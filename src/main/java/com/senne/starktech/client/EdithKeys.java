@@ -1,9 +1,10 @@
 package com.senne.starktech.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.InputConstants.Type;
 import com.senne.starktech.StarkTech;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 
@@ -17,7 +18,8 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 public final class EdithKeys {
     private EdithKeys() {}
 
-    public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(Identifier.fromNamespaceAndPath(StarkTech.MODID, "edith"));
+    /** De naam van het kopje in Opties > Besturing (zie de taalbestanden). */
+    public static final String CATEGORY = "key.categories.starktech";
 
     /**
      * Tikken = E.D.I.T.H.-menu linksboven openen (met tabbladen), nog eens tikken = sluiten.
@@ -52,11 +54,10 @@ public final class EdithKeys {
 
     private static KeyMapping key(String name, int defaultKey) {
         // KeyConflictContext.IN_GAME: de toets doet alleen iets als er geen scherm open is.
-        return new KeyMapping("key.starktech." + name, KeyConflictContext.IN_GAME, InputConstants.Type.KEYBOARD, defaultKey, CATEGORY);
+        return new KeyMapping("key.starktech." + name, KeyConflictContext.IN_GAME, Type.KEYSYM, defaultKey, CATEGORY);
     }
 
     public static void register(RegisterKeyMappingsEvent event) {
-        event.registerCategory(CATEGORY);
         event.register(MENU);
         event.register(ZOOM);
         event.register(NIGHT_VISION);

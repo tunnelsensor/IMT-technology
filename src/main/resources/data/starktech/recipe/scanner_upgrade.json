@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "A": "#c:gems/amethyst",
-    "S": "minecraft:spyglass",
-    "E": "#c:ender_pearls",
-    "C": "starktech:stark_chip"
+    "A": {
+      "tag": "c:gems/amethyst"
+    },
+    "S": {
+      "item": "minecraft:spyglass"
+    },
+    "E": {
+      "tag": "c:ender_pearls"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
   },
   "pattern": [
     "ASA",

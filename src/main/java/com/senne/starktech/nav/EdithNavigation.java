@@ -112,7 +112,7 @@ public final class EdithNavigation {
         if (dimension == Level.END) {
             return Component.translatable("edith.starktech.dimension.end");
         }
-        return Component.literal(dimension.identifier().getPath());
+        return Component.literal(dimension.location().getPath());
     }
 
     /** Maakt een naam netjes: geen opmaakcodes of rare tekens, niet te lang, nooit leeg. */

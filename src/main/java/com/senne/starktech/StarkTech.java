@@ -23,6 +23,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import org.slf4j.Logger;
 
 /**
@@ -59,8 +60,7 @@ public class StarkTech {
         modEventBus.addListener(ModNetwork::register);
 
         // Automatische tests (draaien alleen met "gradlew runGameTestServer").
-        StarkTechGameTests.TEST_FUNCTIONS.register(modEventBus);
-        modEventBus.addListener(StarkTechGameTests::registerTests);
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(StarkTechGameTests.class));
 
         // Gebeurtenissen tijdens het spelen.
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerTick);

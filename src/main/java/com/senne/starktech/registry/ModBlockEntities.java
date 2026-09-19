@@ -18,5 +18,6 @@ public final class ModBlockEntities {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ChargingStationBlockEntity>> CHARGING_STATION =
             BLOCK_ENTITIES.register("charging_station",
-                    () -> new BlockEntityType<>(ChargingStationBlockEntity::new, ModBlocks.CHARGING_STATION.get()));
+                    () -> new BlockEntityType<>(ChargingStationBlockEntity::new,
+                            java.util.Set.of(ModBlocks.CHARGING_STATION.get()), null));
 }

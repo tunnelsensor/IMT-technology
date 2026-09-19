@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": "starktech:drone_upgrade"
+        "recipe": "starktech:drone_upgrade"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

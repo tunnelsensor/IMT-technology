@@ -4,6 +4,7 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.nav.EdithWaypoints;
 import java.util.function.Supplier;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
@@ -19,9 +20,12 @@ public final class ModAttachments {
 
     public static final Supplier<AttachmentType<EdithWaypoints>> WAYPOINTS = ATTACHMENTS.register("waypoints",
             () -> AttachmentType.builder(() -> EdithWaypoints.EMPTY)
-                    .serialize(EdithWaypoints.CODEC)
+                    .serialize(EdithWaypoints.CODEC.codec())
                     .copyOnDeath()
-                    // Alleen de speler zelf krijgt zijn waypoints te zien.
-                    .sync((holder, player) -> holder == player, EdithWaypoints.STREAM_CODEC)
+                    // Alleen de speler zelf krijgt zijn waypoints te zien. De extra controle op
+                    // "hasChannel" is voor nep-spelers (bv. in de automatische tests of van andere
+                    // mods): die hebben geen echte verbinding en kunnen niets ontvangen.
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithWaypoints.STREAM_CODEC)
                     .build());
 }

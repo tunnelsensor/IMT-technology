@@ -1,16 +1,12 @@
 package com.senne.starktech.client;
 
-import com.google.common.reflect.TypeToken;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.drone.DroneModel;
 import com.senne.starktech.client.drone.DroneRenderer;
 import com.senne.starktech.client.voice.VoiceControl;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModMenus;
-import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -20,7 +16,6 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import net.neoforged.neoforge.client.renderstate.RegisterRenderStateModifiersEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 /**
@@ -37,10 +32,8 @@ public class StarkTechClient {
 
         // Aanmelden bij het opstarten van het spel
         modEventBus.addListener(EdithKeys::register);
-        modEventBus.addListener(ClientPayloadHandlers::register);
         modEventBus.addListener(StarkTechClient::registerGuiLayers);
         modEventBus.addListener(StarkTechClient::registerScreens);
-        modEventBus.addListener(StarkTechClient::registerRenderStateModifiers);
         modEventBus.addListener(StarkTechClient::registerEntityRenderers);
         modEventBus.addListener(StarkTechClient::registerLayerDefinitions);
 
@@ -58,7 +51,7 @@ public class StarkTechClient {
 
     /** De HUD komt boven de camera-effecten maar onder de hotbar, chat en menu's. */
     private static void registerGuiLayers(RegisterGuiLayersEvent event) {
-        event.registerAbove(VanillaGuiLayers.CAMERA_OVERLAYS, Identifier.fromNamespaceAndPath(StarkTech.MODID, "edith_hud"), new EdithHud());
+        event.registerAbove(VanillaGuiLayers.CAMERA_OVERLAYS, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_hud"), new EdithHud());
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
@@ -73,8 +66,5 @@ public class StarkTechClient {
         event.registerLayerDefinition(DroneModel.LAYER, DroneModel::createBodyLayer);
     }
 
-    private static void registerRenderStateModifiers(RegisterRenderStateModifiersEvent event) {
-        event.registerEntityModifier(new TypeToken<LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?>>() {},
-                EdithClientEvents::modifyLivingRenderState);
-    }
+
 }

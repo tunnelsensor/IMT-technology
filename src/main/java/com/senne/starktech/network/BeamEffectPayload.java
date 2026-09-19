@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -14,7 +14,7 @@ import net.minecraft.world.phys.Vec3;
  * bericht te sturen in plaats van honderden deeltjes.
  */
 public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements CustomPacketPayload {
-    public static final Type<BeamEffectPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "beam_effect"));
+    public static final Type<BeamEffectPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "beam_effect"));
 
     public enum Kind {
         /** Laserschot van een drone. */
@@ -30,8 +30,8 @@ public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements Custom
     }
 
     public static final StreamCodec<ByteBuf, BeamEffectPayload> STREAM_CODEC = StreamCodec.composite(
-            Vec3.STREAM_CODEC, BeamEffectPayload::from,
-            Vec3.STREAM_CODEC, BeamEffectPayload::to,
+            ModCodecs.VEC3, BeamEffectPayload::from,
+            ModCodecs.VEC3, BeamEffectPayload::to,
             ByteBufCodecs.VAR_INT.map(i -> Kind.values()[Math.floorMod(i, Kind.values().length)], Kind::ordinal), BeamEffectPayload::kind,
             BeamEffectPayload::new);
 

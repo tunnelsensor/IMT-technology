@@ -7,7 +7,7 @@ import java.util.Optional;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -24,14 +24,14 @@ import net.minecraft.world.phys.Vec3;
  */
 public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,
                                  Optional<Vec3> strikeTarget, int strikeTicks) implements CustomPacketPayload {
-    public static final Type<EdithStatusPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "edith_status"));
+    public static final Type<EdithStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_status"));
 
     public static final StreamCodec<ByteBuf, EdithStatusPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, EdithStatusPayload::swarmDrones,
             ByteBufCodecs.VAR_INT, EdithStatusPayload::guardDrones,
             ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)), EdithStatusPayload::cooldowns,
             ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)), EdithStatusPayload::marked,
-            ByteBufCodecs.optional(Vec3.STREAM_CODEC), EdithStatusPayload::strikeTarget,
+            ByteBufCodecs.optional(ModCodecs.VEC3), EdithStatusPayload::strikeTarget,
             ByteBufCodecs.VAR_INT, EdithStatusPayload::strikeTicks,
             EdithStatusPayload::new);
 

@@ -13,8 +13,7 @@ import net.minecraft.client.Minecraft;
 import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
-import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
+import net.minecraft.Util;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
@@ -23,19 +22,17 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public final class ClientPayloadHandlers {
     private ClientPayloadHandlers() {}
 
-    public static void register(RegisterClientPayloadHandlersEvent event) {
-        event.register(EdithMessagePayload.TYPE, ClientPayloadHandlers::onMessage);
-        event.register(OreScanPayload.TYPE, ClientPayloadHandlers::onOreScan);
-        event.register(EdithStatusPayload.TYPE, ClientPayloadHandlers::onStatus);
-        event.register(BeamEffectPayload.TYPE, (payload, context) -> BeamEffects.play(payload));
-        event.register(DroneCameraPayload.TYPE, (payload, context) -> DroneCamera.onServerMessage(payload.droneId(), payload.control()));
-        event.register(PingMarkerPayload.TYPE, ClientPayloadHandlers::onPing);
-        // Fase 6: spionagedrone
-        event.register(SpyStatusPayload.TYPE, ClientPayloadHandlers::onSpyStatus);
-        event.register(SpyReportPayload.TYPE, ClientPayloadHandlers::onSpyReport);
+    /** Een straal tekenen (drone-laser of satelliet). */
+    public static void onBeam(BeamEffectPayload payload, IPayloadContext context) {
+        BeamEffects.play(payload);
     }
 
-    private static void onMessage(EdithMessagePayload payload, IPayloadContext context) {
+    /** "Kijk door deze drone" (of stop ermee). */
+    public static void onDroneCamera(DroneCameraPayload payload, IPayloadContext context) {
+        DroneCamera.onServerMessage(payload.droneId(), payload.control());
+    }
+
+    public static void onMessage(EdithMessagePayload payload, IPayloadContext context) {
         EdithClientState.addNotification(payload.message(), payload.level());
         switch (payload.level()) {
             case BOOT -> EdithClientEvents.playUi(ModSounds.EDITH_BOOT.get(), 1.0f);
@@ -46,7 +43,7 @@ public final class ClientPayloadHandlers {
         }
     }
 
-    private static void onStatus(EdithStatusPayload payload, IPayloadContext context) {
+    public static void onStatus(EdithStatusPayload payload, IPayloadContext context) {
         long now = Util.getMillis();
         EdithClientState.statusMillis = now;
         EdithClientState.swarmDrones = payload.swarmDrones();
@@ -57,13 +54,13 @@ public final class ClientPayloadHandlers {
         EdithClientState.strikeAtMillis = now + payload.strikeTicks() * 50L;
     }
 
-    private static void onPing(PingMarkerPayload payload, IPayloadContext context) {
+    public static void onPing(PingMarkerPayload payload, IPayloadContext context) {
         long now = Util.getMillis();
         EdithClientState.pings.removeIf(ping -> ping.sender().equals(payload.sender()));
         EdithClientState.pings.add(new EdithClientState.Ping(payload.sender(), payload.pos(), now,
                 now + EdithBalance.PING_DURATION * 50L));
         var player = context.player();
-        boolean own = player.getGameProfile().name().equals(payload.sender());
+        boolean own = player.getGameProfile().getName().equals(payload.sender());
         int distance = (int) Math.round(Math.sqrt(player.distanceToSqr(payload.pos())));
         EdithClientState.addNotification(own
                 ? Component.translatable("edith.starktech.msg.ping_placed")
@@ -72,7 +69,7 @@ public final class ClientPayloadHandlers {
     }
 
     /** Wat de spionagedrone nu ziet (twee keer per seconde). */
-    private static void onSpyStatus(SpyStatusPayload payload, IPayloadContext context) {
+    public static void onSpyStatus(SpyStatusPayload payload, IPayloadContext context) {
         EdithClientState.spyActive = payload.active();
         EdithClientState.spyTarget = payload.targetName();
         EdithClientState.spyPos = payload.pos().orElse(null);
@@ -84,17 +81,17 @@ public final class ClientPayloadHandlers {
     }
 
     /** Het rapport van de spionagedrone: bewaren en het scherm openen. */
-    private static void onSpyReport(SpyReportPayload payload, IPayloadContext context) {
+    public static void onSpyReport(SpyReportPayload payload, IPayloadContext context) {
         EdithClientState.spyReportTarget = payload.targetName();
         EdithClientState.spyReport = payload.lines();
         Minecraft mc = Minecraft.getInstance();
-        if (mc.gui.screen() == null) {
-            mc.gui.setScreen(new SpyReportScreen(payload.targetName(), payload.lines()));
+        if (mc.screen == null) {
+            mc.setScreen(new SpyReportScreen(payload.targetName(), payload.lines()));
         }
         EdithClientEvents.playUi(ModSounds.COMMS_MESSAGE.get(), 0.9f);
     }
 
-    private static void onOreScan(OreScanPayload payload, IPayloadContext context) {
+    public static void onOreScan(OreScanPayload payload, IPayloadContext context) {
         EdithClientEvents.playUi(ModSounds.EDITH_SCAN.get(), 1.0f);
         int found = OreScanner.scan(payload.radius());
         EdithClientState.addNotification(Component.translatable("edith.starktech.msg.scan_complete", found, payload.radius()),

@@ -1,7 +1,7 @@
 package com.senne.starktech.client.voice;
 
 import java.util.function.Consumer;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -37,7 +37,7 @@ public class ActionPickerScreen extends Screen {
                 }
                 Button button = Button.builder(Component.translatable(action.translationKey()), b -> {
                             onChosen.accept(action);
-                            minecraft.gui.setScreen(parent);
+                            minecraft.setScreen(parent);
                         })
                         .bounds(left + column * (columnWidth + 4), y, columnWidth, 16)
                         .build();
@@ -51,21 +51,21 @@ public class ActionPickerScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
-        super.extractRenderState(g, mouseX, mouseY, a);
-        g.centeredText(font, title, width / 2, 12, 0xFFFFFFFF);
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
+        super.render(g, mouseX, mouseY, a);
+        g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
         VoiceAction.Group[] groups = VoiceAction.Group.values();
         int columns = groups.length;
         int columnWidth = Math.min(130, (width - 20) / columns - 4);
         int left = (width - columns * (columnWidth + 4)) / 2;
         for (int column = 0; column < columns; column++) {
             Component header = Component.translatable("screen.starktech.voice_edit.group." + groups[column].name().toLowerCase(java.util.Locale.ROOT));
-            g.centeredText(font, header, left + column * (columnWidth + 4) + columnWidth / 2, 28, 0xFF3FD8FF);
+            g.drawCenteredString(font, header, left + column * (columnWidth + 4) + columnWidth / 2, 28, 0xFF3FD8FF);
         }
     }
 
     @Override
     public void onClose() {
-        minecraft.gui.setScreen(parent);
+        minecraft.setScreen(parent);
     }
 }

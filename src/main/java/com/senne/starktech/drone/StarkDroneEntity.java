@@ -6,6 +6,7 @@ import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.edith.EdithTargeting;
 import com.senne.starktech.network.BeamEffectPayload;
+import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.ModNetwork;
@@ -39,13 +40,12 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Een Stark-drone. Er zijn drie soorten (zie Mode):
@@ -239,8 +239,11 @@ public class StarkDroneEntity extends PathfinderMob {
     }
 
     @Override
-    protected void customServerAiStep(ServerLevel level) {
-        super.customServerAiStep(level);
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+        if (!(level() instanceof ServerLevel level)) {
+            return; // denken doet hij alleen op de server
+        }
         if (fireCooldown > 0) {
             fireCooldown--;
         }
@@ -287,7 +290,7 @@ public class StarkDroneEntity extends PathfinderMob {
         // Te ver weg (bv. eigenaar teleporteerde)? Dan springt de drone terug.
         double leash = lockedTargetId != null ? EdithBalance.STRIKE_DRONE_RANGE + 32 : 48;
         if (distanceToSqr(owner) > leash * leash) {
-            snapTo(owner.getX(), owner.getY() + owner.getBbHeight() + 1, owner.getZ());
+            moveTo(owner.getX(), owner.getY() + owner.getBbHeight() + 1, owner.getZ());
             setDeltaMovement(Vec3.ZERO);
         }
 
@@ -371,7 +374,7 @@ public class StarkDroneEntity extends PathfinderMob {
         getLookControl().setLookAt(target, 30.0f, 30.0f);
         // Te veel achterstand (portaal, teleport, elytra)? Dan springt hij mee.
         if (distanceToSqr(target) > 48 * 48) {
-            snapTo(wantedX, wantedY, wantedZ);
+            moveTo(wantedX, wantedY, wantedZ);
             setDeltaMovement(Vec3.ZERO);
         }
     }
@@ -417,24 +420,24 @@ public class StarkDroneEntity extends PathfinderMob {
      * extra lift, sprinten is sneller, en met shift stop je (de drone zet je neer).
      */
     private void flyByRider(ServerPlayer rider, ServerLevel level, ServerPlayer owner) {
-        Input input = rider.getLastClientInput();
-        if (input.shift()) {
+        // Wat de speler indrukt, stuurt zijn eigen spel elke tick naar de server
+        // (zie DroneCamera/EdithClientEvents en EdithServer.handleDroneControl).
+        DroneControlPayload input = EdithServer.getTransportControl(rider);
+        if (rider.isShiftKeyDown()) {
             EdithTransport.land(rider, this, true);
             return;
         }
-        double forward = (input.forward() ? 1 : 0) - (input.backward() ? 1 : 0);
-        double strafe = (input.left() ? 1 : 0) - (input.right() ? 1 : 0);
         Vec3 look = rider.getLookAngle();
         double yawRad = rider.getYRot() * Mth.DEG_TO_RAD;
         Vec3 left = new Vec3(Math.cos(yawRad), 0, Math.sin(yawRad));
-        Vec3 wanted = look.scale(forward).add(left.scale(strafe));
-        if (input.jump()) {
-            wanted = wanted.add(0, 1.0, 0);
+        Vec3 wanted = look.scale(input.forward()).add(left.scale(input.strafe()));
+        if (input.vertical() != 0) {
+            wanted = wanted.add(0, input.vertical(), 0);
         }
         if (wanted.lengthSqr() > 1) {
             wanted = wanted.normalize();
         }
-        double speed = input.sprint() ? EdithBalance.TRANSPORT_BOOST_SPEED : EdithBalance.TRANSPORT_SPEED;
+        double speed = input.boost() ? EdithBalance.TRANSPORT_BOOST_SPEED : EdithBalance.TRANSPORT_SPEED;
         // Zonder invoer blijft hij stil hangen (hij zakt niet: hij heeft geen zwaartekracht).
         setDeltaMovement(getDeltaMovement().lerp(wanted.scale(speed), 0.25));
         setYRot(rider.getYRot());
@@ -561,7 +564,7 @@ public class StarkDroneEntity extends PathfinderMob {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         DamageSource source = ModDamageTypes.droneLaser(level, this, owner);
-        target.hurtServer(level, source, EdithBalance.DRONE_LASER_DAMAGE);
+        target.hurt(source, EdithBalance.DRONE_LASER_DAMAGE);
         playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f + random.nextFloat() * 0.3f);
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
     }
@@ -579,13 +582,13 @@ public class StarkDroneEntity extends PathfinderMob {
 
     /** De eigenaar (en zijn andere drones) kunnen deze drone geen pijn doen. */
     @Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+    public boolean hurt(DamageSource source, float damage) {
         Entity attacker = source.getEntity();
         if (attacker != null && ownerId != null
                 && (ownerId.equals(attacker.getUUID()) || attacker instanceof StarkDroneEntity)) {
             return false;
         }
-        return super.hurtServer(level, source, damage);
+        return super.hurt(source, damage);
     }
 
     @Override
@@ -628,10 +631,8 @@ public class StarkDroneEntity extends PathfinderMob {
         return false;
     }
 
-    @Override
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
+    // Niet verdrinken regelen we met een tag:
+    // data/minecraft/tags/entity_type/can_breathe_under_water.json
 
     @Override
     protected void checkFallDamage(double distance, boolean onGround, net.minecraft.world.level.block.state.BlockState state, net.minecraft.core.BlockPos pos) {
@@ -644,42 +645,46 @@ public class StarkDroneEntity extends PathfinderMob {
      * Vliegt in een rechte lijn naar de gewenste plek (zoals de Vex uit Minecraft,
      * maar dan zonder door muren te gaan).
      */
-    private static class DroneMoveControl extends MoveControl<StarkDroneEntity> {
+    private static class DroneMoveControl extends MoveControl {
+        /** Dezelfde drone als "mob", maar met het juiste type (MoveControl kent alleen Mob). */
+        private final StarkDroneEntity drone;
+
         DroneMoveControl(StarkDroneEntity drone) {
             super(drone);
+            this.drone = drone;
         }
 
         @Override
         public void tick() {
-            if (mob.isScout()) {
+            if (drone.isScout()) {
                 return; // de verkenner wordt rechtstreeks bestuurd
             }
             if (operation != Operation.MOVE_TO) {
                 // Stilhangen: langzaam afremmen.
-                mob.setDeltaMovement(mob.getDeltaMovement().scale(0.8));
+                drone.setDeltaMovement(drone.getDeltaMovement().scale(0.8));
                 return;
             }
-            Vec3 delta = new Vec3(wantedX - mob.getX(), wantedY - mob.getY(), wantedZ - mob.getZ());
+            Vec3 delta = new Vec3(wantedX - drone.getX(), wantedY - drone.getY(), wantedZ - drone.getZ());
             double length = delta.length();
             if (length < 0.3) {
                 operation = Operation.WAIT;
-                mob.setDeltaMovement(mob.getDeltaMovement().scale(0.5));
+                drone.setDeltaMovement(drone.getDeltaMovement().scale(0.5));
                 return;
             }
             // Versnellen richting het doel; dichtbij rustiger aan.
             double speed = speedModifier * 0.06 * Math.min(1.0, length / 2.0);
-            mob.setDeltaMovement(mob.getDeltaMovement().add(delta.scale(speed / length)));
-            if (mob.currentTarget == null) {
-                Vec3 motion = mob.getDeltaMovement();
+            drone.setDeltaMovement(drone.getDeltaMovement().add(delta.scale(speed / length)));
+            if (drone.currentTarget == null) {
+                Vec3 motion = drone.getDeltaMovement();
                 if (motion.horizontalDistanceSqr() > 0.001) {
-                    mob.setYRot(-((float) Mth.atan2(motion.x, motion.z)) * Mth.RAD_TO_DEG);
-                    mob.yBodyRot = mob.getYRot();
+                    drone.setYRot(-((float) Mth.atan2(motion.x, motion.z)) * Mth.RAD_TO_DEG);
+                    drone.yBodyRot = drone.getYRot();
                 }
             } else {
-                double dx = mob.currentTarget.getX() - mob.getX();
-                double dz = mob.currentTarget.getZ() - mob.getZ();
-                mob.setYRot(-((float) Mth.atan2(dx, dz)) * Mth.RAD_TO_DEG);
-                mob.yBodyRot = mob.getYRot();
+                double dx = drone.currentTarget.getX() - drone.getX();
+                double dz = drone.currentTarget.getZ() - drone.getZ();
+                drone.setYRot(-((float) Mth.atan2(dx, dz)) * Mth.RAD_TO_DEG);
+                drone.yBodyRot = drone.getYRot();
             }
         }
     }

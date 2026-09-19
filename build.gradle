@@ -34,8 +34,13 @@ base {
     archivesName = mod_id
 }
 
-// Mojang ships Java 25 to end users in 26.3, so mods should target Java 25.
-java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+// Laat alle fouten zien in plaats van de eerste 100 (handig bij grote wijzigingen).
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.addAll(['-Xmaxerrs', '2000'])
+}
+
+// Minecraft 1.21.1 draait op Java 21, dus daar bouwen we voor.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 neoForge {
     // Specify the version of NeoForge to use.
@@ -141,6 +146,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,

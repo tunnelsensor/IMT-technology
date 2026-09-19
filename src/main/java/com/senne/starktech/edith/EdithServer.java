@@ -45,7 +45,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Het "brein" van E.D.I.T.H. aan de serverkant. Hier wordt beslist wat mag en wat niet:
@@ -74,6 +74,9 @@ public final class EdithServer {
         @Nullable UUID scoutId;
         DroneControlPayload scoutControl = DroneControlPayload.IDLE;
         long lastControlTick;
+        /** De laatste besturing voor een transportdrone (zelf vliegen). */
+        DroneControlPayload transportControl = DroneControlPayload.IDLE;
+        long lastTransportTick;
         /** De drone waar de speler alleen door MEEKIJKT (spionagedrone), of null. */
         @Nullable UUID viewDroneId;
     }
@@ -123,7 +126,7 @@ public final class EdithServer {
 
         // Kijk je mee door een spionagedrone die er niet meer is (of is je bril af)? Dan stoppen.
         if (state.viewDroneId != null) {
-            boolean droneGone = !(player.level().getEntity(state.viewDroneId) instanceof StarkDroneEntity drone)
+            boolean droneGone = !(player.serverLevel().getEntity(state.viewDroneId) instanceof StarkDroneEntity drone)
                     || !drone.isAlive()
                     || drone.distanceToSqr(player) > (EdithBalance.SPY_VIEW_RANGE + 40) * (EdithBalance.SPY_VIEW_RANGE + 40);
             if (!wearing || droneGone) {
@@ -151,7 +154,7 @@ public final class EdithServer {
     /** De speler heeft net een bril opgezet. */
     private static void onEquip(ServerPlayer player, ItemStack glasses) {
         EdithOwner owner = EdithData.getOwner(glasses);
-        String name = player.getGameProfile().name();
+        String name = player.getGameProfile().getName();
 
         if (owner == null) {
             // Nieuwe bril: de eerste drager wordt de eigenaar.
@@ -537,7 +540,7 @@ public final class EdithServer {
             send(player, Component.translatable("edith.starktech.msg.spy_none"), EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (!(player.level().getEntity(droneId) instanceof StarkDroneEntity drone)
+        if (!(player.serverLevel().getEntity(droneId) instanceof StarkDroneEntity drone)
                 || drone.distanceToSqr(player) > EdithBalance.SPY_VIEW_RANGE * EdithBalance.SPY_VIEW_RANGE) {
             send(player, Component.translatable("edith.starktech.msg.spy_signal_weak"), EdithMessagePayload.Level.WARNING);
             return;
@@ -577,7 +580,7 @@ public final class EdithServer {
         if (authorizedGlasses(player) == null) {
             return;
         }
-        Entity entity = player.level().getEntity(entityId);
+        Entity entity = player.serverLevel().getEntity(entityId);
         double maxRange = EdithBalance.TARGET_RANGE + 8;
         if (!(entity instanceof LivingEntity target)) {
             return;
@@ -618,7 +621,7 @@ public final class EdithServer {
             return List.of();
         }
         List<LivingEntity> result = new ArrayList<>();
-        ServerLevel level = player.level();
+        ServerLevel level = player.serverLevel();
         for (UUID id : state.marked) {
             if (level.getEntity(id) instanceof LivingEntity living && isMarkStillValid(player, living)) {
                 result.add(living);
@@ -633,7 +636,7 @@ public final class EdithServer {
 
     /** Haalt dode, verdwenen of te verre doelwitten uit de lijst. */
     private static void cleanUpMarks(ServerPlayer player, PlayerState state) {
-        ServerLevel level = player.level();
+        ServerLevel level = player.serverLevel();
         Iterator<UUID> it = state.marked.iterator();
         while (it.hasNext()) {
             if (!(level.getEntity(it.next()) instanceof LivingEntity living) || !isMarkStillValid(player, living)) {
@@ -652,7 +655,7 @@ public final class EdithServer {
         Vec3 look = player.getViewVector(1.0f);
         Vec3 end = eye.add(look.scale(range));
         // Zit er een blok in de weg? Dan kijken we niet verder dan dat blok.
-        HitResult blockHit = player.level().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        HitResult blockHit = player.serverLevel().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         if (blockHit.getType() != HitResult.Type.MISS) {
             range = blockHit.getLocation().distanceTo(eye);
             end = eye.add(look.scale(range));
@@ -715,7 +718,7 @@ public final class EdithServer {
             return;
         }
         // De satelliet hangt in de ruimte: het doel moet de lucht kunnen zien.
-        if (!player.level().canSeeSky(BlockPos.containing(target).above())) {
+        if (!player.serverLevel().canSeeSky(BlockPos.containing(target).above())) {
             send(player, Component.translatable("edith.starktech.msg.satellite_no_sky"), EdithMessagePayload.Level.WARNING);
             return;
         }
@@ -726,8 +729,8 @@ public final class EdithServer {
         // De schuivende laser beweegt van jou WEG, zodat hij niet naar je toe komt.
         Vec3 away = target.subtract(player.position());
         Vec3 sweep = away.horizontalDistanceSqr() < 0.01 ? new Vec3(1, 0, 0) : new Vec3(away.x, 0, away.z).normalize();
-        SatelliteStrikes.start(player.level(), target, player.getUUID(), mode, locked, sweep);
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SATELLITE_LOCK.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
+        SatelliteStrikes.start(player.serverLevel(), target, player.getUUID(), mode, locked, sweep);
+        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SATELLITE_LOCK.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         send(player, Component.translatable("edith.starktech.msg.satellite_locked_mode",
                 Component.translatable(mode.translationKey()), EdithBalance.SATELLITE_CHARGE_TIME / 20),
                 EdithMessagePayload.Level.WARNING);
@@ -778,7 +781,7 @@ public final class EdithServer {
         StarkDroneEntity scout = getScout(player, state);
         state.scoutId = null;
         if (scout != null) {
-            scout.recall(player.level());
+            scout.recall(player.serverLevel());
         }
         ModNetwork.sendTo(player, DroneCameraPayload.OFF);
         send(player, Component.translatable(messageKey), level);
@@ -788,7 +791,7 @@ public final class EdithServer {
         if (state.scoutId == null) {
             return null;
         }
-        return player.level().getEntity(state.scoutId) instanceof StarkDroneEntity drone && drone.isAlive() ? drone : null;
+        return player.serverLevel().getEntity(state.scoutId) instanceof StarkDroneEntity drone && drone.isAlive() ? drone : null;
     }
 
     /** Is dit de verkenningsdrone waar de speler nu door kijkt? (Wordt door de drone zelf gevraagd.) */
@@ -811,26 +814,54 @@ public final class EdithServer {
         return control;
     }
 
-    /** Besturing van de verkenningsdrone, elke tick gestuurd door het spel van de speler. */
+    /**
+     * Hoe de speler zijn transportdrone bestuurt (zelf vliegen). Hoort er al een halve seconde
+     * niets binnen te komen, dan blijft de drone stil hangen.
+     */
+    public static DroneControlPayload getTransportControl(ServerPlayer player) {
+        PlayerState state = STATES.get(player.getUUID());
+        if (state == null || player.level().getGameTime() - state.lastTransportTick > 10) {
+            return DroneControlPayload.IDLE;
+        }
+        return state.transportControl;
+    }
+
+    /**
+     * Besturing van een drone, elke tick gestuurd door het spel van de speler. Hetzelfde bericht
+     * gebruiken we voor de verkenningsdrone (waar je door kijkt) en voor de transportdrone
+     * (waar je onder hangt).
+     */
     public static void handleDroneControl(ServerPlayer player, DroneControlPayload payload) {
         PlayerState state = STATES.get(player.getUUID());
-        if (state == null || state.scoutId == null) {
+        if (state == null) {
             return;
         }
         // Waarden netjes binnen de grenzen houden (een gehackte client kan rare getallen sturen).
-        state.scoutControl = new DroneControlPayload(
+        DroneControlPayload safe = new DroneControlPayload(
                 Mth.clamp(payload.forward(), -1, 1),
                 Mth.clamp(payload.strafe(), -1, 1),
                 Mth.clamp(payload.vertical(), -1, 1),
                 payload.boost(),
                 Mth.wrapDegrees(payload.yaw()),
                 Mth.clamp(payload.pitch(), -90, 90));
+        // Hang je onder een transportdrone? Dan is dit de besturing daarvan.
+        if (EdithTransport.carrierOf(player) != null) {
+            state.transportControl = safe;
+            state.lastTransportTick = player.level().getGameTime();
+            return;
+        }
+        if (state.scoutId == null) {
+            return;
+        }
+        state.scoutControl = safe;
         state.lastControlTick = player.level().getGameTime();
     }
 
+
+
     /** Wordt de speler geraakt terwijl hij door de drone kijkt? Dan meteen terug naar zijn lichaam. */
     public static void onLivingDamaged(LivingDamageEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getHealthDamage() > 0) {
+        if (event.getEntity() instanceof ServerPlayer player && event.getNewDamage() > 0) {
             PlayerState state = STATES.get(player.getUUID());
             if (state != null && state.scoutId != null) {
                 endScout(player, "edith.starktech.msg.scout_body_attacked", EdithMessagePayload.Level.ALERT);

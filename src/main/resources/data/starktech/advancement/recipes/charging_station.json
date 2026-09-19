@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": "starktech:charging_station"
+        "recipe": "starktech:charging_station"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

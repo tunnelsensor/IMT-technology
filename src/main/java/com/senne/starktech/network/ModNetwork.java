@@ -1,5 +1,6 @@
 package com.senne.starktech.network;
 
+import com.senne.starktech.client.ClientPayloadHandlers;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.nav.EdithNavigation;
@@ -57,16 +58,26 @@ public final class ModNetwork {
             }
         });
 
-        // Server -> speler (de afhandeling staat in de client-code)
-        registrar.playToClient(EdithMessagePayload.TYPE, EdithMessagePayload.STREAM_CODEC);
-        registrar.playToClient(OreScanPayload.TYPE, OreScanPayload.STREAM_CODEC);
-        registrar.playToClient(EdithStatusPayload.TYPE, EdithStatusPayload.STREAM_CODEC);
-        registrar.playToClient(BeamEffectPayload.TYPE, BeamEffectPayload.STREAM_CODEC);
-        registrar.playToClient(DroneCameraPayload.TYPE, DroneCameraPayload.STREAM_CODEC);
-        registrar.playToClient(PingMarkerPayload.TYPE, PingMarkerPayload.STREAM_CODEC);
+        // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
+        // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een
+        // server (die geen schermen heeft) die code nooit.
+        registrar.playToClient(EdithMessagePayload.TYPE, EdithMessagePayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onMessage(payload, context));
+        registrar.playToClient(OreScanPayload.TYPE, OreScanPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onOreScan(payload, context));
+        registrar.playToClient(EdithStatusPayload.TYPE, EdithStatusPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onStatus(payload, context));
+        registrar.playToClient(BeamEffectPayload.TYPE, BeamEffectPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onBeam(payload, context));
+        registrar.playToClient(DroneCameraPayload.TYPE, DroneCameraPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onDroneCamera(payload, context));
+        registrar.playToClient(PingMarkerPayload.TYPE, PingMarkerPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onPing(payload, context));
         // Fase 6: spionagedrone
-        registrar.playToClient(SpyStatusPayload.TYPE, SpyStatusPayload.STREAM_CODEC);
-        registrar.playToClient(SpyReportPayload.TYPE, SpyReportPayload.STREAM_CODEC);
+        registrar.playToClient(SpyStatusPayload.TYPE, SpyStatusPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onSpyStatus(payload, context));
+        registrar.playToClient(SpyReportPayload.TYPE, SpyReportPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onSpyReport(payload, context));
     }
 
     /**

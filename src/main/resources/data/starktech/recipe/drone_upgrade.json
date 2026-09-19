@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "I": "#c:ingots/iron",
-    "F": "#c:feathers",
-    "R": "#c:dusts/redstone",
-    "C": "starktech:stark_chip"
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "F": {
+      "tag": "c:feathers"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
   },
   "pattern": [
     "IRI",

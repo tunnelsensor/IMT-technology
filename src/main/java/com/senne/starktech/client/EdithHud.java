@@ -22,11 +22,11 @@ import java.util.Optional;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.monster.Enemy;
@@ -35,7 +35,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.client.gui.GuiLayer;
+import net.minecraft.client.gui.LayeredDraw;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 
 /**
  * De HUD van E.D.I.T.H.: alles wat je "in de bril" ziet. Wordt elke frame getekend.
@@ -43,7 +45,7 @@ import net.neoforged.neoforge.client.gui.GuiLayer;
  * Tekenen gebeurt met simpele rechthoekjes (fill) en tekst, dus er zijn geen
  * plaatjes nodig. Kleuren zijn geschreven als 0xAARRGGBB (A = doorzichtigheid).
  */
-public class EdithHud implements GuiLayer {
+public class EdithHud implements LayeredDraw.Layer {
     // ---------------------------------------------------------------- Kleuren (zonder alpha)
     static final int CYAN = 0x3FD8FF;
     static final int WHITE = 0xE8FBFF;
@@ -63,10 +65,10 @@ public class EdithHud implements GuiLayer {
     }
 
     @Override
-    public void render(GuiGraphicsExtractor g, DeltaTracker deltaTracker) {
+    public void render(GuiGraphics g, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
-        if (player == null || mc.gui.hud.isHidden() || !EdithClientState.wearing) {
+        if (player == null || mc.options.hideGui || !EdithClientState.wearing) {
             return;
         }
         ItemStack glasses = EdithData.getWornGlasses(player);
@@ -95,7 +97,7 @@ public class EdithHud implements GuiLayer {
         // Is het ronde G-menu open? Dan verdwijnt alles wat plat op je scherm staat (het paneel
         // links, het kompas, meldingen...), zodat niets de cirkel in het midden in de weg zit.
         // Markeringen in de wereld (vijanden, ertsen, pings...) blijven wel zichtbaar.
-        boolean menuOpen = mc.gui.screen() instanceof EdithMenuScreen;
+        boolean menuOpen = mc.screen instanceof EdithMenuScreen;
 
         renderFrame(g, w, h, powered ? CYAN : RED, 110);
         if (powered) {
@@ -122,7 +124,7 @@ public class EdithHud implements GuiLayer {
         } else if (!menuOpen) {
             Component noPower = Component.translatable("hud.starktech.no_power");
             int alpha = (int) (150 + 100 * Math.sin(now / 200.0));
-            g.centeredText(font, noPower, w / 2, h / 2 - 30, argb(alpha, RED));
+            g.drawCenteredString(font, noPower, w / 2, h / 2 - 30, argb(alpha, RED));
         }
         if (!menuOpen) {
             renderStatusPanel(g, font, player, glasses, powered, now);
@@ -133,7 +135,7 @@ public class EdithHud implements GuiLayer {
     // ================================================================ Onderdelen
 
     /** Hoekbeugels rond het hele scherm. */
-    private void renderFrame(GuiGraphicsExtractor g, int w, int h, int color, int alpha) {
+    private void renderFrame(GuiGraphics g, int w, int h, int color, int alpha) {
         int m = 4;
         int len = 22;
         brackets(g, m, m, w - m, h - m, len, argb(alpha, color));
@@ -148,8 +150,8 @@ public class EdithHud implements GuiLayer {
     private int panelRight;
 
     /** Tekent een regel in het paneel links en onthoudt hoe breed het paneel is. */
-    private void panelText(GuiGraphicsExtractor g, Font font, Component text, int x, int y, int color) {
-        g.text(font, text, x, y, color, true);
+    private void panelText(GuiGraphics g, Font font, Component text, int x, int y, int color) {
+        g.drawString(font, text, x, y, color, true);
         panelRight = Math.max(panelRight, x + font.width(text));
     }
 
@@ -158,19 +160,19 @@ public class EdithHud implements GuiLayer {
      * Wat uit staat of niet bezig is, zie je hier niet; staat er niets aan, dan zie je alleen de batterij.
      * (Zolang het G-menu open is, is dit paneel even weg.)
      */
-    private void renderStatusPanel(GuiGraphicsExtractor g, Font font, Player player, ItemStack glasses, boolean powered, long now) {
+    private void renderStatusPanel(GuiGraphics g, Font font, Player player, ItemStack glasses, boolean powered, long now) {
         int x = PANEL_X;
         int y = 10;
 
         // Regel 1: E.D.I.T.H. en de batterij
         Component name = powered ? Component.literal("E.D.I.T.H.") : Component.translatable("hud.starktech.offline");
-        g.text(font, name, x, y, argb(255, powered ? CYAN : RED), true);
+        g.drawString(font, name, x, y, argb(255, powered ? CYAN : RED), true);
         int barX = x + font.width(name) + 5;
         panelRight = barX + 70;
         float fraction = EdithData.getEnergyFraction(glasses);
         int barColor = fraction < 0.1f ? RED : fraction < 0.3f ? ORANGE : CYAN;
         bar(g, barX, y + 3, 40, 3, fraction, barColor);
-        g.text(font, Math.round(fraction * 100) + "%", barX + 44, y, argb(210, barColor), true);
+        g.drawString(font, Math.round(fraction * 100) + "%", barX + 44, y, argb(210, barColor), true);
         // Praat E.D.I.T.H.? Dan een klein bewegend golfje naast de batterij.
         if (EdithSpeech.isSpeaking()) {
             int waveX = barX + 70;
@@ -192,7 +194,7 @@ public class EdithHud implements GuiLayer {
                 Component label = Component.translatable(feature.translationKey() + ".short");
                 int tw = font.width(label);
                 g.fill(tagX - 1, y - 1, tagX + tw + 2, y + 9, argb(70, CYAN));
-                g.text(font, label, tagX + 1, y, argb(255, WHITE), false);
+                g.drawString(font, label, tagX + 1, y, argb(255, WHITE), false);
                 tagX += tw + 6;
                 panelRight = Math.max(panelRight, tagX);
             }
@@ -278,7 +280,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** "● LUISTEREN" (met een balkje voor hoe luid je praat), of "VERWERKEN..." als het oor uitschrijft. */
-    private int renderListening(GuiGraphicsExtractor g, Font font, int x, int y, long now) {
+    private int renderListening(GuiGraphics g, Font font, int x, int y, long now) {
         EdithAssistant.Stage stage = EdithAssistant.stage();
         boolean listening = stage == EdithAssistant.Stage.LISTENING;
         if (listening && (now / 400) % 2 == 0) {
@@ -304,7 +306,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Hoeveel ertsen van elke soort de scan vond, met een balkje dat aftelt tot de markeringen weg zijn. */
-    private int renderOreResults(GuiGraphicsExtractor g, Font font, int x, int y, long now) {
+    private int renderOreResults(GuiGraphics g, Font font, int x, int y, long now) {
         Map<OreType, Integer> counts = new EnumMap<>(OreType.class);
         for (EdithClientState.OreMarker marker : EdithClientState.oreMarkers) {
             counts.merge(marker.type(), 1, Integer::sum);
@@ -348,7 +350,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Regel met een wachttijd die nog loopt (oranje). Is hij klaar, dan tekenen we niets. */
-    private int cooldownLine(GuiGraphicsExtractor g, Font font, int x, int y, String key, int cooldownTicks) {
+    private int cooldownLine(GuiGraphics g, Font font, int x, int y, String key, int cooldownTicks) {
         int seconds = EdithClientState.secondsLeft(cooldownTicks);
         if (seconds <= 0) {
             return y;
@@ -358,7 +360,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Oranje beugels rond gemarkeerde doelwitten (ook door muren). */
-    private void renderMarkedTargets(GuiGraphicsExtractor g, Font font, Minecraft mc) {
+    private void renderMarkedTargets(GuiGraphics g, Font font, Minecraft mc) {
         if (mc.level == null) {
             return;
         }
@@ -383,7 +385,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Rood richtkruis en aftelling voor een satelliet-aanval die aan het opladen is. */
-    private void renderSatelliteStrike(GuiGraphicsExtractor g, Font font, int w, int h, long now, boolean underCrosshair) {
+    private void renderSatelliteStrike(GuiGraphics g, Font font, int w, int h, long now, boolean underCrosshair) {
         Vec3 target = EdithClientState.strikeTarget;
         if (target == null || now > EdithClientState.strikeAtMillis + 500) {
             return;
@@ -399,17 +401,17 @@ public class EdithHud implements GuiLayer {
             int size = 10 + (int) (6 * Math.sin(now / 120.0));
             brackets(g, x - size, y - size, x + size, y + size, 5, argb(pulse, RED));
             g.fill(x - 1, y - 1, x + 1, y + 1, argb(255, RED));
-            g.centeredText(font, countdown, x, y + size + 4, argb(255, RED));
+            g.drawCenteredString(font, countdown, x, y + size + 4, argb(255, RED));
         }
         // Ook onder het vizier, voor als het doel niet in beeld is (niet als het G-menu open is).
         if (underCrosshair) {
-            g.centeredText(font, countdown, w / 2, h / 2 + 24, argb(pulse, RED));
+            g.drawCenteredString(font, countdown, w / 2, h / 2 + 24, argb(pulse, RED));
             // In welke stand de satelliet staat (precisie, bombardement of schuivende laser).
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null) {
                 ItemStack glasses = EdithData.getWornGlasses(mc.player);
                 if (!glasses.isEmpty()) {
-                    g.centeredText(font, Component.translatable(EdithData.getSatelliteMode(glasses).translationKey()),
+                    g.drawCenteredString(font, Component.translatable(EdithData.getSatelliteMode(glasses).translationKey()),
                             w / 2, h / 2 + 34, argb(pulse, ORANGE));
                 }
             }
@@ -420,7 +422,7 @@ public class EdithHud implements GuiLayer {
      * Markering op het doelwit van de spionagedrone: een paarse ruit met naam en afstand.
      * Die zie je door muren heen en van elke afstand (de drone stuurt de plek door).
      */
-    private void renderSpyTarget(GuiGraphicsExtractor g, Font font, Player player, long now) {
+    private void renderSpyTarget(GuiGraphics g, Font font, Player player, long now) {
         Vec3 pos = EdithClientState.spyPos;
         if (!EdithClientState.spyActive || pos == null || EdithClientState.spyDimension != player.level().dimension()) {
             return;
@@ -442,7 +444,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Kompas bovenaan in het midden. */
-    private void renderCompass(GuiGraphicsExtractor g, Font font, Player player, int w) {
+    private void renderCompass(GuiGraphics g, Font font, Player player, int w) {
         int width = 150;
         int cx = w / 2;
         int y = 8;
@@ -462,7 +464,7 @@ public class EdithHud implements GuiLayer {
             if (deg % 45 == 0) {
                 String label = labels[deg / 45];
                 int color = label.equals("N") ? RED : WHITE;
-                g.centeredText(font, label, (int) px, y, argb(alpha, color));
+                g.drawCenteredString(font, label, (int) px, y, argb(alpha, color));
                 g.fill((int) px, y + 8, (int) px + 1, y + 12, argb(alpha, CYAN));
             } else {
                 g.fill((int) px, y + 9, (int) px + 1, y + 12, argb(alpha / 2, CYAN));
@@ -494,11 +496,11 @@ public class EdithHud implements GuiLayer {
 
         // Middenstreepje en graden
         g.fill(cx - 1, y + 11, cx + 1, y + 16, argb(255, CYAN));
-        g.centeredText(font, Math.round(bearing) % 360 + "°", cx, y + 17, argb(200, WHITE));
+        g.drawCenteredString(font, Math.round(bearing) % 360 + "°", cx, y + 17, argb(200, WHITE));
     }
 
     /** Een markering op het kompas. Valt hij erbuiten, dan een pijltje aan de rand (alleen als important). */
-    private void compassMarker(GuiGraphicsExtractor g, Font font, int cx, int y, int width, float bearing, float targetBearing,
+    private void compassMarker(GuiGraphics g, Font font, int cx, int y, int width, float bearing, float targetBearing,
                                int color, Component label, boolean important) {
         float diff = Mth.wrapDegrees(targetBearing - bearing);
         float px = cx + diff * 1.5f;
@@ -516,7 +518,7 @@ public class EdithHud implements GuiLayer {
         } else if (important) {
             // Pijltje aan de linker- of rechterkant van het kompas.
             int x = diff < 0 ? (int) (cx - half - 6) : (int) (cx + half + 2);
-            g.text(font, diff < 0 ? "<" : ">", x, y + 6, argb(255, color), true);
+            g.drawString(font, diff < 0 ? "<" : ">", x, y + 6, argb(255, color), true);
         }
     }
 
@@ -530,7 +532,7 @@ public class EdithHud implements GuiLayer {
 
     /** Waar de camera is (je ogen, of je verkenningsdrone). */
     private static Vec3 cameraPosition() {
-        return Minecraft.getInstance().gameRenderer.mainCamera().position();
+        return Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
     }
 
     // ================================================================ Fase 3: navigatie, pings, drone-camera
@@ -557,7 +559,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Regel in het statuspaneel: waar navigeer je naartoe, hoe ver, hoger of lager? */
-    private int renderNavigationLine(GuiGraphicsExtractor g, Font font, Player player, int x, int y) {
+    private int renderNavigationLine(GuiGraphics g, Font font, Player player, int x, int y) {
         NavTarget target = navTarget(player);
         if (target == null) {
             return y;
@@ -577,7 +579,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Ruitje met naam en afstand op de bestemming in de wereld. */
-    private void renderNavigationMarker(GuiGraphicsExtractor g, Font font, Player player, long now) {
+    private void renderNavigationMarker(GuiGraphics g, Font font, Player player, long now) {
         NavTarget target = navTarget(player);
         if (target == null || !target.sameDimension()) {
             return;
@@ -589,19 +591,19 @@ public class EdithHud implements GuiLayer {
         int x = (int) p.x();
         int y = (int) p.y();
         int pulse = (int) (200 + 55 * Math.sin(now / 250.0));
-        g.pose().pushMatrix();
-        g.pose().translate(p.x(), p.y());
-        g.pose().rotate((float) (Math.PI / 4));
+        g.pose().pushPose();
+        g.pose().translate(p.x(), p.y(), 0.0f);
+        g.pose().mulPose(Axis.ZP.rotation((float) (Math.PI / 4)));
         g.fill(-4, -4, 4, 4, argb(pulse, target.color()));
         g.fill(-2, -2, 2, 2, argb(160, 0x000000));
-        g.pose().popMatrix();
+        g.pose().popPose();
         int distance = (int) Math.round(Math.sqrt(cameraPosition().distanceToSqr(target.pos())));
         smallText(g, font, target.name().getString(), x, y - 14, argb(255, target.color()));
         smallText(g, font, distance + "m", x, y + 7, argb(220, WHITE));
     }
 
     /** Pings van jezelf en anderen: groene beugels met naam en afstand. */
-    private void renderPings(GuiGraphicsExtractor g, Font font, long now) {
+    private void renderPings(GuiGraphics g, Font font, long now) {
         for (EdithClientState.Ping ping : EdithClientState.pings) {
             WorldProjection.ScreenPoint p = projection.project(ping.pos());
             if (p == null || !projection.isOnScreen(p, 0)) {
@@ -625,7 +627,7 @@ public class EdithHud implements GuiLayer {
      * Het "camerabeeld" als je door de verkenningsdrone kijkt: scanlijnen, een knipperende
      * REC-stip, signaalsterkte, de levens van de drone en de afstand tot je lichaam.
      */
-    private void renderDroneFeed(GuiGraphicsExtractor g, Font font, Player player, int w, int h, long now) {
+    private void renderDroneFeed(GuiGraphics g, Font font, Player player, int w, int h, long now) {
         StarkDroneEntity drone = DroneCamera.drone();
         if (drone == null) {
             return;
@@ -650,7 +652,7 @@ public class EdithHud implements GuiLayer {
         if ((now / 500) % 2 == 0) {
             g.fill(x, y + 1, x + 6, y + 7, argb(255, RED));
         }
-        g.text(font, Component.translatable("hud.starktech.drone_feed"), x + 10, y, argb(255, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.drone_feed"), x + 10, y, argb(255, WHITE), true);
         y += 12;
 
         // Signaalsterkte: hoe verder van je lichaam, hoe zwakker.
@@ -662,22 +664,22 @@ public class EdithHud implements GuiLayer {
             int color = i < bars ? (signal < 0.25f ? RED : signal < 0.5f ? ORANGE : GREEN) : 0x404850;
             g.fill(x + i * 4, y + 12 - barHeight, x + i * 4 + 3, y + 12, argb(230, color));
         }
-        g.text(font, Component.translatable("hud.starktech.drone_distance", Math.round(distance)), x + 24, y + 2, argb(220, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.drone_distance", Math.round(distance)), x + 24, y + 2, argb(220, WHITE), true);
         y += 16;
 
         // Levens van de drone
         float health = drone.getHealth() / Math.max(1.0f, drone.getMaxHealth());
-        g.text(font, Component.translatable("hud.starktech.drone_hull"), x, y, argb(220, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.drone_hull"), x, y, argb(220, WHITE), true);
         bar(g, x + 40, y + 2, 60, 4, health, health < 0.3f ? RED : GREEN);
         y += 11;
-        g.text(font, Component.translatable("hud.starktech.drone_altitude", Math.round(drone.getY())), x, y, argb(200, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.drone_altitude", Math.round(drone.getY())), x, y, argb(200, WHITE), true);
 
         // Uitleg onderaan
-        g.centeredText(font, Component.translatable("hud.starktech.drone_controls"), cx, h - 34, argb(200, WHITE));
+        g.drawCenteredString(font, Component.translatable("hud.starktech.drone_controls"), cx, h - 34, argb(200, WHITE));
     }
 
     /** Doelwit-analyse: beugels om het wezen waar je naar kijkt + een info-paneel rechts. */
-    private void renderTarget(GuiGraphicsExtractor g, Font font, Player player, int w, int h, boolean showPanel) {
+    private void renderTarget(GuiGraphics g, Font font, Player player, int w, int h, boolean showPanel) {
         LivingEntity target = EdithClientState.target;
         if (target == null || !target.isAlive()) {
             return;
@@ -701,32 +703,32 @@ public class EdithHud implements GuiLayer {
         g.fill(x - 4, y - 4, x + panelW, y + 70, argb(60, 0x001018));
         brackets(g, x - 4, y - 4, x + panelW, y + 70, 6, argb(160, CYAN));
 
-        g.text(font, Component.translatable("hud.starktech.target"), x, y, argb(255, CYAN), true);
+        g.drawString(font, Component.translatable("hud.starktech.target"), x, y, argb(255, CYAN), true);
         y += 11;
-        g.text(font, target.getDisplayName(), x, y, argb(255, WHITE), true);
+        g.drawString(font, target.getDisplayName(), x, y, argb(255, WHITE), true);
         y += 11;
 
         float health = target.getHealth();
         float maxHealth = Math.max(1.0f, target.getMaxHealth());
         bar(g, x, y + 2, 70, 4, health / maxHealth, health / maxHealth < 0.3f ? RED : GREEN);
-        g.text(font, String.format("%.0f/%.0f", health, maxHealth), x + 75, y, argb(220, WHITE), true);
+        g.drawString(font, String.format("%.0f/%.0f", health, maxHealth), x + 75, y, argb(220, WHITE), true);
         y += 11;
 
-        g.text(font, Component.translatable("hud.starktech.armor", target.getArmorValue()), x, y, argb(220, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.armor", target.getArmorValue()), x, y, argb(220, WHITE), true);
         y += 10;
-        g.text(font, Component.translatable("hud.starktech.distance", String.format("%.1f", player.distanceTo(target))), x, y, argb(220, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.distance", String.format("%.1f", player.distanceTo(target))), x, y, argb(220, WHITE), true);
         y += 10;
-        g.text(font, Component.translatable("hud.starktech.threat_level", threat.label()), x, y, argb(255, threat.color), true);
+        g.drawString(font, Component.translatable("hud.starktech.threat_level", threat.label()), x, y, argb(255, threat.color), true);
         y += 10;
 
         ItemStack held = target.getMainHandItem();
         if (!held.isEmpty()) {
-            g.text(font, Component.translatable("hud.starktech.holding", held.getHoverName()), x, y, argb(200, WHITE), true);
+            g.drawString(font, Component.translatable("hud.starktech.holding", held.getHoverName()), x, y, argb(200, WHITE), true);
         }
     }
 
     /** Rode markeringen boven vijanden (ook door muren heen). */
-    private void renderThreatMarkers(GuiGraphicsExtractor g, Font font, Player player) {
+    private void renderThreatMarkers(GuiGraphics g, Font font, Player player) {
         List<LivingEntity> threats = EdithClientState.threats;
         int drawn = 0;
         for (LivingEntity enemy : threats) {
@@ -751,7 +753,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Gekleurde ruitjes op de ertsen die de scan heeft gevonden. */
-    private void renderOreMarkers(GuiGraphicsExtractor g, Font font, Player player, long now) {
+    private void renderOreMarkers(GuiGraphics g, Font font, Player player, long now) {
         List<EdithClientState.OreMarker> markers = EdithClientState.oreMarkers;
         // Laatste seconde: langzaam vervagen.
         long left = EdithClientState.oreScanEndMillis - now;
@@ -763,12 +765,12 @@ public class EdithHud implements GuiLayer {
                 continue;
             }
             int color = marker.type().color();
-            g.pose().pushMatrix();
-            g.pose().translate(p.x(), p.y());
-            g.pose().rotate((float) (Math.PI / 4));
+            g.pose().pushPose();
+            g.pose().translate(p.x(), p.y(), 0.0f);
+            g.pose().mulPose(Axis.ZP.rotation((float) (Math.PI / 4)));
             g.fill(-3, -3, 3, 3, argb(baseAlpha * 3 / 4, color));
             g.fill(-2, -2, 2, 2, argb(baseAlpha / 3, 0x000000));
-            g.pose().popMatrix();
+            g.pose().popPose();
 
             // Naam + afstand bij de dichtstbijzijnde paar ertsen.
             if (labelled < 6) {
@@ -781,7 +783,7 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Extra's tijdens inzoomen: donkere randen en een afstandsmeter. */
-    private void renderZoom(GuiGraphicsExtractor g, Font font, Player player, int w, int h) {
+    private void renderZoom(GuiGraphics g, Font font, Player player, int w, int h) {
         int border = Math.min(w, h) / 8;
         int dark = argb(110, 0x000814);
         g.fill(0, 0, w, border, dark);
@@ -802,12 +804,12 @@ public class EdithHud implements GuiLayer {
         Vec3 end = eye.add(player.getViewVector(1.0f).scale(256));
         HitResult hit = player.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
         String range = hit.getType() == HitResult.Type.MISS ? "---" : String.format("%.1fm", hit.getLocation().distanceTo(eye));
-        g.text(font, Component.translatable("hud.starktech.zoom", String.format("%.0f", com.senne.starktech.edith.EdithBalance.ZOOM_FACTOR)), cx + 26, cy + 8, argb(230, CYAN), true);
-        g.text(font, Component.translatable("hud.starktech.range", range), cx + 26, cy + 18, argb(230, WHITE), true);
+        g.drawString(font, Component.translatable("hud.starktech.zoom", String.format("%.0f", com.senne.starktech.edith.EdithBalance.ZOOM_FACTOR)), cx + 26, cy + 8, argb(230, CYAN), true);
+        g.drawString(font, Component.translatable("hud.starktech.range", range), cx + 26, cy + 18, argb(230, WHITE), true);
     }
 
     /** Meldingen van E.D.I.T.H., met een typmachine-effect. */
-    private void renderNotifications(GuiGraphicsExtractor g, Font font, int w, long now) {
+    private void renderNotifications(GuiGraphics g, Font font, int w, long now) {
         EdithClientState.NOTIFICATIONS.removeIf(n -> now - n.startMillis() > EdithClientState.NOTIFICATION_MILLIS);
         int y = 36;
         for (EdithClientState.Notification n : EdithClientState.NOTIFICATIONS) {
@@ -832,14 +834,14 @@ public class EdithHud implements GuiLayer {
             }
             g.fill(x - 4, y - 2, x + totalWidth + 4, y + 10, argb(alpha / 3, 0x001018));
             g.fill(x - 4, y - 2, x - 3, y + 10, argb(alpha, color));
-            g.text(font, prefix, x, y, argb(alpha * 2 / 3, color), true);
-            g.text(font, shown, x + font.width(prefix), y, argb(alpha, WHITE), true);
+            g.drawString(font, prefix, x, y, argb(alpha * 2 / 3, color), true);
+            g.drawString(font, shown, x + font.width(prefix), y, argb(alpha, WHITE), true);
             y += 14;
         }
     }
 
     /** Opstart-animatie als je de bril opzet. */
-    private void renderBoot(GuiGraphicsExtractor g, Font font, int w, int h, long age) {
+    private void renderBoot(GuiGraphics g, Font font, int w, int h, long age) {
         float t = (float) age / BOOT_MILLIS;
         // Een scanlijn die van boven naar beneden gaat.
         int lineY = (int) (h * t);
@@ -849,27 +851,27 @@ public class EdithHud implements GuiLayer {
         int grow = (int) (Math.min(1.0f, t * 1.5f) * (Math.min(w, h) / 2 - 4));
         brackets(g, w / 2 - grow * w / h, h / 2 - grow, w / 2 + grow * w / h, h / 2 + grow, 22, argb(200, CYAN));
 
-        g.centeredText(font, Component.literal("E.D.I.T.H."), w / 2, h / 2 - 20, argb(255, CYAN));
-        g.centeredText(font, Component.translatable("hud.starktech.booting"), w / 2, h / 2 - 8, argb(220, WHITE));
+        g.drawCenteredString(font, Component.literal("E.D.I.T.H."), w / 2, h / 2 - 20, argb(255, CYAN));
+        g.drawCenteredString(font, Component.translatable("hud.starktech.booting"), w / 2, h / 2 - 8, argb(220, WHITE));
         bar(g, w / 2 - 50, h / 2 + 6, 100, 3, t, CYAN);
     }
 
     /** Wat je ziet als je een bril van iemand anders opzet. */
-    private void renderAccessDenied(GuiGraphicsExtractor g, Font font, ItemStack glasses, int w, int h, long now) {
+    private void renderAccessDenied(GuiGraphics g, Font font, ItemStack glasses, int w, int h, long now) {
         int alpha = (int) (170 + 80 * Math.sin(now / 180.0));
         renderFrame(g, w, h, RED, alpha);
         g.fill(0, h / 3 - 14, w, h / 3 + 26, argb(90, 0x200000));
-        g.centeredText(font, Component.translatable("hud.starktech.access_denied"), w / 2, h / 3 - 6, argb(255, RED));
+        g.drawCenteredString(font, Component.translatable("hud.starktech.access_denied"), w / 2, h / 3 - 6, argb(255, RED));
         EdithOwner owner = EdithData.getOwner(glasses);
         if (owner != null) {
-            g.centeredText(font, Component.translatable("hud.starktech.registered_to", owner.name()), w / 2, h / 3 + 8, argb(220, WHITE));
+            g.drawCenteredString(font, Component.translatable("hud.starktech.registered_to", owner.name()), w / 2, h / 3 + 8, argb(220, WHITE));
         }
     }
 
     // ================================================================ Tekenhulpjes
 
     /** Vier L-vormige hoekjes (zoals een camera-zoeker). */
-    static void brackets(GuiGraphicsExtractor g, int x0, int y0, int x1, int y1, int len, int color) {
+    static void brackets(GuiGraphics g, int x0, int y0, int x1, int y1, int len, int color) {
         len = Math.min(len, Math.min((x1 - x0) / 2, (y1 - y0) / 2));
         // linksboven
         g.fill(x0, y0, x0 + len, y0 + 1, color);
@@ -886,19 +888,19 @@ public class EdithHud implements GuiLayer {
     }
 
     /** Een balkje dat voor een deel gevuld is (fraction 0.0 - 1.0). */
-    static void bar(GuiGraphicsExtractor g, int x, int y, int width, int height, float fraction, int rgb) {
+    static void bar(GuiGraphics g, int x, int y, int width, int height, float fraction, int rgb) {
         fraction = Mth.clamp(fraction, 0.0f, 1.0f);
         g.fill(x, y, x + width, y + height, argb(60, rgb));
         g.fill(x, y, x + Math.round(width * fraction), y + height, argb(230, rgb));
     }
 
     /** Kleine, gecentreerde tekst (75% van normaal). */
-    private static void smallText(GuiGraphicsExtractor g, Font font, String text, int centerX, int y, int color) {
-        g.pose().pushMatrix();
-        g.pose().translate(centerX, y);
-        g.pose().scale(0.75f, 0.75f);
-        g.text(font, text, -font.width(text) / 2, 0, color, true);
-        g.pose().popMatrix();
+    private static void smallText(GuiGraphics g, Font font, String text, int centerX, int y, int color) {
+        g.pose().pushPose();
+        g.pose().translate(centerX, y, 0.0f);
+        g.pose().scale(0.75f, 0.75f, 1.0f);
+        g.drawString(font, text, -font.width(text) / 2, 0, color, true);
+        g.pose().popPose();
     }
 
     // ================================================================ Dreigingsniveau

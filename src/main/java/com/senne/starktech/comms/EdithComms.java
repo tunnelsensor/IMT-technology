@@ -20,7 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * E.D.I.T.H.-comms: berichten en pings tussen spelers die allemaal een E.D.I.T.H.-bril dragen.
@@ -59,7 +59,7 @@ public final class EdithComms {
         if (text.isEmpty()) {
             return;
         }
-        String senderName = sender.getGameProfile().name();
+        String senderName = sender.getGameProfile().getName();
         Component body = Component.literal(text);
 
         if (payload.recipient().isEmpty()) {
@@ -82,9 +82,9 @@ public final class EdithComms {
                 return;
             }
             EdithServer.send(target, Component.translatable("edith.starktech.comms.direct", senderName, body), EdithMessagePayload.Level.COMMS);
-            EdithServer.send(sender, Component.translatable("edith.starktech.comms.sent_to", target.getGameProfile().name(), body),
+            EdithServer.send(sender, Component.translatable("edith.starktech.comms.sent_to", target.getGameProfile().getName(), body),
                     EdithMessagePayload.Level.COMMS);
-            StarkTech.LOGGER.info("[E.D.I.T.H. comms] {} -> {}: {}", senderName, target.getGameProfile().name(), text);
+            StarkTech.LOGGER.info("[E.D.I.T.H. comms] {} -> {}: {}", senderName, target.getGameProfile().getName(), text);
         }
     }
 
@@ -104,7 +104,7 @@ public final class EdithComms {
             return;
         }
         LAST_PING.put(sender.getUUID(), pos);
-        PingMarkerPayload marker = new PingMarkerPayload(sender.getGameProfile().name(), pos);
+        PingMarkerPayload marker = new PingMarkerPayload(sender.getGameProfile().getName(), pos);
         double range = EdithBalance.PING_RANGE;
         for (ServerPlayer player : edithUsers(sender)) {
             if (player.level() == sender.level() && player.distanceToSqr(pos) <= range * range && sameSide(sender, player)) {

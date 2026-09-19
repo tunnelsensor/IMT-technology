@@ -1,12 +1,13 @@
 package com.senne.starktech.client;
 
+import com.mojang.math.Axis;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Rekent uit waar een punt uit de 3D-wereld op jouw 2D-scherm terechtkomt.
@@ -28,9 +29,16 @@ public final class WorldProjection {
     public record ScreenRect(float minX, float minY, float maxX, float maxY) {}
 
     public void begin(int guiWidth, int guiHeight) {
-        Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
-        camera.getViewRotationProjectionMatrix(viewProjection);
-        cameraPos = camera.position();
+        Minecraft mc = Minecraft.getInstance();
+        Camera camera = mc.gameRenderer.getMainCamera();
+        cameraPos = camera.getPosition();
+        // We bouwen zelf de "kijkmatrix": eerst de wereld draaien zoals de camera staat
+        // (pitch, dan yaw), daarna de lens (projectie) erover. Precies wat Minecraft zelf doet.
+        Matrix4f view = new Matrix4f();
+        view.rotate(Axis.XP.rotationDegrees(camera.getXRot()));
+        view.rotate(Axis.YP.rotationDegrees(camera.getYRot() + 180.0f));
+        Matrix4f projection = mc.gameRenderer.getProjectionMatrix(EdithClientState.fieldOfView);
+        viewProjection.set(projection).mul(view);
         screenWidth = guiWidth;
         screenHeight = guiHeight;
     }

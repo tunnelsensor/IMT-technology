@@ -7,14 +7,13 @@ import com.senne.starktech.network.PingPayload;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Het comms-scherm: stuur een bericht naar iedereen met een E.D.I.T.H.-bril, of naar één
@@ -58,9 +57,9 @@ public class CommsScreen extends Screen {
         recipients.add("");
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() != null && mc.player != null) {
-            String self = mc.player.getGameProfile().name();
+            String self = mc.player.getGameProfile().getName();
             for (PlayerInfo info : mc.getConnection().getOnlinePlayers()) {
-                String name = info.getProfile().name();
+                String name = info.getProfile().getName();
                 if (!name.equals(self)) {
                     recipients.add(name);
                 }
@@ -114,7 +113,7 @@ public class CommsScreen extends Screen {
     }
 
     private void send(String text) {
-        ClientPacketDistributor.sendToServer(new CommsPayload(recipients.get(recipientIndex), text));
+        PacketDistributor.sendToServer(new CommsPayload(recipients.get(recipientIndex), text));
         pendingMessage = "";
         onClose();
     }
@@ -122,19 +121,19 @@ public class CommsScreen extends Screen {
     private void pingMyLocation() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            ClientPacketDistributor.sendToServer(new PingPayload(mc.player.position().add(0, mc.player.getBbHeight() + 0.5, 0)));
+            PacketDistributor.sendToServer(new PingPayload(mc.player.position().add(0, mc.player.getBbHeight() + 0.5, 0)));
         }
         onClose();
     }
 
     /** Enter in het tekstvak = versturen. */
     @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (event.key() == InputConstants.KEY_RETURN && messageBox.isFocused()) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_RETURN && messageBox.isFocused()) {
             sendTyped();
             return true;
         }
-        return super.keyPressed(event);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -146,10 +145,10 @@ public class CommsScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         g.fill(left - 4, top - 4, left + PANEL_W + 4, top + 208, EdithHud.argb(200, 0x08121A));
         EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + 208, 8, EdithHud.argb(220, EdithHud.GREEN));
-        super.extractRenderState(g, mouseX, mouseY, a);
-        g.text(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.GREEN), true);
+        super.render(g, mouseX, mouseY, a);
+        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.GREEN), true);
     }
 }

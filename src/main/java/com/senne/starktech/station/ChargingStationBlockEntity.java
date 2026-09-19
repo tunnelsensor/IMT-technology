@@ -18,8 +18,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * De "binnenkant" van het laadstation: 3 slots, een energie-opslag en een upgrade-teller.
@@ -156,20 +156,20 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     // ---------------------------------------------------------------- Opslaan en laden
 
     @Override
-    protected void loadAdditional(ValueInput input) {
-        super.loadAdditional(input);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(input, items);
-        energy = input.getIntOr("energy", 0);
-        upgradeProgress = input.getIntOr("upgrade_progress", 0);
+        ContainerHelper.loadAllItems(tag, items, registries);
+        energy = tag.getInt("energy");
+        upgradeProgress = tag.getInt("upgrade_progress");
     }
 
     @Override
-    protected void saveAdditional(ValueOutput output) {
-        super.saveAdditional(output);
-        ContainerHelper.saveAllItems(output, items);
-        output.putInt("energy", energy);
-        output.putInt("upgrade_progress", upgradeProgress);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        ContainerHelper.saveAllItems(tag, items, registries);
+        tag.putInt("energy", energy);
+        tag.putInt("upgrade_progress", upgradeProgress);
     }
 
     // ---------------------------------------------------------------- Container-dingen

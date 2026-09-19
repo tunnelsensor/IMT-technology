@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bericht van speler naar server: "doe iets met mijn waypoints".
@@ -16,7 +16,7 @@ import net.minecraft.resources.Identifier;
  * @param color kleur van het nieuwe waypoint (bij ADD)
  */
 public record WaypointActionPayload(Op op, int index, String name, int color) implements CustomPacketPayload {
-    public static final Type<WaypointActionPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "waypoint_action"));
+    public static final Type<WaypointActionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "waypoint_action"));
 
     public enum Op {
         /** Nieuw waypoint op je huidige plek. */

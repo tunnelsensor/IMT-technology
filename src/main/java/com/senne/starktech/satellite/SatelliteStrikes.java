@@ -17,8 +17,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -27,7 +27,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * De satelliet ("orbital strike"). Houdt de aanvallen bij die aan het opladen zijn en laat ze
@@ -186,7 +186,7 @@ public final class SatelliteStrikes {
         double radius = EdithBalance.PRECISION_RADIUS;
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, new AABB(pos, pos).inflate(radius))) {
             if (mayHurt(owner, victim)) {
-                victim.hurtServer(level, source, EdithBalance.PRECISION_DAMAGE);
+                victim.hurt(source, EdithBalance.PRECISION_DAMAGE);
             }
         }
         level.playSound(null, pos.x, pos.y, pos.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 3.0f, 1.3f);
@@ -227,7 +227,7 @@ public final class SatelliteStrikes {
                 new AABB(pos, pos).inflate(EdithBalance.SWEEP_RADIUS))) {
             // Niet elke tick schade: anders is het meteen voorbij.
             if (victim.hurtTime <= 0 && mayHurt(owner, victim)) {
-                victim.hurtServer(level, source, EdithBalance.SWEEP_DAMAGE);
+                victim.hurt(source, EdithBalance.SWEEP_DAMAGE);
             }
         }
         if (strike.fireTicksLeft % 10 == 0) {
@@ -277,10 +277,10 @@ public final class SatelliteStrikes {
 
     /** Een bliksemschicht als effect (doet zelf geen schade en steekt niets in brand). */
     private static void visualLightning(ServerLevel level, Vec3 pos) {
-        LightningBolt bolt = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
+        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
         if (bolt != null) {
             bolt.setVisualOnly(true);
-            bolt.snapTo(pos);
+            bolt.moveTo(pos);
             level.addFreshEntity(bolt);
         }
     }

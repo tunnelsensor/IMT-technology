@@ -1,5 +1,6 @@
 package com.senne.starktech.station;
 
+import com.mojang.serialization.MapCodec;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,13 +29,24 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Het Stark-laadstation: laadt de bril op met redstone en bouwt upgrades in.
  */
 public class ChargingStationBlock extends BaseEntityBlock {
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+
+    /**
+     * Elk blok moet in 1.21.1 kunnen zeggen hoe het opgeslagen wordt (bv. in structuren).
+     * simpleCodec regelt dat voor ons.
+     */
+    public static final MapCodec<ChargingStationBlock> CODEC = simpleCodec(ChargingStationBlock::new);
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
+    }
 
     /** De vorm van het blok (voor botsingen en de zwarte lijntjes als je ernaar kijkt). */
     private static final VoxelShape SHAPE = Shapes.or(
@@ -115,7 +127,7 @@ public class ChargingStationBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
     }
 

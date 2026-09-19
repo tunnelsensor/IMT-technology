@@ -14,12 +14,10 @@ import com.senne.starktech.registry.ModSounds;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.util.ARGB;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
@@ -34,7 +32,7 @@ import net.neoforged.neoforge.client.event.CalculatePlayerTurnEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Alles wat elke tick of elke frame aan de speler-kant gebeurt: toetsen afhandelen,
@@ -70,7 +68,7 @@ public final class EdithClientEvents {
         VoiceControl.tick(mc);
         EdithClientState.pings.removeIf(ping -> Util.getMillis() > ping.endMillis());
 
-        boolean inGame = mc.gui.screen() == null;
+        boolean inGame = mc.screen == null;
         EdithClientState.zooming = EdithClientState.operational && inGame && EdithKeys.ZOOM.isDown();
 
         // Waar kijk je naar? (voor markeren en de doelwit-analyse)
@@ -140,12 +138,12 @@ public final class EdithClientEvents {
 
     /** Opent een E.D.I.T.H.-scherm, maar alleen als je de bril draagt en de eigenaar bent. */
     public static void openIfAuthorized(Minecraft mc, net.minecraft.client.gui.screens.Screen screen) {
-        if (!EdithClientState.wearing || mc.gui.screen() != null) {
+        if (!EdithClientState.wearing || mc.screen != null) {
             return;
         }
         if (EdithClientState.authorized) {
             playUi(ModSounds.EDITH_MENU_OPEN.get(), 1.6f);
-            mc.gui.setScreen(screen);
+            mc.setScreen(screen);
         } else {
             playUi(ModSounds.EDITH_DENIED.get(), 1.0f);
         }
@@ -176,7 +174,7 @@ public final class EdithClientEvents {
             playUi(ModSounds.EDITH_ALERT.get(), 1.2f);
             return;
         }
-        ClientPacketDistributor.sendToServer(new PingPayload(target));
+        PacketDistributor.sendToServer(new PingPayload(target));
     }
 
     /** Waar "kijk" je vandaan: je eigen ogen, of de camera van je verkenningsdrone. */
@@ -196,13 +194,13 @@ public final class EdithClientEvents {
             playUi(ModSounds.EDITH_ALERT.get(), 1.2f);
             return;
         }
-        ClientPacketDistributor.sendToServer(new MarkTargetPayload(target.getId()));
+        PacketDistributor.sendToServer(new MarkTargetPayload(target.getId()));
     }
 
     /** Vraagt de server om een actie uit te voeren (alleen als je de bril draagt). */
     public static void sendAction(EdithAction action) {
         if (EdithClientState.wearing) {
-            ClientPacketDistributor.sendToServer(new EdithActionPayload(action.ordinal()));
+            PacketDistributor.sendToServer(new EdithActionPayload(action.ordinal()));
         }
     }
 
@@ -238,11 +236,14 @@ public final class EdithClientEvents {
     // ---------------------------------------------------------------- Zoom
 
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
+        // Onthouden voor de HUD-markeringen (zie WorldProjection).
+        EdithClientState.fieldOfView = event.getFOV();
         if (EdithClientState.zooming) {
             // Terwijl de satelliet oplaadt zoom je twee keer zo ver in: zo kun je van heel
             // ver precies zien waar hij inslaat.
             float factor = EdithClientState.strikeTarget != null ? EdithBalance.ZOOM_FACTOR * 2 : EdithBalance.ZOOM_FACTOR;
             event.setFOV(event.getFOV() / factor);
+            EdithClientState.fieldOfView = event.getFOV();
         }
     }
 
@@ -253,25 +254,9 @@ public final class EdithClientEvents {
         }
     }
 
-    // ---------------------------------------------------------------- Oplichten door muren
-
-    /**
-     * Wordt voor elk levend wezen aangeroepen vlak voordat het getekend wordt. Als het een
-     * vijand is die E.D.I.T.H. ziet, geven we het een gekleurde omlijning die door muren
-     * heen zichtbaar is (hetzelfde effect als "Glowing").
-     */
-    public static void modifyLivingRenderState(LivingEntity entity, LivingEntityRenderState state) {
-        if (!EdithClientState.operational) {
-            return;
-        }
-        if (EdithClientState.markedIds.contains(entity.getId())) {
-            state.outlineColor = ARGB.opaque(EdithHud.ORANGE);
-        } else if (entity == EdithClientState.target) {
-            state.outlineColor = ARGB.opaque(EdithHud.CYAN);
-        } else if (EdithClientState.threats.contains(entity)) {
-            state.outlineColor = ARGB.opaque(EdithHud.RED);
-        }
-    }
+    // In Minecraft 1.21.1 kunnen we wezens niet zelf een gekleurde omlijning geven zoals in
+    // nieuwere versies. In plaats daarvan tekent de HUD markeringen op je scherm (ook door
+    // muren heen): zie EdithHud.renderThreatMarkers en renderMarkedTargets.
 
     // ---------------------------------------------------------------- Wereld verlaten
 

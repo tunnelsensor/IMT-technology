@@ -29,7 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import net.minecraft.client.Minecraft;
 import net.neoforged.fml.loading.FMLPaths;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Downloadt en installeert de onderdelen voor de stem en de spraakbesturing (zie VoicePack).

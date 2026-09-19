@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bericht van speler naar server: stuur een E.D.I.T.H.-bericht.
@@ -14,7 +14,7 @@ import net.minecraft.resources.Identifier;
  * @param message   de tekst
  */
 public record CommsPayload(String recipient, String message) implements CustomPacketPayload {
-    public static final Type<CommsPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "comms"));
+    public static final Type<CommsPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "comms"));
 
     public static final StreamCodec<ByteBuf, CommsPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.stringUtf8(32), CommsPayload::recipient,

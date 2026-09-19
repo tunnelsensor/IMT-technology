@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": "starktech:battery_upgrade"
+        "recipe": "starktech:battery_upgrade"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

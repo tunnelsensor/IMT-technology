@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 

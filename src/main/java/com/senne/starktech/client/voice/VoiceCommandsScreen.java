@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
@@ -13,7 +13,7 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 
 /**
  * Het scherm "Spraakcommando's" (G > Systemen > Commando's): hier bewerk je het woordenboek van
@@ -228,13 +228,11 @@ public class VoiceCommandsScreen extends Screen {
         y += 11;
         String last = VoiceControl.lastUnknown();
         int phrasesBottom = last.isEmpty() ? y1 : y1 - 20;
-        MultiLineEditBox phrases = MultiLineEditBox.builder()
-                .setX(rightX)
-                .setY(y)
-                .setPlaceholder(Component.translatable("screen.starktech.voice_edit.phrases_hint"))
-                .build(font, rightW, Math.max(30, phrasesBottom - y), Component.translatable("screen.starktech.voice_edit.phrases"));
+        MultiLineEditBox phrases = new MultiLineEditBox(font, rightX, y, rightW, Math.max(30, phrasesBottom - y),
+                Component.translatable("screen.starktech.voice_edit.phrases_hint"),
+                Component.translatable("screen.starktech.voice_edit.phrases"));
         phrases.setCharacterLimit(20000);
-        phrases.setValue(String.join("\n", command.phrases), true);
+        phrases.setValue(String.join("\n", command.phrases));
         phrases.setValueListener(value -> {
             command.phrases.clear();
             Arrays.stream(value.split("\n")).map(String::strip).filter(line -> !line.isEmpty()).forEach(command.phrases::add);
@@ -253,13 +251,11 @@ public class VoiceCommandsScreen extends Screen {
 
     private void initSynonyms(int y0, int y1) {
         int y = y0 + 12;
-        MultiLineEditBox synonyms = MultiLineEditBox.builder()
-                .setX(left)
-                .setY(y)
-                .setPlaceholder(Component.translatable("screen.starktech.voice_edit.synonyms_hint"))
-                .build(font, panelW, Math.max(40, y1 - 40 - y), Component.translatable("screen.starktech.voice_edit.synonyms"));
+        MultiLineEditBox synonyms = new MultiLineEditBox(font, left, y, panelW, Math.max(40, y1 - 40 - y),
+                Component.translatable("screen.starktech.voice_edit.synonyms_hint"),
+                Component.translatable("screen.starktech.voice_edit.synonyms"));
         synonyms.setCharacterLimit(50000);
-        synonyms.setValue(synonymsText, true);
+        synonyms.setValue(synonymsText);
         synonyms.setValueListener(value -> {
             synonymsText = value;
             changed();
@@ -289,28 +285,28 @@ public class VoiceCommandsScreen extends Screen {
     // ---------------------------------------------------------------- Tekenen
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
-        super.extractRenderState(g, mouseX, mouseY, a);
-        g.text(font, title, left + 212, top + 4, CYAN, true);
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
+        super.render(g, mouseX, mouseY, a);
+        g.drawString(font, title, left + 212, top + 4, CYAN, true);
         if (tab == Tab.COMMANDS) {
             if (selected >= 0 && selected < working.commands.size()) {
                 VoiceDictionary.Command command = working.commands.get(selected);
-                g.text(font, Component.translatable("screen.starktech.voice_edit.name"), rightX, nameLabelY, GREY, false);
-                g.text(font, Component.translatable("screen.starktech.voice_edit.actions"), rightX, actionsLabelY, GREY, false);
+                g.drawString(font, Component.translatable("screen.starktech.voice_edit.name"), rightX, nameLabelY, GREY, false);
+                g.drawString(font, Component.translatable("screen.starktech.voice_edit.actions"), rightX, actionsLabelY, GREY, false);
                 if (needsSlotHint(command)) {
-                    g.text(font, Component.translatable("screen.starktech.voice_edit.slot_hint"), rightX, hintY, ORANGE, false);
+                    g.drawString(font, Component.translatable("screen.starktech.voice_edit.slot_hint"), rightX, hintY, ORANGE, false);
                 }
-                g.text(font, Component.translatable("screen.starktech.voice_edit.reply"), rightX, replyLabelY, GREY, false);
-                g.text(font, Component.translatable("screen.starktech.voice_edit.phrases", command.phrases.size()), rightX, phrasesLabelY, GREY, false);
+                g.drawString(font, Component.translatable("screen.starktech.voice_edit.reply"), rightX, replyLabelY, GREY, false);
+                g.drawString(font, Component.translatable("screen.starktech.voice_edit.phrases", command.phrases.size()), rightX, phrasesLabelY, GREY, false);
             }
         } else {
-            g.text(font, Component.translatable("screen.starktech.voice_edit.synonyms_label"), left, top + 22, GREY, false);
-            g.text(font, Component.translatable("screen.starktech.voice_edit.ignore"), left, testY - 36, GREY, false);
+            g.drawString(font, Component.translatable("screen.starktech.voice_edit.synonyms_label"), left, top + 22, GREY, false);
+            g.drawString(font, Component.translatable("screen.starktech.voice_edit.ignore"), left, testY - 36, GREY, false);
         }
-        g.text(font, Component.translatable("screen.starktech.voice_edit.test"), left, testY + 5, GREY, false);
-        g.text(font, testResult, left + 76 + Math.max(80, panelW / 2 - 70), testY + 5, WHITE, false);
+        g.drawString(font, Component.translatable("screen.starktech.voice_edit.test"), left, testY + 5, GREY, false);
+        g.drawString(font, testResult, left + 76 + Math.max(80, panelW / 2 - 70), testY + 5, WHITE, false);
         if (Util.getMillis() < statusUntil) {
-            g.centeredText(font, status, left + panelW / 2, top + panelH - 14, GREEN);
+            g.drawCenteredString(font, status, left + panelW / 2, top + panelH - 14, GREEN);
         }
     }
 
@@ -331,7 +327,7 @@ public class VoiceCommandsScreen extends Screen {
     }
 
     private void pickAction(VoiceDictionary.Command command, int index) {
-        minecraft.gui.setScreen(new ActionPickerScreen(this, action -> {
+        minecraft.setScreen(new ActionPickerScreen(this, action -> {
             VoiceDictionary.ActionRef ref = new VoiceDictionary.ActionRef(action, "");
             if (index < 0) {
                 command.actions.add(ref);
@@ -361,18 +357,18 @@ public class VoiceCommandsScreen extends Screen {
             return;
         }
         String name = working.commands.get(selected).name;
-        minecraft.gui.setScreen(new ConfirmScreen(yes -> {
+        minecraft.setScreen(new ConfirmScreen(yes -> {
             if (yes) {
                 working.commands.remove(selected);
                 selected = Math.min(selected, working.commands.size() - 1);
                 changed();
             }
-            minecraft.gui.setScreen(this);
+            minecraft.setScreen(this);
         }, Component.translatable("screen.starktech.voice_edit.delete_title"), Component.translatable("screen.starktech.voice_edit.delete_message", name)));
     }
 
     private void confirmReset() {
-        minecraft.gui.setScreen(new ConfirmScreen(yes -> {
+        minecraft.setScreen(new ConfirmScreen(yes -> {
             if (yes) {
                 try {
                     working = VoiceCommandStore.resetToDefault();
@@ -387,7 +383,7 @@ public class VoiceCommandsScreen extends Screen {
                     showStatus(Component.translatable("screen.starktech.voice_edit.save_failed", e.getMessage()));
                 }
             }
-            minecraft.gui.setScreen(this);
+            minecraft.setScreen(this);
         }, Component.translatable("screen.starktech.voice_edit.reset_title"), Component.translatable("screen.starktech.voice_edit.reset_message")));
     }
 
@@ -512,6 +508,6 @@ public class VoiceCommandsScreen extends Screen {
         if (dirty) {
             save(false);
         }
-        minecraft.gui.setScreen(parent);
+        minecraft.setScreen(parent);
     }
 }

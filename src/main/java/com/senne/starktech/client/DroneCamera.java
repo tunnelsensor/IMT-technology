@@ -4,14 +4,14 @@ import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.network.DroneControlPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.client.player.ClientInput;
+import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import org.jspecify.annotations.Nullable;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * De drone-camera aan jouw kant: je kijkt door de verkenningsdrone en bestuurt hem met
@@ -32,7 +32,7 @@ public final class DroneCamera {
     private static int pendingId = -1;
     private static long pendingUntilMillis;
     /** De echte besturing van de speler, om later terug te zetten. */
-    private static @Nullable ClientInput savedInput;
+    private static @Nullable Input savedInput;
     /** true = je bestuurt de drone zelf (verkenner); false = je kijkt alleen mee (spion). */
     private static boolean control = true;
 
@@ -94,12 +94,12 @@ public final class DroneCamera {
             return;
         }
         Options options = mc.options;
-        boolean inGame = mc.gui.screen() == null;
+        boolean inGame = mc.screen == null;
         float forward = inGame ? axis(options.keyUp.isDown(), options.keyDown.isDown()) : 0;
         float strafe = inGame ? axis(options.keyLeft.isDown(), options.keyRight.isDown()) : 0;
         float vertical = inGame ? axis(options.keyJump.isDown(), options.keyShift.isDown()) : 0;
         boolean boost = inGame && options.keySprint.isDown();
-        ClientPacketDistributor.sendToServer(new DroneControlPayload(forward, strafe, vertical, boost, player.getYRot(), player.getXRot()));
+        PacketDistributor.sendToServer(new DroneControlPayload(forward, strafe, vertical, boost, player.getYRot(), player.getXRot()));
     }
 
     private static float axis(boolean positive, boolean negative) {
@@ -111,7 +111,7 @@ public final class DroneCamera {
         if (savedInput == null) {
             savedInput = player.input;
             // Een lege besturing: je lichaam loopt, springt en sluipt niet meer.
-            player.input = new ClientInput();
+            player.input = new Input();
         }
         mc.setCameraEntity(drone);
     }

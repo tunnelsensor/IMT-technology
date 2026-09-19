@@ -24,7 +24,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Verbindt de stem-functies met de rest van de mod:
@@ -55,7 +55,7 @@ public final class VoiceControl {
         }
         // Toets los, een scherm geopend of de bril af? Dan stoppen met opnemen.
         if (EdithListener.isListening()
-                && (!EdithKeys.PUSH_TO_TALK.isDown() || mc.gui.screen() != null || !EdithClientState.authorized)) {
+                && (!EdithKeys.PUSH_TO_TALK.isDown() || mc.screen != null || !EdithClientState.authorized)) {
             EdithListener.stop();
         }
         // Het oor alvast opstarten zodra je de bril draagt, dan reageert ze meteen de eerste keer.
@@ -240,7 +240,7 @@ public final class VoiceControl {
 
     /** NONE = navigatie stoppen, DEATH = naar je laatste sterfplek, anders een nummer uit je lijst. */
     private static void navigate(int index) {
-        ClientPacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.NAVIGATE, index, "", 0));
+        PacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.NAVIGATE, index, "", 0));
     }
 
     /** Zoekt de opgeslagen plek met (ongeveer) deze naam. Geeft het nummer terug, of -1. */
@@ -310,7 +310,7 @@ public final class VoiceControl {
             clean = clean.substring(0, EdithBalance.MAX_WAYPOINT_NAME);
         }
         int color = Waypoint.COLORS[count % Waypoint.COLORS.length];
-        ClientPacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, clean, color));
+        PacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, clean, color));
     }
 
     /** Een bericht naar iedereen met een E.D.I.T.H.-bril (de server regelt wie het mag ontvangen). */
@@ -322,7 +322,7 @@ public final class VoiceControl {
         if (clean.length() > EdithBalance.MAX_MESSAGE_LENGTH) {
             clean = clean.substring(0, EdithBalance.MAX_MESSAGE_LENGTH);
         }
-        ClientPacketDistributor.sendToServer(new CommsPayload("", clean));
+        PacketDistributor.sendToServer(new CommsPayload("", clean));
     }
 
     // ---------------------------------------------------------------- G-menu, tabblad Systemen

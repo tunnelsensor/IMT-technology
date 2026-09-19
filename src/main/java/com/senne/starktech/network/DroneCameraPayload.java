@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bericht van server naar speler: "kijk nu door deze drone" (entity-id), of NONE: "terug naar je lichaam".
@@ -14,7 +14,7 @@ import net.minecraft.resources.Identifier;
  * @param control true = je bestuurt de drone zelf (verkenner); false = je kijkt alleen mee (spion)
  */
 public record DroneCameraPayload(int droneId, boolean control) implements CustomPacketPayload {
-    public static final Type<DroneCameraPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "drone_camera"));
+    public static final Type<DroneCameraPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "drone_camera"));
 
     public static final int NONE = -1;
 

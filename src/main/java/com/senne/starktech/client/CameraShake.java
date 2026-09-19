@@ -1,7 +1,7 @@
 package com.senne.starktech.client;
 
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**

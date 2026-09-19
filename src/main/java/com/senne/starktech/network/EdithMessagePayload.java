@@ -7,14 +7,14 @@ import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bericht van server naar speler: "E.D.I.T.H. zegt iets". Het verschijnt in de HUD
  * en speelt een geluidje af dat past bij het soort bericht.
  */
 public record EdithMessagePayload(Component message, Level level) implements CustomPacketPayload {
-    public static final Type<EdithMessagePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "edith_message"));
+    public static final Type<EdithMessagePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_message"));
 
     /** Soort bericht: bepaalt de kleur en het geluid. */
     public enum Level {

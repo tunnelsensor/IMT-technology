@@ -2,7 +2,6 @@ package com.senne.starktech.edith;
 
 import com.senne.starktech.drone.StarkDroneEntity;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntityReference;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.monster.Enemy;
@@ -27,11 +26,8 @@ public final class EdithTargeting {
             // canHarmPlayer kijkt naar de PvP-instelling van de server én naar teams.
             return !player.isCreative() && !player.isSpectator() && owner.canHarmPlayer(player);
         }
-        if (target instanceof OwnableEntity ownable) {
-            EntityReference<LivingEntity> ownerReference = ownable.getOwnerReference();
-            if (ownerReference != null && ownerReference.getUUID().equals(owner.getUUID())) {
-                return false; // je eigen hond, kat, papegaai...
-            }
+        if (target instanceof OwnableEntity ownable && owner.getUUID().equals(ownable.getOwnerUUID())) {
+            return false; // je eigen hond, kat, papegaai...
         }
         return !owner.isAlliedTo(target);
     }

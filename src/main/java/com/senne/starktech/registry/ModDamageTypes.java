@@ -2,13 +2,13 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Eigen soorten schade. De instellingen staan in data/starktech/damage_type/,
@@ -18,10 +18,10 @@ public final class ModDamageTypes {
     private ModDamageTypes() {}
 
     public static final ResourceKey<DamageType> DRONE_LASER =
-            ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(StarkTech.MODID, "drone_laser"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "drone_laser"));
 
     public static final ResourceKey<DamageType> ORBITAL_LASER =
-            ResourceKey.create(Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath(StarkTech.MODID, "orbital_laser"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "orbital_laser"));
 
     /** Schade van de satelliet (precisie-straal en schuivende laser). */
     public static DamageSource orbitalLaser(ServerLevel level, @Nullable Entity owner) {

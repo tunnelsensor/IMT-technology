@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -21,7 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Het navigatiescherm: plekken opslaan, verwijderen en ernaartoe navigeren.
@@ -129,13 +129,13 @@ public class NavigationScreen extends Screen {
     }
 
     private void save() {
-        ClientPacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, pendingName, Waypoint.COLORS[colorIndex]));
+        PacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, pendingName, Waypoint.COLORS[colorIndex]));
         pendingName = "";
         nameBox.setValue("");
     }
 
     private void send(WaypointActionPayload.Op op, int index) {
-        ClientPacketDistributor.sendToServer(new WaypointActionPayload(op, index, "", 0));
+        PacketDistributor.sendToServer(new WaypointActionPayload(op, index, "", 0));
     }
 
     /** Veranderd er iets aan de waypoints (antwoord van de server)? Dan het scherm opnieuw opbouwen. */
@@ -154,14 +154,14 @@ public class NavigationScreen extends Screen {
     // ---------------------------------------------------------------- Tekenen
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         g.fill(left - 4, top - 4, left + PANEL_W + 4, top + 52 + (PER_PAGE + 1) * ROW_H + 30, EdithHud.argb(200, 0x08121A));
         EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + 52 + (PER_PAGE + 1) * ROW_H + 30, 8, EdithHud.argb(220, EdithHud.CYAN));
-        super.extractRenderState(g, mouseX, mouseY, a);
+        super.render(g, mouseX, mouseY, a);
 
-        g.text(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
         String count = shownData.waypoints().size() + "/" + EdithBalance.MAX_WAYPOINTS;
-        g.text(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(180, EdithHud.WHITE), true);
+        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(180, EdithHud.WHITE), true);
         // Kleurvakje op de kleurknop
         g.fill(left + 186, top + 28, left + 196, top + 38, EdithHud.argb(255, Waypoint.COLORS[colorIndex]));
 
@@ -170,7 +170,7 @@ public class NavigationScreen extends Screen {
             return;
         }
         if (rows.isEmpty()) {
-            g.centeredText(font, Component.translatable("screen.starktech.nav.empty"), left + PANEL_W / 2, top + 60,
+            g.drawCenteredString(font, Component.translatable("screen.starktech.nav.empty"), left + PANEL_W / 2, top + 60,
                     EdithHud.argb(160, EdithHud.WHITE));
         }
         for (Row row : rows) {
@@ -199,8 +199,8 @@ public class NavigationScreen extends Screen {
                 pos = waypoint.pos();
             }
             g.fill(left + 8, row.y() + 4, left + 16, row.y() + 12, EdithHud.argb(255, color));
-            g.text(font, name, left + 22, row.y() + 1, EdithHud.argb(255, EdithHud.WHITE), true);
-            g.text(font, locationText(player, dimension, pos), left + 22, row.y() + 10, EdithHud.argb(170, 0x9FC9D6), false);
+            g.drawString(font, name, left + 22, row.y() + 1, EdithHud.argb(255, EdithHud.WHITE), true);
+            g.drawString(font, locationText(player, dimension, pos), left + 22, row.y() + 10, EdithHud.argb(170, 0x9FC9D6), false);
         }
     }
 

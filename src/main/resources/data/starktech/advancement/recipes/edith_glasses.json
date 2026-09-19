@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": "starktech:edith_glasses"
+        "recipe": "starktech:edith_glasses"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

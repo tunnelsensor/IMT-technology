@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Eén llama-server (van llama.cpp) die op de achtergrond draait. Dat is een klein programma dat

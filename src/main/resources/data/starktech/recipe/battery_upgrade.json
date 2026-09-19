@@ -2,9 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "K": "#c:ingots/copper",
-    "R": "#c:storage_blocks/redstone",
-    "C": "starktech:stark_chip"
+    "K": {
+      "tag": "c:ingots/copper"
+    },
+    "R": {
+      "tag": "c:storage_blocks/redstone"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
   },
   "pattern": [
     "KRK",

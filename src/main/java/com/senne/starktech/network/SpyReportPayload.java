@@ -8,7 +8,7 @@ import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bericht van server naar speler: het (eind)rapport van de spionagedrone.
@@ -18,7 +18,7 @@ import net.minecraft.resources.Identifier;
  * @param finished   true = de opdracht is voorbij (dan opent het rapport meteen)
  */
 public record SpyReportPayload(Component targetName, List<Component> lines, boolean finished) implements CustomPacketPayload {
-    public static final Type<SpyReportPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "spy_report"));
+    public static final Type<SpyReportPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "spy_report"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SpyReportPayload> STREAM_CODEC = StreamCodec.composite(
             ComponentSerialization.STREAM_CODEC, SpyReportPayload::targetName,

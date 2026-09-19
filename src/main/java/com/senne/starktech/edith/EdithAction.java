@@ -1,6 +1,6 @@
 package com.senne.starktech.edith;
 
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Alles wat je E.D.I.T.H. kunt vragen te doen. De client (jouw spel) stuurt een actie naar

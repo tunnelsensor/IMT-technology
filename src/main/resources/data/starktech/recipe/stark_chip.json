@@ -2,10 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": "#c:ingots/copper",
-    "G": "#c:ingots/gold",
-    "R": "#c:dusts/redstone",
-    "D": "#c:gems/diamond"
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "G": {
+      "tag": "c:ingots/gold"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "D": {
+      "tag": "c:gems/diamond"
+    }
   },
   "pattern": [
     "CGC",

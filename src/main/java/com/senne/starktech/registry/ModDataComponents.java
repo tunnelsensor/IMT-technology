@@ -26,7 +26,7 @@ public final class ModDataComponents {
                     .persistent(Codec.INT)
                     .networkSynchronized(ByteBufCodecs.VAR_INT)
                     // Voorkomt dat het item in je hand "wiebelt" telkens als de energie verandert.
-                    .ignoreSwapAnimation());
+                    );
 
     /** Van wie de bril is. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithOwner>> OWNER =
@@ -44,8 +44,7 @@ public final class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> SATELLITE_MODE =
             COMPONENTS.registerComponentType("satellite_mode", builder -> builder
                     .persistent(Codec.INT)
-                    .networkSynchronized(ByteBufCodecs.VAR_INT)
-                    .ignoreSwapAnimation());
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
 
     /** Welke upgrades er in de bril zitten. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithUpgrades>> UPGRADES =

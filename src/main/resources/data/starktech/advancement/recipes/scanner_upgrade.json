@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipes": "starktech:scanner_upgrade"
+        "recipe": "starktech:scanner_upgrade"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

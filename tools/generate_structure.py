@@ -16,8 +16,8 @@ from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "starktech" / "structure" / "stark_outpost.nbt"
 
-# Minecraft 26.3 "world_version" (zie version.json in de Minecraft-jar).
-DATA_VERSION = 5023
+# Minecraft 1.21.1 "world_version" (zie version.json in de Minecraft-jar).
+DATA_VERSION = 3955
 
 # Afmetingen van het gebouw: breedte (x), hoogte (y), diepte (z)
 SIZE_X, SIZE_Y, SIZE_Z = 11, 8, 9
@@ -165,9 +165,9 @@ def to_nbt():
         key = (block, tuple(sorted(props.items())))
         if key not in palette_index:
             palette_index[key] = len(palette)
-            entry = {"id": block}
+            entry = {"Name": block}
             if props:
-                entry["properties"] = dict(props)
+                entry["Properties"] = dict(props)
             palette.append(entry)
         entry = {"pos": [Int(x), Int(y), Int(z)], "state": Int(palette_index[key])}
         if nbt:

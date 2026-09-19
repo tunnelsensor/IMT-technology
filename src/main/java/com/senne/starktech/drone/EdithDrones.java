@@ -11,11 +11,11 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hulpfuncties om drones op te roepen, te tellen en terug te roepen.
@@ -81,7 +81,7 @@ public final class EdithDrones {
      * blijft daar achter hangen. Onzichtbaar, en hij valt niets aan.
      */
     public static @Nullable StarkDroneEntity launchSpy(ServerPlayer owner, LivingEntity target) {
-        ServerLevel level = target.level() instanceof ServerLevel targetLevel ? targetLevel : owner.level();
+        ServerLevel level = target.level() instanceof ServerLevel targetLevel ? targetLevel : owner.serverLevel();
         Vec3 above = target.position();
         double y = freeHeightAbove(level, above.x, above.y, above.z);
         StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.SPY, 0, -1, new Vec3(above.x, y, above.z), level, true);
@@ -95,7 +95,7 @@ public final class EdithDrones {
     public static int recallAll(ServerPlayer owner, StarkDroneEntity.Mode mode) {
         List<StarkDroneEntity> drones = find(owner, mode);
         for (StarkDroneEntity drone : drones) {
-            drone.recall(owner.level());
+            drone.recall(owner.serverLevel());
         }
         return drones.size();
     }
@@ -179,7 +179,7 @@ public final class EdithDrones {
      */
     private static @Nullable StarkDroneEntity spawnFromSky(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot,
                                                            int lifeTicks, Vec3 below) {
-        ServerLevel level = owner.level();
+        ServerLevel level = owner.serverLevel();
         // De drones komen niet allemaal op dezelfde plek naar beneden: een kringetje eromheen.
         double angle = slot * (Math.PI * 2 / 5) + (slot / 5) * 0.4;
         double radius = 1.5 + (slot % 5) * 0.35;
@@ -201,7 +201,7 @@ public final class EdithDrones {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int i = 0; i <= maxDrop; i++) {
             int y = startY + i;
-            if (y >= level.getMaxY()) {
+            if (y >= level.getMaxBuildHeight()) {
                 break;
             }
             pos.set((int) Math.floor(x), y, (int) Math.floor(z));
@@ -222,18 +222,18 @@ public final class EdithDrones {
      */
     private static @Nullable StarkDroneEntity spawn(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot, int lifeTicks,
                                                     Vec3 position, boolean diving) {
-        return spawn(owner, mode, slot, lifeTicks, position, owner.level(), diving);
+        return spawn(owner, mode, slot, lifeTicks, position, owner.serverLevel(), diving);
     }
 
     /** Idem, maar in een zelf gekozen wereld (de spionagedrone volgt zijn doelwit door portalen). */
     private static @Nullable StarkDroneEntity spawn(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot, int lifeTicks,
                                                     Vec3 position, ServerLevel level, boolean diving) {
-        StarkDroneEntity drone = ModEntities.STARK_DRONE.get().create(level, EntitySpawnReason.MOB_SUMMONED);
+        StarkDroneEntity drone = ModEntities.STARK_DRONE.get().create(level);
         if (drone == null) {
             return null;
         }
         drone.setup(owner, mode, slot, lifeTicks);
-        drone.snapTo(position.x, position.y, position.z, owner.getYRot(), 0.0f);
+        drone.moveTo(position.x, position.y, position.z, owner.getYRot(), 0.0f);
         if (diving) {
             // Een zetje naar beneden, zodat hij echt "invalt" in plaats van rustig te komen zweven.
             drone.setDeltaMovement(0, -1.1, 0);

@@ -44,7 +44,16 @@ public class ChargingStationMenu extends AbstractContainerMenu {
         addSlot(new FilteredSlot(container, ChargingStationBlockEntity.SLOT_GLASSES, GLASSES_X, GLASSES_Y, 1));
         addSlot(new FilteredSlot(container, ChargingStationBlockEntity.SLOT_FUEL, FUEL_X, FUEL_Y, 64));
         addSlot(new FilteredSlot(container, ChargingStationBlockEntity.SLOT_UPGRADE, UPGRADE_X, UPGRADE_Y, 64));
-        addStandardInventorySlots(inventory, 8, 84);
+        // De inventaris van de speler: drie rijen van negen, en daaronder de hotbar.
+        // (In 1.21.1 moet je die zelf toevoegen.)
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 9; column++) {
+                addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, 84 + row * 18));
+            }
+        }
+        for (int column = 0; column < 9; column++) {
+            addSlot(new Slot(inventory, column, 8 + column * 18, 142));
+        }
         addDataSlots(data);
     }
 

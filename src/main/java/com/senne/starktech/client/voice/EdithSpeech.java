@@ -23,8 +23,8 @@ import javax.sound.sampled.SourceDataLine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Util;
-import org.jspecify.annotations.Nullable;
+import net.minecraft.Util;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * De stem van E.D.I.T.H.: zet haar meldingen om in spraak met Piper en speelt die af.
@@ -124,7 +124,7 @@ public final class EdithSpeech {
         lastText = text;
         lastMillis = now;
         Minecraft mc = Minecraft.getInstance();
-        float volume = mc.options.getFinalSoundSourceVolume(SoundSource.VOICE) * EdithClientConfig.VOICE_VOLUME.get().floatValue();
+        float volume = mc.options.getSoundSourceVolume(SoundSource.VOICE) * EdithClientConfig.VOICE_VOLUME.get().floatValue();
         if (volume <= 0.001f) {
             return;
         }

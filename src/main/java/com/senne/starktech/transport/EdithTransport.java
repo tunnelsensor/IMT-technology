@@ -31,7 +31,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Drones als vervoer. Er zijn vier soorten ritten:
@@ -92,7 +92,7 @@ public final class EdithTransport {
         if (carrier == null) {
             return;
         }
-        owner.startRiding(carrier, true, true);
+        owner.startRiding(carrier, true);
         // Twee drones vliegen mee, puur omdat het er goed uitziet (en ze houden je in het oog).
         EdithDrones.launchTransportEscort(owner, 2);
         EdithServer.send(owner, autopilot
@@ -167,7 +167,7 @@ public final class EdithTransport {
         if (drone == null) {
             return;
         }
-        target.startRiding(drone, true, true);
+        target.startRiding(drone, true);
         EdithServer.send(owner, Component.translatable("edith.starktech.msg.carry_started", target.getDisplayName(),
                 pos.getX(), pos.getY(), pos.getZ()), EdithMessagePayload.Level.INFO);
     }
@@ -184,7 +184,7 @@ public final class EdithTransport {
         if (gentle) {
             softLanding(owner);
         }
-        carrier.recall(owner.level());
+        carrier.recall(owner.serverLevel());
         EdithDrones.recallAll(owner, StarkDroneEntity.Mode.TRANSPORT);
         EdithServer.send(owner, Component.translatable("edith.starktech.msg.transport_landed"), EdithMessagePayload.Level.INFO);
     }
@@ -202,7 +202,7 @@ public final class EdithTransport {
                 entity.blockPosition().getY(), entity.blockPosition().getZ());
         for (int i = 0; i < 64; i++) {
             pos.setY(entity.blockPosition().getY() - i);
-            if (pos.getY() <= level.getMinY() || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
+            if (pos.getY() <= level.getMinBuildHeight() || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
                 return i;
             }
         }
@@ -303,7 +303,7 @@ public final class EdithTransport {
 
     /** Een kist (of ander opslagblok) op of naast de bestemming. */
     private static @Nullable Container containerNear(ServerLevel level, BlockPos center) {
-        for (BlockPos pos : BlockPos.withinManhattan(center, 2)) {
+        for (BlockPos pos : BlockPos.withinManhattan(center, 2, 2, 2)) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof Container container) {
                 return container;

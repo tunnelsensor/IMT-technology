@@ -2,7 +2,7 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -40,6 +40,6 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_PING = register("comms.ping");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
-        return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath(StarkTech.MODID, name)));
+        return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, name)));
     }
 }

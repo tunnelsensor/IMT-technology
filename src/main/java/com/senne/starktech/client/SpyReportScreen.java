@@ -1,7 +1,7 @@
 package com.senne.starktech.client;
 
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -65,26 +65,26 @@ public class SpyReportScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         int height = 40 + ROWS * LINE_H + 36;
         g.fill(left - 4, top - 4, left + PANEL_W + 4, top + height, EdithHud.argb(210, 0x08121A));
         EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + height, 8, EdithHud.argb(220, EdithHud.CYAN));
-        super.extractRenderState(g, mouseX, mouseY, a);
+        super.render(g, mouseX, mouseY, a);
 
-        g.text(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
-        g.text(font, Component.translatable("screen.starktech.spy_report.target", targetName), left + 8, top + 22,
+        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, Component.translatable("screen.starktech.spy_report.target", targetName), left + 8, top + 22,
                 EdithHud.argb(230, EdithHud.WHITE), true);
         String count = lines.size() + Component.translatable("screen.starktech.spy_report.lines").getString();
-        g.text(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(170, EdithHud.WHITE), true);
+        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(170, EdithHud.WHITE), true);
 
         int y = top + 40;
         if (lines.isEmpty()) {
-            g.centeredText(font, Component.translatable("screen.starktech.spy_report.empty"), left + PANEL_W / 2, y,
+            g.drawCenteredString(font, Component.translatable("screen.starktech.spy_report.empty"), left + PANEL_W / 2, y,
                     EdithHud.argb(160, EdithHud.WHITE));
             return;
         }
         for (int i = scroll; i < Math.min(lines.size(), scroll + ROWS); i++) {
-            g.text(font, lines.get(i), left + 8, y, EdithHud.argb(235, EdithHud.WHITE), false);
+            g.drawString(font, lines.get(i), left + 8, y, EdithHud.argb(235, EdithHud.WHITE), false);
             y += LINE_H;
         }
         // Schuifbalkje aan de rechterkant.

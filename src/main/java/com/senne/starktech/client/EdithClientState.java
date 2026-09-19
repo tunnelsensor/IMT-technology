@@ -10,10 +10,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wat E.D.I.T.H. op dit moment aan de speler-kant weet: meldingen, gevonden ertsen,
@@ -85,6 +85,11 @@ public final class EdithClientState {
     // ---------------------------------------------------------------- Zoom
 
     public static boolean zooming;
+    /**
+     * Het beeldveld (FOV) van de laatste frame. Dat onthouden we omdat WorldProjection het nodig
+     * heeft om te berekenen waar iets op je scherm staat - ook als je inzoomt.
+     */
+    public static double fieldOfView = 70.0;
 
     // ---------------------------------------------------------------- Fase 2: status van de server
 

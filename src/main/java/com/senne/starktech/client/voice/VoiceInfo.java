@@ -65,7 +65,7 @@ final class VoiceInfo {
 
     /** "Het is 19:40, 's avonds." Een Minecraft-dag begint om 6 uur 's ochtends (tick 0). */
     private static Component time(ClientLevel level) {
-        long ticks = level.getOverworldClockTime() % 24000;
+        long ticks = level.getDayTime() % 24000;
         int hours = (int) ((ticks / 1000 + 6) % 24);
         int minutes = (int) (ticks % 1000 * 60 / 1000);
         String part = hours >= 5 && hours < 12 ? "morning" : hours >= 12 && hours < 18 ? "afternoon"
@@ -86,7 +86,7 @@ final class VoiceInfo {
         if (!level.isRaining()) {
             return Component.translatable(KEY + "weather.clear");
         }
-        Biome.Precipitation precipitation = level.getBiome(pos).value().getPrecipitationAt(pos, level.getSeaLevel());
+        Biome.Precipitation precipitation = level.getBiome(pos).value().getPrecipitationAt(pos);
         String kind = switch (precipitation) {
             case RAIN -> level.isThundering() ? "thunder" : "rain";
             case SNOW -> "snow";
@@ -123,7 +123,7 @@ final class VoiceInfo {
 
     private static Component position(ClientLevel level, LocalPlayer player) {
         Component biome = level.getBiome(player.blockPosition()).unwrapKey()
-                .map(key -> (Component) Component.translatable(key.identifier().toLanguageKey("biome")))
+                .map(key -> (Component) Component.translatable(key.location().toLanguageKey("biome")))
                 .orElse(Component.literal("?"));
         return Component.translatable(KEY + "position", NavigationScreen.dimensionName(level.dimension()), biome,
                 player.getBlockX(), player.getBlockY(), player.getBlockZ());

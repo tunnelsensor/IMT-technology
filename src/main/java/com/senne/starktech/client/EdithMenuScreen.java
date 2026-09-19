@@ -18,13 +18,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -106,7 +104,7 @@ public class EdithMenuScreen extends Screen {
             voice(VoiceFeature.COMMANDS),
             new Option(Component.translatable("screen.starktech.menu.voice_edit"),
                     glasses -> new Status(Component.translatable("screen.starktech.menu.edit"), EdithHud.CYAN),
-                    () -> Minecraft.getInstance().gui.setScreen(new VoiceCommandsScreen(null))),
+                    () -> Minecraft.getInstance().setScreen(new VoiceCommandsScreen(null))),
             // Staat de tekst van wat jij vraagt en wat E.D.I.T.H. antwoordt in de HUD?
             new Option(Component.translatable("screen.starktech.menu.voice_text"),
                     glasses -> EdithClientConfig.voiceTextInHud()
@@ -181,13 +179,13 @@ public class EdithMenuScreen extends Screen {
 
     /** Geen wazige achtergrond: alleen een lichte verduistering, zodat je de wereld blijft zien. */
     @Override
-    public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
         g.fill(0, 0, width, height, EdithHud.argb(70, 0x000814));
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
-        super.extractRenderState(g, mouseX, mouseY, a);
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
+        super.render(g, mouseX, mouseY, a);
         int cx = width / 2;
         int cy = height / 2;
         MenuTab tab = EdithClientState.menuTab;
@@ -223,9 +221,9 @@ public class EdithMenuScreen extends Screen {
             g.fill(x0, y0, x0 + BOX_W, y0 + BOX_H, EdithHud.argb((isHovered ? 150 : 90) * fade / 255, isHovered ? 0x0B4A5E : 0x001018));
             EdithHud.brackets(g, x0, y0, x0 + BOX_W, y0 + BOX_H, 5, EdithHud.argb((isHovered ? 255 : 150) * fade / 255, EdithHud.CYAN));
 
-            g.centeredText(font, option.label(), bx, y0 + 4, EdithHud.argb(fade, EdithHud.WHITE));
+            g.drawCenteredString(font, option.label(), bx, y0 + 4, EdithHud.argb(fade, EdithHud.WHITE));
             Status status = option.status().apply(glasses);
-            g.centeredText(font, status.text(), bx, y0 + 15, EdithHud.argb(fade * 230 / 255, status.color()));
+            g.drawCenteredString(font, status.text(), bx, y0 + 15, EdithHud.argb(fade * 230 / 255, status.color()));
         }
     }
 
@@ -233,15 +231,15 @@ public class EdithMenuScreen extends Screen {
      * Het midden van de cirkel: op welk tabblad je zit, met een puntje per tabblad eronder.
      * Op het tabblad Systemen staat hier ook de info over de bril.
      */
-    private void renderCenter(GuiGraphicsExtractor g, int cx, int cy, MenuTab tab, float t) {
+    private void renderCenter(GuiGraphics g, int cx, int cy, MenuTab tab, float t) {
         EdithHud.brackets(g, cx - 48, cy - 20, cx + 48, cy + 20, 6, EdithHud.argb(220, EdithHud.CYAN));
-        g.centeredText(font, "E.D.I.T.H.", cx, cy - 15, EdithHud.argb(200, EdithHud.CYAN));
+        g.drawCenteredString(font, "E.D.I.T.H.", cx, cy - 15, EdithHud.argb(200, EdithHud.CYAN));
 
         // Naam van het tabblad, schuift even mee in de scrollrichting.
         int slide = (int) ((1.0f - t) * 10 * tabDirection);
-        g.centeredText(font, tab.label(), cx + slide, cy - 4, EdithHud.argb(255, EdithHud.WHITE));
-        g.text(font, "‹", cx - 44, cy - 4, EdithHud.argb(150, EdithHud.CYAN), false);
-        g.text(font, "›", cx + 40, cy - 4, EdithHud.argb(150, EdithHud.CYAN), false);
+        g.drawCenteredString(font, tab.label(), cx + slide, cy - 4, EdithHud.argb(255, EdithHud.WHITE));
+        g.drawString(font, "‹", cx - 44, cy - 4, EdithHud.argb(150, EdithHud.CYAN), false);
+        g.drawString(font, "›", cx + 40, cy - 4, EdithHud.argb(150, EdithHud.CYAN), false);
 
         // Een puntje per tabblad; het huidige is gevuld.
         MenuTab[] tabs = MenuTab.values();
@@ -254,12 +252,12 @@ public class EdithMenuScreen extends Screen {
         int y = cy + 26;
         if (tab == MenuTab.SYSTEMS) {
             for (Component line : systemInfo(glasses())) {
-                g.centeredText(font, line, cx, y, EdithHud.argb(220, EdithHud.WHITE));
+                g.drawCenteredString(font, line, cx, y, EdithHud.argb(220, EdithHud.WHITE));
                 y += 11;
             }
             y += 4;
         }
-        g.centeredText(font, Component.translatable("screen.starktech.menu.hint"), cx, y, EdithHud.argb(140, EdithHud.WHITE));
+        g.drawCenteredString(font, Component.translatable("screen.starktech.menu.hint"), cx, y, EdithHud.argb(140, EdithHud.WHITE));
     }
 
     /** Info over de bril voor het tabblad Systemen: energie, verbruik en eigenaar. */
@@ -421,15 +419,15 @@ public class EdithMenuScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (EdithKeys.MENU.matches(event)) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (EdithKeys.MENU.matches(keyCode, scanCode)) {
             // Zolang je G nog vasthoudt van het openen, komen er "herhaal"-drukken binnen; die negeren we.
             if (menuKeyReleased) {
                 onClose();
             }
             return true;
         }
-        int key = event.key();
+        int key = keyCode;
         MenuTab[] tabs = MenuTab.values();
         if (key == InputConstants.KEY_LEFT || key == InputConstants.KEY_RIGHT) {
             turn(key == InputConstants.KEY_RIGHT ? 1 : -1);
@@ -440,12 +438,12 @@ public class EdithMenuScreen extends Screen {
             selectTab(tab, tab.ordinal() > EdithClientState.menuTab.ordinal() ? 1 : -1);
             return true;
         }
-        return super.keyPressed(event); // Esc sluit het menu
+        return super.keyPressed(keyCode, scanCode, modifiers); // Esc sluit het menu
     }
 
     @Override
-    public boolean keyReleased(KeyEvent event) {
-        if (EdithKeys.MENU.matches(event)) {
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if (EdithKeys.MENU.matches(keyCode, scanCode)) {
             boolean firstRelease = !menuKeyReleased;
             menuKeyReleased = true;
             // G vastgehouden en losgelaten: kies wat onder de muis staat (of sluit als de muis in het midden staat).
@@ -455,12 +453,12 @@ public class EdithMenuScreen extends Screen {
             }
             return true;
         }
-        return super.keyReleased(event);
+        return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        choose(optionAt(event.x(), event.y()));
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        choose(optionAt(mouseX, mouseY));
         return true;
     }
 
@@ -480,7 +478,9 @@ public class EdithMenuScreen extends Screen {
     /** Wordt de G-toets (of waar je hem op gezet hebt) nu echt ingedrukt? */
     private static boolean isMenuKeyDown() {
         InputConstants.Key key = EdithKeys.MENU.getKey();
-        return key.getType() == InputConstants.Type.KEYBOARD && InputConstants.isKeyDown(key.getValue());
+        // In 1.21.1 moet je erbij zeggen welk venster je bedoelt.
+        return key.getType() == InputConstants.Type.KEYSYM
+                && InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), key.getValue());
     }
 
     private static ItemStack glasses() {

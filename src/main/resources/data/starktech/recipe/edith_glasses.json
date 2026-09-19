@@ -2,11 +2,21 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "I": "#c:ingots/iron",
-    "C": "starktech:stark_chip",
-    "T": "minecraft:tinted_glass",
-    "N": "#c:ingots/netherite",
-    "D": "#c:gems/diamond"
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "T": {
+      "item": "minecraft:tinted_glass"
+    },
+    "N": {
+      "tag": "c:ingots/netherite"
+    },
+    "D": {
+      "tag": "c:gems/diamond"
+    }
   },
   "pattern": [
     "ICI",

@@ -1,12 +1,11 @@
 package com.senne.starktech.edith;
 
-import java.util.function.Consumer;
+import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.TooltipDisplay;
 
 /**
  * Een upgrade die je in het laadstation in de bril kunt bouwen.
@@ -48,13 +47,13 @@ public class UpgradeItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         String key = switch (type) {
             case BATTERY -> "tooltip.starktech.battery_upgrade";
             case SCANNER -> "tooltip.starktech.scanner_upgrade";
             case DRONE -> "tooltip.starktech.drone_upgrade";
         };
-        tooltip.accept(Component.translatable(key).withStyle(ChatFormatting.GRAY));
-        tooltip.accept(Component.translatable("tooltip.starktech.upgrade_hint").withStyle(ChatFormatting.DARK_AQUA));
+        tooltip.add(Component.translatable(key).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.starktech.upgrade_hint").withStyle(ChatFormatting.DARK_AQUA));
     }
 }

@@ -35,10 +35,9 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * De spionagedrone: hij volgt 10 minuten lang stiekem iemand (of iets) en rapporteert
@@ -197,7 +196,8 @@ public final class EdithSpy {
         if (mission == null || !drone.getUUID().equals(mission.droneId)) {
             return null;
         }
-        return drone.level().getEntity(mission.targetId) instanceof LivingEntity living ? living : null;
+        return drone.level() instanceof ServerLevel level && level.getEntity(mission.targetId) instanceof LivingEntity living
+                ? living : null;
     }
 
     /** Onthoudt of de speler nu door de spionagedrone kijkt (voor de HUD en het stoppen). */
@@ -402,7 +402,7 @@ public final class EdithSpy {
         }
     }
 
-    public static void onBlockBreak(BreakBlockEvent event) {
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
         note(event.getPlayer(), Component.translatable("edith.starktech.spy.log.break",
                 event.getState().getBlock().getName(), event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()), false);
     }

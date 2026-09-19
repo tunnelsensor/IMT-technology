@@ -4,6 +4,9 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
+import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.nav.EdithWaypoints;
@@ -11,9 +14,6 @@ import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.WaypointActionPayload;
 import com.senne.starktech.registry.ModAttachments;
-import com.senne.starktech.edith.EdithBalance;
-import com.senne.starktech.edith.EdithData;
-import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteMode;
@@ -23,36 +23,34 @@ import com.senne.starktech.station.ChargingStationBlockEntity;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.gametest.framework.FunctionGameTestInstance;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.gametest.framework.TestData;
-import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.event.RegisterGameTestsEvent;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import org.jspecify.annotations.Nullable;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Automatische tests. Ze draaien alleen als je "gradlew runGameTestServer" uitvoert,
- * of in het spel met het commando /test runall.
+ * Automatische tests. Ze draaien met "gradlew runGameTestServer", of in het spel met /test runall.
+ *
+ * In Minecraft 1.21.1 meld je een test aan met @GameTest boven een methode. "template" is het
+ * stukje wereld waarin de test draait (een structuur-bestand), "batch" bepaalt welke tests
+ * tegelijk lopen: tests met dezelfde batch draaien samen, verschillende batches na elkaar.
+ * Dat is belangrijk, want de explosies van de satelliettest mogen de drones van een andere
+ * test niet raken.
  *
  * - outpost_and_station: bouwt het Stark Industries-gebouw na, controleert de kist en kijkt of
  *   het laadstation een bril echt oplaadt en een upgrade inbouwt.
@@ -62,57 +60,52 @@ import org.jspecify.annotations.Nullable;
  * - scout_drone: de verkenningsdrone vliegt zoals de speler hem bestuurt.
  * - spy_drone: de spionagedrone volgt zijn doelwit, ook als dat wegloopt.
  */
+@GameTestHolder(StarkTech.MODID)
+@PrefixGameTestTemplate(false)
 public final class StarkTechGameTests {
     private StarkTechGameTests() {}
 
-    public static final DeferredRegister<Consumer<GameTestHelper>> TEST_FUNCTIONS =
-            DeferredRegister.create(Registries.TEST_FUNCTION, StarkTech.MODID);
+    // Posities in het gebouw (zie tools/generate_structure.py). In een gametest ligt de
+    // structuur één blok boven het "structuurblok", dus tellen we bij y altijd 1 op.
+    private static final BlockPos STATION_POS = new BlockPos(5, 2, 7);
+    private static final BlockPos CHEST_POS = new BlockPos(1, 2, 7);
 
-    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> OUTPOST_AND_STATION =
-            TEST_FUNCTIONS.register("outpost_and_station", () -> StarkTechGameTests::outpostAndStation);
+    /** De lege test-arena (zie tools/generate_test_structure.py). */
+    private static final String ARENA = "empty";
 
-    // Posities in het gebouw (zie tools/generate_structure.py).
-    private static final BlockPos STATION_POS = new BlockPos(5, 1, 7);
-    private static final BlockPos CHEST_POS = new BlockPos(1, 1, 7);
+    // ================================================================ De tests
 
-    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> DRONE_SWARM =
-            TEST_FUNCTIONS.register("drone_swarm", () -> StarkTechGameTests::droneSwarm);
-
-    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SATELLITE_STRIKE =
-            TEST_FUNCTIONS.register("satellite_strike", () -> StarkTechGameTests::satelliteStrike);
-
-    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> NAVIGATION =
-            TEST_FUNCTIONS.register("navigation", () -> StarkTechGameTests::navigation);
-
-    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SCOUT_DRONE =
-            TEST_FUNCTIONS.register("scout_drone", () -> StarkTechGameTests::scoutDrone);
-
-    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SPY_DRONE =
-            TEST_FUNCTIONS.register("spy_drone", () -> StarkTechGameTests::spyDrone);
-
-    public static void registerTests(RegisterGameTestsEvent event) {
-        // Elke test een eigen "omgeving": tests met een andere omgeving draaien na elkaar,
-        // zodat de explosie of de drones van de ene test de andere niet kunnen raken.
-        Identifier empty = Identifier.withDefaultNamespace("empty");
-        event.registerTest(id("outpost_and_station"), new FunctionGameTestInstance(OUTPOST_AND_STATION.getKey(),
-                new TestData<>(environment(event, "station"), id("stark_outpost"), 200, 0, true)));
-        event.registerTest(id("drone_swarm"), new FunctionGameTestInstance(DRONE_SWARM.getKey(),
-                // Ruim de tijd: de testserver tikt heel snel, en het laden van de chunks
-                // rondom (nodig voor de vliegende drones) kost echte tijd.
-                new TestData<>(environment(event, "drones"), empty, 2400, 0, true)));
-        event.registerTest(id("satellite_strike"), new FunctionGameTestInstance(SATELLITE_STRIKE.getKey(),
-                new TestData<>(environment(event, "satellite"), empty, 300, 0, true)));
-        event.registerTest(id("navigation"), new FunctionGameTestInstance(NAVIGATION.getKey(),
-                new TestData<>(environment(event, "navigation"), empty, 100, 0, true)));
-        event.registerTest(id("scout_drone"), new FunctionGameTestInstance(SCOUT_DRONE.getKey(),
-                new TestData<>(environment(event, "scout"), empty, 2400, 0, true)));
-        event.registerTest(id("spy_drone"), new FunctionGameTestInstance(SPY_DRONE.getKey(),
-                new TestData<>(environment(event, "spy"), empty, 2400, 0, true)));
+    @GameTest(template = "stark_outpost", timeoutTicks = 200, batch = "station")
+    public static void outpost_and_station(GameTestHelper helper) {
+        outpostAndStation(helper);
     }
 
-    private static Holder<TestEnvironmentDefinition<?>> environment(RegisterGameTestsEvent event, String name) {
-        return event.registerEnvironment(id(name), new TestEnvironmentDefinition.AllOf());
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "drones")
+    public static void drone_swarm(GameTestHelper helper) {
+        droneSwarm(helper);
     }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "scout")
+    public static void scout_drone(GameTestHelper helper) {
+        scoutDrone(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "spy")
+    public static void spy_drone(GameTestHelper helper) {
+        spyDrone(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "satellite")
+    public static void satellite_strike(GameTestHelper helper) {
+        satelliteStrike(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "navigation")
+    public static void navigation(GameTestHelper helper) {
+        navigationTest(helper);
+    }
+
+    // ================================================================ Hulpjes
 
     /** Een nep-speler met een opgeladen bril op, die eigenaar is van die bril. */
     @SuppressWarnings("removal")
@@ -129,18 +122,18 @@ public final class StarkTechGameTests {
                 helper.getLevel().getChunk(chunkX + dx, chunkZ + dz); // meteen inladen
             }
         }
-        player.snapTo(pos.x, pos.y, pos.z);
+        player.moveTo(pos.x, pos.y, pos.z);
         player.setNoGravity(true);
         ItemStack glasses = new ItemStack(ModItems.EDITH_GLASSES.get());
         EdithData.setEnergy(glasses, EdithData.getMaxEnergy(glasses));
-        EdithData.setOwner(glasses, new EdithOwner(player.getUUID(), player.getGameProfile().name(), false));
+        EdithData.setOwner(glasses, new EdithOwner(player.getUUID(), player.getGameProfile().getName(), false));
         player.setItemSlot(EquipmentSlot.HEAD, glasses);
         return player;
     }
 
     /** Een vijand die stil blijft staan (geen AI) en niet in de zon verbrandt. */
     private static Husk spawnDummyEnemy(GameTestHelper helper, BlockPos relativePos) {
-        Husk husk = helper.spawn(EntityTypes.HUSK, relativePos);
+        Husk husk = helper.spawn(EntityType.HUSK, relativePos);
         husk.setNoAi(true);
         husk.setNoGravity(true);
         return husk;
@@ -162,35 +155,35 @@ public final class StarkTechGameTests {
      * Navigatie: een plek opslaan, ernaartoe navigeren, en bij aankomst stopt de navigatie.
      * Controleert ook dat de waypoints goed opgeslagen en weer ingelezen worden.
      */
-    private static void navigation(GameTestHelper helper) {
+    private static void navigationTest(GameTestHelper helper) {
         ServerPlayer player = makeEdithOwner(helper, new BlockPos(1, 3, 1));
         EdithNavigation.handleWaypointAction(player,
                 new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, "  Thuis\u00a7c  ", Waypoint.COLORS[2]));
         EdithWaypoints data = player.getData(ModAttachments.WAYPOINTS);
         if (data.waypoints().size() != 1 || !data.waypoints().getFirst().name().equals("Thuis")) {
-            throw helper.assertionException(Component.literal("Waypoint niet (goed) opgeslagen: " + data));
+            throw new GameTestAssertException("Waypoint niet (goed) opgeslagen: " + data);
         }
 
         // Opslaan en weer inlezen (zoals bij het afsluiten en opnieuw laden van de wereld).
         var saved = EdithWaypoints.CODEC.codec().encodeStart(NbtOps.INSTANCE, data).getOrThrow();
         EdithWaypoints loaded = EdithWaypoints.CODEC.codec().parse(NbtOps.INSTANCE, saved).getOrThrow();
         if (!loaded.equals(data)) {
-            throw helper.assertionException(Component.literal("Waypoints anders na opslaan: " + loaded));
+            throw new GameTestAssertException("Waypoints anders na opslaan: " + loaded);
         }
 
         EdithNavigation.handleWaypointAction(player, new WaypointActionPayload(WaypointActionPayload.Op.NAVIGATE, 0, "", 0));
         if (player.getData(ModAttachments.WAYPOINTS).active() != 0) {
-            throw helper.assertionException(Component.literal("Navigatie niet gestart"));
+            throw new GameTestAssertException("Navigatie niet gestart");
         }
         // De speler staat al op de plek, dus de volgende controle moet "aangekomen" zeggen.
         EdithNavigation.tick(player);
         if (player.getData(ModAttachments.WAYPOINTS).active() != EdithWaypoints.NONE) {
-            throw helper.assertionException(Component.literal("Aankomst niet herkend"));
+            throw new GameTestAssertException("Aankomst niet herkend");
         }
 
         EdithNavigation.handleWaypointAction(player, new WaypointActionPayload(WaypointActionPayload.Op.REMOVE, 0, "", 0));
         if (!player.getData(ModAttachments.WAYPOINTS).waypoints().isEmpty()) {
-            throw helper.assertionException(Component.literal("Waypoint niet verwijderd"));
+            throw new GameTestAssertException("Waypoint niet verwijderd");
         }
         helper.succeed();
     }
@@ -213,27 +206,27 @@ public final class StarkTechGameTests {
             int marked = EdithServer.getMarkedTargets(owner).size();
             EdithServer.handleAction(owner, EdithAction.SPY_DRONE.ordinal());
             if (EdithSpy.of(owner) == null) {
-                throw helper.assertionException(Component.literal("Geen spionage-opdracht gestart (gemarkeerd: " + marked
+                throw new GameTestAssertException("Geen spionage-opdracht gestart (gemarkeerd: " + marked
                         + ", energie: " + EdithData.getEnergy(EdithData.getWornGlasses(owner))
-                        + ", drones: " + EdithDrones.find(owner, StarkDroneEntity.Mode.SPY).size() + ")"));
+                        + ", drones: " + EdithDrones.find(owner, StarkDroneEntity.Mode.SPY).size() + ")");
             }
             if (EdithSpy.of(owner).log().isEmpty()) {
-                throw helper.assertionException(Component.literal("Logboek blijft leeg"));
+                throw new GameTestAssertException("Logboek blijft leeg");
             }
             if (EdithDrones.find(owner, StarkDroneEntity.Mode.SPY).isEmpty()) {
-                throw helper.assertionException(Component.literal("Geen spionagedrone in de lucht"));
+                throw new GameTestAssertException("Geen spionagedrone in de lucht");
             }
             // Het doelwit verplaatst zich: de drone moet erachteraan.
-            target.snapTo(helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(14, 3, 1))));
+            target.moveTo(helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(14, 3, 1))));
         });
         helper.succeedWhen(() -> {
             List<StarkDroneEntity> spies = EdithDrones.find(owner, StarkDroneEntity.Mode.SPY);
             if (spies.isEmpty()) {
-                throw helper.assertionException(Component.literal("Spionagedrone verdwenen"));
+                throw new GameTestAssertException("Spionagedrone verdwenen");
             }
             float distance = spies.getFirst().distanceTo(target);
             if (distance > 10) {
-                throw helper.assertionException(Component.literal("Spion volgt zijn doelwit niet: " + distance));
+                throw new GameTestAssertException("Spion volgt zijn doelwit niet: " + distance);
             }
         });
     }
@@ -252,7 +245,7 @@ public final class StarkTechGameTests {
             EdithServer.handleAction(owner, EdithAction.DRONE_CAMERA.ordinal());
             StarkDroneEntity scout = EdithDrones.findScout(owner);
             if (scout == null) {
-                throw helper.assertionException(Component.literal("Geen verkenningsdrone gelanceerd"));
+                throw new GameTestAssertException("Geen verkenningsdrone gelanceerd");
             }
             UUID scoutId = scout.getUUID();
             double startX = scout.getX();
@@ -260,10 +253,10 @@ public final class StarkTechGameTests {
                 // Elke tick "vooruit" sturen (naar het oosten), zoals het spel van de speler zou doen.
                 EdithServer.handleDroneControl(owner, new DroneControlPayload(1, 0, 0, false, -90, 0));
                 if (!(helper.getLevel().getEntity(scoutId) instanceof StarkDroneEntity drone)) {
-                    throw helper.assertionException(Component.literal("Verkenningsdrone verdwenen"));
+                    throw new GameTestAssertException("Verkenningsdrone verdwenen");
                 }
                 if (drone.getX() - startX < 5) {
-                    throw helper.assertionException(Component.literal("Drone vloog niet vooruit: " + (drone.getX() - startX)));
+                    throw new GameTestAssertException("Drone vloog niet vooruit: " + (drone.getX() - startX));
                 }
             });
         });
@@ -280,12 +273,12 @@ public final class StarkTechGameTests {
             int expected = EdithData.getSwarmSize(EdithData.getWornGlasses(owner));
             int launched = EdithDrones.launchSwarm(owner, EdithData.getWornGlasses(owner));
             if (launched != expected) {
-                throw helper.assertionException(Component.literal("Verwacht " + expected + " drones, kreeg er " + launched));
+                throw new GameTestAssertException("Verwacht " + expected + " drones, kreeg er " + launched);
             }
         });
         helper.succeedWhen(() -> {
             if (findAlive(helper, enemyId) instanceof LivingEntity alive) {
-                throw helper.assertionException(Component.literal("Vijand leeft nog: " + alive.getHealth() + " levens"));
+                throw new GameTestAssertException("Vijand leeft nog: " + alive.getHealth() + " levens");
             }
         });
     }
@@ -304,13 +297,13 @@ public final class StarkTechGameTests {
         UUID enemyId = enemy.getUUID();
         helper.runAfterDelay(startDelay + EdithBalance.SATELLITE_CHARGE_TIME - 10, () -> {
             if (!(findAlive(helper, enemyId) instanceof LivingEntity alive) || alive.getHealth() < alive.getMaxHealth()) {
-                throw helper.assertionException(Component.literal("De satelliet sloeg te vroeg in"));
+                throw new GameTestAssertException("De satelliet sloeg te vroeg in");
             }
         });
         // ...en daarna is de vijand weg.
         helper.succeedWhen(() -> {
             if (findAlive(helper, enemyId) != null) {
-                throw helper.assertionException(Component.literal("Vijand leeft nog na de inslag"));
+                throw new GameTestAssertException("Vijand leeft nog na de inslag");
             }
         });
     }
@@ -327,13 +320,13 @@ public final class StarkTechGameTests {
         // 1. Het gebouw is goed geplaatst.
         helper.assertBlockPresent(ModBlocks.CHARGING_STATION.get(), STATION_POS);
         helper.assertBlockPresent(Blocks.CHEST, CHEST_POS);
-        ChestBlockEntity chest = helper.getBlockEntity(CHEST_POS, ChestBlockEntity.class);
+        ChestBlockEntity chest = (ChestBlockEntity) helper.getBlockEntity(CHEST_POS);
         if (chest.getLootTable() == null) {
-            throw helper.assertionException(CHEST_POS, Component.literal("De kist heeft geen loot table"));
+            throw new GameTestAssertException("De kist heeft geen loot table");
         }
 
         // 2. Het laadstation laadt op en bouwt een upgrade in.
-        ChargingStationBlockEntity station = helper.getBlockEntity(STATION_POS, ChargingStationBlockEntity.class);
+        ChargingStationBlockEntity station = (ChargingStationBlockEntity) helper.getBlockEntity(STATION_POS);
         station.setItem(ChargingStationBlockEntity.SLOT_GLASSES, new ItemStack(ModItems.EDITH_GLASSES.get()));
         station.setItem(ChargingStationBlockEntity.SLOT_FUEL, new ItemStack(Items.REDSTONE, 4));
         station.setItem(ChargingStationBlockEntity.SLOT_UPGRADE, new ItemStack(ModItems.BATTERY_UPGRADE.get()));
@@ -341,15 +334,11 @@ public final class StarkTechGameTests {
         helper.succeedWhen(() -> {
             ItemStack glasses = station.getItem(ChargingStationBlockEntity.SLOT_GLASSES);
             if (EdithData.getUpgrades(glasses).battery() != 1) {
-                throw helper.assertionException(STATION_POS, Component.literal("Upgrade nog niet ingebouwd"));
+                throw new GameTestAssertException("Upgrade nog niet ingebouwd");
             }
             if (EdithData.getEnergy(glasses) < 4 * 500) {
-                throw helper.assertionException(STATION_POS, Component.literal("Bril nog niet opgeladen: " + EdithData.getEnergy(glasses)));
+                throw new GameTestAssertException("Bril nog niet opgeladen: " + EdithData.getEnergy(glasses));
             }
         });
-    }
-
-    private static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath(StarkTech.MODID, path);
     }
 }

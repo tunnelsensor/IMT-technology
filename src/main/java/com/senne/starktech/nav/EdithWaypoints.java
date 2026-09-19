@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Alle waypoints van één speler, plus waar hij op dit moment naartoe navigeert.

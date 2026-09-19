@@ -3,11 +3,11 @@ package com.senne.starktech.client;
 import com.senne.starktech.network.BeamEffectPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 /**
  * Tekent laserstralen en de satellietstraal met deeltjes (particles).
@@ -15,11 +15,19 @@ import net.minecraft.world.phys.Vec3;
 public final class BeamEffects {
     private BeamEffects() {}
 
-    private static final DustParticleOptions LASER = new DustParticleOptions(0x7FE8FF, 0.6f);
-    private static final DustParticleOptions TARGETING = new DustParticleOptions(0xFF3030, 1.0f);
-    private static final DustParticleOptions ORBITAL = new DustParticleOptions(0xDDF8FF, 2.5f);
-    private static final DustParticleOptions PRECISION = new DustParticleOptions(0xFFFFFF, 1.2f);
-    private static final DustParticleOptions SWEEP = new DustParticleOptions(0xFF7A1F, 2.0f);
+    /**
+     * Zet een kleur als 0xRRGGBB om in de drie getallen (rood, groen, blauw van 0 tot 1)
+     * die de deeltjes van Minecraft 1.21.1 verwachten.
+     */
+    private static Vector3f color(int rgb) {
+        return new Vector3f(((rgb >> 16) & 0xFF) / 255.0f, ((rgb >> 8) & 0xFF) / 255.0f, (rgb & 0xFF) / 255.0f);
+    }
+
+    private static final DustParticleOptions LASER = new DustParticleOptions(color(0x7FE8FF), 0.6f);
+    private static final DustParticleOptions TARGETING = new DustParticleOptions(color(0xFF3030), 1.0f);
+    private static final DustParticleOptions ORBITAL = new DustParticleOptions(color(0xDDF8FF), 2.5f);
+    private static final DustParticleOptions PRECISION = new DustParticleOptions(color(0xFFFFFF), 1.2f);
+    private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
 
     public static void play(BeamEffectPayload payload) {
         ClientLevel level = Minecraft.getInstance().level;
@@ -87,8 +95,7 @@ public final class BeamEffects {
             level.addAlwaysVisibleParticle(ParticleTypes.END_ROD, true, target.x, target.y + 0.4, target.z,
                     (random.nextDouble() - 0.5) * 0.5, random.nextDouble() * 0.5, (random.nextDouble() - 0.5) * 0.5);
         }
-        level.addAlwaysVisibleParticle(ColorParticleOption.create(ParticleTypes.FLASH, 0xFFFFFF), true,
-                target.x, target.y + 0.5, target.z, 0, 0, 0);
+        level.addAlwaysVisibleParticle(ParticleTypes.FLASH, true, target.x, target.y + 0.5, target.z, 0, 0, 0);
     }
 
     /** De schuivende laser: een brede oranje streep die over de grond kruipt. */

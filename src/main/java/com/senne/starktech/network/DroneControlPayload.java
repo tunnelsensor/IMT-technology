@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Bericht van speler naar server, elke tick tijdens het besturen van de verkenningsdrone:
@@ -20,7 +20,7 @@ import net.minecraft.resources.Identifier;
  */
 public record DroneControlPayload(float forward, float strafe, float vertical, boolean boost, float yaw, float pitch)
         implements CustomPacketPayload {
-    public static final Type<DroneControlPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(StarkTech.MODID, "drone_control"));
+    public static final Type<DroneControlPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "drone_control"));
 
     public static final DroneControlPayload IDLE = new DroneControlPayload(0, 0, 0, false, 0, 0);
 
