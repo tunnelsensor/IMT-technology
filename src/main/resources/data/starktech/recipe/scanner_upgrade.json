@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": "#c:gems/amethyst",
+    "S": "minecraft:spyglass",
+    "E": "#c:ender_pearls",
+    "C": "starktech:stark_chip"
+  },
+  "pattern": [
+    "ASA",
+    "ECE",
+    "AAA"
+  ],
+  "result": {
+    "id": "starktech:scanner_upgrade"
+  }
+}

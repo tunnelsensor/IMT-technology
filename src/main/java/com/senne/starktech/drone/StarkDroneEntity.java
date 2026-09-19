@@ -1,0 +1,686 @@
+package com.senne.starktech.drone;
+
+import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.edith.EdithFeature;
+import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.EdithTargeting;
+import com.senne.starktech.network.BeamEffectPayload;
+import com.senne.starktech.network.EdithMessagePayload;
+import com.senne.starktech.network.DroneControlPayload;
+import com.senne.starktech.network.ModNetwork;
+import com.senne.starktech.registry.ModDamageTypes;
+import com.senne.starktech.registry.ModSounds;
+import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.transport.EdithTransport;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Een Stark-drone. Er zijn drie soorten (zie Mode):
+ * - Aanvalsdrones (de "zwerm"): vallen gemarkeerde doelwitten aan en verdwijnen na een minuut.
+ * - Beschermende drones: vliegen rond hun eigenaar en schieten op vijanden in de buurt.
+ * - Verkenningsdrone: de speler bestuurt hem zelf en kijkt door zijn camera.
+ *
+ * Een drone denkt alleen op de server. Hij heeft altijd een eigenaar; zonder eigenaar
+ * (of als de bril af gaat of leeg is) vliegt hij weg.
+ */
+public class StarkDroneEntity extends PathfinderMob {
+    public enum Mode {
+        ATTACK, GUARD, SCOUT,
+        /** Fase 6: volgt stiekem iemand en rapporteert (onzichtbaar, valt niet aan). */
+        SPY,
+        /** Fase 7: vervoert jou, een vracht of iemand anders. */
+        TRANSPORT;
+
+        public static Mode byId(int id) {
+            Mode[] all = values();
+            return all[Math.floorMod(id, all.length)];
+        }
+    }
+
+    /** Wordt naar de client gestuurd, zodat die de juiste kleur lichtjes kan tekenen. */
+    private static final EntityDataAccessor<Byte> DATA_MODE = SynchedEntityData.defineId(StarkDroneEntity.class, EntityDataSerializers.BYTE);
+
+    private @Nullable UUID ownerId;
+    /**
+     * Als dit gevuld is, jaagt de drone op dit ene wezen en niets anders (de "1 drone op 1
+     * doelwit"-aanval). Is het doelwit dood of verdwenen, dan gaat de drone naar huis.
+     */
+    private @Nullable UUID lockedTargetId;
+    /** Zolang dit > 0 is, duikt de drone nog uit de lucht naar beneden. */
+    private int diveTicks;
+    /** Nummer van de drone binnen zijn groep (voor de plek in de formatie). */
+    private int slot;
+    /** Hoe lang de drone nog leeft; -1 = onbeperkt (beschermende drones). */
+    private int lifeTicks = -1;
+    private int fireCooldown;
+    private @Nullable LivingEntity currentTarget;
+
+    public StarkDroneEntity(EntityType<? extends StarkDroneEntity> type, Level level) {
+        super(type, level);
+        this.moveControl = new DroneMoveControl(this);
+        this.setNoGravity(true);
+        this.xpReward = 0;
+    }
+
+    public static AttributeSupplier.Builder createAttributes() {
+        return Mob.createMobAttributes()
+                .add(Attributes.MAX_HEALTH, EdithBalance.DRONE_HEALTH)
+                .add(Attributes.ARMOR, 4.0)
+                .add(Attributes.FLYING_SPEED, 0.6)
+                .add(Attributes.MOVEMENT_SPEED, 0.6)
+                .add(Attributes.FOLLOW_RANGE, 32.0);
+    }
+
+    /** Stelt een nieuwe drone in. Roep dit aan voordat je hem in de wereld zet. */
+    public void setup(ServerPlayer owner, Mode mode, int slot, int lifeTicks) {
+        this.ownerId = owner.getUUID();
+        this.entityData.set(DATA_MODE, (byte) mode.ordinal());
+        this.slot = slot;
+        this.lifeTicks = lifeTicks;
+        this.fireCooldown = 10 + slot * 3; // niet allemaal tegelijk schieten
+        if (mode == Mode.SPY) {
+            // Een spion valt niet op: hij wordt niet getekend (maar hij is er wel echt,
+            // dus wie weet waar hij hangt, kan hem uit de lucht slaan).
+            setInvisible(true);
+        }
+    }
+
+    /** Deze drone jaagt alleen nog op dit wezen. */
+    public void lockOn(LivingEntity target) {
+        this.lockedTargetId = target.getUUID();
+        this.currentTarget = target;
+    }
+
+    public boolean hasLockedTarget() {
+        return lockedTargetId != null;
+    }
+
+    /** De drone komt uit de lucht: hij duikt de eerste seconden naar beneden. */
+    public void startDive() {
+        this.diveTicks = 60;
+        // Tijdens het duiken schiet hij nog niet.
+        this.fireCooldown = Math.max(this.fireCooldown, 15);
+    }
+
+    public boolean isDiving() {
+        return diveTicks > 0;
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_MODE, (byte) Mode.ATTACK.ordinal());
+    }
+
+    public Mode getMode() {
+        return Mode.byId(this.entityData.get(DATA_MODE));
+    }
+
+    public boolean isGuard() {
+        return getMode() == Mode.GUARD;
+    }
+
+    public boolean isScout() {
+        return getMode() == Mode.SCOUT;
+    }
+
+    public boolean isSpy() {
+        return getMode() == Mode.SPY;
+    }
+
+    public boolean isTransport() {
+        return getMode() == Mode.TRANSPORT;
+    }
+
+    /** Wat een transportdrone doet: jou dragen, vracht brengen, iemand oppakken of meevliegen. */
+    public enum TransportRole {
+        /** Draagt de speler (jij hangt eronder). */
+        CARRIER,
+        /** Vliegt alleen mee, voor de show. */
+        FOLLOWER,
+        /** Brengt spullen naar een plek. */
+        CARGO,
+        /** Pakt een speler/dier/monster op en zet het elders neer. */
+        GRABBER
+    }
+
+    private TransportRole transportRole = TransportRole.FOLLOWER;
+    /** Waar een transportdrone naartoe moet (autopiloot, vracht, oppakken), of null. */
+    private @Nullable BlockPos destination;
+    /** De vracht van een vrachtdrone. */
+    private final List<ItemStack> cargo = new ArrayList<>();
+
+    public TransportRole transportRole() {
+        return transportRole;
+    }
+
+    public @Nullable BlockPos destination() {
+        return destination;
+    }
+
+    /** Stelt een transportdrone in: welke rol, waar naartoe en met welke vracht. */
+    public void setupTransport(TransportRole role, @Nullable BlockPos destination, List<ItemStack> cargo) {
+        this.transportRole = role;
+        this.destination = destination;
+        this.cargo.clear();
+        this.cargo.addAll(cargo);
+    }
+
+    public boolean hasCargo() {
+        return !cargo.isEmpty();
+    }
+
+    /** Haalt de vracht uit de drone (en maakt hem leeg). */
+    public List<ItemStack> takeCargo() {
+        List<ItemStack> copy = List.copyOf(cargo);
+        cargo.clear();
+        return copy;
+    }
+
+    public int getSlot() {
+        return slot;
+    }
+
+    public boolean isOwnedBy(Player player) {
+        return player.getUUID().equals(ownerId);
+    }
+
+    private @Nullable ServerPlayer getOwner(ServerLevel level) {
+        if (ownerId == null) {
+            return null;
+        }
+        // Een spionagedrone volgt zijn doelwit, desnoods naar een andere wereld. Dan is zijn
+        // eigenaar niet in dezelfde wereld, dus zoeken we hem op de hele server.
+        if (isSpy()) {
+            return level.getServer().getPlayerList().getPlayer(ownerId);
+        }
+        return level.getPlayerByUUID(ownerId) instanceof ServerPlayer player ? player : null;
+    }
+
+    // ================================================================ Denken (elke tick, alleen op de server)
+
+    @Override
+    public void tick() {
+        super.tick();
+        setNoGravity(true);
+    }
+
+    @Override
+    protected void customServerAiStep(ServerLevel level) {
+        super.customServerAiStep(level);
+        if (fireCooldown > 0) {
+            fireCooldown--;
+        }
+
+        ServerPlayer owner = getOwner(level);
+        if (owner == null || !owner.isAlive() || owner.isSpectator() || !stillLinked(owner)) {
+            recall(level);
+            return;
+        }
+        if (lifeTicks > 0 && --lifeTicks == 0) {
+            recall(level);
+            return;
+        }
+        if (isScout()) {
+            flyAsScout(owner);
+            return;
+        }
+        if (isSpy()) {
+            flyAsSpy(level, owner);
+            return;
+        }
+        if (isTransport()) {
+            flyAsTransport(level, owner);
+            return;
+        }
+        // Net uit de lucht gekomen: een straaltje vonken achter de drone aan.
+        if (diveTicks > 0) {
+            diveTicks--;
+            if (diveTicks % 2 == 0) {
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 1, 0.05, 0.05, 0.05, 0.01);
+            }
+        }
+
+        // Jaagt de drone op één vastgezet doelwit? Dan stopt hij zodra dat doelwit weg is.
+        if (lockedTargetId != null) {
+            LivingEntity locked = level.getEntity(lockedTargetId) instanceof LivingEntity living ? living : null;
+            if (locked == null || !locked.isAlive()) {
+                EdithServer.send(owner, Component.translatable("edith.starktech.msg.strike_done"), EdithMessagePayload.Level.INFO);
+                recall(level);
+                return;
+            }
+        }
+
+        // Te ver weg (bv. eigenaar teleporteerde)? Dan springt de drone terug.
+        double leash = lockedTargetId != null ? EdithBalance.STRIKE_DRONE_RANGE + 32 : 48;
+        if (distanceToSqr(owner) > leash * leash) {
+            snapTo(owner.getX(), owner.getY() + owner.getBbHeight() + 1, owner.getZ());
+            setDeltaMovement(Vec3.ZERO);
+        }
+
+        // Elke halve seconde opnieuw kiezen wie we aanvallen.
+        if (currentTarget == null || !isValidTarget(owner, currentTarget) || tickCount % 10 == 0) {
+            currentTarget = pickTarget(level, owner);
+        }
+
+        if (currentTarget != null) {
+            engage(level, owner, currentTarget);
+        } else {
+            followOwner(owner);
+        }
+    }
+
+    /** Is de bril van de eigenaar nog verbonden met deze drone? */
+    private boolean stillLinked(ServerPlayer owner) {
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        if (glasses.isEmpty() || !EdithData.isAuthorized(glasses, owner)) {
+            return false;
+        }
+        return switch (getMode()) {
+            case ATTACK -> true;
+            case GUARD -> EdithData.isEnabled(glasses, EdithFeature.GUARD_DRONES) && EdithData.getEnergy(glasses) > 0;
+            case SCOUT -> EdithData.getEnergy(glasses) > 0 && EdithServer.isActiveScout(owner, this);
+            case SPY -> EdithData.getEnergy(glasses) > 0 && EdithSpy.isActiveSpy(owner, this);
+            case TRANSPORT -> EdithData.getEnergy(glasses) > 0;
+        };
+    }
+
+    // ---------------------------------------------------------------- Verkenningsdrone
+
+    /**
+     * De verkenningsdrone vliegt zoals de speler hem bestuurt (WASD, spatie, shift) en kijkt
+     * waar de speler kijkt. Hij mag niet te ver van het lichaam van de speler weg.
+     */
+    private void flyAsScout(ServerPlayer owner) {
+        DroneControlPayload control = EdithServer.getScoutControl(owner);
+        setYRot(control.yaw());
+        setXRot(control.pitch());
+        yBodyRot = control.yaw();
+        yHeadRot = control.yaw();
+
+        double yawRad = control.yaw() * Mth.DEG_TO_RAD;
+        Vec3 forward = new Vec3(-Math.sin(yawRad), 0, Math.cos(yawRad));
+        Vec3 left = new Vec3(Math.cos(yawRad), 0, Math.sin(yawRad));
+        Vec3 wanted = forward.scale(control.forward()).add(left.scale(control.strafe())).add(0, control.vertical(), 0);
+        if (wanted.lengthSqr() > 1) {
+            wanted = wanted.normalize();
+        }
+        wanted = wanted.scale(control.boost() ? EdithBalance.SCOUT_BOOST_SPEED : EdithBalance.SCOUT_SPEED);
+
+        // Aan een elastiekje: te ver weg? Dan trekt de verbinding hem terug.
+        Vec3 toOwner = owner.getEyePosition().subtract(position());
+        double distance = toOwner.length();
+        if (distance > EdithBalance.SCOUT_RANGE) {
+            wanted = wanted.add(toOwner.normalize().scale((distance - EdithBalance.SCOUT_RANGE) * 0.1 + 0.2));
+        }
+        setDeltaMovement(getDeltaMovement().lerp(wanted, 0.4));
+    }
+
+    // ---------------------------------------------------------------- Spionagedrone
+
+    /**
+     * De spionagedrone hangt achter en boven zijn doelwit: zo ziet hij alles, en het doelwit
+     * kijkt er net niet tegenaan. Hij vecht nooit.
+     */
+    private void flyAsSpy(ServerLevel level, ServerPlayer owner) {
+        LivingEntity target = EdithSpy.targetOf(this, owner);
+        if (target == null || target.level() != level) {
+            // Geen contact: stil blijven hangen tot E.D.I.T.H. de opdracht stopt.
+            moveControl.setWantedPosition(getX(), getY(), getZ(), 0.2);
+            return;
+        }
+        Vec3 back = Vec3.directionFromRotation(0.0f, target.getYRot()).scale(-EdithBalance.SPY_FOLLOW_DISTANCE);
+        double wantedX = target.getX() + back.x;
+        double wantedY = target.getY() + EdithBalance.SPY_FOLLOW_HEIGHT;
+        double wantedZ = target.getZ() + back.z;
+        // Hij mag stevig doorvliegen, anders raakt hij een rennende speler kwijt.
+        moveControl.setWantedPosition(wantedX, wantedY, wantedZ, 1.8);
+        getLookControl().setLookAt(target, 30.0f, 30.0f);
+        // Te veel achterstand (portaal, teleport, elytra)? Dan springt hij mee.
+        if (distanceToSqr(target) > 48 * 48) {
+            snapTo(wantedX, wantedY, wantedZ);
+            setDeltaMovement(Vec3.ZERO);
+        }
+    }
+
+    // ---------------------------------------------------------------- Transportdrones (fase 7)
+
+    /** Wat een transportdrone doet, hangt af van zijn rol. */
+    private void flyAsTransport(ServerLevel level, ServerPlayer owner) {
+        switch (transportRole) {
+            case CARRIER -> {
+                if (!(getFirstPassenger() instanceof ServerPlayer rider)) {
+                    // De speler is afgestapt (shift): dan is de rit voorbij.
+                    recall(level);
+                    return;
+                }
+                if (destination != null) {
+                    flyToDestination(level, owner);
+                } else {
+                    flyByRider(rider, level, owner);
+                }
+            }
+            case CARGO -> flyToDestination(level, owner);
+            case GRABBER -> {
+                if (getFirstPassenger() == null) {
+                    recall(level); // wie we vasthielden is weg (afgestapt of dood)
+                    return;
+                }
+                flyToDestination(level, owner);
+            }
+            case FOLLOWER -> {
+                // Escortedrones vliegen alleen mee zolang de speler echt vliegt.
+                if (EdithTransport.carrierOf(owner) == null) {
+                    recall(level);
+                    return;
+                }
+                followOwner(owner);
+            }
+        }
+    }
+
+    /**
+     * Jij stuurt: je vliegt de kant op waar je KIJKT (W/S) en zijwaarts met A/D. Spatie geeft
+     * extra lift, sprinten is sneller, en met shift stop je (de drone zet je neer).
+     */
+    private void flyByRider(ServerPlayer rider, ServerLevel level, ServerPlayer owner) {
+        Input input = rider.getLastClientInput();
+        if (input.shift()) {
+            EdithTransport.land(rider, this, true);
+            return;
+        }
+        double forward = (input.forward() ? 1 : 0) - (input.backward() ? 1 : 0);
+        double strafe = (input.left() ? 1 : 0) - (input.right() ? 1 : 0);
+        Vec3 look = rider.getLookAngle();
+        double yawRad = rider.getYRot() * Mth.DEG_TO_RAD;
+        Vec3 left = new Vec3(Math.cos(yawRad), 0, Math.sin(yawRad));
+        Vec3 wanted = look.scale(forward).add(left.scale(strafe));
+        if (input.jump()) {
+            wanted = wanted.add(0, 1.0, 0);
+        }
+        if (wanted.lengthSqr() > 1) {
+            wanted = wanted.normalize();
+        }
+        double speed = input.sprint() ? EdithBalance.TRANSPORT_BOOST_SPEED : EdithBalance.TRANSPORT_SPEED;
+        // Zonder invoer blijft hij stil hangen (hij zakt niet: hij heeft geen zwaartekracht).
+        setDeltaMovement(getDeltaMovement().lerp(wanted.scale(speed), 0.25));
+        setYRot(rider.getYRot());
+        yBodyRot = getYRot();
+        yHeadRot = getYRot();
+    }
+
+    /**
+     * Vliegt naar zijn bestemming: eerst hoog genoeg klimmen (over de bomen en heuvels),
+     * dan er naartoe, en boven de plek rustig dalen. Is hij er: afleveren.
+     */
+    private void flyToDestination(ServerLevel level, ServerPlayer owner) {
+        BlockPos target = destination;
+        if (target == null) {
+            recall(level);
+            return;
+        }
+        double dx = target.getX() + 0.5 - getX();
+        double dz = target.getZ() + 0.5 - getZ();
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        int groundHere = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(getX()), (int) Math.floor(getZ()));
+        int groundThere = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
+        double cruiseY = Math.max(groundHere, groundThere) + EdithBalance.TRANSPORT_CRUISE_HEIGHT;
+
+        if (horizontal > 2.5) {
+            if (getY() < cruiseY - 3) {
+                // Eerst rechtop klimmen, anders vlieg je door een berg.
+                moveControl.setWantedPosition(getX(), cruiseY, getZ(), 1.2);
+            } else {
+                moveControl.setWantedPosition(target.getX() + 0.5, cruiseY, target.getZ() + 0.5, 1.5);
+            }
+            return;
+        }
+        // Boven de bestemming: dalen.
+        double landY = target.getY() + 1.4;
+        moveControl.setWantedPosition(target.getX() + 0.5, landY, target.getZ() + 0.5, 0.7);
+        if (Math.abs(getY() - landY) < 1.6) {
+            EdithTransport.arrive(level, this, owner);
+        }
+    }
+
+    /** De speler (of het opgepakte wezen) hangt ONDER de drone. */
+    @Override
+    protected Vec3 getPassengerAttachmentPoint(Entity passenger, EntityDimensions dimensions, float scale) {
+        return new Vec3(0.0, -passenger.getBbHeight() - 0.3, 0.0);
+    }
+
+    /** Vracht mag nooit verdwijnen: als de drone weggaat, valt de vracht op de grond. */
+    private void dropCargo(ServerLevel level) {
+        for (ItemStack stack : takeCargo()) {
+            level.addFreshEntity(new ItemEntity(level, getX(), getY(), getZ(), stack));
+        }
+    }
+
+    // ---------------------------------------------------------------- Doelwit kiezen
+
+    private boolean isValidTarget(ServerPlayer owner, LivingEntity target) {
+        double range = lockedTargetId != null ? EdithBalance.STRIKE_DRONE_RANGE + 32 : 48;
+        return !target.isRemoved() && target.level() == level() && EdithTargeting.canTarget(owner, target)
+                && target.distanceToSqr(owner) < range * range;
+    }
+
+    private @Nullable LivingEntity pickTarget(ServerLevel level, ServerPlayer owner) {
+        // Eén vastgezet doelwit? Dan kijken we niet naar iets anders.
+        if (lockedTargetId != null) {
+            return level.getEntity(lockedTargetId) instanceof LivingEntity locked && locked.isAlive() ? locked : null;
+        }
+        // Aanvalsdrones: eerst de gemarkeerde doelwitten, verdeeld over de drones.
+        if (!isGuard()) {
+            List<LivingEntity> marked = EdithServer.getMarkedTargets(owner);
+            if (!marked.isEmpty()) {
+                return marked.get(slot % marked.size());
+            }
+        }
+        // Anders (en voor beschermende drones): vijanden rond de eigenaar.
+        double range = isGuard() ? EdithBalance.GUARD_RANGE : EdithBalance.DRONE_ATTACK_RANGE;
+        List<LivingEntity> threats = level.getEntitiesOfClass(LivingEntity.class, owner.getBoundingBox().inflate(range),
+                e -> EdithTargeting.isThreatTo(owner, e));
+        if (threats.isEmpty()) {
+            return null;
+        }
+        threats.sort(Comparator.comparingDouble(e -> e.distanceToSqr(owner)));
+        // Wie de eigenaar net aanviel, gaat voor.
+        LivingEntity attacker = owner.getLastHurtByMob();
+        if (attacker != null && threats.contains(attacker)) {
+            return attacker;
+        }
+        return threats.get(slot % Math.min(threats.size(), 3));
+    }
+
+    // ---------------------------------------------------------------- Vliegen en schieten
+
+    /** Rond het doelwit cirkelen en erop schieten. */
+    private void engage(ServerLevel level, ServerPlayer owner, LivingEntity target) {
+        double angle = tickCount * 0.06 + slot * (Math.PI * 2 / 5);
+        double radius = 3.5;
+        moveControl.setWantedPosition(
+                target.getX() + Math.cos(angle) * radius,
+                target.getY() + target.getBbHeight() + 1.5,
+                target.getZ() + Math.sin(angle) * radius,
+                1.0);
+        getLookControl().setLookAt(target, 30.0f, 30.0f);
+
+        double range = EdithBalance.DRONE_ATTACK_RANGE;
+        if (fireCooldown <= 0 && distanceToSqr(target) <= range * range && hasLineOfSight(target)) {
+            fireLaser(level, owner, target);
+            fireCooldown = EdithBalance.DRONE_FIRE_INTERVAL + random.nextInt(5);
+        }
+    }
+
+    /** Rond de eigenaar cirkelen. */
+    private void followOwner(ServerPlayer owner) {
+        double angle = tickCount * 0.05 + slot * (Math.PI * 2 / 5);
+        double radius = isGuard() ? 1.8 : 2.8;
+        double height = owner.getBbHeight() + (isGuard() ? 0.5 : 1.4);
+        moveControl.setWantedPosition(
+                owner.getX() + Math.cos(angle) * radius,
+                owner.getY() + height,
+                owner.getZ() + Math.sin(angle) * radius,
+                0.8);
+    }
+
+    private void fireLaser(ServerLevel level, ServerPlayer owner, LivingEntity target) {
+        Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
+        Vec3 to = target.getBoundingBox().getCenter();
+        DamageSource source = ModDamageTypes.droneLaser(level, this, owner);
+        target.hurtServer(level, source, EdithBalance.DRONE_LASER_DAMAGE);
+        playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f + random.nextFloat() * 0.3f);
+        ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
+    }
+
+    /** Terugroepen: de drone verdwijnt met een wolkje en een geluid. */
+    public void recall(ServerLevel level) {
+        dropCargo(level);
+        level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.2, getZ(), 6, 0.2, 0.1, 0.2, 0.02);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 8, 0.3, 0.2, 0.3, 0.1);
+        level.playSound(null, getX(), getY(), getZ(), ModSounds.DRONE_RECALL.get(), SoundSource.NEUTRAL, 0.7f, 1.3f);
+        discard();
+    }
+
+    // ================================================================ Gedrag als wezen
+
+    /** De eigenaar (en zijn andere drones) kunnen deze drone geen pijn doen. */
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        Entity attacker = source.getEntity();
+        if (attacker != null && ownerId != null
+                && (ownerId.equals(attacker.getUUID()) || attacker instanceof StarkDroneEntity)) {
+            return false;
+        }
+        return super.hurtServer(level, source, damage);
+    }
+
+    @Override
+    public void die(DamageSource source) {
+        super.die(source);
+        if (level() instanceof ServerLevel level) {
+            dropCargo(level);
+            level.sendParticles(ParticleTypes.LARGE_SMOKE, getX(), getY() + 0.2, getZ(), 8, 0.2, 0.2, 0.2, 0.02);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 12, 0.3, 0.3, 0.3, 0.2);
+        }
+    }
+
+    @Override
+    protected @Nullable SoundEvent getHurtSound(DamageSource source) {
+        return ModSounds.DRONE_HURT.get();
+    }
+
+    @Override
+    protected @Nullable SoundEvent getDeathSound() {
+        return ModSounds.DRONE_DESTROYED.get();
+    }
+
+    @Override
+    public boolean isPushable() {
+        return false;
+    }
+
+    @Override
+    protected void pushEntities() {
+        // Drones duwen niemand opzij.
+    }
+
+    @Override
+    public boolean removeWhenFarAway(double distanceSqr) {
+        return false;
+    }
+
+    @Override
+    public boolean canBeLeashed() {
+        return false;
+    }
+
+    @Override
+    public boolean canBreatheUnderwater() {
+        return true;
+    }
+
+    @Override
+    protected void checkFallDamage(double distance, boolean onGround, net.minecraft.world.level.block.state.BlockState state, net.minecraft.core.BlockPos pos) {
+        // Drones vliegen; ze vallen niet.
+    }
+
+    // ================================================================ Besturing
+
+    /**
+     * Vliegt in een rechte lijn naar de gewenste plek (zoals de Vex uit Minecraft,
+     * maar dan zonder door muren te gaan).
+     */
+    private static class DroneMoveControl extends MoveControl<StarkDroneEntity> {
+        DroneMoveControl(StarkDroneEntity drone) {
+            super(drone);
+        }
+
+        @Override
+        public void tick() {
+            if (mob.isScout()) {
+                return; // de verkenner wordt rechtstreeks bestuurd
+            }
+            if (operation != Operation.MOVE_TO) {
+                // Stilhangen: langzaam afremmen.
+                mob.setDeltaMovement(mob.getDeltaMovement().scale(0.8));
+                return;
+            }
+            Vec3 delta = new Vec3(wantedX - mob.getX(), wantedY - mob.getY(), wantedZ - mob.getZ());
+            double length = delta.length();
+            if (length < 0.3) {
+                operation = Operation.WAIT;
+                mob.setDeltaMovement(mob.getDeltaMovement().scale(0.5));
+                return;
+            }
+            // Versnellen richting het doel; dichtbij rustiger aan.
+            double speed = speedModifier * 0.06 * Math.min(1.0, length / 2.0);
+            mob.setDeltaMovement(mob.getDeltaMovement().add(delta.scale(speed / length)));
+            if (mob.currentTarget == null) {
+                Vec3 motion = mob.getDeltaMovement();
+                if (motion.horizontalDistanceSqr() > 0.001) {
+                    mob.setYRot(-((float) Mth.atan2(motion.x, motion.z)) * Mth.RAD_TO_DEG);
+                    mob.yBodyRot = mob.getYRot();
+                }
+            } else {
+                double dx = mob.currentTarget.getX() - mob.getX();
+                double dz = mob.currentTarget.getZ() - mob.getZ();
+                mob.setYRot(-((float) Mth.atan2(dx, dz)) * Mth.RAD_TO_DEG);
+                mob.yBodyRot = mob.getYRot();
+            }
+        }
+    }
+}

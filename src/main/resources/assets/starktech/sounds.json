@@ -1,0 +1,164 @@
+{
+  "edith.boot": {
+    "subtitle": "subtitles.starktech.edith.boot",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.activate",
+        "type": "event"
+      }
+    ]
+  },
+  "edith.notify": {
+    "subtitle": "subtitles.starktech.edith.notify",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.pling",
+        "type": "event"
+      }
+    ]
+  },
+  "edith.alert": {
+    "subtitle": "subtitles.starktech.edith.alert",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.bit",
+        "type": "event"
+      }
+    ]
+  },
+  "edith.denied": {
+    "subtitle": "subtitles.starktech.edith.denied",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.bass",
+        "type": "event"
+      }
+    ]
+  },
+  "edith.scan": {
+    "subtitle": "subtitles.starktech.edith.scan",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.power_select",
+        "type": "event"
+      }
+    ]
+  },
+  "edith.menu_open": {
+    "subtitle": "subtitles.starktech.edith.menu_open",
+    "sounds": [
+      {
+        "name": "minecraft:block.amethyst_block.chime",
+        "type": "event"
+      }
+    ]
+  },
+  "edith.select": {
+    "subtitle": "subtitles.starktech.edith.select",
+    "sounds": [
+      {
+        "name": "minecraft:ui.button.click",
+        "type": "event"
+      }
+    ]
+  },
+  "station.upgrade": {
+    "subtitle": "subtitles.starktech.station.upgrade",
+    "sounds": [
+      {
+        "name": "minecraft:block.smithing_table.use",
+        "type": "event"
+      }
+    ]
+  },
+  "drone.deploy": {
+    "subtitle": "subtitles.starktech.drone.deploy",
+    "sounds": [
+      {
+        "name": "minecraft:block.dispenser.launch",
+        "type": "event"
+      }
+    ]
+  },
+  "drone.laser": {
+    "subtitle": "subtitles.starktech.drone.laser",
+    "sounds": [
+      {
+        "name": "minecraft:entity.firework_rocket.shoot",
+        "type": "event"
+      }
+    ]
+  },
+  "drone.recall": {
+    "subtitle": "subtitles.starktech.drone.recall",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.deactivate",
+        "type": "event"
+      }
+    ]
+  },
+  "drone.hurt": {
+    "subtitle": "subtitles.starktech.drone.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.iron_golem.hurt",
+        "type": "event"
+      }
+    ]
+  },
+  "drone.destroyed": {
+    "subtitle": "subtitles.starktech.drone.destroyed",
+    "sounds": [
+      {
+        "name": "minecraft:entity.generic.explode",
+        "type": "event"
+      }
+    ]
+  },
+  "satellite.lock": {
+    "subtitle": "subtitles.starktech.satellite.lock",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.chime",
+        "type": "event"
+      }
+    ]
+  },
+  "satellite.charge": {
+    "subtitle": "subtitles.starktech.satellite.charge",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "satellite.fire": {
+    "subtitle": "subtitles.starktech.satellite.fire",
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.sonic_boom",
+        "type": "event"
+      }
+    ]
+  },
+  "comms.message": {
+    "subtitle": "subtitles.starktech.comms.message",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.chime",
+        "type": "event"
+      }
+    ]
+  },
+  "comms.ping": {
+    "subtitle": "subtitles.starktech.comms.ping",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.bell",
+        "type": "event"
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+package com.senne.starktech.redstone;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+
+/**
+ * Eén plek die E.D.I.T.H. kan aansturen: een E.D.I.T.H.-relais dat je ergens hebt neergezet.
+ *
+ * Je geeft het een naam ("voordeur", "lichten keuken") en een groep ("huis", "val"). Zo kun je
+ * er één aanzetten, of een hele groep tegelijk.
+ *
+ * @param name      de naam die jij eraan gaf
+ * @param group     de groep waarin het zit (lege naam = groep "algemeen")
+ * @param dimension in welke wereld het staat
+ * @param pos       waar het staat
+ */
+public record Relay(String name, String group, ResourceKey<Level> dimension, BlockPos pos) {
+    /** De groep als je zelf niets invult. */
+    public static final String DEFAULT_GROUP = "algemeen";
+
+    public static final Codec<Relay> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.STRING.fieldOf("name").forGetter(Relay::name),
+            Codec.STRING.optionalFieldOf("group", DEFAULT_GROUP).forGetter(Relay::group),
+            Level.RESOURCE_KEY_CODEC.fieldOf("dimension").forGetter(Relay::dimension),
+            BlockPos.CODEC.fieldOf("pos").forGetter(Relay::pos)
+    ).apply(instance, Relay::new));
+
+    public static final StreamCodec<ByteBuf, Relay> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, Relay::name,
+            ByteBufCodecs.STRING_UTF8, Relay::group,
+            ResourceKey.streamCodec(Registries.DIMENSION), Relay::dimension,
+            BlockPos.STREAM_CODEC, Relay::pos,
+            Relay::new);
+
+    public Relay withName(String newName) {
+        return new Relay(newName, group, dimension, pos);
+    }
+
+    public Relay withGroup(String newGroup) {
+        return new Relay(name, newGroup, dimension, pos);
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": "#c:ingots/copper",
+    "R": "#c:storage_blocks/redstone",
+    "C": "starktech:stark_chip"
+  },
+  "pattern": [
+    "KRK",
+    "RCR",
+    "KRK"
+  ],
+  "result": {
+    "id": "starktech:battery_upgrade"
+  }
+}

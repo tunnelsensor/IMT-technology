@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": "#c:ingots/iron",
+    "C": "starktech:stark_chip",
+    "R": "#c:storage_blocks/redstone"
+  },
+  "pattern": [
+    "ICI",
+    "IRI",
+    "III"
+  ],
+  "result": {
+    "id": "starktech:charging_station"
+  }
+}

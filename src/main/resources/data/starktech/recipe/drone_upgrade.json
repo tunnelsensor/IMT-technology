@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": "#c:ingots/iron",
+    "F": "#c:feathers",
+    "R": "#c:dusts/redstone",
+    "C": "starktech:stark_chip"
+  },
+  "pattern": [
+    "IRI",
+    "FCF",
+    "IRI"
+  ],
+  "result": {
+    "id": "starktech:drone_upgrade"
+  }
+}

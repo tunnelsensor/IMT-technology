@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": "#c:ingots/iron",
+    "C": "starktech:stark_chip",
+    "T": "minecraft:tinted_glass",
+    "N": "#c:ingots/netherite",
+    "D": "#c:gems/diamond"
+  },
+  "pattern": [
+    "ICI",
+    "TNT",
+    " D "
+  ],
+  "result": {
+    "id": "starktech:edith_glasses"
+  }
+}
