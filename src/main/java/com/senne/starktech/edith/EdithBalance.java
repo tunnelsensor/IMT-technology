@@ -225,6 +225,20 @@ public final class EdithBalance {
     /** Hoeveel stapels een vrachtdrone kan meenemen. */
     public static final int CARGO_SLOTS = 27;
 
+    // ---------------------------------------------------------------- Rayshield
+    /** Extra energie per seconde zolang je persoonlijke schild aan staat. */
+    public static final int DRAIN_SHIELD = 5;
+    /** Hoeveel energie één punt tegengehouden schade kost (2 schade = 1 hartje). */
+    public static final int SHIELD_COST_PER_DAMAGE = 120;
+    /** Hoe lang een laserwand maximaal wordt (in blokken). */
+    public static final int LASER_MAX_LENGTH = 16;
+    /** Schade als je de laserwand aanraakt (4 = 2 hartjes). */
+    public static final float LASER_WALL_DAMAGE = 4.0f;
+    /** De grootte van de schildkoepel (in blokken). */
+    public static final double DOME_RADIUS = 20.0;
+    /** Hoe hard de koepel monsters naar buiten duwt. */
+    public static final double DOME_PUSH = 0.8;
+
     // ---------------------------------------------------------------- Hack player
     /** Hoeveel spelers je tegelijk kunt hacken. */
     public static final int MAX_HACKS = 3;

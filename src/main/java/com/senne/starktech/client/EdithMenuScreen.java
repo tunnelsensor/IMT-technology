@@ -64,6 +64,7 @@ public class EdithMenuScreen extends Screen {
     // ---------------------------------------------------------------- De opties per tabblad (met de klok mee vanaf boven)
 
     private static final List<Option> COMBAT = List.of(
+            action(EdithAction.TOGGLE_SHIELD),
             action(EdithAction.LAUNCH_DRONES),
             action(EdithAction.DRONE_STRIKE),
             action(EdithAction.TOGGLE_GUARD_DRONES),

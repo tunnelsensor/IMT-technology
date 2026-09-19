@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "starktech:block/dome_generator"
+    },
+    "powered=true": {
+      "model": "starktech:block/dome_generator_on"
+    }
+  }
+}

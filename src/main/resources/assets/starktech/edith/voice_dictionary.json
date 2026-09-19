@@ -593,6 +593,46 @@
       ]
     },
     {
+      "name": "Schild aan",
+      "actions": [
+        {
+          "action": "shield_on"
+        }
+      ],
+      "phrases": [
+        "schild aan",
+        "zet het schild aan",
+        "rayshield aan",
+        "activeer het schild",
+        "bescherm mij met het schild",
+        "schild omhoog",
+        "shields up",
+        "shield on",
+        "raise the shield",
+        "activate the shield",
+        "shields"
+      ]
+    },
+    {
+      "name": "Schild uit",
+      "actions": [
+        {
+          "action": "shield_off"
+        }
+      ],
+      "phrases": [
+        "schild uit",
+        "zet het schild uit",
+        "rayshield uit",
+        "schild omlaag",
+        "laat het schild zakken",
+        "shield off",
+        "shields down",
+        "lower the shield",
+        "deactivate the shield"
+      ]
+    },
+    {
       "name": "Escorte uit",
       "actions": [
         {

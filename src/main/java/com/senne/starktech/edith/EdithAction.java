@@ -53,7 +53,10 @@ public enum EdithAction {
     /** De speler waar je naar kijkt hacken (of de hack stoppen). */
     HACK_PLAYER("hack_player", null),
     /** Alle hacks stoppen. */
-    HACK_STOP("hack_stop", null);
+    HACK_STOP("hack_stop", null),
+    // Fase 11
+    /** Persoonlijk schild aan/uit. */
+    TOGGLE_SHIELD("toggle_shield", EdithFeature.SHIELD);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

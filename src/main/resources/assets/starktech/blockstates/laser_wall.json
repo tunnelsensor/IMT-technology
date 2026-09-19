@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "starktech:block/laser_wall"
+    }
+  }
+}

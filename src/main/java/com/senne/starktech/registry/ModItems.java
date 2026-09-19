@@ -48,4 +48,10 @@ public final class ModItems {
             ModBlocks.CHARGING_STATION);
 
     public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
+
+    // Fase 11: rayshield (de laserwand zelf heeft geen item: die hoort bij de zenders)
+    public static final DeferredItem<BlockItem> LASER_EMITTER = ITEMS.registerSimpleBlockItem("laser_emitter",
+            ModBlocks.LASER_EMITTER);
+    public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
+            ModBlocks.DOME_GENERATOR);
 }

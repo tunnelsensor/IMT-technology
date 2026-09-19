@@ -408,6 +408,42 @@ def relay_textures():
     save(bottom, "block/relay_bottom.png")
 
 
+# --------------------------------------------------------------------- Fase 11: rayshield
+
+def shield_textures():
+    """Laserzender (met lens) en de rode energiewand."""
+    # Zijkant van de zender: donker metaal met koelribben
+    side = img(16, 16, METAL_DARK)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 0], fill=METAL_2)
+    for y in (4, 7, 10):
+        d.line([2, y, 13, y], fill=METAL_1)
+    d.line([1, 13, 14, 13], fill=(150, 30, 30, 255))
+    save(side, "block/emitter_side.png")
+
+    # De lens: uit = donkerrood, aan = fel rood met een gloed
+    def lens(dark, bright, glow):
+        im = img(16, 16, METAL_1)
+        dd = ImageDraw.Draw(im)
+        dd.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        dd.ellipse([3, 3, 12, 12], fill=dark, outline=METAL_3)
+        dd.ellipse([5, 5, 10, 10], fill=bright)
+        px(im, [(7, 7), (8, 8)], glow)
+        return im
+
+    save(lens((70, 20, 20, 255), (120, 35, 35, 255), (160, 60, 60, 255)), "block/emitter_lens.png")
+    save(lens((180, 30, 30, 255), (255, 90, 80, 255), (255, 220, 210, 255)), "block/emitter_lens_on.png")
+
+    # De energiewand: rode strepen die door elkaar lopen, half doorzichtig
+    wall = img(16, 16, (200, 40, 40, 110))
+    d = ImageDraw.Draw(wall)
+    for y in range(0, 16, 3):
+        d.line([0, y, 15, y], fill=(255, 120, 100, 170))
+    for x in range(1, 16, 5):
+        d.line([x, 0, x, 15], fill=(255, 190, 170, 130))
+    save(wall, "block/laser_wall.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -419,3 +455,4 @@ if __name__ == "__main__":
     drone_upgrade()
     drone_textures()
     relay_textures()
+    shield_textures()

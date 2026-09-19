@@ -161,6 +161,9 @@ public final class VoiceControl {
         Minecraft mc = Minecraft.getInstance();
         switch (action) {
             case LAUNCH_DRONES -> EdithClientEvents.sendAction(EdithAction.LAUNCH_DRONES);
+            case SHIELD_ON -> setFeature(EdithFeature.SHIELD, true, quiet);
+            case SHIELD_OFF -> setFeature(EdithFeature.SHIELD, false, quiet);
+            case SHIELD_TOGGLE -> EdithClientEvents.sendAction(EdithAction.TOGGLE_SHIELD);
             case ESCORT_ON -> setFeature(EdithFeature.GUARD_DRONES, true, quiet);
             case ESCORT_OFF -> setFeature(EdithFeature.GUARD_DRONES, false, quiet);
             case ESCORT_TOGGLE -> EdithClientEvents.sendAction(EdithAction.TOGGLE_GUARD_DRONES);

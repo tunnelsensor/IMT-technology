@@ -8,6 +8,7 @@ import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.shield.EdithSwitchable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -188,6 +189,23 @@ public final class EdithRedstone {
             level.getChunk(pos);
         }
         BlockState state = level.getBlockState(pos);
+        // E.D.I.T.H. kan een relais schakelen, maar ook een laserzender of schildkoepel
+        // (die doen er zelf nog iets bij; zie EdithSwitchable).
+        if (state.getBlock() instanceof EdithSwitchable switchable) {
+            boolean now = switchable.isSwitchedOn(state);
+            boolean wanted = switch (op) {
+                case ON, PULSE -> true;
+                case OFF -> false;
+                case TOGGLE -> !now;
+            };
+            if (now != wanted) {
+                switchable.setSwitched(level, pos, state, wanted);
+            }
+            if (op == Op.PULSE) {
+                PULSES.add(new Pulse(relay.dimension(), pos, EdithBalance.RELAY_PULSE_TICKS));
+            }
+            return true;
+        }
         if (!(state.getBlock() instanceof RelayBlock)) {
             return false; // weggehaald of opgeblazen
         }
@@ -228,7 +246,9 @@ public final class EdithRedstone {
                 level.getChunk(pulse.pos);
             }
             BlockState state = level.getBlockState(pulse.pos);
-            if (state.getBlock() instanceof RelayBlock && state.getValue(RelayBlock.POWERED)) {
+            if (state.getBlock() instanceof EdithSwitchable switchable && switchable.isSwitchedOn(state)) {
+                switchable.setSwitched(level, pulse.pos, state, false);
+            } else if (state.getBlock() instanceof RelayBlock && state.getValue(RelayBlock.POWERED)) {
                 level.setBlock(pulse.pos, state.setValue(RelayBlock.POWERED, false), Block.UPDATE_ALL);
                 level.playSound(null, pulse.pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4f, 0.55f);
             }

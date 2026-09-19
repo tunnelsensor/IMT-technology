@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "G": {
+      "item": "minecraft:glowstone"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "RCR",
+    "III"
+  ],
+  "result": {
+    "id": "starktech:laser_emitter",
+    "count": 2
+  }
+}

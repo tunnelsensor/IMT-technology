@@ -57,6 +57,10 @@ public enum VoiceAction {
     TARGET_ANALYSIS_ON(Group.SCANNER, false),
     TARGET_ANALYSIS_OFF(Group.SCANNER, false),
     TARGET_ANALYSIS_TOGGLE(Group.SCANNER, false),
+    /** Fase 11: het persoonlijke rayshield aan of uit. */
+    SHIELD_ON(Group.COMBAT, false),
+    SHIELD_OFF(Group.COMBAT, false),
+    SHIELD_TOGGLE(Group.COMBAT, false),
     /** Fase 10: de speler waar je naar kijkt hacken (of stoppen). */
     HACK_PLAYER(Group.TECH, false),
     HACK_STOP(Group.TECH, false),

@@ -10,7 +10,9 @@ public enum EdithFeature {
     THREAT_SCAN("threat_scan", EdithBalance.DRAIN_THREAT_SCAN, false),
     TARGET_ANALYSIS("target_analysis", EdithBalance.DRAIN_TARGET_ANALYSIS, true),
     // Fase 2. Nieuwe functies altijd ONDERAAN toevoegen, anders kloppen opgeslagen brillen niet meer.
-    GUARD_DRONES("guard_drones", EdithBalance.DRAIN_GUARD_DRONES, false);
+    GUARD_DRONES("guard_drones", EdithBalance.DRAIN_GUARD_DRONES, false),
+    // Fase 11: het persoonlijke rayshield.
+    SHIELD("shield", EdithBalance.DRAIN_SHIELD, false);
 
     private final String id;
     private final int drainPerSecond;
