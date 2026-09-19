@@ -88,6 +88,9 @@ public final class ModNetwork {
         // Fase 9: het scherm om een relais een naam te geven
         registrar.playToClient(RelayEditPayload.TYPE, RelayEditPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onRelayEdit(payload, context));
+        // Fase 10: onderschept privébericht
+        registrar.playToClient(HackMessagePayload.TYPE, HackMessagePayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onHackMessage(payload, context));
     }
 
     /**

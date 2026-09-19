@@ -17,6 +17,7 @@ import com.senne.starktech.redstone.Relay;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModAttachments;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -114,6 +115,7 @@ public class EdithHud implements LayeredDraw.Layer {
             renderPings(g, font, now);
             renderSpyTarget(g, font, player, now);
             renderRelays(g, font);
+            renderHackBubbles(g, font, mc, now);
             renderSatelliteStrike(g, font, w, h, now, !menuOpen);
             if (!menuOpen) {
                 renderCompass(g, font, player, w);
@@ -227,6 +229,12 @@ public class EdithHud implements LayeredDraw.Layer {
             panelText(g, font, Component.translatable("hud.starktech.flying"), x, y, argb(240, CYAN));
             y += LINE;
             panelText(g, font, Component.translatable("hud.starktech.flying_help"), x + 6, y, argb(190, WHITE));
+            y += LINE;
+        }
+        // Wie je hackt
+        if (EdithClientState.hackedCount > 0) {
+            panelText(g, font, Component.translatable("hud.starktech.hacked", EdithClientState.hackedCount),
+                    x, y, argb(235, RED));
             y += LINE;
         }
         // Spionagedrone: wie hij volgt, hoe lang nog en hoeveel leven het doelwit heeft
@@ -417,6 +425,40 @@ public class EdithHud implements LayeredDraw.Layer {
                             w / 2, h / 2 + 34, argb(pulse, ORANGE));
                 }
             }
+        }
+    }
+
+    /**
+     * De onderschepte privéberichten van gehackte spelers: een ballonnetje boven hun hoofd.
+     * Je ziet ze alleen zolang je die speler in beeld hebt (de server stuurt ze ook alleen dan).
+     */
+    private void renderHackBubbles(GuiGraphics g, Font font, Minecraft mc, long now) {
+        if (EdithClientState.hackBubbles.isEmpty() || mc.level == null) {
+            return;
+        }
+        EdithClientState.hackBubbles.removeIf(bubble -> now > bubble.endMillis());
+        // Per speler stapelen we de regels boven elkaar.
+        Map<Integer, Integer> lines = new HashMap<>();
+        for (EdithClientState.HackBubble bubble : EdithClientState.hackBubbles) {
+            if (!(mc.level.getEntity(bubble.entityId()) instanceof LivingEntity entity) || !entity.isAlive()) {
+                continue;
+            }
+            int line = lines.merge(bubble.entityId(), 1, Integer::sum) - 1;
+            WorldProjection.ScreenPoint point = projection.project(
+                    entity.position().add(0, entity.getBbHeight() + 0.8, 0));
+            if (point == null || !projection.isOnScreen(point, 0)) {
+                continue;
+            }
+            String text = bubble.text().getString();
+            int width = font.width(text);
+            int x = (int) point.x() - width / 2;
+            int y = (int) point.y() - 12 - line * 11;
+            // Laatste seconde: langzaam wegvagen.
+            long left = bubble.endMillis() - now;
+            int alpha = (int) Math.min(255, Math.max(40, left / 4));
+            g.fill(x - 3, y - 2, x + width + 3, y + 9, argb(alpha * 3 / 5, 0x0A1520));
+            brackets(g, x - 3, y - 2, x + width + 3, y + 9, 3, argb(alpha, bubble.outgoing() ? ORANGE : GREEN));
+            g.drawString(font, text, x, y, argb(alpha, bubble.outgoing() ? ORANGE : GREEN), false);
         }
     }
 

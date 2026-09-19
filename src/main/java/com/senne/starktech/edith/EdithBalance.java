@@ -225,6 +225,21 @@ public final class EdithBalance {
     /** Hoeveel stapels een vrachtdrone kan meenemen. */
     public static final int CARGO_SLOTS = 27;
 
+    // ---------------------------------------------------------------- Hack player
+    /** Hoeveel spelers je tegelijk kunt hacken. */
+    public static final int MAX_HACKS = 3;
+    /** Energie per seconde per gehackte speler. */
+    public static final int DRAIN_HACK = 3;
+    /** Tot hoe ver je een gehackte speler kunt "afluisteren" (in blokken). */
+    public static final double HACK_RANGE = 64.0;
+    /**
+     * Hoe recht je naar hem moet kijken (1 = precies in het midden van je beeld, 0 = naast je).
+     * 0,45 komt ongeveer overeen met "hij staat in je beeld".
+     */
+    public static final double HACK_VIEW_DOT = 0.45;
+    /** Hoe lang een onderschept bericht boven zijn hoofd blijft staan (in milliseconden). */
+    public static final long HACK_BUBBLE_MILLIS = 9_000;
+
     // ---------------------------------------------------------------- Redstone-relais
     /** Hoeveel relais je kunt aanmelden. */
     public static final int MAX_RELAYS = 64;

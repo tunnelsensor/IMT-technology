@@ -48,7 +48,12 @@ public enum EdithAction {
     SATELLITE_MODE("satellite_mode", null),
     SATELLITE_PRECISION("satellite_precision", null),
     SATELLITE_BOMBARDMENT("satellite_bombardment", null),
-    SATELLITE_SWEEP("satellite_sweep", null);
+    SATELLITE_SWEEP("satellite_sweep", null),
+    // Fase 10
+    /** De speler waar je naar kijkt hacken (of de hack stoppen). */
+    HACK_PLAYER("hack_player", null),
+    /** Alle hacks stoppen. */
+    HACK_STOP("hack_stop", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

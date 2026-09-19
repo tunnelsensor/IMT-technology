@@ -506,6 +506,58 @@
       ]
     },
     {
+      "name": "Hack speler",
+      "actions": [
+        {
+          "action": "hack_player"
+        }
+      ],
+      "phrases": [
+        "hack hem",
+        "hack haar",
+        "hack die speler",
+        "hack deze speler",
+        "luister hem af",
+        "luister haar af",
+        "onderschep zijn berichten",
+        "onderschep haar berichten",
+        "wat stuurt hij",
+        "wat stuurt zij",
+        "lees zijn berichten",
+        "lees haar berichten",
+        "tap hem af",
+        "hack him",
+        "hack her",
+        "hack that player",
+        "tap his messages",
+        "tap her messages",
+        "read his messages",
+        "read her messages",
+        "what is he sending",
+        "what is she sending",
+        "listen in on him"
+      ]
+    },
+    {
+      "name": "Hack stoppen",
+      "actions": [
+        {
+          "action": "hack_stop"
+        }
+      ],
+      "phrases": [
+        "stop de hack",
+        "stop met hacken",
+        "stop het afluisteren",
+        "hack niemand meer",
+        "laat hem met rust",
+        "stop hacking",
+        "stop the hack",
+        "stop listening in",
+        "leave him alone"
+      ]
+    },
+    {
       "name": "Escorte aan",
       "actions": [
         {

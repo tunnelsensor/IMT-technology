@@ -74,7 +74,9 @@ public class EdithMenuScreen extends Screen {
 
     /** Tabblad Tech: dingen in je wereld aansturen. */
     private static final List<Option> TECH = List.of(
-            open("screen.starktech.menu.redstone", EdithHud.ORANGE, RelayListScreen::new));
+            open("screen.starktech.menu.redstone", EdithHud.ORANGE, RelayListScreen::new),
+            action(EdithAction.HACK_PLAYER),
+            action(EdithAction.HACK_STOP));
 
     /** Tabblad Transport: laat je vervoeren of stuur spullen weg. */
     private static final List<Option> TRANSPORT = List.of(
@@ -304,6 +306,12 @@ public class EdithMenuScreen extends Screen {
                     : costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case CARGO_DRONE, CARRY_ENTITY ->
                     costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
+            case HACK_PLAYER -> EdithClientState.hackedCount > 0
+                    ? new Status(Component.translatable("screen.starktech.hack.count", EdithClientState.hackedCount), EdithHud.RED)
+                    : new Status(Component.translatable("screen.starktech.hack.look"), EdithHud.CYAN);
+            case HACK_STOP -> EdithClientState.hackedCount > 0
+                    ? new Status(Component.translatable("screen.starktech.hack.stop"), EdithHud.ORANGE)
+                    : new Status(Component.translatable("screen.starktech.none"), GREY);
             case SPY_DRONE -> EdithClientState.spyActive
                     ? new Status(Component.translatable("screen.starktech.spy.recall"), EdithHud.PURPLE)
                     : costOrCooldown(EdithBalance.SPY_COST, EdithClientState.cooldown(EdithCooldown.SPY));

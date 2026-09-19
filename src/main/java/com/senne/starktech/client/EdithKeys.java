@@ -51,6 +51,9 @@ public final class EdithKeys {
     // Fase 9
     /** Het redstone-scherm openen (al je relais, per groep). */
     public static final KeyMapping REDSTONE = key("redstone", InputConstants.KEY_APOSTROPHE);
+    // Fase 10
+    /** De speler waar je naar kijkt hacken (of de hack stoppen). */
+    public static final KeyMapping HACK = key("hack", InputConstants.KEY_SEMICOLON);
     // Fase 4
     /** Ingedrukt houden = E.D.I.T.H. luistert naar een (Engels) spraakcommando; loslaten = uitvoeren. */
     public static final KeyMapping PUSH_TO_TALK = key("push_to_talk", InputConstants.KEY_Z);
@@ -78,5 +81,6 @@ public final class EdithKeys {
         event.register(SPY_DRONE);
         event.register(STAND_DOWN);
         event.register(REDSTONE);
+        event.register(HACK);
     }
 }

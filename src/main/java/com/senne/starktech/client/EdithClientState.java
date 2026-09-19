@@ -171,6 +171,33 @@ public final class EdithClientState {
         return seconds / 60 + ":" + (seconds % 60 < 10 ? "0" : "") + seconds % 60;
     }
 
+    // ---------------------------------------------------------------- Fase 10: hack player
+
+    /**
+     * Een onderschept privébericht dat nu boven het hoofd van een speler staat.
+     *
+     * @param entityId  welke speler
+     * @param text      wat er gezegd werd
+     * @param outgoing  true = hij stuurde het, false = hij kreeg het
+     * @param endMillis tot wanneer het blijft staan
+     */
+    public record HackBubble(int entityId, Component text, boolean outgoing, long endMillis) {}
+
+    public static final List<HackBubble> hackBubbles = new ArrayList<>();
+    /** Hoeveel spelers je nu hackt (voor het paneel links). */
+    public static int hackedCount;
+
+    /** Zet een nieuw ballonnetje boven een speler (maximaal 3 per speler). */
+    public static void addHackBubble(int entityId, Component text, boolean outgoing, long millis) {
+        long now = Util.getMillis();
+        hackBubbles.removeIf(bubble -> now > bubble.endMillis());
+        long sameEntity = hackBubbles.stream().filter(bubble -> bubble.entityId() == entityId).count();
+        if (sameEntity >= 3) {
+            hackBubbles.stream().filter(bubble -> bubble.entityId() == entityId).findFirst().ifPresent(hackBubbles::remove);
+        }
+        hackBubbles.add(new HackBubble(entityId, text, outgoing, now + millis));
+    }
+
     // ---------------------------------------------------------------- Fase 7: transport
 
     /** Hang je op dit moment onder een transportdrone? */
@@ -207,5 +234,7 @@ public final class EdithClientState {
         spyLogLines = 0;
         spyReport = List.of();
         flying = false;
+        hackBubbles.clear();
+        hackedCount = 0;
     }
 }

@@ -57,6 +57,9 @@ public enum VoiceAction {
     TARGET_ANALYSIS_ON(Group.SCANNER, false),
     TARGET_ANALYSIS_OFF(Group.SCANNER, false),
     TARGET_ANALYSIS_TOGGLE(Group.SCANNER, false),
+    /** Fase 10: de speler waar je naar kijkt hacken (of stoppen). */
+    HACK_PLAYER(Group.TECH, false),
+    HACK_STOP(Group.TECH, false),
     // Fase 9: redstone aansturen (met de naam van een relais of groep)
     REDSTONE_ON(Group.TECH, true),
     REDSTONE_OFF(Group.TECH, true),

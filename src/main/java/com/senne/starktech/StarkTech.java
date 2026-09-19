@@ -15,6 +15,7 @@ import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModMenus;
 import com.senne.starktech.registry.ModSounds;
+import com.senne.starktech.hack.EdithHack;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.spy.EdithSpy;
@@ -85,6 +86,10 @@ public class StarkTech {
         // Fase 9: redstone-relais (pulsen aftellen)
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerTick);
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerStopped);
+        // Fase 10: privéberichten onderscheppen (hack player)
+        NeoForge.EVENT_BUS.addListener(EdithHack::onCommand);
+        NeoForge.EVENT_BUS.addListener(EdithHack::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(EdithHack::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SatelliteStrikes::onServerTick);
         NeoForge.EVENT_BUS.addListener(SatelliteStrikes::onServerStopped);
 

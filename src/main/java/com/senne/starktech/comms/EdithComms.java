@@ -6,6 +6,7 @@ import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.hack.EdithHack;
 import com.senne.starktech.network.CommsPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.ModNetwork;
@@ -71,6 +72,8 @@ public final class EdithComms {
             }
             Component message = Component.translatable("edith.starktech.comms.broadcast", senderName, body);
             recipients.forEach(p -> EdithServer.send(p, message, EdithMessagePayload.Level.COMMS));
+            // Wie gehackt wordt, verraadt ook zijn E.D.I.T.H.-berichten (fase 10).
+            EdithHack.relay(sender, recipients, text);
             EdithServer.send(sender, Component.translatable("edith.starktech.comms.sent_all", recipients.size(), body), EdithMessagePayload.Level.COMMS);
             StarkTech.LOGGER.info("[E.D.I.T.H. comms] {} -> iedereen ({}): {}", senderName, recipients.size(), text);
         } else {
@@ -81,6 +84,7 @@ public final class EdithComms {
                         EdithMessagePayload.Level.WARNING);
                 return;
             }
+            EdithHack.relay(sender, List.of(target), text);
             EdithServer.send(target, Component.translatable("edith.starktech.comms.direct", senderName, body), EdithMessagePayload.Level.COMMS);
             EdithServer.send(sender, Component.translatable("edith.starktech.comms.sent_to", target.getGameProfile().getName(), body),
                     EdithMessagePayload.Level.COMMS);

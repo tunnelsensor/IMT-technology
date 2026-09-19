@@ -21,19 +21,42 @@ import net.minecraft.world.phys.Vec3;
  * @param marked       nummers (entity-id's) van de gemarkeerde doelwitten
  * @param strikeTarget waar de satelliet gaat inslaan (als hij aan het opladen is)
  * @param strikeTicks  ticks tot de inslag
+ * @param hackedCount  hoeveel spelers je nu hackt (fase 10)
  */
 public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,
-                                 Optional<Vec3> strikeTarget, int strikeTicks) implements CustomPacketPayload {
+                                 Optional<Vec3> strikeTarget, int strikeTicks, int hackedCount)
+        implements CustomPacketPayload {
     public static final Type<EdithStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_status"));
 
-    public static final StreamCodec<ByteBuf, EdithStatusPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, EdithStatusPayload::swarmDrones,
-            ByteBufCodecs.VAR_INT, EdithStatusPayload::guardDrones,
-            ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)), EdithStatusPayload::cooldowns,
-            ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)), EdithStatusPayload::marked,
-            ByteBufCodecs.optional(ModCodecs.VEC3), EdithStatusPayload::strikeTarget,
-            ByteBufCodecs.VAR_INT, EdithStatusPayload::strikeTicks,
-            EdithStatusPayload::new);
+    /**
+     * Zelf in- en uitpakken. (StreamCodec.composite kan in 1.21.1 maximaal zes onderdelen
+     * aan elkaar plakken, en dit bericht heeft er meer.)
+     */
+    public static final StreamCodec<ByteBuf, EdithStatusPayload> STREAM_CODEC =
+            new StreamCodec<ByteBuf, EdithStatusPayload>() {
+                @Override
+                public void encode(ByteBuf buffer, EdithStatusPayload payload) {
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.swarmDrones());
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.guardDrones());
+                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)).encode(buffer, payload.cooldowns());
+                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)).encode(buffer, payload.marked());
+                    ByteBufCodecs.optional(ModCodecs.VEC3).encode(buffer, payload.strikeTarget());
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.strikeTicks());
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.hackedCount());
+                }
+
+                @Override
+                public EdithStatusPayload decode(ByteBuf buffer) {
+                    int swarm = ByteBufCodecs.VAR_INT.decode(buffer);
+                    int guards = ByteBufCodecs.VAR_INT.decode(buffer);
+                    List<Integer> cooldowns = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)).decode(buffer);
+                    List<Integer> marked = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)).decode(buffer);
+                    Optional<Vec3> strikeTarget = ByteBufCodecs.optional(ModCodecs.VEC3).decode(buffer);
+                    int strikeTicks = ByteBufCodecs.VAR_INT.decode(buffer);
+                    int hacked = ByteBufCodecs.VAR_INT.decode(buffer);
+                    return new EdithStatusPayload(swarm, guards, cooldowns, marked, strikeTarget, strikeTicks, hacked);
+                }
+            };
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

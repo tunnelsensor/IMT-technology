@@ -203,6 +203,8 @@ public final class VoiceControl {
             case TARGET_ANALYSIS_TOGGLE -> EdithClientEvents.sendAction(EdithAction.TOGGLE_TARGET_ANALYSIS);
             case PING -> EdithClientEvents.placePing();
             // Fase 9: redstone. De waarde is de naam van een relais of van een hele groep.
+            case HACK_PLAYER -> EdithClientEvents.sendAction(EdithAction.HACK_PLAYER);
+            case HACK_STOP -> EdithClientEvents.sendAction(EdithAction.HACK_STOP);
             case REDSTONE_ON -> switchRelay(value, EdithRedstone.Op.ON);
             case REDSTONE_OFF -> switchRelay(value, EdithRedstone.Op.OFF);
             case REDSTONE_TOGGLE -> switchRelay(value, EdithRedstone.Op.TOGGLE);

@@ -55,6 +55,13 @@ public final class EdithConfig {
             .comment("Van hoe hoog drones uit de lucht komen duiken (in blokken)")
             .defineInRange("drones.dropHeight", 24, 0, 96);
 
+    // ---------------------------------------------------------------- Hacken
+
+    public static final ModConfigSpec.BooleanValue HACK_ALLOWED = BUILDER
+            .comment("Mag E.D.I.T.H. de privéberichten van andere spelers onderscheppen (hack player)?",
+                    "Zet dit op false op een server waar spelers dat niet willen.")
+            .define("hack.allowed", true);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     // ---------------------------------------------------------------- Hulpmethodes
@@ -95,5 +102,10 @@ public final class EdithConfig {
 
     public static int droneDropHeight() {
         return value(DRONE_DROP_HEIGHT, 24);
+    }
+
+    /** Mag de hack-functie gebruikt worden? */
+    public static boolean hackAllowed() {
+        return !SPEC.isLoaded() || HACK_ALLOWED.get();
     }
 }

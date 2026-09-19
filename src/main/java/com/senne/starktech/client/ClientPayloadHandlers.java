@@ -6,6 +6,7 @@ import com.senne.starktech.network.DroneCameraPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.EdithStatusPayload;
 import com.senne.starktech.network.OreScanPayload;
+import com.senne.starktech.network.HackMessagePayload;
 import com.senne.starktech.network.PingMarkerPayload;
 import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.network.SpyReportPayload;
@@ -22,6 +23,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public final class ClientPayloadHandlers {
     private ClientPayloadHandlers() {}
+
+    /** Fase 10: een onderschept privébericht boven het hoofd van een gehackte speler. */
+    public static void onHackMessage(HackMessagePayload payload, IPayloadContext context) {
+        EdithClientState.addHackBubble(payload.entityId(), payload.text(), payload.outgoing(),
+                EdithBalance.HACK_BUBBLE_MILLIS);
+        EdithClientEvents.playUi(ModSounds.COMMS_MESSAGE.get(), 1.4f);
+    }
 
     /** Fase 9: open het scherm om een relais een naam en groep te geven. */
     public static void onRelayEdit(RelayEditPayload payload, IPayloadContext context) {
@@ -61,6 +69,7 @@ public final class ClientPayloadHandlers {
         EdithClientState.markedIds = new HashSet<>(payload.marked());
         EdithClientState.strikeTarget = payload.strikeTarget().orElse(null);
         EdithClientState.strikeAtMillis = now + payload.strikeTicks() * 50L;
+        EdithClientState.hackedCount = payload.hackedCount();
     }
 
     public static void onPing(PingMarkerPayload payload, IPayloadContext context) {

@@ -13,6 +13,7 @@ import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.hack.EdithHack;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.spy.EdithSpy;
@@ -243,6 +244,8 @@ public final class EdithServer {
         EdithNavigation.tick(player);
         // Vliegen met drones kost energie; is de bril leeg, dan zet hij je neer.
         EdithTransport.tickRider(player, glasses);
+        // Hacken kost energie per gehackte speler.
+        EdithHack.tick(player, glasses);
     }
 
     // ---------------------------------------------------------------- Nachtzicht
@@ -339,6 +342,9 @@ public final class EdithServer {
             case SATELLITE_PRECISION -> setSatelliteMode(player, glasses, SatelliteMode.PRECISION);
             case SATELLITE_BOMBARDMENT -> setSatelliteMode(player, glasses, SatelliteMode.BOMBARDMENT);
             case SATELLITE_SWEEP -> setSatelliteMode(player, glasses, SatelliteMode.SWEEP);
+            // Fase 10
+            case HACK_PLAYER -> hackPlayer(player);
+            case HACK_STOP -> EdithHack.stopAll(player, true);
             default -> { }
         }
     }
@@ -447,6 +453,17 @@ public final class EdithServer {
             send(player, Component.translatable("edith.starktech.msg.satellite_cancelled"), EdithMessagePayload.Level.INFO);
         }
         sendStatus(player, state);
+    }
+
+    /** Hackt de speler waar je naar kijkt (of stopt die hack). */
+    private static void hackPlayer(ServerPlayer player) {
+        LivingEntity looked = findLookTarget(player, EdithBalance.HACK_RANGE);
+        if (!(looked instanceof ServerPlayer target)) {
+            send(player, Component.translatable("edith.starktech.msg.hack_no_player"), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        EdithHack.toggle(player, target);
+        sendStatus(player, state(player));
     }
 
     // ---------------------------------------------------------------- Transport (fase 7)
@@ -923,7 +940,8 @@ public final class EdithServer {
                 cooldowns,
                 markedIds,
                 strike == null ? Optional.empty() : Optional.of(strike.target()),
-                strike == null ? 0 : strike.ticksLeft()));
+                strike == null ? 0 : strike.ticksLeft(),
+                EdithHack.targetsOf(player).size()));
     }
 
     public static void send(ServerPlayer player, Component message, EdithMessagePayload.Level level) {
