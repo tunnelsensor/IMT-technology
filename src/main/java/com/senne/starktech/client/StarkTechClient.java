@@ -2,6 +2,7 @@ package com.senne.starktech.client;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.drone.DroneModel;
+import com.senne.starktech.client.illusion.IllusionRenderer;
 import com.senne.starktech.client.drone.DroneRenderer;
 import com.senne.starktech.client.voice.VoiceControl;
 import com.senne.starktech.registry.ModEntities;
@@ -45,6 +46,9 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(DroneCamera::onCameraAngles);
         // Fase 8: het beeld schudt bij een inslag van de satelliet
         NeoForge.EVENT_BUS.addListener(CameraShake::onCameraAngles);
+        // Fase 12: de illusies van cloakingdrones tekenen (en dingen verbergen)
+        NeoForge.EVENT_BUS.addListener(IllusionRenderer::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener(IllusionRenderer::onRenderLiving);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
     }

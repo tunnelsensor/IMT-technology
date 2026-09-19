@@ -148,6 +148,16 @@ public final class EdithDrones {
         return drone;
     }
 
+    /**
+     * Een cloakingdrone: hij hangt stil in de lucht voor je en projecteert een illusie.
+     * Onzichtbaar, maar wel echt aanwezig (dus raakbaar).
+     */
+    public static @Nullable StarkDroneEntity launchIllusion(ServerPlayer owner) {
+        Vec3 look = owner.getViewVector(1.0f);
+        Vec3 pos = owner.getEyePosition().add(look.x * 4.0, 1.5, look.z * 4.0);
+        return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, EdithBalance.ILLUSION_LIFETIME, pos, false);
+    }
+
     /** Zorgt dat er genoeg beschermende drones zijn (roept er maximaal één per keer bij). */
     public static void maintainGuards(ServerPlayer owner, ItemStack glasses) {
         List<StarkDroneEntity> guards = find(owner, StarkDroneEntity.Mode.GUARD);

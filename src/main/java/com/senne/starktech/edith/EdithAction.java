@@ -56,7 +56,18 @@ public enum EdithAction {
     HACK_STOP("hack_stop", null),
     // Fase 11
     /** Persoonlijk schild aan/uit. */
-    TOGGLE_SHIELD("toggle_shield", EdithFeature.SHIELD);
+    TOGGLE_SHIELD("toggle_shield", EdithFeature.SHIELD),
+    // Fase 12: illusies
+    /** Valse muur projecteren (van het blok in je hand). */
+    ILLUSION_WALL("illusion_wall", null),
+    /** Nep-leger projecteren (van het spawn-ei in je hand). */
+    ILLUSION_ARMY("illusion_army", null),
+    /** Het stuk wereld waar je naar kijkt kopiëren en projecteren. */
+    ILLUSION_COPY("illusion_copy", null),
+    /** Alles in het veld onzichtbaar maken. */
+    ILLUSION_CLOAK("illusion_cloak", null),
+    /** Alle illusies stoppen. */
+    ILLUSION_STOP("illusion_stop", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

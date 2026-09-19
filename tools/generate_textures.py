@@ -444,6 +444,23 @@ def shield_textures():
     save(wall, "block/laser_wall.png")
 
 
+def emp_item():
+    """De E.M.P.-zender: een klein kastje met een antenne en een blauwe puls."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    # kastje
+    d.rectangle([4, 7, 11, 14], fill=METAL_2, outline=METAL_DARK)
+    d.rectangle([5, 9, 10, 10], fill=CYAN_DIM)
+    px(im, [(6, 12), (9, 12)], GOLD)
+    # antenne
+    d.line([7, 3, 7, 7], fill=METAL_3)
+    d.line([8, 2, 8, 7], fill=METAL_3)
+    # pulsjes
+    d.arc([2, 0, 13, 9], start=200, end=340, fill=CYAN)
+    d.arc([0, -2, 15, 11], start=210, end=330, fill=CYAN_DIM)
+    save(im, "item/emp.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -456,3 +473,4 @@ if __name__ == "__main__":
     drone_textures()
     relay_textures()
     shield_textures()
+    emp_item()

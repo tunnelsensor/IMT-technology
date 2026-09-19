@@ -14,6 +14,8 @@ import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.hack.EdithHack;
+import com.senne.starktech.illusion.EdithIllusions;
+import com.senne.starktech.illusion.IllusionScene;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.spy.EdithSpy;
@@ -345,6 +347,12 @@ public final class EdithServer {
             // Fase 10
             case HACK_PLAYER -> hackPlayer(player);
             case HACK_STOP -> EdithHack.stopAll(player, true);
+            // Fase 12
+            case ILLUSION_WALL -> EdithIllusions.start(player, glasses, IllusionScene.Kind.WALL);
+            case ILLUSION_ARMY -> EdithIllusions.start(player, glasses, IllusionScene.Kind.ARMY);
+            case ILLUSION_COPY -> EdithIllusions.start(player, glasses, IllusionScene.Kind.COPY);
+            case ILLUSION_CLOAK -> EdithIllusions.start(player, glasses, IllusionScene.Kind.CLOAK);
+            case ILLUSION_STOP -> EdithIllusions.stopAll(player);
             default -> { }
         }
     }

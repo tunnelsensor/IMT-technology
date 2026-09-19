@@ -5,6 +5,7 @@ import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.edith.EdithTargeting;
+import com.senne.starktech.illusion.EdithIllusions;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -62,7 +63,9 @@ public class StarkDroneEntity extends PathfinderMob {
         /** Fase 6: volgt stiekem iemand en rapporteert (onzichtbaar, valt niet aan). */
         SPY,
         /** Fase 7: vervoert jou, een vracht of iemand anders. */
-        TRANSPORT;
+        TRANSPORT,
+        /** Fase 12: onzichtbare drone die een illusie projecteert. */
+        ILLUSION;
 
         public static Mode byId(int id) {
             Mode[] all = values();
@@ -111,7 +114,7 @@ public class StarkDroneEntity extends PathfinderMob {
         this.slot = slot;
         this.lifeTicks = lifeTicks;
         this.fireCooldown = 10 + slot * 3; // niet allemaal tegelijk schieten
-        if (mode == Mode.SPY) {
+        if (mode == Mode.SPY || mode == Mode.ILLUSION) {
             // Een spion valt niet op: hij wordt niet getekend (maar hij is er wel echt,
             // dus wie weet waar hij hangt, kan hem uit de lucht slaan).
             setInvisible(true);
@@ -163,6 +166,10 @@ public class StarkDroneEntity extends PathfinderMob {
 
     public boolean isTransport() {
         return getMode() == Mode.TRANSPORT;
+    }
+
+    public boolean isIllusion() {
+        return getMode() == Mode.ILLUSION;
     }
 
     /** Wat een transportdrone doet: jou dragen, vracht brengen, iemand oppakken of meevliegen. */
@@ -269,6 +276,11 @@ public class StarkDroneEntity extends PathfinderMob {
             flyAsTransport(level, owner);
             return;
         }
+        if (isIllusion()) {
+            // Een cloakingdrone blijft stil hangen waar je hem liet: hij is de "projector".
+            moveControl.setWantedPosition(getX(), getY(), getZ(), 0.2);
+            return;
+        }
         // Net uit de lucht gekomen: een straaltje vonken achter de drone aan.
         if (diveTicks > 0) {
             diveTicks--;
@@ -318,6 +330,7 @@ public class StarkDroneEntity extends PathfinderMob {
             case SCOUT -> EdithData.getEnergy(glasses) > 0 && EdithServer.isActiveScout(owner, this);
             case SPY -> EdithData.getEnergy(glasses) > 0 && EdithSpy.isActiveSpy(owner, this);
             case TRANSPORT -> EdithData.getEnergy(glasses) > 0;
+            case ILLUSION -> EdithIllusions.isActive(this);
         };
     }
 

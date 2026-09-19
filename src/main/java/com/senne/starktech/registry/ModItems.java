@@ -3,6 +3,7 @@ package com.senne.starktech.registry;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithGlassesItem;
 import com.senne.starktech.edith.UpgradeItem;
+import com.senne.starktech.illusion.EmpItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -50,6 +51,10 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
 
     // Fase 11: rayshield (de laserwand zelf heeft geen item: die hoort bij de zenders)
+    /** Fase 12: de E.M.P.-zender waarmee je illusies platlegt. */
+    public static final DeferredItem<EmpItem> EMP = ITEMS.registerItem("emp",
+            EmpItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
+
     public static final DeferredItem<BlockItem> LASER_EMITTER = ITEMS.registerSimpleBlockItem("laser_emitter",
             ModBlocks.LASER_EMITTER);
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",

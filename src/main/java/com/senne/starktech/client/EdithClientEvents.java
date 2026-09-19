@@ -268,6 +268,7 @@ public final class EdithClientEvents {
 
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         DroneCamera.exit();
+        com.senne.starktech.client.illusion.IllusionRenderer.clear();
         EdithClientState.reset();
     }
 }

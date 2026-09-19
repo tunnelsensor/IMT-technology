@@ -53,8 +53,8 @@ public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel> {
             RenderType lights = switch (drone.getMode()) {
                 case ATTACK -> ATTACK_LIGHTS;
                 case GUARD, TRANSPORT -> GUARD_LIGHTS;
-                // De spion is onzichtbaar; zie je hem toch (bv. met een detector), dan wit.
-                case SCOUT, SPY -> SCOUT_LIGHTS;
+                // De spion en de cloakingdrone zijn onzichtbaar; zie je ze toch, dan wit.
+                case SCOUT, SPY, ILLUSION -> SCOUT_LIGHTS;
             };
             getParentModel().renderToBuffer(poseStack, buffers.getBuffer(lights), light,
                     OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);

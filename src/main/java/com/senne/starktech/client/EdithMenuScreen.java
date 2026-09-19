@@ -73,6 +73,14 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.STAND_DOWN),
             action(EdithAction.CLEAR_MARKS));
 
+    /** Tabblad Illusie: wat de cloakingdrones projecteren. */
+    private static final List<Option> ILLUSION = List.of(
+            action(EdithAction.ILLUSION_WALL),
+            action(EdithAction.ILLUSION_ARMY),
+            action(EdithAction.ILLUSION_COPY),
+            action(EdithAction.ILLUSION_CLOAK),
+            action(EdithAction.ILLUSION_STOP));
+
     /** Tabblad Tech: dingen in je wereld aansturen. */
     private static final List<Option> TECH = List.of(
             open("screen.starktech.menu.redstone", EdithHud.ORANGE, RelayListScreen::new),
@@ -125,6 +133,7 @@ public class EdithMenuScreen extends Screen {
             case DRONES -> DRONES;
             case TRANSPORT -> TRANSPORT;
             case TECH -> TECH;
+            case ILLUSION -> ILLUSION;
             case SCANNER -> SCANNER;
             case NAVIGATION -> NAVIGATION;
             case SYSTEMS -> SYSTEMS;
@@ -307,6 +316,12 @@ public class EdithMenuScreen extends Screen {
                     : costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case CARGO_DRONE, CARRY_ENTITY ->
                     costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
+            case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_COPY, ILLUSION_CLOAK ->
+                    new Status(Component.translatable("screen.starktech.cost", EdithBalance.ILLUSION_COST), EdithHud.CYAN);
+            case ILLUSION_STOP -> com.senne.starktech.client.illusion.IllusionRenderer.count() > 0
+                    ? new Status(Component.translatable("screen.starktech.illusion.count",
+                            com.senne.starktech.client.illusion.IllusionRenderer.count()), EdithHud.ORANGE)
+                    : new Status(Component.translatable("screen.starktech.none"), GREY);
             case HACK_PLAYER -> EdithClientState.hackedCount > 0
                     ? new Status(Component.translatable("screen.starktech.hack.count", EdithClientState.hackedCount), EdithHud.RED)
                     : new Status(Component.translatable("screen.starktech.hack.look"), EdithHud.CYAN);

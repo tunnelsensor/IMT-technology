@@ -225,6 +225,29 @@ public final class EdithBalance {
     /** Hoeveel stapels een vrachtdrone kan meenemen. */
     public static final int CARGO_SLOTS = 27;
 
+    // ---------------------------------------------------------------- Cloaking / illusies
+    /** Kosten om een illusie te starten. */
+    public static final int ILLUSION_COST = 1_200;
+    /** Hoeveel illusies je tegelijk kunt projecteren. */
+    public static final int MAX_ILLUSIONS = 4;
+    /** Hoe groot het veld van één cloakingdrone is (in blokken). */
+    public static final double ILLUSION_RADIUS = 16.0;
+    /** Hoe lang een cloakingdrone blijft hangen (in ticks). 6000 ticks = 5 minuten. */
+    public static final int ILLUSION_LIFETIME = 6_000;
+    /** De maat van een valse muur. */
+    public static final int ILLUSION_WALL_WIDTH = 9;
+    public static final int ILLUSION_WALL_HEIGHT = 5;
+    /** Hoeveel nep-wezens er in een nep-leger staan. */
+    public static final int ILLUSION_ARMY_SIZE = 8;
+    /** De kubus die "kopieer een stuk wereld" meeneemt (in blokken, oneven getal). */
+    public static final int ILLUSION_COPY_SIZE = 9;
+    /** Hoe ver een E.M.P.-puls reikt (in blokken). */
+    public static final double EMP_RADIUS = 24.0;
+    /** Hoe lang illusies plat liggen na een E.M.P. (in ticks). 600 ticks = 30 seconden. */
+    public static final int EMP_JAM_TICKS = 600;
+    /** Wachttijd van de E.M.P.-zender (in ticks). 300 ticks = 15 seconden. */
+    public static final int EMP_COOLDOWN = 300;
+
     // ---------------------------------------------------------------- Rayshield
     /** Extra energie per seconde zolang je persoonlijke schild aan staat. */
     public static final int DRAIN_SHIELD = 5;
