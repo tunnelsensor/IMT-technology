@@ -55,8 +55,8 @@ import org.jetbrains.annotations.Nullable;
  * Dat is belangrijk, want de explosies van de satelliettest mogen de drones van een andere
  * test niet raken.
  *
- * - outpost_and_station: bouwt het Stark Industries-gebouw na, controleert de kist en kijkt of
- *   het laadstation een bril echt oplaadt en een upgrade inbouwt.
+ * - stark_tower: bouwt de Stark Tower na, controleert de kist en kijkt of het laadstation
+ *   een bril echt oplaadt en een upgrade inbouwt.
  * - drone_swarm: een zwerm drones schakelt een vijand uit.
  * - satellite_strike: de satelliet wacht eerst en slaat dan in.
  * - navigation: waypoints opslaan, laden, navigeren en aankomen.
@@ -69,19 +69,19 @@ import org.jetbrains.annotations.Nullable;
 public final class StarkTechGameTests {
     private StarkTechGameTests() {}
 
-    // Posities in het gebouw (zie tools/generate_structure.py). In een gametest ligt de
+    // Posities in de Stark Tower (zie tools/generate_structure.py). In een gametest ligt de
     // structuur één blok boven het "structuurblok", dus tellen we bij y altijd 1 op.
-    private static final BlockPos STATION_POS = new BlockPos(5, 2, 7);
-    private static final BlockPos CHEST_POS = new BlockPos(1, 2, 7);
+    private static final BlockPos STATION_POS = new BlockPos(7, 2, 12);
+    private static final BlockPos CHEST_POS = new BlockPos(3, 2, 12);
 
     /** De lege test-arena (zie tools/generate_test_structure.py). */
     private static final String ARENA = "empty";
 
     // ================================================================ De tests
 
-    @GameTest(template = "stark_outpost", timeoutTicks = 200, batch = "station")
-    public static void outpost_and_station(GameTestHelper helper) {
-        outpostAndStation(helper);
+    @GameTest(template = "stark_tower", timeoutTicks = 200, batch = "station")
+    public static void stark_tower(GameTestHelper helper) {
+        towerAndStation(helper);
     }
 
     @GameTest(template = ARENA, timeoutTicks = 2400, batch = "drones")
@@ -367,7 +367,7 @@ public final class StarkTechGameTests {
         return helper.getLevel().getEntity(id) instanceof LivingEntity living && living.isAlive() ? living : null;
     }
 
-    private static void outpostAndStation(GameTestHelper helper) {
+    private static void towerAndStation(GameTestHelper helper) {
         // 1. Het gebouw is goed geplaatst.
         helper.assertBlockPresent(ModBlocks.CHARGING_STATION.get(), STATION_POS);
         helper.assertBlockPresent(Blocks.CHEST, CHEST_POS);

@@ -84,6 +84,7 @@ public class EdithMenuScreen extends Screen {
     /** Tabblad Tech: dingen in je wereld aansturen. */
     private static final List<Option> TECH = List.of(
             open("screen.starktech.menu.redstone", EdithHud.ORANGE, RelayListScreen::new),
+            open("screen.starktech.menu.music", EdithHud.GREEN, MusicScreen::new),
             action(EdithAction.HACK_PLAYER),
             action(EdithAction.HACK_STOP));
 

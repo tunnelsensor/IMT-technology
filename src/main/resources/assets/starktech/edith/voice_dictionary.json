@@ -558,6 +558,115 @@
       ]
     },
     {
+      "name": "Muziek spelen",
+      "actions": [
+        {
+          "action": "music_play"
+        }
+      ],
+      "phrases": [
+        "speel {muziek}",
+        "zet {muziek} op",
+        "speel het nummer {muziek}",
+        "ik wil {muziek} horen",
+        "play {muziek}",
+        "put on {muziek}",
+        "play the song {muziek}",
+        "i want to hear {muziek}"
+      ]
+    },
+    {
+      "name": "Muziek pauzeren",
+      "actions": [
+        {
+          "action": "music_pause"
+        }
+      ],
+      "phrases": [
+        "pauzeer de muziek",
+        "zet de muziek stil",
+        "stop de muziek",
+        "muziek pauze",
+        "even stil",
+        "pause the music",
+        "stop the music",
+        "music pause",
+        "quiet please"
+      ]
+    },
+    {
+      "name": "Muziek verder",
+      "actions": [
+        {
+          "action": "music_resume"
+        }
+      ],
+      "phrases": [
+        "muziek verder",
+        "speel verder",
+        "zet de muziek weer aan",
+        "ga verder met de muziek",
+        "resume the music",
+        "continue the music",
+        "music on",
+        "unpause"
+      ]
+    },
+    {
+      "name": "Volgend nummer",
+      "actions": [
+        {
+          "action": "music_next"
+        }
+      ],
+      "phrases": [
+        "volgend nummer",
+        "volgende",
+        "nummer verder",
+        "sla dit nummer over",
+        "andere muziek",
+        "next song",
+        "next track",
+        "skip this song",
+        "skip"
+      ]
+    },
+    {
+      "name": "Vorig nummer",
+      "actions": [
+        {
+          "action": "music_previous"
+        }
+      ],
+      "phrases": [
+        "vorig nummer",
+        "vorige",
+        "terug naar het vorige nummer",
+        "nummer terug",
+        "previous song",
+        "previous track",
+        "go back a song"
+      ]
+    },
+    {
+      "name": "Wat speelt er",
+      "actions": [
+        {
+          "action": "music_what"
+        }
+      ],
+      "phrases": [
+        "wat speelt er",
+        "welk nummer is dit",
+        "wat is dit voor nummer",
+        "welke muziek is dit",
+        "what is playing",
+        "what song is this",
+        "what is this song",
+        "name this song"
+      ]
+    },
+    {
       "name": "Escorte aan",
       "actions": [
         {

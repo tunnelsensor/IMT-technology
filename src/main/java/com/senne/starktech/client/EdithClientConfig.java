@@ -41,6 +41,15 @@ public final class EdithClientConfig {
             .comment("Laat in de HUD zien wat jij zei en wat E.D.I.T.H. antwoordt (zet uit als je alleen haar stem wil)")
             .define("voiceTextInHud", true);
 
+    /**
+     * Het Client ID van JOUW gratis Spotify-app (zie het muziekscherm). Leeg = niet ingesteld.
+     * Dit is geen wachtwoord; je logt zelf in op de site van Spotify.
+     */
+    public static final ModConfigSpec.ConfigValue<String> SPOTIFY_CLIENT_ID = BUILDER
+            .comment("Het Client ID van je eigen Spotify-app (developer.spotify.com/dashboard).",
+                    "Redirect URI in die app: http://127.0.0.1:8899/starktech")
+            .define("spotifyClientId", "");
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     /** Mag de spraaktekst in de HUD? (Zolang de instellingen nog niet geladen zijn: ja.) */

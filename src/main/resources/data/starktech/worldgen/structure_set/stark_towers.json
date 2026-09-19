@@ -2,12 +2,12 @@
   "placement": {
     "type": "minecraft:random_spread",
     "salt": 1834915731,
-    "separation": 12,
-    "spacing": 40
+    "separation": 16,
+    "spacing": 52
   },
   "structures": [
     {
-      "structure": "starktech:stark_outpost",
+      "structure": "starktech:stark_tower",
       "weight": 1
     }
   ]

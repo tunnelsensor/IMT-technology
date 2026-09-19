@@ -6,6 +6,7 @@ import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.client.EdithClientEvents;
 import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.client.EdithKeys;
+import com.senne.starktech.client.music.EdithMusic;
 import com.senne.starktech.client.NavigationScreen;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithBalance;
@@ -206,6 +207,13 @@ public final class VoiceControl {
             case TARGET_ANALYSIS_TOGGLE -> EdithClientEvents.sendAction(EdithAction.TOGGLE_TARGET_ANALYSIS);
             case PING -> EdithClientEvents.placePing();
             // Fase 9: redstone. De waarde is de naam van een relais of van een hele groep.
+            // Fase 13: muziek via Spotify (alles gebeurt in jouw eigen spel)
+            case MUSIC_PLAY -> EdithMusic.play(value);
+            case MUSIC_PAUSE -> EdithMusic.pause();
+            case MUSIC_RESUME -> EdithMusic.resume();
+            case MUSIC_NEXT -> EdithMusic.next();
+            case MUSIC_PREVIOUS -> EdithMusic.previous();
+            case MUSIC_WHAT -> EdithMusic.whatIsPlaying();
             case HACK_PLAYER -> EdithClientEvents.sendAction(EdithAction.HACK_PLAYER);
             case HACK_STOP -> EdithClientEvents.sendAction(EdithAction.HACK_STOP);
             case REDSTONE_ON -> switchRelay(value, EdithRedstone.Op.ON);

@@ -64,6 +64,14 @@ public enum VoiceAction {
     /** Fase 10: de speler waar je naar kijkt hacken (of stoppen). */
     HACK_PLAYER(Group.TECH, false),
     HACK_STOP(Group.TECH, false),
+    // Fase 13: muziek (Spotify)
+    /** "speel X van Y" - de waarde is wat je wil horen. */
+    MUSIC_PLAY(Group.TECH, true),
+    MUSIC_PAUSE(Group.TECH, false),
+    MUSIC_RESUME(Group.TECH, false),
+    MUSIC_NEXT(Group.TECH, false),
+    MUSIC_PREVIOUS(Group.TECH, false),
+    MUSIC_WHAT(Group.TECH, false),
     // Fase 9: redstone aansturen (met de naam van een relais of groep)
     REDSTONE_ON(Group.TECH, true),
     REDSTONE_OFF(Group.TECH, true),

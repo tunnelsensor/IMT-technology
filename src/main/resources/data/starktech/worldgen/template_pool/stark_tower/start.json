@@ -3,7 +3,7 @@
     {
       "element": {
         "element_type": "minecraft:single_pool_element",
-        "location": "starktech:stark_outpost",
+        "location": "starktech:stark_tower",
         "processors": "minecraft:empty",
         "projection": "rigid"
       },
