@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
  * - COMBAT:     doelwit-analyse, dreigingsscan, drones, satelliet, stand down, markeringen wissen
  * - DRONES:     drone-camera, spionagedrone, meekijken, rapport
  * - TRANSPORT:  zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren
+ * - TECH:       redstone-relais (en later rayshield en muziek)
  * - SCANNER:    ertsen-scan en nachtzicht
  * - NAVIGATION: navigatie, ping, comms
  * - SYSTEMS:    eigendom overdragen, stem, spraakbesturing en spraakcommando's bewerken (en in het midden: energie, verbruik)
@@ -19,6 +20,8 @@ public enum MenuTab {
     DRONES("drones"),
     /** Fase 7: vervoer met drones (zelf vliegen, autopiloot, vracht, iemand oppakken). */
     TRANSPORT("transport"),
+    /** Fase 9 en later: techniek in je wereld (redstone, en straks schild en muziek). */
+    TECH("tech"),
     SCANNER("scanner"),
     NAVIGATION("navigation"),
     SYSTEMS("systems");

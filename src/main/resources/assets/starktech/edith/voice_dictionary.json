@@ -430,6 +430,82 @@
       ]
     },
     {
+      "name": "Redstone aan",
+      "actions": [
+        {
+          "action": "redstone_on"
+        }
+      ],
+      "phrases": [
+        "zet {ding} aan",
+        "doe {ding} aan",
+        "maak {ding} aan",
+        "activeer {ding}",
+        "start {ding}",
+        "open {ding}",
+        "zet de {ding} aan",
+        "turn on {ding}",
+        "turn {ding} on",
+        "switch on {ding}",
+        "activate {ding}",
+        "open {ding}",
+        "start {ding}"
+      ]
+    },
+    {
+      "name": "Redstone uit",
+      "actions": [
+        {
+          "action": "redstone_off"
+        }
+      ],
+      "phrases": [
+        "zet {ding} uit",
+        "doe {ding} uit",
+        "maak {ding} uit",
+        "stop {ding}",
+        "sluit {ding}",
+        "deactiveer {ding}",
+        "turn off {ding}",
+        "turn {ding} off",
+        "switch off {ding}",
+        "close {ding}",
+        "deactivate {ding}"
+      ]
+    },
+    {
+      "name": "Redstone omschakelen",
+      "actions": [
+        {
+          "action": "redstone_toggle"
+        }
+      ],
+      "phrases": [
+        "schakel {ding}",
+        "wissel {ding}",
+        "omschakelen {ding}",
+        "toggle {ding}",
+        "flip {ding}"
+      ]
+    },
+    {
+      "name": "Redstone puls",
+      "actions": [
+        {
+          "action": "redstone_pulse"
+        }
+      ],
+      "phrases": [
+        "geef {ding} een puls",
+        "puls {ding}",
+        "tik {ding} aan",
+        "klik {ding}",
+        "pulse {ding}",
+        "trigger {ding}",
+        "knock {ding}"
+      ]
+    },
+    {
       "name": "Escorte aan",
       "actions": [
         {

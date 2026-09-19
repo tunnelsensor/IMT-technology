@@ -46,4 +46,6 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> CHARGING_STATION = ITEMS.registerSimpleBlockItem("charging_station",
             ModBlocks.CHARGING_STATION);
+
+    public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
 }

@@ -72,6 +72,10 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.STAND_DOWN),
             action(EdithAction.CLEAR_MARKS));
 
+    /** Tabblad Tech: dingen in je wereld aansturen. */
+    private static final List<Option> TECH = List.of(
+            open("screen.starktech.menu.redstone", EdithHud.ORANGE, RelayListScreen::new));
+
     /** Tabblad Transport: laat je vervoeren of stuur spullen weg. */
     private static final List<Option> TRANSPORT = List.of(
             action(EdithAction.TRANSPORT_RIDE),
@@ -117,6 +121,7 @@ public class EdithMenuScreen extends Screen {
             case COMBAT -> COMBAT;
             case DRONES -> DRONES;
             case TRANSPORT -> TRANSPORT;
+            case TECH -> TECH;
             case SCANNER -> SCANNER;
             case NAVIGATION -> NAVIGATION;
             case SYSTEMS -> SYSTEMS;

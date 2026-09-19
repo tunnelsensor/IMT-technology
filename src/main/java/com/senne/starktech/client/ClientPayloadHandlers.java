@@ -7,6 +7,7 @@ import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.EdithStatusPayload;
 import com.senne.starktech.network.OreScanPayload;
 import com.senne.starktech.network.PingMarkerPayload;
+import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.network.SpyReportPayload;
 import com.senne.starktech.network.SpyStatusPayload;
 import net.minecraft.client.Minecraft;
@@ -21,6 +22,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public final class ClientPayloadHandlers {
     private ClientPayloadHandlers() {}
+
+    /** Fase 9: open het scherm om een relais een naam en groep te geven. */
+    public static void onRelayEdit(RelayEditPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new RelayEditScreen(payload.index()));
+        }
+    }
 
     /** Een straal tekenen (drone-laser of satelliet). */
     public static void onBeam(BeamEffectPayload payload, IPayloadContext context) {

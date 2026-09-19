@@ -19,6 +19,9 @@ import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.client.voice.VoiceAction;
+import com.senne.starktech.client.voice.VoiceDictionary;
+import com.senne.starktech.client.voice.VoiceMatcher;
 import com.senne.starktech.station.ChargingStationBlockEntity;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +62,7 @@ import org.jetbrains.annotations.Nullable;
  * - navigation: waypoints opslaan, laden, navigeren en aankomen.
  * - scout_drone: de verkenningsdrone vliegt zoals de speler hem bestuurt.
  * - spy_drone: de spionagedrone volgt zijn doelwit, ook als dat wegloopt.
+ * - voice_dictionary: de spraakcommando's worden herkend (ook met een invulplek in de zin).
  */
 @GameTestHolder(StarkTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -103,6 +107,53 @@ public final class StarkTechGameTests {
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "navigation")
     public static void navigation(GameTestHelper helper) {
         navigationTest(helper);
+    }
+
+    /**
+     * Het woordenboek van de spraakbesturing: herkent E.D.I.T.H. de zinnen die erin staan,
+     * en haalt ze de juiste waarde uit een zin met een invulplek?
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void voice_dictionary(GameTestHelper helper) {
+        VoiceDictionary dictionary;
+        try {
+            dictionary = VoiceDictionary.loadDefault();
+        } catch (java.io.IOException e) {
+            throw new GameTestAssertException("Woordenboek kan niet geladen worden: " + e.getMessage());
+        }
+        VoiceMatcher matcher = new VoiceMatcher(dictionary);
+
+        // Zin -> verwachte actie, en (optioneel) wat er ingevuld moet worden.
+        checkVoice(matcher, "stuur de drones", VoiceAction.LAUNCH_DRONES, null);
+        checkVoice(matcher, "stand down", VoiceAction.STAND_DOWN, null);
+        checkVoice(matcher, "bespioneer hem", VoiceAction.SPY_DRONE, null);
+        checkVoice(matcher, "til me op", VoiceAction.TRANSPORT_RIDE, null);
+        // "naar thuis" is bewust een eigen commando (naar huis), dus nemen we een andere plek:
+        checkVoice(matcher, "breng me naar de diamantmijn", VoiceAction.NAVIGATE_TO, "diamantmijn");
+        // Invulplek in het MIDDEN van de zin (dit kon eerst niet). We nemen bewust namen die
+        // niet op een bestaand commando lijken: "licht aan" is bijvoorbeeld al nachtzicht.
+        checkVoice(matcher, "zet de voordeur aan", VoiceAction.REDSTONE_ON, "voordeur");
+        checkVoice(matcher, "doe de voordeur uit", VoiceAction.REDSTONE_OFF, "voordeur");
+        checkVoice(matcher, "turn on the front door", VoiceAction.REDSTONE_ON, "front door");
+        checkVoice(matcher, "geef de val een puls", VoiceAction.REDSTONE_PULSE, "val");
+        helper.succeed();
+    }
+
+    /** Controleert of een zin het juiste commando (en de juiste waarde) oplevert. */
+    private static void checkVoice(VoiceMatcher matcher, String heard, VoiceAction expected, @Nullable String value) {
+        VoiceMatcher.Match match = matcher.best(heard);
+        if (match == null) {
+            throw new GameTestAssertException("Niet herkend: \"" + heard + "\"");
+        }
+        boolean found = match.command().actions.stream().anyMatch(ref -> ref.action() == expected);
+        if (!found) {
+            throw new GameTestAssertException("\"" + heard + "\" werd " + match.command().name
+                    + " in plaats van " + expected);
+        }
+        if (value != null && !match.captured().equalsIgnoreCase(value)) {
+            throw new GameTestAssertException("\"" + heard + "\" vulde in: \"" + match.captured()
+                    + "\" in plaats van \"" + value + "\"");
+        }
     }
 
     // ================================================================ Hulpjes

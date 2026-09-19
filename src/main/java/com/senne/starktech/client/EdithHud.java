@@ -13,6 +13,7 @@ import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
+import com.senne.starktech.redstone.Relay;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModAttachments;
 import java.util.EnumMap;
@@ -112,6 +113,7 @@ public class EdithHud implements LayeredDraw.Layer {
             renderNavigationMarker(g, font, player, now);
             renderPings(g, font, now);
             renderSpyTarget(g, font, player, now);
+            renderRelays(g, font);
             renderSatelliteStrike(g, font, w, h, now, !menuOpen);
             if (!menuOpen) {
                 renderCompass(g, font, player, w);
@@ -415,6 +417,26 @@ public class EdithHud implements LayeredDraw.Layer {
                             w / 2, h / 2 + 34, argb(pulse, ORANGE));
                 }
             }
+        }
+    }
+
+    /**
+     * Naamplaatjes bij je redstone-relais in de buurt: groen als hij aan staat, grijs als hij
+     * uit staat. Zo zie je meteen welk kastje "voordeur" is.
+     */
+    private void renderRelays(GuiGraphics g, Font font) {
+        for (Relay relay : RelayLabels.nearby()) {
+            WorldProjection.ScreenPoint point = projection.project(Vec3.atCenterOf(relay.pos()).add(0, 0.5, 0));
+            if (point == null || !projection.isOnScreen(point, 0)) {
+                continue;
+            }
+            boolean on = RelayLabels.isOn(relay);
+            int color = on ? GREEN : 0x9FC9D6;
+            int px = (int) point.x();
+            int py = (int) point.y();
+            g.fill(px - 2, py - 2, px + 3, py + 3, argb(225, color));
+            smallText(g, font, relay.name(), px, py - 13, argb(235, color));
+            smallText(g, font, relay.group(), px, py + 5, argb(150, color));
         }
     }
 

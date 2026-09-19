@@ -157,7 +157,9 @@ def edith_equipment():
     # Linkerzijde van het hoofd: x=16..23 (x=16 grenst aan de voorkant)
     for x in range(16, 22):
         im.putpixel((x, fy + row + 1), FRAME)
-    save(im, "entity/equipment/humanoid/edith.png")
+    # In Minecraft 1.21.1 is de bril een stuk armor; de texture hoort daarom in
+    # textures/models/armor/ en heet <naam>_layer_1.png (zie ModArmorMaterials).
+    save(im, "models/armor/edith_layer_1.png")
 
 
 # --------------------------------------------------------------------- Laadstation (blok)
@@ -371,6 +373,41 @@ def drone_textures():
         save(lights, f"entity/drone/stark_drone_lights_{name}.png")
 
 
+# --------------------------------------------------------------------- Fase 9: redstone-relais
+
+def relay_textures():
+    """Een plat metalen kastje met een lampje bovenop (uit = donker, aan = groen)."""
+    # Zijkant: metaal met een naad en een streepje redstone-rood
+    side = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 0], fill=METAL_3)
+    d.rectangle([0, 15, 15, 15], fill=METAL_DARK)
+    d.line([1, 9, 14, 9], fill=METAL_DARK)
+    d.line([2, 12, 6, 12], fill=(170, 40, 40, 255))
+    for x in (1, 14):
+        px(side, [(x, 3), (x, 6)], METAL_3)
+    save(side, "block/relay_side.png")
+
+    # Bovenkant: plaatje met vier schroeven en een lampje in het midden
+    def top(lamp, glow):
+        im = img(16, 16, METAL_2)
+        dd = ImageDraw.Draw(im)
+        dd.rectangle([0, 0, 15, 15], outline=METAL_3)
+        dd.rectangle([2, 2, 13, 13], outline=METAL_DARK)
+        for (x, y) in ((3, 3), (12, 3), (3, 12), (12, 12)):
+            px(im, [(x, y)], METAL_3)
+        dd.ellipse([6, 6, 9, 9], fill=lamp, outline=glow)
+        return im
+
+    save(top((40, 60, 55, 255), (70, 90, 85, 255)), "block/relay_top.png")
+    save(top((92, 255, 157, 255), (200, 255, 225, 255)), "block/relay_top_on.png")
+
+    # Onderkant: gewoon donker metaal
+    bottom = img(16, 16, METAL_DARK)
+    ImageDraw.Draw(bottom).rectangle([0, 0, 15, 15], outline=METAL_1)
+    save(bottom, "block/relay_bottom.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -381,3 +418,4 @@ if __name__ == "__main__":
     gui()
     drone_upgrade()
     drone_textures()
+    relay_textures()

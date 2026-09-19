@@ -4,6 +4,7 @@ import com.senne.starktech.client.ClientPayloadHandlers;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.nav.EdithNavigation;
+import com.senne.starktech.redstone.EdithRedstone;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,7 +21,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "4";
+    private static final String PROTOCOL_VERSION = "5";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -57,6 +58,12 @@ public final class ModNetwork {
                 EdithComms.handlePing(player, payload);
             }
         });
+        // Fase 9: redstone-relais
+        registrar.playToServer(RelayActionPayload.TYPE, RelayActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                EdithRedstone.handleAction(player, payload);
+            }
+        });
 
         // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
         // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een
@@ -78,6 +85,9 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onSpyStatus(payload, context));
         registrar.playToClient(SpyReportPayload.TYPE, SpyReportPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSpyReport(payload, context));
+        // Fase 9: het scherm om een relais een naam te geven
+        registrar.playToClient(RelayEditPayload.TYPE, RelayEditPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onRelayEdit(payload, context));
     }
 
     /**

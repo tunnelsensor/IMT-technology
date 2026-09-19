@@ -134,6 +134,9 @@ public final class EdithClientEvents {
         while (EdithKeys.COMMS.consumeClick()) {
             openIfAuthorized(mc, new CommsScreen());
         }
+        while (EdithKeys.REDSTONE.consumeClick()) {
+            openIfAuthorized(mc, new RelayListScreen());
+        }
     }
 
     /** Opent een E.D.I.T.H.-scherm, maar alleen als je de bril draagt en de eigenaar bent. */

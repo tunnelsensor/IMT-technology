@@ -49,9 +49,12 @@ public final class VoiceMatcher {
     /**
      * Een zin uit het woordenboek, klaar om te vergelijken.
      *
-     * @param slot     de invulplek aan het eind (bv. "{plek}"), of null
+     * @param fixed de vaste woorden VOOR de invulplek
+     * @param slot  de invulplek (bv. "{plek}"), of null
+     * @param after de vaste woorden NA de invulplek ("zet {ding} AAN")
      */
-    private record Phrase(VoiceDictionary.Command command, String text, List<String> fixed, String slot) {}
+    private record Phrase(VoiceDictionary.Command command, String text, List<String> fixed, String slot,
+                          List<String> after) {}
 
     /** Invulplekken voor vrije tekst (berichten): daar halen we niets vooraan weg. */
     private static final Set<String> TEXT_SLOTS = Set.of("{tekst}", "{text}", "{bericht}", "{message}");
@@ -86,20 +89,34 @@ public final class VoiceMatcher {
         for (VoiceDictionary.Command command : dictionary.commands) {
             for (String text : command.phrases) {
                 List<String> words = normalize(text);
-                String slot = !words.isEmpty() && words.getLast().startsWith("{") && words.getLast().endsWith("}")
-                        ? words.getLast() : null;
-                if (slot != null) {
-                    words = words.subList(0, words.size() - 1);
+                // Waar staat de invulplek? ("breng me naar {plek}" achteraan, "zet {ding} aan" in het midden)
+                int slotIndex = -1;
+                for (int i = 0; i < words.size(); i++) {
+                    if (words.get(i).startsWith("{") && words.get(i).endsWith("}")) {
+                        slotIndex = i;
+                        break;
+                    }
                 }
+                String slot = slotIndex >= 0 ? words.get(slotIndex) : null;
+                List<String> beforeWords = slot == null ? words : words.subList(0, slotIndex);
+                List<String> afterWords = slot == null ? List.of() : words.subList(slotIndex + 1, words.size());
                 List<String> fixed = new ArrayList<>();
-                for (Token token : canonical(words)) {
+                for (Token token : canonical(beforeWords)) {
                     if (!ignore.contains(token.word())) {
                         fixed.add(token.word());
                     }
                 }
-                // Een zin met invulplek heeft minstens twee vaste woorden nodig, anders past hij op alles.
-                if (fixed.size() >= (slot != null ? 2 : 1)) {
-                    phrases.add(new Phrase(command, text, fixed, slot));
+                List<String> after = new ArrayList<>();
+                for (Token token : canonical(afterWords)) {
+                    if (!ignore.contains(token.word())) {
+                        after.add(token.word());
+                    }
+                }
+                // Minstens één vast woord. Bij een zin met invulplek en maar één vast woord
+                // (bv. "zet {ding} aan": "zet" is een vulwoord, dus alleen "aan" blijft over)
+                // geven we later een kleine aftrek, zodat een zin die helemaal past altijd wint.
+                if (fixed.size() + after.size() >= 1) {
+                    phrases.add(new Phrase(command, text, fixed, slot, after));
                 }
             }
         }
@@ -160,12 +177,13 @@ public final class VoiceMatcher {
             if (match == null || match.score() < MIN_SCORE) {
                 continue;
             }
+            int anchors = phrase.fixed().size() + phrase.after().size();
             boolean better = best == null
                     || match.score() > best.score() + 1e-9
-                    || (Math.abs(match.score() - best.score()) < 1e-9 && phrase.fixed().size() > bestFixed);
+                    || (Math.abs(match.score() - best.score()) < 1e-9 && anchors > bestFixed);
             if (better) {
                 best = match;
-                bestFixed = phrase.fixed().size();
+                bestFixed = anchors;
             }
         }
         return best;
@@ -187,8 +205,9 @@ public final class VoiceMatcher {
     }
 
     /**
-     * Een zin met een invulplek aan het eind, bv. "breng me naar {plek}". Eerst moeten de vaste
-     * woorden in volgorde terugkomen; alles wat je daarna zei, wordt de ingevulde waarde.
+     * Een zin met een invulplek, bv. "breng me naar {plek}" of "zet {ding} aan". Eerst moeten de
+     * vaste woorden in volgorde terugkomen; wat daarna komt (tot aan de woorden NA de invulplek)
+     * wordt de ingevulde waarde.
      */
     private Match scoreSlot(Phrase phrase, List<Token> heard, String original) {
         List<String> fixed = phrase.fixed();
@@ -214,21 +233,54 @@ public final class VoiceMatcher {
             lastRaw = heard.get(found).rawLast();
             position = found + 1;
         }
-        if (lastRaw < 0 || missed > (fixed.size() >= 4 ? 1 : 0)) {
+        if (missed > (fixed.size() >= 4 ? 1 : 0) || (lastRaw < 0 && !fixed.isEmpty())) {
             return null;
         }
-        String captured = capture(original, lastRaw + 1, !TEXT_SLOTS.contains(phrase.slot()));
+        if (fixed.isEmpty() && phrase.after().isEmpty()) {
+            return null; // een zin die alleen uit een invulplek bestaat past op alles
+        }
+        // Woorden NA de invulplek, bv. het "aan" in "zet {ding} aan". Die moeten er ook zijn;
+        // alles tussen de vaste woorden en dat woord is de waarde.
+        int captureEnd = Integer.MAX_VALUE;
+        if (!phrase.after().isEmpty()) {
+            int searchFrom = Math.max(position, 0);
+            for (String word : phrase.after()) {
+                int found = -1;
+                double similarity = 0;
+                for (int i = searchFrom; i < heard.size(); i++) {
+                    similarity = similarity(word, heard.get(i).word());
+                    if (similarity > 0) {
+                        found = i;
+                        break;
+                    }
+                }
+                if (found < 0) {
+                    return null; // "aan" niet gezegd: dan is dit niet het juiste commando
+                }
+                matched += similarity;
+                if (captureEnd == Integer.MAX_VALUE) {
+                    captureEnd = heard.get(found).rawFirst();
+                }
+                searchFrom = found + 1;
+            }
+        }
+        String captured = capture(original, lastRaw + 1, captureEnd, !TEXT_SLOTS.contains(phrase.slot()));
         if (captured.isEmpty()) {
             return null;
         }
-        double coverage = matched / fixed.size();
-        if (coverage < requiredCoverage(fixed.size())) {
+        int words = fixed.size() + phrase.after().size();
+        double coverage = matched / words;
+        if (coverage < requiredCoverage(words)) {
             return null;
         }
+        // Eén vast woord + een invulplek past op veel zinnen; daarom iets minder punten.
+        double anchorPenalty = words <= 1 ? 0.9 : 1.0;
         int captureStart = lastRaw;
-        long capturedWords = heard.stream().filter(token -> token.rawFirst() > captureStart).count();
+        int captureLimit = captureEnd;
+        long capturedWords = heard.stream()
+                .filter(token -> token.rawFirst() > captureStart && token.rawFirst() < captureLimit).count();
         double precision = Math.min(1.0, (matched + capturedWords) / heard.size());
-        return new Match(phrase.command(), captured, 0.75 * coverage + 0.25 * precision, phrase.text());
+        return new Match(phrase.command(), captured, (0.75 * coverage + 0.25 * precision) * anchorPenalty, phrase.text());
     }
 
     /** Hoe goed moeten de woorden van een zin terugkomen? Korte zinnen moeten helemaal passen. */
@@ -338,10 +390,18 @@ public final class VoiceMatcher {
     }
 
     /**
-     * Wat je zei vanaf woord nummer "from" (voor de invulplek), zoals je het zei (met hoofdletters),
-     * zonder leesteken achteraan. Bij een naam of plek (isName) ook zonder "de/het/it" vooraan.
+     * Wat je zei van woord "from" tot woord "to" (de invulplek), zoals je het zei (met
+     * hoofdletters), zonder leesteken achteraan. Bij een naam of plek (isName) ook zonder
+     * "de/het/it" vooraan.
      */
-    private static String capture(String original, int from, boolean isName) {
+    /** Is dit een vulwoord (de, het, een, zet...) dat niet bij een naam hoort? */
+    private boolean isFiller(String raw) {
+        String word = normalize(raw).stream().findFirst().orElse("");
+        String canonical = synonyms.getOrDefault(word, word);
+        return NAME_FILLERS.contains(word) || ignore.contains(word) || ignore.contains(canonical);
+    }
+
+    private String capture(String original, int from, int to, boolean isName) {
         List<String> pieces = new ArrayList<>();
         int index = 0;
         for (String raw : original.trim().split("\\s+")) {
@@ -350,13 +410,18 @@ public final class VoiceMatcher {
             if (count == 0) {
                 continue;
             }
-            if (index >= from) {
+            if (index >= from && index < to) {
                 pieces.add(raw);
             }
             index += count;
         }
-        while (isName && !pieces.isEmpty() && NAME_FILLERS.contains(normalize(pieces.getFirst()).stream().findFirst().orElse(""))) {
+        // Vulwoorden vooraan weghalen: "zet de lichten" -> "lichten".
+        while (isName && !pieces.isEmpty() && isFiller(pieces.getFirst())) {
             pieces.removeFirst();
+        }
+        // En achteraan: "de val een" (uit "geef de val een puls") -> "val".
+        while (isName && !pieces.isEmpty() && isFiller(pieces.getLast())) {
+            pieces.removeLast();
         }
         String captured = String.join(" ", pieces).trim();
         return captured.replaceAll("^[\\p{Punct}\\s]+|[\\p{Punct}\\s]+$", "");

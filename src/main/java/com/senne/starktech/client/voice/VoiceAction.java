@@ -57,6 +57,11 @@ public enum VoiceAction {
     TARGET_ANALYSIS_ON(Group.SCANNER, false),
     TARGET_ANALYSIS_OFF(Group.SCANNER, false),
     TARGET_ANALYSIS_TOGGLE(Group.SCANNER, false),
+    // Fase 9: redstone aansturen (met de naam van een relais of groep)
+    REDSTONE_ON(Group.TECH, true),
+    REDSTONE_OFF(Group.TECH, true),
+    REDSTONE_TOGGLE(Group.TECH, true),
+    REDSTONE_PULSE(Group.TECH, true),
     // Navigatie en berichten
     PING(Group.NAVIGATION, false),
     NAVIGATE_TO(Group.NAVIGATION, true),
@@ -82,7 +87,9 @@ public enum VoiceAction {
 
     /** Groepen, zodat het keuzescherm overzichtelijk blijft. */
     public enum Group {
-        COMBAT, SCANNER, NAVIGATION, INFO
+        COMBAT, SCANNER, NAVIGATION, INFO,
+        /** Techniek in je wereld: redstone (en later schild en muziek). */
+        TECH
     }
 
     private final Group group;

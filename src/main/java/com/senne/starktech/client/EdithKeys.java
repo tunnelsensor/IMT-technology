@@ -48,6 +48,9 @@ public final class EdithKeys {
     public static final KeyMapping SPY_DRONE = key("spy_drone", InputConstants.KEY_PERIOD);
     /** Alles afbreken: drones terug, satelliet uit, escorte uit, markeringen weg. */
     public static final KeyMapping STAND_DOWN = key("stand_down", InputConstants.KEY_COMMA);
+    // Fase 9
+    /** Het redstone-scherm openen (al je relais, per groep). */
+    public static final KeyMapping REDSTONE = key("redstone", InputConstants.KEY_APOSTROPHE);
     // Fase 4
     /** Ingedrukt houden = E.D.I.T.H. luistert naar een (Engels) spraakcommando; loslaten = uitvoeren. */
     public static final KeyMapping PUSH_TO_TALK = key("push_to_talk", InputConstants.KEY_Z);
@@ -74,5 +77,6 @@ public final class EdithKeys {
         event.register(DRONE_STRIKE);
         event.register(SPY_DRONE);
         event.register(STAND_DOWN);
+        event.register(REDSTONE);
     }
 }

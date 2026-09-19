@@ -2,6 +2,7 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.nav.EdithWaypoints;
+import com.senne.starktech.redstone.EdithRelays;
 import java.util.function.Supplier;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
@@ -27,5 +28,14 @@ public final class ModAttachments {
                     // mods): die hebben geen echte verbinding en kunnen niets ontvangen.
                     .sync((holder, player) -> holder == player && player.connection != null
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithWaypoints.STREAM_CODEC)
+                    .build());
+
+    /** De redstone-relais die deze speler heeft aangemeld (fase 9). */
+    public static final Supplier<AttachmentType<EdithRelays>> RELAYS = ATTACHMENTS.register("relays",
+            () -> AttachmentType.builder(() -> EdithRelays.EMPTY)
+                    .serialize(EdithRelays.CODEC.codec())
+                    .copyOnDeath()
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithRelays.STREAM_CODEC)
                     .build());
 }

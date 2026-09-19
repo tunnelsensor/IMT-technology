@@ -1,5 +1,6 @@
 {
   "values": [
-    "starktech:charging_station"
+    "starktech:charging_station",
+    "starktech:relay"
   ]
 }

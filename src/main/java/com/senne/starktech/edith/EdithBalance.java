@@ -225,6 +225,18 @@ public final class EdithBalance {
     /** Hoeveel stapels een vrachtdrone kan meenemen. */
     public static final int CARGO_SLOTS = 27;
 
+    // ---------------------------------------------------------------- Redstone-relais
+    /** Hoeveel relais je kunt aanmelden. */
+    public static final int MAX_RELAYS = 64;
+    /** Maximale lengte van de naam (en van de groepsnaam) van een relais. */
+    public static final int MAX_RELAY_NAME = 24;
+    /** Wat één schakeling kost. */
+    public static final int RELAY_COST = 5;
+    /** Hoe lang een puls duurt (in ticks). 20 ticks = 1 seconde. */
+    public static final int RELAY_PULSE_TICKS = 20;
+    /** Tot hoe ver je de naamplaatjes van je relais in de HUD ziet (in blokken). */
+    public static final double RELAY_LABEL_RANGE = 24.0;
+
     // ---------------------------------------------------------------- Comms
     /** Maximale lengte van een bericht. */
     public static final int MAX_MESSAGE_LENGTH = 100;

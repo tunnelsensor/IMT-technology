@@ -14,6 +14,8 @@ import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.network.CommsPayload;
+import com.senne.starktech.network.RelayActionPayload;
+import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.WaypointActionPayload;
 import com.senne.starktech.registry.ModAttachments;
@@ -200,6 +202,11 @@ public final class VoiceControl {
             case TARGET_ANALYSIS_OFF -> setFeature(EdithFeature.TARGET_ANALYSIS, false, quiet);
             case TARGET_ANALYSIS_TOGGLE -> EdithClientEvents.sendAction(EdithAction.TOGGLE_TARGET_ANALYSIS);
             case PING -> EdithClientEvents.placePing();
+            // Fase 9: redstone. De waarde is de naam van een relais of van een hele groep.
+            case REDSTONE_ON -> switchRelay(value, EdithRedstone.Op.ON);
+            case REDSTONE_OFF -> switchRelay(value, EdithRedstone.Op.OFF);
+            case REDSTONE_TOGGLE -> switchRelay(value, EdithRedstone.Op.TOGGLE);
+            case REDSTONE_PULSE -> switchRelay(value, EdithRedstone.Op.PULSE);
             case NAVIGATE_TO -> navigateTo(mc.player, value);
             case NAVIGATE_HOME -> navigateHome(mc.player);
             case NAVIGATE_DEATH -> navigate(EdithWaypoints.DEATH);
@@ -236,6 +243,16 @@ public final class VoiceControl {
                 return;
             }
         }
+    }
+
+    /** Zet een relais (of een hele groep) aan, uit, om, of geef het een korte puls. */
+    private static void switchRelay(String nameOrGroup, EdithRedstone.Op op) {
+        String clean = nameOrGroup.strip();
+        if (clean.isEmpty()) {
+            tell("edith.starktech.voice.which_relay", EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        PacketDistributor.sendToServer(RelayActionPayload.switchNamed(clean, op));
     }
 
     /** NONE = navigatie stoppen, DEATH = naar je laatste sterfplek, anders een nummer uit je lijst. */
