@@ -576,6 +576,37 @@ def emp_item():
     save(im, "item/emp.png")
 
 
+def holo_table_textures():
+    """De holotafel: een metalen tafel met een oplichtende ring in het blad.
+
+    De ring krijgt de kleur van het hologram, dus er is een blad per kleur (net als bij de
+    rayshields). De zijkant is voor alle kleuren hetzelfde.
+    """
+    side = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(side)
+    # Een paar richels, zodat het geen vlakke plaat is.
+    d.line([0, 4, 15, 4], fill=METAL_DARK)
+    d.line([0, 7, 15, 7], fill=METAL_3)
+    d.line([0, 11, 15, 11], fill=METAL_DARK)
+    for x in range(1, 15, 4):
+        d.point((x, 9), fill=GOLD_DARK)
+    save(side, "block/holo_table_side.png")
+
+    for name, rgb in RAYSHIELD_COLORS.items():
+        bright = rgb + (255,)
+        dim = tuple(c // 3 for c in rgb) + (255,)
+        top = img(16, 16, METAL_2)
+        d = ImageDraw.Draw(top)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        # De projectiering in het midden.
+        d.ellipse([3, 3, 12, 12], outline=dim)
+        d.ellipse([5, 5, 10, 10], outline=bright)
+        px(top, [(8, 8), (7, 8), (8, 7), (7, 7)], bright)
+        # Vier zenders op de hoeken van de ring.
+        px(top, [(3, 8), (12, 8), (8, 3), (8, 12)], bright)
+        save(top, "block/holo_table_top_%s.png" % name)
+
+
 def stark_drone_item():
     """Een gebouwde drone in je hand: een romp met vier rotorarmen en een cyaan oog."""
     im = img(16, 16)
@@ -610,3 +641,4 @@ if __name__ == "__main__":
     charger_textures()
     emp_item()
     stark_drone_item()
+    holo_table_textures()

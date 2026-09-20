@@ -68,6 +68,9 @@ public final class ModItems {
             ModBlocks.LASER_EMITTER);
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
             ModBlocks.DOME_GENERATOR);
+    /** Fase 15: de holotafel. */
+    public static final DeferredItem<BlockItem> HOLO_TABLE = ITEMS.registerSimpleBlockItem("holo_table",
+            ModBlocks.HOLO_TABLE);
 
     /** Fase 15: een gebouwde drone. Gebruik hem en hij vliegt naar je arsenaal in een baan. */
     public static final DeferredItem<StarkDroneItem> STARK_DRONE = ITEMS.registerItem("stark_drone",

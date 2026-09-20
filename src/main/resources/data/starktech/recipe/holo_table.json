@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "item": "minecraft:tinted_glass"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "GAG",
+    "ICI",
+    "I I"
+  ],
+  "result": {
+    "id": "starktech:holo_table",
+    "count": 1
+  }
+}

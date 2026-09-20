@@ -59,6 +59,7 @@ Afspraken die overal gelden:
       Rechtsklik om te repareren met ijzer uit je rugzak, shift-rechtsklik om hem weer omhoog
       te sturen.
 
+- [x] **Holotafel** — zie hieronder
 - [x] **Van heel hoog in- en uitvliegen** — `379478d`
       96 blokken in plaats van 24, in een duik met vonken. Bij vertrek stijgen ze net zo hoog
       weer op in plaats van ter plekke op te lossen.
@@ -66,7 +67,15 @@ Afspraken die overal gelden:
       een drone die nog aan het invallen was. De configsleutel heet nu `drones.orbitHeight`,
       anders hield een bestaande wereld zijn oude 24.
 
-**Stand van zaken:** 27 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+- [x] **Holotafel**
+      Een tafel die een hologram boven zich projecteert, in een kleur die je zelf kiest
+      (dezelfde zes als de rayshields, met sluipen + rechtsklik).
+      Drie standen: een reliëfkaart van de omgeving met je waypoints, spelers en vijanden erop;
+      de bouwtekening van het voorwerp dat je op tafel legt; en je drone-arsenaal dat om een
+      bolletje cirkelt. Zonder bril doet hij niets.
+      Mogelijke uitbreiding: een stand die de ertsen in de buurt laat zien.
+
+**Stand van zaken:** 29 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 
 ---
 
@@ -82,26 +91,22 @@ Afspraken die overal gelden:
 Nog niet besproken: wat het precies kan (vliegen, repulsors, pantser, val opvangen, onder water
 ademen), waar je het vandaan haalt, en wat het aan energie kost.
 
-### 2. Holotafel
-
-- [ ] Een blok dat je waypoints als 3D-kaart boven de tafel projecteert
-
-### 3. Advancements
+### 2. Advancements
 
 - [ ] Een echte boom die je door de fases leidt (nu zijn er alleen recept-advancements)
 
-### 4. Vijanden
+### 3. Vijanden
 
 - [ ] Raiddrones die je aanvallen, willekeurig of als je hun basis aanvalt
 - [ ] Ze mogen blokken kapotmaken, met een **gamerule** om dat uit te zetten; standaard aan
 
-### 5. Meer in de wereld
+### 4. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 6. De AI-stem (als laatste)
+### 5. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API

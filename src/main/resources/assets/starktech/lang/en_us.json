@@ -704,5 +704,11 @@
   "arsenal.starktech.msg.repairing": "Repaired to %s/%s. More iron and it is as good as new.",
   "arsenal.starktech.msg.repaired": "Drone fully repaired. Right-click again to send it back up.",
   "arsenal.starktech.msg.sent_up": "Drone climbing back to orbit.",
-  "screen.starktech.arsenal.repair_hint": "A grounded drone is repaired by right-clicking it (shift to send it up)."
+  "screen.starktech.arsenal.repair_hint": "A grounded drone is repaired by right-clicking it (shift to send it up).",
+  "block.starktech.holo_table": "Holo table",
+  "holo.starktech.mode.map": "Map",
+  "holo.starktech.mode.blueprint": "Blueprint",
+  "holo.starktech.mode.arsenal": "Arsenal",
+  "holo.starktech.blueprint": "Blueprint: %s",
+  "holo.starktech.need_glasses": "Without the glasses it is just an expensive table."
 }

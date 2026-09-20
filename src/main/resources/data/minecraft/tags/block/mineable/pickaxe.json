@@ -3,6 +3,7 @@
     "starktech:charging_station",
     "starktech:relay",
     "starktech:laser_emitter",
-    "starktech:dome_generator"
+    "starktech:dome_generator",
+    "starktech:holo_table"
   ]
 }

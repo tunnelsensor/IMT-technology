@@ -183,6 +183,30 @@ de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes 
 zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
 plat.
 
+### Holotafel
+Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij
+projecteert een hologram boven zich dat langzaam ronddraait, en je bedient hem met de bril op:
+
+| Wat je doet | Wat er gebeurt |
+|---|---|
+| **Rechtsklik** (lege hand) | Volgende stand |
+| **Rechtsklik met een voorwerp** | Laat het recept van dat voorwerp zien |
+| **Sluipen + rechtsklik** | Volgende kleur (dezelfde zes als de rayshields) |
+
+Drie standen:
+
+- **Map** — een reliëfkaart van 96 bij 96 blokken rond de tafel: hoe hoger de grond, hoe hoger
+  en feller het staafje. Je waypoints staan er als gekleurde paaltjes in, en het leeft:
+  spelers zijn witte stipjes, vijanden rode, dieren groene.
+- **Blueprint** — het recept van wat je op tafel legt, als zwevend 3x3-rooster met het
+  resultaat erboven. Mag een onderdeel uit een hele groep komen (bijvoorbeeld "een ijzerstaaf"),
+  dan wisselen de mogelijkheden elkaar af. Bestaat er geen recept (zoals bij de bril), dan zie
+  je een rood kruis.
+- **Arsenal** — je drones cirkelen om een bolletje. Groen is heel, oranje heeft een tik gehad,
+  rood is bijna op; een drone die onderweg is knippert.
+
+Zonder bril doet de tafel niets.
+
 ### Muziek (Spotify)
 Zeg *"E.D.I.T.H., speel Thunderstruck van AC/DC"*. Ook: pauze, verder, volgende, vorige en
 *"wat speelt er"*.

@@ -11,6 +11,10 @@ import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithConfig;
+import com.senne.starktech.holo.HoloMode;
+import com.senne.starktech.holo.HoloTableBlock;
+import com.senne.starktech.holo.HoloTableBlockEntity;
+import com.senne.starktech.shield.ShieldColor;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.edith.EdithServer;
@@ -68,6 +72,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -344,6 +349,83 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("De bril wordt niet opgeladen");
             }
         });
+    }
+
+    // ================================================================ Fase 15: de holotafel
+
+    /**
+     * De holotafel onthoudt wat hij laat zien, en je bedient hem met de bril op:
+     * lege hand = volgende stand, voorwerp = bouwtekening, sluipen = volgende kleur.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "holo")
+    public static void holo_table_switches_mode_and_colour(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 2, 2);
+        helper.setBlock(pos, ModBlocks.HOLO_TABLE.get().defaultBlockState());
+        if (!(helper.getBlockEntity(pos) instanceof HoloTableBlockEntity table)) {
+            throw new GameTestAssertException("De holotafel heeft geen block entity");
+        }
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 2, 1));
+        BlockState state = helper.getBlockState(pos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(helper.absolutePos(pos)),
+                Direction.UP, helper.absolutePos(pos), false);
+
+        // Lege hand: volgende stand.
+        HoloMode first = table.mode();
+        state.useWithoutItem(helper.getLevel(), owner, hit);
+        if (table.mode() != first.next()) {
+            throw new GameTestAssertException("De stand veranderde niet: " + table.mode());
+        }
+
+        // Een voorwerp: dat wordt de bouwtekening, en hij springt naar die stand.
+        ItemStack wanted = new ItemStack(ModItems.STARK_CHIP.get());
+        owner.setItemInHand(InteractionHand.MAIN_HAND, wanted);
+        state.useItemOn(wanted, helper.getLevel(), owner, InteractionHand.MAIN_HAND, hit);
+        if (table.mode() != HoloMode.BLUEPRINT) {
+            throw new GameTestAssertException("Hij sprong niet naar de bouwtekening: " + table.mode());
+        }
+        if (!table.blueprint().is(ModItems.STARK_CHIP.get())) {
+            throw new GameTestAssertException("De bouwtekening klopt niet: " + table.blueprint());
+        }
+
+        // Sluipen: volgende kleur.
+        ShieldColor before = helper.getBlockState(pos).getValue(HoloTableBlock.COLOR);
+        owner.setShiftKeyDown(true);
+        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), owner, hit);
+        owner.setShiftKeyDown(false);
+        ShieldColor after = helper.getBlockState(pos).getValue(HoloTableBlock.COLOR);
+        if (after != before.next()) {
+            throw new GameTestAssertException("De kleur ging van " + before + " naar " + after);
+        }
+
+        // En alles blijft bewaard als de tafel opnieuw wordt ingelezen.
+        HoloTableBlockEntity reloaded = new HoloTableBlockEntity(pos, helper.getBlockState(pos));
+        reloaded.loadWithComponents(table.saveWithoutMetadata(helper.getLevel().registryAccess()),
+                helper.getLevel().registryAccess());
+        if (reloaded.mode() != table.mode() || !reloaded.blueprint().is(ModItems.STARK_CHIP.get())) {
+            throw new GameTestAssertException("Na opnieuw inlezen is hij zijn instelling kwijt");
+        }
+        helper.succeed();
+    }
+
+    /** Zonder bril doet de tafel niets; hij is dan een dure tafel. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "holo")
+    public static void holo_table_needs_the_glasses(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 2, 2);
+        helper.setBlock(pos, ModBlocks.HOLO_TABLE.get().defaultBlockState());
+        if (!(helper.getBlockEntity(pos) instanceof HoloTableBlockEntity table)) {
+            throw new GameTestAssertException("De holotafel heeft geen block entity");
+        }
+        // Een speler zonder bril.
+        ServerPlayer stranger = helper.makeMockServerPlayerInLevel();
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(helper.absolutePos(pos)),
+                Direction.UP, helper.absolutePos(pos), false);
+
+        HoloMode before = table.mode();
+        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), stranger, hit);
+        if (table.mode() != before) {
+            throw new GameTestAssertException("De stand veranderde zonder bril");
+        }
+        helper.succeed();
     }
 
     // ================================================================ Fase 15: het drone-arsenaal

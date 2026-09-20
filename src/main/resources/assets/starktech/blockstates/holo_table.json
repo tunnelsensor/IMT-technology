@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "color=blue": {
+      "model": "starktech:block/holo_table_blue"
+    },
+    "color=cyan": {
+      "model": "starktech:block/holo_table_cyan"
+    },
+    "color=green": {
+      "model": "starktech:block/holo_table_green"
+    },
+    "color=yellow": {
+      "model": "starktech:block/holo_table_yellow"
+    },
+    "color=red": {
+      "model": "starktech:block/holo_table_red"
+    },
+    "color=purple": {
+      "model": "starktech:block/holo_table_purple"
+    }
+  }
+}

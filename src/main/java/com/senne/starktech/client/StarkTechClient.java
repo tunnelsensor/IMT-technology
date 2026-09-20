@@ -4,6 +4,8 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.drone.DroneModel;
 import com.senne.starktech.client.illusion.IllusionRenderer;
 import com.senne.starktech.client.drone.DroneRenderer;
+import com.senne.starktech.client.holo.HoloTableRenderer;
+import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.client.voice.VoiceControl;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModMenus;
@@ -65,6 +67,8 @@ public class StarkTechClient {
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.STARK_DRONE.get(), DroneRenderer::new);
+        // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
+        event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
     }
 
     private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {

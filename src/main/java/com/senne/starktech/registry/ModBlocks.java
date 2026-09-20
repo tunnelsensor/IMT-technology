@@ -3,6 +3,7 @@ package com.senne.starktech.registry;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.redstone.RelayBlock;
 import com.senne.starktech.shield.DomeGeneratorBlock;
+import com.senne.starktech.holo.HoloTableBlock;
 import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.shield.LaserWallBlock;
 import com.senne.starktech.station.ChargingStationBlock;
@@ -68,6 +69,17 @@ public final class ModBlocks {
                     .lightLevel(state -> 6));
 
     // ---------------------------------------------------------------- Fase 11: rayshield
+
+    /** Fase 15: de holotafel, die een hologram boven zich projecteert. */
+    public static final DeferredBlock<HoloTableBlock> HOLO_TABLE = BLOCKS.registerBlock("holo_table",
+            HoloTableBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 7)
+                    .noOcclusion());
 
     /** De laserzender: twee tegenover elkaar maken een energiewand. */
     public static final DeferredBlock<LaserEmitterBlock> LASER_EMITTER = BLOCKS.registerBlock("laser_emitter",

@@ -1,6 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.holo.HoloTableBlockEntity;
 import com.senne.starktech.station.ChargingStationBlockEntity;
 import com.senne.starktech.station.SolarPanelBlockEntity;
 import com.senne.starktech.station.HeatGeneratorBlockEntity;
@@ -27,6 +28,11 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("solar_panel",
                     () -> new BlockEntityType<>(SolarPanelBlockEntity::new,
                             java.util.Set.of(ModBlocks.SOLAR_PANEL.get()), null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HoloTableBlockEntity>> HOLO_TABLE =
+            BLOCK_ENTITIES.register("holo_table",
+                    () -> new BlockEntityType<>(HoloTableBlockEntity::new,
+                            java.util.Set.of(ModBlocks.HOLO_TABLE.get()), null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HeatGeneratorBlockEntity>> HEAT_GENERATOR =
             BLOCK_ENTITIES.register("heat_generator",
