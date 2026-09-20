@@ -205,7 +205,7 @@ public final class EdithSpeech {
         toPiper.flush();
         // Piper schrijft de naam van het bestand terug als het klaar is.
         if (fromPiper.readLine() == null || !Files.isRegularFile(wav)) {
-            throw new IOException("Piper gaf geen geluid terug");
+            throw new IOException("Piper returned no audio");
         }
         return wav;
     }

@@ -416,16 +416,16 @@ public final class StarkTechGameTests {
 
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
     public static void music_query(GameTestHelper helper) {
-        checkQuery("thunderstruck van ac dc", "track:\"thunderstruck\" artist:\"ac dc\"");
-        checkQuery("thunderstruck by acdc", "track:\"thunderstruck\" artist:\"acdc\"");
-        checkQuery("het nummer thunderstruck", "thunderstruck");
-        checkQuery("iets van queen", "artist:\"queen\"");
-        checkQuery("muziek van queen", "artist:\"queen\"");
+        checkQuery("thunderstruck by ac dc", "track:\"thunderstruck\" artist:\"ac dc\"");
+        checkQuery("thunderstruck from acdc", "track:\"thunderstruck\" artist:\"acdc\"");
+        checkQuery("the song thunderstruck", "thunderstruck");
+        checkQuery("something by queen", "artist:\"queen\"");
+        checkQuery("some music by queen", "artist:\"queen\"");
         checkQuery("thunderstruck", "thunderstruck");
-        checkQuery("muziek", "");
-        // De terugval als track:/artist: niets oplevert ("man van staal" is gewoon een titel).
-        if (!MusicQuery.plain("man van staal").equals("man staal")) {
-            throw new GameTestAssertException("Terugval klopt niet: " + MusicQuery.plain("man van staal"));
+        checkQuery("music", "");
+        // De terugval als track:/artist: niets oplevert ("man of steel" is gewoon een titel).
+        if (!MusicQuery.plain("man of steel by anthem").equals("man of steel anthem")) {
+            throw new GameTestAssertException("Terugval klopt niet: " + MusicQuery.plain("man of steel by anthem"));
         }
         helper.succeed();
     }

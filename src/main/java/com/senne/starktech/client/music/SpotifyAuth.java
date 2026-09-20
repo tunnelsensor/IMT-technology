@@ -110,7 +110,7 @@ public final class SpotifyAuth {
         try {
             Files.deleteIfExists(tokenFile());
         } catch (IOException e) {
-            StarkTech.LOGGER.warn("E.D.I.T.H.: kon {} niet verwijderen", tokenFile(), e);
+            StarkTech.LOGGER.warn("E.D.I.T.H.: could not delete {}", tokenFile(), e);
         }
     }
 
@@ -129,7 +129,7 @@ public final class SpotifyAuth {
                 refreshToken = json.get("refresh_token").getAsString();
             }
         } catch (Exception e) {
-            StarkTech.LOGGER.warn("E.D.I.T.H.: kan {} niet lezen", file, e);
+            StarkTech.LOGGER.warn("E.D.I.T.H.: cannot read {}", file, e);
         }
     }
 
@@ -141,7 +141,7 @@ public final class SpotifyAuth {
             Files.createDirectories(tokenFile().getParent());
             Files.writeString(tokenFile(), json.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            StarkTech.LOGGER.warn("E.D.I.T.H.: kan het Spotify-token niet opslaan", e);
+            StarkTech.LOGGER.warn("E.D.I.T.H.: cannot save the Spotify token", e);
         }
     }
 
@@ -167,7 +167,7 @@ public final class SpotifyAuth {
                 // dan is je browser sneller terug dan wij de deur open kunnen zetten.
                 server = openCallbackServer();
             } catch (IOException e) {
-                StarkTech.LOGGER.warn("E.D.I.T.H.: kan niet wachten op {} (poort bezet?)", REDIRECT_URI, e);
+                StarkTech.LOGGER.warn("E.D.I.T.H.: cannot listen on {} (port in use?)", REDIRECT_URI, e);
                 done.accept("port_in_use");
                 return;
             }
@@ -196,7 +196,7 @@ public final class SpotifyAuth {
             } catch (Exception e) {
                 // Is er intussen een nieuwe poging gestart? Dan hoort deze melding daar niet meer bij.
                 if (PENDING.get() == server) {
-                    StarkTech.LOGGER.warn("E.D.I.T.H.: koppelen met Spotify mislukt", e);
+                    StarkTech.LOGGER.warn("E.D.I.T.H.: linking with Spotify failed", e);
                     done.accept(e.getClass().getSimpleName());
                 }
             } finally {
@@ -269,8 +269,8 @@ public final class SpotifyAuth {
                 }
                 // Een vriendelijk berichtje in de browser.
                 respond(socket, code != null
-                        ? "<h2>E.D.I.T.H. is gekoppeld aan Spotify.</h2><p>Je kunt dit tabblad sluiten.</p>"
-                        : "<h2>Er ging iets mis.</h2><p>Probeer het opnieuw in het spel.</p>");
+                        ? "<h2>E.D.I.T.H. is connected to Spotify.</h2><p>You can close this tab.</p>"
+                        : "<h2>Something went wrong.</h2><p>Please try again from inside the game.</p>");
                 return new Callback(code, error);
             } catch (SocketTimeoutException e) {
                 return null;

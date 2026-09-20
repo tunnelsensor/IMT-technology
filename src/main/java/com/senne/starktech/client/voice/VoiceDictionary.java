@@ -29,6 +29,13 @@ import java.util.List;
  * zegt E.D.I.T.H. het in de taal van je spel.
  */
 public final class VoiceDictionary {
+    /**
+     * De versie van het standaard-woordenboek. Hoger dit getal zodra de standaard-zinnen
+     * veranderen: opgeslagen woordenboeken van een oudere versie worden dan opzij gezet
+     * (met een .old ernaast) en vervangen door het nieuwe. Versie 1 was nog deels Nederlands.
+     */
+    public static final int VERSION = 2;
+
     /** Eén actie in een commando, met een eventuele vaste waarde. */
     public record ActionRef(VoiceAction action, String value) {}
 
@@ -58,12 +65,15 @@ public final class VoiceDictionary {
     public final List<Command> commands = new ArrayList<>();
     public final List<Synonym> synonyms = new ArrayList<>();
     public final List<String> ignore = new ArrayList<>();
+    /** De versie die in het gelezen bestand stond (zie VERSION). */
+    public int version = VERSION;
 
     public VoiceDictionary copy() {
         VoiceDictionary copy = new VoiceDictionary();
         commands.forEach(command -> copy.commands.add(command.copy()));
         copy.synonyms.addAll(synonyms);
         copy.ignore.addAll(ignore);
+        copy.version = version;
         return copy;
     }
 
@@ -72,6 +82,8 @@ public final class VoiceDictionary {
     public static VoiceDictionary parse(String json) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         VoiceDictionary dictionary = new VoiceDictionary();
+        dictionary.version = root.has("version") && root.get("version").isJsonPrimitive()
+                ? root.get("version").getAsInt() : 1;
         for (JsonElement element : array(root, "commands")) {
             JsonObject object = element.getAsJsonObject();
             Command command = new Command(string(object, "name"));
@@ -104,7 +116,7 @@ public final class VoiceDictionary {
 
     public String toJson() {
         JsonObject root = new JsonObject();
-        root.addProperty("version", 1);
+        root.addProperty("version", VERSION);
         JsonArray commandArray = new JsonArray();
         for (Command command : commands) {
             JsonObject object = new JsonObject();
@@ -149,7 +161,7 @@ public final class VoiceDictionary {
     public static VoiceDictionary loadDefault() throws IOException {
         try (InputStream in = VoiceDictionary.class.getResourceAsStream("/assets/starktech/edith/voice_dictionary.json")) {
             if (in == null) {
-                throw new IOException("voice_dictionary.json ontbreekt in de mod");
+                throw new IOException("voice_dictionary.json is missing from the mod");
             }
             return parse(new String(in.readAllBytes(), StandardCharsets.UTF_8));
         }

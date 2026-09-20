@@ -43,15 +43,25 @@ public final class VoiceCommandStore {
         Path file = file();
         try {
             if (Files.exists(file)) {
-                use(VoiceDictionary.load(file));
-                return;
+                VoiceDictionary saved = VoiceDictionary.load(file);
+                if (saved.version >= VoiceDictionary.VERSION) {
+                    use(saved);
+                    return;
+                }
+                // Een woordenboek van een oudere versie (versie 1 was nog deels Nederlands).
+                // We zetten het opzij, zodat je eigen zinnen niet verloren gaan, en gaan verder
+                // met het nieuwe standaard-woordenboek.
+                Path backup = file.resolveSibling("starktech-voice-v" + saved.version + ".json.old");
+                Files.move(file, backup, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                StarkTech.LOGGER.info("E.D.I.T.H.: voice dictionary version {} replaced by version {}; the old one is kept as {}",
+                        saved.version, VoiceDictionary.VERSION, backup.getFileName());
             }
         } catch (IOException | RuntimeException e) {
             // Kapot bestand (bv. een typfout met de hand)? Dan het standaard-woordenboek, en het
-            // kapotte bestand bewaren we als .kapot zodat je werk niet verloren gaat.
+            // kapotte bestand bewaren we als .broken zodat je werk niet verloren gaat.
             StarkTech.LOGGER.warn("E.D.I.T.H.: could not read {}, using the default dictionary", file, e);
             try {
-                Files.move(file, file.resolveSibling("starktech-voice.json.kapot"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                Files.move(file, file.resolveSibling("starktech-voice.json.broken"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException ignored) {
                 // dan maar niet
             }

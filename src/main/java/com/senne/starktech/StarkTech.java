@@ -114,6 +114,6 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(SatelliteStrikes::onServerTick);
         NeoForge.EVENT_BUS.addListener(SatelliteStrikes::onServerStopped);
 
-        LOGGER.info("Stark Tech geladen. E.D.I.T.H. staat klaar.");
+        LOGGER.info("Stark Tech loaded. E.D.I.T.H. is standing by.");
     }
 }

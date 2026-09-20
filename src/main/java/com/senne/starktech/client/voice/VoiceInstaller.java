@@ -171,7 +171,7 @@ public final class VoiceInstaller {
                 Path part = dir.resolve("download.part");
                 String sha256 = download(download, part, job);
                 if (!sha256.equalsIgnoreCase(download.sha256())) {
-                    throw new IOException("verkeerde vingerafdruk (SHA-256) voor " + download.url());
+                    throw new IOException("wrong fingerprint (SHA-256) for " + download.url());
                 }
                 switch (download.kind()) {
                     case FILE -> Files.move(part, dir.resolve(download.fileName()), StandardCopyOption.REPLACE_EXISTING);
@@ -224,7 +224,7 @@ public final class VoiceInstaller {
                 job.done.addAndGet(read);
                 received += read;
                 if (received > download.size()) {
-                    throw new IOException("bestand is groter dan verwacht: " + download.url());
+                    throw new IOException("file is larger than expected: " + download.url());
                 }
             }
         }

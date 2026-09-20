@@ -95,7 +95,7 @@ final class LlamaServer {
         long deadline = System.currentTimeMillis() + START_MILLIS;
         while (System.currentTimeMillis() < deadline) {
             if (!started.isAlive()) {
-                throw new IOException(name + " stopte meteen (code " + started.exitValue() + "), zie " + log);
+                throw new IOException(name + " stopped immediately (code " + started.exitValue() + "), see " + log);
             }
             if (healthy()) {
                 StarkTech.LOGGER.info("E.D.I.T.H.: {} ready on port {} ({})", name, port, gpu ? "GPU" : "CPU");
@@ -110,7 +110,7 @@ final class LlamaServer {
         }
         started.destroy();
         process = null;
-        throw new IOException(name + " startte niet op tijd, zie " + log);
+        throw new IOException(name + " did not start in time, see " + log);
     }
 
     private boolean healthy() {

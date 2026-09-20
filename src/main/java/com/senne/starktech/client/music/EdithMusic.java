@@ -179,7 +179,7 @@ public final class EdithMusic {
             try {
                 task.run(token);
             } catch (Exception e) {
-                StarkTech.LOGGER.warn("E.D.I.T.H.: Spotify-verzoek mislukt", e);
+                StarkTech.LOGGER.warn("E.D.I.T.H.: Spotify request failed", e);
                 tell("edith.starktech.music.error", EdithMessagePayload.Level.ALERT);
             }
         });

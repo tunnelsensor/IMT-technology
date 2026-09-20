@@ -9,8 +9,8 @@
         }
       ],
       "phrases": [
-        "drones lanceren",
-        "drones inzetten",
+        "launch the drones",
+        "deploy the drones",
         "help",
         "launch drones",
         "deploy drones",
@@ -51,7 +51,7 @@
         }
       ],
       "phrases": [
-        "eén drone",
+        "just one drone",
         "send one drone",
         "send a drone",
         "single drone",
@@ -391,7 +391,7 @@
         "stop the music",
         "music pause",
         "quiet please",
-        "pauze"
+        "pause"
       ]
     },
     {
@@ -416,7 +416,7 @@
         }
       ],
       "phrases": [
-        "volgende",
+        "next",
         "next song",
         "next track",
         "skip this song",
@@ -431,7 +431,7 @@
         }
       ],
       "phrases": [
-        "vorige",
+        "previous",
         "previous song",
         "previous track",
         "go back a song"
