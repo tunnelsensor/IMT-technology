@@ -4,6 +4,7 @@ import com.senne.starktech.client.ClientPayloadHandlers;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.holo.HoloTables;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.redstone.EdithRedstone;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -71,6 +72,12 @@ public final class ModNetwork {
                 ArsenalServer.handleAction(player, payload);
             }
         });
+        // Fase 15: de holotafel
+        registrar.playToServer(HoloActionPayload.TYPE, HoloActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                HoloTables.handleAction(player, payload);
+            }
+        });
 
         // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
         // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een
@@ -87,6 +94,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onDroneCamera(payload, context));
         registrar.playToClient(PingMarkerPayload.TYPE, PingMarkerPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onPing(payload, context));
+        registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
         // Fase 6: spionagedrone
         registrar.playToClient(SpyStatusPayload.TYPE, SpyStatusPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSpyStatus(payload, context));

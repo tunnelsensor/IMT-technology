@@ -189,9 +189,14 @@ projecteert een hologram boven zich dat langzaam ronddraait, en je bedient hem m
 
 | Wat je doet | Wat er gebeurt |
 |---|---|
-| **Rechtsklik** (lege hand) | Volgende stand |
+| **Rechtsklik** (lege hand) | Het instelscherm |
 | **Rechtsklik met een voorwerp** | Laat het recept van dat voorwerp zien |
-| **Sluipen + rechtsklik** | Volgende kleur (dezelfde zes als de rayshields) |
+| **Sluipen + rechtsklik** | Meteen de volgende kleur, zonder scherm |
+
+In het **instelscherm** kies je wat hij laat zien, de kleur (dezelfde zes als de rayshields),
+hoe ver de kaart reikt (24, 48, 96 of 160 blokken), hoe groot het hologram is (klein, normaal,
+groot) en of hij ronddraait. Je ziet het hologram achter het scherm meteen veranderen, dus er
+is geen opslaan-knop. Met **Take off** haal je het voorwerp weer van tafel.
 
 Drie standen:
 

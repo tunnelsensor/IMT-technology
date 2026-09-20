@@ -72,6 +72,8 @@ Afspraken die overal gelden:
       Drie standen: een reliëfkaart van de omgeving met je waypoints, spelers en vijanden erop;
       de bouwtekening van het voorwerp dat je op tafel legt; en je drone-arsenaal dat om een
       bolletje cirkelt. Zonder bril doet hij niets.
+      Instelscherm (rechtsklik met een lege hand): stand, kleur, bereik van de kaart, grootte
+      van het hologram, ronddraaien aan/uit, en het voorwerp van tafel halen.
       Mogelijke uitbreiding: een stand die de ertsen in de buurt laat zien.
 
 **Stand van zaken:** 29 automatische tests, allemaal groen (`gradlew runGameTestServer`).

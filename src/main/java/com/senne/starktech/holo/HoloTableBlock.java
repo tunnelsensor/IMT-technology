@@ -5,6 +5,7 @@ import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.shield.ShieldColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -30,9 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * De holotafel: een lage tafel die een hologram boven zich projecteert.
  *
  * Wat je ermee doet:
- * - **rechtsklik met een lege hand**: volgende stand (kaart, bouwtekening, arsenaal)
+ * - **rechtsklik met een lege hand**: het instelscherm (stand, kleur, bereik, grootte...)
  * - **rechtsklik met een voorwerp**: laat het recept van dat voorwerp zien
- * - **sluipen + rechtsklik**: volgende kleur voor het hologram
+ * - **sluipen + rechtsklik**: meteen de volgende kleur, zonder scherm
  *
  * Je hebt de bril op nodig: zonder E.D.I.T.H. is het een dure tafel.
  */
@@ -115,13 +116,9 @@ public class HoloTableBlock extends BaseEntityBlock {
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
-        if (level.getBlockEntity(pos) instanceof HoloTableBlockEntity table) {
-            HoloMode next = table.mode().next();
-            table.setMode(next);
-            if (!level.isClientSide) {
-                player.displayClientMessage(next.label(), true);
-                level.playSound(null, pos, SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS, 0.5f, 1.5f);
-            }
+        // Lege hand: het instelscherm. De server beslist of je het mag openen.
+        if (player instanceof ServerPlayer serverPlayer) {
+            HoloTables.openSettings(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

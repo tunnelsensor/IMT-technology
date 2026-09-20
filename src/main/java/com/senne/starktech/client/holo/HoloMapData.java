@@ -17,10 +17,6 @@ import org.jetbrains.annotations.Nullable;
 public class HoloMapData {
     /** Hoeveel vakjes de kaart breed en diep is. */
     public static final int CELLS = 32;
-    /** Hoe ver de kaart reikt vanaf de tafel (in blokken). */
-    public static final int RADIUS = 48;
-    /** Hoeveel blokken één vakje beslaat. */
-    private static final int BLOCKS_PER_CELL = (RADIUS * 2) / CELLS;
     /** Zo vaak rekenen we de kaart opnieuw uit (in ticks). 60 ticks = 3 seconden. */
     private static final long REFRESH_TICKS = 60;
     /** Hoogteverschil (in blokken) dat overeenkomt met de volle hoogte van het hologram. */
@@ -29,26 +25,36 @@ public class HoloMapData {
     private @Nullable Snapshot snapshot;
     private long builtAt = Long.MIN_VALUE;
     private @Nullable BlockPos builtFor;
+    private int builtRadius = -1;
 
-    /** De kaart van nu; wordt zo nodig opnieuw uitgerekend. */
-    public Snapshot get(Level level, BlockPos table) {
+    /**
+     * De kaart van nu; wordt zo nodig opnieuw uitgerekend.
+     *
+     * @param radius hoe ver de kaart reikt (in blokken); komt uit de instellingen van de tafel
+     */
+    public Snapshot get(Level level, BlockPos table, int radius) {
         long now = level.getGameTime();
-        if (snapshot == null || !table.equals(builtFor) || now - builtAt >= REFRESH_TICKS) {
-            snapshot = build(level, table);
+        boolean stale = snapshot == null || !table.equals(builtFor) || radius != builtRadius
+                || now - builtAt >= REFRESH_TICKS;
+        if (stale) {
+            snapshot = build(level, table, radius);
             builtAt = now;
             builtFor = table;
+            builtRadius = radius;
         }
         return snapshot;
     }
 
-    private static Snapshot build(Level level, BlockPos table) {
+    private static Snapshot build(Level level, BlockPos table, int radius) {
         float[] heights = new float[CELLS * CELLS];
-        int originX = table.getX() - RADIUS;
-        int originZ = table.getZ() - RADIUS;
+        int originX = table.getX() - radius;
+        int originZ = table.getZ() - radius;
+        // Hoe groter het bereik, hoe meer blokken één vakje beslaat.
+        int blocksPerCell = Math.max(1, (radius * 2) / CELLS);
         for (int cx = 0; cx < CELLS; cx++) {
             for (int cz = 0; cz < CELLS; cz++) {
-                int x = originX + cx * BLOCKS_PER_CELL + BLOCKS_PER_CELL / 2;
-                int z = originZ + cz * BLOCKS_PER_CELL + BLOCKS_PER_CELL / 2;
+                int x = originX + cx * blocksPerCell + blocksPerCell / 2;
+                int z = originZ + cz * blocksPerCell + blocksPerCell / 2;
                 // Niet geladen stukken slaan we over: daar weten we de hoogte niet van.
                 if (!level.hasChunkAt(new BlockPos(x, table.getY(), z))) {
                     heights[cx * CELLS + cz] = Float.NaN;
@@ -58,11 +64,12 @@ public class HoloMapData {
                 heights[cx * CELLS + cz] = Mth.clamp((top - table.getY()) / HEIGHT_SCALE, -1.0f, 1.0f);
             }
         }
-        return new Snapshot(table, originX, originZ, heights);
+        return new Snapshot(table, originX, originZ, radius, blocksPerCell, heights);
     }
 
     /** Eén uitgerekende kaart. */
-    public record Snapshot(BlockPos table, int originX, int originZ, float[] heights) {
+    public record Snapshot(BlockPos table, int originX, int originZ, int radius, int blocksPerCell,
+                           float[] heights) {
 
         /** Hoe hoog het vakje is, van -1 (diep) tot 1 (hoog), of NaN als het niet geladen is. */
         public float relativeHeight(int cellX, int cellZ) {
@@ -74,8 +81,8 @@ public class HoloMapData {
 
         /** Idem, maar voor een plek in de wereld. */
         public float relativeHeightAt(double worldX, double worldZ) {
-            int cellX = (int) Math.floor((worldX - originX) / BLOCKS_PER_CELL);
-            int cellZ = (int) Math.floor((worldZ - originZ) / BLOCKS_PER_CELL);
+            int cellX = (int) Math.floor((worldX - originX) / blocksPerCell);
+            int cellZ = (int) Math.floor((worldZ - originZ) / blocksPerCell);
             return relativeHeight(cellX, cellZ);
         }
 
@@ -85,8 +92,8 @@ public class HoloMapData {
          * @return de x en z binnen het hologram, of null als die plek buiten de kaart valt
          */
         public float @Nullable [] project(double worldX, double worldZ, float size) {
-            double fx = (worldX - originX) / (RADIUS * 2.0);
-            double fz = (worldZ - originZ) / (RADIUS * 2.0);
+            double fx = (worldX - originX) / (radius * 2.0);
+            double fz = (worldZ - originZ) / (radius * 2.0);
             if (fx < 0 || fx > 1 || fz < 0 || fz > 1) {
                 return null;
             }

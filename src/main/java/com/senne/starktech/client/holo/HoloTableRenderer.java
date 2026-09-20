@@ -77,9 +77,12 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
 
         poseStack.pushPose();
         poseStack.translate(0.5, LIFT, 0.5);
-        // Langzaam ronddraaien, en heel licht op en neer zweven.
+        // Heel licht op en neer zweven, en (als dat aan staat) langzaam ronddraaien.
         poseStack.translate(0, Mth.sin(time / 26.0f) * 0.02f, 0);
-        poseStack.mulPose(Axis.YP.rotationDegrees(time * 0.4f));
+        if (table.spin()) {
+            poseStack.mulPose(Axis.YP.rotationDegrees(time * 0.4f));
+        }
+        poseStack.scale(table.scaleFactor(), table.scaleFactor(), table.scaleFactor());
 
         VertexConsumer lines = buffers.getBuffer(RenderType.lines());
         baseRing(poseStack, lines, rgb, time);
@@ -102,7 +105,7 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
      */
     private void renderMap(HoloTableBlockEntity table, Level level, PoseStack poseStack,
                            VertexConsumer lines, int rgb, float time) {
-        HoloMapData.Snapshot snapshot = map.get(level, table.getBlockPos());
+        HoloMapData.Snapshot snapshot = map.get(level, table.getBlockPos(), table.rangeBlocks());
         int cells = HoloMapData.CELLS;
         float step = SIZE / cells;
         float half = SIZE / 2.0f;
@@ -154,8 +157,7 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     /** Spelers in het wit, vijanden in het rood: een levende kaart. */
     private void renderEntities(HoloTableBlockEntity table, Level level, PoseStack poseStack,
                                 VertexConsumer lines, HoloMapData.Snapshot snapshot, float time) {
-        BlockPos pos = table.getBlockPos();
-        AABB box = new AABB(pos).inflate(HoloMapData.RADIUS);
+        AABB box = new AABB(table.getBlockPos()).inflate(snapshot.radius());
         // Een klein pulsje, zodat de stipjes opvallen tussen de staafjes.
         float pulse = 0.05f + 0.015f * Mth.sin(time / 6.0f);
         for (Entity entity : level.getEntities((Entity) null, box, e -> e instanceof LivingEntity && e.isAlive())) {

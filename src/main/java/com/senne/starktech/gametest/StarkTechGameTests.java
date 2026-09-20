@@ -12,6 +12,8 @@ import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.holo.HoloMode;
+import com.senne.starktech.holo.HoloTables;
+import com.senne.starktech.network.HoloActionPayload;
 import com.senne.starktech.holo.HoloTableBlock;
 import com.senne.starktech.holo.HoloTableBlockEntity;
 import com.senne.starktech.shield.ShieldColor;
@@ -365,21 +367,38 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("De holotafel heeft geen block entity");
         }
         ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 2, 1));
-        BlockState state = helper.getBlockState(pos);
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(helper.absolutePos(pos)),
                 Direction.UP, helper.absolutePos(pos), false);
 
-        // Lege hand: volgende stand.
-        HoloMode first = table.mode();
-        state.useWithoutItem(helper.getLevel(), owner, hit);
-        if (table.mode() != first.next()) {
+        // Het instelscherm zet de stand; hier doen we wat dat scherm stuurt.
+        HoloMode wanted = table.mode().next();
+        HoloTables.handleAction(owner, new HoloActionPayload(helper.absolutePos(pos),
+                HoloActionPayload.Op.MODE, wanted.ordinal()));
+        if (table.mode() != wanted) {
             throw new GameTestAssertException("De stand veranderde niet: " + table.mode());
         }
+        // Bereik, grootte en ronddraaien komen ook uit dat scherm.
+        HoloTables.handleAction(owner, new HoloActionPayload(helper.absolutePos(pos),
+                HoloActionPayload.Op.RANGE, 3));
+        HoloTables.handleAction(owner, new HoloActionPayload(helper.absolutePos(pos),
+                HoloActionPayload.Op.SPIN, 0));
+        if (table.range() != 3 || table.spin()) {
+            throw new GameTestAssertException("Bereik of draaien werd niet overgenomen: "
+                    + table.range() + ", " + table.spin());
+        }
+        // Buiten bereik mag niemand aan je tafel zitten.
+        owner.moveTo(helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(1, 2, 1))).add(200, 0, 0));
+        HoloTables.handleAction(owner, new HoloActionPayload(helper.absolutePos(pos),
+                HoloActionPayload.Op.RANGE, 0));
+        if (table.range() != 3) {
+            throw new GameTestAssertException("De tafel luisterde naar iemand die er niet bij staat");
+        }
+        owner.moveTo(helper.absoluteVec(Vec3.atBottomCenterOf(new BlockPos(1, 2, 1))));
 
         // Een voorwerp: dat wordt de bouwtekening, en hij springt naar die stand.
-        ItemStack wanted = new ItemStack(ModItems.STARK_CHIP.get());
-        owner.setItemInHand(InteractionHand.MAIN_HAND, wanted);
-        state.useItemOn(wanted, helper.getLevel(), owner, InteractionHand.MAIN_HAND, hit);
+        ItemStack chip = new ItemStack(ModItems.STARK_CHIP.get());
+        owner.setItemInHand(InteractionHand.MAIN_HAND, chip);
+        helper.getBlockState(pos).useItemOn(chip, helper.getLevel(), owner, InteractionHand.MAIN_HAND, hit);
         if (table.mode() != HoloMode.BLUEPRINT) {
             throw new GameTestAssertException("Hij sprong niet naar de bouwtekening: " + table.mode());
         }

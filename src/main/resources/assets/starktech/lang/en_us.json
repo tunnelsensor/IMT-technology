@@ -710,5 +710,18 @@
   "holo.starktech.mode.blueprint": "Blueprint",
   "holo.starktech.mode.arsenal": "Arsenal",
   "holo.starktech.blueprint": "Blueprint: %s",
-  "holo.starktech.need_glasses": "Without the glasses it is just an expensive table."
+  "holo.starktech.need_glasses": "Without the glasses it is just an expensive table.",
+  "screen.starktech.holo": "Holo table",
+  "screen.starktech.holo.shows": "Showing",
+  "screen.starktech.holo.range": "Map range",
+  "screen.starktech.holo.range_value": "%s blocks",
+  "screen.starktech.holo.size": "Size",
+  "screen.starktech.holo.scale.0": "Small",
+  "screen.starktech.holo.scale.1": "Normal",
+  "screen.starktech.holo.scale.2": "Large",
+  "screen.starktech.holo.spin": "Turning",
+  "screen.starktech.holo.on_table": "On the table",
+  "screen.starktech.holo.nothing": "nothing",
+  "screen.starktech.holo.clear": "Take off",
+  "screen.starktech.holo.hint": "Right-click the table with an item to see how it is made."
 }

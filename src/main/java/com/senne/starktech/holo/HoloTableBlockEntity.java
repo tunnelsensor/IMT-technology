@@ -25,6 +25,12 @@ public class HoloTableBlockEntity extends BlockEntity {
     private HoloMode mode = HoloMode.MAP;
     /** Het voorwerp waarvan we het recept tonen (alleen in de stand BLUEPRINT). */
     private ItemStack blueprint = ItemStack.EMPTY;
+    /** Hoe ver de kaart reikt; een nummer uit HoloSettings.RANGES. */
+    private int range = HoloSettings.DEFAULT_RANGE;
+    /** Hoe groot het hologram is; een nummer uit HoloSettings.SCALES. */
+    private int scale = HoloSettings.DEFAULT_SCALE;
+    /** Draait het hologram rond? Sommigen kijken liever naar een stilstaand beeld. */
+    private boolean spin = true;
 
     public HoloTableBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HOLO_TABLE.get(), pos, state);
@@ -36,6 +42,49 @@ public class HoloTableBlockEntity extends BlockEntity {
 
     public ItemStack blueprint() {
         return blueprint;
+    }
+
+    public int range() {
+        return range;
+    }
+
+    public int scale() {
+        return scale;
+    }
+
+    public boolean spin() {
+        return spin;
+    }
+
+    /** Hoe ver de kaart reikt, in blokken. */
+    public int rangeBlocks() {
+        return HoloSettings.rangeBlocks(range);
+    }
+
+    /** Hoe groot het hologram is (1.0 = normaal). */
+    public float scaleFactor() {
+        return HoloSettings.scale(scale);
+    }
+
+    public void setRange(int index) {
+        this.range = HoloSettings.clampRange(index);
+        sync();
+    }
+
+    public void setScale(int index) {
+        this.scale = HoloSettings.clampScale(index);
+        sync();
+    }
+
+    public void setSpin(boolean spinning) {
+        this.spin = spinning;
+        sync();
+    }
+
+    /** Haalt het voorwerp van tafel; de bouwtekening is dan leeg. */
+    public void clearBlueprint() {
+        this.blueprint = ItemStack.EMPTY;
+        sync();
     }
 
     public void setMode(HoloMode newMode) {
@@ -63,6 +112,9 @@ public class HoloTableBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putByte("Mode", (byte) mode.ordinal());
+        tag.putByte("Range", (byte) range);
+        tag.putByte("Scale", (byte) scale);
+        tag.putBoolean("Spin", spin);
         if (!blueprint.isEmpty()) {
             tag.put("Blueprint", blueprint.save(registries));
         }
@@ -72,6 +124,9 @@ public class HoloTableBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         mode = HoloMode.byId(tag.getByte("Mode"));
+        range = HoloSettings.clampRange(tag.contains("Range") ? tag.getByte("Range") : HoloSettings.DEFAULT_RANGE);
+        scale = HoloSettings.clampScale(tag.contains("Scale") ? tag.getByte("Scale") : HoloSettings.DEFAULT_SCALE);
+        spin = !tag.contains("Spin") || tag.getBoolean("Spin");
         blueprint = tag.contains("Blueprint")
                 ? ItemStack.parse(registries, tag.getCompound("Blueprint")).orElse(ItemStack.EMPTY)
                 : ItemStack.EMPTY;

@@ -10,6 +10,7 @@ import com.senne.starktech.client.illusion.IllusionRenderer;
 import com.senne.starktech.network.HackMessagePayload;
 import com.senne.starktech.network.IllusionScenePayload;
 import com.senne.starktech.network.PingMarkerPayload;
+import com.senne.starktech.network.HoloOpenPayload;
 import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.network.SpyReportPayload;
 import com.senne.starktech.network.SpyStatusPayload;
@@ -44,6 +45,14 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
             mc.setScreen(new RelayEditScreen(payload.index()));
+        }
+    }
+
+    /** Het instelscherm van een holotafel openen. */
+    public static void onHoloOpen(HoloOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new HoloTableScreen(payload.pos()));
         }
     }
 
