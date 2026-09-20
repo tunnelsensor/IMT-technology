@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.nav.EdithWaypoints;
@@ -165,15 +166,15 @@ public class NavigationScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + 52 + (PER_PAGE + 1) * ROW_H + 30, EdithHud.argb(200, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + 52 + (PER_PAGE + 1) * ROW_H + 30, 8, EdithHud.argb(220, EdithHud.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + 52 + (PER_PAGE + 1) * ROW_H + 30, HudStyle.argb(200, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + 52 + (PER_PAGE + 1) * ROW_H + 30, 8, HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         String count = shownData.waypoints().size() + "/" + EdithBalance.MAX_WAYPOINTS;
-        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(180, EdithHud.WHITE), true);
+        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(180, HudStyle.WHITE), true);
         // Kleurvakje op de kleurknop
-        g.fill(left + 186, top + 28, left + 196, top + 38, EdithHud.argb(255, Waypoint.COLORS[colorIndex]));
+        g.fill(left + 186, top + 28, left + 196, top + 38, HudStyle.argb(255, Waypoint.COLORS[colorIndex]));
 
         LocalPlayer player = player();
         if (player == null) {
@@ -181,12 +182,12 @@ public class NavigationScreen extends Screen {
         }
         if (rows.isEmpty()) {
             g.drawCenteredString(font, Component.translatable("screen.starktech.nav.empty"), left + PANEL_W / 2, top + 60,
-                    EdithHud.argb(160, EdithHud.WHITE));
+                    HudStyle.argb(160, HudStyle.WHITE));
         }
         for (Row row : rows) {
             boolean active = shownData.active() == row.index();
             if (active) {
-                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + ROW_H - 4, EdithHud.argb(60, EdithHud.CYAN));
+                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + ROW_H - 4, HudStyle.argb(60, HudStyle.CYAN));
             }
             int color;
             Component name;
@@ -197,7 +198,7 @@ public class NavigationScreen extends Screen {
                 if (death.isEmpty()) {
                     continue;
                 }
-                color = EdithHud.RED;
+                color = HudStyle.RED;
                 name = Component.translatable("edith.starktech.nav.death");
                 dimension = death.get().dimension();
                 pos = death.get().pos();
@@ -208,9 +209,9 @@ public class NavigationScreen extends Screen {
                 dimension = waypoint.dimension();
                 pos = waypoint.pos();
             }
-            g.fill(left + 8, row.y() + 4, left + 16, row.y() + 12, EdithHud.argb(255, color));
-            g.drawString(font, name, left + 22, row.y() + 1, EdithHud.argb(255, EdithHud.WHITE), true);
-            g.drawString(font, locationText(player, dimension, pos), left + 22, row.y() + 10, EdithHud.argb(170, 0x9FC9D6), false);
+            g.fill(left + 8, row.y() + 4, left + 16, row.y() + 12, HudStyle.argb(255, color));
+            g.drawString(font, name, left + 22, row.y() + 1, HudStyle.argb(255, HudStyle.WHITE), true);
+            g.drawString(font, locationText(player, dimension, pos), left + 22, row.y() + 10, HudStyle.argb(170, 0x9FC9D6), false);
         }
     }
 

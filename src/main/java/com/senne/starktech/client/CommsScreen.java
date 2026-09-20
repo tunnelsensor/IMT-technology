@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.network.CommsPayload;
@@ -146,9 +147,9 @@ public class CommsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + 208, EdithHud.argb(200, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + 208, 8, EdithHud.argb(220, EdithHud.GREEN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + 208, HudStyle.argb(200, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + 208, 8, HudStyle.argb(220, HudStyle.GREEN));
         super.render(g, mouseX, mouseY, a);
-        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.GREEN), true);
+        g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.GREEN), true);
     }
 }

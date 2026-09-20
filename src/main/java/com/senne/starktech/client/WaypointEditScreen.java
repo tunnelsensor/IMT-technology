@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
@@ -111,19 +112,19 @@ public class WaypointEditScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         int panelH = 94;
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, EdithHud.argb(210, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, EdithHud.argb(220, EdithHud.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, HudStyle.argb(210, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + 10, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 10, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         Waypoint waypoint = waypoint();
         if (waypoint != null) {
             String where = waypoint.pos().getX() + " " + waypoint.pos().getY() + " " + waypoint.pos().getZ();
-            g.drawString(font, where, left + PANEL_W - 10 - font.width(where), top + 8, EdithHud.argb(160, EdithHud.WHITE), true);
+            g.drawString(font, where, left + PANEL_W - 10 - font.width(where), top + 8, HudStyle.argb(160, HudStyle.WHITE), true);
         }
         g.drawString(font, Component.translatable("screen.starktech.waypoint_edit.name"), left + 10, top + 24,
-                EdithHud.argb(200, EdithHud.WHITE), false);
+                HudStyle.argb(200, HudStyle.WHITE), false);
         // De gekozen kleur in het knopje laten zien.
-        g.fill(left + PANEL_W - 26, top + 38, left + PANEL_W - 14, top + 50, EdithHud.argb(255, color));
+        g.fill(left + PANEL_W - 26, top + 38, left + PANEL_W - 14, top + 50, HudStyle.argb(255, color));
     }
 }

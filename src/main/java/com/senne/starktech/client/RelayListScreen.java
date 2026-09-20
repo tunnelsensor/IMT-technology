@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.redstone.EdithRedstone;
@@ -172,34 +173,34 @@ public class RelayListScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         int panelH = 28 + ROWS_PER_PAGE * ROW_H + 32;
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, EdithHud.argb(205, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, EdithHud.argb(220, EdithHud.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, HudStyle.argb(205, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         String count = shown.relays().size() + "/" + EdithBalance.MAX_RELAYS;
-        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(180, EdithHud.WHITE), true);
+        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(180, HudStyle.WHITE), true);
 
         LocalPlayer player = player();
         if (rows.isEmpty()) {
             g.drawCenteredString(font, Component.translatable("screen.starktech.relays.empty"), left + PANEL_W / 2,
-                    top + 40, EdithHud.argb(170, EdithHud.WHITE));
+                    top + 40, HudStyle.argb(170, HudStyle.WHITE));
             g.drawCenteredString(font, Component.translatable("screen.starktech.relays.hint"), left + PANEL_W / 2,
-                    top + 54, EdithHud.argb(140, EdithHud.WHITE));
+                    top + 54, HudStyle.argb(140, HudStyle.WHITE));
             return;
         }
         for (Row row : rows) {
             if (row.index() == -2) {
                 // Kopje van een soort apparaat (relais / laserzenders / koepels).
-                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, EdithHud.argb(70, EdithHud.ORANGE));
-                g.drawString(font, row.group(), left + 8, row.y() + 3, EdithHud.argb(255, EdithHud.ORANGE), true);
+                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(70, HudStyle.ORANGE));
+                g.drawString(font, row.group(), left + 8, row.y() + 3, HudStyle.argb(255, HudStyle.ORANGE), true);
                 continue;
             }
             if (row.index() < 0) {
                 // Groepskopje
-                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, EdithHud.argb(45, EdithHud.CYAN));
+                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(45, HudStyle.CYAN));
                 g.drawString(font, Component.translatable("screen.starktech.relays.group", row.group()),
-                        left + 8, row.y() + 3, EdithHud.argb(255, EdithHud.CYAN), true);
+                        left + 8, row.y() + 3, HudStyle.argb(255, HudStyle.CYAN), true);
                 continue;
             }
             Relay relay = shown.get(row.index());
@@ -207,10 +208,10 @@ public class RelayListScreen extends Screen {
                 continue;
             }
             boolean on = RelayLabels.isOn(relay);
-            g.fill(left + 10, row.y() + 5, left + 16, row.y() + 11, EdithHud.argb(255, on ? EdithHud.GREEN : 0x40525C));
-            g.drawString(font, relay.name(), left + 22, row.y() + 1, EdithHud.argb(255, EdithHud.WHITE), true);
+            g.fill(left + 10, row.y() + 5, left + 16, row.y() + 11, HudStyle.argb(255, on ? HudStyle.GREEN : 0x40525C));
+            g.drawString(font, relay.name(), left + 22, row.y() + 1, HudStyle.argb(255, HudStyle.WHITE), true);
             g.drawString(font, NavigationScreen.locationText(player, relay.dimension(), relay.pos()),
-                    left + 22, row.y() + 10, EdithHud.argb(165, 0x9FC9D6), false);
+                    left + 22, row.y() + 10, HudStyle.argb(165, 0x9FC9D6), false);
         }
     }
 }

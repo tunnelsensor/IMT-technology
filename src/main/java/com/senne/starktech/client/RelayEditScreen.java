@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.redstone.EdithRedstone;
@@ -92,19 +93,19 @@ public class RelayEditScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         int panelH = 128;
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, EdithHud.argb(210, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, EdithHud.argb(220, EdithHud.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, HudStyle.argb(210, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + 10, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 10, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         Relay relay = data().get(index);
         if (relay != null) {
             String where = relay.pos().getX() + " " + relay.pos().getY() + " " + relay.pos().getZ();
-            g.drawString(font, where, left + PANEL_W - 10 - font.width(where), top + 8, EdithHud.argb(160, EdithHud.WHITE), true);
+            g.drawString(font, where, left + PANEL_W - 10 - font.width(where), top + 8, HudStyle.argb(160, HudStyle.WHITE), true);
         }
         g.drawString(font, Component.translatable("screen.starktech.relay_edit.name"), left + 10, top + 24,
-                EdithHud.argb(200, EdithHud.WHITE), false);
+                HudStyle.argb(200, HudStyle.WHITE), false);
         g.drawString(font, Component.translatable("screen.starktech.relay_edit.group"), left + 10, top + 58,
-                EdithHud.argb(200, EdithHud.WHITE), false);
+                HudStyle.argb(200, HudStyle.WHITE), false);
     }
 }

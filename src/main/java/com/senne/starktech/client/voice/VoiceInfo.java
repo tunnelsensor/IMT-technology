@@ -1,9 +1,9 @@
 package com.senne.starktech.client.voice;
 
+import com.senne.starktech.client.hud.PowerReadout;
 import com.senne.starktech.client.DroneCamera;
 import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.edith.EdithCooldown;
-import com.senne.starktech.client.EdithHud;
 import com.senne.starktech.client.NavigationScreen;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
@@ -99,7 +99,7 @@ final class VoiceInfo {
         ItemStack glasses = EdithData.getWornGlasses(player);
         int energy = EdithData.getEnergy(glasses);
         return Component.translatable(KEY + "battery", Math.round(EdithData.getEnergyFraction(glasses) * 100),
-                EdithHud.timeLeft(energy, EdithHud.drainPerSecond(glasses)));
+                PowerReadout.timeLeft(energy, PowerReadout.drainPerSecond(glasses)));
     }
 
     private static Component health(LocalPlayer player) {

@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -67,24 +68,24 @@ public class SpyReportScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         int height = 40 + ROWS * LINE_H + 36;
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + height, EdithHud.argb(210, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + height, 8, EdithHud.argb(220, EdithHud.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + height, HudStyle.argb(210, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + height, 8, HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + 8, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         g.drawString(font, Component.translatable("screen.starktech.spy_report.target", targetName), left + 8, top + 22,
-                EdithHud.argb(230, EdithHud.WHITE), true);
+                HudStyle.argb(230, HudStyle.WHITE), true);
         String count = lines.size() + Component.translatable("screen.starktech.spy_report.lines").getString();
-        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, EdithHud.argb(170, EdithHud.WHITE), true);
+        g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(170, HudStyle.WHITE), true);
 
         int y = top + 40;
         if (lines.isEmpty()) {
             g.drawCenteredString(font, Component.translatable("screen.starktech.spy_report.empty"), left + PANEL_W / 2, y,
-                    EdithHud.argb(160, EdithHud.WHITE));
+                    HudStyle.argb(160, HudStyle.WHITE));
             return;
         }
         for (int i = scroll; i < Math.min(lines.size(), scroll + ROWS); i++) {
-            g.drawString(font, lines.get(i), left + 8, y, EdithHud.argb(235, EdithHud.WHITE), false);
+            g.drawString(font, lines.get(i), left + 8, y, HudStyle.argb(235, HudStyle.WHITE), false);
             y += LINE_H;
         }
         // Schuifbalkje aan de rechterkant.
@@ -93,8 +94,8 @@ public class SpyReportScreen extends Screen {
             int barHeight = ROWS * LINE_H;
             int knob = Math.max(10, barHeight * ROWS / lines.size());
             int offset = (barHeight - knob) * scroll / Math.max(1, lines.size() - ROWS);
-            g.fill(left + PANEL_W - 4, barTop, left + PANEL_W - 2, barTop + barHeight, EdithHud.argb(60, EdithHud.CYAN));
-            g.fill(left + PANEL_W - 5, barTop + offset, left + PANEL_W - 1, barTop + offset + knob, EdithHud.argb(220, EdithHud.CYAN));
+            g.fill(left + PANEL_W - 4, barTop, left + PANEL_W - 2, barTop + barHeight, HudStyle.argb(60, HudStyle.CYAN));
+            g.fill(left + PANEL_W - 5, barTop + offset, left + PANEL_W - 1, barTop + offset + knob, HudStyle.argb(220, HudStyle.CYAN));
         }
     }
 }

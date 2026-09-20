@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.station.ChargerMenu;
@@ -44,7 +45,7 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         if (fill > 0) {
             g.fillGradient(x + BUFFER_BAR_X, y + BUFFER_BAR_Y + BUFFER_BAR_H - fill,
                     x + BUFFER_BAR_X + BUFFER_BAR_W, y + BUFFER_BAR_Y + BUFFER_BAR_H,
-                    EdithHud.argb(255, 0xFFE07F), EdithHud.argb(255, 0xB56B12));
+                    HudStyle.argb(255, 0xFFE07F), HudStyle.argb(255, 0xB56B12));
         }
 
         // De bril die erin ligt.
@@ -54,11 +55,11 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
             int width = Math.round(GLASSES_BAR_W * Math.min(1.0f, glassesFraction));
             g.fill(x + GLASSES_BAR_X, y + GLASSES_BAR_Y,
                     x + GLASSES_BAR_X + GLASSES_BAR_W, y + GLASSES_BAR_Y + GLASSES_BAR_H,
-                    EdithHud.argb(120, 0x10323F));
+                    HudStyle.argb(120, 0x10323F));
             if (width > 0) {
                 g.fill(x + GLASSES_BAR_X, y + GLASSES_BAR_Y,
                         x + GLASSES_BAR_X + width, y + GLASSES_BAR_Y + GLASSES_BAR_H,
-                        EdithHud.argb(255, EdithHud.CYAN));
+                        HudStyle.argb(255, HudStyle.CYAN));
             }
         }
     }
@@ -116,7 +117,7 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
                 : Component.translatable(menu.usesFuel()
                         ? "screen.starktech.charger.idle_heat"
                         : "screen.starktech.charger.idle_solar");
-        g.drawString(font, line, 8, 70, rate > 0 ? EdithHud.argb(255, EdithHud.GREEN)
-                : EdithHud.argb(200, EdithHud.ORANGE), false);
+        g.drawString(font, line, 8, 70, rate > 0 ? HudStyle.argb(255, HudStyle.GREEN)
+                : HudStyle.argb(200, HudStyle.ORANGE), false);
     }
 }

@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.client.music.EdithMusic;
 import com.senne.starktech.client.music.SpotifyAuth;
 import net.minecraft.client.Minecraft;
@@ -131,37 +132,37 @@ public class MusicScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         int panelH = 212;
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, EdithHud.argb(210, 0x08121A));
-        EdithHud.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, EdithHud.argb(220, EdithHud.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, HudStyle.argb(210, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + 10, top + 8, EdithHud.argb(255, EdithHud.CYAN), true);
+        g.drawString(font, title, left + 10, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         // De stappen.
         int y = top + 24;
         for (int step = 1; step <= 4; step++) {
             g.drawString(font, Component.translatable("screen.starktech.music.step" + step), left + 10, y,
-                    EdithHud.argb(210, EdithHud.WHITE), false);
+                    HudStyle.argb(210, HudStyle.WHITE), false);
             y += 11;
         }
         // De redirect-URI. De knop ernaast (zie init) zet hem op je klembord.
-        g.drawString(font, SpotifyAuth.REDIRECT_URI, left + 10, y + 4, EdithHud.argb(255, EdithHud.GREEN), false);
+        g.drawString(font, SpotifyAuth.REDIRECT_URI, left + 10, y + 4, HudStyle.argb(255, HudStyle.GREEN), false);
 
         g.drawString(font, Component.translatable("screen.starktech.music.client_id"), left + 10, top + 96,
-                EdithHud.argb(220, EdithHud.WHITE), false);
+                HudStyle.argb(220, HudStyle.WHITE), false);
 
         // Status: gekoppeld of niet, en wat er speelt.
         boolean linked = SpotifyAuth.isLinked();
         g.drawString(font, Component.translatable(linked
                         ? "screen.starktech.music.state_linked"
                         : "screen.starktech.music.state_not_linked"),
-                left + 10, top + 184, EdithHud.argb(255, linked ? EdithHud.GREEN : EdithHud.ORANGE), false);
+                left + 10, top + 184, HudStyle.argb(255, linked ? HudStyle.GREEN : HudStyle.ORANGE), false);
         if (!status.getString().isEmpty()) {
-            g.drawString(font, status, left + 10, top + 196, EdithHud.argb(230, EdithHud.CYAN), false);
+            g.drawString(font, status, left + 10, top + 196, HudStyle.argb(230, HudStyle.CYAN), false);
         }
         String playing = EdithMusic.nowPlaying();
         if (!playing.isEmpty()) {
             g.drawString(font, Component.translatable("screen.starktech.music.now_playing", playing),
-                    left + 10, top + 170, EdithHud.argb(220, EdithHud.WHITE), false);
+                    left + 10, top + 170, HudStyle.argb(220, HudStyle.WHITE), false);
         }
     }
 }

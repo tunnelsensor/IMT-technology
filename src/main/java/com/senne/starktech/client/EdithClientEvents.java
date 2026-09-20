@@ -272,7 +272,7 @@ public final class EdithClientEvents {
 
     // In Minecraft 1.21.1 kunnen we wezens niet zelf een gekleurde omlijning geven zoals in
     // nieuwere versies. In plaats daarvan tekent de HUD markeringen op je scherm (ook door
-    // muren heen): zie EdithHud.renderThreatMarkers en renderMarkedTargets.
+    // muren heen): zie hud/ThreatMarkerWidget en hud/MarkedTargetsWidget.
 
     // ---------------------------------------------------------------- Wereld verlaten
 

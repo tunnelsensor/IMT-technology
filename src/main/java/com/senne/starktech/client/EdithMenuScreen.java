@@ -1,5 +1,7 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.client.hud.PowerReadout;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.senne.starktech.client.voice.VoiceCommandsScreen;
 import com.senne.starktech.client.voice.VoiceControl;
@@ -83,8 +85,8 @@ public class EdithMenuScreen extends Screen {
 
     /** Tabblad Tech: dingen in je wereld aansturen. */
     private static final List<Option> TECH = List.of(
-            open("screen.starktech.menu.redstone", EdithHud.ORANGE, RelayListScreen::new),
-            open("screen.starktech.menu.music", EdithHud.GREEN, MusicScreen::new),
+            open("screen.starktech.menu.redstone", HudStyle.ORANGE, RelayListScreen::new),
+            open("screen.starktech.menu.music", HudStyle.GREEN, MusicScreen::new),
             action(EdithAction.HACK_PLAYER),
             action(EdithAction.HACK_STOP));
 
@@ -109,22 +111,22 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.TOGGLE_THREAT_SCAN));
 
     private static final List<Option> NAVIGATION = List.of(
-            open("screen.starktech.menu.navigation", EdithHud.CYAN, NavigationScreen::new),
+            open("screen.starktech.menu.navigation", HudStyle.CYAN, NavigationScreen::new),
             new Option(Component.translatable("screen.starktech.menu.ping"),
-                    glasses -> new Status(Component.translatable("screen.starktech.menu.here"), EdithHud.GREEN), EdithClientEvents::placePing),
-            open("screen.starktech.menu.comms", EdithHud.GREEN, CommsScreen::new));
+                    glasses -> new Status(Component.translatable("screen.starktech.menu.here"), HudStyle.GREEN), EdithClientEvents::placePing),
+            open("screen.starktech.menu.comms", HudStyle.GREEN, CommsScreen::new));
 
     private static final List<Option> SYSTEMS = List.of(
             action(EdithAction.AUTHORIZE_TRANSFER),
             voice(VoiceFeature.SPEECH),
             voice(VoiceFeature.COMMANDS),
             new Option(Component.translatable("screen.starktech.menu.voice_edit"),
-                    glasses -> new Status(Component.translatable("screen.starktech.menu.edit"), EdithHud.CYAN),
+                    glasses -> new Status(Component.translatable("screen.starktech.menu.edit"), HudStyle.CYAN),
                     () -> Minecraft.getInstance().setScreen(new VoiceCommandsScreen(null))),
             // Staat de tekst van wat jij vraagt en wat E.D.I.T.H. antwoordt in de HUD?
             new Option(Component.translatable("screen.starktech.menu.voice_text"),
                     glasses -> EdithClientConfig.voiceTextInHud()
-                            ? new Status(Component.translatable("screen.starktech.on"), EdithHud.GREEN)
+                            ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.starktech.off"), GREY),
                     EdithClientConfig::toggleVoiceTextInHud));
 
@@ -162,11 +164,11 @@ public class EdithMenuScreen extends Screen {
     private static Status voiceStatus(VoiceFeature feature) {
         return switch (VoiceInstaller.state(feature)) {
             case UNSUPPORTED -> new Status(Component.translatable("screen.starktech.voice.unsupported"), GREY);
-            case NOT_INSTALLED -> new Status(Component.translatable("screen.starktech.voice.download", feature.missingSize()), EdithHud.CYAN);
-            case INSTALLING -> new Status(Component.literal(VoiceInstaller.percent(feature) + "%"), EdithHud.ORANGE);
-            case FAILED -> new Status(Component.translatable("screen.starktech.voice.retry"), EdithHud.RED);
+            case NOT_INSTALLED -> new Status(Component.translatable("screen.starktech.voice.download", feature.missingSize()), HudStyle.CYAN);
+            case INSTALLING -> new Status(Component.literal(VoiceInstaller.percent(feature) + "%"), HudStyle.ORANGE);
+            case FAILED -> new Status(Component.translatable("screen.starktech.voice.retry"), HudStyle.RED);
             case INSTALLED -> feature.isEnabled()
-                    ? new Status(Component.translatable("screen.starktech.on"), EdithHud.GREEN)
+                    ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
                     : new Status(Component.translatable("screen.starktech.off"), GREY);
         };
     }
@@ -198,7 +200,7 @@ public class EdithMenuScreen extends Screen {
     /** Geen wazige achtergrond: alleen een lichte verduistering, zodat je de wereld blijft zien. */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
-        g.fill(0, 0, width, height, EdithHud.argb(70, 0x000814));
+        g.fill(0, 0, width, height, HudStyle.argb(70, 0x000814));
     }
 
     @Override
@@ -231,17 +233,17 @@ public class EdithMenuScreen extends Screen {
             for (double d = 0.35; d < 0.75; d += 0.05) {
                 int px = cx + (int) (Math.cos(angle) * rx * d);
                 int py = cy + (int) (Math.sin(angle) * ry * d);
-                g.fill(px, py, px + 1, py + 1, EdithHud.argb(isHovered ? fade : fade * 110 / 255, EdithHud.CYAN));
+                g.fill(px, py, px + 1, py + 1, HudStyle.argb(isHovered ? fade : fade * 110 / 255, HudStyle.CYAN));
             }
 
             int x0 = bx - BOX_W / 2;
             int y0 = by - BOX_H / 2;
-            g.fill(x0, y0, x0 + BOX_W, y0 + BOX_H, EdithHud.argb((isHovered ? 150 : 90) * fade / 255, isHovered ? 0x0B4A5E : 0x001018));
-            EdithHud.brackets(g, x0, y0, x0 + BOX_W, y0 + BOX_H, 5, EdithHud.argb((isHovered ? 255 : 150) * fade / 255, EdithHud.CYAN));
+            g.fill(x0, y0, x0 + BOX_W, y0 + BOX_H, HudStyle.argb((isHovered ? 150 : 90) * fade / 255, isHovered ? 0x0B4A5E : 0x001018));
+            HudStyle.brackets(g, x0, y0, x0 + BOX_W, y0 + BOX_H, 5, HudStyle.argb((isHovered ? 255 : 150) * fade / 255, HudStyle.CYAN));
 
-            g.drawCenteredString(font, option.label(), bx, y0 + 4, EdithHud.argb(fade, EdithHud.WHITE));
+            g.drawCenteredString(font, option.label(), bx, y0 + 4, HudStyle.argb(fade, HudStyle.WHITE));
             Status status = option.status().apply(glasses);
-            g.drawCenteredString(font, status.text(), bx, y0 + 15, EdithHud.argb(fade * 230 / 255, status.color()));
+            g.drawCenteredString(font, status.text(), bx, y0 + 15, HudStyle.argb(fade * 230 / 255, status.color()));
         }
     }
 
@@ -250,32 +252,32 @@ public class EdithMenuScreen extends Screen {
      * Op het tabblad Systemen staat hier ook de info over de bril.
      */
     private void renderCenter(GuiGraphics g, int cx, int cy, MenuTab tab, float t) {
-        EdithHud.brackets(g, cx - 48, cy - 20, cx + 48, cy + 20, 6, EdithHud.argb(220, EdithHud.CYAN));
-        g.drawCenteredString(font, "E.D.I.T.H.", cx, cy - 15, EdithHud.argb(200, EdithHud.CYAN));
+        HudStyle.brackets(g, cx - 48, cy - 20, cx + 48, cy + 20, 6, HudStyle.argb(220, HudStyle.CYAN));
+        g.drawCenteredString(font, "E.D.I.T.H.", cx, cy - 15, HudStyle.argb(200, HudStyle.CYAN));
 
         // Naam van het tabblad, schuift even mee in de scrollrichting.
         int slide = (int) ((1.0f - t) * 10 * tabDirection);
-        g.drawCenteredString(font, tab.label(), cx + slide, cy - 4, EdithHud.argb(255, EdithHud.WHITE));
-        g.drawString(font, "‹", cx - 44, cy - 4, EdithHud.argb(150, EdithHud.CYAN), false);
-        g.drawString(font, "›", cx + 40, cy - 4, EdithHud.argb(150, EdithHud.CYAN), false);
+        g.drawCenteredString(font, tab.label(), cx + slide, cy - 4, HudStyle.argb(255, HudStyle.WHITE));
+        g.drawString(font, "‹", cx - 44, cy - 4, HudStyle.argb(150, HudStyle.CYAN), false);
+        g.drawString(font, "›", cx + 40, cy - 4, HudStyle.argb(150, HudStyle.CYAN), false);
 
         // Een puntje per tabblad; het huidige is gevuld.
         MenuTab[] tabs = MenuTab.values();
         int dotsX = cx - (tabs.length * 7 - 2) / 2;
         for (int i = 0; i < tabs.length; i++) {
             int dx = dotsX + i * 7;
-            g.fill(dx, cy + 9, dx + 5, cy + 14, EdithHud.argb(tabs[i] == tab ? 255 : 70, EdithHud.CYAN));
+            g.fill(dx, cy + 9, dx + 5, cy + 14, HudStyle.argb(tabs[i] == tab ? 255 : 70, HudStyle.CYAN));
         }
 
         int y = cy + 26;
         if (tab == MenuTab.SYSTEMS) {
             for (Component line : systemInfo(glasses())) {
-                g.drawCenteredString(font, line, cx, y, EdithHud.argb(220, EdithHud.WHITE));
+                g.drawCenteredString(font, line, cx, y, HudStyle.argb(220, HudStyle.WHITE));
                 y += 11;
             }
             y += 4;
         }
-        g.drawCenteredString(font, Component.translatable("screen.starktech.menu.hint"), cx, y, EdithHud.argb(140, EdithHud.WHITE));
+        g.drawCenteredString(font, Component.translatable("screen.starktech.menu.hint"), cx, y, HudStyle.argb(140, HudStyle.WHITE));
     }
 
     /** Info over de bril voor het tabblad Systemen: energie, verbruik en eigenaar. */
@@ -285,9 +287,9 @@ public class EdithMenuScreen extends Screen {
             return lines;
         }
         int energy = EdithData.getEnergy(glasses);
-        int drain = EdithHud.drainPerSecond(glasses);
+        int drain = PowerReadout.drainPerSecond(glasses);
         lines.add(Component.translatable("hud.starktech.sys.energy", energy, EdithData.getMaxEnergy(glasses)));
-        lines.add(Component.translatable("hud.starktech.sys.drain", drain, EdithHud.timeLeft(energy, drain)));
+        lines.add(Component.translatable("hud.starktech.sys.drain", drain, PowerReadout.timeLeft(energy, drain)));
         EdithOwner owner = EdithData.getOwner(glasses);
         if (owner != null) {
             lines.add(Component.translatable("hud.starktech.sys.owner", owner.name()));
@@ -300,7 +302,7 @@ public class EdithMenuScreen extends Screen {
         EdithFeature feature = action.toggles();
         if (feature != null) {
             boolean on = !glasses.isEmpty() && EdithData.isEnabled(glasses, feature);
-            return new Status(Component.translatable(on ? "screen.starktech.on" : "screen.starktech.off"), on ? EdithHud.GREEN : GREY);
+            return new Status(Component.translatable(on ? "screen.starktech.on" : "screen.starktech.off"), on ? HudStyle.GREEN : GREY);
         }
         return switch (action) {
             case ORE_SCAN -> costOrCooldown(EdithBalance.ORE_SCAN_COST, EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
@@ -309,57 +311,57 @@ public class EdithMenuScreen extends Screen {
             case SATELLITE_STRIKE -> costOrCooldown(satelliteCost(glasses), EdithClientState.cooldown(EdithCooldown.SATELLITE));
             case SATELLITE_MODE -> new Status(Component.translatable(glasses.isEmpty()
                     ? SatelliteMode.PRECISION.translationKey()
-                    : EdithData.getSatelliteMode(glasses).translationKey()), EdithHud.ORANGE);
+                    : EdithData.getSatelliteMode(glasses).translationKey()), HudStyle.ORANGE);
             case CLEAR_MARKS -> new Status(Component.translatable("screen.starktech.marked_count", EdithClientState.markedIds.size()),
-                    EdithClientState.markedIds.isEmpty() ? GREY : EdithHud.ORANGE);
+                    EdithClientState.markedIds.isEmpty() ? GREY : HudStyle.ORANGE);
             case TRANSPORT_RIDE, TRANSPORT_AUTOPILOT -> EdithClientState.flying
-                    ? new Status(Component.translatable("screen.starktech.transport.land"), EdithHud.ORANGE)
+                    ? new Status(Component.translatable("screen.starktech.transport.land"), HudStyle.ORANGE)
                     : costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case CARGO_DRONE, CARRY_ENTITY ->
                     costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_COPY, ILLUSION_CLOAK ->
-                    new Status(Component.translatable("screen.starktech.cost", EdithBalance.ILLUSION_COST), EdithHud.CYAN);
+                    new Status(Component.translatable("screen.starktech.cost", EdithBalance.ILLUSION_COST), HudStyle.CYAN);
             case ILLUSION_STOP -> com.senne.starktech.client.illusion.IllusionRenderer.count() > 0
                     ? new Status(Component.translatable("screen.starktech.illusion.count",
-                            com.senne.starktech.client.illusion.IllusionRenderer.count()), EdithHud.ORANGE)
+                            com.senne.starktech.client.illusion.IllusionRenderer.count()), HudStyle.ORANGE)
                     : new Status(Component.translatable("screen.starktech.none"), GREY);
             case HACK_PLAYER -> EdithClientState.hackedCount > 0
-                    ? new Status(Component.translatable("screen.starktech.hack.count", EdithClientState.hackedCount), EdithHud.RED)
-                    : new Status(Component.translatable("screen.starktech.hack.look"), EdithHud.CYAN);
+                    ? new Status(Component.translatable("screen.starktech.hack.count", EdithClientState.hackedCount), HudStyle.RED)
+                    : new Status(Component.translatable("screen.starktech.hack.look"), HudStyle.CYAN);
             case HACK_STOP -> EdithClientState.hackedCount > 0
-                    ? new Status(Component.translatable("screen.starktech.hack.stop"), EdithHud.ORANGE)
+                    ? new Status(Component.translatable("screen.starktech.hack.stop"), HudStyle.ORANGE)
                     : new Status(Component.translatable("screen.starktech.none"), GREY);
             case SPY_DRONE -> EdithClientState.spyActive
-                    ? new Status(Component.translatable("screen.starktech.spy.recall"), EdithHud.PURPLE)
+                    ? new Status(Component.translatable("screen.starktech.spy.recall"), HudStyle.PURPLE)
                     : costOrCooldown(EdithBalance.SPY_COST, EdithClientState.cooldown(EdithCooldown.SPY));
             case SPY_VIEW -> {
                 if (DroneCamera.isWatchingOnly()) {
-                    yield new Status(Component.translatable("screen.starktech.menu.return"), EdithHud.ORANGE);
+                    yield new Status(Component.translatable("screen.starktech.menu.return"), HudStyle.ORANGE);
                 }
                 yield EdithClientState.spyActive
-                        ? new Status(Component.translatable("screen.starktech.menu.watch"), EdithHud.PURPLE)
+                        ? new Status(Component.translatable("screen.starktech.menu.watch"), HudStyle.PURPLE)
                         : new Status(Component.translatable("screen.starktech.none"), GREY);
             }
             case SPY_REPORT -> EdithClientState.spyLogLines > 0 || !EdithClientState.spyReport.isEmpty()
                     ? new Status(Component.translatable("screen.starktech.spy.lines",
-                            Math.max(EdithClientState.spyLogLines, EdithClientState.spyReport.size())), EdithHud.PURPLE)
+                            Math.max(EdithClientState.spyLogLines, EdithClientState.spyReport.size())), HudStyle.PURPLE)
                     : new Status(Component.translatable("screen.starktech.none"), GREY);
             case STAND_DOWN -> {
                 int drones = EdithClientState.swarmDrones + EdithClientState.guardDrones;
                 yield drones > 0 || EdithClientState.strikeTarget != null
-                        ? new Status(Component.translatable("screen.starktech.stand_down.count", drones), EdithHud.ORANGE)
+                        ? new Status(Component.translatable("screen.starktech.stand_down.count", drones), HudStyle.ORANGE)
                         : new Status(Component.translatable("screen.starktech.stand_down.calm"), GREY);
             }
             case DRONE_CAMERA -> DroneCamera.isActive()
-                    ? new Status(Component.translatable("screen.starktech.menu.return"), EdithHud.ORANGE)
-                    : new Status(Component.translatable("screen.starktech.cost", EdithBalance.SCOUT_COST), EdithHud.CYAN);
+                    ? new Status(Component.translatable("screen.starktech.menu.return"), HudStyle.ORANGE)
+                    : new Status(Component.translatable("screen.starktech.cost", EdithBalance.SCOUT_COST), HudStyle.CYAN);
             case AUTHORIZE_TRANSFER -> {
                 EdithOwner owner = glasses.isEmpty() ? null : EdithData.getOwner(glasses);
                 boolean pending = owner != null && owner.transferPending();
                 yield new Status(Component.translatable(pending ? "screen.starktech.transfer.pending" : "screen.starktech.transfer.locked"),
-                        pending ? EdithHud.ORANGE : EdithHud.GREEN);
+                        pending ? HudStyle.ORANGE : HudStyle.GREEN);
             }
-            default -> new Status(Component.empty(), EdithHud.WHITE);
+            default -> new Status(Component.empty(), HudStyle.WHITE);
         };
     }
 
@@ -372,8 +374,8 @@ public class EdithMenuScreen extends Screen {
     private static Status costOrCooldown(int cost, int cooldownTicks) {
         int seconds = EdithClientState.secondsLeft(cooldownTicks);
         return seconds > 0
-                ? new Status(Component.literal(seconds + "s"), EdithHud.ORANGE)
-                : new Status(Component.translatable("screen.starktech.cost", cost), EdithHud.CYAN);
+                ? new Status(Component.literal(seconds + "s"), HudStyle.ORANGE)
+                : new Status(Component.translatable("screen.starktech.cost", cost), HudStyle.CYAN);
     }
 
     // ---------------------------------------------------------------- Waar wijst de muis?
