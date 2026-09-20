@@ -16,6 +16,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -58,6 +59,16 @@ public class ChargingStationBlock extends BaseEntityBlock {
     public ChargingStationBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    /**
+     * Blokken met een block entity zijn standaard onzichtbaar: Minecraft gaat ervan uit dat
+     * een eigen renderer ze tekent. Wij hebben gewoon een model, dus zeggen we dat erbij.
+     * Zonder dit staat er een onzichtbaar (maar wel vast) blok in je wereld.
+     */
+    @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     // ---------------------------------------------------------------- Draairichting

@@ -13,6 +13,7 @@ import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.WaypointActionPayload;
+import com.senne.starktech.registry.ModArmorMaterials;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
@@ -40,7 +41,9 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -107,6 +110,35 @@ public final class StarkTechGameTests {
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "navigation")
     public static void navigation(GameTestHelper helper) {
         navigationTest(helper);
+    }
+
+    /**
+     * Blokken met een block entity zijn standaard onzichtbaar. Deze test bewaakt dat het
+     * laadstation zijn model laat zien, zodat het niet als een onzichtbare muur in je wereld staat.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void charging_station_is_visible(GameTestHelper helper) {
+        BlockState state = ModBlocks.CHARGING_STATION.get().defaultBlockState();
+        if (state.getRenderShape() != RenderShape.MODEL) {
+            throw new GameTestAssertException("Het laadstation wordt niet getekend: " + state.getRenderShape());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De bril is een stuk armor, en armor heeft een materiaal nodig dat ook echt in het spel
+     * geregistreerd is. Was dat niet zo, dan crashte het spel zodra iets de eigenschappen van
+     * de bril opvroeg - bijvoorbeeld bij het tonen van de tooltip in de creative-tab.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void glasses_armor_material(GameTestHelper helper) {
+        if (!ModArmorMaterials.EDITH.isBound()) {
+            throw new GameTestAssertException("Het materiaal starktech:edith is niet geregistreerd.");
+        }
+        ItemStack glasses = new ItemStack(ModItems.EDITH_GLASSES.get());
+        // Dit is precies wat de tooltip doet. Een niet-geregistreerd materiaal knalt hier.
+        glasses.forEachModifier(EquipmentSlot.HEAD, (attribute, modifier) -> {});
+        helper.succeed();
     }
 
     /**

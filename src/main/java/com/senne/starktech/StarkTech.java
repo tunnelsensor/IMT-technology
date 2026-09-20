@@ -6,6 +6,7 @@ import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.gametest.StarkTechGameTests;
 import com.senne.starktech.network.ModNetwork;
+import com.senne.starktech.registry.ModArmorMaterials;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModBlocks;
@@ -51,6 +52,8 @@ public class StarkTech {
         ModDataComponents.COMPONENTS.register(modEventBus);
         ModSounds.SOUNDS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
+        // Moet vóór de items: de E.D.I.T.H.-bril is een stuk armor en zoekt dit materiaal op.
+        ModArmorMaterials.MATERIALS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
