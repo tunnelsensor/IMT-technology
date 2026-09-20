@@ -28,6 +28,8 @@ public final class BeamEffects {
     private static final DustParticleOptions ORBITAL = new DustParticleOptions(color(0xDDF8FF), 2.5f);
     private static final DustParticleOptions PRECISION = new DustParticleOptions(color(0xFFFFFF), 1.2f);
     private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
+    private static final DustParticleOptions REPULSOR_CORE = new DustParticleOptions(color(0xFFFFFF), 0.9f);
+    private static final DustParticleOptions REPULSOR_GLOW = new DustParticleOptions(color(0x9FE8FF), 1.6f);
 
     public static void play(BeamEffectPayload payload) {
         ClientLevel level = Minecraft.getInstance().level;
@@ -45,10 +47,24 @@ public final class BeamEffects {
                 satellitePrecision(level, payload.from(), payload.to());
                 shakeNear(payload.to(), 1.5f, 500);
             }
+            case REPULSOR -> repulsor(level, payload.from(), payload.to());
             case SATELLITE_SWEEP -> {
                 satelliteSweep(level, payload.from(), payload.to());
                 shakeNear(payload.to(), 0.6f, 300);
             }
+        }
+    }
+
+    /** Een repulsorstoot: een korte, brede stoot wit-blauw licht recht vooruit. */
+    private static void repulsor(ClientLevel level, Vec3 from, Vec3 to) {
+        line(level, from, to, 0.12, REPULSOR_CORE, false);
+        line(level, from, to, 0.3, REPULSOR_GLOW, false);
+        RandomSource random = level.getRandom();
+        // Een wolkje bij je hand, alsof de stoot daar vandaan komt.
+        for (int i = 0; i < 8; i++) {
+            level.addParticle(ParticleTypes.ELECTRIC_SPARK, from.x, from.y, from.z,
+                    (random.nextDouble() - 0.5) * 0.2, (random.nextDouble() - 0.5) * 0.2,
+                    (random.nextDouble() - 0.5) * 0.2);
         }
     }
 

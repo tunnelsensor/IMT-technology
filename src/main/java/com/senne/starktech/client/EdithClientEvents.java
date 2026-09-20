@@ -150,6 +150,9 @@ public final class EdithClientEvents {
         while (EdithKeys.HACK.consumeClick()) {
             sendAction(EdithAction.HACK_PLAYER);
         }
+        while (EdithKeys.REPULSOR.consumeClick()) {
+            sendAction(EdithAction.REPULSOR);
+        }
     }
 
     /** Opent een E.D.I.T.H.-scherm, maar alleen als je de bril draagt en de eigenaar bent. */

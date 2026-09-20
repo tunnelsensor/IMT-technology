@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "N": {
+      "tag": "c:ingots/netherite"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "N N",
+    "CRC"
+  ],
+  "result": {
+    "id": "starktech:stark_boots",
+    "count": 1
+  }
+}

@@ -1,5 +1,7 @@
 package com.senne.starktech.gametest;
 
+import com.mojang.authlib.GameProfile;
+import io.netty.channel.embedded.EmbeddedChannel;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalCosts;
@@ -37,6 +39,9 @@ import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.shield.LaserWallBlock;
 import com.senne.starktech.shield.ShieldColor;
 import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.suit.EdithSuit;
+import com.senne.starktech.suit.StarkSuitItem;
+import com.senne.starktech.suit.SuitBalance;
 import com.senne.starktech.transport.EdithTransport;
 import com.senne.starktech.client.music.MusicQuery;
 import com.senne.starktech.client.voice.VoiceAction;
@@ -56,7 +61,10 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -74,6 +82,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -351,6 +360,139 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("De bril wordt niet opgeladen");
             }
         });
+    }
+
+    // ================================================================ Fase 15: het harnas
+
+    /**
+     * Een speler met bril die in survival staat.
+     *
+     * Dat laatste moet: in creative mag je toch al vliegen en krijg je geen schade, dus daar
+     * valt van het harnas niets te zien.
+     */
+    private static ServerPlayer makeSuitOwner(GameTestHelper helper, BlockPos pos) {
+        return makeSurvivalOwner(helper, pos);
+    }
+
+    /** Het hele harnas aantrekken op een speler die al een bril op heeft. */
+    private static void wearSuit(ServerPlayer player) {
+        player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(ModItems.STARK_CHESTPLATE.get()));
+        player.setItemSlot(EquipmentSlot.LEGS, new ItemStack(ModItems.STARK_LEGGINGS.get()));
+        player.setItemSlot(EquipmentSlot.FEET, new ItemStack(ModItems.STARK_BOOTS.get()));
+    }
+
+    /**
+     * Met het hele harnas én de bril kun je vliegen; gaat de bril af, dan is het meteen over.
+     * Dat is het hele punt van het harnas: zonder E.D.I.T.H. doet het niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
+    public static void suit_flies_only_with_the_glasses(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+        if (!StarkSuitItem.fullSet(owner) || !StarkSuitItem.isPowered(owner)) {
+            throw new GameTestAssertException("Het harnas telt niet als compleet en aan");
+        }
+        EdithSuit.onPlayerTick(new PlayerTickEvent.Post(owner));
+        if (!owner.getAbilities().mayfly) {
+            throw new GameTestAssertException("Je mag niet vliegen met een compleet harnas");
+        }
+
+        // Bril af: het vliegen hoort meteen weg te zijn.
+        owner.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        EdithSuit.onPlayerTick(new PlayerTickEvent.Post(owner));
+        if (owner.getAbilities().mayfly) {
+            throw new GameTestAssertException("Je vliegt nog zonder bril");
+        }
+        helper.succeed();
+    }
+
+    /** Een half harnas is niet genoeg om te vliegen, maar beschermt wel. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
+    public static void half_a_suit_does_not_fly(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        owner.setItemSlot(EquipmentSlot.CHEST, new ItemStack(ModItems.STARK_CHESTPLATE.get()));
+        EdithSuit.onPlayerTick(new PlayerTickEvent.Post(owner));
+        if (owner.getAbilities().mayfly) {
+            throw new GameTestAssertException("Je vliegt met maar één stuk harnas");
+        }
+        if (StarkSuitItem.wornPieces(owner) != 1 || !StarkSuitItem.isPowered(owner)) {
+            throw new GameTestAssertException("Eén stuk harnas telt niet mee");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Het harnas haalt een deel van de klap weg en betaalt dat uit je bril. Zonder bril komt
+     * de klap harder aan.
+     *
+     * We slaan hier echt toe in plaats van de gebeurtenis na te bootsen, zodat ook getest
+     * wordt dat het harnas op de juiste gebeurtenis is aangesloten. Wel even wachten: een
+     * speler die net in de wereld komt is de eerste drie seconden onkwetsbaar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "suit")
+    public static void suit_absorbs_damage_and_pays_for_it(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+
+        helper.runAfterDelay(SPAWN_INVULNERABLE_TICKS, () -> {
+            ItemStack glasses = EdithData.getWornGlasses(owner);
+            int before = EdithData.getEnergy(glasses);
+
+            float withSuit = hurtAndMeasure(owner, 10.0f);
+            if (withSuit <= 0.0f) {
+                throw new GameTestAssertException("De klap kwam helemaal niet aan");
+            }
+            int spent = before - EdithData.getEnergy(glasses);
+            if (spent <= 0) {
+                throw new GameTestAssertException("Het harnas kostte geen energie");
+            }
+
+            // Bril af: hetzelfde harnas, maar nu zonder stroom.
+            owner.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+            float withoutGlasses = hurtAndMeasure(owner, 10.0f);
+
+            if (!(withSuit < withoutGlasses)) {
+                throw new GameTestAssertException("Met bril verloor je " + withSuit
+                        + " leven en zonder bril " + withoutGlasses + "; dat hoort andersom");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Zo lang is een speler onkwetsbaar nadat hij in de wereld verschijnt (zie ServerPlayer). */
+    private static final int SPAWN_INVULNERABLE_TICKS = 70;
+
+    /** Geeft de speler een klap en zegt hoeveel leven dat kostte. */
+    private static float hurtAndMeasure(ServerPlayer player, float damage) {
+        player.setHealth(player.getMaxHealth());
+        player.invulnerableTime = 0;
+        player.hurt(player.damageSources().generic(), damage);
+        return player.getMaxHealth() - player.getHealth();
+    }
+
+    /** De repulsor raakt wat voor je staat, duwt het weg en kost energie. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
+    public static void repulsor_hits_what_you_look_at(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+        Husk target = spawnDummyEnemy(helper, new BlockPos(1, 3, 6));
+        // Recht naar het doelwit kijken (in de test-arena ligt +z voor je).
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.position());
+
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        int before = EdithData.getEnergy(glasses);
+        float health = target.getHealth();
+
+        EdithSuit.repulsor(owner);
+
+        if (target.getHealth() >= health) {
+            throw new GameTestAssertException("De repulsor deed geen schade");
+        }
+        if (EdithData.getEnergy(glasses) != before - SuitBalance.REPULSOR_COST) {
+            throw new GameTestAssertException("De repulsor kostte niet " + SuitBalance.REPULSOR_COST
+                    + " maar " + (before - EdithData.getEnergy(glasses)));
+        }
+        helper.succeed();
     }
 
     // ================================================================ Fase 15: de holotafel
@@ -876,7 +1018,46 @@ public final class StarkTechGameTests {
     /** Een nep-speler met een opgeladen bril op, die eigenaar is van die bril. */
     @SuppressWarnings("removal")
     private static ServerPlayer makeEdithOwner(GameTestHelper helper, BlockPos relativePos) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        return equipAsOwner(helper, helper.makeMockServerPlayerInLevel(), relativePos);
+    }
+
+    /**
+     * Een speler met bril die NIET in creative staat.
+     *
+     * De gewone testspeler van Minecraft geeft altijd true terug op isCreative(), en dat is
+     * niet te veranderen: het staat hard in makeMockServerPlayerInLevel(). Voor het harnas
+     * maakt dat alles uit (in creative vlieg je toch al en krijg je geen schade), dus maken
+     * we er hier zelf een die wel gewoon survival is.
+     */
+    private static ServerPlayer makeSurvivalOwner(GameTestHelper helper, BlockPos relativePos) {
+        CommonListenerCookie cookie = CommonListenerCookie.createInitial(
+                new GameProfile(UUID.randomUUID(), "test-survival-player"), false);
+        ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
+                cookie.gameProfile(), cookie.clientInformation()) {
+            @Override
+            public boolean isSpectator() {
+                return false;
+            }
+
+            @Override
+            public boolean isCreative() {
+                return false;
+            }
+        };
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        new EmbeddedChannel(connection);
+        helper.getLevel().getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
+        // Alleen isCreative() overschrijven is niet genoeg: een testspeler komt binnen met de
+        // rechten van creative (onkwetsbaar, mag vliegen). Die zetten we hier op survival.
+        player.getAbilities().invulnerable = false;
+        player.getAbilities().mayfly = false;
+        player.getAbilities().flying = false;
+        player.onUpdateAbilities();
+        return equipAsOwner(helper, player, relativePos);
+    }
+
+    /** Zet een testspeler op zijn plek, met een volle bril en een gevuld arsenaal. */
+    private static ServerPlayer equipAsOwner(GameTestHelper helper, ServerPlayer player, BlockPos relativePos) {
         Vec3 pos = helper.absoluteVec(Vec3.atBottomCenterOf(relativePos));
         // Een nep-speler houdt de chunks rond zich niet "levend". Zonder dit zouden drones
         // die buiten de chunk van de test vliegen stilvallen.

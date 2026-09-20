@@ -1,6 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.suit.SuitBalance;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +47,37 @@ public final class ModArmorMaterials {
                 0.0f);                                               // geen knockback-weerstand
     });
 
+    /** De naam waarmee de texture van het harnas gezocht wordt. */
+    public static final ResourceLocation STARK_ASSET = ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "stark");
+
+    /**
+     * Het harnas: borstplaat, broek en laarzen.
+     *
+     * De bescherming die hier staat is wat het pak zonder stroom doet. Alles wat het pak
+     * bijzonder maakt (schade wegnemen, vliegen, repulsors) zit in EdithSuit en werkt alleen
+     * met de bril op.
+     */
+    public static final DeferredHolder<ArmorMaterial, ArmorMaterial> STARK = MATERIALS.register("stark", () -> {
+        Map<ArmorItem.Type, Integer> defense = new EnumMap<>(ArmorItem.Type.class);
+        defense.put(ArmorItem.Type.CHESTPLATE, SuitBalance.ARMOR_CHEST);
+        defense.put(ArmorItem.Type.LEGGINGS, SuitBalance.ARMOR_LEGS);
+        defense.put(ArmorItem.Type.BOOTS, SuitBalance.ARMOR_BOOTS);
+        return new ArmorMaterial(
+                defense,
+                12,                                                  // betovering-waarde
+                SoundEvents.ARMOR_EQUIP_NETHERITE,
+                () -> Ingredient.of(ModItems.STARK_CHIP.get()),      // repareren met een Stark-chip
+                List.of(new ArmorMaterial.Layer(STARK_ASSET)),
+                SuitBalance.TOUGHNESS,
+                SuitBalance.KNOCKBACK_RESISTANCE);
+    });
+
     /** Handig voor de items: het materiaal als Holder. */
     public static Holder<ArmorMaterial> edith() {
         return EDITH;
+    }
+
+    public static Holder<ArmorMaterial> stark() {
+        return STARK;
     }
 }

@@ -4,6 +4,8 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithGlassesItem;
 import com.senne.starktech.edith.UpgradeItem;
 import com.senne.starktech.arsenal.StarkDroneItem;
+import com.senne.starktech.suit.StarkSuitItem;
+import net.minecraft.world.item.ArmorItem;
 import com.senne.starktech.illusion.EmpItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -68,6 +70,19 @@ public final class ModItems {
             ModBlocks.LASER_EMITTER);
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
             ModBlocks.DOME_GENERATOR);
+    // ---------------------------------------------------------------- Fase 15: het harnas
+    /** De borstplaat: hier zit de reactor, dus hier komt de repulsor vandaan. */
+    public static final DeferredItem<StarkSuitItem> STARK_CHESTPLATE = ITEMS.registerItem("stark_chestplate",
+            properties -> new StarkSuitItem(ArmorItem.Type.CHESTPLATE, properties),
+            new Item.Properties().rarity(Rarity.EPIC));
+    public static final DeferredItem<StarkSuitItem> STARK_LEGGINGS = ITEMS.registerItem("stark_leggings",
+            properties -> new StarkSuitItem(ArmorItem.Type.LEGGINGS, properties),
+            new Item.Properties().rarity(Rarity.EPIC));
+    /** De laarzen: hiermee land je zonder schade. */
+    public static final DeferredItem<StarkSuitItem> STARK_BOOTS = ITEMS.registerItem("stark_boots",
+            properties -> new StarkSuitItem(ArmorItem.Type.BOOTS, properties),
+            new Item.Properties().rarity(Rarity.EPIC));
+
     /** Fase 15: de holotafel. */
     public static final DeferredItem<BlockItem> HOLO_TABLE = ITEMS.registerSimpleBlockItem("holo_table",
             ModBlocks.HOLO_TABLE);

@@ -576,6 +576,67 @@ def emp_item():
     save(im, "item/emp.png")
 
 
+def stark_suit():
+    """Het harnas: de twee armor-lagen op je lichaam, en de drie item-iconen.
+
+    Minecraft tekent armor in twee lagen: laag 1 is borst, armen en laarzen (64x32) en laag 2
+    is de broek (64x32). We maken een donker metalen pak met cyaan lijnen en een lichtje op de
+    borst, in dezelfde stijl als de rest van de mod.
+    """
+    plate = METAL_2
+    trim = CYAN_DIM
+
+    # --- Laag 1: borstplaat, armen en laarzen
+    layer1 = img(64, 32)
+    d = ImageDraw.Draw(layer1)
+    # het lichaam (voor- en achterkant staan naast elkaar op de armor-sheet)
+    d.rectangle([20, 20, 27, 31], fill=plate)
+    d.rectangle([28, 20, 39, 31], fill=plate)
+    # armen
+    d.rectangle([44, 20, 51, 31], fill=plate)
+    d.rectangle([40, 20, 43, 31], fill=plate)
+    # schouderstukken en een lijn over de borst
+    d.line([20, 21, 39, 21], fill=trim)
+    d.line([44, 21, 51, 21], fill=trim)
+    # de reactor midden op de borst
+    px(layer1, [(23, 24), (24, 24), (23, 25), (24, 25)], CYAN)
+    save(layer1, "models/armor/stark_layer_1.png")
+
+    # --- Laag 2: de broek
+    layer2 = img(64, 32)
+    d = ImageDraw.Draw(layer2)
+    d.rectangle([20, 20, 39, 31], fill=plate)
+    d.rectangle([0, 20, 15, 31], fill=plate)
+    d.line([20, 20, 39, 20], fill=trim)
+    save(layer2, "models/armor/stark_layer_2.png")
+
+    # --- De drie iconen in je rugzak
+    chest = img(16, 16)
+    d = ImageDraw.Draw(chest)
+    d.rectangle([3, 3, 12, 12], fill=plate, outline=METAL_DARK)
+    d.rectangle([1, 4, 2, 9], fill=METAL_1)   # schouder links
+    d.rectangle([13, 4, 14, 9], fill=METAL_1)  # schouder rechts
+    d.ellipse([6, 6, 9, 9], fill=CYAN)         # de reactor
+    d.line([3, 3, 12, 3], fill=trim)
+    save(chest, "item/stark_chestplate.png")
+
+    legs = img(16, 16)
+    d = ImageDraw.Draw(legs)
+    d.rectangle([3, 2, 12, 6], fill=plate, outline=METAL_DARK)
+    d.rectangle([3, 7, 6, 14], fill=plate, outline=METAL_DARK)
+    d.rectangle([9, 7, 12, 14], fill=plate, outline=METAL_DARK)
+    d.line([3, 2, 12, 2], fill=trim)
+    save(legs, "item/stark_leggings.png")
+
+    boots = img(16, 16)
+    d = ImageDraw.Draw(boots)
+    d.rectangle([3, 5, 6, 12], fill=plate, outline=METAL_DARK)
+    d.rectangle([9, 5, 12, 12], fill=plate, outline=METAL_DARK)
+    # de repulsors onder de zolen
+    px(boots, [(4, 13), (5, 13), (10, 13), (11, 13)], CYAN)
+    save(boots, "item/stark_boots.png")
+
+
 def holo_table_textures():
     """De holotafel: een metalen tafel met een oplichtende ring in het blad.
 
@@ -642,3 +703,4 @@ if __name__ == "__main__":
     emp_item()
     stark_drone_item()
     holo_table_textures()
+    stark_suit()

@@ -32,6 +32,9 @@ public final class ModCreativeTabs {
 
                 output.accept(ModItems.STARK_CHIP.get());
                 output.accept(ModItems.STARK_DRONE.get());
+                output.accept(ModItems.STARK_CHESTPLATE.get());
+                output.accept(ModItems.STARK_LEGGINGS.get());
+                output.accept(ModItems.STARK_BOOTS.get());
                 output.accept(ModItems.BATTERY_UPGRADE.get());
                 output.accept(ModItems.SCANNER_UPGRADE.get());
                 output.accept(ModItems.DRONE_UPGRADE.get());

@@ -723,5 +723,16 @@
   "screen.starktech.holo.on_table": "On the table",
   "screen.starktech.holo.nothing": "nothing",
   "screen.starktech.holo.clear": "Take off",
-  "screen.starktech.holo.hint": "Right-click the table with an item to see how it is made."
+  "screen.starktech.holo.hint": "Right-click the table with an item to see how it is made.",
+  "item.starktech.stark_chestplate": "Stark Chestplate",
+  "item.starktech.stark_leggings": "Stark Leggings",
+  "item.starktech.stark_boots": "Stark Boots",
+  "tooltip.starktech.suit": "Part of the Stark suit",
+  "tooltip.starktech.suit.needs_glasses": "Does nothing without the E.D.I.T.H. glasses",
+  "key.starktech.repulsor": "Repulsor blast",
+  "edith.starktech.action.repulsor": "Repulsor",
+  "suit.starktech.msg.flight_ready": "Suit online. Flight ready.",
+  "suit.starktech.msg.flight_lost": "Suit offline. Flight is gone.",
+  "suit.starktech.msg.no_chest": "The repulsor is in the chestplate.",
+  "suit.starktech.msg.repulsor_hit": "Repulsor: %s hit."
 }

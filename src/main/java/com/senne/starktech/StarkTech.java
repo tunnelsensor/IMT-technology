@@ -25,6 +25,7 @@ import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.shield.EdithShield;
 import com.senne.starktech.shield.LaserAnimations;
 import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.suit.EdithSuit;
 import com.senne.starktech.transport.EdithTransport;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -106,6 +107,13 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithIllusions::onServerStopped);
         // Fase 11: het persoonlijke schild vangt schade op
         NeoForge.EVENT_BUS.addListener(EdithShield::onIncomingDamage);
+
+        // Fase 15: het harnas
+        NeoForge.EVENT_BUS.addListener(EdithSuit::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(EdithSuit::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(EdithSuit::onFall);
+        NeoForge.EVENT_BUS.addListener(EdithSuit::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(EdithSuit::onServerStopped);
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan
         NeoForge.EVENT_BUS.addListener(LaserAnimations::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) -> LaserAnimations.clear());

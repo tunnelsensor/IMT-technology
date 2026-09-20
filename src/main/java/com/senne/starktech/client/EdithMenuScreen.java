@@ -9,6 +9,7 @@ import com.senne.starktech.client.voice.VoiceFeature;
 import com.senne.starktech.client.voice.VoiceInstaller;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.suit.SuitBalance;
 import com.senne.starktech.edith.EdithCooldown;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
@@ -66,6 +67,7 @@ public class EdithMenuScreen extends Screen {
     // ---------------------------------------------------------------- De opties per tabblad (met de klok mee vanaf boven)
 
     private static final List<Option> COMBAT = List.of(
+            action(EdithAction.REPULSOR),
             action(EdithAction.TOGGLE_SHIELD),
             action(EdithAction.LAUNCH_DRONES),
             action(EdithAction.DRONE_STRIKE),
@@ -307,6 +309,8 @@ public class EdithMenuScreen extends Screen {
         }
         return switch (action) {
             case ORE_SCAN -> costOrCooldown(EdithBalance.ORE_SCAN_COST, EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
+            // De repulsor heeft geen wachttijd die de server bijhoudt, alleen kosten.
+            case REPULSOR -> costOrCooldown(SuitBalance.REPULSOR_COST, 0);
             case LAUNCH_DRONES -> costOrCooldown(EdithBalance.SWARM_COST, EdithClientState.cooldown(EdithCooldown.SWARM));
             case DRONE_STRIKE -> costOrCooldown(EdithBalance.STRIKE_DRONE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
             case SATELLITE_STRIKE -> costOrCooldown(satelliteCost(glasses), EdithClientState.cooldown(EdithCooldown.SATELLITE));

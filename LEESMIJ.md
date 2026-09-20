@@ -60,7 +60,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (15 automatis
 | **U** | Ping plaatsen |
 | **O** | Comms (berichten naar andere E.D.I.T.H.-dragers) |
 | **Z** | Spraaktoets: ingedrukt houden en praten |
-| **I** | (vrij, zie Opties > Besturing > E.D.I.T.H.) |
+| **I** | Repulsorstoot (met de borstplaat aan) |
 
 Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
@@ -70,7 +70,7 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
 | Tabblad | Wat erin zit |
 |---------|--------------|
-| **Gevecht** | Rayshield, drones, één drone, escorte, satelliet + stand, stand down, markeringen wissen |
+| **Gevecht** | Repulsor, rayshield, drones, één drone, escorte, satelliet + stand, stand down, markeringen wissen |
 | **Drones** | Arsenaal, drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
@@ -182,6 +182,24 @@ Zwakke plekken (net als in de film): waar twee velden overlappen gaat het beeld 
 de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes en een zacht
 zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
 plat.
+
+### Het harnas
+Craft een **borstplaat**, **broek** en **laarzen** (netherite, Stark-chips, amethist). Er is geen
+helm: die plek is van de bril, en dat is de bedoeling — **zonder de bril doet het harnas niets
+bijzonders**. Het is dan gewoon een goed pak metaal. De bril levert de stroom; het harnas heeft
+geen eigen batterij.
+
+Met de bril op en energie erin:
+
+- **Schade**: elk gedragen stuk haalt 20% van elke klap weg, dus met het hele pak 60% — bovenop
+  de gewone bescherming. Dat betaalt je bril per treffer.
+- **Vliegen**: met alle drie de stukken kun je vliegen, ongeveer zoals in creative maar sneller.
+  Stilhangen kost 12 energie per seconde, vooruit vliegen 26. Raakt je batterij leeg, dan val je
+  gewoon uit de lucht — hou hem dus in de gaten.
+- **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
+- **Repulsor** (toets **I**, of G > Gevecht): een stoot uit je handpalm die alles op zijn weg
+  raakt en wegduwt, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de reactor) en het
+  kost 500 energie per stoot.
 
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij

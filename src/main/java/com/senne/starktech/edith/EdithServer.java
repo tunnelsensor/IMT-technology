@@ -21,6 +21,7 @@ import com.senne.starktech.illusion.IllusionScene;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.suit.EdithSuit;
 import com.senne.starktech.transport.EdithTransport;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -367,6 +368,8 @@ public final class EdithServer {
             case ILLUSION_COPY -> EdithIllusions.start(player, glasses, IllusionScene.Kind.COPY);
             case ILLUSION_CLOAK -> EdithIllusions.start(player, glasses, IllusionScene.Kind.CLOAK);
             case ILLUSION_STOP -> EdithIllusions.stopAll(player);
+            // Fase 15
+            case REPULSOR -> EdithSuit.repulsor(player);
             default -> { }
         }
     }

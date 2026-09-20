@@ -67,7 +67,10 @@ public enum EdithAction {
     /** Alles in het veld onzichtbaar maken. */
     ILLUSION_CLOAK("illusion_cloak", null),
     /** Alle illusies stoppen. */
-    ILLUSION_STOP("illusion_stop", null);
+    ILLUSION_STOP("illusion_stop", null),
+    // Fase 15: het harnas
+    /** Een repulsorstoot uit je handpalm. */
+    REPULSOR("repulsor", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

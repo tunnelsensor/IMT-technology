@@ -76,38 +76,37 @@ Afspraken die overal gelden:
       van het hologram, ronddraaien aan/uit, en het voorwerp van tafel halen.
       Mogelijke uitbreiding: een stand die de ertsen in de buurt laat zien.
 
-**Stand van zaken:** 29 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+- [x] **Het harnas**
+      Borstplaat, broek en laarzen (geen helm: die plek is van de bril). Zonder bril doet het
+      niets bijzonders. Met bril: 20% schade eraf per gedragen stuk, vliegen met het hele pak,
+      elke val tot 40 blokken opgevangen, en een repulsorstoot op toets I.
+      Duur om te maken: netherite plus Stark-chips.
+      **Aannames die ik zelf heb ingevuld** (zeg het als je het anders wil): wat het kan,
+      dat het craftbaar is in plaats van te vinden, en alle getallen in `SuitBalance.java`.
+      Nog niet gedaan: onder water ademen, een werkbank voor harnasdelen, "Veronica".
+
+**Stand van zaken:** 33 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 
 ---
 
 ## Nog te doen, in deze volgorde
 
-### 1. Het harnas
-
-- [ ] Borstplaat, broek en schoenen (geen helm — daar zit de bril)
-- [ ] **Werkt alleen met de bril op.** Zonder bril doet het harnas niets: de bril levert de
-      stroom, het harnas heeft geen eigen batterij
-- [ ] Mag overpowered zijn, maar moeilijk te krijgen in survival
-
-Nog niet besproken: wat het precies kan (vliegen, repulsors, pantser, val opvangen, onder water
-ademen), waar je het vandaan haalt, en wat het aan energie kost.
-
-### 2. Advancements
+### 1. Advancements
 
 - [ ] Een echte boom die je door de fases leidt (nu zijn er alleen recept-advancements)
 
-### 3. Vijanden
+### 2. Vijanden
 
 - [ ] Raiddrones die je aanvallen, willekeurig of als je hun basis aanvalt
 - [ ] Ze mogen blokken kapotmaken, met een **gamerule** om dat uit te zetten; standaard aan
 
-### 4. Meer in de wereld
+### 3. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 5. De AI-stem (als laatste)
+### 4. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API

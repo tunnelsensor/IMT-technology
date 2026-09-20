@@ -26,7 +26,9 @@ public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements Custom
         /** Precisie-straal: dun, wit en oogverblindend. */
         SATELLITE_PRECISION,
         /** De schuivende laser: een brede streep die over de grond kruipt. */
-        SATELLITE_SWEEP
+        SATELLITE_SWEEP,
+        /** Fase 15: een repulsorstoot uit je handpalm. */
+        REPULSOR
     }
 
     public static final StreamCodec<ByteBuf, BeamEffectPayload> STREAM_CODEC = StreamCodec.composite(
