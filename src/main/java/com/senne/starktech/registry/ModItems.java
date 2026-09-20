@@ -3,6 +3,7 @@ package com.senne.starktech.registry;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithGlassesItem;
 import com.senne.starktech.edith.UpgradeItem;
+import com.senne.starktech.arsenal.StarkDroneItem;
 import com.senne.starktech.illusion.EmpItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -67,4 +68,8 @@ public final class ModItems {
             ModBlocks.LASER_EMITTER);
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
             ModBlocks.DOME_GENERATOR);
+
+    /** Fase 15: een gebouwde drone. Gebruik hem en hij vliegt naar je arsenaal in een baan. */
+    public static final DeferredItem<StarkDroneItem> STARK_DRONE = ITEMS.registerItem("stark_drone",
+            StarkDroneItem::new, new Item.Properties().rarity(Rarity.UNCOMMON));
 }

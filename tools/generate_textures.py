@@ -576,6 +576,24 @@ def emp_item():
     save(im, "item/emp.png")
 
 
+def stark_drone_item():
+    """Een gebouwde drone in je hand: een romp met vier rotorarmen en een cyaan oog."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    # De vier armen, diagonaal naar de hoeken.
+    for x0, y0, x1, y1 in [(3, 3, 6, 6), (12, 3, 9, 6), (3, 12, 6, 9), (12, 12, 9, 9)]:
+        d.line([x0, y0, x1, y1], fill=METAL_3)
+    # De rotors op het eind van elke arm.
+    for cx, cy in [(3, 3), (12, 3), (3, 12), (12, 12)]:
+        d.ellipse([cx - 2, cy - 1, cx + 2, cy + 1], outline=METAL_2)
+    # De romp.
+    d.rectangle([5, 5, 10, 10], fill=METAL_2, outline=METAL_DARK)
+    # Het oog: hier komt de laser uit.
+    d.rectangle([7, 7, 8, 8], fill=CYAN)
+    px(im, [(6, 6), (9, 9)], CYAN_DIM)
+    save(im, "item/stark_drone.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -591,3 +609,4 @@ if __name__ == "__main__":
     rayshield_walls()
     charger_textures()
     emp_item()
+    stark_drone_item()

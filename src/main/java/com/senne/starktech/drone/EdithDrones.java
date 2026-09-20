@@ -1,5 +1,7 @@
 package com.senne.starktech.drone;
 
+import com.senne.starktech.arsenal.ArsenalDrone;
+import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.edith.EdithData;
@@ -26,6 +28,10 @@ import org.jetbrains.annotations.Nullable;
  * Drones komen altijd UIT DE LUCHT aanvliegen: ze verschijnen hoog boven je (of boven het
  * doelwit) en duiken naar beneden. Kan dat niet (je zit in een grot of onder een dak), dan
  * verschijnen ze zo hoog als er nog ruimte is boven je.
+ *
+ * Elke drone die je hier ziet vertrekken komt uit je arsenaal (zie ArsenalServer): hij wordt
+ * uit zijn baan gehaald, doet zijn werk en meldt zich daarna weer terug. Heb je er geen meer
+ * hangen, dan vertrekt er niets - dan moet je eerst nieuwe bouwen.
  */
 public final class EdithDrones {
     private EdithDrones() {}
@@ -50,17 +56,23 @@ public final class EdithDrones {
      * er meteen door, dus hij moet bij je ogen beginnen.
      */
     public static @Nullable StarkDroneEntity launchScout(ServerPlayer owner) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
         Vec3 look = owner.getViewVector(1.0f);
         Vec3 pos = owner.getEyePosition().add(look.x * 1.5, 0.6, look.z * 1.5);
-        return spawn(owner, StarkDroneEntity.Mode.SCOUT, 0, -1, pos, false);
+        return spawn(owner, StarkDroneEntity.Mode.SCOUT, 0, -1, pos, false, available);
     }
 
     /** Lanceert een zwerm aanvalsdrones uit de lucht. Geeft terug hoeveel er gelanceerd zijn. */
     public static int launchSwarm(ServerPlayer owner, ItemStack glasses) {
-        int count = EdithData.getSwarmSize(glasses);
+        // Je bril bepaalt hoeveel drones een zwerm MAG zijn; je arsenaal bepaalt hoeveel het WORDT.
+        List<ArsenalDrone> available = ArsenalServer.checkOut(owner, EdithData.getSwarmSize(glasses));
         int launched = 0;
-        for (int i = 0; i < count; i++) {
-            if (spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, i, EdithBalance.SWARM_LIFETIME, owner.position()) != null) {
+        for (int i = 0; i < available.size(); i++) {
+            if (spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, i, EdithBalance.SWARM_LIFETIME,
+                    owner.position(), available.get(i)) != null) {
                 launched++;
             }
         }
@@ -72,7 +84,12 @@ public final class EdithDrones {
      * niet meer los tot het doelwit dood is (of zijn tijd om is).
      */
     public static @Nullable StarkDroneEntity launchStrike(ServerPlayer owner, LivingEntity target) {
-        StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, 0, EdithBalance.STRIKE_DRONE_LIFETIME, target.position());
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
+        StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, 0,
+                EdithBalance.STRIKE_DRONE_LIFETIME, target.position(), available);
         if (drone != null) {
             drone.lockOn(target);
         }
@@ -84,11 +101,14 @@ public final class EdithDrones {
      * blijft daar achter hangen. Onzichtbaar, en hij valt niets aan.
      */
     public static @Nullable StarkDroneEntity launchSpy(ServerPlayer owner, LivingEntity target) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
         ServerLevel level = target.level() instanceof ServerLevel targetLevel ? targetLevel : owner.serverLevel();
         Vec3 above = target.position();
         double y = freeHeightAbove(level, above.x, above.y, above.z);
-        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.SPY, 0, -1, new Vec3(above.x, y, above.z), level, true);
-        return drone;
+        return spawn(owner, StarkDroneEntity.Mode.SPY, 0, -1, new Vec3(above.x, y, above.z), level, true, available);
     }
 
 /**
@@ -112,8 +132,13 @@ public final class EdithDrones {
      * @param destination null = jij stuurt zelf; anders vliegt de autopiloot daarheen
      */
     public static @Nullable StarkDroneEntity launchCarrier(ServerPlayer owner, @Nullable BlockPos destination) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
         Vec3 above = new Vec3(owner.getX(), owner.getY() + owner.getBbHeight() + 1.2, owner.getZ());
-        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.TRANSPORT, 0, EdithBalance.TRANSPORT_MAX_TICKS, above, false);
+        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.TRANSPORT, 0,
+                EdithBalance.TRANSPORT_MAX_TICKS, above, false, available);
         if (drone != null) {
             drone.setupTransport(StarkDroneEntity.TransportRole.CARRIER, destination, List.of());
         }
@@ -122,9 +147,10 @@ public final class EdithDrones {
 
     /** Een paar drones die met je meevliegen, puur voor het gezicht. */
     public static void launchTransportEscort(ServerPlayer owner, int count) {
-        for (int i = 1; i <= count; i++) {
-            StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.TRANSPORT, i,
-                    EdithBalance.TRANSPORT_MAX_TICKS, owner.position());
+        List<ArsenalDrone> available = ArsenalServer.checkOut(owner, count);
+        for (int i = 0; i < available.size(); i++) {
+            StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.TRANSPORT, i + 1,
+                    EdithBalance.TRANSPORT_MAX_TICKS, owner.position(), available.get(i));
             if (drone != null) {
                 drone.setupTransport(StarkDroneEntity.TransportRole.FOLLOWER, null, List.of());
             }
@@ -133,8 +159,12 @@ public final class EdithDrones {
 
     /** Een vrachtdrone met spullen erin, op weg naar een plek. */
     public static @Nullable StarkDroneEntity launchCargo(ServerPlayer owner, List<ItemStack> cargo, BlockPos destination) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
         StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.TRANSPORT, 0,
-                EdithBalance.TRANSPORT_MAX_TICKS, owner.position());
+                EdithBalance.TRANSPORT_MAX_TICKS, owner.position(), available);
         if (drone != null) {
             drone.setupTransport(StarkDroneEntity.TransportRole.CARGO, destination, cargo);
         }
@@ -143,8 +173,13 @@ public final class EdithDrones {
 
     /** Een drone die iemand (of iets) oppakt en ergens anders neerzet. */
     public static @Nullable StarkDroneEntity launchGrabber(ServerPlayer owner, LivingEntity target, BlockPos destination) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
         Vec3 above = new Vec3(target.getX(), target.getY() + target.getBbHeight() + 1.2, target.getZ());
-        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.TRANSPORT, 0, EdithBalance.TRANSPORT_MAX_TICKS, above, false);
+        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.TRANSPORT, 0,
+                EdithBalance.TRANSPORT_MAX_TICKS, above, false, available);
         if (drone != null) {
             drone.setupTransport(StarkDroneEntity.TransportRole.GRABBER, destination, List.of());
         }
@@ -156,8 +191,12 @@ public final class EdithDrones {
      * Onzichtbaar, maar wel echt aanwezig (dus raakbaar).
      */
     public static @Nullable StarkDroneEntity launchIllusion(ServerPlayer owner) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
         return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, EdithBalance.ILLUSION_LIFETIME,
-                illusionSpot(owner), false);
+                illusionSpot(owner), false, available);
     }
 
     /**
@@ -191,12 +230,16 @@ public final class EdithDrones {
         List<StarkDroneEntity> guards = find(owner, StarkDroneEntity.Mode.GUARD);
         int wanted = EdithData.getGuardCount(glasses);
         if (guards.size() < wanted) {
+            ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+            if (available == null) {
+                return; // geen drones meer in een baan: dan blijft de escorte zo klein als hij is
+            }
             // Kies een vrij plekje in de formatie.
             int slot = 0;
             while (slotTaken(guards, slot)) {
                 slot++;
             }
-            spawnFromSky(owner, StarkDroneEntity.Mode.GUARD, slot, -1, owner.position());
+            spawnFromSky(owner, StarkDroneEntity.Mode.GUARD, slot, -1, owner.position(), available);
         }
     }
 
@@ -216,7 +259,7 @@ public final class EdithDrones {
      * Is er boven dat punt geen ruimte (grot, kelder), dan komt hij zo hoog als het kan.
      */
     private static @Nullable StarkDroneEntity spawnFromSky(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot,
-                                                           int lifeTicks, Vec3 below) {
+                                                           int lifeTicks, Vec3 below, ArsenalDrone fromArsenal) {
         ServerLevel level = owner.serverLevel();
         // De drones komen niet allemaal op dezelfde plek naar beneden: een kringetje eromheen.
         double angle = slot * (Math.PI * 2 / 5) + (slot / 5) * 0.4;
@@ -225,7 +268,7 @@ public final class EdithDrones {
         double z = below.z + Math.sin(angle) * radius;
         double y = freeHeightAbove(level, x, below.y, z);
         boolean diving = y - below.y >= MIN_DROP_HEIGHT;
-        return spawn(owner, mode, slot, lifeTicks, new Vec3(x, y, z), diving);
+        return spawn(owner, mode, slot, lifeTicks, new Vec3(x, y, z), diving, fromArsenal);
     }
 
     /**
@@ -259,18 +302,23 @@ public final class EdithDrones {
      *               vonken achter zich aan); false = hij verschijnt gewoon op zijn plek.
      */
     private static @Nullable StarkDroneEntity spawn(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot, int lifeTicks,
-                                                    Vec3 position, boolean diving) {
-        return spawn(owner, mode, slot, lifeTicks, position, owner.serverLevel(), diving);
+                                                    Vec3 position, boolean diving, ArsenalDrone fromArsenal) {
+        return spawn(owner, mode, slot, lifeTicks, position, owner.serverLevel(), diving, fromArsenal);
     }
 
     /** Idem, maar in een zelf gekozen wereld (de spionagedrone volgt zijn doelwit door portalen). */
     private static @Nullable StarkDroneEntity spawn(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot, int lifeTicks,
-                                                    Vec3 position, ServerLevel level, boolean diving) {
+                                                    Vec3 position, ServerLevel level, boolean diving, ArsenalDrone fromArsenal) {
         StarkDroneEntity drone = ModEntities.STARK_DRONE.get().create(level);
         if (drone == null) {
+            // De drone staat al als "bezig" geboekt, dus die boeking moeten we terugdraaien.
+            ArsenalServer.returnToOrbit(owner, fromArsenal.id(), fromArsenal.health());
             return null;
         }
         drone.setup(owner, mode, slot, lifeTicks);
+        // Hij gaat de lucht in met de schade die hij de vorige keer opliep.
+        drone.setArsenalId(fromArsenal.id());
+        drone.setHealth(fromArsenal.health());
         drone.moveTo(position.x, position.y, position.z, owner.getYRot(), 0.0f);
         if (diving) {
             // Een zetje naar beneden, zodat hij echt "invalt" in plaats van rustig te komen zweven.

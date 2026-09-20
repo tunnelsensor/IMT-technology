@@ -1,5 +1,6 @@
 package com.senne.starktech.edith;
 
+import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.network.DroneCameraPayload;
@@ -393,9 +394,24 @@ public final class EdithServer {
 
     // ---------------------------------------------------------------- Drones
 
+    /**
+     * Hangt er nog minstens één drone klaar in je baan?
+     *
+     * Zo niet, dan zeggen we dat en gebeurt er verder niets: je raakt geen energie kwijt en er
+     * begint geen wachttijd. Nieuwe drones bouw je met een recept; zie het arsenaal-scherm.
+     */
+    private static boolean requireDrone(ServerPlayer player) {
+        if (ArsenalServer.get(player).availableCount() > 0) {
+            return true;
+        }
+        send(player, Component.translatable("arsenal.starktech.msg.empty"), EdithMessagePayload.Level.WARNING);
+        return false;
+    }
+
     private static void launchDrones(ServerPlayer player, ItemStack glasses) {
         PlayerState state = state(player);
-        if (!checkCooldown(player, state, EdithCooldown.SWARM)
+        if (!requireDrone(player)
+                || !checkCooldown(player, state, EdithCooldown.SWARM)
                 || !payEnergy(player, glasses, EdithBalance.SWARM_COST)) {
             return;
         }
@@ -438,7 +454,7 @@ public final class EdithServer {
             send(player, Component.translatable("edith.starktech.msg.cannot_mark", target.getDisplayName()), EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (!payEnergy(player, glasses, EdithBalance.STRIKE_DRONE_COST)) {
+        if (!requireDrone(player) || !payEnergy(player, glasses, EdithBalance.STRIKE_DRONE_COST)) {
             return;
         }
         startCooldown(player, state, EdithCooldown.STRIKE, EdithBalance.STRIKE_DRONE_COOLDOWN);
@@ -497,7 +513,8 @@ public final class EdithServer {
             return;
         }
         PlayerState state = state(player);
-        if (!checkCooldown(player, state, EdithCooldown.TRANSPORT) || !payEnergy(player, glasses, EdithBalance.TRANSPORT_COST)) {
+        if (!requireDrone(player) || !checkCooldown(player, state, EdithCooldown.TRANSPORT)
+                || !payEnergy(player, glasses, EdithBalance.TRANSPORT_COST)) {
             return;
         }
         startCooldown(player, state, EdithCooldown.TRANSPORT, EdithBalance.TRANSPORT_COOLDOWN);
@@ -508,7 +525,8 @@ public final class EdithServer {
     /** Stuurt de spullen uit de kist waar je naar kijkt naar je bestemming. */
     private static void cargo(ServerPlayer player, ItemStack glasses) {
         PlayerState state = state(player);
-        if (!checkCooldown(player, state, EdithCooldown.TRANSPORT) || !payEnergy(player, glasses, EdithBalance.TRANSPORT_COST)) {
+        if (!requireDrone(player) || !checkCooldown(player, state, EdithCooldown.TRANSPORT)
+                || !payEnergy(player, glasses, EdithBalance.TRANSPORT_COST)) {
             return;
         }
         startCooldown(player, state, EdithCooldown.TRANSPORT, EdithBalance.TRANSPORT_COOLDOWN);
@@ -524,7 +542,8 @@ public final class EdithServer {
             send(player, Component.translatable("edith.starktech.msg.no_target_in_sight"), EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (!checkCooldown(player, state, EdithCooldown.TRANSPORT) || !payEnergy(player, glasses, EdithBalance.TRANSPORT_COST)) {
+        if (!requireDrone(player) || !checkCooldown(player, state, EdithCooldown.TRANSPORT)
+                || !payEnergy(player, glasses, EdithBalance.TRANSPORT_COST)) {
             return;
         }
         startCooldown(player, state, EdithCooldown.TRANSPORT, EdithBalance.TRANSPORT_COOLDOWN);
@@ -554,7 +573,7 @@ public final class EdithServer {
             send(player, Component.translatable("edith.starktech.msg.no_target_in_sight"), EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (!payEnergy(player, glasses, EdithBalance.SPY_COST)) {
+        if (!requireDrone(player) || !payEnergy(player, glasses, EdithBalance.SPY_COST)) {
             return;
         }
         startCooldown(player, state, EdithCooldown.SPY, EdithBalance.SPY_COOLDOWN);
@@ -798,6 +817,9 @@ public final class EdithServer {
         }
         if (EdithData.getEnergy(glasses) < EdithBalance.SCOUT_COST) {
             send(player, Component.translatable("edith.starktech.msg.not_enough_energy", EdithBalance.SCOUT_COST), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        if (!requireDrone(player)) {
             return;
         }
         StarkDroneEntity drone = EdithDrones.launchScout(player);

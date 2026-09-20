@@ -1,5 +1,6 @@
 package com.senne.starktech.illusion;
 
+import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithBalance;
@@ -120,6 +121,12 @@ public final class EdithIllusions {
         };
         if (scene == null) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_no_copy"),
+                    EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        // Een illusie is ook gewoon een drone: zonder drone in een baan gebeurt er niets.
+        if (ArsenalServer.get(owner).availableCount() <= 0) {
+            EdithServer.send(owner, Component.translatable("arsenal.starktech.msg.empty"),
                     EdithMessagePayload.Level.WARNING);
             return;
         }

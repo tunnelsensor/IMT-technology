@@ -71,7 +71,7 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 | Tabblad | Wat erin zit |
 |---------|--------------|
 | **Gevecht** | Rayshield, drones, één drone, escorte, satelliet + stand, stand down, markeringen wissen |
-| **Drones** | Drone-camera, spionagedrone, meekijken, rapport |
+| **Drones** | Arsenaal, drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusie** | Valse muur, nep-leger, wereld kopiëren, onzichtbaar veld, stoppen |
@@ -83,9 +83,32 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
 ## 5. De grote functies
 
-### Drones
+### Het drone-arsenaal
+Drones komen niet meer uit het niets: je moet ze **bouwen**. Craft een **Stark-drone**
+(een Stark-chip, 5 ijzer, 2 redstone en een amethist) en gebruik hem: hij schiet de lucht in
+naar een baan om de planeet. Daar wacht hij tot je hem nodig hebt, waar je ook bent.
+
+Alles wat drones gebruikt — de zwerm, de escorte, de verkenner, de spion, transport, vracht
+en de illusies — haalt ze uit dat arsenaal. Hangt er niets meer, dan vertrekt er niets, en zegt
+E.D.I.T.H. dat (je raakt dan geen energie kwijt).
+
+Open het arsenaal met **G > Drones > Arsenaal**. Per drone zie je hoe heel hij nog is en waar
+hij uithangt:
+
+- **In orbit** — klaar voor gebruik. Met **Recall** haal je hem naar de grond.
+- **On a job** — nu ergens bezig. Daar valt niets aan te doen tot hij terug is (of gebruik
+  "stand down").
+- **Grounded** — aan de grond. **Repair** herstelt hem met ijzer uit je rugzak (één staaf is
+  3 levenspunten), en **Launch** stuurt hem weer omhoog.
+
+Schade blijft bewaard: een drone die gehavend terugkomt, gaat gehavend weer de lucht in tot je
+hem repareert. Wordt een drone **neergehaald**, dan is hij weg — je krijgt ongeveer 10% van de
+bouwkosten terug als schroot op de plek waar hij viel, de rest kost je een nieuwe drone.
+
+### Drones in het veld
 Ze komen altijd **uit de lucht** duiken. Hoeveel er maximaal zijn, staat in de config
-(`<wereld>/serverconfig/starktech-server.toml`), standaard zwerm 16 en escorte 8.
+(`<wereld>/serverconfig/starktech-server.toml`), standaard zwerm 16 en escorte 8 — maar je
+arsenaal bepaalt hoeveel het er echt worden.
 
 - **Zwerm** (J): valt je gemarkeerde doelwitten aan, of verdedigt je.
 - **Eén drone** (L): goedkoop, jaagt op één doelwit tot het dood is.

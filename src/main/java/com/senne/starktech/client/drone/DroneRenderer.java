@@ -54,7 +54,8 @@ public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel> {
                 case ATTACK -> ATTACK_LIGHTS;
                 case GUARD, TRANSPORT -> GUARD_LIGHTS;
                 // De spion en de cloakingdrone zijn onzichtbaar; zie je ze toch, dan wit.
-                case SCOUT, SPY, ILLUSION -> SCOUT_LIGHTS;
+                // Een drone op weg naar zijn baan krijgt hetzelfde witte licht.
+                case SCOUT, SPY, ILLUSION, LAUNCH -> SCOUT_LIGHTS;
             };
             getParentModel().renderToBuffer(poseStack, buffers.getBuffer(lights), light,
                     OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);

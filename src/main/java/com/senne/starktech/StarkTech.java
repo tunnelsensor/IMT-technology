@@ -1,6 +1,7 @@
 package com.senne.starktech;
 
 import com.mojang.logging.LogUtils;
+import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.edith.EdithServer;
@@ -74,6 +75,7 @@ public class StarkTech {
         // Gebeurtenissen tijdens het spelen.
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogin);
         NeoForge.EVENT_BUS.addListener(EdithServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(EdithServer::onLivingDamaged);
         // Onthouden wie jou raakte, zodat de dreigingsscan alleen echte aanvallers toont

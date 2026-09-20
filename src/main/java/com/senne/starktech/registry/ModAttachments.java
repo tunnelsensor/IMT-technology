@@ -1,6 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.arsenal.EdithArsenal;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.redstone.EdithRelays;
 import java.util.function.Supplier;
@@ -37,5 +38,14 @@ public final class ModAttachments {
                     .copyOnDeath()
                     .sync((holder, player) -> holder == player && player.connection != null
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithRelays.STREAM_CODEC)
+                    .build());
+
+    /** Het drone-arsenaal in een baan om de planeet (fase 15). */
+    public static final Supplier<AttachmentType<EdithArsenal>> ARSENAL = ATTACHMENTS.register("arsenal",
+            () -> AttachmentType.builder(() -> EdithArsenal.EMPTY)
+                    .serialize(EdithArsenal.CODEC.codec())
+                    .copyOnDeath()
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithArsenal.STREAM_CODEC)
                     .build());
 }

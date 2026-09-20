@@ -1,5 +1,7 @@
 package com.senne.starktech.drone;
 
+import com.senne.starktech.arsenal.ArsenalBalance;
+import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -65,7 +68,9 @@ public class StarkDroneEntity extends PathfinderMob {
         /** Fase 7: vervoert jou, een vracht of iemand anders. */
         TRANSPORT,
         /** Fase 12: onzichtbare drone die een illusie projecteert. */
-        ILLUSION;
+        ILLUSION,
+        /** Fase 15: net gebouwd en op weg naar een baan om de planeet. */
+        LAUNCH;
 
         public static Mode byId(int id) {
             Mode[] all = values();
@@ -82,6 +87,8 @@ public class StarkDroneEntity extends PathfinderMob {
      * doelwit"-aanval). Is het doelwit dood of verdwenen, dan gaat de drone naar huis.
      */
     private @Nullable UUID lockedTargetId;
+    /** Welke drone uit het arsenaal dit is, of null voor een drone zonder arsenaal. */
+    private @Nullable UUID arsenalId;
     /** Zolang dit > 0 is, duikt de drone nog uit de lucht naar beneden. */
     private int diveTicks;
     /** Nummer van de drone binnen zijn groep (voor de plek in de formatie). */
@@ -119,6 +126,15 @@ public class StarkDroneEntity extends PathfinderMob {
             // dus wie weet waar hij hangt, kan hem uit de lucht slaan).
             setInvisible(true);
         }
+    }
+
+    /** Koppelt deze drone aan een drone uit het arsenaal van zijn eigenaar. */
+    public void setArsenalId(@Nullable UUID id) {
+        this.arsenalId = id;
+    }
+
+    public @Nullable UUID getArsenalId() {
+        return arsenalId;
     }
 
     /** Deze drone jaagt alleen nog op dit wezen. */
@@ -273,6 +289,10 @@ public class StarkDroneEntity extends PathfinderMob {
         if (fireCooldown > 0) {
             fireCooldown--;
         }
+        if (getMode() == Mode.LAUNCH) {
+            climbToOrbit(level);
+            return;
+        }
 
         ServerPlayer owner = getOwner(level);
         if (owner == null || !owner.isAlive() || owner.isSpectator() || !stillLinked(owner)) {
@@ -350,6 +370,7 @@ public class StarkDroneEntity extends PathfinderMob {
             case SPY -> EdithData.getEnergy(glasses) > 0 && EdithSpy.isActiveSpy(owner, this);
             case TRANSPORT -> EdithData.getEnergy(glasses) > 0;
             case ILLUSION -> EdithIllusions.isActive(this);
+            case LAUNCH -> true;
         };
     }
 
@@ -628,13 +649,39 @@ public class StarkDroneEntity extends PathfinderMob {
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
     }
 
-    /** Terugroepen: de drone verdwijnt met een wolkje en een geluid. */
+    /**
+     * Terugroepen: de drone verdwijnt met een wolkje en een geluid, en gaat terug naar zijn
+     * baan om de planeet. De schade die hij opliep gaat mee: hij komt beschadigd terug in je
+     * arsenaal en blijft zo tot je hem repareert.
+     */
     public void recall(ServerLevel level) {
         dropCargo(level);
+        returnToArsenal(level);
         level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.2, getZ(), 6, 0.2, 0.1, 0.2, 0.02);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 8, 0.3, 0.2, 0.3, 0.1);
         level.playSound(null, getX(), getY(), getZ(), ModSounds.DRONE_RECALL.get(), SoundSource.NEUTRAL, 0.7f, 1.3f);
         discard();
+    }
+
+    /** Vliegt recht omhoog tot hij de lucht uit is; daarna hangt hij in zijn baan. */
+    private void climbToOrbit(ServerLevel level) {
+        setDeltaMovement(0, ArsenalBalance.LAUNCH_SPEED, 0);
+        hasImpulse = true;
+        if (tickCount % 2 == 0) {
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() - 0.2, getZ(), 2, 0.08, 0.05, 0.08, 0.02);
+        }
+        if (tickCount >= ArsenalBalance.LAUNCH_TICKS || getY() > level.getMaxBuildHeight() + 16) {
+            level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 8, 0.2, 0.2, 0.2, 0.02);
+            discard();
+        }
+    }
+
+    /** Meldt deze drone terug in het arsenaal van zijn eigenaar, met de schade die hij opliep. */
+    private void returnToArsenal(ServerLevel level) {
+        ServerPlayer owner = getOwner(level);
+        if (arsenalId != null && owner != null) {
+            ArsenalServer.returnToOrbit(owner, arsenalId, getHealth());
+        }
     }
 
     // ================================================================ Gedrag als wezen
@@ -655,6 +702,11 @@ public class StarkDroneEntity extends PathfinderMob {
         super.die(source);
         if (level() instanceof ServerLevel level) {
             dropCargo(level);
+            // Neergehaald: uit het arsenaal, en een beetje schroot valt op de grond.
+            ServerPlayer owner = getOwner(level);
+            if (arsenalId != null && owner != null) {
+                ArsenalServer.destroyed(owner, arsenalId, level, position());
+            }
             level.sendParticles(ParticleTypes.LARGE_SMOKE, getX(), getY() + 0.2, getZ(), 8, 0.2, 0.2, 0.2, 0.02);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 12, 0.3, 0.3, 0.3, 0.2);
         }
@@ -668,6 +720,41 @@ public class StarkDroneEntity extends PathfinderMob {
     @Override
     protected @Nullable SoundEvent getDeathSound() {
         return ModSounds.DRONE_DESTROYED.get();
+    }
+
+    // ---------------------------------------------------------------- Opslaan en terugladen
+
+    /**
+     * Wat een drone moet onthouden als de wereld wordt opgeslagen: wie zijn eigenaar is, welke
+     * drone uit het arsenaal hij is, en waar hij mee bezig was.
+     *
+     * Zonder dit was een drone na een herstart zijn eigenaar kwijt, en kon hij zichzelf niet
+     * meer terugmelden in het arsenaal.
+     */
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        if (ownerId != null) {
+            tag.putUUID("StarkOwner", ownerId);
+        }
+        if (arsenalId != null) {
+            tag.putUUID("StarkArsenal", arsenalId);
+        }
+        tag.putByte("StarkMode", (byte) getMode().ordinal());
+        tag.putInt("StarkSlot", slot);
+        tag.putInt("StarkLife", lifeTicks);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        ownerId = tag.hasUUID("StarkOwner") ? tag.getUUID("StarkOwner") : null;
+        arsenalId = tag.hasUUID("StarkArsenal") ? tag.getUUID("StarkArsenal") : null;
+        if (tag.contains("StarkMode")) {
+            entityData.set(DATA_MODE, tag.getByte("StarkMode"));
+        }
+        slot = tag.getInt("StarkSlot");
+        lifeTicks = tag.contains("StarkLife") ? tag.getInt("StarkLife") : -1;
     }
 
     @Override

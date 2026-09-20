@@ -2,6 +2,7 @@ package com.senne.starktech.network;
 
 import com.senne.starktech.client.ClientPayloadHandlers;
 import com.senne.starktech.comms.EdithComms;
+import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.redstone.EdithRedstone;
@@ -62,6 +63,12 @@ public final class ModNetwork {
         registrar.playToServer(RelayActionPayload.TYPE, RelayActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 EdithRedstone.handleAction(player, payload);
+            }
+        });
+        // Fase 15: het drone-arsenaal
+        registrar.playToServer(ArsenalActionPayload.TYPE, ArsenalActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                ArsenalServer.handleAction(player, payload);
             }
         });
 

@@ -97,8 +97,9 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.CARGO_DRONE),
             action(EdithAction.CARRY_ENTITY));
 
-    /** Tabblad Drones: de camera, de spion en zijn rapport. */
+    /** Tabblad Drones: je arsenaal, de camera, de spion en zijn rapport. */
     private static final List<Option> DRONES = List.of(
+            open("screen.starktech.menu.arsenal", HudStyle.CYAN, ArsenalScreen::new),
             action(EdithAction.DRONE_CAMERA),
             action(EdithAction.SPY_DRONE),
             action(EdithAction.SPY_VIEW),
