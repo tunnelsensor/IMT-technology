@@ -53,6 +53,7 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -333,6 +334,43 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("De bril wordt niet opgeladen");
             }
         });
+    }
+
+    /**
+     * De bril hoort alleen uit de kluis van een Stark Tower te komen. Zolang er geen recept
+     * voor bestaat, kun je hem in survival nergens anders vandaan halen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void glasses_cannot_be_crafted(GameTestHelper helper) {
+        for (RecipeHolder<?> holder : helper.getLevel().getServer().getRecipeManager().getRecipes()) {
+            ItemStack result = holder.value().getResultItem(helper.getLevel().registryAccess());
+            if (EdithData.isGlasses(result)) {
+                throw new GameTestAssertException("Er bestaat weer een recept voor de bril: " + holder.id());
+            }
+        }
+        helper.succeed();
+    }
+
+    /** Redstone is noodvoorraad, geen stroomvoorziening: een volle bril kost er honderden. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void redstone_is_a_small_top_up(GameTestHelper helper) {
+        int perRedstone = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE));
+        if (perRedstone != EdithBalance.ENERGY_PER_REDSTONE) {
+            throw new GameTestAssertException("Redstone geeft " + perRedstone + " in plaats van "
+                    + EdithBalance.ENERGY_PER_REDSTONE);
+        }
+        // Een lege bril vol krijgen hoort meer dan een stapel redstone te kosten.
+        int needed = EdithBalance.BASE_CAPACITY / perRedstone;
+        if (needed <= 64) {
+            throw new GameTestAssertException("Een volle bril kost maar " + needed + " redstone; dat is te makkelijk");
+        }
+        // Een blok hoort ongeveer negen losse stuks waard te zijn, niet meer.
+        int perBlock = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE_BLOCK));
+        if (perBlock < perRedstone * 9 || perBlock > perRedstone * 10) {
+            throw new GameTestAssertException("Een redstone-blok geeft " + perBlock
+                    + "; verwacht ongeveer negen keer " + perRedstone);
+        }
+        helper.succeed();
     }
 
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
@@ -811,7 +849,8 @@ public final class StarkTechGameTests {
         // 2. Het laadstation laadt op en bouwt een upgrade in.
         ChargingStationBlockEntity station = (ChargingStationBlockEntity) helper.getBlockEntity(STATION_POS);
         station.setItem(ChargingStationBlockEntity.SLOT_GLASSES, new ItemStack(ModItems.EDITH_GLASSES.get()));
-        station.setItem(ChargingStationBlockEntity.SLOT_FUEL, new ItemStack(Items.REDSTONE, 4));
+        int redstone = 4;
+        station.setItem(ChargingStationBlockEntity.SLOT_FUEL, new ItemStack(Items.REDSTONE, redstone));
         station.setItem(ChargingStationBlockEntity.SLOT_UPGRADE, new ItemStack(ModItems.BATTERY_UPGRADE.get()));
 
         helper.succeedWhen(() -> {
@@ -819,7 +858,7 @@ public final class StarkTechGameTests {
             if (EdithData.getUpgrades(glasses).battery() != 1) {
                 throw new GameTestAssertException("Upgrade nog niet ingebouwd");
             }
-            if (EdithData.getEnergy(glasses) < 4 * 500) {
+            if (EdithData.getEnergy(glasses) < redstone * EdithBalance.ENERGY_PER_REDSTONE) {
                 throw new GameTestAssertException("Bril nog niet opgeladen: " + EdithData.getEnergy(glasses));
             }
         });

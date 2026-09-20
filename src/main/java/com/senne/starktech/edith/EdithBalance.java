@@ -57,10 +57,16 @@ public final class EdithBalance {
     // ---------------------------------------------------------------- Laadstation
     /** Hoeveel energie het laadstation zelf kan opslaan (max 32000, anders klopt de GUI niet). */
     public static final int STATION_CAPACITY = 30_000;
-    /** Energie uit één stuk redstone. */
-    public static final int ENERGY_PER_REDSTONE = 500;
+    /**
+     * Energie uit één stuk redstone.
+     *
+     * Bewust weinig: een volle bril kost zo ongeveer twee stapels redstone. Redstone is
+     * bedoeld als noodvoorraad die je in je zak hebt, niet als je gewone stroom. Daarvoor
+     * zet je een zonnepaneel of een warmtegenerator neer.
+     */
+    public static final int ENERGY_PER_REDSTONE = 50;
     /** Energie uit één redstone-blok (9 redstone + een beetje bonus). */
-    public static final int ENERGY_PER_REDSTONE_BLOCK = 4_800;
+    public static final int ENERGY_PER_REDSTONE_BLOCK = 480;
     /** Hoeveel energie het station per tick naar de bril stuurt. */
     public static final int STATION_CHARGE_RATE = 50;
     // ---------------------------------------------------------------- Zonnepaneel en warmte

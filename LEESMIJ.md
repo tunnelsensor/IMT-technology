@@ -19,11 +19,15 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (15 automatis
 
 ## 2. Beginnen in het spel
 
-- Craft een **Stark-chip** (koper, goud, redstone, diamant) — daar heb je bijna alles mee nodig.
-- Craft de **E.D.I.T.H.-bril** en zet hem op je hoofd (helm-slot).
-  De eerste die hem opzet is de eigenaar; anderen krijgen "toegang geweigerd".
-- Craft het **laadstation** en stop er redstone in om de bril op te laden.
-  In het station bouw je ook upgrades in (batterij, scanner, drones).
+- **De bril kun je niet maken.** Er bestaat geen recept voor: de enige E.D.I.T.H.-bril in je
+  wereld ligt in de kluis van een Stark Tower. Zoek er dus eerst een (zie hieronder).
+- Craft een **Stark-chip** (koper, goud, redstone, diamant) — die heb je nodig voor bijna al het
+  andere: het laadstation, de relais, de laserzenders en de upgrades.
+- Zet de bril op je hoofd (helm-slot). De eerste die hem opzet is de eigenaar; anderen krijgen
+  "toegang geweigerd".
+- Craft het **laadstation** om de bril op te laden. Redstone kan erin, maar geeft weinig
+  (50 per stuk): dat is je noodvoorraad. Voor echte stroom zet je een **zonnepaneel** of een
+  **warmtegenerator** neer. In het station bouw je ook upgrades in (batterij, scanner, drones).
 - Zoek een **Stark Tower** in je wereld: een wolkenkrabber van 29 x 76 blokken met een lobby,
   een lab, een archief, een hangar, een penthouse en een landingsdek op het dak.
   In de gewone kisten vind je materiaal en upgrades — maar **geen bril**.
