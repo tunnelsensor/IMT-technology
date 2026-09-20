@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (7 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (15 automatische tests).
 
 ---
 
@@ -24,8 +24,13 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (7 automatisc
   De eerste die hem opzet is de eigenaar; anderen krijgen "toegang geweigerd".
 - Craft het **laadstation** en stop er redstone in om de bril op te laden.
   In het station bouw je ook upgrades in (batterij, scanner, drones).
-- Zoek een **Stark Tower** in je wereld: een hoge glazen toren met een laadstation, kisten
-  en een landingsplatform. Daar vind je een bril als je er geen wil craften.
+- Zoek een **Stark Tower** in je wereld: een wolkenkrabber van 29 x 76 blokken met een lobby,
+  een lab, een archief, een hangar, een penthouse en een landingsdek op het dak.
+  In de gewone kisten vind je materiaal en upgrades — maar **geen bril**.
+  De bril ligt in de **kluis** bovenin, en die geeft zich niet zomaar gewonnen:
+  eerst door de lasergang (zes rayshields waar je niet doorheen komt), dan de omweg
+  via drie deuren met verstopte schakelaars, en in de kluis zelf staan vier bewakers.
+  Stap je op de plaat voor de kist, dan gaat de deur achter je dicht.
 
 ---
 
@@ -121,7 +126,10 @@ hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit
 ### Rayshield
 - **Persoonlijk schild** (Gevecht): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
-- **Laserzender** (blok): zet er twee tegenover elkaar → een rode wand waar niemand door komt.
+- **Laserzender** (blok): zet er twee tegenover elkaar → een doorzichtig energieveld met
+  lopende scanlijnen waar niemand door komt. Het veld schuift dicht vanaf de twee uiteinden
+  naar het midden (en weer open vanuit het midden), net als de ray shields uit Star Wars.
+  **Sluipen + rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood, paars.
   Aan met redstone óf met E.D.I.T.H. (hij krijgt ook een naam/groep).
 - **Schildkoepel-generator** (blok): koepel van 20 blokken die pijlen laat verdampen en
   monsters naar buiten duwt. Spelers en dieren mogen erdoor.
@@ -146,6 +154,7 @@ Zeg *"E.D.I.T.H., speel Thunderstruck van AC/DC"*. Ook: pauze, verder, volgende,
 Eenmalig instellen (G > Tech > Muziek legt het ook stap voor stap uit):
 1. Ga naar `developer.spotify.com/dashboard` en maak een gratis app ("Create app").
 2. Vul als **Redirect URI** exact in: `http://127.0.0.1:8899/starktech`
+   (in het muziekscherm staat er een knop **Kopieer** naast, dan kun je hem plakken)
 3. Kopieer het **Client ID** van die app in het muziekscherm.
 4. Klik **Koppelen**: je browser opent, je logt in bij Spotify, klaar.
 
@@ -181,5 +190,6 @@ Alle zinnen kun je zelf aanpassen in **G > Systemen > Commando's** (of in
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 7 tests over de toren, drones, satelliet, navigatie,
-  spion en de spraakcommando's.
+- **Tests**: `gradlew runGameTestServer` — 15 tests over de toren en zijn kluis, de drones,
+  zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het laadstation,
+  de rayshields, de relais en de spraakcommando's.

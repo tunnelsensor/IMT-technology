@@ -13,16 +13,20 @@ import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModSounds;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.Container;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -30,6 +34,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.neoforge.event.entity.EntityMountEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,8 +59,12 @@ import org.jetbrains.annotations.Nullable;
 public final class EdithTransport {
     private EdithTransport() {}
 
-    /** Hoe ver boven de grond je nog veilig kunt landen zonder zweefval-effect. */
-    private static final double SAFE_DROP = 3.0;
+    /** Zo ver kijken we naar beneden naar vaste grond; daarboven is het "geen grond". */
+    public static final int NO_GROUND = 64;
+    /** Hoe snel je zakt als de drone je neerzet (blokken per tick). */
+    private static final double SOFT_LANDING_SPEED = 0.35;
+    /** Na zo lang stoppen we met zacht landen, ook als je nog niet staat (vangnet). */
+    private static final int SOFT_LANDING_MAX_TICKS = 300;
 
     // ================================================================ Starten
 
@@ -182,31 +193,133 @@ public final class EdithTransport {
     public static void land(ServerPlayer owner, StarkDroneEntity carrier, boolean gentle) {
         owner.stopRiding();
         if (gentle) {
-            softLanding(owner);
+            setDown(owner);
         }
         carrier.recall(owner.serverLevel());
         EdithDrones.recallAll(owner, StarkDroneEntity.Mode.TRANSPORT);
         EdithServer.send(owner, Component.translatable("edith.starktech.msg.transport_landed"), EdithMessagePayload.Level.INFO);
     }
 
-    /** Hangt de speler hoog in de lucht? Dan even zweefval, zodat hij veilig neerkomt. */
-    private static void softLanding(ServerPlayer player) {
-        if (!player.onGround() && distanceToGround(player) > SAFE_DROP) {
-            player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 200, 0, true, false, true));
+    /**
+     * Sluipen terwijl je onder een drone hangt betekent: landen.
+     *
+     * Minecraft laat je dan los, en daar valt niet tegenin te gaan: jouw eigen spel stapt ook
+     * af, dus je begint sowieso te vallen. In plaats van dat tegen te houden vangen we het op:
+     * vanaf dat moment zák je (rustig en zonder schade) in plaats van te vallen, en de drone
+     * zakt met je mee tot je staat. Zie tickSoftLanding.
+     */
+    public static void onDismount(EntityMountEvent event) {
+        if (!event.isDismounting() || event.getLevel().isClientSide()) {
+            return;
+        }
+        if (!(event.getEntityBeingMounted() instanceof StarkDroneEntity drone)
+                || !(event.getEntityMounting() instanceof ServerPlayer player)
+                || !drone.isTransport()
+                || drone.isLanding()) {
+            return; // de drone zet je zelf af: dat mag natuurlijk wel
+        }
+        double drop = distanceToGround(player);
+        if (drop <= 1.0 || drop >= NO_GROUND) {
+            return; // je staat al zo goed als op de grond (of er is geen grond)
+        }
+        beginSoftLanding(player);
+        drone.beginLanding();
+        EdithServer.send(player, Component.translatable("edith.starktech.msg.transport_landing"),
+                EdithMessagePayload.Level.INFO);
+    }
+
+    /** Spelers die op dit moment zacht aan het landen zijn, met wanneer dat begon. */
+    private static final Map<UUID, Long> SOFT_LANDING = new HashMap<>();
+
+    /** Vanaf nu zak je rustig naar beneden in plaats van te vallen. */
+    public static void beginSoftLanding(ServerPlayer player) {
+        SOFT_LANDING.put(player.getUUID(), player.level().getGameTime());
+    }
+
+    /** Ben je nu aan het zakken? (Dan telt vallen niet als schade.) */
+    public static boolean isSoftLanding(Player player) {
+        return SOFT_LANDING.containsKey(player.getUUID());
+    }
+
+    /**
+     * Elke tick zolang je zakt: we houden je snelheid laag en je valafstand op nul.
+     *
+     * Dat laatste is belangrijk - anders krijg je bij het neerkomen alsnog de klap te
+     * verwerken van de hele hoogte waar de drone je losliet.
+     */
+    public static void tickSoftLanding(ServerPlayer player) {
+        Long since = SOFT_LANDING.get(player.getUUID());
+        if (since == null) {
+            return;
+        }
+        boolean done = player.onGround()
+                || carrierOf(player) != null
+                || player.isSpectator()
+                || player.level().getGameTime() - since > SOFT_LANDING_MAX_TICKS;
+        if (done) {
+            SOFT_LANDING.remove(player.getUUID());
+            player.resetFallDistance();
+            return;
+        }
+        Vec3 motion = player.getDeltaMovement();
+        if (motion.y < -SOFT_LANDING_SPEED) {
+            // Afremmen tot daalsnelheid, en zijwaarts ook rustig aan.
+            player.setDeltaMovement(motion.x * 0.7, -SOFT_LANDING_SPEED, motion.z * 0.7);
+            player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        }
+        player.resetFallDistance();
+    }
+
+    /** Wie zacht landt, komt zonder kleerscheuren neer. */
+    public static void onFallDamage(LivingIncomingDamageEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player
+                && event.getSource().is(DamageTypeTags.IS_FALL)
+                && isSoftLanding(player)) {
+            event.setCanceled(true);
         }
     }
 
-    private static double distanceToGround(Entity entity) {
+    public static void forgetSoftLandings() {
+        SOFT_LANDING.clear();
+    }
+
+    /**
+     * De drone zet je neer: hangt er nog lucht onder je, dan zakt hij je rustig op de grond.
+     * Geen zweefval meer - je staat gewoon, en je houdt geen effect over aan de rit.
+     *
+     * Normaal is dit maar een klein stukje, want de drone daalt al met je mee (zie
+     * StarkDroneEntity.descend). Dit is het laatste zetje, en het vangnet voor als de rit
+     * halverwege stopt (batterij leeg, of je zet hem uit terwijl je hoog hangt).
+     */
+    private static void setDown(ServerPlayer player) {
+        double drop = distanceToGround(player);
+        if (drop <= 0.2 || drop >= NO_GROUND) {
+            return; // je staat al (of er is geen grond onder je)
+        }
+        // Zakken in plaats van vallen: rustig omlaag, en geen klap bij het neerkomen.
+        beginSoftLanding(player);
+        Vec3 motion = player.getDeltaMovement();
+        player.setDeltaMovement(motion.x * 0.5, -SOFT_LANDING_SPEED, motion.z * 0.5);
+        player.resetFallDistance();
+        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+    }
+
+    /** Hoe ver het van hier naar beneden is tot vaste grond, of NO_GROUND als daar niets is. */
+    public static double distanceToGround(Entity entity) {
         ServerLevel level = (ServerLevel) entity.level();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(entity.blockPosition().getX(),
-                entity.blockPosition().getY(), entity.blockPosition().getZ());
-        for (int i = 0; i < 64; i++) {
+        BlockPos.MutableBlockPos pos = entity.blockPosition().mutable();
+        for (int i = 1; i <= NO_GROUND; i++) {
             pos.setY(entity.blockPosition().getY() - i);
-            if (pos.getY() <= level.getMinBuildHeight() || !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
-                return i;
+            if (pos.getY() <= level.getMinBuildHeight()) {
+                return NO_GROUND;
+            }
+            VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
+            if (!shape.isEmpty()) {
+                // Je komt op de bovenkant van dat blok te staan (een trap is lager dan een kubus).
+                return entity.getY() - (pos.getY() + shape.max(Direction.Axis.Y));
             }
         }
-        return 64;
+        return NO_GROUND;
     }
 
     /**
@@ -235,7 +348,7 @@ public final class EdithTransport {
                 if (carried != null) {
                     carried.stopRiding();
                     if (carried instanceof ServerPlayer player) {
-                        softLanding(player);
+                        setDown(player);
                     }
                 }
                 if (owner != null) {

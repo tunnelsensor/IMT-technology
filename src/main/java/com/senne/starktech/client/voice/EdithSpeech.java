@@ -88,10 +88,9 @@ public final class EdithSpeech {
         }
     }
 
-    /** Welke stem bij de taal van je spel hoort. */
+    /** De stem van E.D.I.T.H. De mod is Engels, dus ze praat Engels. */
     public static VoicePack voicePack() {
-        String language = Minecraft.getInstance().getLanguageManager().getSelected();
-        return language.startsWith("nl") ? VoicePack.VOICE_NL : VoicePack.VOICE_EN;
+        return VoicePack.VOICE_EN;
     }
 
     /** Tot dit moment (ms) spreken we gewone meldingen (INFO) niet uit. */

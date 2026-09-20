@@ -21,12 +21,6 @@ public enum VoicePack {
     /** Piper: het programma dat tekst omzet in spraak. */
     PIPER(zip("https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip",
             22_477_236L, "f3c58906402b24f3a96d92145f58acba6d86c9b5db896d207f78dc80811efcea")),
-    /** De Nederlandse (Vlaamse) stem van E.D.I.T.H.: "Nathalie". */
-    VOICE_NL(
-            file("https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_BE/nathalie/medium/nl_BE-nathalie-medium.onnx",
-                    "voice.onnx", 63_201_294L, "49cf48023861f9fd42e13a8632f068fee67d1ce244a6ee38f29595afbf0a6be4"),
-            file("https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_BE/nathalie/medium/nl_BE-nathalie-medium.onnx.json",
-                    "voice.onnx.json", 4_879L, "4704af2736022e910a3f32672480d5530dd39da5c2bcc079f315f604166ff0de")),
     /** De Engelse stem van E.D.I.T.H.: "Lessac". */
     VOICE_EN(
             file("https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx",

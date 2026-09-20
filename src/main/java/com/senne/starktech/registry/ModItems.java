@@ -48,6 +48,14 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> CHARGING_STATION = ITEMS.registerSimpleBlockItem("charging_station",
             ModBlocks.CHARGING_STATION);
 
+    /** Het zonnepaneel: laadt je bril op met daglicht. */
+    public static final DeferredItem<BlockItem> SOLAR_PANEL = ITEMS.registerSimpleBlockItem("solar_panel",
+            ModBlocks.SOLAR_PANEL);
+
+    /** De warmtegenerator: laadt op brandstof en op de hitte om hem heen. */
+    public static final DeferredItem<BlockItem> HEAT_GENERATOR = ITEMS.registerSimpleBlockItem("heat_generator",
+            ModBlocks.HEAT_GENERATOR);
+
     public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
 
     // Fase 11: rayshield (de laserwand zelf heeft geen item: die hoort bij de zenders)

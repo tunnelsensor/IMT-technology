@@ -8,8 +8,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -21,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.minecraft.Util;
 import net.neoforged.fml.loading.FMLPaths;
@@ -35,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * - Wij gebruiken "PKCE": de mod maakt een geheime code, stuurt alleen een versleutelde versie
  *   naar Spotify, en jij logt in op de site van Spotify zelf. De mod ziet je wachtwoord nooit.
  * - Spotify stuurt je daarna terug naar http://127.0.0.1:8899/starktech, een klein webserver-tje
- *   dat alleen op jouw eigen pc draait en één seconde open staat.
+ *   dat alleen op jouw eigen pc draait en dat we sluiten zodra je antwoord binnen is.
  * - We bewaren daarna alleen een "refresh token" in config/starktech-spotify.json. Met dat token
  *   kan E.D.I.T.H. muziek starten; het gaat nooit naar iemand anders dan Spotify.
  *
@@ -46,7 +52,20 @@ public final class SpotifyAuth {
 
     /** Waar Spotify je na het inloggen naartoe stuurt. Zet dit ook in je Spotify-app! */
     public static final String REDIRECT_URI = "http://127.0.0.1:8899/starktech";
-    private static final int CALLBACK_PORT = 8899;
+    /**
+     * Het adres en de poort halen we uit REDIRECT_URI zelf, zodat ze nooit uit elkaar lopen.
+     *
+     * Dat luistert nauw: je pc heeft twee "eigen" adressen, 127.0.0.1 (IPv4) en ::1 (IPv6).
+     * Dat zijn aparte deuren. Spotify stuurt je browser naar 127.0.0.1, dus daar moeten we
+     * wachten. Luisterden we op ::1, dan klopt je browser op een deur waar niemand zit en
+     * krijg je "kan geen verbinding maken met 127.0.0.1:8899".
+     */
+    private static final URI REDIRECT = URI.create(REDIRECT_URI);
+    private static final int CALLBACK_PORT = REDIRECT.getPort();
+    /** Zo lang mag je erover doen om in te loggen. */
+    private static final int LINK_TIMEOUT_MS = 180_000;
+    /** De luisteraar van een koppelpoging die nog loopt, zodat een tweede klik hem opruimt. */
+    private static final AtomicReference<ServerSocket> PENDING = new AtomicReference<>();
     /** Wat de mod mag doen met je account: kijken wat er speelt en de muziek besturen. */
     private static final String SCOPES = "user-read-playback-state user-modify-playback-state";
 
@@ -68,6 +87,11 @@ public final class SpotifyAuth {
     public static synchronized boolean isLinked() {
         load();
         return refreshToken != null && !refreshToken.isBlank();
+    }
+
+    /** De poort waarop we op Spotify wachten (voor de foutmelding als hij bezet is). */
+    public static int callbackPort() {
+        return CALLBACK_PORT;
     }
 
     /** Heb je al een Client ID ingevuld? (Zonder dat kan het koppelen niet beginnen.) */
@@ -134,7 +158,20 @@ public final class SpotifyAuth {
             done.accept("no_client_id");
             return;
         }
+        // Stond er nog een oude poging te wachten? Die laten we los, anders is de poort bezet.
+        closePending();
         Thread thread = new Thread(() -> {
+            ServerSocket server;
+            try {
+                // Eerst luisteren, dan pas de browser openen: ben je al ingelogd bij Spotify,
+                // dan is je browser sneller terug dan wij de deur open kunnen zetten.
+                server = openCallbackServer();
+            } catch (IOException e) {
+                StarkTech.LOGGER.warn("E.D.I.T.H.: kan niet wachten op {} (poort bezet?)", REDIRECT_URI, e);
+                done.accept("port_in_use");
+                return;
+            }
+            PENDING.set(server);
             try {
                 String verifier = randomString(64);
                 String challenge = base64Url(sha256(verifier));
@@ -146,54 +183,127 @@ public final class SpotifyAuth {
                         + "&code_challenge=" + challenge
                         + "&scope=" + encode(SCOPES);
                 Util.getPlatform().openUri(url);
-                String code = waitForCode();
-                if (code == null) {
-                    done.accept("no_code");
+                Callback callback = waitForCallback(server);
+                if (callback == null) {
+                    done.accept("timeout");
                     return;
                 }
-                exchangeCode(id, code, verifier, done);
+                if (callback.error() != null) {
+                    done.accept(callback.error());
+                    return;
+                }
+                exchangeCode(id, callback.code(), verifier, done);
             } catch (Exception e) {
-                StarkTech.LOGGER.warn("E.D.I.T.H.: koppelen met Spotify mislukt", e);
-                done.accept(e.getClass().getSimpleName());
+                // Is er intussen een nieuwe poging gestart? Dan hoort deze melding daar niet meer bij.
+                if (PENDING.get() == server) {
+                    StarkTech.LOGGER.warn("E.D.I.T.H.: koppelen met Spotify mislukt", e);
+                    done.accept(e.getClass().getSimpleName());
+                }
+            } finally {
+                PENDING.compareAndSet(server, null);
+                close(server);
             }
         }, "E.D.I.T.H. Spotify link");
         thread.setDaemon(true);
         thread.start();
     }
 
-    /**
-     * Een piepklein webservertje: het wacht tot Spotify je browser terugstuurt naar
-     * 127.0.0.1:8899 en haalt de code uit die ene regel.
-     */
-    private static @Nullable String waitForCode() throws IOException {
-        try (ServerSocket server = new ServerSocket(CALLBACK_PORT, 1, java.net.InetAddress.getLoopbackAddress())) {
-            server.setSoTimeout(180_000); // drie minuten om in te loggen
-            try (Socket socket = server.accept();
-                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-                String requestLine = in.readLine();
-                String code = null;
-                if (requestLine != null && requestLine.contains("code=")) {
-                    String query = requestLine.substring(requestLine.indexOf("code=") + 5);
-                    int end = query.indexOf('&');
-                    if (end < 0) {
-                        end = query.indexOf(' ');
-                    }
-                    code = end > 0 ? query.substring(0, end) : query;
-                }
-                // Een vriendelijk berichtje in de browser.
-                String page = code != null
-                        ? "<h2>E.D.I.T.H. is gekoppeld aan Spotify.</h2><p>Je kunt dit tabblad sluiten.</p>"
-                        : "<h2>Er ging iets mis.</h2><p>Probeer het opnieuw in het spel.</p>";
-                byte[] body = ("<html><body style='font-family:sans-serif'>" + page + "</body></html>")
-                        .getBytes(StandardCharsets.UTF_8);
-                OutputStream out = socket.getOutputStream();
-                out.write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "
-                        + body.length + "\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.UTF_8));
-                out.write(body);
-                out.flush();
-                return code;
+    /** Breekt een koppelpoging af die nog op je browser staat te wachten. */
+    private static void closePending() {
+        close(PENDING.getAndSet(null));
+    }
+
+    private static void close(@Nullable ServerSocket server) {
+        if (server != null) {
+            try {
+                server.close();
+            } catch (IOException ignored) {
+                // Dichtdoen mag best mislukken; we openen toch een nieuwe.
             }
         }
+    }
+
+    /** Wat je browser terugbracht: een code, of een fout van Spotify (bv. je klikte op "Cancel"). */
+    private record Callback(@Nullable String code, @Nullable String error) {}
+
+    /**
+     * Zet het piepkleine webservertje klaar, op precies het adres uit REDIRECT_URI.
+     * Het staat alleen open op jouw eigen pc; niemand anders kan erbij.
+     */
+    private static ServerSocket openCallbackServer() throws IOException {
+        ServerSocket server = new ServerSocket();
+        // Zonder dit blijft de poort na een afgebroken poging nog even "bezet" van Windows.
+        server.setReuseAddress(true);
+        server.bind(new InetSocketAddress(InetAddress.getByName(REDIRECT.getHost()), CALLBACK_PORT), 5);
+        return server;
+    }
+
+    /**
+     * Wacht tot Spotify je browser terugstuurt en haalt de code uit die ene regel.
+     *
+     * We blijven luisteren tot er echt een antwoord van Spotify langskomt. Browsers leggen
+     * namelijk soms alvast een lege verbinding aan, of vragen een favicon op; stopten we na
+     * de eerste de beste verbinding, dan misten we het echte antwoord.
+     *
+     * @return de code of de fout, of null als je er te lang over deed
+     */
+    private static @Nullable Callback waitForCallback(ServerSocket server) throws IOException {
+        long deadline = System.currentTimeMillis() + LINK_TIMEOUT_MS;
+        while (true) {
+            long left = deadline - System.currentTimeMillis();
+            if (left <= 0) {
+                return null;
+            }
+            server.setSoTimeout((int) left);
+            try (Socket socket = server.accept();
+                 BufferedReader in = new BufferedReader(
+                         new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+                String requestLine = in.readLine();
+                if (requestLine == null) {
+                    continue; // een lege verbinding: de browser warmde alleen even op
+                }
+                String code = queryValue(requestLine, "code");
+                String error = queryValue(requestLine, "error");
+                if (code == null && error == null) {
+                    continue; // iets anders dan het antwoord van Spotify (bv. /favicon.ico)
+                }
+                // Een vriendelijk berichtje in de browser.
+                respond(socket, code != null
+                        ? "<h2>E.D.I.T.H. is gekoppeld aan Spotify.</h2><p>Je kunt dit tabblad sluiten.</p>"
+                        : "<h2>Er ging iets mis.</h2><p>Probeer het opnieuw in het spel.</p>");
+                return new Callback(code, error);
+            } catch (SocketTimeoutException e) {
+                return null;
+            }
+        }
+    }
+
+    /** Haalt één waarde uit de vraagregel van je browser: "GET /starktech?code=... HTTP/1.1". */
+    private static @Nullable String queryValue(String requestLine, String key) {
+        int start = requestLine.indexOf('?');
+        if (start < 0) {
+            return null;
+        }
+        int space = requestLine.indexOf(' ', start);
+        String query = space < 0 ? requestLine.substring(start + 1) : requestLine.substring(start + 1, space);
+        for (String part : query.split("&")) {
+            int equals = part.indexOf('=');
+            if (equals > 0 && part.substring(0, equals).equals(key)) {
+                return URLDecoder.decode(part.substring(equals + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
+    }
+
+    private static void respond(Socket socket, String page) throws IOException {
+        byte[] body = ("<html><body style='font-family:sans-serif'>" + page + "</body></html>")
+                .getBytes(StandardCharsets.UTF_8);
+        OutputStream out = socket.getOutputStream();
+        out.write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "
+                + body.length + "\r\nConnection: close\r\n\r\n")
+                .getBytes(StandardCharsets.UTF_8));
+        out.write(body);
+        out.flush();
     }
 
     /** De code omruilen voor tokens. */

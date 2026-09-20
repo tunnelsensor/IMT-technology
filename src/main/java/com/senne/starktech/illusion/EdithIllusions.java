@@ -144,12 +144,23 @@ public final class EdithIllusions {
     public static void stopAll(ServerPlayer owner) {
         int stopped = 0;
         for (StarkDroneEntity drone : EdithDrones.find(owner, StarkDroneEntity.Mode.ILLUSION)) {
-            PROJECTORS.remove(drone.getUUID());
+            Projector projector = PROJECTORS.remove(drone.getUUID());
+            // Belangrijk: iedereen die de illusie ziet moet horen dat hij weg is. Deden we dat
+            // niet, dan bleef de nep-muur (of het nep-leger) gewoon in beeld staan.
+            if (projector != null) {
+                broadcastStop(owner.server, projector);
+            }
             drone.recall(owner.serverLevel());
             stopped++;
         }
         // Ook projecties waarvan de drone al weg is opruimen.
-        PROJECTORS.entrySet().removeIf(entry -> entry.getValue().ownerId.equals(owner.getUUID()));
+        PROJECTORS.entrySet().removeIf(entry -> {
+            if (!entry.getValue().ownerId.equals(owner.getUUID())) {
+                return false;
+            }
+            broadcastStop(owner.server, entry.getValue());
+            return true;
+        });
         EdithServer.send(owner, stopped > 0
                 ? Component.translatable("edith.starktech.msg.illusion_stopped", stopped)
                 : Component.translatable("edith.starktech.msg.illusion_none"), EdithMessagePayload.Level.INFO);

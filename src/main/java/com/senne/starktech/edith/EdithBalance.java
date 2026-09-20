@@ -63,6 +63,20 @@ public final class EdithBalance {
     public static final int ENERGY_PER_REDSTONE_BLOCK = 4_800;
     /** Hoeveel energie het station per tick naar de bril stuurt. */
     public static final int STATION_CHARGE_RATE = 50;
+    // ---------------------------------------------------------------- Zonnepaneel en warmte
+    /** Hoeveel een zonnepaneel kan opslaan. */
+    public static final int SOLAR_CAPACITY = 12_000;
+    /** Energie per tick bij een zon recht boven je (minder bij regen, 's nachts niets). */
+    public static final int SOLAR_RATE = 6;
+    /** Hoeveel een warmtegenerator kan opslaan. */
+    public static final int HEAT_CAPACITY = 20_000;
+    /** Energie per tick zolang er brandstof brandt. */
+    public static final int HEAT_RATE_FUEL = 14;
+    /** Energie per tick per heet blok dat tegen hem aan staat (lava, vuur, magma...). */
+    public static final int HEAT_RATE_AMBIENT = 3;
+    /** Meer dan zoveel hete buren tellen niet meer mee. */
+    public static final int HEAT_MAX_NEIGHBOURS = 8;
+
     /** Hoe lang het installeren van een upgrade duurt (in ticks). */
     public static final int UPGRADE_INSTALL_TIME = 60;
 
@@ -218,6 +232,10 @@ public final class EdithBalance {
     public static final double TRANSPORT_SPEED = 0.45;
     /** Vliegsnelheid met sprinten. */
     public static final double TRANSPORT_BOOST_SPEED = 0.85;
+    /** Hoe snel de drone met je meezakt als je landt (blokken per tick). */
+    public static final double TRANSPORT_LAND_SPEED = 0.35;
+    /** Zo ver kun je een illusie van je af neerzetten (in blokken). */
+    public static final double ILLUSION_AIM_RANGE = 48.0;
     /** Hoe hoog boven de grond de autopiloot vliegt (in blokken). */
     public static final int TRANSPORT_CRUISE_HEIGHT = 14;
     /** Hoe lang een rit of levering maximaal duurt (in ticks). 6000 ticks = 5 minuten. */

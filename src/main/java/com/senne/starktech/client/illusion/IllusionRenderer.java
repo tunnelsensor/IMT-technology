@@ -36,7 +36,12 @@ public final class IllusionRenderer {
 
     /** Alle illusies die jouw spel kent, per drone. */
     private static final Map<Integer, Projection> PROJECTIONS = new HashMap<>();
-    /** Nep-wezens die we hergebruiken (per soort), zodat we niet elke frame nieuwe maken. */
+    /**
+     * Nep-wezens die we hergebruiken, per soort én per plek in de rij.
+     *
+     * Elk nep-wezen heeft zijn eigen lichaam nodig: deelden ze er één, dan stonden ze allemaal
+     * in precies dezelfde houding, keken ze dezelfde kant op en viel meteen op dat het nep is.
+     */
     private static final Map<String, Entity> FAKE_ENTITIES = new HashMap<>();
 
     /** Bericht van de server: nieuwe (of gestopte) illusie. */
@@ -68,7 +73,13 @@ public final class IllusionRenderer {
      * Wij tekenen daar onze nep-blokken en nep-wezens bij.
      */
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES || PROJECTIONS.isEmpty()) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
+            return;
+        }
+        // Meteen even de camera-matrices van dit frame bewaren: daarmee tekent de HUD zijn
+        // beugels precies om een doelwit heen (zie WorldProjection).
+        com.senne.starktech.client.WorldProjection.capture(event.getModelViewMatrix(), event.getProjectionMatrix());
+        if (PROJECTIONS.isEmpty()) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -136,28 +147,51 @@ public final class IllusionRenderer {
             if (world.distanceToSqr(camera) > 96 * 96 || glitching(world, centers, radii, now)) {
                 continue;
             }
-            Entity fake = fakeEntity(mc, element);
+            Entity fake = fakeEntity(mc, element, index);
             if (fake == null) {
                 continue;
             }
-            // Een beetje leven in de brouwerij: ze wiegen zachtjes heen en weer.
+            // Ze wiegen zachtjes, elk in zijn eigen tempo, en hun hoofd volgt jou. Zo ziet een
+            // nep-leger er levend uit in plaats van als een rij standbeelden.
             float sway = Mth.sin((now + index * 7) * 0.05f) * 6.0f;
             fake.setPos(world.x, world.y, world.z);
-            fake.setYRot(element.yaw() + sway);
-            fake.yRotO = fake.getYRot();
+            fake.xOld = world.x;
+            fake.yOld = world.y;
+            fake.zOld = world.z;
+            // Eigen tijd per wezen: dan ademen en knipperen ze niet allemaal tegelijk.
+            fake.tickCount = (int) (now + index * 13L);
+            float bodyYaw = element.yaw() + sway;
+            fake.setYRot(bodyYaw);
+            fake.yRotO = bodyYaw;
             if (fake instanceof LivingEntity living) {
-                living.yBodyRot = fake.getYRot();
-                living.yHeadRot = fake.getYRot();
-                living.setYHeadRot(fake.getYRot());
+                living.yBodyRot = bodyYaw;
+                living.yBodyRotO = bodyYaw;
+                float headYaw = bodyYaw;
+                float headPitch = 0.0f;
+                if (mc.player != null) {
+                    // Naar de speler kijken, maar niet verder dan een nek kan draaien.
+                    Vec3 toPlayer = mc.player.getEyePosition().subtract(world.x, world.y + fake.getEyeHeight(), world.z);
+                    float wanted = (float) (Mth.atan2(toPlayer.z, toPlayer.x) * Mth.RAD_TO_DEG) - 90.0f;
+                    headYaw = bodyYaw + Mth.clamp(Mth.wrapDegrees(wanted - bodyYaw), -60.0f, 60.0f);
+                    double flat = Math.sqrt(toPlayer.x * toPlayer.x + toPlayer.z * toPlayer.z);
+                    headPitch = Mth.clamp((float) (-Mth.atan2(toPlayer.y, flat) * Mth.RAD_TO_DEG), -30.0f, 30.0f);
+                }
+                living.yHeadRot = headYaw;
+                living.yHeadRotO = headYaw;
+                living.setYHeadRot(headYaw);
+                living.setXRot(headPitch);
+                living.xRotO = headPitch;
+                // Stilstaan, maar niet bevroren: geen loopbeweging, wel de idle-animatie.
+                living.walkAnimation.setSpeed(0.0f);
             }
             mc.getEntityRenderDispatcher().render(fake, world.x - camera.x, world.y - camera.y, world.z - camera.z,
                     fake.getYRot(), partialTick, poseStack, buffers, LevelRenderer.getLightColor(mc.level, BlockPos.containing(world)));
         }
     }
 
-    /** Maakt (of hergebruikt) een nep-wezen van deze soort. Het komt NIET in de wereld. */
-    private static @Nullable Entity fakeEntity(Minecraft mc, IllusionScene.MobElement element) {
-        String key = element.type().toString();
+    /** Maakt (of hergebruikt) een nep-wezen voor deze plek in de rij. Het komt NIET in de wereld. */
+    private static @Nullable Entity fakeEntity(Minecraft mc, IllusionScene.MobElement element, int index) {
+        String key = element.type() + "#" + index;
         Entity fake = FAKE_ENTITIES.get(key);
         if (fake == null) {
             fake = element.type().create(mc.level);

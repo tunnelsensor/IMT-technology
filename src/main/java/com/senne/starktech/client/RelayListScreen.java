@@ -65,12 +65,26 @@ public class RelayListScreen extends Screen {
         shown = data();
         rows.clear();
 
-        // Alle regels bedenken: per groep een kopje en daaronder de relais van die groep.
+        // Alle regels bedenken. Eerst per soort apparaat (relais, laserzenders, koepels) en
+        // daarbinnen per groep: zo staan je deuren niet tussen je lampen.
         List<Row> all = new ArrayList<>();
-        for (String group : shown.groups()) {
-            all.add(new Row(group, -1, 0));
-            for (int i = 0; i < shown.relays().size(); i++) {
-                if (shown.relays().get(i).group().equals(group)) {
+        for (RelayLabels.Kind kind : RelayLabels.Kind.values()) {
+            boolean anyOfKind = false;
+            for (String group : shown.groups()) {
+                boolean headerDone = false;
+                for (int i = 0; i < shown.relays().size(); i++) {
+                    Relay relay = shown.relays().get(i);
+                    if (!relay.group().equals(group) || RelayLabels.kindOf(relay) != kind) {
+                        continue;
+                    }
+                    if (!anyOfKind) {
+                        all.add(new Row(Component.translatable(kind.key).getString(), -2, 0));
+                        anyOfKind = true;
+                    }
+                    if (!headerDone) {
+                        all.add(new Row(group, -1, 0));
+                        headerDone = true;
+                    }
                     all.add(new Row(group, i, 0));
                 }
             }
@@ -82,6 +96,11 @@ public class RelayListScreen extends Screen {
         for (int i = page * ROWS_PER_PAGE; i < Math.min(all.size(), (page + 1) * ROWS_PER_PAGE); i++) {
             Row row = all.get(i);
             rows.add(new Row(row.group(), row.index(), y));
+            if (row.index() == -2) {
+                // Kopje van een soort apparaat: daar hoort geen knop bij.
+                y += ROW_H;
+                continue;
+            }
             if (row.index() < 0) {
                 // Groepskopje: schakel de hele groep.
                 addGroupButtons(row.group(), y);
@@ -170,6 +189,12 @@ public class RelayListScreen extends Screen {
             return;
         }
         for (Row row : rows) {
+            if (row.index() == -2) {
+                // Kopje van een soort apparaat (relais / laserzenders / koepels).
+                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, EdithHud.argb(70, EdithHud.ORANGE));
+                g.drawString(font, row.group(), left + 8, row.y() + 3, EdithHud.argb(255, EdithHud.ORANGE), true);
+                continue;
+            }
             if (row.index() < 0) {
                 // Groepskopje
                 g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, EdithHud.argb(45, EdithHud.CYAN));

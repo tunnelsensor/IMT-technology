@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.EdithThreats;
 import com.senne.starktech.gametest.StarkTechGameTests;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModArmorMaterials;
@@ -21,6 +22,7 @@ import com.senne.starktech.illusion.EdithIllusions;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.shield.EdithShield;
+import com.senne.starktech.shield.LaserAnimations;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.transport.EdithTransport;
 import net.neoforged.bus.api.IEventBus;
@@ -74,6 +76,8 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(EdithServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(EdithServer::onLivingDamaged);
+        // Onthouden wie jou raakte, zodat de dreigingsscan alleen echte aanvallers toont
+        NeoForge.EVENT_BUS.addListener(EdithThreats::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(EdithComms::onServerStopped);
         // Fase 6: de spionagedrone (opdrachten, rapporten en het logboek)
         NeoForge.EVENT_BUS.addListener(EdithSpy::onServerTick);
@@ -88,6 +92,10 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithSpy::onChangedDimension);
         // Fase 7: vrachtdrones laten hun spullen vallen als de server uitgaat
         NeoForge.EVENT_BUS.addListener(EdithTransport::onServerStopping);
+        // Sluipen onder een drone = landen (in plaats van meteen losgelaten worden)
+        NeoForge.EVENT_BUS.addListener(EdithTransport::onDismount);
+        // Wie door een drone wordt neergezet, valt niet: hij zakt (en houdt er niets aan over)
+        NeoForge.EVENT_BUS.addListener(EdithTransport::onFallDamage);
         // Fase 9: redstone-relais (pulsen aftellen)
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerTick);
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerStopped);
@@ -96,6 +104,9 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithIllusions::onServerStopped);
         // Fase 11: het persoonlijke schild vangt schade op
         NeoForge.EVENT_BUS.addListener(EdithShield::onIncomingDamage);
+        // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan
+        NeoForge.EVENT_BUS.addListener(LaserAnimations::onServerTick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) -> LaserAnimations.clear());
         // Fase 10: privéberichten onderscheppen (hack player)
         NeoForge.EVENT_BUS.addListener(EdithHack::onCommand);
         NeoForge.EVENT_BUS.addListener(EdithHack::onPlayerLoggedOut);

@@ -45,7 +45,7 @@ displayName="${mod_name}" #mandatory
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-E.D.I.T.H. - Even Dead I'm The Hero. Tony Stark's AR-bril met HUD, scanners, drones en een satelliet.
+E.D.I.T.H. - Even Dead I'm The Hero. Tony Stark's AR glasses: HUD, scanners, drones and a satellite.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.

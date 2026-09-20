@@ -3,6 +3,7 @@ package com.senne.starktech.edith;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.network.DroneCameraPayload;
+import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -101,11 +102,17 @@ public final class EdithServer {
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         STATES.remove(event.getEntity().getUUID());
+        if (event.getEntity() instanceof ServerPlayer player) {
+            EdithThreats.forget(player);
+            EdithTransport.forgetSoftLandings();
+        }
     }
 
     /** Wereld gesloten: alles vergeten (cooldowns horen bij de tijd van die ene wereld). */
     public static void onServerStopped(ServerStoppedEvent event) {
         STATES.clear();
+        EdithThreats.clear();
+        EdithTransport.forgetSoftLandings();
     }
 
     // ---------------------------------------------------------------- Elke tick
@@ -147,6 +154,12 @@ public final class EdithServer {
         // Eén keer per seconde energie verbruiken en effecten verversen.
         if (player.tickCount % 20 == 0) {
             secondTick(player, glasses, state);
+        }
+        // Zakken naar de grond nadat een drone je heeft losgelaten.
+        EdithTransport.tickSoftLanding(player);
+        // Af en toe: relais die er niet meer staan uit je redstone-lijst gooien.
+        if (player.tickCount % 100 == 0) {
+            EdithRedstone.pruneGhosts(player);
         }
         // Twee keer per seconde de HUD bijwerken.
         if (player.tickCount % 10 == 0) {
@@ -857,10 +870,9 @@ public final class EdithServer {
      * (waar je onder hangt).
      */
     public static void handleDroneControl(ServerPlayer player, DroneControlPayload payload) {
-        PlayerState state = STATES.get(player.getUUID());
-        if (state == null) {
-            return;
-        }
+        // state() in plaats van STATES.get(): het eerste besturingsbericht kan binnenkomen
+        // voordat de speler ooit getickt is, en dan mag het niet verloren gaan.
+        PlayerState state = state(player);
         // Waarden netjes binnen de grenzen houden (een gehackte client kan rare getallen sturen).
         DroneControlPayload safe = new DroneControlPayload(
                 Mth.clamp(payload.forward(), -1, 1),
@@ -943,13 +955,25 @@ public final class EdithServer {
         for (EdithCooldown cooldown : EdithCooldown.values()) {
             cooldowns.add(ticksLeft(player, state.readyAt[cooldown.ordinal()]));
         }
+        // Wie valt je aan? Alleen dat markeren we; zie EdithThreats.
+        List<Integer> threatIds = List.of();
+        ItemStack worn = EdithData.getWornGlasses(player);
+        if (EdithData.isEnabled(worn, EdithFeature.THREAT_SCAN)) {
+            int radius = EdithData.getThreatRadius(worn);
+            threatIds = new ArrayList<>();
+            for (LivingEntity threat : EdithThreats.of(player, radius)) {
+                threatIds.add(threat.getId());
+            }
+            threatIds.addAll(EdithThreats.incomingProjectiles(player, radius));
+        }
         ModNetwork.sendTo(player, new EdithStatusPayload(
                 swarm, guards,
                 cooldowns,
                 markedIds,
                 strike == null ? Optional.empty() : Optional.of(strike.target()),
                 strike == null ? 0 : strike.ticksLeft(),
-                EdithHack.targetsOf(player).size()));
+                EdithHack.targetsOf(player).size(),
+                threatIds));
     }
 
     public static void send(ServerPlayer player, Component message, EdithMessagePayload.Level level) {

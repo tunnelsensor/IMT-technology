@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.network.chat.Component;
 import net.minecraft.Util;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -76,7 +77,8 @@ public final class EdithClientState {
     /** Het wezen waar je naar kijkt (voor de doelwit-analyse), of null. */
     public static @Nullable LivingEntity target;
     /** Vijanden in de buurt (voor "vijanden door muren"). */
-    public static List<LivingEntity> threats = List.of();
+    /** Wat jou nu aanvalt: wezens, maar ook pijlen die onderweg zijn. */
+    public static List<Entity> threats = List.of();
     public static int threatRadius;
 
     /** Het wezen waar je naar kijkt (voor markeren), ook als de doelwit-analyse uit staat. */
@@ -202,6 +204,8 @@ public final class EdithClientState {
 
     /** Hang je op dit moment onder een transportdrone? */
     public static boolean flying;
+    /** Nummers van wat jou op dit moment aanvalt; de server stuurt ze (zie EdithThreats). */
+    public static java.util.List<Integer> threatIds = java.util.List.of();
 
     // ---------------------------------------------------------------- Fase 3: pings
 
@@ -234,6 +238,7 @@ public final class EdithClientState {
         spyLogLines = 0;
         spyReport = List.of();
         flying = false;
+        threatIds = java.util.List.of();
         hackBubbles.clear();
         hackedCount = 0;
     }

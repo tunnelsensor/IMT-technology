@@ -78,6 +78,7 @@ public final class ClientPayloadHandlers {
         EdithClientState.strikeTarget = payload.strikeTarget().orElse(null);
         EdithClientState.strikeAtMillis = now + payload.strikeTicks() * 50L;
         EdithClientState.hackedCount = payload.hackedCount();
+        EdithClientState.threatIds = payload.threats();
     }
 
     public static void onPing(PingMarkerPayload payload, IPayloadContext context) {

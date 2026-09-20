@@ -22,9 +22,11 @@ import net.minecraft.world.phys.Vec3;
  * @param strikeTarget waar de satelliet gaat inslaan (als hij aan het opladen is)
  * @param strikeTicks  ticks tot de inslag
  * @param hackedCount  hoeveel spelers je nu hackt (fase 10)
+ * @param threats      nummers van wat jou op dit moment aanvalt (zie EdithThreats)
  */
 public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,
-                                 Optional<Vec3> strikeTarget, int strikeTicks, int hackedCount)
+                                 Optional<Vec3> strikeTarget, int strikeTicks, int hackedCount,
+                                 List<Integer> threats)
         implements CustomPacketPayload {
     public static final Type<EdithStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_status"));
 
@@ -43,6 +45,7 @@ public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer>
                     ByteBufCodecs.optional(ModCodecs.VEC3).encode(buffer, payload.strikeTarget());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.strikeTicks());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.hackedCount());
+                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).encode(buffer, payload.threats());
                 }
 
                 @Override
@@ -54,7 +57,9 @@ public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer>
                     Optional<Vec3> strikeTarget = ByteBufCodecs.optional(ModCodecs.VEC3).decode(buffer);
                     int strikeTicks = ByteBufCodecs.VAR_INT.decode(buffer);
                     int hacked = ByteBufCodecs.VAR_INT.decode(buffer);
-                    return new EdithStatusPayload(swarm, guards, cooldowns, marked, strikeTarget, strikeTicks, hacked);
+                    List<Integer> threats = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).decode(buffer);
+                    return new EdithStatusPayload(swarm, guards, cooldowns, marked, strikeTarget, strikeTicks,
+                            hacked, threats);
                 }
             };
 

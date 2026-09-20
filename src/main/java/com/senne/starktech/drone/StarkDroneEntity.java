@@ -189,6 +189,24 @@ public class StarkDroneEntity extends PathfinderMob {
     private @Nullable BlockPos destination;
     /** De vracht van een vrachtdrone. */
     private final List<ItemStack> cargo = new ArrayList<>();
+    /** Bezig met landen: de drone zakt met zijn passagier naar de grond. */
+    private boolean landing;
+    /** Hoe hoog je hing bij de vorige landingstick, om te zien of het zakken nog opschiet. */
+    private double lastDrop = -1;
+    /** Hoeveel ticks het zakken al stilstaat (dan laten we je los; zie descend). */
+    private int stuckTicks;
+
+    /** Is hij al aan het zakken om je af te zetten? */
+    public boolean isLanding() {
+        return landing;
+    }
+
+    /** Begin te landen: zakken tot bij de grond en de passagier daar loslaten. */
+    public void beginLanding() {
+        landing = true;
+        lastDrop = -1;
+        stuckTicks = 0;
+    }
 
     public TransportRole transportRole() {
         return transportRole;
@@ -200,6 +218,7 @@ public class StarkDroneEntity extends PathfinderMob {
 
     /** Stelt een transportdrone in: welke rol, waar naartoe en met welke vracht. */
     public void setupTransport(TransportRole role, @Nullable BlockPos destination, List<ItemStack> cargo) {
+        this.landing = false;
         this.transportRole = role;
         this.destination = destination;
         this.cargo.clear();
@@ -403,7 +422,9 @@ public class StarkDroneEntity extends PathfinderMob {
                     recall(level);
                     return;
                 }
-                if (destination != null) {
+                if (landing) {
+                    descend(rider);
+                } else if (destination != null) {
                     flyToDestination(level, owner);
                 } else {
                     flyByRider(rider, level, owner);
@@ -437,7 +458,7 @@ public class StarkDroneEntity extends PathfinderMob {
         // (zie DroneCamera/EdithClientEvents en EdithServer.handleDroneControl).
         DroneControlPayload input = EdithServer.getTransportControl(rider);
         if (rider.isShiftKeyDown()) {
-            EdithTransport.land(rider, this, true);
+            beginLanding(); // hij zakt nu met je mee; zie descend()
             return;
         }
         Vec3 look = rider.getLookAngle();
@@ -456,6 +477,31 @@ public class StarkDroneEntity extends PathfinderMob {
         setYRot(rider.getYRot());
         yBodyRot = getYRot();
         yHeadRot = getYRot();
+    }
+
+    /**
+     * Landen: de drone zakt recht naar beneden tot je voeten bij de grond zijn, en laat je
+     * daar los. Je houdt er niets aan over - geen zweefval, geen val: je staat gewoon.
+     */
+    private void descend(ServerPlayer rider) {
+        double drop = EdithTransport.distanceToGround(rider);
+        // Schiet het zakken nog op? Een drone met iemand eronder kan niet eindeloos laag
+        // komen; zodra hij stil blijft hangen laten we los en zak jij het laatste stukje
+        // zelf (rustig, zie EdithTransport.tickSoftLanding).
+        if (lastDrop >= 0 && lastDrop - drop < 0.05) {
+            stuckTicks++;
+        } else {
+            stuckTicks = 0;
+        }
+        lastDrop = drop;
+
+        if (drop > 0.5 && drop < EdithTransport.NO_GROUND && stuckTicks < 10) {
+            double speed = Math.min(EdithBalance.TRANSPORT_LAND_SPEED, 0.1 + drop * 0.2);
+            setDeltaMovement(0, -speed, 0);
+            return;
+        }
+        setDeltaMovement(Vec3.ZERO);
+        EdithTransport.land(rider, this, true);
     }
 
     /**

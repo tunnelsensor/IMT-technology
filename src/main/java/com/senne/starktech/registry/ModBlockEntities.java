@@ -2,6 +2,8 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.station.ChargingStationBlockEntity;
+import com.senne.starktech.station.SolarPanelBlockEntity;
+import com.senne.starktech.station.HeatGeneratorBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -20,4 +22,14 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("charging_station",
                     () -> new BlockEntityType<>(ChargingStationBlockEntity::new,
                             java.util.Set.of(ModBlocks.CHARGING_STATION.get()), null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL =
+            BLOCK_ENTITIES.register("solar_panel",
+                    () -> new BlockEntityType<>(SolarPanelBlockEntity::new,
+                            java.util.Set.of(ModBlocks.SOLAR_PANEL.get()), null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HeatGeneratorBlockEntity>> HEAT_GENERATOR =
+            BLOCK_ENTITIES.register("heat_generator",
+                    () -> new BlockEntityType<>(HeatGeneratorBlockEntity::new,
+                            java.util.Set.of(ModBlocks.HEAT_GENERATOR.get()), null));
 }

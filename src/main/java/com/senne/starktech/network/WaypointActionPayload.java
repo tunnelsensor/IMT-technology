@@ -12,8 +12,8 @@ import net.minecraft.resources.ResourceLocation;
  *
  * @param op    wat er moet gebeuren
  * @param index welk waypoint (bij REMOVE en NAVIGATE; bij NAVIGATE ook -1 = stoppen, -2 = sterfplek)
- * @param name  naam van het nieuwe waypoint (bij ADD)
- * @param color kleur van het nieuwe waypoint (bij ADD)
+ * @param name  naam van het waypoint (bij ADD en RENAME)
+ * @param color kleur van het waypoint (bij ADD en RENAME)
  */
 public record WaypointActionPayload(Op op, int index, String name, int color) implements CustomPacketPayload {
     public static final Type<WaypointActionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "waypoint_action"));
@@ -22,7 +22,9 @@ public record WaypointActionPayload(Op op, int index, String name, int color) im
         /** Nieuw waypoint op je huidige plek. */
         ADD,
         REMOVE,
-        NAVIGATE
+        NAVIGATE,
+        /** Naam en kleur van een bestaand waypoint wijzigen. */
+        RENAME
     }
 
     public static final StreamCodec<ByteBuf, WaypointActionPayload> STREAM_CODEC = StreamCodec.composite(

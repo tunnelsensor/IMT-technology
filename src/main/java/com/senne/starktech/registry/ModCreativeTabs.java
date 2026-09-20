@@ -35,6 +35,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SCANNER_UPGRADE.get());
                 output.accept(ModItems.DRONE_UPGRADE.get());
                 output.accept(ModItems.CHARGING_STATION.get());
+                output.accept(ModItems.SOLAR_PANEL.get());
+                output.accept(ModItems.HEAT_GENERATOR.get());
                 output.accept(ModItems.RELAY.get());
                 output.accept(ModItems.EMP.get());
                 output.accept(ModItems.LASER_EMITTER.get());

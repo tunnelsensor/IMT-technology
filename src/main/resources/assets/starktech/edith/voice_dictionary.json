@@ -2,44 +2,16 @@
   "version": 1,
   "commands": [
     {
-      "name": "Drones lanceren",
+      "name": "Launch drones",
       "actions": [
         {
           "action": "launch_drones"
         }
       ],
       "phrases": [
-        "stuur de drones",
-        "lanceer de drones",
         "drones lanceren",
-        "drones aanvallen",
-        "drones erop af",
         "drones inzetten",
-        "val aan",
-        "aanvallen",
-        "aanval",
         "help",
-        "help mij",
-        "hulp",
-        "help ik word aangevallen",
-        "ik word aangevallen",
-        "ze vallen me aan",
-        "ik word achtervolgd",
-        "red me",
-        "vernietig ze",
-        "maak ze af",
-        "schiet ze neer",
-        "pak ze",
-        "stuur de zwerm",
-        "zwerm aanvallen",
-        "ik zit in de problemen",
-        "ik ga dood",
-        "er zijn te veel monsters",
-        "er zijn te veel vijanden",
-        "vijanden aanvallen",
-        "val die vijanden aan",
-        "haal ze weg",
-        "weg met die monsters",
         "launch drones",
         "deploy drones",
         "send the drones",
@@ -66,40 +38,20 @@
         "i need help fighting",
         "i'm getting destroyed",
         "mayday",
-        "er zitten vijanden achter me aan",
-        "ze zitten achter me aan",
-        "vijanden achter mij",
         "they're chasing me",
         "something is chasing me",
         "enemies are chasing me"
       ]
     },
     {
-      "name": "Eén drone",
+      "name": "Single drone",
       "actions": [
         {
           "action": "drone_strike"
         }
       ],
       "phrases": [
-        "stuur een drone",
-        "stuur één drone",
-        "stuur er een op af",
         "eén drone",
-        "een drone erop af",
-        "pak hem",
-        "pak haar",
-        "pak die",
-        "schakel hem uit",
-        "schakel haar uit",
-        "maak hem af",
-        "haal hem neer",
-        "val hem aan",
-        "val haar aan",
-        "val dat aan",
-        "één drone aanvallen",
-        "drone op dat doelwit",
-        "drone op hem",
         "send one drone",
         "send a drone",
         "single drone",
@@ -118,19 +70,14 @@
       ]
     },
     {
-      "name": "Satelliet precisie",
+      "name": "Satellite precision",
       "actions": [
         {
           "action": "satellite_precision"
         }
       ],
       "phrases": [
-        "precisie",
         "precisiestraal",
-        "zet de satelliet op precisie",
-        "satelliet precisie",
-        "geen blokschade",
-        "voorzichtig schieten",
         "precision",
         "precision beam",
         "set the satellite to precision",
@@ -139,18 +86,13 @@
       ]
     },
     {
-      "name": "Satelliet bombardement",
+      "name": "Satellite bombardment",
       "actions": [
         {
           "action": "satellite_bombardment"
         }
       ],
       "phrases": [
-        "bombardement",
-        "zet de satelliet op bombardement",
-        "satelliet bombardement",
-        "maak een krater",
-        "blaas alles op",
         "bombardment",
         "carpet bomb",
         "set the satellite to bombardment",
@@ -159,16 +101,13 @@
       ]
     },
     {
-      "name": "Satelliet laser",
+      "name": "Satellite sweep",
       "actions": [
         {
           "action": "satellite_sweep"
         }
       ],
       "phrases": [
-        "schuivende laser",
-        "veeg de grond",
-        "zet de satelliet op laser",
         "satelliet laser",
         "sweep",
         "sweeping laser",
@@ -185,27 +124,6 @@
       ],
       "phrases": [
         "stand down",
-        "stop de aanval",
-        "stop alles",
-        "stop allemaal",
-        "hou op",
-        "afbreken",
-        "aanval afbreken",
-        "alles afbreken",
-        "alles terugroepen",
-        "roep alles terug",
-        "roep alles af",
-        "drones terugroepen",
-        "terugtrekken",
-        "trek terug",
-        "stop met vechten",
-        "niet meer aanvallen",
-        "laat hem gaan",
-        "laat haar gaan",
-        "laat ze gaan",
-        "rustig aan",
-        "genoeg",
-        "het is goed",
         "cease fire",
         "hold fire",
         "abort",
@@ -226,31 +144,14 @@
       ]
     },
     {
-      "name": "Spionagedrone",
+      "name": "Spy drone",
       "actions": [
         {
           "action": "spy_drone"
         }
       ],
       "phrases": [
-        "stuur een spionagedrone",
-        "spionagedrone",
         "spioneer",
-        "bespioneer hem",
-        "bespioneer haar",
-        "volg hem",
-        "volg haar",
-        "volg hem stiekem",
-        "hou hem in de gaten",
-        "hou haar in de gaten",
-        "in de gaten houden",
-        "achtervolg hem",
-        "achtervolg haar",
-        "wie is dat",
-        "waar gaat hij heen",
-        "waar gaat zij heen",
-        "hou hem in het oog",
-        "verkenning op hem",
         "spy on him",
         "spy on her",
         "spy on that",
@@ -272,23 +173,14 @@
       ]
     },
     {
-      "name": "Meekijken",
+      "name": "Watch spy feed",
       "actions": [
         {
           "action": "spy_view"
         }
       ],
       "phrases": [
-        "kijk mee",
-        "laat me meekijken",
-        "laat het beeld zien",
-        "beeld van de spion",
         "spionbeeld",
-        "camera van de spion",
-        "laat zien wat hij doet",
-        "laat zien wat zij doet",
-        "wat doet hij",
-        "wat doet zij",
         "show me the feed",
         "watch along",
         "spy camera",
@@ -300,21 +192,14 @@
       ]
     },
     {
-      "name": "Spionagerapport",
+      "name": "Spy report",
       "actions": [
         {
           "action": "spy_report"
         }
       ],
       "phrases": [
-        "rapport",
         "spionagerapport",
-        "laat het rapport zien",
-        "geef me het rapport",
-        "wat heb je gezien",
-        "wat heeft hij gedaan",
-        "wat heeft zij gedaan",
-        "verslag",
         "report",
         "spy report",
         "show the report",
@@ -325,52 +210,31 @@
       ]
     },
     {
-      "name": "Vlieg met me",
+      "name": "Fly me",
       "actions": [
         {
           "action": "transport_ride"
         }
       ],
       "phrases": [
-        "laat me vliegen",
-        "vlieg met me",
-        "til me op",
-        "pik me op",
-        "haal me op",
-        "drones til me op",
-        "ik wil vliegen",
-        "laat me opstijgen",
-        "opstijgen",
-        "zet me neer",
-        "laat me zakken",
-        "landen",
         "lift me up",
         "pick me up",
         "fly me",
         "let me fly",
         "take off",
-        "i want to fly",
         "put me down",
         "land",
         "land me"
       ]
     },
     {
-      "name": "Autopiloot",
+      "name": "Autopilot",
       "actions": [
         {
           "action": "transport_autopilot"
         }
       ],
       "phrases": [
-        "breng me erheen",
-        "vlieg me erheen",
-        "vlieg me naar mijn bestemming",
-        "autopiloot",
-        "zet de autopiloot aan",
-        "vlieg me naar huis",
-        "breng me naar mijn waypoint",
-        "neem me mee",
         "fly me there",
         "take me there",
         "autopilot",
@@ -379,21 +243,13 @@
       ]
     },
     {
-      "name": "Vrachtdrone",
+      "name": "Cargo drone",
       "actions": [
         {
           "action": "cargo_drone"
         }
       ],
       "phrases": [
-        "stuur deze spullen",
-        "stuur dit weg",
-        "vrachtdrone",
-        "breng deze spullen naar mijn bestemming",
-        "stuur de kist",
-        "laat dit ophalen",
-        "bezorg dit",
-        "send these items",
         "cargo drone",
         "deliver this",
         "send this chest",
@@ -401,23 +257,13 @@
       ]
     },
     {
-      "name": "Iemand vervoeren",
+      "name": "Carry someone",
       "actions": [
         {
           "action": "carry_entity"
         }
       ],
       "phrases": [
-        "pak hem op",
-        "pak haar op",
-        "pak dat op",
-        "til hem op",
-        "til haar op",
-        "haal hem hier weg",
-        "haal haar hier weg",
-        "breng hem naar mijn bestemming",
-        "verplaats hem",
-        "verplaats dat dier",
         "pick him up",
         "pick her up",
         "pick that up",
@@ -430,102 +276,70 @@
       ]
     },
     {
-      "name": "Redstone aan",
+      "name": "Redstone on",
       "actions": [
         {
           "action": "redstone_on"
         }
       ],
       "phrases": [
-        "zet {ding} aan",
-        "doe {ding} aan",
-        "maak {ding} aan",
-        "activeer {ding}",
-        "start {ding}",
-        "open {ding}",
-        "zet de {ding} aan",
-        "turn on {ding}",
-        "turn {ding} on",
-        "switch on {ding}",
-        "activate {ding}",
-        "open {ding}",
-        "start {ding}"
+        "start {thing}",
+        "open {thing}",
+        "turn on {thing}",
+        "turn {thing} on",
+        "switch on {thing}",
+        "activate {thing}"
       ]
     },
     {
-      "name": "Redstone uit",
+      "name": "Redstone off",
       "actions": [
         {
           "action": "redstone_off"
         }
       ],
       "phrases": [
-        "zet {ding} uit",
-        "doe {ding} uit",
-        "maak {ding} uit",
-        "stop {ding}",
-        "sluit {ding}",
-        "deactiveer {ding}",
-        "turn off {ding}",
-        "turn {ding} off",
-        "switch off {ding}",
-        "close {ding}",
-        "deactivate {ding}"
+        "stop {thing}",
+        "turn off {thing}",
+        "turn {thing} off",
+        "switch off {thing}",
+        "close {thing}",
+        "deactivate {thing}"
       ]
     },
     {
-      "name": "Redstone omschakelen",
+      "name": "Redstone toggle",
       "actions": [
         {
           "action": "redstone_toggle"
         }
       ],
       "phrases": [
-        "schakel {ding}",
-        "wissel {ding}",
-        "omschakelen {ding}",
-        "toggle {ding}",
-        "flip {ding}"
+        "toggle {thing}",
+        "flip {thing}"
       ]
     },
     {
-      "name": "Redstone puls",
+      "name": "Redstone pulse",
       "actions": [
         {
           "action": "redstone_pulse"
         }
       ],
       "phrases": [
-        "geef {ding} een puls",
-        "puls {ding}",
-        "tik {ding} aan",
-        "klik {ding}",
-        "pulse {ding}",
-        "trigger {ding}",
-        "knock {ding}"
+        "pulse {thing}",
+        "trigger {thing}",
+        "knock {thing}"
       ]
     },
     {
-      "name": "Hack speler",
+      "name": "Hack player",
       "actions": [
         {
           "action": "hack_player"
         }
       ],
       "phrases": [
-        "hack hem",
-        "hack haar",
-        "hack die speler",
-        "hack deze speler",
-        "luister hem af",
-        "luister haar af",
-        "onderschep zijn berichten",
-        "onderschep haar berichten",
-        "wat stuurt hij",
-        "wat stuurt zij",
-        "lees zijn berichten",
-        "lees haar berichten",
-        "tap hem af",
         "hack him",
         "hack her",
         "hack that player",
@@ -539,18 +353,13 @@
       ]
     },
     {
-      "name": "Hack stoppen",
+      "name": "Stop hacking",
       "actions": [
         {
           "action": "hack_stop"
         }
       ],
       "phrases": [
-        "stop de hack",
-        "stop met hacken",
-        "stop het afluisteren",
-        "hack niemand meer",
-        "laat hem met rust",
         "stop hacking",
         "stop the hack",
         "stop listening in",
@@ -558,54 +367,41 @@
       ]
     },
     {
-      "name": "Muziek spelen",
+      "name": "Play music",
       "actions": [
         {
           "action": "music_play"
         }
       ],
       "phrases": [
-        "speel {muziek}",
-        "zet {muziek} op",
-        "speel het nummer {muziek}",
-        "ik wil {muziek} horen",
-        "play {muziek}",
-        "put on {muziek}",
-        "play the song {muziek}",
-        "i want to hear {muziek}"
+        "play {music}",
+        "put on {music}",
+        "play the song {music}"
       ]
     },
     {
-      "name": "Muziek pauzeren",
+      "name": "Pause music",
       "actions": [
         {
           "action": "music_pause"
         }
       ],
       "phrases": [
-        "pauzeer de muziek",
-        "zet de muziek stil",
-        "stop de muziek",
-        "muziek pauze",
-        "even stil",
         "pause the music",
         "stop the music",
         "music pause",
-        "quiet please"
+        "quiet please",
+        "pauze"
       ]
     },
     {
-      "name": "Muziek verder",
+      "name": "Resume music",
       "actions": [
         {
           "action": "music_resume"
         }
       ],
       "phrases": [
-        "muziek verder",
-        "speel verder",
-        "zet de muziek weer aan",
-        "ga verder met de muziek",
         "resume the music",
         "continue the music",
         "music on",
@@ -613,18 +409,14 @@
       ]
     },
     {
-      "name": "Volgend nummer",
+      "name": "Next track",
       "actions": [
         {
           "action": "music_next"
         }
       ],
       "phrases": [
-        "volgend nummer",
         "volgende",
-        "nummer verder",
-        "sla dit nummer over",
-        "andere muziek",
         "next song",
         "next track",
         "skip this song",
@@ -632,34 +424,27 @@
       ]
     },
     {
-      "name": "Vorig nummer",
+      "name": "Previous track",
       "actions": [
         {
           "action": "music_previous"
         }
       ],
       "phrases": [
-        "vorig nummer",
         "vorige",
-        "terug naar het vorige nummer",
-        "nummer terug",
         "previous song",
         "previous track",
         "go back a song"
       ]
     },
     {
-      "name": "Wat speelt er",
+      "name": "What's playing",
       "actions": [
         {
           "action": "music_what"
         }
       ],
       "phrases": [
-        "wat speelt er",
-        "welk nummer is dit",
-        "wat is dit voor nummer",
-        "welke muziek is dit",
         "what is playing",
         "what song is this",
         "what is this song",
@@ -667,24 +452,13 @@
       ]
     },
     {
-      "name": "Escorte aan",
+      "name": "Escort on",
       "actions": [
         {
           "action": "escort_on"
         }
       ],
       "phrases": [
-        "escorte aan",
-        "bescherm me",
-        "bescherming aan",
-        "lijfwacht",
-        "drones bij mij",
-        "blijf bij me",
-        "bewaak mij",
-        "dek me",
-        "verdedig mij",
-        "escortedrones aan",
-        "zet de escorte aan",
         "escort on",
         "protect me",
         "guard me",
@@ -695,26 +469,17 @@
         "turn on the escort",
         "defend me",
         "watch my back",
-        "escort drones on",
-        "hou me veilig",
-        "houd me veilig",
-        "zorg dat ik veilig ben"
+        "escort drones on"
       ]
     },
     {
-      "name": "Schild aan",
+      "name": "Shield on",
       "actions": [
         {
           "action": "shield_on"
         }
       ],
       "phrases": [
-        "schild aan",
-        "zet het schild aan",
-        "rayshield aan",
-        "activeer het schild",
-        "bescherm mij met het schild",
-        "schild omhoog",
         "shields up",
         "shield on",
         "raise the shield",
@@ -723,18 +488,13 @@
       ]
     },
     {
-      "name": "Schild uit",
+      "name": "Shield off",
       "actions": [
         {
           "action": "shield_off"
         }
       ],
       "phrases": [
-        "schild uit",
-        "zet het schild uit",
-        "rayshield uit",
-        "schild omlaag",
-        "laat het schild zakken",
         "shield off",
         "shields down",
         "lower the shield",
@@ -742,19 +502,13 @@
       ]
     },
     {
-      "name": "Escorte uit",
+      "name": "Escort off",
       "actions": [
         {
           "action": "escort_off"
         }
       ],
       "phrases": [
-        "escorte uit",
-        "stop de escorte",
-        "bescherming uit",
-        "drones terug",
-        "haal de drones terug",
-        "roep de drones terug",
         "escort off",
         "recall the drones",
         "call back the drones",
@@ -764,26 +518,14 @@
       ]
     },
     {
-      "name": "Satelliet-aanval",
+      "name": "Satellite strike",
       "actions": [
         {
           "action": "satellite_strike"
         }
       ],
       "phrases": [
-        "satelliet aanval",
         "satelliet",
-        "vuur de satelliet af",
-        "laser vanuit de ruimte",
-        "blaas dat op",
-        "blaas het op",
-        "blaas die vijand op",
-        "opblazen",
-        "orbitale aanval",
-        "satelliet op dat doel",
-        "laat de satelliet schieten",
-        "schiet met de satelliet",
-        "vernietig dat met de satelliet",
         "satellite strike",
         "orbital strike",
         "fire the satellite",
@@ -799,22 +541,13 @@
       ]
     },
     {
-      "name": "Doelwit markeren",
+      "name": "Mark target",
       "actions": [
         {
           "action": "mark_target"
         }
       ],
       "phrases": [
-        "markeer dat",
-        "markeer doelwit",
-        "markeer dat doelwit",
-        "markeer die vijand",
-        "doelwit markeren",
-        "richt op dat",
-        "selecteer doelwit",
-        "markeer hem",
-        "dat is een doelwit",
         "mark target",
         "mark that",
         "mark it",
@@ -827,18 +560,13 @@
       ]
     },
     {
-      "name": "Doelwitten wissen",
+      "name": "Clear marks",
       "actions": [
         {
           "action": "clear_marks"
         }
       ],
       "phrases": [
-        "wis doelwitten",
-        "doelwitten wissen",
-        "markeringen weg",
-        "verwijder markeringen",
-        "wis alle doelwitten",
         "clear targets",
         "clear marks",
         "remove targets",
@@ -847,26 +575,15 @@
       ]
     },
     {
-      "name": "Verkenningsdrone",
+      "name": "Recon drone",
       "actions": [
         {
           "action": "scout_drone"
         }
       ],
       "phrases": [
-        "verkenningsdrone",
-        "stuur de verkenningsdrone",
-        "lanceer de verkenningsdrone",
-        "verken",
-        "verkennen",
-        "kijk rond met de drone",
-        "kijk eens rond",
         "drone camera",
         "spioneer",
-        "ga kijken",
-        "vooruit kijken",
-        "verken de omgeving",
-        "laat me van bovenaf kijken",
         "verkenner",
         "recon",
         "scout",
@@ -883,20 +600,13 @@
       ]
     },
     {
-      "name": "Terug naar jezelf",
+      "name": "Back to your body",
       "actions": [
         {
           "action": "scout_return"
         }
       ],
       "phrases": [
-        "kom terug",
-        "stop met verkennen",
-        "camera uit",
-        "terug naar mijn lichaam",
-        "verkenningsdrone terug",
-        "verkenning stoppen",
-        "ik wil terug",
         "exit camera",
         "come back",
         "stop scouting",
@@ -906,26 +616,13 @@
       ]
     },
     {
-      "name": "Ertsen scannen",
+      "name": "Scan for ores",
       "actions": [
         {
           "action": "ore_scan"
         }
       ],
       "phrases": [
-        "scan naar erts",
-        "ertsen scannen",
-        "zoek erts",
-        "zoek diamanten",
-        "waar zijn diamanten",
-        "ik zoek diamanten",
-        "ik heb ijzer nodig",
-        "scan de grond",
-        "zijn er diamanten",
-        "zoek naar ertsen",
-        "ertsenscan",
-        "mijnen scan",
-        "wat zit er in de grond",
         "scan for ores",
         "ore scan",
         "find ores",
@@ -941,23 +638,13 @@
       ]
     },
     {
-      "name": "Radar aan",
+      "name": "Threat scan on",
       "actions": [
         {
           "action": "threat_scan_on"
         }
       ],
       "phrases": [
-        "radar aan",
-        "dreigingsscan aan",
-        "scan naar vijanden",
-        "zoek vijanden",
-        "scan vijanden",
-        "toon vijanden",
-        "laat de vijanden zien",
-        "vijanden door muren",
-        "vijanden zichtbaar maken",
-        "waar zijn de vijanden",
         "threat scan on",
         "radar on",
         "show enemies",
@@ -969,17 +656,13 @@
       ]
     },
     {
-      "name": "Radar uit",
+      "name": "Threat scan off",
       "actions": [
         {
           "action": "threat_scan_off"
         }
       ],
       "phrases": [
-        "radar uit",
-        "dreigingsscan uit",
-        "vijanden verbergen",
-        "stop de radar",
         "threat scan off",
         "radar off",
         "hide enemies",
@@ -987,7 +670,7 @@
       ]
     },
     {
-      "name": "Radar aan/uit",
+      "name": "Threat scan toggle",
       "actions": [
         {
           "action": "threat_scan_toggle"
@@ -995,28 +678,17 @@
       ],
       "phrases": [
         "radar",
-        "dreigingsscan",
         "threat scan"
       ]
     },
     {
-      "name": "Nachtzicht aan",
+      "name": "Night vision on",
       "actions": [
         {
           "action": "night_vision_on"
         }
       ],
       "phrases": [
-        "nachtzicht aan",
-        "licht aan",
-        "het is te donker",
-        "het is donker",
-        "ik zie niks",
-        "ik zie niets",
-        "maak het lichter",
-        "ik kan niks zien",
-        "het is hier zo donker",
-        "zet nachtzicht aan",
         "night vision on",
         "lights on",
         "it's too dark",
@@ -1028,18 +700,13 @@
       ]
     },
     {
-      "name": "Nachtzicht uit",
+      "name": "Night vision off",
       "actions": [
         {
           "action": "night_vision_off"
         }
       ],
       "phrases": [
-        "nachtzicht uit",
-        "licht uit",
-        "het is licht genoeg",
-        "te fel",
-        "het is te fel",
         "night vision off",
         "lights off",
         "it's bright enough",
@@ -1048,62 +715,55 @@
       ]
     },
     {
-      "name": "Nachtzicht aan/uit",
+      "name": "Night vision toggle",
       "actions": [
         {
           "action": "night_vision_toggle"
         }
       ],
       "phrases": [
-        "nachtzicht",
         "night vision"
       ]
     },
     {
-      "name": "Doelwit-analyse aan",
+      "name": "Target analysis on",
       "actions": [
         {
           "action": "target_analysis_on"
         }
       ],
       "phrases": [
-        "doelwit analyse aan",
-        "analyse aan",
-        "toon info over doelwit",
         "target analysis on",
         "analysis on",
         "show target info"
       ]
     },
     {
-      "name": "Doelwit-analyse uit",
+      "name": "Target analysis off",
       "actions": [
         {
           "action": "target_analysis_off"
         }
       ],
       "phrases": [
-        "doelwit analyse uit",
-        "analyse uit",
         "target analysis off",
         "analysis off",
         "hide target info"
       ]
     },
     {
-      "name": "Doelwit-analyse aan/uit",
+      "name": "Target analysis toggle",
       "actions": [
         {
           "action": "target_analysis_toggle"
         }
       ],
       "phrases": [
-        "doelwit analyse",
         "target analysis"
       ]
     },
     {
-      "name": "Alles aan",
+      "name": "Everything on",
       "actions": [
         {
           "action": "threat_scan_on"
@@ -1119,10 +779,6 @@
         }
       ],
       "phrases": [
-        "zet alles aan",
-        "alle systemen aan",
-        "alles aan",
-        "volle kracht",
         "turn everything on",
         "all systems on",
         "everything on",
@@ -1130,7 +786,7 @@
       ]
     },
     {
-      "name": "Alles uit",
+      "name": "Everything off",
       "actions": [
         {
           "action": "threat_scan_off"
@@ -1146,10 +802,6 @@
         }
       ],
       "phrases": [
-        "zet alles uit",
-        "alle systemen uit",
-        "alles uit",
-        "energie besparen",
         "turn everything off",
         "all systems off",
         "everything off",
@@ -1159,7 +811,7 @@
       ]
     },
     {
-      "name": "Gevechtsmodus",
+      "name": "Combat mode",
       "actions": [
         {
           "action": "threat_scan_on"
@@ -1173,9 +825,6 @@
       ],
       "reply": "@voice.starktech.reply.combat",
       "phrases": [
-        "gevechtsmodus",
-        "klaar voor gevecht",
-        "maak je klaar voor het gevecht",
         "combat mode",
         "battle mode",
         "ready for battle",
@@ -1191,11 +840,6 @@
       ],
       "phrases": [
         "ping",
-        "ping dat",
-        "ping deze plek",
-        "markeer deze plek voor mijn team",
-        "zet een markering",
-        "wijs dit aan",
         "ping this",
         "ping that",
         "ping this spot",
@@ -1205,21 +849,13 @@
       ]
     },
     {
-      "name": "Navigeer naar plek",
+      "name": "Navigate to place",
       "actions": [
         {
           "action": "navigate_to"
         }
       ],
       "phrases": [
-        "breng me naar {plek}",
-        "navigeer naar {plek}",
-        "ga naar {plek}",
-        "route naar {plek}",
-        "ik wil naar {plek}",
-        "stuur me naar {plek}",
-        "hoe kom ik bij {plek}",
-        "leid me naar {plek}",
         "take me to {place}",
         "navigate to {place}",
         "go to {place}",
@@ -1231,107 +867,72 @@
       ]
     },
     {
-      "name": "Naar huis",
+      "name": "Go home",
       "actions": [
         {
           "action": "navigate_home"
         }
       ],
       "phrases": [
-        "naar huis",
-        "breng me naar huis",
-        "ik wil naar huis",
-        "ik ben verdwaald",
-        "ik ben de weg kwijt",
-        "terug naar huis",
-        "naar de basis",
-        "waar is mijn huis",
         "take me home",
         "go home",
         "i'm lost",
         "back to base",
         "where is my home",
-        "i want to go home",
         "home"
       ]
     },
     {
-      "name": "Naar sterfplek",
+      "name": "Go to death point",
       "actions": [
         {
           "action": "navigate_death"
         }
       ],
       "phrases": [
-        "waar ben ik doodgegaan",
-        "breng me naar mijn sterfplek",
-        "naar mijn spullen",
-        "waar zijn mijn spullen",
-        "sterfplek",
-        "waar ben ik gestorven",
-        "mijn spullen terughalen",
-        "where did i die",
         "take me to my death point",
         "where is my stuff",
-        "find my items",
         "death point",
         "get my stuff back"
       ]
     },
     {
-      "name": "Volgende bestemming",
+      "name": "Next destination",
       "actions": [
         {
           "action": "next_destination"
         }
       ],
       "phrases": [
-        "volgende bestemming",
-        "volgende plek",
-        "naar de volgende plek",
         "next destination",
         "next waypoint",
         "next place"
       ]
     },
     {
-      "name": "Navigatie stoppen",
+      "name": "Stop navigation",
       "actions": [
         {
           "action": "stop_navigation"
         }
       ],
       "phrases": [
-        "stop navigatie",
-        "stop de navigatie",
-        "navigatie uit",
-        "ik ben er",
-        "ik ben aangekomen",
-        "stop met navigeren",
         "stop navigating",
         "cancel navigation",
         "navigation off",
         "i'm here",
         "i have arrived",
-        "stop the navigation",
-        "we zijn aangekomen",
-        "we are here",
-        "we have arrived"
+        "stop the navigation"
       ]
     },
     {
-      "name": "Plek onthouden (met naam)",
+      "name": "Save place (with name)",
       "actions": [
         {
           "action": "save_place"
         }
       ],
       "phrases": [
-        "onthoud deze plek als {naam}",
-        "sla deze plek op als {naam}",
-        "noem deze plek {naam}",
-        "bewaar deze plek als {naam}",
-        "deze plek heet {naam}",
         "remember this place as {name}",
         "save this place as {name}",
         "call this place {name}",
@@ -1342,16 +943,13 @@
       ]
     },
     {
-      "name": "Plek onthouden",
+      "name": "Save place",
       "actions": [
         {
           "action": "save_place"
         }
       ],
       "phrases": [
-        "onthoud deze plek",
-        "sla deze plek op",
-        "bewaar deze plek",
         "remember this place",
         "save this spot",
         "remember this spot",
@@ -1359,20 +957,13 @@
       ]
     },
     {
-      "name": "Bericht sturen",
+      "name": "Send message",
       "actions": [
         {
           "action": "send_message"
         }
       ],
       "phrases": [
-        "stuur bericht {tekst}",
-        "stuur een bericht {tekst}",
-        "zeg tegen iedereen {tekst}",
-        "laat iedereen weten {tekst}",
-        "bericht aan iedereen {tekst}",
-        "zeg tegen mijn team {tekst}",
-        "vertel iedereen {tekst}",
         "send message {text}",
         "send a message {text}",
         "tell everyone {text}",
@@ -1383,7 +974,7 @@
       ]
     },
     {
-      "name": "Hulp vragen aan team",
+      "name": "Call for backup",
       "actions": [
         {
           "action": "send_message",
@@ -1394,10 +985,6 @@
         }
       ],
       "phrases": [
-        "vraag om hulp",
-        "roep hulp",
-        "laat mijn team weten dat ik hulp nodig heb",
-        "vraag het team om hulp",
         "call for help",
         "i need backup",
         "request backup",
@@ -1406,18 +993,13 @@
       ]
     },
     {
-      "name": "Navigatiescherm",
+      "name": "Navigation screen",
       "actions": [
         {
           "action": "open_navigation"
         }
       ],
       "phrases": [
-        "open navigatie",
-        "kaart",
-        "open de kaart",
-        "toon mijn plekken",
-        "mijn plekken",
         "open navigation",
         "open map",
         "show map",
@@ -1426,37 +1008,27 @@
       ]
     },
     {
-      "name": "Berichtenscherm",
+      "name": "Comms screen",
       "actions": [
         {
           "action": "open_comms"
         }
       ],
       "phrases": [
-        "open berichten",
-        "berichten",
         "open comms",
-        "open het berichtenscherm",
         "open messages",
         "comms",
         "communications"
       ]
     },
     {
-      "name": "Hoe laat is het?",
+      "name": "What time is it?",
       "actions": [
         {
           "action": "say_time"
         }
       ],
       "phrases": [
-        "hoe laat is het",
-        "tijd",
-        "wat is de tijd",
-        "hoe laat",
-        "is het al nacht",
-        "wanneer wordt het nacht",
-        "wordt het al donker",
         "what time is it",
         "time",
         "what's the time",
@@ -1466,19 +1038,13 @@
       ]
     },
     {
-      "name": "Weer",
+      "name": "Weather",
       "actions": [
         {
           "action": "say_weather"
         }
       ],
       "phrases": [
-        "wat voor weer is het",
-        "weer",
-        "hoe is het weer",
-        "regent het",
-        "gaat het regenen",
-        "is het onweer",
         "weerbericht",
         "what's the weather",
         "weather",
@@ -1489,19 +1055,13 @@
       ]
     },
     {
-      "name": "Batterij",
+      "name": "Battery",
       "actions": [
         {
           "action": "say_battery"
         }
       ],
       "phrases": [
-        "batterij",
-        "hoeveel batterij heb ik nog",
-        "hoe vol is de batterij",
-        "energie",
-        "hoeveel energie",
-        "moet ik opladen",
         "battery",
         "how much battery",
         "battery level",
@@ -1511,22 +1071,13 @@
       ]
     },
     {
-      "name": "Levens en honger",
+      "name": "Health and hunger",
       "actions": [
         {
           "action": "say_health"
         }
       ],
       "phrases": [
-        "hoeveel levens heb ik",
-        "hoe gaat het met mij",
-        "gezondheid",
-        "levens",
-        "hoeveel hartjes",
-        "heb ik honger",
-        "moet ik eten",
-        "hoe is mijn gezondheid",
-        "hoeveel levens heb ik nog",
         "health",
         "how much health",
         "how much health do i have",
@@ -1537,65 +1088,45 @@
       ]
     },
     {
-      "name": "Vijanden in de buurt?",
+      "name": "Enemies nearby?",
       "actions": [
         {
           "action": "say_enemies"
         }
       ],
       "phrases": [
-        "zijn er vijanden",
-        "vijanden in de buurt",
-        "zijn er vijanden in de buurt",
-        "hoeveel vijanden",
-        "welk monster is het dichtst bij",
-        "is het veilig",
-        "zijn we alleen",
-        "is het hier veilig",
-        "wat is het dichtstbijzijnde monster",
         "are there enemies",
         "enemies nearby",
         "how many enemies",
         "is it safe",
-        "are we alone",
         "closest enemy",
         "any enemies around",
         "is it safe to go outside"
       ]
     },
     {
-      "name": "Waar ben ik?",
+      "name": "Where am I?",
       "actions": [
         {
           "action": "say_position"
         }
       ],
       "phrases": [
-        "waar ben ik",
-        "welke biome",
         "coordinaten",
-        "waar zijn we",
-        "wat zijn mijn coordinaten",
         "where am i",
         "coordinates",
         "which biome",
-        "where are we",
         "what are my coordinates"
       ]
     },
     {
-      "name": "Waar kijk ik naar?",
+      "name": "What am I looking at?",
       "actions": [
         {
           "action": "say_target"
         }
       ],
       "phrases": [
-        "wat is dat",
-        "wat zie ik",
-        "wat is dat daar",
-        "waar kijk ik naar",
-        "wat is dat voor iets",
         "what is that",
         "what am i looking at",
         "what's that",
@@ -1603,38 +1134,26 @@
       ]
     },
     {
-      "name": "Hoe ver nog?",
+      "name": "How far to go?",
       "actions": [
         {
           "action": "say_destination"
         }
       ],
       "phrases": [
-        "hoe ver nog",
-        "waar gaan we heen",
-        "hoe ver is het",
-        "bestemming",
-        "zijn we er bijna",
         "how far",
         "how far is it",
-        "where are we going",
-        "destination",
-        "are we there yet"
+        "destination"
       ]
     },
     {
-      "name": "Wat is er klaar?",
+      "name": "What's ready?",
       "actions": [
         {
           "action": "say_cooldowns"
         }
       ],
       "phrases": [
-        "is de satelliet klaar",
-        "zijn de drones klaar",
-        "wachttijden",
-        "wat is er klaar",
-        "kan ik de satelliet gebruiken",
         "is the satellite ready",
         "are the drones ready",
         "cooldowns",
@@ -1643,7 +1162,7 @@
       ]
     },
     {
-      "name": "Statusrapport",
+      "name": "Status report",
       "actions": [
         {
           "action": "say_status"
@@ -1651,28 +1170,18 @@
       ],
       "phrases": [
         "status",
-        "statusrapport",
-        "rapport",
-        "hoe staat het ervoor",
-        "systeemcheck",
         "status report",
         "report",
         "system check",
-        "sitrep",
-        "how are we doing"
+        "sitrep"
       ]
     },
     {
-      "name": "Hallo",
+      "name": "Hello",
       "actions": [],
       "reply": "@voice.starktech.reply.hello",
       "phrases": [
-        "hallo",
-        "hoi",
         "hey edith",
-        "hallo edith",
-        "goedemorgen",
-        "goedenavond",
         "hello",
         "hi",
         "hey",
@@ -1682,14 +1191,11 @@
       ]
     },
     {
-      "name": "Bedankt",
+      "name": "Thanks",
       "actions": [],
       "reply": "@voice.starktech.reply.thanks",
       "phrases": [
-        "dank je",
-        "bedankt",
         "merci",
-        "goed gedaan",
         "top",
         "thanks",
         "thank you",
@@ -1699,29 +1205,20 @@
       ]
     },
     {
-      "name": "Wie ben jij?",
+      "name": "Who are you?",
       "actions": [],
       "reply": "@voice.starktech.reply.who",
       "phrases": [
-        "wie ben jij",
-        "wat ben jij",
-        "wat kan jij",
-        "wat kun je allemaal",
-        "wat kan je",
         "who are you",
         "what can you do",
         "what are you"
       ]
     },
     {
-      "name": "Laat maar",
+      "name": "Never mind",
       "actions": [],
       "reply": "@voice.starktech.reply.cancel",
       "phrases": [
-        "laat maar",
-        "annuleer",
-        "niks",
-        "vergeet het",
         "nee",
         "cancel",
         "never mind",
@@ -1732,27 +1229,20 @@
       ]
     },
     {
-      "name": "Mop",
+      "name": "Joke",
       "actions": [],
       "reply": "@voice.starktech.reply.joke",
       "phrases": [
-        "vertel een mop",
-        "vertel een grap",
-        "maak me aan het lachen",
         "tell me a joke",
         "tell a joke",
         "make me laugh"
       ]
     },
     {
-      "name": "Slaap lekker",
+      "name": "Goodnight",
       "actions": [],
       "reply": "@voice.starktech.reply.goodnight",
       "phrases": [
-        "ik ga slapen",
-        "welterusten",
-        "slaap lekker",
-        "ik ga even slapen",
         "good night",
         "goodnight",
         "i'm going to sleep"
@@ -1765,45 +1255,32 @@
       "synonyms": [
         "drone",
         "droontjes",
-        "dronen",
-        "zwerm",
         "swarm",
         "robots",
         "robot"
       ]
     },
     {
-      "word": "aanval",
+      "word": "attack",
       "synonyms": [
-        "aanvallen",
-        "aangevallen",
-        "val aan",
-        "vallen aan",
-        "attack",
         "attacks",
         "attacking",
         "attacked",
-        "vernietig",
         "vernietigen",
         "destroy",
         "kill",
         "afmaken",
-        "maak af",
         "take out",
-        "schiet",
         "schieten",
         "shoot",
         "kapot",
-        "neer",
-        "achtervolgd"
+        "neer"
       ]
     },
     {
       "word": "help",
       "synonyms": [
-        "hulp",
         "helpen",
-        "red",
         "redden",
         "save",
         "rescue",
@@ -1813,13 +1290,10 @@
       ]
     },
     {
-      "word": "aan",
+      "word": "on",
       "synonyms": [
-        "on",
-        "activeer",
         "activeren",
         "inschakelen",
-        "schakel in",
         "enable",
         "activate",
         "start",
@@ -1829,30 +1303,23 @@
       ]
     },
     {
-      "word": "uit",
+      "word": "off",
       "synonyms": [
-        "off",
-        "af",
         "uitschakelen",
-        "schakel uit",
-        "deactiveer",
         "deactiveren",
         "disable",
         "deactivate",
         "uitzetten",
         "stop",
-        "stoppen",
         "halt"
       ]
     },
     {
-      "word": "vijand",
+      "word": "enemy",
       "synonyms": [
-        "vijanden",
         "vijandig",
         "monster",
         "monsters",
-        "enemy",
         "enemies",
         "mob",
         "mobs",
@@ -1887,7 +1354,6 @@
     {
       "word": "radar",
       "synonyms": [
-        "dreigingsscan",
         "dreigings scan",
         "threat scan",
         "threatscan",
@@ -1903,15 +1369,12 @@
       ]
     },
     {
-      "word": "nachtzicht",
+      "word": "night vision",
       "synonyms": [
-        "nacht zicht",
         "nachtkijker",
-        "night vision",
         "nightvision",
         "infrarood",
         "infrared",
-        "licht",
         "lights",
         "light",
         "lamp",
@@ -1920,38 +1383,28 @@
       ]
     },
     {
-      "word": "analyse",
+      "word": "analysis",
       "synonyms": [
         "doelwitanalyse",
-        "doelwit analyse",
         "doelanalyse",
         "target analysis",
         "targetanalyse",
         "target info",
-        "doelwit info",
-        "analysis",
         "analyseer",
         "analyze"
       ]
     },
     {
-      "word": "erts",
+      "word": "ore",
       "synonyms": [
-        "ertsen",
-        "ore",
         "ores",
         "diamant",
-        "diamanten",
         "diamond",
         "diamonds",
-        "ijzer",
         "iron",
-        "goud",
         "gold",
-        "kolen",
         "steenkool",
         "coal",
-        "koper",
         "copper",
         "redstone",
         "lapis",
@@ -1975,11 +1428,8 @@
     {
       "word": "scan",
       "synonyms": [
-        "scannen",
         "scanner",
-        "zoek",
         "zoeken",
-        "vind",
         "vinden",
         "find",
         "search",
@@ -1990,26 +1440,22 @@
       ]
     },
     {
-      "word": "satelliet",
+      "word": "satellite",
       "synonyms": [
-        "satellite",
         "sateliet",
         "satteliet",
         "orbitaal",
-        "orbitale",
         "orbital",
         "orbit",
         "ruimtelaser",
         "space laser",
         "laser",
-        "ruimte",
         "space"
       ]
     },
     {
-      "word": "opblazen",
+      "word": "blow up",
       "synonyms": [
-        "blaas",
         "blazen",
         "nuke",
         "bombardeer",
@@ -2020,63 +1466,48 @@
       ]
     },
     {
-      "word": "dat",
+      "word": "that",
       "synonyms": [
-        "die",
-        "that",
-        "dit",
         "this",
-        "deze",
         "those"
       ]
     },
     {
-      "word": "markeer",
+      "word": "mark",
       "synonyms": [
         "markeren",
         "marker",
-        "mark",
         "tag",
         "taggen",
-        "richt op",
         "lock on",
         "lock",
-        "selecteer",
         "select",
         "paint",
         "aanwijzen"
       ]
     },
     {
-      "word": "doelwit",
+      "word": "target",
       "synonyms": [
-        "doelwitten",
         "doel",
         "doelen",
-        "target",
         "targets",
-        "markering",
-        "markeringen",
         "marks",
         "marked"
       ]
     },
     {
-      "word": "wis",
+      "word": "clear",
       "synonyms": [
         "wissen",
-        "verwijder",
         "verwijderen",
-        "clear",
         "remove",
         "delete",
-        "weg",
-        "reset",
-        "leeg"
+        "reset"
       ]
     },
     {
-      "word": "verkenningsdrone",
+      "word": "recon drone",
       "synonyms": [
         "verkennings drone",
         "verkenningsdroon",
@@ -2084,7 +1515,6 @@
         "scout drone",
         "scoutdrone",
         "spy drone",
-        "spionagedrone",
         "camera drone",
         "dronecamera",
         "drone camera",
@@ -2092,11 +1522,8 @@
       ]
     },
     {
-      "word": "verken",
+      "word": "scout",
       "synonyms": [
-        "verkennen",
-        "verkenning",
-        "scout",
         "scouten",
         "scouting",
         "recon",
@@ -2106,33 +1533,23 @@
         "spy",
         "explore",
         "verkenner",
-        "rondkijken",
-        "kijk rond",
         "look around"
       ]
     },
     {
-      "word": "terug",
+      "word": "back",
       "synonyms": [
         "return",
-        "back",
-        "kom terug",
         "come back",
-        "keer terug",
-        "ga terug",
         "go back"
       ]
     },
     {
-      "word": "navigeer",
+      "word": "navigate",
       "synonyms": [
-        "navigatie",
-        "navigeren",
         "navigation",
-        "navigate",
         "navigating",
         "route",
-        "koers",
         "course",
         "gps",
         "gids",
@@ -2142,14 +1559,10 @@
       ]
     },
     {
-      "word": "huis",
+      "word": "home",
       "synonyms": [
-        "thuis",
-        "home",
-        "basis",
         "base",
         "huisje",
-        "kamp",
         "camp",
         "hq",
         "hoofdkwartier",
@@ -2157,23 +1570,18 @@
       ]
     },
     {
-      "word": "ga",
+      "word": "go",
       "synonyms": [
-        "gaan",
-        "go",
-        "breng",
         "brengen",
         "take",
         "bring"
       ]
     },
     {
-      "word": "stuur",
+      "word": "send",
       "synonyms": [
-        "send",
         "zend",
         "sturen",
-        "lanceer",
         "lanceren",
         "launch",
         "deploy",
@@ -2183,42 +1591,33 @@
       ]
     },
     {
-      "word": "bericht",
+      "word": "message",
       "synonyms": [
-        "berichten",
-        "message",
         "messages",
         "msg",
         "sms"
       ]
     },
     {
-      "word": "iedereen",
+      "word": "everyone",
       "synonyms": [
-        "allemaal",
         "team",
         "teamgenoten",
-        "vrienden",
-        "everyone",
         "everybody",
         "others",
         "anderen",
         "friends",
         "squad",
         "crew",
-        "de rest",
         "the rest"
       ]
     },
     {
-      "word": "zeg",
+      "word": "say",
       "synonyms": [
         "zeggen",
-        "vertel",
         "vertellen",
         "tell",
-        "say",
-        "laat weten",
         "let know",
         "meld",
         "inform",
@@ -2226,33 +1625,27 @@
       ]
     },
     {
-      "word": "tijd",
+      "word": "time",
       "synonyms": [
-        "time",
         "klok",
         "clock",
-        "hoe laat",
         "what time"
       ]
     },
     {
-      "word": "nacht",
+      "word": "night",
       "synonyms": [
-        "night",
         "avond",
         "evening"
       ]
     },
     {
-      "word": "weer",
+      "word": "weather",
       "synonyms": [
-        "weather",
-        "regen",
         "regent",
         "rain",
         "raining",
         "storm",
-        "onweer",
         "onweert",
         "thunder",
         "sneeuw",
@@ -2266,11 +1659,9 @@
       ]
     },
     {
-      "word": "batterij",
+      "word": "battery",
       "synonyms": [
-        "battery",
         "accu",
-        "energie",
         "energy",
         "power",
         "stroom",
@@ -2280,27 +1671,23 @@
       ]
     },
     {
-      "word": "levens",
+      "word": "health",
       "synonyms": [
         "leven",
         "hartjes",
         "hart",
         "harten",
-        "health",
         "hp",
         "hearts",
-        "gezondheid",
         "levenspunten",
         "conditie"
       ]
     },
     {
-      "word": "honger",
+      "word": "hunger",
       "synonyms": [
-        "eten",
         "food",
         "hungry",
-        "hunger",
         "voedsel",
         "hongerig",
         "starving"
@@ -2309,12 +1696,8 @@
     {
       "word": "status",
       "synonyms": [
-        "statusrapport",
-        "status rapport",
-        "rapport",
         "report",
         "sitrep",
-        "systeemcheck",
         "systeem check",
         "systems check",
         "system check",
@@ -2324,10 +1707,8 @@
       ]
     },
     {
-      "word": "klaar",
+      "word": "ready",
       "synonyms": [
-        "ready",
-        "gereed",
         "beschikbaar",
         "available",
         "opgeladen",
@@ -2335,53 +1716,39 @@
       ]
     },
     {
-      "word": "wachttijd",
+      "word": "cooldown",
       "synonyms": [
-        "wachttijden",
-        "cooldown",
         "cooldowns",
         "oplaadtijd",
         "recharge"
       ]
     },
     {
-      "word": "escorte",
+      "word": "escort",
       "synonyms": [
-        "escort",
-        "lijfwacht",
         "bodyguard",
         "bodyguards",
-        "bescherming",
         "protection",
-        "beveiliging",
         "bewaking",
-        "escortedrones",
-        "escorte drones",
         "escort drones",
         "guard drones"
       ]
     },
     {
-      "word": "bescherm",
+      "word": "protect",
       "synonyms": [
         "beschermen",
-        "protect",
         "guard",
         "cover",
-        "verdedig",
         "verdedigen",
         "defend",
-        "bewaak",
-        "bewaken",
-        "dek"
+        "bewaken"
       ]
     },
     {
-      "word": "plek",
+      "word": "place",
       "synonyms": [
-        "plaats",
         "locatie",
-        "place",
         "spot",
         "location",
         "positie",
@@ -2391,52 +1758,40 @@
       ]
     },
     {
-      "word": "onthoud",
+      "word": "save",
       "synonyms": [
         "onthouden",
-        "bewaar",
         "bewaren",
-        "sla op",
         "opslaan",
-        "save",
         "remember",
         "noteer",
         "store"
       ]
     },
     {
-      "word": "noem",
+      "word": "call",
       "synonyms": [
         "noemen",
-        "call",
-        "name",
-        "heet"
+        "name"
       ]
     },
     {
-      "word": "sterfplek",
+      "word": "death point",
       "synonyms": [
         "sterfplaats",
-        "doodgegaan",
-        "dood gegaan",
-        "gestorven",
         "stierf",
         "died",
-        "death point",
         "deathpoint",
         "death location",
         "graf",
         "grave",
-        "spullen",
         "stuff",
-        "items",
         "loot"
       ]
     },
     {
-      "word": "coordinaten",
+      "word": "coordinates",
       "synonyms": [
-        "coordinates",
         "coords",
         "coordinaat",
         "xyz"
@@ -2451,23 +1806,20 @@
       ]
     },
     {
-      "word": "volgende",
+      "word": "next",
       "synonyms": [
-        "next",
         "next one"
       ]
     },
     {
-      "word": "bestemming",
+      "word": "destination",
       "synonyms": [
-        "destination",
         "eindpunt"
       ]
     },
     {
-      "word": "kaart",
+      "word": "map",
       "synonyms": [
-        "map",
         "plattegrond"
       ]
     },
@@ -2484,9 +1836,7 @@
       "word": "open",
       "synonyms": [
         "openen",
-        "toon",
         "tonen",
-        "laat zien",
         "show",
         "display",
         "bekijk",
@@ -2494,52 +1844,38 @@
       ]
     },
     {
-      "word": "annuleer",
+      "word": "cancel",
       "synonyms": [
         "annuleren",
-        "cancel",
-        "laat maar",
         "never mind",
         "nevermind",
-        "vergeet het",
         "forget it",
-        "niks",
         "nothing",
-        "niets",
         "nee",
         "no",
         "nope"
       ]
     },
     {
-      "word": "dank",
+      "word": "thanks",
       "synonyms": [
-        "dank je",
         "dankje",
-        "dank u",
-        "bedankt",
         "dankjewel",
         "dankuwel",
         "merci",
-        "thanks",
         "thank you",
         "thx",
         "cheers",
-        "goed gedaan",
         "well done",
         "good job"
       ]
     },
     {
-      "word": "hallo",
+      "word": "hello",
       "synonyms": [
-        "hoi",
         "hey",
         "hi",
-        "hello",
-        "goedemorgen",
         "goedemiddag",
-        "goedenavond",
         "goedendag",
         "good morning",
         "good evening",
@@ -2548,149 +1884,140 @@
       ]
     },
     {
-      "word": "mop",
+      "word": "joke",
       "synonyms": [
-        "grap",
         "grapje",
-        "joke",
         "mopje"
       ]
     },
     {
-      "word": "donker",
+      "word": "dark",
       "synonyms": [
-        "dark",
         "duister",
         "pikdonker"
       ]
     },
     {
-      "word": "zie",
+      "word": "everything",
       "synonyms": [
-        "zien",
-        "see"
-      ]
-    },
-    {
-      "word": "alles",
-      "synonyms": [
-        "everything",
-        "alle systemen",
         "all systems",
         "overal"
       ]
     },
     {
-      "word": "gevecht",
+      "word": "combat",
       "synonyms": [
-        "gevechtsmodus",
-        "combat",
         "combat mode",
         "battle",
         "battle mode",
-        "vechten",
         "fight",
         "oorlog",
         "war"
       ]
     },
     {
-      "word": "slapen",
+      "word": "sleep",
       "synonyms": [
-        "slaap",
-        "sleep",
-        "welterusten",
         "good night",
         "goodnight",
         "bed"
       ]
+    },
+    {
+      "word": "track",
+      "synonyms": [
+        "nummers",
+        "liedjes",
+        "song",
+        "songs",
+        "tracks",
+        "muziekje",
+        "plaatje",
+        "deuntje"
+      ]
+    },
+    {
+      "word": "music",
+      "synonyms": [
+        "muziekjes",
+        "tunes",
+        "spotify"
+      ]
+    },
+    {
+      "word": "play",
+      "synonyms": [
+        "spelen",
+        "afspelen",
+        "draaien",
+        "playing",
+        "opzetten"
+      ]
+    },
+    {
+      "word": "pause",
+      "synonyms": [
+        "pauzeren",
+        "paused",
+        "pauzeert"
+      ]
+    },
+    {
+      "word": "resume",
+      "synonyms": [
+        "hervat",
+        "hervatten",
+        "doorgaan",
+        "continue",
+        "unpause",
+        "verdergaan"
+      ]
     }
   ],
   "ignore": [
-    "de",
-    "het",
-    "een",
     "the",
     "a",
     "an",
     "please",
-    "alsjeblieft",
-    "alstublieft",
-    "aub",
-    "graag",
-    "eens",
-    "even",
-    "nu",
     "now",
     "edith",
-    "ik",
     "i",
     "im",
     "ive",
     "me",
-    "mij",
-    "mijn",
     "my",
-    "je",
-    "jij",
     "u",
     "you",
     "youre",
-    "we",
-    "wij",
-    "ons",
     "our",
     "us",
-    "zet",
-    "doe",
     "turn",
     "switch",
-    "hem",
-    "haar",
     "it",
     "its",
     "is",
-    "ben",
-    "bent",
-    "zijn",
-    "word",
-    "wordt",
     "am",
     "are",
     "be",
-    "er",
     "there",
     "theyre",
-    "ze",
     "they",
     "them",
-    "voor",
     "for",
-    "met",
     "with",
-    "van",
     "of",
-    "maar",
     "just",
-    "gewoon",
-    "oke",
     "ok",
     "okay",
-    "kun",
-    "kan",
-    "kunt",
     "can",
     "could",
     "would",
     "will",
-    "zou",
     "do",
     "does",
-    "snel",
     "quickly",
     "quick",
     "some",
-    "all",
-    "alle"
+    "all"
   ]
 }

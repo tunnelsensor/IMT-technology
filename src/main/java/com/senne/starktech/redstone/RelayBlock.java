@@ -3,6 +3,7 @@ package com.senne.starktech.redstone;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -87,6 +88,18 @@ public class RelayBlock extends Block {
         if (placer instanceof ServerPlayer player) {
             EdithRedstone.register(player, pos);
         }
+    }
+
+    /**
+     * Het kastje is weg: haal het ook uit de lijst van de brillen, anders blijft het
+     * naamplaatje boven een lege plek zweven.
+     */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel) {
+            EdithRedstone.forget(serverLevel, pos);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     /** Rechtsklikken: het scherm openen waarin je naam en groep instelt. */

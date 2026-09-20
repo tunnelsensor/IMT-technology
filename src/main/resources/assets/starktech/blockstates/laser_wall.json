@@ -1,7 +1,136 @@
 {
   "variants": {
-    "": {
-      "model": "starktech:block/laser_wall"
+    "facing=north,color=blue": {
+      "model": "starktech:block/laser_wall_blue"
+    },
+    "facing=south,color=blue": {
+      "model": "starktech:block/laser_wall_blue"
+    },
+    "facing=east,color=blue": {
+      "model": "starktech:block/laser_wall_blue",
+      "y": 90
+    },
+    "facing=west,color=blue": {
+      "model": "starktech:block/laser_wall_blue",
+      "y": 90
+    },
+    "facing=up,color=blue": {
+      "model": "starktech:block/laser_wall_blue",
+      "x": 90
+    },
+    "facing=down,color=blue": {
+      "model": "starktech:block/laser_wall_blue",
+      "x": 90
+    },
+    "facing=north,color=cyan": {
+      "model": "starktech:block/laser_wall_cyan"
+    },
+    "facing=south,color=cyan": {
+      "model": "starktech:block/laser_wall_cyan"
+    },
+    "facing=east,color=cyan": {
+      "model": "starktech:block/laser_wall_cyan",
+      "y": 90
+    },
+    "facing=west,color=cyan": {
+      "model": "starktech:block/laser_wall_cyan",
+      "y": 90
+    },
+    "facing=up,color=cyan": {
+      "model": "starktech:block/laser_wall_cyan",
+      "x": 90
+    },
+    "facing=down,color=cyan": {
+      "model": "starktech:block/laser_wall_cyan",
+      "x": 90
+    },
+    "facing=north,color=green": {
+      "model": "starktech:block/laser_wall_green"
+    },
+    "facing=south,color=green": {
+      "model": "starktech:block/laser_wall_green"
+    },
+    "facing=east,color=green": {
+      "model": "starktech:block/laser_wall_green",
+      "y": 90
+    },
+    "facing=west,color=green": {
+      "model": "starktech:block/laser_wall_green",
+      "y": 90
+    },
+    "facing=up,color=green": {
+      "model": "starktech:block/laser_wall_green",
+      "x": 90
+    },
+    "facing=down,color=green": {
+      "model": "starktech:block/laser_wall_green",
+      "x": 90
+    },
+    "facing=north,color=yellow": {
+      "model": "starktech:block/laser_wall_yellow"
+    },
+    "facing=south,color=yellow": {
+      "model": "starktech:block/laser_wall_yellow"
+    },
+    "facing=east,color=yellow": {
+      "model": "starktech:block/laser_wall_yellow",
+      "y": 90
+    },
+    "facing=west,color=yellow": {
+      "model": "starktech:block/laser_wall_yellow",
+      "y": 90
+    },
+    "facing=up,color=yellow": {
+      "model": "starktech:block/laser_wall_yellow",
+      "x": 90
+    },
+    "facing=down,color=yellow": {
+      "model": "starktech:block/laser_wall_yellow",
+      "x": 90
+    },
+    "facing=north,color=red": {
+      "model": "starktech:block/laser_wall_red"
+    },
+    "facing=south,color=red": {
+      "model": "starktech:block/laser_wall_red"
+    },
+    "facing=east,color=red": {
+      "model": "starktech:block/laser_wall_red",
+      "y": 90
+    },
+    "facing=west,color=red": {
+      "model": "starktech:block/laser_wall_red",
+      "y": 90
+    },
+    "facing=up,color=red": {
+      "model": "starktech:block/laser_wall_red",
+      "x": 90
+    },
+    "facing=down,color=red": {
+      "model": "starktech:block/laser_wall_red",
+      "x": 90
+    },
+    "facing=north,color=purple": {
+      "model": "starktech:block/laser_wall_purple"
+    },
+    "facing=south,color=purple": {
+      "model": "starktech:block/laser_wall_purple"
+    },
+    "facing=east,color=purple": {
+      "model": "starktech:block/laser_wall_purple",
+      "y": 90
+    },
+    "facing=west,color=purple": {
+      "model": "starktech:block/laser_wall_purple",
+      "y": 90
+    },
+    "facing=up,color=purple": {
+      "model": "starktech:block/laser_wall_purple",
+      "x": 90
+    },
+    "facing=down,color=purple": {
+      "model": "starktech:block/laser_wall_purple",
+      "x": 90
     }
   }
 }

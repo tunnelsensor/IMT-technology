@@ -29,6 +29,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.Util;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.monster.Enemy;
@@ -61,6 +62,9 @@ public class EdithHud implements LayeredDraw.Layer {
     private static final long BOOT_MILLIS = 1600;
 
     private final WorldProjection projection = new WorldProjection();
+    /** Het formaat van je scherm dit frame (voor de kompaspijlen aan de rand). */
+    private int lastWidth;
+    private int lastHeight;
 
     static int argb(int alpha, int rgb) {
         return (Mth.clamp(alpha, 0, 255) << 24) | (rgb & 0xFFFFFF);
@@ -94,7 +98,9 @@ public class EdithHud implements LayeredDraw.Layer {
             return;
         }
 
-        projection.begin(w, h);
+        lastWidth = w;
+        lastHeight = h;
+        projection.begin(w, h, deltaTracker.getGameTimeDeltaPartialTick(false));
         boolean powered = EdithData.getEnergy(glasses) > 0;
         // Is het ronde G-menu open? Dan verdwijnt alles wat plat op je scherm staat (het paneel
         // links, het kompas, meldingen...), zodat niets de cirkel in het midden in de weg zit.
@@ -380,7 +386,7 @@ public class EdithHud implements LayeredDraw.Layer {
             if (!(mc.level.getEntity(id) instanceof LivingEntity entity) || !entity.isAlive()) {
                 continue;
             }
-            WorldProjection.ScreenRect rect = projection.projectBox(entity.getBoundingBox());
+            WorldProjection.ScreenRect rect = projection.entityBox(entity);
             if (rect == null) {
                 continue;
             }
@@ -751,7 +757,7 @@ public class EdithHud implements LayeredDraw.Layer {
         ThreatLevel threat = ThreatLevel.of(target);
 
         // Beugels rond het doelwit in de wereld.
-        WorldProjection.ScreenRect rect = projection.projectBox(target.getBoundingBox());
+        WorldProjection.ScreenRect rect = projection.entityBox(target);
         if (rect != null) {
             int pad = 3;
             brackets(g, (int) rect.minX() - pad, (int) rect.minY() - pad, (int) rect.maxX() + pad, (int) rect.maxY() + pad, 5, argb(230, threat.color));
@@ -791,28 +797,85 @@ public class EdithHud implements LayeredDraw.Layer {
         }
     }
 
-    /** Rode markeringen boven vijanden (ook door muren heen). */
+    /**
+     * Wat jou aanvalt, in beeld gebracht.
+     *
+     * Staat de dreiging op je scherm, dan krijgt hij een rood pijltje boven zijn hoofd met de
+     * afstand erbij. Zit hij achter je of buiten beeld, dan verschijnt er een pijl aan de rand
+     * van het scherm die de kant op wijst waar hij vandaan komt - een kompas dus, zodat je
+     * meteen weet welke kant je op moet kijken.
+     */
     private void renderThreatMarkers(GuiGraphics g, Font font, Player player) {
-        List<LivingEntity> threats = EdithClientState.threats;
+        List<Entity> threats = EdithClientState.threats;
         int drawn = 0;
-        for (LivingEntity enemy : threats) {
+        for (Entity threat : threats) {
             if (drawn >= 16) {
                 break;
             }
-            Vec3 top = new Vec3(enemy.getX(), enemy.getBoundingBox().maxY + 0.4, enemy.getZ());
-            WorldProjection.ScreenPoint p = projection.project(top);
-            if (p == null || !projection.isOnScreen(p, 0)) {
-                continue;
-            }
-            int x = (int) p.x();
-            int y = (int) p.y();
-            // Een klein pijltje dat naar beneden wijst.
-            g.fill(x - 3, y - 4, x + 4, y - 3, argb(230, RED));
-            g.fill(x - 2, y - 3, x + 3, y - 2, argb(230, RED));
-            g.fill(x - 1, y - 2, x + 2, y - 1, argb(230, RED));
-            g.fill(x, y - 1, x + 1, y, argb(230, RED));
-            smallText(g, font, Math.round(player.distanceTo(enemy)) + "m", x, y - 11, argb(220, RED));
             drawn++;
+            Vec3 at = projection.drawnPosition(threat);
+            Vec3 top = new Vec3(at.x, at.y + threat.getBbHeight() + 0.4, at.z);
+            WorldProjection.ScreenPoint point = projection.project(top);
+            if (point != null && projection.isOnScreen(point, 0)) {
+                markThreatOnScreen(g, font, player, threat, point);
+            } else {
+                markThreatOffScreen(g, player, at);
+            }
+        }
+    }
+
+    /** Een pijltje boven het doelwit, met hoe ver het van je af is. */
+    private void markThreatOnScreen(GuiGraphics g, Font font, Player player, Entity threat,
+                                    WorldProjection.ScreenPoint point) {
+        int x = (int) point.x();
+        int y = (int) point.y();
+        g.fill(x - 3, y - 4, x + 4, y - 3, argb(230, RED));
+        g.fill(x - 2, y - 3, x + 3, y - 2, argb(230, RED));
+        g.fill(x - 1, y - 2, x + 2, y - 1, argb(230, RED));
+        g.fill(x, y - 1, x + 1, y, argb(230, RED));
+        smallText(g, font, Math.round(player.distanceTo(threat)) + "m", x, y - 11, argb(220, RED));
+    }
+
+    /**
+     * Een kompaspijl aan de rand van het scherm: hij wijst naar de dreiging die je niet ziet.
+     *
+     * We rekenen de hoek uit tussen de kant waar jij naar kijkt en de kant waar de dreiging
+     * vandaan komt. Die hoek zetten we op een cirkel rond het midden van je scherm, en daar
+     * tekenen we een driehoekje dat naar buiten wijst.
+     */
+    private void markThreatOffScreen(GuiGraphics g, Player player, Vec3 threatPos) {
+        double dx = threatPos.x - player.getX();
+        double dz = threatPos.z - player.getZ();
+        if (dx * dx + dz * dz < 0.01) {
+            return;
+        }
+        // Hoek van de dreiging ten opzichte van waar je naartoe kijkt (0 = recht vooruit).
+        float toThreat = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0f;
+        float relative = Mth.wrapDegrees(toThreat - player.getYRot()) * Mth.DEG_TO_RAD;
+
+        int centerX = lastWidth / 2;
+        int centerY = lastHeight / 2;
+        int radius = Math.min(lastWidth, lastHeight) / 2 - 24;
+        // Rechts van je = positieve x op het scherm, vóór je = omhoog.
+        int x = centerX + (int) (Math.sin(relative) * radius);
+        int y = centerY - (int) (Math.cos(relative) * radius);
+        arrowAt(g, x, y, relative, argb(235, RED));
+    }
+
+    /** Een driehoekje op (x, y) dat naar buiten wijst, weg van het midden. */
+    private void arrowAt(GuiGraphics g, int x, int y, float angle, int colour) {
+        // Zeven laagjes die steeds smaller worden: samen een pijl van het midden af gezien.
+        double outX = Math.sin(angle);
+        double outY = -Math.cos(angle);
+        for (int step = 0; step < 7; step++) {
+            int half = 3 - step / 2;
+            int px = x + (int) Math.round(outX * step);
+            int py = y + (int) Math.round(outY * step);
+            // Dwars op de richting uitsmeren, zodat de punt naar buiten wijst.
+            int sx = (int) Math.round(-outY * half);
+            int sy = (int) Math.round(outX * half);
+            g.fill(px - Math.abs(sx) - 1, py - Math.abs(sy) - 1,
+                    px + Math.abs(sx) + 1, py + Math.abs(sy) + 1, colour);
         }
     }
 

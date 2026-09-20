@@ -80,6 +80,52 @@ public final class EdithRedstone {
         EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
     }
 
+    /**
+     * Ruimt relais op die er niet meer staan.
+     *
+     * forget() hieronder vangt het slopen zelf op, maar niet alles: wie op dat moment uitgelogd
+     * was, houdt zijn relais, en kastjes die al weg waren voordat dit bestond staan er ook nog
+     * in. Daarom kijken we af en toe na of het kastje er echt nog staat. Alleen in stukken
+     * wereld die geladen zijn: wat we niet kunnen zien, laten we met rust.
+     */
+    public static void pruneGhosts(ServerPlayer player) {
+        EdithRelays data = player.getData(ModAttachments.RELAYS);
+        ServerLevel level = player.serverLevel();
+        for (int i = data.relays().size() - 1; i >= 0; i--) {
+            Relay relay = data.relays().get(i);
+            if (relay.dimension() == level.dimension()
+                    && level.hasChunkAt(relay.pos())
+                    && !isSwitchable(level.getBlockState(relay.pos()))) {
+                data = data.without(i);
+            }
+        }
+        if (data != player.getData(ModAttachments.RELAYS)) {
+            player.setData(ModAttachments.RELAYS, data);
+        }
+    }
+
+    /**
+     * Staat hier iets dat E.D.I.T.H. kan schakelen? Een relais, maar ook een laserzender of
+     * een schildkoepel: die meld je op dezelfde manier aan.
+     */
+    public static boolean isSwitchable(BlockState state) {
+        return state.getBlock() instanceof RelayBlock || state.getBlock() instanceof EdithSwitchable;
+    }
+
+    /**
+     * Het blok is weg (gesloopt, opgeblazen, weggeduwd). Dan hoort het ook uit de lijst van
+     * iedereen die het had aangemeld: anders blijft zijn naamplaatje in de lucht hangen.
+     */
+    public static void forget(ServerLevel level, BlockPos pos) {
+        for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            EdithRelays data = player.getData(ModAttachments.RELAYS);
+            int index = data.indexAt(level.dimension(), pos);
+            if (index >= 0) {
+                player.setData(ModAttachments.RELAYS, data.without(index));
+            }
+        }
+    }
+
     /** Rechtsklikken op een relais: het scherm openen waarin je naam en groep instelt. */
     public static void openEditor(ServerPlayer player, BlockPos pos) {
         ItemStack glasses = EdithServer.authorizedGlasses(player);

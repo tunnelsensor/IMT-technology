@@ -33,6 +33,16 @@ GOLD = (222, 177, 60, 255)
 GOLD_DARK = (150, 110, 30, 255)
 RED = (200, 40, 40, 255)
 
+# De kleuren die je een rayshield kunt geven (zie ShieldColor in de mod).
+RAYSHIELD_COLORS = {
+    "blue": (60, 140, 255),
+    "cyan": (60, 220, 240),
+    "green": (70, 230, 120),
+    "yellow": (245, 220, 70),
+    "red": (235, 70, 60),
+    "purple": (190, 90, 245),
+}
+
 
 def img(w, h, fill=CLEAR):
     return Image.new("RGBA", (w, h), fill)
@@ -444,6 +454,111 @@ def shield_textures():
     save(wall, "block/laser_wall.png")
 
 
+def rayshield_walls():
+    """
+    Het energieveld van de rayshield, in elke kleur en met een scanlijn die omhoog loopt.
+
+    Elke texture is 16 breed en 16*FRAMES hoog: Minecraft speelt die frames onder elkaar af
+    als animatie (zie het .mcmeta-bestand ernaast). Zo lopen de lijnen echt, net als de ray
+    shields uit Star Wars.
+    """
+    frames = 8
+    for name, (r, g, b) in RAYSHIELD_COLORS.items():
+        sheet = img(16, 16 * frames)
+        d = ImageDraw.Draw(sheet)
+        for frame in range(frames):
+            top = frame * 16
+            # Grondtoon: flink doorzichtig, zodat je er doorheen kijkt.
+            d.rectangle([0, top, 15, top + 15], fill=(r, g, b, 70))
+            # Vaste, rustige lijnen in het veld.
+            for y in range(0, 16, 4):
+                d.line([0, top + y, 15, top + y], fill=(min(255, r + 60), min(255, g + 60), min(255, b + 60), 110))
+            # De scanlijn die per frame een stukje omhoog schuift (16 / frames = 2 pixels).
+            scan = 15 - (frame * 16 // frames)
+            d.line([0, top + scan, 15, top + scan], fill=(255, 255, 255, 190))
+            if scan > 0:
+                d.line([0, top + scan - 1, 15, top + scan - 1],
+                       fill=(min(255, r + 120), min(255, g + 120), min(255, b + 120), 140))
+            # Randen: een helderdere omlijsting, alsof het veld ergens in gespannen staat.
+            d.rectangle([0, top, 15, top + 15], outline=(min(255, r + 90), min(255, g + 90), min(255, b + 90), 150))
+        save(sheet, "block/laser_wall_%s.png" % name)
+
+
+def charger_textures():
+    """
+    Het zonnepaneel en de warmtegenerator, plus het scherm dat ze delen.
+
+    Het paneel is een donkerblauw raster met lichtblauwe cellen; de generator is een
+    metalen kast met een gloeiend rooster aan de voorkant.
+    """
+    # --- Zonnepaneel: bovenkant (de cellen) ---
+    top = img(16, 16, (18, 26, 40, 255))
+    d = ImageDraw.Draw(top)
+    for cx in range(1, 15, 4):
+        for cz in range(1, 15, 4):
+            d.rectangle([cx, cz, cx + 2, cz + 2], fill=(40, 90, 170, 255))
+            px(top, [(cx, cz)], (110, 180, 255, 255))
+    d.rectangle([0, 0, 15, 15], outline=METAL_3)
+    save(top, "block/solar_panel_top.png")
+
+    # --- Zonnepaneel: zijkant (een dunne rand) ---
+    side = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 5], fill=METAL_1, outline=METAL_DARK)
+    d.rectangle([0, 6, 15, 15], fill=(0, 0, 0, 0))
+    px(side, [(3, 2), (8, 2), (12, 2)], CYAN_DIM)
+    save(side, "block/solar_panel_side.png")
+
+    # --- Warmtegenerator: zijkant ---
+    gen = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(gen)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.rectangle([2, 2, 13, 6], fill=METAL_1, outline=METAL_3)
+    for y in range(9, 15, 2):
+        d.line([2, y, 13, y], fill=(120, 60, 30, 255))
+    save(gen, "block/heat_generator_side.png")
+
+    # --- Warmtegenerator: voorkant met gloeiend rooster ---
+    front = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(front)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.rectangle([3, 3, 12, 12], fill=(60, 20, 10, 255), outline=METAL_3)
+    for y in range(4, 12, 2):
+        d.line([4, y, 11, y], fill=(255, 140, 40, 255))
+        d.line([4, y + 1, 11, y + 1], fill=(180, 70, 20, 255))
+    save(front, "block/heat_generator_front.png")
+
+    # --- Warmtegenerator: bovenkant ---
+    gtop = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(gtop)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.ellipse([5, 5, 10, 10], fill=(90, 40, 20, 255), outline=METAL_3)
+    px(gtop, [(7, 7), (8, 8)], (255, 160, 60, 255))
+    save(gtop, "block/heat_generator_top.png")
+
+    # --- Het scherm dat beide apparaten delen ---
+    gui = img(256, 256, CLEAR)
+    d = ImageDraw.Draw(gui)
+    d.rectangle([0, 0, 175, 165], fill=(28, 34, 40, 255), outline=(12, 16, 20, 255))
+    # De balk links (wat het apparaat zelf heeft).
+    d.rectangle([9, 16, 20, 69], fill=(14, 18, 22, 255), outline=(60, 72, 82, 255))
+    # Het bril-slot en het brandstof-slot.
+    for (sx, sy) in ((79, 24), (79, 52)):
+        d.rectangle([sx, sy, sx + 17, sy + 17], fill=(20, 26, 32, 255), outline=(70, 84, 96, 255))
+    # De balk onder de bril.
+    d.rectangle([61, 46, 114, 51], fill=(14, 18, 22, 255))
+    # De vakjes van je eigen inventaris.
+    for row in range(3):
+        for col in range(9):
+            x0 = 7 + col * 18
+            y0 = 83 + row * 18
+            d.rectangle([x0, y0, x0 + 17, y0 + 17], fill=(20, 26, 32, 255), outline=(70, 84, 96, 255))
+    for col in range(9):
+        x0 = 7 + col * 18
+        d.rectangle([x0, 141, x0 + 17, 158], fill=(20, 26, 32, 255), outline=(70, 84, 96, 255))
+    save(gui, "gui/charger.png")
+
+
 def emp_item():
     """De E.M.P.-zender: een klein kastje met een antenne en een blauwe puls."""
     im = img(16, 16)
@@ -473,4 +588,6 @@ if __name__ == "__main__":
     drone_textures()
     relay_textures()
     shield_textures()
+    rayshield_walls()
+    charger_textures()
     emp_item()

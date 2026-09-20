@@ -1,6 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.station.ChargerMenu;
 import com.senne.starktech.station.ChargingStationMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.flag.FeatureFlags;
@@ -18,4 +19,8 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<ChargingStationMenu>> CHARGING_STATION =
             MENUS.register("charging_station", () -> new MenuType<>(ChargingStationMenu::new, FeatureFlags.DEFAULT_FLAGS));
+
+    /** Het scherm van het zonnepaneel en de warmtegenerator (ze delen er een). */
+    public static final DeferredHolder<MenuType<?>, MenuType<ChargerMenu>> CHARGER =
+            MENUS.register("charger", () -> new MenuType<>(ChargerMenu::new, FeatureFlags.DEFAULT_FLAGS));
 }

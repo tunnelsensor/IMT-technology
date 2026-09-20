@@ -93,6 +93,16 @@ public final class DroneCamera {
         if (!control) {
             return;
         }
+        sendControls(mc, player);
+    }
+
+    /**
+     * Stuurt je toetsen en kijkrichting naar de server, die de drone daarop laat vliegen.
+     *
+     * Dit gebruiken we twee keer: voor de verkenningsdrone waar je doorheen kijkt, en voor
+     * de transportdrone waar je zelf onder hangt (zie EdithClientEvents).
+     */
+    public static void sendControls(Minecraft mc, LocalPlayer player) {
         Options options = mc.options;
         boolean inGame = mc.screen == null;
         float forward = inGame ? axis(options.keyUp.isDown(), options.keyDown.isDown()) : 0;

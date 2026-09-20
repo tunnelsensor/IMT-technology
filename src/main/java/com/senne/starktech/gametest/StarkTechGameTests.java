@@ -8,26 +8,37 @@ import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.EdithThreats;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.WaypointActionPayload;
 import com.senne.starktech.registry.ModArmorMaterials;
+import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
+import com.senne.starktech.shield.LaserEmitterBlock;
+import com.senne.starktech.shield.LaserWallBlock;
+import com.senne.starktech.shield.ShieldColor;
 import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.transport.EdithTransport;
+import com.senne.starktech.client.music.MusicQuery;
 import com.senne.starktech.client.voice.VoiceAction;
 import com.senne.starktech.client.voice.VoiceDictionary;
 import com.senne.starktech.client.voice.VoiceMatcher;
+import com.senne.starktech.station.ChargerBlockEntity;
+import com.senne.starktech.station.HeatGeneratorBlockEntity;
+import com.senne.starktech.station.ChargerMenu;
 import com.senne.starktech.station.ChargingStationBlockEntity;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -35,9 +46,11 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -74,8 +87,12 @@ public final class StarkTechGameTests {
 
     // Posities in de Stark Tower (zie tools/generate_structure.py). In een gametest ligt de
     // structuur één blok boven het "structuurblok", dus tellen we bij y altijd 1 op.
-    private static final BlockPos STATION_POS = new BlockPos(7, 2, 12);
-    private static final BlockPos CHEST_POS = new BlockPos(3, 2, 12);
+    // Plekken in de Stark Tower (zie tools/generate_structure.py; in de test ligt alles
+    // één blok hoger dan in het bouwscript, want de structuur staat op de testvloer).
+    private static final BlockPos STATION_POS = new BlockPos(20, 2, 5);
+    private static final BlockPos CHEST_POS = new BlockPos(5, 2, 32);
+    /** De kluiskist bovenin, met de E.D.I.T.H.-bril erin. */
+    private static final BlockPos VAULT_CHEST_POS = new BlockPos(20, 81, 20);
 
     /** De lege test-arena (zie tools/generate_test_structure.py). */
     private static final String ARENA = "empty";
@@ -100,6 +117,16 @@ public final class StarkTechGameTests {
     @GameTest(template = ARENA, timeoutTicks = 2400, batch = "spy")
     public static void spy_drone(GameTestHelper helper) {
         spyDrone(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "transport")
+    public static void transport_ride(GameTestHelper helper) {
+        transportRide(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "transport")
+    public static void transport_landing(GameTestHelper helper) {
+        transportLanding(helper);
     }
 
     @GameTest(template = ARENA, timeoutTicks = 300, batch = "satellite")
@@ -156,19 +183,258 @@ public final class StarkTechGameTests {
         VoiceMatcher matcher = new VoiceMatcher(dictionary);
 
         // Zin -> verwachte actie, en (optioneel) wat er ingevuld moet worden.
-        checkVoice(matcher, "stuur de drones", VoiceAction.LAUNCH_DRONES, null);
+        checkVoice(matcher, "send the drones", VoiceAction.LAUNCH_DRONES, null);
         checkVoice(matcher, "stand down", VoiceAction.STAND_DOWN, null);
-        checkVoice(matcher, "bespioneer hem", VoiceAction.SPY_DRONE, null);
-        checkVoice(matcher, "til me op", VoiceAction.TRANSPORT_RIDE, null);
-        // "naar thuis" is bewust een eigen commando (naar huis), dus nemen we een andere plek:
-        checkVoice(matcher, "breng me naar de diamantmijn", VoiceAction.NAVIGATE_TO, "diamantmijn");
-        // Invulplek in het MIDDEN van de zin (dit kon eerst niet). We nemen bewust namen die
-        // niet op een bestaand commando lijken: "licht aan" is bijvoorbeeld al nachtzicht.
-        checkVoice(matcher, "zet de voordeur aan", VoiceAction.REDSTONE_ON, "voordeur");
-        checkVoice(matcher, "doe de voordeur uit", VoiceAction.REDSTONE_OFF, "voordeur");
+        checkVoice(matcher, "spy on him", VoiceAction.SPY_DRONE, null);
+        checkVoice(matcher, "pick me up", VoiceAction.TRANSPORT_RIDE, null);
+        checkVoice(matcher, "navigate to the diamond mine", VoiceAction.NAVIGATE_TO, "diamond mine");
+        // Invulplek in het MIDDEN van de zin (dit kon eerst niet).
         checkVoice(matcher, "turn on the front door", VoiceAction.REDSTONE_ON, "front door");
-        checkVoice(matcher, "geef de val een puls", VoiceAction.REDSTONE_PULSE, "val");
+        checkVoice(matcher, "turn off the front door", VoiceAction.REDSTONE_OFF, "front door");
+        checkVoice(matcher, "pulse the trap", VoiceAction.REDSTONE_PULSE, "trap");
+        // Muziek. "turn on the music" leek vroeger op "turn on {thing}" en probeerde dus een
+        // redstone-relais met de naam "music" aan te zetten.
+        checkVoice(matcher, "pause", VoiceAction.MUSIC_PAUSE, null);
+        checkVoice(matcher, "turn on the music", VoiceAction.MUSIC_RESUME, null);
+        checkVoice(matcher, "resume the music", VoiceAction.MUSIC_RESUME, null);
+        checkVoice(matcher, "next song", VoiceAction.MUSIC_NEXT, null);
+        checkVoice(matcher, "what song is this", VoiceAction.MUSIC_WHAT, null);
+        checkVoice(matcher, "play the song thunderstruck", VoiceAction.MUSIC_PLAY, "thunderstruck");
+        // Hier hoort "something by queen" uit te komen; MusicQuery maakt daar artist:"queen"
+        // van (zie de test music_query).
+        checkVoice(matcher, "play something by queen", VoiceAction.MUSIC_PLAY, "something by queen");
         helper.succeed();
+    }
+
+    /**
+     * Wat we van jouw zin maken voor Spotify. Met track:/artist: vindt Spotify het echte
+     * nummer; zonder die filters kreeg je zomaar een cover met dezelfde woorden in de titel.
+     */
+    /** Waypoints kun je niet alleen weggooien, maar ook een andere naam en kleur geven. */
+    /**
+     * Een rayshield klapt niet in één keer aan: hij schuift dicht vanaf de uiteinden naar het
+     * midden, in de kleur die de zender heeft.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "voice")
+    public static void rayshield_slides_shut(GameTestHelper helper) {
+        BlockPos emitter = new BlockPos(1, 3, 1);
+        // Twee zenders tegenover elkaar, met ruimte ertussen.
+        helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.EAST)
+                .setValue(LaserEmitterBlock.COLOR, ShieldColor.GREEN));
+        BlockPos far = emitter.east(5);
+        helper.setBlock(far, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.WEST));
+        BlockPos abs = helper.absolutePos(emitter);
+        ((LaserEmitterBlock) ModBlocks.LASER_EMITTER.get())
+                .setSwitched(helper.getLevel(), abs, helper.getLevel().getBlockState(abs), true);
+
+        // Meteen daarna mag hij nog niet dicht zijn: hij hoort te schuiven.
+        int immediately = countWall(helper, emitter, 4);
+        if (immediately == 4) {
+            throw new GameTestAssertException("Het veld stond meteen helemaal dicht (geen animatie)");
+        }
+        helper.succeedWhen(() -> {
+            if (countWall(helper, emitter, 4) < 4) {
+                throw new GameTestAssertException("Het veld is nog niet dicht");
+            }
+            BlockState wall = helper.getBlockState(emitter.east(1));
+            if (wall.getValue(LaserWallBlock.COLOR) != ShieldColor.GREEN) {
+                throw new GameTestAssertException("Verkeerde kleur: " + wall.getValue(LaserWallBlock.COLOR));
+            }
+        });
+    }
+
+    /** Hoeveel van de plekken voor de zender zijn al laserwand? */
+    private static int countWall(GameTestHelper helper, BlockPos emitter, int length) {
+        int count = 0;
+        for (int i = 1; i <= length; i++) {
+            if (helper.getBlockState(emitter.east(i)).is(ModBlocks.LASER_WALL.get())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * De dreigingsscan markeert alleen wat jou echt aanvalt. Een zombie die daar wat staat
+     * hoort er niet bij; een zombie die op jou jaagt wel.
+     */
+    /**
+     * De warmtegenerator laadt je bril op met brandstof, en sneller als er hitte omheen staat.
+     * (Het zonnepaneel is lastiger te testen: dat hangt van de stand van de zon af.)
+     */
+    /**
+     * Het scherm van een lader moet meelopen terwijl het openstaat: je hoeft het niet te
+     * sluiten en opnieuw te openen om te zien hoeveel erin zit.
+     *
+     * Minecraft stuurt die getallen alleen door als ze in de "remote" kopie van het menu
+     * veranderen. Precies dat controleren we hier.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "voice")
+    public static void charger_screen_updates_live(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(3, 3, 3);
+        helper.setBlock(pos, ModBlocks.HEAT_GENERATOR.get());
+        if (!(helper.getBlockEntity(pos) instanceof HeatGeneratorBlockEntity generator)) {
+            throw new GameTestAssertException("De warmtegenerator heeft geen block entity");
+        }
+        generator.setItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(Items.COAL, 8));
+
+        ServerPlayer player = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        player.openMenu(generator);
+        if (!(player.containerMenu instanceof ChargerMenu menu)) {
+            throw new GameTestAssertException("Het scherm van de lader ging niet open");
+        }
+        // Even laten draaien, zodat er energie in komt.
+        for (int i = 0; i < 20; i++) {
+            generator.serverTick(helper.getLevel(), helper.absolutePos(pos), helper.getBlockState(pos));
+        }
+        menu.broadcastChanges();
+        int remote = remoteDataSlot(menu, ChargerBlockEntity.DATA_ENERGY);
+        if (remote != menu.getEnergy() || remote <= 0) {
+            throw new GameTestAssertException("Jouw kant kreeg " + remote
+                    + " door terwijl het apparaat op " + menu.getEnergy() + " staat");
+        }
+        // En de teller voor "hoeveel al geproduceerd" loopt ook mee.
+        if (menu.getTotalProduced() <= 0) {
+            throw new GameTestAssertException("De productieteller staat nog op nul");
+        }
+        player.closeContainer();
+        helper.succeed();
+    }
+
+    /** Wat er volgens het menu al naar de speler is gestuurd (de "remote" kopie). */
+    private static int remoteDataSlot(AbstractContainerMenu menu, int index) {
+        try {
+            java.lang.reflect.Field field = AbstractContainerMenu.class.getDeclaredField("remoteDataSlots");
+            field.setAccessible(true);
+            return ((it.unimi.dsi.fastutil.ints.IntList) field.get(menu)).getInt(index);
+        } catch (ReflectiveOperationException e) {
+            throw new GameTestAssertException("Kan de verstuurde waarden niet lezen: " + e);
+        }
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "voice")
+    public static void heat_generator_charges(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 3, 2);
+        helper.setBlock(pos, ModBlocks.HEAT_GENERATOR.get());
+        if (!(helper.getBlockEntity(pos) instanceof HeatGeneratorBlockEntity generator)) {
+            throw new GameTestAssertException("De warmtegenerator heeft geen block entity");
+        }
+        // Een lege bril en een stuk kolen erin.
+        ItemStack glasses = new ItemStack(ModItems.EDITH_GLASSES.get());
+        EdithData.setEnergy(glasses, 0);
+        generator.setItem(ChargerBlockEntity.SLOT_GLASSES, glasses);
+        generator.setItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(Items.COAL, 4));
+        helper.succeedWhen(() -> {
+            generator.serverTick(helper.getLevel(), helper.absolutePos(pos), helper.getBlockState(pos));
+            ItemStack inside = generator.getItem(ChargerBlockEntity.SLOT_GLASSES);
+            if (EdithData.getEnergy(inside) <= 0) {
+                throw new GameTestAssertException("De bril wordt niet opgeladen");
+            }
+        });
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void threats_only_attackers(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        Husk bystander = spawnDummyEnemy(helper, new BlockPos(5, 3, 1));
+        Husk hunter = spawnDummyEnemy(helper, new BlockPos(7, 3, 1));
+
+        if (!EdithThreats.of(owner, 32).isEmpty()) {
+            throw new GameTestAssertException("Er staat niets te doen, maar er is wel een dreiging gemeld");
+        }
+        // Eentje kiest jou als doelwit: die hoort er nu wel bij.
+        hunter.setTarget(owner);
+        List<LivingEntity> threats = EdithThreats.of(owner, 32);
+        if (threats.size() != 1 || threats.getFirst() != hunter) {
+            throw new GameTestAssertException("Verwacht alleen de aanvaller, kreeg: " + threats);
+        }
+        if (threats.contains(bystander)) {
+            throw new GameTestAssertException("De omstander werd ook gemarkeerd");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void waypoint_edit(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        EdithNavigation.handleWaypointAction(owner,
+                new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, "Mijn plek", Waypoint.COLORS[0]));
+        if (owner.getData(ModAttachments.WAYPOINTS).waypoints().isEmpty()) {
+            throw new GameTestAssertException("Het waypoint werd niet opgeslagen");
+        }
+        // Naam en kleur wijzigen; de plek moet blijven waar hij was.
+        BlockPos where = owner.getData(ModAttachments.WAYPOINTS).waypoints().getFirst().pos();
+        EdithNavigation.handleWaypointAction(owner,
+                new WaypointActionPayload(WaypointActionPayload.Op.RENAME, 0, "Basis", Waypoint.COLORS[3]));
+        Waypoint changed = owner.getData(ModAttachments.WAYPOINTS).waypoints().getFirst();
+        if (!changed.name().equals("Basis")) {
+            throw new GameTestAssertException("Naam werd niet gewijzigd: " + changed.name());
+        }
+        if (changed.color() != Waypoint.COLORS[3]) {
+            throw new GameTestAssertException("Kleur werd niet gewijzigd");
+        }
+        if (!changed.pos().equals(where)) {
+            throw new GameTestAssertException("De plek verschoof: " + changed.pos());
+        }
+        EdithNavigation.handleWaypointAction(owner,
+                new WaypointActionPayload(WaypointActionPayload.Op.REMOVE, 0, "", 0));
+        if (!owner.getData(ModAttachments.WAYPOINTS).waypoints().isEmpty()) {
+            throw new GameTestAssertException("Het waypoint werd niet weggegooid");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void relay_forgotten_when_broken(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        BlockPos relayPos = new BlockPos(3, 2, 3);
+        helper.setBlock(relayPos, ModBlocks.RELAY.get());
+        EdithRedstone.register(owner, helper.absolutePos(relayPos));
+        if (owner.getData(ModAttachments.RELAYS).relays().isEmpty()) {
+            throw new GameTestAssertException("Het relais kwam niet in de lijst van de bril");
+        }
+        // Slopen: dan hoort hij ook uit het redstone-scherm te verdwijnen.
+        helper.setBlock(relayPos, Blocks.AIR);
+        if (!owner.getData(ModAttachments.RELAYS).relays().isEmpty()) {
+            throw new GameTestAssertException("Het gesloopte relais staat nog in de lijst");
+        }
+
+        // En het opruimen achteraf, voor relais die verdwenen terwijl je uitgelogd was
+        // (of die al in je lijst stonden van voor deze opruiming).
+        EdithRedstone.register(owner, helper.absolutePos(new BlockPos(4, 2, 4))); // daar staat niets
+        if (owner.getData(ModAttachments.RELAYS).relays().isEmpty()) {
+            throw new GameTestAssertException("Het spook-relais kwam niet in de lijst");
+        }
+        EdithRedstone.pruneGhosts(owner);
+        if (!owner.getData(ModAttachments.RELAYS).relays().isEmpty()) {
+            throw new GameTestAssertException("Een relais zonder kastje bleef in de lijst staan");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
+    public static void music_query(GameTestHelper helper) {
+        checkQuery("thunderstruck van ac dc", "track:\"thunderstruck\" artist:\"ac dc\"");
+        checkQuery("thunderstruck by acdc", "track:\"thunderstruck\" artist:\"acdc\"");
+        checkQuery("het nummer thunderstruck", "thunderstruck");
+        checkQuery("iets van queen", "artist:\"queen\"");
+        checkQuery("muziek van queen", "artist:\"queen\"");
+        checkQuery("thunderstruck", "thunderstruck");
+        checkQuery("muziek", "");
+        // De terugval als track:/artist: niets oplevert ("man van staal" is gewoon een titel).
+        if (!MusicQuery.plain("man van staal").equals("man staal")) {
+            throw new GameTestAssertException("Terugval klopt niet: " + MusicQuery.plain("man van staal"));
+        }
+        helper.succeed();
+    }
+
+    private static void checkQuery(String spoken, String expected) {
+        String got = MusicQuery.build(spoken);
+        if (!got.equals(expected)) {
+            throw new GameTestAssertException("\"" + spoken + "\" werd \"" + got + "\" in plaats van \"" + expected + "\"");
+        }
     }
 
     /** Controleert of een zin het juiste commando (en de juiste waarde) oplevert. */
@@ -345,6 +611,96 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Zelf vliegen: een drone pakt je op, en hij vliegt de kant op die jij stuurt.
+     * Dit test de serverkant; jouw spel hoort elke tick de besturing door te sturen.
+     */
+    private static void transportRide(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        owner.setYRot(-90); // naar het oosten kijken (+X)
+        AtomicBoolean started = new AtomicBoolean();
+        whenEntityTicking(helper, List.of(owner.blockPosition(), owner.blockPosition().east(12)), () -> {
+            if (started.getAndSet(true)) {
+                return;
+            }
+            EdithTransport.startRide(owner, EdithData.getWornGlasses(owner), false);
+            StarkDroneEntity carrier = EdithTransport.carrierOf(owner);
+            if (carrier == null) {
+                throw new GameTestAssertException("Er kwam geen transportdrone onder je hangen");
+            }
+            UUID carrierId = carrier.getUUID();
+            double startX = carrier.getX();
+            helper.succeedWhen(() -> {
+                // Elke tick "vooruit", precies wat het spel van de speler hoort te sturen.
+                EdithServer.handleDroneControl(owner, new DroneControlPayload(1, 0, 0, false, -90, 0));
+                if (!(helper.getLevel().getEntity(carrierId) instanceof StarkDroneEntity drone)) {
+                    throw new GameTestAssertException("Transportdrone verdwenen");
+                }
+                if (drone.getX() - startX < 5) {
+                    throw new GameTestAssertException("Drone vloog niet vooruit: " + (drone.getX() - startX));
+                }
+            });
+        });
+    }
+
+    /**
+     * Landen: de drone zakt met je mee en zet je op de grond. Vroeger liet hij je vallen
+     * met zweefval; daar sta je dan seconden later pas mee beneden.
+     */
+    private static void transportLanding(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        AtomicBoolean started = new AtomicBoolean();
+        AtomicBoolean landing = new AtomicBoolean();
+        whenEntityTicking(helper, List.of(owner.blockPosition()), () -> {
+            if (started.getAndSet(true)) {
+                return;
+            }
+            EdithTransport.startRide(owner, EdithData.getWornGlasses(owner), false);
+            if (EdithTransport.carrierOf(owner) == null) {
+                throw new GameTestAssertException("Er kwam geen transportdrone onder je hangen");
+            }
+            helper.succeedWhen(() -> {
+                // De batterij vol houden: anders laat de drone je halverwege los omdat de
+                // energie op is, en dan meten we het landen niet meer.
+                ItemStack worn = EdithData.getWornGlasses(owner);
+                EdithData.setEnergy(worn, EdithData.getMaxEnergy(worn));
+                StarkDroneEntity carrier = EdithTransport.carrierOf(owner);
+                if (!landing.get()) {
+                    if (carrier == null) {
+                        throw new GameTestAssertException("De rit stopte uit zichzelf");
+                    }
+                    if (EdithTransport.distanceToGround(owner) < 8) {
+                        // Omhoog (spatie), tot we hoog genoeg hangen om te kunnen landen.
+                        EdithServer.handleDroneControl(owner, new DroneControlPayload(0, 0, 1, false, 0, 0));
+                        throw new GameTestAssertException("Nog aan het stijgen");
+                    }
+                    landing.set(true);
+                    owner.setNoGravity(false); // vanaf nu telt de zwaartekracht mee
+                    carrier.beginLanding(); // wat sluipen doet (zie EdithTransport.onDismount)
+                    throw new GameTestAssertException("Landen net begonnen");
+                }
+                if (carrier != null) {
+                    throw new GameTestAssertException("Hangt nog steeds onder de drone");
+                }
+                if (owner.hasEffect(MobEffects.SLOW_FALLING)) {
+                    throw new GameTestAssertException("Je kreeg zweefval in plaats van neergezet te worden");
+                }
+                // De drone heeft je losgelaten. Dan moet je zakken, niet vallen: de mod zet
+                // je in de zachte landing en houdt je valafstand op nul.
+                //
+                // Dat je daarna ook echt rustig naar beneden komt, kan deze test niet zien:
+                // een nep-speler heeft geen spel dat hem laat vallen. Dat merk je alleen in
+                // het echte spel.
+                if (!EdithTransport.isSoftLanding(owner) && EdithTransport.distanceToGround(owner) > 1.0) {
+                    throw new GameTestAssertException("Je werd losgelaten zonder zachte landing");
+                }
+                if (owner.fallDistance > 1.0f) {
+                    throw new GameTestAssertException("Valafstand loopt op: " + owner.fallDistance);
+                }
+            });
+        });
+    }
+
     /** Een zwerm aanvalsdrones schakelt een vijand in de buurt uit. */
     private static void droneSwarm(GameTestHelper helper) {
         ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
@@ -399,6 +755,43 @@ public final class StarkTechGameTests {
         return helper.getLevel().getEntity(id) instanceof LivingEntity living && living.isAlive() ? living : null;
     }
 
+    /**
+     * De kluis moet echt een kluis zijn: bewakers, laserpoorten op de weg ernaartoe, en
+     * deuren die je open moet zien te krijgen.
+     */
+    private static void checkVault(GameTestHelper helper) {
+        int emitters = 0;
+        int spawners = 0;
+        int doors = 0;
+        int levers = 0;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = 0; x < 41; x++) {
+            for (int z = 0; z < 41; z++) {
+                for (int y = 67; y < 88; y++) {
+                    BlockState state = helper.getBlockState(pos.set(x, y, z));
+                    if (state.is(ModBlocks.LASER_EMITTER.get())) {
+                        emitters++;
+                    } else if (state.is(Blocks.SPAWNER)) {
+                        spawners++;
+                    } else if (state.is(Blocks.IRON_DOOR)) {
+                        doors++;
+                    } else if (state.is(Blocks.LEVER)) {
+                        levers++;
+                    }
+                }
+            }
+        }
+        if (emitters < 12) {
+            throw new GameTestAssertException("Te weinig laserpoorten op de weg naar de kluis: " + emitters);
+        }
+        if (spawners < 4) {
+            throw new GameTestAssertException("De kluis wordt niet bewaakt: " + spawners + " spawners");
+        }
+        if (doors < 3 || levers < 3) {
+            throw new GameTestAssertException("De omweg klopt niet: " + doors + " deuren, " + levers + " schakelaars");
+        }
+    }
+
     private static void towerAndStation(GameTestHelper helper) {
         // 1. Het gebouw is goed geplaatst.
         helper.assertBlockPresent(ModBlocks.CHARGING_STATION.get(), STATION_POS);
@@ -407,6 +800,13 @@ public final class StarkTechGameTests {
         if (chest.getLootTable() == null) {
             throw new GameTestAssertException("De kist heeft geen loot table");
         }
+        // De bril ligt niet in de gewone kisten, maar in de kluis bovenin.
+        helper.assertBlockPresent(Blocks.CHEST, VAULT_CHEST_POS);
+        ChestBlockEntity vault = (ChestBlockEntity) helper.getBlockEntity(VAULT_CHEST_POS);
+        if (vault.getLootTable() == null || !vault.getLootTable().location().getPath().contains("vault")) {
+            throw new GameTestAssertException("De kluiskist heeft niet de kluis-loot: " + vault.getLootTable());
+        }
+        checkVault(helper);
 
         // 2. Het laadstation laadt op en bouwt een upgrade in.
         ChargingStationBlockEntity station = (ChargingStationBlockEntity) helper.getBlockEntity(STATION_POS);

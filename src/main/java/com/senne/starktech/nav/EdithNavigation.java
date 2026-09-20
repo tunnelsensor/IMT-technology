@@ -46,6 +46,17 @@ public final class EdithNavigation {
                 data = data.without(payload.index());
                 EdithServer.send(player, Component.translatable("edith.starktech.msg.waypoint_removed", name), EdithMessagePayload.Level.INFO);
             }
+            case RENAME -> {
+                if (payload.index() < 0 || payload.index() >= data.waypoints().size()) {
+                    return;
+                }
+                Waypoint old = data.waypoints().get(payload.index());
+                String name = cleanName(payload.name(), payload.index() + 1);
+                data = data.replace(payload.index(),
+                        new Waypoint(name, old.dimension(), old.pos(), validColor(payload.color())));
+                EdithServer.send(player, Component.translatable("edith.starktech.msg.waypoint_renamed", name),
+                        EdithMessagePayload.Level.INFO);
+            }
             case NAVIGATE -> {
                 int index = payload.index();
                 if (index == EdithWaypoints.DEATH && player.getLastDeathLocation().isEmpty()) {

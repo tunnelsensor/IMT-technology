@@ -62,6 +62,16 @@ public record EdithWaypoints(List<Waypoint> waypoints, int active) {
         return new EdithWaypoints(list, newActive);
     }
 
+    /** Eén waypoint vervangen (naam of kleur gewijzigd); de plek blijft waar hij was. */
+    public EdithWaypoints replace(int index, Waypoint waypoint) {
+        if (index < 0 || index >= waypoints.size()) {
+            return this;
+        }
+        List<Waypoint> list = new ArrayList<>(waypoints);
+        list.set(index, waypoint);
+        return new EdithWaypoints(list, active);
+    }
+
     public EdithWaypoints withActive(int newActive) {
         boolean valid = newActive == NONE || newActive == DEATH || (newActive >= 0 && newActive < waypoints.size());
         return new EdithWaypoints(waypoints, valid ? newActive : NONE);

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "starktech:block/heat_generator_top",
+    "front": "starktech:block/heat_generator_front",
+    "side": "starktech:block/heat_generator_side"
+  }
+}

@@ -6,6 +6,8 @@ import com.senne.starktech.shield.DomeGeneratorBlock;
 import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.shield.LaserWallBlock;
 import com.senne.starktech.station.ChargingStationBlock;
+import com.senne.starktech.station.SolarPanelBlock;
+import com.senne.starktech.station.HeatGeneratorBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -44,6 +46,26 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(RelayBlock.POWERED) ? 8 : 2)
                     .noOcclusion());
+
+    /** Het zonnepaneel: laadt je bril op met daglicht. */
+    public static final DeferredBlock<SolarPanelBlock> SOLAR_PANEL = BLOCKS.registerBlock("solar_panel",
+            SolarPanelBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(2.5f, 5.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion());
+
+    /** De warmtegenerator: maakt energie van brandstof en van de hitte om hem heen. */
+    public static final DeferredBlock<HeatGeneratorBlock> HEAT_GENERATOR = BLOCKS.registerBlock("heat_generator",
+            HeatGeneratorBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 6));
 
     // ---------------------------------------------------------------- Fase 11: rayshield
 

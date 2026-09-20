@@ -14,6 +14,9 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -153,9 +156,34 @@ public final class EdithDrones {
      * Onzichtbaar, maar wel echt aanwezig (dus raakbaar).
      */
     public static @Nullable StarkDroneEntity launchIllusion(ServerPlayer owner) {
-        Vec3 look = owner.getViewVector(1.0f);
-        Vec3 pos = owner.getEyePosition().add(look.x * 4.0, 1.5, look.z * 4.0);
-        return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, EdithBalance.ILLUSION_LIFETIME, pos, false);
+        return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, EdithBalance.ILLUSION_LIFETIME,
+                illusionSpot(owner), false);
+    }
+
+    /**
+     * Waar de illusie komt te staan: op de plek waar je naar KIJKT, tot ILLUSION_AIM_RANGE
+     * blokken ver. Zo zet je een nep-muur precies in die gang, of een nep-leger op die heuvel.
+     *
+     * Kijk je de lucht in, dan zetten we hem een stuk voor je neer. De drone zelf hangt twee
+     * blokken boven de grond, want zijn beeld hangt eronder: dan staat de muur netjes op de
+     * grond in plaats van er half in.
+     */
+    public static Vec3 illusionSpot(ServerPlayer owner) {
+        Vec3 eye = owner.getEyePosition();
+        Vec3 far = eye.add(owner.getViewVector(1.0f).scale(EdithBalance.ILLUSION_AIM_RANGE));
+        BlockHitResult hit = owner.level().clip(new ClipContext(eye, far,
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
+        Vec3 aimed = hit.getType() == HitResult.Type.MISS ? far : Vec3.atCenterOf(hit.getBlockPos());
+        // Op de grond onder die plek gaan staan (of blijven zweven als daar niets is).
+        ServerLevel level = owner.serverLevel();
+        BlockPos.MutableBlockPos pos = BlockPos.containing(aimed).mutable();
+        for (int i = 0; i < 8 && pos.getY() > level.getMinBuildHeight(); i++) {
+            if (!level.getBlockState(pos.below()).getCollisionShape(level, pos.below()).isEmpty()) {
+                break;
+            }
+            pos.move(0, -1, 0);
+        }
+        return new Vec3(aimed.x, pos.getY() + 2.0, aimed.z);
     }
 
     /** Zorgt dat er genoeg beschermende drones zijn (roept er maximaal één per keer bij). */

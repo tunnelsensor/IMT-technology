@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "starktech:block/heat_generator"
+    }
+  }
+}

@@ -2,28 +2,6 @@
   "type": "minecraft:chest",
   "pools": [
     {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "starktech:edith_glasses",
-          "weight": 1,
-          "functions": [
-            {
-              "function": "minecraft:set_components",
-              "components": {
-                "starktech:energy": 2500
-              }
-            }
-          ]
-        },
-        {
-          "type": "minecraft:empty",
-          "weight": 1
-        }
-      ]
-    },
-    {
       "rolls": {
         "type": "minecraft:uniform",
         "min": 1,

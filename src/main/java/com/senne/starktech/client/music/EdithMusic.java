@@ -11,7 +11,6 @@ import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import net.minecraft.client.Minecraft;
@@ -55,21 +54,26 @@ public final class EdithMusic {
      * Je kunt ook gewoon "speel wat rustige muziek" zeggen; dan zoekt Spotify zelf iets.
      */
     public static void play(String request) {
-        String query = cleanRequest(request);
+        String query = MusicQuery.build(request);
         if (query.isBlank()) {
             tell("edith.starktech.music.what", EdithMessagePayload.Level.WARNING);
             return;
         }
         run(token -> {
-            String url = API + "/search?type=track&limit=1&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
-            JsonObject result = get(token, url);
-            if (result == null) {
+            JsonArray items = search(token, query);
+            String plain = MusicQuery.plain(request);
+            // Niets gevonden met track:/artist:? Dan was "van" misschien deel van de titel
+            // ("man van staal"). Zoek het dan nog eens als gewone tekst.
+            if (items != null && items.isEmpty() && !plain.equalsIgnoreCase(query) && !plain.isBlank()) {
+                items = search(token, plain);
+            }
+            if (items == null) {
                 tell("edith.starktech.music.error", EdithMessagePayload.Level.ALERT);
                 return;
             }
-            JsonArray items = result.getAsJsonObject("tracks").getAsJsonArray("items");
             if (items.isEmpty()) {
-                tellText(Component.translatable("edith.starktech.music.not_found", query), EdithMessagePayload.Level.WARNING);
+                tellText(Component.translatable("edith.starktech.music.not_found", plain.isBlank() ? query : plain),
+                        EdithMessagePayload.Level.WARNING);
                 return;
             }
             JsonObject track = items.get(0).getAsJsonObject();
@@ -216,20 +220,11 @@ public final class EdithMusic {
 
     // ================================================================ Hulpjes
 
-    /**
-     * Maakt van wat je zei een zoekopdracht: "thunderstruck van acdc" wordt
-     * "thunderstruck acdc". Spotify vindt daar zelf het juiste nummer bij.
-     */
-    private static String cleanRequest(String request) {
-        String text = request.strip();
-        String lower = text.toLowerCase(Locale.ROOT);
-        for (String by : new String[] {" van ", " by ", " from "}) {
-            int index = lower.indexOf(by);
-            if (index > 0) {
-                return text.substring(0, index) + " " + text.substring(index + by.length());
-            }
-        }
-        return text;
+    /** Zoekt nummers bij Spotify. Geeft null als er iets misging (dan is er geen antwoord). */
+    private static @Nullable JsonArray search(String token, String query) throws Exception {
+        String url = API + "/search?type=track&limit=1&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        JsonObject result = get(token, url);
+        return result == null ? null : result.getAsJsonObject("tracks").getAsJsonArray("items");
     }
 
     private static void tell(String key, EdithMessagePayload.Level level) {

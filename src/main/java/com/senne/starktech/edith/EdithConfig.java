@@ -24,42 +24,42 @@ public final class EdithConfig {
     // ---------------------------------------------------------------- Drones
 
     public static final ModConfigSpec.IntValue SWARM_BASE = BUILDER
-            .comment("Aantal aanvalsdrones in een zwerm zonder drone-upgrades")
+            .comment("Number of attack drones in a swarm without drone upgrades")
             .defineInRange("drones.swarmBase", 4, 1, 64);
 
     public static final ModConfigSpec.IntValue SWARM_MAX = BUILDER
-            .comment("Maximum aantal aanvalsdrones in een zwerm (met alle upgrades)")
+            .comment("Maximum number of attack drones in a swarm (with all upgrades)")
             .defineInRange("drones.swarmMax", 16, 1, 64);
 
     public static final ModConfigSpec.IntValue GUARD_BASE = BUILDER
-            .comment("Aantal beschermende drones (escorte) zonder drone-upgrades")
+            .comment("Number of guard drones (escort) without drone upgrades")
             .defineInRange("drones.guardBase", 2, 0, 32);
 
     public static final ModConfigSpec.IntValue GUARD_MAX = BUILDER
-            .comment("Maximum aantal beschermende drones (met alle upgrades)")
+            .comment("Maximum number of guard drones (with all upgrades)")
             .defineInRange("drones.guardMax", 8, 0, 32);
 
     public static final ModConfigSpec.IntValue DRONES_PER_UPGRADE = BUILDER
-            .comment("Hoeveel aanvalsdrones er per drone-upgrade bijkomen")
+            .comment("How many extra attack drones each drone upgrade adds")
             .defineInRange("drones.swarmPerUpgrade", 2, 0, 8);
 
     public static final ModConfigSpec.IntValue GUARDS_PER_UPGRADE = BUILDER
-            .comment("Hoeveel beschermende drones er per drone-upgrade bijkomen")
+            .comment("How many extra guard drones each drone upgrade adds")
             .defineInRange("drones.guardsPerUpgrade", 1, 0, 8);
 
     public static final ModConfigSpec.IntValue MAX_DRONE_UPGRADES = BUILDER
-            .comment("Hoeveel drone-upgrades er maximaal in één bril passen")
+            .comment("How many drone upgrades fit in one pair of glasses")
             .defineInRange("drones.maxUpgrades", 6, 0, 16);
 
     public static final ModConfigSpec.IntValue DRONE_DROP_HEIGHT = BUILDER
-            .comment("Van hoe hoog drones uit de lucht komen duiken (in blokken)")
+            .comment("How high above you drones dive in from (in blocks)")
             .defineInRange("drones.dropHeight", 24, 0, 96);
 
     // ---------------------------------------------------------------- Hacken
 
     public static final ModConfigSpec.BooleanValue HACK_ALLOWED = BUILDER
-            .comment("Mag E.D.I.T.H. de privéberichten van andere spelers onderscheppen (hack player)?",
-                    "Zet dit op false op een server waar spelers dat niet willen.")
+            .comment("May E.D.I.T.H. intercept other players' private messages (hack player)?",
+                    "Set this to false on a server where players do not want that.")
             .define("hack.allowed", true);
 
     public static final ModConfigSpec SPEC = BUILDER.build();

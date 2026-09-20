@@ -115,11 +115,21 @@ public class NavigationScreen extends Screen {
         boolean active = shownData.active() == index;
         Component label = Component.translatable(active ? "screen.starktech.nav.stop" : "screen.starktech.nav.navigate");
         int navigateTo = active ? EdithWaypoints.NONE : index;
+        // De sterfplek kun je niet bewerken of weggooien: die zet het spel zelf.
         addRenderableWidget(Button.builder(label, button -> send(WaypointActionPayload.Op.NAVIGATE, navigateTo))
-                .bounds(left + PANEL_W - (deletable ? 110 : 88), y, 80, 18).build());
+                .bounds(left + PANEL_W - (deletable ? 134 : 88), y, 80, 18).build());
         if (deletable) {
+            addRenderableWidget(Button.builder(Component.literal("✎"),
+                            button -> minecraft.setScreen(new WaypointEditScreen(index)))
+                    .bounds(left + PANEL_W - 52, y, 20, 18)
+                    .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                            Component.translatable("screen.starktech.nav.edit")))
+                    .build());
             addRenderableWidget(Button.builder(Component.literal("X"), button -> send(WaypointActionPayload.Op.REMOVE, index))
-                    .bounds(left + PANEL_W - 28, y, 20, 18).build());
+                    .bounds(left + PANEL_W - 28, y, 20, 18)
+                    .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                            Component.translatable("screen.starktech.nav.remove")))
+                    .build());
         }
     }
 

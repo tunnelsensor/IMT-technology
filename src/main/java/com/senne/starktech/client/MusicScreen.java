@@ -57,6 +57,12 @@ public class MusicScreen extends Screen {
         });
         addRenderableWidget(clientIdBox);
 
+        // Naast de Redirect URI: een knop die hem op je klembord zet, zodat je hem
+        // niet hoeft over te typen (een tikfout hier laat het koppelen mislukken).
+        addRenderableWidget(Button.builder(Component.translatable("screen.starktech.music.copy"),
+                        button -> copyRedirectUri())
+                .bounds(left + 14 + font.width(SpotifyAuth.REDIRECT_URI), top + 68, 60, 16).build());
+
         // De knop naar het Spotify-dashboard.
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.music.open_dashboard"),
                         button -> net.minecraft.Util.getPlatform().openUri("https://developer.spotify.com/dashboard"))
@@ -91,6 +97,12 @@ public class MusicScreen extends Screen {
                 .bounds(left + PANEL_W - 88, top + 180, 80, 20).build());
     }
 
+    /** Zet de Redirect URI op het klembord; in het Spotify-dashboard plak je hem met Ctrl+V. */
+    private void copyRedirectUri() {
+        Minecraft.getInstance().keyboardHandler.setClipboard(SpotifyAuth.REDIRECT_URI);
+        status = Component.translatable("screen.starktech.music.copied");
+    }
+
     private void link() {
         if (!SpotifyAuth.hasClientId()) {
             status = Component.translatable("screen.starktech.music.need_client_id");
@@ -98,11 +110,22 @@ public class MusicScreen extends Screen {
         }
         status = Component.translatable("screen.starktech.music.linking");
         SpotifyAuth.link(error -> Minecraft.getInstance().execute(() -> {
-            status = error == null
-                    ? Component.translatable("screen.starktech.music.linked")
-                    : Component.translatable("screen.starktech.music.failed", error);
+            status = error == null ? Component.translatable("screen.starktech.music.linked") : failure(error);
             rebuildWidgets();
         }));
+    }
+
+    /** Zet een foutcode om in iets waar je wat aan hebt. */
+    private Component failure(String error) {
+        return switch (error) {
+            // De poort staat nog open van een ander venster, of een ander programma zit erop.
+            case "port_in_use" -> Component.translatable("screen.starktech.music.port_in_use",
+                    SpotifyAuth.callbackPort());
+            case "timeout" -> Component.translatable("screen.starktech.music.timeout");
+            // Je klikte op "Cancel" in het Spotify-scherm.
+            case "access_denied" -> Component.translatable("screen.starktech.music.denied");
+            default -> Component.translatable("screen.starktech.music.failed", error);
+        };
     }
 
     @Override
@@ -120,7 +143,7 @@ public class MusicScreen extends Screen {
                     EdithHud.argb(210, EdithHud.WHITE), false);
             y += 11;
         }
-        // De redirect-URI, zodat je hem kunt overtypen.
+        // De redirect-URI. De knop ernaast (zie init) zet hem op je klembord.
         g.drawString(font, SpotifyAuth.REDIRECT_URI, left + 10, y + 4, EdithHud.argb(255, EdithHud.GREEN), false);
 
         g.drawString(font, Component.translatable("screen.starktech.music.client_id"), left + 10, top + 96,

@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -51,12 +52,25 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+    /**
+     * Aangezet door E.D.I.T.H. (of een spraakcommando) in plaats van door redstone.
+     *
+     * Zonder dit ging de wand weer uit zodra er iets in de buurt veranderde: elke blok-update
+     * liet de zender kijken of er redstone op stond, en dat was niet zo.
+     */
+    public static final BooleanProperty SWITCHED = BooleanProperty.create("switched");
+    /** De kleur van het veld dat deze zender maakt. Sluipen + rechtsklik bladert erdoorheen. */
+    public static final EnumProperty<ShieldColor> COLOR = EnumProperty.create("color", ShieldColor.class);
 
     private static final VoxelShape SHAPE = Block.box(3, 0, 3, 13, 6, 13);
 
     public LaserEmitterBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false));
+        registerDefaultState(stateDefinition.any()
+                .setValue(FACING, Direction.NORTH)
+                .setValue(POWERED, false)
+                .setValue(SWITCHED, false)
+                .setValue(COLOR, ShieldColor.BLUE));
     }
 
     @Override
@@ -66,7 +80,7 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED);
+        builder.add(FACING, POWERED, SWITCHED, COLOR);
     }
 
     @Override
@@ -99,9 +113,10 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
         if (level.isClientSide) {
             return;
         }
-        boolean redstone = level.hasNeighborSignal(pos);
-        if (redstone != state.getValue(POWERED)) {
-            setActive((ServerLevel) level, pos, state, redstone);
+        // Aan als er redstone op staat OF als E.D.I.T.H. hem heeft aangezet.
+        boolean wanted = level.hasNeighborSignal(pos) || state.getValue(SWITCHED);
+        if (wanted != state.getValue(POWERED)) {
+            setActive((ServerLevel) level, pos, state, wanted);
         }
     }
 
@@ -132,16 +147,38 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
     /** Rechtsklikken met de bril op: naam en groep geven (dan kan E.D.I.T.H. hem aansturen). */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        // Sluipen erbij: dan blader je door de kleuren in plaats van het naamscherm te openen.
+        if (player.isShiftKeyDown()) {
+            if (level instanceof ServerLevel serverLevel) {
+                recolour(serverLevel, pos, state);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (player instanceof ServerPlayer serverPlayer) {
             EdithRedstone.openEditor(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    /** Volgende kleur: de zender én de wand die er al staat kleuren mee. */
+    private static void recolour(ServerLevel level, BlockPos pos, BlockState state) {
+        ShieldColor colour = state.getValue(COLOR).next();
+        level.setBlock(pos, state.setValue(COLOR, colour), Block.UPDATE_ALL);
+        Direction facing = state.getValue(FACING);
+        for (BlockPos target : wallPositions(level, pos, facing)) {
+            BlockState wall = level.getBlockState(target);
+            if (wall.is(ModBlocks.LASER_WALL.get())) {
+                level.setBlock(target, wall.setValue(LaserWallBlock.COLOR, colour), Block.UPDATE_ALL);
+            }
+        }
+        level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 0.6f, 1.2f);
+    }
+
     /** E.D.I.T.H. zet hem aan of uit (zie EdithSwitchable). */
     @Override
     public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
-        setActive(level, pos, state, on);
+        // Onthouden dat E.D.I.T.H. hem aanzette, zodat een blok-update hem niet weer uitdoet.
+        setActive(level, pos, state.setValue(SWITCHED, on), on);
     }
 
     @Override
@@ -164,21 +201,25 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
                 SoundSource.BLOCKS, 0.5f, on ? 1.6f : 1.2f);
     }
 
-    /** Vult de ruimte voor de zender met laserwand-blokken. */
+    /**
+     * Het veld schuift dicht vanaf de twee uiteinden naar het midden (zie LaserAnimations).
+     * Je kunt er dus nog net doorheen duiken als je snel bent.
+     */
     private static void buildWall(ServerLevel level, BlockPos pos, Direction facing) {
-        BlockState wall = ModBlocks.LASER_WALL.get().defaultBlockState().setValue(LaserWallBlock.AXIS_FACING, facing);
-        for (BlockPos target : wallPositions(level, pos, facing)) {
-            level.setBlock(target, wall, Block.UPDATE_ALL);
-        }
+        BlockState state = level.getBlockState(pos);
+        ShieldColor colour = state.hasProperty(COLOR) ? state.getValue(COLOR) : ShieldColor.BLUE;
+        BlockState wall = ModBlocks.LASER_WALL.get().defaultBlockState()
+                .setValue(LaserWallBlock.AXIS_FACING, facing)
+                .setValue(LaserWallBlock.COLOR, colour);
+        LaserAnimations.start(level, wallPositions(level, pos, facing), wall, colour, true);
     }
 
-    /** Haalt de laserwand voor de zender weg. */
+    /** En weer open, vanuit het midden naar buiten. */
     private static void clearWall(ServerLevel level, BlockPos pos, Direction facing) {
-        for (BlockPos target : wallPositions(level, pos, facing)) {
-            if (level.getBlockState(target).is(ModBlocks.LASER_WALL.get())) {
-                level.setBlock(target, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-            }
-        }
+        BlockState state = level.getBlockState(pos);
+        ShieldColor colour = state.hasProperty(COLOR) ? state.getValue(COLOR) : ShieldColor.BLUE;
+        LaserAnimations.start(level, wallPositions(level, pos, facing),
+                Blocks.AIR.defaultBlockState(), colour, false);
     }
 
     /**

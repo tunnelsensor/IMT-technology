@@ -11,6 +11,7 @@ import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.MarkTargetPayload;
 import com.senne.starktech.network.PingPayload;
 import com.senne.starktech.registry.ModSounds;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -64,6 +65,11 @@ public final class EdithClientEvents {
         // Hang je onder een transportdrone? (Dan tonen we de vliegtips in de HUD.)
         EdithClientState.flying = player.getVehicle() instanceof StarkDroneEntity drone && drone.isTransport();
         DroneCamera.tick(mc);
+        // Zelf vliegen: de server weet pas welke kant je op wil als jouw spel het doorstuurt.
+        // (Kijk je door een drone-camera, dan doet DroneCamera.tick dat al.)
+        if (EdithClientState.flying && !DroneCamera.isActive()) {
+            DroneCamera.sendControls(mc, player);
+        }
         handleKeys(mc);
         VoiceControl.tick(mc);
         EdithClientState.pings.removeIf(ping -> Util.getMillis() > ping.endMillis());
@@ -75,13 +81,17 @@ public final class EdithClientEvents {
         EdithClientState.lookTarget = EdithClientState.operational ? findTarget(player) : null;
         EdithClientState.target = EdithData.isEnabled(glasses, EdithFeature.TARGET_ANALYSIS) ? EdithClientState.lookTarget : null;
 
-        // Vijanden door muren
+        // Wie valt je aan? Dat weet alleen de server (welk doelwit een wezen heeft, ziet jouw
+        // spel niet), dus die stuurt de nummers door; wij zoeken ze hier op.
         if (EdithClientState.operational && EdithData.isEnabled(glasses, EdithFeature.THREAT_SCAN)) {
-            int radius = EdithData.getThreatRadius(glasses);
-            EdithClientState.threatRadius = radius;
-            AABB area = player.getBoundingBox().inflate(radius);
-            List<LivingEntity> threats = mc.level.getEntitiesOfClass(LivingEntity.class, area,
-                    e -> e instanceof Enemy && e.isAlive() && e.distanceToSqr(player) <= (double) radius * radius);
+            EdithClientState.threatRadius = EdithData.getThreatRadius(glasses);
+            List<Entity> threats = new ArrayList<>();
+            for (int id : EdithClientState.threatIds) {
+                Entity entity = mc.level.getEntity(id);
+                if (entity != null && entity.isAlive()) {
+                    threats.add(entity);
+                }
+            }
             threats.sort((a, b) -> Double.compare(a.distanceToSqr(player), b.distanceToSqr(player)));
             EdithClientState.threats = threats;
         } else {
