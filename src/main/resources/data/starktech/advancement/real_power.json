@@ -1,0 +1,46 @@
+{
+  "display": {
+    "icon": {
+      "id": "starktech:solar_panel"
+    },
+    "title": {
+      "translate": "advancements.starktech.real_power.title"
+    },
+    "description": {
+      "translate": "advancements.starktech.real_power.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "solar": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starktech:solar_panel"
+          }
+        ]
+      }
+    },
+    "heat": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starktech:heat_generator"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "starktech:charging_station",
+  "requirements": [
+    [
+      "solar",
+      "heat"
+    ]
+  ]
+}

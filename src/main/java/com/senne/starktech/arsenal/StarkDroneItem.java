@@ -1,6 +1,7 @@
 package com.senne.starktech.arsenal;
 
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.StarkAdvancements;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModSounds;
 import java.util.List;
@@ -46,6 +47,7 @@ public class StarkDroneItem extends Item {
         }
 
         ArsenalServer.add(serverPlayer);
+        StarkAdvancements.award(serverPlayer, StarkAdvancements.FIRST_DRONE);
         int total = ArsenalServer.get(serverPlayer).size();
         if (!player.isCreative()) {
             stack.shrink(1);

@@ -3,6 +3,7 @@ package com.senne.starktech.arsenal;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.StarkAdvancements;
 import com.senne.starktech.network.ArsenalActionPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModAttachments;
@@ -122,6 +123,7 @@ public final class ArsenalServer {
         level.sendParticles(ParticleTypes.LARGE_SMOKE, where.x, where.y, where.z, 12, 0.3, 0.3, 0.3, 0.02);
         message(player, Component.translatable("arsenal.starktech.msg.lost", arsenal.size() - 1),
                 EdithMessagePayload.Level.ALERT);
+        StarkAdvancements.award(player, StarkAdvancements.DRONE_DOWN);
     }
 
     // ---------------------------------------------------------------- Terugroepen, repareren, lanceren

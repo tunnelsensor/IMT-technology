@@ -1,6 +1,7 @@
 package com.senne.starktech.illusion;
 
 import com.senne.starktech.arsenal.ArsenalServer;
+import com.senne.starktech.edith.StarkAdvancements;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithBalance;
@@ -142,6 +143,7 @@ public final class EdithIllusions {
         Projector projector = new Projector(owner.getUUID(), drone.getUUID(), drone.getId(), scene,
                 EdithBalance.ILLUSION_RADIUS);
         PROJECTORS.put(drone.getUUID(), projector);
+        StarkAdvancements.award(owner, StarkAdvancements.ILLUSION);
         EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_started",
                 Component.translatable("edith.starktech.illusion.kind." + kind.name().toLowerCase(java.util.Locale.ROOT)),
                 scene.size()), EdithMessagePayload.Level.INFO);

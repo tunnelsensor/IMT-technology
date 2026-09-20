@@ -85,28 +85,30 @@ Afspraken die overal gelden:
       dat het craftbaar is in plaats van te vinden, en alle getallen in `SuitBalance.java`.
       Nog niet gedaan: onder water ademen, een werkbank voor harnasdelen, "Veronica".
 
-**Stand van zaken:** 33 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+- [x] **Advancements**
+      Een boom van 16 prestaties onder "Stark Industries", van je eerste Stark-chip tot vliegen
+      met het harnas. Wat Minecraft zelf kan bijhouden (heb je dit voorwerp gemaakt, sta je in
+      een Stark Tower) gaat met gewone voorwaarden; de rest kent de mod zelf toe op het moment
+      dat het gebeurt (eerste drone, satellietaanval, drone verloren, vliegen, repulsor).
+
+**Stand van zaken:** 35 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 
 ---
 
 ## Nog te doen, in deze volgorde
 
-### 1. Advancements
-
-- [ ] Een echte boom die je door de fases leidt (nu zijn er alleen recept-advancements)
-
-### 2. Vijanden
+### 1. Vijanden
 
 - [ ] Raiddrones die je aanvallen, willekeurig of als je hun basis aanvalt
 - [ ] Ze mogen blokken kapotmaken, met een **gamerule** om dat uit te zetten; standaard aan
 
-### 3. Meer in de wereld
+### 2. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 4. De AI-stem (als laatste)
+### 3. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API

@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "starktech:charging_station"
+    },
+    "title": {
+      "translate": "advancements.starktech.charging_station.title"
+    },
+    "description": {
+      "translate": "advancements.starktech.charging_station.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starktech:charging_station"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "starktech:root",
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

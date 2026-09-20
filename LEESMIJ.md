@@ -183,6 +183,14 @@ de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes 
 zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
 plat.
 
+### Prestaties (advancements)
+De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste Stark-chip tot
+vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Stark Industries**.
+
+Sommige krijg je vanzelf als je iets maakt; andere kent de mod zelf toe op het moment dat het
+gebeurt — je eerste drone de ruimte in sturen, een satellietaanval, een drone verliezen, met het
+harnas vliegen.
+
 ### Het harnas
 Craft een **borstplaat**, **broek** en **laarzen** (netherite, Stark-chips, amethist). Er is geen
 helm: die plek is van de bril, en dat is de bedoeling — **zonder de bril doet het harnas niets

@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "starktech:stark_chestplate"
+    },
+    "title": {
+      "translate": "advancements.starktech.suit.title"
+    },
+    "description": {
+      "translate": "advancements.starktech.suit.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trigger": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "starktech:glasses",
+  "requirements": [
+    [
+      "trigger"
+    ]
+  ]
+}

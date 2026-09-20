@@ -3,6 +3,7 @@ package com.senne.starktech.redstone;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.StarkAdvancements;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RelayActionPayload;
@@ -77,6 +78,7 @@ public final class EdithRedstone {
         String name = Component.translatable("edith.starktech.relay.default_name", data.relays().size() + 1).getString();
         Relay relay = new Relay(name, Relay.DEFAULT_GROUP, player.level().dimension(), pos);
         player.setData(ModAttachments.RELAYS, data.with(relay));
+        StarkAdvancements.award(player, StarkAdvancements.RELAY);
         EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
     }
 

@@ -22,6 +22,7 @@ import com.senne.starktech.shield.ShieldColor;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.StarkAdvancements;
 import com.senne.starktech.edith.EdithThreats;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.nav.EdithWaypoints;
@@ -73,7 +74,9 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -360,6 +363,57 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("De bril wordt niet opgeladen");
             }
         });
+    }
+
+    // ================================================================ Fase 15: prestaties
+
+    /** Alle prestaties van de mod, in de volgorde van de boom. */
+    private static final String[] ADVANCEMENTS = {
+        "root", "charging_station", "real_power", "find_tower", "glasses",
+        "first_drone", "swarm", "drone_down", "satellite", "relay",
+        "rayshield", "illusion", "holo_table", "suit", "fly", "repulsor"
+    };
+
+    /**
+     * Elke prestatie moet inladen.
+     *
+     * Een prestatie met een fout erin wordt door Minecraft stilletjes overgeslagen: je ziet
+     * alleen een regel in het log en daarna ontbreekt hij gewoon. Deze test valt dan om.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "advancements")
+    public static void all_advancements_load(GameTestHelper helper) {
+        ServerAdvancementManager manager = helper.getLevel().getServer().getAdvancements();
+        for (String name : ADVANCEMENTS) {
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, name);
+            if (manager.get(id) == null) {
+                throw new GameTestAssertException("Prestatie ontbreekt of laadde niet: " + id);
+            }
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De prestaties die de mod zelf toekent, werken.
+     *
+     * Die hebben een voorwaarde die nooit vanzelf uitkomt, dus als het toekennen niet werkt,
+     * krijg je ze nooit en merkt niemand dat.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "advancements")
+    public static void code_awarded_advancements_work(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        AdvancementHolder holder = helper.getLevel().getServer().getAdvancements()
+                .get(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, StarkAdvancements.FIRST_DRONE));
+        if (holder == null) {
+            throw new GameTestAssertException("De prestatie voor je eerste drone bestaat niet");
+        }
+        if (owner.getAdvancements().getOrStartProgress(holder).isDone()) {
+            throw new GameTestAssertException("Hij stond al aan voordat er iets gebeurde");
+        }
+        StarkAdvancements.award(owner, StarkAdvancements.FIRST_DRONE);
+        if (!owner.getAdvancements().getOrStartProgress(holder).isDone()) {
+            throw new GameTestAssertException("Toekennen werkte niet");
+        }
+        helper.succeed();
     }
 
     // ================================================================ Fase 15: het harnas

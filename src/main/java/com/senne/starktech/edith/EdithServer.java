@@ -173,6 +173,9 @@ public final class EdithServer {
     private static void onEquip(ServerPlayer player, ItemStack glasses) {
         EdithOwner owner = EdithData.getOwner(glasses);
         String name = player.getGameProfile().getName();
+        if (owner == null || owner.id().equals(player.getUUID()) || owner.transferPending()) {
+            StarkAdvancements.award(player, StarkAdvancements.GLASSES);
+        }
 
         if (owner == null) {
             // Nieuwe bril: de eerste drager wordt de eigenaar.
@@ -427,6 +430,9 @@ public final class EdithServer {
         }
         startCooldown(player, state, EdithCooldown.SWARM, EdithBalance.SWARM_COOLDOWN);
         int launched = EdithDrones.launchSwarm(player, glasses);
+        if (launched > 0) {
+            StarkAdvancements.award(player, StarkAdvancements.SWARM);
+        }
         int targets = getMarkedTargets(player).size();
         Component message = targets > 0
                 ? Component.translatable("edith.starktech.msg.swarm_launched", launched, targets)
@@ -790,6 +796,7 @@ public final class EdithServer {
         Vec3 away = target.subtract(player.position());
         Vec3 sweep = away.horizontalDistanceSqr() < 0.01 ? new Vec3(1, 0, 0) : new Vec3(away.x, 0, away.z).normalize();
         SatelliteStrikes.start(player.serverLevel(), target, player.getUUID(), mode, locked, sweep);
+        StarkAdvancements.award(player, StarkAdvancements.SATELLITE);
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SATELLITE_LOCK.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         send(player, Component.translatable("edith.starktech.msg.satellite_locked_mode",
                 Component.translatable(mode.translationKey()), EdithBalance.SATELLITE_CHARGE_TIME / 20),

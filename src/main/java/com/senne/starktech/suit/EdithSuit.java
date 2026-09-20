@@ -2,6 +2,7 @@ package com.senne.starktech.suit;
 
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.StarkAdvancements;
 import com.senne.starktech.edith.EdithTargeting;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -72,6 +73,7 @@ public final class EdithSuit {
                 player.onUpdateAbilities();
                 EdithServer.send(player, Component.translatable("suit.starktech.msg.flight_ready"),
                         EdithMessagePayload.Level.INFO);
+                StarkAdvancements.award(player, StarkAdvancements.SUIT);
             }
             if (abilities.flying) {
                 drainForFlight(player);
@@ -104,6 +106,7 @@ public final class EdithSuit {
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
             return; // de volgende tick merkt dat de batterij leeg is en zet het vliegen uit
         }
+        StarkAdvancements.award(player, StarkAdvancements.FLY);
         ServerLevel level = player.serverLevel();
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + 0.1, player.getZ(),
                 2, 0.2, 0.05, 0.2, 0.01);
@@ -222,6 +225,7 @@ public final class EdithSuit {
         player.push(back.x, 0.05, back.z);
         player.hurtMarked = true;
         if (hits > 0) {
+            StarkAdvancements.award(player, StarkAdvancements.REPULSOR);
             EdithServer.send(player, Component.translatable("suit.starktech.msg.repulsor_hit", hits),
                     EdithMessagePayload.Level.INFO);
         }

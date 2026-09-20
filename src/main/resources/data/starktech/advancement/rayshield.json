@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "starktech:laser_emitter"
+    },
+    "title": {
+      "translate": "advancements.starktech.rayshield.title"
+    },
+    "description": {
+      "translate": "advancements.starktech.rayshield.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "starktech:laser_emitter"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "starktech:glasses",
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}
