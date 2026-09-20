@@ -1,5 +1,7 @@
 package com.senne.starktech.arsenal;
 
+import com.senne.starktech.drone.EdithDrones;
+import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.ArsenalActionPayload;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -84,6 +86,24 @@ public final class ArsenalServer {
         set(player, arsenal.replace(new ArsenalDrone(id, health, ArsenalDrone.State.ORBIT)));
     }
 
+    /** Boekt een drone als "onderweg", bijvoorbeeld zolang hij naar boven klimt. */
+    public static void markDeployed(ServerPlayer player, UUID id) {
+        EdithArsenal arsenal = get(player);
+        ArsenalDrone drone = arsenal.find(id);
+        if (drone != null && drone.state() != ArsenalDrone.State.DEPLOYED) {
+            set(player, arsenal.replace(drone.withState(ArsenalDrone.State.DEPLOYED)));
+        }
+    }
+
+    /** Schrijft de schade van een drone weg zonder verder iets te veranderen. */
+    public static void setHealth(ServerPlayer player, UUID id, float health) {
+        EdithArsenal arsenal = get(player);
+        ArsenalDrone drone = arsenal.find(id);
+        if (drone != null) {
+            set(player, arsenal.replace(drone.withHealth(health)));
+        }
+    }
+
     /**
      * Een drone is neergehaald: hij gaat uit het arsenaal en een klein deel van de
      * bouwkosten valt als schroot op de plek waar hij uit elkaar viel.
@@ -106,57 +126,48 @@ public final class ArsenalServer {
 
     // ---------------------------------------------------------------- Terugroepen, repareren, lanceren
 
-    /** Haalt een drone uit zijn baan naar de grond, zodat je hem kunt repareren. */
+    /**
+     * Haalt een drone uit zijn baan en laat hem naast je landen.
+     *
+     * Hij komt echt uit de lucht vallen en blijft dan naast je staan wachten. Repareren doe je
+     * met een rechtsklik op de drone zelf; shift-rechtsklik stuurt hem weer omhoog.
+     */
     public static boolean recall(ServerPlayer player, UUID id) {
         EdithArsenal arsenal = get(player);
         ArsenalDrone drone = arsenal.find(id);
         if (drone == null || drone.state() != ArsenalDrone.State.ORBIT) {
             return false;
         }
-        set(player, arsenal.replace(drone.withState(ArsenalDrone.State.GROUNDED)));
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                ModSounds.DRONE_RECALL.get(), SoundSource.PLAYERS, 0.7f, 1.1f);
-        return true;
-    }
-
-    /** Stuurt een drone die aan de grond staat weer de ruimte in. */
-    public static boolean launch(ServerPlayer player, UUID id) {
-        EdithArsenal arsenal = get(player);
-        ArsenalDrone drone = arsenal.find(id);
-        if (drone == null || drone.state() != ArsenalDrone.State.GROUNDED || drone.health() <= 0.0f) {
+        ArsenalDrone grounded = drone.withState(ArsenalDrone.State.GROUNDED);
+        set(player, arsenal.replace(grounded));
+        if (EdithDrones.landRecalled(player, grounded) == null) {
+            // Er kon geen drone neergezet worden: dan blijft hij gewoon in zijn baan hangen.
+            set(player, get(player).replace(drone));
             return false;
         }
-        set(player, arsenal.replace(drone.withState(ArsenalDrone.State.ORBIT)));
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                ModSounds.DRONE_DEPLOY.get(), SoundSource.PLAYERS, 0.7f, 1.3f);
+        message(player, Component.translatable("arsenal.starktech.msg.coming_down"),
+                EdithMessagePayload.Level.INFO);
         return true;
     }
 
     /**
-     * Repareert een drone die aan de grond staat, met ijzer uit je eigen rugzak.
-     *
-     * Je hoeft niet genoeg ijzer te hebben: hij herstelt zover als het ijzer reikt, en de rest
-     * doe je later. Geeft terug hoeveel staven er zijn verbruikt (0 = er gebeurde niets).
+     * Stuurt een drone die aan de grond staat weer de ruimte in, vanuit het arsenaal-scherm.
+     * De drone die naast je staat stijgt dan echt op.
      */
-    public static int repair(ServerPlayer player, UUID id) {
-        EdithArsenal arsenal = get(player);
-        ArsenalDrone drone = arsenal.find(id);
-        if (drone == null || drone.state() != ArsenalDrone.State.GROUNDED || drone.isFullyRepaired()) {
-            return 0;
+    public static boolean launch(ServerPlayer player, UUID id) {
+        ArsenalDrone drone = get(player).find(id);
+        if (drone == null || drone.state() != ArsenalDrone.State.GROUNDED) {
+            return false;
         }
-        float missing = (float) ArsenalBalance.DRONE_MAX_HEALTH - drone.health();
-        int wanted = (int) Math.ceil(missing / ArsenalBalance.REPAIR_PER_INGOT);
-        int used = ArsenalCosts.takeRepairParts(player, wanted);
-        if (used <= 0) {
-            message(player, Component.translatable("arsenal.starktech.msg.no_parts",
-                    ArsenalCosts.repairPartName(), wanted), EdithMessagePayload.Level.WARNING);
-            return 0;
+        StarkDroneEntity landed = EdithDrones.findGrounded(player, id);
+        if (landed != null) {
+            landed.departToOrbit(player.serverLevel());
+            return true;
         }
-        float healed = (float) (used * ArsenalBalance.REPAIR_PER_INGOT);
-        set(player, arsenal.replace(drone.withHealth(drone.health() + healed)));
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                ModSounds.STATION_UPGRADE.get(), SoundSource.PLAYERS, 0.8f, 1.4f);
-        return used;
+        // Zijn drone is er niet meer (te ver weg gelopen, wereld opnieuw geladen): dan zetten
+        // we hem gewoon administratief terug in zijn baan.
+        set(player, get(player).replace(drone.withState(ArsenalDrone.State.ORBIT)));
+        return true;
     }
 
     /** Wat het arsenaal-scherm vraagt: terugroepen, repareren of weer lanceren. */
@@ -167,7 +178,6 @@ public final class ArsenalServer {
         }
         switch (payload.op()) {
             case RECALL -> recall(player, payload.drone());
-            case REPAIR -> repair(player, payload.drone());
             case LAUNCH -> launch(player, payload.drone());
         }
     }

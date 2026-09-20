@@ -1,5 +1,6 @@
 package com.senne.starktech.edith;
 
+import com.senne.starktech.arsenal.ArsenalBalance;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
@@ -52,8 +53,11 @@ public final class EdithConfig {
             .defineInRange("drones.maxUpgrades", 6, 0, 16);
 
     public static final ModConfigSpec.IntValue DRONE_DROP_HEIGHT = BUILDER
-            .comment("How high above you drones dive in from (in blocks)")
-            .defineInRange("drones.dropHeight", 24, 0, 96);
+            // Andere naam dan het oude "dropHeight": de betekenis is veranderd (drones komen nu
+            // van veel hoger), dus moeten bestaande werelden de nieuwe waarde krijgen in plaats
+            // van hun oude 24 te houden.
+            .comment("How high above you drones dive in from, and climb away to (in blocks)")
+            .defineInRange("drones.orbitHeight", ArsenalBalance.ORBIT_HEIGHT, 0, 320);
 
     // ---------------------------------------------------------------- Hacken
 
@@ -101,7 +105,7 @@ public final class EdithConfig {
     }
 
     public static int droneDropHeight() {
-        return value(DRONE_DROP_HEIGHT, 24);
+        return value(DRONE_DROP_HEIGHT, ArsenalBalance.ORBIT_HEIGHT);
     }
 
     /** Mag de hack-functie gebruikt worden? */

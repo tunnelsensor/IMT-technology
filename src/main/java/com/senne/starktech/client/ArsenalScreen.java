@@ -19,9 +19,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * Het arsenaal-scherm: al je drones, met hoe heel ze nog zijn en waar ze uithangen.
  *
- * Wat je hier kunt: een drone uit zijn baan halen (TERUGROEPEN), hem repareren met ijzer uit
- * je eigen rugzak (REPAREREN) en hem weer de ruimte in sturen (LANCEREN). Een drone die op
- * dat moment ergens aan het werk is, kun je niet aanraken - daarvoor is "stand down".
+ * Met RECALL laat je een drone uit zijn baan naast je landen. Repareren doe je daarna bij de
+ * drone zelf: rechtsklik erop met ijzer in je rugzak. Met LAUNCH (of shift-rechtsklik op de
+ * drone) stuur je hem weer omhoog. Een drone die ergens aan het werk is, kun je niet aanraken;
+ * daarvoor is "stand down".
  *
  * Openen: G-menu > tabblad Drones > Arsenaal.
  */
@@ -91,16 +92,12 @@ public class ArsenalScreen extends Screen {
             case ORBIT -> addRenderableWidget(Button.builder(Component.translatable("screen.starktech.arsenal.recall"),
                             button -> send(ArsenalActionPayload.Op.RECALL, drone))
                     .bounds(x + 76, y, 68, 18).build());
-            case GROUNDED -> {
-                Button repair = Button.builder(Component.translatable("screen.starktech.arsenal.repair"),
-                                button -> send(ArsenalActionPayload.Op.REPAIR, drone))
-                        .bounds(x, y, 72, 18).build();
-                repair.active = !drone.isFullyRepaired();
-                addRenderableWidget(repair);
-                addRenderableWidget(Button.builder(Component.translatable("screen.starktech.arsenal.launch"),
-                                button -> send(ArsenalActionPayload.Op.LAUNCH, drone))
-                        .bounds(x + 76, y, 68, 18).build());
-            }
+            // Aan de grond: repareren doe je bij de drone zelf (rechtsklik), hier kun je hem
+            // alleen terugsturen.
+            case GROUNDED -> addRenderableWidget(Button.builder(
+                            Component.translatable("screen.starktech.arsenal.launch"),
+                            button -> send(ArsenalActionPayload.Op.LAUNCH, drone))
+                    .bounds(x + 76, y, 68, 18).build());
             // Onderweg: daar valt niets aan te doen tot hij terug is.
             case DEPLOYED -> { }
         }
@@ -154,10 +151,16 @@ public class ArsenalScreen extends Screen {
 
         int y = top + 28;
         int number = page * ROWS_PER_PAGE;
+        boolean anyGrounded = false;
         for (ArsenalDrone drone : rows) {
             number++;
             drawRow(g, drone, number, y);
+            anyGrounded |= drone.state() == ArsenalDrone.State.GROUNDED;
             y += ROW_H;
+        }
+        if (anyGrounded) {
+            g.drawCenteredString(font, Component.translatable("screen.starktech.arsenal.repair_hint"),
+                    left + PANEL_W / 2, top + 28 + ROWS_PER_PAGE * ROW_H + 12, HudStyle.argb(150, HudStyle.WHITE));
         }
     }
 

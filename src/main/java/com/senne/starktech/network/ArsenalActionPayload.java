@@ -22,8 +22,6 @@ public record ArsenalActionPayload(Op op, UUID drone) implements CustomPacketPay
     public enum Op {
         /** Uit zijn baan naar de grond halen, zodat je eraan kunt sleutelen. */
         RECALL,
-        /** Repareren met ijzer uit je rugzak. */
-        REPAIR,
         /** Weer de ruimte in sturen. */
         LAUNCH
     }

@@ -698,7 +698,11 @@
   "screen.starktech.arsenal.empty": "Your arsenal is empty.",
   "screen.starktech.arsenal.hint": "Craft a Stark Drone and use it: it flies up and waits in orbit.",
   "screen.starktech.arsenal.recall": "Recall",
-  "screen.starktech.arsenal.repair": "Repair",
   "screen.starktech.arsenal.launch": "Launch",
-  "screen.starktech.menu.arsenal": "Arsenal"
+  "screen.starktech.menu.arsenal": "Arsenal",
+  "arsenal.starktech.msg.coming_down": "Drone on its way down. Right-click it to repair it.",
+  "arsenal.starktech.msg.repairing": "Repaired to %s/%s. More iron and it is as good as new.",
+  "arsenal.starktech.msg.repaired": "Drone fully repaired. Right-click again to send it back up.",
+  "arsenal.starktech.msg.sent_up": "Drone climbing back to orbit.",
+  "screen.starktech.arsenal.repair_hint": "A grounded drone is repaired by right-clicking it (shift to send it up)."
 }

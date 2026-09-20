@@ -95,20 +95,29 @@ E.D.I.T.H. dat (je raakt dan geen energie kwijt).
 Open het arsenaal met **G > Drones > Arsenaal**. Per drone zie je hoe heel hij nog is en waar
 hij uithangt:
 
-- **In orbit** — klaar voor gebruik. Met **Recall** haal je hem naar de grond.
+- **In orbit** — klaar voor gebruik. Met **Recall** komt hij uit de lucht vallen en landt hij
+  naast je.
 - **On a job** — nu ergens bezig. Daar valt niets aan te doen tot hij terug is (of gebruik
   "stand down").
-- **Grounded** — aan de grond. **Repair** herstelt hem met ijzer uit je rugzak (één staaf is
-  3 levenspunten), en **Launch** stuurt hem weer omhoog.
+- **Grounded** — hij staat naast je te wachten. **Rechtsklik** erop om hem te repareren met
+  ijzer uit je rugzak (één staaf is 3 levenspunten). Is hij weer heel, dan stijgt hij bij de
+  volgende klik op. **Shift + rechtsklik** stuurt hem meteen omhoog, ook als hij nog stuk is
+  (de knop **Launch** in het scherm doet hetzelfde).
 
 Schade blijft bewaard: een drone die gehavend terugkomt, gaat gehavend weer de lucht in tot je
 hem repareert. Wordt een drone **neergehaald**, dan is hij weg — je krijgt ongeveer 10% van de
 bouwkosten terug als schroot op de plek waar hij viel, de rest kost je een nieuwe drone.
 
 ### Drones in het veld
-Ze komen altijd **uit de lucht** duiken. Hoeveel er maximaal zijn, staat in de config
-(`<wereld>/serverconfig/starktech-server.toml`), standaard zwerm 16 en escorte 8 — maar je
-arsenaal bepaalt hoeveel het er echt worden.
+Ze komen **van heel hoog** aanvliegen: standaard 96 blokken boven je, in een duik met een
+streep vonken achter zich aan. Zit er een plafond boven je (een grot, een kelder), dan komen ze
+zo hoog als er ruimte is. Klaar met hun werk? Dan stijgen ze net zo hoog weer op en verdwijnen
+in de lucht — ze lossen niet ter plekke op. Pas als ze boven zijn, staan ze weer klaar in je
+arsenaal.
+
+Hoe hoog precies staat in de config (`drones.orbitHeight`). Hoeveel drones er maximaal in een
+zwerm passen staat daar ook (standaard zwerm 16 en escorte 8) — maar je arsenaal bepaalt
+hoeveel het er echt worden.
 
 - **Zwerm** (J): valt je gemarkeerde doelwitten aan, of verdedigt je.
 - **Eén drone** (L): goedkoop, jaagt op één doelwit tot het dood is.
@@ -202,7 +211,7 @@ Alle zinnen kun je zelf aanpassen in **G > Systemen > Commando's** (of in
 
 | Bestand | Wat |
 |---------|-----|
-| `<wereld>/serverconfig/starktech-server.toml` | Max drones, hoogte waaruit ze duiken, hacken aan/uit |
+| `<wereld>/serverconfig/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), hacken aan/uit |
 | `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |

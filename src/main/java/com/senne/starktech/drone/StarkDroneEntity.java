@@ -1,6 +1,7 @@
 package com.senne.starktech.drone;
 
 import com.senne.starktech.arsenal.ArsenalBalance;
+import com.senne.starktech.arsenal.ArsenalCosts;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
@@ -24,6 +25,8 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -69,8 +72,10 @@ public class StarkDroneEntity extends PathfinderMob {
         TRANSPORT,
         /** Fase 12: onzichtbare drone die een illusie projecteert. */
         ILLUSION,
-        /** Fase 15: net gebouwd en op weg naar een baan om de planeet. */
-        LAUNCH;
+        /** Fase 15: op weg naar een baan om de planeet (net gebouwd, of klaar met zijn werk). */
+        LAUNCH,
+        /** Fase 15: teruggeroepen en aan de grond; rechtsklik om hem te repareren. */
+        GROUNDED;
 
         public static Mode byId(int id) {
             Mode[] all = values();
@@ -90,7 +95,10 @@ public class StarkDroneEntity extends PathfinderMob {
     /** Welke drone uit het arsenaal dit is, of null voor een drone zonder arsenaal. */
     private @Nullable UUID arsenalId;
     /** Zolang dit > 0 is, duikt de drone nog uit de lucht naar beneden. */
-    private int diveTicks;
+    /** Naar welke hoogte de drone duikt, of Double.NaN als hij niet duikt. */
+    private double diveTargetY = Double.NaN;
+    /** Hoe lang hij al aan het opstijgen is (alleen in LAUNCH). */
+    private int launchTicks;
     /** Nummer van de drone binnen zijn groep (voor de plek in de formatie). */
     private int slot;
     /** Hoe lang de drone nog leeft; -1 = onbeperkt (beschermende drones). */
@@ -147,15 +155,42 @@ public class StarkDroneEntity extends PathfinderMob {
         return lockedTargetId != null;
     }
 
-    /** De drone komt uit de lucht: hij duikt de eerste seconden naar beneden. */
-    public void startDive() {
-        this.diveTicks = 60;
+    /**
+     * De drone komt uit de lucht: hij valt met hoge snelheid naar beneden tot vlak boven
+     * "targetY" en vangt daar op. Zo zie je hem echt uit de wolken komen.
+     */
+    public void startDive(double targetY) {
+        this.diveTargetY = targetY;
         // Tijdens het duiken schiet hij nog niet.
         this.fireCooldown = Math.max(this.fireCooldown, 15);
     }
 
     public boolean isDiving() {
-        return diveTicks > 0;
+        return !Double.isNaN(diveTargetY);
+    }
+
+    /**
+     * Klaar hier: de drone stijgt op en verdwijnt hoog in de lucht, in plaats van ter plekke
+     * op te lossen. Pas als hij boven is, meldt hij zich terug in je arsenaal.
+     */
+    public void departToOrbit(ServerLevel level) {
+        if (getMode() == Mode.LAUNCH) {
+            return; // al onderweg naar boven
+        }
+        dropCargo(level);
+        // Zolang hij stijgt, staat hij als "onderweg" geboekt: je kunt hem nog niet opnieuw sturen.
+        ServerPlayer owner = getOwner(level);
+        if (arsenalId != null && owner != null) {
+            ArsenalServer.markDeployed(owner, arsenalId);
+        }
+        entityData.set(DATA_MODE, (byte) Mode.LAUNCH.ordinal());
+        diveTargetY = Double.NaN;
+        launchTicks = 0;
+        launchFrom = getY();
+        currentTarget = null;
+        lockedTargetId = null;
+        setInvisible(false);
+        level.playSound(null, getX(), getY(), getZ(), ModSounds.DRONE_RECALL.get(), SoundSource.NEUTRAL, 0.7f, 1.3f);
     }
 
     @Override
@@ -293,10 +328,19 @@ public class StarkDroneEntity extends PathfinderMob {
             climbToOrbit(level);
             return;
         }
+        // Nog aan het invallen? Dan doet hij verder even niets: eerst landen.
+        if (isDiving()) {
+            dive(level);
+            return;
+        }
 
         ServerPlayer owner = getOwner(level);
         if (owner == null || !owner.isAlive() || owner.isSpectator() || !stillLinked(owner)) {
             recall(level);
+            return;
+        }
+        if (getMode() == Mode.GROUNDED) {
+            restOnTheGround(level);
             return;
         }
         if (lifeTicks > 0 && --lifeTicks == 0) {
@@ -320,14 +364,6 @@ public class StarkDroneEntity extends PathfinderMob {
             moveControl.setWantedPosition(getX(), getY(), getZ(), 0.2);
             return;
         }
-        // Net uit de lucht gekomen: een straaltje vonken achter de drone aan.
-        if (diveTicks > 0) {
-            diveTicks--;
-            if (diveTicks % 2 == 0) {
-                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 1, 0.05, 0.05, 0.05, 0.01);
-            }
-        }
-
         // Jaagt de drone op één vastgezet doelwit? Dan stopt hij zodra dat doelwit weg is.
         if (lockedTargetId != null) {
             LivingEntity locked = level.getEntity(lockedTargetId) instanceof LivingEntity living ? living : null;
@@ -370,7 +406,7 @@ public class StarkDroneEntity extends PathfinderMob {
             case SPY -> EdithData.getEnergy(glasses) > 0 && EdithSpy.isActiveSpy(owner, this);
             case TRANSPORT -> EdithData.getEnergy(glasses) > 0;
             case ILLUSION -> EdithIllusions.isActive(this);
-            case LAUNCH -> true;
+            case LAUNCH, GROUNDED -> true;
         };
     }
 
@@ -650,30 +686,116 @@ public class StarkDroneEntity extends PathfinderMob {
     }
 
     /**
-     * Terugroepen: de drone verdwijnt met een wolkje en een geluid, en gaat terug naar zijn
-     * baan om de planeet. De schade die hij opliep gaat mee: hij komt beschadigd terug in je
-     * arsenaal en blijft zo tot je hem repareert.
+     * Terugroepen: de drone stijgt op en verdwijnt hoog in de lucht. Zijn schade gaat mee, dus
+     * hij komt beschadigd terug in je arsenaal en blijft zo tot je hem repareert.
+     *
+     * Is er geen weg omhoog (je staat in een grot), dan lost hij ter plekke op; anders zou hij
+     * tegen het plafond blijven duwen.
      */
     public void recall(ServerLevel level) {
-        dropCargo(level);
-        returnToArsenal(level);
-        level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.2, getZ(), 6, 0.2, 0.1, 0.2, 0.02);
-        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 8, 0.3, 0.2, 0.3, 0.1);
-        level.playSound(null, getX(), getY(), getZ(), ModSounds.DRONE_RECALL.get(), SoundSource.NEUTRAL, 0.7f, 1.3f);
-        discard();
+        departToOrbit(level);
     }
 
-    /** Vliegt recht omhoog tot hij de lucht uit is; daarna hangt hij in zijn baan. */
+    /** Vliegt recht omhoog tot hij hoog genoeg is; daarna hangt hij in zijn baan. */
     private void climbToOrbit(ServerLevel level) {
+        launchTicks++;
         setDeltaMovement(0, ArsenalBalance.LAUNCH_SPEED, 0);
         hasImpulse = true;
-        if (tickCount % 2 == 0) {
+        if (launchTicks % 2 == 0) {
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() - 0.2, getZ(), 2, 0.08, 0.05, 0.08, 0.02);
         }
-        if (tickCount >= ArsenalBalance.LAUNCH_TICKS || getY() > level.getMaxBuildHeight() + 16) {
+        boolean highEnough = getY() >= launchFrom + ArsenalBalance.ORBIT_HEIGHT;
+        boolean stuck = horizontalCollision || verticalCollision;
+        if (highEnough || stuck || launchTicks >= ArsenalBalance.LAUNCH_TICKS
+                || getY() > level.getMaxBuildHeight() + 16) {
             level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 8, 0.2, 0.2, 0.2, 0.02);
+            returnToArsenal(level);
             discard();
         }
+    }
+
+    /** Vanaf welke hoogte hij begon met stijgen; zo weet hij wanneer hij hoog genoeg is. */
+    private double launchFrom = Double.NaN;
+
+    /** Valt met hoge snelheid naar beneden en vangt vlak boven zijn doel op. */
+    private void dive(ServerLevel level) {
+        double left = getY() - diveTargetY;
+        if (left <= ArsenalBalance.DIVE_BRAKE_HEIGHT) {
+            diveTargetY = Double.NaN;
+            setDeltaMovement(0, 0, 0);
+            level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 6, 0.2, 0.1, 0.2, 0.02);
+            return;
+        }
+        setDeltaMovement(0, -Math.min(ArsenalBalance.DIVE_SPEED, left), 0);
+        hasImpulse = true;
+        // Een streep vonken achter hem aan, zodat je hem uit de lucht ziet komen.
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.4, getZ(), 2, 0.05, 0.1, 0.05, 0.01);
+        // Tegen een plafond gelopen? Dan is hij er ook.
+        if (verticalCollision) {
+            diveTargetY = Double.NaN;
+            setDeltaMovement(0, 0, 0);
+        }
+    }
+
+    /**
+     * Een teruggeroepen drone: hij zakt naar de grond en blijft daar staan wachten tot je hem
+     * met een rechtsklik repareert.
+     */
+    private void restOnTheGround(ServerLevel level) {
+        if (onGround() || !level.getBlockState(blockPosition().below()).getCollisionShape(level, blockPosition().below()).isEmpty()) {
+            setDeltaMovement(0, 0, 0);
+            setNoGravity(true);
+        } else {
+            setDeltaMovement(0, -0.25, 0);
+            hasImpulse = true;
+        }
+        // Een zacht knipperlicht, zodat je ziet dat hij op je wacht.
+        if (tickCount % 20 == 0) {
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.3, getZ(), 1, 0.1, 0.05, 0.1, 0.0);
+        }
+    }
+
+    /**
+     * Rechtsklikken op een drone die op je wacht: repareren met ijzer uit je rugzak.
+     * Is hij weer helemaal heel (of hou je shift ingedrukt), dan vertrekt hij naar zijn baan.
+     */
+    @Override
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (getMode() != Mode.GROUNDED || !(player instanceof ServerPlayer serverPlayer)
+                || !(level() instanceof ServerLevel level)) {
+            return super.mobInteract(player, hand);
+        }
+        if (!isOwnedBy(player)) {
+            return InteractionResult.FAIL; // niet jouw drone
+        }
+        boolean full = getHealth() >= getMaxHealth();
+        if (player.isShiftKeyDown() || full) {
+            departToOrbit(level);
+            EdithServer.send(serverPlayer, Component.translatable("arsenal.starktech.msg.sent_up"),
+                    EdithMessagePayload.Level.INFO);
+            return InteractionResult.SUCCESS;
+        }
+        int wanted = (int) Math.ceil((getMaxHealth() - getHealth()) / ArsenalBalance.REPAIR_PER_INGOT);
+        int used = ArsenalCosts.takeRepairParts(player, wanted);
+        if (used <= 0) {
+            EdithServer.send(serverPlayer, Component.translatable("arsenal.starktech.msg.no_parts",
+                    ArsenalCosts.repairPartName(), wanted), EdithMessagePayload.Level.WARNING);
+            return InteractionResult.CONSUME;
+        }
+        setHealth((float) Math.min(getMaxHealth(), getHealth() + used * ArsenalBalance.REPAIR_PER_INGOT));
+        if (arsenalId != null) {
+            ArsenalServer.setHealth(serverPlayer, arsenalId, getHealth());
+        }
+        level.playSound(null, getX(), getY(), getZ(), ModSounds.STATION_UPGRADE.get(), SoundSource.PLAYERS, 0.8f, 1.4f);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.4, getZ(), 8, 0.2, 0.2, 0.2, 0.05);
+        if (getHealth() >= getMaxHealth()) {
+            EdithServer.send(serverPlayer, Component.translatable("arsenal.starktech.msg.repaired"),
+                    EdithMessagePayload.Level.INFO);
+        } else {
+            EdithServer.send(serverPlayer, Component.translatable("arsenal.starktech.msg.repairing",
+                    Math.round(getHealth()), Math.round(getMaxHealth())), EdithMessagePayload.Level.INFO);
+        }
+        return InteractionResult.SUCCESS;
     }
 
     /** Meldt deze drone terug in het arsenaal van zijn eigenaar, met de schade die hij opliep. */

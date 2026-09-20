@@ -1,5 +1,6 @@
 package com.senne.starktech.drone;
 
+import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithBalance;
@@ -39,9 +40,16 @@ public final class EdithDrones {
     /** Minimale vrije ruimte (in blokken) boven je voordat we van "uit de lucht" kunnen spreken. */
     private static final int MIN_DROP_HEIGHT = 4;
 
-    /** Alle drones van deze speler in de buurt van één soort. */
+    /**
+     * Alle drones van deze speler van één soort, in de buurt.
+     *
+     * "In de buurt" moet ruim genoeg zijn om ook de drones te vinden die nog hoog boven je
+     * hangen: ze vallen van ORBIT_HEIGHT blokken naar beneden en stijgen net zo hoog weer op.
+     * Was dit te krap, dan zou "stand down" een invallende drone gewoon missen.
+     */
     public static List<StarkDroneEntity> find(ServerPlayer owner, StarkDroneEntity.Mode mode) {
-        return owner.level().getEntitiesOfClass(StarkDroneEntity.class, owner.getBoundingBox().inflate(EdithBalance.SCOUT_RANGE + 16),
+        double range = Math.max(EdithBalance.SCOUT_RANGE + 16, ArsenalBalance.ORBIT_HEIGHT + 16);
+        return owner.level().getEntitiesOfClass(StarkDroneEntity.class, owner.getBoundingBox().inflate(range),
                 drone -> drone.isAlive() && drone.isOwnedBy(owner) && drone.getMode() == mode);
     }
 
@@ -108,10 +116,57 @@ public final class EdithDrones {
         ServerLevel level = target.level() instanceof ServerLevel targetLevel ? targetLevel : owner.serverLevel();
         Vec3 above = target.position();
         double y = freeHeightAbove(level, above.x, above.y, above.z);
-        return spawn(owner, StarkDroneEntity.Mode.SPY, 0, -1, new Vec3(above.x, y, above.z), level, true, available);
+        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.SPY, 0, -1,
+                new Vec3(above.x, y, above.z), level, true, available);
+        if (drone != null) {
+            drone.startDive(above.y + EdithBalance.SPY_FOLLOW_HEIGHT);
+        }
+        return drone;
     }
 
-/**
+    /**
+     * Zet een teruggeroepen drone naast de speler neer. Hij komt uit de lucht vallen en blijft
+     * daar staan tot je hem repareert (rechtsklik) of weer omhoog stuurt (shift-rechtsklik).
+     */
+    public static @Nullable StarkDroneEntity landRecalled(ServerPlayer owner, ArsenalDrone fromArsenal) {
+        ServerLevel level = owner.serverLevel();
+        // Twee blokken naast je, aan de kant waar je naartoe kijkt.
+        Vec3 look = owner.getViewVector(1.0f);
+        double x = owner.getX() + look.x * 2.0;
+        double z = owner.getZ() + look.z * 2.0;
+        double groundY = groundBelow(level, x, owner.getY() + 1, z);
+        double from = freeHeightAbove(level, x, groundY, z);
+        StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.GROUNDED, 0, -1,
+                new Vec3(x, from, z), level, from - groundY >= MIN_DROP_HEIGHT, fromArsenal);
+        if (drone != null) {
+            drone.startDive(groundY);
+        }
+        return drone;
+    }
+
+    /** De drone uit je arsenaal die nu naast je op de grond staat, of null. */
+    public static @Nullable StarkDroneEntity findGrounded(ServerPlayer owner, java.util.UUID arsenalId) {
+        for (StarkDroneEntity drone : find(owner, StarkDroneEntity.Mode.GROUNDED)) {
+            if (arsenalId.equals(drone.getArsenalId())) {
+                return drone;
+            }
+        }
+        return null;
+    }
+
+    /** De eerste vaste grond onder een punt (of de bodem van de wereld). */
+    private static double groundBelow(ServerLevel level, double x, double fromY, double z) {
+        BlockPos.MutableBlockPos pos = BlockPos.containing(x, fromY, z).mutable();
+        for (int i = 0; i < 24 && pos.getY() > level.getMinBuildHeight(); i++) {
+            if (!level.getBlockState(pos.below()).getCollisionShape(level, pos.below()).isEmpty()) {
+                return pos.getY();
+            }
+            pos.move(0, -1, 0);
+        }
+        return fromY;
+    }
+
+    /**
      * Roept alle drones van één soort van deze speler terug. Geeft terug hoeveel er weg gingen.
      * (Gebruikt door "stand down": alles afbreken.)
      */
@@ -268,7 +323,11 @@ public final class EdithDrones {
         double z = below.z + Math.sin(angle) * radius;
         double y = freeHeightAbove(level, x, below.y, z);
         boolean diving = y - below.y >= MIN_DROP_HEIGHT;
-        return spawn(owner, mode, slot, lifeTicks, new Vec3(x, y, z), diving, fromArsenal);
+        StarkDroneEntity drone = spawn(owner, mode, slot, lifeTicks, new Vec3(x, y, z), diving, fromArsenal);
+        if (drone != null && diving) {
+            drone.startDive(below.y);
+        }
+        return drone;
     }
 
     /**
@@ -322,8 +381,8 @@ public final class EdithDrones {
         drone.moveTo(position.x, position.y, position.z, owner.getYRot(), 0.0f);
         if (diving) {
             // Een zetje naar beneden, zodat hij echt "invalt" in plaats van rustig te komen zweven.
-            drone.setDeltaMovement(0, -1.1, 0);
-            drone.startDive();
+            // Waar hij precies moet uitkomen, zegt de beller met startDive().
+            drone.setDeltaMovement(0, -ArsenalBalance.DIVE_SPEED, 0);
         }
         level.addFreshEntity(drone);
         // Een spion maakt geen show: geen vonken en geen geluid bij het doelwit.

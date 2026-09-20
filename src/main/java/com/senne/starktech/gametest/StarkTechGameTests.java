@@ -10,6 +10,7 @@ import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.edith.EdithServer;
@@ -59,6 +60,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.core.NonNullList;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -350,7 +352,7 @@ public final class StarkTechGameTests {
      * Een zwerm komt uit je arsenaal: de drones staan daarna als "onderweg" geboekt, en
      * als ze teruggeroepen worden hangen ze weer klaar - met de schade die ze opliepen.
      */
-    @GameTest(template = ARENA, timeoutTicks = 200, batch = "arsenal")
+    @GameTest(template = ARENA, timeoutTicks = 600, batch = "arsenal")
     public static void swarm_comes_from_the_arsenal(GameTestHelper helper) {
         ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
         ItemStack glasses = EdithData.getWornGlasses(owner);
@@ -371,14 +373,76 @@ public final class StarkTechGameTests {
         if (after.size() != before) {
             throw new GameTestAssertException("Het arsenaal werd kleiner terwijl er niets kapot ging");
         }
-        // Terugroepen: ze horen weer klaar te hangen.
+        // Terugroepen: ze stijgen op en melden zich pas terug als ze hoog genoeg zijn.
         EdithDrones.recallAll(owner, StarkDroneEntity.Mode.ATTACK);
-        EdithArsenal back = ArsenalServer.get(owner);
-        if (back.availableCount() != before) {
-            throw new GameTestAssertException("Na terugroepen hangen er " + back.availableCount()
-                    + " klaar in plaats van " + before);
+        helper.succeedWhen(() -> {
+            EdithArsenal back = ArsenalServer.get(owner);
+            if (back.availableCount() != before) {
+                throw new GameTestAssertException("Na terugroepen hangen er " + back.availableCount()
+                        + " klaar in plaats van " + before);
+            }
+        });
+    }
+
+    /**
+     * Drones horen uit de lucht te komen en door de lucht te vertrekken.
+     *
+     * Hoe hoog ze precies beginnen hangt af van de ruimte boven je: in deze testarena zit een
+     * plafond, dus komen ze van net daaronder. Wat we hier vastleggen is dat de mod om veel
+     * hoogte vraagt, dat ze zo hoog beginnen als er ruimte is, dat ze duiken, en dat ze bij
+     * het terugroepen opstijgen in plaats van ter plekke op te lossen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 600, batch = "arsenal")
+    public static void drones_arrive_and_leave_through_the_sky(GameTestHelper helper) {
+        if (EdithConfig.droneDropHeight() < ArsenalBalance.ORBIT_HEIGHT) {
+            throw new GameTestAssertException("De mod vraagt maar " + EdithConfig.droneDropHeight()
+                    + " blokken hoogte; verwacht minstens " + ArsenalBalance.ORBIT_HEIGHT);
         }
-        helper.succeed();
+
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        if (EdithDrones.launchSwarm(owner, glasses) <= 0) {
+            throw new GameTestAssertException("Er vertrok geen enkele drone");
+        }
+
+        List<StarkDroneEntity> drones = EdithDrones.find(owner, StarkDroneEntity.Mode.ATTACK);
+        if (drones.isEmpty()) {
+            throw new GameTestAssertException("De gelanceerde drones zijn niet te vinden");
+        }
+        // Ze beginnen hoog boven je (zo hoog als het plafond toelaat) en duiken naar beneden.
+        double highest = 0;
+        boolean anyDiving = false;
+        for (StarkDroneEntity drone : drones) {
+            highest = Math.max(highest, drone.getY() - owner.getY());
+            anyDiving |= drone.isDiving();
+        }
+        if (highest < 8) {
+            throw new GameTestAssertException("De hoogste drone begon maar " + Math.round(highest)
+                    + " blokken boven je");
+        }
+        if (!anyDiving) {
+            throw new GameTestAssertException("Geen enkele drone is aan het duiken");
+        }
+
+        // Even laten vallen tot ze bij je zijn.
+        helper.runAfterDelay(40, () -> {
+            for (StarkDroneEntity drone : EdithDrones.find(owner, StarkDroneEntity.Mode.ATTACK)) {
+                if (drone.isDiving()) {
+                    throw new GameTestAssertException("Er duikt er nog een na twee seconden");
+                }
+                if (drone.getY() - owner.getY() > 8) {
+                    throw new GameTestAssertException("Een drone hangt nog op "
+                            + Math.round(drone.getY() - owner.getY()) + " blokken hoogte");
+                }
+            }
+            // Terugroepen: ze stijgen op, ze verdwijnen niet meteen.
+            EdithDrones.recallAll(owner, StarkDroneEntity.Mode.ATTACK);
+            List<StarkDroneEntity> leaving = EdithDrones.find(owner, StarkDroneEntity.Mode.LAUNCH);
+            if (leaving.isEmpty()) {
+                throw new GameTestAssertException("Na het terugroepen stijgt er niemand op");
+            }
+            helper.succeed();
+        });
     }
 
     /** Is je arsenaal leeg, dan vertrekt er niets - ook niet als je genoeg energie hebt. */
@@ -498,8 +562,11 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
-    /** Terugroepen, repareren met ijzer uit je rugzak, en weer omhoog sturen. */
-    @GameTest(template = ARENA, timeoutTicks = 100, batch = "arsenal")
+    /**
+     * Terugroepen zet een echte drone naast je neer. Daar repareer je hem met een rechtsklik
+     * (ijzer uit je rugzak), en met shift-rechtsklik stuur je hem weer omhoog.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "arsenal")
     public static void recall_repair_and_launch(GameTestHelper helper) {
         ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
         owner.setData(ModAttachments.ARSENAL, EdithArsenal.EMPTY);
@@ -510,25 +577,39 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("Terugroepen lukte niet");
         }
         if (ArsenalServer.get(owner).find(id).state() != ArsenalDrone.State.GROUNDED) {
-            throw new GameTestAssertException("De drone staat niet aan de grond");
+            throw new GameTestAssertException("De drone staat niet als 'aan de grond' geboekt");
         }
-        // Zonder ijzer gebeurt er niets.
-        if (ArsenalServer.repair(owner, id) != 0) {
+        StarkDroneEntity landed = EdithDrones.findGrounded(owner, id);
+        if (landed == null) {
+            throw new GameTestAssertException("Er kwam geen drone naast je naar beneden");
+        }
+        if (Math.abs(landed.getHealth() - 1.0f) > 0.01f) {
+            throw new GameTestAssertException("De drone landde met " + landed.getHealth() + " leven");
+        }
+
+        // Rechtsklikken zonder ijzer doet niets.
+        landed.mobInteract(owner, InteractionHand.MAIN_HAND);
+        if (landed.getHealth() > 1.01f) {
             throw new GameTestAssertException("Er werd gerepareerd zonder onderdelen");
         }
+        // Met ijzer in je rugzak wel, en het ijzer gaat op.
         owner.getInventory().add(new ItemStack(ArsenalCosts.REPAIR_PART, 64));
-        if (ArsenalServer.repair(owner, id) <= 0) {
-            throw new GameTestAssertException("Repareren lukte niet met ijzer in de rugzak");
+        landed.mobInteract(owner, InteractionHand.MAIN_HAND);
+        if (landed.getHealth() < landed.getMaxHealth()) {
+            throw new GameTestAssertException("De drone is nog niet heel: " + landed.getHealth());
         }
-        ArsenalDrone repaired = ArsenalServer.get(owner).find(id);
-        if (!repaired.isFullyRepaired()) {
-            throw new GameTestAssertException("De drone is nog niet heel: " + repaired.health());
+        if (owner.getInventory().countItem(ArsenalCosts.REPAIR_PART) >= 64) {
+            throw new GameTestAssertException("Het ijzer werd niet verbruikt");
         }
-        if (!ArsenalServer.launch(owner, id)) {
-            throw new GameTestAssertException("Lanceren lukte niet");
+        ArsenalDrone stored = ArsenalServer.get(owner).find(id);
+        if (!stored.isFullyRepaired()) {
+            throw new GameTestAssertException("Het arsenaal weet nog niet dat hij heel is: " + stored.health());
         }
-        if (!ArsenalServer.get(owner).find(id).isAvailable()) {
-            throw new GameTestAssertException("De drone hangt niet klaar na het lanceren");
+
+        // Nog een klik op een hele drone: hij vertrekt naar zijn baan.
+        landed.mobInteract(owner, InteractionHand.MAIN_HAND);
+        if (landed.getMode() != StarkDroneEntity.Mode.LAUNCH) {
+            throw new GameTestAssertException("De drone stijgt niet op: " + landed.getMode());
         }
         helper.succeed();
     }
