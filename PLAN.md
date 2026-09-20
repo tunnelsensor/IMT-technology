@@ -59,7 +59,6 @@ Afspraken die overal gelden:
       Rechtsklik om te repareren met ijzer uit je rugzak, shift-rechtsklik om hem weer omhoog
       te sturen.
 
-- [x] **Holotafel** — zie hieronder
 - [x] **Van heel hoog in- en uitvliegen** — `379478d`
       96 blokken in plaats van 24, in een duik met vonken. Bij vertrek stijgen ze net zo hoog
       weer op in plaats van ter plekke op te lossen.
@@ -67,7 +66,7 @@ Afspraken die overal gelden:
       een drone die nog aan het invallen was. De configsleutel heet nu `drones.orbitHeight`,
       anders hield een bestaande wereld zijn oude 24.
 
-- [x] **Holotafel**
+- [x] **Holotafel** — `47b99c1`
       Een tafel die een hologram boven zich projecteert, in een kleur die je zelf kiest
       (dezelfde zes als de rayshields, met sluipen + rechtsklik).
       Drie standen: een reliëfkaart van de omgeving met je waypoints, spelers en vijanden erop;
@@ -125,7 +124,7 @@ ademen), waar je het vandaan haalt, en wat het aan energie kost.
       Nu moet je de mod herbouwen om iets aan te passen. In een configbestand kun je tijdens het
       spelen bijsturen — handig zodra je met vrienden speelt ("die satelliet is te sterk").
 - [ ] **Wil je bij elke nieuwe functie automatische tests?**
-      Ik schrijf ze nu standaard mee (27 stuks inmiddels). Ze kosten per functie 20-50 regels
+      Ik schrijf ze nu standaard mee (29 stuks inmiddels). Ze kosten per functie 20-50 regels
       extra en vangen op dat een wijziging aan de drones per ongeluk de satelliet sloopt.
 - [ ] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? Die zie je alleen tijdens
       ontwikkelen, nooit in het spel.
