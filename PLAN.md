@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 35 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 38 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 
 ---
 
@@ -77,27 +77,17 @@ Afspraken die overal gelden:
       Aannames die ik zelf heb ingevuld: wat het kan, dat het craftbaar is (netherite +
       Stark-chips), en de getallen in `SuitBalance.java`.
 
+- [x] **Vijanden: raiddrones** — `66fae68`
+      Een vijandige drone (donker, oranje lampjes) die uit de lucht duikt, om je heen cirkelt
+      en schiet. Verstop je je, dan komt hij dichterbij en breekt hij zich naar binnen.
+      Komt vanzelf als je de bril draagt (standaard elke 20–45 minuten) en meteen als je te veel
+      sloopt in een Stark Tower. Gamerule `starktechRaidGriefing` zet het slopen uit (standaard
+      aan); frequentie en grootte van een golf staan in de serverconfig.
+
 - [x] **Advancements** — `1e3604d`
       16 prestaties onder "Stark Industries", van je eerste Stark-chip tot vliegen met het
       harnas. Wat de mod zelf toekent (eerste drone, satelliet, drone verloren, vliegen,
       repulsor) gebeurt op het moment dat het echt gebeurt.
-
----
-
-## Bezig
-
-### Vijanden: raiddrones
-
-Staat apart (in `git stash`), nog niet gecommit, omdat de test nog faalt.
-
-- [x] Een vijandige drone met eigen uiterlijk (donker, oranje lampjes) die uit de lucht duikt,
-      je beschiet en door muren heen breekt als je je verstopt
-- [x] Komt willekeurig als je de bril draagt (standaard elke 20–45 minuten, in te stellen)
-- [x] Komt meteen als je te veel sloopt in een Stark Tower
-- [x] Gamerule `starktechRaidGriefing` om het blokken slopen uit te zetten, standaard aan
-- [ ] **Nog op te lossen:** van een golf van 3 drones kwam er één 195 blokken hoog in plaats
-      van ~90. De hoogte waarop ze beginnen hangt af van de grond onder elke drone apart, en
-      daar klopt iets niet.
 
 ---
 
@@ -133,6 +123,9 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
 - [ ] De holotafel na het herstel: de kaart, de bouwtekening en het arsenaal
 - [ ] Het harnas op je lijf (de texturen heb ik wel nagekeken op een voorvertoning)
 - [ ] Het vliegen met het harnas en de repulsorstraal
+- [ ] Raiddrones: hoe ze eruitzien en bewegen
+- [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
+      een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
 
 ---
 
@@ -142,7 +135,7 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       Nu moet je de mod herbouwen om iets aan te passen. In een configbestand kun je tijdens het
       spelen bijsturen — handig zodra je met vrienden speelt ("die satelliet is te sterk").
 - [ ] **Wil je bij elke nieuwe functie automatische tests?**
-      Ik schrijf ze nu standaard mee (35 stuks inmiddels). Ze kosten per functie 20-50 regels
+      Ik schrijf ze nu standaard mee (38 stuks inmiddels). Ze kosten per functie 20-50 regels
       extra en vangen op dat een wijziging aan de drones per ongeluk de satelliet sloopt.
 - [ ] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? Die zie je alleen tijdens
       ontwikkelen, nooit in het spel.
