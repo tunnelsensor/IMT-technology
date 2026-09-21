@@ -766,5 +766,10 @@
   "advancements.starktech.fly.title": "Up and away",
   "advancements.starktech.fly.description": "Fly with the suit.",
   "advancements.starktech.repulsor.title": "Repulsor",
-  "advancements.starktech.repulsor.description": "Hit something with a repulsor blast."
+  "advancements.starktech.repulsor.description": "Hit something with a repulsor blast.",
+  "entity.starktech.raid_drone": "Raid Drone",
+  "raid.starktech.msg.incoming": "Contacts inbound: %s drones. They are not ours.",
+  "raid.starktech.msg.noticed": "Someone noticed you taking that tower apart.",
+  "gamerule.starktechRaidGriefing": "Raid drones break blocks",
+  "gamerule.starktechRaidGriefing.description": "Whether raid drones may break their way through walls to reach you."
 }

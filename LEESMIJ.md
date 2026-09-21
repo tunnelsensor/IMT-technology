@@ -183,6 +183,20 @@ de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes 
 zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
 plat.
 
+### Raiddrones
+Wie de E.D.I.T.H.-bril draagt, valt op. Af en toe komt er een golf **raiddrones** op je af:
+donker, met oranje lampjes, en niet van jou. Ze duiken uit de lucht, cirkelen om je heen en
+schieten. Verstop je je achter een muur, dan komen ze dichterbij en breken ze zich een weg naar
+binnen.
+
+- **Vanzelf**: standaard elke 20 tot 45 minuten, zolang je de bril op hebt.
+- **Omdat je erom vroeg**: sloop je in een Stark Tower, dan trek je aandacht. Doe je dat te
+  vaak, dan komen ze meteen (bij het eerste blok krijg je een waarschuwing).
+- **Blokken slopen uitzetten**: `/gamerule starktechRaidGriefing false`. Dan kunnen ze nog wel
+  schieten, maar laten ze je muren heel.
+- **Instellen per wereld** in `<wereld>/serverconfig/starktech-server.toml`: `raids.enabled`,
+  `raids.minMinutes`, `raids.maxMinutes` en `raids.size` (hoeveel drones per golf, standaard 4).
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste Stark-chip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Stark Industries**.
@@ -266,7 +280,7 @@ Alle zinnen kun je zelf aanpassen in **G > Systemen > Commando's** (of in
 
 | Bestand | Wat |
 |---------|-----|
-| `<wereld>/serverconfig/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), hacken aan/uit |
+| `<wereld>/serverconfig/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
 | `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |

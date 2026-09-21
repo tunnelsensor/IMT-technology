@@ -1,7 +1,7 @@
 package com.senne.starktech.client.drone;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.drone.StarkDroneEntity;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -20,7 +20,9 @@ import net.minecraft.util.Mth;
  * Maten zijn in pixels (16 pixels = 1 blok). Minecraft-modellen staan "op hun kop":
  * y = 24 is de grond en kleinere y is hoger.
  */
-public class DroneModel extends EntityModel<StarkDroneEntity> {
+public class DroneModel<T extends Entity> extends EntityModel<T> {
+    // Het model weet niet welke drone het tekent: je eigen drones en de vijandige raiddrones
+    // zijn dezelfde machine en gebruiken hetzelfde model, alleen met andere texturen.
     public static final ModelLayerLocation LAYER =
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "stark_drone"), "main");
 
@@ -82,7 +84,7 @@ public class DroneModel extends EntityModel<StarkDroneEntity> {
      * "ageInTicks" loopt op met de tijd; daarmee laten we hem zweven en de rotors draaien.
      */
     @Override
-    public void setupAnim(StarkDroneEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
+    public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks,
                           float netHeadYaw, float headPitch) {
         // Een beetje op en neer zweven.
         body.y = 20 + Mth.sin(ageInTicks * 0.15f) * 0.5f;

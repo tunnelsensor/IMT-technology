@@ -15,11 +15,11 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * Tekent de Stark-drones.
  */
-public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel> {
+public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel<StarkDroneEntity>> {
     private static final ResourceLocation TEXTURE = texture("stark_drone");
 
     public DroneRenderer(EntityRendererProvider.Context context) {
-        super(context, new DroneModel(context.bakeLayer(DroneModel.LAYER)), 0.25f);
+        super(context, new DroneModel<>(context.bakeLayer(DroneModel.LAYER)), 0.25f);
         addLayer(new LightsLayer(this));
     }
 
@@ -37,12 +37,12 @@ public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel> {
      * ogen van een enderman). Rood voor aanvalsdrones, blauw voor beschermende en
      * transportdrones, wit voor de verkenner en de spion.
      */
-    private static class LightsLayer extends RenderLayer<StarkDroneEntity, DroneModel> {
+    private static class LightsLayer extends RenderLayer<StarkDroneEntity, DroneModel<StarkDroneEntity>> {
         private static final RenderType ATTACK_LIGHTS = RenderType.eyes(texture("stark_drone_lights_attack"));
         private static final RenderType GUARD_LIGHTS = RenderType.eyes(texture("stark_drone_lights_guard"));
         private static final RenderType SCOUT_LIGHTS = RenderType.eyes(texture("stark_drone_lights_scout"));
 
-        LightsLayer(RenderLayerParent<StarkDroneEntity, DroneModel> renderer) {
+        LightsLayer(RenderLayerParent<StarkDroneEntity, DroneModel<StarkDroneEntity>> renderer) {
             super(renderer);
         }
 

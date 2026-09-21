@@ -30,6 +30,10 @@ import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.WaypointActionPayload;
 import com.senne.starktech.registry.ModArmorMaterials;
+import com.senne.starktech.raid.EdithRaids;
+import com.senne.starktech.raid.ModGameRules;
+import com.senne.starktech.raid.RaidBalance;
+import com.senne.starktech.raid.RaidDroneEntity;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
@@ -363,6 +367,130 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("De bril wordt niet opgeladen");
             }
         });
+    }
+
+    // ================================================================ Fase 15: raids
+
+    /** Een golf raiddrones komt uit de lucht op je af en kiest jou als doelwit. */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "raids")
+    public static void raid_drones_come_for_you(GameTestHelper helper) {
+        EdithRaids.clear();
+        // Midden in de arena: de drones komen tot 8 blokken naast je binnen, en aan de rand van
+        // de arena zou dat buiten de muren van de test zijn.
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 12));
+
+        int spawned = EdithRaids.startRaid(owner, 3);
+        if (spawned != 3) {
+            throw new GameTestAssertException("Er kwamen " + spawned + " drones in plaats van 3");
+        }
+        List<RaidDroneEntity> drones = helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class,
+                owner.getBoundingBox().inflate(RaidBalance.ARRIVAL_HEIGHT + 32));
+        if (drones.size() != 3) {
+            throw new GameTestAssertException("Niet alle drones zijn te vinden: " + drones.size());
+        }
+        // Ze horen uit de lucht te komen: zo hoog als de ruimte toelaat (in deze arena zit een
+        // plafond, net als bij de test voor je eigen drones) en duikend. Nooit hoger dan
+        // ARRIVAL_HEIGHT, en nooit dwars door dat plafond heen.
+        for (RaidDroneEntity drone : drones) {
+            double above = drone.getY() - owner.getY();
+            if (above < 6) {
+                throw new GameTestAssertException("Een raiddrone begon maar " + Math.round(above) + " blokken hoog");
+            }
+            if (above > RaidBalance.ARRIVAL_HEIGHT + RaidBalance.HOVER_ABOVE + 2) {
+                throw new GameTestAssertException("Een raiddrone begon " + Math.round(above)
+                        + " blokken hoog, hoger dan hij ooit mag");
+            }
+        }
+
+        // Even laten vallen; daarna horen ze jou op de korrel te hebben.
+        helper.succeedWhen(() -> {
+            for (RaidDroneEntity drone : helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class,
+                    owner.getBoundingBox().inflate(RaidBalance.ARRIVAL_HEIGHT + 32))) {
+                if (drone.isDiving()) {
+                    throw new GameTestAssertException("Er duikt er nog een");
+                }
+                if (drone.getTarget() != owner) {
+                    throw new GameTestAssertException("Een raiddrone heeft jou niet als doelwit");
+                }
+            }
+        });
+    }
+
+    /**
+     * Met de gamerule aan breekt een raiddrone zich een weg naar je toe als je je verstopt.
+     *
+     * De speler zit dicht ingemetseld, zodat de drone hem nooit kan zien en wel moet slopen.
+     * De twee gamerule-tests staan elk in een eigen groep: de regel geldt voor de hele wereld,
+     * en tests in dezelfde groep draaien tegelijk.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "raids_grief_on")
+    public static void raid_drone_breaks_in_when_allowed(GameTestHelper helper) {
+        EdithRaids.clear();
+        setRaidGriefing(helper, true);
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 12));
+        List<BlockPos> shell = encloseInStone(helper, new BlockPos(12, 3, 12));
+        spawnHunter(helper, owner, new BlockPos(12, 8, 18));
+
+        helper.succeedWhen(() -> {
+            for (BlockPos pos : shell) {
+                if (helper.getBlockState(pos).isAir()) {
+                    return; // er is een gat: hij is aan het inbreken
+                }
+            }
+            throw new GameTestAssertException("De drone heeft nog geen blok weggehaald");
+        });
+    }
+
+    /** Met de gamerule uit blijft je schuilplaats heel, hoe lang de drone ook zoekt. */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "raids_grief_off")
+    public static void raid_drone_leaves_walls_when_forbidden(GameTestHelper helper) {
+        EdithRaids.clear();
+        setRaidGriefing(helper, false);
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 12));
+        List<BlockPos> shell = encloseInStone(helper, new BlockPos(12, 3, 12));
+        spawnHunter(helper, owner, new BlockPos(12, 8, 18));
+
+        helper.runAfterDelay(200, () -> {
+            // Eerst terugzetten, zodat een mislukte test de rest niet meesleept.
+            setRaidGriefing(helper, true);
+            for (BlockPos pos : shell) {
+                helper.assertBlockPresent(Blocks.STONE, pos);
+            }
+            helper.succeed();
+        });
+    }
+
+    private static void setRaidGriefing(GameTestHelper helper, boolean allowed) {
+        helper.getLevel().getGameRules().getRule(ModGameRules.RAID_GRIEFING)
+                .set(allowed, helper.getLevel().getServer());
+    }
+
+    /** Metselt een speler helemaal in: steen om voeten en hoofd heen, met een vloer en een dak. */
+    private static List<BlockPos> encloseInStone(GameTestHelper helper, BlockPos feet) {
+        List<BlockPos> shell = new java.util.ArrayList<>();
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dy = -1; dy <= 2; dy++) {
+                    boolean inside = dx == 0 && dz == 0 && (dy == 0 || dy == 1);
+                    if (!inside) {
+                        BlockPos pos = feet.offset(dx, dy, dz);
+                        helper.setBlock(pos, Blocks.STONE);
+                        shell.add(pos);
+                    }
+                }
+            }
+        }
+        return shell;
+    }
+
+    /** Een raiddrone op een vaste plek, meteen op deze speler gericht. */
+    private static void spawnHunter(GameTestHelper helper, ServerPlayer target, BlockPos at) {
+        Vec3 where = helper.absoluteVec(Vec3.atCenterOf(at));
+        RaidDroneEntity drone = RaidDroneEntity.spawn(helper.getLevel(), where, where.y);
+        if (drone == null) {
+            throw new GameTestAssertException("De raiddrone verscheen niet");
+        }
+        drone.setTarget(target);
     }
 
     // ================================================================ Fase 15: prestaties

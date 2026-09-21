@@ -335,7 +335,16 @@ public final class EdithDrones {
      * beginnen: hooguit dropHeight blokken hoger, en nooit door een plafond heen.
      */
     private static double freeHeightAbove(ServerLevel level, double x, double fromY, double z) {
-        int maxDrop = EdithConfig.droneDropHeight();
+        return freeHeightAbove(level, x, fromY, z, EdithConfig.droneDropHeight());
+    }
+
+    /**
+     * Hoe hoog boven "fromY" is de lucht nog vrij, tot maximaal "maxDrop" blokken? Stopt net
+     * onder het eerste blok dat in de weg zit, zodat een drone nooit door een dak heen komt.
+     *
+     * Ook de vijandige raiddrones gebruiken dit, zodat ze op dezelfde manier binnenkomen.
+     */
+    public static double freeHeightAbove(ServerLevel level, double x, double fromY, double z, int maxDrop) {
         int startY = (int) Math.floor(fromY) + 2;
         double best = fromY + 1.2;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();

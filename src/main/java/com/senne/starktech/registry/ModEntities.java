@@ -2,6 +2,7 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.drone.StarkDroneEntity;
+import com.senne.starktech.raid.RaidDroneEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -28,8 +29,18 @@ public final class ModEntities {
                     .noSummon()                // niet met /summon, want een drone zonder eigenaar vliegt meteen weg
                     .build("stark_drone"));
 
+    /** Fase 15: de vijandige drones van een raid. */
+    public static final DeferredHolder<EntityType<?>, EntityType<RaidDroneEntity>> RAID_DRONE = ENTITIES.register(
+            "raid_drone", () -> EntityType.Builder.of(RaidDroneEntity::new, MobCategory.MONSTER)
+                    .sized(0.8f, 0.5f)
+                    .eyeHeight(0.25f)
+                    .clientTrackingRange(10)
+                    .fireImmune()
+                    .build("raid_drone"));
+
     /** Levenspunten, snelheid enz. van elk wezen. */
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(STARK_DRONE.get(), StarkDroneEntity.createAttributes().build());
+        event.put(RAID_DRONE.get(), RaidDroneEntity.createAttributes().build());
     }
 }

@@ -24,6 +24,8 @@ import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.shield.EdithShield;
 import com.senne.starktech.shield.LaserAnimations;
+import com.senne.starktech.raid.EdithRaids;
+import com.senne.starktech.raid.ModGameRules;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.suit.EdithSuit;
 import com.senne.starktech.transport.EdithTransport;
@@ -107,6 +109,12 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithIllusions::onServerStopped);
         // Fase 11: het persoonlijke schild vangt schade op
         NeoForge.EVENT_BUS.addListener(EdithShield::onIncomingDamage);
+
+        // Fase 15: raids
+        ModGameRules.register();
+        NeoForge.EVENT_BUS.addListener(EdithRaids::onServerTick);
+        NeoForge.EVENT_BUS.addListener(EdithRaids::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(EdithRaids::onServerStopped);
 
         // Fase 15: het harnas
         NeoForge.EVENT_BUS.addListener(EdithSuit::onPlayerTick);

@@ -382,6 +382,31 @@ def drone_textures():
         px(lights, [(x, y), (x + 1, y + 1)], dim)
         save(lights, f"entity/drone/stark_drone_lights_{name}.png")
 
+    # --- De vijandige raiddrone: dezelfde machine, maar donkerder en met oranje lampjes.
+    raid = base.copy()
+    for region in body.values():
+        fill_region(raid, region, (32, 30, 34, 255))
+    fill_region(raid, body["top"], (44, 40, 46, 255))
+    fill_region(raid, body["bottom"], (20, 18, 22, 255))
+    for region in camera.values():
+        fill_region(raid, region, (22, 20, 24, 255))
+    for arm in (arm_a, arm_b):
+        for region in arm.values():
+            fill_region(raid, region, (40, 38, 42, 255))
+    save(raid, "entity/drone/raid_drone.png")
+
+    raid_lights = img(64, 32)
+    orange = (255, 140, 30, 255)
+    orange_dim = (150, 70, 10, 255)
+    fill_region(raid_lights, camera["front"], orange)
+    x, y, w, h = body["top"]
+    px(raid_lights, [(x + 2, y + 2), (x + 3, y + 2), (x + 2, y + 3), (x + 3, y + 3)], orange)
+    for side in ("front", "back", "east", "west"):
+        x, y, w, h = body[side]
+        for i in range(1, w - 1):
+            raid_lights.putpixel((x + i, y + 1), orange_dim)
+    save(raid_lights, "entity/drone/raid_drone_lights.png")
+
 
 # --------------------------------------------------------------------- Fase 9: redstone-relais
 

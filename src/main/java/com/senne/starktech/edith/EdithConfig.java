@@ -59,6 +59,24 @@ public final class EdithConfig {
             .comment("How high above you drones dive in from, and climb away to (in blocks)")
             .defineInRange("drones.orbitHeight", ArsenalBalance.ORBIT_HEIGHT, 0, 320);
 
+    // ---------------------------------------------------------------- Raids (fase 15)
+
+    public static final ModConfigSpec.BooleanValue RAIDS_ENABLED = BUILDER
+            .comment("Do hostile raid drones come after players wearing the glasses?")
+            .define("raids.enabled", true);
+
+    public static final ModConfigSpec.IntValue RAID_MIN_MINUTES = BUILDER
+            .comment("Shortest wait between two raids (in minutes)")
+            .defineInRange("raids.minMinutes", 20, 1, 1440);
+
+    public static final ModConfigSpec.IntValue RAID_MAX_MINUTES = BUILDER
+            .comment("Longest wait between two raids (in minutes)")
+            .defineInRange("raids.maxMinutes", 45, 1, 1440);
+
+    public static final ModConfigSpec.IntValue RAID_SIZE = BUILDER
+            .comment("How many drones come in one raid")
+            .defineInRange("raids.size", 4, 1, 32);
+
     // ---------------------------------------------------------------- Hacken
 
     public static final ModConfigSpec.BooleanValue HACK_ALLOWED = BUILDER
@@ -106,6 +124,22 @@ public final class EdithConfig {
 
     public static int droneDropHeight() {
         return value(DRONE_DROP_HEIGHT, ArsenalBalance.ORBIT_HEIGHT);
+    }
+
+    public static boolean raidsEnabled() {
+        return !SPEC.isLoaded() || RAIDS_ENABLED.get();
+    }
+
+    public static int raidMinMinutes() {
+        return value(RAID_MIN_MINUTES, 20);
+    }
+
+    public static int raidMaxMinutes() {
+        return value(RAID_MAX_MINUTES, 45);
+    }
+
+    public static int raidSize() {
+        return value(RAID_SIZE, 4);
     }
 
     /** Mag de hack-functie gebruikt worden? */
