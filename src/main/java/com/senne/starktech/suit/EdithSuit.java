@@ -210,7 +210,7 @@ public final class EdithSuit {
             target.hurt(ModDamageTypes.droneLaser(level, player, player), SuitBalance.REPULSOR_DAMAGE);
             Vec3 push = target.position().subtract(player.position()).normalize()
                     .scale(SuitBalance.REPULSOR_KNOCKBACK);
-            target.push(push.x, 0.4, push.z);
+            target.push(push.x, 0.15, push.z);
             target.hurtMarked = true;
             hits++;
         }
@@ -220,9 +220,9 @@ public final class EdithSuit {
                 new BeamEffectPayload(from, to, BeamEffectPayload.Kind.REPULSOR));
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_POWER_SELECT,
                 SoundSource.PLAYERS, 0.9f, 0.6f);
-        // Een zetje naar achteren: een repulsor duwt jou ook.
-        Vec3 back = player.getViewVector(1.0f).scale(-0.15);
-        player.push(back.x, 0.05, back.z);
+        // Een klein zetje naar achteren: een repulsor duwt jou ook een beetje.
+        Vec3 back = player.getViewVector(1.0f).scale(-SuitBalance.REPULSOR_RECOIL);
+        player.push(back.x, 0.0, back.z);
         player.hurtMarked = true;
         if (hits > 0) {
             StarkAdvancements.award(player, StarkAdvancements.REPULSOR);

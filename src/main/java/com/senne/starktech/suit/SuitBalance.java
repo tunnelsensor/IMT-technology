@@ -41,16 +41,18 @@ public final class SuitBalance {
     public static final int LANDING_COST = 200;
 
     // ---------------------------------------------------------------- Repulsor
-    /** Schade van één repulsorstoot (12 = 6 hartjes). */
-    public static final float REPULSOR_DAMAGE = 12.0f;
+    /** Schade van één repulsorstoot (7 = 3,5 hartje). */
+    public static final float REPULSOR_DAMAGE = 7.0f;
     /** Wat één stoot kost. */
-    public static final int REPULSOR_COST = 500;
+    public static final int REPULSOR_COST = 200;
     /** Wachttijd tussen twee stoten (in ticks). 20 ticks = 1 seconde. */
     public static final int REPULSOR_COOLDOWN = 20;
     /** Hoe ver de stoot reikt (in blokken). */
     public static final double REPULSOR_RANGE = 24.0;
     /** Hoe hard hij wegduwt wat hij raakt. */
-    public static final double REPULSOR_KNOCKBACK = 1.4;
+    public static final double REPULSOR_KNOCKBACK = 0.7;
+    /** Hoe hard de stoot jou zelf naar achteren duwt. Klein houden: anders schiet je jezelf weg. */
+    public static final double REPULSOR_RECOIL = 0.04;
     /** Hoe ver naast de straal je nog geraakt wordt (in blokken). */
     public static final double REPULSOR_WIDTH = 1.2;
 }

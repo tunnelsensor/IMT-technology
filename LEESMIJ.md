@@ -206,8 +206,8 @@ Met de bril op en energie erin:
   gewoon uit de lucht — hou hem dus in de gaten.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
 - **Repulsor** (toets **I**, of G > Gevecht): een stoot uit je handpalm die alles op zijn weg
-  raakt en wegduwt, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de reactor) en het
-  kost 500 energie per stoot.
+  raakt en een stukje wegduwt, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de
+  reactor) en het kost 200 energie per stoot.
 
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij
