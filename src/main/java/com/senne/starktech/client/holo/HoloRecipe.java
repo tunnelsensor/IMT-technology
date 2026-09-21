@@ -1,6 +1,9 @@
 package com.senne.starktech.client.holo;
 
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
@@ -40,9 +43,15 @@ public final class HoloRecipe {
 
     // ---------------------------------------------------------------- Opzoeken
 
-    private static @Nullable ItemStack lastWanted;
-    private static @Nullable HoloRecipe lastResult;
-    private static long lastBuiltAt = Long.MIN_VALUE;
+    /** Een opgezocht recept en wanneer dat was. */
+    private record Cached(@Nullable HoloRecipe recipe, long builtAt) {}
+
+    /**
+     * Wat we per voorwerp al opgezocht hebben. Eerst was er maar één plekje: stonden er twee
+     * tafels met elk een ander voorwerp, dan zochten ze elke frame opnieuw de hele receptenlijst
+     * door.
+     */
+    private static final Map<Item, Cached> CACHE = new HashMap<>();
 
     /**
      * Zoekt het recept dat dit voorwerp maakt. Geeft null als er geen (gewoon) recept voor is,
@@ -50,14 +59,16 @@ public final class HoloRecipe {
      */
     public static @Nullable HoloRecipe of(Level level, ItemStack wanted) {
         long now = level.getGameTime();
-        boolean sameItem = lastWanted != null && ItemStack.isSameItem(lastWanted, wanted);
-        if (sameItem && now - lastBuiltAt < CYCLE_TICKS) {
-            return lastResult;
+        Cached cached = CACHE.get(wanted.getItem());
+        if (cached != null && now - cached.builtAt() < CYCLE_TICKS && now >= cached.builtAt()) {
+            return cached.recipe();
         }
-        lastWanted = wanted.copy();
-        lastBuiltAt = now;
-        lastResult = search(level, wanted, now);
-        return lastResult;
+        if (CACHE.size() > 64) {
+            CACHE.clear();
+        }
+        HoloRecipe recipe = search(level, wanted, now);
+        CACHE.put(wanted.getItem(), new Cached(recipe, now));
+        return recipe;
     }
 
     private static @Nullable HoloRecipe search(Level level, ItemStack wanted, long now) {

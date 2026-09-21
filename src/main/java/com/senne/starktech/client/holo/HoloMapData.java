@@ -19,8 +19,11 @@ public class HoloMapData {
     public static final int CELLS = 32;
     /** Zo vaak rekenen we de kaart opnieuw uit (in ticks). 60 ticks = 3 seconden. */
     private static final long REFRESH_TICKS = 60;
-    /** Hoogteverschil (in blokken) dat overeenkomt met de volle hoogte van het hologram. */
-    private static final float HEIGHT_SCALE = 32.0f;
+    /**
+     * Hoogteverschil (in blokken) dat overeenkomt met de volle hoogte van het hologram.
+     * Wat kleiner dan echt, zodat ook een heuvel van een paar blokken te zien is.
+     */
+    private static final float HEIGHT_SCALE = 20.0f;
 
     private @Nullable Snapshot snapshot;
     private long builtAt = Long.MIN_VALUE;
@@ -49,12 +52,14 @@ public class HoloMapData {
         float[] heights = new float[CELLS * CELLS];
         int originX = table.getX() - radius;
         int originZ = table.getZ() - radius;
-        // Hoe groter het bereik, hoe meer blokken één vakje beslaat.
-        int blocksPerCell = Math.max(1, (radius * 2) / CELLS);
+        // Hoe groter het bereik, hoe meer blokken één vakje beslaat. Met kommagetallen: bij een
+        // bereik van 24 is een vakje anderhalf blok, en met hele getallen werd dat 1, waardoor
+        // de kaart kleiner uitviel dan de plek waar de spelers en waypoints op stonden.
+        double blocksPerCell = (radius * 2.0) / CELLS;
         for (int cx = 0; cx < CELLS; cx++) {
             for (int cz = 0; cz < CELLS; cz++) {
-                int x = originX + cx * blocksPerCell + blocksPerCell / 2;
-                int z = originZ + cz * blocksPerCell + blocksPerCell / 2;
+                int x = (int) Math.floor(originX + (cx + 0.5) * blocksPerCell);
+                int z = (int) Math.floor(originZ + (cz + 0.5) * blocksPerCell);
                 // Niet geladen stukken slaan we over: daar weten we de hoogte niet van.
                 if (!level.hasChunkAt(new BlockPos(x, table.getY(), z))) {
                     heights[cx * CELLS + cz] = Float.NaN;
@@ -68,7 +73,7 @@ public class HoloMapData {
     }
 
     /** Eén uitgerekende kaart. */
-    public record Snapshot(BlockPos table, int originX, int originZ, int radius, int blocksPerCell,
+    public record Snapshot(BlockPos table, int originX, int originZ, int radius, double blocksPerCell,
                            float[] heights) {
 
         /** Hoe hoog het vakje is, van -1 (diep) tot 1 (hoog), of NaN als het niet geladen is. */

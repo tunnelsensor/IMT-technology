@@ -11,8 +11,11 @@ import com.senne.starktech.holo.HoloTableBlockEntity;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.registry.ModAttachments;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -54,7 +57,14 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     private static final int VIEW_DISTANCE = 24;
 
     private final ItemRenderer items;
-    private final HoloMapData map = new HoloMapData();
+    /**
+     * Een kaart per tafel. Er is maar één renderer voor alle holotafels samen, dus met één
+     * gedeelde kaart gooiden twee tafels elkaars kaart elke frame weg en rekenden ze hem
+     * steeds opnieuw uit.
+     */
+    private final Map<BlockPos, HoloMapData> maps = new HashMap<>();
+    /** Hoe hoog het reliëf wordt: een hoogteverschil van "1" op de kaart is zoveel blokken. */
+    private static final float RELIEF = 0.4f;
 
     public HoloTableRenderer(BlockEntityRendererProvider.Context context) {
         this.items = context.getItemRenderer();
@@ -89,7 +99,7 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
 
         switch (table.mode()) {
             case MAP -> renderMap(table, level, poseStack, lines, rgb, time);
-            case BLUEPRINT -> renderBlueprint(table, level, poseStack, buffers, lines, rgb, light);
+            case BLUEPRINT -> renderBlueprint(table, level, poseStack, buffers, lines, rgb);
             case ARSENAL -> renderArsenal(poseStack, lines, rgb, time);
         }
         poseStack.popPose();
@@ -98,35 +108,43 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     // ---------------------------------------------------------------- Kaart
 
     /**
-     * De reliëfkaart: per vakje een staafje dat zo hoog is als de grond daar.
+     * De reliëfkaart: een draadmodel van het landschap rond de tafel.
+     *
+     * Elk vakje is een punt op de hoogte van de grond daar, verbonden met zijn buren. Zo zie je
+     * ook vlak land (als een net) en niet alleen de bergen; hoe hoger de grond, hoe feller de lijn.
+     *
+     * Eerst was elk vakje een staafje zo lang als het hoogteverschil met de tafel. Op vlakke grond
+     * is dat verschil nul, en dan zag je dus helemaal niets.
      *
      * De hoogtes rekenen we niet elke frame opnieuw uit - dat zijn duizenden opzoekingen - maar
-     * hooguit een paar keer per seconde, en alleen als er iets veranderd is (zie HoloMapData).
+     * hooguit eens per paar seconden (zie HoloMapData).
      */
     private void renderMap(HoloTableBlockEntity table, Level level, PoseStack poseStack,
                            VertexConsumer lines, int rgb, float time) {
-        HoloMapData.Snapshot snapshot = map.get(level, table.getBlockPos(), table.rangeBlocks());
+        HoloMapData.Snapshot snapshot = mapFor(table).get(level, table.getBlockPos(), table.rangeBlocks());
         int cells = HoloMapData.CELLS;
-        float step = SIZE / cells;
-        float half = SIZE / 2.0f;
-
         for (int cx = 0; cx < cells; cx++) {
             for (int cz = 0; cz < cells; cz++) {
                 float height = snapshot.relativeHeight(cx, cz);
                 if (Float.isNaN(height)) {
                     continue; // niets geladen daar
                 }
-                float x = -half + cx * step;
-                float z = -half + cz * step;
-                // Hoe hoger de grond, hoe feller het staafje.
-                float shade = 0.35f + 0.65f * Mth.clamp((height + 0.5f) / 1.0f, 0.0f, 1.0f);
-                int alpha = (int) (110 + 90 * shade);
-                vline(poseStack, lines, x, 0, z, height * 0.5f, rgb, alpha, shade);
+                float x = cellCentre(cx);
+                float z = cellCentre(cz);
+                float y = height * RELIEF;
+                float right = snapshot.relativeHeight(cx + 1, cz);
+                if (!Float.isNaN(right)) {
+                    meshLine(poseStack, lines, x, y, z, cellCentre(cx + 1), right * RELIEF, z, rgb, (height + right) / 2);
+                }
+                float below = snapshot.relativeHeight(cx, cz + 1);
+                if (!Float.isNaN(below)) {
+                    meshLine(poseStack, lines, x, y, z, x, below * RELIEF, cellCentre(cz + 1), rgb, (height + below) / 2);
+                }
             }
         }
 
         // De tafel zelf als een klein baken in het midden.
-        marker(poseStack, lines, 0, 0, 0, 0.16f, 0xFFFFFF, 255);
+        marker(poseStack, lines, 0, 0.02f, 0, 0.12f, 0xFFFFFF, 255);
 
         // Wat er leeft in de buurt, en waar je naartoe wil.
         renderWaypoints(table, level, poseStack, lines, snapshot);
@@ -149,8 +167,10 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
             if (spot == null) {
                 continue;
             }
-            vline(poseStack, lines, spot[0], 0, spot[1], 0.34f, waypoint.color(), 235, 1.0f);
-            marker(poseStack, lines, spot[0], 0.34f, spot[1], 0.05f, waypoint.color(), 255);
+            // Een paaltje dat uit het landschap omhoog steekt, met een kruisje erop.
+            float ground = groundAt(snapshot, waypoint.pos().getX() + 0.5, waypoint.pos().getZ() + 0.5);
+            vline(poseStack, lines, spot[0], ground, spot[1], 0.34f, waypoint.color(), 235, 1.0f);
+            marker(poseStack, lines, spot[0], ground + 0.34f, spot[1], 0.05f, waypoint.color(), 255);
         }
     }
 
@@ -166,9 +186,8 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
                 continue;
             }
             int colour = entity instanceof Player ? 0xFFFFFF : entity instanceof Enemy ? 0xFF4545 : 0x5CFF9D;
-            float height = snapshot.relativeHeightAt(entity.getX(), entity.getZ());
-            float y = Float.isNaN(height) ? 0.0f : height * 0.5f;
-            marker(poseStack, lines, spot[0], y + 0.04f, spot[1], pulse, colour, 255);
+            float y = groundAt(snapshot, entity.getX(), entity.getZ());
+            marker(poseStack, lines, spot[0], y + 0.05f, spot[1], pulse, colour, 255);
         }
     }
 
@@ -176,7 +195,7 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
 
     /** Het recept van het voorwerp op tafel: het rooster met de onderdelen, en het resultaat erboven. */
     private void renderBlueprint(HoloTableBlockEntity table, Level level, PoseStack poseStack,
-                                 MultiBufferSource buffers, VertexConsumer lines, int rgb, int light) {
+                                 MultiBufferSource buffers, VertexConsumer lines, int rgb) {
         ItemStack wanted = table.blueprint();
         if (wanted.isEmpty()) {
             // Niets op tafel: een leeg rooster, als uitnodiging.
@@ -194,13 +213,14 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
                     if (!ingredient.isEmpty()) {
                         float x = (col - 1) * cell;
                         float z = (row - 1) * cell;
-                        item(poseStack, buffers, ingredient, x, 0.02f, z, 0.42f, light);
+                        // Een beetje boven het rooster, anders zakt het voorwerp er half doorheen.
+                        item(poseStack, buffers, ingredient, x, 0.12f, z, 0.42f);
                     }
                 }
             }
         }
         // Het resultaat zweeft erboven, groter.
-        item(poseStack, buffers, wanted, 0, 0.55f, 0, 0.7f, light);
+        item(poseStack, buffers, wanted, 0, 0.62f, 0, 0.7f);
         if (recipe == null) {
             // Geen recept bekend: alleen het voorwerp, met een kruis eronder.
             cross(poseStack, lines, 0.22f, 0xFF4545, 220);
@@ -338,16 +358,47 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
         lines.addVertex(matrix, x1, y1, z1).setColor(r, g, b, alpha).setNormal(pose, nx, ny, nz);
     }
 
-    /** Een voorwerp als zwevend model. */
+    /**
+     * Een voorwerp als zwevend model. Het draait mee met het hologram, als op een draaischijf.
+     *
+     * Het licht staat op vol: een hologram geeft zelf licht. Met het licht van de plek waren de
+     * voorwerpen 's nachts en binnenshuis bijna zwart.
+     */
     private void item(PoseStack poseStack, MultiBufferSource buffers, ItemStack stack,
-                      float x, float y, float z, float scale, int light) {
+                      float x, float y, float z, float scale) {
         poseStack.pushPose();
         poseStack.translate(x, y, z);
         poseStack.scale(scale, scale, scale);
-        // Tegendraaien, zodat de voorwerpen rechtop blijven staan terwijl de kaart draait.
-        items.renderStatic(stack, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY,
+        items.renderStatic(stack, ItemDisplayContext.GROUND, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
                 poseStack, buffers, Minecraft.getInstance().level, 0);
         poseStack.popPose();
+    }
+
+    /** De kaart van deze tafel (en ruim de kaarten op als er heel veel tafels voorbij zijn gekomen). */
+    private HoloMapData mapFor(HoloTableBlockEntity table) {
+        if (maps.size() > 32) {
+            maps.clear();
+        }
+        return maps.computeIfAbsent(table.getBlockPos().immutable(), pos -> new HoloMapData());
+    }
+
+    /** Waar vakje nummer {@code cell} in het hologram ligt (het midden van het vakje). */
+    private static float cellCentre(int cell) {
+        return ((cell + 0.5f) / HoloMapData.CELLS - 0.5f) * SIZE;
+    }
+
+    /** Hoe hoog het landschap in het hologram is op deze plek in de wereld. */
+    private static float groundAt(HoloMapData.Snapshot snapshot, double worldX, double worldZ) {
+        float height = snapshot.relativeHeightAt(worldX, worldZ);
+        return Float.isNaN(height) ? 0.0f : height * RELIEF;
+    }
+
+    /** Eén lijntje van het landschap; hoe hoger, hoe feller. */
+    private void meshLine(PoseStack poseStack, VertexConsumer lines, float x0, float y0, float z0,
+                          float x1, float y1, float z1, int rgb, float height) {
+        float brightness = 0.45f + 0.55f * Mth.clamp((height + 1.0f) / 2.0f, 0.0f, 1.0f);
+        int alpha = (int) (150 + 100 * brightness);
+        line(poseStack, lines, x0, y0, z0, x1, y1, z1, shade(rgb, brightness), alpha);
     }
 
     /** Dezelfde kleur, maar donkerder (0 = zwart, 1 = onveranderd). */
@@ -362,6 +413,18 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     @Override
     public boolean shouldRender(HoloTableBlockEntity table, Vec3 cameraPos) {
         return cameraPos.closerThan(Vec3.atCenterOf(table.getBlockPos()), VIEW_DISTANCE);
+    }
+
+    /**
+     * Het stuk wereld waarin het hologram kan zitten.
+     *
+     * Minecraft tekent een blok alleen als dit vak in beeld is, en standaard is dat alleen het
+     * blok zelf. Het hologram zweeft erboven en steekt aan de zijkanten uit, dus keek je omhoog
+     * naar het hologram met de tafel net buiten beeld, dan verdween het hele hologram.
+     */
+    @Override
+    public AABB getRenderBoundingBox(HoloTableBlockEntity table) {
+        return new AABB(table.getBlockPos()).inflate(1.6, 0.0, 1.6).expandTowards(0.0, 3.0, 0.0);
     }
 
 }
