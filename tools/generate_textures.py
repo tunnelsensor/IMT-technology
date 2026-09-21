@@ -577,63 +577,199 @@ def emp_item():
 
 
 def stark_suit():
-    """Het harnas: de twee armor-lagen op je lichaam, en de drie item-iconen.
+    """Het Stark-harnas: rood en goud, met een blauwe reactor op de borst.
 
-    Minecraft tekent armor in twee lagen: laag 1 is borst, armen en laarzen (64x32) en laag 2
-    is de broek (64x32). We maken een donker metalen pak met cyaan lijnen en een lichtje op de
-    borst, in dezelfde stijl als de rest van de mod.
+    Minecraft tekent een harnas in twee lagen van 64x32. Elk lichaamsdeel is een doosje, en
+    elk doosje heeft zijn zes vlakken op een vaste plek in het plaatje:
+
+    - borst   (laag 1): begint op (16,16), doosje 8 breed, 12 hoog, 4 diep
+    - armen   (laag 1): begint op (40,16), doosje 4x12x4
+    - laarzen (laag 1): het been-doosje op (0,16), maar alleen de onderste rijen
+    - broek   (laag 2): het been-doosje op (0,16) helemaal, plus de onderkant van de borst
+                        als riem
+
+    Linker- en rechterarm (en -been) delen hetzelfde stukje plaatje; Minecraft spiegelt het.
     """
-    plate = METAL_2
-    trim = CYAN_DIM
+    red = (168, 28, 30, 255)
+    red_hi = (206, 52, 44, 255)
+    red_dark = (106, 16, 20, 255)
+    gold = (224, 178, 62, 255)
+    gold_hi = (246, 214, 120, 255)
+    gold_dark = (150, 108, 30, 255)
+    seam = (70, 10, 14, 255)
+    glow = (150, 240, 255, 255)
 
-    # --- Laag 1: borstplaat, armen en laarzen
+    def faces(u, v, w, h, d):
+        """De zes vlakken van een doosje: naam -> (x, y, breedte, hoogte)."""
+        return {
+            "top": (u + d, v, w, d),
+            "bottom": (u + d + w, v, w, d),
+            "right": (u, v + d, d, h),
+            "front": (u + d, v + d, w, h),
+            "left": (u + d + w, v + d, d, h),
+            "back": (u + d + w + d, v + d, w, h),
+        }
+
+    def fill(im, box, colour, rows=None):
+        """Vult een vlak; met rows=(van, tot) alleen die rijen (tellend vanaf de bovenkant)."""
+        x, y, w, h = box
+        r0, r1 = rows if rows else (0, h)
+        for yy in range(y + r0, y + r1):
+            for xx in range(x, x + w):
+                im.putpixel((xx, yy), colour)
+
+    def shade(im, box, rows=None):
+        """Lichtrand links en boven, schaduw rechts en onder: dan lijkt het rond."""
+        x, y, w, h = box
+        r0, r1 = rows if rows else (0, h)
+        for yy in range(y + r0, y + r1):
+            c = im.getpixel((x, yy))
+            im.putpixel((x, yy), tuple(min(255, v + 30) for v in c[:3]) + (255,))
+            c = im.getpixel((x + w - 1, yy))
+            im.putpixel((x + w - 1, yy), tuple(max(0, v - 40) for v in c[:3]) + (255,))
+
+    # ================================================================ Laag 1
     layer1 = img(64, 32)
-    d = ImageDraw.Draw(layer1)
-    # het lichaam (voor- en achterkant staan naast elkaar op de armor-sheet)
-    d.rectangle([20, 20, 27, 31], fill=plate)
-    d.rectangle([28, 20, 39, 31], fill=plate)
-    # armen
-    d.rectangle([44, 20, 51, 31], fill=plate)
-    d.rectangle([40, 20, 43, 31], fill=plate)
-    # schouderstukken en een lijn over de borst
-    d.line([20, 21, 39, 21], fill=trim)
-    d.line([44, 21, 51, 21], fill=trim)
-    # de reactor midden op de borst
-    px(layer1, [(23, 24), (24, 24), (23, 25), (24, 25)], CYAN)
+    body = faces(16, 16, 8, 12, 4)
+    arm = faces(40, 16, 4, 12, 4)
+    leg = faces(0, 16, 4, 12, 4)
+
+    # --- Borstplaat: rood, met een gouden buik en de reactor midden op de borst.
+    for name, box in body.items():
+        fill(layer1, box, red)
+    fill(layer1, body["top"], red_hi)
+    x, y, w, h = body["front"]
+    # schouderrand
+    for xx in range(x, x + w):
+        layer1.putpixel((xx, y), red_hi)
+    # gouden buik van vier plaatjes, met daaronder een donkere taille zodat de borstplaat
+    # niet naadloos overloopt in de broek
+    fill(layer1, body["front"], gold, rows=(6, 10))
+    for xx in range(x + 1, x + w - 1):
+        layer1.putpixel((xx, y + 8), gold_dark)
+    for yy in range(y + 6, y + 10):
+        layer1.putpixel((x + 3, yy), gold_dark)
+        layer1.putpixel((x + 4, yy), gold_dark)
+    for xx in range(x, x + w):
+        layer1.putpixel((xx, y + 6), gold_hi)
+    fill(layer1, body["front"], red_dark, rows=(10, 12))
+    for xx in range(x, x + w):
+        layer1.putpixel((xx, y + 11), seam)
+    # de reactor: een donkere ring met een felle kern
+    cx, cy = x + 3, y + 2
+    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        layer1.putpixel((cx + dx, cy + dy), glow)
+    for dx, dy in ((-1, 0), (-1, 1), (2, 0), (2, 1), (0, -1), (1, -1), (0, 2), (1, 2)):
+        layer1.putpixel((cx + dx, cy + dy), seam)
+    # borstplaten boven de buik, met een naad in het midden
+    for yy in range(y + 1, y + 6):
+        layer1.putpixel((x, yy), red_hi)
+    shade(layer1, body["front"], rows=(0, 6))
+    # rug: rood met een gouden ruggengraat
+    bx, by, bw, bh = body["back"]
+    for yy in range(by + 1, by + bh - 1):
+        layer1.putpixel((bx + 3, yy), gold_dark)
+        layer1.putpixel((bx + 4, yy), gold)
+    fill(layer1, body["back"], red_dark, rows=(10, 12))
+    # zijkanten iets donkerder
+    fill(layer1, body["left"], red_dark)
+    fill(layer1, body["right"], red_dark)
+
+    # --- Armen: rode bovenarm, gouden elleboog, rode onderarm, blauwe repulsor in de hand.
+    for name, box in arm.items():
+        fill(layer1, box, red)
+    fill(layer1, arm["top"], red_hi)
+    for name in ("front", "back", "left", "right"):
+        fill(layer1, arm[name], gold, rows=(5, 7))
+        fill(layer1, arm[name], red_dark, rows=(10, 12))
+    shade(layer1, arm["front"])
+    shade(layer1, arm["back"])
+    x, y, w, h = arm["bottom"]
+    fill(layer1, arm["bottom"], seam)
+    layer1.putpixel((x + 1, y + 1), glow)
+    layer1.putpixel((x + 2, y + 1), glow)
+    layer1.putpixel((x + 1, y + 2), glow)
+    layer1.putpixel((x + 2, y + 2), glow)
+
+    # --- Laarzen: alleen de onderste rijen van het been; rood met een gouden neus.
+    boot_rows = (6, 12)
+    for name in ("front", "back", "left", "right"):
+        fill(layer1, leg[name], red, rows=boot_rows)
+        fill(layer1, leg[name], red_hi, rows=(6, 7))
+        fill(layer1, leg[name], gold, rows=(10, 12))
+    shade(layer1, leg["front"], rows=boot_rows)
+    x, y, w, h = leg["bottom"]
+    fill(layer1, leg["bottom"], seam)
+    layer1.putpixel((x + 1, y + 1), glow)
+    layer1.putpixel((x + 2, y + 2), glow)
     save(layer1, "models/armor/stark_layer_1.png")
 
-    # --- Laag 2: de broek
+    # ================================================================ Laag 2: de broek
     layer2 = img(64, 32)
-    d = ImageDraw.Draw(layer2)
-    d.rectangle([20, 20, 39, 31], fill=plate)
-    d.rectangle([0, 20, 15, 31], fill=plate)
-    d.line([20, 20, 39, 20], fill=trim)
+    body2 = faces(16, 16, 8, 12, 4)
+    leg2 = faces(0, 16, 4, 12, 4)
+    # riem: alleen de onderste rijen van de borst
+    for name in ("front", "back", "left", "right"):
+        fill(layer2, body2[name], red_dark, rows=(9, 12))
+        fill(layer2, body2[name], gold_dark, rows=(9, 10))
+    x, y, w, h = body2["front"]
+    layer2.putpixel((x + 3, y + 10), gold_hi)
+    layer2.putpixel((x + 4, y + 10), gold_hi)
+    # benen: rode dijen met een gouden kniestuk; het scheenbeen zit onder de laars
+    for name in ("front", "back", "left", "right"):
+        fill(layer2, leg2[name], red, rows=(0, 12))
+        fill(layer2, leg2[name], gold, rows=(4, 6))
+    x, y, w, h = leg2["front"]
+    layer2.putpixel((x + 1, y + 4), gold_hi)
+    layer2.putpixel((x + 2, y + 4), gold_hi)
+    # een naad over de dij, zodat het plaatwerk is en geen stof
+    for yy in range(y, y + 4):
+        layer2.putpixel((x + 3, yy), red_dark)
+    fill(layer2, leg2["top"], red_dark)
+    shade(layer2, leg2["front"])
+    shade(layer2, leg2["back"])
     save(layer2, "models/armor/stark_layer_2.png")
 
-    # --- De drie iconen in je rugzak
+    # ================================================================ Iconen in je rugzak
+    # Borstplaat
     chest = img(16, 16)
     d = ImageDraw.Draw(chest)
-    d.rectangle([3, 3, 12, 12], fill=plate, outline=METAL_DARK)
-    d.rectangle([1, 4, 2, 9], fill=METAL_1)   # schouder links
-    d.rectangle([13, 4, 14, 9], fill=METAL_1)  # schouder rechts
-    d.ellipse([6, 6, 9, 9], fill=CYAN)         # de reactor
-    d.line([3, 3, 12, 3], fill=trim)
+    d.polygon([(3, 2), (12, 2), (13, 5), (12, 13), (3, 13), (2, 5)], fill=red, outline=seam)
+    d.rectangle([0, 3, 2, 8], fill=red_dark, outline=seam)      # schouder links
+    d.rectangle([13, 3, 15, 8], fill=red_dark, outline=seam)    # schouder rechts
+    d.rectangle([4, 9, 11, 12], fill=gold, outline=gold_dark)   # buik
+    d.line([4, 10, 11, 10], fill=gold_dark)
+    d.line([7, 9, 7, 12], fill=gold_dark)
+    d.line([8, 9, 8, 12], fill=gold_dark)
+    d.line([3, 3, 12, 3], fill=red_hi)
+    d.ellipse([6, 4, 9, 7], fill=seam)                          # de reactor
+    px(chest, [(7, 5), (8, 5), (7, 6), (8, 6)], glow)
     save(chest, "item/stark_chestplate.png")
 
+    # Broek
     legs = img(16, 16)
     d = ImageDraw.Draw(legs)
-    d.rectangle([3, 2, 12, 6], fill=plate, outline=METAL_DARK)
-    d.rectangle([3, 7, 6, 14], fill=plate, outline=METAL_DARK)
-    d.rectangle([9, 7, 12, 14], fill=plate, outline=METAL_DARK)
-    d.line([3, 2, 12, 2], fill=trim)
+    d.rectangle([3, 1, 12, 4], fill=red_dark, outline=seam)     # riem
+    d.line([4, 2, 11, 2], fill=gold_dark)
+    d.rectangle([3, 5, 6, 14], fill=red, outline=seam)          # been links
+    d.rectangle([9, 5, 12, 14], fill=red, outline=seam)         # been rechts
+    d.rectangle([4, 9, 5, 10], fill=gold)                       # knie links
+    d.rectangle([10, 9, 11, 10], fill=gold)                     # knie rechts
+    px(legs, [(4, 9), (10, 9)], gold_hi)
+    d.line([4, 5, 4, 7], fill=red_hi)                           # licht op de dijen
+    d.line([10, 5, 10, 7], fill=red_hi)
     save(legs, "item/stark_leggings.png")
 
+    # Laarzen
     boots = img(16, 16)
     d = ImageDraw.Draw(boots)
-    d.rectangle([3, 5, 6, 12], fill=plate, outline=METAL_DARK)
-    d.rectangle([9, 5, 12, 12], fill=plate, outline=METAL_DARK)
-    # de repulsors onder de zolen
-    px(boots, [(4, 13), (5, 13), (10, 13), (11, 13)], CYAN)
+    d.rectangle([2, 4, 6, 12], fill=red, outline=seam)
+    d.rectangle([9, 4, 13, 12], fill=red, outline=seam)
+    d.rectangle([2, 10, 7, 12], fill=gold, outline=gold_dark)   # neus links
+    d.rectangle([9, 10, 14, 12], fill=gold, outline=gold_dark)  # neus rechts
+    d.line([3, 5, 5, 5], fill=red_hi)
+    d.line([10, 5, 12, 5], fill=red_hi)
+    px(boots, [(3, 13), (4, 13), (5, 13), (10, 13), (11, 13), (12, 13)], glow)  # repulsors
     save(boots, "item/stark_boots.png")
 
 
