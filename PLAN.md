@@ -1,7 +1,7 @@
 # Stark Tech — plan en voortgang
 
-Alles wat we besproken hebben, op één plek: wat af is, wat er nog komt, en wat er nog open
-staat. Bijwerken zodra er iets verandert.
+Alles wat we besproken hebben, op één plek: wat af is, waar ik mee bezig ben, wat er nog komt,
+en wat er nog open staat. Bijwerken zodra er iets verandert.
 
 Afspraken die overal gelden:
 
@@ -14,101 +14,102 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
+**Stand van zaken:** 35 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+
 ---
 
 ## Afgerond
 
 ### Polijsten
 
+- [x] **Al het werk van vóór deze ronde vastgelegd** — `053dd5a`
+      Zonnepaneel, warmtegenerator en de lader met zijn scherm; rayshields in zes kleuren met
+      een schuif-animatie; de grote Stark Tower met kluis; waypoints bewerken.
+
 - [x] **Alles Engels in het spel** — `47a7d4b`
-      De taalbestanden waren al Engels, maar er lekte nog Nederlands door via het
-      spraakwoordenboek (6 zinnen, één met een kapot teken), de Spotify-pagina in je browser,
-      foutmeldingen in de HUD en het installatiescherm. Ook de muziekzoeker verstond nog
-      Nederlands ("van" als artiest-woord).
-      Twee bugs onderweg: een opgeslagen `starktech-voice.json` werd eeuwig hergebruikt omdat
-      de versie wel werd geschreven maar nooit gelezen, en `split("\s+")` is in Java 15+ geen
-      regex maar de escape voor een spatie.
+      Er lekte nog Nederlands door via het spraakwoordenboek, de Spotify-pagina in je browser,
+      foutmeldingen in de HUD en het installatiescherm, en de muziekzoeker verstond "van".
+      Twee bugs onderweg: een opgeslagen `starktech-voice.json` werd eeuwig hergebruikt, en
+      `split("\s+")` was geen regex maar de escape voor een spatie.
 
 - [x] **HUD opgesplitst** — `b1f8260`
-      1084 regels in één klasse → een orkestrator van 124 regels plus 16 losse widgets in
-      `client/hud/`. De schermen halen hun kleuren nu uit `HudStyle` en niet meer uit de HUD.
-      Er verandert niets op je scherm.
+      1084 regels in één klasse → 124 regels plus 16 losse widgets in `client/hud/`.
 
 - [x] **Bril alleen nog uit de Stark Tower** — `4bcffc6`
-      Geen recept meer. De enige bril in je wereld ligt in de kluis. De ingrediënten blijven
-      bestaan voor al het andere.
+      Geen recept meer; de ingrediënten blijven bestaan voor al het andere.
 
 - [x] **Redstone geeft minder energie** — `4bcffc6`
-      50 per stuk in plaats van 500 (blok: 480). Een volle bril kost nu ongeveer twee stapels,
-      dus redstone is je noodvoorraad en het zonnepaneel of de warmtegenerator je echte stroom.
+      50 per stuk in plaats van 500. Redstone is noodvoorraad; zon en warmte zijn je stroom.
 
 ### Fase 15
 
 - [x] **Drone-arsenaal in een baan om de planeet** — `8fedd02`
-      Je bouwt drones (Stark-chip, 5 ijzer, 2 redstone, amethist), gebruikt ze, en ze vliegen
-      naar hun baan. Eén arsenaal, één soort drone die alles kan, oneindig groot, van jou
-      persoonlijk en overal bereikbaar. Alles wat drones gebruikt (zwerm, escorte, verkenner,
-      spion, transport, vracht, illusies) haalt ze daaruit; leeg arsenaal betekent dat er niets
-      vertrekt, zonder dat het je energie kost.
-      Schade blijft bewaard. Neergehaald is weg, met ~10% van de bouwkosten als schroot.
-      Arsenaal-scherm op **G > Drones > Arsenaal** met de HP van elke drone.
-      Onderweg gevonden: drone-entities sloegen helemaal niets op, dus een drone die een
-      herstart overleefde was zijn eigenaar kwijt.
+      Je bouwt drones (Stark-chip, 5 ijzer, 2 redstone, amethist) en ze vliegen naar hun baan.
+      Eén arsenaal, één soort drone, oneindig groot, van jou persoonlijk. Alles wat drones
+      gebruikt haalt ze daaruit; leeg arsenaal = er vertrekt niets. Schade blijft bewaard,
+      neergehaald is weg (~10% terug als schroot). Scherm op **G > Drones > Arsenaal**.
 
 - [x] **Teruggeroepen drone landt naast je** — `379478d`
-      Rechtsklik om te repareren met ijzer uit je rugzak, shift-rechtsklik om hem weer omhoog
-      te sturen.
+      Rechtsklik = repareren met ijzer, shift-rechtsklik = weer omhoog.
 
 - [x] **Van heel hoog in- en uitvliegen** — `379478d`
-      96 blokken in plaats van 24, in een duik met vonken. Bij vertrek stijgen ze net zo hoog
-      weer op in plaats van ter plekke op te lossen.
-      Onderweg gevonden: `EdithDrones.find()` keek maar 80 blokken ver, dus "stand down" miste
-      een drone die nog aan het invallen was. De configsleutel heet nu `drones.orbitHeight`,
-      anders hield een bestaande wereld zijn oude 24.
+      96 blokken hoog in een duik met vonken, en bij vertrek net zo hoog weer weg.
+      Configsleutel heet nu `drones.orbitHeight`.
 
-- [x] **Holotafel** — `47b99c1`
-      Een tafel die een hologram boven zich projecteert, in een kleur die je zelf kiest
-      (dezelfde zes als de rayshields, met sluipen + rechtsklik).
-      Drie standen: een reliëfkaart van de omgeving met je waypoints, spelers en vijanden erop;
-      de bouwtekening van het voorwerp dat je op tafel legt; en je drone-arsenaal dat om een
-      bolletje cirkelt. Zonder bril doet hij niets.
-      Instelscherm (rechtsklik met een lege hand): stand, kleur, bereik van de kaart, grootte
-      van het hologram, ronddraaien aan/uit, en het voorwerp van tafel halen.
-      Mogelijke uitbreiding: een stand die de ertsen in de buurt laat zien.
+- [x] **Holotafel** — `47b99c1`, instelscherm `7565c03`, kaart hersteld `b0a2ed3`
+      Hologram boven een tafel in een kleur naar keuze. Drie standen: reliëfkaart met je
+      waypoints, spelers en vijanden; de bouwtekening van wat je op tafel legt; je arsenaal.
+      Instelscherm (rechtsklik met een lege hand): stand, kleur, bereik (24–160 blokken),
+      grootte, ronddraaien, voorwerp van tafel halen. Zonder bril doet hij niets.
+      **Hersteld na jouw melding:** de kaart tekende op vlak land helemaal niets (lijnen van
+      lengte nul) en is nu een draadmodel-rooster; het hologram verdween als de tafel zelf
+      buiten beeld was; bij het kleinste bereik stond alles scheef; voorwerpen in de
+      bouwtekening waren 's nachts zwart; twee tafels zaten elkaar in de weg.
 
-- [x] **Het harnas**
-      Borstplaat, broek en laarzen (geen helm: die plek is van de bril). Zonder bril doet het
-      niets bijzonders. Met bril: 20% schade eraf per gedragen stuk, vliegen met het hele pak,
-      elke val tot 40 blokken opgevangen, en een repulsorstoot op toets I.
-      Duur om te maken: netherite plus Stark-chips.
-      **Aannames die ik zelf heb ingevuld** (zeg het als je het anders wil): wat het kan,
-      dat het craftbaar is in plaats van te vinden, en alle getallen in `SuitBalance.java`.
-      Nog niet gedaan: onder water ademen, een werkbank voor harnasdelen, "Veronica".
+- [x] **Het harnas** — `710d7ab`, afgezwakt `f78aba3`, nieuw uiterlijk `e96a9df`
+      Borstplaat, broek en laarzen; geen helm, want die plek is van de bril. Zonder bril doet
+      het niets bijzonders. Met bril: 20% schade eraf per stuk, vliegen met het hele pak, elke
+      val tot 40 blokken opgevangen, repulsor op toets **I**.
+      Repulsor na jouw feedback: 7 schade (was 12), 200 energie (was 500), minder wegduwen en
+      bijna geen terugslag meer.
+      Uiterlijk na jouw feedback: rood en goud met een blauwe reactor. De oude texturen stonden
+      op de verkeerde plekken, waardoor de laarzen onzichtbaar waren.
+      Aannames die ik zelf heb ingevuld: wat het kan, dat het craftbaar is (netherite +
+      Stark-chips), en de getallen in `SuitBalance.java`.
 
-- [x] **Advancements**
-      Een boom van 16 prestaties onder "Stark Industries", van je eerste Stark-chip tot vliegen
-      met het harnas. Wat Minecraft zelf kan bijhouden (heb je dit voorwerp gemaakt, sta je in
-      een Stark Tower) gaat met gewone voorwaarden; de rest kent de mod zelf toe op het moment
-      dat het gebeurt (eerste drone, satellietaanval, drone verloren, vliegen, repulsor).
+- [x] **Advancements** — `1e3604d`
+      16 prestaties onder "Stark Industries", van je eerste Stark-chip tot vliegen met het
+      harnas. Wat de mod zelf toekent (eerste drone, satelliet, drone verloren, vliegen,
+      repulsor) gebeurt op het moment dat het echt gebeurt.
 
-**Stand van zaken:** 35 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+---
+
+## Bezig
+
+### Vijanden: raiddrones
+
+Staat apart (in `git stash`), nog niet gecommit, omdat de test nog faalt.
+
+- [x] Een vijandige drone met eigen uiterlijk (donker, oranje lampjes) die uit de lucht duikt,
+      je beschiet en door muren heen breekt als je je verstopt
+- [x] Komt willekeurig als je de bril draagt (standaard elke 20–45 minuten, in te stellen)
+- [x] Komt meteen als je te veel sloopt in een Stark Tower
+- [x] Gamerule `starktechRaidGriefing` om het blokken slopen uit te zetten, standaard aan
+- [ ] **Nog op te lossen:** van een golf van 3 drones kwam er één 195 blokken hoog in plaats
+      van ~90. De hoogte waarop ze beginnen hangt af van de grond onder elke drone apart, en
+      daar klopt iets niet.
 
 ---
 
 ## Nog te doen, in deze volgorde
 
-### 1. Vijanden
-
-- [ ] Raiddrones die je aanvallen, willekeurig of als je hun basis aanvalt
-- [ ] Ze mogen blokken kapotmaken, met een **gamerule** om dat uit te zetten; standaard aan
-
-### 2. Meer in de wereld
+### 1. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 3. De AI-stem (als laatste)
+### 2. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API
@@ -121,13 +122,27 @@ Afspraken die overal gelden:
 
 ---
 
+## Nog nooit in het spel bekeken
+
+De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
+eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] De HUD na het opsplitsen (hoort er precies hetzelfde uit te zien als ervoor)
+- [ ] Het arsenaal-scherm
+- [ ] Het instelscherm van de holotafel
+- [ ] De holotafel na het herstel: de kaart, de bouwtekening en het arsenaal
+- [ ] Het harnas op je lijf (de texturen heb ik wel nagekeken op een voorvertoning)
+- [ ] Het vliegen met het harnas en de repulsorstraal
+
+---
+
 ## Open vragen
 
 - [ ] **Moeten de getallen uit `EdithBalance.java` naar een configbestand?**
       Nu moet je de mod herbouwen om iets aan te passen. In een configbestand kun je tijdens het
       spelen bijsturen — handig zodra je met vrienden speelt ("die satelliet is te sterk").
 - [ ] **Wil je bij elke nieuwe functie automatische tests?**
-      Ik schrijf ze nu standaard mee (29 stuks inmiddels). Ze kosten per functie 20-50 regels
+      Ik schrijf ze nu standaard mee (35 stuks inmiddels). Ze kosten per functie 20-50 regels
       extra en vangen op dat een wijziging aan de drones per ongeluk de satelliet sloopt.
 - [ ] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? Die zie je alleen tijdens
       ontwikkelen, nooit in het spel.
@@ -139,10 +154,11 @@ Afspraken die overal gelden:
 Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 
 **Gevecht**
-- Repulsor-handschoen als los item
+- Repulsor-handschoen als los item (nu zit de repulsor in de borstplaat)
 - Mini-raketten die hun doel volgen
 - "Veronica": onderdelen van een harnas die naar je toe vliegen
 - Drone-formaties (schild, pijl, cirkel)
+- Het harnas: onder water ademen
 
 **Basis en techniek**
 - Een werkbank die harnasdelen maakt
@@ -150,6 +166,7 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 - Automatische torentjes die aan je relais-groepen hangen
 - Energie-netwerk: kabels of een draadloos Stark-net, zodat zonnepanelen en warmtegeneratoren
   niet meer alleen zichzelf opladen
+- Holotafel: een vierde stand die de ertsen in de buurt laat zien
 
 **Sfeer**
 - Eigen geluiden. Alle 18 geluiden in `sounds.json` zijn nu vanilla-geluiden onder een andere
