@@ -771,6 +771,37 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Rechtsklik met een lege hand opent het instelscherm; het mag de tafel niet veranderen.
+     *
+     * Minecraft geeft een lege hand eerst als "voorwerp" door aan de tafel. Die legde toen
+     * "lucht" op tafel als bouwtekening, en het instelscherm ging nooit open. We lopen hier
+     * dezelfde weg als het echte spel (via gameMode), zodat precies dat pad getest wordt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "holo")
+    public static void holo_table_empty_hand_is_not_a_blueprint(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 2, 2);
+        helper.setBlock(pos, ModBlocks.HOLO_TABLE.get().defaultBlockState());
+        if (!(helper.getBlockEntity(pos) instanceof HoloTableBlockEntity table)) {
+            throw new GameTestAssertException("De holotafel heeft geen block entity");
+        }
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(2, 2, 1));
+        owner.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        owner.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(helper.absolutePos(pos)),
+                Direction.UP, helper.absolutePos(pos), false);
+
+        HoloMode before = table.mode();
+        owner.gameMode.useItemOn(owner, helper.getLevel(), ItemStack.EMPTY, InteractionHand.MAIN_HAND, hit);
+        if (!table.blueprint().isEmpty()) {
+            throw new GameTestAssertException("Een lege hand legde " + table.blueprint() + " op tafel");
+        }
+        if (table.mode() != before) {
+            throw new GameTestAssertException("Een lege hand veranderde de stand naar " + table.mode());
+        }
+        helper.succeed();
+    }
+
     // ================================================================ Fase 15: het drone-arsenaal
 
     /**

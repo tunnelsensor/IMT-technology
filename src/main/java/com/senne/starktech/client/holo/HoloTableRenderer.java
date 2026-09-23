@@ -63,8 +63,14 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
      * steeds opnieuw uit.
      */
     private final Map<BlockPos, HoloMapData> maps = new HashMap<>();
-    /** Hoe hoog het reliëf wordt: een hoogteverschil van "1" op de kaart is zoveel blokken. */
-    private static final float RELIEF = 0.4f;
+    /**
+     * Hoe hoog het reliëf wordt: een hoogteverschil van "1" op de kaart is zoveel blokken.
+     * Omlaag minder dan omhoog, want onder het hologram staat de tafel zelf.
+     */
+    private static final float RELIEF_UP = 0.55f;
+    private static final float RELIEF_DOWN = 0.18f;
+    /** De bodem van het "blok landschap": de randen van de kaart lopen tot hier naar beneden. */
+    private static final float MAP_FLOOR = -0.2f;
 
     public HoloTableRenderer(BlockEntityRendererProvider.Context context) {
         this.items = context.getItemRenderer();
@@ -112,9 +118,10 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
      *
      * Elk vakje is een punt op de hoogte van de grond daar, verbonden met zijn buren. Zo zie je
      * ook vlak land (als een net) en niet alleen de bergen; hoe hoger de grond, hoe feller de lijn.
+     * Water tekenen we zwakker, zodat je rivieren en meren herkent.
      *
-     * Eerst was elk vakje een staafje zo lang als het hoogteverschil met de tafel. Op vlakke grond
-     * is dat verschil nul, en dan zag je dus helemaal niets.
+     * De randen lopen naar beneden tot een bodem, met een kader eromheen: zo ziet het eruit als
+     * een uitgesneden blok landschap dat boven de tafel zweeft, en niet als een plat vel.
      *
      * De hoogtes rekenen we niet elke frame opnieuw uit - dat zijn duizenden opzoekingen - maar
      * hooguit eens per paar seconden (zie HoloMapData).
@@ -129,26 +136,59 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
                 if (Float.isNaN(height)) {
                     continue; // niets geladen daar
                 }
+                boolean water = snapshot.isWater(cx, cz);
                 float x = cellCentre(cx);
                 float z = cellCentre(cz);
-                float y = height * RELIEF;
+                float y = relief(height);
                 float right = snapshot.relativeHeight(cx + 1, cz);
                 if (!Float.isNaN(right)) {
-                    meshLine(poseStack, lines, x, y, z, cellCentre(cx + 1), right * RELIEF, z, rgb, (height + right) / 2);
+                    meshLine(poseStack, lines, x, y, z, cellCentre(cx + 1), relief(right), z, rgb,
+                            (height + right) / 2, water && snapshot.isWater(cx + 1, cz));
                 }
                 float below = snapshot.relativeHeight(cx, cz + 1);
                 if (!Float.isNaN(below)) {
-                    meshLine(poseStack, lines, x, y, z, x, below * RELIEF, cellCentre(cz + 1), rgb, (height + below) / 2);
+                    meshLine(poseStack, lines, x, y, z, x, relief(below), cellCentre(cz + 1), rgb,
+                            (height + below) / 2, water && snapshot.isWater(cx, cz + 1));
+                }
+                // De rand: een lijn van het landschap naar de bodem.
+                if (cx == 0 || cz == 0 || cx == cells - 1 || cz == cells - 1) {
+                    line(poseStack, lines, x, y, z, x, MAP_FLOOR, z, shade(rgb, 0.7f), 110);
                 }
             }
         }
+        frame(poseStack, lines, rgb);
 
         // De tafel zelf als een klein baken in het midden.
-        marker(poseStack, lines, 0, 0.02f, 0, 0.12f, 0xFFFFFF, 255);
+        marker(poseStack, lines, 0, groundAt(snapshot, table.getBlockPos().getX() + 0.5,
+                table.getBlockPos().getZ() + 0.5) + 0.03f, 0, 0.06f, 0xFFFFFF, 255);
 
         // Wat er leeft in de buurt, en waar je naartoe wil.
         renderWaypoints(table, level, poseStack, lines, snapshot);
         renderEntities(table, level, poseStack, lines, snapshot, time);
+    }
+
+    /**
+     * Het kader om de bodem van de kaart, met een pijltje dat naar het noorden wijst. Het
+     * hologram draait rond, dus zonder dat pijltje weet je niet welke kant noord is.
+     */
+    private void frame(PoseStack poseStack, VertexConsumer lines, int rgb) {
+        float half = SIZE / 2.0f;
+        float y = MAP_FLOOR;
+        line(poseStack, lines, -half, y, -half, half, y, -half, rgb, 170);
+        line(poseStack, lines, half, y, -half, half, y, half, rgb, 170);
+        line(poseStack, lines, half, y, half, -half, y, half, rgb, 170);
+        line(poseStack, lines, -half, y, half, -half, y, -half, rgb, 170);
+        // Noord is -z in Minecraft.
+        float tip = -half - 0.16f;
+        float back = -half - 0.05f;
+        line(poseStack, lines, -0.06f, y, back, 0, y, tip, 0xFFFFFF, 230);
+        line(poseStack, lines, 0.06f, y, back, 0, y, tip, 0xFFFFFF, 230);
+        line(poseStack, lines, -0.06f, y, back, 0.06f, y, back, 0xFFFFFF, 230);
+    }
+
+    /** Van een hoogte op de kaart (-1 tot 1) naar een hoogte in het hologram. */
+    private static float relief(float height) {
+        return height >= 0 ? height * RELIEF_UP : height * RELIEF_DOWN;
     }
 
     /** Je waypoints als paaltjes in hun eigen kleur, zodat je ze uit elkaar houdt. */
@@ -178,8 +218,8 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     private void renderEntities(HoloTableBlockEntity table, Level level, PoseStack poseStack,
                                 VertexConsumer lines, HoloMapData.Snapshot snapshot, float time) {
         AABB box = new AABB(table.getBlockPos()).inflate(snapshot.radius());
-        // Een klein pulsje, zodat de stipjes opvallen tussen de staafjes.
-        float pulse = 0.05f + 0.015f * Mth.sin(time / 6.0f);
+        // Een klein pulsje, zodat de stipjes opvallen tussen de lijnen van het landschap.
+        float pulse = 0.035f + 0.01f * Mth.sin(time / 6.0f);
         for (Entity entity : level.getEntities((Entity) null, box, e -> e instanceof LivingEntity && e.isAlive())) {
             float[] spot = snapshot.project(entity.getX(), entity.getZ(), SIZE);
             if (spot == null) {
@@ -187,7 +227,9 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
             }
             int colour = entity instanceof Player ? 0xFFFFFF : entity instanceof Enemy ? 0xFF4545 : 0x5CFF9D;
             float y = groundAt(snapshot, entity.getX(), entity.getZ());
-            marker(poseStack, lines, spot[0], y + 0.05f, spot[1], pulse, colour, 255);
+            // Een steeltje vanaf de grond, met het stipje erop: zo zie je waar hij staat.
+            line(poseStack, lines, spot[0], y, spot[1], spot[0], y + 0.08f, spot[1], colour, 160);
+            marker(poseStack, lines, spot[0], y + 0.08f, spot[1], pulse, colour, 255);
         }
     }
 
@@ -390,14 +432,22 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     /** Hoe hoog het landschap in het hologram is op deze plek in de wereld. */
     private static float groundAt(HoloMapData.Snapshot snapshot, double worldX, double worldZ) {
         float height = snapshot.relativeHeightAt(worldX, worldZ);
-        return Float.isNaN(height) ? 0.0f : height * RELIEF;
+        return Float.isNaN(height) ? 0.0f : relief(height);
     }
 
-    /** Eén lijntje van het landschap; hoe hoger, hoe feller. */
+    /**
+     * Eén lijntje van het landschap; hoe hoger, hoe feller. Vlak land is doorschijnend, zodat
+     * het net niet dichtslibt tot een plaat en de heuvels eruit springen.
+     */
     private void meshLine(PoseStack poseStack, VertexConsumer lines, float x0, float y0, float z0,
-                          float x1, float y1, float z1, int rgb, float height) {
-        float brightness = 0.45f + 0.55f * Mth.clamp((height + 1.0f) / 2.0f, 0.0f, 1.0f);
-        int alpha = (int) (150 + 100 * brightness);
+                          float x1, float y1, float z1, int rgb, float height, boolean water) {
+        if (water) {
+            line(poseStack, lines, x0, y0, z0, x1, y1, z1, shade(rgb, 0.55f), 55);
+            return;
+        }
+        float up = Mth.clamp(height * 2.5f, 0.0f, 1.0f);
+        float brightness = 0.6f + 0.4f * up;
+        int alpha = (int) (85 + 170 * up);
         line(poseStack, lines, x0, y0, z0, x1, y1, z1, shade(rgb, brightness), alpha);
     }
 

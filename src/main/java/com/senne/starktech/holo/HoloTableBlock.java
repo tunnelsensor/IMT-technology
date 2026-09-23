@@ -83,7 +83,9 @@ public class HoloTableBlock extends BaseEntityBlock {
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
                                               Player player, InteractionHand hand, BlockHitResult hit) {
-        if (player.isShiftKeyDown()) {
+        // Minecraft roept dit óók aan met een lege hand (een "lege stapel"). Zonder deze regel
+        // legden we dan "lucht" op tafel en ging het instelscherm nooit open.
+        if (stack.isEmpty() || player.isShiftKeyDown()) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (!hasGlasses(player)) {

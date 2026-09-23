@@ -713,6 +713,7 @@
   "holo.starktech.need_glasses": "Without the glasses it is just an expensive table.",
   "screen.starktech.holo": "Holo table",
   "screen.starktech.holo.shows": "Showing",
+  "screen.starktech.holo.colour": "Colour",
   "screen.starktech.holo.range": "Map range",
   "screen.starktech.holo.range_value": "%s blocks",
   "screen.starktech.holo.size": "Size",

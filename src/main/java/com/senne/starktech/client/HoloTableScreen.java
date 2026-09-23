@@ -7,12 +7,14 @@ import com.senne.starktech.holo.HoloTableBlock;
 import com.senne.starktech.holo.HoloTableBlockEntity;
 import com.senne.starktech.network.HoloActionPayload;
 import com.senne.starktech.shield.ShieldColor;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
@@ -24,27 +26,30 @@ import org.jetbrains.annotations.Nullable;
  * ziet veranderen terwijl je klikt. Er is dus geen "opslaan"-knop.
  *
  * Openen: rechtsklik op de tafel met een lege hand (met de bril op).
+ *
+ * Elke regel heeft links een naam en rechts de knoppen. Alles is zo uitgerekend dat het
+ * past op het kleinste scherm dat Minecraft toestaat (240 beeldpunten hoog): eerder liepen de
+ * uitleg, "Take off" en "Done" over elkaar heen.
  */
 public class HoloTableScreen extends Screen {
-    private static final int PANEL_W = 268;
-    private static final int PANEL_H = 190;
+    private static final int PANEL_W = 300;
+    private static final int PANEL_H = 198;
     /** Hoogte van één regel met een knop erin. */
     private static final int ROW = 24;
     private static final int MARGIN = 8;
-    /** Waar de knoppen van de instellingen beginnen (de tekst ervoor staat links). */
+    /** Waar de knoppen beginnen (de naam van de regel staat links daarvan). */
     private static final int VALUE_X = 96;
-    private static final int VALUE_W = 84;
+    private static final int VALUE_W = PANEL_W - VALUE_X - MARGIN;
+    /** De knop "Take off" staat rechts in zijn regel. */
+    private static final int CLEAR_W = 60;
+    private static final int DONE_W = 80;
+    /** Een kleurknopje en de ruimte ertussen. */
+    private static final int SWATCH_W = 24;
+    private static final int SWATCH_GAP = 4;
 
     private final BlockPos pos;
     private int left;
     private int top;
-    /** De y van elke regel, uitgerekend in init() en gebruikt bij het tekenen. */
-    private int modeY;
-    private int colourY;
-    private int rangeY;
-    private int scaleY;
-    private int spinY;
-    private int clearY;
 
     public HoloTableScreen(BlockPos pos) {
         super(Component.translatable("screen.starktech.holo"));
@@ -64,7 +69,29 @@ public class HoloTableScreen extends Screen {
 
     private ShieldColor colour() {
         Minecraft mc = Minecraft.getInstance();
-        return mc.level == null ? ShieldColor.CYAN : mc.level.getBlockState(pos).getValue(HoloTableBlock.COLOR);
+        if (mc.level == null || !mc.level.getBlockState(pos).hasProperty(HoloTableBlock.COLOR)) {
+            return ShieldColor.CYAN;
+        }
+        return mc.level.getBlockState(pos).getValue(HoloTableBlock.COLOR);
+    }
+
+    // ---------------------------------------------------------------- Waar alles staat
+
+    /** De y van regel nummer {@code row} (0 = "Showing"). */
+    private int rowY(int row) {
+        return top + 22 + row * ROW;
+    }
+
+    private static final int ROW_MODE = 0;
+    private static final int ROW_COLOUR = 1;
+    private static final int ROW_RANGE = 2;
+    private static final int ROW_SIZE = 3;
+    private static final int ROW_SPIN = 4;
+    private static final int ROW_TABLE = 5;
+
+    /** Waar de uitleg en de knop "Done" staan, onderaan. */
+    private int footerY() {
+        return top + PANEL_H - 28;
     }
 
     // ---------------------------------------------------------------- Opbouw
@@ -77,57 +104,52 @@ public class HoloTableScreen extends Screen {
             return;
         }
         left = (width - PANEL_W) / 2;
-        top = Math.max(10, (height - PANEL_H) / 2);
-
-        modeY = top + 30;
-        colourY = modeY + ROW + 12;
-        rangeY = colourY + ROW + 12;
-        scaleY = rangeY + ROW;
-        spinY = scaleY + ROW;
-        clearY = spinY + ROW;
+        top = Math.max(6, (height - PANEL_H) / 2);
+        int valueX = left + VALUE_X;
 
         // Wat hij laat zien: één knop per stand, de huidige staat uit.
-        int modeW = (PANEL_W - MARGIN * 2 - 8) / HoloMode.values().length;
-        int x = left + MARGIN;
+        int modes = HoloMode.values().length;
+        int modeW = (VALUE_W - (modes - 1) * 4) / modes;
+        int x = valueX;
         for (HoloMode mode : HoloMode.values()) {
             Button button = Button.builder(mode.label(), b -> send(HoloActionPayload.Op.MODE, mode.ordinal()))
-                    .bounds(x, modeY, modeW, 20).build();
+                    .bounds(x, rowY(ROW_MODE), modeW, 20).build();
             button.active = table.mode() != mode;
             addRenderableWidget(button);
             x += modeW + 4;
         }
 
         // De kleuren: een rij knopjes met een gekleurd vlakje erin (zie render).
-        x = left + MARGIN;
+        x = valueX;
         for (ShieldColor option : ShieldColor.values()) {
             Button button = Button.builder(Component.empty(),
                             b -> send(HoloActionPayload.Op.COLOUR, option.ordinal()))
-                    .bounds(x, colourY, 24, 20).build();
+                    .bounds(x, rowY(ROW_COLOUR), SWATCH_W, 20).build();
             button.active = colour() != option;
             addRenderableWidget(button);
-            x += 28;
+            x += SWATCH_W + SWATCH_GAP;
         }
 
         addRenderableWidget(Button.builder(HoloSettings.rangeLabel(table.range()),
                         b -> send(HoloActionPayload.Op.RANGE, next(table.range(), HoloSettings.RANGES.length)))
-                .bounds(left + VALUE_X, rangeY, VALUE_W, 20).build());
+                .bounds(valueX, rowY(ROW_RANGE), 90, 20).build());
 
         addRenderableWidget(Button.builder(HoloSettings.scaleLabel(table.scale()),
                         b -> send(HoloActionPayload.Op.SCALE, next(table.scale(), HoloSettings.SCALES.length)))
-                .bounds(left + VALUE_X, scaleY, VALUE_W, 20).build());
+                .bounds(valueX, rowY(ROW_SIZE), 90, 20).build());
 
         addRenderableWidget(Button.builder(onOff(table.spin()),
                         b -> send(HoloActionPayload.Op.SPIN, table.spin() ? 0 : 1))
-                .bounds(left + VALUE_X, spinY, VALUE_W, 20).build());
+                .bounds(valueX, rowY(ROW_SPIN), 90, 20).build());
 
         Button clear = Button.builder(Component.translatable("screen.starktech.holo.clear"),
                         b -> send(HoloActionPayload.Op.CLEAR_BLUEPRINT, 0))
-                .bounds(left + VALUE_X, clearY, VALUE_W, 20).build();
+                .bounds(left + PANEL_W - MARGIN - CLEAR_W, rowY(ROW_TABLE), CLEAR_W, 20).build();
         clear.active = !table.blueprint().isEmpty();
         addRenderableWidget(clear);
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(left + PANEL_W - 88, top + PANEL_H - 28, 80, 20).build());
+                .bounds(left + PANEL_W - MARGIN - DONE_W, footerY(), DONE_W, 20).build());
     }
 
     private static int next(int current, int count) {
@@ -181,47 +203,79 @@ public class HoloTableScreen extends Screen {
 
     // ---------------------------------------------------------------- Tekenen
 
+    /**
+     * Het paneel hoort bij de achtergrond. Minecraft tekent in render() eerst een wazige
+     * achtergrond; wat daarvóór getekend was, werd dus mee vervaagd en verduisterd. En juist
+     * hier wil je het hologram achter het scherm scherp zien veranderen.
+     */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
+        HudStyle.dim(g, width, height);
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, HudStyle.argb(205, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, 8,
+                HudStyle.argb(220, colour().rgb()));
+    }
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         HoloTableBlockEntity table = table();
         if (table == null) {
             return;
         }
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, HudStyle.argb(205, 0x08121A));
-        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, 8,
-                HudStyle.argb(220, HudStyle.CYAN));
         super.render(g, mouseX, mouseY, a);
 
-        g.drawString(font, title, left + MARGIN, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
-        label(g, "screen.starktech.holo.shows", modeY - 11);
+        g.drawString(font, title, left + MARGIN, top + 7, HudStyle.argb(255, HudStyle.CYAN), true);
 
-        // Het gekleurde vlakje in elke kleurknop.
-        int x = left + MARGIN;
+        label(g, "screen.starktech.holo.shows", ROW_MODE);
+        label(g, "screen.starktech.holo.colour", ROW_COLOUR);
+        label(g, "screen.starktech.holo.range", ROW_RANGE);
+        label(g, "screen.starktech.holo.size", ROW_SIZE);
+        label(g, "screen.starktech.holo.spin", ROW_SPIN);
+        label(g, "screen.starktech.holo.on_table", ROW_TABLE);
+
+        // Het gekleurde vlakje in elke kleurknop; de gekozen kleur krijgt een wit randje.
+        int x = left + VALUE_X;
+        int y = rowY(ROW_COLOUR);
+        ShieldColor current = colour();
         for (ShieldColor option : ShieldColor.values()) {
-            g.fill(x + 6, colourY + 6, x + 18, colourY + 14, HudStyle.argb(255, option.rgb()));
-            x += 28;
+            if (option == current) {
+                g.fill(x + 4, y + 4, x + SWATCH_W - 4, y + 16, HudStyle.argb(255, HudStyle.WHITE));
+            }
+            g.fill(x + 6, y + 6, x + SWATCH_W - 6, y + 14, HudStyle.argb(255, option.rgb()));
+            x += SWATCH_W + SWATCH_GAP;
         }
 
-        label(g, "screen.starktech.holo.range", rangeY + 6);
-        label(g, "screen.starktech.holo.size", scaleY + 6);
-        label(g, "screen.starktech.holo.spin", spinY + 6);
-        label(g, "screen.starktech.holo.on_table", clearY + 6);
-
-        // Wat er nu op tafel ligt: de naam, en het voorwerp zelf rechts.
+        // Wat er nu op tafel ligt: het voorwerp zelf en zijn naam (ingekort als hij te lang is).
         ItemStack blueprint = table.blueprint();
+        int itemX = left + VALUE_X;
+        int rowY = rowY(ROW_TABLE);
+        int textX = itemX;
+        if (!blueprint.isEmpty()) {
+            g.renderItem(blueprint, itemX, rowY + 2);
+            textX += 20;
+        }
+        int textRoom = left + PANEL_W - MARGIN - CLEAR_W - 6 - textX;
         Component what = blueprint.isEmpty()
                 ? Component.translatable("screen.starktech.holo.nothing")
                 : blueprint.getHoverName();
-        g.drawString(font, what, left + VALUE_X + VALUE_W + 8, clearY + 6, HudStyle.argb(210, HudStyle.WHITE), true);
-        if (!blueprint.isEmpty()) {
-            g.renderItem(blueprint, left + PANEL_W - 24, clearY + 2);
+        String shown = font.plainSubstrByWidth(what.getString(), textRoom);
+        if (shown.length() < what.getString().length()) {
+            shown = font.plainSubstrByWidth(what.getString(), textRoom - font.width("...")) + "...";
         }
+        g.drawString(font, shown, textX, rowY + 6, HudStyle.argb(210, HudStyle.WHITE), true);
 
-        g.drawString(font, Component.translatable("screen.starktech.holo.hint"), left + MARGIN,
-                top + PANEL_H - 22, HudStyle.argb(140, HudStyle.WHITE), false);
+        // De uitleg onderaan, over zoveel regels als nodig, links van "Done".
+        int hintWidth = PANEL_W - MARGIN * 2 - DONE_W - 8;
+        List<FormattedCharSequence> hint = font.split(Component.translatable("screen.starktech.holo.hint"), hintWidth);
+        int hintY = footerY() + 10 - hint.size() * 5;
+        for (FormattedCharSequence line : hint) {
+            g.drawString(font, line, left + MARGIN, hintY, HudStyle.argb(150, HudStyle.WHITE), false);
+            hintY += 10;
+        }
     }
 
-    private void label(GuiGraphics g, String key, int y) {
-        g.drawString(font, Component.translatable(key), left + MARGIN, y, HudStyle.argb(190, HudStyle.WHITE), true);
+    private void label(GuiGraphics g, String key, int row) {
+        g.drawString(font, Component.translatable(key), left + MARGIN, rowY(row) + 6,
+                HudStyle.argb(190, HudStyle.WHITE), true);
     }
 }
