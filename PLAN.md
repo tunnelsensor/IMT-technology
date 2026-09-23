@@ -15,6 +15,8 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 42 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle functies één voor één zien, met een
+pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
 testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 `run-visual/screenshots`. Er gaat dan even een Minecraft-venster open; laat dat met rust.
@@ -130,11 +132,21 @@ testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
       straalvlammen die iedereen ziet. Nagemeten in het spel: stilhangen blijft op dezelfde
       hoogte, naverbrander 21 → 48 m/s in twee seconden, stijgen 12 m/s, dalen 15 m/s.
       Getallen staan in `SuitBalance.java`.
-- [ ] **Schade aan drones zichtbaar**: hoe meer schade, hoe kapotter het model, met rook en
-      vonken, ook als ze naast je vliegen.
-- [ ] **Arsenaal in 3D**: een scherm met de satelliet en je drones als 3D-modellen, met hun
-      schade eraan te zien.
-- [ ] **Opstartanimatie van de bril** leuker en uitgebreider.
+- [x] **Showcase** — `c4caae7`
+      `python tools/showcase.py`: vraagt of je pauzes wilt (Y/n), start het spel en laat alle
+      52 functies zien. Na elke functie: Enter = volgende, r = opnieuw, q = stoppen, een getal =
+      springen, iets anders = notitie in `showcase-notities.md`.
+- [x] **Schade aan drones zichtbaar** — `1935f14`
+      Roet en krassen in drie stappen, een kromme rotor, een ontbrekende rotor en een hangende
+      camera, op het laatst twee rotors weg en een wiebelende romp. Rook, vonken, brandende
+      brokjes en haperende lampjes. Ook bij raiddrones.
+- [x] **Arsenaal in 3D** — `1935f14`
+      De aarde met de Stark-satelliet en al je drones in hun baan, als echte modellen met hun
+      schade. Slepen = rondkijken, scrollen = zoomen, klikken = kiezen; de gekozen drone draait
+      groot in een vakje.
+- [x] **Opstartanimatie van de bril** — `3c5dcec`
+      Ruim vier seconden: scherm gaat aan, logo met reactorringen, systeemcheck met piepjes
+      (met je echte aantal drones en je batterij), irisscan met je naam, ONLINE. Eigen geluiden.
 - [ ] **Satelliet upgraden via een scherm**: cooldown, schade, de drie schietmodi vrijspelen,
       enz. Elk tot niveau 10. Je hebt genoeg drones nodig om de onderdelen naar de baan te
       brengen.
@@ -170,6 +182,12 @@ raiddrones eruitzien.
 - [ ] Hoe het vliegen *aanvoelt* (de getallen kloppen, maar dat moet je zelf proberen)
 - [ ] De blauwe straalvlammen onder de laarzen (het screenshot werd onderbroken)
 - [ ] Raiddrones: hoe ze bewegen en aanvallen
+
+Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
+
+- [ ] De **schildkoepel** zie je van een afstand bijna niet: hij bestaat uit een paar
+      lichtstipjes per tick op de rand. Misschien een echte, doorzichtige koepel tekenen?
+- [ ] **Illusie "cloak"**: op het screenshot was de koe in het veld nog gewoon te zien.
 - [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
 
