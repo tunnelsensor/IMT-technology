@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 39 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 40 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
 testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 `run-visual/screenshots`. Er gaat dan even een Minecraft-venster open; laat dat met rust.
@@ -115,8 +115,14 @@ testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 
 ### 1. Jouw nieuwe wensen (23 september)
 
-- [ ] **Repulsor als aan/uit-knop**: toets I zet hem aan of uit; staat hij aan, dan vuur je met
-      de aanvalsknop (linkermuisknop). Met een geluid zoals bij Iron Man (opladen + knal).
+- [x] **Repulsor als aan/uit-knop** — `bdaa237`
+      Toets I (of G > Combat) zet hem aan of uit; staat hij aan, dan vuur je met de aanvalsknop,
+      ingedrukt houden vuurt elke seconde. Een ring rond het vizier laat zien wanneer hij weer
+      geladen is. Drie eigen geluiden, gemaakt door `tools/generate_sounds.py`: opladen bij
+      aanzetten, wegzakken bij uitzetten, en het schot (zoem, zap, dreun, naklank).
+      Onderweg gevonden: de wachttijd van één seconde werd nergens gecontroleerd; de server
+      houdt hem nu echt bij (nieuwe test). De straal begint een armlengte voor je, anders zag
+      je zelf alleen blauwe blokken.
 - [ ] **Vliegen met natuurkunde** in plaats van creative-vliegen: snelheid opbouwen, uitlopen,
       zwaartekracht, stuwkracht.
 - [ ] **Schade aan drones zichtbaar**: hoe meer schade, hoe kapotter het model, met rook en
