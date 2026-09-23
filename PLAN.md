@@ -14,7 +14,10 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 38 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 39 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
+testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
+`run-visual/screenshots`. Er gaat dan even een Minecraft-venster open; laat dat met rust.
 
 ---
 
@@ -84,6 +87,23 @@ Afspraken die overal gelden:
       sloopt in een Stark Tower. Gamerule `starktechRaidGriefing` zet het slopen uit (standaard
       aan); frequentie en grootte van een golf staan in de serverconfig.
 
+- [x] **Holotafel-scherm werkt echt** — `bbdf1ab`
+      Rechtsklik met een lege hand opende het instelscherm nooit: Minecraft geeft een lege hand
+      ook als "voorwerp" door, en de tafel legde dan "lucht" op tafel. Het scherm zelf had
+      knoppen en tekst over elkaar ("Done" over de uitleg, "Take off" eronder) en is opnieuw
+      ingedeeld. De kaart was van dichtbij één dichte blauwe plaat; nu minder en lichtere lijnen,
+      meer reliëf (hoogste punt per vakje, dus ook een smalle toren), randen die naar een bodem
+      lopen, water zwakker en een noordpijl.
+
+- [x] **Schermen niet meer wazig** — `ddbe519`
+      In 1.21.1 tekent Minecraft een wazige achtergrond over alles wat vóór de knoppen getekend
+      is. Daardoor waren de panelen van 9 schermen (arsenaal, navigatie, comms, muziek, relais,
+      spionage, waypoints, holotafel) wazig en donker. Nu een lichte verduistering en een scherp
+      paneel. Lange uitleg loopt niet meer buiten het paneel.
+
+- [x] **Screenshot-rondleiding** — `6e4de3a`
+      `gradlew runVisualCheck`, zie bovenaan.
+
 - [x] **Advancements** — `1e3604d`
       16 prestaties onder "Stark Industries", van je eerste Stark-chip tot vliegen met het
       harnas. Wat de mod zelf toekent (eerste drone, satelliet, drone verloren, vliegen,
@@ -93,13 +113,28 @@ Afspraken die overal gelden:
 
 ## Nog te doen, in deze volgorde
 
-### 1. Meer in de wereld
+### 1. Jouw nieuwe wensen (23 september)
+
+- [ ] **Repulsor als aan/uit-knop**: toets I zet hem aan of uit; staat hij aan, dan vuur je met
+      de aanvalsknop (linkermuisknop). Met een geluid zoals bij Iron Man (opladen + knal).
+- [ ] **Vliegen met natuurkunde** in plaats van creative-vliegen: snelheid opbouwen, uitlopen,
+      zwaartekracht, stuwkracht.
+- [ ] **Schade aan drones zichtbaar**: hoe meer schade, hoe kapotter het model, met rook en
+      vonken, ook als ze naast je vliegen.
+- [ ] **Arsenaal in 3D**: een scherm met de satelliet en je drones als 3D-modellen, met hun
+      schade eraan te zien.
+- [ ] **Opstartanimatie van de bril** leuker en uitgebreider.
+- [ ] **Satelliet upgraden via een scherm**: cooldown, schade, de drie schietmodi vrijspelen,
+      enz. Elk tot niveau 10. Je hebt genoeg drones nodig om de onderdelen naar de baan te
+      brengen.
+
+### 2. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 2. De AI-stem (als laatste)
+### 3. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API
@@ -117,13 +152,12 @@ Afspraken die overal gelden:
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
-- [ ] De HUD na het opsplitsen (hoort er precies hetzelfde uit te zien als ervoor)
-- [ ] Het arsenaal-scherm
-- [ ] Het instelscherm van de holotafel
-- [ ] De holotafel na het herstel: de kaart, de bouwtekening en het arsenaal
-- [ ] Het harnas op je lijf (de texturen heb ik wel nagekeken op een voorvertoning)
-- [ ] Het vliegen met het harnas en de repulsorstraal
-- [ ] Raiddrones: hoe ze eruitzien en bewegen
+Sinds de screenshot-rondleiding wél gezien en in orde: de HUD (met doelanalyse), het G-menu,
+alle schermen, de holotafel in alle drie de standen, het harnas op je lijf en hoe de drones en
+raiddrones eruitzien.
+
+- [ ] Het vliegen met het harnas en de repulsorstraal (dat beweegt; een screenshot zegt weinig)
+- [ ] Raiddrones: hoe ze bewegen en aanvallen
 - [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
 
@@ -175,6 +209,5 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 ## Besloten om niet te doen
 
 - **Linux en Mac ondersteunen.** Alleen Windows; de stem en de AI draaien op Windows-programma's.
-- **De satelliet aanpassen.** Die is goed zoals hij is.
 - **De mod publiceren.** Blijft voorlopig privé.
 - **Naar een nieuwere Minecraft-versie.** Voorlopig 1.21.1.
