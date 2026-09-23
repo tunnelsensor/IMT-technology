@@ -2,7 +2,8 @@
 Maakt de eigen geluiden van Stark Tech (.ogg) uit golven en ruis, zonder opnames.
 
 Gebruik (eenmalig: pip install numpy scipy soundfile):
-    python tools/generate_sounds.py
+    python tools/generate_sounds.py               # alle geluiden
+    python tools/generate_sounds.py edith_boot    # alleen deze
 
 De bestanden komen in src/main/resources/assets/starktech/sounds/. Minecraft wil mono
 Ogg Vorbis: alleen mono-geluiden klinken van een plek in de wereld (links/rechts, ver/dichtbij).
@@ -186,7 +187,52 @@ def suit_thruster():
     return (loop / np.max(np.abs(loop)) * 0.7).astype(np.float32)
 
 
+def chime(freq, duration, decay_speed=5.0):
+    """Een zuivere, glinsterende toon met een boventoon: een belletje."""
+    t = seconds(duration)
+    tone = np.sin(2 * np.pi * freq * t) + 0.3 * np.sin(2 * np.pi * freq * 2 * t)
+    shimmer = 1.0 + 0.15 * np.sin(2 * np.pi * 6 * t)
+    return tone * shimmer * decay(duration, decay_speed)
+
+
+def edith_boot():
+    """
+    De bril gaat aan: een zachte brom die aanzwelt, een oplopend loopje van vier tonen, en dan
+    een helder, glinsterend akkoord ("klaar"). Duurt ruim twee seconden, net als de animatie.
+    """
+    total = np.zeros(int(RATE * 2.6))
+    # 1. Een lage brom met wat ruis, die aanzwelt.
+    t = seconds(1.2)
+    hum = (np.sin(2 * np.pi * 70 * t) + 0.5 * np.sin(2 * np.pi * 140 * t)) * np.linspace(0, 0.5, len(t))
+    hiss = bandpass(noise(1.2), 800, 5000) * np.linspace(0, 0.12, len(t))
+    place(total, fade(hum + hiss, 0.05, 0.3), 0.0)
+    # 2. Het loopje: vier tonen omhoog (C, E, G, hoge C).
+    for i, freq in enumerate((523.25, 659.25, 783.99, 1046.5)):
+        place(total, fade(chime(freq, 0.35, 9) * 0.35, 0.003, 0.05), 0.55 + i * 0.12)
+    # 3. Het akkoord: vier tonen tegelijk, die langzaam uitsterven.
+    for freq in (523.25, 659.25, 783.99, 987.77):
+        place(total, fade(chime(freq, 1.3, 2.6) * 0.22, 0.01, 0.2), 1.08)
+    return finish(total, peak=0.6)
+
+
+def edith_blip():
+    """Een kort piepje: bij elke regel van de systeemcheck."""
+    tone = np.sin(sweep(2100, 1700, 0.07)) * decay(0.07, 45)
+    return finish(fade(tone, 0.002, 0.01), peak=0.45)
+
+
+def edith_confirm():
+    """Twee tonen omhoog: "identiteit bevestigd"."""
+    total = np.zeros(int(RATE * 0.45))
+    place(total, fade(chime(1318.5, 0.18, 14) * 0.5, 0.003, 0.03), 0.0)
+    place(total, fade(chime(1975.5, 0.3, 9) * 0.5, 0.003, 0.05), 0.12)
+    return finish(total, peak=0.55)
+
+
 SOUNDS = {
+    "edith_boot": edith_boot,
+    "edith_blip": edith_blip,
+    "edith_confirm": edith_confirm,
     "repulsor_arm": repulsor_arm,
     "repulsor_disarm": repulsor_disarm,
     "repulsor_fire": repulsor_fire,
@@ -195,8 +241,20 @@ SOUNDS = {
 
 
 def main():
+    """
+    Zonder namen: alle geluiden. Met namen (python tools/generate_sounds.py edith_boot) alleen
+    die. Handig, want een .ogg komt er elke keer net iets anders uit, en dan lijkt het in git
+    alsof ook de geluiden die je niet aanraakte veranderd zijn.
+    """
+    import sys
+    wanted = sys.argv[1:] or list(SOUNDS)
+    unknown = [name for name in wanted if name not in SOUNDS]
+    if unknown:
+        print("Onbekend:", ", ".join(unknown), "- kies uit:", ", ".join(SOUNDS))
+        return
     OUT.mkdir(parents=True, exist_ok=True)
-    for name, make in SOUNDS.items():
+    for name in wanted:
+        make = SOUNDS[name]
         path = OUT / f"{name}.ogg"
         sf.write(path, make(), RATE, format="OGG", subtype="VORBIS")
         print(f"{path.relative_to(OUT.parent.parent.parent.parent.parent.parent)}  ({path.stat().st_size // 1024} KB)")

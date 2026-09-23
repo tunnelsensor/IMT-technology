@@ -18,6 +18,10 @@ public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, StarkTech.MODID);
 
     public static final DeferredHolder<SoundEvent, SoundEvent> EDITH_BOOT = register("edith.boot");
+    /** Een piepje bij elke regel van de systeemcheck als de bril opstart. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EDITH_BLIP = register("edith.blip");
+    /** "Identiteit bevestigd" na de irisscan. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EDITH_CONFIRM = register("edith.confirm");
     public static final DeferredHolder<SoundEvent, SoundEvent> EDITH_NOTIFY = register("edith.notify");
     public static final DeferredHolder<SoundEvent, SoundEvent> EDITH_ALERT = register("edith.alert");
     public static final DeferredHolder<SoundEvent, SoundEvent> EDITH_DENIED = register("edith.denied");

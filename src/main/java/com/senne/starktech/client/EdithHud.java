@@ -101,7 +101,7 @@ public class EdithHud implements LayeredDraw.Layer {
         // Net opgezet: eerst de opstart-animatie, de rest komt daarna.
         long bootAge = now - EdithClientState.bootStartMillis;
         if (bootAge < BootOverlay.BOOT_MILLIS) {
-            BootOverlay.boot(g, mc.font, w, h, bootAge);
+            BootOverlay.boot(g, mc.font, w, h, bootAge, EdithClientState.bootStartMillis, player, glasses);
             return;
         }
 

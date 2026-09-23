@@ -3,8 +3,7 @@
     "subtitle": "subtitles.starktech.edith.boot",
     "sounds": [
       {
-        "name": "minecraft:block.beacon.activate",
-        "type": "event"
+        "name": "starktech:edith_boot"
       }
     ]
   },
@@ -190,6 +189,22 @@
     "sounds": [
       {
         "name": "starktech:suit_thruster"
+      }
+    ]
+  },
+  "edith.blip": {
+    "subtitle": "subtitles.starktech.edith.blip",
+    "sounds": [
+      {
+        "name": "starktech:edith_blip"
+      }
+    ]
+  },
+  "edith.confirm": {
+    "subtitle": "subtitles.starktech.edith.confirm",
+    "sounds": [
+      {
+        "name": "starktech:edith_confirm"
       }
     ]
   }
