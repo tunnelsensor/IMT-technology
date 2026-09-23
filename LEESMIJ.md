@@ -296,13 +296,50 @@ Alle zinnen kun je zelf aanpassen in **G > Systemen > Commando's** (of in
 
 ---
 
-## 7. Zelf verder bouwen
+## 7. Alles in één keer bekijken: de showcase
+
+```
+python tools/showcase.py
+```
+
+Het script vraagt eerst `Wil je een pauze tussen elke functie (Y/n):`. Druk gewoon op Enter
+voor ja (wat in HOOFDLETTERS staat is de standaard), of typ `n`.
+
+Daarna start het spel vanzelf in een testwereld (dat duurt een halve tot een hele minuut) en
+laat het elke functie van de mod zien, van het opzetten van de bril tot de Stark Tower. In je
+terminal staat bij elke functie de naam en waar je op moet letten; wat E.D.I.T.H. zegt,
+verschijnt er ook.
+
+Met pauze wacht het script na elke functie op jou:
+
+| Wat je typt | Wat er gebeurt |
+|---|---|
+| Enter | volgende functie |
+| `r` | deze functie nog eens |
+| `q` | stoppen (het spel sluit ook) |
+| een getal, bv. `12` | naar die functie springen |
+| iets anders | wordt bewaard als notitie bij deze functie, in `showcase-notities.md` |
+
+Beginnen bij een bepaalde functie: `python tools/showcase.py --vanaf 30`.
+
+Het spel draait in de map `run-showcase`, los van je eigen werelden. Je hoeft er niets in te
+doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
+`client/dev/ShowcaseFeatures.java`, dan zit hij in de showcase.
+
+---
+
+## 8. Zelf verder bouwen
 
 - **Getallen aanpassen** (sterker/zwakker): `EdithBalance.java`, dan `gradlew build`.
 - **Textures**: `python tools/generate_textures.py` maakt ze allemaal opnieuw. Teken je liever
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 15 tests over de toren en zijn kluis, de drones,
-  zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het laadstation,
-  de rayshields, de relais en de spraakcommando's.
+- **Tests**: `gradlew runGameTestServer` — 42 tests over de toren en zijn kluis, de drones en
+  het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
+  laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
+- **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
+  alle schermen, de holotafel, het harnas en een testvlucht, en sluit weer af. De plaatjes
+  staan in `run-visual/screenshots`.
+- **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
+  stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

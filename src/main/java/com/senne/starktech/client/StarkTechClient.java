@@ -1,6 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.client.dev.Showcase;
 import com.senne.starktech.client.dev.VisualCheck;
 import com.senne.starktech.client.drone.DroneModel;
 import com.senne.starktech.client.illusion.IllusionRenderer;
@@ -64,6 +65,8 @@ public class StarkTechClient {
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
+        // Alleen tijdens het ontwikkelen (python tools/showcase.py): alle functies laten zien.
+        Showcase.registerIfEnabled();
     }
 
     /** De HUD komt boven de camera-effecten maar onder de hotbar, chat en menu's. */

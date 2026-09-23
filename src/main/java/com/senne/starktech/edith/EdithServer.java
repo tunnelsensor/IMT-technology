@@ -956,6 +956,22 @@ public final class EdithServer {
         startCooldown(player, state(player), cooldown, ticks);
     }
 
+    /**
+     * Alle wachttijden en markeringen weg, en geen drone-camera meer. Alleen voor de showcase
+     * (client/dev/Showcase), die elke functie vanaf een schone lei wil laten zien.
+     */
+    public static void resetForShowcase(ServerPlayer player) {
+        PlayerState state = state(player);
+        java.util.Arrays.fill(state.readyAt, 0L);
+        state.marked.clear();
+        if (state.scoutId != null || state.viewDroneId != null) {
+            ModNetwork.sendTo(player, DroneCameraPayload.OFF);
+        }
+        state.scoutId = null;
+        state.viewDroneId = null;
+        sendStatus(player, state);
+    }
+
     /** Is deze functie weer beschikbaar? Zo niet, dan krijgt de speler een melding. */
     private static boolean checkCooldown(ServerPlayer player, PlayerState state, EdithCooldown cooldown) {
         return checkCooldown(player, state.readyAt[cooldown.ordinal()]);

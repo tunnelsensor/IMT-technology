@@ -14,6 +14,8 @@ out/
 
 .run/
 run-visual/
+run-showcase/
+showcase-notities.md
 
 ### Eclipse ###
 .apt_generated
@@ -39,3 +41,4 @@ run/
 **/src/generated/**/.cache/
 repo/
 !**/src/**/repo/
+__pycache__/

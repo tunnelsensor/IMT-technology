@@ -82,6 +82,15 @@ neoForge {
             programArguments.addAll '--width', '1280', '--height', '720'
         }
 
+        // De showcase: alle functies één voor één, gestuurd vanuit tools/showcase.py
+        // (zie client/dev/Showcase.java). Ook in een eigen map.
+        showcase {
+            client()
+            gameDirectory = project.file('run-showcase')
+            systemProperty 'starktech.showcase', 'true'
+            programArguments.addAll '--width', '1600', '--height', '900'
+        }
+
         data {
             clientData()
             // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
