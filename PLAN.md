@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 40 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 42 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
 testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 `run-visual/screenshots`. Er gaat dan even een Minecraft-venster open; laat dat met rust.
@@ -123,8 +123,13 @@ testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
       Onderweg gevonden: de wachttijd van één seconde werd nergens gecontroleerd; de server
       houdt hem nu echt bij (nieuwe test). De straal begint een armlengte voor je, anders zag
       je zelf alleen blauwe blokken.
-- [ ] **Vliegen met natuurkunde** in plaats van creative-vliegen: snelheid opbouwen, uitlopen,
-      zwaartekracht, stuwkracht.
+- [x] **Vliegen met natuurkunde** — `917c83c`
+      Dubbel spatie zet de stuwraketten aan. Stuwkracht in je kijkrichting, vaart die opbouwt
+      en uitloopt, zwaartekracht, naverbrander op sprint, overhellen in bochten, breder beeld
+      bij hoge snelheid, zelf afremmen boven de grond, een stuwraketgeluid (lus) en blauwe
+      straalvlammen die iedereen ziet. Nagemeten in het spel: stilhangen blijft op dezelfde
+      hoogte, naverbrander 21 → 48 m/s in twee seconden, stijgen 12 m/s, dalen 15 m/s.
+      Getallen staan in `SuitBalance.java`.
 - [ ] **Schade aan drones zichtbaar**: hoe meer schade, hoe kapotter het model, met rook en
       vonken, ook als ze naast je vliegen.
 - [ ] **Arsenaal in 3D**: een scherm met de satelliet en je drones als 3D-modellen, met hun
@@ -162,7 +167,8 @@ Sinds de screenshot-rondleiding wél gezien en in orde: de HUD (met doelanalyse)
 alle schermen, de holotafel in alle drie de standen, het harnas op je lijf en hoe de drones en
 raiddrones eruitzien.
 
-- [ ] Het vliegen met het harnas en de repulsorstraal (dat beweegt; een screenshot zegt weinig)
+- [ ] Hoe het vliegen *aanvoelt* (de getallen kloppen, maar dat moet je zelf proberen)
+- [ ] De blauwe straalvlammen onder de laarzen (het screenshot werd onderbroken)
 - [ ] Raiddrones: hoe ze bewegen en aanvallen
 - [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
