@@ -408,6 +408,159 @@ def drone_textures():
     save(raid_lights, "entity/drone/raid_drone_lights.png")
 
 
+def planet_texture():
+    """
+    De aarde voor het arsenaal-scherm: een wereldkaart van 64 x 32 pixels die om een bol wordt
+    gevouwen (links en rechts sluiten op elkaar aan). Oceanen, continenten, woestijn, bergen
+    en ijskappen, uit "ruis" gemaakt: willekeurig maar vloeiend, en elke keer hetzelfde.
+    """
+    import math
+    import random
+    rng = random.Random(42)
+    w, h = 64, 32
+    # Een grof rooster van willekeurige hoogtes, vloeiend opgeblazen naar 64 x 32.
+    grid_w, grid_h = 8, 5
+    grid = [[rng.random() for _ in range(grid_w)] for _ in range(grid_h)]
+    fine = [[rng.random() for _ in range(grid_w * 2)] for _ in range(grid_h * 2)]
+
+    def sample(g, gw, gh, x, y):
+        fx, fy = x / w * gw, y / (h - 1) * (gh - 1)
+        x0, y0 = int(fx) % gw, min(int(fy), gh - 2)
+        tx, ty = fx - int(fx), fy - y0
+        tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
+        x1 = (x0 + 1) % gw  # links en rechts lopen door: het is een bol
+        top = g[y0][x0] * (1 - tx) + g[y0][x1] * tx
+        bottom = g[y0 + 1][x0] * (1 - tx) + g[y0 + 1][x1] * tx
+        return top * (1 - ty) + bottom * ty
+
+    im = img(w, h)
+    for y in range(h):
+        latitude = abs(y - (h - 1) / 2) / ((h - 1) / 2)  # 0 = evenaar, 1 = pool
+        for x in range(w):
+            height = sample(grid, grid_w, grid_h, x, y) * 0.75 + sample(fine, grid_w * 2, grid_h * 2, x, y) * 0.25
+            if latitude > 0.85 or (latitude > 0.72 and height > 0.5):
+                colour = (232, 242, 250, 255)  # ijs
+            elif height < 0.47:
+                deep = height < 0.36
+                colour = (22, 58, 132, 255) if deep else (38, 96, 170, 255)
+            elif height > 0.72:
+                colour = (118, 108, 96, 255)  # bergen
+            elif latitude < 0.35 and height < 0.58:
+                colour = (196, 172, 104, 255)  # woestijn rond de evenaar
+            else:
+                colour = (64, 128, 58, 255) if (x + y) % 3 else (56, 116, 52, 255)
+            im.putpixel((x, y), colour)
+    save(im, "gui/arsenal/planet.png")
+
+
+def satellite_textures():
+    """
+    De Stark-satelliet in het arsenaal-scherm (64 x 64): een romp met gouden strepen, twee
+    blauwe zonnepanelen, een schotel, een antenne en een motor. Plus een lichtlaag met de
+    reactor en de lampjes, die ook in het donker gloeien.
+    """
+    base = img(64, 64)
+    core = box_regions(0, 0, 8, 8, 10)
+    reactor = box_regions(40, 0, 4, 4, 1)
+    strut = box_regions(40, 8, 4, 2, 2)
+    panel = box_regions(0, 20, 18, 1, 8)
+    dish = box_regions(0, 32, 7, 1, 7)
+    antenna = box_regions(30, 32, 1, 5, 1)
+    engine = box_regions(36, 32, 4, 4, 3)
+
+    for region in core.values():
+        fill_region(base, region, METAL_2)
+    for name in ("east", "west", "front", "back"):
+        x, y, w, h = core[name]
+        for i in range(w):
+            base.putpixel((x + i, y + 2), GOLD)          # gouden streep rondom
+            base.putpixel((x + i, y + h - 1), METAL_DARK)
+    fill_region(base, core["top"], METAL_3)
+    fill_region(base, core["bottom"], METAL_DARK)
+    for region in reactor.values():
+        fill_region(base, region, METAL_DARK)
+    fill_region(base, reactor["front"], (20, 70, 90, 255))
+    for region in strut.values():
+        fill_region(base, region, METAL_3)
+    # Zonnepanelen: donkerblauw met een rooster van cellen.
+    for region in panel.values():
+        fill_region(base, region, (24, 40, 92, 255))
+    for side in ("top", "bottom"):
+        x, y, w, h = panel[side]
+        for i in range(w):
+            for j in range(h):
+                if i % 3 == 0 or j % 4 == 0:
+                    base.putpixel((x + i, y + j), (70, 90, 130, 255))
+    for region in dish.values():
+        fill_region(base, region, (210, 214, 220, 255))
+    x, y, w, h = dish["top"]
+    px(base, [(x + 3, y + 3), (x + 2, y + 3), (x + 3, y + 2)], (150, 156, 164, 255))
+    for region in antenna.values():
+        fill_region(base, region, (180, 184, 190, 255))
+    for region in engine.values():
+        fill_region(base, region, METAL_DARK)
+    save(base, "gui/arsenal/satellite.png")
+
+    lights = img(64, 64)
+    # De reactor voorop, en een lichtje op de antenne.
+    x, y, w, h = reactor["front"]
+    fill_region(lights, (x, y, w, h), CYAN)
+    px(lights, [(x + 1, y + 1), (x + 2, y + 2)], (220, 250, 255, 255))
+    x, y, w, h = antenna["top"]
+    fill_region(lights, (x, y, w, h), (255, 70, 55, 255))
+    # De motor achteraan gloeit oranje.
+    x, y, w, h = engine["back"]
+    fill_region(lights, (x + 1, y + 1, w - 2, h - 2), (255, 150, 40, 255))
+    save(lights, "gui/arsenal/satellite_lights.png")
+
+
+def drone_damage_textures():
+    """
+    Schade over een drone heen (zoals de barsten op een ijzergolem): roetvlekken, krassen en
+    blank metaal waar de verf eraf is. Drie stappen, elk erger dan de vorige. De rest van het
+    plaatje is doorzichtig, dus je ziet de gewone drone eronder.
+
+    Elke stap tekent de vorige opnieuw en doet er een schepje bovenop, met vaste "toevals"
+    getallen zodat het plaatje elke keer hetzelfde uitkomt.
+    """
+    import random
+    rng = random.Random(7)
+    body = box_regions(0, 0, 6, 3, 6)
+    arm_a = box_regions(0, 16, 12, 1, 1)
+    arm_b = box_regions(0, 19, 12, 1, 1)
+    camera = box_regions(0, 10, 2, 2, 2)
+    soot = [(18, 16, 14, 230), (30, 26, 22, 210), (44, 36, 30, 190)]
+    scratch = (150, 158, 168, 255)
+    burnt = (70, 40, 22, 235)
+
+    surfaces = list(body.values()) + list(arm_a.values()) + list(arm_b.values()) + list(camera.values())
+    pixels = [(x + i, y + j) for (x, y, w, h) in surfaces for i in range(w) for j in range(h)]
+
+    overlay = img(64, 32)
+    for name, soot_spots, scratches in (("low", 6, 3), ("medium", 12, 7), ("high", 22, 12)):
+        # Roet: kleine vlekjes van een paar pixels.
+        for _ in range(soot_spots):
+            cx, cy = rng.choice(pixels)
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (-1, 0), (1, 1)):
+                if (cx + dx, cy + dy) in pixels and rng.random() < 0.8:
+                    overlay.putpixel((cx + dx, cy + dy), rng.choice(soot))
+        # Krassen: korte schuine lijntjes van blank metaal.
+        for _ in range(scratches):
+            cx, cy = rng.choice(pixels)
+            step = rng.choice([(1, 0), (1, 1), (0, 1), (1, -1)])
+            for k in range(rng.randint(2, 4)):
+                p = (cx + step[0] * k, cy + step[1] * k)
+                if p in pixels:
+                    overlay.putpixel(p, scratch)
+        if name == "high":
+            # Verbrande plekken op de romp: daar zat het vuur.
+            for region in (body["top"], body["front"], body["east"]):
+                x, y, w, h = region
+                for _ in range(4):
+                    overlay.putpixel((x + rng.randrange(w), y + rng.randrange(h)), burnt)
+        save(overlay, f"entity/drone/drone_damage_{name}.png")
+
+
 # --------------------------------------------------------------------- Fase 9: redstone-relais
 
 def relay_textures():
@@ -857,6 +1010,9 @@ if __name__ == "__main__":
     gui()
     drone_upgrade()
     drone_textures()
+    drone_damage_textures()
+    planet_texture()
+    satellite_textures()
     relay_textures()
     shield_textures()
     rayshield_walls()

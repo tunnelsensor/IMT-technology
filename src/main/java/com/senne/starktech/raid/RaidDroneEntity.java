@@ -70,6 +70,8 @@ public class RaidDroneEntity extends Monster {
     public void tick() {
         super.tick();
         setNoGravity(true);
+        // Raak je hem, dan zie je dat ook: rook, vonken, en op het laatst brandende brokjes.
+        com.senne.starktech.drone.DroneDamage.particles(this);
     }
 
     @Override

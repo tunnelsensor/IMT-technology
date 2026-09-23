@@ -2,6 +2,7 @@ package com.senne.starktech.client.drone;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.drone.DroneDamage;
 import com.senne.starktech.drone.StarkDroneEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -20,6 +21,7 @@ public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel<Star
 
     public DroneRenderer(EntityRendererProvider.Context context) {
         super(context, new DroneModel<>(context.bakeLayer(DroneModel.LAYER)), 0.25f);
+        addLayer(new DamageLayer<>(this));
         addLayer(new LightsLayer(this));
     }
 
@@ -50,6 +52,10 @@ public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel<Star
         public void render(PoseStack poseStack, MultiBufferSource buffers, int light, StarkDroneEntity drone,
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
+            // Bijna kapot: de lampjes haperen.
+            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
+                return;
+            }
             RenderType lights = switch (drone.getMode()) {
                 case ATTACK -> ATTACK_LIGHTS;
                 case GUARD, TRANSPORT -> GUARD_LIGHTS;

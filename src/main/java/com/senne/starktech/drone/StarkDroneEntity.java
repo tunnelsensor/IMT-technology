@@ -313,6 +313,8 @@ public class StarkDroneEntity extends PathfinderMob {
     public void tick() {
         super.tick();
         setNoGravity(true);
+        // Beschadigd? Dan rookt en vonkt hij (alleen te zien in je eigen spel).
+        DroneDamage.particles(this);
     }
 
     @Override

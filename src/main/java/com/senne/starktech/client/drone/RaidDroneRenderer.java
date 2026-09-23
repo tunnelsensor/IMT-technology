@@ -2,6 +2,7 @@ package com.senne.starktech.client.drone;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.drone.DroneDamage;
 import com.senne.starktech.raid.RaidDroneEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -24,6 +25,7 @@ public class RaidDroneRenderer extends MobRenderer<RaidDroneEntity, DroneModel<R
 
     public RaidDroneRenderer(EntityRendererProvider.Context context) {
         super(context, new DroneModel<>(context.bakeLayer(DroneModel.LAYER)), 0.3f);
+        addLayer(new DamageLayer<>(this));
         addLayer(new LightsLayer(this));
     }
 
@@ -46,6 +48,9 @@ public class RaidDroneRenderer extends MobRenderer<RaidDroneEntity, DroneModel<R
         public void render(PoseStack poseStack, MultiBufferSource buffers, int light, RaidDroneEntity drone,
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
+            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
+                return;
+            }
             getParentModel().renderToBuffer(poseStack, buffers.getBuffer(LIGHTS), light,
                     OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         }
