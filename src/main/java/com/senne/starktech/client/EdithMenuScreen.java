@@ -203,7 +203,7 @@ public class EdithMenuScreen extends Screen {
     /** Geen wazige achtergrond: alleen een lichte verduistering, zodat je de wereld blijft zien. */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
-        g.fill(0, 0, width, height, HudStyle.argb(70, 0x000814));
+        HudStyle.dim(g, width, height);
     }
 
     @Override

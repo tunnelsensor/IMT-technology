@@ -127,11 +127,20 @@ public class ArsenalScreen extends Screen {
 
     // ---------------------------------------------------------------- Tekenen
 
+    /**
+     * Het paneel hoort bij de achtergrond. Minecraft tekent in render() eerst een wazige
+     * achtergrond; wat daarvóór getekend was, werd dus mee vervaagd en verduisterd.
+     */
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
+        HudStyle.dim(g, width, height);
         int panelH = 28 + ROWS_PER_PAGE * ROW_H + 32;
         g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, HudStyle.argb(205, 0x08121A));
         HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, HudStyle.argb(220, HudStyle.CYAN));
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         super.render(g, mouseX, mouseY, a);
 
         g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
@@ -144,8 +153,8 @@ public class ArsenalScreen extends Screen {
         if (shown.drones().isEmpty()) {
             g.drawCenteredString(font, Component.translatable("screen.starktech.arsenal.empty"),
                     left + PANEL_W / 2, top + 40, HudStyle.argb(170, HudStyle.WHITE));
-            g.drawCenteredString(font, Component.translatable("screen.starktech.arsenal.hint"),
-                    left + PANEL_W / 2, top + 54, HudStyle.argb(140, HudStyle.WHITE));
+            HudStyle.wrappedCentered(g, font, Component.translatable("screen.starktech.arsenal.hint"),
+                    left + PANEL_W / 2, top + 54, PANEL_W - 24, HudStyle.argb(140, HudStyle.WHITE));
             return;
         }
 

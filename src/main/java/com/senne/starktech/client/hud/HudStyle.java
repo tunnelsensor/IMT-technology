@@ -3,6 +3,8 @@ package com.senne.starktech.client.hud;
 import com.senne.starktech.network.EdithMessagePayload;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 
 /**
@@ -30,6 +32,15 @@ public final class HudStyle {
     /** Een kleur met doorzichtigheid: 0 = onzichtbaar, 255 = helemaal dicht. */
     public static int argb(int alpha, int rgb) {
         return (Mth.clamp(alpha, 0, 255) << 24) | (rgb & 0xFFFFFF);
+    }
+
+    /**
+     * De achtergrond achter een E.D.I.T.H.-scherm: een lichte verduistering in plaats van de
+     * wazige achtergrond van Minecraft. De wereld blijft scherp, zodat je bijvoorbeeld het
+     * hologram van de holotafel ziet veranderen terwijl je in het scherm klikt.
+     */
+    public static void dim(GuiGraphics g, int width, int height) {
+        g.fill(0, 0, width, height, argb(70, 0x000814));
     }
 
     /** Vier L-vormige hoekjes (zoals een camera-zoeker). */
@@ -63,6 +74,19 @@ public final class HudStyle {
         g.pose().scale(0.75f, 0.75f, 1.0f);
         g.drawString(font, text, -font.width(text) / 2, 0, color, true);
         g.pose().popPose();
+    }
+
+    /**
+     * Gecentreerde tekst die op meerdere regels mag, zodat een lange uitleg niet buiten het
+     * paneel loopt. Geeft de y terug onder de laatste regel.
+     */
+    public static int wrappedCentered(GuiGraphics g, Font font, Component text, int centerX, int y,
+                                      int maxWidth, int color) {
+        for (FormattedCharSequence line : font.split(text, maxWidth)) {
+            g.drawString(font, line, centerX - font.width(line) / 2, y, color, true);
+            y += 10;
+        }
+        return y;
     }
 
     /** Kleur die bij een soort melding hoort. */

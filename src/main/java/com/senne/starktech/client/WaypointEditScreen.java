@@ -109,11 +109,20 @@ public class WaypointEditScreen extends Screen {
         Minecraft.getInstance().setScreen(new NavigationScreen());
     }
 
+    /**
+     * Het paneel hoort bij de achtergrond. Minecraft tekent in render() eerst een wazige
+     * achtergrond; wat daarvóór getekend was, werd dus mee vervaagd en verduisterd.
+     */
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
+        HudStyle.dim(g, width, height);
         int panelH = 94;
         g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH, HudStyle.argb(210, 0x08121A));
         HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH, 8, HudStyle.argb(220, HudStyle.CYAN));
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         super.render(g, mouseX, mouseY, a);
 
         g.drawString(font, title, left + 10, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
