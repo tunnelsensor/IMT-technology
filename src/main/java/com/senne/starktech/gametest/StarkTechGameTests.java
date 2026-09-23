@@ -588,6 +588,57 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Stuwraketten aan: in de lucht kost dat energie en vangen ze je val op. Gaat de bril af,
+     * dan gaan ze meteen uit. (Het vliegen zelf rekent het spel van de speler uit; dat kan een
+     * test zonder beeld niet nadoen.)
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
+    public static void suit_thrusters_cost_energy_and_catch_you(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+        EdithSuit.onPlayerTick(new PlayerTickEvent.Post(owner));
+        EdithSuit.setEngaged(owner, true);
+        if (!EdithSuit.isEngaged(owner)) {
+            throw new GameTestAssertException("De stuwraketten gingen niet aan met een compleet harnas");
+        }
+
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        int before = EdithData.getEnergy(glasses);
+        owner.setOnGround(false);
+        owner.fallDistance = 30.0f;
+        // De rekening komt één keer per seconde: op een tick die deelbaar is door 20.
+        owner.tickCount = 40;
+        EdithSuit.onPlayerTick(new PlayerTickEvent.Post(owner));
+        if (owner.fallDistance != 0.0f) {
+            throw new GameTestAssertException("De val werd niet opgevangen: " + owner.fallDistance);
+        }
+        int spent = before - EdithData.getEnergy(glasses);
+        if (spent != SuitBalance.DRAIN_HOVER) {
+            throw new GameTestAssertException("Stilhangen kostte " + spent + " in plaats van " + SuitBalance.DRAIN_HOVER);
+        }
+
+        owner.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        EdithSuit.onPlayerTick(new PlayerTickEvent.Post(owner));
+        if (EdithSuit.isEngaged(owner)) {
+            throw new GameTestAssertException("De stuwraketten bleven aan zonder bril");
+        }
+        helper.succeed();
+    }
+
+    /** Zonder het hele harnas gaan de stuwraketten niet aan, ook niet als je spel dat vraagt. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "suit")
+    public static void suit_thrusters_need_the_whole_suit(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        owner.setItemSlot(EquipmentSlot.CHEST, new ItemStack(ModItems.STARK_CHESTPLATE.get()));
+        owner.setItemSlot(EquipmentSlot.FEET, new ItemStack(ModItems.STARK_BOOTS.get()));
+        EdithSuit.setEngaged(owner, true);
+        if (EdithSuit.isEngaged(owner)) {
+            throw new GameTestAssertException("De stuwraketten gingen aan zonder broek");
+        }
+        helper.succeed();
+    }
+
     /** Een half harnas is niet genoeg om te vliegen, maar beschermt wel. */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
     public static void half_a_suit_does_not_fly(GameTestHelper helper) {

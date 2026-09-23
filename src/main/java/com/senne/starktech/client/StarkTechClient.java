@@ -57,6 +57,10 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
         // De repulsor aan? Dan is de aanvalsknop de repulsor.
         NeoForge.EVENT_BUS.addListener(RepulsorControl::onInteraction);
+        // Vliegen met het harnas: de natuurkunde, en het beeld dat overhelt in de bochten.
+        NeoForge.EVENT_BUS.addListener(SuitFlight::onPlayerTickPre);
+        NeoForge.EVENT_BUS.addListener(SuitFlight::onPlayerTickPost);
+        NeoForge.EVENT_BUS.addListener(SuitFlight::onCameraAngles);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();

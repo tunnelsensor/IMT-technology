@@ -257,6 +257,8 @@ public final class EdithClientEvents {
     // ---------------------------------------------------------------- Zoom
 
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
+        // Snel vliegen met het harnas maakt het beeld iets breder: zo voel je de snelheid.
+        event.setFOV(event.getFOV() * SuitFlight.fovFactor((float) event.getPartialTick()));
         // Onthouden voor de HUD-markeringen (zie WorldProjection).
         EdithClientState.fieldOfView = event.getFOV();
         if (EdithClientState.zooming) {
@@ -284,6 +286,7 @@ public final class EdithClientEvents {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         DroneCamera.exit();
         RepulsorControl.reset();
+        SuitFlight.reset();
         com.senne.starktech.client.illusion.IllusionRenderer.clear();
         EdithClientState.reset();
     }

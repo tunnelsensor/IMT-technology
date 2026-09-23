@@ -8,6 +8,7 @@ import com.senne.starktech.edith.EdithTargeting;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.ModNetwork;
+import com.senne.starktech.network.SuitFlightPayload;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
@@ -53,6 +54,13 @@ public final class EdithSuit {
      */
     private static final Set<UUID> FLYING_BY_SUIT = new HashSet<>();
 
+    /**
+     * Wie zijn stuwraketten aan heeft staan. Het vliegen zelf (stuwkracht, vaart, zwaartekracht)
+     * rekent het spel van de speler uit, zie client/SuitFlight; de server betaalt de energie,
+     * vangt de val op en laat iedereen de straalvlammen zien.
+     */
+    private static final Set<UUID> ENGAGED = new HashSet<>();
+
     // ================================================================ Elke tick
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {
@@ -64,13 +72,15 @@ public final class EdithSuit {
             FLYING_BY_SUIT.remove(player.getUUID());
             return;
         }
-        boolean mayFly = StarkSuitItem.fullSet(player) && StarkSuitItem.isPowered(player);
+        boolean mayFly = mayFly(player);
         Abilities abilities = player.getAbilities();
 
         if (mayFly) {
+            // "mayfly" zetten we aan om twee redenen: een server gooit je er anders uit omdat je
+            // "te lang zweeft", en dubbel op spatie tikken wordt zo het teken om de stuwraketten
+            // aan te zetten. Het gewone creative-vliegen zelf zetten we meteen weer uit.
             if (!abilities.mayfly) {
                 abilities.mayfly = true;
-                abilities.setFlyingSpeed(0.05f * SuitBalance.FLY_SPEED);
                 FLYING_BY_SUIT.add(player.getUUID());
                 player.onUpdateAbilities();
                 EdithServer.send(player, Component.translatable("suit.starktech.msg.flight_ready"),
@@ -78,40 +88,105 @@ public final class EdithSuit {
                 StarkAdvancements.award(player, StarkAdvancements.SUIT);
             }
             if (abilities.flying) {
-                drainForFlight(player);
+                abilities.flying = false;
+                player.onUpdateAbilities();
+            }
+            if (ENGAGED.contains(player.getUUID())) {
+                thrusters(player);
             }
             return;
         }
         // Geen (volledig) harnas meer, bril af of batterij leeg: het vliegen stopt.
+        boolean wasEngaged = ENGAGED.remove(player.getUUID());
+        if (wasEngaged) {
+            ModNetwork.sendTo(player, new SuitFlightPayload(false));
+        }
         if (FLYING_BY_SUIT.remove(player.getUUID())) {
             abilities.mayfly = false;
-            boolean wasFlying = abilities.flying;
             abilities.flying = false;
-            abilities.setFlyingSpeed(0.05f);
             player.onUpdateAbilities();
-            if (wasFlying) {
+            if (wasEngaged && !player.onGround()) {
                 EdithServer.send(player, Component.translatable("suit.starktech.msg.flight_lost"),
                         EdithMessagePayload.Level.ALERT);
             }
         }
     }
 
-    /** Vliegen kost energie: stilhangen weinig, vooruit vliegen meer. */
-    private static void drainForFlight(ServerPlayer player) {
+    /** Mag deze speler nu met het harnas vliegen? Hele harnas, eigen bril, energie. */
+    private static boolean mayFly(ServerPlayer player) {
+        return StarkSuitItem.fullSet(player) && StarkSuitItem.isPowered(player);
+    }
+
+    /**
+     * Jouw spel zet de stuwraketten aan (dubbel spatie) of uit (geland, of nog eens dubbel spatie).
+     * Mag het niet, dan zeggen we terug dat ze uit blijven.
+     */
+    public static void setEngaged(ServerPlayer player, boolean engaged) {
+        if (engaged && !player.isCreative() && !player.isSpectator() && mayFly(player)) {
+            ENGAGED.add(player.getUUID());
+            player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.5f, 1.6f);
+            return;
+        }
+        ENGAGED.remove(player.getUUID());
+        if (engaged) {
+            ModNetwork.sendTo(player, new SuitFlightPayload(false));
+        }
+    }
+
+    public static boolean isEngaged(ServerPlayer player) {
+        return ENGAGED.contains(player.getUUID());
+    }
+
+    /**
+     * Zolang de stuwraketten aan staan: geen valschade (je remt zelf af), energie betalen en
+     * straalvlammen onder je laarzen die iedereen ziet.
+     */
+    private static void thrusters(ServerPlayer player) {
+        player.resetFallDistance();
+        if (player.onGround()) {
+            return; // op de grond kosten ze niets; je spel zet ze zo meteen zelf uit
+        }
+        ServerLevel level = player.serverLevel();
+        // Hoe snel je gaat weet de server uit wat jouw spel doorstuurt, niet uit zijn eigen
+        // "deltaMovement": die houdt hij voor spelers niet bij.
+        double speed = player.getKnownMovement().length();
+        if (player.tickCount % 2 == 0) {
+            jets(level, player, speed);
+        }
         // Eén keer per seconde afrekenen, niet elke tick.
         if (player.tickCount % 20 != 0) {
             return;
         }
-        boolean moving = player.getDeltaMovement().horizontalDistanceSqr() > 0.01;
-        int cost = moving ? SuitBalance.DRAIN_FLY : SuitBalance.DRAIN_HOVER;
+        int cost = speed > SuitBalance.BOOST_SPEED ? SuitBalance.DRAIN_BOOST
+                : speed > SuitBalance.CRUISE_SPEED ? SuitBalance.DRAIN_FLY : SuitBalance.DRAIN_HOVER;
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
             return; // de volgende tick merkt dat de batterij leeg is en zet het vliegen uit
         }
         StarkAdvancements.award(player, StarkAdvancements.FLY);
-        ServerLevel level = player.serverLevel();
-        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + 0.1, player.getZ(),
-                2, 0.2, 0.05, 0.2, 0.01);
+    }
+
+    /** Een blauwe straalvlam onder elke laars, en een vonkje. Harder vliegen = meer vuur. */
+    private static void jets(ServerLevel level, ServerPlayer player, double speed) {
+        double yaw = Math.toRadians(player.yBodyRot);
+        // Een halve voet opzij, links en rechts van het midden van je lichaam.
+        double sideX = Math.cos(yaw) * 0.14;
+        double sideZ = Math.sin(yaw) * 0.14;
+        int flames = speed > SuitBalance.CRUISE_SPEED ? 2 : 1;
+        for (int side = -1; side <= 1; side += 2) {
+            double x = player.getX() + sideX * side;
+            double z = player.getZ() + sideZ * side;
+            for (int i = 0; i < flames; i++) {
+                // Met aantal 0 is (0, -1, 0) de richting en 0.25 de snelheid: recht naar beneden.
+                level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, x, player.getY() - 0.05, z,
+                        0, 0.0, -1.0, 0.0, 0.25);
+            }
+        }
+        if (level.random.nextInt(4) == 0) {
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() - 0.1, player.getZ(),
+                    1, 0.1, 0.05, 0.1, 0.02);
+        }
     }
 
     // ================================================================ Schade opvangen
@@ -243,9 +318,11 @@ public final class EdithSuit {
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         FLYING_BY_SUIT.remove(event.getEntity().getUUID());
+        ENGAGED.remove(event.getEntity().getUUID());
     }
 
     public static void onServerStopped(ServerStoppedEvent event) {
         FLYING_BY_SUIT.clear();
+        ENGAGED.clear();
     }
 }

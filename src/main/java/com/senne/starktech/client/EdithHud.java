@@ -3,6 +3,7 @@ package com.senne.starktech.client;
 import com.senne.starktech.client.hud.BootOverlay;
 import com.senne.starktech.client.hud.CompassWidget;
 import com.senne.starktech.client.hud.DroneFeedWidget;
+import com.senne.starktech.client.hud.FlightWidget;
 import com.senne.starktech.client.hud.HackBubbleWidget;
 import com.senne.starktech.client.hud.HudContext;
 import com.senne.starktech.client.hud.HudStyle;
@@ -68,6 +69,7 @@ public class EdithHud implements LayeredDraw.Layer {
             new DroneFeedWidget(),
             new ZoomWidget(),
             new RepulsorWidget(),
+            new FlightWidget(),
             new NoPowerWidget(),
             new StatusPanelWidget(),
             NOTIFICATIONS);

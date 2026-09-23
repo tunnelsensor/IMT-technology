@@ -215,9 +215,14 @@ Met de bril op en energie erin:
 
 - **Schade**: elk gedragen stuk haalt 20% van elke klap weg, dus met het hele pak 60% — bovenop
   de gewone bescherming. Dat betaalt je bril per treffer.
-- **Vliegen**: met alle drie de stukken kun je vliegen, ongeveer zoals in creative maar sneller.
-  Stilhangen kost 12 energie per seconde, vooruit vliegen 26. Raakt je batterij leeg, dan val je
-  gewoon uit de lucht — hou hem dus in de gaten.
+- **Vliegen**: met alle drie de stukken heb je stuwraketten. **Dubbel op spatie** zet ze aan
+  (nog eens dubbel spatie zet ze uit; landen doen ze vanzelf). Het is geen creative-vliegen:
+  je hebt vaart. **W/S** stuwt je de kant op waar je **kijkt** (ook omhoog of omlaag),
+  **A/D** opzij, **spatie/shift** stijgen en dalen, en **sprint** is de naverbrander. Snelheid
+  bouwt langzaam op en loopt uit als je loslaat, het beeld helt over in de bochten en vlak
+  boven de grond remt het harnas zelf af. Links van je vizier staan je snelheid en hoogte.
+  Stilhangen kost 12 energie per seconde, vooruit vliegen 26, de naverbrander 45. Raakt je
+  batterij leeg, dan val je gewoon uit de lucht — hou hem dus in de gaten.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
 - **Repulsor** (toets **I**, of G > Gevecht): zet de repulsor **aan of uit**. Staat hij aan,
   dan is je aanvalsknop (linkermuisknop) de repulsor: klikken vuurt, ingedrukt houden vuurt

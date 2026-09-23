@@ -251,6 +251,48 @@ public final class VisualCheck {
         shot(4, "43_repulsor_fired");
         step(30, RepulsorControl::toggle);
 
+        // --- Vliegen met het harnas. In creative vlieg je gewoon zoals altijd, dus even survival.
+        // We drukken de toetsen in zoals een speler en schrijven bij elke stap de snelheid in de
+        // log ("[visual check] vlucht"), zodat de natuurkunde na te rekenen is.
+        step(0, () -> command("gamemode survival @a"));
+        stand(10, 0.5, -60, -24, 180, -5);
+        key(40, "jump", true);
+        key(2, "jump", false);
+        key(2, "jump", true);            // dubbel tikken: stuwraketten aan
+        probe(1, "dubbel getikt");
+        probe(24, "25 ticks spatie");
+        key(0, "jump", false);
+        probe(10, "10 ticks los");
+        probe(20, "30 ticks los");
+        camera(0, CameraType.THIRD_PERSON_BACK);
+        // Zonder HUD (zoals F1): anders vallen de vlammen onder je voeten achter de hartjes.
+        step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        shot(10, "47_flight_jets");
+        step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        camera(0, CameraType.FIRST_PERSON);
+        key(0, "up", true);
+        key(0, "sprint", true);
+        probe(10, "boost 10");
+        probe(10, "boost 20");
+        probe(10, "boost 30");
+        probe(10, "boost 40");
+        shot(0, "44_flight_boost");
+        key(0, "left", true);
+        shot(10, "45_flight_bank");
+        key(0, "left", false);
+        key(0, "up", false);
+        key(0, "sprint", false);
+        probe(10, "uitglijden 10");
+        probe(10, "uitglijden 20");
+        probe(20, "uitglijden 40");
+        shot(0, "46_flight_glide");
+        key(0, "shift", true);
+        probe(40, "dalen 40");
+        probe(40, "dalen 80");
+        key(0, "shift", false);
+        probe(20, "geland");
+        step(0, () -> command("gamemode creative @a"));
+
         // --- Drones: onze eigen en een raiddrone, stilgezet zodat je ze goed ziet
         onServer(0, VisualCheck::spawnDrones);
         view(0, 0.5, -59, -16, 0, 0);
@@ -363,6 +405,42 @@ public final class VisualCheck {
         step(waitTicks, () -> Minecraft.getInstance().options.setCameraType(type));
     }
 
+    /** Een toets indrukken of loslaten, zoals een speler dat doet. */
+    private static void key(int waitTicks, String which, boolean down) {
+        step(waitTicks, () -> {
+            var options = Minecraft.getInstance().options;
+            var mapping = switch (which) {
+                case "jump" -> options.keyJump;
+                case "up" -> options.keyUp;
+                case "left" -> options.keyLeft;
+                case "sprint" -> options.keySprint;
+                case "shift" -> options.keyShift;
+                default -> throw new IllegalArgumentException(which);
+            };
+            mapping.setDown(down);
+        });
+    }
+
+    /** Schrijft op waar de speler is en hoe snel hij gaat. */
+    private static void probe(int waitTicks, String label) {
+        step(waitTicks, () -> {
+            var player = Minecraft.getInstance().player;
+            if (player == null) {
+                return;
+            }
+            var v = player.getDeltaMovement();
+            StarkTech.LOGGER.info(String.format(java.util.Locale.ROOT,
+                    "[visual check] vlucht %-16s y=%7.2f  v=(%5.2f, %5.2f, %5.2f)  |v|=%4.2f  aan=%s  grond=%s",
+                    label, player.getY(), v.x, v.y, v.z, v.length(),
+                    com.senne.starktech.client.SuitFlight.isEngaged(), player.onGround()));
+        });
+    }
+
+    /** Zet de speler op de grond neer, zonder te laten vliegen (voor survival). */
+    private static void stand(int waitTicks, double x, double y, double z, float yaw, float pitch) {
+        onServer(waitTicks, player -> player.teleportTo(player.serverLevel(), x, y, z, yaw, pitch));
+    }
+
     /** Zet de speler op een plek, kijkend in een richting (yaw 0 = zuid, pitch + = omlaag). */
     private static void view(int waitTicks, double x, double y, double z, float yaw, float pitch) {
         onServer(waitTicks, player -> {
@@ -420,6 +498,8 @@ public final class VisualCheck {
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.getTutorial().setStep(TutorialSteps.NONE);
         mc.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0);
+        // Geen chat in beeld: die stond over de voeten (en straalvlammen) van het harnas.
+        mc.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.HIDDEN);
         mc.options.save();
     }
 

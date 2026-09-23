@@ -184,5 +184,13 @@
         "name": "starktech:repulsor_fire"
       }
     ]
+  },
+  "suit.thruster": {
+    "subtitle": "subtitles.starktech.suit.thruster",
+    "sounds": [
+      {
+        "name": "starktech:suit_thruster"
+      }
+    ]
   }
 }

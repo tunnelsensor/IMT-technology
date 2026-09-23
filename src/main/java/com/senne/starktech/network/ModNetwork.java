@@ -7,12 +7,14 @@ import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.holo.HoloTables;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.redstone.EdithRedstone;
+import com.senne.starktech.suit.EdithSuit;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.DirectionalPayloadHandler;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
@@ -96,6 +98,16 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onPing(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
+        // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server
+        // zet ze uit (bijvoorbeeld als je energie op is).
+        registrar.playBidirectional(SuitFlightPayload.TYPE, SuitFlightPayload.STREAM_CODEC,
+                new DirectionalPayloadHandler<>(
+                        (payload, context) -> ClientPayloadHandlers.onSuitFlight(payload, context),
+                        (payload, context) -> {
+                            if (context.player() instanceof ServerPlayer player) {
+                                EdithSuit.setEngaged(player, payload.engaged());
+                            }
+                        }));
         // Fase 6: spionagedrone
         registrar.playToClient(SpyStatusPayload.TYPE, SpyStatusPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSpyStatus(payload, context));

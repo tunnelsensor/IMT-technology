@@ -11,6 +11,7 @@ import com.senne.starktech.network.HackMessagePayload;
 import com.senne.starktech.network.IllusionScenePayload;
 import com.senne.starktech.network.PingMarkerPayload;
 import com.senne.starktech.network.HoloOpenPayload;
+import com.senne.starktech.network.SuitFlightPayload;
 import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.network.SpyReportPayload;
 import com.senne.starktech.network.SpyStatusPayload;
@@ -53,6 +54,13 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
             mc.setScreen(new HoloTableScreen(payload.pos()));
+        }
+    }
+
+    /** De server zet je stuwraketten uit (energie op, harnas uit...). */
+    public static void onSuitFlight(SuitFlightPayload payload, IPayloadContext context) {
+        if (!payload.engaged()) {
+            SuitFlight.serverStopped();
         }
     }
 

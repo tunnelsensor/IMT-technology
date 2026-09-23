@@ -41,6 +41,8 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_ARM = register("suit.repulsor_arm");
     public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_DISARM = register("suit.repulsor_disarm");
     public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_FIRE = register("suit.repulsor_fire");
+    /** De stuwraketten, als lus zolang je vliegt. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> SUIT_THRUSTER = register("suit.thruster");
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_PING = register("comms.ping");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {

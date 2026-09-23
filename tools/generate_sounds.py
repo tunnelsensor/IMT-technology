@@ -157,10 +157,40 @@ def repulsor_fire():
     return finish(total, peak=0.7)
 
 
+def suit_thruster():
+    """
+    De stuwraketten van het harnas. Dit geluid speelt als lus zolang je vliegt: een diep
+    gebrul van straalmotoren, gesis, en een hoog elektrisch gezoem erdoor, met een langzaam
+    flakkeren zoals een vlam.
+
+    Een lus mag geen naad hebben. Daarom maken we hem wat langer dan nodig en laten we het
+    stuk ná het einde over het begin heen vloeien: waar het einde terugspringt naar het begin,
+    klinkt het begin dan precies als het vervolg van het einde.
+    """
+    length, overlap = 2.0, 0.4
+    total = length + overlap
+    t = seconds(total)
+    roar = bandpass(noise(total), 90, 2400, order=2)
+    hiss = bandpass(noise(total), 2500, 8000) * 0.25
+    rumble = lowpass(noise(total), 140) * 2.5
+    flutter = 1.0 + 0.12 * np.sin(2 * np.pi * 3.0 * t) + 0.06 * np.sin(2 * np.pi * 7.3 * t)
+    buzz = 0.06 * np.sin(2 * np.pi * 880 * t + 0.8 * np.sin(2 * np.pi * 5 * t)) + 0.02 * np.sin(2 * np.pi * 1760 * t)
+    sound = (roar + hiss + rumble) * flutter + buzz
+
+    n, m = int(RATE * length), int(RATE * overlap)
+    loop = sound[:n].copy()
+    ramp = np.linspace(0.0, 1.0, m)
+    loop[:m] = sound[n:n + m] * (1.0 - ramp) + loop[:m] * ramp
+    # Geen fade() hier: een zachte rand zou je bij elke herhaling horen als een hikje.
+    loop = np.tanh(loop * 1.2)
+    return (loop / np.max(np.abs(loop)) * 0.7).astype(np.float32)
+
+
 SOUNDS = {
     "repulsor_arm": repulsor_arm,
     "repulsor_disarm": repulsor_disarm,
     "repulsor_fire": repulsor_fire,
+    "suit_thruster": suit_thruster,
 }
 
 
