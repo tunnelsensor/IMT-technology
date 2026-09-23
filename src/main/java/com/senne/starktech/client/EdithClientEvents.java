@@ -71,6 +71,7 @@ public final class EdithClientEvents {
             DroneCamera.sendControls(mc, player);
         }
         handleKeys(mc);
+        RepulsorControl.tick(mc);
         VoiceControl.tick(mc);
         EdithClientState.pings.removeIf(ping -> Util.getMillis() > ping.endMillis());
 
@@ -151,7 +152,8 @@ public final class EdithClientEvents {
             sendAction(EdithAction.HACK_PLAYER);
         }
         while (EdithKeys.REPULSOR.consumeClick()) {
-            sendAction(EdithAction.REPULSOR);
+            // Aan of uit; vuren doe je daarna met de aanvalsknop (zie RepulsorControl).
+            RepulsorControl.toggle();
         }
     }
 
@@ -281,6 +283,7 @@ public final class EdithClientEvents {
 
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         DroneCamera.exit();
+        RepulsorControl.reset();
         com.senne.starktech.client.illusion.IllusionRenderer.clear();
         EdithClientState.reset();
     }

@@ -677,6 +677,34 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * De repulsor vuur je door de aanvalsknop vast te houden, dus er komt elke tick een "vuur"
+     * binnen. De server laat er maar één per wachttijd door: de tweede kost niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
+    public static void repulsor_waits_for_its_cooldown(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        int full = EdithData.getEnergy(glasses);
+
+        EdithSuit.repulsor(owner);
+        EdithSuit.repulsor(owner);
+        int afterTwo = EdithData.getEnergy(glasses);
+        if (afterTwo != full - SuitBalance.REPULSOR_COST) {
+            throw new GameTestAssertException("Twee stoten in dezelfde tick kostten " + (full - afterTwo)
+                    + " in plaats van " + SuitBalance.REPULSOR_COST);
+        }
+        // Na de wachttijd mag hij weer.
+        helper.runAfterDelay(SuitBalance.REPULSOR_COOLDOWN + 1, () -> {
+            EdithSuit.repulsor(owner);
+            if (EdithData.getEnergy(glasses) != afterTwo - SuitBalance.REPULSOR_COST) {
+                throw new GameTestAssertException("Na de wachttijd vuurde de repulsor niet opnieuw");
+            }
+            helper.succeed();
+        });
+    }
+
     // ================================================================ Fase 15: de holotafel
 
     /**

@@ -160,5 +160,29 @@
         "type": "event"
       }
     ]
+  },
+  "suit.repulsor_arm": {
+    "subtitle": "subtitles.starktech.suit.repulsor_arm",
+    "sounds": [
+      {
+        "name": "starktech:repulsor_arm"
+      }
+    ]
+  },
+  "suit.repulsor_disarm": {
+    "subtitle": "subtitles.starktech.suit.repulsor_disarm",
+    "sounds": [
+      {
+        "name": "starktech:repulsor_disarm"
+      }
+    ]
+  },
+  "suit.repulsor_fire": {
+    "subtitle": "subtitles.starktech.suit.repulsor_fire",
+    "sounds": [
+      {
+        "name": "starktech:repulsor_fire"
+      }
+    ]
   }
 }

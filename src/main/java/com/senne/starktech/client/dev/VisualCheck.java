@@ -9,6 +9,7 @@ import com.senne.starktech.client.EdithMenuScreen;
 import com.senne.starktech.client.HoloTableScreen;
 import com.senne.starktech.client.MusicScreen;
 import com.senne.starktech.client.NavigationScreen;
+import com.senne.starktech.client.RepulsorControl;
 import com.senne.starktech.client.RelayListScreen;
 import com.senne.starktech.client.SpyReportScreen;
 import com.senne.starktech.client.WaypointEditScreen;
@@ -240,6 +241,15 @@ public final class VisualCheck {
         camera(0, CameraType.THIRD_PERSON_BACK);
         shot(20, "41_suit_back");
         camera(0, CameraType.FIRST_PERSON);
+
+        // --- De repulsor: aanzetten, dan de aanvalsknop "indrukken" zoals een speler dat doet
+        view(0, 6.5, -60, -4.5, 180, 8);
+        step(10, RepulsorControl::toggle);
+        shot(30, "42_repulsor_armed");
+        step(0, () -> Minecraft.getInstance().options.keyAttack.setDown(true));
+        step(2, () -> Minecraft.getInstance().options.keyAttack.setDown(false));
+        shot(4, "43_repulsor_fired");
+        step(30, RepulsorControl::toggle);
 
         // --- Drones: onze eigen en een raiddrone, stilgezet zodat je ze goed ziet
         onServer(0, VisualCheck::spawnDrones);

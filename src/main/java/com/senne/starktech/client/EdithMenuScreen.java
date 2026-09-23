@@ -67,7 +67,12 @@ public class EdithMenuScreen extends Screen {
     // ---------------------------------------------------------------- De opties per tabblad (met de klok mee vanaf boven)
 
     private static final List<Option> COMBAT = List.of(
-            action(EdithAction.REPULSOR),
+            // Aan/uit: vuren doe je daarna met de aanvalsknop.
+            new Option(Component.translatable(EdithAction.REPULSOR.translationKey()),
+                    glasses -> RepulsorControl.isArmed()
+                            ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
+                            : new Status(Component.translatable("screen.starktech.cost", SuitBalance.REPULSOR_COST), GREY),
+                    RepulsorControl::toggle),
             action(EdithAction.TOGGLE_SHIELD),
             action(EdithAction.LAUNCH_DRONES),
             action(EdithAction.DRONE_STRIKE),
@@ -309,8 +314,6 @@ public class EdithMenuScreen extends Screen {
         }
         return switch (action) {
             case ORE_SCAN -> costOrCooldown(EdithBalance.ORE_SCAN_COST, EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
-            // De repulsor heeft geen wachttijd die de server bijhoudt, alleen kosten.
-            case REPULSOR -> costOrCooldown(SuitBalance.REPULSOR_COST, 0);
             case LAUNCH_DRONES -> costOrCooldown(EdithBalance.SWARM_COST, EdithClientState.cooldown(EdithCooldown.SWARM));
             case DRONE_STRIKE -> costOrCooldown(EdithBalance.STRIKE_DRONE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
             case SATELLITE_STRIKE -> costOrCooldown(satelliteCost(glasses), EdithClientState.cooldown(EdithCooldown.SATELLITE));

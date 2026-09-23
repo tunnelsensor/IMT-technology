@@ -1,5 +1,6 @@
 package com.senne.starktech.suit;
 
+import com.senne.starktech.edith.EdithCooldown;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.edith.StarkAdvancements;
@@ -8,6 +9,7 @@ import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
+import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -189,6 +191,11 @@ public final class EdithSuit {
         if (glasses.isEmpty() || !EdithData.isAuthorized(glasses, player)) {
             return;
         }
+        // Je houdt de aanvalsknop ingedrukt, dus dit komt vaak binnen: stil negeren tot de
+        // repulsor weer geladen is. (Je eigen spel wacht ook al, maar de server beslist.)
+        if (!EdithServer.isReady(player, EdithCooldown.REPULSOR)) {
+            return;
+        }
         if (!EdithData.tryUseEnergy(glasses, SuitBalance.REPULSOR_COST)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.not_enough_energy",
                     SuitBalance.REPULSOR_COST), EdithMessagePayload.Level.WARNING);
@@ -215,11 +222,12 @@ public final class EdithSuit {
             hits++;
         }
 
-        player.getCooldowns().addCooldown(glasses.getItem(), SuitBalance.REPULSOR_COOLDOWN);
+        EdithServer.startCooldown(player, EdithCooldown.REPULSOR, SuitBalance.REPULSOR_COOLDOWN);
         ModNetwork.sendNear(level, player.position(), 64,
                 new BeamEffectPayload(from, to, BeamEffectPayload.Kind.REPULSOR));
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_POWER_SELECT,
-                SoundSource.PLAYERS, 0.9f, 0.6f);
+        // Iedereen in de buurt hoort het schot, een beetje anders van toon elke keer.
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.REPULSOR_FIRE.get(),
+                SoundSource.PLAYERS, 1.0f, 0.95f + level.random.nextFloat() * 0.1f);
         // Een klein zetje naar achteren: een repulsor duwt jou ook een beetje.
         Vec3 back = player.getViewVector(1.0f).scale(-SuitBalance.REPULSOR_RECOIL);
         player.push(back.x, 0.0, back.z);

@@ -943,6 +943,19 @@ public final class EdithServer {
 
     // ---------------------------------------------------------------- Hulpjes
 
+    /**
+     * Is deze functie weer beschikbaar? Zonder melding: voor dingen die je ingedrukt houdt,
+     * zoals de repulsor, zou je anders elke tick "nog 1 seconde" in beeld krijgen.
+     */
+    public static boolean isReady(ServerPlayer player, EdithCooldown cooldown) {
+        return player.level().getGameTime() >= state(player).readyAt[cooldown.ordinal()];
+    }
+
+    /** Zet de wachttijd van een functie op "nu + ticks" (voor functies buiten deze klasse). */
+    public static void startCooldown(ServerPlayer player, EdithCooldown cooldown, int ticks) {
+        startCooldown(player, state(player), cooldown, ticks);
+    }
+
     /** Is deze functie weer beschikbaar? Zo niet, dan krijgt de speler een melding. */
     private static boolean checkCooldown(ServerPlayer player, PlayerState state, EdithCooldown cooldown) {
         return checkCooldown(player, state.readyAt[cooldown.ordinal()]);

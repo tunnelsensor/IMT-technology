@@ -37,6 +37,10 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> SATELLITE_FIRE = register("satellite.fire");
     // Fase 3
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_MESSAGE = register("comms.message");
+    // Het harnas: eigen geluiden (zie tools/generate_sounds.py)
+    public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_ARM = register("suit.repulsor_arm");
+    public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_DISARM = register("suit.repulsor_disarm");
+    public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_FIRE = register("suit.repulsor_fire");
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_PING = register("comms.ping");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {

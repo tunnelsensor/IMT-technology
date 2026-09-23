@@ -55,6 +55,8 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onRenderLiving);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
+        // De repulsor aan? Dan is de aanvalsknop de repulsor.
+        NeoForge.EVENT_BUS.addListener(RepulsorControl::onInteraction);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();

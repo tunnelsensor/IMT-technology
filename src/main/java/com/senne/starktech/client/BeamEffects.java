@@ -55,8 +55,14 @@ public final class BeamEffects {
         }
     }
 
-    /** Een repulsorstoot: een korte, brede stoot wit-blauw licht recht vooruit. */
-    private static void repulsor(ClientLevel level, Vec3 from, Vec3 to) {
+    /**
+     * Een repulsorstoot: een korte, brede stoot wit-blauw licht recht vooruit.
+     *
+     * De straal begint een armlengte voor de schutter. Vanaf zijn ogen getekend zag de schutter
+     * zelf alleen nog grote blauwe blokken vlak voor zijn neus.
+     */
+    private static void repulsor(ClientLevel level, Vec3 eye, Vec3 to) {
+        Vec3 from = eye.add(to.subtract(eye).normalize().scale(1.1));
         line(level, from, to, 0.12, REPULSOR_CORE, false);
         line(level, from, to, 0.3, REPULSOR_GLOW, false);
         RandomSource random = level.getRandom();

@@ -60,7 +60,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (15 automatis
 | **U** | Ping plaatsen |
 | **O** | Comms (berichten naar andere E.D.I.T.H.-dragers) |
 | **Z** | Spraaktoets: ingedrukt houden en praten |
-| **I** | Repulsorstoot (met de borstplaat aan) |
+| **I** | Repulsor aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
 
 Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
@@ -219,8 +219,11 @@ Met de bril op en energie erin:
   Stilhangen kost 12 energie per seconde, vooruit vliegen 26. Raakt je batterij leeg, dan val je
   gewoon uit de lucht — hou hem dus in de gaten.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
-- **Repulsor** (toets **I**, of G > Gevecht): een stoot uit je handpalm die alles op zijn weg
-  raakt en een stukje wegduwt, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de
+- **Repulsor** (toets **I**, of G > Gevecht): zet de repulsor **aan of uit**. Staat hij aan,
+  dan is je aanvalsknop (linkermuisknop) de repulsor: klikken vuurt, ingedrukt houden vuurt
+  elke seconde. Slaan en blokken breken gaat dan niet; zet hem uit om weer te hakken. Rond je
+  vizier staat een ring die na elk schot weer volloopt. Een stoot raakt alles op zijn weg en
+  duwt het een stukje weg, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de
   reactor) en het kost 200 energie per stoot.
 
 ### Holotafel

@@ -30,7 +30,9 @@ public enum EdithCooldown {
     /** Redstone aansturen. */
     REDSTONE,
     /** Muziek (Spotify). */
-    MUSIC;
+    MUSIC,
+    /** Een repulsorstoot uit het harnas. */
+    REPULSOR;
 
     public static final int COUNT = values().length;
 }
