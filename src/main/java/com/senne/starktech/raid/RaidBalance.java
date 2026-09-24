@@ -8,12 +8,12 @@ public final class RaidBalance {
     private RaidBalance() {}
 
     // ---------------------------------------------------------------- De drone zelf
-    /** Levenspunten (16 = 8 hartjes). Iets taaier dan je eigen drones. */
-    public static final double HEALTH = 16.0;
-    /** Schade van één laserschot (5 = 2,5 hartje). */
-    public static final float LASER_DAMAGE = 5.0f;
-    /** Ticks tussen twee schoten. */
-    public static final int FIRE_INTERVAL = 25;
+    /** Levenspunten (10 = 5 hartjes). Was 16; na jouw feedback afgezwakt. */
+    public static final double HEALTH = 10.0;
+    /** Schade van één laserschot (3 = 1,5 hartje). Was 5. */
+    public static final float LASER_DAMAGE = 3.0f;
+    /** Ticks tussen twee schoten (40 = 2 seconden). Was 25. */
+    public static final int FIRE_INTERVAL = 40;
     /** Hoeveel ervaring hij laat vallen. */
     public static final int XP_REWARD = 8;
 
