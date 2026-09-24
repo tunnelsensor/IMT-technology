@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.arsenal.EdithArsenal;
+import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.registry.ModAttachments;
@@ -79,6 +80,13 @@ public final class DevWorld {
         mc.options.chatVisibility().set(ChatVisiblity.HIDDEN);
         if (mute) {
             mc.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0);
+        } else {
+            // De showcase: alle geluid op 100%, ook als het bij een vorige keer lager stond,
+            // en de stem van E.D.I.T.H. ook.
+            for (SoundSource source : SoundSource.values()) {
+                mc.options.getSoundSourceOptionInstance(source).set(1.0);
+            }
+            EdithClientConfig.VOICE_VOLUME.set(1.0);
         }
         mc.options.save();
     }
