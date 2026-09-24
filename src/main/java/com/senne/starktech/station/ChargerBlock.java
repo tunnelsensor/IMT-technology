@@ -1,5 +1,7 @@
 package com.senne.starktech.station;
 
+import com.senne.starktech.energy.PowerConnectable;
+import com.senne.starktech.energy.StarkGrid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -22,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
  * Wat ze precies opwekken staat in hun block entity (SolarPanelBlockEntity en
  * HeatGeneratorBlockEntity).
  */
-public abstract class ChargerBlock extends BaseEntityBlock {
+public abstract class ChargerBlock extends BaseEntityBlock implements PowerConnectable {
     protected ChargerBlock(Properties properties) {
         super(properties);
     }
@@ -59,12 +61,24 @@ public abstract class ChargerBlock extends BaseEntityBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    /** Sloop je hem, dan vallen je bril en je brandstof eruit. */
+    /** Een nieuwe leverancier: de stroomnetten eromheen moeten opnieuw zoeken (zie StarkGrid). */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(state.getBlock())) {
+            StarkGrid.changed();
+        }
+    }
+
+    /** Sloop je hem, dan vallen je bril en je brandstof eruit (en het net verandert). */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof ChargerBlockEntity charger) {
-            Containers.dropContents(level, pos, charger);
-            level.updateNeighbourForOutputSignal(pos, this);
+        if (!state.is(newState.getBlock())) {
+            StarkGrid.changed();
+            if (level.getBlockEntity(pos) instanceof ChargerBlockEntity charger) {
+                Containers.dropContents(level, pos, charger);
+                level.updateNeighbourForOutputSignal(pos, this);
+            }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }

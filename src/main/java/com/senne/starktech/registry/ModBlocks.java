@@ -1,6 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.energy.StarkCableBlock;
 import com.senne.starktech.redstone.RelayBlock;
 import com.senne.starktech.shield.DomeGeneratorBlock;
 import com.senne.starktech.holo.HoloTableBlock;
@@ -46,6 +47,18 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(RelayBlock.POWERED) ? 8 : 2)
+                    .noOcclusion());
+
+    /**
+     * De Stark-kabel: verbindt zonnepanelen en warmtegeneratoren met alles wat stroom gebruikt.
+     * Dun en snel te breken, net als een stuk draad.
+     */
+    public static final DeferredBlock<StarkCableBlock> CABLE = BLOCKS.registerBlock("cable",
+            StarkCableBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .strength(0.5f, 3.0f)
+                    .sound(SoundType.COPPER)
                     .noOcclusion());
 
     /** Het zonnepaneel: laadt je bril op met daglicht. */

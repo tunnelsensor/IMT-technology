@@ -4,6 +4,9 @@
     "starktech:relay",
     "starktech:laser_emitter",
     "starktech:dome_generator",
-    "starktech:holo_table"
+    "starktech:holo_table",
+    "starktech:cable",
+    "starktech:solar_panel",
+    "starktech:heat_generator"
   ]
 }

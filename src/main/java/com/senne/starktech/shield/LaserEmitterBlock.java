@@ -2,6 +2,7 @@ package com.senne.starktech.shield;
 
 import com.mojang.serialization.MapCodec;
 import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.registry.ModBlocks;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  * De wand loopt in de richting waarin de zender kijkt, tot maximaal LASER_MAX_LENGTH blokken,
  * en stopt bij de tegenoverliggende zender (of bij het eerste blok dat in de weg staat).
  */
-public class LaserEmitterBlock extends Block {
+public class LaserEmitterBlock extends Block implements PowerConnectable {
     public static final MapCodec<LaserEmitterBlock> CODEC = simpleCodec(LaserEmitterBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;

@@ -3,6 +3,7 @@ package com.senne.starktech.station;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.UpgradeItem;
+import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModSounds;
 import net.minecraft.core.BlockPos;
@@ -25,6 +26,9 @@ import net.minecraft.nbt.CompoundTag;
  * De "binnenkant" van het laadstation: 3 slots, een energie-opslag en een upgrade-teller.
  *
  * Slot 0 = de bril, slot 1 = brandstof (redstone), slot 2 = een upgrade.
+ *
+ * Stroom komt uit redstone (de noodvoorraad) of van het stroomnet: zonnepanelen en
+ * warmtegeneratoren die via Stark-kabels (of er direct tegenaan) verbonden zijn.
  */
 public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     public static final int SLOT_GLASSES = 0;
@@ -75,6 +79,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
         boolean changed = burnFuel();
+        changed |= pullFromGrid(level, pos);
         changed |= chargeGlasses();
         changed |= tickUpgrade(level, pos);
         if (changed) {
@@ -92,6 +97,22 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
             return true;
         }
         return false;
+    }
+
+    /** Vult de opslag bij uit het stroomnet, zo snel als STATION_GRID_RATE toestaat. */
+    private boolean pullFromGrid(ServerLevel level, BlockPos pos) {
+        int room = EdithBalance.STATION_CAPACITY - energy;
+        if (room <= 0) {
+            return false;
+        }
+        int got = StarkGrid.draw(level, pos, Math.min(room, EdithBalance.STATION_GRID_RATE));
+        energy += got;
+        return got > 0;
+    }
+
+    /** Hoeveel energie er in het station zit. */
+    public int energy() {
+        return energy;
     }
 
     /** Stuurt energie van het station naar de bril. */

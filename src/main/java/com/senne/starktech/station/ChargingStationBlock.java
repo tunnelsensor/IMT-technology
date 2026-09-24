@@ -1,6 +1,7 @@
 package com.senne.starktech.station;
 
 import com.mojang.serialization.MapCodec;
+import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -35,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Het Stark-laadstation: laadt de bril op met redstone en bouwt upgrades in.
  */
-public class ChargingStationBlock extends BaseEntityBlock {
+public class ChargingStationBlock extends BaseEntityBlock implements PowerConnectable {
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     /**

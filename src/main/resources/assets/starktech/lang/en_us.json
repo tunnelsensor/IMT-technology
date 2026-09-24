@@ -9,6 +9,7 @@
   "item.starktech.battery_upgrade": "E.D.I.T.H. Battery Upgrade",
   "item.starktech.scanner_upgrade": "E.D.I.T.H. Scanner Upgrade",
   "block.starktech.solar_panel": "Solar panel",
+  "block.starktech.cable": "Stark cable",
   "block.starktech.heat_generator": "Heat generator",
   "screen.starktech.charger.stored": "Stored: %s / %s",
   "screen.starktech.charger.total": "Produced in total: %s",

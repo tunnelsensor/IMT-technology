@@ -313,6 +313,14 @@ public final class VisualCheck {
             t.shot(20, "53_drones_damaged_close");
         }
 
+        // --- Het stroomnet: een warmtegenerator, een kabel met een hoek en een stuk omhoog, en
+        // een laadstation. De kabel moet netjes aansluiten op alles wat hij raakt.
+        if (want("power")) {
+            t.onServer(0, VisualCheck::buildPowerLine);
+            t.view(20, 24.5, -58.5, -16.5, 200, 30);
+            t.shot(20, "95_power_cables");
+        }
+
         // --- Illusies richten: eerst een valse muur (van bakstenen), met de drone vooruit
         // gevlogen; dan een nep-leger boven op de heuvel (de zombies moeten óp de heuvel staan).
         if (want("illusion")) {
@@ -475,6 +483,27 @@ public final class VisualCheck {
         if (mc.screen != null) {
             mc.screen.mouseScrolled(mc.screen.width * 0.62, mc.screen.height * 0.3, 0, amount);
         }
+    }
+
+    /** Generator - kabels (met een hoek en een stukje omhoog) - laadstation, bij x 20..27, z -20. */
+    private static void buildPowerLine(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos start = new BlockPos(20, -60, -20);
+        List<BlockPos> path = List.of(start.east(1), start.east(2), start.east(3), start.east(3).south(),
+                start.east(3).south(2), start.east(3).south(2).above(), start.east(4).south(2).above(),
+                start.east(5).south(2).above());
+        level.setBlockAndUpdate(start, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        for (BlockPos pos : path) {
+            level.setBlockAndUpdate(pos, ModBlocks.CABLE.get().defaultBlockState());
+        }
+        // Pas na het leggen van alle kabels: dan kent elke kabel zijn buren al.
+        for (BlockPos pos : path) {
+            BlockState placed = ModBlocks.CABLE.get().getStateForPlacement(
+                    new net.minecraft.world.item.context.DirectionalPlaceContext(level, pos, Direction.DOWN, ItemStack.EMPTY, Direction.UP));
+            level.setBlockAndUpdate(pos, placed);
+        }
+        level.setBlockAndUpdate(start.east(6).south(2).above(), ModBlocks.CHARGING_STATION.get().defaultBlockState());
+        level.setBlockAndUpdate(start.east(6).south(2), Blocks.STONE.defaultBlockState());
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */

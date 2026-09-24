@@ -69,6 +69,11 @@ public final class EdithBalance {
     public static final int ENERGY_PER_REDSTONE_BLOCK = 480;
     /** Hoeveel energie het station per tick naar de bril stuurt. */
     public static final int STATION_CHARGE_RATE = 50;
+    /**
+     * Hoeveel energie het station per tick uit het stroomnet (Stark-kabels) mag halen. Ruim meer
+     * dan één zonnepaneel maakt, zodat een heel veld panelen ook echt sneller laadt.
+     */
+    public static final int STATION_GRID_RATE = 40;
     // ---------------------------------------------------------------- Zonnepaneel en warmte
     /** Hoeveel een zonnepaneel kan opslaan. */
     public static final int SOLAR_CAPACITY = 12_000;

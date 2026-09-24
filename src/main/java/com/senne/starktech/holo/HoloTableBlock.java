@@ -2,6 +2,7 @@ package com.senne.starktech.holo;
 
 import com.mojang.serialization.MapCodec;
 import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.shield.ShieldColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -37,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Je hebt de bril op nodig: zonder E.D.I.T.H. is het een dure tafel.
  */
-public class HoloTableBlock extends BaseEntityBlock {
+public class HoloTableBlock extends BaseEntityBlock implements PowerConnectable {
     public static final MapCodec<HoloTableBlock> CODEC = simpleCodec(HoloTableBlock::new);
 
     /** De kleur van het hologram. Dezelfde rij kleuren als de rayshields. */

@@ -697,6 +697,42 @@ def drone_damage_textures():
         save(overlay, f"entity/drone/drone_damage_{name}.png")
 
 
+# --------------------------------------------------------------------- Stroomnet
+
+def cable_textures():
+    """
+    De Stark-kabel. Het verbindingsstukje ('cable') is donker rubber met koperen randjes en een
+    blauwe energiestreep in het midden. De streep loopt zowel horizontaal als verticaal (een
+    kruis): elke kant van een kabelstuk laat maar één van de twee zien, precies in de lengte.
+    De kern ('cable_core') is een metalen knooppunt met een blauw lampje.
+    """
+    rubber = (36, 38, 44, 255)
+    rubber_hi = (54, 57, 64, 255)
+    copper = (190, 110, 60, 255)
+    side = img(16, 16, rubber)
+    for i in range(16):
+        for c in (5, 10):
+            side.putpixel((i, c), copper)
+            side.putpixel((c, i), copper)
+        for c in (6, 9):
+            side.putpixel((i, c), rubber_hi)
+            side.putpixel((c, i), rubber_hi)
+        for c in (7, 8):
+            side.putpixel((i, c), CYAN_DIM)
+            side.putpixel((c, i), CYAN_DIM)
+    for i in range(0, 16, 4):
+        px(side, [(i, 7), (7, i)], CYAN)
+    save(side, "block/cable.png")
+
+    core = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(core)
+    d.rectangle([5, 5, 10, 10], fill=METAL_2, outline=METAL_DARK)
+    px(core, [(5, 5), (10, 5), (5, 10), (10, 10)], copper)
+    d.rectangle([7, 7, 8, 8], fill=CYAN)
+    px(core, [(6, 7), (9, 8), (7, 6), (8, 9)], CYAN_DIM)
+    save(core, "block/cable_core.png")
+
+
 # --------------------------------------------------------------------- Fase 9: redstone-relais
 
 def relay_textures():
@@ -1177,6 +1213,7 @@ if __name__ == "__main__":
     drone_damage_textures()
     planet_texture()
     satellite_textures()
+    cable_textures()
     relay_textures()
     shield_textures()
     rayshield_walls()

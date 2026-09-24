@@ -2,6 +2,7 @@ package com.senne.starktech.station;
 
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.energy.EnergySource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -23,9 +24,12 @@ import net.minecraft.world.level.block.state.BlockState;
  * Allebei werken ze hetzelfde: ze maken energie en stoppen die in de bril die je erin legt.
  * Het verschil zit in wáár die energie vandaan komt, en dat regelt {@link #produce}.
  *
+ * Wat ze opwekken kan ook het stroomnet op: apparaten die via Stark-kabels (of er direct
+ * tegenaan) verbonden zijn, halen het hier weg (zie EnergySource en StarkGrid).
+ *
  * Twee slots: 0 is de bril, 1 is brandstof (alleen de warmtegenerator doet daar iets mee).
  */
-public abstract class ChargerBlockEntity extends BaseContainerBlockEntity {
+public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implements EnergySource {
     public static final int SLOT_GLASSES = 0;
     public static final int SLOT_FUEL = 1;
     public static final int SLOT_COUNT = 2;
@@ -93,8 +97,26 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity {
     /** Hoeveel dit blok kan opslaan. */
     public abstract int capacity();
 
+    @Override
     public int energy() {
         return energy;
+    }
+
+    /** Het stroomnet haalt hier stroom weg (zie StarkGrid). */
+    @Override
+    public int drain(int max) {
+        int taken = Math.min(max, energy);
+        if (taken > 0) {
+            energy -= taken;
+            setChanged();
+        }
+        return taken;
+    }
+
+    /** Stroom erbij zetten zonder dat hij die zelf opwekt (voor de tests). */
+    public void fill(int amount) {
+        energy = Math.min(capacity(), energy + amount);
+        setChanged();
     }
 
     /** Alles wat dit blok ooit heeft opgewekt. */

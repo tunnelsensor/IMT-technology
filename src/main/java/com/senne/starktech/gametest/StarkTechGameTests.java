@@ -887,6 +887,44 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    // ================================================================ Stroomnet
+
+    /**
+     * Een warmtegenerator levert via vier kabels stroom aan een laadstation. Een tweede rij met
+     * een gat in de kabel krijgt niets: kabels moeten aan elkaar zitten.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "grid")
+    public static void grid_carries_power_over_cables(GameTestHelper helper) {
+        BlockPos connected = gridRow(helper, 1, false);
+        BlockPos broken = gridRow(helper, 3, true);
+        helper.runAfterDelay(10, () -> {
+            int got = ((ChargingStationBlockEntity) helper.getBlockEntity(connected)).energy();
+            int gotThroughGap = ((ChargingStationBlockEntity) helper.getBlockEntity(broken)).energy();
+            if (got <= 0) {
+                throw new GameTestAssertException("Het laadstation kreeg geen stroom over de kabels");
+            }
+            if (gotThroughGap != 0) {
+                throw new GameTestAssertException("Stroom sprong over een gat in de kabel: " + gotThroughGap);
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Generator (vol) - vier kabels - laadstation, op rij z. Met {@code gap} ontbreekt de middelste kabel. */
+    private static BlockPos gridRow(GameTestHelper helper, int z, boolean gap) {
+        BlockPos source = new BlockPos(1, 3, z);
+        helper.setBlock(source, ModBlocks.HEAT_GENERATOR.get());
+        for (int x = 2; x <= 5; x++) {
+            if (!(gap && x == 4)) {
+                helper.setBlock(new BlockPos(x, 3, z), ModBlocks.CABLE.get());
+            }
+        }
+        BlockPos station = new BlockPos(6, 3, z);
+        helper.setBlock(station, ModBlocks.CHARGING_STATION.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(source)).fill(5_000);
+        return station;
+    }
+
     // ================================================================ Illusies richten
 
     /**

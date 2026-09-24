@@ -60,6 +60,8 @@ public final class ModItems {
             ModBlocks.HEAT_GENERATOR);
 
     public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
+    /** De Stark-kabel voor het stroomnet. */
+    public static final DeferredItem<BlockItem> CABLE = ITEMS.registerSimpleBlockItem("cable", ModBlocks.CABLE);
 
     // Fase 11: rayshield (de laserwand zelf heeft geen item: die hoort bij de zenders)
     /** Fase 12: de E.M.P.-zender waarmee je illusies platlegt. */

@@ -1,6 +1,7 @@
 package com.senne.starktech.shield;
 
 import com.mojang.serialization.MapCodec;
+import com.senne.starktech.energy.PowerConnectable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * - vijandige monsters worden naar buiten geduwd;
  * - spelers en dieren kunnen er gewoon door (anders kwam je zelf niet meer thuis).
  */
-public class DomeGeneratorBlock extends Block implements EdithSwitchable {
+public class DomeGeneratorBlock extends Block implements EdithSwitchable, PowerConnectable {
     public static final MapCodec<DomeGeneratorBlock> CODEC = simpleCodec(DomeGeneratorBlock::new);
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
