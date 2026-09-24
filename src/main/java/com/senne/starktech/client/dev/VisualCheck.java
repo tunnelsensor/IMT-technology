@@ -148,11 +148,12 @@ public final class VisualCheck {
         });
         // --- De opstartanimatie van de bril (die begint zodra de bril op is)
         if (want("boot")) {
-            t.shot(16, "00_boot_a");
-            t.shot(16, "00_boot_b");
-            t.shot(16, "00_boot_c");
-            t.shot(16, "00_boot_d");
-            t.shot(12, "00_boot_e");
+            // Logo, laadbalk, identiteitscontrole, bevestigd met welkomstzin, ONLINE.
+            t.shot(24, "00_boot_a");
+            t.shot(20, "00_boot_b");
+            t.shot(26, "00_boot_c");
+            t.shot(22, "00_boot_d");
+            t.shot(14, "00_boot_e");
         } else {
             t.pause(100); // de bril moet toch even opstarten
         }

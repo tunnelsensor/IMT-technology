@@ -19,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
 import net.minecraft.network.chat.Component;
+import com.senne.starktech.client.hud.BootOverlay;
 import net.minecraft.Util;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -75,6 +76,15 @@ public final class ClientPayloadHandlers {
     }
 
     public static void onMessage(EdithMessagePayload payload, IPayloadContext context) {
+        // De welkomstzin bij het opzetten: die zegt de opstart-animatie zelf, op het moment dat
+        // je identiteit bevestigd is. Is die animatie al voorbij, dan gewoon meteen.
+        long bootAge = Util.getMillis() - EdithClientState.bootStartMillis;
+        if (payload.level() == EdithMessagePayload.Level.BOOT && bootAge < BootOverlay.CONFIRMED_AT) {
+            EdithClientState.bootGreeting = payload.message();
+            EdithClientState.bootGreetingMillis = Util.getMillis();
+            EdithClientEvents.playUi(ModSounds.EDITH_BOOT.get(), 1.0f);
+            return;
+        }
         EdithClientState.addNotification(payload.message(), payload.level());
         switch (payload.level()) {
             case BOOT -> EdithClientEvents.playUi(ModSounds.EDITH_BOOT.get(), 1.0f);

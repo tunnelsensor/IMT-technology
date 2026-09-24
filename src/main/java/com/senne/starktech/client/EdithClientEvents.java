@@ -59,6 +59,7 @@ public final class EdithClientEvents {
 
         if (EdithClientState.wearing && !wasWearing) {
             EdithClientState.bootStartMillis = Util.getMillis();
+            EdithClientState.bootGreetingSaid = false;
         }
 
         EdithClientState.loadMenuTab();
