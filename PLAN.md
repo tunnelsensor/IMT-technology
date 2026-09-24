@@ -14,12 +14,13 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 42 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 45 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle functies één voor één zien, met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
 testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 `run-visual/screenshots`. Er gaat dan even een Minecraft-venster open; laat dat met rust.
+Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite`.
 
 ---
 
@@ -147,17 +148,84 @@ testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 - [x] **Opstartanimatie van de bril** — `3c5dcec`
       Ruim vier seconden: scherm gaat aan, logo met reactorringen, systeemcheck met piepjes
       (met je echte aantal drones en je batterij), irisscan met je naam, ONLINE. Eigen geluiden.
-- [ ] **Satelliet upgraden via een scherm**: cooldown, schade, de drie schietmodi vrijspelen,
-      enz. Elk tot niveau 10. Je hebt genoeg drones nodig om de onderdelen naar de baan te
-      brengen.
+- [x] **Satelliet upgraden via een scherm** — `85f1dd3`
+      Zes onderdelen, elk tot niveau 10: precisie-straal, bombardement en schuivende laser
+      (die laatste twee eerst vrijspelen), opladen, kracht en richten. Een niveau kost spullen
+      uit je rugzak, en 2 tot 6 drones uit je arsenaal vliegen ze voor je ogen omhoog (ze komen
+      daarna terug). De getallen per niveau staan in `SatelliteStats.java`, de kosten in
+      `SatelliteUpgrade.java`. Drie nieuwe tests.
 
-### 2. Meer in de wereld
+### 2. Uit de showcase (23 september, 21:13)
+
+Jouw notities uit `showcase-notities.md`, per onderwerp gegroepeerd. In deze volgorde: eerst
+wat de satelliet afmaakt, dan de kleine dingen, dan de grote.
+
+**Satelliet** (hoort bij het upgradescherm hierboven)
+- [x] Satelliet los van het arsenaal: geen knop meer in het arsenaalscherm, een eigen plek
+      onder G > Combat. In de 3D-baan van het arsenaal blijft hij wel hangen. — `85f1dd3`
+- [x] De satelliet ziet er beter uit naarmate je hem upgradet — `85f1dd3`
+      Per onderdeel komen er stukken bij: een kanon met focusringen en een gloeiende punt,
+      raketkokers (tot acht), een rode lens met vinnen, langere zonnepanelen, condensatoren en
+      een grote reactor, een tweede antenne, een grotere schotel en een sensor. Ook in het
+      arsenaal zie je je eigen satelliet zo. Slepen draait hem, scrollen zoomt in.
+- [x] Scherm netter: geen tekst over elkaar, duidelijkere secties, en *alle* stats onder de
+      3D-satelliet (ook die van het bombardement en de laser) — `85f1dd3`
+      Links de satelliet met daaronder alles per stand; rechts "Firing modes" en "Systems".
+      Nagekeken op screenshots bij een klein scherm (1280x720, GUI-schaal 3).
+      Onderweg: de uitleg onderaan het arsenaalscherm hield halverwege op ("click a").
+- [x] In creative: een knop om alle upgrades in één keer vrij te spelen ("Max all") — `85f1dd3`
+- [x] Showcase: de drie schietstanden vrijspelen, anders werken bombardement en laser niet —
+      `85f1dd3`. Nieuw in de showcase: "Satellite upgrades", waarin de satelliet groeit.
+
+**Kleine dingen**
+- [ ] Geen tekst meer boven de relais
+- [ ] Laserpoort: geen relais-functies meer, een volledig blok, en het glas in de goede
+      richting (één lijn `---`, niet naast elkaar `| | |`)
+- [ ] De illusie "wereld kopiëren" weghalen ("cloak" blijft)
+- [ ] Repulsor: niet bij elk schot "hit 1" zeggen of tonen; alleen geluid
+- [ ] Raiddrones iets minder sterk: minder schade, minder leven en trager schieten
+- [ ] G > Systems > Commands: bij een nieuw commando staan de acties over elkaar of buiten
+      beeld; een echte scrollbalk erbij
+
+**Geluid en opstarten**
+- [ ] De bevestigingsgeluiden (zoals "aangekomen op bestemming") klinken lelijk: eigen
+      E.D.I.T.H.-tonen, en meteen ook de andere geleende Minecraft-geluiden vervangen
+- [ ] Opstartanimatie: een laadbalk, duidelijk "E.D.I.T.H." in beeld, de bril zegt iets, en
+      je identiteit wordt gecontroleerd
+
+**Illusies richten**
+- [ ] Valse muur: vóór het plaatsen de drone besturen en zo richten waar de muur komt
+- [ ] Nep-leger: de zombies zakten in de grond; ook richten met de drone, zoals de muur
+
+**Stroomkabels en de schildkoepel**
+- [ ] Een kabelblok: zonnepanelen en warmtegeneratoren sturen stroom naar alles wat stroom
+      gebruikt (koepel, laadstation, laserpoort, holotafel). Laserpoort en holotafel doen
+      zonder stroom niets meer.
+- [ ] Koepel begint als één straal omhoog, wordt vanaf een bepaalde hoogte mooi breder en zakt
+      dan als koepel naar beneden
+- [ ] Een scherm om kleur, bereik en sterkte in te stellen (sterker = meer energie)
+- [ ] Houdt alles tegen wat niet van jou of je team is: projectielen, monsters, raiddrones,
+      satellietaanvallen van anderen
+
+**Harnas**
+- [ ] Repulsor: de hand beweegt en gloeit bij een schot, en het schot is een eigen, gedetailleerd
+      effect in plaats van Minecraft-deeltjes
+- [ ] Vliegen: de vlammen beter onder de voeten, geen echt spoor erachter, en eigen deeltjes
+- [ ] Het harnas meer 3D-vorm geven
+
+**Modellen en gebouwen**
+- [ ] Holotafel: een vierde stand "Satellite" (groot en gedetailleerd, met zijn upgrades), en
+      in de arsenaalstand echte drone-modellen in plaats van stipjes
+- [ ] Zonnepaneel en warmtegenerator een mooier 3D-model
+- [ ] Stark Tower mooier, overal meer detail
+
+### 3. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 3. De AI-stem (als laatste)
+### 4. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API
