@@ -263,8 +263,6 @@ public final class EdithBalance {
     public static final int ILLUSION_WALL_HEIGHT = 5;
     /** Hoeveel nep-wezens er in een nep-leger staan. */
     public static final int ILLUSION_ARMY_SIZE = 8;
-    /** De kubus die "kopieer een stuk wereld" meeneemt (in blokken, oneven getal). */
-    public static final int ILLUSION_COPY_SIZE = 9;
     /** Hoe ver een E.M.P.-puls reikt (in blokken). */
     public static final double EMP_RADIUS = 24.0;
     /** Hoe lang illusies plat liggen na een E.M.P. (in ticks). 600 ticks = 30 seconden. */

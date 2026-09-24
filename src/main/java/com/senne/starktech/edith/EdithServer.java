@@ -373,7 +373,6 @@ public final class EdithServer {
             // Fase 12
             case ILLUSION_WALL -> EdithIllusions.start(player, glasses, IllusionScene.Kind.WALL);
             case ILLUSION_ARMY -> EdithIllusions.start(player, glasses, IllusionScene.Kind.ARMY);
-            case ILLUSION_COPY -> EdithIllusions.start(player, glasses, IllusionScene.Kind.COPY);
             case ILLUSION_CLOAK -> EdithIllusions.start(player, glasses, IllusionScene.Kind.CLOAK);
             case ILLUSION_STOP -> EdithIllusions.stopAll(player);
             // Fase 15

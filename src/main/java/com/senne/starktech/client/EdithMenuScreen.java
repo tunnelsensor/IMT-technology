@@ -88,7 +88,6 @@ public class EdithMenuScreen extends Screen {
     private static final List<Option> ILLUSION = List.of(
             action(EdithAction.ILLUSION_WALL),
             action(EdithAction.ILLUSION_ARMY),
-            action(EdithAction.ILLUSION_COPY),
             action(EdithAction.ILLUSION_CLOAK),
             action(EdithAction.ILLUSION_STOP));
 
@@ -329,7 +328,7 @@ public class EdithMenuScreen extends Screen {
                     : costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case CARGO_DRONE, CARRY_ENTITY ->
                     costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
-            case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_COPY, ILLUSION_CLOAK ->
+            case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK ->
                     new Status(Component.translatable("screen.starktech.cost", EdithBalance.ILLUSION_COST), HudStyle.CYAN);
             case ILLUSION_STOP -> com.senne.starktech.client.illusion.IllusionRenderer.count() > 0
                     ? new Status(Component.translatable("screen.starktech.illusion.count",

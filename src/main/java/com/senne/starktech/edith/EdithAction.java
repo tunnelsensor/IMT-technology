@@ -62,8 +62,6 @@ public enum EdithAction {
     ILLUSION_WALL("illusion_wall", null),
     /** Nep-leger projecteren (van het spawn-ei in je hand). */
     ILLUSION_ARMY("illusion_army", null),
-    /** Het stuk wereld waar je naar kijkt kopiëren en projecteren. */
-    ILLUSION_COPY("illusion_copy", null),
     /** Alles in het veld onzichtbaar maken. */
     ILLUSION_CLOAK("illusion_cloak", null),
     /** Alle illusies stoppen. */

@@ -30,8 +30,6 @@ public record IllusionScene(Kind kind, List<BlockElement> blocks, List<MobElemen
         WALL,
         /** Een nep-leger van wezens rond de drone. */
         ARMY,
-        /** Een kopie van een stuk wereld dat je gescand hebt. */
-        COPY,
         /** Geen nep-beeld, maar verbergen: alles in het veld wordt onzichtbaar. */
         CLOAK
     }
@@ -100,10 +98,5 @@ public record IllusionScene(Kind kind, List<BlockElement> blocks, List<MobElemen
                     (float) Math.toDegrees(-angle) + 90.0f));
         }
         return new IllusionScene(Kind.ARMY, List.of(), mobs);
-    }
-
-    /** Een kopie van een stuk wereld. */
-    public static IllusionScene copy(List<BlockElement> blocks) {
-        return new IllusionScene(Kind.COPY, blocks, List.of());
     }
 }

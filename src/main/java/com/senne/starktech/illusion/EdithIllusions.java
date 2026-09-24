@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -32,8 +31,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -104,7 +101,6 @@ public final class EdithIllusions {
      * Start een illusie. Wat je krijgt, hangt af van de soort:
      * - WALL:  een valse muur van het blok dat je in je andere hand hebt (of steen);
      * - ARMY:  een nep-leger van het wezen uit het spawn-ei in je hand (of zombies);
-     * - COPY:  een kopie van het stuk wereld waar je naar kijkt;
      * - CLOAK: verbergt alles in het veld.
      */
     public static void start(ServerPlayer owner, ItemStack glasses, IllusionScene.Kind kind) {
@@ -117,14 +113,8 @@ public final class EdithIllusions {
             case WALL -> IllusionScene.wall(blockFromHand(owner), EdithBalance.ILLUSION_WALL_WIDTH,
                     EdithBalance.ILLUSION_WALL_HEIGHT);
             case ARMY -> IllusionScene.army(mobFromHand(owner), EdithBalance.ILLUSION_ARMY_SIZE, 3.0);
-            case COPY -> copyLookedAtRegion(owner);
             case CLOAK -> IllusionScene.CLOAK_ONLY;
         };
-        if (scene == null) {
-            EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_no_copy"),
-                    EdithMessagePayload.Level.WARNING);
-            return;
-        }
         // Een illusie is ook gewoon een drone: zonder drone in een baan gebeurt er niets.
         if (ArsenalServer.get(owner).availableCount() <= 0) {
             EdithServer.send(owner, Component.translatable("arsenal.starktech.msg.empty"),
@@ -200,31 +190,6 @@ public final class EdithIllusions {
             }
         }
         return EntityType.ZOMBIE;
-    }
-
-    /** Kopieert het stuk wereld waar je naar kijkt (een kubus van ILLUSION_COPY_SIZE blokken). */
-    private static @Nullable IllusionScene copyLookedAtRegion(ServerPlayer owner) {
-        HitResult hit = owner.pick(32.0, 1.0f, false);
-        if (!(hit instanceof BlockHitResult blockHit) || hit.getType() == HitResult.Type.MISS) {
-            return null;
-        }
-        BlockPos center = blockHit.getBlockPos();
-        int half = EdithBalance.ILLUSION_COPY_SIZE / 2;
-        List<IllusionScene.BlockElement> blocks = new ArrayList<>();
-        ServerLevel level = owner.serverLevel();
-        for (int x = -half; x <= half; x++) {
-            for (int y = -half; y <= half; y++) {
-                for (int z = -half; z <= half; z++) {
-                    BlockPos pos = center.offset(x, y, z);
-                    BlockState state = level.getBlockState(pos);
-                    if (!state.isAir()) {
-                        // De plek slaan we op ten opzichte van het midden van de kopie.
-                        blocks.add(new IllusionScene.BlockElement(new BlockPos(x, y, z), state));
-                    }
-                }
-            }
-        }
-        return blocks.isEmpty() ? null : IllusionScene.copy(blocks);
     }
 
     // ================================================================ E.M.P.

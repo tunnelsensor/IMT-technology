@@ -438,14 +438,6 @@ final class ShowcaseFeatures {
                 .pause(200)
                 .action(0, EdithAction.ILLUSION_STOP));
 
-        add("Illusion: copy", "Een kopie van het stuk wereld waar je naar kijkt (de piramide), ergens "
-                + "anders neergezet.", start, -90, 5, s -> s
-                .lookAt(5, Vec3.atCenterOf(PYRAMID))
-                .action(10, EdithAction.ILLUSION_COPY)
-                .look(20, 180, 12)
-                .pause(200)
-                .action(0, EdithAction.ILLUSION_STOP));
-
         add("Illusion: cloak", "Alles in het veld verdwijnt uit beeld: kijk naar de koe en Happy.",
                 start, 180, 5, s -> s
                 .lookAt(5, mob(COW))
