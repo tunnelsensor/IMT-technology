@@ -74,7 +74,7 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 | **Drones** | Arsenaal, drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
-| **Illusie** | Valse muur, nep-leger, wereld kopiëren, onzichtbaar veld, stoppen |
+| **Illusie** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
 | **Scanner** | Ertsen-scan, nachtzicht, doelwit-analyse, dreigingsscan |
 | **Navigatie** | Waypoints, ping, comms |
 | **Systemen** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst aan/uit |
@@ -170,11 +170,12 @@ hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit
 ### Rayshield
 - **Persoonlijk schild** (Gevecht): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
-- **Laserzender** (blok): zet er twee tegenover elkaar → een doorzichtig energieveld met
-  lopende scanlijnen waar niemand door komt. Het veld schuift dicht vanaf de twee uiteinden
-  naar het midden (en weer open vanuit het midden), net als de ray shields uit Star Wars.
-  **Sluipen + rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood, paars.
-  Aan met redstone óf met E.D.I.T.H. (hij krijgt ook een naam/groep).
+- **Laserzender** (volledig blok met een lens aan de voorkant): zet er twee tegenover elkaar
+  → een doorzichtig energieveld met lopende scanlijnen waar niemand door komt. Het veld ligt
+  als één rechte wand tussen de twee lenzen, en schuift dicht vanaf de uiteinden naar het
+  midden (en weer open vanuit het midden), net als de ray shields uit Star Wars.
+  **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood, paars.
+  Aan met redstone. Wil je hem met E.D.I.T.H. schakelen, zet er dan een relais naast.
 - **Schildkoepel-generator** (blok): koepel van 20 blokken die pijlen laat verdampen en
   monsters naar buiten duwt. Spelers en dieren mogen erdoor.
 
@@ -183,7 +184,6 @@ Een onzichtbare drone projecteert een beeld in een bol van 16 blokken. Alles is 
 wereld verandert niets.
 - **Valse muur** — van het blok dat je in je hand houdt.
 - **Nep-leger** — van het spawn-ei dat je in je hand houdt.
-- **Wereld kopiëren** — kopieert 9x9x9 waar je naar kijkt en projecteert dat.
 - **Onzichtbaar veld** — alles in het veld wordt niet meer getekend.
 
 Zwakke plekken (net als in de film): waar twee velden overlappen gaat het beeld **flikkeren**,

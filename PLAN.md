@@ -20,7 +20,8 @@ pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
 testwereld, maakt screenshots van alles en sluit weer af. De plaatjes staan in
 `run-visual/screenshots`. Er gaat dan even een Minecraft-venster open; laat dat met rust.
-Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite`.
+Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` (of `laser`,
+`commands`, `holo`, `screens`, ...).
 
 ---
 
@@ -178,14 +179,21 @@ wat de satelliet afmaakt, dan de kleine dingen, dan de grote.
       `85f1dd3`. Nieuw in de showcase: "Satellite upgrades", waarin de satelliet groeit.
 
 **Kleine dingen**
-- [ ] Geen tekst meer boven de relais
-- [ ] Laserpoort: geen relais-functies meer, een volledig blok, en het glas in de goede
-      richting (één lijn `---`, niet naast elkaar `| | |`)
-- [ ] De illusie "wereld kopiëren" weghalen ("cloak" blijft)
-- [ ] Repulsor: niet bij elk schot "hit 1" zeggen of tonen; alleen geluid
-- [ ] Raiddrones iets minder sterk: minder schade, minder leven en trager schieten
-- [ ] G > Systems > Commands: bij een nieuw commando staan de acties over elkaar of buiten
-      beeld; een echte scrollbalk erbij
+- [x] Geen tekst meer boven de relais — `a6ef7d4`
+- [x] Laserpoort: geen relais-functies meer, een volledig blok, en het glas in de goede
+      richting (één lijn `---`, niet naast elkaar `| | |`) — `a6ef7d4`
+      Een metalen blok met de lens in een frame; aan met redstone, rechtsklik = kleur. Wil je
+      hem toch met E.D.I.T.H. schakelen: zet er een relais naast. Oude laserpoorten verdwijnen
+      vanzelf uit je relaislijst. Nagekeken op screenshots (`-Ponly=laser`), ook van boven.
+- [x] De illusie "wereld kopiëren" weghalen ("cloak" blijft) — `ab4ab2d`
+- [x] Repulsor: niet bij elk schot "hit 1" zeggen of tonen; alleen geluid — `c7c7e7a`
+- [x] Raiddrones iets minder sterk: minder schade, minder leven en trager schieten — `bc46a61`
+      3 schade (was 5), 10 leven (was 16), om de 2 seconden (was 1,25).
+- [x] G > Systems > Commands: bij een nieuw commando staan de acties over elkaar of buiten
+      beeld; een echte scrollbalk erbij — `a8b14b5`
+      Past het gekozen commando niet, dan scrolt de rechterkant (wieltje of balk slepen); de
+      lijst links heeft ook een balk. Nagekeken met vier acties op een klein scherm
+      (`-Ponly=commands`).
 
 **Geluid en opstarten**
 - [ ] De bevestigingsgeluiden (zoals "aangekomen op bestemming") klinken lelijk: eigen
