@@ -808,7 +808,6 @@
   "subtitles.starktech.suit.thruster": "Suit thrusters roar",
   "suit.starktech.msg.flight_lost": "Suit offline. Flight is gone.",
   "suit.starktech.msg.no_chest": "The repulsor is in the chestplate.",
-  "suit.starktech.msg.repulsor_hit": "Repulsor: %s hit.",
   "advancements.starktech.root.title": "Stark Industries",
   "advancements.starktech.root.description": "Craft a Stark Chip. Everything else is built on it.",
   "advancements.starktech.charging_station.title": "Keeping the lights on",

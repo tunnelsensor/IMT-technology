@@ -307,10 +307,9 @@ public final class EdithSuit {
         Vec3 back = player.getViewVector(1.0f).scale(-SuitBalance.REPULSOR_RECOIL);
         player.push(back.x, 0.0, back.z);
         player.hurtMarked = true;
+        // Geen melding of stem bij een treffer: het schot zelf (geluid en straal) zegt genoeg.
         if (hits > 0) {
             StarkAdvancements.award(player, StarkAdvancements.REPULSOR);
-            EdithServer.send(player, Component.translatable("suit.starktech.msg.repulsor_hit", hits),
-                    EdithMessagePayload.Level.INFO);
         }
     }
 
