@@ -5,6 +5,8 @@ import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModSounds;
+import com.senne.starktech.shield.DomeSettings;
+import com.senne.starktech.shield.EdithDomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -144,6 +146,13 @@ public class RaidDroneEntity extends Monster {
     private void fireLaser(ServerLevel level, LivingEntity target) {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
+        // Staat zijn doelwit onder een schildkoepel? Dan stuit het schot daarop.
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, DomeSettings.COST_LASER);
+        if (shield != null) {
+            playSound(ModSounds.DRONE_LASER.get(), 0.8f, 1.1f);
+            ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
+            return;
+        }
         DamageSource source = ModDamageTypes.droneLaser(level, this, this);
         target.hurt(source, RaidBalance.LASER_DAMAGE);
         playSound(ModSounds.DRONE_LASER.get(), 0.8f, 1.1f + random.nextFloat() * 0.2f);

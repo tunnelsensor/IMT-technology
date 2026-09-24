@@ -16,6 +16,8 @@ import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
+import com.senne.starktech.shield.DomeSettings;
+import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.transport.EdithTransport;
 import java.util.ArrayList;
@@ -303,6 +305,11 @@ public class StarkDroneEntity extends PathfinderMob {
 
     public int getSlot() {
         return slot;
+    }
+
+    /** Van wie deze drone is (of null). */
+    public @Nullable UUID getOwnerId() {
+        return ownerId;
     }
 
     public boolean isOwnedBy(Player player) {
@@ -709,6 +716,13 @@ public class StarkDroneEntity extends PathfinderMob {
     private void fireLaser(ServerLevel level, ServerPlayer owner, LivingEntity target) {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
+        // Staat het doelwit onder de schildkoepel van iemand anders? Dan stuit het schot daarop.
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, owner.getUUID(), DomeSettings.COST_LASER);
+        if (shield != null) {
+            playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f);
+            ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
+            return;
+        }
         DamageSource source = ModDamageTypes.droneLaser(level, this, owner);
         target.hurt(source, EdithBalance.DRONE_LASER_DAMAGE);
         playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f + random.nextFloat() * 0.3f);

@@ -13,6 +13,7 @@ import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteStrikes;
+import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.spy.EdithSpy;
 import java.util.ArrayList;
@@ -132,6 +133,8 @@ final class ShowcaseScene {
         // Ook de laserzender en de koepel hebben stroom nodig: een warmtegenerator op magma ernaast.
         DevWorld.powerNextTo(level, LASER_A.north());
         DevWorld.powerNextTo(level, DOME.west());
+        dome(player).setOwner(player);
+        dome(player).setEnabled(false);
 
         // De bunker: dichte stenen doos, twee husks erin (die krijgen jou als doelwit).
         fill(level, BUNKER.offset(-3, 0, -3), BUNKER.offset(3, 3, 3), Blocks.STONE_BRICKS.defaultBlockState());
@@ -227,6 +230,9 @@ final class ShowcaseScene {
         player.setData(ModAttachments.WAYPOINTS, player.getData(ModAttachments.WAYPOINTS).withActive(EdithWaypoints.NONE));
         level.setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(DOME_POWER, Blocks.AIR.defaultBlockState());
+        if (level.getBlockEntity(DOME) instanceof DomeGeneratorBlockEntity dome) {
+            dome.setEnabled(false);
+        }
         DevWorld.command("time set noon");
         DevWorld.command("weather clear");
 
@@ -291,5 +297,21 @@ final class ShowcaseScene {
         for (BlockPos pos : BlockPos.betweenClosed(from, to)) {
             level.setBlockAndUpdate(pos, state);
         }
+    }
+
+    /** De koepelgenerator van de showcase. */
+    static DomeGeneratorBlockEntity dome(ServerPlayer player) {
+        return (DomeGeneratorBlockEntity) player.serverLevel().getBlockEntity(DOME);
+    }
+
+    /** Een pijl (van niemand) die van buiten op de koepel af vliegt. */
+    static void shootAtDome(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.world.entity.projectile.Arrow arrow =
+                new net.minecraft.world.entity.projectile.Arrow(net.minecraft.world.entity.EntityType.ARROW, level);
+        arrow.setPos(DOME.getX() + 0.5, DOME.getY() + 5, DOME.getZ() - 22);
+        arrow.setDeltaMovement(0, 0, 2.0);
+        arrow.setNoGravity(true);
+        level.addFreshEntity(arrow);
     }
 }

@@ -22,6 +22,7 @@ import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
 import com.senne.starktech.client.CommsScreen;
+import com.senne.starktech.client.DomeScreen;
 import com.senne.starktech.client.DroneCamera;
 import com.senne.starktech.client.EdithClientEvents;
 import com.senne.starktech.client.EdithKeys;
@@ -418,12 +419,19 @@ final class ShowcaseFeatures {
                 .onServer(0, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState()))
                 .pause(80));
 
-        add("Rayshield: dome", "De koepelgenerator: een energiekoepel om je basis die monsters en "
-                + "pijlen buiten houdt.", new Vec3(-21.5, -60, -12.5), 0, -10, s -> s
-                .onServer(20, player -> player.serverLevel().setBlockAndUpdate(DOME_POWER, Blocks.REDSTONE_BLOCK.defaultBlockState()))
-                .pause(180)
-                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(DOME_POWER, Blocks.AIR.defaultBlockState()))
-                .pause(60));
+        add("Rayshield: dome", "De schildkoepel gaat aan: eerst een straal omhoog, dan vouwt hij bovenin open "
+                + "en zakt hij als koepel naar beneden. Een pijl van buiten stuit op de rand (flits, en de "
+                + "schildkracht zakt). Daarna het scherm: kleur, bereik, sterkte en wat het aan stroom kost. "
+                + "Hij draait op de warmtegenerator ernaast.", new Vec3(-21.5, -60, -12.5), 0, -10, s -> s
+                .onServer(20, player -> ShowcaseScene.dome(player).setEnabled(true))
+                .pause(90)
+                .onServer(0, ShowcaseScene::shootAtDome)
+                .pause(50)
+                .step(0, () -> Minecraft.getInstance().setScreen(new DomeScreen(DOME)))
+                .pause(120)
+                .close(0)
+                .onServer(0, player -> ShowcaseScene.dome(player).setEnabled(false))
+                .pause(40));
 
         // ---------------------------------------------------------------- Illusies
         add("Illusion: wall", "Een valse muur (van het blok in je andere hand). Eerst richten: je kijkt "

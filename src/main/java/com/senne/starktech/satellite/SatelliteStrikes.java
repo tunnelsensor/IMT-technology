@@ -6,6 +6,8 @@ import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
+import com.senne.starktech.shield.DomeSettings;
+import com.senne.starktech.shield.EdithDomes;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -188,6 +190,13 @@ public final class SatelliteStrikes {
     /** Precisie: één felle straal, veel schade op één plek, geen blokschade. */
     private static void firePrecision(ServerLevel level, Strike strike) {
         Vec3 pos = strike.target;
+        // Onder de schildkoepel van iemand anders? Dan stuit de straal op de koepel.
+        Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, DomeSettings.COST_SATELLITE_BEAM);
+        if (shield != null) {
+            sendBeam(level, shield, BeamEffectPayload.Kind.SATELLITE_PRECISION);
+            level.playSound(null, shield.x, shield.y, shield.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 3.0f, 1.3f);
+            return;
+        }
         sendBeam(level, pos, BeamEffectPayload.Kind.SATELLITE_PRECISION);
         visualLightning(level, pos);
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(strike.ownerId);
@@ -211,6 +220,12 @@ public final class SatelliteStrikes {
                 ? strike.target
                 : strike.target.add((level.getRandom().nextDouble() - 0.5) * 2 * spread, 0, (level.getRandom().nextDouble() - 0.5) * 2 * spread);
         pos = onGround(level, pos);
+        Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, DomeSettings.COST_SATELLITE_IMPACT);
+        if (shield != null) {
+            sendBeam(level, shield, BeamEffectPayload.Kind.SATELLITE_FIRE);
+            level.playSound(null, shield.x, shield.y, shield.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 4.0f, 0.9f);
+            return;
+        }
         sendBeam(level, pos, BeamEffectPayload.Kind.SATELLITE_FIRE);
         visualLightning(level, pos);
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(strike.ownerId);
@@ -229,6 +244,16 @@ public final class SatelliteStrikes {
         Vec3 moved = strike.target.add(strike.sweepDirection.scale(EdithBalance.SWEEP_SPEED));
         strike.target = onGround(level, moved);
         Vec3 pos = strike.target;
+        // Over een schildkoepel heen? Dan schroeit hij over de koepel in plaats van over de grond
+        // (om de tick kost dat schildkracht).
+        int cost = strike.fireTicksLeft % 2 == 0 ? DomeSettings.COST_SATELLITE_SWEEP : 0;
+        Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, cost);
+        if (shield != null) {
+            if (cost > 0) {
+                sendBeam(level, shield, BeamEffectPayload.Kind.SATELLITE_SWEEP);
+            }
+            return;
+        }
         if (strike.fireTicksLeft % 2 == 0) {
             sendBeam(level, pos, BeamEffectPayload.Kind.SATELLITE_SWEEP);
         }

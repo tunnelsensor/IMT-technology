@@ -58,6 +58,9 @@ import com.senne.starktech.client.voice.VoiceDictionary;
 import com.senne.starktech.client.voice.VoiceMatcher;
 import com.senne.starktech.illusion.EdithIllusions;
 import com.senne.starktech.illusion.IllusionScene;
+import com.senne.starktech.shield.DomeGeneratorBlockEntity;
+import com.senne.starktech.shield.DomeSettings;
+import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.station.ChargerBlockEntity;
 import com.senne.starktech.station.HeatGeneratorBlockEntity;
 import com.senne.starktech.station.ChargerMenu;
@@ -90,6 +93,8 @@ import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Blocks;
@@ -1005,6 +1010,112 @@ public final class StarkTechGameTests {
             }
             if (!((HoloTableBlockEntity) helper.getBlockEntity(lit)).powered()) {
                 throw new GameTestAssertException("Een holotafel met een generator ernaast bleef uit");
+            }
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Schildkoepel
+
+    /** Een koepel van 8 blokken in het midden van de arena, met een volle warmtegenerator ernaast. */
+    private static DomeGeneratorBlockEntity poweredDome(GameTestHelper helper, @Nullable ServerPlayer owner) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        helper.setBlock(pos, ModBlocks.DOME_GENERATOR.get());
+        helper.setBlock(pos.east(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(pos.east())).fill(20_000);
+        DomeGeneratorBlockEntity dome = (DomeGeneratorBlockEntity) helper.getBlockEntity(pos);
+        dome.setRadius(0);
+        if (owner != null) {
+            dome.setOwner(owner);
+        }
+        return dome;
+    }
+
+    /** Een pijl die van {@code distance} blokken ten zuiden van de koepel recht naar het midden vliegt. */
+    private static Arrow arrowTowards(GameTestHelper helper, DomeGeneratorBlockEntity dome, double distance,
+                                      @Nullable Entity shooter) {
+        Arrow arrow = new Arrow(EntityType.ARROW, helper.getLevel());
+        Vec3 center = dome.center();
+        arrow.setPos(center.x, center.y + 2, center.z + distance);
+        arrow.setDeltaMovement(0, 0, -1.5);
+        arrow.setNoGravity(true);
+        if (shooter != null) {
+            arrow.setOwner(shooter);
+        }
+        helper.getLevel().addFreshEntity(arrow);
+        return arrow;
+    }
+
+    /**
+     * Met stroom gaat de koepel op. Een pijl van buiten (van niemand) verdampt op de rand en kost
+     * schildkracht; een pijl van de eigenaar gaat er gewoon doorheen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "dome")
+    public static void dome_blocks_arrows_but_not_yours(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        DomeGeneratorBlockEntity dome = poweredDome(helper, owner);
+        helper.runAfterDelay(20, () -> {
+            if (!dome.isUp()) {
+                throw new GameTestAssertException("De koepel ging niet op, status " + dome.status());
+            }
+            int before = dome.shield();
+            Arrow stranger = arrowTowards(helper, dome, 10.5, null);
+            Arrow mine = arrowTowards(helper, dome, 10.0, owner);
+            helper.runAfterDelay(4, () -> {
+                if (stranger.isAlive()) {
+                    throw new GameTestAssertException("Een vreemde pijl kwam door de koepel");
+                }
+                if (!mine.isAlive() || !dome.contains(mine.position())) {
+                    throw new GameTestAssertException("De pijl van de eigenaar kwam niet binnen");
+                }
+                if (dome.shield() >= before + DomeSettings.recharge(dome.strength()) * 4) {
+                    throw new GameTestAssertException("Tegenhouden kostte geen schildkracht");
+                }
+                helper.succeed();
+            });
+        });
+    }
+
+    /** Zonder stroom blijft de koepel uit (en zegt hij waarom). */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "dome")
+    public static void dome_needs_power(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        helper.setBlock(pos, ModBlocks.DOME_GENERATOR.get());
+        helper.runAfterDelay(25, () -> {
+            DomeGeneratorBlockEntity dome = (DomeGeneratorBlockEntity) helper.getBlockEntity(pos);
+            if (dome.isUp() || dome.status() != DomeGeneratorBlockEntity.Status.NO_POWER) {
+                throw new GameTestAssertException("Zonder stroom: op=" + dome.isUp() + ", status " + dome.status());
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een satellietstraal van een ander op iets binnen de koepel stuit erop; die van de eigenaar
+     * niet. Is de schildkracht op, dan valt de koepel even weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "dome")
+    public static void dome_stops_satellites_until_it_is_overloaded(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        DomeGeneratorBlockEntity dome = poweredDome(helper, owner);
+        helper.runAfterDelay(20, () -> {
+            ServerLevel level = helper.getLevel();
+            Vec3 inside = dome.center().add(2, 0, 1);
+            if (EdithDomes.blockedAt(level, inside, null, owner.getUUID(), DomeSettings.COST_SATELLITE_BEAM) != null) {
+                throw new GameTestAssertException("De koepel hield de satelliet van zijn eigenaar tegen");
+            }
+            if (EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), DomeSettings.COST_SATELLITE_BEAM) == null) {
+                throw new GameTestAssertException("De satelliet van een ander kwam door de koepel");
+            }
+            // Blijven schieten tot hij bezwijkt: dan valt hij weg en komt er niets meer tegen.
+            for (int i = 0; i < 20 && dome.isUp(); i++) {
+                EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), DomeSettings.COST_SATELLITE_BEAM);
+            }
+            if (dome.isUp() || dome.status() != DomeGeneratorBlockEntity.Status.DEPLETED) {
+                throw new GameTestAssertException("De koepel viel niet weg toen zijn schildkracht op was");
+            }
+            if (EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), DomeSettings.COST_SATELLITE_BEAM) != null) {
+                throw new GameTestAssertException("Een weggevallen koepel hield nog iets tegen");
             }
             helper.succeed();
         });

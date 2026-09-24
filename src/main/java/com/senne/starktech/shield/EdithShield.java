@@ -30,8 +30,8 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  *    pijlen, vuurballen, explosies en drone-lasers tegenhoudt. Elke treffer kost energie;
  *    is je batterij leeg, dan valt het schild weg en voel je de klap wel.
  * 2. LASERPOORT: twee laserzenders tegenover elkaar maken een rode wand (zie LaserEmitterBlock).
- * 3. KOEPEL: een schildgenerator maakt een koepel om je basis (zie DomeGeneratorBlock):
- *    projectielen verdampen aan de rand en monsters worden naar buiten geduwd.
+ * 3. KOEPEL: een koepelgenerator maakt een koepel om je basis (zie DomeGeneratorBlock en
+ *    EdithDomes).
  */
 public final class EdithShield {
     private EdithShield() {}
@@ -73,56 +73,5 @@ public final class EdithShield {
     private static void flash(ServerLevel level, Vec3 center) {
         level.sendParticles(ParticleTypes.END_ROD, center.x, center.y, center.z, 14, 0.5, 0.6, 0.5, 0.05);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, center.x, center.y, center.z, 8, 0.6, 0.7, 0.6, 0.2);
-    }
-
-    // ================================================================ 3. De koepel
-
-    /**
-     * Eén koepel bijwerken: projectielen aan de rand verdampen en monsters worden naar buiten
-     * geduwd. De generator roept dit zelf elke halve seconde aan (zie DomeGeneratorBlock),
-     * zodat we nooit de hele wereld hoeven af te zoeken.
-     */
-    public static void tickDome(ServerLevel level, BlockPos pos) {
-        double radius = EdithBalance.DOME_RADIUS;
-        Vec3 center = Vec3.atCenterOf(pos);
-        AABB area = new AABB(center, center).inflate(radius);
-
-        // Projectielen die de rand raken: verdampen.
-        for (Projectile projectile : level.getEntitiesOfClass(Projectile.class, area)) {
-            double distance = projectile.position().distanceTo(center);
-            if (Math.abs(distance - radius) <= 2.0) {
-                level.sendParticles(ParticleTypes.END_ROD, projectile.getX(), projectile.getY(), projectile.getZ(),
-                        6, 0.1, 0.1, 0.1, 0.1);
-                projectile.discard();
-            }
-        }
-
-        // Monsters binnen de koepel: naar buiten duwen (spelers en dieren mogen erdoor).
-        List<LivingEntity> inside = level.getEntitiesOfClass(LivingEntity.class, area,
-                entity -> entity instanceof Enemy && entity.isAlive());
-        for (LivingEntity monster : inside) {
-            Vec3 away = monster.position().subtract(center);
-            double distance = Math.max(0.5, away.length());
-            if (distance > radius) {
-                continue;
-            }
-            Vec3 push = away.normalize().scale(EdithBalance.DOME_PUSH);
-            monster.push(push.x, 0.15, push.z);
-            monster.hurtMarked = true;
-            if (level.random.nextInt(4) == 0) {
-                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, monster.getX(), monster.getY() + 1, monster.getZ(),
-                        3, 0.2, 0.3, 0.2, 0.05);
-            }
-        }
-
-        // Af en toe een stipje op de rand van de koepel, zodat je ziet dat hij aan staat.
-        for (int i = 0; i < 6; i++) {
-            double theta = level.random.nextDouble() * Math.PI * 2;
-            double phi = level.random.nextDouble() * Math.PI / 2; // alleen de bovenste helft
-            double x = center.x + Math.cos(theta) * Math.cos(phi) * radius;
-            double y = center.y + Math.sin(phi) * radius;
-            double z = center.z + Math.sin(theta) * Math.cos(phi) * radius;
-            level.sendParticles(ParticleTypes.END_ROD, x, y, z, 1, 0, 0, 0, 0);
-        }
     }
 }

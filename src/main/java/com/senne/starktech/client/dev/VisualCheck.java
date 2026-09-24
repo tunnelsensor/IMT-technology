@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.senne.starktech.client.CommsScreen;
+import com.senne.starktech.client.DomeScreen;
 import com.senne.starktech.client.EdithMenuScreen;
 import com.senne.starktech.client.HoloTableScreen;
 import com.senne.starktech.client.MusicScreen;
@@ -35,6 +36,8 @@ import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.shield.DomeGeneratorBlockEntity;
+import com.senne.starktech.shield.DomeSettings;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -313,6 +316,27 @@ public final class VisualCheck {
             t.shot(20, "53_drones_damaged_close");
         }
 
+        // --- De schildkoepel: aanzetten en de animatie in stapjes vastleggen (straal, openvouwen,
+        // naar beneden zakken, staan), dan een pijl die erop stuit, het scherm, en van binnen.
+        if (want("dome")) {
+            t.onServer(0, VisualCheck::buildDome);
+            t.view(10, 0.5, -55, 64.5, 180, 6);
+            t.onServer(20, player -> domeAt(player).setEnabled(true));
+            t.shot(8, "97_dome_a");
+            t.shot(6, "97_dome_b");
+            t.shot(6, "97_dome_c");
+            t.shot(8, "97_dome_d");
+            t.shot(10, "97_dome_e");
+            t.shot(30, "97_dome_up");
+            t.onServer(0, VisualCheck::shootAtDome);
+            t.shot(3, "98_dome_arrow");
+            t.open(20, () -> new DomeScreen(DOME));
+            t.shot(20, "99_dome_screen");
+            t.close(0);
+            t.view(0, 3.5, -59, 38.5, 160, -35);
+            t.shot(20, "99_dome_inside");
+        }
+
         // --- Het stroomnet: een warmtegenerator, een kabel met een hoek en een stuk omhoog, en
         // een laadstation. De kabel moet netjes aansluiten op alles wat hij raakt.
         if (want("power")) {
@@ -492,6 +516,36 @@ public final class VisualCheck {
         if (mc.screen != null) {
             mc.screen.mouseScrolled(mc.screen.width * 0.62, mc.screen.height * 0.3, 0, amount);
         }
+    }
+
+    /** Waar de koepel in de rondleiding staat. */
+    private static final BlockPos DOME = new BlockPos(0, -60, 36);
+
+    /** Een koepelgenerator (nog uit) met een volle warmtegenerator ernaast; van jou, bereik 16. */
+    private static void buildDome(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(DOME, ModBlocks.DOME_GENERATOR.get().defaultBlockState());
+        DevWorld.powerNextTo(level, DOME.east());
+        DomeGeneratorBlockEntity dome = domeAt(player);
+        dome.setOwner(player);
+        dome.setEnabled(false);
+        dome.setRadius(DomeSettings.DEFAULT_RADIUS);
+        dome.setColour(ShieldColor.CYAN);
+    }
+
+    private static DomeGeneratorBlockEntity domeAt(ServerPlayer player) {
+        return (DomeGeneratorBlockEntity) player.serverLevel().getBlockEntity(DOME);
+    }
+
+    /** Een pijl (van niemand) die van buiten op de koepel af vliegt. */
+    private static void shootAtDome(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.world.entity.projectile.Arrow arrow =
+                new net.minecraft.world.entity.projectile.Arrow(EntityType.ARROW, level);
+        arrow.setPos(DOME.getX() + 0.5, DOME.getY() + 6, DOME.getZ() + 22);
+        arrow.setDeltaMovement(0, 0, -2.0);
+        arrow.setNoGravity(true);
+        level.addFreshEntity(arrow);
     }
 
     /** Generator - kabels (met een hoek en een stukje omhoog) - laadstation, bij x 20..27, z -20. */

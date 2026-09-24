@@ -2,6 +2,7 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.holo.HoloTableBlockEntity;
+import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.station.ChargingStationBlockEntity;
 import com.senne.starktech.station.SolarPanelBlockEntity;
 import com.senne.starktech.station.HeatGeneratorBlockEntity;
@@ -28,6 +29,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("solar_panel",
                     () -> new BlockEntityType<>(SolarPanelBlockEntity::new,
                             java.util.Set.of(ModBlocks.SOLAR_PANEL.get()), null));
+
+    /** De schildkoepel-generator: zijn instellingen, schildkracht en of de koepel staat. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DomeGeneratorBlockEntity>> DOME_GENERATOR =
+            BLOCK_ENTITIES.register("dome_generator",
+                    () -> new BlockEntityType<>(DomeGeneratorBlockEntity::new,
+                            java.util.Set.of(ModBlocks.DOME_GENERATOR.get()), null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HoloTableBlockEntity>> HOLO_TABLE =
             BLOCK_ENTITIES.register("holo_table",

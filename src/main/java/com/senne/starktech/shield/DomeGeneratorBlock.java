@@ -2,19 +2,22 @@ package com.senne.starktech.shield;
 
 import com.mojang.serialization.MapCodec;
 import com.senne.starktech.energy.PowerConnectable;
+import com.senne.starktech.redstone.EdithRedstone;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import com.senne.starktech.registry.ModBlocks;
+import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -26,21 +29,21 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De schildkoepel-generator: zet hem in je basis, geef hem redstone (of laat E.D.I.T.H. hem
- * aanzetten) en er komt een energiekoepel om je basis heen.
+ * De schildkoepel-generator: zet hem in je basis, sluit hem aan op stroom (een Stark-kabel naar
+ * een zonnepaneel of warmtegenerator, of er direct tegenaan) en er komt een energiekoepel om je
+ * basis heen.
  *
- * Wat de koepel doet (zie EdithShield):
- * - pijlen, vuurballen en andere projectielen die naar binnen willen, verdampen;
- * - vijandige monsters worden naar buiten geduwd;
- * - spelers en dieren kunnen er gewoon door (anders kwam je zelf niet meer thuis).
+ * Rechtsklik opent zijn scherm: aan/uit, kleur, bereik en sterkte. Wat de koepel tegenhoudt en
+ * wat dat kost, staat in EdithDomes en DomeSettings; hoe hij eruitziet in DomeRenderer.
+ *
+ * E.D.I.T.H. kan hem ook aan- en uitzetten ("zet de koepel aan"): hij wordt bij het neerzetten
+ * aangemeld zoals een relais (zie EdithSwitchable).
  */
-public class DomeGeneratorBlock extends Block implements EdithSwitchable, PowerConnectable {
+public class DomeGeneratorBlock extends BaseEntityBlock implements EdithSwitchable, PowerConnectable {
     public static final MapCodec<DomeGeneratorBlock> CODEC = simpleCodec(DomeGeneratorBlock::new);
 
+    /** Staat de koepel? (Alleen voor het model: dan gloeit de projector.) */
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-
-    /** Hoe vaak de koepel zijn werk doet (in ticks). 10 ticks = een halve seconde. */
-    private static final int DOME_TICK_INTERVAL = 10;
 
     private static final VoxelShape SHAPE = Shapes.or(
             Block.box(2, 0, 2, 14, 4, 14),    // voet
@@ -52,7 +55,7 @@ public class DomeGeneratorBlock extends Block implements EdithSwitchable, PowerC
     }
 
     @Override
-    protected MapCodec<? extends Block> codec() {
+    protected MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
@@ -66,73 +69,59 @@ public class DomeGeneratorBlock extends Block implements EdithSwitchable, PowerC
         return SHAPE;
     }
 
-    // ---------------------------------------------------------------- Aan en uit
-
+    /** Het blok zelf is een gewoon model; de koepel tekent DomeRenderer erbij. */
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
-                                   BlockPos fromPos, boolean movedByPiston) {
-        if (level.isClientSide) {
-            return;
-        }
-        boolean redstone = level.hasNeighborSignal(pos);
-        if (redstone != state.getValue(POWERED)) {
-            setActive((ServerLevel) level, pos, state, redstone);
-        }
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
+    @Override
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new DomeGeneratorBlockEntity(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                            BlockEntityType<T> type) {
+        if (level.isClientSide) {
+            return null;
+        }
+        return (tickLevel, pos, tickState, blockEntity) -> {
+            if (blockEntity instanceof DomeGeneratorBlockEntity dome && tickLevel instanceof ServerLevel serverLevel) {
+                dome.serverTick(serverLevel, pos, tickState);
+            }
+        };
+    }
+
+    /** Neergezet: de koepel is van jou, en E.D.I.T.H. kan hem schakelen. */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (level instanceof ServerLevel serverLevel) {
-            if (level.hasNeighborSignal(pos)) {
-                setActive(serverLevel, pos, state, true);
-            }
-            if (placer instanceof ServerPlayer player) {
-                com.senne.starktech.redstone.EdithRedstone.register(player, pos);
-            }
+        if (placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof DomeGeneratorBlockEntity dome) {
+            dome.setOwner(player);
+            EdithRedstone.register(player, pos);
         }
     }
 
-    /** Rechtsklikken met de bril op: naam en groep geven. */
+    /** Rechtsklikken: het instelscherm openen (alleen voor de eigenaar). */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer) {
-            com.senne.starktech.redstone.EdithRedstone.openEditor(serverPlayer, pos);
+            EdithDomes.open(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    /** E.D.I.T.H. zet hem aan of uit (zie EdithSwitchable). */
     @Override
     public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
-        setActive(level, pos, state, on);
+        if (level.getBlockEntity(pos) instanceof DomeGeneratorBlockEntity dome) {
+            dome.setEnabled(on);
+        }
     }
 
     @Override
     public boolean isSwitchedOn(BlockState state) {
         return state.getValue(POWERED);
-    }
-
-    private static void setActive(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
-        level.setBlock(pos, state.setValue(POWERED, on), Block.UPDATE_ALL);
-        level.playSound(null, pos, on ? SoundEvents.BEACON_ACTIVATE : SoundEvents.BEACON_DEACTIVATE,
-                SoundSource.BLOCKS, 0.8f, on ? 0.9f : 0.7f);
-        if (on) {
-            // Laat het blok vanaf nu elke halve seconde "tikken": dan doet de koepel zijn werk.
-            level.scheduleTick(pos, ModBlocks.DOME_GENERATOR.get(), DOME_TICK_INTERVAL);
-        }
-    }
-
-    /**
-     * Elke halve seconde terwijl de koepel aan staat: projectielen tegenhouden en monsters
-     * wegduwen. Daarna planned hij zichzelf opnieuw in. (Zo'n geplande tick wordt ook
-     * opgeslagen in de wereld, dus na een herstart loopt de koepel gewoon door.)
-     */
-    @Override
-    protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
-        if (!state.getValue(POWERED)) {
-            return;
-        }
-        EdithShield.tickDome(level, pos);
-        level.scheduleTick(pos, this, DOME_TICK_INTERVAL);
     }
 }

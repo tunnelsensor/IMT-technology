@@ -21,6 +21,7 @@ import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
 import net.minecraft.network.chat.Component;
 import com.senne.starktech.client.hud.BootOverlay;
+import com.senne.starktech.network.DomeOpenPayload;
 import net.minecraft.Util;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -53,6 +54,14 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
             mc.setScreen(new RelayEditScreen(payload.index()));
+        }
+    }
+
+    /** Het instelscherm van een schildkoepel openen. */
+    public static void onDomeOpen(DomeOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new DomeScreen(payload.pos()));
         }
     }
 

@@ -697,6 +697,43 @@ def drone_damage_textures():
         save(overlay, f"entity/drone/drone_damage_{name}.png")
 
 
+# --------------------------------------------------------------------- Schildkoepel
+
+def dome_field():
+    """
+    Het patroon op de schildkoepel: een raster van zeshoeken, wit op zwart. De koepel telt het
+    licht op bij wat erachter zit, dus zwart is onzichtbaar en wit is fel; de kleur (blauw,
+    rood...) geeft de mod er zelf aan. Het plaatje herhaalt naadloos (links = rechts, boven =
+    onder), zodat je geen naden op de koepel ziet.
+    """
+    import math
+    w, h = 64, 112  # breedte van één zeshoek-rij en twee rijen hoog: zo sluit het rooster op zichzelf aan
+    im = img(w, h, (0, 0, 0, 255))
+    # De middens van de zeshoeken: een rooster met rijen die om de beurt een halve stap opschuiven.
+    # Elk midden maar één keer (anders lijkt elk punt even ver van twee "verschillende" middens).
+    centres = set()
+    for row in range(-6, 10):
+        for col in range(-4, 8):
+            centres.add((col * w / 2 + (row % 2) * w / 4, row * h / 4))
+    for y in range(h):
+        for x in range(w):
+            best = second = 1e9
+            for cx, cy in centres:
+                d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+                if d < best:
+                    best, second = d, best
+                elif d < second:
+                    second = d
+            edge = (second - best) / 2  # afstand tot de rand van de zeshoek
+            line = max(0.0, 1 - edge / 1.4)        # de felle rand
+            glow = max(0.0, 1 - edge / 6.0) * 0.35  # een zachte gloed ernaast
+            inside = 0.06                           # het veld zelf, heel zwak
+            v = min(1.0, line + glow + inside)
+            c = int(255 * v)
+            im.putpixel((x, y), (c, c, c, 255))
+    save(im, "misc/dome_field.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -1214,6 +1251,7 @@ if __name__ == "__main__":
     planet_texture()
     satellite_textures()
     cable_textures()
+    dome_field()
     relay_textures()
     shield_textures()
     rayshield_walls()

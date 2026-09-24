@@ -9,6 +9,7 @@ import com.senne.starktech.holo.HoloTables;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.satellite.SatelliteWorkshop;
+import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.suit.EdithSuit;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
@@ -27,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "8";
+    private static final String PROTOCOL_VERSION = "9";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -96,6 +97,12 @@ public final class ModNetwork {
             }
         });
         // Fase 15: de holotafel
+        // De schildkoepel: een knop in zijn scherm.
+        registrar.playToServer(DomeActionPayload.TYPE, DomeActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                EdithDomes.handleAction(player, payload);
+            }
+        });
         registrar.playToServer(HoloActionPayload.TYPE, HoloActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 HoloTables.handleAction(player, payload);
@@ -117,6 +124,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onDroneCamera(payload, context));
         registrar.playToClient(PingMarkerPayload.TYPE, PingMarkerPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onPing(payload, context));
+        registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
         // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server
