@@ -111,6 +111,14 @@ final class ShowcaseScene {
         level.setBlockAndUpdate(HEAT_GENERATOR, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         level.setBlockAndUpdate(HEAT_GENERATOR.below(), Blocks.MAGMA_BLOCK.defaultBlockState());
         level.setBlockAndUpdate(HOLO_TABLE, ModBlocks.HOLO_TABLE.get().defaultBlockState());
+        // Stroom: een kabel onder de grond van de warmtegenerator langs het zonnepaneel en het
+        // laadstation naar de holotafel (die doet zonder stroom niets).
+        level.setBlockAndUpdate(HEAT_GENERATOR.east(), ModBlocks.CABLE.get().defaultBlockState());
+        for (int x = HEAT_GENERATOR.getX() + 1; x <= HOLO_TABLE.getX(); x++) {
+            level.setBlockAndUpdate(new BlockPos(x, HOLO_TABLE.getY() - 1, HOLO_TABLE.getZ()),
+                    ModBlocks.CABLE.get().defaultBlockState());
+        }
+        DevWorld.fillGenerator(level, HEAT_GENERATOR);
         level.setBlockAndUpdate(LAMP, Blocks.REDSTONE_LAMP.defaultBlockState());
         level.setBlockAndUpdate(RELAY, ModBlocks.RELAY.get().defaultBlockState());
         EdithRedstone.register(player, RELAY);
@@ -121,6 +129,9 @@ final class ShowcaseScene {
         level.setBlockAndUpdate(LASER_B, ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, Direction.WEST));
         level.setBlockAndUpdate(DOME, ModBlocks.DOME_GENERATOR.get().defaultBlockState());
+        // Ook de laserzender en de koepel hebben stroom nodig: een warmtegenerator op magma ernaast.
+        DevWorld.powerNextTo(level, LASER_A.north());
+        DevWorld.powerNextTo(level, DOME.west());
 
         // De bunker: dichte stenen doos, twee husks erin (die krijgen jou als doelwit).
         fill(level, BUNKER.offset(-3, 0, -3), BUNKER.offset(3, 3, 3), Blocks.STONE_BRICKS.defaultBlockState());

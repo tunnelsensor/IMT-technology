@@ -6,6 +6,7 @@ import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.shield.ShieldColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -20,6 +21,8 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
@@ -76,6 +79,20 @@ public class HoloTableBlock extends BaseEntityBlock implements PowerConnectable 
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new HoloTableBlockEntity(pos, state);
+    }
+
+    /** Op de server tikt de tafel: zo betaalt hij zijn stroom (zie HoloTableBlockEntity). */
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                            BlockEntityType<T> type) {
+        if (level.isClientSide) {
+            return null;
+        }
+        return (tickLevel, pos, tickState, blockEntity) -> {
+            if (blockEntity instanceof HoloTableBlockEntity table && tickLevel instanceof ServerLevel serverLevel) {
+                table.serverTick(serverLevel, pos);
+            }
+        };
     }
 
     // ---------------------------------------------------------------- Bedienen

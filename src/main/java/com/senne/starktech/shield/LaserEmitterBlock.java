@@ -3,6 +3,7 @@ package com.senne.starktech.shield;
 import com.mojang.serialization.MapCodec;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.energy.PowerConnectable;
+import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlocks;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,11 @@ import org.jetbrains.annotations.Nullable;
  * Een volledig blok met een lens aan de voorkant. Aan en uit gaat met redstone: een hendel,
  * een drukplaat, of een E.D.I.T.H.-relais ernaast (dan kan E.D.I.T.H. hem toch schakelen).
  * Rechtsklikken wisselt de kleur.
+ *
+ * Hij heeft STROOM nodig: een Stark-kabel naar een zonnepaneel of warmtegenerator (of er
+ * direct tegenaan). Zolang de wand aan staat, betaalt hij elke seconde LASER_UPKEEP per tick.
+ * Is de stroom op, dan valt de wand weg; komt de stroom terug terwijl de redstone nog aan
+ * staat, dan gaat hij vanzelf weer aan.
  *
  * De wand loopt in de richting waarin de zender kijkt, tot maximaal LASER_MAX_LENGTH blokken,
  * en stopt bij de tegenoverliggende zender (of bij het eerste blok dat in de weg staat).
@@ -86,16 +92,12 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     // ---------------------------------------------------------------- Aan en uit
 
-    /** Redstone erop? Dan gaat de wand aan; eraf, dan weer uit. */
+    /** Redstone erop? Dan gaat de wand aan (als er stroom is); eraf, dan weer uit. */
     @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
                                    BlockPos fromPos, boolean movedByPiston) {
-        if (level.isClientSide) {
-            return;
-        }
-        boolean wanted = level.hasNeighborSignal(pos);
-        if (wanted != state.getValue(POWERED)) {
-            setActive((ServerLevel) level, pos, state, wanted);
+        if (level instanceof ServerLevel serverLevel) {
+            update(serverLevel, pos, state);
         }
     }
 
@@ -103,8 +105,97 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (level instanceof ServerLevel serverLevel && level.hasNeighborSignal(pos)) {
-            setActive(serverLevel, pos, state, true);
+        if (level instanceof ServerLevel serverLevel) {
+            update(serverLevel, pos, state);
+        }
+    }
+
+    /**
+     * In de wereld gezet (ook door een gebouw, zoals de Stark Tower): over een seconde kijken
+     * of hij aan moet (redstone en stroom), of, als hij al aan stond, zijn stroom betalen.
+     */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(this)) {
+            level.scheduleTick(pos, this, UPKEEP_INTERVAL);
+        }
+    }
+
+    /** Zo vaak (ticks) betaalt hij zijn stroom, en kijkt hij of die er (weer) is. */
+    private static final int UPKEEP_INTERVAL = 20;
+
+    /**
+     * Moet de wand aan of uit? Aan als er redstone op staat én er stroom is voor de eerste
+     * seconde. Zonder stroom proberen we het elke twee seconden opnieuw.
+     */
+    private void update(ServerLevel level, BlockPos pos, BlockState state) {
+        boolean wanted = level.hasNeighborSignal(pos);
+        boolean on = state.getValue(POWERED);
+        if (!wanted && on) {
+            setActive(level, pos, state, false);
+        } else if (wanted && !on) {
+            if (pay(level, pos)) {
+                setActive(level, pos, state, true);
+            } else {
+                noPower(level, pos);
+                level.scheduleTick(pos, this, UPKEEP_INTERVAL * 2);
+            }
+        }
+    }
+
+    /** Eén seconde stroom betalen. Lukt het niet, dan halen we niets weg. */
+    private static boolean pay(ServerLevel level, BlockPos pos) {
+        int cost = EdithBalance.LASER_UPKEEP * UPKEEP_INTERVAL;
+        if (StarkGrid.available(level, pos) < cost) {
+            return false;
+        }
+        StarkGrid.draw(level, pos, cost);
+        return true;
+    }
+
+    /** Geen stroom: een droog klikje en een rookpluimpje bij de lens. */
+    private static void noPower(ServerLevel level, BlockPos pos) {
+        level.playSound(null, pos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.3f, 1.8f);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 3, 0.2, 0.1, 0.2, 0.01);
+    }
+
+    /**
+     * Elke seconde terwijl hij aan staat: stroom betalen, anders gaat hij uit. Staat hij uit terwijl
+     * er wel redstone op staat (geen stroom), dan proberen we hem weer aan te zetten.
+     */
+    @Override
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        if (state.getValue(POWERED)) {
+            if (!level.hasNeighborSignal(pos)) {
+                setActive(level, pos, state, false);
+            } else if (pay(level, pos)) {
+                level.scheduleTick(pos, this, UPKEEP_INTERVAL);
+            } else {
+                setActive(level, pos, state, false);
+                noPower(level, pos);
+                level.scheduleTick(pos, this, UPKEEP_INTERVAL * 2);
+            }
+        } else {
+            update(level, pos, state);
+        }
+    }
+
+    /**
+     * Vangnet: een zender die bij het maken van de wereld in een gebouw is gezet (zoals in de
+     * Stark Tower), of die aan stond in een oude wereld, heeft nog geen geplande tik. Af en toe
+     * (willekeurig, gemiddeld om de minuut) kijken we of hij er een heeft.
+     */
+    @Override
+    protected boolean isRandomlyTicking(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        if (!level.getBlockTicks().hasScheduledTick(pos, this)) {
+            tick(state, level, pos, random);
         }
     }
 
@@ -148,6 +239,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         level.setBlock(pos, state.setValue(POWERED, on), Block.UPDATE_ALL);
         if (on) {
             buildWall(level, pos, facing);
+            level.scheduleTick(pos, state.getBlock(), UPKEEP_INTERVAL);
         } else {
             clearWall(level, pos, facing);
         }

@@ -469,9 +469,11 @@ def build_laser_gauntlet():
     """
     De lasergang: de enige weg naar de kluis, dwars doorsneden door acht rayshields.
 
-    De velden staan permanent aan (een redstoneblok onder elke zender). Er komt niemand
+    De velden staan aan zolang er redstone op de zenders staat (een redstoneblok in de muur
+    achter elke zender) én er stroom is. Die stroom komt uit een verborgen krachtcentrale op de
+    verdieping eronder (zie build_power_plant), via kabels in het plafond. Er komt niemand
     doorheen, dus je moet eromheen: drie kamers aan de zijkant, elk achter een ijzeren deur
-    met de schakelaar ernaast.
+    met de schakelaar ernaast. Of je vindt de kabels in het plafond en knipt ze door...
     """
     terrace(LASERS_Y - 1, SECURITY_IN, LASERS_IN)
     curtain_wall(LASERS_Y, VAULT_Y - 1, LASERS_IN, DARK_GLASS)
@@ -484,14 +486,23 @@ def build_laser_gauntlet():
         fill(MID + 3, LASERS_Y + 1, z, MID + 3, LASERS_Y + 5, z, "minecraft:deepslate_tiles")
 
     colours = ["red", "blue", "green", "yellow", "purple", "cyan"]
-    for i, z in enumerate(range(z0 + 3, z1 - 2, 2)):
+    laser_rows = list(range(z0 + 3, z1 - 2, 2))
+    for i, z in enumerate(laser_rows):
         colour = colours[i % len(colours)]
+        # Nog uit: ze gaan zelf aan zodra ze redstone en stroom hebben.
         put(MID - 2, LASERS_Y + 1, z, "starktech:laser_emitter",
-            {"facing": "east", "powered": "true", "color": colour})
+            {"facing": "east", "powered": "false", "color": colour})
         put(MID + 2, LASERS_Y + 1, z, "starktech:laser_emitter",
-            {"facing": "west", "powered": "true", "color": colour})
-        put(MID - 2, LASERS_Y, z, "minecraft:redstone_block")
-        put(MID + 2, LASERS_Y, z, "minecraft:redstone_block")
+            {"facing": "west", "powered": "false", "color": colour})
+        # Redstone in de muur achter de zender, stroom via een kabel eronder.
+        put(MID - 3, LASERS_Y + 1, z, "minecraft:redstone_block")
+        put(MID + 3, LASERS_Y + 1, z, "minecraft:redstone_block")
+        cable(MID - 2, LASERS_Y, z)
+        cable(MID + 2, LASERS_Y, z)
+    # De kabels in het plafond van de beveiligingsverdieping: een lijn onder elke rij zenders.
+    for z in range(POWER_Z, laser_rows[-1] + 1):
+        cable(MID - 2, LASERS_Y - 1, z)
+        cable(MID + 2, LASERS_Y - 1, z)
 
     # De omweg: drie kamers achter een ijzeren deur, schakelaar pal ernaast.
     doors = [
@@ -520,6 +531,37 @@ def build_laser_gauntlet():
     for y in range(LASERS_Y + 1, VAULT_Y):
         put(MID - 1, y, z0 + 2, "minecraft:ladder", {"facing": "east", "waterlogged": "false"})
         put(MID - 2, y, z0 + 2, "minecraft:deepslate_tiles")
+
+
+# Waar de kabel van de krachtcentrale het plafond in gaat (buiten de rij plafondlampen).
+POWER_Z = SECURITY_IN + 4
+POWER_X = SIZE_X - 1 - SECURITY_IN - 3
+
+
+def build_power_plant():
+    """
+    De verborgen krachtcentrale voor de lasergang: een dichtgemetseld blok in de hoek van de
+    beveiligingsverdieping. Binnenin twee warmtegeneratoren, elk in een ring van lava (dat is
+    hitte, dus stroom). Een kabel loopt omhoog het plafond in en dan naar de twee lijnen onder de
+    zenders. Knip je die kabels door, dan gaan de lasers uit.
+    """
+    y0, y1 = SECURITY_Y + 1, LASERS_Y - 2
+    fill(POWER_X - 2, y0, POWER_Z - 2, POWER_X + 2, y1, POWER_Z + 2, "minecraft:deepslate_bricks")
+    for gy in (SECURITY_Y + 2, SECURITY_Y + 5):
+        for dx in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                put(POWER_X + dx, gy, POWER_Z + dz, "minecraft:lava", {"level": "0"})
+        put(POWER_X, gy, POWER_Z, "starktech:heat_generator")
+    # De kabel omhoog, tussen en boven de generatoren, tot in het plafond.
+    for y in range(SECURITY_Y + 3, LASERS_Y):
+        if y != SECURITY_Y + 5:
+            cable(POWER_X, y, POWER_Z)
+    # In het plafond naar de twee lijnen onder de zenders.
+    for x in range(MID - 2, POWER_X + 1):
+        cable(x, LASERS_Y - 1, POWER_Z)
+    # Een paar zwarte panelen op het blok, zodat het op een serverkast lijkt.
+    for y in range(y0 + 1, y1, 2):
+        put(POWER_X - 3, y, POWER_Z, "minecraft:black_concrete")
 
 
 def build_vault():
@@ -634,6 +676,7 @@ def build():
     build_hangar()
     build_living()
     build_security()
+    build_power_plant()
     build_laser_gauntlet()
     build_vault()
     build_penthouse()
@@ -642,6 +685,31 @@ def build():
     # Door de kluis heen gaat geen ladder: daar moet je langs de lasers.
     ladder_run(LOBBY_Y, LASERS_Y - 1)
     ladder_run(PENTHOUSE_Y, ROOF_Y - 1)
+    connect_cables()
+
+
+# Blokken waar een Stark-kabel op aansluit (zie PowerConnectable in de mod).
+POWER_BLOCKS = {"starktech:cable", "starktech:laser_emitter", "starktech:heat_generator", "starktech:solar_panel",
+                "starktech:charging_station", "starktech:dome_generator", "starktech:holo_table"}
+
+
+def cable(x, y, z):
+    """Een Stark-kabel. Met welke buren hij verbonden is, rekent connect_cables() aan het eind uit."""
+    put(x, y, z, "starktech:cable")
+
+
+def connect_cables():
+    """Zet bij elke kabel de kanten aan waar een andere kabel of een apparaat met stroom zit."""
+    sides = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0),
+             "up": (0, 1, 0), "down": (0, -1, 0)}
+    for (x, y, z), (block, props, nbt) in list(blocks.items()):
+        if block != "starktech:cable":
+            continue
+        props = {}
+        for name, (dx, dy, dz) in sides.items():
+            neighbour = blocks.get((x + dx, y + dy, z + dz))
+            props[name] = "true" if neighbour and neighbour[0] in POWER_BLOCKS else "false"
+        blocks[(x, y, z)] = (block, props, nbt)
 
 
 def to_nbt():

@@ -101,6 +101,14 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
         poseStack.scale(table.scaleFactor(), table.scaleFactor(), table.scaleFactor());
 
         VertexConsumer lines = buffers.getBuffer(RenderType.lines());
+        // Geen stroom? Dan geen hologram, alleen een zwak knipperend rood ringetje.
+        if (!table.powered()) {
+            if ((int) (time / 10) % 2 == 0) {
+                ring(poseStack, lines, SIZE / 2.0f + 0.05f, -0.12f, 0xFF3B30, 70);
+            }
+            poseStack.popPose();
+            return;
+        }
         baseRing(poseStack, lines, rgb, time);
 
         switch (table.mode()) {

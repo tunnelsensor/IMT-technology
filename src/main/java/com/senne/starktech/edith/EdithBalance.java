@@ -286,6 +286,13 @@ public final class EdithBalance {
     public static final float LASER_WALL_DAMAGE = 4.0f;
     /** De grootte van de schildkoepel (in blokken). */
     public static final double DOME_RADIUS = 20.0;
+    /**
+     * Hoeveel stroom een laserzender per tick verbruikt zolang zijn wand aan staat. Een paar
+     * zenders (twee) kost dus 2 per tick: een zonnepaneel houdt er overdag een paar aan.
+     */
+    public static final int LASER_UPKEEP = 1;
+    /** Hoeveel stroom een holotafel per tick verbruikt. */
+    public static final int HOLO_UPKEEP = 1;
     /** Hoe hard de koepel monsters naar buiten duwt. */
     public static final double DOME_PUSH = 0.8;
 

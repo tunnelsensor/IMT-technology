@@ -145,6 +145,46 @@ public final class StarkTechGameTests {
         towerAndStation(helper);
     }
 
+    /**
+     * De lasergang in de Stark Tower gaat aan met stroom uit de verborgen krachtcentrale: na het
+     * neerzetten van de toren moeten er laserwanden in de gang staan (acht rijen van drie).
+     */
+    @GameTest(template = "stark_tower", timeoutTicks = 300, batch = "tower_power")
+    public static void stark_tower_lasers_have_power(GameTestHelper helper) {
+        // Een toren uit de wereldgeneratie krijgt geen "je bent geplaatst"-seintje: de zenders
+        // gaan aan bij een willekeurige tik (gemiddeld om de minuut). Die doen we hier na, zodra
+        // de krachtcentrale een beetje stroom heeft.
+        helper.runAfterDelay(40, () -> {
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 41; z++) {
+                    for (int y = 64; y < 74; y++) {
+                        BlockState state = helper.getBlockState(pos.set(x, y, z));
+                        if (state.is(ModBlocks.LASER_EMITTER.get())) {
+                            state.randomTick(helper.getLevel(), helper.absolutePos(pos), helper.getLevel().random);
+                        }
+                    }
+                }
+            }
+        });
+        helper.succeedWhen(() -> {
+            int walls = 0;
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 41; z++) {
+                    for (int y = 64; y < 74; y++) {
+                        if (helper.getBlockState(pos.set(x, y, z)).is(ModBlocks.LASER_WALL.get())) {
+                            walls++;
+                        }
+                    }
+                }
+            }
+            if (walls < 24) {
+                throw new GameTestAssertException("Pas " + walls + " van de 24 laserwanden staan aan");
+            }
+        });
+    }
+
     @GameTest(template = ARENA, timeoutTicks = 2400, batch = "drones")
     public static void drone_swarm(GameTestHelper helper) {
         droneSwarm(helper);
@@ -266,7 +306,9 @@ public final class StarkTechGameTests {
         BlockPos far = emitter.east(5);
         helper.setBlock(far, ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, Direction.WEST));
-        // Aanzetten met redstone (een redstoneblok eronder).
+        // Stroom (een volle warmtegenerator erboven), en dan aanzetten met redstone eronder.
+        helper.setBlock(emitter.above(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(emitter.above())).fill(5_000);
         helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
 
         // Meteen daarna mag hij nog niet dicht zijn: hij hoort te schuiven.
@@ -898,8 +940,11 @@ public final class StarkTechGameTests {
         BlockPos connected = gridRow(helper, 1, false);
         BlockPos broken = gridRow(helper, 3, true);
         helper.runAfterDelay(10, () -> {
-            int got = ((ChargingStationBlockEntity) helper.getBlockEntity(connected)).energy();
-            int gotThroughGap = ((ChargingStationBlockEntity) helper.getBlockEntity(broken)).energy();
+            // Het station stuurt de stroom meteen door naar de bril die erin ligt.
+            int got = EdithData.getEnergy(((ChargingStationBlockEntity) helper.getBlockEntity(connected))
+                    .getItem(ChargingStationBlockEntity.SLOT_GLASSES));
+            int gotThroughGap = EdithData.getEnergy(((ChargingStationBlockEntity) helper.getBlockEntity(broken))
+                    .getItem(ChargingStationBlockEntity.SLOT_GLASSES));
             if (got <= 0) {
                 throw new GameTestAssertException("Het laadstation kreeg geen stroom over de kabels");
             }
@@ -910,7 +955,10 @@ public final class StarkTechGameTests {
         });
     }
 
-    /** Generator (vol) - vier kabels - laadstation, op rij z. Met {@code gap} ontbreekt de middelste kabel. */
+    /**
+     * Generator (vol) - vier kabels - laadstation met een lege bril erin, op rij z. Met {@code gap}
+     * ontbreekt de middelste kabel.
+     */
     private static BlockPos gridRow(GameTestHelper helper, int z, boolean gap) {
         BlockPos source = new BlockPos(1, 3, z);
         helper.setBlock(source, ModBlocks.HEAT_GENERATOR.get());
@@ -921,8 +969,45 @@ public final class StarkTechGameTests {
         }
         BlockPos station = new BlockPos(6, 3, z);
         helper.setBlock(station, ModBlocks.CHARGING_STATION.get());
+        ((ChargingStationBlockEntity) helper.getBlockEntity(station)).setItem(ChargingStationBlockEntity.SLOT_GLASSES,
+                new ItemStack(ModItems.EDITH_GLASSES.get()));
         ((ChargerBlockEntity) helper.getBlockEntity(source)).fill(5_000);
         return station;
+    }
+
+    /** Een laserzender zonder stroom doet niets, ook niet met redstone erop. */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "grid")
+    public static void laser_gate_needs_power(GameTestHelper helper) {
+        BlockPos emitter = new BlockPos(1, 3, 1);
+        helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
+        helper.runAfterDelay(20, () -> {
+            if (countWall(helper, emitter, 4) > 0 || helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
+                throw new GameTestAssertException("De laserpoort ging aan zonder stroom");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** De holotafel heeft stroom nodig: zonder generator blijft hij uit, met een generator gaat hij aan. */
+    @GameTest(template = ARENA, timeoutTicks = 80, batch = "grid")
+    public static void holo_table_needs_power(GameTestHelper helper) {
+        BlockPos dark = new BlockPos(1, 3, 1);
+        BlockPos lit = new BlockPos(4, 3, 1);
+        helper.setBlock(dark, ModBlocks.HOLO_TABLE.get());
+        helper.setBlock(lit, ModBlocks.HOLO_TABLE.get());
+        helper.setBlock(lit.east(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(lit.east())).fill(5_000);
+        helper.runAfterDelay(30, () -> {
+            if (((HoloTableBlockEntity) helper.getBlockEntity(dark)).powered()) {
+                throw new GameTestAssertException("Een holotafel zonder stroom ging toch aan");
+            }
+            if (!((HoloTableBlockEntity) helper.getBlockEntity(lit)).powered()) {
+                throw new GameTestAssertException("Een holotafel met een generator ernaast bleef uit");
+            }
+            helper.succeed();
+        });
     }
 
     // ================================================================ Illusies richten

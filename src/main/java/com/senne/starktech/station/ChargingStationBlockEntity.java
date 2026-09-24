@@ -99,13 +99,24 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         return false;
     }
 
-    /** Vult de opslag bij uit het stroomnet, zo snel als STATION_GRID_RATE toestaat. */
+    /**
+     * Haalt stroom uit het net, maar alleen voor een bril die erin ligt en nog niet vol is (en
+     * nooit meer dan STATION_GRID_RATE per tick). Anders bleef het station zijn eigen grote
+     * opslag vullen en zoog het het net leeg, en had bijvoorbeeld een holotafel op hetzelfde
+     * net niets meer. Stroom die in de generatoren blijft, is niet verloren: die wacht daar.
+     */
     private boolean pullFromGrid(ServerLevel level, BlockPos pos) {
-        int room = EdithBalance.STATION_CAPACITY - energy;
-        if (room <= 0) {
+        ItemStack glasses = items.get(SLOT_GLASSES);
+        if (!EdithData.isGlasses(glasses)) {
             return false;
         }
-        int got = StarkGrid.draw(level, pos, Math.min(room, EdithBalance.STATION_GRID_RATE));
+        int missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses) - energy;
+        int room = EdithBalance.STATION_CAPACITY - energy;
+        int wanted = Math.min(Math.min(missing, room), EdithBalance.STATION_GRID_RATE);
+        if (wanted <= 0) {
+            return false;
+        }
+        int got = StarkGrid.draw(level, pos, wanted);
         energy += got;
         return got > 0;
     }

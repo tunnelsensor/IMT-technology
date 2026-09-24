@@ -391,6 +391,7 @@ public final class VisualCheck {
         BlockState stone = Blocks.STONE.defaultBlockState();
 
         level.setBlockAndUpdate(TABLE, ModBlocks.HOLO_TABLE.get().defaultBlockState());
+        DevWorld.powerNextTo(level, TABLE.east());
         // Een heuvel (piramide), een kuil en een toren: dan heeft de kaart iets te laten zien.
         for (int layer = 0; layer < 9; layer++) {
             int r = 8 - layer;
@@ -447,11 +448,19 @@ public final class VisualCheck {
             level.setBlockAndUpdate(new BlockPos(29, y, 20), power);
             level.setBlockAndUpdate(new BlockPos(37, y, 20), power);
         }
+        // Stroom: een warmtegenerator tegen de onderste zender, en een stukje kabel erboven naar
+        // de bovenste.
+        for (int x : new int[] {30, 36}) {
+            DevWorld.powerNextTo(level, new BlockPos(x, -60, 21));
+            level.setBlockAndUpdate(new BlockPos(x, -59, 21), ModBlocks.CABLE.get().defaultBlockState());
+        }
         // Van noord (z 17) naar zuid (z 23), in het rood.
         level.setBlockAndUpdate(new BlockPos(42, -60, 17), emitter(Direction.SOUTH, ShieldColor.RED));
         level.setBlockAndUpdate(new BlockPos(42, -60, 23), emitter(Direction.NORTH, ShieldColor.RED));
         level.setBlockAndUpdate(new BlockPos(42, -60, 16), power);
         level.setBlockAndUpdate(new BlockPos(42, -60, 24), power);
+        DevWorld.powerNextTo(level, new BlockPos(43, -60, 17));
+        DevWorld.powerNextTo(level, new BlockPos(43, -60, 23));
     }
 
     private static BlockState emitter(Direction facing, ShieldColor colour) {

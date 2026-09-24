@@ -8,7 +8,9 @@ import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.station.ChargerBlockEntity;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,6 +42,7 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import org.jetbrains.annotations.Nullable;
@@ -89,6 +92,23 @@ public final class DevWorld {
             EdithClientConfig.VOICE_VOLUME.set(1.0);
         }
         mc.options.save();
+    }
+
+    /**
+     * Een warmtegenerator op magma, meteen vol: stroom voor een apparaat ernaast (een
+     * laserzender, holotafel of koepel doet zonder stroom niets).
+     */
+    public static void powerNextTo(ServerLevel level, BlockPos pos) {
+        level.setBlockAndUpdate(pos.below(), Blocks.MAGMA_BLOCK.defaultBlockState());
+        level.setBlockAndUpdate(pos, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        fillGenerator(level, pos);
+    }
+
+    /** Een zonnepaneel of warmtegenerator helemaal vol stroom zetten. */
+    public static void fillGenerator(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof ChargerBlockEntity generator) {
+            generator.fill(generator.capacity());
+        }
     }
 
     /** Voert iets uit op de server (in hetzelfde spel), met de echte speler daar. */
