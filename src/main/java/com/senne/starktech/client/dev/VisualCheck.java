@@ -4,6 +4,12 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
+import com.senne.starktech.client.SatelliteScreen;
+import com.senne.starktech.satellite.SatelliteUpgrade;
+import com.senne.starktech.satellite.SatelliteUpgrades;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.senne.starktech.client.CommsScreen;
 import com.senne.starktech.client.EdithMenuScreen;
 import com.senne.starktech.client.HoloTableScreen;
@@ -56,6 +62,12 @@ public final class VisualCheck {
     private VisualCheck() {}
 
     private static final boolean ENABLED = Boolean.getBoolean("starktech.visualcheck");
+    /**
+     * Alleen een paar stukken van de rondleiding, bijvoorbeeld "satellite" of "holo,screens"
+     * (gradlew runVisualCheck -Ponly=satellite). Leeg = alles.
+     */
+    private static final Set<String> ONLY = Arrays.stream(System.getProperty("starktech.visualcheck.only", "").split(","))
+            .map(String::trim).filter(part -> !part.isEmpty()).collect(Collectors.toSet());
     private static final String WORLD = "VisualCheck";
 
     /** Waar alles staat in de platte wereld (de grond is daar y = -61, je staat op -60). */
@@ -129,150 +141,183 @@ public final class VisualCheck {
             DevWorld.onServer(VisualCheck::buildScene);
         });
         // --- De opstartanimatie van de bril (die begint zodra de bril op is)
-        t.shot(16, "00_boot_a");
-        t.shot(16, "00_boot_b");
-        t.shot(16, "00_boot_c");
-        t.shot(16, "00_boot_d");
-        t.shot(12, "00_boot_e");
-        t.view(20, 0.5, -60, -3.2, 0, 22);
+        if (want("boot")) {
+            t.shot(16, "00_boot_a");
+            t.shot(16, "00_boot_b");
+            t.shot(16, "00_boot_c");
+            t.shot(16, "00_boot_d");
+            t.shot(12, "00_boot_e");
+        } else {
+            t.pause(100); // de bril moet toch even opstarten
+        }
 
         // --- De holotafel
-        t.shot(200, "01_holo_map");
-        t.open(0, () -> new HoloTableScreen(TABLE));
-        t.shot(20, "02_holo_screen");
-        t.close(0);
-        onTable(t, table -> table.setBlueprint(new ItemStack(ModItems.CHARGING_STATION.get())));
-        t.shot(30, "03_holo_blueprint");
-        t.open(0, () -> new HoloTableScreen(TABLE));
-        t.shot(20, "04_holo_screen_blueprint");
-        t.close(0);
-        onTable(t, table -> table.setMode(HoloMode.ARSENAL));
-        t.shot(30, "05_holo_arsenal");
-        onTable(t, table -> {
-            table.setMode(HoloMode.MAP);
-            table.setScale(2);
-            table.setRange(3);
-        });
-        t.shot(80, "06_holo_map_big_far");
-        onTable(t, table -> {
-            table.setScale(0);
-            table.setRange(0);
-        });
-        t.shot(80, "07_holo_map_small_near");
-        onTable(t, table -> {
-            table.setScale(1);
-            table.setRange(1);
-        });
-        t.command(0, "time set midnight");
-        t.shot(80, "08_holo_night");
-        t.command(0, "time set noon");
-        t.view(0, 0.5, -57.2, -2.2, 0, 55);
-        t.shot(40, "09_holo_from_above");
-        t.view(0, 3.2, -60, 2.8, 130, 18);
-        t.shot(40, "10_holo_side");
+        if (want("holo")) {
+            t.view(20, 0.5, -60, -3.2, 0, 22);
+            t.shot(200, "01_holo_map");
+            t.open(0, () -> new HoloTableScreen(TABLE));
+            t.shot(20, "02_holo_screen");
+            t.close(0);
+            onTable(t, table -> table.setBlueprint(new ItemStack(ModItems.CHARGING_STATION.get())));
+            t.shot(30, "03_holo_blueprint");
+            t.open(0, () -> new HoloTableScreen(TABLE));
+            t.shot(20, "04_holo_screen_blueprint");
+            t.close(0);
+            onTable(t, table -> table.setMode(HoloMode.ARSENAL));
+            t.shot(30, "05_holo_arsenal");
+            onTable(t, table -> {
+                table.setMode(HoloMode.MAP);
+                table.setScale(2);
+                table.setRange(3);
+            });
+            t.shot(80, "06_holo_map_big_far");
+            onTable(t, table -> {
+                table.setScale(0);
+                table.setRange(0);
+            });
+            t.shot(80, "07_holo_map_small_near");
+            onTable(t, table -> {
+                table.setScale(1);
+                table.setRange(1);
+            });
+            t.command(0, "time set midnight");
+            t.shot(80, "08_holo_night");
+            t.command(0, "time set noon");
+            t.view(0, 0.5, -57.2, -2.2, 0, 55);
+            t.shot(40, "09_holo_from_above");
+            t.view(0, 3.2, -60, 2.8, 130, 18);
+            t.shot(40, "10_holo_side");
+        }
 
         // --- De schermen
-        t.view(0, 0.5, -60, -3.2, 0, 22);
-        t.open(20, EdithMenuScreen::new);
-        t.shot(20, "20_menu");
-        t.open(0, ArsenalScreen::new);
-        t.shot(20, "21_arsenal");
-        t.open(0, NavigationScreen::new);
-        t.shot(20, "22_navigation");
-        t.open(0, () -> new WaypointEditScreen(0));
-        t.shot(20, "23_waypoint_edit");
-        t.open(0, CommsScreen::new);
-        t.shot(20, "24_comms");
-        t.open(0, MusicScreen::new);
-        t.shot(20, "25_music");
-        t.open(0, RelayListScreen::new);
-        t.shot(20, "26_relays");
-        t.open(0, () -> new SpyReportScreen(Component.literal("Steve"), List.of(
-                Component.literal("00:30  Steve is at 120, 64, -40"),
-                Component.literal("01:00  Steve mined 3 diamond ore"),
-                Component.literal("01:30  Steve entered a cave"))));
-        t.shot(20, "27_spy_report");
-        t.open(0, () -> new VoiceCommandsScreen(null));
-        t.shot(20, "28_voice_commands");
-        t.close(0);
+        if (want("screens")) {
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.open(20, EdithMenuScreen::new);
+            t.shot(20, "20_menu");
+            t.open(0, ArsenalScreen::new);
+            t.shot(20, "21_arsenal");
+            t.open(0, NavigationScreen::new);
+            t.shot(20, "22_navigation");
+            t.open(0, () -> new WaypointEditScreen(0));
+            t.shot(20, "23_waypoint_edit");
+            t.open(0, CommsScreen::new);
+            t.shot(20, "24_comms");
+            t.open(0, MusicScreen::new);
+            t.shot(20, "25_music");
+            t.open(0, RelayListScreen::new);
+            t.shot(20, "26_relays");
+            t.open(0, () -> new SpyReportScreen(Component.literal("Steve"), List.of(
+                    Component.literal("00:30  Steve is at 120, 64, -40"),
+                    Component.literal("01:00  Steve mined 3 diamond ore"),
+                    Component.literal("01:30  Steve entered a cave"))));
+            t.shot(20, "27_spy_report");
+            t.open(0, () -> new VoiceCommandsScreen(null));
+            t.shot(20, "28_voice_commands");
+            t.close(0);
+        }
 
         // --- De HUD, kijkend naar een vijand
-        t.view(10, 6.5, -60, -4.5, 180, 8);
-        t.shot(60, "30_hud_target");
+        if (want("hud")) {
+            t.view(10, 6.5, -60, -4.5, 180, 8);
+            t.shot(60, "30_hud_target");
+        }
 
         // --- Het harnas
-        t.onServer(0, VisualCheck::wearSuit);
-        t.view(0, -4.5, -60, -4.5, 225, 10);
-        t.camera(0, CameraType.THIRD_PERSON_FRONT);
-        t.shot(40, "40_suit_front");
-        t.camera(0, CameraType.THIRD_PERSON_BACK);
-        t.shot(20, "41_suit_back");
-        t.camera(0, CameraType.FIRST_PERSON);
+        if (want("suit")) {
+            t.onServer(0, VisualCheck::wearSuit);
+            t.view(0, -4.5, -60, -4.5, 225, 10);
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(40, "40_suit_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(20, "41_suit_back");
+            t.camera(0, CameraType.FIRST_PERSON);
 
-        // --- De repulsor: aanzetten, dan de aanvalsknop "indrukken" zoals een speler dat doet
-        t.view(0, 6.5, -60, -4.5, 180, 8);
-        t.step(10, RepulsorControl::toggle);
-        t.shot(30, "42_repulsor_armed");
-        t.tap(0, () -> Minecraft.getInstance().options.keyAttack);
-        t.shot(4, "43_repulsor_fired");
-        t.step(30, RepulsorControl::toggle);
+            // --- De repulsor: aanzetten, dan de aanvalsknop "indrukken" zoals een speler dat doet
+            t.view(0, 6.5, -60, -4.5, 180, 8);
+            t.step(10, RepulsorControl::toggle);
+            t.shot(30, "42_repulsor_armed");
+            t.tap(0, () -> Minecraft.getInstance().options.keyAttack);
+            t.shot(4, "43_repulsor_fired");
+            t.step(30, RepulsorControl::toggle);
+        }
 
         // --- Vliegen met het harnas. In creative vlieg je gewoon zoals altijd, dus even survival.
-        // We drukken de toetsen in zoals een speler en schrijven bij elke stap de snelheid in de
-        // log ("[dev]"), zodat de natuurkunde na te rekenen is.
-        t.command(0, "gamemode survival @a");
-        t.stand(10, 0.5, -60, -24, 180, -5);
-        t.key(40, () -> Minecraft.getInstance().options.keyJump, true);
-        t.key(2, () -> Minecraft.getInstance().options.keyJump, false);
-        t.key(2, () -> Minecraft.getInstance().options.keyJump, true);   // dubbel tikken: stuwraketten aan
-        t.probe(1, "dubbel getikt");
-        t.probe(24, "25 ticks spatie");
-        t.key(0, () -> Minecraft.getInstance().options.keyJump, false);
-        t.probe(10, "10 ticks los");
-        t.probe(20, "30 ticks los");
-        t.camera(0, CameraType.THIRD_PERSON_BACK);
-        // Zonder HUD (zoals F1): anders vallen de vlammen onder je voeten achter de hartjes.
-        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
-        t.shot(10, "47_flight_jets");
-        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-        t.camera(0, CameraType.FIRST_PERSON);
-        t.key(0, () -> Minecraft.getInstance().options.keyUp, true);
-        t.key(0, () -> Minecraft.getInstance().options.keySprint, true);
-        t.probe(10, "boost 10");
-        t.probe(10, "boost 20");
-        t.probe(10, "boost 30");
-        t.probe(10, "boost 40");
-        t.shot(0, "44_flight_boost");
-        t.key(0, () -> Minecraft.getInstance().options.keyLeft, true);
-        t.shot(10, "45_flight_bank");
-        t.key(0, () -> Minecraft.getInstance().options.keyLeft, false);
-        t.key(0, () -> Minecraft.getInstance().options.keyUp, false);
-        t.key(0, () -> Minecraft.getInstance().options.keySprint, false);
-        t.probe(10, "uitglijden 10");
-        t.probe(10, "uitglijden 20");
-        t.probe(20, "uitglijden 40");
-        t.shot(0, "46_flight_glide");
-        t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
-        t.probe(40, "dalen 40");
-        t.probe(40, "dalen 80");
-        t.key(0, () -> Minecraft.getInstance().options.keyShift, false);
-        t.probe(20, "geland");
-        t.command(0, "gamemode creative @a");
+        if (want("flight")) {
+            t.onServer(0, VisualCheck::wearSuit);
+            // We drukken de toetsen in zoals een speler en schrijven bij elke stap de snelheid in de
+            // log ("[dev]"), zodat de natuurkunde na te rekenen is.
+            t.command(0, "gamemode survival @a");
+            t.stand(10, 0.5, -60, -24, 180, -5);
+            t.key(40, () -> Minecraft.getInstance().options.keyJump, true);
+            t.key(2, () -> Minecraft.getInstance().options.keyJump, false);
+            t.key(2, () -> Minecraft.getInstance().options.keyJump, true);   // dubbel tikken: stuwraketten aan
+            t.probe(1, "dubbel getikt");
+            t.probe(24, "25 ticks spatie");
+            t.key(0, () -> Minecraft.getInstance().options.keyJump, false);
+            t.probe(10, "10 ticks los");
+            t.probe(20, "30 ticks los");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            // Zonder HUD (zoals F1): anders vallen de vlammen onder je voeten achter de hartjes.
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.shot(10, "47_flight_jets");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.key(0, () -> Minecraft.getInstance().options.keyUp, true);
+            t.key(0, () -> Minecraft.getInstance().options.keySprint, true);
+            t.probe(10, "boost 10");
+            t.probe(10, "boost 20");
+            t.probe(10, "boost 30");
+            t.probe(10, "boost 40");
+            t.shot(0, "44_flight_boost");
+            t.key(0, () -> Minecraft.getInstance().options.keyLeft, true);
+            t.shot(10, "45_flight_bank");
+            t.key(0, () -> Minecraft.getInstance().options.keyLeft, false);
+            t.key(0, () -> Minecraft.getInstance().options.keyUp, false);
+            t.key(0, () -> Minecraft.getInstance().options.keySprint, false);
+            t.probe(10, "uitglijden 10");
+            t.probe(10, "uitglijden 20");
+            t.probe(20, "uitglijden 40");
+            t.shot(0, "46_flight_glide");
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
+            t.probe(40, "dalen 40");
+            t.probe(40, "dalen 80");
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, false);
+            t.probe(20, "geland");
+            t.command(0, "gamemode creative @a");
+        }
 
         // --- Drones: onze eigen en een raiddrone, stilgezet zodat je ze goed ziet
-        t.onServer(0, VisualCheck::spawnDrones);
-        t.view(0, 0.5, -59, -16, 0, 0);
-        t.shot(40, "50_drones");
-        t.view(0, 0.5, -59, -18.5, 0, 0);
-        t.shot(20, "51_drones_close");
+        if (want("drones")) {
+            t.onServer(0, VisualCheck::spawnDrones);
+            t.view(0, 0.5, -59, -16, 0, 0);
+            t.shot(40, "50_drones");
+            t.view(0, 0.5, -59, -18.5, 0, 0);
+            t.shot(20, "51_drones_close");
 
-        // --- Schade: een rij drones van heel tot bijna kapot, met rook en vonken
-        t.onServer(0, player -> DevWorld.damagedDroneRow(player.serverLevel(), new BlockPos(20, -59, -30), 0));
-        t.view(0, 24.5, -59.2, -35.5, 0, 5);
-        t.shot(60, "52_drones_damaged");
-        t.view(0, 24.5, -59.5, -33.2, 0, 8);
-        t.shot(20, "53_drones_damaged_close");
-    }
+            // --- Schade: een rij drones van heel tot bijna kapot, met rook en vonken
+            t.onServer(0, player -> DevWorld.damagedDroneRow(player.serverLevel(), new BlockPos(20, -59, -30), 0));
+            t.view(0, 24.5, -59.2, -35.5, 0, 5);
+            t.shot(60, "52_drones_damaged");
+            t.view(0, 24.5, -59.5, -33.2, 0, 8);
+            t.shot(20, "53_drones_damaged_close");
+        }
+
+        // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
+        if (want("satellite")) {
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.onServer(0, player -> satelliteAt(player, 0));
+            t.open(10, SatelliteScreen::new);
+            t.shot(30, "60_satellite_start");
+            t.onServer(0, player -> satelliteAt(player, 5));
+            t.shot(30, "61_satellite_level5");
+            t.onServer(0, player -> satelliteAt(player, 10));
+            t.shot(30, "62_satellite_max");
+            t.close(0);
+            t.open(0, ArsenalScreen::new);
+            t.shot(30, "63_arsenal_with_satellite");
+            t.close(0);
+        }
+}
 
     // ================================================================ De wereld inrichten
 
@@ -324,6 +369,20 @@ public final class VisualCheck {
 
         player.getAbilities().flying = true;
         player.onUpdateAbilities();
+    }
+
+    /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */
+    private static boolean want(String section) {
+        return ONLY.isEmpty() || ONLY.contains(section);
+    }
+
+    /** Alle upgrades van de satelliet op hetzelfde niveau; de drie schietstanden minstens vrijgespeeld. */
+    private static void satelliteAt(ServerPlayer player, int level) {
+        SatelliteUpgrades upgrades = SatelliteUpgrades.START;
+        for (SatelliteUpgrade upgrade : SatelliteUpgrade.values()) {
+            upgrades = upgrades.with(upgrade, upgrade.isMode() ? Math.max(1, level) : level);
+        }
+        player.setData(ModAttachments.SATELLITE, upgrades);
     }
 
     private static void wearSuit(ServerPlayer player) {

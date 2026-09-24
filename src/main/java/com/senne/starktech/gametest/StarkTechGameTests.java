@@ -40,6 +40,10 @@ import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
+import com.senne.starktech.satellite.SatelliteWorkshop;
+import com.senne.starktech.satellite.SatelliteUpgrade;
+import com.senne.starktech.satellite.SatelliteUpgrades;
+import com.senne.starktech.satellite.SatelliteStats;
 import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.shield.LaserWallBlock;
 import com.senne.starktech.shield.ShieldColor;
@@ -877,6 +881,96 @@ public final class StarkTechGameTests {
         }
         if (table.mode() != before) {
             throw new GameTestAssertException("Een lege hand veranderde de stand naar " + table.mode());
+        }
+        helper.succeed();
+    }
+
+    // ================================================================ Satelliet-upgrades
+
+    /**
+     * Een upgrade kost onderdelen én drones om ze naar boven te brengen. Zonder onderdelen
+     * gebeurt er niets; mét gaan ze uit je rugzak, vertrekken de drones, en gaat de upgrade in
+     * zodra ze boven zijn.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "satellite_upgrade")
+    public static void satellite_upgrade_needs_parts_and_drones(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        // Alleen de rugzak leeg (niet clearContent: dat haalt ook de bril van je hoofd).
+        owner.getInventory().items.replaceAll(stack -> ItemStack.EMPTY);
+        int ready = ArsenalServer.get(owner).availableCount();
+
+        SatelliteWorkshop.upgrade(owner, SatelliteUpgrade.RECHARGE);
+        if (SatelliteWorkshop.get(owner).recharge() != 0 || ArsenalServer.get(owner).availableCount() != ready) {
+            throw new GameTestAssertException("Een upgrade zonder onderdelen ging toch door");
+        }
+
+        List<ItemStack> cost = SatelliteUpgrade.RECHARGE.costFor(1);
+        for (ItemStack part : cost) {
+            owner.getInventory().add(part.copy());
+        }
+        SatelliteWorkshop.upgrade(owner, SatelliteUpgrade.RECHARGE);
+        for (ItemStack part : cost) {
+            if (SatelliteWorkshop.count(owner.getInventory(), part) != 0) {
+                throw new GameTestAssertException("De onderdelen zitten nog in de rugzak: " + part);
+            }
+        }
+        int carriers = SatelliteUpgrade.dronesFor(1);
+        if (ArsenalServer.get(owner).availableCount() != ready - carriers) {
+            throw new GameTestAssertException("Er vertrokken " + (ready - ArsenalServer.get(owner).availableCount())
+                    + " drones in plaats van " + carriers);
+        }
+        if (SatelliteWorkshop.get(owner).recharge() != 0) {
+            throw new GameTestAssertException("De upgrade ging in voordat de drones boven waren");
+        }
+        helper.runAfterDelay(SatelliteWorkshop.DELIVERY_TICKS + 5, () -> {
+            if (SatelliteWorkshop.get(owner).recharge() != 1) {
+                throw new GameTestAssertException("De upgrade ging niet in na de levering");
+            }
+            if (SatelliteStats.cooldownTicks(1) >= SatelliteStats.cooldownTicks(0)) {
+                throw new GameTestAssertException("Opladen niveau 1 maakt de wachttijd niet korter");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** "Max all" in het satellietscherm: in creative alles op 10, in survival niets. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "satellite_upgrade")
+    public static void satellite_max_all_only_in_creative(GameTestHelper helper) {
+        ServerPlayer survival = makeSurvivalOwner(helper, new BlockPos(1, 3, 1));
+        SatelliteWorkshop.maxAll(survival);
+        if (!SatelliteWorkshop.get(survival).equals(SatelliteUpgrades.START)) {
+            throw new GameTestAssertException("'Max all' werkte ook in survival");
+        }
+        ServerPlayer creative = makeEdithOwner(helper, new BlockPos(3, 3, 1));
+        SatelliteWorkshop.maxAll(creative);
+        for (SatelliteUpgrade upgrade : SatelliteUpgrade.values()) {
+            if (SatelliteWorkshop.get(creative).level(upgrade) != SatelliteUpgrade.MAX_LEVEL) {
+                throw new GameTestAssertException("Na 'Max all' staat " + upgrade + " niet op het hoogste niveau");
+            }
+        }
+        helper.succeed();
+    }
+
+    /** Bombardement en de schuivende laser zitten op slot tot je ze vrijspeelt. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "satellite_upgrade")
+    public static void satellite_modes_start_locked(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+
+        EdithServer.handleAction(owner, EdithAction.SATELLITE_BOMBARDMENT.ordinal());
+        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.PRECISION) {
+            throw new GameTestAssertException("Het bombardement was te kiezen zonder het vrij te spelen");
+        }
+        // Doorbladeren slaat de standen op slot over.
+        EdithServer.handleAction(owner, EdithAction.SATELLITE_MODE.ordinal());
+        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.PRECISION) {
+            throw new GameTestAssertException("Doorbladeren kwam uit op " + EdithData.getSatelliteMode(glasses));
+        }
+
+        SatelliteWorkshop.install(owner, SatelliteUpgrade.BOMBARDMENT, 1);
+        EdithServer.handleAction(owner, EdithAction.SATELLITE_BOMBARDMENT.ordinal());
+        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.BOMBARDMENT) {
+            throw new GameTestAssertException("Na het vrijspelen was het bombardement niet te kiezen");
         }
         helper.succeed();
     }

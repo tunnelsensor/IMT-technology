@@ -22,6 +22,7 @@ import com.senne.starktech.hack.EdithHack;
 import com.senne.starktech.illusion.EdithIllusions;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.satellite.SatelliteStrikes;
+import com.senne.starktech.satellite.SatelliteWorkshop;
 import com.senne.starktech.shield.EdithShield;
 import com.senne.starktech.shield.LaserAnimations;
 import com.senne.starktech.raid.EdithRaids;
@@ -131,6 +132,10 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithHack::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SatelliteStrikes::onServerTick);
         NeoForge.EVENT_BUS.addListener(SatelliteStrikes::onServerStopped);
+        // Satelliet-upgrades: onderdelen die met drones naar boven gaan
+        NeoForge.EVENT_BUS.addListener(SatelliteWorkshop::onServerTick);
+        NeoForge.EVENT_BUS.addListener(SatelliteWorkshop::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(SatelliteWorkshop::onServerStopped);
 
         LOGGER.info("Stark Tech loaded. E.D.I.T.H. is standing by.");
     }

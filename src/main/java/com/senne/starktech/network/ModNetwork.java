@@ -7,6 +7,7 @@ import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.holo.HoloTables;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.redstone.EdithRedstone;
+import com.senne.starktech.satellite.SatelliteWorkshop;
 import com.senne.starktech.suit.EdithSuit;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
@@ -25,7 +26,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "6";
+    private static final String PROTOCOL_VERSION = "7";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -45,6 +46,15 @@ public final class ModNetwork {
         registrar.playToServer(WaypointActionPayload.TYPE, WaypointActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 EdithNavigation.handleWaypointAction(player, payload);
+            }
+        });
+        registrar.playToServer(SatelliteUpgradePayload.TYPE, SatelliteUpgradePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                if (payload.maxAll()) {
+                    SatelliteWorkshop.maxAll(player);
+                } else {
+                    SatelliteWorkshop.upgrade(player, payload.upgrade());
+                }
             }
         });
         registrar.playToServer(DroneControlPayload.TYPE, DroneControlPayload.STREAM_CODEC, (payload, context) -> {

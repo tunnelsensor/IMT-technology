@@ -7,6 +7,7 @@ import com.senne.starktech.client.arsenal.OrbitView;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.network.ArsenalActionPayload;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.satellite.SatelliteUpgrades;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
@@ -239,7 +241,9 @@ public class ArsenalScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         float seconds = (Util.getMillis() % 3_600_000L) / 1000.0f;
         List<ArsenalDrone> orbit = shown.drones().stream().filter(d -> d.state() == ArsenalDrone.State.ORBIT).toList();
-        view.render(g, viewX0, viewY0, viewX1, viewY1, orbit, selected, seconds);
+        LocalPlayer player = Minecraft.getInstance().player;
+        SatelliteUpgrades satellite = player == null ? SatelliteUpgrades.START : player.getData(ModAttachments.SATELLITE);
+        view.render(g, viewX0, viewY0, viewX1, viewY1, orbit, selected, satellite, seconds);
         HudStyle.brackets(g, viewX0, viewY0, viewX1, viewY1, 6, HudStyle.argb(160, HudStyle.CYAN));
 
         super.render(g, mouseX, mouseY, a);
@@ -271,8 +275,15 @@ public class ArsenalScreen extends Screen {
         boolean anyGrounded = shown.drones().stream().anyMatch(d -> d.state() == ArsenalDrone.State.GROUNDED);
         Component hint = Component.translatable(anyGrounded ? "screen.starktech.arsenal.repair_hint"
                 : "screen.starktech.arsenal.controls");
-        g.drawString(font, font.plainSubstrByWidth(hint.getString(), listX - viewX0 - 8), viewX0 + 2, viewY1 + 11,
-                HudStyle.argb(140, HudStyle.WHITE), false);
+        // Klein (75%) en desnoods over twee regels, zodat de zin niet halverwege ophoudt.
+        List<FormattedCharSequence> lines = font.split(hint, (int) ((listX - viewX0 - 8) / 0.75f));
+        g.pose().pushPose();
+        g.pose().translate(viewX0 + 2, viewY1 + (lines.size() > 1 ? 7 : 11), 0);
+        g.pose().scale(0.75f, 0.75f, 1.0f);
+        for (int i = 0; i < Math.min(2, lines.size()); i++) {
+            g.drawString(font, lines.get(i), 0, i * 10, HudStyle.argb(160, HudStyle.WHITE), false);
+        }
+        g.pose().popPose();
     }
 
     /** Eén regel: nummer, levensbalk en waar hij is. De gekozen drone licht op. */

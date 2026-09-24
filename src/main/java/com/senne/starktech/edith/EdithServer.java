@@ -19,6 +19,9 @@ import com.senne.starktech.hack.EdithHack;
 import com.senne.starktech.illusion.EdithIllusions;
 import com.senne.starktech.illusion.IllusionScene;
 import com.senne.starktech.satellite.SatelliteMode;
+import com.senne.starktech.satellite.SatelliteStats;
+import com.senne.starktech.satellite.SatelliteUpgrades;
+import com.senne.starktech.satellite.SatelliteWorkshop;
 import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.suit.EdithSuit;
@@ -355,7 +358,9 @@ public final class EdithServer {
             case CARRY_ENTITY -> carry(player, glasses);
             // Fase 8
             case SATELLITE_MODE -> {
-                SatelliteMode next = EdithData.cycleSatelliteMode(glasses);
+                // Doorbladeren slaat de standen over die je nog niet vrijgespeeld hebt.
+                SatelliteMode next = SatelliteWorkshop.get(player).nextUnlocked(EdithData.getSatelliteMode(glasses));
+                EdithData.setSatelliteMode(glasses, next);
                 send(player, Component.translatable("edith.starktech.msg.satellite_mode",
                         Component.translatable(next.translationKey()), next.cost()), EdithMessagePayload.Level.INFO);
             }
@@ -735,6 +740,11 @@ public final class EdithServer {
     // ---------------------------------------------------------------- Satelliet
 
     private static void setSatelliteMode(ServerPlayer player, ItemStack glasses, SatelliteMode mode) {
+        if (!SatelliteWorkshop.get(player).unlocked(mode)) {
+            send(player, Component.translatable("satellite.starktech.msg.locked", Component.translatable(mode.translationKey())),
+                    EdithMessagePayload.Level.WARNING);
+            return;
+        }
         EdithData.setSatelliteMode(glasses, mode);
         send(player, Component.translatable("edith.starktech.msg.satellite_mode",
                 Component.translatable(mode.translationKey()), mode.cost()), EdithMessagePayload.Level.INFO);
@@ -754,17 +764,24 @@ public final class EdithServer {
         if (SatelliteStrikes.pendingFor(player.getUUID()) != null || !checkCooldown(player, state, EdithCooldown.SATELLITE)) {
             return;
         }
+        SatelliteUpgrades upgrades = SatelliteWorkshop.get(player);
         SatelliteMode mode = EdithData.getSatelliteMode(glasses);
+        // Staat de bril nog op een stand die (nog) niet vrijgespeeld is? Dan de precisie-straal.
+        if (!upgrades.unlocked(mode)) {
+            mode = SatelliteMode.PRECISION;
+            EdithData.setSatelliteMode(glasses, mode);
+        }
+        double range = SatelliteStats.range(upgrades.targeting());
         UUID locked = null;
         Vec3 target = null;
 
-        LivingEntity looked = findLookTarget(player, EdithBalance.SATELLITE_RANGE);
+        LivingEntity looked = findLookTarget(player, range);
         if (looked != null && EdithTargeting.canTarget(player, looked)) {
             locked = looked.getUUID();
             target = looked.position();
         }
         if (target == null) {
-            HitResult hit = player.pick(EdithBalance.SATELLITE_RANGE, 1.0f, true);
+            HitResult hit = player.pick(range, 1.0f, true);
             if (hit.getType() != HitResult.Type.MISS) {
                 target = hit.getLocation();
             }
@@ -791,7 +808,7 @@ public final class EdithServer {
         if (!payEnergy(player, glasses, mode.cost())) {
             return;
         }
-        startCooldown(player, state, EdithCooldown.SATELLITE, EdithBalance.SATELLITE_COOLDOWN);
+        startCooldown(player, state, EdithCooldown.SATELLITE, SatelliteStats.cooldownTicks(upgrades.recharge()));
         // De schuivende laser beweegt van jou WEG, zodat hij niet naar je toe komt.
         Vec3 away = target.subtract(player.position());
         Vec3 sweep = away.horizontalDistanceSqr() < 0.01 ? new Vec3(1, 0, 0) : new Vec3(away.x, 0, away.z).normalize();
@@ -799,7 +816,7 @@ public final class EdithServer {
         StarkAdvancements.award(player, StarkAdvancements.SATELLITE);
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SATELLITE_LOCK.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         send(player, Component.translatable("edith.starktech.msg.satellite_locked_mode",
-                Component.translatable(mode.translationKey()), EdithBalance.SATELLITE_CHARGE_TIME / 20),
+                Component.translatable(mode.translationKey()), SatelliteStats.chargeTicks(upgrades.targeting()) / 20),
                 EdithMessagePayload.Level.WARNING);
         sendStatus(player, state);
     }

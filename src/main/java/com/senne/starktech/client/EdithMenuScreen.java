@@ -79,6 +79,8 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.TOGGLE_GUARD_DRONES),
             action(EdithAction.SATELLITE_STRIKE),
             action(EdithAction.SATELLITE_MODE),
+            // Het satellietscherm: upgraden en zien wat hij kan.
+            open("screen.starktech.menu.satellite", HudStyle.ORANGE, SatelliteScreen::new),
             action(EdithAction.STAND_DOWN),
             action(EdithAction.CLEAR_MARKS));
 

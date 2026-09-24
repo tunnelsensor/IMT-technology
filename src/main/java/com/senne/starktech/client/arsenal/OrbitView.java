@@ -10,6 +10,7 @@ import com.senne.starktech.client.drone.DamageLayer;
 import com.senne.starktech.client.drone.DroneModel;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.drone.DroneDamage;
+import com.senne.starktech.satellite.SatelliteUpgrades;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -97,10 +98,11 @@ public final class OrbitView {
      *
      * @param orbit    de drones die in hun baan hangen
      * @param selected de gekozen drone (krijgt hoekjes eromheen), of null
+     * @param upgrades hoe ver de satelliet is opgewaardeerd (dan zie je zijn onderdelen)
      * @param seconds  de tijd in seconden, voor het draaien van alles
      */
     public void render(GuiGraphics g, int x0, int y0, int x1, int y1, List<ArsenalDrone> orbit,
-                       @Nullable UUID selected, float seconds) {
+                       @Nullable UUID selected, SatelliteUpgrades upgrades, float seconds) {
         g.enableScissor(x0, y0, x1, y1);
         g.fill(x0, y0, x1, y1, HudStyle.argb(235, 0x02050C));
         stars(g, x0, y0, x1, y1);
@@ -119,7 +121,7 @@ public final class OrbitView {
 
         planet(pose, buffers, seconds);
         rings(pose, buffers);
-        satellite(pose, buffers, seconds);
+        satellite(pose, buffers, upgrades, seconds);
 
         spots.clear();
         int count = Math.min(orbit.size(), 60);
@@ -240,23 +242,28 @@ public final class OrbitView {
     }
 
     /** De satelliet, in zijn eigen baan, met zijn zonnepanelen naar buiten. */
-    private void satellite(PoseStack pose, MultiBufferSource buffers, float seconds) {
+    private void satellite(PoseStack pose, MultiBufferSource buffers, SatelliteUpgrades upgrades, float seconds) {
         pose.pushPose();
         pose.mulPose(Axis.ZP.rotationDegrees(SATELLITE_TILT));
         float angle = seconds * 0.12f + 1.0f;
         pose.translate(Mth.cos(angle) * SATELLITE_RADIUS, 0, Mth.sin(angle) * SATELLITE_RADIUS);
         pose.mulPose(Axis.YP.rotation(-angle));
-        drawSatellite(pose, buffers, 1.4f);
+        drawSatellite(pose, buffers, upgrades, 1.0f);
         pose.popPose();
     }
 
-    /** De satelliet zelf, {@code size} eenheden groot, met zijn midden op de oorsprong. */
-    public void drawSatellite(PoseStack pose, MultiBufferSource buffers, float size) {
+    /**
+     * De satelliet zelf, met de onderdelen van zijn upgrades, en zijn midden op de oorsprong.
+     * {@code size} is hoe breed hij is zonder verlengde zonnepanelen (in eenheden); met langere
+     * panelen wordt hij breder, zodat je ziet dat hij gegroeid is.
+     */
+    public void drawSatellite(PoseStack pose, MultiBufferSource buffers, SatelliteUpgrades upgrades, float size) {
+        SatelliteModel.showUpgrades(satellite, upgrades);
         pose.pushPose();
         // Modellen staan "op hun kop" (y naar beneden): omdraaien. Minecraft rekent de pixels van
-        // een model zelf al om naar blokken (16 pixels = 1 blok); de satelliet is met zijn
-        // zonnepanelen 52 pixels = 3,25 blok breed, en die breedte maken we {@code size}.
-        float k = size / 3.25f;
+        // een model zelf al om naar blokken (16 pixels = 1 blok): BASE_WIDTH pixels breed wordt
+        // dus BASE_WIDTH / 16 blok, en die breedte maken we {@code size}.
+        float k = size / (SatelliteModel.BASE_WIDTH / 16.0f);
         pose.scale(-k, -k, k);
         satellite.render(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(SATELLITE)), LIGHT, OverlayTexture.NO_OVERLAY);
         satellite.render(pose, buffers.getBuffer(RenderType.eyes(SATELLITE_LIGHTS)), LIGHT, OverlayTexture.NO_OVERLAY);
@@ -312,18 +319,25 @@ public final class OrbitView {
         g.disableScissor();
     }
 
-    /** De satelliet groot in beeld (voor het satellietscherm). */
-    public void renderSatelliteCloseUp(GuiGraphics g, int x0, int y0, int x1, int y1, float seconds) {
+    /**
+     * De satelliet groot in beeld (voor het satellietscherm). Zo groot dat hij met de langste
+     * zonnepanelen nog net in het vakje past; met korte panelen blijft er dus ruimte over.
+     */
+    public void renderSatelliteCloseUp(GuiGraphics g, int x0, int y0, int x1, int y1,
+                                       SatelliteUpgrades upgrades, float seconds) {
         g.enableScissor(x0, y0, x1, y1);
         PoseStack pose = g.pose();
         pose.pushPose();
-        float scale = Math.min(x1 - x0, y1 - y0) * 0.55f;
+        // Het vakje is meestal breder dan hoog; de satelliet ook. Met de langste panelen vult hij
+        // de hele breedte, maar hij wordt nooit hoger dan het vakje.
+        // Slepen en scrollen (yaw, pitch, zoom) werken hier net als in het grote beeld.
+        float scale = Math.min((x1 - x0) * 1.0f, (y1 - y0) * 2.6f) * zoom;
         pose.translate((x0 + x1) / 2.0f, (y0 + y1) / 2.0f, 400);
         pose.scale(scale, -scale, -scale);
-        pose.mulPose(Axis.XP.rotationDegrees(20));
-        pose.mulPose(Axis.YP.rotationDegrees(seconds * 20));
+        pose.mulPose(Axis.XP.rotationDegrees(pitch));
+        pose.mulPose(Axis.YP.rotationDegrees(yaw + seconds * 20));
         Lighting.setupForEntityInInventory();
-        drawSatellite(pose, g.bufferSource(), 1.0f);
+        drawSatellite(pose, g.bufferSource(), upgrades, SatelliteModel.BASE_WIDTH / SatelliteModel.MAX_WIDTH);
         g.flush();
         Lighting.setupFor3DItems();
         pose.popPose();

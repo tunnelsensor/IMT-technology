@@ -144,13 +144,6 @@ public final class EdithData {
         stack.set(ModDataComponents.SATELLITE_MODE.get(), mode.ordinal());
     }
 
-    /** Zet de satelliet in de volgende stand en geeft die terug. */
-    public static SatelliteMode cycleSatelliteMode(ItemStack stack) {
-        SatelliteMode next = getSatelliteMode(stack).next();
-        setSatelliteMode(stack, next);
-        return next;
-    }
-
     // ---------------------------------------------------------------- Samengevat
 
     /**

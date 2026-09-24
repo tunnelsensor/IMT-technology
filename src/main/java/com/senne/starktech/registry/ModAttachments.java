@@ -4,6 +4,7 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.EdithArsenal;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.redstone.EdithRelays;
+import com.senne.starktech.satellite.SatelliteUpgrades;
 import java.util.function.Supplier;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
@@ -38,6 +39,15 @@ public final class ModAttachments {
                     .copyOnDeath()
                     .sync((holder, player) -> holder == player && player.connection != null
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithRelays.STREAM_CODEC)
+                    .build());
+
+    /** Hoe ver je satelliet is opgewaardeerd (per onderdeel een niveau van 0 tot 10). */
+    public static final Supplier<AttachmentType<SatelliteUpgrades>> SATELLITE = ATTACHMENTS.register("satellite",
+            () -> AttachmentType.builder(() -> SatelliteUpgrades.START)
+                    .serialize(SatelliteUpgrades.CODEC.codec())
+                    .copyOnDeath()
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), SatelliteUpgrades.STREAM_CODEC)
                     .build());
 
     /** Het drone-arsenaal in een baan om de planeet (fase 15). */

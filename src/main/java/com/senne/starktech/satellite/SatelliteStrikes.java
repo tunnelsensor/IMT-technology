@@ -58,21 +58,27 @@ public final class SatelliteStrikes {
         int ticksLeft;
         /** Ticks dat hij nog aan het vuren is (bombardement en sweep duren even). */
         int fireTicksLeft;
+        /** Hoe lang hij in totaal vuurt; zo weten we welke inslag de eerste is. */
+        final int fireTicks;
+        /** De upgrades van de eigenaar op het moment van richten (zie SatelliteStats). */
+        final SatelliteUpgrades upgrades;
 
         Strike(ResourceKey<Level> dimension, Vec3 target, UUID ownerId, SatelliteMode mode,
-               @Nullable UUID lockedId, Vec3 sweepDirection) {
+               @Nullable UUID lockedId, Vec3 sweepDirection, SatelliteUpgrades upgrades) {
             this.dimension = dimension;
             this.target = target;
             this.ownerId = ownerId;
             this.mode = mode;
             this.lockedId = lockedId;
             this.sweepDirection = sweepDirection;
-            this.ticksLeft = EdithBalance.SATELLITE_CHARGE_TIME;
-            this.fireTicksLeft = switch (mode) {
+            this.upgrades = upgrades;
+            this.ticksLeft = SatelliteStats.chargeTicks(upgrades.targeting());
+            this.fireTicks = switch (mode) {
                 case PRECISION -> 1;
-                case BOMBARDMENT -> EdithBalance.BOMBARDMENT_SHOTS * EdithBalance.BOMBARDMENT_INTERVAL;
-                case SWEEP -> EdithBalance.SWEEP_TICKS;
+                case BOMBARDMENT -> SatelliteStats.bombardmentShots(upgrades.bombardment()) * EdithBalance.BOMBARDMENT_INTERVAL;
+                case SWEEP -> SatelliteStats.sweepTicks(upgrades.sweep());
             };
+            this.fireTicksLeft = fireTicks;
         }
 
         public Vec3 target() {
@@ -93,7 +99,10 @@ public final class SatelliteStrikes {
     /** Start een aanval. De straal komt na SATELLITE_CHARGE_TIME ticks los. */
     public static void start(ServerLevel level, Vec3 target, UUID ownerId, SatelliteMode mode,
                              @Nullable UUID lockedId, Vec3 sweepDirection) {
-        STRIKES.add(new Strike(level.dimension(), target, ownerId, mode, lockedId, sweepDirection));
+        // Hoe sterk de aanval is, hangt af van de upgrades van de eigenaar (zie SatelliteStats).
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        SatelliteUpgrades upgrades = owner == null ? SatelliteUpgrades.START : SatelliteWorkshop.get(owner);
+        STRIKES.add(new Strike(level.dimension(), target, ownerId, mode, lockedId, sweepDirection, upgrades));
         level.playSound(null, target.x, target.y, target.z, ModSounds.SATELLITE_CHARGE.get(), SoundSource.PLAYERS, 3.0f, 0.8f);
     }
 
@@ -183,10 +192,11 @@ public final class SatelliteStrikes {
         visualLightning(level, pos);
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(strike.ownerId);
         DamageSource source = ModDamageTypes.orbitalLaser(level, owner);
-        double radius = EdithBalance.PRECISION_RADIUS;
+        double radius = SatelliteStats.precisionRadius(strike.upgrades.precision());
+        float damage = SatelliteStats.precisionDamage(strike.upgrades.precision(), strike.upgrades.power());
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, new AABB(pos, pos).inflate(radius))) {
             if (mayHurt(owner, victim)) {
-                victim.hurt(source, EdithBalance.PRECISION_DAMAGE);
+                victim.hurt(source, damage);
             }
         }
         level.playSound(null, pos.x, pos.y, pos.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 3.0f, 1.3f);
@@ -194,9 +204,9 @@ public final class SatelliteStrikes {
 
     /** Bombardement: meerdere inslagen rond het doel, met kraters en een schokgolf. */
     private static void fireBombardmentShot(ServerLevel level, Strike strike) {
-        double spread = EdithBalance.BOMBARDMENT_SPREAD;
+        double spread = SatelliteStats.bombardmentSpread(strike.upgrades.bombardment());
         // De eerste inslag zit precies op het doel; daarna eromheen.
-        boolean first = strike.fireTicksLeft == EdithBalance.BOMBARDMENT_SHOTS * EdithBalance.BOMBARDMENT_INTERVAL;
+        boolean first = strike.fireTicksLeft == strike.fireTicks;
         Vec3 pos = first
                 ? strike.target
                 : strike.target.add((level.getRandom().nextDouble() - 0.5) * 2 * spread, 0, (level.getRandom().nextDouble() - 0.5) * 2 * spread);
@@ -207,7 +217,8 @@ public final class SatelliteStrikes {
         Level.ExplosionInteraction interaction = EdithBalance.SATELLITE_BREAKS_BLOCKS
                 ? Level.ExplosionInteraction.MOB   // volgt de spelregel mobGriefing
                 : Level.ExplosionInteraction.NONE;
-        level.explode(owner, pos.x, pos.y, pos.z, EdithBalance.SATELLITE_EXPLOSION_POWER, false, interaction);
+        level.explode(owner, pos.x, pos.y, pos.z,
+                SatelliteStats.explosionPower(strike.upgrades.bombardment(), strike.upgrades.power()), false, interaction);
         shockwave(level, pos, owner);
         level.playSound(null, pos.x, pos.y, pos.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 4.0f, 0.9f);
     }
@@ -227,7 +238,7 @@ public final class SatelliteStrikes {
                 new AABB(pos, pos).inflate(EdithBalance.SWEEP_RADIUS))) {
             // Niet elke tick schade: anders is het meteen voorbij.
             if (victim.hurtTime <= 0 && mayHurt(owner, victim)) {
-                victim.hurt(source, EdithBalance.SWEEP_DAMAGE);
+                victim.hurt(source, SatelliteStats.sweepDamage(strike.upgrades.sweep(), strike.upgrades.power()));
             }
         }
         if (strike.fireTicksLeft % 10 == 0) {

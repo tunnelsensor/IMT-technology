@@ -79,6 +79,8 @@ neoForge {
             client()
             gameDirectory = project.file('run-visual')
             systemProperty 'starktech.visualcheck', 'true'
+            // Alleen een stuk van de rondleiding: gradlew runVisualCheck -Ponly=satellite
+            systemProperty 'starktech.visualcheck.only', (project.findProperty('only') ?: '').toString()
             programArguments.addAll '--width', '1280', '--height', '720'
         }
 

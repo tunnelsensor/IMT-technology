@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (15 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (45 automatische tests).
 
 ---
 
@@ -70,7 +70,7 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
 | Tabblad | Wat erin zit |
 |---------|--------------|
-| **Gevecht** | Repulsor, rayshield, drones, één drone, escorte, satelliet + stand, stand down, markeringen wissen |
+| **Gevecht** | Repulsor, rayshield, drones, één drone, escorte, satelliet + stand, satellietscherm (upgrades), stand down, markeringen wissen |
 | **Drones** | Arsenaal, drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
@@ -139,11 +139,19 @@ naar jouw spel).
 
 ### Satelliet (K)
 Drie standen (kies in Gevecht > Satelliet-stand):
-- **Precisie** — veel schade, **geen** blokschade.
-- **Bombardement** — vijf inslagen, flinke krater.
-- **Schuivende laser** — een streep die van je af over de grond kruipt.
+- **Precisie** — veel schade, **geen** blokschade. Heb je vanaf het begin.
+- **Bombardement** — een regen van inslagen, flinke kraters. Eerst vrijspelen.
+- **Schuivende laser** — een streep die van je af over de grond kruipt. Eerst vrijspelen.
 Hij volgt bewegende doelwitten (lock-on), richt tot 500 blokken, en je kunt ook op je waypoint
 of je laatste ping mikken. Bij de inslag komt er een schokgolf en schudt je beeld.
+
+**Upgraden** doe je in het satellietscherm (G > Gevecht > Satellite). Zes onderdelen, elk tot
+niveau 10: de drie standen (vrijspelen, dan sterker), opladen (kortere wachttijd), kracht (meer
+schade voor alles) en richten (sneller richten, verder weg). Een niveau kost spullen uit je
+rugzak (ijzer, redstone en Stark-chips; later goud, diamant en netherite), en een paar drones
+uit je arsenaal brengen ze naar boven — die komen daarna gewoon terug. De satelliet zelf krijgt
+er zichtbaar onderdelen bij: langere zonnepanelen, raketkokers, een kanon, een grotere schotel.
+In creative zet de knop **Max all** alles in één keer op 10.
 
 ### Redstone-relais (')
 Craft een **E.D.I.T.H.-relais**, zet het naast een deur, lamp, zuiger of trechter en klik er
@@ -335,11 +343,13 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 42 tests over de toren en zijn kluis, de drones en
+- **Tests**: `gradlew runGameTestServer` — 45 tests over de toren en zijn kluis, de drones en
   het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
   laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
-  alle schermen, de holotafel, het harnas en een testvlucht, en sluit weer af. De plaatjes
-  staan in `run-visual/screenshots`.
+  alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
+  plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
+  -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`; meerdere
+  met komma's).
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

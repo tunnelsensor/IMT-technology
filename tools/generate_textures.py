@@ -455,11 +455,15 @@ def planet_texture():
 
 def satellite_textures():
     """
-    De Stark-satelliet in het arsenaal-scherm (64 x 64): een romp met gouden strepen, twee
-    blauwe zonnepanelen, een schotel, een antenne en een motor. Plus een lichtlaag met de
-    reactor en de lampjes, die ook in het donker gloeien.
+    De Stark-satelliet in het arsenaal- en satellietscherm (128 x 64): een romp met gouden
+    strepen, twee blauwe zonnepanelen, een schotel, een antenne en een motor. Plus een lichtlaag
+    met de reactor en de lampjes, die ook in het donker gloeien.
+
+    De rechterhelft (x 64 en verder) is voor de onderdelen die er bij upgrades bij komen
+    (zie SatelliteModel): raketkokers, het kanon, langere panelen, condensatoren, een grote
+    schotel, een sensor, de lens van de schuivende laser en een grote reactor.
     """
-    base = img(64, 64)
+    base = img(128, 64)
     core = box_regions(0, 0, 8, 8, 10)
     reactor = box_regions(40, 0, 4, 4, 1)
     strut = box_regions(40, 8, 4, 2, 2)
@@ -467,6 +471,21 @@ def satellite_textures():
     dish = box_regions(0, 32, 7, 1, 7)
     antenna = box_regions(30, 32, 1, 5, 1)
     engine = box_regions(36, 32, 4, 4, 3)
+    # De upgrade-onderdelen (zelfde plekken als de texOffs in SatelliteModel).
+    pod = box_regions(64, 0, 2, 2, 6)
+    cannon = box_regions(80, 0, 3, 3, 3)
+    barrel = box_regions(92, 0, 2, 5, 2)
+    ring = box_regions(100, 0, 3, 1, 3)
+    tip = box_regions(112, 0, 1, 1, 1)
+    panel_ext = box_regions(64, 8, 10, 1, 8)
+    coil = box_regions(100, 8, 2, 2, 8)
+    dish_big = box_regions(64, 20, 10, 1, 10)
+    antenna_2 = box_regions(104, 20, 1, 6, 1)
+    sensor = box_regions(108, 20, 3, 2, 3)
+    lens = box_regions(64, 32, 6, 2, 3)
+    fins = box_regions(84, 32, 1, 3, 4)
+    reactor_big = box_regions(96, 32, 6, 6, 1)
+    lens_2 = box_regions(110, 32, 4, 1, 2)
 
     for region in core.values():
         fill_region(base, region, METAL_2)
@@ -499,9 +518,105 @@ def satellite_textures():
         fill_region(base, region, (180, 184, 190, 255))
     for region in engine.values():
         fill_region(base, region, METAL_DARK)
+
+    # --- Raketkokers: donker metaal met een rode punt voorop en gouden banden.
+    for region in pod.values():
+        fill_region(base, region, METAL_1)
+    # De lange kanten: een lichte bovenrand en twee gouden banden dwars eroverheen.
+    for name in ("east", "west"):
+        x, y, w, h = pod[name]
+        for j in range(h):
+            base.putpixel((x + 1, y + j), GOLD_DARK)
+            base.putpixel((x + w - 2, y + j), GOLD_DARK)
+    for name in ("top", "bottom"):
+        x, y, w, h = pod[name]
+        for i in range(w):
+            base.putpixel((x + i, y + 1), GOLD_DARK)
+            base.putpixel((x + i, y + h - 2), GOLD_DARK)
+    fill_region(base, pod["front"], RED)
+    fill_region(base, pod["back"], METAL_DARK)
+    # --- Het kanon: een wit-gouden huis met een donkere loop en gouden ringen.
+    for region in cannon.values():
+        fill_region(base, region, (196, 200, 206, 255))
+    for name in ("east", "west", "front", "back"):
+        x, y, w, h = cannon[name]
+        for i in range(w):
+            base.putpixel((x + i, y + h - 1), GOLD)
+    for region in barrel.values():
+        fill_region(base, region, METAL_DARK)
+    for name in ("east", "west", "front", "back"):
+        x, y, w, h = barrel[name]
+        for j in range(0, h, 2):
+            for i in range(w):
+                base.putpixel((x + i, y + j), METAL_1)
+    for region in ring.values():
+        fill_region(base, region, GOLD)
+    fill_region(base, ring["top"], GOLD_DARK)
+    for region in tip.values():
+        fill_region(base, region, (180, 240, 255, 255))
+    # --- Verlengstukken van de zonnepanelen: net als de gewone panelen.
+    for region in panel_ext.values():
+        fill_region(base, region, (24, 40, 92, 255))
+    for side in ("top", "bottom"):
+        x, y, w, h = panel_ext[side]
+        for i in range(w):
+            for j in range(h):
+                if i % 3 == 0 or j % 4 == 0:
+                    base.putpixel((x + i, y + j), (70, 90, 130, 255))
+    # --- Condensatoren: koperen spoelen met donkere groeven.
+    for region in coil.values():
+        fill_region(base, region, (176, 104, 56, 255))
+    for name in ("top", "bottom", "east", "west"):
+        x, y, w, h = coil[name]
+        long_side_vertical = name in ("east", "west")
+        if long_side_vertical:
+            for i in range(0, w, 2):
+                for j in range(h):
+                    base.putpixel((x + i, y + j), (120, 64, 32, 255))
+        else:
+            for j in range(0, h, 2):
+                for i in range(w):
+                    base.putpixel((x + i, y + j), (120, 64, 32, 255))
+    fill_region(base, coil["front"], METAL_3)
+    fill_region(base, coil["back"], METAL_3)
+    # --- De grote schotel: wit met ringen.
+    for region in dish_big.values():
+        fill_region(base, region, (214, 218, 224, 255))
+    x, y, w, h = dish_big["top"]
+    for i in range(w):
+        for j in range(h):
+            r = max(abs(i - 4.5), abs(j - 4.5))
+            if int(r) in (1, 3):
+                base.putpixel((x + i, y + j), (170, 176, 184, 255))
+    px(base, [(x + 4, y + 4), (x + 5, y + 5), (x + 4, y + 5), (x + 5, y + 4)], METAL_2)
+    for region in antenna_2.values():
+        fill_region(base, region, (180, 184, 190, 255))
+    for region in sensor.values():
+        fill_region(base, region, METAL_2)
+    fill_region(base, sensor["front"], (20, 20, 24, 255))
+    fill_region(base, sensor["bottom"], (20, 20, 24, 255))
+    # --- De lens van de schuivende laser: metaal met een rode onderkant.
+    for region in lens.values():
+        fill_region(base, region, METAL_2)
+    fill_region(base, lens["bottom"], (110, 24, 20, 255))
+    for name in ("east", "west", "front", "back"):
+        x, y, w, h = lens[name]
+        for i in range(w):
+            base.putpixel((x + i, y), GOLD_DARK)
+    for region in fins.values():
+        fill_region(base, region, METAL_3)
+    for region in lens_2.values():
+        fill_region(base, region, METAL_DARK)
+    fill_region(base, lens_2["bottom"], (110, 24, 20, 255))
+    # --- De grote reactor: een donkere ring met goud eromheen.
+    for region in reactor_big.values():
+        fill_region(base, region, GOLD)
+    x, y, w, h = reactor_big["front"]
+    fill_region(base, (x + 1, y + 1, w - 2, h - 2), METAL_DARK)
+    fill_region(base, (x + 2, y + 2, w - 4, h - 4), (20, 70, 90, 255))
     save(base, "gui/arsenal/satellite.png")
 
-    lights = img(64, 64)
+    lights = img(128, 64)
     # De reactor voorop, en een lichtje op de antenne.
     x, y, w, h = reactor["front"]
     fill_region(lights, (x, y, w, h), CYAN)
@@ -511,6 +626,27 @@ def satellite_textures():
     # De motor achteraan gloeit oranje.
     x, y, w, h = engine["back"]
     fill_region(lights, (x + 1, y + 1, w - 2, h - 2), (255, 150, 40, 255))
+    # Upgrades: de punt van het kanon, de rode lenzen, de sensor, de reactorkern en een lichtje
+    # op elke raketkoker en condensator.
+    for region in tip.values():
+        fill_region(lights, region, (200, 250, 255, 255))
+    x, y, w, h = barrel["bottom"]
+    fill_region(lights, (x, y, w, h), CYAN)
+    fill_region(lights, lens["bottom"], (255, 60, 45, 255))
+    fill_region(lights, lens_2["bottom"], (255, 90, 60, 255))
+    x, y, w, h = sensor["front"]
+    px(lights, [(x + 1, y), (x + 1, y + 1)], (255, 70, 55, 255))
+    x, y, w, h = reactor_big["front"]
+    fill_region(lights, (x + 2, y + 2, w - 4, h - 4), CYAN)
+    px(lights, [(x + 1, y + 1), (x + w - 2, y + 1), (x + 1, y + h - 2), (x + w - 2, y + h - 2)], CYAN_DIM)
+    x, y, w, h = pod["front"]
+    px(lights, [(x, y)], (255, 90, 60, 255))
+    for name in ("top",):
+        x, y, w, h = coil[name]
+        for j in range(1, h, 3):
+            px(lights, [(x, y + j), (x + 1, y + j)], CYAN_DIM)
+    x, y, w, h = antenna_2["top"]
+    fill_region(lights, (x, y, w, h), (255, 70, 55, 255))
     save(lights, "gui/arsenal/satellite_lights.png")
 
 

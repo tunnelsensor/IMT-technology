@@ -30,6 +30,7 @@ import com.senne.starktech.client.MusicScreen;
 import com.senne.starktech.client.NavigationScreen;
 import com.senne.starktech.client.RelayListScreen;
 import com.senne.starktech.client.RepulsorControl;
+import com.senne.starktech.client.SatelliteScreen;
 import com.senne.starktech.client.SuitFlight;
 import com.senne.starktech.client.voice.VoiceCommandsScreen;
 import com.senne.starktech.comms.EdithComms;
@@ -38,10 +39,14 @@ import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.network.CommsPayload;
 import com.senne.starktech.network.HoloActionPayload;
 import com.senne.starktech.network.RelayActionPayload;
+import com.senne.starktech.network.SatelliteUpgradePayload;
 import com.senne.starktech.network.WaypointActionPayload;
 import com.senne.starktech.raid.EdithRaids;
 import com.senne.starktech.redstone.EdithRedstone;
+import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.satellite.SatelliteUpgrade;
+import com.senne.starktech.satellite.SatelliteUpgrades;
 import com.senne.starktech.shield.ShieldColor;
 import java.util.ArrayList;
 import java.util.List;
@@ -248,6 +253,7 @@ final class ShowcaseFeatures {
 
         add("Satellite: precision (K)", "De satelliet: eerst een rode richtstraal en een ring op de "
                 + "grond, dan een dunne, felle straal. Richt op de verre husk.", range, 180, 0, s -> s
+                .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
                 .action(5, EdithAction.SATELLITE_PRECISION)
                 .lookAt(10, mob(FAR_TARGET))
                 .action(10, EdithAction.SATELLITE_STRIKE)
@@ -255,6 +261,7 @@ final class ShowcaseFeatures {
 
         add("Satellite: bombardment", "Dezelfde satelliet, andere stand: een regen van inslagen rond "
                 + "het doel.", range, 180, 0, s -> s
+                .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
                 .action(5, EdithAction.SATELLITE_BOMBARDMENT)
                 .lookAt(10, mob(TARGETS.get(1)))
                 .action(10, EdithAction.SATELLITE_STRIKE)
@@ -262,10 +269,26 @@ final class ShowcaseFeatures {
 
         add("Satellite: sweep", "De schuivende laser: hij trekt een baan van je af, over de doelwitten.",
                 range, 180, 0, s -> s
+                .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
                 .action(5, EdithAction.SATELLITE_SWEEP)
                 .lookAt(10, mob(TARGETS.get(0)))
                 .action(10, EdithAction.SATELLITE_STRIKE)
                 .pause(260));
+
+        add("Satellite upgrades", "Het satellietscherm (G > Combat > Satellite): links de satelliet met al "
+                + "zijn getallen, rechts de upgrades met hun kosten. Kijk hoe de satelliet groeit: niveau 1, 4, 7 "
+                + "en tot slot de creative-knop 'Max all' (langere panelen, raketkokers, het kanon, een grotere "
+                + "schotel, condensatoren, een grote reactor).", start, 180, 0, s -> s
+                .onServer(0, player -> satelliteAt(player, 1))
+                .open(10, SatelliteScreen::new)
+                .pause(100)
+                .onServer(0, player -> satelliteAt(player, 4))
+                .pause(80)
+                .onServer(0, player -> satelliteAt(player, 7))
+                .pause(80)
+                .step(0, () -> PacketDistributor.sendToServer(SatelliteUpgradePayload.everything()))
+                .pause(140)
+                .close(0));
 
         add("Drone camera (Y)", "Je kijkt door een verkenningsdrone en bestuurt hem zelf "
                 + "(vooruit, omhoog). Daarna kijk je weer door je eigen ogen.", start, 180, 0, s -> s
@@ -672,6 +695,29 @@ final class ShowcaseFeatures {
         if (mc.player != null && mc.gameMode != null) {
             mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
         }
+    }
+
+    /**
+     * Bombardement en schuivende laser zitten op slot tot je ze vrijspeelt (zie SatelliteUpgrade).
+     * De showcase speelt ze vrij, anders doet de satelliet in die demo's niets.
+     */
+    private static void unlockSatelliteModes(ServerPlayer player) {
+        SatelliteUpgrades upgrades = player.getData(ModAttachments.SATELLITE);
+        for (SatelliteUpgrade mode : List.of(SatelliteUpgrade.PRECISION, SatelliteUpgrade.BOMBARDMENT, SatelliteUpgrade.SWEEP)) {
+            if (upgrades.level(mode) == 0) {
+                upgrades = upgrades.with(mode, 1);
+            }
+        }
+        player.setData(ModAttachments.SATELLITE, upgrades);
+    }
+
+    /** Alle upgrades van de satelliet op hetzelfde niveau (zonder onderdelen of drones). */
+    private static void satelliteAt(ServerPlayer player, int level) {
+        SatelliteUpgrades upgrades = SatelliteUpgrades.START;
+        for (SatelliteUpgrade upgrade : SatelliteUpgrade.values()) {
+            upgrades = upgrades.with(upgrade, level);
+        }
+        player.setData(ModAttachments.SATELLITE, upgrades);
     }
 
     private static void wearSuit(ServerPlayer player) {
