@@ -255,6 +255,20 @@ public final class EdithDrones {
     }
 
     /**
+     * Een cloakingdrone om mee te RICHTEN: hij vertrekt vlak voor je (zoals de verkenner), en jij
+     * kijkt door hem heen tot je de illusie neerzet. Hij blijft tot dan zonder tijdslimiet.
+     */
+    public static @Nullable StarkDroneEntity launchIllusionAim(ServerPlayer owner) {
+        ArsenalDrone available = ArsenalServer.checkOutOne(owner);
+        if (available == null) {
+            return null;
+        }
+        Vec3 look = owner.getViewVector(1.0f);
+        Vec3 pos = owner.getEyePosition().add(look.x * 1.5, 0.6, look.z * 1.5);
+        return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, -1, pos, false, available);
+    }
+
+    /**
      * Waar de illusie komt te staan: op de plek waar je naar KIJKT, tot ILLUSION_AIM_RANGE
      * blokken ver. Zo zet je een nep-muur precies in die gang, of een nep-leger op die heuvel.
      *

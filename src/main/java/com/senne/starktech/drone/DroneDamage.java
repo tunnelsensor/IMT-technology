@@ -54,12 +54,19 @@ public final class DroneDamage {
     }
 
     /**
+     * De drone waar jij nu doorheen kijkt (drone-camera, of een illusie richten), of -1. Die
+     * rookt niet: de rook en vlammetjes zouden anders vlak voor je lens hangen en je hele beeld
+     * vullen. (Jouw spel zet dit; zie DroneCamera.)
+     */
+    public static int cameraDroneId = -1;
+
+    /**
      * Elke tick, in jouw eigen spel: rook, vonken en brokjes, meer naarmate de drone kapotter is.
      * Een onzichtbare drone (spion, cloakingdrone) rookt niet: dan zou je hem zo vinden.
      */
     public static void particles(LivingEntity drone) {
         Level level = drone.level();
-        if (!level.isClientSide || drone.isInvisible() || !drone.isAlive()) {
+        if (!level.isClientSide || drone.isInvisible() || !drone.isAlive() || drone.getId() == cameraDroneId) {
             return;
         }
         float damage = of(drone);

@@ -7,7 +7,10 @@ import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.network.DroneCameraPayload;
+import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.EdithMessagePayload;
+import com.senne.starktech.network.IllusionAimPayload;
 import com.senne.starktech.network.IllusionScenePayload;
 import com.senne.starktech.network.ModNetwork;
 import java.util.ArrayList;
@@ -16,8 +19,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -40,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * De cloakingdrones en hun illusies (zoals de drones van Mysterio).
  *
  * Hoe het werkt:
+ * - Een valse muur of nep-leger RICHT je eerst: een drone vliegt van je weg en jij kijkt door
+ *   hem heen (zoals de drone-camera). Onder de drone zie je een voorvertoning op de grond.
+ *   Linkermuisknop zet het beeld daar neer, rechtermuisknop annuleert (zie {@link #place}).
  * - Je stuurt een cloakingdrone de lucht in. Die drone is onzichtbaar, maar hij is er ECHT:
  *   hij heeft een hitbox, dus wie weet waar hij hangt kan hem uit de lucht slaan.
  * - Rond de drone hangt een "veld" (een bol met straal ILLUSION_RADIUS). Iedereen die in dat
@@ -65,17 +73,24 @@ public final class EdithIllusions {
         private final int droneEntityId;
         private final IllusionScene scene;
         private final double radius;
+        /** Het punt op de grond waar het beeld staat (zie IllusionScene). */
+        private final BlockPos anchor;
         /** Zolang dit > 0 is, ligt de illusie plat door een E.M.P. */
         private int jammedTicks;
         /** Spelers die de scène al gekregen hebben. */
         private final Set<UUID> informed = new HashSet<>();
 
-        Projector(UUID ownerId, UUID droneId, int droneEntityId, IllusionScene scene, double radius) {
+        Projector(UUID ownerId, UUID droneId, int droneEntityId, IllusionScene scene, double radius, BlockPos anchor) {
             this.ownerId = ownerId;
             this.droneId = droneId;
             this.droneEntityId = droneEntityId;
             this.scene = scene;
             this.radius = radius;
+            this.anchor = anchor;
+        }
+
+        public BlockPos anchor() {
+            return anchor;
         }
 
         public IllusionScene scene() {
@@ -90,7 +105,37 @@ public final class EdithIllusions {
     /** Alle actieve projecties (per drone). */
     private static final Map<UUID, Projector> PROJECTORS = new HashMap<>();
 
+    /**
+     * Iemand is een illusie aan het richten: welke drone, wat voor beeld, en hoe hij die drone
+     * nu bestuurt (de toetsen en kijkrichting die zijn spel elke tick stuurt).
+     */
+    private static final class Aim {
+        final UUID droneId;
+        final IllusionScene.Kind kind;
+        final IllusionScene scene;
+        final long startTick;
+        DroneControlPayload control;
+
+        Aim(UUID droneId, IllusionScene.Kind kind, IllusionScene scene, long startTick, DroneControlPayload control) {
+            this.droneId = droneId;
+            this.kind = kind;
+            this.scene = scene;
+            this.startTick = startTick;
+            this.control = control;
+        }
+    }
+
+    /** Wie er nu aan het richten is (per speler). */
+    private static final Map<UUID, Aim> AIMS = new HashMap<>();
+    /** Na zo lang richten (ticks) geeft de drone het op. 1800 ticks = anderhalve minuut. */
+    private static final int AIM_TIMEOUT = 1_800;
+
     // ================================================================ Starten
+
+    /** De illusies die deze speler nu projecteert (voor de tests). */
+    public static List<Projector> projectorsOf(ServerPlayer owner) {
+        return PROJECTORS.values().stream().filter(projector -> projector.ownerId.equals(owner.getUUID())).toList();
+    }
 
     /** Hoeveel illusies deze speler nu projecteert. */
     public static int countOf(ServerPlayer owner) {
@@ -102,8 +147,15 @@ public final class EdithIllusions {
      * - WALL:  een valse muur van het blok dat je in je andere hand hebt (of steen);
      * - ARMY:  een nep-leger van het wezen uit het spawn-ei in je hand (of zombies);
      * - CLOAK: verbergt alles in het veld.
+     *
+     * Muur en leger richt je eerst met de drone; het onzichtbare veld komt meteen waar je kijkt.
+     * Ben je al aan het richten, dan betekent nog eens kiezen: zet hem hier neer.
      */
     public static void start(ServerPlayer owner, ItemStack glasses, IllusionScene.Kind kind) {
+        if (AIMS.containsKey(owner.getUUID())) {
+            place(owner);
+            return;
+        }
         if (countOf(owner) >= EdithBalance.MAX_ILLUSIONS) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_too_many",
                     EdithBalance.MAX_ILLUSIONS), EdithMessagePayload.Level.WARNING);
@@ -121,17 +173,36 @@ public final class EdithIllusions {
                     EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (!EdithData.tryUseEnergy(glasses, EdithBalance.ILLUSION_COST)) {
+        // Betalen doen we pas bij het neerzetten, maar genoeg energie moet er nu al zijn.
+        if (EdithData.getEnergy(glasses) < EdithBalance.ILLUSION_COST) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.not_enough_energy",
                     EdithBalance.ILLUSION_COST), EdithMessagePayload.Level.WARNING);
             return;
         }
-        StarkDroneEntity drone = EdithDrones.launchIllusion(owner);
+        if (kind == IllusionScene.Kind.CLOAK) {
+            StarkDroneEntity drone = EdithDrones.launchIllusion(owner);
+            if (drone != null && EdithData.tryUseEnergy(glasses, EdithBalance.ILLUSION_COST)) {
+                project(owner, drone, scene, IllusionScene.groundBelow(drone.level(), drone.position()), kind);
+            }
+            return;
+        }
+        // Muur of leger: eerst richten. De drone vliegt van je weg en jij kijkt door hem heen.
+        StarkDroneEntity drone = EdithDrones.launchIllusionAim(owner);
         if (drone == null) {
             return;
         }
+        AIMS.put(owner.getUUID(), new Aim(drone.getUUID(), kind, scene, owner.level().getGameTime(),
+                new DroneControlPayload(0, 0, 0, false, owner.getYRot(), owner.getXRot())));
+        ModNetwork.sendTo(owner, new DroneCameraPayload(drone.getId(), true));
+        ModNetwork.sendTo(owner, new IllusionAimPayload(drone.getId(), Optional.of(scene)));
+        EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_aim"), EdithMessagePayload.Level.INFO);
+    }
+
+    /** De illusie gaat echt aan: deze drone projecteert dit beeld op dit punt. */
+    private static void project(ServerPlayer owner, StarkDroneEntity drone, IllusionScene scene, BlockPos anchor,
+                                IllusionScene.Kind kind) {
         Projector projector = new Projector(owner.getUUID(), drone.getUUID(), drone.getId(), scene,
-                EdithBalance.ILLUSION_RADIUS);
+                EdithBalance.ILLUSION_RADIUS, anchor);
         PROJECTORS.put(drone.getUUID(), projector);
         StarkAdvancements.award(owner, StarkAdvancements.ILLUSION);
         EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_started",
@@ -139,8 +210,95 @@ public final class EdithIllusions {
                 scene.size()), EdithMessagePayload.Level.INFO);
     }
 
-    /** Roept alle cloakingdrones van deze speler terug. */
+    // ================================================================ Richten
+
+    /**
+     * Neerzetten (linkermuisknop tijdens het richten): het beeld komt op de grond waar de drone
+     * naar kijkt, de muur dwars op die kijkrichting, en de drone gaat er recht boven hangen.
+     */
+    public static void place(ServerPlayer owner) {
+        Aim aim = AIMS.remove(owner.getUUID());
+        if (aim == null) {
+            return;
+        }
+        endAimView(owner);
+        StarkDroneEntity drone = findDrone(owner.server, aim.droneId);
+        if (drone == null) {
+            EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_lost"), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        ItemStack glasses = EdithServer.authorizedGlasses(owner);
+        if (glasses == null || countOf(owner) >= EdithBalance.MAX_ILLUSIONS
+                || !EdithData.tryUseEnergy(glasses, EdithBalance.ILLUSION_COST)) {
+            EdithServer.send(owner, Component.translatable("edith.starktech.msg.not_enough_energy",
+                    EdithBalance.ILLUSION_COST), EdithMessagePayload.Level.WARNING);
+            drone.recall(owner.serverLevel());
+            return;
+        }
+        BlockPos anchor = IllusionScene.aimAnchor(drone.level(), drone.getEyePosition(),
+                aim.control.yaw(), aim.control.pitch());
+        IllusionScene scene = aim.scene.facing(aim.control.yaw());
+        // Boven het beeld hangen: daar zit het midden van zijn veld (tenzij daar iets in de weg zit).
+        BlockPos above = anchor.above(Math.max(3, scene.height() + 2));
+        if (drone.level().getBlockState(above).getCollisionShape(drone.level(), above).isEmpty()) {
+            drone.moveTo(above.getX() + 0.5, above.getY(), above.getZ() + 0.5, aim.control.yaw(), 0.0f);
+            drone.setDeltaMovement(Vec3.ZERO);
+        }
+        drone.setLifeTicks(EdithBalance.ILLUSION_LIFETIME);
+        project(owner, drone, scene, anchor, aim.kind);
+    }
+
+    /** Annuleren (rechtermuisknop, of er ging iets mis): de drone gaat terug naar zijn baan. */
+    public static void cancelAim(ServerPlayer owner, String messageKey) {
+        Aim aim = AIMS.remove(owner.getUUID());
+        if (aim == null) {
+            return;
+        }
+        endAimView(owner);
+        StarkDroneEntity drone = findDrone(owner.server, aim.droneId);
+        if (drone != null) {
+            drone.recall(owner.serverLevel());
+        }
+        EdithServer.send(owner, Component.translatable(messageKey), EdithMessagePayload.Level.INFO);
+    }
+
+    /** Terug naar je eigen ogen, en de voorvertoning weg. */
+    private static void endAimView(ServerPlayer owner) {
+        ModNetwork.sendTo(owner, DroneCameraPayload.OFF);
+        ModNetwork.sendTo(owner, IllusionAimPayload.DONE);
+    }
+
+    /** Is deze speler een illusie aan het richten? */
+    public static boolean isAiming(ServerPlayer owner) {
+        return AIMS.containsKey(owner.getUUID());
+    }
+
+    /**
+     * Wordt er met deze drone gericht? Dan de besturing die hij moet volgen, anders null.
+     * (De drone vraagt dit zelf, elke tick.)
+     */
+    public static @Nullable DroneControlPayload aimControl(StarkDroneEntity drone) {
+        for (Aim aim : AIMS.values()) {
+            if (aim.droneId.equals(drone.getUUID())) {
+                return aim.control;
+            }
+        }
+        return null;
+    }
+
+    /** De besturing van de speler, terwijl hij richt. Geeft false als hij niet aan het richten is. */
+    public static boolean steer(ServerPlayer owner, DroneControlPayload control) {
+        Aim aim = AIMS.get(owner.getUUID());
+        if (aim == null) {
+            return false;
+        }
+        aim.control = control;
+        return true;
+    }
+
+    /** Roept alle cloakingdrones van deze speler terug (en stopt het richten). */
     public static void stopAll(ServerPlayer owner) {
+        cancelAim(owner, "edith.starktech.msg.illusion_aim_cancelled");
         int stopped = 0;
         for (StarkDroneEntity drone : EdithDrones.find(owner, StarkDroneEntity.Mode.ILLUSION)) {
             Projector projector = PROJECTORS.remove(drone.getUUID());
@@ -165,9 +323,9 @@ public final class EdithIllusions {
                 : Component.translatable("edith.starktech.msg.illusion_none"), EdithMessagePayload.Level.INFO);
     }
 
-    /** Hoort deze drone bij een actieve illusie? (De drone vraagt dit zelf.) */
+    /** Hoort deze drone bij een actieve illusie, of wordt er nog mee gericht? (De drone vraagt dit zelf.) */
     public static boolean isActive(StarkDroneEntity drone) {
-        return PROJECTORS.containsKey(drone.getUUID());
+        return PROJECTORS.containsKey(drone.getUUID()) || aimControl(drone) != null;
     }
 
     // ================================================================ Wat je in je hand hebt
@@ -220,6 +378,7 @@ public final class EdithIllusions {
     // ================================================================ Elke tick
 
     public static void onServerTick(ServerTickEvent.Post event) {
+        tickAims(event.getServer());
         if (PROJECTORS.isEmpty()) {
             return;
         }
@@ -257,6 +416,30 @@ public final class EdithIllusions {
         sends.forEach(Runnable::run);
     }
 
+    /**
+     * Wie richt, maar zijn drone kwijt is (neergehaald), is uitgelogd, of er te lang over doet:
+     * dan stopt het richten.
+     */
+    private static void tickAims(net.minecraft.server.MinecraftServer server) {
+        if (AIMS.isEmpty()) {
+            return;
+        }
+        for (UUID ownerId : List.copyOf(AIMS.keySet())) {
+            Aim aim = AIMS.get(ownerId);
+            ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
+            if (owner == null) {
+                AIMS.remove(ownerId); // de drone merkt zelf dat zijn eigenaar weg is
+            } else if (findDrone(server, aim.droneId) == null) {
+                AIMS.remove(ownerId);
+                endAimView(owner);
+                EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_lost"),
+                        EdithMessagePayload.Level.WARNING);
+            } else if (owner.level().getGameTime() - aim.startTick > AIM_TIMEOUT) {
+                cancelAim(owner, "edith.starktech.msg.illusion_aim_timeout");
+            }
+        }
+    }
+
     private static @Nullable StarkDroneEntity findDrone(net.minecraft.server.MinecraftServer server, UUID droneId) {
         for (ServerLevel level : server.getAllLevels()) {
             if (level.getEntity(droneId) instanceof StarkDroneEntity drone && drone.isAlive()) {
@@ -273,7 +456,7 @@ public final class EdithIllusions {
             boolean near = player.distanceToSqr(drone) <= range * range;
             if (near && projector.informed.add(player.getUUID())) {
                 ModNetwork.sendTo(player, new IllusionScenePayload(drone.getId(), projector.radius,
-                        projector.jammed(), java.util.Optional.of(projector.scene)));
+                        projector.jammed(), projector.anchor, Optional.of(projector.scene)));
             } else if (!near && projector.informed.remove(player.getUUID())) {
                 ModNetwork.sendTo(player, IllusionScenePayload.stop(drone.getId()));
             }
@@ -291,6 +474,7 @@ public final class EdithIllusions {
 
     public static void onServerStopped(ServerStoppedEvent event) {
         PROJECTORS.clear();
+        AIMS.clear();
     }
 
     /** Hulpje voor de HUD: hoeveel illusies staan er in de buurt van dit punt? */

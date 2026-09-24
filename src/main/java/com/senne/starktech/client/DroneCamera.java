@@ -1,7 +1,10 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.drone.DroneDamage;
 import com.senne.starktech.drone.StarkDroneEntity;
+import com.senne.starktech.client.illusion.IllusionRenderer;
 import com.senne.starktech.network.DroneControlPayload;
+import com.senne.starktech.network.IllusionPlacePayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.player.Input;
@@ -118,6 +121,7 @@ public final class DroneCamera {
 
     private static void enter(Minecraft mc, LocalPlayer player, StarkDroneEntity drone) {
         droneId = drone.getId();
+        DroneDamage.cameraDroneId = droneId;
         if (savedInput == null) {
             savedInput = player.input;
             // Een lege besturing: je lichaam loopt, springt en sluipt niet meer.
@@ -140,6 +144,7 @@ public final class DroneCamera {
         savedInput = null;
         droneId = -1;
         pendingId = -1;
+        DroneDamage.cameraDroneId = -1;
     }
 
     // ---------------------------------------------------------------- Events
@@ -167,6 +172,8 @@ public final class DroneCamera {
     /**
      * Klikken doet niets met je lichaam. Linkermuisknop markeert het doelwit waar de drone
      * naar kijkt (zo kun je vanuit de lucht doelwitten aanwijzen voor je zwerm).
+     *
+     * Richt je een illusie, dan zet de linkermuisknop hem neer en annuleert de rechter.
      */
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
         if (!isActive()) {
@@ -179,8 +186,16 @@ public final class DroneCamera {
         }
         event.setCanceled(true);
         event.setSwingHand(false);
-        // Ingedrukt houden stuurt dit event elke tick; we markeren hooguit 4x per seconde.
         long now = Util.getMillis();
+        if (IllusionRenderer.isAiming()) {
+            // Eén klik is één keer: ingedrukt houden stuurt dit event elke tick.
+            if ((event.isAttack() || event.isUseItem()) && now - lastMarkMillis > 400) {
+                lastMarkMillis = now;
+                PacketDistributor.sendToServer(new IllusionPlacePayload(event.isAttack()));
+            }
+            return;
+        }
+        // Ingedrukt houden stuurt dit event elke tick; we markeren hooguit 4x per seconde.
         if (event.isAttack() && now - lastMarkMillis > 250) {
             lastMarkMillis = now;
             EdithClientEvents.markLookTarget();

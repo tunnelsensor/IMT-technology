@@ -38,6 +38,7 @@ import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.network.CommsPayload;
 import com.senne.starktech.network.HoloActionPayload;
+import com.senne.starktech.network.IllusionPlacePayload;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.network.SatelliteUpgradePayload;
 import com.senne.starktech.network.WaypointActionPayload;
@@ -425,16 +426,31 @@ final class ShowcaseFeatures {
                 .pause(60));
 
         // ---------------------------------------------------------------- Illusies
-        add("Illusion: wall", "Een onzichtbare drone projecteert een valse muur (van het blok in je "
-                + "andere hand). Alleen beeld: de echte wereld verandert niet.", start, 180, 12, s -> s
+        add("Illusion: wall", "Een valse muur (van het blok in je andere hand). Eerst richten: je kijkt "
+                + "door de drone, vliegt omhoog en ziet de muur als voorvertoning waar je naar kijkt (blauw "
+                + "kader). Linkermuisknop zet hem neer. Alleen beeld: de echte wereld verandert niet.",
+                start, 180, 12, s -> s
                 .onServer(0, player -> player.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.BRICKS)))
                 .action(20, EdithAction.ILLUSION_WALL)
-                .pause(200)
+                .key(20, () -> Minecraft.getInstance().options.keyJump, true)
+                .key(12, () -> Minecraft.getInstance().options.keyJump, false)
+                .look(5, 160, 22)
+                .look(40, 200, 22)
+                .look(40, 180, 25)
+                .pause(30)
+                .step(0, () -> placeIllusion(true))
+                .pause(160)
                 .action(0, EdithAction.ILLUSION_STOP));
 
-        add("Illusion: army", "Een nep-leger (zombies, of wat er in het spawn-ei in je hand zit).",
-                start, 180, 12, s -> s
+        add("Illusion: army", "Een nep-leger (zombies, of wat er in het spawn-ei in je hand zit). Ook "
+                + "richten met de drone: kijk naar de piramide, dan staan de zombies op de treden (niet "
+                + "in de grond).", start, -90, 5, s -> s
                 .action(10, EdithAction.ILLUSION_ARMY)
+                .key(20, () -> Minecraft.getInstance().options.keyJump, true)
+                .key(20, () -> Minecraft.getInstance().options.keyJump, false)
+                .lookAt(5, Vec3.atCenterOf(PYRAMID))
+                .pause(60)
+                .step(0, () -> placeIllusion(true))
                 .pause(200)
                 .action(0, EdithAction.ILLUSION_STOP));
 
@@ -448,6 +464,7 @@ final class ShowcaseFeatures {
         add("E.M.P.", "Eerst een valse muur, dan een E.M.P.-puls: alle illusies in de buurt vallen weg.",
                 start, 180, 12, s -> s
                 .action(10, EdithAction.ILLUSION_WALL)
+                .step(30, () -> placeIllusion(true))
                 .onServer(0, player -> player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.EMP.get())))
                 .pause(140)
                 .step(0, ShowcaseFeatures::useItem)
@@ -679,6 +696,11 @@ final class ShowcaseFeatures {
         }
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos).add(0, 0.45, 0), Direction.UP, pos, false);
         mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, hit);
+    }
+
+    /** Tijdens het richten van een illusie: neerzetten (true) of annuleren, zoals met de muis. */
+    private static void placeIllusion(boolean place) {
+        PacketDistributor.sendToServer(new IllusionPlacePayload(place));
     }
 
     /** Rechtsklik in de lucht met wat je in je hand hebt. */

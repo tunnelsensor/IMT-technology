@@ -4,6 +4,7 @@ import com.senne.starktech.client.ClientPayloadHandlers;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.illusion.EdithIllusions;
 import com.senne.starktech.holo.HoloTables;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.redstone.EdithRedstone;
@@ -26,7 +27,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "7";
+    private static final String PROTOCOL_VERSION = "8";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -54,6 +55,16 @@ public final class ModNetwork {
                     SatelliteWorkshop.maxAll(player);
                 } else {
                     SatelliteWorkshop.upgrade(player, payload.upgrade());
+                }
+            }
+        });
+        // Illusie richten: "zet hem hier neer" of "laat maar".
+        registrar.playToServer(IllusionPlacePayload.TYPE, IllusionPlacePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                if (payload.place()) {
+                    EdithIllusions.place(player);
+                } else {
+                    EdithIllusions.cancelAim(player, "edith.starktech.msg.illusion_aim_cancelled");
                 }
             }
         });
@@ -129,6 +140,8 @@ public final class ModNetwork {
         // Fase 12: illusies van cloakingdrones
         registrar.playToClient(IllusionScenePayload.TYPE, IllusionScenePayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onIllusionScene(payload, context));
+        registrar.playToClient(IllusionAimPayload.TYPE, IllusionAimPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onIllusionAim(payload, context));
         // Fase 10: onderschept privébericht
         registrar.playToClient(HackMessagePayload.TYPE, HackMessagePayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHackMessage(payload, context));

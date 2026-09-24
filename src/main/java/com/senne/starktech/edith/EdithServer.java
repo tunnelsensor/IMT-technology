@@ -935,6 +935,10 @@ public final class EdithServer {
             state.lastTransportTick = player.level().getGameTime();
             return;
         }
+        // Richt je een illusie? Dan bestuur je die drone.
+        if (EdithIllusions.steer(player, safe)) {
+            return;
+        }
         if (state.scoutId == null) {
             return;
         }
@@ -954,6 +958,7 @@ public final class EdithServer {
             if (isWatching(player)) {
                 stopWatching(player);
             }
+            EdithIllusions.cancelAim(player, "edith.starktech.msg.illusion_aim_attacked");
         }
     }
 

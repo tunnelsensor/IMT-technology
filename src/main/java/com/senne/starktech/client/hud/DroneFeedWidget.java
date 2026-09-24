@@ -9,6 +9,7 @@ import static com.senne.starktech.client.hud.HudStyle.bar;
 import static com.senne.starktech.client.hud.HudStyle.brackets;
 
 import com.senne.starktech.client.DroneCamera;
+import com.senne.starktech.client.illusion.IllusionRenderer;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithBalance;
 import net.minecraft.client.gui.GuiGraphics;
@@ -54,7 +55,10 @@ public final class DroneFeedWidget implements HudWidget {
         if ((c.now / 500) % 2 == 0) {
             g.fill(x, y + 1, x + 6, y + 7, argb(255, RED));
         }
-        g.drawString(c.font, Component.translatable("hud.starktech.drone_feed"), x + 10, y, argb(255, WHITE), true);
+        // Richt je een illusie, dan staat dat erboven (anders "DRONE FEED").
+        boolean aiming = IllusionRenderer.isAiming();
+        g.drawString(c.font, Component.translatable(aiming ? "hud.starktech.illusion_aim" : "hud.starktech.drone_feed"),
+                x + 10, y, argb(255, WHITE), true);
         y += 12;
 
         // Signaalsterkte: hoe verder van je lichaam, hoe zwakker.
@@ -78,7 +82,8 @@ public final class DroneFeedWidget implements HudWidget {
         g.drawString(c.font, Component.translatable("hud.starktech.drone_altitude", Math.round(drone.getY())),
                 x, y, argb(200, WHITE), true);
 
-        // Uitleg onderaan
-        g.drawCenteredString(c.font, Component.translatable("hud.starktech.drone_controls"), cx, h - 34, argb(200, WHITE));
+        // Uitleg onderaan: hoe je vliegt, en (tijdens het richten) hoe je neerzet of annuleert.
+        g.drawCenteredString(c.font, Component.translatable(aiming ? "hud.starktech.illusion_aim_controls"
+                : "hud.starktech.drone_controls"), cx, h - 34, argb(200, WHITE));
     }
 }

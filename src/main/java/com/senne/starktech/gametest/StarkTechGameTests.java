@@ -56,6 +56,8 @@ import com.senne.starktech.client.music.MusicQuery;
 import com.senne.starktech.client.voice.VoiceAction;
 import com.senne.starktech.client.voice.VoiceDictionary;
 import com.senne.starktech.client.voice.VoiceMatcher;
+import com.senne.starktech.illusion.EdithIllusions;
+import com.senne.starktech.illusion.IllusionScene;
 import com.senne.starktech.station.ChargerBlockEntity;
 import com.senne.starktech.station.HeatGeneratorBlockEntity;
 import com.senne.starktech.station.ChargerMenu;
@@ -87,6 +89,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Blocks;
@@ -880,6 +883,69 @@ public final class StarkTechGameTests {
         }
         if (table.mode() != before) {
             throw new GameTestAssertException("Een lege hand veranderde de stand naar " + table.mode());
+        }
+        helper.succeed();
+    }
+
+    // ================================================================ Illusies richten
+
+    /**
+     * Een valse muur richt je eerst met de drone: tot je hem neerzet, staat er nog niets. Daarna
+     * staat hij op de grond onder de drone (het ankerpunt is lucht, met iets vasts eronder).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "illusion_aim")
+    public static void illusion_is_aimed_before_it_is_placed(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        EdithIllusions.start(owner, glasses, IllusionScene.Kind.WALL);
+        if (!EdithIllusions.isAiming(owner) || EdithIllusions.countOf(owner) != 0) {
+            throw new GameTestAssertException("De muur stond er al voordat hij gericht was");
+        }
+        helper.runAfterDelay(10, () -> {
+            EdithIllusions.place(owner);
+            if (EdithIllusions.isAiming(owner) || EdithIllusions.countOf(owner) != 1) {
+                throw new GameTestAssertException("Na het neerzetten projecteerde de drone niets");
+            }
+            BlockPos anchor = EdithIllusions.projectorsOf(owner).getFirst().anchor();
+            ServerLevel level = helper.getLevel();
+            boolean onGround = level.getBlockState(anchor).getCollisionShape(level, anchor).isEmpty()
+                    && !level.getBlockState(anchor.below()).getCollisionShape(level, anchor.below()).isEmpty();
+            if (!onGround) {
+                throw new GameTestAssertException("De muur staat niet op de grond: " + anchor);
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Annuleren tijdens het richten: niets neergezet, en je richt niet meer. */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "illusion_aim")
+    public static void illusion_aim_can_be_cancelled(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        EdithIllusions.start(owner, EdithData.getWornGlasses(owner), IllusionScene.Kind.ARMY);
+        EdithIllusions.cancelAim(owner, "edith.starktech.msg.illusion_aim_cancelled");
+        if (EdithIllusions.isAiming(owner) || EdithIllusions.countOf(owner) != 0) {
+            throw new GameTestAssertException("Na annuleren was er toch een illusie, of richtte je nog");
+        }
+        helper.succeed();
+    }
+
+    /** Nep-wezens staan op de grond onder hun eigen plek, ook op een verhoging (vroeger een blok te diep). */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "illusion_aim")
+    public static void illusion_mobs_stand_on_the_ground(GameTestHelper helper) {
+        helper.setBlock(new BlockPos(3, 3, 3), Blocks.STONE);
+        BlockPos step = helper.absolutePos(new BlockPos(3, 3, 3));
+        BlockPos flat = helper.absolutePos(new BlockPos(5, 3, 5));
+        ServerLevel level = helper.getLevel();
+        double onStep = IllusionScene.feetY(level, step.getX() + 0.5, step.getZ() + 0.5, flat.getY());
+        double onFlat = IllusionScene.feetY(level, flat.getX() + 0.5, flat.getZ() + 0.5, flat.getY());
+        if (onStep != step.getY() + 1) {
+            throw new GameTestAssertException("Op de verhoging: voeten op " + onStep + ", verwacht " + (step.getY() + 1));
+        }
+        // Op de vlakke vloer: onder de voeten iets vasts, op de voeten zelf lucht.
+        BlockPos feet = BlockPos.containing(flat.getX() + 0.5, onFlat, flat.getZ() + 0.5);
+        if (level.getBlockState(feet.below()).getCollisionShape(level, feet.below()).isEmpty()
+                || !level.getBlockState(feet).getCollisionShape(level, feet).isEmpty()) {
+            throw new GameTestAssertException("Op de vloer: voeten op " + onFlat + " staan niet op de grond");
         }
         helper.succeed();
     }

@@ -1,6 +1,7 @@
 package com.senne.starktech.client.illusion;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.senne.starktech.illusion.IllusionScene;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,11 +10,13 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
@@ -27,12 +30,15 @@ import org.jetbrains.annotations.Nullable;
  *
  * De zwakke plek uit de film zit er ook in: waar twee velden elkaar overlappen, gaat het beeld
  * flikkeren en zie je stukken van de echte wereld doorschemeren.
+ *
+ * Richt je zelf een illusie (zie EdithIllusions), dan tekenen we hier ook de voorvertoning: het
+ * beeld op de grond onder je drone, met een blauw kader eromheen en een lijn naar de drone.
  */
 public final class IllusionRenderer {
     private IllusionRenderer() {}
 
-    /** Eén illusie die nu in de buurt is. */
-    public record Projection(int droneId, double radius, boolean jammed, IllusionScene scene) {}
+    /** Eén illusie die nu in de buurt is; {@code anchor} is het punt op de grond waar hij staat. */
+    public record Projection(int droneId, double radius, boolean jammed, BlockPos anchor, IllusionScene scene) {}
 
     /** Alle illusies die jouw spel kent, per drone. */
     private static final Map<Integer, Projection> PROJECTIONS = new HashMap<>();
@@ -45,7 +51,8 @@ public final class IllusionRenderer {
     private static final Map<String, Entity> FAKE_ENTITIES = new HashMap<>();
 
     /** Bericht van de server: nieuwe (of gestopte) illusie. */
-    public static void onServerMessage(int droneId, double radius, boolean jammed, @Nullable IllusionScene scene) {
+    public static void onServerMessage(int droneId, double radius, boolean jammed, BlockPos anchor,
+                                       @Nullable IllusionScene scene) {
         if (scene == null) {
             PROJECTIONS.remove(droneId);
             if (droneId < 0) {
@@ -53,12 +60,30 @@ public final class IllusionRenderer {
             }
             return;
         }
-        PROJECTIONS.put(droneId, new Projection(droneId, radius, jammed, scene));
+        PROJECTIONS.put(droneId, new Projection(droneId, radius, jammed, anchor, scene));
+    }
+
+    /** De drone waarmee je nu een illusie richt, of -1. */
+    private static int aimDroneId = -1;
+    /** Wat je aan het richten bent (nog niet gedraaid naar je kijkrichting). */
+    private static @Nullable IllusionScene aimScene;
+
+    /** Bericht van de server: je richt nu met deze drone (of: klaar met richten, bij null). */
+    public static void onAim(int droneId, @Nullable IllusionScene scene) {
+        aimDroneId = scene == null ? -1 : droneId;
+        aimScene = scene;
+    }
+
+    /** Ben je een illusie aan het richten? */
+    public static boolean isAiming() {
+        return aimScene != null && aimDroneId >= 0;
     }
 
     public static void clear() {
         PROJECTIONS.clear();
         FAKE_ENTITIES.clear();
+        aimDroneId = -1;
+        aimScene = null;
     }
 
     /** Hoeveel illusies ken je nu (voor de HUD)? */
@@ -79,11 +104,8 @@ public final class IllusionRenderer {
         // Meteen even de camera-matrices van dit frame bewaren: daarmee tekent de HUD zijn
         // beugels precies om een doelwit heen (zie WorldProjection).
         com.senne.starktech.client.WorldProjection.capture(event.getModelViewMatrix(), event.getProjectionMatrix());
-        if (PROJECTIONS.isEmpty()) {
-            return;
-        }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) {
+        if (mc.level == null || (PROJECTIONS.isEmpty() && !isAiming())) {
             return;
         }
         PoseStack poseStack = event.getPoseStack();
@@ -91,6 +113,10 @@ public final class IllusionRenderer {
         Vec3 camera = event.getCamera().getPosition();
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         long now = mc.level.getGameTime();
+
+        if (isAiming()) {
+            renderPreview(mc, camera, poseStack, buffers, partialTick, now);
+        }
 
         // Eerst alle middens (de drones) opzoeken, zodat we overlap kunnen zien.
         List<Vec3> centers = new ArrayList<>();
@@ -108,19 +134,70 @@ public final class IllusionRenderer {
             if (drone == null || projection.jammed()) {
                 continue; // drone weg of platgelegd door een E.M.P.: geen beeld
             }
-            Vec3 center = drone.position();
-            renderBlocks(mc, projection, center, camera, poseStack, buffers, centers, radii, now);
-            renderMobs(mc, projection, center, camera, poseStack, buffers, partialTick, centers, radii, now);
+            renderBlocks(mc, projection.scene(), projection.anchor(), camera, poseStack, buffers, centers, radii, now);
+            renderMobs(mc, projection.scene(), projection.anchor(), camera, poseStack, buffers, partialTick, centers, radii, now);
         }
         buffers.endBatch();
     }
 
-    /** De nep-blokken tekenen. */
-    private static void renderBlocks(Minecraft mc, Projection projection, Vec3 center, Vec3 camera, PoseStack poseStack,
+    /**
+     * De voorvertoning tijdens het richten: het beeld op de grond waar je drone naar kijkt (de
+     * muur dwars op je kijkrichting), met een knipperend blauw kader eromheen en een richtlijn
+     * van de drone ernaartoe.
+     */
+    private static void renderPreview(Minecraft mc, Vec3 camera, PoseStack poseStack, MultiBufferSource.BufferSource buffers,
+                                      float partialTick, long now) {
+        Entity drone = mc.level.getEntity(aimDroneId);
+        if (drone == null || aimScene == null || mc.player == null) {
+            return;
+        }
+        Vec3 dronePos = drone.getEyePosition(partialTick);
+        BlockPos anchor = IllusionScene.aimAnchor(mc.level, dronePos, mc.player.getViewYRot(partialTick),
+                mc.player.getViewXRot(partialTick));
+        IllusionScene scene = aimScene.facing(mc.player.getYRot());
+        renderBlocks(mc, scene, anchor, camera, poseStack, buffers, List.of(), List.of(), now);
+        renderMobs(mc, scene, anchor, camera, poseStack, buffers, partialTick, List.of(), List.of(), now);
+
+        // Het kader: om alle blokken heen, of om de kring van wezens.
+        AABB box = previewBox(scene, anchor);
+        float pulse = 0.55f + 0.45f * Mth.sin((now + partialTick) * 0.25f);
+        VertexConsumer lines = buffers.getBuffer(RenderType.lines());
+        poseStack.pushPose();
+        poseStack.translate(-camera.x, -camera.y, -camera.z);
+        LevelRenderer.renderLineBox(poseStack, lines, box, 0.25f, 0.85f, 1.0f, pulse);
+        // Een richtlijn van net onder de drone naar het midden van het beeld.
+        PoseStack.Pose pose = poseStack.last();
+        Vec3 from = dronePos.add(0, -0.4, 0);
+        Vec3 ground = new Vec3(anchor.getX() + 0.5, anchor.getY(), anchor.getZ() + 0.5);
+        Vec3 dir = ground.subtract(from).normalize();
+        lines.addVertex(pose, (float) from.x, (float) from.y, (float) from.z)
+                .setColor(0.25f, 0.85f, 1.0f, 0.8f).setNormal(pose, (float) dir.x, (float) dir.y, (float) dir.z);
+        lines.addVertex(pose, (float) ground.x, (float) ground.y, (float) ground.z)
+                .setColor(0.25f, 0.85f, 1.0f, 0.8f).setNormal(pose, (float) dir.x, (float) dir.y, (float) dir.z);
+        poseStack.popPose();
+    }
+
+    /** Het kader om een voorvertoning: de blokken, of de wezens (twee blokken hoog). */
+    private static AABB previewBox(IllusionScene scene, BlockPos anchor) {
+        AABB box = null;
+        for (IllusionScene.BlockElement element : scene.blocks()) {
+            AABB block = new AABB(anchor.offset(element.offset()));
+            box = box == null ? block : box.minmax(block);
+        }
+        for (IllusionScene.MobElement element : scene.mobs()) {
+            double x = anchor.getX() + 0.5 + element.x();
+            double z = anchor.getZ() + 0.5 + element.z();
+            AABB mob = new AABB(x - 0.4, anchor.getY(), z - 0.4, x + 0.4, anchor.getY() + 2.0, z + 0.4);
+            box = box == null ? mob : box.minmax(mob);
+        }
+        return box == null ? new AABB(anchor) : box.inflate(0.05);
+    }
+
+    /** De nep-blokken tekenen, ten opzichte van het ankerpunt. */
+    private static void renderBlocks(Minecraft mc, IllusionScene scene, BlockPos anchor, Vec3 camera, PoseStack poseStack,
                                      MultiBufferSource buffers, List<Vec3> centers, List<Double> radii, long now) {
-        BlockPos droneBlock = BlockPos.containing(center);
-        for (IllusionScene.BlockElement element : projection.scene().blocks()) {
-            BlockPos pos = droneBlock.offset(element.offset());
+        for (IllusionScene.BlockElement element : scene.blocks()) {
+            BlockPos pos = anchor.offset(element.offset());
             Vec3 world = Vec3.atLowerCornerOf(pos);
             if (world.distanceToSqr(camera) > 128 * 128) {
                 continue; // te ver om te zien
@@ -136,14 +213,19 @@ public final class IllusionRenderer {
         }
     }
 
-    /** De nep-wezens tekenen (ze staan er alleen; ze doen niets). */
-    private static void renderMobs(Minecraft mc, Projection projection, Vec3 center, Vec3 camera, PoseStack poseStack,
+    /**
+     * De nep-wezens tekenen (ze staan er alleen; ze doen niets). Elk wezen staat op de grond
+     * onder zijn eigen plek, zodat ze op een heuvel niet in de grond verdwijnen.
+     */
+    private static void renderMobs(Minecraft mc, IllusionScene scene, BlockPos anchor, Vec3 camera, PoseStack poseStack,
                                    MultiBufferSource buffers, float partialTick, List<Vec3> centers, List<Double> radii,
                                    long now) {
         int index = 0;
-        for (IllusionScene.MobElement element : projection.scene().mobs()) {
+        for (IllusionScene.MobElement element : scene.mobs()) {
             index++;
-            Vec3 world = center.add(element.x(), element.y(), element.z());
+            double x = anchor.getX() + 0.5 + element.x();
+            double z = anchor.getZ() + 0.5 + element.z();
+            Vec3 world = new Vec3(x, IllusionScene.feetY(mc.level, x, z, anchor.getY()) + element.y(), z);
             if (world.distanceToSqr(camera) > 96 * 96 || glitching(world, centers, radii, now)) {
                 continue;
             }

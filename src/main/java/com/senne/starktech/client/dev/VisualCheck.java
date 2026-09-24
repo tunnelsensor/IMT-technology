@@ -4,6 +4,8 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
+import com.senne.starktech.edith.EdithAction;
+import com.senne.starktech.network.IllusionPlacePayload;
 import com.senne.starktech.client.voice.VoiceAction;
 import com.senne.starktech.client.voice.VoiceCommandStore;
 import com.senne.starktech.client.voice.VoiceDictionary;
@@ -47,10 +49,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Een rondleiding langs alles wat de automatische tests niet kunnen zien, met een screenshot
@@ -307,6 +311,29 @@ public final class VisualCheck {
             t.shot(60, "52_drones_damaged");
             t.view(0, 24.5, -59.5, -33.2, 0, 8);
             t.shot(20, "53_drones_damaged_close");
+        }
+
+        // --- Illusies richten: eerst een valse muur (van bakstenen), met de drone vooruit
+        // gevlogen; dan een nep-leger boven op de heuvel (de zombies moeten óp de heuvel staan).
+        if (want("illusion")) {
+            t.stand(0, -20.5, -60, -12.5, 180, 15);
+            t.onServer(0, player -> player.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.BRICKS)));
+            t.action(10, EdithAction.ILLUSION_WALL);
+            t.key(20, () -> Minecraft.getInstance().options.keyJump, true);
+            t.key(12, () -> Minecraft.getInstance().options.keyJump, false);
+            t.look(5, 180, 25);
+            t.shot(15, "90_illusion_aim_wall");
+            t.step(0, () -> PacketDistributor.sendToServer(new IllusionPlacePayload(true)));
+            t.shot(25, "91_illusion_wall_placed");
+            t.stand(0, 2.5, -60, 10.5, -90, 12);
+            t.action(10, EdithAction.ILLUSION_ARMY);
+            t.key(20, () -> Minecraft.getInstance().options.keyJump, true);
+            t.key(30, () -> Minecraft.getInstance().options.keyJump, false);
+            t.look(5, -90, 30);
+            t.shot(15, "92_illusion_aim_army");
+            t.step(0, () -> PacketDistributor.sendToServer(new IllusionPlacePayload(true)));
+            t.shot(25, "93_illusion_army_placed");
+            t.action(0, EdithAction.ILLUSION_STOP);
         }
 
         // --- Spraakcommando's: een commando met vier acties bovenaan, zodat de kolom rechts

@@ -8,6 +8,7 @@ import com.senne.starktech.network.EdithStatusPayload;
 import com.senne.starktech.network.OreScanPayload;
 import com.senne.starktech.client.illusion.IllusionRenderer;
 import com.senne.starktech.network.HackMessagePayload;
+import com.senne.starktech.network.IllusionAimPayload;
 import com.senne.starktech.network.IllusionScenePayload;
 import com.senne.starktech.network.PingMarkerPayload;
 import com.senne.starktech.network.HoloOpenPayload;
@@ -31,8 +32,13 @@ public final class ClientPayloadHandlers {
 
     /** Fase 12: een illusie van een cloakingdrone (of "vergeet deze illusie"). */
     public static void onIllusionScene(IllusionScenePayload payload, IPayloadContext context) {
-        IllusionRenderer.onServerMessage(payload.droneId(), payload.radius(), payload.jammed(),
+        IllusionRenderer.onServerMessage(payload.droneId(), payload.radius(), payload.jammed(), payload.anchor(),
                 payload.scene().orElse(null));
+    }
+
+    /** Je richt een illusie met een drone (of je bent klaar met richten). */
+    public static void onIllusionAim(IllusionAimPayload payload, IPayloadContext context) {
+        IllusionRenderer.onAim(payload.droneId(), payload.scene().orElse(null));
     }
 
     /** Fase 10: een onderschept privébericht boven het hoofd van een gehackte speler. */

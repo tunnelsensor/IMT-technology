@@ -129,11 +129,25 @@ public class StarkDroneEntity extends PathfinderMob {
         this.slot = slot;
         this.lifeTicks = lifeTicks;
         this.fireCooldown = 10 + slot * 3; // niet allemaal tegelijk schieten
-        if (mode == Mode.SPY || mode == Mode.ILLUSION) {
-            // Een spion valt niet op: hij wordt niet getekend (maar hij is er wel echt,
-            // dus wie weet waar hij hangt, kan hem uit de lucht slaan).
-            setInvisible(true);
-        }
+    }
+
+    /**
+     * Een spion en een cloakingdrone vallen niet op: ze worden niet getekend (maar ze zijn er wel
+     * echt, dus wie weet waar ze hangen, kan ze uit de lucht slaan).
+     *
+     * Dit hangt aan hun taak en niet aan setInvisible(): dat vlagje zet Minecraft bij de eerste
+     * tick weer uit, omdat er geen onzichtbaarheidsdrankje werkt. Daardoor waren ze vroeger
+     * gewoon te zien. De taak (DATA_MODE) kent ook jouw spel, dus daar klopt het ook.
+     */
+    @Override
+    public boolean isInvisible() {
+        Mode mode = getMode();
+        return mode == Mode.SPY || mode == Mode.ILLUSION || super.isInvisible();
+    }
+
+    /** Hoe lang hij nog blijft (ticks); -1 = tot iemand hem terugroept. */
+    public void setLifeTicks(int lifeTicks) {
+        this.lifeTicks = lifeTicks;
     }
 
     /** Koppelt deze drone aan een drone uit het arsenaal van zijn eigenaar. */
@@ -362,6 +376,12 @@ public class StarkDroneEntity extends PathfinderMob {
             return;
         }
         if (isIllusion()) {
+            // Wordt er nog mee gericht? Dan vliegt hij zoals de speler hem bestuurt.
+            DroneControlPayload aim = EdithIllusions.aimControl(this);
+            if (aim != null) {
+                flyByControl(owner, aim, EdithBalance.ILLUSION_AIM_RANGE);
+                return;
+            }
             // Een cloakingdrone blijft stil hangen waar je hem liet: hij is de "projector".
             moveControl.setWantedPosition(getX(), getY(), getZ(), 0.2);
             return;
@@ -419,7 +439,15 @@ public class StarkDroneEntity extends PathfinderMob {
      * waar de speler kijkt. Hij mag niet te ver van het lichaam van de speler weg.
      */
     private void flyAsScout(ServerPlayer owner) {
-        DroneControlPayload control = EdithServer.getScoutControl(owner);
+        flyByControl(owner, EdithServer.getScoutControl(owner), EdithBalance.SCOUT_RANGE);
+    }
+
+    /**
+     * Vliegen zoals de speler stuurt: vooruit, opzij, omhoog/omlaag in de richting waarin hij
+     * kijkt. Hij mag niet verder dan {@code range} blokken van het lichaam van de speler weg.
+     * (Voor de verkenner en voor een cloakingdrone waarmee je richt.)
+     */
+    private void flyByControl(ServerPlayer owner, DroneControlPayload control, double range) {
         setYRot(control.yaw());
         setXRot(control.pitch());
         yBodyRot = control.yaw();
@@ -437,8 +465,8 @@ public class StarkDroneEntity extends PathfinderMob {
         // Aan een elastiekje: te ver weg? Dan trekt de verbinding hem terug.
         Vec3 toOwner = owner.getEyePosition().subtract(position());
         double distance = toOwner.length();
-        if (distance > EdithBalance.SCOUT_RANGE) {
-            wanted = wanted.add(toOwner.normalize().scale((distance - EdithBalance.SCOUT_RANGE) * 0.1 + 0.2));
+        if (distance > range) {
+            wanted = wanted.add(toOwner.normalize().scale((distance - range) * 0.1 + 0.2));
         }
         setDeltaMovement(getDeltaMovement().lerp(wanted, 0.4));
     }

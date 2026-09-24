@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.drone.DroneDamage;
 import com.senne.starktech.drone.StarkDroneEntity;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -52,6 +53,10 @@ public class DroneRenderer extends MobRenderer<StarkDroneEntity, DroneModel<Star
         public void render(PoseStack poseStack, MultiBufferSource buffers, int light, StarkDroneEntity drone,
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
+            // Onzichtbaar (spion, cloakingdrone): dan ook geen lampjes, anders verraden die hem.
+            if (drone.isInvisibleTo(Minecraft.getInstance().player)) {
+                return;
+            }
             // Bijna kapot: de lampjes haperen.
             if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
                 return;
