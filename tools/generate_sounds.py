@@ -78,6 +78,14 @@ def place(total, part, at):
     return total
 
 
+def mix(*parts):
+    """Telt geluiden van verschillende lengte bij elkaar op (de kortere vullen we aan met stilte)."""
+    total = np.zeros(max(len(part) for part in parts))
+    for part in parts:
+        total[:len(part)] += part
+    return total
+
+
 def finish(sound, peak=0.8):
     """Zacht afkappen (geen harde vervorming) en op een vaste luidheid zetten."""
     sound = np.tanh(sound * 1.4)
@@ -229,10 +237,261 @@ def edith_confirm():
     return finish(total, peak=0.55)
 
 
+# ---------------------------------------------------------------- meldingen en menu
+# Alles in dezelfde toonsoort als het opstartgeluid (C, E, G, B), met zachte, glazige tonen:
+# E.D.I.T.H. mag je niet laten schrikken, behalve als er echt iets mis is.
+
+def glass(freq, duration, decay_speed=8.0, bright=0.25):
+    """Een zachte, glazige toon: een sinus met een vleugje FM, zodat hij niet "piept"."""
+    t = seconds(duration)
+    tone = np.sin(2 * np.pi * freq * t + bright * np.sin(2 * np.pi * freq * 2.0 * t))
+    tone += 0.18 * np.sin(2 * np.pi * freq * 3.0 * t)
+    return tone * decay(duration, decay_speed)
+
+
+def edith_notify():
+    """
+    Een gewone melding (bijvoorbeeld "aangekomen op je bestemming"): twee zachte tonen omhoog,
+    de tweede met een nagalmpje. Kort en rustig, want dit hoor je vaak.
+    """
+    total = np.zeros(int(RATE * 0.55))
+    place(total, fade(glass(783.99, 0.22, 16) * 0.45, 0.004, 0.04), 0.0)
+    place(total, fade(glass(1174.66, 0.45, 7) * 0.5, 0.004, 0.08), 0.085)
+    # Een hele zachte echo, een octaaf hoger: dat maakt het "glazig".
+    place(total, fade(glass(2349.3, 0.3, 12, bright=0.1) * 0.08, 0.01, 0.08), 0.1)
+    return finish(total, peak=0.5)
+
+
+def edith_alert():
+    """Een waarschuwing: twee korte, iets scherpere tonen op dezelfde hoogte."""
+    total = np.zeros(int(RATE * 0.45))
+    for i in range(2):
+        t = seconds(0.12)
+        tone = np.sin(2 * np.pi * 987.77 * t) + 0.4 * np.sin(2 * np.pi * 987.77 * 3 * t) * decay(0.12, 30)
+        place(total, fade(tone * decay(0.12, 14) * 0.5, 0.003, 0.03), i * 0.16)
+    return finish(total, peak=0.5)
+
+
+def edith_denied():
+    """Geweigerd of mislukt: twee tonen omlaag, laag en wat brommerig."""
+    total = np.zeros(int(RATE * 0.5))
+    for i, freq in enumerate((392.0, 261.63)):
+        t = seconds(0.2)
+        tone = signal.sawtooth(2 * np.pi * freq * t) * 0.5 + np.sin(2 * np.pi * freq * t)
+        tone = lowpass(tone, 1800) * decay(0.2, 9)
+        place(total, fade(tone * 0.5, 0.004, 0.05), i * 0.17)
+    return finish(total, peak=0.5)
+
+
+def edith_scan():
+    """
+    De ertsen-scan: een zachte "zoef" omhoog (de scan gaat de grond in), dan een sonar-ping
+    die twee keer zachter terugkaatst.
+    """
+    total = np.zeros(int(RATE * 1.4))
+    whoosh = bandpass(noise(0.45), 400, 6000, order=2)
+    whoosh *= np.sin(np.linspace(0, np.pi, len(whoosh))) ** 2
+    rise = np.sin(sweep(300, 1400, 0.45, curve=0.8)) * np.linspace(0, 1, int(RATE * 0.45)) ** 2 * 0.25
+    place(total, fade(whoosh * 0.35 + rise, 0.02, 0.05), 0.0)
+    for i, loudness in enumerate((0.6, 0.25, 0.1)):
+        place(total, fade(glass(1567.98, 0.5, 9, bright=0.4) * loudness, 0.003, 0.1), 0.42 + i * 0.24)
+    return finish(total, peak=0.5)
+
+
+def edith_menu_open():
+    """Het G-menu gaat open: een korte, luchtige zoef omhoog met een glinstertje."""
+    total = np.zeros(int(RATE * 0.35))
+    air = bandpass(noise(0.2), 2000, 9000, order=2) * np.sin(np.linspace(0, np.pi, int(RATE * 0.2))) * 0.25
+    rise = np.sin(sweep(700, 1600, 0.16, curve=0.7)) * decay(0.16, 10) * 0.3
+    place(total, fade(mix(air, rise), 0.005, 0.05), 0.0)
+    place(total, fade(glass(2093.0, 0.18, 18, bright=0.1) * 0.15, 0.003, 0.05), 0.1)
+    return finish(total, peak=0.4)
+
+
+def edith_select():
+    """Een optie kiezen: een heel kort, zacht tikje, zoals een aanraakscherm."""
+    t = seconds(0.045)
+    tick = np.sin(2 * np.pi * 2600 * t) * decay(0.045, 110)
+    tick += bandpass(noise(0.045), 3000, 8000) * decay(0.045, 180) * 0.3
+    return finish(fade(tick, 0.001, 0.01), peak=0.35)
+
+
+# ---------------------------------------------------------------- laadstation
+
+def station_upgrade():
+    """
+    Een upgrade wordt ingebouwd: een servo die zoemt, een klik als het onderdeel vastzit, en
+    dan het "klaar"-akkoord van E.D.I.T.H.
+    """
+    total = np.zeros(int(RATE * 1.2))
+    servo = whine(180, 420, 0.35, curve=0.8, wobble=0.25) * np.sin(np.linspace(0, np.pi, int(RATE * 0.35)))
+    place(total, fade(lowpass(servo, 2500) * 0.35, 0.02, 0.05), 0.0)
+    clunk = mix(np.sin(sweep(220, 90, 0.1)) * decay(0.1, 30), bandpass(noise(0.04), 1500, 6000) * decay(0.04, 120) * 0.6)
+    place(total, fade(clunk * 0.7, 0.001, 0.02), 0.36)
+    for freq in (523.25, 659.25, 783.99):
+        place(total, fade(glass(freq, 0.7, 5) * 0.2, 0.005, 0.1), 0.48)
+    return finish(total, peak=0.55)
+
+
+# ---------------------------------------------------------------- drones
+
+def rotor(duration, start_hz, end_hz):
+    """Het gezoem van rotors: een snel "brrr" (een toon die heel snel aan en uit gaat)."""
+    t = seconds(duration)
+    speed = np.linspace(start_hz, end_hz, len(t))
+    chop = 0.5 + 0.5 * np.sin(2 * np.pi * np.cumsum(speed) / RATE)
+    body = bandpass(noise(duration), 150, 2500, order=2) * 0.6 + np.sin(2 * np.pi * np.cumsum(speed * 4) / RATE) * 0.2
+    return body * chop
+
+
+def drone_deploy():
+    """Een drone vertrekt: rotors die opspinnen en een zoef omhoog."""
+    total = np.zeros(int(RATE * 0.9))
+    spin = rotor(0.8, 12, 45) * np.linspace(0.2, 1, int(RATE * 0.8)) * decay(0.8, 1.5)
+    place(total, fade(spin * 0.6, 0.02, 0.15), 0.0)
+    whoosh = bandpass(noise(0.5), 600, 5000, order=2) * np.sin(np.linspace(0, np.pi, int(RATE * 0.5))) ** 2
+    place(total, fade(whoosh * 0.35, 0.02, 0.1), 0.3)
+    return finish(total, peak=0.55)
+
+
+def drone_laser():
+    """Een droneschot: een korte, heldere "pew" die snel omlaag glijdt."""
+    phase = sweep(2600, 700, 0.18, curve=0.5)
+    zap = (np.sin(phase) + 0.3 * np.sin(2 * phase)) * decay(0.18, 18)
+    crack = bandpass(noise(0.05), 3000, 9000) * decay(0.05, 80) * 0.4
+    total = np.zeros(int(RATE * 0.22))
+    place(total, fade(zap * 0.6, 0.001, 0.03), 0.0)
+    place(total, crack, 0.0)
+    return finish(total, peak=0.5)
+
+
+def drone_recall():
+    """Een drone gaat terug naar zijn baan: rotors die wegzakken en een zacht blipje omlaag."""
+    total = np.zeros(int(RATE * 0.8))
+    spin = rotor(0.7, 40, 14) * decay(0.7, 3)
+    place(total, fade(spin * 0.5, 0.01, 0.15), 0.0)
+    place(total, fade(np.sin(sweep(1318.5, 783.99, 0.25)) * decay(0.25, 8) * 0.3, 0.003, 0.05), 0.08)
+    return finish(total, peak=0.5)
+
+
+def drone_hurt():
+    """Een drone wordt geraakt: een metalen tik en wat knetterende vonken."""
+    total = np.zeros(int(RATE * 0.35))
+    t = seconds(0.2)
+    clank = sum(np.sin(2 * np.pi * f * t) * decay(0.2, d) for f, d in ((820, 25), (1370, 30), (2250, 40)))
+    place(total, fade(clank * 0.35, 0.001, 0.03), 0.0)
+    for i in range(5):
+        at = 0.03 + rng.uniform(0, 0.25)
+        spark = bandpass(noise(0.015), 3000, 10000) * decay(0.015, 200) * rng.uniform(0.2, 0.5)
+        place(total, spark, at)
+    return finish(total, peak=0.55)
+
+
+def drone_destroyed():
+    """Een drone ontploft: een doffe knal, rondvliegende metalen brokjes en elektrisch gesis."""
+    total = np.zeros(int(RATE * 1.6))
+    boom = np.sin(sweep(120, 35, 0.6, curve=0.6)) * decay(0.6, 6)
+    blast = lowpass(noise(1.0), 1200) * decay(1.0, 5)
+    crack = bandpass(noise(0.2), 1500, 8000) * decay(0.2, 25)
+    place(total, fade(mix(boom * 1.2, crack * 0.8), 0.001, 0.1), 0.0)
+    place(total, fade(blast * 0.8, 0.001, 0.2), 0.0)
+    for i in range(7):
+        t = seconds(0.12)
+        f = rng.uniform(900, 2600)
+        ping = np.sin(2 * np.pi * f * t) * decay(0.12, 35) * rng.uniform(0.08, 0.2)
+        place(total, fade(ping, 0.001, 0.02), 0.15 + rng.uniform(0, 0.9))
+    fizz = bandpass(noise(0.8), 4000, 10000) * decay(0.8, 4) * np.abs(np.sin(np.linspace(0, 40, int(RATE * 0.8))))
+    place(total, fade(fizz * 0.25, 0.05, 0.2), 0.3)
+    return finish(total, peak=0.75)
+
+
+# ---------------------------------------------------------------- satelliet
+
+def satellite_lock():
+    """Doel vergrendeld: drie piepjes die steeds sneller komen, en dan een lange, hoge toon."""
+    total = np.zeros(int(RATE * 0.9))
+    for at in (0.0, 0.16, 0.28):
+        t = seconds(0.07)
+        place(total, fade(np.sin(2 * np.pi * 1760 * t) * decay(0.07, 25) * 0.45, 0.002, 0.02), at)
+    t = seconds(0.5)
+    hold = np.sin(2 * np.pi * 2093 * t) * 0.4 + np.sin(2 * np.pi * 2093 * 1.5 * t) * 0.12
+    place(total, fade(hold * decay(0.5, 3), 0.005, 0.12), 0.38)
+    return finish(total, peak=0.5)
+
+
+def satellite_charge():
+    """
+    De satelliet laadt op: een diepe brom die aanzwelt en steeds hoger gaat zingen, met een
+    snelle trilling erin. Klinkt op de plek van de inslag, dus iedereen daar hoort hem komen.
+    """
+    duration = 2.8
+    t = seconds(duration)
+    build = np.linspace(0, 1, len(t)) ** 1.6
+    hum = np.sin(sweep(55, 110, duration)) * 0.8
+    sing = whine(220, 1760, duration, curve=1.8, wobble=0.3) * build * 0.45
+    crackle = bandpass(noise(duration), 2500, 9000) * build ** 2 * 0.25
+    tremolo = 1.0 + 0.25 * np.sin(2 * np.pi * (4 + 14 * build) * t)
+    return finish(fade((hum + sing + crackle) * tremolo * (0.3 + 0.7 * build), 0.3, 0.05), peak=0.55)
+
+
+def satellite_fire():
+    """
+    De inslag: een enorme dreun, een felle straal die omlaag zingt, en een lang gerommel dat
+    wegtrekt. Dit is het grootste geluid van de mod.
+    """
+    total = np.zeros(int(RATE * 3.0))
+    beam_phase = sweep(4200, 180, 0.7, curve=0.5)
+    beam = (np.sin(beam_phase) + 0.4 * np.sin(1.5 * beam_phase)) * decay(0.7, 4)
+    place(total, fade(beam * 0.6, 0.002, 0.1), 0.0)
+    boom = np.sin(sweep(90, 28, 1.2, curve=0.5)) * decay(1.2, 3.2)
+    place(total, fade(boom * 1.5, 0.002, 0.2), 0.02)
+    crack = bandpass(noise(0.3), 1000, 9000) * decay(0.3, 14)
+    place(total, fade(crack * 1.2, 0.001, 0.05), 0.0)
+    rumble = lowpass(noise(2.8), 400) * decay(2.8, 1.4)
+    place(total, fade(rumble * 1.4, 0.05, 0.5), 0.05)
+    # Niet voller dan 0,65: na het omzetten naar .ogg schiet de piek anders boven 1 uit (kraken).
+    return finish(total, peak=0.65)
+
+
+# ---------------------------------------------------------------- comms
+
+def comms_message():
+    """Een bericht van een andere E.D.I.T.H.-drager: drie snelle, heldere tonen omlaag en weer op."""
+    total = np.zeros(int(RATE * 0.6))
+    for i, freq in enumerate((1318.5, 1046.5, 1567.98)):
+        place(total, fade(glass(freq, 0.25, 12) * 0.4, 0.003, 0.05), i * 0.09)
+    return finish(total, peak=0.5)
+
+
+def comms_ping():
+    """Een ping op de kaart: een sonar-"ping" met een echo die wegsterft."""
+    total = np.zeros(int(RATE * 1.0))
+    for i, loudness in enumerate((0.6, 0.3, 0.12)):
+        place(total, fade(glass(1046.5, 0.45, 8, bright=0.6) * loudness, 0.002, 0.1), i * 0.2)
+    return finish(total, peak=0.5)
+
+
 SOUNDS = {
     "edith_boot": edith_boot,
     "edith_blip": edith_blip,
     "edith_confirm": edith_confirm,
+    "edith_notify": edith_notify,
+    "edith_alert": edith_alert,
+    "edith_denied": edith_denied,
+    "edith_scan": edith_scan,
+    "edith_menu_open": edith_menu_open,
+    "edith_select": edith_select,
+    "station_upgrade": station_upgrade,
+    "drone_deploy": drone_deploy,
+    "drone_laser": drone_laser,
+    "drone_recall": drone_recall,
+    "drone_hurt": drone_hurt,
+    "drone_destroyed": drone_destroyed,
+    "satellite_lock": satellite_lock,
+    "satellite_charge": satellite_charge,
+    "satellite_fire": satellite_fire,
+    "comms_message": comms_message,
+    "comms_ping": comms_ping,
     "repulsor_arm": repulsor_arm,
     "repulsor_disarm": repulsor_disarm,
     "repulsor_fire": repulsor_fire,

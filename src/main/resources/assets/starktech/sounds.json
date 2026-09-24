@@ -11,8 +11,7 @@
     "subtitle": "subtitles.starktech.edith.notify",
     "sounds": [
       {
-        "name": "minecraft:block.note_block.pling",
-        "type": "event"
+        "name": "starktech:edith_notify"
       }
     ]
   },
@@ -20,8 +19,7 @@
     "subtitle": "subtitles.starktech.edith.alert",
     "sounds": [
       {
-        "name": "minecraft:block.note_block.bit",
-        "type": "event"
+        "name": "starktech:edith_alert"
       }
     ]
   },
@@ -29,8 +27,7 @@
     "subtitle": "subtitles.starktech.edith.denied",
     "sounds": [
       {
-        "name": "minecraft:block.note_block.bass",
-        "type": "event"
+        "name": "starktech:edith_denied"
       }
     ]
   },
@@ -38,8 +35,7 @@
     "subtitle": "subtitles.starktech.edith.scan",
     "sounds": [
       {
-        "name": "minecraft:block.beacon.power_select",
-        "type": "event"
+        "name": "starktech:edith_scan"
       }
     ]
   },
@@ -47,8 +43,7 @@
     "subtitle": "subtitles.starktech.edith.menu_open",
     "sounds": [
       {
-        "name": "minecraft:block.amethyst_block.chime",
-        "type": "event"
+        "name": "starktech:edith_menu_open"
       }
     ]
   },
@@ -56,8 +51,7 @@
     "subtitle": "subtitles.starktech.edith.select",
     "sounds": [
       {
-        "name": "minecraft:ui.button.click",
-        "type": "event"
+        "name": "starktech:edith_select"
       }
     ]
   },
@@ -65,8 +59,7 @@
     "subtitle": "subtitles.starktech.station.upgrade",
     "sounds": [
       {
-        "name": "minecraft:block.smithing_table.use",
-        "type": "event"
+        "name": "starktech:station_upgrade"
       }
     ]
   },
@@ -74,8 +67,7 @@
     "subtitle": "subtitles.starktech.drone.deploy",
     "sounds": [
       {
-        "name": "minecraft:block.dispenser.launch",
-        "type": "event"
+        "name": "starktech:drone_deploy"
       }
     ]
   },
@@ -83,8 +75,7 @@
     "subtitle": "subtitles.starktech.drone.laser",
     "sounds": [
       {
-        "name": "minecraft:entity.firework_rocket.shoot",
-        "type": "event"
+        "name": "starktech:drone_laser"
       }
     ]
   },
@@ -92,8 +83,7 @@
     "subtitle": "subtitles.starktech.drone.recall",
     "sounds": [
       {
-        "name": "minecraft:block.beacon.deactivate",
-        "type": "event"
+        "name": "starktech:drone_recall"
       }
     ]
   },
@@ -101,8 +91,7 @@
     "subtitle": "subtitles.starktech.drone.hurt",
     "sounds": [
       {
-        "name": "minecraft:entity.iron_golem.hurt",
-        "type": "event"
+        "name": "starktech:drone_hurt"
       }
     ]
   },
@@ -110,8 +99,7 @@
     "subtitle": "subtitles.starktech.drone.destroyed",
     "sounds": [
       {
-        "name": "minecraft:entity.generic.explode",
-        "type": "event"
+        "name": "starktech:drone_destroyed"
       }
     ]
   },
@@ -119,8 +107,7 @@
     "subtitle": "subtitles.starktech.satellite.lock",
     "sounds": [
       {
-        "name": "minecraft:block.note_block.chime",
-        "type": "event"
+        "name": "starktech:satellite_lock"
       }
     ]
   },
@@ -128,8 +115,7 @@
     "subtitle": "subtitles.starktech.satellite.charge",
     "sounds": [
       {
-        "name": "minecraft:block.beacon.ambient",
-        "type": "event"
+        "name": "starktech:satellite_charge"
       }
     ]
   },
@@ -137,8 +123,7 @@
     "subtitle": "subtitles.starktech.satellite.fire",
     "sounds": [
       {
-        "name": "minecraft:entity.warden.sonic_boom",
-        "type": "event"
+        "name": "starktech:satellite_fire"
       }
     ]
   },
@@ -146,8 +131,7 @@
     "subtitle": "subtitles.starktech.comms.message",
     "sounds": [
       {
-        "name": "minecraft:block.note_block.chime",
-        "type": "event"
+        "name": "starktech:comms_message"
       }
     ]
   },
@@ -155,8 +139,7 @@
     "subtitle": "subtitles.starktech.comms.ping",
     "sounds": [
       {
-        "name": "minecraft:block.note_block.bell",
-        "type": "event"
+        "name": "starktech:comms_ping"
       }
     ]
   },
