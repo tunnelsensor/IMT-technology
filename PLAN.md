@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 45 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 48 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle functies één voor één zien, met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -209,8 +209,16 @@ wat de satelliet afmaakt, dan de kleine dingen, dan de grote.
 - [x] Showcase: geluid standaard op 100% (ook de stem) — `49f1931`
 
 **Illusies richten**
-- [ ] Valse muur: vóór het plaatsen de drone besturen en zo richten waar de muur komt
-- [ ] Nep-leger: de zombies zakten in de grond; ook richten met de drone, zoals de muur
+- [x] Valse muur: vóór het plaatsen de drone besturen en zo richten waar de muur komt — `1f47de1`
+      Je kijkt door de drone; de muur staat als voorvertoning waar je naar kijkt, in een blauw
+      kader met een richtlijn, en draait mee met je kijkrichting. Linkermuisknop = neerzetten,
+      rechtermuisknop = annuleren. Nagekeken op screenshots (`-Ponly=illusion`).
+- [x] Nep-leger: de zombies zakten in de grond; ook richten met de drone, zoals de muur — `1f47de1`
+      Ze stonden precies één blok te laag. Nu staat elke zombie op de grond onder zijn eigen
+      plek, dus ook netjes op de treden van een heuvel.
+      Onderweg gevonden: de spionagedrone en de cloakingdrone waren nooit echt onzichtbaar
+      (Minecraft zette dat meteen weer uit). Nu wel, en hun lampjes verraden ze ook niet meer.
+      Een beschadigde drone waar je doorheen kijkt, vult je beeld niet meer met rook.
 
 **Stroomkabels en de schildkoepel**
 - [ ] Een kabelblok: zonnepanelen en warmtegeneratoren sturen stroom naar alles wat stroom

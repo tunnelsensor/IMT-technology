@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (45 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (48 automatische tests).
 
 ---
 
@@ -186,6 +186,11 @@ wereld verandert niets.
 - **Nep-leger** — van het spawn-ei dat je in je hand houdt.
 - **Onzichtbaar veld** — alles in het veld wordt niet meer getekend.
 
+Een muur of leger **richt je eerst**: een drone vliegt van je weg en jij kijkt door hem heen
+(WASD, spatie en shift om te vliegen). Waar je naar kijkt, zie je de illusie als voorvertoning
+in een blauw kader; de muur draait mee zodat hij dwars op je kijkrichting staat.
+**Linkermuisknop** zet hem neer, **rechtermuisknop** annuleert (de drone gaat terug).
+
 Zwakke plekken (net als in de film): waar twee velden overlappen gaat het beeld **flikkeren**,
 de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes en een zacht
 zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
@@ -343,7 +348,7 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 45 tests over de toren en zijn kluis, de drones en
+- **Tests**: `gradlew runGameTestServer` — 48 tests over de toren en zijn kluis, de drones en
   het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
   laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
