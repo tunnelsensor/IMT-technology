@@ -4,6 +4,9 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
+import com.senne.starktech.client.voice.VoiceAction;
+import com.senne.starktech.client.voice.VoiceCommandStore;
+import com.senne.starktech.client.voice.VoiceDictionary;
 import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.shield.ShieldColor;
 import net.minecraft.core.Direction;
@@ -305,6 +308,17 @@ public final class VisualCheck {
             t.shot(20, "53_drones_damaged_close");
         }
 
+        // --- Spraakcommando's: een commando met vier acties bovenaan, zodat de kolom rechts
+        // niet meer past en moet scrollen. Eerst bovenaan, dan helemaal naar beneden gescrold.
+        if (want("commands")) {
+            t.step(0, VisualCheck::addBusyCommand);
+            t.open(10, () -> new VoiceCommandsScreen(null));
+            t.shot(20, "80_commands_busy");
+            t.step(0, () -> scrollScreen(-10));
+            t.shot(10, "81_commands_scrolled");
+            t.close(0);
+        }
+
         // --- De laserpoort: een poort van oost naar west (twee hoog) en een van noord naar zuid.
         // De velden moeten één doorlopende wand vormen (---), geen losse plaatjes (| | |).
         if (want("laser")) {
@@ -408,6 +422,31 @@ public final class VisualCheck {
         return ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, facing)
                 .setValue(LaserEmitterBlock.COLOR, colour);
+    }
+
+    /**
+     * Zet (alleen in het geheugen, niet op schijf) een commando met vier acties bovenaan het
+     * woordenboek. Het scherm kiest het eerste commando, dus dat zie je meteen.
+     */
+    private static void addBusyCommand() {
+        VoiceDictionary.Command busy = new VoiceDictionary.Command("Lock down the base");
+        busy.actions.add(new VoiceDictionary.ActionRef(VoiceAction.REDSTONE_ON, "front door"));
+        busy.actions.add(new VoiceDictionary.ActionRef(VoiceAction.REDSTONE_OFF, "lights"));
+        busy.actions.add(new VoiceDictionary.ActionRef(VoiceAction.REDSTONE_PULSE, "alarm"));
+        busy.actions.add(new VoiceDictionary.ActionRef(VoiceAction.MUSIC_PLAY, "back in black"));
+        busy.reply = "Base locked down.";
+        busy.phrases.add("lock down the base");
+        busy.phrases.add("lockdown");
+        busy.phrases.add("we are under attack");
+        VoiceCommandStore.dictionary().commands.addFirst(busy);
+    }
+
+    /** Het wieltje van de muis, midden rechts in het open scherm (negatief = naar beneden). */
+    private static void scrollScreen(double amount) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) {
+            mc.screen.mouseScrolled(mc.screen.width * 0.62, mc.screen.height * 0.3, 0, amount);
+        }
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */

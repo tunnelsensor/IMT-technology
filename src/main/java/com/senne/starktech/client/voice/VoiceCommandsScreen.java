@@ -1,5 +1,6 @@
 package com.senne.starktech.client.voice;
 
+import com.senne.starktech.client.ScrollBar;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,11 +32,19 @@ import net.minecraft.Util;
  *
  * Onderaan kun je een zin testen: je ziet meteen welk commando E.D.I.T.H. zou kiezen.
  * Je wijzigingen worden opgeslagen als je op Opslaan of Klaar klikt (ook met Esc).
+ *
+ * Past het gekozen commando niet in beeld (veel acties, een klein scherm), dan krijgt de
+ * rechterkant een scrollbalk: scrollen met het wieltje of de balk slepen. De lijst links heeft
+ * er ook een als er meer commando's zijn dan er passen.
  */
 public class VoiceCommandsScreen extends Screen {
     private enum Tab { COMMANDS, SYNONYMS }
 
     private static final int ROW_H = 14;
+    /** Het vak met de zinnen wordt nooit lager dan dit (anders zie je er niets in). */
+    private static final int MIN_PHRASES_H = 60;
+    /** Eén tik aan het wieltje scrolt de rechterkant zoveel pixels (één regel met een actie). */
+    private static final int EDITOR_STEP = 18;
     private static final int WHITE = 0xFFE8FBFF;
     private static final int CYAN = 0xFF3FD8FF;
     private static final int GREY = 0xFF8A9BA0;
@@ -71,6 +80,14 @@ public class VoiceCommandsScreen extends Screen {
     private int phrasesLabelY;
     private int testY;
     private final List<Integer> visible = new ArrayList<>();
+    /** De lijst links: hoeveel regels er passen, en zijn scrollbalk. */
+    private int listRows;
+    private final ScrollBar listBar = new ScrollBar();
+    /** De rechterkant (het gekozen commando): hoe ver gescrold, waar hij begint en eindigt, en zijn balk. */
+    private int editorScroll;
+    private int editorY0;
+    private int editorY1;
+    private final ScrollBar editorBar = new ScrollBar();
 
     public VoiceCommandsScreen(Screen parent) {
         super(Component.translatable("screen.starktech.voice_edit"));
@@ -137,7 +154,11 @@ public class VoiceCommandsScreen extends Screen {
         updateVisible();
         int listTop = y0 + 20;
         int rows = Math.max(1, (y1 - 22 - listTop) / ROW_H);
+        listRows = rows;
         listScroll = Math.max(0, Math.min(listScroll, visible.size() - rows));
+        listBar.set(left + listW - ScrollBar.WIDTH, listTop, rows * ROW_H - 1, visible.size(), rows, listScroll);
+        // Is er een balk nodig, dan worden de knoppen iets smaller zodat hij ernaast past.
+        int buttonW = listBar.needed() ? listW - ScrollBar.WIDTH - 2 : listW;
         for (int row = 0; row < rows && listScroll + row < visible.size(); row++) {
             int index = visible.get(listScroll + row);
             VoiceDictionary.Command command = working.commands.get(index);
@@ -146,7 +167,7 @@ public class VoiceCommandsScreen extends Screen {
             addRenderableWidget(Button.builder(label, b -> {
                 selected = index;
                 rebuildWidgets();
-            }).bounds(left, listTop + row * ROW_H, listW, ROW_H - 1).build());
+            }).bounds(left, listTop + row * ROW_H, buttonW, ROW_H - 1).build());
         }
         int half = (listW - 4) / 2;
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.voice_edit.new"), b -> addCommand())
@@ -154,23 +175,38 @@ public class VoiceCommandsScreen extends Screen {
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.voice_edit.delete"), b -> confirmDelete())
                 .bounds(left + half + 4, y1 - 18, half, 18).build());
 
-        // --- Rechts: het gekozen commando
+        // --- Rechts: het gekozen commando, in een kolom die scrolt als hij niet in beeld past
+        editorY0 = y0;
+        editorY1 = y1;
         if (selected < 0 || selected >= working.commands.size()) {
+            editorBar.set(0, 0, 0, 0, 0, 0);
             return;
         }
         VoiceDictionary.Command command = working.commands.get(selected);
-        int rightW = left + panelW - rightX;
-        int y = y0;
+        String last = VoiceControl.lastUnknown();
+        // Eerst uitrekenen hoe hoog alles samen is. Past het, dan krijgen de zinnen de rest van
+        // de ruimte; past het niet, dan krijgen ze MIN_PHRASES_H en komt er een scrollbalk.
+        int view = y1 - y0;
+        int fixed = 20 + command.actions.size() * 18 + (command.actions.size() < 4 ? 18 : 0)
+                + (needsSlotHint(command) ? 12 : 0) + 2 + 22 + 11 + (last.isEmpty() ? 0 : 20);
+        int phrasesH = Math.max(MIN_PHRASES_H, view - fixed);
+        int content = fixed + phrasesH;
+        editorScroll = Math.max(0, Math.min(editorScroll, content - view));
+        editorBar.set(left + panelW - ScrollBar.WIDTH, y0, view, content, view, editorScroll);
+        int rightW = left + panelW - rightX - (editorBar.needed() ? ScrollBar.WIDTH + 3 : 0);
+        int y = y0 - editorScroll; // waar de kolom op het scherm begint (boven de rand als je gescrold hebt)
 
         nameLabelY = y + 4;
-        EditBox name = new EditBox(font, rightX + 60, y, rightW - 60, 16, Component.translatable("screen.starktech.voice_edit.name"));
-        name.setMaxLength(40);
-        name.setValue(command.name);
-        name.setResponder(value -> {
-            command.name = value;
-            changed();
-        });
-        addRenderableWidget(name);
+        if (inEditor(y, 16)) {
+            EditBox name = new EditBox(font, rightX + 60, y, rightW - 60, 16, Component.translatable("screen.starktech.voice_edit.name"));
+            name.setMaxLength(40);
+            name.setValue(command.name);
+            name.setResponder(value -> {
+                command.name = value;
+                changed();
+            });
+            addRenderableWidget(name);
+        }
         y += 20;
 
         actionsLabelY = y + 4;
@@ -178,31 +214,35 @@ public class VoiceCommandsScreen extends Screen {
             int actionIndex = i;
             VoiceDictionary.ActionRef ref = command.actions.get(i);
             int actionW = ref.action().needsValue() ? (rightW - 60) / 2 : rightW - 60 - 20;
-            addRenderableWidget(Button.builder(Component.translatable(ref.action().translationKey()),
-                            b -> pickAction(command, actionIndex))
-                    .bounds(rightX + 60, y, actionW, 16).build());
-            if (ref.action().needsValue()) {
-                EditBox value = new EditBox(font, rightX + 62 + actionW, y, rightW - 60 - actionW - 22, 16,
-                        Component.translatable("screen.starktech.voice_edit.value"));
-                value.setMaxLength(100);
-                value.setValue(ref.value());
-                value.setHint(Component.translatable("screen.starktech.voice_edit.value_hint"));
-                value.setResponder(text -> {
-                    command.actions.set(actionIndex, new VoiceDictionary.ActionRef(command.actions.get(actionIndex).action(), text));
+            if (inEditor(y, 16)) {
+                addRenderableWidget(Button.builder(Component.translatable(ref.action().translationKey()),
+                                b -> pickAction(command, actionIndex))
+                        .bounds(rightX + 60, y, actionW, 16).build());
+                if (ref.action().needsValue()) {
+                    EditBox value = new EditBox(font, rightX + 62 + actionW, y, rightW - 60 - actionW - 22, 16,
+                            Component.translatable("screen.starktech.voice_edit.value"));
+                    value.setMaxLength(100);
+                    value.setValue(ref.value());
+                    value.setHint(Component.translatable("screen.starktech.voice_edit.value_hint"));
+                    value.setResponder(text -> {
+                        command.actions.set(actionIndex, new VoiceDictionary.ActionRef(command.actions.get(actionIndex).action(), text));
+                        changed();
+                    });
+                    addRenderableWidget(value);
+                }
+                addRenderableWidget(Button.builder(Component.literal("×"), b -> {
+                    command.actions.remove(actionIndex);
                     changed();
-                });
-                addRenderableWidget(value);
+                    rebuildWidgets();
+                }).bounds(rightX + rightW - 18, y, 18, 16).build());
             }
-            addRenderableWidget(Button.builder(Component.literal("×"), b -> {
-                command.actions.remove(actionIndex);
-                changed();
-                rebuildWidgets();
-            }).bounds(rightX + rightW - 18, y, 18, 16).build());
             y += 18;
         }
         if (command.actions.size() < 4) {
-            addRenderableWidget(Button.builder(Component.translatable("screen.starktech.voice_edit.add_action"),
-                    b -> pickAction(command, -1)).bounds(rightX + 60, y, 90, 16).build());
+            if (inEditor(y, 16)) {
+                addRenderableWidget(Button.builder(Component.translatable("screen.starktech.voice_edit.add_action"),
+                        b -> pickAction(command, -1)).bounds(rightX + 60, y, 90, 16).build());
+            }
             y += 18;
         }
         hintY = y + 2;
@@ -212,41 +252,52 @@ public class VoiceCommandsScreen extends Screen {
         y += 2;
 
         replyLabelY = y + 4;
-        EditBox reply = new EditBox(font, rightX + 60, y, rightW - 60, 16, Component.translatable("screen.starktech.voice_edit.reply"));
-        reply.setMaxLength(200);
-        // Antwoorden uit het standaard-woordenboek zijn vertaalsleutels (@...): toon de echte tekst.
-        reply.setValue(command.reply.startsWith("@") ? Component.translatable(command.reply.substring(1)).getString() : command.reply);
-        reply.setHint(Component.translatable("screen.starktech.voice_edit.reply_hint"));
-        reply.setResponder(value -> {
-            command.reply = value;
-            changed();
-        });
-        addRenderableWidget(reply);
+        if (inEditor(y, 16)) {
+            EditBox reply = new EditBox(font, rightX + 60, y, rightW - 60, 16, Component.translatable("screen.starktech.voice_edit.reply"));
+            reply.setMaxLength(200);
+            // Antwoorden uit het standaard-woordenboek zijn vertaalsleutels (@...): toon de echte tekst.
+            reply.setValue(command.reply.startsWith("@") ? Component.translatable(command.reply.substring(1)).getString() : command.reply);
+            reply.setHint(Component.translatable("screen.starktech.voice_edit.reply_hint"));
+            reply.setResponder(value -> {
+                command.reply = value;
+                changed();
+            });
+            addRenderableWidget(reply);
+        }
         y += 22;
 
         phrasesLabelY = y;
         y += 11;
-        String last = VoiceControl.lastUnknown();
-        int phrasesBottom = last.isEmpty() ? y1 : y1 - 20;
-        MultiLineEditBox phrases = new MultiLineEditBox(font, rightX, y, rightW, Math.max(30, phrasesBottom - y),
-                Component.translatable("screen.starktech.voice_edit.phrases_hint"),
-                Component.translatable("screen.starktech.voice_edit.phrases"));
-        phrases.setCharacterLimit(20000);
-        phrases.setValue(String.join("\n", command.phrases));
-        phrases.setValueListener(value -> {
-            command.phrases.clear();
-            Arrays.stream(value.split("\n")).map(String::strip).filter(line -> !line.isEmpty()).forEach(command.phrases::add);
-            changed();
-        });
-        addRenderableWidget(phrases);
-        if (!last.isEmpty()) {
+        // Het zinnenvak scrolt zelf ook; we laten het stuk zien dat binnen de kolom valt.
+        int boxTop = Math.max(y, y0);
+        int boxBottom = Math.min(y + phrasesH, y1);
+        if (boxBottom - boxTop >= 24) {
+            MultiLineEditBox phrases = new MultiLineEditBox(font, rightX, boxTop, rightW, boxBottom - boxTop,
+                    Component.translatable("screen.starktech.voice_edit.phrases_hint"),
+                    Component.translatable("screen.starktech.voice_edit.phrases"));
+            phrases.setCharacterLimit(20000);
+            phrases.setValue(String.join("\n", command.phrases));
+            phrases.setValueListener(value -> {
+                command.phrases.clear();
+                Arrays.stream(value.split("\n")).map(String::strip).filter(line -> !line.isEmpty()).forEach(command.phrases::add);
+                changed();
+            });
+            addRenderableWidget(phrases);
+        }
+        y += phrasesH + 2;
+        if (!last.isEmpty() && inEditor(y, 18)) {
             String shown = last.length() > 40 ? last.substring(0, 40) + "…" : last;
             addRenderableWidget(Button.builder(Component.translatable("screen.starktech.voice_edit.add_last", shown), b -> {
                 command.phrases.add(last);
                 changed();
                 rebuildWidgets();
-            }).bounds(rightX, y1 - 18, rightW, 18).build());
+            }).bounds(rightX, y, rightW, 18).build());
         }
+    }
+
+    /** Valt dit stuk (van y, zo hoog) helemaal binnen de zichtbare kolom rechts? */
+    private boolean inEditor(int y, int height) {
+        return y >= editorY0 && y + height <= editorY1;
     }
 
     private void initSynonyms(int y0, int y1) {
@@ -291,14 +342,16 @@ public class VoiceCommandsScreen extends Screen {
         if (tab == Tab.COMMANDS) {
             if (selected >= 0 && selected < working.commands.size()) {
                 VoiceDictionary.Command command = working.commands.get(selected);
-                g.drawString(font, Component.translatable("screen.starktech.voice_edit.name"), rightX, nameLabelY, GREY, false);
-                g.drawString(font, Component.translatable("screen.starktech.voice_edit.actions"), rightX, actionsLabelY, GREY, false);
+                label(g, Component.translatable("screen.starktech.voice_edit.name"), nameLabelY, GREY);
+                label(g, Component.translatable("screen.starktech.voice_edit.actions"), actionsLabelY, GREY);
                 if (needsSlotHint(command)) {
-                    g.drawString(font, Component.translatable("screen.starktech.voice_edit.slot_hint"), rightX, hintY, ORANGE, false);
+                    label(g, Component.translatable("screen.starktech.voice_edit.slot_hint"), hintY, ORANGE);
                 }
-                g.drawString(font, Component.translatable("screen.starktech.voice_edit.reply"), rightX, replyLabelY, GREY, false);
-                g.drawString(font, Component.translatable("screen.starktech.voice_edit.phrases", command.phrases.size()), rightX, phrasesLabelY, GREY, false);
+                label(g, Component.translatable("screen.starktech.voice_edit.reply"), replyLabelY, GREY);
+                label(g, Component.translatable("screen.starktech.voice_edit.phrases", command.phrases.size()), phrasesLabelY, GREY);
+                editorBar.render(g, mouseX, mouseY);
             }
+            listBar.render(g, mouseX, mouseY);
         } else {
             g.drawString(font, Component.translatable("screen.starktech.voice_edit.synonyms_label"), left, top + 22, GREY, false);
             g.drawString(font, Component.translatable("screen.starktech.voice_edit.ignore"), left, testY - 36, GREY, false);
@@ -307,6 +360,13 @@ public class VoiceCommandsScreen extends Screen {
         g.drawString(font, testResult, left + 76 + Math.max(80, panelW / 2 - 70), testY + 5, WHITE, false);
         if (Util.getMillis() < statusUntil) {
             g.drawCenteredString(font, status, left + panelW / 2, top + panelH - 14, GREEN);
+        }
+    }
+
+    /** Een opschrift in de kolom rechts, alleen als het (na scrollen) nog in beeld is. */
+    private void label(GuiGraphics g, Component text, int y, int colour) {
+        if (inEditor(y, 8)) {
+            g.drawString(font, text, rightX, y, colour, false);
         }
     }
 
@@ -346,6 +406,7 @@ public class VoiceCommandsScreen extends Screen {
         }
         working.commands.add(command);
         selected = working.commands.size() - 1;
+        editorScroll = 0;
         filter = "";
         listScroll = Integer.MAX_VALUE; // naar het einde van de lijst
         changed();
@@ -500,7 +561,68 @@ public class VoiceCommandsScreen extends Screen {
             rebuildWidgets();
             return true;
         }
-        return super.mouseScrolled(x, y, scrollX, scrollY);
+        // Eerst het zinnenvak (dat scrolt zelf), anders de hele kolom rechts.
+        if (super.mouseScrolled(x, y, scrollX, scrollY)) {
+            return true;
+        }
+        if (tab == Tab.COMMANDS && x >= rightX && editorBar.needed() && scrollY != 0) {
+            editorScroll = Math.max(0, Math.min(editorBar.max(), editorScroll - (int) Math.signum(scrollY) * EDITOR_STEP));
+            rebuildWidgets();
+            return true;
+        }
+        return false;
+    }
+
+    /** Een klik op een van de scrollbalken pakt hem vast (of springt erheen). */
+    @Override
+    public boolean mouseClicked(double x, double y, int button) {
+        if (tab == Tab.COMMANDS && button == 0) {
+            int list = listBar.mouseClicked(x, y);
+            if (list >= 0) {
+                setListScroll(list);
+                return true;
+            }
+            int editor = editorBar.mouseClicked(x, y);
+            if (editor >= 0) {
+                setEditorScroll(editor);
+                return true;
+            }
+        }
+        return super.mouseClicked(x, y, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
+        if (listBar.isDragging()) {
+            setListScroll(listBar.mouseDragged(y));
+            return true;
+        }
+        if (editorBar.isDragging()) {
+            setEditorScroll(editorBar.mouseDragged(y));
+            return true;
+        }
+        return super.mouseDragged(x, y, button, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(double x, double y, int button) {
+        listBar.mouseReleased();
+        editorBar.mouseReleased();
+        return super.mouseReleased(x, y, button);
+    }
+
+    private void setListScroll(int rows) {
+        if (rows != listScroll) {
+            listScroll = rows;
+            rebuildWidgets();
+        }
+    }
+
+    private void setEditorScroll(int pixels) {
+        if (pixels != editorScroll) {
+            editorScroll = pixels;
+            rebuildWidgets();
+        }
     }
 
     @Override
