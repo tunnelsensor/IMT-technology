@@ -205,36 +205,38 @@ def chime(freq, duration, decay_speed=5.0):
 
 def edith_boot():
     """
-    De bril gaat aan: een zachte brom die aanzwelt, een oplopend loopje van vier tonen, en dan
-    een helder, glinsterend akkoord ("klaar"). Duurt ruim twee seconden, net als de animatie.
+    De bril gaat aan, als een arc reactor: een elektrisch gejank dat oplaadt zoals een
+    condensator (steeds hoger en luider, met geknetter), dan een diepe klap als de reactor
+    aanslaat en een warme brom die blijft hangen. (Jouw keuze "D" uit de voorbeelden.)
     """
-    total = np.zeros(int(RATE * 2.6))
-    # 1. Een lage brom met wat ruis, die aanzwelt.
-    t = seconds(1.2)
-    hum = (np.sin(2 * np.pi * 70 * t) + 0.5 * np.sin(2 * np.pi * 140 * t)) * np.linspace(0, 0.5, len(t))
-    hiss = bandpass(noise(1.2), 800, 5000) * np.linspace(0, 0.12, len(t))
-    place(total, fade(hum + hiss, 0.05, 0.3), 0.0)
-    # 2. Het loopje: vier tonen omhoog (C, E, G, hoge C).
-    for i, freq in enumerate((523.25, 659.25, 783.99, 1046.5)):
-        place(total, fade(chime(freq, 0.35, 9) * 0.35, 0.003, 0.05), 0.55 + i * 0.12)
-    # 3. Het akkoord: vier tonen tegelijk, die langzaam uitsterven.
-    for freq in (523.25, 659.25, 783.99, 987.77):
-        place(total, fade(chime(freq, 1.3, 2.6) * 0.22, 0.01, 0.2), 1.08)
-    return finish(total, peak=0.6)
+    total = np.zeros(int(RATE * 3.2))
+    whir = whine(180, 3000, 1.5, curve=1.4, wobble=0.35) * np.linspace(0.1, 1, int(RATE * 1.5)) ** 1.5 * 0.35
+    crackle = bandpass(noise(1.5), 3000, 10000) * np.linspace(0, 1, int(RATE * 1.5)) ** 3 * 0.25
+    place(total, fade(whir + crackle, 0.05, 0.01), 0.0)
+    thunk = np.sin(sweep(140, 45, 0.5, curve=0.6)) * decay(0.5, 7) * 1.3
+    t = seconds(1.6)
+    hum = (np.sin(2 * np.pi * 98 * t) + 0.5 * np.sin(2 * np.pi * 196 * t) + 0.25 * np.sin(2 * np.pi * 392 * t))         * decay(1.6, 1.8) * (1 + 0.15 * np.sin(2 * np.pi * 6 * t)) * 0.35
+    ring = np.sin(2 * np.pi * 1568 * t) * decay(1.6, 3) * 0.12
+    place(total, fade(thunk, 0.001, 0.1), 1.5)
+    place(total, fade(hum + ring, 0.005, 0.4), 1.5)
+    return finish(total, peak=0.7)
 
 
 def edith_blip():
-    """Een kort piepje: bij elke regel van de systeemcheck."""
-    tone = np.sin(sweep(2100, 1700, 0.07)) * decay(0.07, 45)
-    return finish(fade(tone, 0.002, 0.01), peak=0.45)
+    """Een klein elektrisch zapje: bij elke stap van de laadbalk."""
+    t = seconds(0.05)
+    zap = np.sin(sweep(3000, 1200, 0.05)) * decay(0.05, 50) + bandpass(noise(0.05), 4000, 10000) * decay(0.05, 90) * 0.4
+    return finish(fade(zap, 0.001, 0.01), peak=0.35)
 
 
 def edith_confirm():
-    """Twee tonen omhoog: "identiteit bevestigd"."""
-    total = np.zeros(int(RATE * 0.45))
-    place(total, fade(chime(1318.5, 0.18, 14) * 0.5, 0.003, 0.03), 0.0)
-    place(total, fade(chime(1975.5, 0.3, 9) * 0.5, 0.003, 0.05), 0.12)
-    return finish(total, peak=0.55)
+    """Identiteit bevestigd: een diepe dreun, een ping die omhoog schiet en een heldere nagalm."""
+    total = np.zeros(int(RATE * 1.3))
+    place(total, fade(np.sin(sweep(120, 50, 0.35)) * decay(0.35, 9) * 1.1, 0.001, 0.05), 0.0)
+    ping = np.sin(sweep(1046.5, 2093, 0.15, curve=0.5))
+    place(total, fade(ping * 0.4, 0.002, 0.01), 0.05)
+    place(total, fade(chime(2093, 1.0, 4) * 0.35, 0.002, 0.2), 0.2)
+    return finish(total, peak=0.6)
 
 
 # ---------------------------------------------------------------- meldingen en menu
