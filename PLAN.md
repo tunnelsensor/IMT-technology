@@ -198,8 +198,16 @@ wat de satelliet afmaakt, dan de kleine dingen, dan de grote.
 **Geluid en opstarten**
 - [ ] De bevestigingsgeluiden (zoals "aangekomen op bestemming") klinken lelijk: eigen
       E.D.I.T.H.-tonen, en meteen ook de andere geleende Minecraft-geluiden vervangen
-- [ ] Opstartanimatie: een laadbalk, duidelijk "E.D.I.T.H." in beeld, de bril zegt iets, en
-      je identiteit wordt gecontroleerd
+      Gebouwd in `270ae6b`: alle 17 geleende geluiden zijn nu eigen geluiden. **Wacht op jou:**
+      luister ze in `geluid-keuzes/alle-geluiden-nu/` (of alles achter elkaar in
+      `geluid-keuzes/alle_geluiden_achter_elkaar.wav`) en zeg welke je anders wilt.
+- [x] Opstartanimatie: een laadbalk, duidelijk "E.D.I.T.H." in beeld, de bril zegt iets, en
+      je identiteit wordt gecontroleerd — `6761fd5`, geluid `668fabb`
+      Groot logo in reactorringen, een laadbalk met wat er geladen wordt (je echte drones en
+      batterij), dan scant hij je eigen gezicht terwijl de balk op 90% wacht. Bevestigd: groen,
+      je naam, en E.D.I.T.H. zegt haar welkomstzin (die werd vroeger ongezien meteen gezegd).
+      Geluid: stijl "D, arc reactor", door jou gekozen uit vier voorbeelden.
+- [x] Showcase: geluid standaard op 100% (ook de stem) — `49f1931`
 
 **Illusies richten**
 - [ ] Valse muur: vóór het plaatsen de drone besturen en zo richten waar de muur komt
