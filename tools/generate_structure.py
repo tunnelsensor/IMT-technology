@@ -487,9 +487,9 @@ def build_laser_gauntlet():
     for i, z in enumerate(range(z0 + 3, z1 - 2, 2)):
         colour = colours[i % len(colours)]
         put(MID - 2, LASERS_Y + 1, z, "starktech:laser_emitter",
-            {"facing": "east", "powered": "true", "switched": "false", "color": colour})
+            {"facing": "east", "powered": "true", "color": colour})
         put(MID + 2, LASERS_Y + 1, z, "starktech:laser_emitter",
-            {"facing": "west", "powered": "true", "switched": "false", "color": colour})
+            {"facing": "west", "powered": "true", "color": colour})
         put(MID - 2, LASERS_Y, z, "minecraft:redstone_block")
         put(MID + 2, LASERS_Y, z, "minecraft:redstone_block")
 
@@ -549,7 +549,7 @@ def build_vault():
     put(MID, VAULT_Y + 1, MID + 3, "minecraft:heavy_weighted_pressure_plate", {"power": "0"})
     for x in (MID - 1, MID + 1):
         put(x, VAULT_Y + 1, z1 - 1, "starktech:laser_emitter",
-            {"facing": "north", "powered": "false", "switched": "false", "color": "red"})
+            {"facing": "north", "powered": "false", "color": "red"})
 
     # De bewakers.
     spawner(x0 + 2, VAULT_Y + 1, z0 + 2, "minecraft:iron_golem")

@@ -2,14 +2,12 @@ package com.senne.starktech.shield;
 
 import com.mojang.serialization.MapCodec;
 import com.senne.starktech.edith.EdithBalance;
-import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModBlocks;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
@@ -17,7 +15,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -30,46 +27,33 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De laserzender: zet er twee tegenover elkaar en er ontstaat een rode energiewand tussen
+ * De laserzender: zet er twee tegenover elkaar en er ontstaat een energiewand tussen
  * (zoals de "ray shields" uit Star Wars). Handig als deur die je niet ziet aankomen, of als
  * val in een gang.
  *
- * Aanzetten kan op twee manieren:
- * - met redstone (een hendel, een drukplaat, of een E.D.I.T.H.-relais ernaast);
- * - of je meldt de zender zelf aan bij je bril (rechtsklikken met de bril op) en zegt
- *   bijvoorbeeld "zet de poort aan".
+ * Een volledig blok met een lens aan de voorkant. Aan en uit gaat met redstone: een hendel,
+ * een drukplaat, of een E.D.I.T.H.-relais ernaast (dan kan E.D.I.T.H. hem toch schakelen).
+ * Rechtsklikken wisselt de kleur.
  *
  * De wand loopt in de richting waarin de zender kijkt, tot maximaal LASER_MAX_LENGTH blokken,
  * en stopt bij de tegenoverliggende zender (of bij het eerste blok dat in de weg staat).
  */
-public class LaserEmitterBlock extends Block implements EdithSwitchable {
+public class LaserEmitterBlock extends Block {
     public static final MapCodec<LaserEmitterBlock> CODEC = simpleCodec(LaserEmitterBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    /**
-     * Aangezet door E.D.I.T.H. (of een spraakcommando) in plaats van door redstone.
-     *
-     * Zonder dit ging de wand weer uit zodra er iets in de buurt veranderde: elke blok-update
-     * liet de zender kijken of er redstone op stond, en dat was niet zo.
-     */
-    public static final BooleanProperty SWITCHED = BooleanProperty.create("switched");
-    /** De kleur van het veld dat deze zender maakt. Sluipen + rechtsklik bladert erdoorheen. */
+    /** De kleur van het veld dat deze zender maakt. Rechtsklikken bladert erdoorheen. */
     public static final EnumProperty<ShieldColor> COLOR = EnumProperty.create("color", ShieldColor.class);
-
-    private static final VoxelShape SHAPE = Block.box(3, 0, 3, 13, 6, 13);
 
     public LaserEmitterBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(POWERED, false)
-                .setValue(SWITCHED, false)
                 .setValue(COLOR, ShieldColor.BLUE));
     }
 
@@ -80,7 +64,7 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED, SWITCHED, COLOR);
+        builder.add(FACING, POWERED, COLOR);
     }
 
     @Override
@@ -99,11 +83,6 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
-    @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
-    }
-
     // ---------------------------------------------------------------- Aan en uit
 
     /** Redstone erop? Dan gaat de wand aan; eraf, dan weer uit. */
@@ -113,8 +92,7 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
         if (level.isClientSide) {
             return;
         }
-        // Aan als er redstone op staat OF als E.D.I.T.H. hem heeft aangezet.
-        boolean wanted = level.hasNeighborSignal(pos) || state.getValue(SWITCHED);
+        boolean wanted = level.hasNeighborSignal(pos);
         if (wanted != state.getValue(POWERED)) {
             setActive((ServerLevel) level, pos, state, wanted);
         }
@@ -124,14 +102,8 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (level instanceof ServerLevel serverLevel) {
-            if (level.hasNeighborSignal(pos)) {
-                setActive(serverLevel, pos, state, true);
-            }
-            if (placer instanceof ServerPlayer player) {
-                // Ook aanmelden bij de bril, zodat E.D.I.T.H. hem met een naam kan aansturen.
-                EdithRedstone.register(player, pos);
-            }
+        if (level instanceof ServerLevel serverLevel && level.hasNeighborSignal(pos)) {
+            setActive(serverLevel, pos, state, true);
         }
     }
 
@@ -144,18 +116,11 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
-    /** Rechtsklikken met de bril op: naam en groep geven (dan kan E.D.I.T.H. hem aansturen). */
+    /** Rechtsklikken: de volgende kleur. */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        // Sluipen erbij: dan blader je door de kleuren in plaats van het naamscherm te openen.
-        if (player.isShiftKeyDown()) {
-            if (level instanceof ServerLevel serverLevel) {
-                recolour(serverLevel, pos, state);
-            }
-            return InteractionResult.sidedSuccess(level.isClientSide);
-        }
-        if (player instanceof ServerPlayer serverPlayer) {
-            EdithRedstone.openEditor(serverPlayer, pos);
+        if (level instanceof ServerLevel serverLevel) {
+            recolour(serverLevel, pos, state);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -172,18 +137,6 @@ public class LaserEmitterBlock extends Block implements EdithSwitchable {
             }
         }
         level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 0.6f, 1.2f);
-    }
-
-    /** E.D.I.T.H. zet hem aan of uit (zie EdithSwitchable). */
-    @Override
-    public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
-        // Onthouden dat E.D.I.T.H. hem aanzette, zodat een blok-update hem niet weer uitdoet.
-        setActive(level, pos, state.setValue(SWITCHED, on), on);
-    }
-
-    @Override
-    public boolean isSwitchedOn(BlockState state) {
-        return state.getValue(POWERED);
     }
 
     // ---------------------------------------------------------------- De wand maken en weghalen

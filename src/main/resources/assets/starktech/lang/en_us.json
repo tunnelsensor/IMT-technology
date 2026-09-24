@@ -414,7 +414,6 @@
   "edith.starktech.music.what": "What should I play?",
   "screen.starktech.relays": "E.D.I.T.H. redstone",
   "screen.starktech.relays.kind.relay": "Relays",
-  "screen.starktech.relays.kind.emitter": "Laser emitters",
   "screen.starktech.relays.kind.dome": "Shield domes",
   "screen.starktech.relays.group": "Group: %s",
   "screen.starktech.relays.on": "ON",

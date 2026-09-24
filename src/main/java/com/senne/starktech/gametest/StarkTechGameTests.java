@@ -263,9 +263,8 @@ public final class StarkTechGameTests {
         BlockPos far = emitter.east(5);
         helper.setBlock(far, ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, Direction.WEST));
-        BlockPos abs = helper.absolutePos(emitter);
-        ((LaserEmitterBlock) ModBlocks.LASER_EMITTER.get())
-                .setSwitched(helper.getLevel(), abs, helper.getLevel().getBlockState(abs), true);
+        // Aanzetten met redstone (een redstoneblok eronder).
+        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
 
         // Meteen daarna mag hij nog niet dicht zijn: hij hoort te schuiven.
         int immediately = countWall(helper, emitter, 4);

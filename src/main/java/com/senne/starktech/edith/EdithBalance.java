@@ -310,8 +310,6 @@ public final class EdithBalance {
     public static final int RELAY_COST = 5;
     /** Hoe lang een puls duurt (in ticks). 20 ticks = 1 seconde. */
     public static final int RELAY_PULSE_TICKS = 20;
-    /** Tot hoe ver je de naamplaatjes van je relais in de HUD ziet (in blokken). */
-    public static final double RELAY_LABEL_RANGE = 24.0;
 
     // ---------------------------------------------------------------- Comms
     /** Maximale lengte van een bericht. */

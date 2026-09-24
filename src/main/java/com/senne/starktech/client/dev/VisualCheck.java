@@ -4,6 +4,9 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
+import com.senne.starktech.shield.LaserEmitterBlock;
+import com.senne.starktech.shield.ShieldColor;
+import net.minecraft.core.Direction;
 import com.senne.starktech.client.SatelliteScreen;
 import com.senne.starktech.satellite.SatelliteUpgrade;
 import com.senne.starktech.satellite.SatelliteUpgrades;
@@ -302,6 +305,18 @@ public final class VisualCheck {
             t.shot(20, "53_drones_damaged_close");
         }
 
+        // --- De laserpoort: een poort van oost naar west (twee hoog) en een van noord naar zuid.
+        // De velden moeten één doorlopende wand vormen (---), geen losse plaatjes (| | |).
+        if (want("laser")) {
+            t.onServer(0, VisualCheck::buildLaserGates);
+            t.view(40, 33.5, -60, 14.5, 0, 5);
+            t.shot(0, "70_laser_front");
+            t.view(0, 36.5, -53, 21.5, 0, 89);
+            t.shot(20, "71_laser_above");
+            t.view(0, 39.5, -59.5, 14.5, 35, 10);
+            t.shot(20, "72_laser_angle");
+        }
+
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
         if (want("satellite")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);
@@ -369,6 +384,30 @@ public final class VisualCheck {
 
         player.getAbilities().flying = true;
         player.onUpdateAbilities();
+    }
+
+    /** Twee laserpoorten met een redstoneblok achter elke zender (zie de sectie "laser"). */
+    private static void buildLaserGates(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockState power = Blocks.REDSTONE_BLOCK.defaultBlockState();
+        // Van west (x 30) naar oost (x 36), twee blokken hoog.
+        for (int y = -60; y <= -59; y++) {
+            level.setBlockAndUpdate(new BlockPos(30, y, 20), emitter(Direction.EAST, ShieldColor.BLUE));
+            level.setBlockAndUpdate(new BlockPos(36, y, 20), emitter(Direction.WEST, ShieldColor.BLUE));
+            level.setBlockAndUpdate(new BlockPos(29, y, 20), power);
+            level.setBlockAndUpdate(new BlockPos(37, y, 20), power);
+        }
+        // Van noord (z 17) naar zuid (z 23), in het rood.
+        level.setBlockAndUpdate(new BlockPos(42, -60, 17), emitter(Direction.SOUTH, ShieldColor.RED));
+        level.setBlockAndUpdate(new BlockPos(42, -60, 23), emitter(Direction.NORTH, ShieldColor.RED));
+        level.setBlockAndUpdate(new BlockPos(42, -60, 16), power);
+        level.setBlockAndUpdate(new BlockPos(42, -60, 24), power);
+    }
+
+    private static BlockState emitter(Direction facing, ShieldColor colour) {
+        return ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, facing)
+                .setValue(LaserEmitterBlock.COLOR, colour);
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */

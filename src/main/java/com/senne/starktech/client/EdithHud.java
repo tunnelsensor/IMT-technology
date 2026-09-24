@@ -15,7 +15,6 @@ import com.senne.starktech.client.hud.NotificationWidget;
 import com.senne.starktech.client.hud.OreMarkerWidget;
 import com.senne.starktech.client.hud.PingWidget;
 import com.senne.starktech.client.hud.RepulsorWidget;
-import com.senne.starktech.client.hud.RelayLabelWidget;
 import com.senne.starktech.client.hud.SatelliteStrikeWidget;
 import com.senne.starktech.client.hud.SpyTargetWidget;
 import com.senne.starktech.client.hud.StatusPanelWidget;
@@ -62,7 +61,6 @@ public class EdithHud implements LayeredDraw.Layer {
             new NavigationMarkerWidget(),
             new PingWidget(),
             new SpyTargetWidget(),
-            new RelayLabelWidget(),
             new HackBubbleWidget(),
             new SatelliteStrikeWidget(),
             new CompassWidget(),

@@ -89,8 +89,7 @@ public final class ModBlocks {
                     .strength(3.0f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
-                    .lightLevel(state -> state.getValue(LaserEmitterBlock.POWERED) ? 10 : 3)
-                    .noOcclusion());
+                    .lightLevel(state -> state.getValue(LaserEmitterBlock.POWERED) ? 10 : 3));
 
     /**
      * De energiewand zelf. Je kunt hem niet breken en hij valt nooit als item: hij hoort bij

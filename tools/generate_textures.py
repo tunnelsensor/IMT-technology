@@ -735,15 +735,43 @@ def relay_textures():
 # --------------------------------------------------------------------- Fase 11: rayshield
 
 def shield_textures():
-    """Laserzender (met lens) en de rode energiewand."""
-    # Zijkant van de zender: donker metaal met koelribben
-    side = img(16, 16, METAL_DARK)
+    """
+    De laserzender (een volledig blok met een lens in een frame) en de rode energiewand.
+    Zie models/block/laser_emitter.json voor welk plaatje op welke kant zit.
+    """
+    # Zijkant: een donker metalen paneel met een lichte rand, koelsleuven en een rode streep.
+    side = img(16, 16, METAL_1)
     d = ImageDraw.Draw(side)
-    d.rectangle([0, 0, 15, 0], fill=METAL_2)
-    for y in (4, 7, 10):
-        d.line([2, y, 13, y], fill=METAL_1)
-    d.line([1, 13, 14, 13], fill=(150, 30, 30, 255))
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.line([1, 1, 14, 1], fill=METAL_3)
+    d.line([1, 1, 1, 14], fill=METAL_2)
+    for y in (4, 6, 8, 10):
+        d.line([4, y, 11, y], fill=METAL_DARK)
+    d.line([2, 13, 13, 13], fill=(150, 30, 30, 255))
+    px(side, [(2, 2), (13, 2), (2, 14), (13, 14)], METAL_3)  # boutjes
     save(side, "block/emitter_side.png")
+
+    # Achterkant: hetzelfde paneel met een aansluiting in het midden.
+    back = side.copy()
+    d = ImageDraw.Draw(back)
+    d.rectangle([4, 3, 11, 11], fill=METAL_1)
+    d.rectangle([6, 5, 9, 9], fill=METAL_DARK, outline=METAL_3)
+    px(back, [(7, 7), (8, 7)], GOLD_DARK)
+    save(back, "block/emitter_back.png")
+
+    # Het frame om de lens: licht metaal met gouden hoeken.
+    front = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(front)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.rectangle([3, 3, 12, 12], outline=METAL_1)
+    for x, y in ((1, 1), (13, 1), (1, 13), (13, 13)):
+        d.rectangle([x, y, x + 1, y + 1], fill=GOLD)
+    d.line([5, 1, 10, 1], fill=(150, 30, 30, 255))
+    save(front, "block/emitter_front.png")
+
+    # De holte achter de lens: bijna zwart.
+    recess = img(16, 16, (16, 18, 22, 255))
+    save(recess, "block/emitter_recess.png")
 
     # De lens: uit = donkerrood, aan = fel rood met een gloed
     def lens(dark, bright, glow):

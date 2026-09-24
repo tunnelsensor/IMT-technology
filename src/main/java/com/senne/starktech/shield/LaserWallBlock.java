@@ -55,19 +55,20 @@ public class LaserWallBlock extends Block {
 
     /**
      * Een dunne plaat midden in het blok, net als een glasplaat - maar er komt niemand door.
-     * Hij staat dwars op de doorgang, dus de kant waar de zender naartoe kijkt bepaalt hoe
-     * de plaat ligt.
+     * De platen liggen IN de lijn van zender naar zender, zodat ze samen één doorlopende wand
+     * vormen (---) en niet als losse plaatjes naast elkaar staan (| | |).
+     * Loopt de wand van oost naar west (as X), dan is de plaat dun in de noord-zuidrichting.
      */
-    private static final VoxelShape SHAPE_NS = Block.box(0, 0, 7, 16, 16, 9);
-    private static final VoxelShape SHAPE_EW = Block.box(7, 0, 0, 9, 16, 16);
-    private static final VoxelShape SHAPE_FLAT = Block.box(0, 7, 0, 16, 9, 16);
+    private static final VoxelShape ALONG_X = Block.box(0, 0, 7, 16, 16, 9);
+    private static final VoxelShape ALONG_Z = Block.box(7, 0, 0, 9, 16, 16);
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return switch (state.getValue(AXIS_FACING).getAxis()) {
-            case Z -> SHAPE_NS;
-            case X -> SHAPE_EW;
-            case Y -> SHAPE_FLAT;
+            case X -> ALONG_X;
+            case Z -> ALONG_Z;
+            // Een staande wand (zenders in vloer en plafond): ook een plaat van oost naar west.
+            case Y -> ALONG_X;
         };
     }
 
