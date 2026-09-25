@@ -47,6 +47,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.LASER_EMITTER.get());
                 output.accept(ModItems.DOME_GENERATOR.get());
                 output.accept(ModItems.HOLO_TABLE.get());
+                output.accept(ModItems.HYDRA_CIRCUIT.get());
+                output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
             })
             .build());
 }

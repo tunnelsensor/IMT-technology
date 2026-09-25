@@ -10,6 +10,7 @@ import com.senne.starktech.illusion.EmpItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -88,6 +89,21 @@ public final class ModItems {
     /** Fase 15: de holotafel. */
     public static final DeferredItem<BlockItem> HOLO_TABLE = ITEMS.registerSimpleBlockItem("holo_table",
             ModBlocks.HOLO_TABLE);
+
+    // ---------------------------------------------------------------- Hydra
+
+    /** Hydra-tech uit de bunker: nodig voor het raketpakket en de torentjes. */
+    public static final DeferredItem<Item> HYDRA_CIRCUIT = ITEMS.registerSimpleItem("hydra_circuit",
+            new Item.Properties().rarity(Rarity.RARE));
+
+    /** Het geweer van de Hydra-soldaten. Alleen zij hebben het; het valt nooit. */
+    public static final DeferredItem<Item> HYDRA_RIFLE = ITEMS.registerSimpleItem("hydra_rifle",
+            new Item.Properties().stacksTo(1));
+
+    /** Om een Hydra-soldaat neer te zetten (creative). */
+    public static final DeferredItem<DeferredSpawnEggItem> HYDRA_SOLDIER_SPAWN_EGG = ITEMS.register(
+            "hydra_soldier_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.HYDRA_SOLDIER, 0x18191C, 0xCD2020,
+                    new Item.Properties()));
 
     /** Fase 15: een gebouwde drone. Gebruik hem en hij vliegt naar je arsenaal in een baan. */
     public static final DeferredItem<StarkDroneItem> STARK_DRONE = ITEMS.registerItem("stark_drone",

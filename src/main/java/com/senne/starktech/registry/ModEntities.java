@@ -2,6 +2,7 @@ package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.drone.StarkDroneEntity;
+import com.senne.starktech.hydra.HydraSoldierEntity;
 import com.senne.starktech.raid.RaidDroneEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -38,9 +39,18 @@ public final class ModEntities {
                     .fireImmune()
                     .build("raid_drone"));
 
+    /** De soldaten van Hydra, die de bunker bewaken. */
+    public static final DeferredHolder<EntityType<?>, EntityType<HydraSoldierEntity>> HYDRA_SOLDIER = ENTITIES.register(
+            "hydra_soldier", () -> EntityType.Builder.of(HydraSoldierEntity::new, MobCategory.MONSTER)
+                    .sized(0.6f, 1.95f)        // zo groot als een speler
+                    .eyeHeight(1.62f)
+                    .clientTrackingRange(8)
+                    .build("hydra_soldier"));
+
     /** Levenspunten, snelheid enz. van elk wezen. */
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(STARK_DRONE.get(), StarkDroneEntity.createAttributes().build());
         event.put(RAID_DRONE.get(), RaidDroneEntity.createAttributes().build());
+        event.put(HYDRA_SOLDIER.get(), HydraSoldierEntity.createAttributes().build());
     }
 }

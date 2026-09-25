@@ -29,6 +29,7 @@ public final class BeamEffects {
     private static final DustParticleOptions ORBITAL = new DustParticleOptions(color(0xDDF8FF), 2.5f);
     private static final DustParticleOptions PRECISION = new DustParticleOptions(color(0xFFFFFF), 1.2f);
     private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
+    private static final DustParticleOptions HYDRA = new DustParticleOptions(color(0xFF2A1A), 0.7f);
 
     public static void play(BeamEffectPayload payload) {
         ClientLevel level = Minecraft.getInstance().level;
@@ -47,6 +48,7 @@ public final class BeamEffects {
                 shakeNear(payload.to(), 1.5f, 500);
             }
             case REPULSOR -> repulsor(level, payload.from(), payload.to());
+            case HYDRA_LASER -> hydraLaser(level, payload.from(), payload.to());
             case SATELLITE_SWEEP -> {
                 satelliteSweep(level, payload.from(), payload.to());
                 shakeNear(payload.to(), 0.6f, 300);
@@ -67,6 +69,17 @@ public final class BeamEffects {
         Vec3 up = right.cross(dir).normalize();
         Vec3 hand = eye.add(dir.scale(0.8)).add(right.scale(0.32)).add(up.scale(-0.22));
         SuitEffects.addShot(eye, hand, to);
+    }
+
+    /** Het lasergeweer van een Hydra-soldaat: een rode straal met vonkjes en een rookje waar hij raakt. */
+    private static void hydraLaser(ClientLevel level, Vec3 from, Vec3 to) {
+        line(level, from, to, 0.22, HYDRA, false);
+        RandomSource random = level.getRandom();
+        for (int i = 0; i < 4; i++) {
+            level.addParticle(ParticleTypes.SMALL_FLAME, to.x, to.y, to.z,
+                    (random.nextDouble() - 0.5) * 0.08, random.nextDouble() * 0.06, (random.nextDouble() - 0.5) * 0.08);
+        }
+        level.addParticle(ParticleTypes.SMOKE, to.x, to.y, to.z, 0, 0.03, 0);
     }
 
     /** Dunne blauwe straal met vonkjes waar hij raakt. */

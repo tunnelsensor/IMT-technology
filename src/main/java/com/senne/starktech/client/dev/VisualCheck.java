@@ -51,6 +51,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -424,6 +425,34 @@ public final class VisualCheck {
         // --- Het wrak van de neergestorte satelliet: van boven, van dichtbij en 's nachts.
         if (want("crash")) {
             crashSite(t);
+        }
+
+        // --- Een Hydra-soldaat van dichtbij: in rust en met zijn geweer in de aanslag.
+        if (want("hydra")) {
+            t.view(0, 60.5, -60, 60.5, 180, 5);
+            t.onServer(20, player -> {
+                ServerLevel level = player.serverLevel();
+                Entity calm = DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.HYDRA_SOLDIER.get(),
+                        new BlockPos(59, -60, 57), 0);
+                Entity aiming = DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.HYDRA_SOLDIER.get(),
+                        new BlockPos(62, -60, 57), 0);
+                for (Entity soldier : new Entity[] {calm, aiming}) {
+                    if (soldier instanceof net.minecraft.world.entity.Mob mob) {
+                        mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+                                new ItemStack(ModItems.HYDRA_RIFLE.get()));
+                    }
+                }
+                if (aiming instanceof net.minecraft.world.entity.Mob mob) {
+                    mob.setAggressive(true);
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.shot(20, "h01_hydra_front");
+            t.view(0, 66.5, -60, 58.5, 90, 5);
+            t.shot(20, "h02_hydra_side");
+            t.view(0, 60.5, -60, 53.5, 0, 5);
+            t.shot(20, "h03_hydra_back");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
         // --- De 3D-modellen van het zonnepaneel en de warmtegenerator (aan en uit), van voren,

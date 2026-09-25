@@ -28,7 +28,9 @@ public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements Custom
         /** De schuivende laser: een brede streep die over de grond kruipt. */
         SATELLITE_SWEEP,
         /** Fase 15: een repulsorstoot uit je handpalm. */
-        REPULSOR
+        REPULSOR,
+        /** Het lasergeweer van een Hydra-soldaat: een rode straal. */
+        HYDRA_LASER
     }
 
     public static final StreamCodec<ByteBuf, BeamEffectPayload> STREAM_CODEC = StreamCodec.composite(

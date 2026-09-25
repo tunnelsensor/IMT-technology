@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (63 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (64 automatische tests).
 
 ---
 
@@ -261,6 +261,16 @@ Raiddrones).
 - **Instellen per wereld** in `<wereld>/serverconfig/starktech-server.toml`: `raids.enabled`,
   `raids.minMinutes`, `raids.maxMinutes` en `raids.size` (hoeveel drones per golf, standaard 4).
 
+### Hydra-soldaten
+Hydra wil Stark-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
+embleem op borst en helm. Zien ze je, dan leggen ze hun **lasergeweer** aan en schieten ze rode
+laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones,
+en raak je er één, dan komen de anderen ook. Straks bewaken ze de Hydra-bunker.
+
+- Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je straks nodig
+  voor de nieuwste tech (raketten en torentjes).
+- Zelf oproepen om te oefenen: het **Hydra Soldier Spawn Egg** in de Stark Tech-tab.
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste Stark-chip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Stark Industries**.
@@ -432,10 +442,10 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower en het
   dichtstbijzijnde satellietwrak, en schrijft in het log (`[structures]`) waar ze liggen, waar de
   kisten staan en hoe je er met `/tp` komt. Daarna stopt hij vanzelf.
-- **Tests**: `gradlew runGameTestServer` — 63 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 64 tests over de toren en zijn kluis, het
   satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
-  spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
-  spraakcommando's.
+  spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas, de
+  Hydra-soldaten en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck

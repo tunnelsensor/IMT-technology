@@ -11,6 +11,7 @@ import com.senne.starktech.arsenal.EdithArsenal;
 import com.senne.starktech.drone.DroneFormation;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
+import com.senne.starktech.hydra.HydraSoldierEntity;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithConfig;
@@ -38,6 +39,7 @@ import com.senne.starktech.raid.RaidDroneEntity;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
+import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
@@ -1655,6 +1657,28 @@ public final class StarkTechGameTests {
             }
         }
         helper.succeed();
+    }
+
+    /**
+     * Een Hydra-soldaat met zijn lasergeweer: hij legt aan op een speler in survival en raakt
+     * hem. Zijn geweer laat hij nooit vallen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "hydra")
+    public static void hydra_soldier_shoots(GameTestHelper helper) {
+        ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(4, 3, 4));
+        HydraSoldierEntity soldier = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), new BlockPos(14, 3, 12));
+        soldier.finalizeSpawn(helper.getLevel(), helper.getLevel().getCurrentDifficultyAt(soldier.blockPosition()),
+                net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+        if (!soldier.getMainHandItem().is(ModItems.HYDRA_RIFLE.get())) {
+            throw new GameTestAssertException("De soldaat heeft geen lasergeweer");
+        }
+        soldier.setTarget(player);
+        float start = player.getHealth();
+        helper.succeedWhen(() -> {
+            if (player.getHealth() >= start) {
+                throw new GameTestAssertException("De soldaat heeft nog niet geraakt");
+            }
+        });
     }
 
     /**

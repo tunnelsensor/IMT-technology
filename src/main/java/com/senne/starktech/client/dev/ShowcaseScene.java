@@ -205,7 +205,8 @@ final class ShowcaseScene {
                 e -> e instanceof com.senne.starktech.drone.StarkDroneEntity
                         || e instanceof com.senne.starktech.raid.RaidDroneEntity
                         || e instanceof net.minecraft.world.entity.item.ItemEntity
-                        || e instanceof net.minecraft.world.entity.projectile.AbstractArrow)) {
+                        || e instanceof net.minecraft.world.entity.projectile.AbstractArrow
+                        || e instanceof com.senne.starktech.hydra.HydraSoldierEntity)) {
             entity.discard();
         }
         EdithServer.resetForShowcase(player);

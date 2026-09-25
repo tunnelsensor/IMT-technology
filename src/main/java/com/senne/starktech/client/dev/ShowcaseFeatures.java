@@ -45,6 +45,7 @@ import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithOwner;
+import com.senne.starktech.hydra.HydraSoldierEntity;
 import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.network.CommsPayload;
 import com.senne.starktech.network.HoloActionPayload;
@@ -804,6 +805,18 @@ final class ShowcaseFeatures {
                 .look(0, 0, -10)
                 .pause(160));
 
+        add("Hydra soldiers", "Nieuwe vijanden: Hydra-soldaten, die straks de Hydra-bunker bewaken. Zwart tactisch "
+                + "pak, rode bril, het rode embleem op borst en helm. Zien ze je, dan leggen ze hun lasergeweer aan "
+                + "(twee handen) en schieten ze rode laserstralen. Ze schieten ook op je drones, en raak je er "
+                + "één, dan komen de anderen ook. Soms laten ze een Hydra-onderdeel vallen.",
+                GameType.SURVIVAL, start, 180, 0, s -> s
+                .onServer(10, ShowcaseFeatures::spawnHydraSquad)
+                .pause(80)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(80)
+                .camera(0, CameraType.FIRST_PERSON)
+                .pause(60));
+
         add("Raid drones: breaking in", "Verstop je in een dichte hut (stenen muren, glazen dak) en de "
                 + "raiddrones zien je niet. Dan komen ze dichterbij en schieten ze zich naar binnen: om de "
                 + "anderhalve seconde verdwijnt er een blok (laserstraal en vonken), tot ze je zien. Kijk "
@@ -1127,6 +1140,22 @@ final class ShowcaseFeatures {
         for (double[] spot : spots) {
             Vec3 landing = centre.add(spot[0], 4, spot[1]);
             RaidDroneEntity.spawn(player.serverLevel(), landing.add(spot[0] * 0.5, 30, spot[1] * 0.5), landing);
+        }
+    }
+
+    /** Twee Hydra-soldaten een eind voor je, met hun geweer, die jou als doelwit hebben. */
+    private static void spawnHydraSquad(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (int side = -1; side <= 1; side += 2) {
+            HydraSoldierEntity soldier = com.senne.starktech.registry.ModEntities.HYDRA_SOLDIER.get().create(level);
+            if (soldier == null) {
+                continue;
+            }
+            soldier.moveTo(player.getX() + side * 4, player.getY(), player.getZ() - 12, 0, 0);
+            soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(soldier.blockPosition()),
+                    net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+            level.addFreshEntity(soldier);
+            soldier.setTarget(player);
         }
     }
 

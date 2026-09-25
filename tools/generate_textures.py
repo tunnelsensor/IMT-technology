@@ -1421,6 +1421,109 @@ def stark_drone_item():
     save(im, "item/stark_drone.png")
 
 
+HYDRA_RED = (205, 32, 32, 255)
+HYDRA_RED_DIM = (120, 20, 20, 255)
+HYDRA_BLACK = (24, 25, 28, 255)
+HYDRA_GREY = (48, 50, 55, 255)
+
+
+def hydra_circuit():
+    """Het Hydra-onderdeel: een zwart printplaatje met rode sporen en het rode embleem."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.rectangle([2, 3, 13, 12], fill=HYDRA_BLACK, outline=(12, 12, 14, 255))
+    # Pootjes onder en boven.
+    for x in range(4, 12, 2):
+        px(im, [(x, 2), (x, 13)], GOLD_DARK)
+    # Rode sporen.
+    d.line([3, 5, 6, 5], fill=HYDRA_RED_DIM)
+    d.line([9, 10, 12, 10], fill=HYDRA_RED_DIM)
+    d.line([3, 10, 5, 8], fill=HYDRA_RED_DIM)
+    d.line([12, 5, 10, 7], fill=HYDRA_RED_DIM)
+    # Het embleem in het midden: een schedel met tentakels, heel klein.
+    d.rectangle([7, 6, 8, 7], fill=HYDRA_RED)
+    px(im, [(6, 8), (9, 8), (7, 9), (8, 9), (6, 9), (9, 9)], HYDRA_RED)
+    px(im, [(7, 6)], (255, 110, 100, 255))
+    save(im, "item/hydra_circuit.png")
+
+
+def hydra_rifle():
+    """Het lasergeweer van de Hydra-soldaten: schuin (zoals een zwaard), met een rode energiecel."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    # Kolf linksonder, loop rechtsboven.
+    d.line([2, 14, 13, 3], fill=HYDRA_GREY, width=2)
+    d.line([3, 14, 13, 4], fill=HYDRA_BLACK)
+    d.rectangle([1, 12, 4, 14], fill=HYDRA_BLACK)
+    # De loop: dunner en lichter aan het eind, met een rood mondje.
+    d.line([10, 5, 14, 1], fill=METAL_3)
+    px(im, [(14, 1)], HYDRA_RED)
+    # Energiecel en richtkijker.
+    d.rectangle([6, 8, 7, 9], fill=HYDRA_RED)
+    px(im, [(6, 8)], (255, 120, 110, 255))
+    d.line([8, 5, 10, 3], fill=METAL_2)
+    # Handgreep.
+    d.line([5, 11, 5, 13], fill=HYDRA_BLACK)
+    save(im, "item/hydra_rifle.png")
+
+
+def hydra_soldier():
+    """
+    Het pak van een Hydra-soldaat (64 x 64, de indeling van mensachtige wezens; de linker arm
+    en het linker been gebruiken gespiegeld dezelfde plek als de rechter).
+
+    Een zwart tactisch pak met een grijs vest, een bivakmuts met een rode bril, een helm, het
+    rode Hydra-embleem op de borst en op de helm, rode banden om de armen, handschoenen,
+    kniestukken en laarzen.
+    """
+    im = img(64, 64)
+    d = ImageDraw.Draw(im)
+    suit = HYDRA_BLACK
+    dark = (16, 16, 18, 255)
+
+    # Hoofd (0,0; 8x8x8): een bivakmuts, met een rode bril over de ogen.
+    d.rectangle([0, 0, 31, 15], fill=(34, 34, 38, 255))
+    d.rectangle([8, 8, 15, 15], fill=(34, 34, 38, 255))
+    d.rectangle([8, 11, 15, 12], fill=dark)                      # brilband
+    d.rectangle([9, 11, 10, 12], fill=HYDRA_RED)                  # glazen
+    d.rectangle([13, 11, 14, 12], fill=HYDRA_RED)
+    px(im, [(9, 11), (13, 11)], (255, 110, 100, 255))
+    d.line([0, 11, 7, 11], fill=dark)                             # band om de zijkant
+    d.line([16, 11, 31, 11], fill=dark)
+    d.rectangle([10, 14, 13, 15], fill=(24, 24, 27, 255))          # mondstuk
+
+    # Helm (de hoedlaag, 32,0): alleen bovenop en de bovenste rijen van de kanten.
+    d.rectangle([40, 0, 55, 7], fill=(40, 42, 38, 255))           # boven en onder
+    for x0 in (32, 40, 48, 56):
+        d.rectangle([x0, 8, x0 + 7, 10], fill=(40, 42, 38, 255))
+    px(im, [(43, 9), (44, 9)], HYDRA_RED)                          # embleempje voorop
+
+    # Lijf (16,16; 8x12x4).
+    d.rectangle([16, 16, 39, 31], fill=suit)
+    d.rectangle([20, 20, 27, 28], fill=HYDRA_GREY)                  # vest voor
+    d.rectangle([32, 20, 39, 28], fill=HYDRA_GREY)                  # vest achter
+    d.rectangle([20, 29, 27, 30], fill=(40, 30, 24, 255))           # riem
+    px(im, [(23, 29), (24, 29)], METAL_3)                           # gesp
+    # Het embleem op de borst: een schedel met tentakels.
+    d.rectangle([23, 21, 24, 22], fill=HYDRA_RED)
+    px(im, [(22, 22), (25, 22)], HYDRA_RED)
+    px(im, [(21, 23), (22, 24), (23, 23), (24, 23), (25, 24), (26, 23), (22, 23), (25, 23)], HYDRA_RED)
+    px(im, [(23, 21)], (255, 110, 100, 255))
+
+    # Arm (40,16; 4x12x4): zwarte mouw, rode band, grijze handschoen.
+    d.rectangle([40, 16, 55, 31], fill=suit)
+    d.line([40, 23, 55, 23], fill=HYDRA_RED)
+    d.rectangle([40, 28, 55, 31], fill=HYDRA_GREY)
+    d.rectangle([44, 16, 51, 19], fill=HYDRA_GREY)                  # schouderstuk boven
+
+    # Been (0,16; 4x12x4): broek, kniestuk, laars.
+    d.rectangle([0, 16, 15, 31], fill=(22, 23, 26, 255))
+    d.rectangle([4, 23, 7, 24], fill=HYDRA_GREY)                    # kniestuk voor
+    d.rectangle([0, 27, 15, 31], fill=dark)                          # laars
+    d.line([0, 31, 15, 31], fill=(58, 50, 44, 255))                  # zool
+    save(im, "entity/hydra_soldier.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -1444,3 +1547,6 @@ if __name__ == "__main__":
     stark_drone_item()
     holo_table_textures()
     stark_suit()
+    hydra_circuit()
+    hydra_rifle()
+    hydra_soldier()
