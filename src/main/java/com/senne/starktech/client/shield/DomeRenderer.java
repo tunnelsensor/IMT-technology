@@ -22,12 +22,15 @@ import org.joml.Matrix4f;
  * Gaat de koepel op, dan gebeurt dat in drie stappen (tijden in ticks, 20 = 1 seconde):
  * <pre>
  *  0 - 14   een felle straal schiet uit de generator omhoog, tot de top van de koepel
- * 10 - 22   bovenin vouwt hij open: een schijf die breder wordt
- * 18 - 50   de koepel zakt vanuit de top naar beneden, tot hij op de grond staat
+ * 10 - 22   bovenin vouwt hij open als een paraplu: een fel kapje dat breder wordt
+ * 22 - 50   dat kapje zakt verder naar beneden, tot de koepel op de grond staat
  * </pre>
- * Daarna staat hij er: doorzichtig, in zijn kleur, met een zeshoekjespatroon dat langzaam over
- * de koepel glijdt. Heeft hij weinig schildkracht over, dan flakkert hij. Valt hij weg, dan
- * trekt hij zich snel terug naar de top en verdwijnt.
+ * Het is één en hetzelfde oppervlak dat vanaf de top groeit: het kapje wordt de koepel. (Eerst
+ * was het kapje een losse platte schijf die verdween zodra de koepel begon te zakken; die sprong
+ * zag je als een hapering.) Daarna staat hij er: doorzichtig, in zijn kleur, met een
+ * zeshoekjespatroon dat langzaam over de koepel glijdt, en de straal uit de generator blijft
+ * staan (rustiger, zacht kloppend). Heeft hij weinig schildkracht over, dan flakkert hij. Valt
+ * hij weg, dan trekt hij zich snel terug naar de top en zakt de straal terug de generator in.
  *
  * We tekenen met "energySwirl" (net als het schild om een opgeladen creeper): licht dat opgeteld
  * wordt bij wat erachter zit, dus hij gloeit en je ziet er toch doorheen. Van binnen zie je hem
@@ -41,9 +44,14 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
     private static final float BEAM_TICKS = 14;
     private static final float OPEN_START = 10;
     private static final float OPEN_TICKS = 12;
-    private static final float DROP_START = 18;
-    private static final float DROP_TICKS = 32;
+    private static final float DROP_START = 22;
+    private static final float DROP_TICKS = 28;
     private static final float COLLAPSE_TICKS = 16;
+
+    private static final float HALF_PI = (float) (Math.PI / 2);
+    /** Hoe breed het kapje is als het helemaal open is (deel van de straal), en tot welke hoek dat reikt. */
+    private static final float CAP_WIDTH = 0.45f;
+    private static final float CAP_THETA = (float) Math.asin(CAP_WIDTH);
 
     /** Hoeveel ringen (van de top naar beneden) en stukken (rondom) de koepel heeft. */
     private static final int RINGS = 24;
@@ -80,23 +88,29 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
         float radius = dome.radius();
         int rgb = dome.colour().rgb();
 
-        float beam;     // hoe hoog de straal is (0..1 van de straal van de koepel)
-        float open;     // hoe breed de schijf bovenin is (0..1)
-        float drop;     // tot hoe ver de koepel naar beneden reikt (0 = alleen de top, 1 = tot de grond)
-        float bright;   // hoe fel de koepel is
+        float beam;       // hoe hoog de straal is (0..1 van de straal van de koepel)
+        float beamAlpha;  // hoe fel de straal is
+        float theta;      // tot waar de koepel reikt, als hoek vanaf de top (0 = niets, pi/2 = tot de grond)
+        float field;      // hoe fel het veld is: fel tijdens het openvouwen, daarna rustiger
+        float bright;     // alles samen: flakkeren en uitgaan
         if (dome.isUp()) {
             beam = Mth.clamp(age / BEAM_TICKS, 0, 1);
-            open = ease(Mth.clamp((age - OPEN_START) / OPEN_TICKS, 0, 1));
-            drop = ease(Mth.clamp((age - DROP_START) / DROP_TICKS, 0, 1));
+            float open = ease(Mth.clamp((age - OPEN_START) / OPEN_TICKS, 0, 1));
+            float drop = ease(Mth.clamp((age - DROP_START) / DROP_TICKS, 0, 1));
+            theta = drop > 0 ? CAP_THETA + (HALF_PI - CAP_THETA) * drop : (float) Math.asin(CAP_WIDTH * open);
+            field = Mth.lerp(drop, 0.9f, 0.42f);
+            // Tijdens het opstarten fel; daarna blijft hij staan, rustiger en zacht kloppend.
+            beamAlpha = Mth.lerp(drop, 1.0f, 0.75f + 0.1f * Mth.sin(time * 0.15f));
             bright = 1.0f;
         } else {
             float collapse = Mth.clamp(age / COLLAPSE_TICKS, 0, 1);
             if (collapse >= 1) {
                 return;
             }
-            beam = 0;
-            open = 1 - collapse;
-            drop = 1 - ease(collapse);
+            beam = 1 - ease(collapse);
+            beamAlpha = 0.75f;
+            theta = HALF_PI * (1 - ease(collapse));
+            field = 0.42f;
             bright = 1 - collapse;
         }
 
@@ -110,25 +124,21 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
         poseStack.pushPose();
         poseStack.translate(0.5, 0.5, 0.5);
         // Het patroon glijdt langzaam over de koepel.
-        VertexConsumer field = buffers.getBuffer(RenderType.energySwirl(FIELD, time * 0.004f, time * 0.002f));
+        VertexConsumer surface = buffers.getBuffer(RenderType.energySwirl(FIELD, time * 0.004f, time * 0.002f));
         Matrix4f matrix = poseStack.last().pose();
 
-        if (open > 0 && drop <= 0.02f) {
-            // De schijf bovenin, net voor hij naar beneden zakt.
-            cap(matrix, field, radius, open * 0.45f, rgb, 0.9f * bright);
-        }
-        if (drop > 0) {
-            dome(matrix, field, radius, drop, rgb, 0.42f * bright);
+        if (theta > 0.001f) {
+            dome(matrix, surface, radius, theta, rgb, field * bright);
         }
 
         // Het felle licht (de straal en de rand die naar beneden zakt): effen kleur, opgeteld.
         VertexConsumer glow = buffers.getBuffer(RenderType.lightning());
-        if (beam > 0 && drop < 1) {
-            beam(matrix, glow, radius * beam, rgb, bright * (1 - drop));
+        if (beam > 0) {
+            beam(matrix, glow, radius * beam, rgb, beamAlpha * bright);
         }
-        if (dome.isUp() && drop > 0 && drop < 1) {
-            // De onderrand van de zakkende koepel is feller: daar "bouwt" hij.
-            edge(matrix, glow, radius, drop, rgb, bright);
+        if (dome.isUp() && theta > 0.001f && theta < HALF_PI - 0.001f) {
+            // De onderrand van de groeiende koepel is feller: daar "bouwt" hij.
+            edge(matrix, glow, radius, theta, rgb, bright);
         }
         poseStack.popPose();
     }
@@ -182,34 +192,14 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
     }
 
     /**
-     * De top van de koepel als platte schijf die opengaat, op de hoogte van de koepeltop.
-     * {@code part} is hoe breed hij is (deel van de straal).
+     * De koepel zelf: een stuk bol van ringen, van de top naar beneden, tot hoek {@code maxTheta}
+     * (pi/2 = tot aan de grond). Altijd evenveel ringen, zodat hij tijdens het groeien niet
+     * verspringt.
      */
-    private static void cap(Matrix4f m, VertexConsumer out, float radius, float part, int rgb, float alpha) {
-        float y = radius;
-        float r = radius * part;
-        for (int j = 0; j < SEGMENTS; j++) {
-            double a0 = j * (Math.PI * 2 / SEGMENTS);
-            double a1 = (j + 1) * (Math.PI * 2 / SEGMENTS);
-            float x0 = (float) Math.cos(a0) * r;
-            float z0 = (float) Math.sin(a0) * r;
-            float x1 = (float) Math.cos(a1) * r;
-            float z1 = (float) Math.sin(a1) * r;
-            quad(m, out, 0, y, 0, 0, y, 0, x1, y, z1, x0, y, z0, rgb, alpha,
-                    j / (float) SEGMENTS * 8, 0, (j + 1) / (float) SEGMENTS * 8, part * 4);
-        }
-    }
-
-    /**
-     * De koepel zelf: een halve bol van ringen, van de top naar beneden. {@code drop} zegt tot waar
-     * hij al reikt (1 = tot aan de grond).
-     */
-    private static void dome(Matrix4f m, VertexConsumer out, float radius, float drop, int rgb, float alpha) {
-        int rings = Math.max(1, Math.round(RINGS * drop));
-        float maxTheta = (float) (Math.PI / 2 * drop);
-        for (int i = 0; i < rings; i++) {
-            float t0 = maxTheta * i / rings;
-            float t1 = maxTheta * (i + 1) / rings;
+    private static void dome(Matrix4f m, VertexConsumer out, float radius, float maxTheta, int rgb, float alpha) {
+        for (int i = 0; i < RINGS; i++) {
+            float t0 = maxTheta * i / RINGS;
+            float t1 = maxTheta * (i + 1) / RINGS;
             for (int j = 0; j < SEGMENTS; j++) {
                 float p0 = (float) (j * Math.PI * 2 / SEGMENTS);
                 float p1 = (float) ((j + 1) * Math.PI * 2 / SEGMENTS);
@@ -228,9 +218,9 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
         }
     }
 
-    /** Een felle band op de onderrand van de koepel terwijl hij naar beneden zakt. */
-    private static void edge(Matrix4f m, VertexConsumer out, float radius, float drop, int rgb, float alpha) {
-        float t1 = (float) (Math.PI / 2 * drop);
+    /** Een felle band op de onderrand van de koepel terwijl hij groeit (tot hoek {@code theta}). */
+    private static void edge(Matrix4f m, VertexConsumer out, float radius, float theta, int rgb, float alpha) {
+        float t1 = theta;
         float t0 = Math.max(0, t1 - 0.05f);
         int colour = mix(rgb, 0xFFFFFF, 0.4f);
         for (int j = 0; j < SEGMENTS; j++) {
