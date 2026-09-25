@@ -17,13 +17,21 @@ import net.minecraft.world.level.Level;
  * er één aanzetten, of een hele groep tegelijk.
  *
  * @param name      de naam die jij eraan gaf
- * @param group     de groep waarin het zit (lege naam = groep "algemeen")
+ * @param group     de groep waarin het zit (lege naam = groep "general")
  * @param dimension in welke wereld het staat
  * @param pos       waar het staat
  */
 public record Relay(String name, String group, ResourceKey<Level> dimension, BlockPos pos) {
-    /** De groep als je zelf niets invult. */
-    public static final String DEFAULT_GROUP = "algemeen";
+    /** De groep als je zelf niets invult. (Engels: je ziet hem in het spel.) */
+    public static final String DEFAULT_GROUP = "general";
+    /** Zo heette de standaardgroep vroeger; relais uit oude werelden komen zo in "general". */
+    private static final String OLD_DEFAULT_GROUP = "algemeen";
+
+    public Relay {
+        if (OLD_DEFAULT_GROUP.equals(group)) {
+            group = DEFAULT_GROUP;
+        }
+    }
 
     public static final Codec<Relay> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("name").forGetter(Relay::name),
