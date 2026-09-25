@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 55 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 55 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 56 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -276,8 +276,13 @@ kleine dingen, dan de grote.
       ook. Close-ups: `-Ponly=suit` (`41b` t/m `41d`).
 
 **Modellen en gebouwen**
-- [ ] Holotafel: een vierde stand "Satellite" (groot en gedetailleerd, met zijn upgrades), en
-      in de arsenaalstand echte drone-modellen in plaats van stipjes
+- [x] Holotafel: een vierde stand "Satellite" (groot en gedetailleerd, met zijn upgrades), en
+      in de arsenaalstand echte drone-modellen in plaats van stipjes — `0bd0964`
+      Beide gebruiken de echte 3D-modellen uit het arsenaalscherm, doorschijnend en getint:
+      de satelliet in de kleur van het hologram (met al zijn upgrade-onderdelen, iets schuin
+      zodat je het kanon en de schotel ziet, en een ring met zes stukken van tien streepjes
+      voor de niveaus), de drones in hun schadekleur met de neus in de vliegrichting. Nieuwe
+      showcase-functie "Holo table: satellite"; close-ups met `-Ponly=holo` (`05a` t/m `05d`).
 - [ ] Zonnepaneel en warmtegenerator een mooier 3D-model
 - [ ] Stark Tower mooier, overal meer detail
 
