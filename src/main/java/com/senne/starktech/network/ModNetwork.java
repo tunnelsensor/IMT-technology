@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "9";
+    private static final String PROTOCOL_VERSION = "10";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -154,6 +154,9 @@ public final class ModNetwork {
         // Fase 10: onderschept privébericht
         registrar.playToClient(HackMessagePayload.TYPE, HackMessagePayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHackMessage(payload, context));
+        // Harnas: straalvlammen onder de laarzen van wie vliegt
+        registrar.playToClient(ThrusterPayload.TYPE, ThrusterPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onThruster(payload, context));
     }
 
     /**

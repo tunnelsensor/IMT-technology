@@ -21,7 +21,9 @@ import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
 import net.minecraft.network.chat.Component;
 import com.senne.starktech.client.hud.BootOverlay;
+import com.senne.starktech.client.suit.SuitEffects;
 import com.senne.starktech.network.DomeOpenPayload;
+import com.senne.starktech.network.ThrusterPayload;
 import net.minecraft.Util;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -83,6 +85,10 @@ public final class ClientPayloadHandlers {
     /** Een straal tekenen (drone-laser of satelliet). */
     public static void onBeam(BeamEffectPayload payload, IPayloadContext context) {
         BeamEffects.play(payload);
+    }
+
+    public static void onThruster(ThrusterPayload payload, IPayloadContext context) {
+        SuitEffects.onThruster(payload);
     }
 
     /** "Kijk door deze drone" (of stop ermee). */

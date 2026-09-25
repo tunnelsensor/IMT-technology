@@ -501,9 +501,12 @@ final class ShowcaseFeatures {
                 .pause(40)
                 .camera(0, CameraType.FIRST_PERSON));
 
-        add("Repulsor (I, then attack)", "Toets I zet de repulsor aan (geluid + ring rond het vizier), "
-                + "linkermuisknop vuurt. Na elk schot laadt de ring weer op. Bij een treffer zegt E.D.I.T.H. "
-                + "niets meer: alleen het geluid.", range, 180, 0, s -> s
+        add("Repulsor (I, then attack)", "Toets I zet de repulsor aan (geluid + ring rond het vizier): "
+                + "je arm gaat omhoog, de hand geknikt met een zacht gloeiende handpalm. Linkermuisknop "
+                + "vuurt: de palm flitst, je arm slaat terug, en er schiet een zelf getekende straal (witte "
+                + "kern, blauwe gloed, drukgolfringen bij de hand, flits en ring bij de inslag). Na elk schot "
+                + "laadt de ring weer op. Op het eind van buitenaf (F5): de arm vooruit en de palm gloeit.",
+                range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::wearSuit)
                 .lookAt(20, mob(TARGETS.get(1)))
                 .step(5, RepulsorControl::toggle)
@@ -512,12 +515,19 @@ final class ShowcaseFeatures {
                 .tap(5, () -> Minecraft.getInstance().options.keyAttack)
                 .lookAt(30, mob(TARGETS.get(2)))
                 .tap(5, () -> Minecraft.getInstance().options.keyAttack)
-                .step(40, RepulsorControl::toggle)
+                .camera(30, CameraType.THIRD_PERSON_FRONT)
+                .pause(30)
+                .tap(0, () -> Minecraft.getInstance().options.keyAttack)
+                .pause(40)
+                .camera(0, CameraType.FIRST_PERSON)
+                .step(10, RepulsorControl::toggle)
                 .pause(30));
 
         add("Suit flight", "Dubbel spatie: stuwraketten aan. Stijgen, stilhangen, vooruit met de "
                 + "naverbrander (sprint), opzij (het beeld helt over), uitglijden en zelf landen. "
-                + "Links van het vizier: stuwkracht, snelheid en hoogte.", GameType.SURVIVAL,
+                + "Links van het vizier: stuwkracht, snelheid en hoogte. Op het eind van achteren: de "
+                + "straalvlammen zijn zelf getekend en zitten vast onder de laarzen (geen spoor), harder "
+                + "vliegen = langere, fellere vlammen. Andere spelers zien ze ook.", GameType.SURVIVAL,
                 new Vec3(0.5, -60, 20.5), 180, -5, s -> s
                 .onServer(0, ShowcaseFeatures::wearSuit)
                 .key(40, () -> Minecraft.getInstance().options.keyJump, true)

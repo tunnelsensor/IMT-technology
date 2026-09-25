@@ -251,7 +251,15 @@ public final class VisualCheck {
             t.step(10, RepulsorControl::toggle);
             t.shot(30, "42_repulsor_armed");
             t.tap(0, () -> Minecraft.getInstance().options.keyAttack);
-            t.shot(4, "43_repulsor_fired");
+            t.shot(1, "43_repulsor_fired");
+            t.shot(3, "43b_repulsor_impact");
+            // Hoe zien anderen het? De arm vooruit en een gloeiende handpalm.
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "43c_repulsor_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.tap(0, () -> Minecraft.getInstance().options.keyAttack);
+            t.shot(2, "43d_repulsor_back_fire");
+            t.camera(0, CameraType.FIRST_PERSON);
             t.step(30, RepulsorControl::toggle);
         }
 
@@ -274,6 +282,8 @@ public final class VisualCheck {
             // Zonder HUD (zoals F1): anders vallen de vlammen onder je voeten achter de hartjes.
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.shot(10, "47_flight_jets");
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(5, "47b_flight_jets_front");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.camera(0, CameraType.FIRST_PERSON);
             t.key(0, () -> Minecraft.getInstance().options.keyUp, true);

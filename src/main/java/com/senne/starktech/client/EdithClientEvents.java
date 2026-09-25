@@ -288,6 +288,8 @@ public final class EdithClientEvents {
         DroneCamera.exit();
         RepulsorControl.reset();
         SuitFlight.reset();
+        com.senne.starktech.client.suit.SuitEffects.clear();
+        com.senne.starktech.client.suit.RepulsorHand.reset();
         com.senne.starktech.client.illusion.IllusionRenderer.clear();
         EdithClientState.reset();
     }

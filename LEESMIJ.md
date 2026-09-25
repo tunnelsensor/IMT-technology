@@ -256,14 +256,17 @@ Met de bril op en energie erin:
   bouwt langzaam op en loopt uit als je loslaat, het beeld helt over in de bochten en vlak
   boven de grond remt het harnas zelf af. Links van je vizier staan je snelheid en hoogte.
   Stilhangen kost 12 energie per seconde, vooruit vliegen 26, de naverbrander 45. Raakt je
-  batterij leeg, dan val je gewoon uit de lucht — hou hem dus in de gaten.
+  batterij leeg, dan val je gewoon uit de lucht — hou hem dus in de gaten. Onder je laarzen
+  branden blauwe straalvlammen (langer en feller als je harder gaat); iedereen ziet ze.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
 - **Repulsor** (toets **I**, of G > Gevecht): zet de repulsor **aan of uit**. Staat hij aan,
   dan is je aanvalsknop (linkermuisknop) de repulsor: klikken vuurt, ingedrukt houden vuurt
   elke seconde. Slaan en blokken breken gaat dan niet; zet hem uit om weer te hakken. Rond je
   vizier staat een ring die na elk schot weer volloopt. Een stoot raakt alles op zijn weg en
   duwt het een stukje weg, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de
-  reactor) en het kost 200 energie per stoot.
+  reactor) en het kost 200 energie per stoot. Met een lege hand zie je je arm omhoog gaan,
+  de hand geknikt met een gloeiende handpalm; bij een schot flitst hij op en slaat je arm
+  terug. Anderen zien je arm vooruit wijzen en je handpalm oplichten als je schiet.
 
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij

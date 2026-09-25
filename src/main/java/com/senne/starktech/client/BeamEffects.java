@@ -1,5 +1,6 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.client.suit.SuitEffects;
 import com.senne.starktech.network.BeamEffectPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -28,8 +29,6 @@ public final class BeamEffects {
     private static final DustParticleOptions ORBITAL = new DustParticleOptions(color(0xDDF8FF), 2.5f);
     private static final DustParticleOptions PRECISION = new DustParticleOptions(color(0xFFFFFF), 1.2f);
     private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
-    private static final DustParticleOptions REPULSOR_CORE = new DustParticleOptions(color(0xFFFFFF), 0.9f);
-    private static final DustParticleOptions REPULSOR_GLOW = new DustParticleOptions(color(0x9FE8FF), 1.6f);
 
     public static void play(BeamEffectPayload payload) {
         ClientLevel level = Minecraft.getInstance().level;
@@ -56,22 +55,18 @@ public final class BeamEffects {
     }
 
     /**
-     * Een repulsorstoot: een korte, brede stoot wit-blauw licht recht vooruit.
+     * Een repulsorstoot: zelf getekend licht (zie SuitEffects), geen deeltjes.
      *
-     * De straal begint een armlengte voor de schutter. Vanaf zijn ogen getekend zag de schutter
-     * zelf alleen nog grote blauwe blokken vlak voor zijn neus.
+     * De stoot begint bij de rechterhand van de schutter: een armlengte vooruit, iets naar rechts
+     * en iets omlaag. Vanaf zijn ogen getekend zag de schutter zelf alleen nog licht voor zijn neus.
      */
     private static void repulsor(ClientLevel level, Vec3 eye, Vec3 to) {
-        Vec3 from = eye.add(to.subtract(eye).normalize().scale(1.1));
-        line(level, from, to, 0.12, REPULSOR_CORE, false);
-        line(level, from, to, 0.3, REPULSOR_GLOW, false);
-        RandomSource random = level.getRandom();
-        // Een wolkje bij je hand, alsof de stoot daar vandaan komt.
-        for (int i = 0; i < 8; i++) {
-            level.addParticle(ParticleTypes.ELECTRIC_SPARK, from.x, from.y, from.z,
-                    (random.nextDouble() - 0.5) * 0.2, (random.nextDouble() - 0.5) * 0.2,
-                    (random.nextDouble() - 0.5) * 0.2);
-        }
+        Vec3 dir = to.subtract(eye).normalize();
+        Vec3 right = dir.cross(new Vec3(0, 1, 0));
+        right = right.lengthSqr() < 1.0E-6 ? new Vec3(1, 0, 0) : right.normalize();
+        Vec3 up = right.cross(dir).normalize();
+        Vec3 hand = eye.add(dir.scale(0.8)).add(right.scale(0.32)).add(up.scale(-0.22));
+        SuitEffects.addShot(eye, hand, to);
     }
 
     /** Dunne blauwe straal met vonkjes waar hij raakt. */

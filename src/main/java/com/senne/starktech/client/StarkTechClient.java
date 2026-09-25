@@ -9,6 +9,8 @@ import com.senne.starktech.client.drone.DroneRenderer;
 import com.senne.starktech.client.drone.RaidDroneRenderer;
 import com.senne.starktech.client.holo.HoloTableRenderer;
 import com.senne.starktech.client.shield.DomeRenderer;
+import com.senne.starktech.client.suit.RepulsorHand;
+import com.senne.starktech.client.suit.SuitEffects;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.client.voice.VoiceControl;
 import com.senne.starktech.registry.ModEntities;
@@ -43,6 +45,8 @@ public class StarkTechClient {
         modEventBus.addListener(StarkTechClient::registerScreens);
         modEventBus.addListener(StarkTechClient::registerEntityRenderers);
         modEventBus.addListener(StarkTechClient::registerLayerDefinitions);
+        // De gloeiende handpalm op spelers (repulsor).
+        modEventBus.addListener(RepulsorHand::addLayers);
 
         // Gebeurtenissen tijdens het spelen
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTick);
@@ -63,6 +67,10 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(SuitFlight::onPlayerTickPre);
         NeoForge.EVENT_BUS.addListener(SuitFlight::onPlayerTickPost);
         NeoForge.EVENT_BUS.addListener(SuitFlight::onCameraAngles);
+        // Het harnas in beeld: repulsorschoten, straalvlammen en de repulsorhand.
+        NeoForge.EVENT_BUS.addListener(SuitEffects::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener(RepulsorHand::onRenderHand);
+        NeoForge.EVENT_BUS.addListener(RepulsorHand::onRenderPlayer);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();

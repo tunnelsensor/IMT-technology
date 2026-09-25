@@ -9,6 +9,7 @@ import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.SuitFlightPayload;
+import com.senne.starktech.network.ThrusterPayload;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
 import java.util.HashSet;
@@ -167,26 +168,14 @@ public final class EdithSuit {
         StarkAdvancements.award(player, StarkAdvancements.FLY);
     }
 
-    /** Een blauwe straalvlam onder elke laars, en een vonkje. Harder vliegen = meer vuur. */
+    /**
+     * Vertel de spelers in de buurt dat hier iemand vliegt, en hoe hard: hun spel tekent dan de
+     * straalvlammen onder zijn laarzen (client/suit/SuitEffects). Die zitten vast aan de laarzen,
+     * dus je ziet geen spoor. Komt er even geen bericht, dan gaan de vlammen vanzelf uit.
+     */
     private static void jets(ServerLevel level, ServerPlayer player, double speed) {
-        double yaw = Math.toRadians(player.yBodyRot);
-        // Een halve voet opzij, links en rechts van het midden van je lichaam.
-        double sideX = Math.cos(yaw) * 0.14;
-        double sideZ = Math.sin(yaw) * 0.14;
-        int flames = speed > SuitBalance.CRUISE_SPEED ? 2 : 1;
-        for (int side = -1; side <= 1; side += 2) {
-            double x = player.getX() + sideX * side;
-            double z = player.getZ() + sideZ * side;
-            for (int i = 0; i < flames; i++) {
-                // Met aantal 0 is (0, -1, 0) de richting en 0.25 de snelheid: recht naar beneden.
-                level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, x, player.getY() - 0.05, z,
-                        0, 0.0, -1.0, 0.0, 0.25);
-            }
-        }
-        if (level.random.nextInt(4) == 0) {
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() - 0.1, player.getZ(),
-                    1, 0.1, 0.05, 0.1, 0.02);
-        }
+        float power = (float) Math.min(1.0, speed / SuitBalance.BOOST_SPEED);
+        ModNetwork.sendNear(level, player.position(), 96, new ThrusterPayload(player.getId(), power));
     }
 
     // ================================================================ Schade opvangen
