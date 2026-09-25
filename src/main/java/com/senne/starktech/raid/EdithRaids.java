@@ -33,6 +33,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  *    er een golf; hoe vaak precies staat in de serverconfig.
  * 2. **Omdat je erom vroeg.** Sloop je in een Stark Tower, dan trek je aandacht. Genoeg
  *    aandacht en ze komen meteen, zonder te wachten op de klok.
+ * 3. **Omdat je bij het wrak komt.** Een neergestorte Stark-satelliet zendt nog; zij luisteren
+ *    mee. Kom je er met de bril, dan duiken ze meteen naar beneden (hooguit eens per
+ *    CRASH_SITE_COOLDOWN).
  *
  * Alles wordt per speler bijgehouden en niet opgeslagen: na een herstart begint de klok
  * opnieuw. Dat is expres - je wil niet inloggen en meteen een raid over je heen krijgen.
@@ -43,6 +46,9 @@ public final class EdithRaids {
     /** De Stark Tower, om te herkennen dat je in hun gebouw staat te slopen. */
     private static final ResourceKey<Structure> STARK_TOWER = ResourceKey.create(Registries.STRUCTURE,
             ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "stark_tower"));
+    /** Het wrak van een Stark-satelliet (zie tools/generate_crash_site.py). */
+    private static final ResourceKey<Structure> CRASHED_SATELLITE = ResourceKey.create(Registries.STRUCTURE,
+            ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "crashed_satellite"));
 
     /** Hoe vaak we kijken of er iets moet gebeuren (in ticks). 100 ticks = 5 seconden. */
     private static final int CHECK_INTERVAL = 100;
@@ -55,6 +61,8 @@ public final class EdithRaids {
         int heat;
         /** Wanneer we voor het laatst aandacht hebben afgebouwd. */
         long lastCooled;
+        /** Speltijd waarop het wrak van een satelliet ze weer mag roepen. */
+        long crashSiteReadyAt;
     }
 
     private static final Map<UUID, Watch> WATCHED = new HashMap<>();
@@ -100,8 +108,21 @@ public final class EdithRaids {
             if (now >= watch.nextRaidAt) {
                 startRaid(player, EdithConfig.raidSize());
                 watch.nextRaidAt = now + randomDelay(player.serverLevel());
+            } else if (now >= watch.crashSiteReadyAt && atCrashSite(player)) {
+                watch.crashSiteReadyAt = now + RaidBalance.CRASH_SITE_COOLDOWN;
+                // De gewone klok schuift ook op, anders komt er vlak daarna nog een golf.
+                watch.nextRaidAt = Math.max(watch.nextRaidAt, now + randomDelay(player.serverLevel()));
+                EdithServer.send(player, Component.translatable("raid.starktech.msg.crash_site"),
+                        EdithMessagePayload.Level.WARNING);
+                startRaid(player, EdithConfig.raidSize());
             }
         }
+    }
+
+    /** Staat deze speler in het wrak van een neergestorte satelliet (de krater en de voor)? */
+    private static boolean atCrashSite(ServerPlayer player) {
+        return player.serverLevel().structureManager()
+                .getStructureWithPieceAt(player.blockPosition(), holder -> holder.is(CRASHED_SATELLITE)).isValid();
     }
 
     /** Aandacht zakt vanzelf weg als je je een tijdje gedraagt. */

@@ -1,6 +1,8 @@
 package com.senne.starktech.client.dev;
 
+import static com.senne.starktech.client.dev.ShowcaseScene.BLACK_BOX;
 import static com.senne.starktech.client.dev.ShowcaseScene.CHARGING_STATION;
+import static com.senne.starktech.client.dev.ShowcaseScene.CRASH_SITE;
 import static com.senne.starktech.client.dev.ShowcaseScene.CHEST;
 import static com.senne.starktech.client.dev.ShowcaseScene.COW;
 import static com.senne.starktech.client.dev.ShowcaseScene.DOME;
@@ -842,6 +844,32 @@ final class ShowcaseFeatures {
                 .pause(60)
                 .view(20, STARK_TOWER.getX() + 20.5, STARK_TOWER.getY() + 80, STARK_TOWER.getZ() + 15.5, 0, 25)
                 .pause(80));
+
+        add("Crashed satellite", "Een nieuwe structuur: het wrak van een oude Stark-satelliet in een krater. "
+                + "Eerst van boven: de rook (blauw uit de romp, van de reactor), de voor aan de oostkant waar hij "
+                + "binnenkwam, het zonnepaneel dat nog schuin omhoog steekt, het afgebroken paneel op de helling, "
+                + "de schotel op de noordhelling en overal brokstukken. Dan open je de zwarte doos in de romp: "
+                + "netherite, diamanten, Stark-chips, upgrades. In een echte wereld duiken er raiddrones op je af "
+                + "als je er met de bril komt; dat kan de showcase niet nadoen (hij herkent een neergezet wrak "
+                + "niet als structuur).", new Vec3(CRASH_SITE.getX() + 30, -46, CRASH_SITE.getZ() + 0.5), 90, 22, s -> {
+            Vec3 middle = new Vec3(CRASH_SITE.getX() + 0.5, CRASH_SITE.getY() - 1, CRASH_SITE.getZ() + 0.5);
+            s.view(0, CRASH_SITE.getX() + 30, -46, CRASH_SITE.getZ() + 0.5, 90, 22)
+                    .lookAt(2, middle)
+                    .pause(90)
+                    .view(0, CRASH_SITE.getX() - 20, -44, CRASH_SITE.getZ() - 20, -45, 30)
+                    .lookAt(2, middle)
+                    .pause(90)
+                    .view(0, CRASH_SITE.getX() + 7, -50, CRASH_SITE.getZ() + 16, 150, 35)
+                    .lookAt(2, middle)
+                    .pause(80)
+                    // Voor de opengescheurde romp, en de zwarte doos openen.
+                    .stand(0, CRASH_SITE.getX() + 2.5, CRASH_SITE.getY(), CRASH_SITE.getZ() + 0.5, 90, 20)
+                    .lookAt(10, Vec3.atCenterOf(BLACK_BOX))
+                    .pause(40)
+                    .step(0, () -> rightClick(BLACK_BOX))
+                    .pause(120)
+                    .close(0);
+        });
 
         // ---------------------------------------------------------------- Schermen en overige
         add("Voice commands", "De editor voor spraakcommando's (het woordenboek). De stem zelf moet "

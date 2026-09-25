@@ -99,6 +99,7 @@ import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -149,6 +150,24 @@ public final class StarkTechGameTests {
     @GameTest(template = "stark_tower", timeoutTicks = 200, batch = "station")
     public static void stark_tower(GameTestHelper helper) {
         towerAndStation(helper);
+    }
+
+    /**
+     * Het wrak van de neergestorte satelliet (zie tools/generate_crash_site.py; in de test ligt
+     * alles één blok hoger): in de romp staat de zwarte doos met de satelliet-onderdelen, en de
+     * reactor gloeit nog met een blauw vuurtje ernaast.
+     */
+    @GameTest(template = "crashed_satellite", timeoutTicks = 60, batch = "crash_site")
+    public static void crashed_satellite(GameTestHelper helper) {
+        BlockPos blackBox = new BlockPos(15, 3, 16);
+        helper.assertBlockPresent(Blocks.CHEST, blackBox);
+        ChestBlockEntity chest = (ChestBlockEntity) helper.getBlockEntity(blackBox);
+        if (chest.getLootTable() == null || !chest.getLootTable().location().getPath().endsWith("crashed_satellite")) {
+            throw new GameTestAssertException("De zwarte doos heeft niet de goede buit: " + chest.getLootTable());
+        }
+        helper.assertBlockPresent(Blocks.SEA_LANTERN, new BlockPos(14, 4, 16));
+        helper.assertBlockProperty(new BlockPos(15, 3, 15), CampfireBlock.LIT, true);
+        helper.succeed();
     }
 
     /**

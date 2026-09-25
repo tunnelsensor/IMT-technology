@@ -172,6 +172,29 @@ public final class DevWorld {
         }
     }
 
+    /**
+     * Het wrak van een neergestorte satelliet neerzetten, met {@code centre} als midden op het
+     * gras (y = het grasblok). De testwereld is plat en maar 3 blokken diep, te ondiep voor de
+     * krater: daarom eerst een heuvel van 5 blokken hoog met schuine randen, en de krater daarin.
+     * (In een echte wereld ligt het wrak 8 blokken in de grond, zie crashed_satellite.json.)
+     */
+    public static void placeCrashSite(ServerLevel level, BlockPos centre) {
+        int raise = 5;
+        for (int dx = -28; dx <= 28; dx++) {
+            for (int dz = -28; dz <= 28; dz++) {
+                double r = Math.sqrt(dx * dx + dz * dz);
+                int height = r <= 20 ? raise : (int) Math.round(raise * Math.max(0, 28 - r) / 8.0);
+                for (int dy = 0; dy < height; dy++) {
+                    level.setBlock(centre.offset(dx, dy, dz), Blocks.DIRT.defaultBlockState(), 2);
+                }
+                level.setBlock(centre.offset(dx, height, dz), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
+            }
+        }
+        // Laag 7 van de structuur is het gras: dat ligt nu op centre.y + raise.
+        BlockPos origin = centre.offset(-16, raise - 7, -16);
+        command("place template starktech:crashed_satellite " + origin.getX() + " " + origin.getY() + " " + origin.getZ());
+    }
+
     /** Een nieuwe, volle bril die van deze speler is. */
     public static ItemStack ownGlasses(ServerPlayer player) {
         ItemStack glasses = new ItemStack(ModItems.EDITH_GLASSES.get());

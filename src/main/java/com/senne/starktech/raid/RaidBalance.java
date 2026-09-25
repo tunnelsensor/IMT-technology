@@ -40,8 +40,11 @@ public final class RaidBalance {
     // ---------------------------------------------------------------- Aankomst
     /** Hoe hoog boven je ze verschijnen (in blokken). */
     public static final int ARRIVAL_HEIGHT = 80;
-    /** Hoe snel ze naar beneden duiken (blokken per tick). */
-    public static final double DIVE_SPEED = 1.8;
+    /**
+     * Na een golf bij het wrak van een satelliet duurt het zo lang (ticks) voordat het wrak ze
+     * opnieuw roept: 12000 ticks = 10 minuten.
+     */
+    public static final int CRASH_SITE_COOLDOWN = 12_000;
     /** Hoe ver de drones van een golf uit elkaar liggen als ze aankomen. */
     public static final double SPREAD = 8.0;
 

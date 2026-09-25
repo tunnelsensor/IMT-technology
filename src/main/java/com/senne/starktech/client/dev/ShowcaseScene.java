@@ -93,6 +93,10 @@ final class ShowcaseScene {
     static final BlockPos MINE = new BlockPos(-34, -60, 26);
     /** Het midden van een dichte hut waar je je verstopt voor raiddrones (ze breken erin). */
     static final BlockPos HUT = new BlockPos(14, -60, 36);
+    /** Het midden van het wrak van de neergestorte satelliet (op het gras, ver naar het westen). */
+    static final BlockPos CRASH_SITE = new BlockPos(-80, -61, 0);
+    /** De zwarte doos in de romp van het wrak (plek 15, 2, 16 in generate_crash_site.py). */
+    static final BlockPos BLACK_BOX = CRASH_SITE.offset(-1, 0, 0);
 
     // ================================================================ Eén keer: de wereld bouwen
 

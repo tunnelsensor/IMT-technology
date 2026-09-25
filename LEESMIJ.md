@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (61 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (62 automatische tests).
 
 ---
 
@@ -240,6 +240,19 @@ binnen.
 - **Vanzelf**: standaard elke 20 tot 45 minuten, zolang je de bril op hebt.
 - **Omdat je erom vroeg**: sloop je in een Stark Tower, dan trek je aandacht. Doe je dat te
   vaak, dan komen ze meteen (bij het eerste blok krijg je een waarschuwing).
+- **Bij een wrak**: het wrak van een neergestorte satelliet zendt nog, en zij luisteren mee.
+  Kom je er met de bril, dan duiken ze meteen naar beneden (hooguit eens per 10 minuten).
+
+### Neergestorte satellieten
+Hier en daar is een oude Stark-satelliet uit zijn baan gevallen: een krater van zo'n 25
+blokken breed met verschroeide grond, opgeworpen aarde op de rand en aan één kant de voor
+waar hij binnenkwam. Je vindt ze in vlaktes, woestijnen, savannes, badlands, bossen, taiga's
+en sneeuwvlaktes; de rook van de smeulende brokstukken zie je van ver. In het midden ligt de
+romp (opengescheurd, de reactor gloeit nog), een zonnepaneel dat schuin omhoog steekt en de
+schotel op de helling. In de romp staat de **zwarte doos**: een kist met wat je voor de
+satelliet-upgrades nodig hebt (netherite, diamanten, goud, Stark-chips, soms een upgrade of
+een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaakt (zie
+Raiddrones).
 - **Blokken slopen uitzetten**: `/gamerule starktechRaidGriefing false`. Dan kunnen ze nog wel
   schieten, maar laten ze je muren heel.
 - **Instellen per wereld** in `<wereld>/serverconfig/starktech-server.toml`: `raids.enabled`,
@@ -407,13 +420,17 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 61 tests over de toren en zijn kluis, de drones en
-  het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
-  laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
+- **Het satellietwrak verbouwen**: `python tools/generate_crash_site.py` (of in het spel opslaan
+  als `starktech:crashed_satellite`).
+- **Tests**: `gradlew runGameTestServer` — 62 tests over de toren en zijn kluis, het
+  satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
+  spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
+  spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
-  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`; meerdere met komma's).
+  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`; meerdere met
+  komma's).
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

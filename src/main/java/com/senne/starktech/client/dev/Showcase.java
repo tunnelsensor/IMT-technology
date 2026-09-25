@@ -107,6 +107,7 @@ public final class Showcase {
                 .onServer(0, ShowcaseScene::build)
                 .onServer(0, player -> ShowcaseScene.reset(player, net.minecraft.world.level.GameType.CREATIVE))
                 .step(100, ShowcaseScene::placeTower)
+                .onServer(0, player -> DevWorld.placeCrashSite(player.serverLevel(), ShowcaseScene.CRASH_SITE))
                 // Even wachten: de bril start op, en de toren moet er staan.
                 .pause(60);
     }

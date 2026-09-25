@@ -55,6 +55,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -407,6 +408,11 @@ public final class VisualCheck {
             tower(t);
         }
 
+        // --- Het wrak van de neergestorte satelliet: van boven, van dichtbij en 's nachts.
+        if (want("crash")) {
+            crashSite(t);
+        }
+
         // --- De 3D-modellen van het zonnepaneel en de warmtegenerator (aan en uit), van voren,
         // schuin van achteren, en 's nachts (dan zie je het rooster gloeien).
         if (want("models")) {
@@ -628,6 +634,36 @@ public final class VisualCheck {
 
     /** Waar de rondleiding de Stark Tower neerzet (ver van de rest, op de vlakte). */
     private static final BlockPos STARK_TOWER = new BlockPos(200, -61, 200);
+    /** Waar het wrak van de satelliet komt (het midden, op het gras). */
+    private static final BlockPos CRASH_SITE = new BlockPos(-150, -61, 150);
+
+    /** Het wrak van de neergestorte satelliet: neerzetten (op een heuveltje), dan foto's. */
+    private static void crashSite(DevScript t) {
+        int x = CRASH_SITE.getX();
+        int z = CRASH_SITE.getZ();
+        Vec3 middle = new Vec3(x + 0.5, CRASH_SITE.getY() - 1, z + 0.5);
+        // Eerst ernaartoe, zodat dat stuk wereld geladen is, dan pas neerzetten.
+        t.view(0, x + 30, -46, z + 0.5, 90, 22);
+        t.onServer(60, player -> DevWorld.placeCrashSite(player.serverLevel(), CRASH_SITE));
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.view(40, x + 30, -46, z + 0.5, 90, 22);
+        t.lookAt(2, middle);
+        t.shot(30, "c01_crash_from_furrow");
+        t.view(0, x - 20, -44, z - 20, -45, 30);
+        t.lookAt(2, middle);
+        t.shot(30, "c02_crash_northwest");
+        t.view(0, x + 7, -52, z + 14, 150, 35);
+        t.lookAt(2, middle);
+        t.shot(30, "c03_crash_close");
+        t.view(0, x + 0.5, -30, z + 0.5, 0, 90);
+        t.shot(30, "c04_crash_from_above");
+        t.command(0, "time set midnight");
+        t.view(0, x + 30, -46, z + 0.5, 90, 22);
+        t.lookAt(2, middle);
+        t.shot(40, "c05_crash_night");
+        t.command(0, "time set noon");
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+    }
 
     /**
      * De Stark Tower: neerzetten, dan foto's van buiten en van elke verdieping van binnen. Binnen
