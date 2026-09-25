@@ -10,6 +10,7 @@ import static com.senne.starktech.client.dev.ShowcaseScene.GRID_CUT;
 import static com.senne.starktech.client.dev.ShowcaseScene.HEAT_GENERATOR;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOLO_TABLE;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOME;
+import static com.senne.starktech.client.dev.ShowcaseScene.HUT;
 import static com.senne.starktech.client.dev.ShowcaseScene.LAMP;
 import static com.senne.starktech.client.dev.ShowcaseScene.LASER_POWER;
 import static com.senne.starktech.client.dev.ShowcaseScene.PYRAMID;
@@ -18,6 +19,7 @@ import static com.senne.starktech.client.dev.ShowcaseScene.STARK_TOWER;
 import static com.senne.starktech.client.dev.ShowcaseScene.TARGETS;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.senne.starktech.StarkTech;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
@@ -29,13 +31,18 @@ import com.senne.starktech.client.EdithKeys;
 import com.senne.starktech.client.EdithMenuScreen;
 import com.senne.starktech.client.MusicScreen;
 import com.senne.starktech.client.NavigationScreen;
+import com.senne.starktech.client.RelayEditScreen;
 import com.senne.starktech.client.RelayListScreen;
 import com.senne.starktech.client.RepulsorControl;
 import com.senne.starktech.client.SatelliteScreen;
 import com.senne.starktech.client.SuitFlight;
+import com.senne.starktech.client.WaypointEditScreen;
 import com.senne.starktech.client.voice.VoiceCommandsScreen;
 import com.senne.starktech.comms.EdithComms;
+import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
+import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.edith.EdithOwner;
 import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.network.CommsPayload;
 import com.senne.starktech.network.HoloActionPayload;
@@ -44,13 +51,16 @@ import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.network.SatelliteUpgradePayload;
 import com.senne.starktech.network.WaypointActionPayload;
 import com.senne.starktech.raid.EdithRaids;
+import com.senne.starktech.raid.RaidDroneEntity;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.registry.ModCreativeTabs;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.satellite.SatelliteUpgrade;
 import com.senne.starktech.satellite.SatelliteUpgrades;
 import com.senne.starktech.shield.ShieldColor;
+import com.senne.starktech.station.ChargingStationBlockEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -60,12 +70,16 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -73,6 +87,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Alle functies van de mod, in de volgorde waarin de showcase ze laat zien.
@@ -155,6 +170,18 @@ final class ShowcaseFeatures {
                 .pause(140)
                 .onServer(0, DevWorld::wearGlasses)
                 .pause(120));
+
+        add("Transfer glasses", "Een bril doorgeven. Eerst geef jij je eigen bril vrij (G > Systems > "
+                + "'Transfer ownership'): E.D.I.T.H. meldt dat de volgende die hem opzet de nieuwe eigenaar "
+                + "wordt; nog eens drukken = annuleren. Daarna heeft Happy zíjn bril vrijgegeven en zet jij "
+                + "hem op: geen 'Access denied' zoals bij 'Owner lock', maar de opstart met jouw naam, want "
+                + "nu is hij van jou.", start, 180, 0, s -> s
+                .action(10, EdithAction.AUTHORIZE_TRANSFER)
+                .pause(90)
+                .action(0, EdithAction.AUTHORIZE_TRANSFER)
+                .pause(70)
+                .onServer(0, ShowcaseFeatures::wearFriendsReleasedGlasses)
+                .pause(240));
 
         add("Target analysis", "Kijk naar een husk: rechts verschijnt de doelanalyse "
                 + "(leven, pantser, afstand, dreigingsniveau) en hoekjes rond het doelwit.", range, 180, 0, s -> s
@@ -279,13 +306,19 @@ final class ShowcaseFeatures {
                 .action(10, EdithAction.SATELLITE_STRIKE)
                 .pause(240));
 
-        add("Satellite: sweep", "De schuivende laser: hij trekt een baan van je af, over de doelwitten.",
+        add("Satellite: sweep", "De schuivende laser, met een zelfgekozen begin en eind: kijk naar de linker "
+                + "husk en druk K (het beginpunt krijgt een markering), kijk naar de rechter husk en druk nog "
+                + "eens K. Na het opladen trekt de laser van links naar rechts over alle drie.",
                 range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
                 .action(5, EdithAction.SATELLITE_SWEEP)
                 .lookAt(10, mob(TARGETS.get(0)))
                 .action(10, EdithAction.SATELLITE_STRIKE)
-                .pause(260));
+                .pause(30)
+                .lookAt(20, mob(TARGETS.get(2)))
+                .action(10, EdithAction.SATELLITE_STRIKE)
+                .lookAt(10, mob(TARGETS.get(1)))
+                .pause(240));
 
         add("Satellite upgrades", "Het satellietscherm (G > Combat > Satellite): links de satelliet met al "
                 + "zijn getallen, rechts de upgrades met hun kosten. Kijk hoe de satelliet groeit: niveau 1, 4, 7 "
@@ -366,6 +399,13 @@ final class ShowcaseFeatures {
                 .lookAt(10, Vec3.atCenterOf(HOME))
                 .pause(120));
 
+        add("Edit a waypoint", "Het potloodje naast een waypoint in het navigatiescherm: een andere naam "
+                + "of kleur geven, of hem weggooien. De plek zelf blijft waar je hem opsloeg.", start, 180, 0, s -> s
+                .open(10, NavigationScreen::new)
+                .open(50, () -> new WaypointEditScreen(0))
+                .pause(130)
+                .close(0));
+
         // ---------------------------------------------------------------- Transport
         add("Fly with drones", "Drones pikken je op en je stuurt zelf: je vliegt waar je kijkt. "
                 + "Daarna land je weer.", GameType.SURVIVAL, start, 180, 10, s -> s
@@ -414,25 +454,44 @@ final class ShowcaseFeatures {
                 .pause(60)
                 .step(0, () -> relay(EdithRedstone.Op.OFF)));
 
-        add("Rayshield: personal shield", "Een energieschild om je heen (van buitenaf bekeken).",
+        add("Relay: name and group", "Een relais een naam en een groep geven (rechtsklik op het relais met "
+                + "de bril op, of 'Edit' in het relaisscherm). Alles in dezelfde groep ('house', 'trap') zet "
+                + "je met één commando tegelijk aan of uit.", new Vec3(3.5, -60, 2.5), 0, 20, s -> s
+                .open(10, () -> new RelayEditScreen(0))
+                .pause(150)
+                .close(0));
+
+        add("Rayshield: personal shield", "Een energieschild om je heen (van buitenaf bekeken). Dan komen er "
+                + "drie pijlen van opzij op je af: het schild vangt ze op (blauwe flits en een tik) en elke "
+                + "treffer kost wat energie van de bril (kijk links boven).", GameType.SURVIVAL,
                 start, 180, 0, s -> s
                 .action(10, EdithAction.TOGGLE_SHIELD)
                 .camera(10, CameraType.THIRD_PERSON_FRONT)
-                .pause(140)
+                .pause(60)
+                // Normaal is de showcase-speler onkwetsbaar, maar dan komt een pijl niet eens bij
+                // het schild aan. Even niet dus (het schild vangt alles op).
+                .onServer(0, player -> invulnerable(player, false))
+                .onServer(0, player -> shootArrowAt(player, new Vec3(-12, 0.5, 0)))
+                .onServer(30, player -> shootArrowAt(player, new Vec3(12, 1, -2)))
+                .onServer(30, player -> shootArrowAt(player, new Vec3(-12, 2, 3)))
+                .pause(60)
+                .onServer(0, player -> invulnerable(player, true))
                 .camera(0, CameraType.FIRST_PERSON)
                 .action(0, EdithAction.TOGGLE_SHIELD));
 
-        add("Rayshield: laser gate", "Twee laserzenders (volle blokken met een lens): met redstone schuift "
-                + "er een energiewand tussen, als één rechte wand (---). Zonder redstone schuift hij weer weg. "
-                + "Hij draait op stroom van de warmtegenerator ernaast; zonder stroom gaat hij niet aan. "
-                + "Rechtsklik op een zender = andere kleur.", new Vec3(13.5, -60, 4.5), 0, 5, s -> s
+        add("Rayshield: laser gate", "Een laserzender (vol blok met een lens): met redstone schuift de "
+                + "energiewand uit de lens naar de overkant, altijd van één kant (niet meer van twee kanten naar "
+                + "het midden). Zonder redstone schuift hij terug de zender in. Een tweede zender aan de "
+                + "overkant is niet nodig. Hij draait op stroom van de warmtegenerator ernaast; zonder stroom "
+                + "gaat hij niet aan. Rechtsklik op een zender = andere kleur.", new Vec3(13.5, -60, 4.5), 0, 5, s -> s
                 .onServer(20, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.REDSTONE_BLOCK.defaultBlockState()))
                 .pause(120)
                 .onServer(0, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState()))
                 .pause(80));
 
         add("Rayshield: dome", "De schildkoepel gaat aan: eerst een straal omhoog, dan vouwt hij bovenin open "
-                + "en zakt hij als koepel naar beneden. Een pijl van buiten stuit op de rand (flits, en de "
+                + "en zakt hij in één vloeiende beweging als koepel naar beneden (zonder hapering). De straal uit "
+                + "de generator blijft daarna staan, rustiger. Een pijl van buiten stuit op de rand (flits, en de "
                 + "schildkracht zakt). Daarna het scherm: kleur, bereik, sterkte en wat het aan stroom kost. "
                 + "Hij draait op de warmtegenerator ernaast.", new Vec3(-21.5, -60, -12.5), 0, -10, s -> s
                 .onServer(20, player -> ShowcaseScene.dome(player).setEnabled(true))
@@ -444,6 +503,21 @@ final class ShowcaseFeatures {
                 .close(0)
                 .onServer(0, player -> ShowcaseScene.dome(player).setEnabled(false))
                 .pause(40));
+
+        add("Dome under attack", "Je staat onder de schildkoepel en drie raiddrones vallen aan. Ze komen "
+                + "niet binnen: wie de rand raakt, wordt met vonken teruggeduwd, en hun laserschoten stuiten "
+                + "op de koepel. Elke treffer kost schildkracht; is die bijna op, dan flakkert de koepel, en "
+                + "leeg = 10 seconden uit.", GameType.SURVIVAL, new Vec3(-22.5, -60, 13.5), 180, -15, s -> s
+                .onServer(10, player -> ShowcaseScene.dome(player).setEnabled(true))
+                .pause(90)
+                .onServer(0, ShowcaseFeatures::raidOutsideDome)
+                .pause(220)
+                .look(0, 150, -12)
+                .pause(60)
+                .look(0, -150, -12)
+                .pause(60)
+                .onServer(0, player -> ShowcaseScene.dome(player).setEnabled(false))
+                .pause(20));
 
         // ---------------------------------------------------------------- Illusies
         add("Illusion: wall", "Een valse muur (van het blok in je andere hand). Eerst richten: je kijkt "
@@ -464,14 +538,18 @@ final class ShowcaseFeatures {
 
         add("Illusion: army", "Een nep-leger (zombies, of wat er in het spawn-ei in je hand zit). Ook "
                 + "richten met de drone: kijk naar de piramide, dan staan de zombies op de treden (niet "
-                + "in de grond).", start, -90, 5, s -> s
+                + "in de grond). Dan gaan ze op Happy af: ze lopen de piramide af, gaan in een kring om hem "
+                + "heen staan en slaan (armen vooruit, een tik), maar zonder schade: het is alleen beeld. Zo "
+                + "leid je iemand af.", start, -90, 5, s -> s
                 .action(10, EdithAction.ILLUSION_ARMY)
                 .key(20, () -> Minecraft.getInstance().options.keyJump, true)
                 .key(20, () -> Minecraft.getInstance().options.keyJump, false)
                 .lookAt(5, Vec3.atCenterOf(PYRAMID))
                 .pause(60)
                 .step(0, () -> placeIllusion(true))
-                .pause(200)
+                .pause(80)
+                .lookAt(20, eyes(FRIEND_SPOT))
+                .pause(180)
                 .action(0, EdithAction.ILLUSION_STOP));
 
         add("Illusion: cloak", "Alles in het veld verdwijnt uit beeld: kijk naar de koe en Happy.",
@@ -624,6 +702,20 @@ final class ShowcaseFeatures {
                 .look(0, 180, 30)
                 .pause(200));
 
+        add("Repair a drone", "Een gehavende drone (30% leven, rook en een kromme rotor) roep je terug; hij "
+                + "landt naast je. Rechtsklik met ijzer in je rugzak: vonkjes, en hij is weer heel. Nog een "
+                + "rechtsklik als hij heel is (of shift-rechtsklik, ook als hij nog stuk is): hij vliegt terug "
+                + "naar zijn baan.", start, 180, 30, s -> s
+                .onServer(0, ShowcaseFeatures::recallDamagedDrone)
+                .waitUntil(300, ShowcaseFeatures::droneLandedNearYou)
+                .pause(40)
+                .step(0, ShowcaseFeatures::rightClickGroundedDrone)
+                .pause(80)
+                .step(0, ShowcaseFeatures::rightClickGroundedDrone)
+                .pause(20)
+                .look(10, 180, -60)
+                .pause(100));
+
         add("Build a drone", "Een zelfgebouwde drone gebruiken: hij vliegt omhoog naar zijn baan en "
                 + "komt in je arsenaal.", start, 180, -20, s -> s
                 .onServer(0, player -> player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.STARK_DRONE.get())))
@@ -636,6 +728,16 @@ final class ShowcaseFeatures {
                 new Vec3(-2.5, -60, 3.5), 0, 20, s -> s
                 .step(10, () -> rightClick(CHARGING_STATION))
                 .pause(120)
+                .close(0));
+
+        add("Glasses upgrades", "In het laadstation een bril upgraden: een tweede bril (bijna leeg), redstone "
+                + "als stroom en drie batterij-upgrades. De bril laadt op, de voortgangsbalk van de upgrade "
+                + "loopt vol, 'ding', en de volgende gaat erin (3 seconden per stuk). Er zijn drie soorten: "
+                + "batterij (meer energie), scanner (grotere ertsscan) en drones (meer drones in de zwerm).",
+                new Vec3(-2.5, -60, 3.5), 0, 20, s -> s
+                .onServer(0, ShowcaseFeatures::fillStation)
+                .step(10, () -> rightClick(CHARGING_STATION))
+                .pause(230)
                 .close(0));
 
         add("Solar panel and heat generator", "Stroom maken: een zonnepaneel (een schuin paneel op een "
@@ -668,6 +770,21 @@ final class ShowcaseFeatures {
                 .pause(120)
                 .look(0, 0, -10)
                 .pause(160));
+
+        add("Raid drones: breaking in", "Verstop je in een dichte hut (stenen muren, glazen dak) en de "
+                + "raiddrones zien je niet. Dan komen ze dichterbij en schieten ze zich naar binnen: om de "
+                + "anderhalve seconde verdwijnt er een blok (laserstraal en vonken), tot ze je zien. Kijk "
+                + "omhoog door het dak. Wie dat slopen niet wil: gamerule starktechRaidGriefing false.",
+                GameType.SURVIVAL, at(HUT), 180, -55, s -> s
+                .onServer(0, player -> ShowcaseScene.buildHut(player.serverLevel()))
+                .command(0, "gamerule starktechRaidGriefing true")
+                .onServer(20, player -> EdithRaids.startRaid(player, 3))
+                .pause(150)
+                .look(0, 0, -35)
+                .pause(110)
+                .look(0, 90, -10)
+                .pause(110)
+                .command(0, "gamerule starktechRaidGriefing false"));
 
         add("Stark Tower", "Het gebouw waar je de bril vindt: rondvliegen om de Stark Tower. Let op het "
                 + "STARK-logo van koperen lampen op de gevel, de lampjes langs elk terras, de kluis bovenin "
@@ -743,6 +860,14 @@ final class ShowcaseFeatures {
                 start, 180, 0, s -> s
                 .step(10, ShowcaseFeatures::openAdvancements)
                 .pause(140)
+                .close(0));
+
+        add("Stark Tech items", "Alles wat de mod toevoegt, in het creative-tabblad 'Stark Tech': de bril "
+                + "(leeg en opgeladen), de Stark-chip, de drone, het harnas, de drie upgrades, de E.M.P. en "
+                + "alle blokken (laadstation, zonnepaneel, kabel, warmtegenerator, relais, laserzender, "
+                + "koepelgenerator en holotafel).", start, 180, 0, s -> s
+                .step(10, ShowcaseFeatures::openStarkTab)
+                .pause(160)
                 .close(0));
     }
 
@@ -895,6 +1020,132 @@ final class ShowcaseFeatures {
         player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(ModItems.STARK_CHESTPLATE.get()));
         player.setItemSlot(EquipmentSlot.LEGS, new ItemStack(ModItems.STARK_LEGGINGS.get()));
         player.setItemSlot(EquipmentSlot.FEET, new ItemStack(ModItems.STARK_BOOTS.get()));
+    }
+
+    /**
+     * Happy heeft zijn bril vrijgegeven ("Transfer ownership") en jij zet hem op. Wie hem als
+     * eerste opzet, wordt de nieuwe eigenaar.
+     */
+    private static void wearFriendsReleasedGlasses(ServerPlayer player) {
+        ServerPlayer friend = ShowcaseScene.friend(player);
+        if (friend == null) {
+            return;
+        }
+        ItemStack glasses = DevWorld.ownGlasses(friend);
+        EdithOwner owner = EdithData.getOwner(glasses);
+        if (owner != null) {
+            EdithData.setOwner(glasses, owner.withTransferPending(true));
+        }
+        player.setItemSlot(EquipmentSlot.HEAD, glasses);
+    }
+
+    /** De showcase-speler is normaal onkwetsbaar; voor de schild-demo even niet. */
+    private static void invulnerable(ServerPlayer player, boolean on) {
+        player.getAbilities().invulnerable = on;
+        player.onUpdateAbilities();
+    }
+
+    /** Een pijl (van niemand) die vanaf een plek naast de speler recht op zijn borst af vliegt. */
+    private static void shootArrowAt(ServerPlayer player, Vec3 offset) {
+        ServerLevel level = player.serverLevel();
+        Vec3 target = player.position().add(0, 1.2, 0);
+        Vec3 from = target.add(offset);
+        Vec3 direction = target.subtract(from).normalize();
+        Arrow arrow = new Arrow(EntityType.ARROW, level);
+        arrow.setPos(from.x, from.y, from.z);
+        arrow.shoot(direction.x, direction.y, direction.z, 2.0f, 0);
+        arrow.setNoGravity(true);
+        level.addFreshEntity(arrow);
+    }
+
+    /**
+     * Drie raiddrones die buiten de koepel beginnen (aan de noordkant, waar je naar kijkt). Ze
+     * willen naar jou toe, maar jij staat binnen.
+     */
+    private static void raidOutsideDome(ServerPlayer player) {
+        Vec3 centre = Vec3.atBottomCenterOf(DOME);
+        double[][] spots = {{-14, -22}, {0, -27}, {14, -22}};
+        for (double[] spot : spots) {
+            Vec3 landing = centre.add(spot[0], 4, spot[1]);
+            RaidDroneEntity.spawn(player.serverLevel(), landing.add(spot[0] * 0.5, 30, spot[1] * 0.5), landing);
+        }
+    }
+
+    /** De eerste drone uit het arsenaal gehavend maken en terugroepen: hij landt naast je. */
+    private static void recallDamagedDrone(ServerPlayer player) {
+        player.getInventory().add(new ItemStack(Items.IRON_INGOT, 16));
+        List<ArsenalDrone> drones = ArsenalServer.get(player).drones();
+        if (drones.isEmpty()) {
+            return;
+        }
+        ArsenalDrone first = drones.getFirst();
+        ArsenalServer.setHealth(player, first.id(), first.health() * 0.3f);
+        ArsenalServer.recall(player, first.id());
+    }
+
+    /** Je teruggeroepen drone, als die naast je staat (of nog aan het zakken is). */
+    private static @Nullable StarkDroneEntity groundedDrone() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) {
+            return null;
+        }
+        return mc.level.getEntitiesOfClass(StarkDroneEntity.class, mc.player.getBoundingBox().inflate(6),
+                drone -> drone.getMode() == StarkDroneEntity.Mode.GROUNDED)
+                .stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Is hij geland? Hij staat dan stil vlak boven de grond. (Op "onGround" kun je niet wachten:
+     * een drone zweeft net boven het blok eronder en raakt het nooit echt.)
+     */
+    private static boolean droneLandedNearYou() {
+        Minecraft mc = Minecraft.getInstance();
+        StarkDroneEntity drone = groundedDrone();
+        return drone != null && mc.player != null && Math.abs(drone.getY() - drone.yOld) < 0.01
+                && drone.getY() - mc.player.getY() < 1.5;
+    }
+
+    /** Kijk naar de gelande drone en rechtsklik erop, zoals met de muis. */
+    private static void rightClickGroundedDrone() {
+        Minecraft mc = Minecraft.getInstance();
+        StarkDroneEntity drone = groundedDrone();
+        if (drone == null || mc.player == null || mc.gameMode == null) {
+            return;
+        }
+        mc.player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, drone.position());
+        mc.gameMode.interact(mc.player, drone, InteractionHand.MAIN_HAND);
+    }
+
+    /** Het laadstation vullen: een bijna lege bril, redstone en drie batterij-upgrades. */
+    private static void fillStation(ServerPlayer player) {
+        if (player.serverLevel().getBlockEntity(CHARGING_STATION) instanceof ChargingStationBlockEntity station) {
+            ItemStack glasses = DevWorld.ownGlasses(player);
+            EdithData.setEnergy(glasses, EdithData.getMaxEnergy(glasses) / 5);
+            station.setItem(ChargingStationBlockEntity.SLOT_GLASSES, glasses);
+            station.setItem(ChargingStationBlockEntity.SLOT_FUEL, new ItemStack(Items.REDSTONE, 16));
+            station.setItem(ChargingStationBlockEntity.SLOT_UPGRADE, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 3));
+        }
+    }
+
+    /**
+     * Het creative-scherm, meteen op het tabblad "Stark Tech". Welk tabblad open staat, onthoudt
+     * Minecraft in een verborgen veld (selectedTab); dat zetten we vooraf, dan kiest het scherm
+     * bij het openen zelf dat tabblad (en de goede pagina).
+     */
+    private static void openStarkTab() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+        try {
+            java.lang.reflect.Field selected = CreativeModeInventoryScreen.class.getDeclaredField("selectedTab");
+            selected.setAccessible(true);
+            selected.set(null, ModCreativeTabs.STARK_TECH.get());
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            StarkTech.LOGGER.warn("[showcase] kan het tabblad Stark Tech niet kiezen", e);
+        }
+        mc.setScreen(new CreativeModeInventoryScreen(mc.player, mc.player.connection.enabledFeatures(),
+                mc.options.operatorItemsTab().get()));
     }
 
     /** Happy typt een commando (bijvoorbeeld een privébericht). */

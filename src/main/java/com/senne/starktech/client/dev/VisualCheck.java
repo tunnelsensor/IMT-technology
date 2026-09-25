@@ -332,6 +332,14 @@ public final class VisualCheck {
             t.probe(10, "boost 30");
             t.probe(10, "boost 40");
             t.shot(0, "44_flight_boost");
+            // Van buitenaf bij volle vaart: helt hij voorover, met de benen recht (FlightPose)?
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(5, "44b_flight_pose_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(5, "44c_flight_pose_back");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.key(0, () -> Minecraft.getInstance().options.keyLeft, true);
             t.shot(10, "45_flight_bank");
             t.key(0, () -> Minecraft.getInstance().options.keyLeft, false);

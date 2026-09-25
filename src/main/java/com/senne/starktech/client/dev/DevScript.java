@@ -6,6 +6,7 @@ import com.senne.starktech.edith.EdithAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.client.CameraType;
@@ -17,6 +18,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Een draaiboek: een rij stappen die het spel tick voor tick afwerkt, alsof iemand achter het
@@ -27,12 +29,20 @@ import net.minecraft.world.phys.Vec3;
  * gebruiken dit.
  */
 public final class DevScript {
-    /** Eén stap: eerst zoveel ticks wachten, dan iets doen. */
-    private record Step(int waitTicks, Runnable action) {}
+    /**
+     * Eén stap: eerst zoveel ticks wachten, dan iets doen. Met een {@code until} wacht de stap
+     * daarna ook nog tot dat waar is (maar hooguit {@code maxTicks}), zie waitUntil.
+     */
+    private record Step(int waitTicks, Runnable action, @Nullable BooleanSupplier until, int maxTicks) {
+        Step(int waitTicks, Runnable action) {
+            this(waitTicks, action, null, 0);
+        }
+    }
 
     private final List<Step> steps = new ArrayList<>();
     private int index;
     private int waiting;
+    private int held;
     private boolean started;
 
     /** Voert elke tick een stukje uit. Geeft true terug als alles gedaan is. */
@@ -48,7 +58,15 @@ public final class DevScript {
             waiting--;
             return false;
         }
-        steps.get(index++).action().run();
+        Step step = steps.get(index);
+        // Een wachtstap: hier blijven tot het zover is, of tot het te lang duurt.
+        if (step.until() != null && held < step.maxTicks() && !step.until().getAsBoolean()) {
+            held++;
+            return false;
+        }
+        held = 0;
+        index++;
+        step.action().run();
         waiting = index < steps.size() ? steps.get(index).waitTicks() : 0;
         return index >= steps.size();
     }
@@ -61,7 +79,8 @@ public final class DevScript {
     public int totalTicks() {
         int total = 0;
         for (Step step : steps) {
-            total += step.waitTicks() + 1;
+            // Van een wachtstap weten we niet hoe lang hij duurt: we rekenen de helft van het maximum.
+            total += step.waitTicks() + 1 + step.maxTicks() / 2;
         }
         return total;
     }
@@ -76,6 +95,15 @@ public final class DevScript {
     /** Alleen wachten. */
     public DevScript pause(int waitTicks) {
         return step(waitTicks, () -> {});
+    }
+
+    /**
+     * Wachten tot iets zo is, bijvoorbeeld tot een drone geland is. Duurt het langer dan
+     * {@code maxTicks}, dan gaat het draaiboek toch verder (anders kan het eeuwig blijven hangen).
+     */
+    public DevScript waitUntil(int maxTicks, BooleanSupplier condition) {
+        steps.add(new Step(0, () -> {}, condition, maxTicks));
+        return this;
     }
 
     /** Een screenshot in de map screenshots van het spel. */

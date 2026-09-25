@@ -16,6 +16,7 @@ import com.senne.starktech.satellite.SatelliteStrikes;
 import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.shield.LaserEmitterBlock;
 import com.senne.starktech.spy.EdithSpy;
+import com.senne.starktech.station.ChargingStationBlockEntity;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -90,6 +91,8 @@ final class ShowcaseScene {
     static final BlockPos STARK_TOWER = new BlockPos(90, -61, -20);
     static final BlockPos HOME = new BlockPos(34, -60, 30);
     static final BlockPos MINE = new BlockPos(-34, -60, 26);
+    /** Het midden van een dichte hut waar je je verstopt voor raiddrones (ze breken erin). */
+    static final BlockPos HUT = new BlockPos(14, -60, 36);
 
     // ================================================================ Eén keer: de wereld bouwen
 
@@ -159,8 +162,12 @@ final class ShowcaseScene {
         level.setBlockAndUpdate(HOME.north(2), Blocks.CHEST.defaultBlockState());
 
         // De vriend: een tweede speler met een eigen bril, om te hacken en te bespioneren.
+        // Onkwetsbaar: raiddrones kiezen de dichtstbijzijnde speler, en een dode Happy kun je
+        // niet meer hacken, bespioneren of met een nep-leger afleiden.
         ServerPlayer friend = DevWorld.fakePlayer(level, FRIEND, FRIEND_SPOT);
         DevWorld.wearGlasses(friend);
+        friend.getAbilities().invulnerable = true;
+        friend.onUpdateAbilities();
     }
 
     /** De Stark Tower komt later: dan zijn de stukken wereld waar hij komt al geladen. */
@@ -193,7 +200,8 @@ final class ShowcaseScene {
         for (Entity entity : level.getEntities((Entity) null, everywhere,
                 e -> e instanceof com.senne.starktech.drone.StarkDroneEntity
                         || e instanceof com.senne.starktech.raid.RaidDroneEntity
-                        || e instanceof net.minecraft.world.entity.item.ItemEntity)) {
+                        || e instanceof net.minecraft.world.entity.item.ItemEntity
+                        || e instanceof net.minecraft.world.entity.projectile.AbstractArrow)) {
             entity.discard();
         }
         EdithServer.resetForShowcase(player);
@@ -237,6 +245,12 @@ final class ShowcaseScene {
         if (level.getBlockEntity(DOME) instanceof DomeGeneratorBlockEntity dome) {
             dome.setEnabled(false);
         }
+        // Het laadstation leeg (de upgrade-demo legt er een bril en upgrades in).
+        if (level.getBlockEntity(CHARGING_STATION) instanceof ChargingStationBlockEntity station) {
+            station.clearContent();
+        }
+        // Raiddrones mogen alleen in "Raid drones: breaking in" iets slopen.
+        DevWorld.command("gamerule starktechRaidGriefing false");
         DevWorld.command("time set noon");
         DevWorld.command("weather clear");
 
@@ -306,6 +320,18 @@ final class ShowcaseScene {
     /** De koepelgenerator van de showcase. */
     static DomeGeneratorBlockEntity dome(ServerPlayer player) {
         return (DomeGeneratorBlockEntity) player.serverLevel().getBlockEntity(DOME);
+    }
+
+    /**
+     * Een dichte hut van 5 x 5 met stenen muren, een glazen dak en een lamp in de vloer: binnen
+     * zien raiddrones je niet, dus breken ze erin. Door het dak zie je ze aankomen. Elke keer
+     * opnieuw gebouwd, want na de demo zitten er gaten in.
+     */
+    static void buildHut(ServerLevel level) {
+        fill(level, HUT.offset(-2, 0, -2), HUT.offset(2, 3, 2), Blocks.STONE_BRICKS.defaultBlockState());
+        fill(level, HUT.offset(-2, 4, -2), HUT.offset(2, 4, 2), Blocks.GLASS.defaultBlockState());
+        fill(level, HUT.offset(-1, 0, -1), HUT.offset(1, 3, 1), Blocks.AIR.defaultBlockState());
+        level.setBlockAndUpdate(HUT.below(), Blocks.SEA_LANTERN.defaultBlockState());
     }
 
     /** Een pijl (van niemand) die van buiten op de koepel af vliegt. */
