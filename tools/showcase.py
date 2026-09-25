@@ -4,6 +4,7 @@ Stark Tech showcase: start het spel en laat alle functies één voor één zien.
 Gebruik (vanuit de projectmap):
     python tools/showcase.py
     python tools/showcase.py --vanaf 12     # begin bij functie 12
+    python tools/showcase.py --vanaf 12 --tot 15   # alleen functie 12 tot en met 15
 
 Eerst vraagt het script of je een pauze wilt tussen de functies. Met pauze wacht het na elke
 functie op jou:
@@ -170,6 +171,7 @@ def save_note(number, title, note, session):
 def main():
     parser = argparse.ArgumentParser(description="Laat alle functies van Stark Tech zien.")
     parser.add_argument("--vanaf", type=int, default=1, help="begin bij deze functie (nummer)")
+    parser.add_argument("--tot", type=int, default=0, help="stop na deze functie (nummer); 0 = tot het einde")
     parser.add_argument("--test", action="store_true",
                         help="voor het ontwikkelen: geen pauzes en een screenshot van elke functie")
     args = parser.parse_args()
@@ -195,13 +197,14 @@ def main():
         return
     total = len(features)
     print(f"{GREEN}Klaar: {total} functies. Kijk naar het spelvenster.{RESET}")
+    last = min(args.tot, total) if args.tot > 0 else total
     if args.test:
         link.send("SHOTS")
 
     session = {"header": False}
     number = max(1, min(args.vanaf, total))
     try:
-        while number <= total:
+        while number <= last:
             title, watch = features[number - 1]
             if not show(link, number, total, title, watch):
                 print(f"\n{ORANGE}Het spel is gesloten.{RESET}")

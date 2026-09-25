@@ -209,7 +209,8 @@ public class DomeScreen extends Screen {
                 ? Component.translatable("screen.starktech.dome.no_sources")
                 : Component.translatable("screen.starktech.dome.hint");
         List<FormattedCharSequence> lines = font.split(hint, PANEL_W - 2 * MARGIN - 90);
-        for (int i = 0; i < Math.min(3, lines.size()); i++) {
+        // Tot vier regels: links van de knop Done is daar ruimte voor.
+        for (int i = 0; i < Math.min(4, lines.size()); i++) {
             g.drawString(font, lines.get(i), left + MARGIN, infoY + 12 + i * 10,
                     HudStyle.argb(dome.sources() == 0 ? 255 : 170, dome.sources() == 0 ? HudStyle.RED : GREY), false);
         }

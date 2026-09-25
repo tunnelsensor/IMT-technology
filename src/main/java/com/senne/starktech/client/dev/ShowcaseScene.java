@@ -75,6 +75,8 @@ final class ShowcaseScene {
     static final BlockPos SOLAR_PANEL = new BlockPos(-5, -60, 6);
     static final BlockPos HEAT_GENERATOR = new BlockPos(-7, -60, 6);
     static final BlockPos RELAY = new BlockPos(3, -60, 6);
+    /** Het stuk kabel onder de basis dat de showcase doorknipt (tussen laadstation en holotafel). */
+    static final BlockPos GRID_CUT = new BlockPos(-1, -61, 6);
     static final BlockPos LAMP = new BlockPos(4, -60, 6);
     static final BlockPos LASER_A = new BlockPos(10, -60, 12);
     static final BlockPos LASER_B = new BlockPos(16, -60, 12);
@@ -230,6 +232,8 @@ final class ShowcaseScene {
         player.setData(ModAttachments.WAYPOINTS, player.getData(ModAttachments.WAYPOINTS).withActive(EdithWaypoints.NONE));
         level.setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(DOME_POWER, Blocks.AIR.defaultBlockState());
+        // De kabel die 'Power grid' doorknipt, altijd weer heel.
+        level.setBlockAndUpdate(GRID_CUT, ModBlocks.CABLE.get().defaultBlockState());
         if (level.getBlockEntity(DOME) instanceof DomeGeneratorBlockEntity dome) {
             dome.setEnabled(false);
         }

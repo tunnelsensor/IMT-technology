@@ -4,9 +4,9 @@ import static com.senne.starktech.client.dev.ShowcaseScene.CHARGING_STATION;
 import static com.senne.starktech.client.dev.ShowcaseScene.CHEST;
 import static com.senne.starktech.client.dev.ShowcaseScene.COW;
 import static com.senne.starktech.client.dev.ShowcaseScene.DOME;
-import static com.senne.starktech.client.dev.ShowcaseScene.DOME_POWER;
 import static com.senne.starktech.client.dev.ShowcaseScene.FAR_TARGET;
 import static com.senne.starktech.client.dev.ShowcaseScene.FRIEND_SPOT;
+import static com.senne.starktech.client.dev.ShowcaseScene.GRID_CUT;
 import static com.senne.starktech.client.dev.ShowcaseScene.HEAT_GENERATOR;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOLO_TABLE;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOME;
@@ -47,6 +47,7 @@ import com.senne.starktech.raid.EdithRaids;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.satellite.SatelliteUpgrade;
 import com.senne.starktech.satellite.SatelliteUpgrades;
 import com.senne.starktech.shield.ShieldColor;
@@ -127,12 +128,21 @@ final class ShowcaseFeatures {
         Vec3 range = new Vec3(0.5, -60, -8.5);
 
         // ---------------------------------------------------------------- De bril
-        add("E.D.I.T.H. glasses", "De opstartanimatie van de bril, daarna de HUD: energie links boven, "
-                + "kompas boven, meldingen van E.D.I.T.H. in het midden.", start, 180, 0, s -> s
+        add("E.D.I.T.H. glasses", "De opstart van de bril (ruim 5 seconden): groot E.D.I.T.H.-logo in "
+                + "reactorringen, een laadbalk met wat er geladen wordt (je echte drones en batterij), dan "
+                + "scant hij je gezicht terwijl de balk op 90% wacht, IDENTITY CONFIRMED met je naam, en "
+                + "E.D.I.T.H. begroet je (met stem als die geïnstalleerd is, anders in beeld). Geluid: 'arc "
+                + "reactor'. Daarna de HUD: energie links boven, kompas boven, meldingen in het midden.",
+                start, 180, 0, s -> s
                 .onServer(0, player -> player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY))
                 .pause(40)
                 .onServer(0, DevWorld::wearGlasses)
-                .pause(180));
+                .pause(200));
+
+        add("E.D.I.T.H. sounds", "Alle eigen geluiden van E.D.I.T.H., één voor één, met hun naam in beeld: "
+                + "meldingen (info zoals 'aangekomen', waarschuwing, geweigerd), scan, menu, laadstation, "
+                + "drones, satelliet, comms, repulsor en het opstarten. Zeg bij een nummer welke je anders wilt.",
+                start, 180, 0, ShowcaseFeatures::soundTour);
 
         add("Owner lock", "Een bril van iemand anders (Happy): 'Access denied'. Alleen de eigenaar "
                 + "kan hem gebruiken. Daarna weer je eigen bril.", start, 180, 0, s -> s
@@ -412,8 +422,10 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON)
                 .action(0, EdithAction.TOGGLE_SHIELD));
 
-        add("Rayshield: laser gate", "Twee laserzenders: met stroom schuift er een energiewand tussen, "
-                + "zonder stroom schuift hij weer weg.", new Vec3(13.5, -60, 4.5), 0, 5, s -> s
+        add("Rayshield: laser gate", "Twee laserzenders (volle blokken met een lens): met redstone schuift "
+                + "er een energiewand tussen, als één rechte wand (---). Zonder redstone schuift hij weer weg. "
+                + "Hij draait op stroom van de warmtegenerator ernaast; zonder stroom gaat hij niet aan. "
+                + "Rechtsklik op een zender = andere kleur.", new Vec3(13.5, -60, 4.5), 0, 5, s -> s
                 .onServer(20, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.REDSTONE_BLOCK.defaultBlockState()))
                 .pause(120)
                 .onServer(0, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState()))
@@ -490,7 +502,8 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON));
 
         add("Repulsor (I, then attack)", "Toets I zet de repulsor aan (geluid + ring rond het vizier), "
-                + "linkermuisknop vuurt. Na elk schot laadt de ring weer op.", range, 180, 0, s -> s
+                + "linkermuisknop vuurt. Na elk schot laadt de ring weer op. Bij een treffer zegt E.D.I.T.H. "
+                + "niets meer: alleen het geluid.", range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::wearSuit)
                 .lookAt(20, mob(TARGETS.get(1)))
                 .step(5, RepulsorControl::toggle)
@@ -528,7 +541,8 @@ final class ShowcaseFeatures {
         // ---------------------------------------------------------------- Basis
         Vec3 atTable = new Vec3(0.5, -60, 3.2);
         add("Holo table: map", "Een reliëfkaart van de omgeving als hologram: de piramide, de toren, "
-                + "je waypoints (paaltjes), spelers (wit), dieren (groen) en vijanden (rood).", atTable, 0, 22, s -> s
+                + "je waypoints (paaltjes), spelers (wit), dieren (groen) en vijanden (rood). De tafel draait "
+                + "op stroom (kabel in de grond, zie 'Power grid').", atTable, 0, 22, s -> s
                 .step(5, () -> holo(HoloActionPayload.Op.MODE, HoloMode.MAP.ordinal()))
                 .pause(180));
 
@@ -589,7 +603,9 @@ final class ShowcaseFeatures {
                 .look(10, 180, -60)
                 .pause(160));
 
-        add("Charging station", "Het laadstation: bril laden en upgraden.", new Vec3(-2.5, -60, 3.5), 0, 20, s -> s
+        add("Charging station", "Het laadstation: bril laden en upgraden. Stroom komt uit redstone of "
+                + "van het net (de kabel eronder), maar alleen als er een bril in ligt die nog niet vol is.",
+                new Vec3(-2.5, -60, 3.5), 0, 20, s -> s
                 .step(10, () -> rightClick(CHARGING_STATION))
                 .pause(120)
                 .close(0));
@@ -600,6 +616,19 @@ final class ShowcaseFeatures {
                 .close(90)
                 .step(10, () -> rightClick(HEAT_GENERATOR))
                 .close(90));
+
+        add("Power grid (Stark cables)", "Het stroomnet: de Stark-kabel in de grond verbindt de "
+                + "warmtegenerator en het zonnepaneel met het laadstation en de holotafel (kabels sluiten "
+                + "vanzelf aan). Dan wordt de kabel doorgeknipt: de holotafel valt uit (alleen een rood "
+                + "ringetje). Kabel terug: hij gaat weer aan.", new Vec3(-2.5, -58.5, 1.5), 0, 40, s -> s
+                .lookAt(10, new Vec3(-2.5, -61, 6.5))
+                .pause(60)
+                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(GRID_CUT, Blocks.AIR.defaultBlockState()))
+                .lookAt(20, Vec3.atCenterOf(HOLO_TABLE).add(0, 1, 0))
+                .pause(80)
+                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(GRID_CUT,
+                        com.senne.starktech.registry.ModBlocks.CABLE.get().defaultBlockState()))
+                .pause(80));
 
         // ---------------------------------------------------------------- Vijanden en wereld
         add("Raid drones", "Vijandige drones (donker, oranje lampjes) duiken uit de lucht, cirkelen "
@@ -623,6 +652,17 @@ final class ShowcaseFeatures {
             }
             s.view(0, centre.x, 60, centre.z - 60, 0, 30).pause(80);
         });
+
+        add("Stark Tower: laser corridor", "Binnen in de toren: de lasergang naar de kluis (acht rijen "
+                + "rayshields). Ze draaien op stroom van een verborgen krachtcentrale een verdieping lager: "
+                + "daarna zie je het dichtgemetselde blok in de hoek en de kabels in het plafond. Knip je "
+                + "die door, dan gaan de lasers uit.", towerPoint(20.5, 68, 30.2), 180, 0, s -> s
+                .pause(120)
+                .view(0, STARK_TOWER.getX() + 22.5, STARK_TOWER.getY() + 57, STARK_TOWER.getZ() + 18.5, 180, 0)
+                .lookAt(10, towerPoint(27.5, 62, 12.5))
+                .pause(80)
+                .lookAt(10, towerPoint(21, 66.5, 14))
+                .pause(80));
 
         // ---------------------------------------------------------------- Schermen en overige
         add("Voice commands", "De editor voor spraakcommando's (het woordenboek). De stem zelf moet "
@@ -657,6 +697,53 @@ final class ShowcaseFeatures {
 
     private static Vec3 eyes(BlockPos pos) {
         return new Vec3(pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5);
+    }
+
+    /** Een punt in de Stark Tower, gemeten vanaf de hoek van het gebouw (zoals in generate_structure.py). */
+    private static Vec3 towerPoint(double x, double y, double z) {
+        return new Vec3(STARK_TOWER.getX() + x, STARK_TOWER.getY() + y, STARK_TOWER.getZ() + z);
+    }
+
+    /**
+     * Alle eigen geluiden, één voor één, met hun naam als titel. (Een titel in beeld is Engels,
+     * want die zie je in het spel.)
+     */
+    private static void soundTour(DevScript s) {
+        Object[][] sounds = {
+                {"Notification", "info, like 'arrived at your destination'", ModSounds.EDITH_NOTIFY},
+                {"Warning", "something needs your attention", ModSounds.EDITH_ALERT},
+                {"Denied", "access denied or it failed", ModSounds.EDITH_DENIED},
+                {"Ore scan", "", ModSounds.EDITH_SCAN},
+                {"Menu open", "the G menu", ModSounds.EDITH_MENU_OPEN},
+                {"Select", "choosing an option", ModSounds.EDITH_SELECT},
+                {"Upgrade installed", "charging station", ModSounds.STATION_UPGRADE},
+                {"Drone launch", "", ModSounds.DRONE_DEPLOY},
+                {"Drone laser", "", ModSounds.DRONE_LASER},
+                {"Drone recall", "", ModSounds.DRONE_RECALL},
+                {"Drone hit", "", ModSounds.DRONE_HURT},
+                {"Drone destroyed", "", ModSounds.DRONE_DESTROYED},
+                {"Satellite lock", "", ModSounds.SATELLITE_LOCK},
+                {"Satellite charge", "", ModSounds.SATELLITE_CHARGE},
+                {"Satellite strike", "", ModSounds.SATELLITE_FIRE},
+                {"Message", "comms", ModSounds.COMMS_MESSAGE},
+                {"Ping", "comms", ModSounds.COMMS_PING},
+                {"Repulsor on", "", ModSounds.REPULSOR_ARM},
+                {"Repulsor shot", "", ModSounds.REPULSOR_FIRE},
+                {"Repulsor off", "", ModSounds.REPULSOR_DISARM},
+                {"Boot", "putting the glasses on", ModSounds.EDITH_BOOT},
+                {"Boot step", "loading bar", ModSounds.EDITH_BLIP},
+                {"Identity confirmed", "", ModSounds.EDITH_CONFIRM},
+        };
+        int number = 1;
+        for (Object[] sound : sounds) {
+            @SuppressWarnings("unchecked")
+            java.util.function.Supplier<net.minecraft.sounds.SoundEvent> event =
+                    (java.util.function.Supplier<net.minecraft.sounds.SoundEvent>) sound[2];
+            s.title(number == 1 ? 10 : 50, number + ". " + sound[0], (String) sound[1])
+                    .step(5, () -> EdithClientEvents.playUi(event.get(), 1.0f));
+            number++;
+        }
+        s.pause(60);
     }
 
     private static Vec3 towerCentre() {
