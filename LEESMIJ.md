@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (48 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (55 automatische tests).
 
 ---
 
@@ -27,13 +27,15 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (48 automatis
   "toegang geweigerd".
 - Craft het **laadstation** om de bril op te laden. Redstone kan erin, maar geeft weinig
   (50 per stuk): dat is je noodvoorraad. Voor echte stroom zet je een **zonnepaneel** of een
-  **warmtegenerator** neer. In het station bouw je ook upgrades in (batterij, scanner, drones).
+  **warmtegenerator** neer en verbind je die met **Stark-kabels** (zie "Stroom en kabels").
+  In het station bouw je ook upgrades in (batterij, scanner, drones).
 - Zoek een **Stark Tower** in je wereld: een wolkenkrabber van 29 x 76 blokken met een lobby,
   een lab, een archief, een hangar, een penthouse en een landingsdek op het dak.
   In de gewone kisten vind je materiaal en upgrades — maar **geen bril**.
   De bril ligt in de **kluis** bovenin, en die geeft zich niet zomaar gewonnen:
-  eerst door de lasergang (zes rayshields waar je niet doorheen komt), dan de omweg
+  eerst door de lasergang (acht rayshields waar je niet doorheen komt), dan de omweg
   via drie deuren met verstopte schakelaars, en in de kluis zelf staan vier bewakers.
+  (De lasers draaien op stroom. Wie goed kijkt, vindt misschien een andere manier...)
   Stap je op de plaat voor de kist, dan gaat de deur achter je dicht.
 
 ---
@@ -167,6 +169,17 @@ hoofd. Je ziet het alleen als je hem echt kunt zien (binnen 64 blokken, geen muu
 hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit uitzetten met
 `hack.allowed = false` in de serverconfig.
 
+### Stroom en kabels
+Zonnepanelen en warmtegeneratoren maken stroom. Met **Stark-kabels** (koper, redstone, koper
+geeft 8 kabels) breng je die naar alles wat stroom gebruikt: het laadstation, de laserzender, de
+holotafel en de schildkoepel. Kabels sluiten vanzelf op elkaar en op apparaten aan; een apparaat
+dat direct tegen een generator staat, heeft geen kabel nodig. Een apparaat haalt zijn stroom
+eerst bij de generator die het meest heeft.
+- Een **zonnepaneel** werkt alleen overdag onder open hemel.
+- Een **warmtegenerator** stookt brandstof, en haalt gratis warmte uit lava, magma of vuur om
+  hem heen (hoe meer, hoe beter). Bij een lavameer hoef je er nooit meer naar om te kijken.
+- Zonder stroom doen de laserpoort, de holotafel en de koepel niets.
+
 ### Rayshield
 - **Persoonlijk schild** (Gevecht): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
@@ -175,9 +188,17 @@ hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit
   als één rechte wand tussen de twee lenzen, en schuift dicht vanaf de uiteinden naar het
   midden (en weer open vanuit het midden), net als de ray shields uit Star Wars.
   **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood, paars.
-  Aan met redstone. Wil je hem met E.D.I.T.H. schakelen, zet er dan een relais naast.
-- **Schildkoepel-generator** (blok): koepel van 20 blokken die pijlen laat verdampen en
-  monsters naar buiten duwt. Spelers en dieren mogen erdoor.
+  Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
+  staat). Wil je hem met E.D.I.T.H. schakelen, zet er dan een relais naast.
+- **Schildkoepel-generator** (blok, op stroom): een koepel om je basis. **Rechtsklik** opent
+  zijn scherm: aan/uit, kleur, bereik (8 tot 32 blokken) en sterkte (1 tot 5). Groter en
+  sterker kost meer stroom. De koepel houdt alles tegen wat niet van jou of je team komt:
+  pijlen en vuurballen, monsters en raiddrones (die worden naar buiten geduwd), laserschoten
+  van raiddrones en andermans drones, en satellietaanvallen van anderen. Jouw eigen aanvallen
+  gaan er gewoon doorheen, net als spelers en dieren. Elke treffer kost **schildkracht**; een
+  sterkere koepel heeft er meer en laadt sneller bij. Is hij leeg, dan valt de koepel 10
+  seconden weg. Aanzetten is een show: een straal omhoog, dan vouwt hij bovenin open en zakt
+  als koepel naar beneden.
 
 ### Illusies (cloakingdrones)
 Een onzichtbare drone projecteert een beeld in een bol van 16 blokken. Alles is **nep**: in de
@@ -246,7 +267,8 @@ Met de bril op en energie erin:
 
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij
-projecteert een hologram boven zich dat langzaam ronddraait, en je bedient hem met de bril op:
+projecteert een hologram boven zich dat langzaam ronddraait (als hij **stroom** heeft; zonder
+stroom knippert er alleen een rood ringetje), en je bedient hem met de bril op:
 
 | Wat je doet | Wat er gebeurt |
 |---|---|
@@ -348,7 +370,7 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 48 tests over de toren en zijn kluis, de drones en
+- **Tests**: `gradlew runGameTestServer` — 55 tests over de toren en zijn kluis, de drones en
   het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
   laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert

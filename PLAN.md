@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 48 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 55 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle functies één voor één zien, met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -158,8 +158,9 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 
 ### 2. Uit de showcase (23 september, 21:13)
 
-Jouw notities uit `showcase-notities.md`, per onderwerp gegroepeerd. In deze volgorde: eerst
-wat de satelliet afmaakt, dan de kleine dingen, dan de grote.
+Jouw notities uit de showcase, per onderwerp gegroepeerd. Alles uit het notitiebestand staat
+hier, dus dat bestand is weggegooid. In deze volgorde: eerst wat de satelliet afmaakt, dan de
+kleine dingen, dan de grote.
 
 **Satelliet** (hoort bij het upgradescherm hierboven)
 - [x] Satelliet los van het arsenaal: geen knop meer in het arsenaalscherm, een eigen plek
@@ -221,14 +222,33 @@ wat de satelliet afmaakt, dan de kleine dingen, dan de grote.
       Een beschadigde drone waar je doorheen kijkt, vult je beeld niet meer met rook.
 
 **Stroomkabels en de schildkoepel**
-- [ ] Een kabelblok: zonnepanelen en warmtegeneratoren sturen stroom naar alles wat stroom
+- [x] Een kabelblok: zonnepanelen en warmtegeneratoren sturen stroom naar alles wat stroom
       gebruikt (koepel, laadstation, laserpoort, holotafel). Laserpoort en holotafel doen
-      zonder stroom niets meer.
-- [ ] Koepel begint als één straal omhoog, wordt vanaf een bepaalde hoogte mooi breder en zakt
-      dan als koepel naar beneden
-- [ ] Een scherm om kleur, bereik en sterkte in te stellen (sterker = meer energie)
-- [ ] Houdt alles tegen wat niet van jou of je team is: projectielen, monsters, raiddrones,
-      satellietaanvallen van anderen
+      zonder stroom niets meer. — kabels `4ed89b7`, lasers/holotafel/toren `413c0c3`
+      De Stark-kabel (koper, redstone, koper = 8 kabels) sluit vanzelf aan op kabels en
+      apparaten; een apparaat dat direct tegen een generator staat, doet ook mee. Het
+      laadstation haalt alleen stroom voor een bril die nog niet vol is (anders zoog het het
+      net leeg). Een holotafel zonder stroom toont alleen een knipperend rood ringetje.
+      De **Stark Tower** heeft nu een verborgen krachtcentrale: een dichtgemetseld blok op de
+      beveiligingsverdieping met twee warmtegeneratoren in lava, en kabels door het plafond naar
+      alle laserzenders. Knip ze door en de lasers gaan uit. Onderweg gevonden: de lasers in de
+      toren stonden als "aan" opgeslagen zonder wand, dus de gang had waarschijnlijk nooit echt
+      laserwanden. Nu gaan ze zelf aan zodra ze redstone en stroom hebben (test erbij).
+      Ook gevonden: het zonnepaneel en de warmtegenerator lieten bij afbreken niets vallen.
+- [x] Koepel begint als één straal omhoog, wordt vanaf een bepaalde hoogte mooi breder en zakt
+      dan als koepel naar beneden — `e0d2b64`
+      Een felle lichtbundel omhoog, bovenin vouwt hij open als een paraplu en zakt met een
+      oplichtende onderrand naar de grond. Daarna een doorzichtig zeshoekjesveld in zijn kleur
+      dat langzaam over de koepel glijdt, ook van binnen te zien, en dat flakkert als de
+      schildkracht bijna op is. Nagekeken op screenshots (`-Ponly=dome`).
+- [x] Een scherm om kleur, bereik en sterkte in te stellen (sterker = meer energie) — `e0d2b64`
+      Rechtsklik (alleen de eigenaar): aan/uit, zes kleuren, bereik 8 tot 32 blokken,
+      sterkte 1 tot 5, en wat dat kost en hoeveel stroombronnen er aan hangen.
+- [x] Houdt alles tegen wat niet van jou of je team is: projectielen, monsters, raiddrones,
+      satellietaanvallen van anderen — `e0d2b64`
+      Ook de laserschoten van raiddrones en van andermans drones; een satellietstraal eindigt
+      zichtbaar óp de koepel. Elke treffer kost schildkracht; is die op, dan valt hij 10
+      seconden weg. De getallen staan in `DomeSettings.java`. Vier nieuwe tests.
 
 **Harnas**
 - [ ] Repulsor: de hand beweegt en gloeit bij een schot, en het schot is een eigen, gedetailleerd
@@ -276,8 +296,8 @@ raiddrones eruitzien.
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 
-- [ ] De **schildkoepel** zie je van een afstand bijna niet: hij bestaat uit een paar
-      lichtstipjes per tick op de rand. Misschien een echte, doorzichtige koepel tekenen?
+- [x] De **schildkoepel** zie je van een afstand bijna niet — opgelost met de nieuwe koepel
+      (`e0d2b64`).
 - [ ] **Illusie "cloak"**: op het screenshot was de koe in het veld nog gewoon te zien.
 - [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
