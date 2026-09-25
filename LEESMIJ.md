@@ -355,7 +355,8 @@ Met pauze wacht het script na elke functie op jou:
 | een getal, bv. `12` | naar die functie springen |
 | iets anders | wordt bewaard als notitie bij deze functie, in `showcase-notities.md` |
 
-Beginnen bij een bepaalde functie: `python tools/showcase.py --vanaf 30`.
+Beginnen bij een bepaalde functie: `python tools/showcase.py --vanaf 30`. Alleen een stukje:
+`python tools/showcase.py --vanaf 30 --tot 34`.
 
 Het spel draait in de map `run-showcase`, los van je eigen werelden. Je hoeft er niets in te
 doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
