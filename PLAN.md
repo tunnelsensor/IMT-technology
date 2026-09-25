@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 63 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 69 functies één voor één zien (of een
+**Stand van zaken:** 64 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 70 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -428,7 +428,12 @@ wilt. Eerst de kleine dingen, dan de grote.
         G > Drones > Formation wisselt tussen Orbit (zoals altijd), Shield (snel draaiende ring
         dicht om je heen), Arrow (een V schuin achter je die meedraait) en Circle (wijde ring).
         In Shield en Arrow blijven ze in formatie als ze schieten; de bril onthoudt de keuze.
-  - [ ] **Hydra-onderdeel** (het item uit de bunker) en **Hydra-soldaten**
+  - [x] **Hydra-onderdeel** (het item uit de bunker) en **Hydra-soldaten** — `f4888be`
+        Een nieuw vijandig wezen: zwart tactisch pak, rode bril en het rode embleem. Ziet hij
+        je, dan legt hij zijn lasergeweer aan en schiet hij rode laserstralen (4 schade, om de
+        ~2 seconden, tot 18 blokken; een rayshield houdt ze tegen). Hij schiet ook op je drones
+        en roept zijn maten als je hem raakt. Het **Hydra-onderdeel** valt soms (7%) als jij er
+        een verslaat; in de bunker ligt het zeker. Er is een spawn-ei. Eén nieuwe test.
   - [ ] **Mini-raketten** uit het harnas: een salvo dat je gemarkeerde doelwitten (of waar je
         naar kijkt) volgt; kost bril-energie en heeft een wachttijd. Werkt met het hele harnas
         en een **raketpakket** (te maken met een Hydra-onderdeel).
