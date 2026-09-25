@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -73,6 +74,8 @@ public final class EdithServer {
     /** Tijdelijke gegevens per speler die niet in de bril zelf hoeven (worden niet opgeslagen). */
     private static final class PlayerState {
         boolean wasWearing;
+        /** Van wie de bril was die de speler vorige tick op had (null = van niemand, of geen bril). */
+        @Nullable UUID wornOwner;
         boolean warnedLowBattery;
         boolean warnedEmptyBattery;
         /** Wanneer elke functie weer mag (speltijd in ticks), op de volgorde van EdithCooldown. */
@@ -127,12 +130,19 @@ public final class EdithServer {
         ItemStack glasses = EdithData.getWornGlasses(player);
         boolean wearing = !glasses.isEmpty();
 
-        if (wearing && !state.wasWearing) {
+        // Opzetten telt ook als je de ene bril direct voor de andere verwisselt (rechtsklik met een
+        // bril terwijl je er al een op hebt): dan zat er geen tick zonder bril tussen. Een andere
+        // bril herkennen we aan zijn eigenaar.
+        UUID owner = wearing ? ownerId(glasses) : null;
+        boolean swapped = wearing && state.wasWearing && !Objects.equals(owner, state.wornOwner);
+        if (wearing && (!state.wasWearing || swapped)) {
             onEquip(player, glasses);
+            owner = ownerId(glasses); // een nieuwe bril heeft nu misschien net een eigenaar
         } else if (!wearing && state.wasWearing) {
             removeOurNightVision(player);
         }
         state.wasWearing = wearing;
+        state.wornOwner = owner;
 
         // Verkenningsdrone kwijt (neergeschoten, bril af...)? Dan terug naar je lichaam.
         if (state.scoutId != null && (!wearing || !EdithData.isAuthorized(glasses, player) || getScout(player, state) == null)) {
@@ -170,6 +180,11 @@ public final class EdithServer {
         if (player.tickCount % 10 == 0) {
             sendStatus(player, state);
         }
+    }
+
+    private static @Nullable UUID ownerId(ItemStack glasses) {
+        EdithOwner owner = EdithData.getOwner(glasses);
+        return owner == null ? null : owner.id();
     }
 
     /** De speler heeft net een bril opgezet. */

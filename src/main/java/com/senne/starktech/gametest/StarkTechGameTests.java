@@ -619,6 +619,26 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Een bril doorgeven zonder dat de nieuwe drager eerst zijn eigen bril afzet: hij verwisselt
+     * ze direct (zoals met rechtsklik). Ook dan moet hij de nieuwe eigenaar worden. Vroeger telde
+     * alleen "eerst niets op, dan een bril", en bleef de bril van de vorige eigenaar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "glasses")
+    public static void swapped_glasses_change_owner(GameTestHelper helper) {
+        ServerPlayer player = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        EdithServer.onPlayerTick(new PlayerTickEvent.Post(player)); // hij heeft zijn eigen bril op
+        ItemStack released = new ItemStack(ModItems.EDITH_GLASSES.get());
+        EdithData.setOwner(released, new EdithOwner(UUID.randomUUID(), "someone else", true));
+        player.setItemSlot(EquipmentSlot.HEAD, released);
+        EdithServer.onPlayerTick(new PlayerTickEvent.Post(player));
+        EdithOwner owner = EdithData.getOwner(EdithData.getWornGlasses(player));
+        if (owner == null || !owner.id().equals(player.getUUID()) || owner.transferPending()) {
+            throw new GameTestAssertException("De verwisselde bril is niet van de nieuwe drager geworden: " + owner);
+        }
+        helper.succeed();
+    }
+
     // ================================================================ Fase 15: het harnas
 
     /**
