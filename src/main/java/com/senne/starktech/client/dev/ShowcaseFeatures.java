@@ -638,8 +638,10 @@ final class ShowcaseFeatures {
                 .pause(120)
                 .close(0));
 
-        add("Solar panel and heat generator", "Stroom maken: een zonnepaneel en een "
-                + "warmtegenerator (op magma).", new Vec3(-6, -60, 3.5), 0, 20, s -> s
+        add("Solar panel and heat generator", "Stroom maken: een zonnepaneel (een schuin paneel op een "
+                + "paaltje) en een warmtegenerator op magma (een kast met koelribben, koperen pijpen achter "
+                + "en voorin een rooster dat oranje gloeit zolang hij warmte opwekt). Daarna hun schermen.",
+                new Vec3(-6, -60, 3.5), 0, 20, s -> s
                 .step(10, () -> rightClick(SOLAR_PANEL))
                 .close(90)
                 .step(10, () -> rightClick(HEAT_GENERATOR))

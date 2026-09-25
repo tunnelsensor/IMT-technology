@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -25,6 +26,8 @@ import net.minecraft.world.level.block.state.BlockState;
 public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
     /** Hoeveel ticks de huidige brandstof nog brandt. */
     private int burnTicks;
+    /** Wat hij de laatste tick opwekte (brandstof plus hitte), ook als zijn buffer vol zat. */
+    private int heat;
 
     public HeatGeneratorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HEAT_GENERATOR.get(), pos, state);
@@ -62,7 +65,24 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
         }
         // 2. Hitte uit de buurt (dit kost een blik op de 26 blokken om hem heen).
         made += EdithBalance.HEAT_RATE_AMBIENT * hotNeighbours(level, pos);
+        heat = made;
         return made;
+    }
+
+    /**
+     * Na elke tick: gloeit het rooster nog zoals het hoort? Alleen als het verandert passen we het
+     * blok aan (dat is een beetje werk: het stukje wereld moet opnieuw getekend worden).
+     *
+     * We kijken naar de hitte die binnenkomt, niet naar wat er in de buffer bijkwam: met een volle
+     * buffer bij een lavameer blijft hij dus gewoon gloeien, in plaats van steeds aan en uit.
+     */
+    @Override
+    public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
+        super.serverTick(level, pos, state);
+        boolean lit = heat > 0;
+        if (state.hasProperty(HeatGeneratorBlock.LIT) && state.getValue(HeatGeneratorBlock.LIT) != lit) {
+            level.setBlock(pos, state.setValue(HeatGeneratorBlock.LIT, lit), Block.UPDATE_CLIENTS);
+        }
     }
 
     /** Hoeveel hete blokken staan er tegen hem aan? (Maximaal een stuk of acht telt mee.) */

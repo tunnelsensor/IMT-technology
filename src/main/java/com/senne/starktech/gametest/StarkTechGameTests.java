@@ -62,6 +62,7 @@ import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.station.ChargerBlockEntity;
+import com.senne.starktech.station.HeatGeneratorBlock;
 import com.senne.starktech.station.HeatGeneratorBlockEntity;
 import com.senne.starktech.station.ChargerMenu;
 import com.senne.starktech.station.ChargingStationBlockEntity;
@@ -418,6 +419,10 @@ public final class StarkTechGameTests {
             ItemStack inside = generator.getItem(ChargerBlockEntity.SLOT_GLASSES);
             if (EdithData.getEnergy(inside) <= 0) {
                 throw new GameTestAssertException("De bril wordt niet opgeladen");
+            }
+            // Zolang hij brandt, gloeit zijn rooster (en geeft hij licht).
+            if (!helper.getBlockState(pos).getValue(HeatGeneratorBlock.LIT)) {
+                throw new GameTestAssertException("Het rooster gloeit niet terwijl hij brandt");
             }
         });
     }

@@ -394,6 +394,22 @@ public final class VisualCheck {
             t.shot(20, "95_power_cables");
         }
 
+        // --- De 3D-modellen van het zonnepaneel en de warmtegenerator (aan en uit), van voren,
+        // schuin van achteren, en 's nachts (dan zie je het rooster gloeien).
+        if (want("models")) {
+            t.onServer(0, VisualCheck::buildModelDisplay);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(40, 40.5, -60, 37.0, 0, 22);
+            t.shot(20, "96_models_front");
+            t.view(0, 43.5, -60, 43.5, 135, 25);
+            t.shot(20, "97_models_back");
+            t.command(0, "time set midnight");
+            t.view(0, 40.5, -60, 37.0, 0, 22);
+            t.shot(30, "98_models_night");
+            t.command(0, "time set noon");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- Illusies richten: eerst een valse muur (van bakstenen), met de drone vooruit
         // gevlogen; dan een nep-leger boven op de heuvel (de zombies moeten óp de heuvel staan).
         if (want("illusion")) {
@@ -598,6 +614,22 @@ public final class VisualCheck {
     }
 
     /** Generator - kabels (met een hoek en een stukje omhoog) - laadstation, bij x 20..27, z -20. */
+    /**
+     * Een rijtje om de modellen te bekijken, met de voorkanten naar het noorden: een
+     * zonnepaneel, een warmtegenerator op magma (die werkt, dus gloeit) en een zonder hitte.
+     */
+    private static void buildModelDisplay(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos centre = new BlockPos(40, -60, 40);
+        for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-4, 0, -4), centre.offset(4, 3, 4))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        level.setBlockAndUpdate(centre.offset(-2, 0, 0), ModBlocks.SOLAR_PANEL.get().defaultBlockState());
+        level.setBlockAndUpdate(centre.below(), Blocks.MAGMA_BLOCK.defaultBlockState());
+        level.setBlockAndUpdate(centre, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        level.setBlockAndUpdate(centre.offset(2, 0, 0), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+    }
+
     private static void buildPowerLine(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos start = new BlockPos(20, -60, -20);

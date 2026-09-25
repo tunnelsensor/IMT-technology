@@ -903,53 +903,138 @@ def charger_textures():
     """
     Het zonnepaneel en de warmtegenerator, plus het scherm dat ze delen.
 
-    Het paneel is een donkerblauw raster met lichtblauwe cellen; de generator is een
-    metalen kast met een gloeiend rooster aan de voorkant.
+    Beide hebben een 3D-model van meerdere doosjes (zie tools/generate_block_models.py); elk
+    doosje krijgt hier zijn eigen plaatje.
+
+    - Zonnepaneel: donkerblauwe cellen in een aluminium frame, een donkere achterkant met
+      ribben, en een metalen voet en paal.
+    - Warmtegenerator: een metalen kast op een sokkel, met koelribben, koperen pijpen achter,
+      een rooster bovenop, en voorin een rooster dat oranje gloeit als hij werkt.
     """
-    # --- Zonnepaneel: bovenkant (de cellen) ---
+    alu = (150, 160, 172, 255)
+    alu_dark = (104, 112, 124, 255)
+    copper = (176, 98, 52, 255)
+    copper_hi = (222, 140, 84, 255)
+    copper_dark = (112, 56, 28, 255)
+    hot = (255, 140, 40, 255)
+    hot_dim = (180, 70, 20, 255)
+    cold = (70, 34, 22, 255)
+    cold_dim = (44, 22, 16, 255)
+
+    # --- Zonnepaneel: de cellen (bovenkant van het schuine paneel) ---
     top = img(16, 16, (18, 26, 40, 255))
     d = ImageDraw.Draw(top)
     for cx in range(1, 15, 4):
         for cz in range(1, 15, 4):
             d.rectangle([cx, cz, cx + 2, cz + 2], fill=(40, 90, 170, 255))
             px(top, [(cx, cz)], (110, 180, 255, 255))
-    d.rectangle([0, 0, 15, 15], outline=METAL_3)
+            px(top, [(cx + 2, cz + 2)], (28, 60, 120, 255))
+    d.rectangle([0, 0, 15, 15], outline=alu)
+    px(top, [(0, 0), (15, 0), (0, 15), (15, 15)], alu_dark)
     save(top, "block/solar_panel_top.png")
 
-    # --- Zonnepaneel: zijkant (een dunne rand) ---
+    # --- Zonnepaneel: de rand van het paneel (aluminium) ---
+    frame = img(16, 16, alu)
+    d = ImageDraw.Draw(frame)
+    for y in range(16):
+        if y % 4 == 3:
+            d.line([0, y, 15, y], fill=alu_dark)
+    save(frame, "block/solar_panel_frame.png")
+
+    # --- Zonnepaneel: de achterkant (onderkant van het paneel), met ribben ---
+    under = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(under)
+    for x in (3, 8, 12):
+        d.line([x, 0, x, 15], fill=METAL_3)
+    d.rectangle([6, 6, 9, 9], fill=METAL_DARK, outline=METAL_3)   # aansluitdoos
+    px(under, [(7, 7)], CYAN_DIM)
+    save(under, "block/solar_panel_under.png")
+
+    # --- Zonnepaneel: voet en paal (metaal met klinknagels) ---
     side = img(16, 16, METAL_2)
     d = ImageDraw.Draw(side)
-    d.rectangle([0, 0, 15, 5], fill=METAL_1, outline=METAL_DARK)
-    d.rectangle([0, 6, 15, 15], fill=(0, 0, 0, 0))
-    px(side, [(3, 2), (8, 2), (12, 2)], CYAN_DIM)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    px(side, [(2, 2), (13, 2), (2, 13), (13, 13)], METAL_3)
+    px(side, [(7, 7), (8, 8)], CYAN_DIM)
     save(side, "block/solar_panel_side.png")
 
-    # --- Warmtegenerator: zijkant ---
+    # --- Warmtegenerator: zijkant van de kast (onder de koelribben) ---
     gen = img(16, 16, METAL_2)
     d = ImageDraw.Draw(gen)
     d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
-    d.rectangle([2, 2, 13, 6], fill=METAL_1, outline=METAL_3)
-    for y in range(9, 15, 2):
+    d.rectangle([2, 2, 13, 5], fill=METAL_1, outline=METAL_3)
+    px(gen, [(4, 3), (11, 3)], hot_dim)
+    for y in range(8, 15, 2):
         d.line([2, y, 13, y], fill=(120, 60, 30, 255))
     save(gen, "block/heat_generator_side.png")
 
-    # --- Warmtegenerator: voorkant met gloeiend rooster ---
+    # --- Warmtegenerator: voorkant van de kast (het rooster zit ervoor, zie grill) ---
     front = img(16, 16, METAL_2)
     d = ImageDraw.Draw(front)
     d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
-    d.rectangle([3, 3, 12, 12], fill=(60, 20, 10, 255), outline=METAL_3)
-    for y in range(4, 12, 2):
-        d.line([4, y, 11, y], fill=(255, 140, 40, 255))
-        d.line([4, y + 1, 11, y + 1], fill=(180, 70, 20, 255))
+    d.rectangle([1, 1, 14, 14], outline=METAL_3)
+    # een meter bovenaan en een waarschuwingsstreep onderaan
+    d.rectangle([5, 1, 10, 2], fill=METAL_DARK)
+    px(front, [(6, 1), (7, 1)], (90, 220, 120, 255))
+    for x in range(1, 15):
+        px(front, [(x, 13)], (220, 170, 40, 255) if (x // 2) % 2 == 0 else METAL_DARK)
     save(front, "block/heat_generator_front.png")
 
-    # --- Warmtegenerator: bovenkant ---
+    # --- Warmtegenerator: het rooster, uit en aan ---
+    for name, slat, slat_dim, back in (("heat_generator_grill", cold, cold_dim, (30, 14, 10, 255)),
+                                        ("heat_generator_grill_on", hot, hot_dim, (90, 30, 10, 255))):
+        grill = img(16, 16, back)
+        d = ImageDraw.Draw(grill)
+        for y in range(1, 15, 3):
+            d.line([1, y, 14, y], fill=slat)
+            d.line([1, y + 1, 14, y + 1], fill=slat_dim)
+        d.rectangle([0, 0, 15, 15], outline=METAL_3)
+        save(grill, "block/%s.png" % name)
+
+    # --- Warmtegenerator: sokkel, deksel en ribben (donker metaal) ---
+    base = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(base)
+    d.line([0, 0, 15, 0], fill=METAL_3)
+    d.line([0, 15, 15, 15], fill=METAL_DARK)
+    px(base, [(2, 1), (7, 1), (13, 1)], METAL_3)
+    save(base, "block/heat_generator_base.png")
+
+    fin = img(16, 16, METAL_3)
+    d = ImageDraw.Draw(fin)
+    d.line([0, 0, 0, 15], fill=(100, 110, 124, 255))
+    d.line([15, 0, 15, 15], fill=METAL_1)
+    save(fin, "block/heat_generator_fin.png")
+
+    # --- Warmtegenerator: koperen pijpen achterop, met ringen ---
+    pipe = img(16, 16, copper)
+    d = ImageDraw.Draw(pipe)
+    d.line([0, 0, 0, 15], fill=copper_hi)
+    d.line([15, 0, 15, 15], fill=copper_dark)
+    for y in (2, 8, 13):
+        d.line([0, y, 15, y], fill=copper_dark)
+    save(pipe, "block/heat_generator_pipe.png")
+
+    # --- Warmtegenerator: achterkant van de kast (een luik) ---
+    back = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(back)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.rectangle([5, 3, 10, 11], fill=METAL_1, outline=METAL_3)
+    px(back, [(9, 7)], METAL_DARK)
+    save(back, "block/heat_generator_back.png")
+
+    # --- Warmtegenerator: bovenkant (deksel) en het luchtrooster erop ---
     gtop = img(16, 16, METAL_1)
     d = ImageDraw.Draw(gtop)
     d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
-    d.ellipse([5, 5, 10, 10], fill=(90, 40, 20, 255), outline=METAL_3)
-    px(gtop, [(7, 7), (8, 8)], (255, 160, 60, 255))
+    px(gtop, [(1, 1), (14, 1), (1, 14), (14, 14)], METAL_3)
     save(gtop, "block/heat_generator_top.png")
+
+    vent = img(16, 16, METAL_DARK)
+    d = ImageDraw.Draw(vent)
+    for y in range(1, 15, 2):
+        d.line([1, y, 14, y], fill=(60, 30, 20, 255))
+    d.rectangle([0, 0, 15, 15], outline=METAL_3)
+    save(vent, "block/heat_generator_vent.png")
 
     # --- Het scherm dat beide apparaten delen ---
     gui = img(256, 256, CLEAR)

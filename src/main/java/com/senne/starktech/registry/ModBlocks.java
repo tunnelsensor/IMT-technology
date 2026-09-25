@@ -79,7 +79,8 @@ public final class ModBlocks {
                     .strength(3.5f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
-                    .lightLevel(state -> 6));
+                    // Alleen licht als hij werkt (dan gloeit zijn rooster).
+                    .lightLevel(state -> state.getValue(HeatGeneratorBlock.LIT) ? 7 : 0));
 
     // ---------------------------------------------------------------- Fase 11: rayshield
 

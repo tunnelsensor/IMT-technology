@@ -10,12 +10,18 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.level.BlockGetter;
 import org.jetbrains.annotations.Nullable;
 
-/** Het zonnepaneel: een platte plaat die daglicht omzet in energie voor je bril. */
+/**
+ * Het zonnepaneel: een paneel op een paaltje dat daglicht omzet in energie voor je bril.
+ * Het paneel staat schuin (naar het zuiden), net als echte zonnepanelen.
+ */
 public class SolarPanelBlock extends ChargerBlock {
     public static final MapCodec<SolarPanelBlock> CODEC = simpleCodec(SolarPanelBlock::new);
 
-    /** Een platte plaat van 6 pixels hoog: hij moet de lucht kunnen zien. */
-    private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 6, 16);
+    /**
+     * Zo hoog als het schuine paneel (9 pixels): lager dan een trede, dus je loopt er nog
+     * gewoon overheen, net als over een halve plaat.
+     */
+    private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 9, 16);
 
     public SolarPanelBlock(Properties properties) {
         super(properties);

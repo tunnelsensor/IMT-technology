@@ -175,9 +175,12 @@ geeft 8 kabels) breng je die naar alles wat stroom gebruikt: het laadstation, de
 holotafel en de schildkoepel. Kabels sluiten vanzelf op elkaar en op apparaten aan; een apparaat
 dat direct tegen een generator staat, heeft geen kabel nodig. Een apparaat haalt zijn stroom
 eerst bij de generator die het meest heeft.
-- Een **zonnepaneel** werkt alleen overdag onder open hemel.
+- Een **zonnepaneel** werkt alleen overdag onder open hemel. Het is een schuin paneel op een
+  paaltje (je loopt er gewoon overheen).
 - Een **warmtegenerator** stookt brandstof, en haalt gratis warmte uit lava, magma of vuur om
   hem heen (hoe meer, hoe beter). Bij een lavameer hoef je er nooit meer naar om te kijken.
+  Zijn voorkant (het rooster) wijst naar je toe als je hem neerzet; zolang hij warmte
+  opwekt, gloeit het rooster oranje en geeft hij wat licht.
 - Zonder stroom doen de laserpoort, de holotafel en de koepel niets.
 
 ### Rayshield
@@ -380,6 +383,8 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
 - **Getallen aanpassen** (sterker/zwakker): `EdithBalance.java`, dan `gradlew build`.
 - **Textures**: `python tools/generate_textures.py` maakt ze allemaal opnieuw. Teken je liever
   zelf? Teken dan over het bestand heen en draai het script niet meer.
+- **Blokmodellen**: `python tools/generate_block_models.py` maakt de 3D-modellen van het
+  zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
 - **Tests**: `gradlew runGameTestServer` — 55 tests over de toren en zijn kluis, de drones en
@@ -388,7 +393,7 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
-  -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`; meerdere
-  met komma's).
+  -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
+  `laser`, `commands`, `illusion`, `power`, `dome`, `models`; meerdere met komma's).
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.
