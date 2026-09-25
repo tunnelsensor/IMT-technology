@@ -154,16 +154,14 @@ public final class EdithRaids {
         ServerLevel level = player.serverLevel();
         int spawned = 0;
         for (int i = 0; i < count; i++) {
-            // Verspreid rond de speler. Ze duiken naar een plek iets boven hem, en beginnen zo
-            // hoog als er vrije lucht is boven die plek: onder een dak of in een grot dus lager.
-            // (Eerst keken we naar de hoogte van de grond onder elke drone apart; stond je naast
-            // een gebouw, dan begon een drone boven dat gebouw, of dwars door een plafond heen.)
+            // Verspreid rond de speler. Ze duiken in een boog naar een plek iets boven hem (elk
+            // uit een andere richting), en beginnen zo hoog als er vrije lucht is: onder een dak
+            // of in een grot dus lager (zie EdithDrones.arcStart).
             double angle = i * (Math.PI * 2 / Math.max(1, count));
-            double x = player.getX() + Math.cos(angle) * RaidBalance.SPREAD;
-            double z = player.getZ() + Math.sin(angle) * RaidBalance.SPREAD;
-            double targetY = player.getY() + RaidBalance.HOVER_ABOVE;
-            double from = EdithDrones.freeHeightAbove(level, x, targetY, z, RaidBalance.ARRIVAL_HEIGHT);
-            if (RaidDroneEntity.spawn(level, new Vec3(x, from, z), targetY) != null) {
+            Vec3 landing = new Vec3(player.getX() + Math.cos(angle) * RaidBalance.SPREAD,
+                    player.getY() + RaidBalance.HOVER_ABOVE, player.getZ() + Math.sin(angle) * RaidBalance.SPREAD);
+            Vec3 start = EdithDrones.arcStart(level, landing, angle, RaidBalance.ARRIVAL_HEIGHT);
+            if (RaidDroneEntity.spawn(level, start, landing) != null) {
                 spawned++;
             }
         }

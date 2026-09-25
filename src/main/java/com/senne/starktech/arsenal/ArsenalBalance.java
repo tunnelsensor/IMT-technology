@@ -17,9 +17,13 @@ public final class ArsenalBalance {
      */
     public static final int ORBIT_HEIGHT = 96;
 
-    /** Hoe snel een drone naar beneden duikt (blokken per tick). 2,5 = ruim 2 seconden van boven. */
-    public static final double DIVE_SPEED = 2.5;
-    /** Op deze hoogte boven zijn doel vangt hij de duik op. */
+    /**
+     * Een drone duikt in een boog naar beneden (zie SkyDive), en begint daarvoor een stuk opzij:
+     * dit deel van de valhoogte, maar nooit meer dan DIVE_ARC_MAX blokken.
+     */
+    public static final double DIVE_ARC_RATIO = 0.3;
+    public static final double DIVE_ARC_MAX = 24.0;
+    /** Zo hoog boven zijn doel komt een aanvallende drone na de duik uit. */
     public static final double DIVE_BRAKE_HEIGHT = 3.0;
 
     /** Hoe snel een vertrekkende drone omhoog gaat (blokken per tick). */

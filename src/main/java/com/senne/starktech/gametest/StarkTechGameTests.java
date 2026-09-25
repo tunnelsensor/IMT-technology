@@ -627,7 +627,7 @@ public final class StarkTechGameTests {
     /** Een raiddrone op een vaste plek, meteen op deze speler gericht. */
     private static void spawnHunter(GameTestHelper helper, ServerPlayer target, BlockPos at) {
         Vec3 where = helper.absoluteVec(Vec3.atCenterOf(at));
-        RaidDroneEntity drone = RaidDroneEntity.spawn(helper.getLevel(), where, where.y);
+        RaidDroneEntity drone = RaidDroneEntity.spawn(helper.getLevel(), where, where);
         if (drone == null) {
             throw new GameTestAssertException("De raiddrone verscheen niet");
         }
@@ -1633,6 +1633,35 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("Het recept gebruikt " + slots + "x "
                         + part.item() + ", maar ArsenalCosts zegt " + part.count());
             }
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Twee drones vlak na elkaar terugroepen: ze landen naast elkaar, niet op elkaar. Het plekje
+     * van de eerste is al bezet terwijl hij nog onderweg naar beneden is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "arsenal_recall")
+    public static void recalled_drones_land_side_by_side(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(6, 3, 4));
+        owner.setData(ModAttachments.ARSENAL, EdithArsenal.EMPTY);
+        UUID first = ArsenalServer.add(owner);
+        UUID second = ArsenalServer.add(owner);
+        ArsenalServer.returnToOrbit(owner, first, 1.0f);
+        ArsenalServer.returnToOrbit(owner, second, 1.0f);
+        if (!ArsenalServer.recall(owner, first) || !ArsenalServer.recall(owner, second)) {
+            throw new GameTestAssertException("Terugroepen lukte niet");
+        }
+        StarkDroneEntity a = EdithDrones.findGrounded(owner, first);
+        StarkDroneEntity b = EdithDrones.findGrounded(owner, second);
+        if (a == null || b == null) {
+            throw new GameTestAssertException("Er kwamen geen twee drones naar beneden");
+        }
+        Vec3 spotA = a.landingSpot();
+        Vec3 spotB = b.landingSpot();
+        double apart = Math.hypot(spotA.x - spotB.x, spotA.z - spotB.z);
+        if (apart < 1.0) {
+            throw new GameTestAssertException("Ze landen op elkaar (" + String.format("%.2f", apart) + " blok uit elkaar)");
         }
         helper.succeed();
     }

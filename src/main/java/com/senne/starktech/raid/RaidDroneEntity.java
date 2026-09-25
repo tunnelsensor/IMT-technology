@@ -21,6 +21,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import com.senne.starktech.drone.SkyDive;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,8 +37,8 @@ import org.jetbrains.annotations.Nullable;
  * ook afmaken, ook als je even uitlogt.
  */
 public class RaidDroneEntity extends Monster {
-    /** Zolang dit niet NaN is, duikt hij nog naar beneden. */
-    private double diveTargetY = Double.NaN;
+    /** De duik uit de lucht (in een boog naar zijn plek), of null als hij niet (meer) duikt. */
+    private @Nullable SkyDive dive;
     private int fireCooldown;
     /** Wanneer hij weer een blok mag stukmaken. */
     private int breakCooldown;
@@ -58,14 +59,14 @@ public class RaidDroneEntity extends Monster {
                 .add(Attributes.ATTACK_DAMAGE, RaidBalance.LASER_DAMAGE);
     }
 
-    /** Laat hem uit de lucht naar beneden duiken, tot vlak boven deze hoogte. */
-    public void startDive(double targetY) {
-        this.diveTargetY = targetY;
+    /** Laat hem uit de lucht in een boog naar {@code landing} duiken (zie SkyDive). */
+    public void startDive(Vec3 landing) {
+        this.dive = new SkyDive(position(), landing);
         this.fireCooldown = Math.max(this.fireCooldown, 20);
     }
 
     public boolean isDiving() {
-        return !Double.isNaN(diveTargetY);
+        return dive != null;
     }
 
     @Override
@@ -189,17 +190,16 @@ public class RaidDroneEntity extends Monster {
         }
     }
 
-    /** Valt met hoge snelheid naar beneden en vangt vlak boven zijn doel op. */
+    /** Eén tick van de duik: naar de volgende plek op de boog, met een rookspoor erachter. */
     private void dive(ServerLevel level) {
-        double left = getY() - diveTargetY;
-        if (left <= 3.0 || verticalCollision) {
-            diveTargetY = Double.NaN;
-            setDeltaMovement(0, 0, 0);
-            return;
-        }
-        setDeltaMovement(0, -Math.min(RaidBalance.DIVE_SPEED, left), 0);
+        SkyDive current = dive;
+        setDeltaMovement(current.next().subtract(position()));
         hasImpulse = true;
         level.sendParticles(ParticleTypes.SMOKE, getX(), getY() + 0.4, getZ(), 2, 0.05, 0.1, 0.05, 0.01);
+        if (current.done() || horizontalCollision || verticalCollision) {
+            dive = null;
+            setDeltaMovement(0, 0, 0);
+        }
     }
 
     // ---------------------------------------------------------------- Gedrag als wezen
@@ -245,14 +245,19 @@ public class RaidDroneEntity extends Monster {
         fireCooldown = tag.getInt("Fire");
     }
 
-    /** Maakt een raiddrone hoog boven een plek, klaar om te duiken. */
-    public static @Nullable RaidDroneEntity spawn(ServerLevel level, Vec3 above, double targetY) {
+    /**
+     * Maakt een raiddrone op {@code start} (hoog in de lucht), die daarna in een boog naar
+     * {@code landing} duikt. Zijn ze hetzelfde, dan hangt hij er meteen.
+     */
+    public static @Nullable RaidDroneEntity spawn(ServerLevel level, Vec3 start, Vec3 landing) {
         RaidDroneEntity drone = ModEntities.RAID_DRONE.get().create(level);
         if (drone == null) {
             return null;
         }
-        drone.moveTo(above.x, above.y, above.z, level.random.nextFloat() * 360.0f, 0.0f);
-        drone.startDive(targetY);
+        drone.moveTo(start.x, start.y, start.z, level.random.nextFloat() * 360.0f, 0.0f);
+        if (start.distanceToSqr(landing) > 1) {
+            drone.startDive(landing);
+        }
         level.addFreshEntity(drone);
         return drone;
     }

@@ -96,9 +96,8 @@ public class StarkDroneEntity extends PathfinderMob {
     private @Nullable UUID lockedTargetId;
     /** Welke drone uit het arsenaal dit is, of null voor een drone zonder arsenaal. */
     private @Nullable UUID arsenalId;
-    /** Zolang dit > 0 is, duikt de drone nog uit de lucht naar beneden. */
-    /** Naar welke hoogte de drone duikt, of Double.NaN als hij niet duikt. */
-    private double diveTargetY = Double.NaN;
+    /** De duik uit de lucht (in een boog naar zijn plek), of null als hij niet duikt. */
+    private @Nullable SkyDive dive;
     /** Hoe lang hij al aan het opstijgen is (alleen in LAUNCH). */
     private int launchTicks;
     /** Nummer van de drone binnen zijn groep (voor de plek in de formatie). */
@@ -172,17 +171,23 @@ public class StarkDroneEntity extends PathfinderMob {
     }
 
     /**
-     * De drone komt uit de lucht: hij valt met hoge snelheid naar beneden tot vlak boven
-     * "targetY" en vangt daar op. Zo zie je hem echt uit de wolken komen.
+     * De drone komt uit de lucht: vanaf waar hij nu is duikt hij in een boog naar
+     * {@code landing}, snel vanuit de hoogte en rustig afremmend bij aankomst (zie SkyDive). Zo
+     * zie je hem echt uit de wolken komen.
      */
-    public void startDive(double targetY) {
-        this.diveTargetY = targetY;
+    public void startDive(Vec3 landing) {
+        this.dive = new SkyDive(position(), landing);
         // Tijdens het duiken schiet hij nog niet.
         this.fireCooldown = Math.max(this.fireCooldown, 15);
     }
 
     public boolean isDiving() {
-        return !Double.isNaN(diveTargetY);
+        return dive != null;
+    }
+
+    /** Waar hij neerkomt als hij nog aan het duiken is, anders waar hij nu is. */
+    public Vec3 landingSpot() {
+        return dive != null ? dive.to() : position();
     }
 
     /**
@@ -200,7 +205,7 @@ public class StarkDroneEntity extends PathfinderMob {
             ArsenalServer.markDeployed(owner, arsenalId);
         }
         entityData.set(DATA_MODE, (byte) Mode.LAUNCH.ordinal());
-        diveTargetY = Double.NaN;
+        dive = null;
         launchTicks = 0;
         launchFrom = getY();
         currentTarget = null;
@@ -762,22 +767,24 @@ public class StarkDroneEntity extends PathfinderMob {
     private double launchFrom = Double.NaN;
 
     /** Valt met hoge snelheid naar beneden en vangt vlak boven zijn doel op. */
+    /** Eén tick van de duik: naar de volgende plek op de boog, met zijn neus in de vliegrichting. */
     private void dive(ServerLevel level) {
-        double left = getY() - diveTargetY;
-        if (left <= ArsenalBalance.DIVE_BRAKE_HEIGHT) {
-            diveTargetY = Double.NaN;
-            setDeltaMovement(0, 0, 0);
-            level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 6, 0.2, 0.1, 0.2, 0.02);
-            return;
-        }
-        setDeltaMovement(0, -Math.min(ArsenalBalance.DIVE_SPEED, left), 0);
+        SkyDive current = dive;
+        Vec3 step = current.next().subtract(position());
+        setDeltaMovement(step);
         hasImpulse = true;
+        if (step.horizontalDistanceSqr() > 0.0025) {
+            float yaw = (float) (Mth.atan2(step.z, step.x) * Mth.RAD_TO_DEG) - 90.0f;
+            setYRot(yaw);
+            yBodyRot = yaw;
+        }
         // Een streep vonken achter hem aan, zodat je hem uit de lucht ziet komen.
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.4, getZ(), 2, 0.05, 0.1, 0.05, 0.01);
-        // Tegen een plafond gelopen? Dan is hij er ook.
-        if (verticalCollision) {
-            diveTargetY = Double.NaN;
+        // Aangekomen, of ergens tegenaan gevlogen? Dan is de duik klaar.
+        if (current.done() || horizontalCollision || verticalCollision) {
+            dive = null;
             setDeltaMovement(0, 0, 0);
+            level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 6, 0.2, 0.1, 0.2, 0.02);
         }
     }
 

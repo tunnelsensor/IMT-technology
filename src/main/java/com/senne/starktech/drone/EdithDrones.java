@@ -14,6 +14,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -119,29 +121,93 @@ public final class EdithDrones {
         StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.SPY, 0, -1,
                 new Vec3(above.x, y, above.z), level, true, available);
         if (drone != null) {
-            drone.startDive(above.y + EdithBalance.SPY_FOLLOW_HEIGHT);
+            // Een spion maakt geen show: hij zakt recht naar beneden, niet in een grote boog.
+            drone.startDive(new Vec3(above.x, above.y + EdithBalance.SPY_FOLLOW_HEIGHT, above.z));
         }
         return drone;
     }
 
     /**
-     * Zet een teruggeroepen drone naast de speler neer. Hij komt uit de lucht vallen en blijft
-     * daar staan tot je hem repareert (rechtsklik) of weer omhoog stuurt (shift-rechtsklik).
+     * Zet een teruggeroepen drone naast de speler neer. Hij komt in een boog uit de lucht, vóór
+     * je (zodat je hem ziet aankomen), en blijft daar staan tot je hem repareert (rechtsklik) of
+     * weer omhoog stuurt (shift-rechtsklik). Roep je er meer terug, dan landen ze naast elkaar.
      */
     public static @Nullable StarkDroneEntity landRecalled(ServerPlayer owner, ArsenalDrone fromArsenal) {
         ServerLevel level = owner.serverLevel();
-        // Twee blokken naast je, aan de kant waar je naartoe kijkt.
-        Vec3 look = owner.getViewVector(1.0f);
-        double x = owner.getX() + look.x * 2.0;
-        double z = owner.getZ() + look.z * 2.0;
-        double groundY = groundBelow(level, x, owner.getY() + 1, z);
-        double from = freeHeightAbove(level, x, groundY, z);
+        Vec3 landing = freeLandingSpot(owner, level);
+        float yaw = owner.getYRot() * Mth.DEG_TO_RAD;
+        double ahead = Math.atan2(Mth.cos(yaw), -Mth.sin(yaw)); // de kant waar je naartoe kijkt
+        Vec3 start = arcStart(level, landing, ahead, EdithConfig.droneDropHeight());
         StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.GROUNDED, 0, -1,
-                new Vec3(x, from, z), level, from - groundY >= MIN_DROP_HEIGHT, fromArsenal);
+                start, level, start.y - landing.y >= MIN_DROP_HEIGHT, fromArsenal);
         if (drone != null) {
-            drone.startDive(groundY);
+            drone.startDive(landing);
         }
         return drone;
+    }
+
+    /**
+     * Een vrij plekje om te landen: eerst twee blokken voor je, anders links of rechts daarvan,
+     * of een rij verder. Een plek is bezet als er al een teruggeroepen drone staat (of naartoe
+     * onderweg is). Zo landen twee drones naast elkaar in plaats van op elkaar.
+     */
+    private static Vec3 freeLandingSpot(ServerPlayer owner, ServerLevel level) {
+        List<Vec3> taken = find(owner, StarkDroneEntity.Mode.GROUNDED).stream()
+                .map(StarkDroneEntity::landingSpot).toList();
+        float yaw = owner.getYRot() * Mth.DEG_TO_RAD;
+        double forwardX = -Mth.sin(yaw);
+        double forwardZ = Mth.cos(yaw);
+        // {hoe ver vooruit, hoe ver opzij}
+        double[][] spots = {{2, 0}, {2, 1.3}, {2, -1.3}, {2, 2.6}, {2, -2.6},
+                {3.3, 0.65}, {3.3, -0.65}, {3.3, 1.95}, {3.3, -1.95}, {4.6, 0}, {4.6, 1.3}, {4.6, -1.3}};
+        for (double[] spot : spots) {
+            double x = owner.getX() + forwardX * spot[0] - forwardZ * spot[1];
+            double z = owner.getZ() + forwardZ * spot[0] + forwardX * spot[1];
+            if (taken.stream().noneMatch(other -> Math.hypot(other.x - x, other.z - z) < 1.1)) {
+                return new Vec3(x, groundBelow(level, x, owner.getY() + 1, z), z);
+            }
+        }
+        double x = owner.getX() + forwardX * 2;
+        double z = owner.getZ() + forwardZ * 2;
+        return new Vec3(x, groundBelow(level, x, owner.getY() + 1, z), z);
+    }
+
+    /**
+     * Waar een drone hoog in de lucht begint om in een boog naar {@code landing} te duiken (zie
+     * SkyDive): een stuk opzij in richting {@code angle} (in radialen), hoe hoger hoe verder.
+     * Daar moet de lucht vrij zijn en de boog mag nergens door een blok gaan; anders proberen we
+     * het half zo ver opzij, en op het laatst gewoon recht erboven (zoals vroeger).
+     *
+     * Ook de raiddrones gebruiken dit, met hun eigen maximale hoogte.
+     */
+    public static Vec3 arcStart(ServerLevel level, Vec3 landing, double angle, int maxDrop) {
+        double offset = Math.min(ArsenalBalance.DIVE_ARC_MAX, maxDrop * ArsenalBalance.DIVE_ARC_RATIO);
+        for (double part : new double[] {1.0, 0.5}) {
+            double x = landing.x + Math.cos(angle) * offset * part;
+            double z = landing.z + Math.sin(angle) * offset * part;
+            Vec3 start = new Vec3(x, freeHeightAbove(level, x, landing.y, z, maxDrop), z);
+            if (start.y - landing.y >= MIN_DROP_HEIGHT && arcIsClear(level, start, landing)) {
+                return start;
+            }
+        }
+        return new Vec3(landing.x, freeHeightAbove(level, landing.x, landing.y, landing.z, maxDrop), landing.z);
+    }
+
+    /** Gaat de boog van start naar landing nergens door een blok? We controleren hem in stukjes. */
+    private static boolean arcIsClear(ServerLevel level, Vec3 start, Vec3 landing) {
+        // Een halve blok hoger, zodat een landing óp de grond niet als "botsing" telt.
+        Vec3 lift = new Vec3(0, 0.5, 0);
+        SkyDive path = new SkyDive(start.add(lift), landing.add(lift));
+        Vec3 last = start.add(lift);
+        for (int i = 1; i <= 12; i++) {
+            Vec3 point = path.at(i / 12.0);
+            if (level.clip(new ClipContext(last, point, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                    CollisionContext.empty())).getType() != HitResult.Type.MISS) {
+                return false;
+            }
+            last = point;
+        }
+        return true;
     }
 
     /** De drone uit je arsenaal die nu naast je op de grond staat, of null. */
@@ -324,22 +390,23 @@ public final class EdithDrones {
     // ---------------------------------------------------------------- Uit de lucht komen
 
     /**
-     * Roept een drone hoog boven "below" op, die daarna naar beneden duikt.
-     * Is er boven dat punt geen ruimte (grot, kelder), dan komt hij zo hoog als het kan.
+     * Roept een drone hoog in de lucht op, die daarna in een boog naar "below" duikt (en net
+     * daarboven uitkomt). Elke drone van een zwerm komt uit een andere richting, dus ze waaieren
+     * van alle kanten binnen. Is er geen ruimte (grot, kelder), dan komt hij zo hoog als het kan.
      */
     private static @Nullable StarkDroneEntity spawnFromSky(ServerPlayer owner, StarkDroneEntity.Mode mode, int slot,
                                                            int lifeTicks, Vec3 below, ArsenalDrone fromArsenal) {
         ServerLevel level = owner.serverLevel();
-        // De drones komen niet allemaal op dezelfde plek naar beneden: een kringetje eromheen.
+        // De drones komen niet allemaal op dezelfde plek uit: een kringetje eromheen.
         double angle = slot * (Math.PI * 2 / 5) + (slot / 5) * 0.4;
         double radius = 1.5 + (slot % 5) * 0.35;
-        double x = below.x + Math.cos(angle) * radius;
-        double z = below.z + Math.sin(angle) * radius;
-        double y = freeHeightAbove(level, x, below.y, z);
-        boolean diving = y - below.y >= MIN_DROP_HEIGHT;
-        StarkDroneEntity drone = spawn(owner, mode, slot, lifeTicks, new Vec3(x, y, z), diving, fromArsenal);
+        Vec3 landing = new Vec3(below.x + Math.cos(angle) * radius, below.y + ArsenalBalance.DIVE_BRAKE_HEIGHT,
+                below.z + Math.sin(angle) * radius);
+        Vec3 start = arcStart(level, landing, angle, EdithConfig.droneDropHeight());
+        boolean diving = start.y - landing.y >= MIN_DROP_HEIGHT;
+        StarkDroneEntity drone = spawn(owner, mode, slot, lifeTicks, start, diving, fromArsenal);
         if (drone != null && diving) {
-            drone.startDive(below.y);
+            drone.startDive(landing);
         }
         return drone;
     }
@@ -401,12 +468,8 @@ public final class EdithDrones {
         // Hij gaat de lucht in met de schade die hij de vorige keer opliep.
         drone.setArsenalId(fromArsenal.id());
         drone.setHealth(fromArsenal.health());
+        // Duikt hij, dan zegt de beller met startDive() waar hij uitkomt (in een boog, zie SkyDive).
         drone.moveTo(position.x, position.y, position.z, owner.getYRot(), 0.0f);
-        if (diving) {
-            // Een zetje naar beneden, zodat hij echt "invalt" in plaats van rustig te komen zweven.
-            // Waar hij precies moet uitkomen, zegt de beller met startDive().
-            drone.setDeltaMovement(0, -ArsenalBalance.DIVE_SPEED, 0);
-        }
         level.addFreshEntity(drone);
         // Een spion maakt geen show: geen vonken en geen geluid bij het doelwit.
         if (mode != StarkDroneEntity.Mode.SPY) {
