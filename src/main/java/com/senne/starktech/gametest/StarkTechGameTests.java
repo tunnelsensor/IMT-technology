@@ -316,8 +316,8 @@ public final class StarkTechGameTests {
      */
     /** Waypoints kun je niet alleen weggooien, maar ook een andere naam en kleur geven. */
     /**
-     * Een rayshield klapt niet in één keer aan: hij schuift dicht vanaf de uiteinden naar het
-     * midden, in de kleur die de zender heeft.
+     * Een rayshield klapt niet in één keer aan: hij schuift uit de zender naar voren (altijd van
+     * één kant, dus steeds een aaneengesloten stuk vanaf de zender), in de kleur van de zender.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "voice")
     public static void rayshield_slides_shut(GameTestHelper helper) {
@@ -339,6 +339,15 @@ public final class StarkTechGameTests {
         if (immediately == 4) {
             throw new GameTestAssertException("Het veld stond meteen helemaal dicht (geen animatie)");
         }
+        // Elke tick: wat er staat, begint bij de zender en heeft geen gaten.
+        helper.onEachTick(() -> {
+            int count = countWall(helper, emitter, 4);
+            for (int i = 1; i <= count; i++) {
+                if (!helper.getBlockState(emitter.east(i)).is(ModBlocks.LASER_WALL.get())) {
+                    throw new GameTestAssertException("Het veld groeit niet vanaf de zender (gat op plek " + i + ")");
+                }
+            }
+        });
         helper.succeedWhen(() -> {
             if (countWall(helper, emitter, 4) < 4) {
                 throw new GameTestAssertException("Het veld is nog niet dicht");
@@ -347,6 +356,37 @@ public final class StarkTechGameTests {
             if (wall.getValue(LaserWallBlock.COLOR) != ShieldColor.GREEN) {
                 throw new GameTestAssertException("Verkeerde kleur: " + wall.getValue(LaserWallBlock.COLOR));
             }
+        });
+    }
+
+    /**
+     * Twee zenders tegenover elkaar die allebei aan staan, delen één wand (die maar van één kant
+     * komt). Gaat er één uit, dan blijft de wand staan zolang de andere nog aan is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "voice")
+    public static void rayshield_shared_by_two_emitters(GameTestHelper helper) {
+        BlockPos emitter = new BlockPos(1, 3, 1);
+        BlockPos far = emitter.east(5);
+        helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+        helper.setBlock(far, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.WEST));
+        for (BlockPos each : List.of(emitter, far)) {
+            helper.setBlock(each.above(), ModBlocks.HEAT_GENERATOR.get());
+            ((ChargerBlockEntity) helper.getBlockEntity(each.above())).fill(5_000);
+            helper.setBlock(each.below(), Blocks.REDSTONE_BLOCK);
+        }
+        helper.runAfterDelay(40, () -> {
+            if (countWall(helper, emitter, 4) < 4) {
+                throw new GameTestAssertException("De wand tussen de twee zenders stond er niet");
+            }
+            helper.setBlock(emitter.below(), Blocks.AIR); // de eerste zender gaat uit
+            helper.runAfterDelay(40, () -> {
+                if (countWall(helper, emitter, 4) < 4) {
+                    throw new GameTestAssertException("De wand ging weg terwijl de zender aan de overkant nog aan stond");
+                }
+                helper.succeed();
+            });
         });
     }
 

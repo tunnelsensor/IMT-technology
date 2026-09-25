@@ -32,9 +32,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De laserzender: zet er twee tegenover elkaar en er ontstaat een energiewand tussen
- * (zoals de "ray shields" uit Star Wars). Handig als deur die je niet ziet aankomen, of als
- * val in een gang.
+ * De laserzender: een energiewand die uit de lens schuift (zoals de "ray shields" uit Star
+ * Wars). Handig als deur die je niet ziet aankomen, of als val in een gang. Eén zender is
+ * genoeg; zet je er een tweede tegenover, dan sluit die de wand netjes af.
  *
  * Een volledig blok met een lens aan de voorkant. Aan en uit gaat met redstone: een hendel,
  * een drukplaat, of een E.D.I.T.H.-relais ernaast (dan kan E.D.I.T.H. hem toch schakelen).
@@ -248,10 +248,16 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     }
 
     /**
-     * Het veld schuift dicht vanaf de twee uiteinden naar het midden (zie LaserAnimations).
-     * Je kunt er dus nog net doorheen duiken als je snel bent.
+     * Het veld schuift uit de zender naar voren (zie LaserAnimations). Je kunt er dus nog net
+     * doorheen duiken als je snel bent.
+     *
+     * Staan er twee zenders tegenover elkaar die allebei aan zijn, dan bouwt alleen de eerste de
+     * wand: anders schoven er twee wanden naar elkaar toe, en moet het van één kant komen.
      */
     private static void buildWall(ServerLevel level, BlockPos pos, Direction facing) {
+        if (partnerIsOn(level, pos, facing)) {
+            return; // de zender aan de overkant heeft de wand al gemaakt
+        }
         BlockState state = level.getBlockState(pos);
         ShieldColor colour = state.hasProperty(COLOR) ? state.getValue(COLOR) : ShieldColor.BLUE;
         BlockState wall = ModBlocks.LASER_WALL.get().defaultBlockState()
@@ -260,12 +266,29 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         LaserAnimations.start(level, wallPositions(level, pos, facing), wall, colour, true);
     }
 
-    /** En weer open, vanuit het midden naar buiten. */
+    /**
+     * En weer open: het veld schuift terug de zender in. Houdt de zender aan de overkant hem nog
+     * aan, dan blijft de wand staan (hij is van hen allebei).
+     */
     private static void clearWall(ServerLevel level, BlockPos pos, Direction facing) {
+        if (partnerIsOn(level, pos, facing)) {
+            return;
+        }
         BlockState state = level.getBlockState(pos);
         ShieldColor colour = state.hasProperty(COLOR) ? state.getValue(COLOR) : ShieldColor.BLUE;
         LaserAnimations.start(level, wallPositions(level, pos, facing),
                 Blocks.AIR.defaultBlockState(), colour, false);
+    }
+
+    /**
+     * Staat er aan het eind van de wand een zender die terugkijkt en die zelf aan staat? Dan
+     * delen ze de wand.
+     */
+    private static boolean partnerIsOn(ServerLevel level, BlockPos pos, Direction facing) {
+        BlockPos end = pos.relative(facing, wallPositions(level, pos, facing).size() + 1);
+        BlockState partner = level.getBlockState(end);
+        return partner.is(ModBlocks.LASER_EMITTER.get()) && partner.getValue(FACING) == facing.getOpposite()
+                && partner.getValue(POWERED);
     }
 
     /**

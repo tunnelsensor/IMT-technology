@@ -18,9 +18,10 @@ import org.joml.Vector3f;
 /**
  * Het open- en dichtschuiven van een rayshield.
  *
- * Een rayshield klapt niet in één keer aan: het veld groeit vanaf de twee uiteinden naar het
- * midden toe dicht, en gaat vanuit het midden weer open. Dat is precies hoe de blast doors en
- * ray shields in Star Wars werken, en het geeft je net genoeg tijd om er nog doorheen te duiken.
+ * Een rayshield klapt niet in één keer aan: het veld schuift uit de zender naar voren tot het
+ * eind, en schuift bij het uitgaan weer terug de zender in. Dat geeft je net genoeg tijd om er
+ * nog doorheen te duiken. (Vroeger groeide het van twee kanten naar het midden, maar zonder
+ * tweede zender aan de overkant kwam er dan een wand uit het niets.)
  *
  * Per stap zetten we één blok neer (of halen we er één weg), om de paar ticks.
  */
@@ -103,16 +104,12 @@ public final class LaserAnimations {
     }
 
     /**
-     * Welke plek is nu aan de beurt?
-     *
-     * Dichtschuiven gaat van de twee uiteinden naar het midden (om en om een van voor en een
-     * van achter), openschuiven precies andersom: vanuit het midden naar buiten.
+     * Welke plek is nu aan de beurt? De plekken staan op volgorde vanaf de zender. Dichtschuiven
+     * gaat van de zender naar het eind, openschuiven van het eind terug naar de zender.
      */
     private static BlockPos nextCell(Sliding sliding) {
         int size = sliding.cells.size();
-        int step = sliding.closing ? sliding.step : size - 1 - sliding.step;
-        int half = step / 2;
-        return step % 2 == 0 ? sliding.cells.get(half) : sliding.cells.get(size - 1 - half);
+        return sliding.closing ? sliding.cells.get(sliding.step) : sliding.cells.get(size - 1 - sliding.step);
     }
 
     /** Een vonkje in de kleur van het veld, op de plek die net veranderde. */
