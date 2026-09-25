@@ -34,9 +34,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * Indeling:
  * - links de satelliet zelf (hij krijgt er onderdelen bij naarmate je upgradet) en daaronder
- *   al zijn getallen, per schietstand;
+ *   een tabel met al zijn getallen, per schietstand;
  * - rechts twee secties: de drie schietstanden en de drie systemen. Per onderdeel de naam, tien
- *   blokjes voor het niveau, de knop, wat het volgende niveau doet en wat het kost;
+ *   blokjes voor het niveau en wat het volgende niveau doet; daarnaast een eigen vakje met wat
+ *   het kost (twee rijen plaatjes), en helemaal rechts de knop;
  * - onderaan: "Done", en in creative een knop die alles in één keer op het hoogste niveau zet.
  *
  * Een niveau kost onderdelen uit je rugzak, en drones uit je arsenaal brengen ze naar boven.
@@ -48,11 +49,14 @@ public class SatelliteScreen extends Screen {
     private static final int HEADER_H = 18;
     private static final int FOOTER_H = 26;
     private static final int SECTION_H = 11;
-    private static final int BUTTON_W = 58;
-    /** Hoe breed één kostenplaatje met zijn aantal is. */
-    private static final int COST_W = 20;
-    /** Regelhoogte van de kleine (75%) tekst. */
-    private static final int LINE = 7;
+    /** Hoe breed en hoog één kostenplaatje met zijn aantal is, en hoeveel er naast elkaar passen. */
+    private static final int COST_W = 22;
+    private static final int COST_H = 12;
+    private static final int COST_COLUMNS = 4;
+    /** Het kostenvakje: vier plaatjes breed (twee rijen), met een randje. */
+    private static final int COST_BOX_W = COST_COLUMNS * COST_W + 4;
+    /** Hoogte van één regel in de tabel met getallen (kleine tekst met wat lucht). */
+    private static final int TABLE_ROW = 8;
     /** Waar de blokjes beginnen: net na de langste naam ("Sweeping laser"). */
     private static final int PIPS_AT = 82;
 
@@ -81,6 +85,11 @@ public class SatelliteScreen extends Screen {
     private int rowsX;
     private int rowsW;
     private int rowH;
+    /** Hoe breed de knoppen zijn (op een klein scherm wat smaller). */
+    private int buttonW;
+    /** Waar het kostenvakje begint, en hoe breed de tekst links ervan mag zijn. */
+    private int costX;
+    private int textW;
     /** Staat de creative-knop "alles op max" er (dan is er minder plek voor de uitleg onderaan)? */
     private boolean maxAllButton;
     /** Het vakje met de satelliet (uitgerekend bij het tekenen), om erin te slepen en te scrollen. */
@@ -119,12 +128,16 @@ public class SatelliteScreen extends Screen {
         panelH = Math.min(height - 12, 270);
         left = (width - panelW) / 2;
         top = (height - panelH) / 2;
-        leftW = Math.max(140, Math.min(168, Math.round(panelW * 0.36f)));
+        leftW = Mth.clamp(Math.round(panelW * 0.30f), 118, 150);
         rowsX = left + leftW + 10;
         rowsW = left + panelW - 6 - rowsX;
-        // Tussen de blokjes en de knop moet "10/10" nog passen.
+        // Van rechts naar links: de knop, dan het kostenvakje, dan de naam, blokjes en uitleg.
+        buttonW = rowsW >= 300 ? 58 : 48;
+        costX = rowsX + rowsW - buttonW - 6 - COST_BOX_W;
+        textW = costX - 6 - rowsX;
+        // Tussen de blokjes en het kostenvakje moet "10/10" nog passen.
         int levelTextW = (int) Math.ceil(font.width("10/10") * 0.75f) + 4;
-        pipStep = Math.max(4, Math.min(7, (rowsW - BUTTON_W - PIPS_AT - levelTextW - 2) / SatelliteUpgrade.MAX_LEVEL));
+        pipStep = Mth.clamp((textW - PIPS_AT - levelTextW - 2) / SatelliteUpgrade.MAX_LEVEL, 3, 7);
         rowH = (panelH - HEADER_H - FOOTER_H - 2 * SECTION_H) / SatelliteUpgrade.values().length;
         shown = data();
 
@@ -134,8 +147,9 @@ public class SatelliteScreen extends Screen {
             Component label = level >= SatelliteUpgrade.MAX_LEVEL ? Component.translatable("screen.starktech.satellite.max")
                     : upgrade.isMode() && level == 0 ? Component.translatable("screen.starktech.satellite.unlock")
                     : Component.translatable("screen.starktech.satellite.upgrade");
+            // De knop staat in het midden van de regel, los van de kosten ernaast.
             Button button = Button.builder(label, b -> buy(upgrade))
-                    .bounds(rowsX + rowsW - BUTTON_W, y + 1, BUTTON_W, 14).build();
+                    .bounds(rowsX + rowsW - buttonW, y + (rowH - 18) / 2, buttonW, 16).build();
             Component problem = problem(upgrade);
             button.active = problem == null;
             button.setTooltip(Tooltip.create(tooltip(upgrade, problem)));
@@ -328,20 +342,18 @@ public class SatelliteScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         float seconds = (Util.getMillis() % 3_600_000L) / 1000.0f;
 
-        // Links onder: alle getallen. Eerst uitrekenen hoe hoog dat wordt; de satelliet krijgt de rest.
+        // Links onder: de tabel met alle getallen. Eerst uitrekenen hoe hoog die wordt; de
+        // satelliet krijgt de rest.
         List<StatGroup> groups = stats();
-        int statsH = 0;
-        for (StatGroup group : groups) {
-            statsH += LINE * (1 + group.lines().size()) + 2;
-        }
+        int statsH = tableHeight(groups);
         boxX0 = left + 2;
         boxY0 = top + HEADER_H;
         boxX1 = left + leftW;
-        boxY1 = top + panelH - FOOTER_H - statsH - 2;
+        boxY1 = top + panelH - FOOTER_H - statsH - 4;
         g.fill(boxX0, boxY0, boxX1, boxY1, HudStyle.argb(235, 0x02050C));
         view.renderSatelliteCloseUp(g, boxX0, boxY0, boxX1, boxY1, shown, seconds);
         HudStyle.brackets(g, boxX0, boxY0, boxX1, boxY1, 6, HudStyle.argb(160, HudStyle.ORANGE));
-        drawStats(g, groups, boxX0 + 2, boxX1 - 2, boxY1 + 4);
+        drawTable(g, groups, boxX0, boxX1, boxY1 + 3);
 
         super.render(g, mouseX, mouseY, a);
 
@@ -378,9 +390,11 @@ public class SatelliteScreen extends Screen {
     }
 
     /**
-     * Eén onderdeel, op twee regels:
-     * naam .......... [tien blokjes] 3/10 ........ [knop]
-     * Next: wat het volgende niveau doet ...... [kosten]
+     * Eén onderdeel:
+     * <pre>
+     * naam .... [tien blokjes] 3/10   | kosten  kosten  kosten  kosten |  [knop]
+     * Next: wat het volgende niveau doet | kosten  kosten  kosten  kosten |
+     * </pre>
      */
     private void drawRow(GuiGraphics g, SatelliteUpgrade upgrade, int y) {
         int level = shown.level(upgrade);
@@ -407,30 +421,28 @@ public class SatelliteScreen extends Screen {
             int pip = filled ? HudStyle.argb(230, colour)
                     : coming ? HudStyle.argb((int) (120 + 100 * Math.sin(Util.getMillis() / 150.0)), HudStyle.ORANGE)
                     : HudStyle.argb(45, HudStyle.WHITE);
-            g.fill(x, y + 5, x + pipStep - 2, y + 11, pip);
+            g.fill(x, y + 5, x + Math.max(2, pipStep - (pipStep > 4 ? 2 : 1)), y + 11, pip);
         }
         small(g, locked ? Component.translatable("satellite.starktech.upgrade.locked").getString()
                         : level + "/" + SatelliteUpgrade.MAX_LEVEL,
                 pipsX + SatelliteUpgrade.MAX_LEVEL * pipStep + 2, y + 6, HudStyle.argb(locked ? 150 : 200, colour));
 
-        // Tweede regel: rechts de kosten, links wat het volgende niveau doet (zo lang als past).
-        int line2 = y + 15;
+        // Tweede regel: wat het volgende niveau doet (zo lang als past). Rechts ervan het kostenvakje.
+        int line2 = y + 17;
         if (maxed) {
-            small(g, Component.translatable("screen.starktech.satellite.fully").getString(), rowsX, line2 + 2,
+            small(g, Component.translatable("screen.starktech.satellite.fully").getString(), rowsX, line2,
                     HudStyle.argb(200, HudStyle.GREEN));
             return;
         }
         if (sending == upgrade) {
-            small(g, Component.translatable("screen.starktech.satellite.sending").getString(), rowsX, line2 + 2,
+            small(g, Component.translatable("screen.starktech.satellite.sending").getString(), rowsX, line2,
                     HudStyle.argb((int) (170 + 60 * Math.sin(Util.getMillis() / 200.0)), HudStyle.ORANGE));
             return;
         }
-        List<ItemStack> cost = new ArrayList<>(upgrade.costFor(level + 1));
-        int costX = rowsX + rowsW - COST_W * (cost.size() + 1);
         Component next = Component.translatable("screen.starktech.satellite.next", upgrade.effect(level + 1));
-        small(g, font.plainSubstrByWidth(next.getString(), (int) ((costX - rowsX - 4) / 0.75f)),
-                rowsX, line2 + 2, HudStyle.argb(200, HudStyle.GREEN));
-        drawCost(g, cost, SatelliteUpgrade.dronesFor(level + 1), costX, line2);
+        small(g, font.plainSubstrByWidth(next.getString(), (int) (textW / 0.75f)),
+                rowsX, line2, HudStyle.argb(200, HudStyle.GREEN));
+        drawCost(g, upgrade.costFor(level + 1), SatelliteUpgrade.dronesFor(level + 1), y);
     }
 
     /** Kleine tekst (75%), links uitgelijnd. */
@@ -448,16 +460,27 @@ public class SatelliteScreen extends Screen {
     }
 
     /**
-     * De kosten als kleine plaatjes met een aantal; rood als je er te weinig van hebt. Als
-     * laatste een drone: zoveel drones moeten de onderdelen naar boven brengen.
+     * De kosten in een eigen vakje naast de knop: kleine plaatjes met een aantal, vier per rij;
+     * rood als je er te weinig van hebt. Als laatste een drone: zoveel drones moeten de
+     * onderdelen naar boven brengen.
      */
-    private void drawCost(GuiGraphics g, List<ItemStack> cost, int drones, int x, int y) {
+    private void drawCost(GuiGraphics g, List<ItemStack> cost, int drones, int rowTop) {
+        int boxH = 2 * COST_H + 3;
+        int boxY = rowTop + (rowH - boxH) / 2 - 1;
+        g.fill(costX, boxY, costX + COST_BOX_W, boxY + boxH, HudStyle.argb(140, 0x02050C));
+        g.renderOutline(costX, boxY, COST_BOX_W, boxH, HudStyle.argb(55, HudStyle.ORANGE));
+
         Inventory inventory = Minecraft.getInstance().player.getInventory();
-        for (ItemStack needed : cost) {
-            costCell(g, needed, needed.getCount(), have(inventory, needed) >= needed.getCount(), x, y);
-            x += COST_W;
+        List<ItemStack> icons = new ArrayList<>(cost);
+        icons.add(new ItemStack(ModItems.STARK_DRONE.get(), drones));
+        for (int i = 0; i < icons.size() && i < 2 * COST_COLUMNS; i++) {
+            ItemStack needed = icons.get(i);
+            boolean enough = i == icons.size() - 1 ? dronesReady() >= drones
+                    : have(inventory, needed) >= needed.getCount();
+            int x = costX + 2 + (i % COST_COLUMNS) * COST_W;
+            int y = boxY + 2 + (i / COST_COLUMNS) * COST_H;
+            costCell(g, needed, needed.getCount(), enough, x, y);
         }
-        costCell(g, new ItemStack(ModItems.STARK_DRONE.get()), drones, dronesReady() >= drones, x, y);
     }
 
     private void costCell(GuiGraphics g, ItemStack icon, int count, boolean enough, int x, int y) {
@@ -466,7 +489,7 @@ public class SatelliteScreen extends Screen {
         g.pose().scale(0.625f, 0.625f, 1);
         g.renderItem(icon, 0, 0);
         g.pose().popPose();
-        small(g, String.valueOf(count), x + 10, y + 4, HudStyle.argb(230, enough ? HudStyle.WHITE : HudStyle.RED));
+        small(g, String.valueOf(count), x + 11, y + 3, HudStyle.argb(230, enough ? HudStyle.WHITE : HudStyle.RED));
     }
 
     // ---------------------------------------------------------------- De getallen onder de satelliet
@@ -509,21 +532,42 @@ public class SatelliteScreen extends Screen {
         return (s == Math.round(s) ? String.valueOf(Math.round(s)) : String.format("%.1f", s)) + " s";
     }
 
-    /** De groepjes onder elkaar: kopje in kleur, daaronder "wat ....... hoeveel". */
-    private void drawStats(GuiGraphics g, List<StatGroup> groups, int x0, int x1, int y) {
+    /** Hoe hoog de tabel wordt: per groep een kopregel en een regel per getal, met een kiertje ertussen. */
+    private static int tableHeight(List<StatGroup> groups) {
+        int height = 0;
         for (StatGroup group : groups) {
-            small(g, group.title().getString().toUpperCase(), x0, y, HudStyle.argb(230, group.locked() ? 0x8A9BA0 : group.colour()));
+            height += TABLE_ROW * (1 + group.lines().size()) + 2;
+        }
+        return height - 2;
+    }
+
+    /**
+     * De getallen als tabel: per groep een gekleurde kopregel, dan om en om lichte en donkere
+     * regels met links wat het is en rechts (in een eigen kolom) hoeveel, en een kader eromheen.
+     */
+    private void drawTable(GuiGraphics g, List<StatGroup> groups, int x0, int x1, int y) {
+        int valueX = x1 - Math.round((x1 - x0) * 0.36f); // de grens tussen de twee kolommen
+        for (StatGroup group : groups) {
+            int colour = group.locked() ? 0x8A9BA0 : group.colour();
+            int groupTop = y;
+            g.fill(x0, y, x1, y + TABLE_ROW, HudStyle.argb(group.locked() ? 35 : 60, colour));
+            small(g, group.title().getString().toUpperCase(), x0 + 3, y + 1, HudStyle.argb(240, colour));
             if (group.locked()) {
-                smallRight(g, Component.translatable("satellite.starktech.upgrade.locked").getString(), x1, y,
+                smallRight(g, Component.translatable("satellite.starktech.upgrade.locked").getString(), x1 - 3, y + 1,
                         HudStyle.argb(170, 0x8A9BA0));
             }
-            y += LINE;
-            for (Stat stat : group.lines()) {
-                int alpha = group.locked() ? 90 : 210;
-                small(g, stat.label().getString(), x0 + 4, y, HudStyle.argb(alpha, HudStyle.WHITE));
-                smallRight(g, group.locked() ? "-" : stat.value(), x1, y, HudStyle.argb(alpha, HudStyle.WHITE));
-                y += LINE;
+            y += TABLE_ROW;
+            int alpha = group.locked() ? 90 : 220;
+            for (int i = 0; i < group.lines().size(); i++) {
+                Stat stat = group.lines().get(i);
+                g.fill(x0, y, x1, y + TABLE_ROW, i % 2 == 0 ? HudStyle.argb(170, 0x02050C) : HudStyle.argb(150, 0x172833));
+                String label = font.plainSubstrByWidth(stat.label().getString(), (int) ((valueX - x0 - 6) / 0.75f));
+                small(g, label, x0 + 4, y + 1, HudStyle.argb(alpha, HudStyle.WHITE));
+                smallRight(g, group.locked() ? "-" : stat.value(), x1 - 3, y + 1, HudStyle.argb(alpha, HudStyle.WHITE));
+                y += TABLE_ROW;
             }
+            g.fill(valueX, groupTop + TABLE_ROW, valueX + 1, y, HudStyle.argb(45, colour));
+            g.renderOutline(x0, groupTop, x1 - x0, y - groupTop, HudStyle.argb(90, colour));
             y += 2;
         }
     }
