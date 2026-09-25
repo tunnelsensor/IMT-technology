@@ -1037,16 +1037,13 @@ def charger_textures():
     save(vent, "block/heat_generator_vent.png")
 
     # --- Het scherm dat beide apparaten delen ---
+    # Alleen de achtergrond en je eigen inventaris: de vakjes en balken van het apparaat zelf
+    # tekent ChargerScreen, want het zonnepaneel heeft er minder dan de warmtegenerator.
     gui = img(256, 256, CLEAR)
     d = ImageDraw.Draw(gui)
     d.rectangle([0, 0, 175, 165], fill=(28, 34, 40, 255), outline=(12, 16, 20, 255))
-    # De balk links (wat het apparaat zelf heeft).
-    d.rectangle([9, 16, 20, 69], fill=(14, 18, 22, 255), outline=(60, 72, 82, 255))
-    # Het bril-slot en het brandstof-slot.
-    for (sx, sy) in ((79, 24), (79, 52)):
-        d.rectangle([sx, sy, sx + 17, sy + 17], fill=(20, 26, 32, 255), outline=(70, 84, 96, 255))
-    # De balk onder de bril.
-    d.rectangle([61, 46, 114, 51], fill=(14, 18, 22, 255))
+    # Een dun lijntje tussen het apparaat (boven) en je inventaris (onder).
+    d.line([7, 80, 168, 80], fill=(44, 54, 64, 255))
     # De vakjes van je eigen inventaris.
     for row in range(3):
         for col in range(9):

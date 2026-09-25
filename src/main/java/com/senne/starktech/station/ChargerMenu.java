@@ -2,6 +2,7 @@ package com.senne.starktech.station;
 
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.registry.ModMenus;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,22 +16,27 @@ import net.minecraft.world.item.ItemStack;
 /**
  * Het menu van een lader (zonnepaneel of warmtegenerator): welke slots er zijn.
  *
- * Links de bril die opgeladen wordt, en bij de warmtegenerator daaronder een slot voor
- * brandstof. Het zonnepaneel heeft dat niet nodig - dat slot zit er dan wel, maar accepteert
- * niets en het scherm tekent er geen vakje.
+ * Een slot voor de bril die opgeladen wordt, en alleen bij de warmtegenerator een slot voor
+ * brandstof. Het zonnepaneel heeft dat niet nodig en krijgt het dus ook niet.
+ *
+ * Welk van de twee het is, stuurt de server mee als het scherm opengaat (zie ChargerBlock):
+ * anders zou jouw spel het niet weten, want ze delen dit menu.
  */
 public class ChargerMenu extends AbstractContainerMenu {
-    public static final int GLASSES_X = 80, GLASSES_Y = 25;
-    public static final int FUEL_X = 80, FUEL_Y = 53;
+    public static final int GLASSES_X = 80, GLASSES_Y = 24;
+    public static final int FUEL_X = 80, FUEL_Y = 52;
 
     private final Container container;
     private final ContainerData data;
     private final boolean usesFuel;
 
-    /** Wordt op de client gebruikt: de echte inhoud komt van de server. */
-    public ChargerMenu(int containerId, Inventory inventory) {
+    /**
+     * Wordt op de client gebruikt: de echte inhoud komt van de server. Of het een
+     * warmtegenerator is, staat in {@code extra} (door de server meegestuurd).
+     */
+    public ChargerMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
         this(containerId, inventory, new SimpleContainer(ChargerBlockEntity.SLOT_COUNT),
-                new SimpleContainerData(ChargerBlockEntity.DATA_COUNT), true);
+                new SimpleContainerData(ChargerBlockEntity.DATA_COUNT), extra.readBoolean());
     }
 
     public ChargerMenu(int containerId, Inventory inventory, Container container, ContainerData data, boolean usesFuel) {
@@ -43,7 +49,9 @@ public class ChargerMenu extends AbstractContainerMenu {
         container.startOpen(inventory.player);
 
         addSlot(new FilteredSlot(container, ChargerBlockEntity.SLOT_GLASSES, GLASSES_X, GLASSES_Y, 1));
-        addSlot(new FilteredSlot(container, ChargerBlockEntity.SLOT_FUEL, FUEL_X, FUEL_Y, 64));
+        if (usesFuel) {
+            addSlot(new FilteredSlot(container, ChargerBlockEntity.SLOT_FUEL, FUEL_X, FUEL_Y, 64));
+        }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
                 addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, 84 + row * 18));
@@ -112,7 +120,8 @@ public class ChargerMenu extends AbstractContainerMenu {
         }
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
-        int inventoryStart = ChargerBlockEntity.SLOT_COUNT;
+        // De slots van het apparaat komen eerst (1 of 2), daarna die van jou.
+        int inventoryStart = usesFuel ? 2 : 1;
         if (index < inventoryStart) {
             // Uit het apparaat naar je eigen tassen.
             if (!moveItemStackTo(stack, inventoryStart, slots.size(), true)) {

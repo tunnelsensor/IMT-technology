@@ -51,12 +51,15 @@ public abstract class ChargerBlock extends BaseEntityBlock implements PowerConne
         };
     }
 
-    /** Rechtsklikken: het scherm openen waarin je je bril neerlegt. */
+    /**
+     * Rechtsklikken: het scherm openen waarin je je bril neerlegt. We sturen mee of het een
+     * warmtegenerator is (met brandstofslot) of een zonnepaneel (zonder).
+     */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof ChargerBlockEntity charger) {
-            player.openMenu(charger);
+            player.openMenu(charger, buffer -> buffer.writeBoolean(charger.usesFuel()));
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
