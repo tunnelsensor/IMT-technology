@@ -413,9 +413,24 @@ wilt. Eerst de kleine dingen, dan de grote.
         (beide gevonden, met al hun kisten, in een savanne en een berkenbos).
         Aannames (zeg het als je het anders wilt): de buit, hoe vaak hij voorkomt (ongeveer even
         vaak als de toren) en de raiddrones als bewaking.
-  - [ ] Hydra-bunker (uit de ideeënlijst; nog te bespreken wat erin moet)
-- [ ] De Stark Tower verder uitbreiden
-- [ ] Meer high tech in het algemeen
+  - [ ] **Hydra-bunker, in een berg** (Winter Soldier-stijl): een ingang in een rotswand,
+        gangen de berg in, en achterin de buit. Bewaakt door **Hydra-soldaten** (een nieuw
+        wezen met een lasergeweer) én **torentjes** en laserwanden. De beloning is **Hydra-tech**:
+        onderdelen die je nodig hebt om het raketpakket en de torentjes te maken. Zo is de
+        bunker de weg naar de nieuwe tech.
+- [ ] De Stark Tower verder uitbreiden (nog te bespreken)
+- [ ] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
+  - [ ] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien
+  - [ ] **Drone-formaties** — je escorte in een vorm: schild om je heen, pijl, cirkel
+  - [ ] **Hydra-onderdeel** (het item uit de bunker) en **Hydra-soldaten**
+  - [ ] **Mini-raketten** uit het harnas: een salvo dat je gemarkeerde doelwitten (of waar je
+        naar kijkt) volgt; kost bril-energie en heeft een wachttijd. Werkt met het hele harnas
+        en een **raketpakket** (te maken met een Hydra-onderdeel).
+  - [ ] **Automatische torentjes** voor je basis: schieten op monsters en raiddrones (spelers
+        alleen met PvP aan, nooit jij of je team), met een laser op stroom (kabels) en raketten
+        als munitie. Een redstone-signaal (bv. een relais) zet ze uit. Te maken met een
+        Hydra-onderdeel. In de bunker staan vijandige versies.
+  - [ ] Daarna de bunker (zie hierboven), met de soldaten en torentjes erin
 
 ### 5. De AI-stem (als laatste)
 
