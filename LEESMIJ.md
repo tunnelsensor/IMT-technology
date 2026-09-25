@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (55 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (61 automatische tests).
 
 ---
 
@@ -100,8 +100,8 @@ E.D.I.T.H. dat (je raakt dan geen energie kwijt).
 Open het arsenaal met **G > Drones > Arsenaal**. Per drone zie je hoe heel hij nog is en waar
 hij uithangt:
 
-- **In orbit** — klaar voor gebruik. Met **Recall** komt hij uit de lucht vallen en landt hij
-  naast je.
+- **In orbit** — klaar voor gebruik. Met **Recall** komt hij in een boog uit de lucht en landt
+  hij voor je. Roep je er meer terug, dan landen ze naast elkaar.
 - **On a job** — nu ergens bezig. Daar valt niets aan te doen tot hij terug is (of gebruik
   "stand down").
 - **Grounded** — hij staat naast je te wachten. **Rechtsklik** erop om hem te repareren met
@@ -114,9 +114,10 @@ hem repareert. Wordt een drone **neergehaald**, dan is hij weg — je krijgt ong
 bouwkosten terug als schroot op de plek waar hij viel, de rest kost je een nieuwe drone.
 
 ### Drones in het veld
-Ze komen **van heel hoog** aanvliegen: standaard 96 blokken boven je, in een duik met een
-streep vonken achter zich aan. Zit er een plafond boven je (een grot, een kelder), dan komen ze
-zo hoog als er ruimte is. Klaar met hun werk? Dan stijgen ze net zo hoog weer op en verdwijnen
+Ze komen **van heel hoog** aanvliegen: standaard 96 blokken boven je, in een boog met een
+streep vonken achter zich aan. Ze beginnen een stuk opzij, duiken steil naar beneden, buigen
+af en remmen rustig af bij hun doel (een zwerm waaiert zo van alle kanten binnen). Zit er een
+plafond boven je (een grot, een kelder), dan komen ze zo hoog als er ruimte is. Klaar met hun werk? Dan stijgen ze net zo hoog weer op en verdwijnen
 in de lucht — ze lossen niet ter plekke op. Pas als ze boven zijn, staan ze weer klaar in je
 arsenaal.
 
@@ -146,7 +147,9 @@ naar jouw spel).
 Drie standen (kies in Gevecht > Satelliet-stand):
 - **Precisie** — veel schade, **geen** blokschade. Heb je vanaf het begin.
 - **Bombardement** — een regen van inslagen, flinke kraters. Eerst vrijspelen.
-- **Schuivende laser** — een streep die van je af over de grond kruipt. Eerst vrijspelen.
+- **Schuivende laser** — een streep die over de grond kruipt, van een begin- naar een eindpunt
+  dat jij kiest: kijk naar het begin en druk **K** (daar komt een markering), kijk naar het eind
+  en druk nog eens **K**. Een beginpunt blijft een halve minuut bewaard. Eerst vrijspelen.
 Hij volgt bewegende doelwitten (lock-on), richt tot 500 blokken, en je kunt ook op je waypoint
 of je laatste ping mikken. Bij de inslag komt er een schokgolf en schudt je beeld.
 
@@ -185,14 +188,17 @@ eerst bij de generator die het meest heeft.
   Zijn voorkant (het rooster) wijst naar je toe als je hem neerzet; zolang hij warmte
   opwekt, gloeit het rooster oranje en geeft hij wat licht.
 - Zonder stroom doen de laserpoort, de holotafel en de koepel niets.
+- Het **laadstation** laadt een bril die erin ligt uit het net, en vult daarna ook zijn eigen
+  voorraad, maar alleen met wat over is: de generatoren houden altijd de helft achter voor de
+  rest van het net.
 
 ### Rayshield
 - **Persoonlijk schild** (Gevecht): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
-- **Laserzender** (volledig blok met een lens aan de voorkant): zet er twee tegenover elkaar
-  → een doorzichtig energieveld met lopende scanlijnen waar niemand door komt. Het veld ligt
-  als één rechte wand tussen de twee lenzen, en schuift dicht vanaf de uiteinden naar het
-  midden (en weer open vanuit het midden), net als de ray shields uit Star Wars.
+- **Laserzender** (volledig blok met een lens aan de voorkant): een doorzichtig energieveld
+  met lopende scanlijnen waar niemand door komt. Het schuift uit de lens naar voren tot het
+  eerste blok (of een tweede zender die terugkijkt), en bij het uitgaan weer terug de zender
+  in, net als de ray shields uit Star Wars. Eén zender is genoeg.
   **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood, paars.
   Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
   staat). Wil je hem met E.D.I.T.H. schakelen, zet er dan een relais naast.
@@ -204,13 +210,14 @@ eerst bij de generator die het meest heeft.
   gaan er gewoon doorheen, net als spelers en dieren. Elke treffer kost **schildkracht**; een
   sterkere koepel heeft er meer en laadt sneller bij. Is hij leeg, dan valt de koepel 10
   seconden weg. Aanzetten is een show: een straal omhoog, dan vouwt hij bovenin open en zakt
-  als koepel naar beneden.
+  als koepel naar beneden. De straal uit de generator blijft staan zolang de koepel aan is.
 
 ### Illusies (cloakingdrones)
 Een onzichtbare drone projecteert een beeld in een bol van 16 blokken. Alles is **nep**: in de
 wereld verandert niets.
 - **Valse muur** — van het blok dat je in je hand houdt.
-- **Nep-leger** — van het spawn-ei dat je in je hand houdt.
+- **Nep-leger** — van het spawn-ei dat je in je hand houdt. Ze lopen op de dichtstbijzijnde
+  andere speler af, gaan om hem heen staan en slaan, maar zonder schade: zo leid je iemand af.
 - **Onzichtbaar veld** — alles in het veld wordt niet meer getekend.
 
 Een muur of leger **richt je eerst**: een drone vliegt van je weg en jij kijkt door hem heen
@@ -218,7 +225,8 @@ Een muur of leger **richt je eerst**: een drone vliegt van je weg en jij kijkt d
 in een blauw kader; de muur draait mee zodat hij dwars op je kijkrichting staat.
 **Linkermuisknop** zet hem neer, **rechtermuisknop** annuleert (de drone gaat terug).
 
-Zwakke plekken (net als in de film): waar twee velden overlappen gaat het beeld **flikkeren**,
+Zwakke plekken (net als in de film): waar de velden van twee verschillende spelers overlappen
+gaat het beeld **flikkeren** (je eigen illusies storen elkaar niet),
 de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes en een zacht
 zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
 plat.
@@ -267,7 +275,9 @@ Met de bril op en energie erin:
   boven de grond remt het harnas zelf af. Links van je vizier staan je snelheid en hoogte.
   Stilhangen kost 12 energie per seconde, vooruit vliegen 26, de naverbrander 45. Raakt je
   batterij leeg, dan val je gewoon uit de lucht — hou hem dus in de gaten. Onder je laarzen
-  branden blauwe straalvlammen (langer en feller als je harder gaat); iedereen ziet ze.
+  branden blauwe straalvlammen (langer en feller als je harder gaat); iedereen ziet ze. Van
+  buitenaf zie je geen loopbeweging: wie vooruit vliegt, helt voorover tot bijna liggend, met
+  de benen recht, en de vlammen wijzen dan langs je lichaam naar achteren.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
 - **Repulsor** (toets **I**, of G > Gevecht): zet de repulsor **aan of uit**. Staat hij aan,
   dan is je aanvalsknop (linkermuisknop) de repulsor: klikken vuurt, ingedrukt houden vuurt
@@ -397,7 +407,7 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 56 tests over de toren en zijn kluis, de drones en
+- **Tests**: `gradlew runGameTestServer` — 61 tests over de toren en zijn kluis, de drones en
   het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
   laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert

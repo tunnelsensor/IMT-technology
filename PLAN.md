@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 56 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 58 functies één voor één zien (of een
+**Stand van zaken:** 61 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 66 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -305,13 +305,103 @@ kleine dingen, dan de grote.
       holotafel in de beveiliging, bar en vleugel in het penthouse, schotel en zonnepanelen
       op het dak). Rondleiding met screenshots: `-Ponly=tower`.
 
-### 3. Meer in de wereld
+### 3. Uit de tweede showcase (25 september, 17:07)
+
+Jouw notities, per onderwerp. Alles uit het notitiebestand staat hier, dus dat bestand is
+weggegooid. Waar ik zelf iets heb ingevuld staat "(mijn invulling)": zeg het als je het anders
+wilt. Eerst de kleine dingen, dan de grote.
+
+**Showcase**
+- [x] Overslaan, vorige en typen tijdens een functie — `6c9a69f`
+      Typ tijdens een functie en druk op Enter: `s` = overslaan, `v` = vorige, `r` = opnieuw,
+      `q` = stoppen, een getal = springen, al het andere = notitie (de functie speelt door). Een
+      S in een notitie telt dus niet als overslaan.
+- [x] De showcase uitgebreid met wat er nog niet in zat — `cb04ecb`
+      Negen nieuwe functies (nu 66): "Transfer glasses" (bril doorgeven), "Edit a waypoint",
+      "Relay: name and group", "Dome under attack" (raiddrones tegen de koepel), "Repair a
+      drone", "Glasses upgrades" (in het laadstation), "Raid drones: breaking in" (ze schieten
+      zich een hut in), "Stark Tech items" (het creative-tabblad) en het persoonlijke schild
+      vangt nu echt pijlen op. De sweep kiest een begin en eind, het leger valt Happy aan.
+      Onderweg gevonden: Happy ging dood door raiddrones (en was daarna niet meer te hacken of af
+      te leiden); hij is nu onkwetsbaar in de showcase.
+
+**Rayshields**
+- [x] Laserpoort: de wand komt altijd van één kant: hij schuift uit de zender naar het eind (en
+      schuift er ook weer in terug), in plaats van vanaf twee kanten naar het midden — `fb89766`
+      Een tweede zender aan de overkant is niet nodig. Staan er twee tegenover elkaar die
+      allebei aan zijn, dan bouwt alleen de eerste de wand, en die blijft staan zolang één van
+      de twee aan is (nieuwe test).
+- [x] Koepel: de kleine hapering bij het opstarten weg — `4a561f8`
+      Het openvouwende kapje was een platte schijf die in één keer verdween als de koepel begon
+      te zakken, waarna die weer als klein dopje begon. Nu is het één oppervlak dat vanaf de top
+      groeit. Nagekeken op screenshots (`-Ponly=dome`).
+- [x] Koepel: de lichtstraal uit de generator blijft staan zolang de koepel aan is — `4a561f8`
+      Rustiger dan bij het opstarten, en hij klopt zachtjes.
+
+**Satelliet**
+- [x] Satellietscherm: de getallen onder de 3D-satelliet in een echte tabel — `82fde3a`
+      Een gekleurde kopregel per groep, gestreepte regels en een kolomlijn tussen naam en waarde.
+- [x] Satellietscherm: de upgradekosten netter, niet meer opgepropt tegen de upgradeknop — `82fde3a`
+      Elk onderdeel heeft een eigen kadertje met de kosten (twee rijen van vier), los van de
+      knop, en de aantallen lopen niet meer tegen het volgende plaatje aan.
+- [x] Schuivende laser: zelf een begin- en eindpunt kiezen — `9c448a0`, `8d4db10`
+      Kijk naar het begin en druk op K (een markering "Sweep start", nog geen kosten), kijk naar
+      het eind en druk nog eens op K. Na het opladen trekt de laser in de hele schuiftijd van het
+      begin naar het eind. Een beginpunt blijft een halve minuut bewaard, of tot je van stand
+      wisselt (nieuwe test: hij komt bij het eind en schiet er niet voorbij).
+
+**Stroom**
+- [x] Zonnepaneel en warmtegenerator: een logischer scherm, zonder vakjes die niets doen — `14087e2`
+      Het zonnepaneel heeft nu alleen een vakje voor de bril; de warmtegenerator ook een voor
+      brandstof. Lege vakjes tonen een vaag voorbeeld, er staan namen bij, en rechts staan de
+      voorraad en het totaal. Onderweg gevonden: jouw spel dacht altijd dat het een
+      warmtegenerator was (daarom het brandstofvakje, een verkeerde balk en 's nachts "no fuel
+      and no heat" bij een zonnepaneel).
+- [x] Laadstation: de voorraad vult ook via de kabels, alleen met wat het net over heeft —
+      `5f49839`
+      De generatoren houden altijd de helft achter voor de holotafel, laserpoorten en de koepel;
+      alleen wat daarboven zit gaat, langzaam, het station in (nieuwe test).
+
+**Illusies**
+- [x] Valse muur: er kunnen er meer tegelijk staan — `811ec9f`
+      De "rare glitch" was het flikkeren waar twee velden overlappen (de zwakke plek uit de
+      film). Dat gebeurde ook bij twee muren van jezelf naast elkaar. Nu storen alleen velden van
+      verschillende spelers elkaar.
+- [x] Nep-leger: de zombies vallen andere spelers aan, zonder schade — `811ec9f`
+      Ze lopen naar de dichtstbijzijnde speler die niet de eigenaar is (tot 24 blokken van het
+      beeld), gaan in een kring om hem heen staan met hun armen vooruit en slaan, met een tik
+      zonder schade. Is er niemand, dan lopen ze terug naar hun plek.
+
+**Harnas**
+- [x] Vliegen: een echte vlieghouding in plaats van de loopanimatie — `5d6564a`
+      Wie met het harnas vooruit vliegt, helt voorover tot bijna liggend (70 graden bij volle
+      vaart), met de benen recht; stilhangen en stijgen doe je rechtop, achteruit een beetje
+      achterover. De straalvlammen kantelen mee en wijzen langs je lichaam naar achteren. Geldt
+      voor jezelf in derde persoon en voor andere spelers.
+
+**Drones**
+- [x] Drones die uit de lucht komen vliegen in een boog naar beneden en remmen rustig af — `a30b194`
+      Een drone begint een stuk opzij (hoe hoger, hoe verder, tot 24 blokken), duikt steil,
+      buigt af en komt schuin binnen, met zijn neus in de vliegrichting. Past de boog nergens
+      (grot, gebouw), dan komt hij recht naar beneden. Ook raiddrones komen zo binnen.
+- [x] Teruggeroepen drones landen naast elkaar, niet in elkaar — `a30b194`
+      Elke drone kiest een vrij plekje voor je; ook een plek waar een drone nog naartoe onderweg
+      is, telt als bezet (nieuwe test).
+
+**Onderweg gevonden**
+- [x] Een bril verwisselen (rechtsklik met een bril terwijl je er al een op hebt) telde niet als
+      opzetten: een vrijgegeven bril kreeg nooit zijn nieuwe eigenaar, en de bril van een ander
+      zei geen "Access denied" — `e135989` (nieuwe test)
+- [x] De standaardgroep van een relais heette "algemeen" (Nederlands in het spel); nu "general",
+      en oude relais gaan vanzelf mee — `b08c4d3`
+
+### 4. Meer in de wereld
 
 - [ ] Meer structuren
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
-### 4. De AI-stem (als laatste)
+### 5. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
       taalmodel in de cloud via de Claude API
