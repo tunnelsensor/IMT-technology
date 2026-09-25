@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Van het script naar het spel:
  * - {@code SHOW <nummer>}: laat die functie zien
+ * - {@code SKIP <nummer>}: stop die functie nu (het spel stuurt dan meteen DONE)
  * - {@code QUIT}: sluit het spel af
  *
  * Van het spel naar het script:

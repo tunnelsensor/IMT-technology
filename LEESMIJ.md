@@ -362,15 +362,22 @@ laat het elke functie van de mod zien, van het opzetten van de bril tot de Stark
 terminal staat bij elke functie de naam en waar je op moet letten; wat E.D.I.T.H. zegt,
 verschijnt er ook.
 
-Met pauze wacht het script na elke functie op jou:
+Met pauze wacht het script na elke functie op jou. Je typt iets en drukt op Enter:
 
 | Wat je typt | Wat er gebeurt |
 |---|---|
-| Enter | volgende functie |
+| Enter of `s` | volgende functie |
+| `v` | vorige functie |
 | `r` | deze functie nog eens |
 | `q` | stoppen (het spel sluit ook) |
 | een getal, bv. `12` | naar die functie springen |
 | iets anders | wordt bewaard als notitie bij deze functie, in `showcase-notities.md` |
+
+Dat typen kan ook al terwijl een functie speelt. Een notitie wordt dan meteen bewaard en de
+functie speelt gewoon door. Typ je `s` en Enter (of `v`, `r`, `q` of een getal), dan stopt de
+functie meteen en gaat het script daarheen. Alleen wat je in zijn geheel typt telt: een S midden
+in een notitie slaat dus niets over. Klik wel eerst op de terminal, anders krijgt het spel je
+toetsen.
 
 Beginnen bij een bepaalde functie: `python tools/showcase.py --vanaf 30`. Alleen een stukje:
 `python tools/showcase.py --vanaf 30 --tot 34`.

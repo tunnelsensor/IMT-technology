@@ -7,12 +7,20 @@ Gebruik (vanuit de projectmap):
     python tools/showcase.py --vanaf 12 --tot 15   # alleen functie 12 tot en met 15
 
 Eerst vraagt het script of je een pauze wilt tussen de functies. Met pauze wacht het na elke
-functie op jou:
-    Enter      volgende functie
-    r          deze functie nog eens
-    q          stoppen
-    een getal  naar die functie springen
+functie op jou. Je typt iets en drukt op Enter:
+    Enter        volgende functie
+    s            volgende functie (overslaan)
+    v            vorige functie
+    r            deze functie nog eens
+    q            stoppen
+    een getal    naar die functie springen
     iets anders  wordt als notitie bij deze functie bewaard (in showcase-notities.md)
+
+Dat typen kan ook al terwijl een functie speelt: een notitie wordt meteen bewaard en de functie
+speelt gewoon door. Typ je s, v, r, q of een getal (en Enter), dan stopt de functie meteen en
+gaat het script daarheen. Een S midden in een notitie telt dus niet als overslaan: alleen wat
+je in zijn geheel typt, telt.
+Let op: de terminal moet dan actief zijn (klik er eerst op), anders krijgt het spel je toetsen.
 
 Hoe het werkt: het script start "gradlew runShowcase". Het spel maakt een testwereld en
 luistert op 127.0.0.1:25599 (alleen je eigen computer). Het script vraagt het spel via die
@@ -25,6 +33,7 @@ import argparse
 import datetime
 import os
 import queue
+import select
 import socket
 import subprocess
 import sys
@@ -32,6 +41,11 @@ import textwrap
 import threading
 import time
 from pathlib import Path
+
+try:
+    import msvcrt  # alleen op Windows: toetsen lezen zonder op Enter te wachten
+except ImportError:
+    msvcrt = None
 
 ROOT = Path(__file__).resolve().parent.parent
 PORT = 25599
@@ -41,6 +55,15 @@ NOTES = ROOT / "showcase-notities.md"
 # Kleurtjes in de terminal (werkt in Windows Terminal en de terminal van VS Code).
 os.system("")
 CYAN, GREEN, ORANGE, GREY, BOLD, RESET = "\033[96m", "\033[92m", "\033[93m", "\033[90m", "\033[1m", "\033[0m"
+
+# Wat voor je tekst staat als je begint te typen terwijl een functie speelt.
+TYPING_PROMPT = f"   {GREY}>{RESET} "
+PAUSE_PROMPT = (f"   {GREY}[Enter] volgende  [v] vorige  [r] opnieuw  [q] stoppen  "
+                f"of typ een notitie >{RESET} ")
+
+
+class GameClosed(Exception):
+    """Het spel is weg (gesloten of gecrasht)."""
 
 
 def ask_yes_no(question, default=True):
@@ -116,10 +139,100 @@ class Link:
             return []
 
 
-def print_say(parts):
+class Keyboard:
+    """
+    Wat je in de terminal typt. Op Windows lezen we letter voor letter, zonder te wachten, zodat
+    het spel gewoon doorspeelt terwijl jij typt. Pas als je op Enter drukt, telt de regel: een
+    commando (s, v, r, q, een getal) of anders een notitie.
+
+    Alles wat het script print, gaat via say(): dan komt het boven je halve regel te staan in
+    plaats van er dwars doorheen.
+    """
+
+    def __init__(self):
+        self.text = ""    # wat je al getypt hebt, nog zonder Enter
+        self.prompt = ""  # wat er voor je tekst staat; "" = je typregel staat niet in beeld
+
+    def _redraw(self):
+        # \r = terug naar het begin van de regel, \033[K = de rest van de regel wissen.
+        print(f"\r\033[K{self.prompt}{self.text}", end="", flush=True)
+
+    def poll(self):
+        """Kijkt even naar het toetsenbord, wacht nooit. Na Enter: de regel, anders None."""
+        if msvcrt is None:
+            # Mac en Linux: de terminal toont zelf wat je typt en geeft het pas na Enter door.
+            if sys.stdin.isatty() and select.select([sys.stdin], [], [], 0)[0]:
+                return sys.stdin.readline().strip()
+            return None
+        while msvcrt.kbhit():
+            key = msvcrt.getwch()
+            if key in ("\x00", "\xe0"):
+                msvcrt.getwch()  # pijltjes en F-toetsen bestaan uit twee delen: negeren
+            elif key in ("\r", "\n"):
+                line = self.text.strip()
+                if self.prompt:
+                    print()  # je regel blijft staan, verder op de volgende
+                self.text, self.prompt = "", ""
+                return line
+            elif key in ("\x08", "\x7f"):  # Backspace
+                self.text = self.text[:-1]
+                if self.prompt:
+                    self._redraw()
+            elif key == "\x1b":  # Esc: alles wissen
+                self.text = ""
+                if self.prompt:
+                    self._redraw()
+            elif key.isprintable():
+                if not self.prompt:
+                    self.prompt = TYPING_PROMPT
+                self.text += key
+                self._redraw()
+        return None
+
+    def say(self, line=""):
+        """Print een regel boven wat je aan het typen bent."""
+        if self.prompt:
+            print("\r\033[K", end="")  # je typregel even weghalen
+        print(line)
+        if self.prompt:
+            self._redraw()  # en weer terugzetten
+
+    def ask(self, prompt):
+        """Wacht op een hele regel (de pauze na een functie). Wat je al typte, blijft staan."""
+        if msvcrt is None:
+            return input(prompt).strip()
+        self.prompt = prompt
+        self._redraw()
+        while True:
+            line = self.poll()
+            if line is not None:
+                return line
+            time.sleep(0.05)
+
+
+def choose(answer, number, total):
+    """
+    Wat bedoel je met wat je typte? Geeft het nummer van de functie waar je heen wilt, of None
+    als het een notitie is. Een nummer hoger dan het totaal betekent: stoppen.
+    """
+    word = answer.lower()
+    if word in ("", "s", "skip", "volgende"):
+        return number + 1
+    if word in ("v", "vorige"):
+        return max(1, number - 1)
+    if word in ("r", "opnieuw"):
+        return number
+    if word in ("q", "stop", "stoppen"):
+        return total + 1
+    if word.isdigit() and 1 <= int(word) <= total:
+        return int(word)
+    return None
+
+
+def say_text(parts):
     level, text = (parts[1], parts[2]) if len(parts) >= 3 else ("INFO", parts[-1])
     colour = ORANGE if level in ("WARNING", "ALERT") else GREY
-    print(f"      {colour}E.D.I.T.H.: {text}{RESET}")
+    return f"      {colour}E.D.I.T.H.: {text}{RESET}"
 
 
 def wait_for_ready(link):
@@ -136,21 +249,41 @@ def wait_for_ready(link):
             return features
 
 
-def show(link, number, total, title, watch):
-    """Laat één functie zien en wacht tot het spel zegt dat hij klaar is. False = spel weg."""
-    print()
-    print(f"{BOLD}{CYAN}[{number}/{total}] {title}{RESET}")
+def show(link, keyboard, number, total, title, watch, session):
+    """
+    Laat één functie zien en wacht tot het spel zegt dat hij klaar is. Ondertussen kun je typen:
+    een notitie wordt meteen bewaard. Typ je een commando (s, v, r, q, een getal), dan stopt de
+    functie en geeft dit het nummer terug waar je heen wilt. Vanzelf klaar = None.
+    """
+    keyboard.say()
+    keyboard.say(f"{BOLD}{CYAN}[{number}/{total}] {title}{RESET}")
     for line in textwrap.wrap(watch, width=90):
-        print(f"      {line}")
+        keyboard.say(f"      {line}")
     link.send("SHOW", number)
+    chosen = None
     while True:
-        parts = link.next()
+        # Hooguit 0,1 seconde wachten op een bericht, zodat we tussendoor steeds naar het
+        # toetsenbord kunnen kijken.
+        parts = link.next(timeout=0.1)
         if parts is None:
-            return False
+            raise GameClosed()
         if parts and parts[0] == "SAY":
-            print_say(parts)
+            keyboard.say(say_text(parts))
         elif parts and parts[0] == "DONE" and parts[1] == str(number):
-            return True
+            return chosen
+        if chosen is not None:
+            continue  # al gestopt, wachten op DONE van het spel
+        answer = keyboard.poll()
+        if not answer:
+            continue  # niets getypt, of alleen Enter: dat telt tijdens een functie niet
+        chosen = choose(answer, number, total)
+        if chosen is None:
+            save_note(number, title, answer, session)
+            keyboard.say(f"   {GREEN}Notitie bewaard.{RESET}")
+        else:
+            # Het spel stopt de functie en stuurt dan gewoon DONE; daar wachten we nog op.
+            link.send("SKIP", number)
+            keyboard.say(f"      {ORANGE}Gestopt.{RESET}")
 
 
 def save_note(number, title, note, session):
@@ -181,9 +314,9 @@ def main():
 
     print(f"{BOLD}Stark Tech showcase{RESET}")
     pauses = False if args.test else ask_yes_no("Wil je een pauze tussen elke functie")
-    if pauses:
-        print(f"{GREY}Na elke functie: Enter = volgende, r = opnieuw, q = stoppen, een getal = "
-              f"naar die functie, iets anders = notitie (komt in {NOTES.name}).{RESET}")
+    print(f"{GREY}Typ (ook tijdens een functie) en druk op Enter: s = overslaan, v = vorige, "
+          f"r = opnieuw, q = stoppen, een getal = naar die functie, iets anders = notitie "
+          f"(komt in {NOTES.name}). Klik eerst op deze terminal.{RESET}")
     print()
 
     game = start_game()
@@ -201,38 +334,36 @@ def main():
     if args.test:
         link.send("SHOTS")
 
+    keyboard = Keyboard()
     session = {"header": False}
     number = max(1, min(args.vanaf, total))
     try:
         while number <= last:
             title, watch = features[number - 1]
-            if not show(link, number, total, title, watch):
-                print(f"\n{ORANGE}Het spel is gesloten.{RESET}")
-                return
+            chosen = show(link, keyboard, number, total, title, watch, session)
+            if chosen is not None:
+                # Je koos tijdens de functie al waar het heen moet: geen pauze.
+                number = chosen
+                continue
             if not pauses:
                 time.sleep(2)
                 number += 1
                 continue
             while True:
-                answer = input(f"   {GREY}[Enter] volgende  [r] opnieuw  [q] stoppen  of typ een notitie >{RESET} ").strip()
-                if answer == "":
-                    number += 1
-                    break
-                if answer.lower() == "r":
-                    break
-                if answer.lower() == "q":
-                    number = total + 1
-                    break
-                if answer.isdigit() and 1 <= int(answer) <= total:
-                    number = int(answer)
+                answer = keyboard.ask(PAUSE_PROMPT)
+                chosen = choose(answer, number, total)
+                if chosen is not None:
+                    number = chosen
                     break
                 save_note(number, title, answer, session)
-                print(f"   {GREEN}Notitie bewaard.{RESET}")
+                keyboard.say(f"   {GREEN}Notitie bewaard.{RESET}")
         print(f"\n{GREEN}Klaar!{RESET}", end=" ")
         if session["header"]:
             print(f"Je notities staan in {NOTES}")
         else:
             print()
+    except GameClosed:
+        print(f"\n{ORANGE}Het spel is gesloten.{RESET}")
     except KeyboardInterrupt:
         print()
     finally:

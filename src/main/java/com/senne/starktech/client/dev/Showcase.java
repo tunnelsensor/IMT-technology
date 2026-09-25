@@ -22,7 +22,8 @@ import org.jetbrains.annotations.Nullable;
  * 3. het script vraagt "laat functie 1 zien": het spel ruimt op, zet je op de goede plek en
  *    speelt het draaiboek af (ShowcaseFeatures);
  * 4. als dat klaar is zegt het spel "klaar", en het script wacht (als je dat wilde) tot jij op
- *    Enter drukt voor de volgende.
+ *    Enter drukt voor de volgende. Typ je tijdens een functie "s" (overslaan), "v" (vorige)
+ *    of een ander commando, dan stopt het spel die functie meteen (SKIP).
  *
  * In een normaal spel doet deze klasse niets: hij staat alleen aan met
  * {@code -Dstarktech.showcase=true}, en dat doet alleen die ene Gradle-taak.
@@ -125,6 +126,7 @@ public final class Showcase {
             String[] parts = message.split("\t");
             switch (parts[0]) {
                 case "SHOW" -> start(features, Integer.parseInt(parts[1].trim()) - 1);
+                case "SKIP" -> skip(Integer.parseInt(parts[1].trim()) - 1);
                 case "SHOTS" -> shots = true;
                 case "QUIT" -> {
                     StarkTech.LOGGER.info("[showcase] klaar, spel sluit af");
@@ -167,6 +169,21 @@ public final class Showcase {
         // Het screenshot komt op 60% van de tijd: dan is er meestal het meeste te zien.
         shotAtTick = (int) (script.totalTicks() * 0.6);
         LINK.send("START", index + 1);
+    }
+
+    /**
+     * Stopt de functie die nu speelt, omdat je in de terminal een commando typte (overslaan,
+     * vorige, opnieuw...). De rest van het draaiboek wordt niet meer gedaan. Losgelaten toetsen en een dicht scherm, zodat je niet
+     * blijft doorvliegen; de wereld zelf ruimt de volgende functie op (ShowcaseScene.reset).
+     */
+    private static void skip(int index) {
+        // Was de functie net vanzelf klaar (DONE is al verstuurd), dan valt er niets te stoppen.
+        if (playing == null || index != current) {
+            return;
+        }
+        playing = null;
+        ShowcaseFeatures.clientReset();
+        LINK.send("DONE", current + 1);
     }
 
     /** Wat E.D.I.T.H. zegt, gaat ook naar je terminal (handig voor waarschuwingen). */
