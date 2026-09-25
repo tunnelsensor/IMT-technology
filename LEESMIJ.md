@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (62 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (63 automatische tests).
 
 ---
 
@@ -127,7 +127,10 @@ hoeveel het er echt worden.
 
 - **Zwerm** (J): valt je gemarkeerde doelwitten aan, of verdedigt je.
 - **Eén drone** (L): goedkoop, jaagt op één doelwit tot het dood is.
-- **Escorte**: vliegt met je mee en schiet op wat jou aanvalt.
+- **Escorte**: vliegt met je mee en schiet op wat jou aanvalt. Met **G > Drones > Formation**
+  kies je de vorm: **Orbit** (rondcirkelen), **Shield** (een snel draaiende ring dicht om je
+  heen: wat op je af komt, raakt eerst een drone), **Arrow** (een V schuin boven en achter je)
+  of **Circle** (een wijde ring). In Shield en Arrow blijven ze in formatie als ze schieten.
 - **Stand down** (,): alles stopt meteen.
 
 ### Spionagedrone (.)
@@ -429,7 +432,7 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower en het
   dichtstbijzijnde satellietwrak, en schrijft in het log (`[structures]`) waar ze liggen, waar de
   kisten staan en hoe je er met `/tp` komt. Daarna stopt hij vanzelf.
-- **Tests**: `gradlew runGameTestServer` — 62 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 63 tests over de toren en zijn kluis, het
   satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   spraakcommando's.

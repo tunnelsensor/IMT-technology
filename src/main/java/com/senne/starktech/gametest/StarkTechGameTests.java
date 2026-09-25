@@ -8,6 +8,7 @@ import com.senne.starktech.arsenal.ArsenalCosts;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.arsenal.EdithArsenal;
+import com.senne.starktech.drone.DroneFormation;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
@@ -1652,6 +1653,35 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("Het recept gebruikt " + slots + "x "
                         + part.item() + ", maar ArsenalCosts zegt " + part.count());
             }
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De formaties van de escorte: in het schild hangen ze dicht om je heen (en niet op elkaar),
+     * in de pijl achter je (tegen je kijkrichting in), en in de wijde cirkel op vijf blokken.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "formations")
+    public static void escort_formations(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(6, 3, 6));
+        owner.setYRot(0); // kijkt naar het zuiden (+z)
+        Vec3 forward = new Vec3(0, 0, 1);
+        for (int slot = 0; slot < 4; slot++) {
+            Vec3 shield = DroneFormation.SHIELD.spot(owner, slot, 4, 100);
+            if (Math.hypot(shield.x - owner.getX(), shield.z - owner.getZ()) > 1.6) {
+                throw new GameTestAssertException("In het schild hangt drone " + slot + " te ver weg");
+            }
+            Vec3 arrow = DroneFormation.ARROW.spot(owner, slot, 4, 100);
+            if (arrow.subtract(owner.position()).dot(forward) >= 0) {
+                throw new GameTestAssertException("In de pijl hangt drone " + slot + " niet achter je");
+            }
+            Vec3 circle = DroneFormation.CIRCLE.spot(owner, slot, 4, 100);
+            if (Math.abs(Math.hypot(circle.x - owner.getX(), circle.z - owner.getZ()) - 5) > 0.1) {
+                throw new GameTestAssertException("De cirkel is niet vijf blokken wijd");
+            }
+        }
+        if (DroneFormation.SHIELD.spot(owner, 0, 4, 100).distanceTo(DroneFormation.SHIELD.spot(owner, 1, 4, 100)) < 1.0) {
+            throw new GameTestAssertException("Twee drones in het schild hangen op elkaar");
         }
         helper.succeed();
     }

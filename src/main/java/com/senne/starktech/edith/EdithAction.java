@@ -68,7 +68,10 @@ public enum EdithAction {
     ILLUSION_STOP("illusion_stop", null),
     // Fase 15: het harnas
     /** Een repulsorstoot uit je handpalm. */
-    REPULSOR("repulsor", null);
+    REPULSOR("repulsor", null),
+    // Meer tech
+    /** De volgende vorm voor je escortedrones (zie DroneFormation). */
+    DRONE_FORMATION("drone_formation", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

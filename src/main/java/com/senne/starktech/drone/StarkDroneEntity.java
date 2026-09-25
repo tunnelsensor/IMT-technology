@@ -688,15 +688,22 @@ public class StarkDroneEntity extends PathfinderMob {
 
     // ---------------------------------------------------------------- Vliegen en schieten
 
-    /** Rond het doelwit cirkelen en erop schieten. */
+    /**
+     * Rond het doelwit cirkelen en erop schieten. Escortedrones in een formatie die blijft
+     * staan (schild, pijl) gaan niet naar het doelwit toe: ze schieten vanaf hun plek.
+     */
     private void engage(ServerLevel level, ServerPlayer owner, LivingEntity target) {
-        double angle = tickCount * 0.06 + slot * (Math.PI * 2 / 5);
-        double radius = 3.5;
-        moveControl.setWantedPosition(
-                target.getX() + Math.cos(angle) * radius,
-                target.getY() + target.getBbHeight() + 1.5,
-                target.getZ() + Math.sin(angle) * radius,
-                1.0);
+        if (isGuard() && formationOf(owner).holdsPosition()) {
+            followOwner(owner);
+        } else {
+            double angle = tickCount * 0.06 + slot * (Math.PI * 2 / 5);
+            double radius = 3.5;
+            moveControl.setWantedPosition(
+                    target.getX() + Math.cos(angle) * radius,
+                    target.getY() + target.getBbHeight() + 1.5,
+                    target.getZ() + Math.sin(angle) * radius,
+                    1.0);
+        }
         getLookControl().setLookAt(target, 30.0f, 30.0f);
 
         double range = EdithBalance.DRONE_ATTACK_RANGE;
@@ -706,8 +713,24 @@ public class StarkDroneEntity extends PathfinderMob {
         }
     }
 
-    /** Rond de eigenaar cirkelen. */
+    /** De vorm waarin de escorte van deze eigenaar vliegt (staat op zijn bril). */
+    private static DroneFormation formationOf(ServerPlayer owner) {
+        return EdithData.getFormation(EdithData.getWornGlasses(owner));
+    }
+
+    /**
+     * Bij de eigenaar blijven. Escortedrones nemen hun plek in de formatie in (zie
+     * DroneFormation), met de speltijd als klok: dan draaien ze samen rond en blijven ze
+     * netjes verdeeld. Andere drones cirkelen gewoon om de eigenaar.
+     */
     private void followOwner(ServerPlayer owner) {
+        if (isGuard()) {
+            ItemStack glasses = EdithData.getWornGlasses(owner);
+            DroneFormation formation = EdithData.getFormation(glasses);
+            Vec3 spot = formation.spot(owner, slot, EdithData.getGuardCount(glasses), level().getGameTime());
+            moveControl.setWantedPosition(spot.x, spot.y, spot.z, formation.speed());
+            return;
+        }
         double angle = tickCount * 0.05 + slot * (Math.PI * 2 / 5);
         double radius = isGuard() ? 1.8 : 2.8;
         double height = owner.getBbHeight() + (isGuard() ? 0.5 : 1.4);

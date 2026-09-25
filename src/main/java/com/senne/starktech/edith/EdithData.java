@@ -144,6 +144,17 @@ public final class EdithData {
         stack.set(ModDataComponents.SATELLITE_MODE.get(), mode.ordinal());
     }
 
+    // ---------------------------------------------------------------- Formatie van de escorte
+
+    /** In welke vorm de escortedrones om je heen vliegen. */
+    public static com.senne.starktech.drone.DroneFormation getFormation(ItemStack stack) {
+        return com.senne.starktech.drone.DroneFormation.byId(stack.getOrDefault(ModDataComponents.ESCORT_FORMATION.get(), 0));
+    }
+
+    public static void setFormation(ItemStack stack, com.senne.starktech.drone.DroneFormation formation) {
+        stack.set(ModDataComponents.ESCORT_FORMATION.get(), formation.ordinal());
+    }
+
     // ---------------------------------------------------------------- Samengevat
 
     /**

@@ -46,6 +46,12 @@ public final class ModDataComponents {
                     .persistent(Codec.INT)
                     .networkSynchronized(ByteBufCodecs.VAR_INT));
 
+    /** In welke vorm de escortedrones vliegen (zie DroneFormation; 0 = rondcirkelen). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ESCORT_FORMATION =
+            COMPONENTS.registerComponentType("escort_formation", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
     /** Welke upgrades er in de bril zitten. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithUpgrades>> UPGRADES =
             COMPONENTS.registerComponentType("upgrades", builder -> builder

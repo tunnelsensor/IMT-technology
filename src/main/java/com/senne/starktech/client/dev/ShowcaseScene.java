@@ -222,6 +222,7 @@ final class ShowcaseScene {
                 EdithData.toggle(glasses, feature);
             }
         }
+        EdithData.setFormation(glasses, com.senne.starktech.drone.DroneFormation.ORBIT);
         player.removeEffect(MobEffects.NIGHT_VISION);
         DevWorld.refill(player);
         DevWorld.freshArsenal(player, 32);

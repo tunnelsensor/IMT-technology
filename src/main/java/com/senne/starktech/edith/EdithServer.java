@@ -396,6 +396,12 @@ public final class EdithServer {
             case ILLUSION_STOP -> EdithIllusions.stopAll(player);
             // Fase 15
             case REPULSOR -> EdithSuit.repulsor(player);
+            case DRONE_FORMATION -> {
+                com.senne.starktech.drone.DroneFormation next = EdithData.getFormation(glasses).next();
+                EdithData.setFormation(glasses, next);
+                send(player, Component.translatable("edith.starktech.msg.formation", Component.translatable(next.translationKey())),
+                        EdithMessagePayload.Level.INFO);
+            }
             default -> { }
         }
     }

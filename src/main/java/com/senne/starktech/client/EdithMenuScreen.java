@@ -108,6 +108,7 @@ public class EdithMenuScreen extends Screen {
     /** Tabblad Drones: je arsenaal, de camera, de spion en zijn rapport. */
     private static final List<Option> DRONES = List.of(
             open("screen.starktech.menu.arsenal", HudStyle.CYAN, ArsenalScreen::new),
+            action(EdithAction.DRONE_FORMATION),
             action(EdithAction.DRONE_CAMERA),
             action(EdithAction.SPY_DRONE),
             action(EdithAction.SPY_VIEW),
@@ -321,6 +322,8 @@ public class EdithMenuScreen extends Screen {
             case SATELLITE_MODE -> new Status(Component.translatable(glasses.isEmpty()
                     ? SatelliteMode.PRECISION.translationKey()
                     : EdithData.getSatelliteMode(glasses).translationKey()), HudStyle.ORANGE);
+            case DRONE_FORMATION -> new Status(Component.translatable(
+                    EdithData.getFormation(glasses).translationKey()), HudStyle.CYAN);
             case CLEAR_MARKS -> new Status(Component.translatable("screen.starktech.marked_count", EdithClientState.markedIds.size()),
                     EdithClientState.markedIds.isEmpty() ? GREY : HudStyle.ORANGE);
             case TRANSPORT_RIDE, TRANSPORT_AUTOPILOT -> EdithClientState.flying

@@ -271,6 +271,29 @@ final class ShowcaseFeatures {
                 .action(0, EdithAction.TOGGLE_GUARD_DRONES)
                 .pause(60));
 
+        add("Drone formations", "Je escorte in een vorm (G > Drones > Formation), van buitenaf bekeken. Eerst "
+                + "Orbit (rondcirkelen, zoals altijd), dan Shield (een snel draaiende ring dicht om je heen: wat "
+                + "op je af komt, raakt eerst een drone), Arrow (een V schuin boven en achter je; kijk hoe hij "
+                + "meedraait als je je omdraait) en Circle (een wijde, trage ring). In Shield en Arrow blijven ze "
+                + "in formatie als ze schieten.", start, 180, 15, s -> s
+                .action(10, EdithAction.TOGGLE_GUARD_DRONES)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(110)
+                .action(0, EdithAction.DRONE_FORMATION)
+                .pause(90)
+                .action(0, EdithAction.DRONE_FORMATION)
+                .pause(50)
+                .look(0, 90, 15)
+                .pause(50)
+                .look(0, 180, 15)
+                .pause(40)
+                .action(0, EdithAction.DRONE_FORMATION)
+                .pause(100)
+                .action(0, EdithAction.DRONE_FORMATION)
+                .camera(0, CameraType.FIRST_PERSON)
+                .action(10, EdithAction.TOGGLE_GUARD_DRONES)
+                .pause(20));
+
         add("Damaged drones", "Schade zie je aan de drone zelf: van links naar rechts heel, 70%, 45% en 15% "
                 + "leven, en een raiddrone. Krassen en roet, een kromme rotor, een ontbrekende rotor, rook, "
                 + "vonken, brandende brokjes en haperende lampjes.", new Vec3(4.5, -60, 1.5), 180, 5, s -> s
