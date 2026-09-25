@@ -3,6 +3,7 @@ package com.senne.starktech.station;
 import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.UpgradeItem;
+import com.senne.starktech.energy.EnergySource;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModSounds;
@@ -80,6 +81,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
         boolean changed = burnFuel();
         changed |= pullFromGrid(level, pos);
+        changed |= storeSpareFromGrid(level, pos);
         changed |= chargeGlasses();
         changed |= tickUpgrade(level, pos);
         if (changed) {
@@ -113,6 +115,33 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         int missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses) - energy;
         int room = EdithBalance.STATION_CAPACITY - energy;
         int wanted = Math.min(Math.min(missing, room), EdithBalance.STATION_GRID_RATE);
+        if (wanted <= 0) {
+            return false;
+        }
+        int got = StarkGrid.draw(level, pos, wanted);
+        energy += got;
+        return got > 0;
+    }
+
+    /**
+     * De eigen voorraad (de balk die je ook met redstone vult) bijvullen uit het net, maar alleen
+     * met wat over is. De generatoren houden de helft van wat erin past achter
+     * (STATION_GRID_RESERVE), zodat de holotafel, laserpoorten en de koepel op hetzelfde net
+     * altijd voorgaan; alleen wat daarboven zit, gaat langzaam het station in.
+     */
+    private boolean storeSpareFromGrid(ServerLevel level, BlockPos pos) {
+        int room = EdithBalance.STATION_CAPACITY - energy;
+        if (room <= 0) {
+            return false;
+        }
+        long stored = 0;
+        long capacity = 0;
+        for (EnergySource source : StarkGrid.sources(level, pos)) {
+            stored += source.energy();
+            capacity += source.capacity();
+        }
+        long spare = stored - (long) (capacity * EdithBalance.STATION_GRID_RESERVE);
+        int wanted = (int) Math.min(Math.min(spare, room), EdithBalance.STATION_STORE_RATE);
         if (wanted <= 0) {
             return false;
         }

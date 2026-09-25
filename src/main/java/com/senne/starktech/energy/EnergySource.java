@@ -10,6 +10,9 @@ public interface EnergySource {
     /** Hoeveel stroom er nu in zit. */
     int energy();
 
+    /** Hoeveel stroom er maximaal in past. */
+    int capacity();
+
     /** Haalt maximaal {@code max} stroom weg en geeft terug hoeveel het echt was. */
     int drain(int max);
 }

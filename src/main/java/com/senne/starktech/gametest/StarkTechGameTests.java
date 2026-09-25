@@ -1088,6 +1088,45 @@ public final class StarkTechGameTests {
         return station;
     }
 
+    /**
+     * Ook zonder bril erin vult het laadstation zijn eigen voorraad uit het net, maar alleen met
+     * wat over is: een generator houdt de helft van wat erin past achter voor de rest van het
+     * net. Een volle generator geeft dus wel iets, een die voor een kwart vol is niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "grid")
+    public static void station_stores_only_spare_grid_power(GameTestHelper helper) {
+        BlockPos full = storeRow(helper, 1, EdithBalance.HEAT_CAPACITY);
+        BlockPos quarter = storeRow(helper, 3, EdithBalance.HEAT_CAPACITY / 4);
+        helper.runAfterDelay(40, () -> {
+            int fromFull = ((ChargingStationBlockEntity) helper.getBlockEntity(full)).energy();
+            int fromQuarter = ((ChargingStationBlockEntity) helper.getBlockEntity(quarter)).energy();
+            int left = ((ChargerBlockEntity) helper.getBlockEntity(new BlockPos(1, 3, 1))).energy();
+            if (fromFull <= 0) {
+                throw new GameTestAssertException("Het station vulde zijn voorraad niet uit een volle generator");
+            }
+            if (fromQuarter != 0) {
+                throw new GameTestAssertException("Het station nam stroom die voor de rest van het net was: " + fromQuarter);
+            }
+            if (left < EdithBalance.HEAT_CAPACITY * EdithBalance.STATION_GRID_RESERVE) {
+                throw new GameTestAssertException("De generator zakte onder zijn reserve: " + left);
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Generator (met {@code energy} erin) - vier kabels - laadstation zonder bril, op rij z. */
+    private static BlockPos storeRow(GameTestHelper helper, int z, int energy) {
+        BlockPos source = new BlockPos(1, 3, z);
+        helper.setBlock(source, ModBlocks.HEAT_GENERATOR.get());
+        for (int x = 2; x <= 5; x++) {
+            helper.setBlock(new BlockPos(x, 3, z), ModBlocks.CABLE.get());
+        }
+        BlockPos station = new BlockPos(6, 3, z);
+        helper.setBlock(station, ModBlocks.CHARGING_STATION.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(source)).fill(energy);
+        return station;
+    }
+
     /** Een laserzender zonder stroom doet niets, ook niet met redstone erop. */
     @GameTest(template = ARENA, timeoutTicks = 60, batch = "grid")
     public static void laser_gate_needs_power(GameTestHelper helper) {

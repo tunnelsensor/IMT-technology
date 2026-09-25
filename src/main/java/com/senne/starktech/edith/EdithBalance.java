@@ -74,6 +74,13 @@ public final class EdithBalance {
      * dan één zonnepaneel maakt, zodat een heel veld panelen ook echt sneller laadt.
      */
     public static final int STATION_GRID_RATE = 40;
+    /**
+     * Zijn eigen voorraad vult het station ook uit het net, maar alleen met wat over is: de
+     * generatoren houden altijd dit deel van wat erin past achter voor de rest van het net
+     * (holotafel, laserpoorten, koepel). En langzaam: zoveel per tick.
+     */
+    public static final float STATION_GRID_RESERVE = 0.5f;
+    public static final int STATION_STORE_RATE = 10;
     // ---------------------------------------------------------------- Zonnepaneel en warmte
     /** Hoeveel een zonnepaneel kan opslaan. */
     public static final int SOLAR_CAPACITY = 12_000;
