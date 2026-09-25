@@ -68,6 +68,8 @@ public final class EdithSuit {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
+        // Een salvo mini-raketten dat nog bezig is (ook in creative).
+        SuitRockets.tick(player);
         if (player.isCreative() || player.isSpectator()) {
             // Daar bemoeien we ons niet mee; wel onthouden dat het vliegen niet van ons is.
             FLYING_BY_SUIT.remove(player.getUUID());

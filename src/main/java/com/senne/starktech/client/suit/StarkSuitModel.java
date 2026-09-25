@@ -2,6 +2,7 @@ package com.senne.starktech.client.suit;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.suit.RocketPackItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidArmorModel;
 import net.minecraft.client.model.HumanoidModel;
@@ -28,7 +29,9 @@ import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsE
  *   twee straalopeningen;
  * - armen: schouderplaten, onderarmbeschermers, en een repulsor in de handpalm;
  * - laarzen: een dikkere schaal, een gouden neus en een zool met een straalbuis;
- * - broek: kniestukken, dijplaten aan de buitenkant en een gesp aan de riem.
+ * - broek: kniestukken, dijplaten aan de buitenkant en een gesp aan de riem;
+ * - met een raketpakket: twee raketbuizen op de rug, die alleen zichtbaar zijn als de
+ *   borstplaat er een heeft (zie registerExtensions).
  *
  * Er zijn twee modellen, net als in Minecraft: het BUITENSTE voor borst en laarzen, en het
  * BINNENSTE (iets strakker) voor de broek, zodat die niet door de borstplaat heen steekt.
@@ -76,7 +79,14 @@ public final class StarkSuitModel {
             @Override
             public HumanoidModel<?> getHumanoidArmorModel(LivingEntity entity, ItemStack stack, EquipmentSlot slot,
                                                           HumanoidModel<?> original) {
-                return forSlot(slot);
+                HumanoidModel<LivingEntity> model = forSlot(slot);
+                if (slot == EquipmentSlot.CHEST) {
+                    // Hetzelfde model tekent elke borstplaat: per keer aan- of uitzetten.
+                    boolean pods = RocketPackItem.installedOn(stack);
+                    model.body.getChild("rocket_pod_right").visible = pods;
+                    model.body.getChild("rocket_pod_left").visible = pods;
+                }
+                return model;
             }
         }, ModItems.STARK_CHESTPLATE.get(), ModItems.STARK_LEGGINGS.get(), ModItems.STARK_BOOTS.get());
     }
@@ -106,6 +116,11 @@ public final class StarkSuitModel {
                 .addBox(-2.5f, 8f, 2.6f, 2, 2, 1), PartPose.ZERO);
         body.addOrReplaceChild("vent_left", CubeListBuilder.create().texOffs(112, 0).mirror()
                 .addBox(0.5f, 8f, 2.6f, 2, 2, 1), PartPose.ZERO);
+        // Raketbuizen op de rug (raketpakket): schuin naar achteren en een beetje naar buiten.
+        body.addOrReplaceChild("rocket_pod_right", CubeListBuilder.create().texOffs(96, 48)
+                .addBox(-1.5f, -5f, -1.5f, 3, 5, 3), PartPose.offsetAndRotation(-3.2f, 2.5f, 5f, -0.25f, 0, 0.2f));
+        body.addOrReplaceChild("rocket_pod_left", CubeListBuilder.create().texOffs(96, 48).mirror()
+                .addBox(-1.5f, -5f, -1.5f, 3, 5, 3), PartPose.offsetAndRotation(3.2f, 2.5f, 5f, -0.25f, 0, -0.2f));
 
         // Armen: het midden van de rechterarm ligt 1 pixel naar buiten (x = -1), van de linker
         // 1 pixel de andere kant op (x = +1).

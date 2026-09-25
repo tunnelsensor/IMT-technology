@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (64 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (66 automatische tests).
 
 ---
 
@@ -66,6 +66,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (64 automatis
 | **O** | Comms (berichten naar andere E.D.I.T.H.-dragers) |
 | **Z** | Spraaktoets: ingedrukt houden en praten |
 | **I** | Repulsor aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
+| **X** | Salvo mini-raketten (hele harnas + raketpakket) |
 
 Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
@@ -267,8 +268,8 @@ embleem op borst en helm. Zien ze je, dan leggen ze hun **lasergeweer** aan en s
 laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones,
 en raak je er één, dan komen de anderen ook. Straks bewaken ze de Hydra-bunker.
 
-- Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je straks nodig
-  voor de nieuwste tech (raketten en torentjes).
+- Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je nodig voor
+  de nieuwste tech: het raketpakket (zie Het harnas) en straks de torentjes.
 - Zelf oproepen om te oefenen: het **Hydra Soldier Spawn Egg** in de Stark Tech-tab.
 
 ### Prestaties (advancements)
@@ -313,6 +314,16 @@ Met de bril op en energie erin:
   reactor) en het kost 200 energie per stoot. Met een lege hand zie je je arm omhoog gaan,
   de hand geknikt met een gloeiende handpalm; bij een schot flitst hij op en slaat je arm
   terug. Anderen zien je arm vooruit wijzen en je handpalm oplichten als je schiet.
+- **Mini-raketten** (toets **X**, G > Gevecht, of zeg "fire rockets"): een salvo van zes
+  raketten uit twee buizen op je rug. Daarvoor heb je een **raketpakket** nodig: craft het met
+  een **Hydra-onderdeel** in het midden, een Stark-chip eronder, buskruit en ijzer. Trek de
+  borstplaat aan en klik rechts met het pakket in je hand; dan zit het vast op DIE borstplaat
+  (de tooltip zegt "Rocket pack installed") en zie je de buizen op je rug. De raketten gaan
+  om de beurt links en rechts weg, waaieren uit en draaien dan naar hun doel: je
+  **gemarkeerde doelwitten** (R; ze worden verdeeld), anders **wat je aankijkt**, anders de
+  **plek waar je kijkt**. Ze ontploffen zonder blokken te slopen en raken jou, je team en je
+  drones nooit. Je hebt het hele harnas nodig; een salvo kost 900 energie en daarna moet het
+  pakket 12 seconden herladen (links in de HUD: ROCKETS). Munitie is er niet.
 
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij
@@ -442,10 +453,10 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower en het
   dichtstbijzijnde satellietwrak, en schrijft in het log (`[structures]`) waar ze liggen, waar de
   kisten staan en hoe je er met `/tp` komt. Daarna stopt hij vanzelf.
-- **Tests**: `gradlew runGameTestServer` — 64 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 66 tests over de toren en zijn kluis, het
   satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
-  spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas, de
-  Hydra-soldaten en de spraakcommando's.
+  spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
+  mini-raketten, de Hydra-soldaten en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck

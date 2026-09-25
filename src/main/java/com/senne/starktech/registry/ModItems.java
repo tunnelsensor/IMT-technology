@@ -4,6 +4,7 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithGlassesItem;
 import com.senne.starktech.edith.UpgradeItem;
 import com.senne.starktech.arsenal.StarkDroneItem;
+import com.senne.starktech.suit.RocketPackItem;
 import com.senne.starktech.suit.StarkSuitItem;
 import net.minecraft.world.item.ArmorItem;
 import com.senne.starktech.illusion.EmpItem;
@@ -85,6 +86,9 @@ public final class ModItems {
     public static final DeferredItem<StarkSuitItem> STARK_BOOTS = ITEMS.registerItem("stark_boots",
             properties -> new StarkSuitItem(ArmorItem.Type.BOOTS, properties),
             new Item.Properties().rarity(Rarity.EPIC));
+    /** Mini-raketten voor op de borstplaat (te maken met een Hydra-onderdeel). */
+    public static final DeferredItem<RocketPackItem> ROCKET_PACK = ITEMS.registerItem("rocket_pack",
+            RocketPackItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
 
     /** Fase 15: de holotafel. */
     public static final DeferredItem<BlockItem> HOLO_TABLE = ITEMS.registerSimpleBlockItem("holo_table",

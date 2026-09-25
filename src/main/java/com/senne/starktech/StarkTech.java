@@ -30,6 +30,7 @@ import com.senne.starktech.raid.ModGameRules;
 import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.suit.EdithSuit;
+import com.senne.starktech.suit.SuitRockets;
 import com.senne.starktech.transport.EdithTransport;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -126,6 +127,8 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithSuit::onFall);
         NeoForge.EVENT_BUS.addListener(EdithSuit::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(EdithSuit::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(SuitRockets::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(SuitRockets::onServerStopped);
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan
         NeoForge.EVENT_BUS.addListener(LaserAnimations::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) -> LaserAnimations.clear());

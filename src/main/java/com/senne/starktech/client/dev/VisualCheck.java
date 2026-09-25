@@ -34,6 +34,7 @@ import com.senne.starktech.holo.HoloTableBlockEntity;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
+import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.shield.DomeGeneratorBlockEntity;
@@ -453,6 +454,57 @@ public final class VisualCheck {
             t.view(0, 60.5, -60, 53.5, 0, 5);
             t.shot(20, "h03_hydra_back");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
+        // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde
+        // doelwitten en een salvo, gevolgd van achter de speler.
+        if (want("rockets")) {
+            t.onServer(0, player -> {
+                wearSuit(player);
+                player.getItemBySlot(EquipmentSlot.CHEST).set(ModDataComponents.ROCKET_PACK.get(), true);
+            });
+            // Een harnasstandaard met het harnas en het raketpakket, zodat we er omheen kunnen lopen.
+            t.onServer(0, player -> {
+                net.minecraft.world.entity.decoration.ArmorStand stand = new net.minecraft.world.entity.decoration.ArmorStand(
+                        player.serverLevel(), 60.5, -60, 56.5);
+                stand.setYRot(180);
+                stand.setYBodyRot(180);
+                ItemStack chest = new ItemStack(ModItems.STARK_CHESTPLATE.get());
+                chest.set(ModDataComponents.ROCKET_PACK.get(), true);
+                stand.setItemSlot(EquipmentSlot.CHEST, chest);
+                stand.setItemSlot(EquipmentSlot.LEGS, new ItemStack(ModItems.STARK_LEGGINGS.get()));
+                stand.setItemSlot(EquipmentSlot.FEET, new ItemStack(ModItems.STARK_BOOTS.get()));
+                player.serverLevel().addFreshEntity(stand);
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(10, 60.5, -59.2, 59.5, 180, 10);
+            t.shot(20, "r01_pods_back");
+            t.view(0, 63.5, -59.2, 56.5, 90, 10);
+            t.shot(10, "r02_pods_side");
+            t.view(0, 62.6, -59.2, 58.6, 135, 10);
+            t.shot(10, "r02b_pods_diagonal");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> player.serverLevel().getEntitiesOfClass(
+                    net.minecraft.world.entity.decoration.ArmorStand.class,
+                    player.getBoundingBox().inflate(10)).forEach(Entity::discard));
+
+            t.view(0, 60.5, -60, 64.5, 180, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.onServer(10, player -> {
+                ServerLevel level = player.serverLevel();
+                for (BlockPos pos : new BlockPos[] {new BlockPos(57, -60, 50), new BlockPos(64, -60, 50)}) {
+                    Entity husk = DevWorld.spawnStill(level, net.minecraft.world.entity.EntityType.HUSK, pos, 0);
+                    if (husk != null) {
+                        com.senne.starktech.edith.EdithServer.handleMark(player, husk.getId());
+                    }
+                }
+            });
+            t.onServer(20, com.senne.starktech.suit.SuitRockets::fire);
+            t.shot(3, "r03_rockets_launch");
+            t.shot(5, "r04_rockets_turn");
+            t.shot(6, "r05_rockets_hit");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.shot(40, "r06_rockets_hud");
         }
 
         // --- De 3D-modellen van het zonnepaneel en de warmtegenerator (aan en uit), van voren,

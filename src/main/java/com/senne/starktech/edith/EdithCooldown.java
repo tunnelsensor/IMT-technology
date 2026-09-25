@@ -32,7 +32,9 @@ public enum EdithCooldown {
     /** Muziek (Spotify). */
     MUSIC,
     /** Een repulsorstoot uit het harnas. */
-    REPULSOR;
+    REPULSOR,
+    /** Een salvo mini-raketten uit het harnas. */
+    ROCKETS;
 
     public static final int COUNT = values().length;
 }

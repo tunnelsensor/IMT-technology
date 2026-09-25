@@ -73,6 +73,7 @@ public class EdithMenuScreen extends Screen {
                             ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.starktech.cost", SuitBalance.REPULSOR_COST), GREY),
                     RepulsorControl::toggle),
+            action(EdithAction.ROCKETS),
             action(EdithAction.TOGGLE_SHIELD),
             action(EdithAction.LAUNCH_DRONES),
             action(EdithAction.DRONE_STRIKE),
@@ -318,6 +319,7 @@ public class EdithMenuScreen extends Screen {
             case ORE_SCAN -> costOrCooldown(EdithBalance.ORE_SCAN_COST, EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
             case LAUNCH_DRONES -> costOrCooldown(EdithBalance.SWARM_COST, EdithClientState.cooldown(EdithCooldown.SWARM));
             case DRONE_STRIKE -> costOrCooldown(EdithBalance.STRIKE_DRONE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
+            case ROCKETS -> costOrCooldown(SuitBalance.ROCKET_COST, EdithClientState.cooldown(EdithCooldown.ROCKETS));
             case SATELLITE_STRIKE -> costOrCooldown(satelliteCost(glasses), EdithClientState.cooldown(EdithCooldown.SATELLITE));
             case SATELLITE_MODE -> new Status(Component.translatable(glasses.isEmpty()
                     ? SatelliteMode.PRECISION.translationKey()

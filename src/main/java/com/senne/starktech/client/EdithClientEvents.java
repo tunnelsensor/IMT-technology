@@ -156,6 +156,9 @@ public final class EdithClientEvents {
             // Aan of uit; vuren doe je daarna met de aanvalsknop (zie RepulsorControl).
             RepulsorControl.toggle();
         }
+        while (EdithKeys.ROCKETS.consumeClick()) {
+            sendAction(EdithAction.ROCKETS);
+        }
     }
 
     /** Opent een E.D.I.T.H.-scherm, maar alleen als je de bril draagt en de eigenaar bent. */

@@ -71,7 +71,9 @@ public enum EdithAction {
     REPULSOR("repulsor", null),
     // Meer tech
     /** De volgende vorm voor je escortedrones (zie DroneFormation). */
-    DRONE_FORMATION("drone_formation", null);
+    DRONE_FORMATION("drone_formation", null),
+    /** Een salvo mini-raketten uit het harnas (zie SuitRockets). */
+    ROCKETS("rockets", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

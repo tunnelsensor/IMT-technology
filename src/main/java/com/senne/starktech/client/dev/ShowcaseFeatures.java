@@ -630,6 +630,28 @@ final class ShowcaseFeatures {
                 .step(10, RepulsorControl::toggle)
                 .pause(30));
 
+        add("Mini rockets (X)", "Eerst het raketpakket inbouwen: met de borstplaat aan klik je rechts met "
+                + "het pakket in je hand (onderin: Rocket pack installed; op je rug verschijnen twee rode "
+                + "buizen). Dan markeer je twee doelwitten (R) en druk je X: zes raketten schieten om de beurt "
+                + "uit de buizen, waaieren uit, draaien naar de doelwitten (drie per doelwit) en ontploffen. "
+                + "Een salvo kost 900 energie en daarna 12 seconden herladen (links: ROCKETS). Zonder "
+                + "markering gaan ze op wat je aankijkt, of naar de plek waar je kijkt.", GameType.SURVIVAL,
+                range, 180, 0, s -> s
+                .onServer(0, ShowcaseFeatures::wearSuit)
+                .onServer(0, player -> player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                        new ItemStack(ModItems.ROCKET_PACK.get())))
+                .step(20, () -> KeyMapping.click(Minecraft.getInstance().options.keyUse.getKey()))
+                .lookAt(40, mob(TARGETS.get(0)))
+                .step(5, EdithClientEvents::markLookTarget)
+                .lookAt(20, mob(TARGETS.get(2)))
+                .step(5, EdithClientEvents::markLookTarget)
+                .look(15, 180, -5)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .step(10, () -> KeyMapping.click(EdithKeys.ROCKETS.getKey()))
+                .pause(70)
+                .camera(0, CameraType.FIRST_PERSON)
+                .pause(30));
+
         add("Suit flight", "Dubbel spatie: stuwraketten aan. Stijgen, stilhangen, vooruit met de "
                 + "naverbrander (sprint), opzij (het beeld helt over), uitglijden en zelf landen. "
                 + "Links van het vizier: stuwkracht, snelheid en hoogte. Op het eind van achteren: de "

@@ -70,6 +70,25 @@
       ]
     },
     {
+      "name": "Mini rockets",
+      "actions": [
+        {
+          "action": "rockets"
+        }
+      ],
+      "phrases": [
+        "fire rockets",
+        "fire the rockets",
+        "launch rockets",
+        "rockets",
+        "fire missiles",
+        "launch missiles",
+        "missiles",
+        "rocket salvo",
+        "light them up"
+      ]
+    },
+    {
       "name": "Satellite precision",
       "actions": [
         {

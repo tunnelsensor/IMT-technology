@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "item": "minecraft:gunpowder"
+    },
+    "H": {
+      "item": "starktech:hydra_circuit"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "GHG",
+    "ICI"
+  ],
+  "result": {
+    "id": "starktech:rocket_pack"
+  }
+}

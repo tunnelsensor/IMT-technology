@@ -40,6 +40,7 @@ import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
+import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.satellite.SatelliteStrikes;
@@ -52,6 +53,8 @@ import com.senne.starktech.shield.LaserWallBlock;
 import com.senne.starktech.shield.ShieldColor;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.suit.EdithSuit;
+import com.senne.starktech.suit.RocketPackItem;
+import com.senne.starktech.suit.SuitRockets;
 import com.senne.starktech.suit.StarkSuitItem;
 import com.senne.starktech.suit.SuitBalance;
 import com.senne.starktech.transport.EdithTransport;
@@ -936,6 +939,73 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("Na de wachttijd vuurde de repulsor niet opnieuw");
             }
             helper.succeed();
+        });
+    }
+
+    /**
+     * Mini-raketten: zonder raketpakket gebeurt er niets. Bouw je het pakket in (rechtsklik met
+     * de borstplaat aan), dan kost een salvo energie, en meteen nog een salvo kan niet: het
+     * pakket moet eerst herladen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "suit")
+    public static void rockets_need_the_rocket_pack(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        int full = EdithData.getEnergy(glasses);
+
+        SuitRockets.fire(owner);
+        if (EdithData.getEnergy(glasses) != full) {
+            throw new GameTestAssertException("Zonder raketpakket kostte het toch energie");
+        }
+
+        owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ROCKET_PACK.get()));
+        owner.getItemInHand(InteractionHand.MAIN_HAND).use(helper.getLevel(), owner, InteractionHand.MAIN_HAND);
+        if (!RocketPackItem.worn(owner)) {
+            throw new GameTestAssertException("Het raketpakket zit niet op de borstplaat");
+        }
+
+        SuitRockets.fire(owner);
+        int afterOne = EdithData.getEnergy(glasses);
+        if (afterOne != full - SuitBalance.ROCKET_COST) {
+            throw new GameTestAssertException("Een salvo kostte " + (full - afterOne) + " in plaats van "
+                    + SuitBalance.ROCKET_COST);
+        }
+        helper.runAfterDelay(SuitBalance.ROCKET_SALVO * SuitBalance.ROCKET_INTERVAL + 2, () -> {
+            SuitRockets.fire(owner);
+            if (EdithData.getEnergy(glasses) != afterOne) {
+                throw new GameTestAssertException("Een tweede salvo tijdens het herladen kostte toch energie");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een salvo gaat op het wezen waar je naar kijkt: de raketten vliegen eerst omhoog, sturen
+     * dan bij en raken het meer dan eens. Jou raken ze nooit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
+    public static void rockets_home_in_on_the_target(GameTestHelper helper) {
+        // Midden in de arena: langs de rand staat een onzichtbare muur waar raketten op ontploffen.
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(12, 3, 4));
+        wearSuit(owner);
+        owner.getItemBySlot(EquipmentSlot.CHEST).set(ModDataComponents.ROCKET_PACK.get(), true);
+        Husk target = spawnDummyEnemy(helper, new BlockPos(12, 3, 16));
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.position());
+        float full = target.getMaxHealth();
+
+        SuitRockets.fire(owner);
+        // Een testspeler tikt niet vanzelf; het salvo gaat verder als de speler tikt.
+        helper.onEachTick(() -> SuitRockets.tick(owner));
+        helper.succeedWhen(() -> {
+            if (owner.getHealth() < owner.getMaxHealth()) {
+                throw new GameTestAssertException("De raketten raakten je zelf");
+            }
+            // Twee treffers of meer: dan telt ook een raket vlak na de vorige.
+            if (target.isAlive() && target.getHealth() > full - 2 * SuitBalance.ROCKET_DAMAGE * 0.8f) {
+                throw new GameTestAssertException("Het doelwit is nog niet twee keer geraakt ("
+                        + target.getHealth() + "/" + full + ")");
+            }
         });
     }
 

@@ -57,6 +57,8 @@ public final class EdithKeys {
 
     /** Fase 15: een repulsorstoot uit je handpalm (je moet de borstplaat dragen). */
     public static final KeyMapping REPULSOR = key("repulsor", InputConstants.KEY_I);
+    /** Een salvo mini-raketten (hele harnas + raketpakket op de borstplaat). */
+    public static final KeyMapping ROCKETS = key("rockets", InputConstants.KEY_X);
     // Fase 4
     /** Ingedrukt houden = E.D.I.T.H. luistert naar een (Engels) spraakcommando; loslaten = uitvoeren. */
     public static final KeyMapping PUSH_TO_TALK = key("push_to_talk", InputConstants.KEY_Z);
@@ -86,5 +88,6 @@ public final class EdithKeys {
         event.register(REDSTONE);
         event.register(HACK);
         event.register(REPULSOR);
+        event.register(ROCKETS);
     }
 }

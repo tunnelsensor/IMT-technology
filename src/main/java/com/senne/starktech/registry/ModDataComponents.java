@@ -52,6 +52,12 @@ public final class ModDataComponents {
                     .persistent(Codec.INT)
                     .networkSynchronized(ByteBufCodecs.VAR_INT));
 
+    /** Zit er een raketpakket op deze borstplaat? (Zie RocketPackItem.) */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> ROCKET_PACK =
+            COMPONENTS.registerComponentType("rocket_pack", builder -> builder
+                    .persistent(Codec.BOOL)
+                    .networkSynchronized(ByteBufCodecs.BOOL));
+
     /** Welke upgrades er in de bril zitten. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithUpgrades>> UPGRADES =
             COMPONENTS.registerComponentType("upgrades", builder -> builder

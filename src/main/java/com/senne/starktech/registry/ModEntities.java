@@ -4,6 +4,7 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.hydra.HydraSoldierEntity;
 import com.senne.starktech.raid.RaidDroneEntity;
+import com.senne.starktech.suit.MiniRocketEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -46,6 +47,15 @@ public final class ModEntities {
                     .eyeHeight(1.62f)
                     .clientTrackingRange(8)
                     .build("hydra_soldier"));
+
+    /** Een mini-raket uit het raketpakket van het harnas. */
+    public static final DeferredHolder<EntityType<?>, EntityType<MiniRocketEntity>> MINI_ROCKET = ENTITIES.register(
+            "mini_rocket", () -> EntityType.Builder.<MiniRocketEntity>of(MiniRocketEntity::new, MobCategory.MISC)
+                    .sized(0.3f, 0.3f)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)         // elke tick bijwerken: hij stuurt steeds bij
+                    .noSave()
+                    .build("mini_rocket"));
 
     /** Levenspunten, snelheid enz. van elk wezen. */
     public static void registerAttributes(EntityAttributeCreationEvent event) {

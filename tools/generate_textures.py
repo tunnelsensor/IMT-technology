@@ -1283,6 +1283,18 @@ def stark_suit():
         for dx in range(2, 5):
             big1.putpixel((x + dx, y + dy), CYAN_DIM)
     big1.putpixel((x + 3, y + 3), glow)
+    # raketbuis op de rug (3x5x3), alleen met een raketpakket: rood met een gouden band, en
+    # bovenop de donkere gaten met de rode neuzen van de raketten erin
+    f = part(big1, 96, 48, 3, 5, 3, red_dark, top=seam, bottom=red_dark)
+    for n in ("right", "left", "back", "front"):
+        fill(big1, f[n], red, rows=(0, 1))
+        fill(big1, f[n], gold, rows=(2, 3))
+    shade(big1, f["back"])
+    shade(big1, f["front"])
+    x, y, w, h = f["top"]
+    for dx, dy in ((0, 0), (2, 0), (0, 2), (2, 2)):
+        big1.putpixel((x + dx, y + dy), RED)
+    big1.putpixel((x + 1, y + 1), gold_hi)
     save(big1, "models/armor/stark_layer_1.png")
 
     # ================================================================ Laag 2: de broek
@@ -1467,6 +1479,61 @@ def hydra_rifle():
     save(im, "item/hydra_rifle.png")
 
 
+def mini_rocket():
+    """
+    Een mini-raket (32 x 16): zilver buisje met een rode band, rode neus en donkere vinnen.
+    Het -Z-vlak van het buisje ("front" in box_regions) is de staart: daar gloeit hij oranje.
+    """
+    im = img(32, 16)
+    silver = (200, 204, 210, 255)
+    silver_dark = (140, 146, 154, 255)
+    body = box_regions(0, 0, 2, 2, 8)
+    for name in ("top", "bottom", "east", "west", "back"):
+        fill_region(im, body[name], silver)
+    # Een rode band en een gouden streepje halverwege; "top" en "bottom" lopen van boven
+    # naar beneden, de zijkanten van links naar rechts.
+    for name in ("top", "bottom"):
+        x, y, w, h = body[name]
+        for xx in range(x, x + w):
+            px(im, [(xx, y + 5), (xx, y + 6)], RED)
+            px(im, [(xx, y + 3)], GOLD)
+    for name in ("east", "west"):
+        x, y, w, h = body[name]
+        for yy in range(y, y + h):
+            px(im, [(x + 1, yy), (x + 2, yy)], RED)
+            px(im, [(x + 4, yy)], GOLD)
+        px(im, [(x, y + h - 1), (x + w - 1, y + h - 1)], silver_dark)
+    fill_region(im, body["front"], (255, 150, 40, 255))  # de staart gloeit
+    fins_v = box_regions(20, 0, 1, 6, 2)
+    fins_h = box_regions(0, 10, 6, 1, 2)
+    for fins in (fins_v, fins_h):
+        for region in fins.values():
+            fill_region(im, region, METAL_2)
+    nose = box_regions(26, 0, 1, 1, 2)
+    for region in nose.values():
+        fill_region(im, region, RED)
+    save(im, "entity/mini_rocket.png")
+
+
+def rocket_pack():
+    """Het raketpakket: twee rode lanceerbuizen naast elkaar, met raketneuzen erin."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    red = (168, 28, 30, 255)
+    red_dark = (106, 16, 20, 255)
+    for x0 in (2, 9):
+        d.rectangle([x0, 4, x0 + 4, 13], fill=red, outline=red_dark)
+        d.line([x0 + 1, 10, x0 + 3, 10], fill=GOLD)
+        # Twee gaten bovenin met de rode neuzen van de raketten.
+        px(im, [(x0 + 1, 5), (x0 + 3, 5)], METAL_DARK)
+        px(im, [(x0 + 1, 3), (x0 + 3, 3)], (220, 60, 50, 255))
+        px(im, [(x0 + 1, 4), (x0 + 3, 4)], (200, 204, 210, 255))
+    # Een gouden beugel die de twee buizen verbindt.
+    d.line([6, 8, 9, 8], fill=GOLD_DARK)
+    d.line([6, 12, 9, 12], fill=GOLD_DARK)
+    save(im, "item/rocket_pack.png")
+
+
 def hydra_soldier():
     """
     Het pak van een Hydra-soldaat (64 x 64, de indeling van mensachtige wezens; de linker arm
@@ -1550,3 +1617,5 @@ if __name__ == "__main__":
     hydra_circuit()
     hydra_rifle()
     hydra_soldier()
+    mini_rocket()
+    rocket_pack()

@@ -86,4 +86,35 @@ public final class SuitBalance {
     public static final double REPULSOR_RECOIL = 0.04;
     /** Hoe ver naast de straal je nog geraakt wordt (in blokken). */
     public static final double REPULSOR_WIDTH = 1.2;
+
+    // ---------------------------------------------------------------- Mini-raketten
+    /** Hoeveel raketten er in één salvo zitten. */
+    public static final int ROCKET_SALVO = 6;
+    /** Wat een heel salvo kost. */
+    public static final int ROCKET_COST = 900;
+    /** Wachttijd tussen twee salvo's (in ticks): 12 seconden. */
+    public static final int ROCKET_COOLDOWN = 240;
+    /** Zoveel ticks tussen twee raketten van hetzelfde salvo. */
+    public static final int ROCKET_INTERVAL = 2;
+    /** Hoe ver de raketten doelwitten zoeken en hoe ver ze vliegen zonder doelwit (in blokken). */
+    public static final double ROCKET_RANGE = 48.0;
+    /** Schade voor wat de raket raakt (5 = 2,5 hartje). */
+    public static final float ROCKET_DAMAGE = 5.0f;
+    /** Schade voor wie vlak naast de inslag staat. */
+    public static final float ROCKET_SPLASH_DAMAGE = 2.0f;
+    /** Tot zover van de inslag krijg je die schade (in blokken). */
+    public static final double ROCKET_SPLASH_RADIUS = 1.8;
+    /** Snelheid bij het wegschieten en de hoogste snelheid (blokken per tick). */
+    public static final double ROCKET_START_SPEED = 0.45;
+    public static final double ROCKET_MAX_SPEED = 1.6;
+    /** Zoveel snelheid komt er elke tick bij. */
+    public static final double ROCKET_ACCELERATION = 0.08;
+    /** Zo lang (ticks) vliegt een raket eerst rechtdoor voor hij gaat bijsturen: het salvo waaiert uit. */
+    public static final int ROCKET_ARM_TICKS = 5;
+    /** Hoe scherp een raket bijstuurt (0 = niet, 1 = meteen recht op het doel). */
+    public static final double ROCKET_TURN = 0.28;
+    /** Dichter dan dit bij zijn doel (in blokken) stuurt hij steeds scherper, tot recht erop. */
+    public static final double ROCKET_SHARP_TURN_DISTANCE = 6.0;
+    /** Na zoveel ticks ontploft een raket vanzelf (5 seconden). */
+    public static final int ROCKET_LIFETIME = 100;
 }

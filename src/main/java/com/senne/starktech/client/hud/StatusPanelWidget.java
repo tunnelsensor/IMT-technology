@@ -139,6 +139,7 @@ public final class StatusPanelWidget implements HudWidget {
         // Wachttijden die nog lopen
         y = cooldownLine(c, x, y, "hud.starktech.swarm", EdithClientState.cooldown(EdithCooldown.SWARM));
         y = cooldownLine(c, x, y, "hud.starktech.strike", EdithClientState.cooldown(EdithCooldown.STRIKE));
+        y = cooldownLine(c, x, y, "hud.starktech.rockets", EdithClientState.cooldown(EdithCooldown.ROCKETS));
         y = cooldownLine(c, x, y, "hud.starktech.satellite", EdithClientState.cooldown(EdithCooldown.SATELLITE));
         y = cooldownLine(c, x, y, "hud.starktech.ore_scan", EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
         // Bestemming (navigatie)

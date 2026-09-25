@@ -173,6 +173,7 @@ public final class VoiceControl {
             case SATELLITE_BOMBARDMENT -> EdithClientEvents.sendAction(EdithAction.SATELLITE_BOMBARDMENT);
             case SATELLITE_SWEEP -> EdithClientEvents.sendAction(EdithAction.SATELLITE_SWEEP);
             case DRONE_STRIKE -> EdithClientEvents.sendAction(EdithAction.DRONE_STRIKE);
+            case ROCKETS -> EdithClientEvents.sendAction(EdithAction.ROCKETS);
             case STAND_DOWN -> EdithClientEvents.sendAction(EdithAction.STAND_DOWN);
             case SPY_DRONE -> EdithClientEvents.sendAction(EdithAction.SPY_DRONE);
             case SPY_VIEW -> EdithClientEvents.sendAction(EdithAction.SPY_VIEW);

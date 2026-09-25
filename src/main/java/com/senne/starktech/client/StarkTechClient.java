@@ -98,6 +98,7 @@ public class StarkTechClient {
         event.registerEntityRenderer(ModEntities.STARK_DRONE.get(), DroneRenderer::new);
         event.registerEntityRenderer(ModEntities.RAID_DRONE.get(), RaidDroneRenderer::new);
         event.registerEntityRenderer(ModEntities.HYDRA_SOLDIER.get(), com.senne.starktech.client.hydra.HydraSoldierRenderer::new);
+        event.registerEntityRenderer(ModEntities.MINI_ROCKET.get(), com.senne.starktech.client.suit.MiniRocketRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
@@ -107,6 +108,8 @@ public class StarkTechClient {
         event.registerLayerDefinition(DroneModel.LAYER, DroneModel::createBodyLayer);
         event.registerLayerDefinition(com.senne.starktech.client.hydra.HydraSoldierRenderer.LAYER,
                 com.senne.starktech.client.hydra.HydraSoldierRenderer::createLayer);
+        event.registerLayerDefinition(com.senne.starktech.client.suit.MiniRocketRenderer.LAYER,
+                com.senne.starktech.client.suit.MiniRocketRenderer::createLayer);
         event.registerLayerDefinition(StarkSuitModel.OUTER, StarkSuitModel::createOuter);
         event.registerLayerDefinition(StarkSuitModel.INNER, StarkSuitModel::createInner);
     }

@@ -30,6 +30,8 @@ public enum VoiceAction {
     SCOUT_RETURN(Group.COMBAT, false),
     /** Fase 5: een losse drone op het doelwit waar je naar kijkt. */
     DRONE_STRIKE(Group.COMBAT, false),
+    /** Een salvo mini-raketten uit het harnas. */
+    ROCKETS(Group.COMBAT, false),
     /** Fase 6: alles afbreken (zwerm, losse drone, escorte, satelliet). */
     STAND_DOWN(Group.COMBAT, false),
     /** Fase 6: spionagedrone sturen of terugroepen. */

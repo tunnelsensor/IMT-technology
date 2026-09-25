@@ -396,6 +396,7 @@ public final class EdithServer {
             case ILLUSION_STOP -> EdithIllusions.stopAll(player);
             // Fase 15
             case REPULSOR -> EdithSuit.repulsor(player);
+            case ROCKETS -> com.senne.starktech.suit.SuitRockets.fire(player);
             case DRONE_FORMATION -> {
                 com.senne.starktech.drone.DroneFormation next = EdithData.getFormation(glasses).next();
                 EdithData.setFormation(glasses, next);
@@ -738,6 +739,11 @@ public final class EdithServer {
                 it.remove();
             }
         }
+    }
+
+    /** Het wezen waar de speler naar kijkt, voor functies buiten deze klasse (zoals de raketten). */
+    public static @Nullable LivingEntity lookTarget(ServerPlayer player, double range) {
+        return findLookTarget(player, range);
     }
 
     /**
