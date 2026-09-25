@@ -832,7 +832,7 @@ public final class EdithServer {
             if (state.sweepStart == null || now - state.sweepStartAt > EdithBalance.SWEEP_START_TIMEOUT) {
                 state.sweepStart = target;
                 state.sweepStartAt = now;
-                ModNetwork.sendTo(player, new PingMarkerPayload("Sweep start", target));
+                ModNetwork.sendTo(player, new PingMarkerPayload(PingMarkerPayload.SWEEP_START, target));
                 send(player, Component.translatable("edith.starktech.msg.sweep_start_set"), EdithMessagePayload.Level.INFO);
                 return;
             }

@@ -134,6 +134,9 @@ public final class ClientPayloadHandlers {
         EdithClientState.pings.removeIf(ping -> ping.sender().equals(payload.sender()));
         EdithClientState.pings.add(new EdithClientState.Ping(payload.sender(), payload.pos(), now,
                 now + EdithBalance.PING_DURATION * 50L));
+        if (payload.sender().equals(PingMarkerPayload.SWEEP_START)) {
+            return; // alleen de markering, geen melding
+        }
         var player = context.player();
         boolean own = player.getGameProfile().getName().equals(payload.sender());
         int distance = (int) Math.round(Math.sqrt(player.distanceToSqr(payload.pos())));
