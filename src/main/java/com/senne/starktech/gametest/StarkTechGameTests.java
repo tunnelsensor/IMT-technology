@@ -233,6 +233,32 @@ public final class StarkTechGameTests {
         transportLanding(helper);
     }
 
+    /**
+     * De schuivende laser trekt van het beginpunt naar het eindpunt dat je koos: een vijand die
+     * aan het eind staat (en niet aan het begin) wordt geraakt, en een vijand ver achter het
+     * eindpunt niet (de laser schiet er niet overheen).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "satellite_sweep")
+    public static void satellite_sweep_goes_from_start_to_end(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(0, 3, 0));
+        Husk atEnd = spawnDummyEnemy(helper, new BlockPos(14, 3, 12));
+        Husk beyond = spawnDummyEnemy(helper, new BlockPos(14, 3, 22));
+        Vec3 start = helper.absoluteVec(new Vec3(14.5, 3, 2.5));
+        Vec3 end = atEnd.position();
+        SatelliteStrikes.start(helper.getLevel(), start, owner.getUUID(), SatelliteMode.SWEEP, null, end);
+        helper.succeedWhen(() -> {
+            if (atEnd.getHealth() >= atEnd.getMaxHealth()) {
+                throw new GameTestAssertException("De laser kwam niet bij het eindpunt");
+            }
+            if (SatelliteStrikes.pendingFor(owner.getUUID()) != null) {
+                throw new GameTestAssertException("De laser is nog bezig");
+            }
+            if (beyond.getHealth() < beyond.getMaxHealth()) {
+                throw new GameTestAssertException("De laser schoot voorbij het eindpunt");
+            }
+        });
+    }
+
     @GameTest(template = ARENA, timeoutTicks = 300, batch = "satellite")
     public static void satellite_strike(GameTestHelper helper) {
         satelliteStrike(helper);
@@ -2104,7 +2130,7 @@ public final class StarkTechGameTests {
         int startDelay = 100;
         // Bombardement: meerdere inslagen, dus de vijand gaat er zeker aan.
         helper.runAfterDelay(startDelay, () -> SatelliteStrikes.start(helper.getLevel(), enemy.position(), owner.getUUID(),
-                SatelliteMode.BOMBARDMENT, null, new Vec3(1, 0, 0)));
+                SatelliteMode.BOMBARDMENT, null, null));
         // Tijdens het opladen mag er nog niets gebeuren...
         UUID enemyId = enemy.getUUID();
         helper.runAfterDelay(startDelay + EdithBalance.SATELLITE_CHARGE_TIME - 10, () -> {

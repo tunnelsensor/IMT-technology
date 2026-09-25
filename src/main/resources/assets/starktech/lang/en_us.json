@@ -226,6 +226,7 @@
   "edith.starktech.msg.marks_cleared": "All targets cleared.",
   "edith.starktech.msg.no_target_in_sight": "No target in sight.",
   "edith.starktech.msg.satellite_no_target": "No target within satellite range.",
+  "edith.starktech.msg.sweep_start_set": "Sweep start marked. Aim at the end point and fire again.",
   "edith.starktech.msg.satellite_too_close": "Target too close. I'm not going to blow you up.",
   "edith.starktech.msg.satellite_no_sky": "No line of sight from orbit. The target needs open sky.",
   "edith.starktech.msg.satellite_locked": "Satellite locked on. Impact in %s seconds!",

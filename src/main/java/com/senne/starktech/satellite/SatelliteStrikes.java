@@ -54,8 +54,12 @@ public final class SatelliteStrikes {
         final SatelliteMode mode;
         /** Het wezen dat gevolgd wordt (lock-on), of null bij een vaste plek. */
         final @Nullable UUID lockedId;
-        /** De richting waarin de schuivende laser beweegt. */
-        final Vec3 sweepDirection;
+        /**
+         * Schuivende laser: waar hij naartoe trekt (null = hij blijft op zijn plek), en waar hij
+         * begon met vuren (dat onthouden we bij de eerste stap).
+         */
+        final @Nullable Vec3 sweepTo;
+        @Nullable Vec3 sweepFrom;
         /** Ticks tot de inslag. */
         int ticksLeft;
         /** Ticks dat hij nog aan het vuren is (bombardement en sweep duren even). */
@@ -66,13 +70,13 @@ public final class SatelliteStrikes {
         final SatelliteUpgrades upgrades;
 
         Strike(ResourceKey<Level> dimension, Vec3 target, UUID ownerId, SatelliteMode mode,
-               @Nullable UUID lockedId, Vec3 sweepDirection, SatelliteUpgrades upgrades) {
+               @Nullable UUID lockedId, @Nullable Vec3 sweepTo, SatelliteUpgrades upgrades) {
             this.dimension = dimension;
             this.target = target;
             this.ownerId = ownerId;
             this.mode = mode;
             this.lockedId = lockedId;
-            this.sweepDirection = sweepDirection;
+            this.sweepTo = sweepTo;
             this.upgrades = upgrades;
             this.ticksLeft = SatelliteStats.chargeTicks(upgrades.targeting());
             this.fireTicks = switch (mode) {
@@ -98,13 +102,16 @@ public final class SatelliteStrikes {
 
     private static final List<Strike> STRIKES = new ArrayList<>();
 
-    /** Start een aanval. De straal komt na SATELLITE_CHARGE_TIME ticks los. */
+    /**
+     * Start een aanval. De straal komt na het opladen los. Bij de schuivende laser trekt hij
+     * daarna van {@code target} naar {@code sweepTo} (voor de andere standen: null).
+     */
     public static void start(ServerLevel level, Vec3 target, UUID ownerId, SatelliteMode mode,
-                             @Nullable UUID lockedId, Vec3 sweepDirection) {
+                             @Nullable UUID lockedId, @Nullable Vec3 sweepTo) {
         // Hoe sterk de aanval is, hangt af van de upgrades van de eigenaar (zie SatelliteStats).
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
         SatelliteUpgrades upgrades = owner == null ? SatelliteUpgrades.START : SatelliteWorkshop.get(owner);
-        STRIKES.add(new Strike(level.dimension(), target, ownerId, mode, lockedId, sweepDirection, upgrades));
+        STRIKES.add(new Strike(level.dimension(), target, ownerId, mode, lockedId, sweepTo, upgrades));
         level.playSound(null, target.x, target.y, target.z, ModSounds.SATELLITE_CHARGE.get(), SoundSource.PLAYERS, 3.0f, 0.8f);
     }
 
@@ -238,11 +245,18 @@ public final class SatelliteStrikes {
         level.playSound(null, pos.x, pos.y, pos.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 4.0f, 0.9f);
     }
 
-    /** Schuivende laser: hij kruipt over de grond en schroeit alles wat hij raakt. */
+    /**
+     * Schuivende laser: hij kruipt over de grond van het beginpunt naar het eindpunt, gelijkmatig
+     * verdeeld over de hele duur, en schroeit alles wat hij raakt.
+     */
     private static void fireSweepStep(ServerLevel level, Strike strike) {
-        // Elke tick een stukje verder, en netjes op de grond blijven.
-        Vec3 moved = strike.target.add(strike.sweepDirection.scale(EdithBalance.SWEEP_SPEED));
-        strike.target = onGround(level, moved);
+        if (strike.sweepFrom == null) {
+            strike.sweepFrom = strike.target;
+        }
+        Vec3 to = strike.sweepTo != null ? strike.sweepTo : strike.sweepFrom;
+        double progress = (strike.fireTicks - strike.fireTicksLeft + 1) / (double) strike.fireTicks;
+        // Netjes op de grond blijven, ook als het eindpunt hoger of lager ligt.
+        strike.target = onGround(level, strike.sweepFrom.lerp(to, progress));
         Vec3 pos = strike.target;
         // Over een schildkoepel heen? Dan schroeit hij over de koepel in plaats van over de grond
         // (om de tick kost dat schildkracht).

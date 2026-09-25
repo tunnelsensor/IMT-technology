@@ -166,8 +166,12 @@ public final class EdithBalance {
     // --- Schuivende laser
     /** Hoe lang de laser over de grond schuift (in ticks). 70 ticks = 3,5 seconde. */
     public static final int SWEEP_TICKS = 70;
-    /** Hoe snel hij schuift (blokken per tick). */
-    public static final double SWEEP_SPEED = 0.6;
+    /**
+     * Het beginpunt dat je met de eerste K kiest, blijft zo lang bewaard (ticks): 600 = een halve
+     * minuut. Daarna begint een nieuwe K weer bij het beginpunt. De laser zelf gaat in de hele
+     * schuiftijd van het begin- naar het eindpunt, hoe ver die ook uit elkaar liggen.
+     */
+    public static final int SWEEP_START_TIMEOUT = 600;
     /** Hoe breed de laser raakt (in blokken). */
     public static final double SWEEP_RADIUS = 2.5;
     /** Schade per treffer van de schuivende laser. */

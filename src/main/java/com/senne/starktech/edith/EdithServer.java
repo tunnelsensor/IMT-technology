@@ -11,6 +11,7 @@ import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.EdithStatusPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.OreScanPayload;
+import com.senne.starktech.network.PingMarkerPayload;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.comms.EdithComms;
 import com.senne.starktech.nav.EdithWaypoints;
@@ -91,6 +92,9 @@ public final class EdithServer {
         long lastTransportTick;
         /** De drone waar de speler alleen door MEEKIJKT (spionagedrone), of null. */
         @Nullable UUID viewDroneId;
+        /** Schuivende laser: het beginpunt dat de speler al koos (en wanneer), of null. */
+        @Nullable Vec3 sweepStart;
+        long sweepStartAt;
     }
 
     private static final Map<UUID, PlayerState> STATES = new HashMap<>();
@@ -760,6 +764,7 @@ public final class EdithServer {
             return;
         }
         EdithData.setSatelliteMode(glasses, mode);
+        state(player).sweepStart = null; // een half gekozen laserlijn geldt niet voor een andere stand
         send(player, Component.translatable("edith.starktech.msg.satellite_mode",
                 Component.translatable(mode.translationKey()), mode.cost()), EdithMessagePayload.Level.INFO);
     }
@@ -819,14 +824,28 @@ public final class EdithServer {
             send(player, Component.translatable("edith.starktech.msg.satellite_no_sky"), EdithMessagePayload.Level.WARNING);
             return;
         }
+        // De schuivende laser kies je in twee keer: eerst het beginpunt (dat kost nog niets), dan
+        // het eindpunt. Pas bij het tweede punt vuurt hij, van het begin naar het eind.
+        Vec3 sweepTo = null;
+        if (mode == SatelliteMode.SWEEP) {
+            long now = player.level().getGameTime();
+            if (state.sweepStart == null || now - state.sweepStartAt > EdithBalance.SWEEP_START_TIMEOUT) {
+                state.sweepStart = target;
+                state.sweepStartAt = now;
+                ModNetwork.sendTo(player, new PingMarkerPayload("Sweep start", target));
+                send(player, Component.translatable("edith.starktech.msg.sweep_start_set"), EdithMessagePayload.Level.INFO);
+                return;
+            }
+            sweepTo = target;
+            target = state.sweepStart;
+            locked = null; // een lijn over de grond, niet achter een wezen aan
+        }
         if (!payEnergy(player, glasses, mode.cost())) {
             return;
         }
+        state.sweepStart = null;
         startCooldown(player, state, EdithCooldown.SATELLITE, SatelliteStats.cooldownTicks(upgrades.recharge()));
-        // De schuivende laser beweegt van jou WEG, zodat hij niet naar je toe komt.
-        Vec3 away = target.subtract(player.position());
-        Vec3 sweep = away.horizontalDistanceSqr() < 0.01 ? new Vec3(1, 0, 0) : new Vec3(away.x, 0, away.z).normalize();
-        SatelliteStrikes.start(player.serverLevel(), target, player.getUUID(), mode, locked, sweep);
+        SatelliteStrikes.start(player.serverLevel(), target, player.getUUID(), mode, locked, sweepTo);
         StarkAdvancements.award(player, StarkAdvancements.SATELLITE);
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.SATELLITE_LOCK.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         send(player, Component.translatable("edith.starktech.msg.satellite_locked_mode",
@@ -1005,6 +1024,7 @@ public final class EdithServer {
         }
         state.scoutId = null;
         state.viewDroneId = null;
+        state.sweepStart = null;
         sendStatus(player, state);
     }
 
