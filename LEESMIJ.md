@@ -29,14 +29,17 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (55 automatis
   (50 per stuk): dat is je noodvoorraad. Voor echte stroom zet je een **zonnepaneel** of een
   **warmtegenerator** neer en verbind je die met **Stark-kabels** (zie "Stroom en kabels").
   In het station bouw je ook upgrades in (batterij, scanner, drones).
-- Zoek een **Stark Tower** in je wereld: een wolkenkrabber van 29 x 76 blokken met een lobby,
-  een lab, een archief, een hangar, een penthouse en een landingsdek op het dak.
-  In de gewone kisten vind je materiaal en upgrades — maar **geen bril**.
-  De bril ligt in de **kluis** bovenin, en die geeft zich niet zomaar gewonnen:
-  eerst door de lasergang (acht rayshields waar je niet doorheen komt), dan de omweg
-  via drie deuren met verstopte schakelaars, en in de kluis zelf staan vier bewakers.
+- Zoek een **Stark Tower** in je wereld: een wolkenkrabber van 41 x 110 blokken met een
+  verlicht STARK-logo en een blauwe lichtstraal uit de kroon (die zie je van ver). Binnen: een
+  lobby met receptie, een lab, een archief, een hangar, een woonverdieping, de beveiliging,
+  een penthouse en een landingsdek op het dak. Naar boven ga je met de glazen liftkoker
+  (een ladder) in de lobby. In de gewone kisten vind je materiaal en upgrades — maar
+  **geen bril**. De bril ligt in de **kluis** bovenin, en die geeft zich niet zomaar gewonnen:
+  eerst door de lasergang (rayshields waar je niet doorheen komt), dan de omweg via drie
+  deuren met verstopte schakelaars, en in de kluis zelf staan vier bewakers.
   (De lasers draaien op stroom. Wie goed kijkt, vindt misschien een andere manier...)
-  Stap je op de plaat voor de kist, dan gaat de deur achter je dicht.
+  En kijk uit voor de drukplaat voor de kluiskist: stap je erop, dan schieten er vier
+  laserzuilen uit de vloer omhoog en sta je in een kooi.
 
 ---
 
@@ -387,13 +390,13 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `starktech:stark_tower`.
-- **Tests**: `gradlew runGameTestServer` — 55 tests over de toren en zijn kluis, de drones en
+- **Tests**: `gradlew runGameTestServer` — 56 tests over de toren en zijn kluis, de drones en
   het arsenaal, zelf vliegen en landen, de satelliet, navigatie, spion, de bril, het
   laadstation, de rayshields, de relais, de holotafel, het harnas en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
-  `laser`, `commands`, `illusion`, `power`, `dome`, `models`; meerdere met komma's).
+  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`; meerdere met komma's).
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

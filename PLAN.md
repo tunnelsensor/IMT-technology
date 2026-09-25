@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 55 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 56 functies één voor één zien (of een
+**Stand van zaken:** 56 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 58 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -290,7 +290,20 @@ kleine dingen, dan de grote.
       Hij heeft nu een voorkant (naar je toe bij plaatsen) en gloeit alleen als hij warmte
       opwekt (dan ook licht); de test van de generator controleert dat. De modellen maakt
       `tools/generate_block_models.py`; screenshots met `-Ponly=models`.
-- [ ] Stark Tower mooier, overal meer detail
+- [x] Stark Tower mooier, overal meer detail — `COMMIT`
+      Onderweg gevonden en gerepareerd: het STARK-logo miste de bovenste rij van elke letter
+      (het terras erboven overschreef hem), en er hing nergens een plafondlamp (de vloer erboven
+      overschreef ze), dus binnen was het donker. De ladder liep buiten langs de gevel en vanaf
+      het archief kwam je nergens meer binnen; de ladder van de kluis eindigde tegen het glas.
+      Nu: een glazen liftkoker van de lobby tot in de lasergang, en een ladder van de kluis
+      door het penthouse naar het dak. De valstrik in de kluis deed niets (geen redstone, geen
+      stroom): nu schieten er vier laserzuilen omhoog als je op de drukplaat stapt (nieuwe
+      test). Het logo is van koperen lampen (gloeit 's nachts), elk terras heeft lampjes, de
+      kluis heeft van buiten banden en kolommen, en uit de kroon schiet een blauwe bakenstraal.
+      Elke verdieping is ingericht (receptie met logowand, lab met watertanks en pakstelling,
+      archief, hangar met landingscirkel en hangardeur, woonverdieping, serverkasten en een
+      holotafel in de beveiliging, bar en vleugel in het penthouse, schotel en zonnepanelen
+      op het dak). Rondleiding met screenshots: `-Ponly=tower`.
 
 ### 3. Meer in de wereld
 

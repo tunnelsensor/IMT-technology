@@ -191,6 +191,23 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * De val in de kluis: komt er iets op de drukplaat voor de sokkel (hier een ijzerstaaf), dan
+     * schieten er uit de vloer eromheen vier laserzuilen omhoog: een kooi. Ze draaien op stroom
+     * van de krachtcentrale, via een kabel door de muur van de lasergang.
+     */
+    @GameTest(template = "stark_tower", timeoutTicks = 200, batch = "tower_trap")
+    public static void stark_tower_vault_trap(GameTestHelper helper) {
+        // De krachtcentrale eerst even laten opwarmen, dan de staaf op de plaat.
+        helper.runAfterDelay(20, () -> helper.spawnItem(Items.IRON_INGOT, 20.5f, 79.1f, 23.5f));
+        helper.succeedWhen(() -> {
+            for (BlockPos column : List.of(new BlockPos(19, 80, 23), new BlockPos(21, 80, 23),
+                    new BlockPos(20, 80, 22), new BlockPos(20, 80, 24))) {
+                helper.assertBlockPresent(ModBlocks.LASER_WALL.get(), column);
+            }
+        });
+    }
+
     @GameTest(template = ARENA, timeoutTicks = 2400, batch = "drones")
     public static void drone_swarm(GameTestHelper helper) {
         droneSwarm(helper);

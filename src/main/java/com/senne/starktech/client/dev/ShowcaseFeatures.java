@@ -669,7 +669,9 @@ final class ShowcaseFeatures {
                 .look(0, 0, -10)
                 .pause(160));
 
-        add("Stark Tower", "Het gebouw waar je de bril vindt: rondvliegen om de Stark Tower.",
+        add("Stark Tower", "Het gebouw waar je de bril vindt: rondvliegen om de Stark Tower. Let op het "
+                + "STARK-logo van koperen lampen op de gevel, de lampjes langs elk terras, de kluis bovenin "
+                + "(donker, maar met hetzelfde ritme als de rest) en de blauwe lichtstraal uit de kroon.",
                 new Vec3(STARK_TOWER.getX() - 30, -20, STARK_TOWER.getZ() + 20), -90, 10, s -> {
             Vec3 centre = towerCentre();
             double[][] around = {{-30, 20}, {20, -45}, {70, 20}, {20, 85}};
@@ -692,6 +694,36 @@ final class ShowcaseFeatures {
                 .lookAt(10, towerPoint(27.5, 62, 12.5))
                 .pause(80)
                 .lookAt(10, towerPoint(21, 66.5, 14))
+                .pause(80));
+
+        add("Stark Tower: floors", "Elke verdieping van binnen, van onder naar boven: lobby (receptie met "
+                + "logowand, vitrines, zithoeken, de glazen liftkoker), lab (watertanks, pakstelling, "
+                + "teslaspoel, werkbanken), archief, hangar (landingscirkel, dockingstations, hangardeur), "
+                + "woonverdieping, beveiliging (serverkasten, schermenwand, holotafel), lasergang, kluis, "
+                + "penthouse (bar, vleugel, holotafel) en het dak (zonnepanelen, schotel, kroon met baken).",
+                towerPoint(35.5, 2, 35.5), 135, 12, s -> {
+            String[] names = {"lobby", "lab", "archive", "hangar", "living", "security", "lasers", "vault",
+                    "penthouse", "roof"};
+            int[] floors = {1, 12, 23, 34, 45, 57, 67, 77, 89, 99};
+            int[] insets = {2, 4, 5, 6, 7, 8, 9, 9, 10, 10};
+            for (int i = 0; i < floors.length; i++) {
+                double corner = 41 - 1 - insets[i] - 1.5;
+                s.title(0, names[i], "").view(0, STARK_TOWER.getX() + corner, STARK_TOWER.getY() + floors[i] + 1,
+                        STARK_TOWER.getZ() + corner, 135, 12).pause(70);
+            }
+        });
+
+        add("Stark Tower: vault trap", "De val in de kluis: voor de kluiskist ligt een drukplaat, met in de "
+                + "vloer eromheen vier laserzenders die omhoog kijken. Stap je erop, dan schieten er vier rode "
+                + "laserzuilen tot aan het plafond: je staat in een kooi. Eruit door een zender uit de vloer "
+                + "te hakken, of door de stroom af te snijden (ze hangen aan de krachtcentrale).",
+                towerPoint(20.5, 79, 13.5), 0, 15, s -> s
+                .pause(60)
+                .stand(0, STARK_TOWER.getX() + 20.5, STARK_TOWER.getY() + 79.1, STARK_TOWER.getZ() + 23.5, 0, 10)
+                .pause(60)
+                .look(30, 0, -55)
+                .pause(60)
+                .view(20, STARK_TOWER.getX() + 20.5, STARK_TOWER.getY() + 80, STARK_TOWER.getZ() + 15.5, 0, 25)
                 .pause(80));
 
         // ---------------------------------------------------------------- Schermen en overige

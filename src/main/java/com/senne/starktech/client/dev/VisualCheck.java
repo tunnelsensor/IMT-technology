@@ -394,6 +394,11 @@ public final class VisualCheck {
             t.shot(20, "95_power_cables");
         }
 
+        // --- De Stark Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
+        if (want("tower")) {
+            tower(t);
+        }
+
         // --- De 3D-modellen van het zonnepaneel en de warmtegenerator (aan en uit), van voren,
         // schuin van achteren, en 's nachts (dan zie je het rooster gloeien).
         if (want("models")) {
@@ -613,7 +618,47 @@ public final class VisualCheck {
         level.addFreshEntity(arrow);
     }
 
-    /** Generator - kabels (met een hoek en een stukje omhoog) - laadstation, bij x 20..27, z -20. */
+    /** Waar de rondleiding de Stark Tower neerzet (ver van de rest, op de vlakte). */
+    private static final BlockPos STARK_TOWER = new BlockPos(200, -61, 200);
+
+    /**
+     * De Stark Tower: neerzetten, dan foto's van buiten en van elke verdieping van binnen. Binnen
+     * staan we in de zuidoosthoek (met een wijde blik) en kijken we schuin naar het midden.
+     */
+    private static void tower(DevScript t) {
+        int x = STARK_TOWER.getX();
+        int y = STARK_TOWER.getY();
+        int z = STARK_TOWER.getZ();
+        // Eerst ernaartoe, zodat dat stuk wereld geladen is, dan pas neerzetten.
+        t.view(0, x + 20.5, y + 40, z - 40, 0, 0);
+        t.command(60, "place template starktech:stark_tower " + x + " " + y + " " + z);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.view(40, x + 20.5, y + 45, z + 90, 180, 8);
+        t.shot(40, "t01_outside_south");
+        t.view(0, x - 40, y + 70, z - 30, -50, 25);
+        t.shot(30, "t02_outside_northwest_high");
+        t.view(0, x + 20.5, y + 2, z + 52, 180, -12);
+        t.shot(30, "t03_outside_entrance");
+        t.view(0, x + 20.5, y + 112, z + 30, 180, 25);
+        t.shot(30, "t05_crown");
+        t.command(0, "time set midnight");
+        t.view(0, x + 20.5, y + 45, z + 90, 180, 8);
+        t.shot(30, "t04_outside_night");
+        t.command(0, "time set noon");
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(95));
+        String[] names = {"lobby", "lab", "archive", "hangar", "living", "security", "lasers", "vault",
+                "penthouse", "roof"};
+        int[] floors = {1, 12, 23, 34, 45, 56, 67, 77, 88, 99};
+        int[] insets = {2, 4, 5, 6, 7, 8, 9, 9, 10, 10};
+        for (int i = 0; i < floors.length; i++) {
+            double corner = 41 - 1 - insets[i] - 1.5;
+            t.view(0, x + corner, y + floors[i] + 1, z + corner, 135, 12);
+            t.shot(30, String.format("t%02d_%s", 10 + i, names[i]));
+        }
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+    }
+
     /**
      * Een rijtje om de modellen te bekijken, met de voorkanten naar het noorden: een
      * zonnepaneel, een warmtegenerator op magma (die werkt, dus gloeit) en een zonder hitte.
@@ -630,6 +675,7 @@ public final class VisualCheck {
         level.setBlockAndUpdate(centre.offset(2, 0, 0), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
     }
 
+    /** Generator - kabels (met een hoek en een stukje omhoog) - laadstation, bij x 20..27, z -20. */
     private static void buildPowerLine(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos start = new BlockPos(20, -60, -20);
