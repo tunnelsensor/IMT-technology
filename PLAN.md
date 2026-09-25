@@ -266,7 +266,14 @@ kleine dingen, dan de grote.
       vast aan de laarzen zitten, langer en feller naarmate je harder gaat. De server vertelt
       spelers in de buurt wie er vliegt en hoe hard, dus iedereen ziet ze. Screenshots:
       `-Ponly=suit,flight`.
-- [ ] Het harnas meer 3D-vorm geven
+- [x] Het harnas meer 3D-vorm geven — `76900f5`
+      Een eigen model bovenop het gewone harnas (`client/suit/StarkSuitModel.java`), met de
+      plaatjes nu 128x64 zodat de extra stukken een plek hebben: een uitstekende reactor die
+      blauw gloeit (ook in het donker), borstplaten, drie gouden buikplaten, een rugplaat met
+      twee straalopeningen, schouderplaten die iets naar buiten kantelen, onderarmbeschermers
+      met een repulsor in de handpalm, laarzen met een schaal, gouden neus en zool, en aan de
+      broek kniestukken, dijplaten en een gesp. Je eigen arm (repulsor) toont de harnasmouw
+      ook. Close-ups: `-Ponly=suit` (`41b` t/m `41d`).
 
 **Modellen en gebouwen**
 - [ ] Holotafel: een vierde stand "Satellite" (groot en gedetailleerd, met zijn upgrades), en
