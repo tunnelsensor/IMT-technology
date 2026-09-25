@@ -491,8 +491,11 @@ final class ShowcaseFeatures {
                 .pause(120));
 
         // ---------------------------------------------------------------- Het harnas
-        add("Stark suit", "Het harnas: borstplaat, broek en laarzen (rood en goud, met de reactor). "
-                + "Samen met de bril neemt het schade weg.", start, 180, 0, s -> s
+        add("Stark suit", "Het harnas: borstplaat, broek en laarzen (rood en goud). Een eigen 3D-model: "
+                + "een reactor die uitsteekt en blauw gloeit (ook in het donker), borst- en buikplaten, een "
+                + "rugplaat met straalopeningen, schouderplaten, onderarmbeschermers, kniestukken en "
+                + "laarzen met een gouden neus en een zool. Samen met de bril neemt het schade weg.",
+                start, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::wearSuit)
                 .camera(10, CameraType.THIRD_PERSON_FRONT)
                 .look(40, 150, 5)

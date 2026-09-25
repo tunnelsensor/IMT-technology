@@ -1117,7 +1117,91 @@ def stark_suit():
     fill(layer1, leg["bottom"], seam)
     layer1.putpixel((x + 1, y + 1), glow)
     layer1.putpixel((x + 2, y + 2), glow)
-    save(layer1, "models/armor/stark_layer_1.png")
+
+    # ---------------------------------------------------------------- De 3D-stukken
+    # Het harnas heeft een eigen model (client/suit/StarkSuitModel.java) met extra doosjes bovenop
+    # het gewone harnas. Die hebben ook een plekje in het plaatje nodig, dus het plaatje wordt
+    # 128x64: links boven het oude harnas, de rest voor de extra stukken. De getallen (u, v) en
+    # maten (breedte, hoogte, diepte) moeten precies kloppen met StarkSuitModel.
+    def part(im, u, v, w, h, d, side, top=None, bottom=None, front=None):
+        f = faces(u, v, w, h, d)
+        for n in ("right", "left", "back", "front"):
+            fill(im, f[n], side)
+        fill(im, f["top"], top or side)
+        fill(im, f["bottom"], bottom or side)
+        if front:
+            fill(im, f["front"], front)
+        return f
+
+    big1 = img(128, 64)
+    big1.paste(layer1, (0, 0))
+    # reactor (3x3x1): donkere ring met een felle kern
+    f = part(big1, 64, 0, 3, 3, 1, seam)
+    x, y, w, h = f["front"]
+    for yy in range(y, y + h):
+        for xx in range(x, x + w):
+            big1.putpixel((xx, yy), glow if (xx - x, yy - y) == (1, 1) else CYAN)
+    big1.putpixel((x, y), seam)
+    big1.putpixel((x + 2, y), seam)
+    big1.putpixel((x, y + 2), seam)
+    big1.putpixel((x + 2, y + 2), seam)
+    # borstplaat (3x4x1), links en rechts dezelfde (gespiegeld)
+    f = part(big1, 72, 0, 3, 4, 1, red_dark, top=red_hi, front=red_hi)
+    shade(big1, f["front"])
+    # buikplaat (6x1x1), drie keer onder elkaar
+    f = part(big1, 80, 0, 6, 1, 1, gold_dark, top=gold_hi, front=gold)
+    x, y, w, h = f["front"]
+    big1.putpixel((x + 2, y), gold_dark)
+    big1.putpixel((x + 3, y), gold_dark)
+    # rugplaat (6x7x1): rood met een naad rondom en een gouden streep
+    f = part(big1, 96, 0, 6, 7, 1, red_dark, top=red_hi)
+    x, y, w, h = f["back"]
+    fill(big1, f["back"], red)
+    for xx in range(x, x + w):
+        big1.putpixel((xx, y), red_hi)
+        big1.putpixel((xx, y + h - 1), seam)
+    for yy in range(y + 1, y + h - 1):
+        big1.putpixel((x + 2, yy), gold_dark)
+        big1.putpixel((x + 3, yy), gold)
+    # straalopeningen op de rug (2x2x1): donker met een blauw gloeiend puntje
+    f = part(big1, 112, 0, 2, 2, 1, seam)
+    x, y, w, h = f["back"]
+    big1.putpixel((x, y + 1), CYAN_DIM)
+    big1.putpixel((x + 1, y + 1), CYAN_DIM)
+    # schouderplaat (7x3x7): rood, bovenop licht, met een gouden rand onderaan
+    f = part(big1, 64, 16, 7, 3, 7, red, top=red_hi, bottom=red_dark)
+    for n in ("right", "left", "back", "front"):
+        fill(big1, f[n], gold, rows=(2, 3))
+        fill(big1, f[n], red_hi, rows=(0, 1))
+    shade(big1, f["front"])
+    shade(big1, f["back"])
+    # onderarmbeschermer (7x3x7): donkerrood met een gouden rand bovenaan
+    f = part(big1, 92, 16, 7, 3, 7, red_dark, top=gold_hi, bottom=red_dark)
+    for n in ("right", "left", "back", "front"):
+        fill(big1, f[n], gold, rows=(0, 1))
+    shade(big1, f["front"])
+    shade(big1, f["back"])
+    # repulsor in de handpalm (3x1x3): de onderkant gloeit
+    f = part(big1, 64, 28, 3, 1, 3, seam, bottom=CYAN)
+    x, y, w, h = f["bottom"]
+    big1.putpixel((x + 1, y + 1), glow)
+    # laarsschaal (7x4x7): rood met een gouden onderkant
+    f = part(big1, 64, 36, 7, 4, 7, red, top=red_hi, bottom=seam)
+    for n in ("right", "left", "back", "front"):
+        fill(big1, f[n], gold, rows=(2, 4))
+        fill(big1, f[n], gold_hi, rows=(2, 3))
+    shade(big1, f["front"])
+    # neus van de laars (6x3x1): goud
+    f = part(big1, 92, 36, 6, 3, 1, gold_dark, top=gold_hi, front=gold)
+    shade(big1, f["front"])
+    # zool (7x1x7): donker, met een blauwe straalbuis in het midden van de onderkant
+    f = part(big1, 64, 48, 7, 1, 7, seam, top=red_dark, bottom=seam)
+    x, y, w, h = f["bottom"]
+    for dy in range(2, 5):
+        for dx in range(2, 5):
+            big1.putpixel((x + dx, y + dy), CYAN_DIM)
+    big1.putpixel((x + 3, y + 3), glow)
+    save(big1, "models/armor/stark_layer_1.png")
 
     # ================================================================ Laag 2: de broek
     layer2 = img(64, 32)
@@ -1143,7 +1227,25 @@ def stark_suit():
     fill(layer2, leg2["top"], red_dark)
     shade(layer2, leg2["front"])
     shade(layer2, leg2["back"])
-    save(layer2, "models/armor/stark_layer_2.png")
+
+    # De 3D-stukken van de broek (zie hierboven bij laag 1).
+    big2 = img(128, 64)
+    big2.paste(layer2, (0, 0))
+    # kniestuk (4x3x1): goud
+    f = part(big2, 64, 0, 4, 3, 1, gold_dark, top=gold_hi, front=gold)
+    x, y, w, h = f["front"]
+    big2.putpixel((x + 1, y), gold_hi)
+    big2.putpixel((x + 2, y), gold_hi)
+    shade(big2, f["front"])
+    # dijplaat aan de buitenkant (1x4x4): donkerrood met een lichte rand
+    f = part(big2, 76, 0, 1, 4, 4, red_dark, top=red_hi)
+    for n in ("right", "left"):
+        shade(big2, f[n])
+    # gesp van de riem (3x2x1): goud met een blauw lampje
+    f = part(big2, 88, 0, 3, 2, 1, gold_dark, top=gold_hi, front=gold)
+    x, y, w, h = f["front"]
+    big2.putpixel((x + 1, y), CYAN)
+    save(big2, "models/armor/stark_layer_2.png")
 
     # ================================================================ Iconen in je rugzak
     # Borstplaat

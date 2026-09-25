@@ -10,6 +10,7 @@ import com.senne.starktech.client.drone.RaidDroneRenderer;
 import com.senne.starktech.client.holo.HoloTableRenderer;
 import com.senne.starktech.client.shield.DomeRenderer;
 import com.senne.starktech.client.suit.RepulsorHand;
+import com.senne.starktech.client.suit.StarkSuitModel;
 import com.senne.starktech.client.suit.SuitEffects;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.client.voice.VoiceControl;
@@ -45,8 +46,9 @@ public class StarkTechClient {
         modEventBus.addListener(StarkTechClient::registerScreens);
         modEventBus.addListener(StarkTechClient::registerEntityRenderers);
         modEventBus.addListener(StarkTechClient::registerLayerDefinitions);
-        // De gloeiende handpalm op spelers (repulsor).
+        // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(RepulsorHand::addLayers);
+        modEventBus.addListener(StarkSuitModel::registerExtensions);
 
         // Gebeurtenissen tijdens het spelen
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTick);
@@ -98,6 +100,8 @@ public class StarkTechClient {
 
     private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(DroneModel.LAYER, DroneModel::createBodyLayer);
+        event.registerLayerDefinition(StarkSuitModel.OUTER, StarkSuitModel::createOuter);
+        event.registerLayerDefinition(StarkSuitModel.INNER, StarkSuitModel::createInner);
     }
 
 

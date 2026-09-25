@@ -244,6 +244,18 @@ public final class VisualCheck {
             t.shot(40, "40_suit_front");
             t.camera(0, CameraType.THIRD_PERSON_BACK);
             t.shot(20, "41_suit_back");
+            // Van dichtbij (ingezoomd, zonder HUD): de 3D-stukken van het harnas.
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.view(0, -4.5, -60, -4.5, 200, 0);
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(10, "41b_suit_close_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(10, "41c_suit_close_back");
+            t.view(0, -4.5, -60, -4.5, 120, 0);
+            t.shot(10, "41d_suit_close_side");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.camera(0, CameraType.FIRST_PERSON);
 
             // --- De repulsor: aanzetten, dan de aanvalsknop "indrukken" zoals een speler dat doet

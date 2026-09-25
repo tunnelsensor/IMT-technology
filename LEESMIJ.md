@@ -245,6 +245,10 @@ helm: die plek is van de bril, en dat is de bedoeling — **zonder de bril doet 
 bijzonders**. Het is dan gewoon een goed pak metaal. De bril levert de stroom; het harnas heeft
 geen eigen batterij.
 
+Het harnas heeft een eigen 3D-vorm: een reactor op je borst die blauw gloeit (ook 's nachts),
+borst- en buikplaten, een rugplaat, schouderplaten, onderarmbeschermers, kniestukken en
+laarzen met een gouden neus.
+
 Met de bril op en energie erin:
 
 - **Schade**: elk gedragen stuk haalt 20% van elke klap weg, dus met het hele pak 60% — bovenop

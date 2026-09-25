@@ -8,9 +8,7 @@ import com.senne.starktech.client.DroneCamera;
 import com.senne.starktech.client.RepulsorControl;
 import com.senne.starktech.suit.StarkSuitItem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -69,8 +67,8 @@ public final class RepulsorHand {
     /** Waren we de vorige keer al aan het richten? Zo zien we wanneer je arm omhoog moet. */
     private static boolean wasArmed;
     private static float armedAt;
-    /** Het armstuk van het harnas (een gewoon armor-model), pas gemaakt als we het nodig hebben. */
-    private static HumanoidModel<AbstractClientPlayer> suitModel;
+    /** De extra 3D-stukken op een arm van het harnas (zie StarkSuitModel). */
+    private static final String[] ARM_EXTRAS = {"pauldron", "gauntlet", "repulsor"};
 
     // ================================================================ Wie richt er?
 
@@ -146,6 +144,10 @@ public final class RepulsorHand {
         public void render(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
+            boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof StarkSuitItem;
+            if (suit && !player.isInvisible()) {
+                reactor(pose, buffers.getBuffer(SuitEffects.GLOW), ageInTicks);
+            }
             float glow = glow(player, partialTick, ageInTicks);
             if (glow <= 0) {
                 return;
@@ -154,8 +156,23 @@ public final class RepulsorHand {
             ModelPart part = arm == HumanoidArm.RIGHT ? getParentModel().rightArm : getParentModel().leftArm;
             pose.pushPose();
             part.translateAndRotate(pose);
-            boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof StarkSuitItem;
             palm(pose, buffers.getBuffer(SuitEffects.GLOW), arm, slim, suit, glow);
+            pose.popPose();
+        }
+
+        /** De reactor op de borst: een blauw licht dat zacht klopt, ook in het donker. */
+        private void reactor(PoseStack pose, VertexConsumer out, float ageInTicks) {
+            pose.pushPose();
+            getParentModel().body.translateAndRotate(pose);
+            // Net voor de voorkant van de reactor (die steekt uit tot 4 pixels voor de borst), en
+            // gedraaid zodat onze schijfjes (die plat liggen) rechtop naar voren kijken.
+            pose.translate(0, 3 / 16f, -4.05f / 16f);
+            pose.mulPose(Axis.XP.rotationDegrees(90));
+            Matrix4f m = pose.last().pose();
+            float pulse = 0.85f + 0.15f * Mth.sin(ageInTicks * 0.15f);
+            SuitEffects.disc(m, out, Vec3.ZERO, 0.16f, 0x2F9BFF, 0.22f * pulse);
+            SuitEffects.disc(m, out, Vec3.ZERO, 0.075f, 0x6FE0FF, 0.7f * pulse);
+            SuitEffects.disc(m, out, Vec3.ZERO, 0.035f, 0xF2FCFF, pulse);
             pose.popPose();
         }
     }
@@ -214,15 +231,15 @@ public final class RepulsorHand {
         pose.translate(shoulder.x, shoulder.y, shoulder.z);
         pose.mulPose(turn);
         pose.scale(ARM_SCALE, ARM_SCALE, ARM_SCALE);
-        // De onderarm: gewoon je arm.
-        drawArm(mc, player, arm, suit, pose, buffers, light);
+        // De onderarm: gewoon je arm (met de onderarmbeschermer van het harnas).
+        drawArm(mc, player, arm, suit, false, pose, buffers, light);
         // De hand: nog eens je arm, maar half zo lang, bij de pols omhoog geknikt (een kwartslag),
         // zodat de handpalm naar voren wijst. Bij een schot knikt hij nog wat verder door.
         pose.pushPose();
         pose.translate(0, WRIST, -1 / 16f);
         pose.mulPose(Axis.XP.rotationDegrees(-90 - 20 * recoil));
         pose.scale(1, 0.5f, 1);
-        drawArm(mc, player, arm, suit, pose, buffers, light);
+        drawArm(mc, player, arm, suit, true, pose, buffers, light);
         pose.popPose();
         pose.popPose();
 
@@ -235,9 +252,13 @@ public final class RepulsorHand {
         halo(pose, buffers.getBuffer(SuitEffects.GLOW_ON_TOP), centre, glow(player, partialTick, time));
     }
 
-    /** Je arm met alles erop: huid, mouw van je skin, en de mouw van het harnas als je dat draagt. */
-    private static void drawArm(Minecraft mc, LocalPlayer player, HumanoidArm arm, boolean suit, PoseStack pose,
-                                MultiBufferSource buffers, int light) {
+    /**
+     * Je arm met alles erop: huid, mouw van je skin, en de mouw van het harnas als je dat draagt.
+     * Voor de hand ({@code hand}) laten we de extra stukken van het harnas weg (schouderstuk,
+     * onderarmbeschermer en repulsor): die horen bij de arm, niet bij een platgedrukte hand.
+     */
+    private static void drawArm(Minecraft mc, LocalPlayer player, HumanoidArm arm, boolean suit, boolean hand,
+                                PoseStack pose, MultiBufferSource buffers, int light) {
         boolean right = arm == HumanoidArm.RIGHT;
         PlayerRenderer renderer = (PlayerRenderer) mc.getEntityRenderDispatcher().getRenderer(player);
         PlayerModel<AbstractClientPlayer> model = renderer.getModel();
@@ -248,9 +269,15 @@ public final class RepulsorHand {
                     buffers.getBuffer(RenderType.entityTranslucent(skin)), light);
         }
         if (suit) {
-            HumanoidModel<AbstractClientPlayer> suitArm = suitModel(mc);
-            drawPart(pose, right ? suitArm.rightArm : suitArm.leftArm,
-                    buffers.getBuffer(RenderType.armorCutoutNoCull(SUIT_TEXTURE)), light);
+            ModelPart suitArm = right ? StarkSuitModel.outer().rightArm : StarkSuitModel.outer().leftArm;
+            for (String extra : ARM_EXTRAS) {
+                // De repulsor zit aan het eind van de arm, precies waar de hand zit: weglaten.
+                suitArm.getChild(extra).visible = !hand && !extra.equals("repulsor");
+            }
+            drawPart(pose, suitArm, buffers.getBuffer(RenderType.armorCutoutNoCull(SUIT_TEXTURE)), light);
+            for (String extra : ARM_EXTRAS) {
+                suitArm.getChild(extra).visible = true;
+            }
         }
     }
 
@@ -287,17 +314,15 @@ public final class RepulsorHand {
     /** Teken één stuk van een model, recht en zonder verschuiving (wij hebben het al neergezet). */
     private static void drawPart(PoseStack pose, ModelPart part, VertexConsumer out, int light) {
         PartPose saved = part.storePose();
+        // Het harnasmodel wordt gedeeld door borst en laarzen; na de laarzen staan de armen op
+        // onzichtbaar. Voor je eigen hand even zichtbaar maken.
+        boolean wasVisible = part.visible;
+        part.visible = true;
         part.setPos(0, 0, 0);
         part.setRotation(0, 0, 0);
         part.render(pose, out, light, OverlayTexture.NO_OVERLAY);
         part.loadPose(saved);
-    }
-
-    private static HumanoidModel<AbstractClientPlayer> suitModel(Minecraft mc) {
-        if (suitModel == null) {
-            suitModel = new HumanoidModel<>(mc.getEntityModels().bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR));
-        }
-        return suitModel;
+        part.visible = wasVisible;
     }
 
     // ================================================================ De gloed
@@ -321,6 +346,5 @@ public final class RepulsorHand {
 
     public static void reset() {
         wasArmed = false;
-        suitModel = null;
     }
 }
