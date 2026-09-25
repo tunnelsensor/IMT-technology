@@ -422,6 +422,10 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   structuurblok en sla hem op als `starktech:stark_tower`.
 - **Het satellietwrak verbouwen**: `python tools/generate_crash_site.py` (of in het spel opslaan
   als `starktech:crashed_satellite`).
+- **Komen de structuren echt in de wereld?** `gradlew runStructureCheck` start een server met
+  een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower en het
+  dichtstbijzijnde satellietwrak, en schrijft in het log (`[structures]`) waar ze liggen, waar de
+  kisten staan en hoe je er met `/tp` komt. Daarna stopt hij vanzelf.
 - **Tests**: `gradlew runGameTestServer` — 62 tests over de toren en zijn kluis, het
   satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de

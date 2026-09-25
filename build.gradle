@@ -84,6 +84,16 @@ neoForge {
             programArguments.addAll '--width', '1280', '--height', '720'
         }
 
+        // Komen onze structuren echt in een gewone wereld? Start een server, zoekt de
+        // dichtstbijzijnde Stark Tower en het dichtstbijzijnde satellietwrak, schrijft in het log
+        // waar ze liggen, en stopt weer (zie gametest/StructureCheck.java).
+        structureCheck {
+            server()
+            gameDirectory = project.file('run-structures')
+            programArgument '--nogui'
+            systemProperty 'starktech.structurecheck', 'true'
+        }
+
         // De showcase: alle functies één voor één, gestuurd vanuit tools/showcase.py
         // (zie client/dev/Showcase.java). Ook in een eigen map.
         showcase {

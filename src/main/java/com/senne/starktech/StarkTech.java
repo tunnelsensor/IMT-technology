@@ -76,6 +76,8 @@ public class StarkTech {
 
         // Automatische tests (draaien alleen met "gradlew runGameTestServer").
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(StarkTechGameTests.class));
+        // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
+        com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 
         // Gebeurtenissen tijdens het spelen.
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerTick);
