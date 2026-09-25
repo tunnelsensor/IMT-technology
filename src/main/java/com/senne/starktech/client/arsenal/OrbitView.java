@@ -258,6 +258,15 @@ public final class OrbitView {
      * panelen wordt hij breder, zodat je ziet dat hij gegroeid is.
      */
     public void drawSatellite(PoseStack pose, MultiBufferSource buffers, SatelliteUpgrades upgrades, float size) {
+        drawSatellite(pose, buffers, upgrades, size, 0);
+    }
+
+    /**
+     * De satelliet als HOLOGRAM (voor de holotafel): zijn eigen plaatje, maar doorschijnend,
+     * lichtgevend en gekleurd met {@code argb} (0xAARRGGBB). Met {@code argb} 0 gewoon echt.
+     */
+    public void drawSatellite(PoseStack pose, MultiBufferSource buffers, SatelliteUpgrades upgrades, float size,
+                              int argb) {
         SatelliteModel.showUpgrades(satellite, upgrades);
         pose.pushPose();
         // Modellen staan "op hun kop" (y naar beneden): omdraaien. Minecraft rekent de pixels van
@@ -265,6 +274,12 @@ public final class OrbitView {
         // dus BASE_WIDTH / 16 blok, en die breedte maken we {@code size}.
         float k = size / (SatelliteModel.BASE_WIDTH / 16.0f);
         pose.scale(-k, -k, k);
+        if (argb != 0) {
+            satellite.render(pose, buffers.getBuffer(RenderType.entityTranslucentEmissive(SATELLITE)), LIGHT,
+                    OverlayTexture.NO_OVERLAY, argb);
+            pose.popPose();
+            return;
+        }
         satellite.render(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(SATELLITE)), LIGHT, OverlayTexture.NO_OVERLAY);
         satellite.render(pose, buffers.getBuffer(RenderType.eyes(SATELLITE_LIGHTS)), LIGHT, OverlayTexture.NO_OVERLAY);
         pose.popPose();
@@ -275,6 +290,15 @@ public final class OrbitView {
      * Ook gebruikt voor de grote drone in het inspectievakje.
      */
     public void drawDrone(PoseStack pose, MultiBufferSource buffers, ArsenalDrone d, float seconds, float size) {
+        drawDrone(pose, buffers, d, seconds, size, 0);
+    }
+
+    /**
+     * Een drone als HOLOGRAM (voor de holotafel): doorschijnend en gekleurd met {@code argb}
+     * (0xAARRGGBB), zonder roet en lampjes. Met {@code argb} 0 gewoon echt.
+     */
+    public void drawDrone(PoseStack pose, MultiBufferSource buffers, ArsenalDrone d, float seconds, float size,
+                          int argb) {
         float damage = 1.0f - d.healthFraction();
         int seed = d.id().hashCode();
         float age = seconds * 20 + Math.floorMod(seed, 100);
@@ -285,6 +309,12 @@ public final class OrbitView {
         float k = size / 0.75f;
         pose.scale(-k, -k, k);
         pose.translate(0, -20 / 16.0f, 0); // de romp zit 20 pixels hoog in het model
+        if (argb != 0) {
+            drone.renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucentEmissive(DRONE)), LIGHT,
+                    OverlayTexture.NO_OVERLAY, argb);
+            pose.popPose();
+            return;
+        }
         drone.renderToBuffer(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(DRONE)), LIGHT,
                 OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         ResourceLocation soot = DamageLayer.overlay(damage);

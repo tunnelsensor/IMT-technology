@@ -288,7 +288,7 @@ hoe ver de kaart reikt (24, 48, 96 of 160 blokken), hoe groot het hologram is (k
 groot) en of hij ronddraait. Je ziet het hologram achter het scherm meteen veranderen, dus er
 is geen opslaan-knop. Met **Take off** haal je het voorwerp weer van tafel.
 
-Drie standen:
+Vier standen:
 
 - **Map** — een reliëfkaart van 96 bij 96 blokken rond de tafel: hoe hoger de grond, hoe hoger
   en feller het staafje. Je waypoints staan er als gekleurde paaltjes in, en het leeft:
@@ -297,8 +297,12 @@ Drie standen:
   resultaat erboven. Mag een onderdeel uit een hele groep komen (bijvoorbeeld "een ijzerstaaf"),
   dan wisselen de mogelijkheden elkaar af. Bestaat er geen recept (zoals bij de bril), dan zie
   je een rood kruis.
-- **Arsenal** — je drones cirkelen om een bolletje. Groen is heel, oranje heeft een tik gehad,
-  rood is bijna op; een drone die onderweg is knippert.
+- **Arsenal** — je drones cirkelen om een bolletje, als kleine hologrammen van het echte
+  drone-model. Groen is heel, oranje heeft een tik gehad, rood is bijna op; een drone die
+  onderweg is knippert.
+- **Satellite** — je satelliet groot als hologram, met alle onderdelen van zijn upgrades
+  (langere zonnepanelen, kanon, raketkokers, grotere schotel...). De ring eronder heeft zes
+  stukken, één per upgrade, met tien streepjes: fel wat je al hebt.
 
 Zonder bril doet de tafel niets.
 

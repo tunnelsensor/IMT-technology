@@ -179,6 +179,33 @@ public final class VisualCheck {
             t.close(0);
             onTable(t, table -> table.setMode(HoloMode.ARSENAL));
             t.shot(30, "05_holo_arsenal");
+            // Ingezoomd (zonder HUD), om de drones te kunnen zien.
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.shot(10, "05a_holo_arsenal_close");
+            onTable(t, table -> table.setMode(HoloMode.SATELLITE));
+            t.view(0, 0.5, -60, -3.2, 0, 4); // de satelliet hangt hoger: iets omhoog kijken
+            t.shot(30, "05b_holo_satellite_close");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.shot(10, "05b_holo_satellite");
+            t.onServer(0, player -> {
+                SatelliteUpgrades upgrades = SatelliteUpgrades.START;
+                for (SatelliteUpgrade upgrade : SatelliteUpgrade.values()) {
+                    upgrades = upgrades.with(upgrade, SatelliteUpgrade.MAX_LEVEL);
+                }
+                player.setData(ModAttachments.SATELLITE, upgrades);
+            });
+            t.shot(30, "05c_holo_satellite_max");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.view(0, 0.5, -60, -3.2, 0, 4);
+            t.shot(10, "05d_holo_satellite_max_close");
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> player.setData(ModAttachments.SATELLITE, SatelliteUpgrades.START));
             onTable(t, table -> {
                 table.setMode(HoloMode.MAP);
                 table.setScale(2);

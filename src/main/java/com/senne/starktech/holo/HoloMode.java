@@ -12,7 +12,9 @@ public enum HoloMode implements StringRepresentable {
     /** Het recept van het voorwerp dat je in de tafel legt. */
     BLUEPRINT("blueprint"),
     /** Je drones in hun baan, met hoe heel ze nog zijn. */
-    ARSENAL("arsenal");
+    ARSENAL("arsenal"),
+    /** Je satelliet, groot, met alle onderdelen van zijn upgrades en een ring met hun niveaus. */
+    SATELLITE("satellite");
 
     private final String name;
 

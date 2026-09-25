@@ -566,10 +566,25 @@ final class ShowcaseFeatures {
                 .step(10, () -> rightClick(HOLO_TABLE))
                 .pause(160));
 
-        add("Holo table: arsenal", "Je drones als stipjes rond een bolletje; de kleur is hun schade.",
-                atTable, 0, 22, s -> s
+        add("Holo table: arsenal", "Je drones als kleine hologrammen van het echte drone-model, rond een "
+                + "bolletje en met hun neus in de vliegrichting. De kleur is hun schade (groen heel, oranje "
+                + "geraakt, rood bijna kapot); een drone die buiten is, knippert.", atTable, 0, 22, s -> s
                 .step(5, () -> holo(HoloActionPayload.Op.MODE, HoloMode.ARSENAL.ordinal()))
                 .pause(160)
+                .step(0, () -> holo(HoloActionPayload.Op.MODE, HoloMode.MAP.ordinal())));
+
+        add("Holo table: satellite", "De vierde stand: je satelliet groot als hologram, met de onderdelen "
+                + "van zijn upgrades. De ring eronder heeft zes stukken (één per upgrade) met tien streepjes: "
+                + "fel wat je hebt. Eerst de satelliet van het begin, dan alles op niveau 6, dan alles op 10 "
+                + "(langere zonnepanelen, kanon, raketkokers, grotere schotel...).", atTable, 0, 22, s -> s
+                .step(5, () -> holo(HoloActionPayload.Op.MODE, HoloMode.SATELLITE.ordinal()))
+                .onServer(0, player -> player.setData(ModAttachments.SATELLITE, SatelliteUpgrades.START))
+                .pause(100)
+                .onServer(0, player -> satelliteAt(player, 6))
+                .pause(90)
+                .onServer(0, player -> satelliteAt(player, 10))
+                .pause(90)
+                .onServer(0, player -> player.setData(ModAttachments.SATELLITE, SatelliteUpgrades.START))
                 .step(0, () -> holo(HoloActionPayload.Op.MODE, HoloMode.MAP.ordinal())));
 
         add("Holo table: settings", "Rechtsklik met een lege hand: het instelscherm. Kleur, bereik en "

@@ -5,12 +5,15 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.EdithArsenal;
+import com.senne.starktech.client.arsenal.OrbitView;
 import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.holo.HoloTableBlock;
 import com.senne.starktech.holo.HoloTableBlockEntity;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.satellite.SatelliteUpgrade;
+import com.senne.starktech.satellite.SatelliteUpgrades;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +46,14 @@ import org.joml.Matrix4f;
  * eruit hoort te zien: doorzichtig, lichtgevend en zonder textuur. De hele projectie draait
  * langzaam rond, zodat je hem van alle kanten kunt bekijken zonder zelf te lopen.
  *
- * Drie standen, zie {@link HoloMode}:
+ * Vier standen, zie {@link HoloMode}:
  * - KAART: een reliëfkaart van de omgeving, met je waypoints, spelers en vijanden erop
  * - BOUWTEKENING: het recept van het voorwerp dat je op de tafel legde
  * - ARSENAAL: je drones die om een bolletje cirkelen, met hun schade in de kleur
+ * - SATELLIET: je satelliet groot in beeld, met de onderdelen van zijn upgrades
+ *
+ * De drones en de satelliet zijn hun echte 3D-modellen (dezelfde als in het arsenaalscherm),
+ * maar doorschijnend en in de kleur van het hologram.
  */
 public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEntity> {
     /** Hoe groot het hologram is (in blokken, van rand tot rand). */
@@ -57,6 +64,8 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
     private static final int VIEW_DISTANCE = 24;
 
     private final ItemRenderer items;
+    /** Tekent de echte modellen van drones en de satelliet (gedeeld met het arsenaalscherm). */
+    private OrbitView models;
     /**
      * Een kaart per tafel. Er is maar één renderer voor alle holotafels samen, dus met één
      * gedeelde kaart gooiden twee tafels elkaars kaart elke frame weg en rekenden ze hem
@@ -114,7 +123,8 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
         switch (table.mode()) {
             case MAP -> renderMap(table, level, poseStack, lines, rgb, time);
             case BLUEPRINT -> renderBlueprint(table, level, poseStack, buffers, lines, rgb);
-            case ARSENAL -> renderArsenal(poseStack, lines, rgb, time);
+            case ARSENAL -> renderArsenal(poseStack, buffers, lines, rgb, time);
+            case SATELLITE -> renderSatellite(poseStack, buffers, lines, rgb, time);
         }
         poseStack.popPose();
     }
@@ -279,8 +289,13 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
 
     // ---------------------------------------------------------------- Arsenaal
 
-    /** Je drones cirkelen om een bolletje; de kleur zegt hoe heel ze zijn. */
-    private void renderArsenal(PoseStack poseStack, VertexConsumer lines, int rgb, float time) {
+    /**
+     * Je drones cirkelen om een bolletje, als kleine hologrammen van het echte model; de kleur
+     * zegt hoe heel ze zijn. Eerst alle lijnen, dan pas de modellen: een model tekenen sluit de
+     * lijnen af (dan mogen we er niet meer in schrijven).
+     */
+    private void renderArsenal(PoseStack poseStack, MultiBufferSource buffers, VertexConsumer lines, int rgb,
+                               float time) {
         Player player = Minecraft.getInstance().player;
         if (player == null) {
             return;
@@ -298,6 +313,8 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
         }
         // Meer dan dit tekenen we niet: anders is het één wolk en zie je niets meer.
         int shown = Math.min(drones.size(), 48);
+        // Hoe groter de zwerm, hoe kleiner elke drone, anders botsen ze in het hologram.
+        float size = shown <= 12 ? 0.2f : shown <= 24 ? 0.15f : 0.11f;
         for (int i = 0; i < shown; i++) {
             ArsenalDrone drone = drones.get(i);
             // Elke drone een eigen baan: een andere hoek, hoogte en snelheid.
@@ -309,9 +326,84 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
             int colour = healthColour(drone.healthFraction());
             // Een drone die onderweg is knippert, zodat je ziet dat hij niet klaar hangt.
             int alpha = drone.state() == ArsenalDrone.State.DEPLOYED
-                    ? (int) (120 + 110 * Mth.sin(time / 5.0f + i)) : 255;
-            marker(poseStack, lines, x, y, z, 0.05f, colour, Mth.clamp(alpha, 40, 255));
+                    ? (int) (120 + 110 * Mth.sin(time / 5.0f + i)) : 220;
+            poseStack.pushPose();
+            poseStack.translate(x, y, z);
+            // Met de neus in de richting waarin hij vliegt.
+            poseStack.mulPose(Axis.YP.rotation(-angle));
+            models().drawDrone(poseStack, buffers, drone, time / 20.0f, size,
+                    (Mth.clamp(alpha, 40, 255) << 24) | colour);
+            poseStack.popPose();
         }
+    }
+
+    // ---------------------------------------------------------------- Satelliet
+
+    /**
+     * Je satelliet, groot en langzaam draaiend, met de onderdelen van zijn upgrades (langere
+     * zonnepanelen, kanon, raketkokers, ...). Eronder een ring met zes stukken, één per upgrade:
+     * elk streepje is een niveau, fel als je het hebt. Een scanlijn glijdt op en neer, zoals bij
+     * een echt hologram.
+     */
+    private void renderSatellite(PoseStack poseStack, MultiBufferSource buffers, VertexConsumer lines, int rgb,
+                                 float time) {
+        Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        SatelliteUpgrades upgrades = player.getData(ModAttachments.SATELLITE);
+        upgradeRing(poseStack, lines, upgrades, rgb);
+        float scan = 0.28f + Mth.sin(time / 24.0f) * 0.3f;
+        ring(poseStack, lines, SIZE * 0.5f, scan, rgb, 80);
+
+        poseStack.pushPose();
+        poseStack.translate(0, 0.42f, 0);
+        // Een beetje schuin, zodat je ook de onderkant (het kanon) en de schotel ziet.
+        poseStack.mulPose(Axis.XP.rotationDegrees(18));
+        models().drawSatellite(poseStack, buffers, upgrades, SIZE * 0.72f, 0xC8000000 | lighten(rgb, 0.25f));
+        poseStack.popPose();
+    }
+
+    /**
+     * Een ring onder de satelliet, in zes stukken (één per upgrade). Elk stuk heeft tien
+     * streepjes voor de tien niveaus: fel wat je hebt, zwak wat nog kan.
+     */
+    private void upgradeRing(PoseStack poseStack, VertexConsumer lines, SatelliteUpgrades upgrades, int rgb) {
+        float inner = SIZE * 0.42f;
+        float outer = SIZE * 0.5f;
+        float y = -0.08f;
+        SatelliteUpgrade[] all = SatelliteUpgrade.values();
+        double part = Math.PI * 2 / all.length;
+        for (int u = 0; u < all.length; u++) {
+            int level = upgrades.level(all[u]);
+            for (int l = 0; l < SatelliteUpgrade.MAX_LEVEL; l++) {
+                // Een kleine opening tussen de stukken, zodat je ze telt.
+                double a = u * part + part * (0.08 + 0.84 * (l + 0.5) / SatelliteUpgrade.MAX_LEVEL);
+                float cos = (float) Math.cos(a);
+                float sin = (float) Math.sin(a);
+                boolean have = l < level;
+                line(poseStack, lines, cos * inner, y, sin * inner, cos * outer, y, sin * outer,
+                        have ? 0xFFFFFF : rgb, have ? 235 : 60);
+            }
+        }
+    }
+
+    private OrbitView models() {
+        if (models == null) {
+            models = new OrbitView();
+        }
+        return models;
+    }
+
+    /**
+     * Een kleur lichter maken ({@code amount} 0 = zoals hij is, 1 = wit): het plaatje van het
+     * model wordt met deze kleur vermenigvuldigd, en met de pure kleur werd het te donker.
+     */
+    private static int lighten(int rgb, float amount) {
+        int r = (int) Mth.lerp(amount, (rgb >> 16) & 0xFF, 255);
+        int g = (int) Mth.lerp(amount, (rgb >> 8) & 0xFF, 255);
+        int b = (int) Mth.lerp(amount, rgb & 0xFF, 255);
+        return (r << 16) | (g << 8) | b;
     }
 
     /** Groen als hij heel is, oranje als hij een tik heeft, rood als hij bijna op is. */
