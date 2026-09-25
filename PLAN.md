@@ -283,7 +283,13 @@ kleine dingen, dan de grote.
       zodat je het kanon en de schotel ziet, en een ring met zes stukken van tien streepjes
       voor de niveaus), de drones in hun schadekleur met de neus in de vliegrichting. Nieuwe
       showcase-functie "Holo table: satellite"; close-ups met `-Ponly=holo` (`05a` t/m `05d`).
-- [ ] Zonnepaneel en warmtegenerator een mooier 3D-model
+- [x] Zonnepaneel en warmtegenerator een mooier 3D-model — `7c527b8`
+      Zonnepaneel: voetplaat, paaltje met scharnier en een schuin paneel (naar het zuiden) met
+      cellen, aluminium rand en geribde achterkant. Warmtegenerator: sokkel, kast, deksel met
+      luchtrooster, vier koelribben per kant, twee koperen pijpen achter en voorin een rooster.
+      Hij heeft nu een voorkant (naar je toe bij plaatsen) en gloeit alleen als hij warmte
+      opwekt (dan ook licht); de test van de generator controleert dat. De modellen maakt
+      `tools/generate_block_models.py`; screenshots met `-Ponly=models`.
 - [ ] Stark Tower mooier, overal meer detail
 
 ### 3. Meer in de wereld
