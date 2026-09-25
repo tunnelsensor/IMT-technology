@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 62 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 67 functies één voor één zien (of een
+**Stand van zaken:** 63 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 69 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -420,8 +420,14 @@ wilt. Eerst de kleine dingen, dan de grote.
         bunker de weg naar de nieuwe tech.
 - [ ] De Stark Tower verder uitbreiden (nog te bespreken)
 - [ ] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
-  - [ ] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien
-  - [ ] **Drone-formaties** — je escorte in een vorm: schild om je heen, pijl, cirkel
+  - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
+        Tot 16 blokken opzij en 48 diep, als gekleurde blokjes in een doorzichtig blok aarde,
+        in de kleuren van de ertsscanner (diamant en smaragd knipperen, kolen en koper zwakker).
+        Het holotafelscherm zet de vijf standen nu in twee rijen, anders pasten de namen niet.
+  - [x] **Drone-formaties** — je escorte in een vorm: schild om je heen, pijl, cirkel — `065664e`
+        G > Drones > Formation wisselt tussen Orbit (zoals altijd), Shield (snel draaiende ring
+        dicht om je heen), Arrow (een V schuin achter je die meedraait) en Circle (wijde ring).
+        In Shield en Arrow blijven ze in formatie als ze schieten; de bril onthoudt de keuze.
   - [ ] **Hydra-onderdeel** (het item uit de bunker) en **Hydra-soldaten**
   - [ ] **Mini-raketten** uit het harnas: een salvo dat je gemarkeerde doelwitten (of waar je
         naar kijkt) volgt; kost bril-energie en heeft een wachttijd. Werkt met het hele harnas
