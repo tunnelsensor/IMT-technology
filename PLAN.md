@@ -290,7 +290,7 @@ kleine dingen, dan de grote.
       Hij heeft nu een voorkant (naar je toe bij plaatsen) en gloeit alleen als hij warmte
       opwekt (dan ook licht); de test van de generator controleert dat. De modellen maakt
       `tools/generate_block_models.py`; screenshots met `-Ponly=models`.
-- [x] Stark Tower mooier, overal meer detail — `COMMIT`
+- [x] Stark Tower mooier, overal meer detail — `23d7f84`
       Onderweg gevonden en gerepareerd: het STARK-logo miste de bovenste rij van elke letter
       (het terras erboven overschreef hem), en er hing nergens een plafondlamp (de vloer erboven
       overschreef ze), dus binnen was het donker. De ladder liep buiten langs de gevel en vanaf
