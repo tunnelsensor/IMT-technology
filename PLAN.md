@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 61 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 66 functies één voor één zien (of een
+**Stand van zaken:** 62 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 67 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -398,6 +398,22 @@ wilt. Eerst de kleine dingen, dan de grote.
 ### 4. Meer in de wereld
 
 - [ ] Meer structuren
+  - [x] **Neergestorte Stark-satelliet** — `2510e03`, controle `4629359`
+        Een oude Stark-satelliet uit zijn baan gevallen: een krater van zo'n 25 blokken met
+        verschroeide grond, opgeworpen aarde en de voor waar hij binnenkwam; in het midden de
+        opengescheurde romp (de reactor gloeit nog), een zonnepaneel dat schuin omhoog steekt,
+        een afgebroken paneel, de schotel op de helling en rookende brokstukken. In de romp de
+        **zwarte doos** met wat de satelliet-upgrades nodig hebben (netherite, diamanten, goud,
+        Stark-chips, soms een upgrade of drone), eromheen kratten met schroot. In vlaktes,
+        woestijnen, savannes, badlands, bossen, taiga's en sneeuwvlaktes; hij ligt 8 blokken in
+        de grond, zodat de krater echt is uitgegraven. **Bewaakt**: kom je er met de bril, dan
+        duiken er raiddrones op je af (hooguit eens per 10 minuten). Bouwscript
+        `tools/generate_crash_site.py`, screenshots `-Ponly=crash`, showcase "Crashed satellite".
+        Nieuw: `gradlew runStructureCheck` kijkt in een echte wereld of de structuren er komen
+        (beide gevonden, met al hun kisten, in een savanne en een berkenbos).
+        Aannames (zeg het als je het anders wilt): de buit, hoe vaak hij voorkomt (ongeveer even
+        vaak als de toren) en de raiddrones als bewaking.
+  - [ ] Hydra-bunker (uit de ideeënlijst; nog te bespreken wat erin moet)
 - [ ] De Stark Tower verder uitbreiden
 - [ ] Meer high tech in het algemeen
 
@@ -475,8 +491,8 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 - Betere foutmeldingen bij Spotify en de stem-installatie
 
 **Wereld**
-- Een tweede soort structuur met de onderdelen voor de volgende fase (Hydra-bunker, neergestorte
-  satelliet)
+- Een tweede soort structuur met de onderdelen voor de volgende fase (Hydra-bunker; de
+  neergestorte satelliet is gebouwd, zie hoofdstuk 4)
 
 ---
 
