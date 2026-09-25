@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.EdithArsenal;
+import com.senne.starktech.client.OreType;
 import com.senne.starktech.client.arsenal.OrbitView;
 import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.holo.HoloTableBlock;
@@ -72,6 +73,11 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
      * steeds opnieuw uit.
      */
     private final Map<BlockPos, HoloMapData> maps = new HashMap<>();
+    /** Idem voor de ertsen (stand "Ores"), ook per tafel. */
+    private final Map<BlockPos, HoloOreData> ores = new HashMap<>();
+    /** Het blok aarde van de ertsenstand: waar de onderkant zit en hoe hoog het is. */
+    private static final float ORE_FLOOR = -0.25f;
+    private static final float ORE_HEIGHT = 1.0f;
     /**
      * Hoe hoog het reliëf wordt: een hoogteverschil van "1" op de kaart is zoveel blokken.
      * Omlaag minder dan omhoog, want onder het hologram staat de tafel zelf.
@@ -125,6 +131,7 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
             case BLUEPRINT -> renderBlueprint(table, level, poseStack, buffers, lines, rgb);
             case ARSENAL -> renderArsenal(poseStack, buffers, lines, rgb, time);
             case SATELLITE -> renderSatellite(poseStack, buffers, lines, rgb, time);
+            case ORES -> renderOres(table, level, poseStack, lines, rgb, time);
         }
         poseStack.popPose();
     }
@@ -249,6 +256,77 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
             line(poseStack, lines, spot[0], y, spot[1], spot[0], y + 0.08f, spot[1], colour, 160);
             marker(poseStack, lines, spot[0], y + 0.08f, spot[1], pulse, colour, 255);
         }
+    }
+
+    // ---------------------------------------------------------------- Ertsen
+
+    /**
+     * De ertsen onder de tafel: een doorzichtig blok aarde (alleen de ribben), met een zwak rooster
+     * op de hoogte van de tafel, en elk erts als een gekleurd kubusje op zijn plek. Hoe dieper het
+     * zit, hoe lager in het blok. De kleuren zijn die van de ertsscanner; de zeldzame ertsen
+     * (diamant, smaragd, goud...) fel en knipperend, kolen en koper zwakker, anders zie je door
+     * de kolen de diamanten niet.
+     */
+    private void renderOres(HoloTableBlockEntity table, Level level, PoseStack poseStack, VertexConsumer lines,
+                            int rgb, float time) {
+        HoloOreData.Snapshot snapshot = oresFor(table).get(level, table.getBlockPos());
+        float half = SIZE / 2.0f;
+        float perBlockXZ = SIZE / (HoloOreData.RADIUS * 2 + 1);
+        float perBlockY = ORE_HEIGHT / (HoloOreData.ABOVE - snapshot.bottom() + 1);
+        float top = ORE_FLOOR + ORE_HEIGHT;
+        float ground = ORE_FLOOR + (-snapshot.bottom() + 1) * perBlockY;
+
+        box(poseStack, lines, -half, ORE_FLOOR, -half, half, top, half, rgb, 150);
+        // Het maaiveld: een rooster op de hoogte van de tafel, en de tafel zelf als wit puntje.
+        for (int i = -2; i <= 2; i++) {
+            float at = i * half / 2.0f;
+            line(poseStack, lines, at, ground, -half, at, ground, half, rgb, 55);
+            line(poseStack, lines, -half, ground, at, half, ground, at, rgb, 55);
+        }
+        marker(poseStack, lines, 0, ground, 0, 0.06f, 0xFFFFFF, 255);
+        // Noord (-z) aanwijzen, anders weet je bij een draaiend hologram niet welke kant het is.
+        float tip = -half - 0.16f;
+        float back = -half - 0.05f;
+        line(poseStack, lines, -0.06f, top, back, 0, top, tip, 0xFFFFFF, 230);
+        line(poseStack, lines, 0.06f, top, back, 0, top, tip, 0xFFFFFF, 230);
+
+        float cube = perBlockXZ * 0.46f;
+        boolean blink = (int) (time / 8) % 2 == 0;
+        for (HoloOreData.Ore ore : snapshot.ores()) {
+            float x = ore.dx() * perBlockXZ;
+            float z = ore.dz() * perBlockXZ;
+            float y = ORE_FLOOR + (ore.dy() - snapshot.bottom() + 0.5f) * perBlockY;
+            boolean common = ore.type() == OreType.COAL || ore.type() == OreType.COPPER
+                    || ore.type() == OreType.IRON || ore.type() == OreType.OTHER;
+            boolean rare = ore.type() == OreType.DIAMOND || ore.type() == OreType.ANCIENT_DEBRIS
+                    || ore.type() == OreType.EMERALD;
+            int alpha = common ? 90 : rare && blink ? 255 : 210;
+            box(poseStack, lines, x - cube, y - cube, z - cube, x + cube, y + cube, z + cube,
+                    ore.type().color() & 0xFFFFFF, alpha);
+        }
+    }
+
+    /** De twaalf ribben van een doos. */
+    private void box(PoseStack poseStack, VertexConsumer lines, float x0, float y0, float z0,
+                     float x1, float y1, float z1, int rgb, int alpha) {
+        for (float y : new float[] {y0, y1}) {
+            line(poseStack, lines, x0, y, z0, x1, y, z0, rgb, alpha);
+            line(poseStack, lines, x1, y, z0, x1, y, z1, rgb, alpha);
+            line(poseStack, lines, x1, y, z1, x0, y, z1, rgb, alpha);
+            line(poseStack, lines, x0, y, z1, x0, y, z0, rgb, alpha);
+        }
+        line(poseStack, lines, x0, y0, z0, x0, y1, z0, rgb, alpha);
+        line(poseStack, lines, x1, y0, z0, x1, y1, z0, rgb, alpha);
+        line(poseStack, lines, x1, y0, z1, x1, y1, z1, rgb, alpha);
+        line(poseStack, lines, x0, y0, z1, x0, y1, z1, rgb, alpha);
+    }
+
+    /** De ertsen van deze tafel (en ruim op als er heel veel tafels voorbij zijn gekomen). */
+    private HoloOreData oresFor(HoloTableBlockEntity table) {
+        if (ores.size() > 32) {
+            ores.clear();
+        }
+        return ores.computeIfAbsent(table.getBlockPos().immutable(), pos -> new HoloOreData());
     }
 
     // ---------------------------------------------------------------- Bouwtekening

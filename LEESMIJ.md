@@ -317,7 +317,7 @@ hoe ver de kaart reikt (24, 48, 96 of 160 blokken), hoe groot het hologram is (k
 groot) en of hij ronddraait. Je ziet het hologram achter het scherm meteen veranderen, dus er
 is geen opslaan-knop. Met **Take off** haal je het voorwerp weer van tafel.
 
-Vier standen:
+Vijf standen:
 
 - **Map** — een reliëfkaart van 96 bij 96 blokken rond de tafel: hoe hoger de grond, hoe hoger
   en feller het staafje. Je waypoints staan er als gekleurde paaltjes in, en het leeft:
@@ -332,6 +332,9 @@ Vier standen:
 - **Satellite** — je satelliet groot als hologram, met alle onderdelen van zijn upgrades
   (langere zonnepanelen, kanon, raketkokers, grotere schotel...). De ring eronder heeft zes
   stukken, één per upgrade, met tien streepjes: fel wat je al hebt.
+- **Ores** — de ertsen in de grond onder de tafel (tot 16 blokken opzij en 48 diep) als
+  gekleurde blokjes in een doorzichtig blok aarde, in de kleuren van de ertsscanner. Diamanten
+  en smaragden knipperen, kolen en koper zijn zwakker. Het witte puntje is de tafel.
 
 Zonder bril doet de tafel niets.
 

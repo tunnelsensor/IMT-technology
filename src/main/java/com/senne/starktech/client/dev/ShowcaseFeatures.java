@@ -667,6 +667,14 @@ final class ShowcaseFeatures {
                 .onServer(0, player -> player.setData(ModAttachments.SATELLITE, SatelliteUpgrades.START))
                 .step(0, () -> holo(HoloActionPayload.Op.MODE, HoloMode.MAP.ordinal())));
 
+        add("Holo table: ores", "De vijfde stand: de ertsen in de grond onder de tafel, als gekleurde blokjes "
+                + "in een doorzichtig blok aarde (tot 16 blokken opzij en 48 diep). Dezelfde kleuren als de "
+                + "ertsscanner; diamanten en smaragden knipperen, kolen en koper zijn zwakker. Het witte "
+                + "puntje is de tafel, het rooster het maaiveld.", atTable, 0, 22, s -> s
+                .step(5, () -> holo(HoloActionPayload.Op.MODE, HoloMode.ORES.ordinal()))
+                .pause(160)
+                .step(0, () -> holo(HoloActionPayload.Op.MODE, HoloMode.MAP.ordinal())));
+
         add("Holo table: settings", "Rechtsklik met een lege hand: het instelscherm. Kleur, bereik en "
                 + "grootte veranderen meteen achter het scherm.", atTable, 0, 22, s -> s
                 .step(10, () -> rightClick(HOLO_TABLE))

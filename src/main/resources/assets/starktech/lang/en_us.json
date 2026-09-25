@@ -787,6 +787,7 @@
   "holo.starktech.mode.blueprint": "Blueprint",
   "holo.starktech.mode.arsenal": "Arsenal",
   "holo.starktech.mode.satellite": "Satellite",
+  "holo.starktech.mode.ores": "Ores",
   "holo.starktech.blueprint": "Blueprint: %s",
   "holo.starktech.need_glasses": "Without the glasses it is just an expensive table.",
   "screen.starktech.holo": "Holo table",

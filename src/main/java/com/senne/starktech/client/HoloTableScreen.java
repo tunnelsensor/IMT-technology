@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class HoloTableScreen extends Screen {
     private static final int PANEL_W = 300;
-    private static final int PANEL_H = 198;
+    private static final int PANEL_H = 222;
     /** Hoogte van één regel met een knop erin. */
     private static final int ROW = 24;
     private static final int MARGIN = 8;
@@ -82,12 +82,14 @@ public class HoloTableScreen extends Screen {
         return top + 22 + row * ROW;
     }
 
+    /** De standen staan in twee rijen (MODES_PER_ROW per rij), dus de volgende regel is 2. */
     private static final int ROW_MODE = 0;
-    private static final int ROW_COLOUR = 1;
-    private static final int ROW_RANGE = 2;
-    private static final int ROW_SIZE = 3;
-    private static final int ROW_SPIN = 4;
-    private static final int ROW_TABLE = 5;
+    private static final int MODES_PER_ROW = 3;
+    private static final int ROW_COLOUR = 2;
+    private static final int ROW_RANGE = 3;
+    private static final int ROW_SIZE = 4;
+    private static final int ROW_SPIN = 5;
+    private static final int ROW_TABLE = 6;
 
     /** Waar de uitleg en de knop "Done" staan, onderaan. */
     private int footerY() {
@@ -107,20 +109,20 @@ public class HoloTableScreen extends Screen {
         top = Math.max(6, (height - PANEL_H) / 2);
         int valueX = left + VALUE_X;
 
-        // Wat hij laat zien: één knop per stand, de huidige staat uit.
-        int modes = HoloMode.values().length;
-        int modeW = (VALUE_W - (modes - 1) * 4) / modes;
-        int x = valueX;
+        // Wat hij laat zien: één knop per stand, de huidige staat uit. Vijf standen passen niet
+        // naast elkaar (de namen vielen eraf), dus twee rijen.
+        int modeW = (VALUE_W - (MODES_PER_ROW - 1) * 4) / MODES_PER_ROW;
         for (HoloMode mode : HoloMode.values()) {
+            int column = mode.ordinal() % MODES_PER_ROW;
+            int row = ROW_MODE + mode.ordinal() / MODES_PER_ROW;
             Button button = Button.builder(mode.label(), b -> send(HoloActionPayload.Op.MODE, mode.ordinal()))
-                    .bounds(x, rowY(ROW_MODE), modeW, 20).build();
+                    .bounds(valueX + column * (modeW + 4), rowY(row), modeW, 20).build();
             button.active = table.mode() != mode;
             addRenderableWidget(button);
-            x += modeW + 4;
         }
 
         // De kleuren: een rij knopjes met een gekleurd vlakje erin (zie render).
-        x = valueX;
+        int x = valueX;
         for (ShieldColor option : ShieldColor.values()) {
             Button button = Button.builder(Component.empty(),
                             b -> send(HoloActionPayload.Op.COLOUR, option.ordinal()))

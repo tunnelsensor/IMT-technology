@@ -207,6 +207,19 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.onServer(0, player -> player.setData(ModAttachments.SATELLITE, SatelliteUpgrades.START));
+            // De ertsenstand: eerst wat ertsen onder de tafel leggen (de platte wereld heeft er
+            // geen), en lang genoeg wachten tot de tafel opnieuw heeft gekeken.
+            t.onServer(0, player -> oresUnder(player.serverLevel(), TABLE));
+            onTable(t, table -> table.setMode(HoloMode.ORES));
+            t.shot(110, "05e_holo_ores");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(40));
+            t.shot(10, "05f_holo_ores_close");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.open(0, () -> new HoloTableScreen(TABLE));
+            t.shot(20, "05g_holo_screen_ores");
+            t.close(0);
             onTable(t, table -> {
                 table.setMode(HoloMode.MAP);
                 table.setScale(2);
@@ -764,6 +777,24 @@ public final class VisualCheck {
         ServerLevel level = player.serverLevel();
         DevWorld.spawnStill(level, ModEntities.STARK_DRONE.get(), new BlockPos(-1, -59, -14), 180);
         DevWorld.spawnStill(level, ModEntities.RAID_DRONE.get(), new BlockPos(2, -59, -14), 180);
+    }
+
+    /**
+     * Wat ertsen onder de holotafel (de platte wereld heeft er geen): een diamantader, goud,
+     * redstone, lapis, een kluit kolen en wat ijzer, op twee en drie blokken diep.
+     */
+    private static void oresUnder(ServerLevel level, BlockPos table) {
+        int[][] spots = {{3, 2}, {4, 2}, {4, 3}, {-5, 4}, {-6, 4}, {8, -6}, {-9, -3}, {-9, -4}, {-10, -3},
+                {12, 9}, {-12, 10}, {6, -11}, {7, -11}, {0, 13}, {-3, -14}, {14, -2}};
+        BlockState[] kinds = {Blocks.DIAMOND_ORE.defaultBlockState(), Blocks.DIAMOND_ORE.defaultBlockState(),
+                Blocks.DIAMOND_ORE.defaultBlockState(), Blocks.GOLD_ORE.defaultBlockState(), Blocks.GOLD_ORE.defaultBlockState(),
+                Blocks.REDSTONE_ORE.defaultBlockState(), Blocks.COAL_ORE.defaultBlockState(), Blocks.COAL_ORE.defaultBlockState(),
+                Blocks.COAL_ORE.defaultBlockState(), Blocks.LAPIS_ORE.defaultBlockState(), Blocks.IRON_ORE.defaultBlockState(),
+                Blocks.EMERALD_ORE.defaultBlockState(), Blocks.COPPER_ORE.defaultBlockState(), Blocks.IRON_ORE.defaultBlockState(),
+                Blocks.REDSTONE_ORE.defaultBlockState(), Blocks.COAL_ORE.defaultBlockState()};
+        for (int i = 0; i < spots.length; i++) {
+            level.setBlockAndUpdate(table.offset(spots[i][0], -2 - (i % 2), spots[i][1]), kinds[i]);
+        }
     }
 
     private static void onTable(DevScript t, Consumer<HoloTableBlockEntity> action) {

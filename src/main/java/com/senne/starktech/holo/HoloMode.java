@@ -14,7 +14,9 @@ public enum HoloMode implements StringRepresentable {
     /** Je drones in hun baan, met hoe heel ze nog zijn. */
     ARSENAL("arsenal"),
     /** Je satelliet, groot, met alle onderdelen van zijn upgrades en een ring met hun niveaus. */
-    SATELLITE("satellite");
+    SATELLITE("satellite"),
+    /** De ertsen in de grond onder de tafel, als gekleurde blokjes in een doorzichtig blok aarde. */
+    ORES("ores");
 
     private final String name;
 
