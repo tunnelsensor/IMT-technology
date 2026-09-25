@@ -252,9 +252,20 @@ kleine dingen, dan de grote.
       seconden weg. De getallen staan in `DomeSettings.java`. Vier nieuwe tests.
 
 **Harnas**
-- [ ] Repulsor: de hand beweegt en gloeit bij een schot, en het schot is een eigen, gedetailleerd
-      effect in plaats van Minecraft-deeltjes
-- [ ] Vliegen: de vlammen beter onder de voeten, geen echt spoor erachter, en eigen deeltjes
+- [x] Repulsor: de hand beweegt en gloeit bij een schot, en het schot is een eigen, gedetailleerd
+      effect in plaats van Minecraft-deeltjes — `da56f6c`
+      In je eigen beeld gaat je arm omhoog (onderarm vooruit, hand omhoog geknikt, palm naar
+      voren) met een zacht kloppende blauwe gloed; bij een schot flitst de palm en slaat je arm
+      terug. Anderen (en jij met F5) zien de arm vooruit wijzen en de palm oplichten: daarvoor
+      een nieuwe armhouding via NeoForge (`META-INF/enumextensions.json`). Het schot is zelf
+      getekend licht: witte kern, blauwe gloed, drukgolfringen bij de hand, een lichtbol naar het
+      doel en een flits met een uitdijende ring bij de inslag.
+- [x] Vliegen: de vlammen beter onder de voeten, geen echt spoor erachter, en eigen deeltjes
+      — `da56f6c`
+      Zelf getekende straalvlammen (blauw met een witte kern en een gloed tegen de zool) die
+      vast aan de laarzen zitten, langer en feller naarmate je harder gaat. De server vertelt
+      spelers in de buurt wie er vliegt en hoe hard, dus iedereen ziet ze. Screenshots:
+      `-Ponly=suit,flight`.
 - [ ] Het harnas meer 3D-vorm geven
 
 **Modellen en gebouwen**
