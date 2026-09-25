@@ -122,6 +122,13 @@ public final class SuitEffects {
         THRUSTING.clear();
     }
 
+    /** Vliegt deze (andere) speler volgens de server, de laatste paar ticks? */
+    public static boolean isThrusting(int entityId) {
+        Minecraft mc = Minecraft.getInstance();
+        Thrust thrust = THRUSTING.get(entityId);
+        return thrust != null && mc.level != null && mc.level.getGameTime() - thrust.seen() <= 6;
+    }
+
     // ================================================================ Tekenen
 
     public static void onRenderLevel(RenderLevelStageEvent event) {
@@ -228,26 +235,35 @@ public final class SuitEffects {
     }
 
     /**
-     * De straalvlammen onder de laarzen van deze speler. Ze hangen recht naar beneden vanaf de
-     * zolen, een witte kern met blauw eromheen, en flakkeren een beetje. {@code power} (0..1)
-     * maakt ze langer en feller.
+     * De straalvlammen onder de laarzen van deze speler: vanaf de zolen, een witte kern met blauw
+     * eromheen, en ze flakkeren een beetje. {@code power} (0..1) maakt ze langer en feller.
+     *
+     * Helt hij voorover (zie FlightPose), dan kantelen de zolen en de vlammen mee: ze wijzen dan
+     * langs zijn lichaam naar achteren. Behalve bij jezelf in je eigen ogen: daar zie je je
+     * lichaam niet, en hangen ze gewoon onder je.
      */
     private static void flames(Matrix4f m, VertexConsumer out, Player player, float power, float partialTick,
                                float time, Vec3 cam) {
+        Minecraft mc = Minecraft.getInstance();
+        boolean tilted = player != mc.player || !mc.options.getCameraType().isFirstPerson();
         Vec3 feet = player.getPosition(partialTick);
         float bodyYaw = Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD;
         Vec3 right = new Vec3(Mth.cos(bodyYaw), 0, Mth.sin(bodyYaw));
+        Vec3 down = tilted ? FlightPose.tiltDirection(player, partialTick, new Vec3(0, -1, 0)) : new Vec3(0, -1, 0);
         for (int side = -1; side <= 1; side += 2) {
             Vec3 sole = feet.add(right.scale(0.12 * side)).add(0, 0.02, 0);
+            if (tilted) {
+                sole = FlightPose.tilt(player, partialTick, sole);
+            }
             float flicker = 0.9f + 0.1f * Mth.sin(time * 2.3f + side * 1.7f) + 0.06f * Mth.sin(time * 5.1f + side);
             float length = (0.55f + 0.9f * power) * flicker;
             // Buiten naar binnen: breed en blauw, dan smaller en lichter, dan een witte kern.
-            flame(m, out, sole, cam, 0.3f + 0.08f * power, length, 0x2F7BFF, 0.5f + 0.25f * power);
-            flame(m, out, sole, cam, 0.19f, length * 0.72f, 0x5FD0FF, 0.75f + 0.2f * power);
-            flame(m, out, sole, cam, 0.1f, length * 0.42f, 0xF2FCFF, 1f);
+            flame(m, out, sole, down, cam, 0.3f + 0.08f * power, length, 0x2F7BFF, 0.5f + 0.25f * power);
+            flame(m, out, sole, down, cam, 0.19f, length * 0.72f, 0x5FD0FF, 0.75f + 0.2f * power);
+            flame(m, out, sole, down, cam, 0.1f, length * 0.42f, 0xF2FCFF, 1f);
             // Een gloeiend schijfje tegen de zool, en een zachte gloed eromheen.
-            disc(m, out, sole.add(0, -0.01, 0), 0.11f, 0xBFF4FF, 0.9f);
-            billboard(m, out, sole.add(0, -0.08, 0), cam, 0.45f + 0.2f * power, 0x3F9BFF, 0.3f);
+            disc(m, out, sole.add(down.scale(0.01)), down, 0.11f, 0xBFF4FF, 0.9f);
+            billboard(m, out, sole.add(down.scale(0.08)), cam, 0.45f + 0.2f * power, 0x3F9BFF, 0.3f);
         }
     }
 
@@ -266,10 +282,10 @@ public final class SuitEffects {
         quad(m, out, a.add(side), a.subtract(side), b.subtract(side), b.add(side), rgb, alpha);
     }
 
-    /** Een vlam: een driehoek van licht die vanaf {@code top} recht naar beneden hangt. */
-    private static void flame(Matrix4f m, VertexConsumer out, Vec3 top, Vec3 cam, float width, float length,
-                              int rgb, float alpha) {
-        Vec3 down = new Vec3(0, -length, 0);
+    /** Een vlam: een driehoek van licht die vanaf {@code top} in richting {@code direction} wijst. */
+    private static void flame(Matrix4f m, VertexConsumer out, Vec3 top, Vec3 direction, Vec3 cam, float width,
+                              float length, int rgb, float alpha) {
+        Vec3 down = direction.scale(length);
         Vec3 side = down.cross(cam.subtract(top));
         if (side.lengthSqr() < 1.0E-8) {
             side = new Vec3(1, 0, 0);
@@ -320,6 +336,21 @@ public final class SuitEffects {
             Vec3 d1 = u.scale(Math.cos(t1)).add(v.scale(Math.sin(t1)));
             quad(m, out, centre.add(d0.scale(radius)), centre.add(d1.scale(radius)),
                     centre.add(d1.scale(radius + thickness)), centre.add(d0.scale(radius + thickness)), rgb, alpha);
+        }
+    }
+
+    /** Een plat schijfje licht, loodrecht op {@code axis}. */
+    static void disc(Matrix4f m, VertexConsumer out, Vec3 centre, Vec3 axis, float radius, int rgb, float alpha) {
+        Vec3 a = Math.abs(axis.y) > 0.9 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
+        Vec3 u = axis.cross(a).normalize();
+        Vec3 v = axis.cross(u).normalize();
+        int steps = 12;
+        for (int i = 0; i < steps; i++) {
+            double t0 = i * Math.PI * 2 / steps;
+            double t1 = (i + 1) * Math.PI * 2 / steps;
+            Vec3 p0 = centre.add(u.scale(Math.cos(t0) * radius)).add(v.scale(Math.sin(t0) * radius));
+            Vec3 p1 = centre.add(u.scale(Math.cos(t1) * radius)).add(v.scale(Math.sin(t1) * radius));
+            quad(m, out, centre, centre, p1, p0, rgb, alpha);
         }
     }
 

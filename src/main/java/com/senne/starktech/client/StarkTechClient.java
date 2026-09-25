@@ -74,6 +74,9 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(SuitEffects::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(RepulsorHand::onRenderHand);
         NeoForge.EVENT_BUS.addListener(RepulsorHand::onRenderPlayer);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.suit.FlightPose::onRenderPlayerPre);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.suit.FlightPose::onRenderPlayerPost);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.suit.FlightPose::onClientTick);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
