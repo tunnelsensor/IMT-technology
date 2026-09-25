@@ -455,7 +455,7 @@ public final class EdithIllusions {
         for (ServerPlayer player : level.players()) {
             boolean near = player.distanceToSqr(drone) <= range * range;
             if (near && projector.informed.add(player.getUUID())) {
-                ModNetwork.sendTo(player, new IllusionScenePayload(drone.getId(), projector.radius,
+                ModNetwork.sendTo(player, new IllusionScenePayload(drone.getId(), projector.ownerId, projector.radius,
                         projector.jammed(), projector.anchor, Optional.of(projector.scene)));
             } else if (!near && projector.informed.remove(player.getUUID())) {
                 ModNetwork.sendTo(player, IllusionScenePayload.stop(drone.getId()));

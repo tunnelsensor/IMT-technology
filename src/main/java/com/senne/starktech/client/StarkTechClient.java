@@ -61,6 +61,7 @@ public class StarkTechClient {
         // Fase 12: de illusies van cloakingdrones tekenen (en dingen verbergen)
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onRenderLiving);
+        NeoForge.EVENT_BUS.addListener(IllusionRenderer::onClientTick);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
         // De repulsor aan? Dan is de aanvalsknop de repulsor.

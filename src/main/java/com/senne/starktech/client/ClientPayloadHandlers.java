@@ -35,8 +35,8 @@ public final class ClientPayloadHandlers {
 
     /** Fase 12: een illusie van een cloakingdrone (of "vergeet deze illusie"). */
     public static void onIllusionScene(IllusionScenePayload payload, IPayloadContext context) {
-        IllusionRenderer.onServerMessage(payload.droneId(), payload.radius(), payload.jammed(), payload.anchor(),
-                payload.scene().orElse(null));
+        IllusionRenderer.onServerMessage(payload.droneId(), payload.owner(), payload.radius(), payload.jammed(),
+                payload.anchor(), payload.scene().orElse(null));
     }
 
     /** Je richt een illusie met een drone (of je bent klaar met richten). */
