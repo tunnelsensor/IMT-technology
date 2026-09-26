@@ -641,7 +641,7 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 - Het harnas: onder water ademen
 
 **Basis en techniek**
-- Een werkbank die harnasdelen maakt
+- ~~Een werkbank die harnasdelen maakt~~ (gebouwd: de Suit Workbench, `61fde87`)
 - Een Stark-AI-kern die passief onderzoek doet
 - ~~Automatische torentjes die aan je relais-groepen hangen~~ (gebouwd: `53ff0b9`, ze staan in je redstone-lijst)
 - ~~Energie-netwerk: kabels of een draadloos Stark-net~~ (gebouwd: de Stark-kabels)
