@@ -195,6 +195,36 @@ public final class DevWorld {
         command("place template starktech:crashed_satellite " + origin.getX() + " " + origin.getY() + " " + origin.getZ());
     }
 
+    /**
+     * De Hydra-bunker in een zelfgebouwde berg (de testwereld is plat). De ingang komt op
+     * {@code entrance} en kijkt naar het noorden; de berg loopt daarachter (naar het zuiden)
+     * omhoog. We zetten de bunker neer zoals de echte wereld dat doet (HydraBunkerPiece), dus
+     * met soldaten, en de laserwanden gaan vanzelf aan.
+     */
+    public static void placeHydraBunker(ServerLevel level, BlockPos entrance) {
+        // entrance = waar je voor de deur staat; de grond (en de vloer van de bunker) ligt eronder.
+        int ground = entrance.getY() - 1;
+        for (int dx = -30; dx <= 30; dx++) {
+            for (int dz = -4; dz <= 52; dz++) {
+                // Een helling die na 12 blokken op volle hoogte is, en naar de zijkanten afloopt.
+                int rise = Math.min(22, Math.max(0, dz * 2));
+                int side = Math.max(0, Math.abs(dx) - 20) * 2;
+                int top = ground + Math.max(0, rise - side);
+                for (int y = ground - 2; y < top; y++) {
+                    level.setBlock(new BlockPos(entrance.getX() + dx, y, entrance.getZ() + dz), Blocks.STONE.defaultBlockState(), 2);
+                }
+                level.setBlock(new BlockPos(entrance.getX() + dx, top, entrance.getZ() + dz),
+                        (top - ground > 14 ? Blocks.SNOW_BLOCK : Blocks.GRASS_BLOCK).defaultBlockState(), 2);
+            }
+        }
+        net.minecraft.world.level.block.Rotation rotation = net.minecraft.world.level.block.Rotation.NONE;
+        BlockPos origin = com.senne.starktech.hydra.HydraBunkerStructure.originFor(entrance.below(), rotation);
+        com.senne.starktech.hydra.HydraBunkerPiece piece = new com.senne.starktech.hydra.HydraBunkerPiece(
+                level.getStructureManager(), origin, rotation);
+        piece.postProcess(level, level.structureManager(), level.getChunkSource().getGenerator(), level.random,
+                piece.getBoundingBox(), new net.minecraft.world.level.ChunkPos(origin), origin);
+    }
+
     /** Een nieuwe, volle bril die van deze speler is. */
     public static ItemStack ownGlasses(ServerPlayer player) {
         ItemStack glasses = new ItemStack(ModItems.EDITH_GLASSES.get());

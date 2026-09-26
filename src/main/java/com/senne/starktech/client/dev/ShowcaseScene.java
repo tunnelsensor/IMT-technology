@@ -97,6 +97,12 @@ final class ShowcaseScene {
     static final BlockPos CRASH_SITE = new BlockPos(-80, -61, 0);
     /** De zwarte doos in de romp van het wrak (plek 15, 2, 16 in generate_crash_site.py). */
     static final BlockPos BLACK_BOX = CRASH_SITE.offset(-1, 0, 0);
+    /**
+     * Waar je voor de deur van de Hydra-bunker staat (de ingang kijkt naar het noorden, de bunker
+     * loopt de berg in naar het zuiden). Een plek (x, y, z) uit tools/generate_bunker.py ligt in
+     * de wereld op (23 + x, -61 + y, 80 + z).
+     */
+    static final BlockPos HYDRA_BUNKER = new BlockPos(40, -60, 80);
     /** Het Stark-torentje van de demo (de warmtegenerator staat ernaast, het Hydra-torentje rechts). */
     static final BlockPos TURRET = new BlockPos(0, -60, 40);
 

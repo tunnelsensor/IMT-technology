@@ -1,0 +1,7 @@
+{
+  "type": "starktech:hydra_bunker",
+  "biomes": "#starktech:has_structure/hydra_bunker",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "none"
+}

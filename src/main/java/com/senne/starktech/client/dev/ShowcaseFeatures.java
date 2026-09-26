@@ -10,6 +10,7 @@ import static com.senne.starktech.client.dev.ShowcaseScene.FAR_TARGET;
 import static com.senne.starktech.client.dev.ShowcaseScene.FRIEND_SPOT;
 import static com.senne.starktech.client.dev.ShowcaseScene.GRID_CUT;
 import static com.senne.starktech.client.dev.ShowcaseScene.HEAT_GENERATOR;
+import static com.senne.starktech.client.dev.ShowcaseScene.HYDRA_BUNKER;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOLO_TABLE;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOME;
 import static com.senne.starktech.client.dev.ShowcaseScene.HUT;
@@ -956,6 +957,35 @@ final class ShowcaseFeatures {
                     .pause(40)
                     .step(0, () -> rightClick(BLACK_BOX))
                     .pause(120)
+                    .close(0);
+        });
+
+        add("Hydra bunker", "De geheime Hydra-basis, uitgehakt in een berg (Winter Soldier). In een echte "
+                + "wereld zoekt de mod een steile helling in de bergen; hier staat hij in een zelfgebouwde berg. "
+                + "Buiten: de betonnen gevel met het rode embleem en twee Hydra-torentjes. Binnen: de gang met "
+                + "een controlepost, de grote hal (zuilen, kratten, vaandels, soldaten, een torentje achterin), "
+                + "de reactorkamer (twee warmtegeneratoren in lava; hun kabel loopt over het plafond van de hal "
+                + "naar achteren), de kluisgang met twee rode laserwanden, en de kluis met Hydra-onderdelen en "
+                + "een cryo-cel. De laserwanden gaan uit als je de generatoren sloopt of de kabel doorknipt. "
+                + "Hier in creative laten de soldaten en torentjes je met rust. Zoeken? De zwarte doos van een "
+                + "neergestorte satelliet heeft een kaart 'Hydra Intel' met een kruis op de dichtstbijzijnde bunker.",
+                new Vec3(HYDRA_BUNKER.getX() + 0.5, -52, HYDRA_BUNKER.getZ() - 22), 0, 12, s -> {
+            BlockPos b = HYDRA_BUNKER;
+            s.onServer(0, player -> DevWorld.placeHydraBunker(player.serverLevel(), b))
+                    .pause(70)
+                    .view(0, b.getX() + 0.5, b.getY() + 1, b.getZ() - 3.5, 0, 8)
+                    .pause(60)
+                    .view(0, b.getX() + 0.5, b.getY() + 2, b.getZ() + 16.5, 0, 12)
+                    .pause(70)
+                    .view(0, b.getX() + 10.5, b.getY() + 1, b.getZ() + 17.5, 0, 25)
+                    .pause(60)
+                    .view(0, b.getX() + 0.5, b.getY() + 1, b.getZ() + 30.5, 0, 5)
+                    .pause(60)
+                    .view(0, b.getX() + 0.5, b.getY() + 2, b.getZ() + 39.5, 0, 20)
+                    .pause(30)
+                    .stand(0, b.getX() - 3.5, b.getY(), b.getZ() + 40.5, 0, 30)
+                    .step(10, () -> rightClick(b.offset(-4, 0, 42)))
+                    .pause(90)
                     .close(0);
         });
 

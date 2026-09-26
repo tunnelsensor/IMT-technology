@@ -213,6 +213,32 @@
           ]
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:map",
+          "functions": [
+            {
+              "function": "minecraft:exploration_map",
+              "destination": "starktech:on_hydra_maps",
+              "decoration": "minecraft:red_x",
+              "zoom": 1,
+              "search_radius": 60,
+              "skip_existing_chunks": false
+            },
+            {
+              "function": "minecraft:set_name",
+              "target": "item_name",
+              "name": {
+                "translate": "item.starktech.hydra_intel_map"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

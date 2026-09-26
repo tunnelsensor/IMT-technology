@@ -246,6 +246,33 @@ public final class VisualCheck {
             t.shot(40, "10_holo_side");
         }
 
+        // --- De Hydra-bunker in een (zelfgebouwde) berg: van buiten, en dan kamer voor kamer.
+        // De ingang staat op (20, -60, 100) en kijkt naar het noorden; de bunker loopt naar het
+        // zuiden. Een plek in het bestand (x, y, z) ligt in de wereld op (3 + x, -61 + y, 100 + z).
+        if (want("bunker")) {
+            t.onServer(0, player -> DevWorld.placeHydraBunker(player.serverLevel(), new BlockPos(20, -60, 100)));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(40, 20.5, -52, 76, 0, 12);
+            t.shot(20, "b01_bunker_outside");
+            t.view(0, 20.5, -59, 96.5, 0, 8);
+            t.shot(15, "b02_bunker_entrance");
+            t.view(0, 20.5, -59, 106.5, 0, 5);
+            t.shot(15, "b03_bunker_corridor");
+            t.view(0, 20.5, -57.5, 115.5, 0, 12);
+            t.shot(15, "b04_bunker_hall");
+            t.view(0, 20.5, -57.5, 127.5, 180, 12);
+            t.shot(15, "b05_bunker_hall_back");
+            t.view(0, 30.5, -58.5, 117.5, 0, 25);
+            t.shot(15, "b06_bunker_reactor");
+            t.view(0, 20.5, -59, 130.5, 0, 5);
+            t.shot(15, "b07_bunker_lasers");
+            t.view(0, 20.5, -57.5, 139.5, 0, 20);
+            t.shot(15, "b08_bunker_vault");
+            t.view(0, 6.5, -58.5, 122.5, 180, 20);
+            t.shot(15, "b09_bunker_barracks");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- Het G-menu: elk tabblad apart.
         if (want("menu")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

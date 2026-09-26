@@ -179,6 +179,112 @@ public final class StarkTechGameTests {
     }
 
     /**
+     * Elke buittabel van de mod laadt echt. Zit er een fout in (bv. een verkeerde naam), dan
+     * gooit Minecraft de hele tabel weg en blijft de kist leeg, zonder dat je het merkt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "bunker")
+    public static void loot_tables_load(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var tables = server.reloadableRegistries().get().registryOrThrow(net.minecraft.core.registries.Registries.LOOT_TABLE);
+        List<String> missing = new java.util.ArrayList<>();
+        // Alle bestanden in data/starktech/loot_table, en of het spel ze ook echt kent.
+        var files = server.getResourceManager().listResources("loot_table",
+                location -> location.getNamespace().equals(StarkTech.MODID) && location.getPath().endsWith(".json"));
+        for (ResourceLocation file : files.keySet()) {
+            String name = file.getPath().substring("loot_table/".length(), file.getPath().length() - ".json".length());
+            if (tables.get(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, name)) == null) {
+                missing.add(name);
+            }
+        }
+        if (files.size() < 10) {
+            throw new GameTestAssertException("Maar " + files.size() + " buittabellen gevonden");
+        }
+        if (!missing.isEmpty()) {
+            throw new GameTestAssertException("Deze buittabellen laden niet (kijk in het log): " + missing);
+        }
+        helper.succeed();
+    }
+
+    // ================================================================ De Hydra-bunker
+    // In de test ligt alles één blok hoger dan in tools/generate_bunker.py (y + 1).
+
+    /** Telt in de hele bunker de blokken waarvoor {@code test} klopt. */
+    private static int countInBunker(GameTestHelper helper, java.util.function.Predicate<BlockPos> test) {
+        int count = 0;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = 0; x < 35; x++) {
+            for (int y = 1; y <= 8; y++) {
+                for (int z = 0; z < 44; z++) {
+                    if (test.test(pos.set(x, y, z))) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * De kluis heeft twee kisten met Hydra-buit, er staan vijf Hydra-torentjes, en op acht plekken
+     * een markering waar bij het maken van de wereld een soldaat komt.
+     */
+    @GameTest(template = "hydra_bunker", timeoutTicks = 60, batch = "bunker")
+    public static void hydra_bunker_vault_and_guards(GameTestHelper helper) {
+        for (BlockPos pos : List.of(new BlockPos(13, 2, 42), new BlockPos(21, 2, 42))) {
+            helper.assertBlockPresent(Blocks.CHEST, pos);
+            ChestBlockEntity chest = (ChestBlockEntity) helper.getBlockEntity(pos);
+            if (chest.getLootTable() == null || !chest.getLootTable().location().getPath().endsWith("hydra_vault")) {
+                throw new GameTestAssertException("Een kluiskist heeft niet de goede buit: " + chest.getLootTable());
+            }
+        }
+        int turrets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.HYDRA_TURRET.get()));
+        if (turrets != 5) {
+            throw new GameTestAssertException("Er staan " + turrets + " Hydra-torentjes in plaats van 5");
+        }
+        int soldiers = countInBunker(helper, pos -> helper.getLevel().getBlockEntity(helper.absolutePos(pos))
+                instanceof net.minecraft.world.level.block.entity.StructureBlockEntity marker
+                && com.senne.starktech.hydra.HydraBunkerPiece.SOLDIER.equals(marker.getMetaData()));
+        if (soldiers != 8) {
+            throw new GameTestAssertException("Er zijn " + soldiers + " plekken voor een soldaat in plaats van 8");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De laserwanden in de kluisgang (twee wanden van 3 x 3) gaan aan met stroom uit de reactor.
+     * Sloop je de twee warmtegeneratoren, dan valt de stroom weg en gaan ze uit: zo kom je erdoor.
+     */
+    @GameTest(template = "hydra_bunker", timeoutTicks = 400, batch = "bunker")
+    public static void hydra_bunker_lasers_need_the_reactor(GameTestHelper helper) {
+        java.util.function.IntSupplier walls = () -> countInBunker(helper,
+                pos -> helper.getBlockState(pos).is(ModBlocks.LASER_WALL.get()));
+        // Net als in de wereld: de zenders gaan aan bij een willekeurige tik; die doen we na.
+        helper.runAfterDelay(40, () -> countInBunker(helper, pos -> {
+            BlockState state = helper.getBlockState(pos);
+            if (state.is(ModBlocks.LASER_EMITTER.get())) {
+                state.randomTick(helper.getLevel(), helper.absolutePos(pos), helper.getLevel().random);
+            }
+            return false;
+        }));
+        boolean[] reactorGone = {false};
+        helper.onEachTick(() -> {
+            if (!reactorGone[0] && walls.getAsInt() == 18) {
+                reactorGone[0] = true;
+                helper.setBlock(new BlockPos(30, 2, 20), Blocks.AIR);
+                helper.setBlock(new BlockPos(30, 2, 22), Blocks.AIR);
+            }
+        });
+        helper.succeedWhen(() -> {
+            if (!reactorGone[0]) {
+                throw new GameTestAssertException("De laserwanden staan nog niet allemaal aan (" + walls.getAsInt() + " van 18)");
+            }
+            if (walls.getAsInt() > 0) {
+                throw new GameTestAssertException("Zonder reactor staan er nog " + walls.getAsInt() + " laserblokken");
+            }
+        });
+    }
+
+    /**
      * De lasergang in de Stark Tower gaat aan met stroom uit de verborgen krachtcentrale: na het
      * neerzetten van de toren moeten er laserwanden in de gang staan (acht rijen van drie).
      */

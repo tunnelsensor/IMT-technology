@@ -45,7 +45,7 @@ public final class StructureCheck {
 
     private static void onServerStarted(ServerStartedEvent event) {
         ServerLevel level = event.getServer().overworld();
-        for (String name : List.of("crashed_satellite", "stark_tower")) {
+        for (String name : List.of("crashed_satellite", "stark_tower", "hydra_bunker")) {
             check(level, name);
         }
         StarkTech.LOGGER.info("[structures] klaar, server stopt");
@@ -91,11 +91,54 @@ public final class StructureCheck {
                             && container.getLootTable() != null) {
                         StarkTech.LOGGER.info("[structures] {}:   kist {} op {} ({} t.o.v. de grond)", name,
                                 container.getLootTable().location(), pos, pos.getY() - ground);
+                        if (container.getLootTable().location().getPath().equals("chests/crashed_satellite")) {
+                            intelMap(container);
+                        }
                     }
                 }
             }
         }
+        if (name.equals("hydra_bunker")) {
+            bunkerDetails(level, box);
+        }
         StarkTech.LOGGER.info("[structures] {}: teleporteer ernaartoe met /tp {} {} {}", name,
                 centre.getX(), ground + 2, centre.getZ());
+    }
+
+    /** Van de bunker ook: hoeveel soldaten, torentjes en laserzenders er echt staan, en waar de ingang is. */
+    private static void bunkerDetails(ServerLevel level, BoundingBox box) {
+        net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.of(box).inflate(2);
+        int soldiers = level.getEntitiesOfClass(com.senne.starktech.hydra.HydraSoldierEntity.class, area).size();
+        int turrets = 0;
+        int emitters = 0;
+        int markers = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
+            var state = level.getBlockState(pos);
+            if (state.is(com.senne.starktech.registry.ModBlocks.HYDRA_TURRET.get())) {
+                turrets++;
+            } else if (state.is(com.senne.starktech.registry.ModBlocks.LASER_EMITTER.get())) {
+                emitters++;
+            } else if (state.is(net.minecraft.world.level.block.Blocks.STRUCTURE_BLOCK)) {
+                markers++;
+            }
+        }
+        StarkTech.LOGGER.info("[structures] hydra_bunker:   {} soldaten, {} Hydra-torentjes, {} laserzenders, "
+                + "{} overgebleven structuurblokken", soldiers, turrets, emitters, markers);
+    }
+
+    /** Open de zwarte doos en kijk waar de Hydra Intel-kaart naartoe wijst. */
+    private static void intelMap(RandomizableContainerBlockEntity box) {
+        box.unpackLootTable(null);
+        for (int slot = 0; slot < box.getContainerSize(); slot++) {
+            var stack = box.getItem(slot);
+            var decorations = stack.get(net.minecraft.core.component.DataComponents.MAP_DECORATIONS);
+            if (decorations != null && !decorations.decorations().isEmpty()) {
+                decorations.decorations().values().forEach(entry -> StarkTech.LOGGER.info(
+                        "[structures] crashed_satellite:   {} wijst naar x {} z {}", stack.getHoverName().getString(),
+                        (int) entry.x(), (int) entry.z()));
+                return;
+            }
+        }
+        StarkTech.LOGGER.warn("[structures] crashed_satellite:   geen kaart met een kruis in de zwarte doos");
     }
 }

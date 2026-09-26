@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (70 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatische tests).
 
 ---
 
@@ -263,8 +263,9 @@ en sneeuwvlaktes; de rook van de smeulende brokstukken zie je van ver. In het mi
 romp (opengescheurd, de reactor gloeit nog), een zonnepaneel dat schuin omhoog steekt en de
 schotel op de helling. In de romp staat de **zwarte doos**: een kist met wat je voor de
 satelliet-upgrades nodig hebt (netherite, diamanten, goud, Stark-chips, soms een upgrade of
-een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaakt (zie
-Raiddrones).
+een drone) en altijd een kaart **Hydra Intel**: de satelliet ving nog Hydra-verkeer op, en de
+kaart heeft een rood kruis op de dichtstbijzijnde Hydra-bunker. In de kratten eromheen liggen
+brokstukken. Maar het wrak wordt bewaakt (zie Raiddrones).
 - **Blokken slopen uitzetten**: `/gamerule starktechRaidGriefing false`. Dan kunnen ze nog wel
   schieten, maar laten ze je muren heel.
 - **Instellen per wereld** in `<wereld>/serverconfig/starktech-server.toml`: `raids.enabled`,
@@ -274,7 +275,7 @@ Raiddrones).
 Hydra wil Stark-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
 embleem op borst en helm. Zien ze je, dan leggen ze hun **lasergeweer** aan en schieten ze rode
 laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones,
-en raak je er één, dan komen de anderen ook. Straks bewaken ze de Hydra-bunker.
+en raak je er één, dan komen de anderen ook. Ze bewaken de Hydra-bunker (zie hieronder).
 
 - Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je nodig voor
   de nieuwste tech: het raketpakket (zie Het harnas) en de torentjes (zie Torentjes).
@@ -304,6 +305,27 @@ Hydra-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten 
 In de Hydra-bunker staan **Hydra Turrets** (zwart met rood): die hebben geen stroom nodig en
 schieten op jou en je drones. Ook die gaan uit met redstone. Sloop je er een, dan krijg je
 ijzer en soms een Hydra-onderdeel.
+
+### De Hydra-bunker
+Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
+vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
+een uitsparing in een rotswand met een betonnen gevel en het rode Hydra-embleem. De kaart
+**Hydra Intel** uit de zwarte doos van een neergestorte satelliet wijst je de weg.
+
+Wat je binnen tegenkomt:
+- **Bij de deur** twee Hydra-torentjes; daarna een gang met een controlepost.
+- **De grote hal**: zuilen, kratten met voorraden (buskruit, ijzer, redstone, soms raketten),
+  Hydra-vaandels, soldaten en een torentje op een verhoging.
+- **Links de slaapzaal** (bedden, kisten met wat soldaten bij zich hebben, soms een
+  Hydra-onderdeel), **rechts de reactorkamer**: twee warmtegeneratoren in een bak lava.
+- **De kluisgang** met twee rode laserwanden. Die krijgen hun stroom van de reactor, via de
+  kabel over het plafond van de hal. **Sloop de generatoren of knip de kabel door**, en ze gaan
+  uit. (Of graaf je eromheen: het is een berg.)
+- **De kluis**: twee kisten met altijd 2 à 3 **Hydra-onderdelen**, en verder diamanten, goud,
+  raketmunitie, Stark-chips en soms een raketpakket. Plus twee torentjes en een cryo-cel.
+
+Er staan acht soldaten en vijf torentjes; zonder harnas is dat pittig. Soldaten komen niet
+terug als je ze verslagen hebt, dus de onderdelen zijn niet eindeloos te halen.
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste Stark-chip tot
@@ -499,18 +521,21 @@ showcase en staat hij bij NIEUW.
 - **Het satellietwrak verbouwen**: `python tools/generate_crash_site.py` (of in het spel opslaan
   als `starktech:crashed_satellite`).
 - **Komen de structuren echt in de wereld?** `gradlew runStructureCheck` start een server met
-  een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower en het
-  dichtstbijzijnde satellietwrak, en schrijft in het log (`[structures]`) waar ze liggen, waar de
-  kisten staan en hoe je er met `/tp` komt. Daarna stopt hij vanzelf.
-- **Tests**: `gradlew runGameTestServer` — 70 tests over de toren en zijn kluis, het
-  satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
+  een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower, het
+  dichtstbijzijnde satellietwrak en de dichtstbijzijnde Hydra-bunker, en schrijft in het log
+  (`[structures]`) waar ze liggen, waar de kisten staan, waar de Hydra Intel-kaart naartoe wijst,
+  hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
+  hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
+- **De bunker verbouwen**: `python tools/generate_bunker.py`.
+- **Tests**: `gradlew runGameTestServer` — 74 tests over de toren en zijn kluis, het
+  satellietwrak, de Hydra-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   mini-raketten, de Hydra-soldaten, de torentjes en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
-  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`; meerdere met
-  komma's).
+  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
+  `rockets`, `turrets`, `menu`, `bunker`; meerdere met komma's).
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.
