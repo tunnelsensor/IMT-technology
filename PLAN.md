@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 76 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 77 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 73 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -530,9 +530,14 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 
 ## Open vragen
 
-- [ ] **Moeten de getallen uit `EdithBalance.java` naar een configbestand?** Ja, per wereld
-      (jouw keuze op 26 september), in `<wereld>/serverconfig`, zoals de raids al zijn. Dit komt
-      als eerste, voor de toren.
+- [x] **Moeten de getallen uit `EdithBalance.java` naar een configbestand?** Ja, per wereld
+      (jouw keuze op 26 september) — `d26a25e`
+      120 getallen staan nu in `config/starktech-balance.toml` (kosten, schade, bereik,
+      wachttijden, verbruik; per kopje: bril, drones, satelliet, harnas, torentjes, Hydra...).
+      Het bestand geldt voor al je werelden; een kopie in `<wereld>/serverconfig/` geldt alleen
+      voor die wereld (zo werkt NeoForge 21.1; ook de raid-instellingen staan zo). Niet erin:
+      wat bij het opstarten vastligt (bescherming van het harnas, levens van wezens) en de
+      natuurkunde van het vliegen. Eén nieuwe test.
 - [x] **Wil je bij elke nieuwe functie automatische tests?** (mijn invulling: ja, ik schrijf ze
       mee; er zijn er nu 76, en ze vingen deze week o.a. een lege zwarte doos en een stikkende
       drone)
