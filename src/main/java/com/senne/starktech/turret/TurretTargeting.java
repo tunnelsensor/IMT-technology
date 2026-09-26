@@ -20,18 +20,25 @@ import org.jetbrains.annotations.Nullable;
  *
  * HYDRA-torentje (in de bunker): spelers (niet in creative) en E.D.I.T.H.-drones.
  *
+ * BEVEILIGINGSTORENTJE (in de Stark Tower): wat de beveiligingskern een indringer noemt.
+ *
  * We kijken naar de eigenaar via zijn UUID en naam, niet naar de speler zelf: een torentje
  * moet ook werken als de eigenaar niet online is.
  */
 public final class TurretTargeting {
     private TurretTargeting() {}
 
-    public static boolean isTarget(ServerLevel level, boolean hydra, @Nullable UUID ownerId, String ownerName,
-                                   LivingEntity entity) {
+    public static boolean isTarget(ServerLevel level, TurretKind kind, @Nullable UUID ownerId, String ownerName,
+                                   LivingEntity entity, net.minecraft.core.BlockPos turretPos) {
         if (!entity.isAlive() || entity.isInvulnerable() || entity instanceof ArmorStand) {
             return false;
         }
-        if (hydra) {
+        if (kind == TurretKind.SECURITY) {
+            // Wie een indringer is, zegt de beveiligingskern van de toren.
+            return com.senne.starktech.security.SecurityCores.isIntruder(level,
+                    com.senne.starktech.security.SecurityCores.coreAt(level, turretPos), entity);
+        }
+        if (kind == TurretKind.HYDRA) {
             return entity instanceof StarkDroneEntity || entity instanceof Player player && canHurt(player);
         }
         if (entity instanceof StarkDroneEntity) {

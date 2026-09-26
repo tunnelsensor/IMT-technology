@@ -40,6 +40,8 @@ public class TurretRenderer implements BlockEntityRenderer<TurretBlockEntity> {
             ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "textures/entity/stark_turret.png");
     private static final ResourceLocation HYDRA_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "textures/entity/hydra_turret.png");
+    private static final ResourceLocation SECURITY_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "textures/entity/security_turret.png");
     /** Hoe hoog het draaipunt van de kop zit (in pixels boven de onderkant van het blok). */
     private static final float PIVOT_Y = 11;
 
@@ -73,7 +75,11 @@ public class TurretRenderer implements BlockEntityRenderer<TurretBlockEntity> {
     @Override
     public void render(TurretBlockEntity turret, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {
-        ResourceLocation texture = turret.isHydra() ? HYDRA_TEXTURE : STARK_TEXTURE;
+        ResourceLocation texture = switch (turret.kind()) {
+            case STARK -> STARK_TEXTURE;
+            case HYDRA -> HYDRA_TEXTURE;
+            case SECURITY -> SECURITY_TEXTURE;
+        };
         VertexConsumer buffer = buffers.getBuffer(RenderType.entityCutoutNoCull(texture));
         pose.pushPose();
         pose.translate(0.5, PIVOT_Y / 16.0, 0.5);

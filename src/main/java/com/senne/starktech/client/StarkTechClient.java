@@ -99,6 +99,7 @@ public class StarkTechClient {
         event.registerEntityRenderer(ModEntities.RAID_DRONE.get(), RaidDroneRenderer::new);
         event.registerEntityRenderer(ModEntities.HYDRA_SOLDIER.get(), com.senne.starktech.client.hydra.HydraSoldierRenderer::new);
         event.registerEntityRenderer(ModEntities.MINI_ROCKET.get(), com.senne.starktech.client.suit.MiniRocketRenderer::new);
+        event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.starktech.client.drone.SecurityDroneRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);

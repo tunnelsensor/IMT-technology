@@ -177,6 +177,11 @@ def chest(x, y, z, facing, loot=LOOT):
         {"id": "minecraft:chest", "LootTable": loot})
 
 
+def security_turret(x, y, z):
+    """Een beveiligingstorentje: schiet op indringers, tot iemand de toren hackt."""
+    put(x, y, z, "starktech:security_turret", {"enabled": "true", "powered": "false"})
+
+
 def spawner(x, y, z, mob):
     """Een bewaker die pas wakker wordt als je dichtbij komt."""
     put(x, y, z, "minecraft:spawner", None,
@@ -474,6 +479,9 @@ def build_lobby():
     for x in range(x1 - 9, x1 - 6):
         top_slab(x, y, MID + 6)
     chest(x1 - 3, y, z1 - 6, "north")
+    # Twee beveiligingstorentjes bij de lift: de enige weg naar boven.
+    security_turret(MID - 5, y, MID + 6)
+    security_turret(MID + 5, y, MID + 6)
 
     floor_slab(LAB_Y - 1, LOBBY_IN)
 
@@ -780,6 +788,13 @@ def build_security():
 
     chest(x0 + 2, y, z1 - 2, "north")
     chest(x1 - 2, y, z1 - 2, "north")
+
+    # De beveiligingskern: de "hoofdserver" in het gat midden in de rij serverkasten. Hij
+    # beschermt de hele toren en houdt de beveiligingsdrones in de lucht; met een laptop kun je
+    # hem hacken, en dan werkt de beveiliging voor jou.
+    put(x0 + 2, y, MID, "starktech:security_core", {"facing": "east", "claimed": "false"})
+    security_turret(x0 + 2, y, z0 + 2)
+    security_turret(x1 - 2, y, z0 + 2)
     floor_slab(LASERS_Y - 1, SECURITY_IN, DARK_FLOOR, light_step=9)
 
 
@@ -961,11 +976,9 @@ def build_vault():
         cable(riser_x, yy, plate_z)
     cable(MID + 2, LASERS_Y, plate_z)
 
-    # De bewakers.
-    spawner(x0 + 2, y, z0 + 2, "minecraft:iron_golem")
-    spawner(x1 - 2, y, z0 + 2, "minecraft:iron_golem")
-    spawner(x0 + 2, y, z1 - 2, "minecraft:wither_skeleton")
-    spawner(x1 - 2, y, z1 - 2, "minecraft:wither_skeleton")
+    # De bewakers: vier beveiligingstorentjes in de hoeken (tot iemand de toren hackt).
+    for (x, z) in ((x0 + 2, z0 + 2), (x1 - 2, z0 + 2), (x0 + 2, z1 - 2), (x1 - 2, z1 - 2)):
+        security_turret(x, y, z)
 
     # De ingang vanuit de lasergang.
     for x in range(MID - 1, MID + 2):

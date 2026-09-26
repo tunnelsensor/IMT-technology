@@ -1545,6 +1545,9 @@ def turret_textures():
                       stripe=GOLD, lens=CYAN, lens_dim=CYAN_DIM),
         "hydra": dict(body=HYDRA_BLACK, dark=(14, 14, 16, 255), light=HYDRA_GREY,
                       stripe=HYDRA_RED_DIM, lens=HYDRA_RED, lens_dim=HYDRA_RED_DIM),
+        # De beveiliging van de Stark Tower: Stark-wit met een rode streep en een rood oog.
+        "security": dict(body=(196, 200, 208, 255), dark=(110, 116, 126, 255), light=(232, 235, 240, 255),
+                         stripe=(170, 30, 32, 255), lens=(255, 60, 50, 255), lens_dim=(150, 30, 25, 255)),
     }
     for name, c in looks.items():
         # Voet, zijkant: metaal met een streep en boutjes; de onderste rij donker.
@@ -1617,6 +1620,88 @@ def turret_textures():
     d = ImageDraw.Draw(barrel_tex)
     d.rectangle([0, 0, 15, 15], outline=METAL_1)
     save(barrel_tex, "block/turret_barrel.png")
+
+
+def security_textures():
+    """
+    De beveiliging van de Stark Tower: de kern (een serverkast met een statuslampje, rood als de
+    toren van niemand is, groen als hij van jou is) en de beveiligingsdrone (Stark-wit met een
+    rode streep, en rode alarmlampjes).
+    """
+    rack = (34, 36, 42, 255)
+    rack_dark = (20, 21, 25, 255)
+    rack_light = (70, 74, 84, 255)
+    for name, status in (("security_core_front", (255, 50, 40, 255)), ("security_core_front_claimed", (60, 230, 90, 255))):
+        im = img(16, 16, rack)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=rack_light)
+        # Rijen servers met knipperlichtjes.
+        for row, y in enumerate(range(2, 12, 3)):
+            d.rectangle([2, y, 13, y + 1], fill=rack_dark)
+            for x in range(3, 13, 3):
+                px(im, [(x, y)], CYAN_DIM if (x + row) % 2 else (40, 160, 60, 255))
+        # Het grote statuslampje onderaan, met het Stark-rood eromheen.
+        d.rectangle([5, 12, 10, 14], fill=(90, 20, 20, 255))
+        d.rectangle([6, 12, 9, 13], fill=status)
+        save(im, f"block/{name}.png")
+    side = img(16, 16, rack)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=rack_light)
+    for y in range(2, 15, 2):
+        d.line([2, y, 13, y], fill=rack_dark)
+    save(side, "block/security_core_side.png")
+    top = img(16, 16, rack_dark)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=rack_light)
+    d.rectangle([4, 4, 11, 11], outline=(170, 30, 32, 255))
+    save(top, "block/security_core_top.png")
+
+    # De drone: het model van de Stark-drone, maar wit met een rode streep.
+    body = box_regions(0, 0, 6, 3, 6)
+    camera = box_regions(0, 10, 2, 2, 2)
+    arm_a = box_regions(0, 16, 12, 1, 1)
+    arm_b = box_regions(0, 19, 12, 1, 1)
+    blade_x = box_regions(28, 0, 6, 1, 1)
+    blade_z = box_regions(28, 3, 1, 1, 6)
+    hub = box_regions(28, 11, 2, 2, 2)
+    white = (214, 218, 224, 255)
+    grey = (150, 156, 166, 255)
+    red = (170, 30, 32, 255)
+    drone = img(64, 32)
+    for region in body.values():
+        fill_region(drone, region, white)
+    fill_region(drone, body["bottom"], grey)
+    for name in ("east", "front", "west", "back"):
+        x, y, w, h = body[name]
+        for i in range(w):
+            drone.putpixel((x + i, y + 1), red)
+            drone.putpixel((x + i, y + h - 1), grey)
+    x, y, w, h = body["top"]
+    for i in range(w):
+        drone.putpixel((x + i, y + 2), red)
+    for region in camera.values():
+        fill_region(drone, region, METAL_DARK)
+    for arm in (arm_a, arm_b):
+        for region in arm.values():
+            fill_region(drone, region, grey)
+    for blade in (blade_x, blade_z):
+        for region in blade.values():
+            fill_region(drone, region, (175, 185, 195, 255))
+    for region in hub.values():
+        fill_region(drone, region, METAL_3)
+    save(drone, "entity/drone/security_drone.png")
+
+    alarm = img(64, 32)
+    bright = (255, 55, 45, 255)
+    dim = (160, 25, 20, 255)
+    fill_region(alarm, camera["front"], bright)
+    x, y, w, h = body["top"]
+    px(alarm, [(x + 2, y + 3), (x + 3, y + 3), (x + 2, y + 4), (x + 3, y + 4)], bright)
+    for side_name in ("front", "back"):
+        x, y, w, h = body[side_name]
+        for i in range(1, w - 1):
+            alarm.putpixel((x + i, y + 1), dim)
+    save(alarm, "entity/drone/security_drone_lights_alarm.png")
 
 
 def rocket_ammo():
@@ -1720,3 +1805,4 @@ if __name__ == "__main__":
     rocket_pack()
     turret_textures()
     rocket_ammo()
+    security_textures()

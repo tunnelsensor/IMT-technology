@@ -86,13 +86,26 @@ public class LaserWallBlock extends Block {
     /** Wie erin staat, krijgt schade (behalve items en dingen die niet leven). */
     @Override
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (level instanceof ServerLevel serverLevel && entity instanceof LivingEntity living && living.hurtTime <= 0) {
+        if (level instanceof ServerLevel serverLevel && entity instanceof LivingEntity living && living.hurtTime <= 0
+                && !friendOfTheTower(serverLevel, pos, living)) {
             living.hurt(ModDamageTypes.laserWall(serverLevel), EdithBalance.LASER_WALL_DAMAGE);
         }
         // Items en pijlen die erin belanden verbranden.
         if (entity instanceof ItemEntity || entity instanceof net.minecraft.world.entity.projectile.Projectile) {
             entity.discard();
         }
+    }
+
+    /**
+     * Staat deze wand in een Stark Tower die van jou is (of van je team)? Dan loop je er gewoon
+     * doorheen. Een toren van niemand, of een wand buiten een toren: dan brand je.
+     */
+    private static boolean friendOfTheTower(ServerLevel level, BlockPos pos, LivingEntity entity) {
+        if (!(entity instanceof net.minecraft.world.entity.player.Player player)) {
+            return false;
+        }
+        var core = com.senne.starktech.security.SecurityCores.coreAt(level, pos);
+        return core != null && com.senne.starktech.security.SecurityCores.isFriend(level, core, player);
     }
 
     /** Je kunt hem niet oprapen of breken: hij hoort bij de zenders. */

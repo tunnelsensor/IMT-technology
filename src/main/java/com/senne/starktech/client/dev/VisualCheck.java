@@ -273,6 +273,32 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- De beveiliging van de Stark Tower: een kern met twee torentjes, en de drones die hij
+        // de lucht in stuurt. Eerst van niemand (rood), dan "gehackt" door jou (groen en blauw).
+        if (want("security")) {
+            BlockPos core = new BlockPos(-40, -60, 60);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
+                        .setValue(com.senne.starktech.security.SecurityCoreBlock.FACING, net.minecraft.core.Direction.NORTH));
+                level.setBlockAndUpdate(core.offset(-4, 0, 0), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
+                level.setBlockAndUpdate(core.offset(4, 0, 0), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(20, -39.5, -58.5, 52.5, 0, 12);
+            t.shot(200, "s01_security_unclaimed");
+            t.view(0, -39.5, -59.4, 57.8, 0, 10);
+            t.shot(10, "s02_security_core");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                }
+            });
+            t.view(0, -39.5, -58.5, 52.5, 0, 12);
+            t.shot(40, "s03_security_claimed");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- Het G-menu: elk tabblad apart.
         if (want("menu")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

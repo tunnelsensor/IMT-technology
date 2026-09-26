@@ -36,10 +36,20 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   (een ladder) in de lobby. In de gewone kisten vind je materiaal en upgrades — maar
   **geen bril**. De bril ligt in de **kluis** bovenin, en die geeft zich niet zomaar gewonnen:
   eerst door de lasergang (rayshields waar je niet doorheen komt), dan de omweg via drie
-  deuren met verstopte schakelaars, en in de kluis zelf staan vier bewakers.
+  deuren met verstopte schakelaars, en in de kluis zelf staan vier beveiligingstorentjes.
   (De lasers draaien op stroom. Wie goed kijkt, vindt misschien een andere manier...)
   En kijk uit voor de drukplaat voor de kluiskist: stap je erop, dan schieten er vier
   laserzuilen uit de vloer omhoog en sta je in een kooi.
+- De toren wordt **bewaakt**. Op de beveiligingsverdieping staat de **Stark Security Core**
+  (een serverkast met een rood lampje, in de rij serverkasten). Die beschermt de hele toren:
+  - **beveiligingstorentjes** (wit met rood) bij de lift in de lobby, op de
+    beveiligingsverdieping en in de kluis schieten op iedereen die binnenkomt (niet in creative);
+  - vier **beveiligingsdrones** met rode lampjes patrouilleren rond de kern en vallen je aan.
+    Schiet je er een neer, dan stuurt de kern na zo'n 45 seconden een nieuwe.
+  De kern is heel sterk (slopen kan met diamant, maar duurt lang). Wie hem **hackt**, krijgt de
+  toren: dan brandt het lampje groen, worden de lampjes van de drones blauw, laten torentjes,
+  drones en laserwanden jou en je team met rust, en bewaken ze de toren voor jou. Andere
+  spelers vallen ze dan alleen aan als PvP aan staat.
 
 ---
 

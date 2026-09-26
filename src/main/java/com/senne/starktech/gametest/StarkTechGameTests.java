@@ -113,6 +113,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -252,7 +253,7 @@ public final class StarkTechGameTests {
     }
 
     /**
-     * Het configbestand starktech-balance.toml: alle 120 getallen staan erin, en verander je er
+     * Het configbestand starktech-balance.toml: alle 128 getallen staan erin, en verander je er
      * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
@@ -261,9 +262,9 @@ public final class StarkTechGameTests {
         if (!spec.isLoaded()) {
             throw new GameTestAssertException("starktech-balance.toml is niet geladen");
         }
-        if (com.senne.starktech.edith.BalanceConfig.size() != 120) {
+        if (com.senne.starktech.edith.BalanceConfig.size() != 128) {
             throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
-                    + " getallen in het bestand in plaats van 120");
+                    + " getallen in het bestand in plaats van 128");
         }
         net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
@@ -283,6 +284,71 @@ public final class StarkTechGameTests {
             com.senne.starktech.edith.BalanceConfig.reapply();
         }
         helper.succeed();
+    }
+
+    // ================================================================ De beveiliging van de Stark Tower
+
+    /** Zet een beveiligingskern neer (zonder eigenaar, of met de gegeven eigenaar). */
+    private static com.senne.starktech.security.SecurityCoreBlockEntity placeCore(GameTestHelper helper, BlockPos pos,
+                                                                                   @Nullable ServerPlayer owner) {
+        helper.setBlock(pos, ModBlocks.SECURITY_CORE.get());
+        var core = (com.senne.starktech.security.SecurityCoreBlockEntity) helper.getBlockEntity(pos);
+        if (owner != null) {
+            core.setOwner(owner);
+        }
+        return core;
+    }
+
+    /** Een toren van niemand: het beveiligingstorentje schiet op wie er binnenkomt. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "security")
+    public static void security_turret_shoots_intruders(GameTestHelper helper) {
+        placeCore(helper, new BlockPos(2, 3, 2), null);
+        helper.setBlock(new BlockPos(12, 3, 12), ModBlocks.SECURITY_TURRET.get());
+        ServerPlayer intruder = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
+        helper.succeedWhen(() -> {
+            if (intruder.getHealth() >= intruder.getMaxHealth()) {
+                throw new GameTestAssertException("Het beveiligingstorentje heeft de indringer nog niet geraakt");
+            }
+        });
+    }
+
+    /**
+     * Na het hacken is de toren van jou: het torentje laat jou met rust, maar schiet nog wel op
+     * een monster. Door de laserwand van je eigen toren loop je zonder te branden.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "security")
+    public static void security_works_for_the_owner(GameTestHelper helper) {
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
+        placeCore(helper, new BlockPos(2, 3, 2), owner);
+        helper.setBlock(new BlockPos(12, 3, 12), ModBlocks.SECURITY_TURRET.get());
+        Husk monster = spawnDummyEnemy(helper, new BlockPos(18, 3, 12));
+        // Een laserwand waar de eigenaar in staat.
+        helper.setBlock(new BlockPos(12, 3, 18), ModBlocks.LASER_WALL.get());
+        helper.setBlock(new BlockPos(12, 4, 18), ModBlocks.LASER_WALL.get());
+        helper.succeedWhen(() -> {
+            if (owner.getHealth() < owner.getMaxHealth()) {
+                throw new GameTestAssertException("De beveiliging (of de laserwand) raakte de eigenaar");
+            }
+            if (monster.isAlive() && monster.getHealth() >= monster.getMaxHealth()) {
+                throw new GameTestAssertException("Het monster is nog niet geraakt");
+            }
+        });
+    }
+
+    /** De kern stuurt zijn beveiligingsdrones de lucht in, tot er vier rondvliegen. */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "security")
+    public static void security_core_launches_drones(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        placeCore(helper, pos, null);
+        BlockPos absolute = helper.absolutePos(pos);
+        helper.succeedWhen(() -> {
+            int drones = helper.getLevel().getEntitiesOfClass(com.senne.starktech.security.SecurityDroneEntity.class,
+                    new AABB(absolute).inflate(40), drone -> absolute.equals(drone.home())).size();
+            if (drones != com.senne.starktech.security.SecurityBalance.MAX_DRONES) {
+                throw new GameTestAssertException("Er vliegen " + drones + " beveiligingsdrones in plaats van "
+                        + com.senne.starktech.security.SecurityBalance.MAX_DRONES);
+            }
+        });
     }
 
     // ================================================================ De Hydra-bunker
@@ -2686,12 +2752,13 @@ public final class StarkTechGameTests {
     }
 
     /**
-     * De kluis moet echt een kluis zijn: bewakers, laserpoorten op de weg ernaartoe, en
-     * deuren die je open moet zien te krijgen.
+     * De kluis moet echt een kluis zijn: bewakers (beveiligingstorentjes), laserpoorten op de weg
+     * ernaartoe, en deuren die je open moet zien te krijgen. En op de beveiligingsverdieping staat
+     * de beveiligingskern, die je met een laptop kunt hacken.
      */
     private static void checkVault(GameTestHelper helper) {
         int emitters = 0;
-        int spawners = 0;
+        int guards = 0;
         int doors = 0;
         int levers = 0;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -2701,8 +2768,8 @@ public final class StarkTechGameTests {
                     BlockState state = helper.getBlockState(pos.set(x, y, z));
                     if (state.is(ModBlocks.LASER_EMITTER.get())) {
                         emitters++;
-                    } else if (state.is(Blocks.SPAWNER)) {
-                        spawners++;
+                    } else if (state.is(ModBlocks.SECURITY_TURRET.get())) {
+                        guards++;
                     } else if (state.is(Blocks.IRON_DOOR)) {
                         doors++;
                     } else if (state.is(Blocks.LEVER)) {
@@ -2714,9 +2781,11 @@ public final class StarkTechGameTests {
         if (emitters < 12) {
             throw new GameTestAssertException("Te weinig laserpoorten op de weg naar de kluis: " + emitters);
         }
-        if (spawners < 4) {
-            throw new GameTestAssertException("De kluis wordt niet bewaakt: " + spawners + " spawners");
+        if (guards < 4) {
+            throw new GameTestAssertException("De kluis wordt niet bewaakt: " + guards + " beveiligingstorentjes");
         }
+        // De kern op de beveiligingsverdieping (in de rij serverkasten, zie generate_structure.py).
+        helper.assertBlockPresent(ModBlocks.SECURITY_CORE.get(), new BlockPos(10, 58, 20));
         if (doors < 3 || levers < 3) {
             throw new GameTestAssertException("De omweg klopt niet: " + doors + " deuren, " + levers + " schakelaars");
         }

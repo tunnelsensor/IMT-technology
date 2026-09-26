@@ -52,6 +52,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ROCKET_AMMO.get());
                 output.accept(ModItems.HYDRA_CIRCUIT.get());
                 output.accept(ModItems.HYDRA_TURRET.get());
+                output.accept(ModItems.SECURITY_TURRET.get());
+                output.accept(ModItems.SECURITY_CORE.get());
                 output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
             })
             .build());

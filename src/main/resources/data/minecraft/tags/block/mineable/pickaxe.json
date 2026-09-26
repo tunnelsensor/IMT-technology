@@ -9,6 +9,8 @@
     "starktech:solar_panel",
     "starktech:heat_generator",
     "starktech:stark_turret",
-    "starktech:hydra_turret"
+    "starktech:hydra_turret",
+    "starktech:security_turret",
+    "starktech:security_core"
   ]
 }

@@ -43,6 +43,15 @@ public final class TurretBalance {
     @Tunable(section = "turrets", comment = "How far a Hydra turret reaches (blocks)")
     public static double HYDRA_RANGE = 14.0;
 
+    // ---------------------------------------------------------------- Beveiligingstorentje
+    /** Het beveiligingstorentje in de Stark Tower: geen stroom nodig, schiet op indringers. */
+    @Tunable(section = "turrets", comment = "Damage of one Stark Tower security turret shot")
+    public static float SECURITY_LASER_DAMAGE = 3.0f;
+    @Tunable(section = "turrets", comment = "Ticks between two security turret shots")
+    public static int SECURITY_LASER_INTERVAL = 20;
+    @Tunable(section = "turrets", comment = "How far a security turret reaches (blocks)")
+    public static double SECURITY_RANGE = 16.0;
+
     // ---------------------------------------------------------------- Draaien
     /** Hoe vaak (in ticks) hij rondkijkt naar een nieuw doelwit als hij er geen heeft. */
     public static final int SCAN_INTERVAL = 10;

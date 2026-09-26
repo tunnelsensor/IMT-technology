@@ -50,5 +50,11 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.turret.TurretBlockEntity>> TURRET =
             BLOCK_ENTITIES.register("turret",
                     () -> new BlockEntityType<>(com.senne.starktech.turret.TurretBlockEntity::new,
-                            java.util.Set.of(ModBlocks.STARK_TURRET.get(), ModBlocks.HYDRA_TURRET.get()), null));
+                            java.util.Set.of(ModBlocks.STARK_TURRET.get(), ModBlocks.HYDRA_TURRET.get(),
+                                    ModBlocks.SECURITY_TURRET.get()), null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.SecurityCoreBlockEntity>> SECURITY_CORE =
+            BLOCK_ENTITIES.register("security_core",
+                    () -> new BlockEntityType<>(com.senne.starktech.security.SecurityCoreBlockEntity::new,
+                            java.util.Set.of(ModBlocks.SECURITY_CORE.get()), null));
 }

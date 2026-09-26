@@ -133,7 +133,7 @@ public final class ModBlocks {
 
     /** Het automatische torentje voor je basis (te maken met een Hydra-onderdeel). */
     public static final DeferredBlock<com.senne.starktech.turret.TurretBlock> STARK_TURRET = BLOCKS.registerBlock(
-            "stark_turret", properties -> new com.senne.starktech.turret.TurretBlock(false, properties),
+            "stark_turret", properties -> new com.senne.starktech.turret.TurretBlock(com.senne.starktech.turret.TurretKind.STARK, properties),
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
                     .strength(3.5f, 6.0f)
@@ -143,11 +143,32 @@ public final class ModBlocks {
 
     /** Het vijandige torentje uit de Hydra-bunker. */
     public static final DeferredBlock<com.senne.starktech.turret.TurretBlock> HYDRA_TURRET = BLOCKS.registerBlock(
-            "hydra_turret", properties -> new com.senne.starktech.turret.TurretBlock(true, properties),
+            "hydra_turret", properties -> new com.senne.starktech.turret.TurretBlock(com.senne.starktech.turret.TurretKind.HYDRA, properties),
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(5.0f, 9.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .noOcclusion());
+
+    /** Het beveiligingstorentje van de Stark Tower (luistert naar de beveiligingskern). */
+    public static final DeferredBlock<com.senne.starktech.turret.TurretBlock> SECURITY_TURRET = BLOCKS.registerBlock(
+            "security_turret", properties -> new com.senne.starktech.turret.TurretBlock(
+                    com.senne.starktech.turret.TurretKind.SECURITY, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(5.0f, 9.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion());
+
+    /** De beveiligingskern van de Stark Tower: heel sterk, zodat hacken de weg is. */
+    public static final DeferredBlock<com.senne.starktech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
+            "security_core", com.senne.starktech.security.SecurityCoreBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(50.0f, 1200.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 4));
 }

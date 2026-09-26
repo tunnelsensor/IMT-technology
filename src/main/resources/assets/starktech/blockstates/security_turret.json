@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "starktech:block/security_turret"
+    }
+  }
+}

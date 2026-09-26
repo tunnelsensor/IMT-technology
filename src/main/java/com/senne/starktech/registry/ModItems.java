@@ -99,6 +99,10 @@ public final class ModItems {
             ModBlocks.STARK_TURRET, new Item.Properties().rarity(Rarity.EPIC));
     public static final DeferredItem<BlockItem> HYDRA_TURRET = ITEMS.registerSimpleBlockItem("hydra_turret",
             ModBlocks.HYDRA_TURRET, new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<BlockItem> SECURITY_TURRET = ITEMS.registerSimpleBlockItem("security_turret",
+            ModBlocks.SECURITY_TURRET, new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<BlockItem> SECURITY_CORE = ITEMS.registerSimpleBlockItem("security_core",
+            ModBlocks.SECURITY_CORE, new Item.Properties().rarity(Rarity.EPIC));
     public static final DeferredItem<Item> ROCKET_AMMO = ITEMS.registerSimpleItem("rocket_ammo",
             new Item.Properties());
 

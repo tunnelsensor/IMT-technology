@@ -5,6 +5,7 @@
     "starktech:laser_emitter",
     "starktech:dome_generator",
     "starktech:stark_turret",
-    "starktech:hydra_turret"
+    "starktech:hydra_turret",
+    "starktech:security_turret"
   ]
 }

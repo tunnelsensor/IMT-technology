@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, PowerConnectable {
     public static final MapCodec<TurretBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Codec.BOOL.fieldOf("hydra").forGetter(TurretBlock::isHydra),
+            TurretKind.CODEC.fieldOf("kind").forGetter(TurretBlock::kind),
             propertiesCodec()).apply(instance, TurretBlock::new));
 
     /** Krijgt het blok een redstone-signaal? Dan staat het uit. */
@@ -67,16 +67,20 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
 
     private static final VoxelShape SHAPE = Block.box(2, 0, 2, 14, 15, 14);
 
-    private final boolean hydra;
+    private final TurretKind kind;
 
-    public TurretBlock(boolean hydra, BlockBehaviour.Properties properties) {
+    public TurretBlock(TurretKind kind, BlockBehaviour.Properties properties) {
         super(properties);
-        this.hydra = hydra;
+        this.kind = kind;
         registerDefaultState(stateDefinition.any().setValue(POWERED, false).setValue(ENABLED, true));
     }
 
+    public TurretKind kind() {
+        return kind;
+    }
+
     public boolean isHydra() {
-        return hydra;
+        return kind == TurretKind.HYDRA;
     }
 
     @Override
@@ -154,7 +158,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (!hydra && placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
+        if (kind == TurretKind.STARK && placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
             turret.setOwner(player);
             EdithRedstone.register(player, pos, "edith.starktech.turret.default_name");
         }
@@ -164,7 +168,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                               InteractionHand hand, BlockHitResult hit) {
-        if (!stack.is(ModItems.ROCKET_AMMO.get()) || hydra) {
+        if (!stack.is(ModItems.ROCKET_AMMO.get()) || !kind.usesAmmo()) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
@@ -201,8 +205,16 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
                 ? Component.translatable("turret.starktech.status.online").withStyle(ChatFormatting.GREEN)
                 : Component.translatable(state.getValue(POWERED) ? "turret.starktech.status.off_redstone"
                         : "turret.starktech.status.off_edith").withStyle(ChatFormatting.RED);
-        if (hydra) {
+        if (kind == TurretKind.HYDRA) {
             player.displayClientMessage(Component.translatable("turret.starktech.status.hydra", onOff), true);
+            return;
+        }
+        if (kind == TurretKind.SECURITY) {
+            var core = com.senne.starktech.security.SecurityCores.coreAt(player.level(), turret.getBlockPos());
+            Component tower = core == null || core.ownerId() == null
+                    ? Component.translatable("turret.starktech.status.unclaimed").withStyle(ChatFormatting.RED)
+                    : Component.translatable("turret.starktech.status.owned", core.ownerName()).withStyle(ChatFormatting.AQUA);
+            player.displayClientMessage(Component.translatable("turret.starktech.status.security", onOff, tower), true);
             return;
         }
         boolean power = com.senne.starktech.energy.StarkGrid.available(player.level(), turret.getBlockPos())

@@ -62,7 +62,7 @@ public class TurretBlockEntity extends BlockEntity {
     private final ItemStackHandler ammo = new ItemStackHandler(1) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(ModItems.ROCKET_AMMO.get()) && !isHydra();
+            return stack.is(ModItems.ROCKET_AMMO.get()) && kind().usesAmmo();
         }
 
         @Override
@@ -86,8 +86,12 @@ public class TurretBlockEntity extends BlockEntity {
         super(ModBlockEntities.TURRET.get(), pos, state);
     }
 
+    public TurretKind kind() {
+        return getBlockState().getBlock() instanceof TurretBlock turret ? turret.kind() : TurretKind.STARK;
+    }
+
     public boolean isHydra() {
-        return getBlockState().getBlock() instanceof TurretBlock turret && turret.isHydra();
+        return kind() == TurretKind.HYDRA;
     }
 
     public ItemStackHandler ammo() {
@@ -156,7 +160,7 @@ public class TurretBlockEntity extends BlockEntity {
     }
 
     private double laserRange() {
-        return isHydra() ? TurretBalance.HYDRA_RANGE : TurretBalance.RANGE;
+        return kind().range();
     }
 
     /** Zo ver kijkt hij: met raketten erin wat verder dan de laser reikt. */
@@ -180,7 +184,7 @@ public class TurretBlockEntity extends BlockEntity {
         Vec3 aim = entity.getBoundingBox().getCenter();
         double range = scanRange();
         return aim.distanceToSqr(muzzle) <= range * range
-                && TurretTargeting.isTarget(level, isHydra(), ownerId, ownerName, entity)
+                && TurretTargeting.isTarget(level, kind(), ownerId, ownerName, entity, worldPosition)
                 && canSee(level, aim);
     }
 
@@ -195,32 +199,31 @@ public class TurretBlockEntity extends BlockEntity {
     }
 
     private void fireLaser(ServerLevel level, LivingEntity target) {
-        boolean hydra = isHydra();
+        TurretKind kind = kind();
         // Het Stark-torentje betaalt elk schot aan het stroomnet; geen stroom = geen laser.
-        if (!hydra) {
+        if (kind.needsPower()) {
             if (StarkGrid.available(level, worldPosition) < TurretBalance.LASER_COST) {
                 return;
             }
             StarkGrid.draw(level, worldPosition, TurretBalance.LASER_COST);
         }
-        laserCooldown = hydra ? TurretBalance.HYDRA_LASER_INTERVAL : TurretBalance.LASER_INTERVAL;
+        laserCooldown = kind.laserInterval();
 
         Vec3 muzzle = muzzle();
         Vec3 to = target.getBoundingBox().getCenter();
         Vec3 from = muzzle.add(to.subtract(muzzle).normalize().scale(0.7));
-        BeamEffectPayload.Kind kind = hydra ? BeamEffectPayload.Kind.HYDRA_LASER : BeamEffectPayload.Kind.DRONE_LASER;
-        level.playSound(null, worldPosition, ModSounds.DRONE_LASER.get(), SoundSource.BLOCKS,
-                0.8f, hydra ? 0.7f : 1.2f);
+        BeamEffectPayload.Kind beam = kind.beam();
+        level.playSound(null, worldPosition, ModSounds.DRONE_LASER.get(), SoundSource.BLOCKS, 0.8f, kind.pitch());
         // Een rayshield-koepel om het doelwit houdt de straal tegen (de eigen koepel niet).
         Vec3 shield = EdithDomes.blockedAt(level, to, muzzle, ownerId, DomeSettings.COST_LASER);
         if (shield != null) {
-            ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, shield, kind));
+            ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, shield, beam));
             return;
         }
         ServerPlayer owner = ownerId == null ? null : level.getServer().getPlayerList().getPlayer(ownerId);
         target.hurt(ModDamageTypes.turretLaser(level, owner),
-                hydra ? TurretBalance.HYDRA_LASER_DAMAGE : TurretBalance.LASER_DAMAGE);
-        ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, to, kind));
+                kind.laserDamage());
+        ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, to, beam));
     }
 
     private void fireRocket(ServerLevel level, LivingEntity target) {

@@ -85,7 +85,7 @@ public class StarkTech {
         // Een trechter kan raketten in een Stark-torentje doen.
         modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
                 event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
-                        ModBlockEntities.TURRET.get(), (turret, side) -> turret.isHydra() ? null : turret.ammo()));
+                        ModBlockEntities.TURRET.get(), (turret, side) -> turret.kind().usesAmmo() ? turret.ammo() : null));
 
         // Netwerkberichten tussen speler en server.
         modEventBus.addListener(ModNetwork::register);
@@ -144,6 +144,8 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithSuit::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SuitRockets::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(SuitRockets::onServerStopped);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.starktech.security.SecurityCores.clear());
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan
         NeoForge.EVENT_BUS.addListener(LaserAnimations::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) -> LaserAnimations.clear());

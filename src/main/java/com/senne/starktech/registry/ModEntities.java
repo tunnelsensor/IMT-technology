@@ -48,6 +48,16 @@ public final class ModEntities {
                     .clientTrackingRange(8)
                     .build("hydra_soldier"));
 
+    /** Een beveiligingsdrone van de Stark Tower (hoort bij een beveiligingskern). */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.starktech.security.SecurityDroneEntity>> SECURITY_DRONE =
+            ENTITIES.register("security_drone", () -> EntityType.Builder
+                    .of(com.senne.starktech.security.SecurityDroneEntity::new, MobCategory.MISC)
+                    .sized(0.7f, 0.4f)
+                    .eyeHeight(0.2f)
+                    .clientTrackingRange(8)
+                    .fireImmune()
+                    .build("security_drone"));
+
     /** Een mini-raket uit het raketpakket van het harnas. */
     public static final DeferredHolder<EntityType<?>, EntityType<MiniRocketEntity>> MINI_ROCKET = ENTITIES.register(
             "mini_rocket", () -> EntityType.Builder.<MiniRocketEntity>of(MiniRocketEntity::new, MobCategory.MISC)
@@ -62,5 +72,6 @@ public final class ModEntities {
         event.put(STARK_DRONE.get(), StarkDroneEntity.createAttributes().build());
         event.put(RAID_DRONE.get(), RaidDroneEntity.createAttributes().build());
         event.put(HYDRA_SOLDIER.get(), HydraSoldierEntity.createAttributes().build());
+        event.put(SECURITY_DRONE.get(), com.senne.starktech.security.SecurityDroneEntity.createAttributes().build());
     }
 }
