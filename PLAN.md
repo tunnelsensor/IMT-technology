@@ -445,7 +445,13 @@ wilt. Eerst de kleine dingen, dan de grote.
         testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
-- [ ] De Stark Tower verder uitbreiden (nog te bespreken)
+- [ ] **De Stark Tower verder uitbreiden** (jouw keuze op 26 september: alle vijf)
+  - [ ] **Inrichting en buitenkant** mooier afgewerkt, met meer detail
+  - [ ] **Tony's lab** met een harnas-werkbank: daar maak en upgrade je harnasdelen
+  - [ ] **Beveiliging die leeft**: Stark-beveiligingsdrones of -torentjes die indringers aanvallen
+  - [ ] **Landingsplatform en hangar** bovenop: landen met het harnas, je arsenaal-drones staan er
+  - [ ] **De toren overnemen**: heb je de kluis gehaald, dan wordt hij jouw basis (lasers en
+        beveiliging werken voor jou, en je kunt er laden en spullen kwijt)
 - [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
         Tot 16 blokken opzij en 48 diep, als gekleurde blokjes in een doorzichtig blok aarde,
@@ -482,7 +488,10 @@ wilt. Eerst de kleine dingen, dan de grote.
 ### 5. De AI-stem (als laatste)
 
 - [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
-      taalmodel in de cloud via de Claude API
+      taalmodel in de cloud via de Claude API (jouw keuze op 26 september: lokaal én Claude,
+      te kiezen in het G-menu)
+- [ ] Ze **praat én doet dingen**: gewone taal ("stuur twee drones naar die zombie", "hoeveel
+      energie heb ik?") wordt een actie of een antwoord; het woordenboek blijft de snelle reserve
 - [ ] De API-sleutel vul je **in het spel** in
 - [ ] De mod kiest aan de hand van je pc-specs welk lokaal model wordt geïnstalleerd
 - [ ] Ze onthoudt dingen permanent ("mijn basis heet Thuis") én leert van jouw manier van praten
@@ -521,14 +530,14 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 
 ## Open vragen
 
-- [ ] **Moeten de getallen uit `EdithBalance.java` naar een configbestand?**
-      Nu moet je de mod herbouwen om iets aan te passen. In een configbestand kun je tijdens het
-      spelen bijsturen — handig zodra je met vrienden speelt ("die satelliet is te sterk").
-- [ ] **Wil je bij elke nieuwe functie automatische tests?**
-      Ik schrijf ze nu standaard mee (38 stuks inmiddels). Ze kosten per functie 20-50 regels
-      extra en vangen op dat een wijziging aan de drones per ongeluk de satelliet sloopt.
-- [ ] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? Die zie je alleen tijdens
-      ontwikkelen, nooit in het spel.
+- [ ] **Moeten de getallen uit `EdithBalance.java` naar een configbestand?** Ja, per wereld
+      (jouw keuze op 26 september), in `<wereld>/serverconfig`, zoals de raids al zijn. Dit komt
+      als eerste, voor de toren.
+- [x] **Wil je bij elke nieuwe functie automatische tests?** (mijn invulling: ja, ik schrijf ze
+      mee; er zijn er nu 76, en ze vingen deze week o.a. een lege zwarte doos en een stikkende
+      drone)
+- [x] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? (mijn invulling: nee, die
+      zie je alleen tijdens het ontwikkelen, en Nederlands leest voor jou makkelijker)
 
 ---
 
