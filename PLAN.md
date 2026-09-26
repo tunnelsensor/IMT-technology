@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 83 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 74 functies één voor één zien (of een
+**Stand van zaken:** 87 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 75 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -464,9 +464,15 @@ wilt. Eerst de kleine dingen, dan de grote.
         Esc breekt de hack af; de server keurt een onmogelijk snelle hack af. Daarna is de toren
         van jou. Showcase: "Stark Tower: security and hack". Drie nieuwe tests.
         (mijn invulling) De vorm van de minigame (timing met een balk).
-  - [ ] **Tony's lab** met een harnas-werkbank: het harnas maak je daar (niet meer in de crafting
-        table), en je bouwt er upgrades in met een voortgangsbalk: stuwraketten, bepantsering,
-        repulsor-condensator en het raketpakket
+  - [x] **Tony's lab** met een harnas-werkbank — `61fde87`
+        De Suit Workbench (op stroom van het net): negen vakken voor materialen, knoppen om een
+        borstplaat, broek of laarzen te bouwen (zelfde materialen als het oude recept; de muis op
+        de knop laat zien wat het kost), en een vak voor een stuk harnas plus een upgrade. Upgrades:
+        Thruster Upgrade (laarzen, tot 3: sneller en zuiniger vliegen), Armor Plating (elk stuk, tot
+        2: meer schade weg), Repulsor Capacitor (borstplaat, tot 2: sterkere repulsor), en het
+        raketpakket. Het harnas staat niet meer in de crafting table. In het lab van de toren staat
+        een werkbank met stroom, en in de kisten zit soms een upgrade. Vier nieuwe tests.
+        (mijn invulling) Welke upgrades, hoeveel ze doen, en de recepten.
   - [ ] **Landingsplatform en hangar**: landen met het harnas op het dak, en je arsenaal-drones
         staan in de hangar
   - [ ] **Inrichting en buitenkant** mooier afgewerkt, met meer detail
