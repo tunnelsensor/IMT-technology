@@ -40,7 +40,7 @@ public class SuitWorkbenchScreen extends AbstractContainerScreen<SuitWorkbenchMe
             String name = blueprint.name().toLowerCase(Locale.ROOT);
             Button button = Button.builder(Component.translatable("screen.starktech.workbench.build." + name),
                             b -> minecraft.gameMode.handleInventoryButtonClick(menu.containerId, blueprint.ordinal()))
-                    .bounds(leftPos + 66, topPos + 20 + blueprint.ordinal() * 22, 70, 20)
+                    .bounds(leftPos + 66, topPos + 20 + blueprint.ordinal() * 22, 62, 20)
                     .tooltip(Tooltip.create(costText(blueprint)))
                     .build();
             buildButtons.add(addRenderableWidget(button));

@@ -656,6 +656,46 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON)
                 .pause(30));
 
+        add("Suit workbench", "Tony's lab: de harnas-werkbank (op stroom, hier van een warmtegenerator "
+                + "ernaast). Links de materialen; houd de muis op een knop en je ziet wat een stuk kost (een grijze "
+                + "knop mist iets). Eerst bouwt hij een borstplaat: de materialen gaan eruit, het balkje loopt vol, "
+                + "en de borstplaat staat in het vak Suit. Dan laarzen met een Thruster Upgrade: die bouwt hij er "
+                + "vanzelf in (in de tooltip staat daarna 'Thruster upgrades: 1'). Het harnas kun je niet meer in "
+                + "de crafting table maken.", start, 180, 30, s -> {
+            BlockPos bench = ShowcaseScene.START.offset(0, 0, -3);
+            s.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(bench, com.senne.starktech.registry.ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
+                level.setBlockAndUpdate(bench.east(), com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(bench.east()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                if (level.getBlockEntity(bench) instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be) {
+                    be.clearContent();
+                    be.setItem(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 8));
+                    be.setItem(1, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 2));
+                    be.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 4));
+                    player.openMenu(be);
+                }
+            })
+                    .pause(50)
+                    .onServer(0, player -> player.containerMenu.clickMenuButton(player, 0))
+                    .pause(240)
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be) {
+                            // De nieuwe borstplaat naar je inventaris, en dan laarzen erin.
+                            player.getInventory().add(be.removeItemNoUpdate(
+                                    com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK));
+                            be.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK,
+                                    new ItemStack(ModItems.STARK_BOOTS.get()));
+                            be.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE,
+                                    new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
+                        }
+                    })
+                    .pause(140)
+                    .close(20);
+        });
+
         add("Suit flight", "Dubbel spatie: stuwraketten aan. Stijgen, stilhangen, vooruit met de "
                 + "naverbrander (sprint), opzij (het beeld helt over), uitglijden en zelf landen. "
                 + "Links van het vizier: stuwkracht, snelheid en hoogte. Op het eind van achteren: de "
