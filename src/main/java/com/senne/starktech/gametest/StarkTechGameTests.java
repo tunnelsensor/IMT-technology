@@ -205,6 +205,52 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Een illusie (of het onzichtbare veld) komt waar je naar kijkt. Kijk je naar een wezen met
+     * een muur erachter, dan komt hij bij het wezen, niet op de muur. Vroeger ging hij de muur in,
+     * en stikte de drone daar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "illusion_spot")
+    public static void illusion_goes_where_you_look(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(12, 3, 4));
+        Husk target = spawnDummyEnemy(helper, new BlockPos(12, 3, 12));
+        // Een muur ver achter het doelwit.
+        for (int x = 8; x <= 16; x++) {
+            for (int y = 3; y <= 7; y++) {
+                helper.setBlock(new BlockPos(x, y, 20), Blocks.STONE);
+            }
+        }
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.getEyePosition());
+        Vec3 spot = EdithDrones.illusionSpot(owner);
+        if (Math.hypot(spot.x - target.getX(), spot.z - target.getZ()) > 2) {
+            throw new GameTestAssertException("De illusie kwam op " + helper.relativeVec(spot)
+                    + " in plaats van bij het doelwit op " + helper.relativeVec(target.position()));
+        }
+        helper.succeed();
+    }
+
+    /** Een drone ademt niet: klem in een blok stikt hij niet. */
+    @GameTest(template = ARENA, timeoutTicks = 80, batch = "illusion_spot")
+    public static void drones_do_not_suffocate(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(2, 3, 2));
+        BlockPos inside = new BlockPos(12, 4, 12);
+        helper.setBlock(inside, Blocks.STONE);
+        helper.setBlock(inside.above(), Blocks.STONE);
+        StarkDroneEntity drone = ModEntities.STARK_DRONE.get().create(helper.getLevel());
+        drone.setup(owner, StarkDroneEntity.Mode.ILLUSION, 0, -1);
+        drone.setNoAi(true);
+        Vec3 pos = helper.absoluteVec(Vec3.atCenterOf(inside));
+        drone.moveTo(pos.x, pos.y - 0.2, pos.z, 0, 0);
+        helper.getLevel().addFreshEntity(drone);
+        float health = drone.getHealth();
+        helper.runAfterDelay(60, () -> {
+            if (!drone.isAlive() || drone.getHealth() < health) {
+                throw new GameTestAssertException("De drone kreeg schade in het blok (" + drone.getHealth() + "/" + health + ")");
+            }
+            helper.succeed();
+        });
+    }
+
     // ================================================================ De Hydra-bunker
     // In de test ligt alles één blok hoger dan in tools/generate_bunker.py (y + 1).
 

@@ -885,6 +885,10 @@ public class StarkDroneEntity extends PathfinderMob {
     /** De eigenaar (en zijn andere drones) kunnen deze drone geen pijn doen. */
     @Override
     public boolean hurt(DamageSource source, float damage) {
+        // Een drone ademt niet: raakt hij klem in een blok, dan stikt hij daar niet in.
+        if (source.is(net.minecraft.world.damagesource.DamageTypes.IN_WALL)) {
+            return false;
+        }
         Entity attacker = source.getEntity();
         if (attacker != null && ownerId != null
                 && (ownerId.equals(attacker.getUUID()) || attacker instanceof StarkDroneEntity)) {

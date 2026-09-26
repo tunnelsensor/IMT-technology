@@ -338,6 +338,8 @@ public final class EdithDrones {
      * Waar de illusie komt te staan: op de plek waar je naar KIJKT, tot ILLUSION_AIM_RANGE
      * blokken ver. Zo zet je een nep-muur precies in die gang, of een nep-leger op die heuvel.
      *
+     * Kijk je naar een wezen (een koe, een speler), dan komt hij daar: niet op de muur erachter.
+     * Kijk je tegen de zijkant van een muur, dan op de vrije plek ervoor (en niet ín de muur).
      * Kijk je de lucht in, dan zetten we hem een stuk voor je neer. De drone zelf hangt twee
      * blokken boven de grond, want zijn beeld hangt eronder: dan staat de muur netjes op de
      * grond in plaats van er half in.
@@ -347,7 +349,16 @@ public final class EdithDrones {
         Vec3 far = eye.add(owner.getViewVector(1.0f).scale(EdithBalance.ILLUSION_AIM_RANGE));
         BlockHitResult hit = owner.level().clip(new ClipContext(eye, far,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
-        Vec3 aimed = hit.getType() == HitResult.Type.MISS ? far : Vec3.atCenterOf(hit.getBlockPos());
+        net.minecraft.world.entity.LivingEntity looked = com.senne.starktech.edith.EdithServer.lookTarget(owner,
+                EdithBalance.ILLUSION_AIM_RANGE);
+        Vec3 aimed;
+        if (looked != null) {
+            aimed = looked.position().add(0, 0.5, 0);
+        } else if (hit.getType() == HitResult.Type.MISS) {
+            aimed = far;
+        } else {
+            aimed = Vec3.atCenterOf(hit.getBlockPos().relative(hit.getDirection()));
+        }
         // Op de grond onder die plek gaan staan (of blijven zweven als daar niets is).
         ServerLevel level = owner.serverLevel();
         BlockPos.MutableBlockPos pos = BlockPos.containing(aimed).mutable();
