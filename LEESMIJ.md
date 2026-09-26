@@ -429,37 +429,53 @@ Alle zinnen kun je zelf aanpassen in **G > Systemen > Commando's** (of in
 python tools/showcase.py
 ```
 
-Het script vraagt eerst `Wil je een pauze tussen elke functie (Y/n):`. Druk gewoon op Enter
-voor ja (wat in HOOFDLETTERS staat is de standaard), of typ `n`.
+Het spel start meteen op in een testwereld (dat duurt een halve tot een hele minuut). Intussen
+zie je de **inhoud**: alle functies per deel (De bril, Drones, Transport, ...), met hun nummer.
+Bovenaan staat **NIEUW**: wat je nog niet gezien hebt (ook in de delen gemarkeerd met een `*`).
+Dan vraagt het script `Wat wil je zien?`:
 
-Daarna start het spel vanzelf in een testwereld (dat duurt een halve tot een hele minuut) en
-laat het elke functie van de mod zien, van het opzetten van de bril tot de Stark Tower. In je
-terminal staat bij elke functie de naam en waar je op moet letten; wat E.D.I.T.H. zegt,
-verschijnt er ook.
+| Wat je typt | Wat je ziet |
+|---|---|
+| Enter | alles |
+| `n` | alleen de nieuwe functies |
+| `3 7 12` | die functies |
+| `10-15` | functie 10 tot en met 15 |
+| `drones` | een heel deel (een stukje van de naam is genoeg: `bril`, `harnas`, `vijanden`...) |
+
+Je mag ze mengen, bijvoorbeeld `n 3-5 harnas`. Een functie gaat uit NIEUW zodra je hem bekeken
+hebt: hij speelde tot het eind, of je stopte hem pas na 8 seconden. Wat je meteen overslaat,
+blijft nieuw. Wat je gezien hebt staat in `showcase-gezien.json`; gooi dat weg en alles is
+weer nieuw.
+
+Daarna vraagt het `Wil je een pauze tussen elke functie (Y/n):`. Druk gewoon op Enter voor ja
+(wat in HOOFDLETTERS staat is de standaard), of typ `n`. In je terminal staat bij elke functie
+de naam en waar je op moet letten; wat E.D.I.T.H. zegt, verschijnt er ook.
 
 Met pauze wacht het script na elke functie op jou. Je typt iets en drukt op Enter:
 
 | Wat je typt | Wat er gebeurt |
 |---|---|
-| Enter of `s` | volgende functie |
+| Enter of `s` | volgende functie (van wat je koos) |
 | `v` | vorige functie |
 | `r` | deze functie nog eens |
+| `i` | de inhoud weer zien en iets anders kiezen |
 | `q` | stoppen (het spel sluit ook) |
 | een getal, bv. `12` | naar die functie springen |
 | iets anders | wordt bewaard als notitie bij deze functie, in `showcase-notities.md` |
 
 Dat typen kan ook al terwijl een functie speelt. Een notitie wordt dan meteen bewaard en de
-functie speelt gewoon door. Typ je `s` en Enter (of `v`, `r`, `q` of een getal), dan stopt de
-functie meteen en gaat het script daarheen. Alleen wat je in zijn geheel typt telt: een S midden
-in een notitie slaat dus niets over. Klik wel eerst op de terminal, anders krijgt het spel je
-toetsen.
+functie speelt gewoon door. Typ je `s` en Enter (of `v`, `r`, `i`, `q` of een getal), dan stopt
+de functie meteen en gaat het script daarheen. Alleen wat je in zijn geheel typt telt: een S
+midden in een notitie slaat dus niets over. Klik wel eerst op de terminal, anders krijgt het
+spel je toetsen.
 
-Beginnen bij een bepaalde functie: `python tools/showcase.py --vanaf 30`. Alleen een stukje:
-`python tools/showcase.py --vanaf 30 --tot 34`.
+Zonder inhoud meteen beginnen bij een bepaalde functie: `python tools/showcase.py --vanaf 30`.
+Alleen een stukje: `python tools/showcase.py --vanaf 30 --tot 34`.
 
 Het spel draait in de map `run-showcase`, los van je eigen werelden. Je hoeft er niets in te
 doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
-`client/dev/ShowcaseFeatures.java`, dan zit hij in de showcase.
+`client/dev/ShowcaseFeatures.java` (onder het juiste kopje `// ----- Naam`), dan zit hij in de
+showcase en staat hij bij NIEUW.
 
 ---
 
