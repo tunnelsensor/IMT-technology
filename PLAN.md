@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 74 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 76 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 73 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -416,7 +416,7 @@ wilt. Eerst de kleine dingen, dan de grote.
 
 ### 4. Meer in de wereld
 
-- [ ] Meer structuren
+- [x] Meer structuren (het satellietwrak en de Hydra-bunker)
   - [x] **Neergestorte Stark-satelliet** — `2510e03`, controle `4629359`
         Een oude Stark-satelliet uit zijn baan gevallen: een krater van zo'n 25 blokken met
         verschroeide grond, opgeworpen aarde en de voor waar hij binnenkwam; in het midden de
@@ -446,7 +446,7 @@ wilt. Eerst de kleine dingen, dan de grote.
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
 - [ ] De Stark Tower verder uitbreiden (nog te bespreken)
-- [ ] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
+- [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
         Tot 16 blokken opzij en 48 diep, als gekleurde blokjes in een doorzichtig blok aarde,
         in de kleuren van de ertsscanner (diamant en smaragd knipperen, kolen en koper zwakker).
@@ -502,14 +502,18 @@ alle schermen, de holotafel in alle drie de standen, het harnas op je lijf en ho
 raiddrones eruitzien.
 
 - [ ] Hoe het vliegen *aanvoelt* (de getallen kloppen, maar dat moet je zelf proberen)
-- [ ] De blauwe straalvlammen onder de laarzen (het screenshot werd onderbroken)
+- [x] De blauwe straalvlammen onder de laarzen: gezien op 26 september (`47_flight_jets`), in orde
 - [ ] Raiddrones: hoe ze bewegen en aanvallen
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 
 - [x] De **schildkoepel** zie je van een afstand bijna niet — opgelost met de nieuwe koepel
       (`e0d2b64`).
-- [ ] **Illusie "cloak"**: op het screenshot was de koe in het veld nog gewoon te zien.
+- [x] **Illusie "cloak"**: op het screenshot was de koe in het veld nog gewoon te zien — `c615d11`
+      Het veld ging naar de muur achter de koe (alleen blokken telden bij het richten), en
+      raakte je de zijkant van een muur, dan kwam de drone ín de muur en stikte hij. Nu komt het
+      veld bij het wezen waar je naar kijkt, of op de vrije plek voor de muur, en stikken drones
+      niet meer. Twee nieuwe tests.
 - [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
 
@@ -534,18 +538,17 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 
 **Gevecht**
 - Repulsor-handschoen als los item (nu zit de repulsor in de borstplaat)
-- Mini-raketten die hun doel volgen
+- ~~Mini-raketten die hun doel volgen~~ (gebouwd: `c030a4a`)
 - "Veronica": onderdelen van een harnas die naar je toe vliegen
-- Drone-formaties (schild, pijl, cirkel)
+- ~~Drone-formaties (schild, pijl, cirkel)~~ (gebouwd: `065664e`)
 - Het harnas: onder water ademen
 
 **Basis en techniek**
 - Een werkbank die harnasdelen maakt
 - Een Stark-AI-kern die passief onderzoek doet
-- Automatische torentjes die aan je relais-groepen hangen
-- Energie-netwerk: kabels of een draadloos Stark-net, zodat zonnepanelen en warmtegeneratoren
-  niet meer alleen zichzelf opladen
-- Holotafel: een vierde stand die de ertsen in de buurt laat zien
+- ~~Automatische torentjes die aan je relais-groepen hangen~~ (gebouwd: `53ff0b9`, ze staan in je redstone-lijst)
+- ~~Energie-netwerk: kabels of een draadloos Stark-net~~ (gebouwd: de Stark-kabels)
+- ~~Holotafel: een stand die de ertsen in de buurt laat zien~~ (gebouwd: `6cd20ed`)
 
 **Sfeer**
 - Eigen geluiden. Alle 18 geluiden in `sounds.json` zijn nu vanilla-geluiden onder een andere
@@ -553,8 +556,7 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 - Betere foutmeldingen bij Spotify en de stem-installatie
 
 **Wereld**
-- Een tweede soort structuur met de onderdelen voor de volgende fase (Hydra-bunker; de
-  neergestorte satelliet is gebouwd, zie hoofdstuk 4)
+- ~~Een tweede soort structuur met de onderdelen voor de volgende fase~~ (gebouwd: de Hydra-bunker, `163771b`)
 
 ---
 
