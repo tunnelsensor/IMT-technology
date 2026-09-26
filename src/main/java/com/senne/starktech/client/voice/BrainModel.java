@@ -63,7 +63,7 @@ public enum BrainModel {
                 return model;
             }
         }
-        return totalRamGb() >= 16 ? MEDIUM : SMALL;
+        return totalRamGb() >= 15 ? MEDIUM : SMALL; // een pc met "16 GB" meldt er net iets minder
     }
 
     /**

@@ -1107,6 +1107,38 @@ final class ShowcaseFeatures {
                 .pause(140)
                 .close(0));
 
+        add("AI Brain", "Het scherm G > Systems > AI Brain: woordenboek, lokaal model of Claude (met je eigen "
+                + "API-sleutel), en 'Speaks on her own'. Daarna praat je (hier als tekst, zonder microfoon) tegen "
+                + "het lokale model: een vraag over je batterij, twee dingen tegelijk, iets onthouden en terugvragen, "
+                + "een vage zin (dan vraagt ze wat je bedoelt), en een zin in het Engels. Wat ze hoort en antwoordt "
+                + "staat bovenaan. Staat het lokale model niet in de showcase-map, dan zie je alleen het scherm.",
+                start, 180, 0, s -> {
+            s.step(0, () -> com.senne.starktech.client.voice.EdithMemory.forgetAll())
+                    .open(10, com.senne.starktech.client.BrainScreen::new)
+                    .pause(100)
+                    .close(0);
+            // Zinnen zoals het oor ze zou opschrijven; na elke zin wachten tot ze klaar is met denken.
+            s.step(0, () -> {
+                com.senne.starktech.client.voice.BrainModel.decide(); // welke maat past bij deze pc
+                if (com.senne.starktech.client.voice.EdithBrain.ready(com.senne.starktech.client.voice.BrainMode.LOCAL)) {
+                    com.senne.starktech.client.voice.EdithBrain.setMode(com.senne.starktech.client.voice.BrainMode.LOCAL);
+                }
+            });
+            for (String said : new String[] {"hoeveel energie heb ik nog", "zet nachtzicht aan en scan naar ertsen",
+                    "onthoud dat mijn basis Stark Hoeve heet", "hoe heet mijn basis?", "doe iets met de ding",
+                    "what time is it and is it going to rain"}) {
+                s.step(0, () -> {
+                    if (com.senne.starktech.client.voice.EdithBrain.mode() == com.senne.starktech.client.voice.BrainMode.LOCAL) {
+                        com.senne.starktech.client.voice.VoiceControl.hear(said);
+                    }
+                })
+                        .pause(2)
+                        .waitUntil(1200, () -> !com.senne.starktech.client.voice.EdithBrain.isThinking())
+                        .pause(70);
+            }
+            s.step(0, () -> com.senne.starktech.client.voice.EdithBrain.setMode(com.senne.starktech.client.voice.BrainMode.DICTIONARY));
+        });
+
         add("Music (Spotify)", "Het muziekscherm: eenmalig Spotify koppelen, daarna 'E.D.I.T.H. play X "
                 + "by Y'.", start, 180, 0, s -> s
                 .open(10, MusicScreen::new)
