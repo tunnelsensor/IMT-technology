@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 70 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 71 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 72 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -401,6 +401,18 @@ wilt. Eerst de kleine dingen, dan de grote.
       zei geen "Access denied" — `e135989` (nieuwe test)
 - [x] De standaardgroep van een relais heette "algemeen" (Nederlands in het spel); nu "general",
       en oude relais gaan vanzelf mee — `b08c4d3`
+
+**Het G-menu opnieuw ingedeeld** (26 september)
+- [x] Tien tabbladen — `1bca747`
+      COMBAT (repulsor, raketten, rayshield) · SATELLITE & ARSENAL (precisie-straal,
+      bombardement en schuivende laser elk apart: kiezen = die stand en meteen vuren, LOCKED
+      als hij nog op slot zit, PICK END als de laser op zijn eindpunt wacht; plus het
+      satellietscherm en het arsenaal) · DRONES (zwerm, één drone, escorte, vorm, stand down,
+      markeringen wissen) · RECON DRONES (camera, spion, meekijken, rapport) · TRANSPORT ·
+      TECH · ILLUSION · INFORMATION (ertsen, dreigingen, doelanalyse) · NAVIGATION · SYSTEMS
+      (nu ook nachtzicht). Cijfers 1-9 en 0 springen naar een tabblad. Eén nieuwe test.
+      (mijn invulling) Het tweede, lege puntje onder Satellite & Arsenal: het satellietscherm
+      en het arsenaal.
 
 ### 4. Meer in de wereld
 
