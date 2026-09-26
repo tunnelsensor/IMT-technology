@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 80 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 73 functies één voor één zien (of een
+**Stand van zaken:** 83 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 74 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -455,10 +455,15 @@ wilt. Eerst de kleine dingen, dan de grote.
         creative); daarna laten torentjes, drones én laserwanden de eigenaar en zijn team met
         rust. De drones zijn geen "monsters", zodat je eigen torentjes en escorte ze na de hack
         niet neerschieten. Drie nieuwe tests.
-  - [ ] **De toren overnemen met een laptop** (jouw idee): geen bril nodig. Je speelt in een
-        scherm een kleine hack-minigame; ondertussen blijft de beveiliging je aanvallen, dus snel
-        en nauwkeurig zijn. Daarna is de beveiliging van jou en valt ze jou niet meer aan (ook
-        de lasers niet), en is de toren je basis
+  - [x] **De toren overnemen met een laptop** (jouw idee) — `9cbf5ab`
+        Stark Laptop (zwart glas, redstone, Stark-chip, ijzer; geen bril nodig): klik op de kern,
+        het alarm gaat af en alle drones komen op je af. De minigame heeft drie lagen (Firewall,
+        Encryption, Override; 3, 4 en 5 treffers): spatie of klik als de heen-en-weer schuivende
+        cursor in het groene vak staat, elke laag sneller met een kleiner vak; mis = een treffer
+        kwijt. Het spel loopt door, dus je wordt beschoten. Weglopen (> 6 blokken), doodgaan of
+        Esc breekt de hack af; de server keurt een onmogelijk snelle hack af. Daarna is de toren
+        van jou. Showcase: "Stark Tower: security and hack". Drie nieuwe tests.
+        (mijn invulling) De vorm van de minigame (timing met een balk).
   - [ ] **Tony's lab** met een harnas-werkbank: het harnas maak je daar (niet meer in de crafting
         table), en je bouwt er upgrades in met een voortgangsbalk: stuwraketten, bepantsering,
         repulsor-condensator en het raketpakket
