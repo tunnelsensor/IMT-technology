@@ -191,4 +191,14 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> 5)
                     .noOcclusion());
+
+    /** Het midden van een landingsplatform: hier land je met het harnas, en ben je thuis. */
+    public static final DeferredBlock<com.senne.starktech.suit.LandingPadBlock> LANDING_PAD = BLOCKS.registerBlock(
+            "landing_pad", com.senne.starktech.suit.LandingPadBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 10));
 }

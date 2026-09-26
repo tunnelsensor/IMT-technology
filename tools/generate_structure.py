@@ -20,7 +20,8 @@ reling en lampjes. Van onder naar boven:
    67-76    de lasergang: negen rayshields en de omweg met drie deuren
    77-87    DE KLUIS: hier ligt de bril, achter bewakers en een laserkooi-val
    88-98    het penthouse: bar, lounge, piano, slaapplek, holotafel
-   99-105   het dak: landingsdek, zonnepanelen, schotel, de arc-reactor-kroon met een baken
+   99-105   het dak: landingsdek, een uitstekend landingsplatform voor het harnas (oostkant),
+            zonnepanelen, schotel, de arc-reactor-kroon met een baken
   106-109   de antennes
 
 Buiten heeft hij koperen ribben over de volle hoogte, verlichte randen per verdieping en
@@ -1123,6 +1124,8 @@ def build_roof():
     put(MID, CROWN_Y - 1, MID, GLASS)
     put(MID, CROWN_Y, MID, GLASS)
 
+    build_landing_platform(x1)
+
     # Antennes (van ijzeren staven: daar gaat de straal gewoon doorheen).
     for y in range(CROWN_Y + 1, SIZE_Y - 1):
         put(MID, y, MID, RAIL, BARS)
@@ -1131,6 +1134,51 @@ def build_roof():
     for (x, z) in ((MID - 5, MID - 5), (MID + 5, MID + 5)):
         for dy in (1, 2, 3, 4):
             put(x, CROWN_Y + dy, z, "minecraft:end_rod", {"facing": "up"})
+
+
+def build_landing_platform(roof_x1):
+    """
+    Het landingsplatform voor het harnas: een dek van 9 x 9 dat aan de oostkant uit het dak
+    steekt, zoals in The Avengers. In het midden het Landing Pad-blok (daar land je, en daar laadt
+    je bril op), met een blauwe ring om het landingsvak van 5 x 5 en geel-zwarte strepen langs
+    de rand. Onder het midden hangt een warmtegenerator tussen drie magmablokken: die geeft het
+    platform stroom, en van onderen zie je hem gloeien als een motor.
+
+    Van het platform loop je zo het dak op (de reling is daar open), en de ladder naast de
+    opening brengt je naar het penthouse.
+    """
+    y = ROOF_Y
+    x0, x1 = roof_x1 + 1, roof_x1 + 9
+    z0, z1 = MID - 4, MID + 4
+    cx, cz = roof_x1 + 5, MID
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            ring = max(abs(x - cx), abs(z - cz))
+            if ring == 4:
+                block = "minecraft:yellow_concrete" if (x + z) % 2 == 0 else "minecraft:black_concrete"
+            elif ring == 3:
+                block = STRIPE
+            else:
+                block = "minecraft:gray_concrete"
+            put(x, y, z, block)
+    put(cx, y, cz, "starktech:landing_pad")
+    # Landingslichten op de vier hoeken.
+    for (x, z) in ((x0, z0), (x0, z1), (x1, z0), (x1, z1)):
+        put(x, y, z, LIGHT)
+        put(x, y + 1, z, "minecraft:end_rod", {"facing": "up"})
+    # De reling van het dak gaat open waar het platform begint.
+    for z in range(z0 + 1, z1):
+        put(roof_x1, y + 1, z, "minecraft:air")
+    # Draagbalken eronder, en de generator met zijn magma.
+    for x in range(x0, x1 + 1):
+        put(x, y - 1, z0, TRIM)
+        put(x, y - 1, z1, TRIM)
+    for z in range(z0, z1 + 1):
+        put(x1, y - 1, z, TRIM)
+    put(cx, y - 1, cz, "starktech:heat_generator", {"facing": "east"})
+    put(cx, y - 2, cz, "minecraft:magma_block")
+    put(cx - 1, y - 1, cz, "minecraft:magma_block")
+    put(cx + 1, y - 1, cz, "minecraft:magma_block")
 
 
 # --------------------------------------------------------------------- De route naar boven

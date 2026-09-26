@@ -148,6 +148,8 @@ public final class EdithSuit {
     private static void thrusters(ServerPlayer player) {
         player.resetFallDistance();
         if (player.onGround()) {
+            // Net geland op je eigen landingsplatform? Dan zegt E.D.I.T.H. "welkom thuis".
+            LandingPadBlockEntity.touchdown(player);
             return; // op de grond kosten ze niets; je spel zet ze zo meteen zelf uit
         }
         ServerLevel level = player.serverLevel();
@@ -161,6 +163,7 @@ public final class EdithSuit {
         if (player.tickCount % 20 != 0) {
             return;
         }
+        LandingPads.forgetMissing(player);
         int drain = speed > SuitBalance.BOOST_SPEED ? SuitBalance.DRAIN_BOOST
                 : speed > SuitBalance.CRUISE_SPEED ? SuitBalance.DRAIN_FLY : SuitBalance.DRAIN_HOVER;
         // Stuwraket-upgrades in de laarzen: zuiniger vliegen.
@@ -322,10 +325,12 @@ public final class EdithSuit {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         FLYING_BY_SUIT.remove(event.getEntity().getUUID());
         ENGAGED.remove(event.getEntity().getUUID());
+        LandingPadBlockEntity.forget(event.getEntity().getUUID());
     }
 
     public static void onServerStopped(ServerStoppedEvent event) {
         FLYING_BY_SUIT.clear();
         ENGAGED.clear();
+        LandingPadBlockEntity.clear();
     }
 }

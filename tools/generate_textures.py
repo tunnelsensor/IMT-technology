@@ -1842,6 +1842,36 @@ def drone_dock_textures():
     save(side, "block/drone_dock_side.png")
 
 
+def landing_pad_textures():
+    """
+    Het midden van een landingsplatform: een gloeiende blauwe ring met een stip in het midden
+    op donker staal, en gele hoekjes. De zijkant heeft een blauwe lichtstrip.
+    """
+    steel = (58, 62, 70, 255)
+    steel_dark = (36, 40, 46, 255)
+    yellow = (230, 190, 40, 255)
+
+    top = img(16, 16, steel_dark)
+    d = ImageDraw.Draw(top)
+    d.ellipse([1, 1, 14, 14], outline=CYAN_DIM)
+    d.ellipse([2, 2, 13, 13], outline=CYAN)
+    d.ellipse([6, 6, 9, 9], fill=CYAN_DIM)
+    px(top, [(7, 7), (8, 7), (7, 8), (8, 8)], (235, 250, 255, 255))
+    for (x, y) in ((0, 0), (15, 0), (0, 15), (15, 15)):
+        px(top, [(x, y)], yellow)
+    px(top, [(1, 0), (0, 1), (14, 0), (15, 1), (0, 14), (1, 15), (15, 14), (14, 15)], yellow)
+    save(top, "block/landing_pad_top.png")
+
+    side = img(16, 16, steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.line([1, 3, 14, 3], fill=CYAN)
+    d.line([1, 4, 14, 4], fill=CYAN_DIM)
+    for x in range(1, 15, 4):
+        d.line([x, 9, x + 1, 9], fill=yellow)
+    save(side, "block/landing_pad_side.png")
+
+
 def rocket_ammo():
     """Munitie voor het torentje: drie kleine raketten met rode neuzen, samengebonden."""
     im = img(16, 16)
@@ -1947,3 +1977,4 @@ if __name__ == "__main__":
     stark_laptop()
     workbench_textures()
     drone_dock_textures()
+    landing_pad_textures()

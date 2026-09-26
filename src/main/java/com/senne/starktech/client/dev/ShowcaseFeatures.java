@@ -997,6 +997,54 @@ final class ShowcaseFeatures {
                     .pause(80);
         });
 
+        add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
+                + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
+                + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
+                + "een blauw hologram staan. Daarna landen ze weer. Dan het dak: in het harnas stijg je op, en de "
+                + "HUD wijst je landingsplatform aan (groen ruitje, afstand, en dichtbij het landingsvak als "
+                + "gestippeld vierkant). Je daalt op het platform: E.D.I.T.H. zegt 'Welcome home', en je bril "
+                + "laadt op (kijk naar het percentage linksboven).", GameType.SURVIVAL,
+                towerPoint(20.5, 34, 17.5), 180, 8, s -> {
+            BlockPos core = STARK_TOWER.offset(10, 57, 20);
+            Vec3 pad = towerPoint(35.5, 100, 20.5);
+            s.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                }
+                DevWorld.freshArsenal(player, 6);
+            })
+                    .pause(80)
+                    // Twee drones op pad, en weer terug.
+                    .onServer(0, player -> com.senne.starktech.arsenal.ArsenalServer.checkOut(player, 2))
+                    .pause(100)
+                    .onServer(0, player -> {
+                        for (com.senne.starktech.arsenal.ArsenalDrone drone : com.senne.starktech.arsenal.ArsenalServer.get(player).drones()) {
+                            if (drone.state() == com.senne.starktech.arsenal.ArsenalDrone.State.DEPLOYED) {
+                                com.senne.starktech.arsenal.ArsenalServer.returnToOrbit(player, drone.id(), drone.health());
+                            }
+                        }
+                    })
+                    .pause(60)
+                    // Het dak: harnas aan, opstijgen, en de HUD wijst het platform aan.
+                    .onServer(0, player -> {
+                        wearSuit(player);
+                        EdithData.setEnergy(EdithData.getWornGlasses(player),
+                                EdithData.getMaxEnergy(EdithData.getWornGlasses(player)) / 3);
+                    })
+                    .stand(0, STARK_TOWER.getX() + 24.5, STARK_TOWER.getY() + 100, STARK_TOWER.getZ() + 12.5, 90, 0)
+                    .key(30, () -> Minecraft.getInstance().options.keyJump, true)
+                    .key(2, () -> Minecraft.getInstance().options.keyJump, false)
+                    .key(2, () -> Minecraft.getInstance().options.keyJump, true)
+                    .key(30, () -> Minecraft.getInstance().options.keyJump, false)
+                    .lookAt(10, pad)
+                    .pause(60)
+                    // Boven het platform, en dalen tot je staat.
+                    .onServer(0, player -> player.teleportTo(player.serverLevel(), pad.x, pad.y + 7, pad.z, 90, 55))
+                    .key(10, () -> Minecraft.getInstance().options.keyShift, true)
+                    .key(90, () -> Minecraft.getInstance().options.keyShift, false)
+                    .pause(80);
+        });
+
         add("Crashed satellite", "Een nieuwe structuur: het wrak van een oude Stark-satelliet in een krater. "
                 + "Eerst van boven: de rook (blauw uit de romp, van de reactor), de voor aan de oostkant waar hij "
                 + "binnenkwam, het zonnepaneel dat nog schuin omhoog steekt, het afgebroken paneel op de helling, "

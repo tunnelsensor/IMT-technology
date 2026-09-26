@@ -58,4 +58,14 @@ public final class ModAttachments {
                     .sync((holder, player) -> holder == player && player.connection != null
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithArsenal.STREAM_CODEC)
                     .build());
+
+    /** Waar jouw landingsplatforms liggen (zie LandingPads): de HUD wijst je de weg ernaartoe. */
+    public static final Supplier<AttachmentType<com.senne.starktech.suit.LandingPads>> LANDING_PADS = ATTACHMENTS.register("landing_pads",
+            () -> AttachmentType.builder(() -> com.senne.starktech.suit.LandingPads.EMPTY)
+                    .serialize(com.senne.starktech.suit.LandingPads.CODEC.codec())
+                    .copyOnDeath()
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
+                            com.senne.starktech.suit.LandingPads.STREAM_CODEC)
+                    .build());
 }

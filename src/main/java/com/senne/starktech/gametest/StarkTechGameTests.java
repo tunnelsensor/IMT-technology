@@ -253,7 +253,7 @@ public final class StarkTechGameTests {
     }
 
     /**
-     * Het configbestand starktech-balance.toml: alle 138 getallen staan erin, en verander je er
+     * Het configbestand starktech-balance.toml: alle 141 getallen staan erin, en verander je er
      * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
@@ -262,9 +262,9 @@ public final class StarkTechGameTests {
         if (!spec.isLoaded()) {
             throw new GameTestAssertException("starktech-balance.toml is niet geladen");
         }
-        if (com.senne.starktech.edith.BalanceConfig.size() != 138) {
+        if (com.senne.starktech.edith.BalanceConfig.size() != 141) {
             throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
-                    + " getallen in het bestand in plaats van 138");
+                    + " getallen in het bestand in plaats van 141");
         }
         net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
@@ -577,6 +577,102 @@ public final class StarkTechGameTests {
                 if (com.senne.starktech.energy.StarkGrid.available(helper.getLevel(), helper.absolutePos(dock)) <= 0) {
                     throw new GameTestAssertException("De drone-dock op " + dock + " heeft geen stroom");
                 }
+            }
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Het landingsplatform
+
+    /**
+     * Sta je op je eigen landingsplatform, dan laadt je bril op en wordt je harnas gerepareerd.
+     * Het platform staat op je lijst (voor de HUD) en gaat eraf als hij wordt afgebroken.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "landing_pad")
+    public static void landing_pad_charges_and_repairs(GameTestHelper helper) {
+        BlockPos padPos = new BlockPos(6, 2, 6);
+        helper.setBlock(padPos, ModBlocks.LANDING_PAD.get());
+        helper.setBlock(padPos.below(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(padPos.below())).fill(20_000);
+        ServerPlayer owner = makeSuitOwner(helper, padPos.above());
+        wearSuit(owner);
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        EdithData.setEnergy(glasses, 100);
+        ItemStack chest = owner.getItemBySlot(EquipmentSlot.CHEST);
+        chest.setDamageValue(50);
+        var pad = (com.senne.starktech.suit.LandingPadBlockEntity) helper.getBlockEntity(padPos);
+        pad.setOwner(owner.getUUID());
+        net.minecraft.core.GlobalPos here = net.minecraft.core.GlobalPos.of(helper.getLevel().dimension(),
+                helper.absolutePos(padPos));
+
+        helper.startSequence()
+                .thenWaitUntil(() -> {
+                    if (!com.senne.starktech.suit.LandingPads.of(owner).pads().contains(here)) {
+                        throw new GameTestAssertException("Het platform staat niet op de lijst van de eigenaar");
+                    }
+                    if (com.senne.starktech.suit.LandingPadBlockEntity.padUnder(owner) != pad) {
+                        throw new GameTestAssertException("Het platform ziet niet dat de eigenaar erop staat");
+                    }
+                    if (EdithData.getEnergy(EdithData.getWornGlasses(owner)) < 100 + SuitBalance.PAD_CHARGE_PER_SECOND) {
+                        throw new GameTestAssertException("De bril laadt niet op: " + EdithData.getEnergy(EdithData.getWornGlasses(owner)));
+                    }
+                    if (owner.getItemBySlot(EquipmentSlot.CHEST).getDamageValue() >= 50) {
+                        throw new GameTestAssertException("Het harnas wordt niet gerepareerd");
+                    }
+                })
+                .thenExecute(() -> helper.destroyBlock(padPos))
+                .thenExecuteAfter(1, () -> {
+                    if (com.senne.starktech.suit.LandingPads.of(owner).pads().contains(here)) {
+                        throw new GameTestAssertException("Het afgebroken platform staat nog op de lijst");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /** Het platform van iemand anders doet niets voor jou (en staat niet op jouw lijst). */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "landing_pad")
+    public static void landing_pad_ignores_strangers(GameTestHelper helper) {
+        BlockPos padPos = new BlockPos(6, 2, 6);
+        helper.setBlock(padPos, ModBlocks.LANDING_PAD.get());
+        helper.setBlock(padPos.below(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(padPos.below())).fill(20_000);
+        ServerPlayer stranger = makeSuitOwner(helper, padPos.above());
+        EdithData.setEnergy(EdithData.getWornGlasses(stranger), 100);
+        ((com.senne.starktech.suit.LandingPadBlockEntity) helper.getBlockEntity(padPos)).setOwner(UUID.randomUUID());
+        helper.runAfterDelay(45, () -> {
+            if (EdithData.getEnergy(EdithData.getWornGlasses(stranger)) != 100) {
+                throw new GameTestAssertException("Het platform van een ander laadde de bril op");
+            }
+            if (!com.senne.starktech.suit.LandingPads.of(stranger).pads().isEmpty()) {
+                throw new GameTestAssertException("Het platform van een ander staat op jouw lijst");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Het dak van de Stark Tower: één landingsplatform, en het heeft stroom van de generator
+     * eronder.
+     */
+    @GameTest(template = "stark_tower", timeoutTicks = 100, batch = "tower_pad")
+    public static void stark_tower_has_a_powered_landing_pad(GameTestHelper helper) {
+        helper.runAfterDelay(40, () -> {
+            List<BlockPos> pads = new java.util.ArrayList<>();
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 41; z++) {
+                    for (int y = 90; y < 110; y++) {
+                        if (helper.getBlockState(pos.set(x, y, z)).is(ModBlocks.LANDING_PAD.get())) {
+                            pads.add(pos.immutable());
+                        }
+                    }
+                }
+            }
+            if (pads.size() != 1) {
+                throw new GameTestAssertException("Er liggen " + pads.size() + " landingsplatforms op het dak in plaats van 1");
+            }
+            if (com.senne.starktech.energy.StarkGrid.available(helper.getLevel(), helper.absolutePos(pads.getFirst())) <= 0) {
+                throw new GameTestAssertException("Het landingsplatform heeft geen stroom");
             }
             helper.succeed();
         });

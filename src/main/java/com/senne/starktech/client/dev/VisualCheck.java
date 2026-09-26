@@ -399,6 +399,44 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- Het landingsplatform op de Stark Tower: van buiten, van onderen, en de HUD tijdens het vliegen.
+        if (want("pad")) {
+            int x = STARK_TOWER.getX();
+            int y = STARK_TOWER.getY();
+            int z = STARK_TOWER.getZ();
+            Vec3 pad = new Vec3(x + 35.5, y + 100, z + 20.5);
+            t.view(0, x + 20.5, y + 40, z - 40, 0, 0);
+            t.command(60, "place template starktech:stark_tower " + x + " " + y + " " + z);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(40, x + 62, y + 108, z + 2, 0, 0);
+            t.lookAt(2, pad);
+            t.shot(30, "p01_pad_outside");
+            t.view(0, x + 46, y + 90, z + 8, 0, 0);
+            t.lookAt(2, pad);
+            t.shot(30, "p02_pad_below");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // Vliegen: bril en harnas aan, het platform op je lijst, dan opstijgen vanaf het dak.
+            t.onServer(0, player -> {
+                DevWorld.wearGlasses(player);
+                DevWorld.refill(player);
+                wearSuit(player);
+                com.senne.starktech.suit.LandingPads.add(player, net.minecraft.core.GlobalPos.of(
+                        player.serverLevel().dimension(), BlockPos.containing(pad).below()));
+            });
+            t.command(0, "gamemode survival @a");
+            t.stand(10, x + 24.5, y + 100, z + 12.5, 0, 0);
+            t.key(40, () -> Minecraft.getInstance().options.keyJump, true);
+            t.key(2, () -> Minecraft.getInstance().options.keyJump, false);
+            t.key(2, () -> Minecraft.getInstance().options.keyJump, true);
+            t.key(30, () -> Minecraft.getInstance().options.keyJump, false);
+            t.lookAt(10, pad);
+            t.shot(10, "p03_pad_hud_near");
+            t.onServer(0, player -> player.teleportTo(player.serverLevel(), x + 110, y + 118, z + 70, 0, 0));
+            t.lookAt(10, pad);
+            t.shot(20, "p04_pad_hud_far");
+            t.command(0, "gamemode creative @a");
+        }
+
         // --- Het G-menu: elk tabblad apart.
         if (want("menu")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

@@ -89,6 +89,9 @@ public final class ModItems {
     /** Een drone-dock voor je hangar. */
     public static final DeferredItem<BlockItem> DRONE_DOCK = ITEMS.registerSimpleBlockItem("drone_dock",
             ModBlocks.DRONE_DOCK, new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** Een landingsplatform voor het harnas. */
+    public static final DeferredItem<BlockItem> LANDING_PAD = ITEMS.registerSimpleBlockItem("landing_pad",
+            ModBlocks.LANDING_PAD, new Item.Properties().rarity(Rarity.UNCOMMON));
     /** De harnas-werkbank, en de upgrades die je daar in het harnas bouwt. */
     public static final DeferredItem<BlockItem> SUIT_WORKBENCH = ITEMS.registerSimpleBlockItem("suit_workbench",
             ModBlocks.SUIT_WORKBENCH, new Item.Properties().rarity(Rarity.RARE));

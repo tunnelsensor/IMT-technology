@@ -13,6 +13,7 @@
     "starktech:security_turret",
     "starktech:security_core",
     "starktech:suit_workbench",
-    "starktech:drone_dock"
+    "starktech:drone_dock",
+    "starktech:landing_pad"
   ]
 }

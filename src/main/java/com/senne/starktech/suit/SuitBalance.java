@@ -80,6 +80,17 @@ public final class SuitBalance {
     @Tunable(section = "suit", comment = "Energy cost of catching a fall")
     public static int LANDING_COST = 200;
 
+    // ---------------------------------------------------------------- Landingsplatform
+    /** Zoveel energie per seconde laadt een landingsplatform in je bril (als het net het heeft). */
+    @Tunable(section = "suit", comment = "Energy per second a landing pad puts into your glasses")
+    public static int PAD_CHARGE_PER_SECOND = 400;
+    /** Zoveel duurzaamheid per seconde repareert hij aan elk stuk harnas... */
+    @Tunable(section = "suit", comment = "Durability per second a landing pad repairs on each suit piece")
+    public static int PAD_REPAIR_PER_SECOND = 2;
+    /** ...en dat kost zoveel stroom per punt. */
+    @Tunable(section = "suit", comment = "Energy per point of durability a landing pad repairs")
+    public static int PAD_REPAIR_ENERGY = 10;
+
     // ---------------------------------------------------------------- Repulsor
     /** Schade van één repulsorstoot (7 = 3,5 hartje). */
     @Tunable(section = "suit", comment = "Damage of one repulsor blast")

@@ -68,6 +68,7 @@ public class EdithHud implements LayeredDraw.Layer {
             new ZoomWidget(),
             new RepulsorWidget(),
             new FlightWidget(),
+            new com.senne.starktech.client.hud.LandingPadWidget(),
             new NoPowerWidget(),
             new StatusPanelWidget(),
             NOTIFICATIONS);
