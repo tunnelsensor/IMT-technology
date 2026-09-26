@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 66 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 71 functies één voor één zien (of een
+**Stand van zaken:** 70 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 72 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -441,10 +441,15 @@ wilt. Eerst de kleine dingen, dan de grote.
         zonder blokken te slopen; jou en je team raken ze nooit. Hele harnas nodig, 900 energie,
         12 s herladen. Het **raketpakket** (Hydra-onderdeel, Stark-chip, buskruit, ijzer) klik je
         met de borstplaat aan op die borstplaat; dan zie je de buizen op je rug. Twee nieuwe tests.
-  - [ ] **Automatische torentjes** voor je basis: schieten op monsters en raiddrones (spelers
-        alleen met PvP aan, nooit jij of je team), met een laser op stroom (kabels) en raketten
-        als munitie. Een redstone-signaal (bv. een relais) zet ze uit. Te maken met een
-        Hydra-onderdeel. In de bunker staan vijandige versies.
+  - [x] **Automatische torentjes** — `53ff0b9`
+        Stark Turret (Hydra-onderdeel, 2 Stark-chips, dispenser, observer, ijzer): een draaiende
+        kop die op monsters, raiddrones en Hydra-soldaten richt (spelers alleen met PvP, nooit
+        jij of je team) en op hetzelfde doelwit blijft tot het neer is. Laser: 16 blokken, 4
+        schade per seconde, 60 stroom per schot van het net. Raketten: Rocket Ammo (rechtsklik of
+        trechter), om de 2,5 s, tot 24 blokken. Redstone zet hem uit (de loop hangt omlaag), en
+        hij staat in de redstone-lijst van E.D.I.T.H. onder Turrets. Rechtsklik = status, shift =
+        raketten eruit. Hydra Turret: zwart/rood, geen stroom nodig, schiet op spelers en drones;
+        gesloopt geeft hij ijzer en soms een Hydra-onderdeel. Vier nieuwe tests.
   - [ ] Daarna de bunker (zie hierboven), met de soldaten en torentjes erin
 
 ### 5. De AI-stem (als laatste)
