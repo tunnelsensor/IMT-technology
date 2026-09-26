@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "H": {
+      "item": "starktech:hydra_circuit"
+    },
+    "O": {
+      "item": "minecraft:observer"
+    }
+  },
+  "pattern": [
+    "IDI",
+    "CHC",
+    "IOI"
+  ],
+  "result": {
+    "id": "starktech:stark_turret"
+  }
+}

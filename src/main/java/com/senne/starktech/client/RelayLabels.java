@@ -34,7 +34,8 @@ public final class RelayLabels {
     /** Wat voor apparaat staat hier? Bepaalt onder welk kopje het in de lijst komt. */
     public enum Kind {
         RELAY("screen.starktech.relays.kind.relay"),
-        DOME("screen.starktech.relays.kind.dome");
+        DOME("screen.starktech.relays.kind.dome"),
+        TURRET("screen.starktech.relays.kind.turret");
 
         public final String key;
 
@@ -52,6 +53,9 @@ public final class RelayLabels {
         Block block = mc.level.getBlockState(relay.pos()).getBlock();
         if (block instanceof DomeGeneratorBlock) {
             return Kind.DOME;
+        }
+        if (block instanceof com.senne.starktech.turret.TurretBlock) {
+            return Kind.TURRET;
         }
         return Kind.RELAY;
     }

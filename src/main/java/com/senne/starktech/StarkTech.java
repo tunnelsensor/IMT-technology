@@ -71,6 +71,10 @@ public class StarkTech {
         ModCreativeTabs.TABS.register(modEventBus);
 
         modEventBus.addListener(ModEntities::registerAttributes);
+        // Een trechter kan raketten in een Stark-torentje doen.
+        modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
+                event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
+                        ModBlockEntities.TURRET.get(), (turret, side) -> turret.isHydra() ? null : turret.ammo()));
 
         // Netwerkberichten tussen speler en server.
         modEventBus.addListener(ModNetwork::register);

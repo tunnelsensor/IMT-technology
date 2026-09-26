@@ -97,6 +97,8 @@ final class ShowcaseScene {
     static final BlockPos CRASH_SITE = new BlockPos(-80, -61, 0);
     /** De zwarte doos in de romp van het wrak (plek 15, 2, 16 in generate_crash_site.py). */
     static final BlockPos BLACK_BOX = CRASH_SITE.offset(-1, 0, 0);
+    /** Het Stark-torentje van de demo (de warmtegenerator staat ernaast, het Hydra-torentje rechts). */
+    static final BlockPos TURRET = new BlockPos(0, -60, 40);
 
     // ================================================================ Eén keer: de wereld bouwen
 
@@ -211,6 +213,9 @@ final class ShowcaseScene {
             entity.discard();
         }
         EdithServer.resetForShowcase(player);
+        // De torentjes van de demo weg, anders schiet het Hydra-torentje ook in andere functies.
+        fill(level, TURRET.offset(-2, 0, -4), TURRET.offset(9, 1, 1), Blocks.AIR.defaultBlockState());
+        level.getEntitiesOfClass(Husk.class, new AABB(TURRET).inflate(24)).forEach(Entity::discard);
 
         // De bril: eigen, vol, en alle schakelaars uit (behalve de doelanalyse, die staat
         // standaard aan).
@@ -339,6 +344,37 @@ final class ShowcaseScene {
         fill(level, HUT.offset(-2, 4, -2), HUT.offset(2, 4, 2), Blocks.GLASS.defaultBlockState());
         fill(level, HUT.offset(-1, 0, -1), HUT.offset(1, 3, 1), Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(HUT.below(), Blocks.SEA_LANTERN.defaultBlockState());
+    }
+
+    /**
+     * De torentjes-demo: een Stark-torentje met een volle warmtegenerator ernaast en 16 raketten
+     * erin (van jou), en rechts daarvan een Hydra-torentje.
+     */
+    static void buildTurrets(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(TURRET, ModBlocks.STARK_TURRET.get().defaultBlockState());
+        if (level.getBlockEntity(TURRET) instanceof com.senne.starktech.turret.TurretBlockEntity turret) {
+            turret.setOwner(player);
+            turret.ammo().insertItem(0, new ItemStack(com.senne.starktech.registry.ModItems.ROCKET_AMMO.get(), 16), false);
+        }
+        level.setBlockAndUpdate(TURRET.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(TURRET.east()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(10_000);
+        }
+        level.setBlockAndUpdate(TURRET.offset(7, 0, -2), ModBlocks.HYDRA_TURRET.get().defaultBlockState());
+    }
+
+    /** Twee husks ver voor het torentje, die op je af komen. */
+    static void turretAttackers(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (int x = -2; x <= 2; x += 4) {
+            Husk husk = EntityType.HUSK.create(level);
+            if (husk != null) {
+                husk.moveTo(TURRET.getX() + x + 0.5, TURRET.getY(), TURRET.getZ() - 23 + 0.5, 0, 0);
+                level.addFreshEntity(husk);
+                husk.setTarget(player);
+            }
+        }
     }
 
     /** Een pijl (van niemand) die van buiten op de koepel af vliegt. */

@@ -13,7 +13,7 @@ redstone op afstand, en zelfs muziek. Alles werkt met **Minecraft 1.21.1** en
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (66 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (70 automatische tests).
 
 ---
 
@@ -269,8 +269,33 @@ laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook
 en raak je er één, dan komen de anderen ook. Straks bewaken ze de Hydra-bunker.
 
 - Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je nodig voor
-  de nieuwste tech: het raketpakket (zie Het harnas) en straks de torentjes.
+  de nieuwste tech: het raketpakket (zie Het harnas) en de torentjes (zie Torentjes).
 - Zelf oproepen om te oefenen: het **Hydra Soldier Spawn Egg** in de Stark Tech-tab.
+
+### Torentjes
+Een **Stark Turret** verdedigt je basis. Craft hem met een **Hydra-onderdeel** in het midden,
+twee Stark-chips ernaast, een dispenser erboven, een observer eronder en ijzer in de hoeken.
+Zet hem neer: hij is van jou. De kop kijkt rustig rond; komt er een monster (ook raiddrones en
+Hydra-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten tot het neer is.
+
+- **Laser**: tot 16 blokken, 4 schade per seconde. Elk schot haalt 60 stroom van het net: sluit
+  hem aan met een Stark-kabel op een zonnepaneel of warmtegenerator (of zet die er direct
+  tegenaan). Eén zonnepaneel houdt één torentje makkelijk bij. Geen stroom = geen laser.
+- **Raketten**: klik rechts met **Rocket Ammo** (4 stuks uit een ijzerklompje-kruis met buskruit
+  en redstone) of zet er een trechter boven. Dan gaat er om de 2,5 seconde ook een raket in een
+  boogje op af, tot 24 blokken ver. Er passen 64 in.
+- **Op wie**: monsters. Spelers alleen als PvP aan staat, en nooit jij of je team. Dieren,
+  dorpelingen, je huisdieren en E.D.I.T.H.-drones laat hij met rust. Wat hij neerhaalt telt
+  als jouw buit.
+- **Uitzetten**: een redstone-signaal (een hendel, of een E.D.I.T.H.-relais ernaast) zet hem
+  uit; de loop hangt dan omlaag. E.D.I.T.H. kan hem ook zelf schakelen: hij staat in je
+  redstone-lijst (toets **'**) onder **Turrets**, en werkt ook met je stem.
+- **Hoe staat hij ervoor?** Klik rechts met een lege hand: aan/uit, stroom en raketten. Met
+  shift haal je de raketten eruit.
+
+In de Hydra-bunker staan **Hydra Turrets** (zwart met rood): die hebben geen stroom nodig en
+schieten op jou en je drones. Ook die gaan uit met redstone. Sloop je er een, dan krijg je
+ijzer en soms een Hydra-onderdeel.
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste Stark-chip tot
@@ -453,10 +478,10 @@ doen, maar je mag wel rondkijken. Een nieuwe functie gebouwd? Zet hem in
   een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower en het
   dichtstbijzijnde satellietwrak, en schrijft in het log (`[structures]`) waar ze liggen, waar de
   kisten staan en hoe je er met `/tp` komt. Daarna stopt hij vanzelf.
-- **Tests**: `gradlew runGameTestServer` — 66 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 70 tests over de toren en zijn kluis, het
   satellietwrak, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
-  mini-raketten, de Hydra-soldaten en de spraakcommando's.
+  mini-raketten, de Hydra-soldaten, de torentjes en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck

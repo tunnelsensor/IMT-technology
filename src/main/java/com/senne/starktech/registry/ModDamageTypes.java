@@ -36,6 +36,14 @@ public final class ModDamageTypes {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(LASER_WALL));
     }
 
+    public static final ResourceKey<DamageType> TURRET_LASER =
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "turret_laser"));
+
+    /** Laserschade van een torentje; de eigenaar (als hij online is) telt als aanvaller. */
+    public static DamageSource turretLaser(ServerLevel level, @Nullable Entity owner) {
+        return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(TURRET_LASER), owner, owner);
+    }
+
     /** Laserschade van een drone; de eigenaar telt als "aanvaller" (voor PvP-regels en buit). */
     public static DamageSource droneLaser(ServerLevel level, Entity drone, @Nullable Entity owner) {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(DRONE_LASER), drone, owner);

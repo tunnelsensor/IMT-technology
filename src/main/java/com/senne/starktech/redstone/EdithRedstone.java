@@ -66,6 +66,11 @@ public final class EdithRedstone {
 
     /** Net neergezet: het relais komt in de lijst van de speler, met een standaardnaam. */
     public static void register(ServerPlayer player, BlockPos pos) {
+        register(player, pos, "edith.starktech.relay.default_name");
+    }
+
+    /** Zelfde, maar met een eigen standaardnaam (zoals "Turret 3" voor een torentje). */
+    public static void register(ServerPlayer player, BlockPos pos, String defaultNameKey) {
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         if (data.indexAt(player.level().dimension(), pos) >= 0) {
             return; // stond er al in
@@ -75,7 +80,7 @@ public final class EdithRedstone {
                     EdithMessagePayload.Level.WARNING);
             return;
         }
-        String name = Component.translatable("edith.starktech.relay.default_name", data.relays().size() + 1).getString();
+        String name = Component.translatable(defaultNameKey, data.relays().size() + 1).getString();
         Relay relay = new Relay(name, Relay.DEFAULT_GROUP, player.level().dimension(), pos);
         player.setData(ModAttachments.RELAYS, data.with(relay));
         StarkAdvancements.award(player, StarkAdvancements.RELAY);

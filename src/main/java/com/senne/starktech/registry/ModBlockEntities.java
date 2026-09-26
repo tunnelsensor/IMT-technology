@@ -45,4 +45,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("heat_generator",
                     () -> new BlockEntityType<>(HeatGeneratorBlockEntity::new,
                             java.util.Set.of(ModBlocks.HEAT_GENERATOR.get()), null));
+
+    /** Beide torentjes (Stark en Hydra) gebruiken dezelfde binnenkant. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.turret.TurretBlockEntity>> TURRET =
+            BLOCK_ENTITIES.register("turret",
+                    () -> new BlockEntityType<>(com.senne.starktech.turret.TurretBlockEntity::new,
+                            java.util.Set.of(ModBlocks.STARK_TURRET.get(), ModBlocks.HYDRA_TURRET.get()), null));
 }

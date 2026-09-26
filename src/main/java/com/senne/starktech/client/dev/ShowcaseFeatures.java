@@ -839,6 +839,25 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON)
                 .pause(60));
 
+        add("Automatic turrets", "Een Stark-torentje (gemaakt met een Hydra-onderdeel) met een warmtegenerator "
+                + "ernaast: de kop kijkt rustig rond tot er monsters komen (eerst misschien een slijmpje), "
+                + "draait dan naar het dichtstbijzijnde en blijft daarop schieten tot het neer is: een blauwe "
+                + "laser (60 stroom per schot). Er zitten 16 raketten in (Rocket Ammo, met "
+                + "rechtsklik of een trechter), dus om de paar seconden gaat er ook een raket in een boogje op "
+                + "af. Jou raakt hij nooit. Dan komt er een redstoneblok naast: het torentje staat uit en de "
+                + "loop hangt omlaag (E.D.I.T.H. kan hem ook uitzetten, hij staat in je redstone-lijst onder "
+                + "Turrets). Rechts een Hydra-torentje uit de bunker: dat schiet rode lasers op jou.",
+                GameType.SURVIVAL, at(ShowcaseScene.TURRET.offset(-4, 0, 3)), 200, 10, s -> s
+                .onServer(0, ShowcaseScene::buildTurrets)
+                .pause(40)
+                .onServer(0, ShowcaseScene::turretAttackers)
+                .pause(240)
+                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ShowcaseScene.TURRET.west(),
+                        net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState()))
+                .pause(50)
+                .look(0, 150, 10)
+                .pause(70));
+
         add("Raid drones: breaking in", "Verstop je in een dichte hut (stenen muren, glazen dak) en de "
                 + "raiddrones zien je niet. Dan komen ze dichterbij en schieten ze zich naar binnen: om de "
                 + "anderhalve seconde verdwijnt er een blok (laserstraal en vonken), tot ze je zien. Kijk "

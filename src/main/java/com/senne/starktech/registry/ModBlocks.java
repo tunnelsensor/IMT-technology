@@ -130,4 +130,24 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(DomeGeneratorBlock.POWERED) ? 12 : 3)
                     .noOcclusion());
+
+    /** Het automatische torentje voor je basis (te maken met een Hydra-onderdeel). */
+    public static final DeferredBlock<com.senne.starktech.turret.TurretBlock> STARK_TURRET = BLOCKS.registerBlock(
+            "stark_turret", properties -> new com.senne.starktech.turret.TurretBlock(false, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion());
+
+    /** Het vijandige torentje uit de Hydra-bunker. */
+    public static final DeferredBlock<com.senne.starktech.turret.TurretBlock> HYDRA_TURRET = BLOCKS.registerBlock(
+            "hydra_turret", properties -> new com.senne.starktech.turret.TurretBlock(true, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(5.0f, 9.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion());
 }

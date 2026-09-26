@@ -55,6 +55,8 @@ import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.suit.EdithSuit;
 import com.senne.starktech.suit.RocketPackItem;
 import com.senne.starktech.suit.SuitRockets;
+import com.senne.starktech.turret.TurretBlock;
+import com.senne.starktech.turret.TurretBlockEntity;
 import com.senne.starktech.suit.StarkSuitItem;
 import com.senne.starktech.suit.SuitBalance;
 import com.senne.starktech.transport.EdithTransport;
@@ -1005,6 +1007,106 @@ public final class StarkTechGameTests {
             if (target.isAlive() && target.getHealth() > full - 2 * SuitBalance.ROCKET_DAMAGE * 0.8f) {
                 throw new GameTestAssertException("Het doelwit is nog niet twee keer geraakt ("
                         + target.getHealth() + "/" + full + ")");
+            }
+        });
+    }
+
+    // ================================================================ Torentjes
+
+    /** Zet een torentje neer, met (voor een Stark-torentje) een eigenaar. */
+    private static TurretBlockEntity placeTurret(GameTestHelper helper, BlockPos pos, boolean hydra,
+                                                 @Nullable ServerPlayer owner) {
+        helper.setBlock(pos, (hydra ? ModBlocks.HYDRA_TURRET : ModBlocks.STARK_TURRET).get());
+        TurretBlockEntity turret = (TurretBlockEntity) helper.getBlockEntity(pos);
+        if (owner != null) {
+            turret.setOwner(owner);
+        }
+        return turret;
+    }
+
+    /** Een warmtegenerator vol stroom naast het torentje (er direct tegenaan is ook aangesloten). */
+    private static void powerTurret(GameTestHelper helper, BlockPos generator) {
+        helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(5_000);
+    }
+
+    /**
+     * Een Stark-torentje op stroom schiet het monster neer, maar niet de koe die dichterbij
+     * staat, en ook niet zijn eigenaar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "turret")
+    public static void stark_turret_shoots_monsters_only(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 8));
+        placeTurret(helper, pos, false, owner);
+        powerTurret(helper, pos.east());
+        Husk monster = spawnDummyEnemy(helper, new BlockPos(12, 3, 18));
+        net.minecraft.world.entity.animal.Cow cow = helper.spawn(EntityType.COW, new BlockPos(9, 3, 12));
+        cow.setNoAi(true);
+        float full = monster.getMaxHealth();
+
+        helper.succeedWhen(() -> {
+            if (cow.getHealth() < cow.getMaxHealth()) {
+                throw new GameTestAssertException("Het torentje schoot op een koe");
+            }
+            if (owner.getHealth() < owner.getMaxHealth()) {
+                throw new GameTestAssertException("Het torentje schoot op zijn eigenaar");
+            }
+            if (monster.isAlive() && monster.getHealth() >= full) {
+                throw new GameTestAssertException("Het monster is nog niet geraakt");
+            }
+        });
+    }
+
+    /** Een redstone-signaal zet het torentje uit: dan schiet het niet, ook niet met stroom. */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "turret")
+    public static void turret_is_off_with_redstone(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(2, 3, 2));
+        placeTurret(helper, pos, false, owner);
+        powerTurret(helper, pos.east());
+        helper.setBlock(pos.west(), Blocks.REDSTONE_BLOCK);
+        if (!helper.getBlockState(pos).getValue(TurretBlock.POWERED)) {
+            throw new GameTestAssertException("Het torentje merkte het redstone-signaal niet");
+        }
+        Husk monster = spawnDummyEnemy(helper, new BlockPos(12, 3, 18));
+        helper.runAfterDelay(80, () -> {
+            if (monster.getHealth() < monster.getMaxHealth()) {
+                throw new GameTestAssertException("Het torentje schoot terwijl het uit stond");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Zonder stroom geen laser, maar met munitie erin schiet het wel raketten. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "turret")
+    public static void turret_fires_rockets_from_its_ammo(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 4);
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(2, 3, 2));
+        TurretBlockEntity turret = placeTurret(helper, pos, false, owner);
+        turret.ammo().insertItem(0, new ItemStack(ModItems.ROCKET_AMMO.get(), 4), false);
+        Husk monster = spawnDummyEnemy(helper, new BlockPos(12, 3, 18));
+        float full = monster.getMaxHealth();
+
+        helper.succeedWhen(() -> {
+            if (turret.ammoCount() >= 4) {
+                throw new GameTestAssertException("Er is nog geen raket weg");
+            }
+            if (monster.isAlive() && monster.getHealth() >= full) {
+                throw new GameTestAssertException("De raket heeft het monster nog niet geraakt");
+            }
+        });
+    }
+
+    /** Het Hydra-torentje (uit de bunker) heeft geen stroom nodig en schiet op spelers. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "turret")
+    public static void hydra_turret_shoots_players(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        placeTurret(helper, pos, true, null);
+        ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
+        helper.succeedWhen(() -> {
+            if (player.getHealth() >= player.getMaxHealth()) {
+                throw new GameTestAssertException("Het Hydra-torentje heeft de speler nog niet geraakt");
             }
         });
     }

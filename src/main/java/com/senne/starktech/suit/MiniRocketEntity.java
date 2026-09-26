@@ -40,6 +40,8 @@ public class MiniRocketEntity extends Projectile {
     /** Waar hij heen vliegt als er geen doelwit (meer) is. */
     private @Nullable Vec3 aimPoint;
     private int age;
+    /** Raketten van een torentje raken alleen monsters (en hun eigen doelwit), nooit iemand anders. */
+    private boolean onlyEnemies;
 
     public MiniRocketEntity(EntityType<? extends MiniRocketEntity> type, Level level) {
         super(type, level);
@@ -56,6 +58,11 @@ public class MiniRocketEntity extends Projectile {
         faceMotion();
         this.targetId = target == null ? null : target.getUUID();
         this.aimPoint = target == null ? aim : target.getBoundingBox().getCenter();
+    }
+
+    /** Voor torentjes: raak alleen monsters en je eigen doelwit. */
+    public void onlyHitEnemies() {
+        this.onlyEnemies = true;
     }
 
     @Override
@@ -147,6 +154,9 @@ public class MiniRocketEntity extends Projectile {
         Entity owner = getOwner();
         if (entity == owner) {
             return false;
+        }
+        if (onlyEnemies) {
+            return living instanceof net.minecraft.world.entity.monster.Enemy || living.getUUID().equals(targetId);
         }
         return !(owner instanceof ServerPlayer player) || EdithTargeting.canTarget(player, living);
     }

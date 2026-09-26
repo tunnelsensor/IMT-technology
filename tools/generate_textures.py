@@ -1534,6 +1534,105 @@ def rocket_pack():
     save(im, "item/rocket_pack.png")
 
 
+def turret_textures():
+    """
+    De torentjes: Stark (grijs metaal, gouden streep, blauwe lens) en Hydra (zwart, rode streep,
+    rode lens). Per soort een voet (zijkant en bovenkant, 16x16, voor het blokmodel) en een kop
+    (64x32, voor TurretRenderer; de loop wijst naar +Z, dat is het "back"-vlak in box_regions).
+    """
+    looks = {
+        "stark": dict(body=(150, 158, 168, 255), dark=(84, 90, 100, 255), light=(196, 202, 210, 255),
+                      stripe=GOLD, lens=CYAN, lens_dim=CYAN_DIM),
+        "hydra": dict(body=HYDRA_BLACK, dark=(14, 14, 16, 255), light=HYDRA_GREY,
+                      stripe=HYDRA_RED_DIM, lens=HYDRA_RED, lens_dim=HYDRA_RED_DIM),
+    }
+    for name, c in looks.items():
+        # Voet, zijkant: metaal met een streep en boutjes; de onderste rij donker.
+        side = img(16, 16, c["body"])
+        d = ImageDraw.Draw(side)
+        d.rectangle([0, 0, 15, 15], outline=c["dark"])
+        d.line([0, 9, 15, 9], fill=c["stripe"])
+        d.line([0, 10, 15, 10], fill=c["stripe"])
+        for x in (2, 13):
+            px(side, [(x, 3), (x, 13)], c["light"])
+        d.line([4, 1, 11, 1], fill=c["light"])
+        save(side, f"block/{name}_turret_side.png")
+        # Voet, bovenkant: een ring waar de draaischijf op staat.
+        top = img(16, 16, c["body"])
+        d = ImageDraw.Draw(top)
+        d.rectangle([0, 0, 15, 15], outline=c["dark"])
+        d.ellipse([3, 3, 12, 12], outline=c["dark"])
+        d.ellipse([5, 5, 10, 10], fill=c["light"])
+        save(top, f"block/{name}_turret_top.png")
+
+        # De kop (64 x 32).
+        head = img(64, 32)
+        swivel = box_regions(0, 0, 6, 1, 6)
+        gun = box_regions(0, 7, 8, 6, 8)
+        barrel = box_regions(32, 0, 2, 2, 7)
+        muzzle = box_regions(50, 0, 3, 3, 1)
+        pod = box_regions(32, 9, 3, 4, 5)
+        for region in swivel.values():
+            fill_region(head, region, c["dark"])
+        for region in gun.values():
+            fill_region(head, region, c["body"])
+        # Een streep rondom de kop, lichte bovenkant, donkere naad onderaan.
+        for face in ("east", "front", "west", "back"):
+            x, y, w, h = gun[face]
+            for xx in range(x, x + w):
+                px(head, [(xx, y + 3)], c["stripe"])
+                px(head, [(xx, y)], c["light"])
+                px(head, [(xx, y + h - 1)], c["dark"])
+        x, y, w, h = gun["top"]
+        fill_region(head, (x + 1, y + 1, w - 2, h - 2), c["light"])
+        for yy in range(y, y + h):
+            px(head, [(x + 3, yy), (x + 4, yy)], c["stripe"])
+        # De "ogen" boven de loop (voorkant = +Z = "back").
+        x, y, w, h = gun["back"]
+        px(head, [(x + 1, y + 1), (x + 2, y + 1), (x + 5, y + 1), (x + 6, y + 1)], c["lens"])
+        px(head, [(x + 1, y + 2), (x + 6, y + 2)], c["lens_dim"])
+        for region in barrel.values():
+            fill_region(head, region, c["dark"])
+        for face in ("top", "east", "west"):
+            x, y, w, h = barrel[face]
+            for yy in range(y, y + h):
+                for xx in range(x, x + w):
+                    if (xx + yy) % 3 == 0:
+                        px(head, [(xx, yy)], c["body"])
+        for region in muzzle.values():
+            fill_region(head, region, METAL_DARK)
+        x, y, w, h = muzzle["back"]
+        px(head, [(x + 1, y + 1)], c["lens"])
+        for region in pod.values():
+            fill_region(head, region, c["body"])
+        for face in ("east", "west", "top", "bottom"):
+            x, y, w, h = pod[face]
+            px(head, [(x, y), (x + w - 1, y + h - 1)], c["dark"])
+        x, y, w, h = pod["back"]
+        fill_region(head, pod["back"], c["dark"])
+        px(head, [(x, y + 1), (x + 2, y + 1), (x + 1, y + 3)], RED)
+        save(head, f"entity/{name}_turret.png")
+
+    barrel_tex = img(16, 16, METAL_DARK)
+    d = ImageDraw.Draw(barrel_tex)
+    d.rectangle([0, 0, 15, 15], outline=METAL_1)
+    save(barrel_tex, "block/turret_barrel.png")
+
+
+def rocket_ammo():
+    """Munitie voor het torentje: drie kleine raketten met rode neuzen, samengebonden."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    silver = (200, 204, 210, 255)
+    for x0 in (3, 7, 11):
+        d.rectangle([x0, 4, x0 + 2, 12], fill=silver, outline=(140, 146, 154, 255))
+        px(im, [(x0 + 1, 2), (x0 + 1, 3), (x0, 3), (x0 + 2, 3)], RED)
+        px(im, [(x0 - 1, 12), (x0 + 3, 12), (x0 - 1, 13), (x0 + 3, 13)], METAL_2)
+        px(im, [(x0 + 1, 13)], (255, 150, 40, 255))
+    d.line([2, 8, 14, 8], fill=GOLD_DARK)
+    save(im, "item/rocket_ammo.png")
+
+
 def hydra_soldier():
     """
     Het pak van een Hydra-soldaat (64 x 64, de indeling van mensachtige wezens; de linker arm
@@ -1619,3 +1718,5 @@ if __name__ == "__main__":
     hydra_soldier()
     mini_rocket()
     rocket_pack()
+    turret_textures()
+    rocket_ammo()

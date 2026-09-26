@@ -94,6 +94,14 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> HOLO_TABLE = ITEMS.registerSimpleBlockItem("holo_table",
             ModBlocks.HOLO_TABLE);
 
+    /** Het automatische torentje, en de raketten die je erin stopt. */
+    public static final DeferredItem<BlockItem> STARK_TURRET = ITEMS.registerSimpleBlockItem("stark_turret",
+            ModBlocks.STARK_TURRET, new Item.Properties().rarity(Rarity.EPIC));
+    public static final DeferredItem<BlockItem> HYDRA_TURRET = ITEMS.registerSimpleBlockItem("hydra_turret",
+            ModBlocks.HYDRA_TURRET, new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<Item> ROCKET_AMMO = ITEMS.registerSimpleItem("rocket_ammo",
+            new Item.Properties());
+
     // ---------------------------------------------------------------- Hydra
 
     /** Hydra-tech uit de bunker: nodig voor het raketpakket en de torentjes. */

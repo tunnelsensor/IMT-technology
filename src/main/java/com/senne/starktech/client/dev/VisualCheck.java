@@ -507,6 +507,29 @@ public final class VisualCheck {
             t.shot(40, "r06_rockets_hud");
         }
 
+        // --- Torentjes: een Stark-torentje op stroom dat op twee monsters richt, een Hydra-torentje
+        // (dat jou in creative negeert en rondkijkt) en een Stark-torentje dat uit staat (redstone).
+        if (want("turrets")) {
+            t.onServer(0, VisualCheck::buildTurrets);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(10, 81.5, -59.5, 67.5, 180, 12);
+            t.shot(30, "t01_turrets_front");
+            t.onServer(0, player -> {
+                DevWorld.spawnStill(player.serverLevel(), net.minecraft.world.entity.EntityType.HUSK,
+                        new BlockPos(71, -60, 58), 0);
+                DevWorld.spawnStill(player.serverLevel(), net.minecraft.world.entity.EntityType.HUSK,
+                        new BlockPos(74, -60, 52), 0);
+            });
+            t.shot(25, "t02_turrets_aim");
+            t.shot(10, "t03_turrets_fire");
+            t.view(0, 75.5, -59.5, 62.5, 225, 20);
+            t.shot(15, "t04_turrets_close");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                    new ItemStack(ModItems.STARK_TURRET.get())));
+            t.shot(10, "t05_turret_item");
+        }
+
         // --- De 3D-modellen van het zonnepaneel en de warmtegenerator (aan en uit), van voren,
         // schuin van achteren, en 's nachts (dan zie je het rooster gloeien).
         if (want("models")) {
@@ -846,6 +869,24 @@ public final class VisualCheck {
             upgrades = upgrades.with(upgrade, upgrade.isMode() ? Math.max(1, level) : level);
         }
         player.setData(ModAttachments.SATELLITE, upgrades);
+    }
+
+    /** Drie torentjes op een rij, met een volle warmtegenerator naast het eerste. */
+    private static void buildTurrets(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos stark = new BlockPos(78, -60, 60);
+        level.setBlockAndUpdate(stark, ModBlocks.STARK_TURRET.get().defaultBlockState());
+        if (level.getBlockEntity(stark) instanceof com.senne.starktech.turret.TurretBlockEntity turret) {
+            turret.setOwner(player);
+        }
+        level.setBlockAndUpdate(stark.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(stark.east()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(10_000);
+        }
+        level.setBlockAndUpdate(new BlockPos(83, -60, 60), ModBlocks.HYDRA_TURRET.get().defaultBlockState());
+        BlockPos off = new BlockPos(87, -60, 60);
+        level.setBlockAndUpdate(off, ModBlocks.STARK_TURRET.get().defaultBlockState());
+        level.setBlockAndUpdate(off.east(), net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());
     }
 
     private static void wearSuit(ServerPlayer player) {
