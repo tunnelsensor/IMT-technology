@@ -316,6 +316,42 @@ public final class VisualCheck {
             t.shot(40, "k06_hack_core_green");
         }
 
+        // --- De harnas-werkbank: het blok, het scherm met materialen, en een borstplaat bouwen.
+        if (want("workbench")) {
+            BlockPos bench = new BlockPos(-80, -60, 60);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(bench, ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
+                level.setBlockAndUpdate(bench.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(bench.east()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                if (level.getBlockEntity(bench) instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be) {
+                    be.setItem(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 16));
+                    be.setItem(1, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 4));
+                    be.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 8));
+                    be.setItem(3, new ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 6));
+                    be.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE,
+                            new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
+                }
+            });
+            t.close(10);
+            t.view(0, -79.5, -59, 57.5, 0, 20);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.shot(20, "w01_workbench_block");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be) {
+                    player.openMenu(be);
+                }
+            });
+            t.shot(20, "w02_workbench_screen");
+            t.onServer(0, player -> player.containerMenu.clickMenuButton(player, 0));
+            t.shot(60, "w03_workbench_building");
+            t.shot(180, "w04_workbench_done");
+            t.close(0);
+        }
+
         // --- Het G-menu: elk tabblad apart.
         if (want("menu")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

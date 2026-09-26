@@ -11,6 +11,7 @@
     "starktech:stark_turret",
     "starktech:hydra_turret",
     "starktech:security_turret",
-    "starktech:security_core"
+    "starktech:security_core",
+    "starktech:suit_workbench"
   ]
 }

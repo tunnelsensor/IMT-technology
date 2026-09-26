@@ -101,7 +101,10 @@ public final class SuitFlight {
         boolean up = input.jumping;
         boolean down = input.shiftKeyDown;
         boosting = Minecraft.getInstance().options.keySprint.isDown() && forward > 0;
-        double power = SuitBalance.THRUST * (boosting ? SuitBalance.BOOST : 1.0);
+        // Stuwraket-upgrades in de laarzen (werkbank): meer stuwkracht en een hogere topsnelheid.
+        double upgrade = 1 + com.senne.starktech.workbench.WorkbenchBalance.THRUSTER_SPEED
+                * com.senne.starktech.workbench.SuitUpgrades.thrustersOf(player);
+        double power = SuitBalance.THRUST * (boosting ? SuitBalance.BOOST : 1.0) * upgrade;
 
         // Vooruit is waar je kijkt, ook omhoog of omlaag. Opzij is altijd plat.
         Vec3 look = player.getLookAngle();
@@ -123,7 +126,7 @@ public final class SuitFlight {
             carriedY *= SuitBalance.HOVER_DAMPING;
         }
         Vec3 next = new Vec3(v.x * (keep / 0.91) + push.x, carriedY + push.y + lift, v.z * (keep / 0.91) + push.z);
-        double max = boosting ? SuitBalance.MAX_BOOST_SPEED : SuitBalance.MAX_SPEED;
+        double max = (boosting ? SuitBalance.MAX_BOOST_SPEED : SuitBalance.MAX_SPEED) * upgrade;
         if (next.length() > max) {
             next = next.normalize().scale(max);
         }

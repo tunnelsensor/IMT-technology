@@ -6,6 +6,7 @@
     "starktech:dome_generator",
     "starktech:stark_turret",
     "starktech:hydra_turret",
-    "starktech:security_turret"
+    "starktech:security_turret",
+    "starktech:suit_workbench"
   ]
 }

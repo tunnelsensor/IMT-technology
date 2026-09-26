@@ -171,4 +171,13 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .lightLevel(state -> 4));
+
+    /** De harnas-werkbank: het harnas bouwen en er upgrades in zetten (Tony's lab). */
+    public static final DeferredBlock<com.senne.starktech.workbench.SuitWorkbenchBlock> SUIT_WORKBENCH = BLOCKS.registerBlock(
+            "suit_workbench", com.senne.starktech.workbench.SuitWorkbenchBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
 }

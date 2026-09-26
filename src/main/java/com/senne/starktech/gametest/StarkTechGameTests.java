@@ -253,7 +253,7 @@ public final class StarkTechGameTests {
     }
 
     /**
-     * Het configbestand starktech-balance.toml: alle 128 getallen staan erin, en verander je er
+     * Het configbestand starktech-balance.toml: alle 136 getallen staan erin, en verander je er
      * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
@@ -262,9 +262,9 @@ public final class StarkTechGameTests {
         if (!spec.isLoaded()) {
             throw new GameTestAssertException("starktech-balance.toml is niet geladen");
         }
-        if (com.senne.starktech.edith.BalanceConfig.size() != 128) {
+        if (com.senne.starktech.edith.BalanceConfig.size() != 136) {
             throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
-                    + " getallen in het bestand in plaats van 128");
+                    + " getallen in het bestand in plaats van 136");
         }
         net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
@@ -401,6 +401,93 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("De hack liep door terwijl de hacker 10 blokken verderop stond");
         }
         helper.succeed();
+    }
+
+    // ================================================================ De harnas-werkbank
+
+    /** Een werkbank met een volle warmtegenerator ernaast. */
+    private static com.senne.starktech.workbench.SuitWorkbenchBlockEntity placeWorkbench(GameTestHelper helper, BlockPos pos) {
+        helper.setBlock(pos, ModBlocks.SUIT_WORKBENCH.get());
+        helper.setBlock(pos.east(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(pos.east())).fill(20_000);
+        return (com.senne.starktech.workbench.SuitWorkbenchBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    /** Met de materialen erin en stroom erbij bouwt de werkbank een borstplaat. */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "workbench")
+    public static void workbench_builds_a_chestplate(GameTestHelper helper) {
+        var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
+        bench.setItem(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 5));
+        bench.setItem(1, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 1));
+        bench.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 3));
+        if (!bench.startBuild(com.senne.starktech.workbench.Blueprint.CHESTPLATE)) {
+            throw new GameTestAssertException("Het bouwen begon niet");
+        }
+        if (!bench.getItem(0).isEmpty() || bench.getItem(2).getCount() != 1) {
+            throw new GameTestAssertException("De materialen zijn niet (goed) gebruikt");
+        }
+        helper.succeedWhen(() -> {
+            if (!bench.getItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK).is(ModItems.STARK_CHESTPLATE.get())) {
+                throw new GameTestAssertException("De borstplaat is nog niet klaar");
+            }
+        });
+    }
+
+    /**
+     * Laarzen en een stuwraket-upgrade: die bouwt hij in. Een condensator hoort in de borstplaat,
+     * dus die past niet in laarzen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "workbench")
+    public static void workbench_installs_upgrades(GameTestHelper helper) {
+        var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
+        ItemStack boots = new ItemStack(ModItems.STARK_BOOTS.get());
+        if (((com.senne.starktech.workbench.SuitModuleItem) ModItems.REPULSOR_CAPACITOR.get()).canApplyTo(boots)) {
+            throw new GameTestAssertException("Een repulsor-condensator paste in laarzen");
+        }
+        bench.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK, boots);
+        bench.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE, new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
+        helper.succeedWhen(() -> {
+            ItemStack result = bench.getItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK);
+            if (com.senne.starktech.workbench.SuitUpgrades.of(result).thrusters() != 1
+                    || !bench.getItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE).isEmpty()) {
+                throw new GameTestAssertException("De stuwraket-upgrade zit er nog niet in");
+            }
+        });
+    }
+
+    /** Het harnas maak je aan de werkbank: in de crafting table staat het niet meer. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "workbench")
+    public static void suit_is_not_in_the_crafting_table(GameTestHelper helper) {
+        var registries = helper.getLevel().registryAccess();
+        for (var recipe : helper.getLevel().getRecipeManager().getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING)) {
+            ItemStack result = recipe.value().getResultItem(registries);
+            if (result.getItem() instanceof StarkSuitItem) {
+                throw new GameTestAssertException("De crafting table maakt nog steeds " + result.getHoverName().getString()
+                        + " (" + recipe.id() + ")");
+            }
+        }
+        helper.succeed();
+    }
+
+    /** Bepantsering (werkbank) laat het harnas meer schade tegenhouden. */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "workbench")
+    public static void armor_plating_stops_more_damage(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(2, 3, 2));
+        wearSuit(owner);
+        // Een net binnengekomen speler is 3 seconden onkwetsbaar: even wachten.
+        helper.runAfterDelay(SPAWN_INVULNERABLE_TICKS, () -> {
+            float without = hurtAndMeasure(owner, 10);
+            for (ItemStack piece : owner.getInventory().armor) {
+                if (piece.getItem() instanceof StarkSuitItem) {
+                    com.senne.starktech.workbench.SuitUpgrades.set(piece, new com.senne.starktech.workbench.SuitUpgrades(0, 2, 0));
+                }
+            }
+            float with = hurtAndMeasure(owner, 10);
+            if (without <= 0 || with >= without) {
+                throw new GameTestAssertException("Met bepantsering kwam er niet minder schade door (" + with + " tegen " + without + ")");
+            }
+            helper.succeed();
+        });
     }
 
     // ================================================================ De Hydra-bunker

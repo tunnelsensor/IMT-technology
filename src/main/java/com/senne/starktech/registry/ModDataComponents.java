@@ -58,6 +58,12 @@ public final class ModDataComponents {
                     .persistent(Codec.BOOL)
                     .networkSynchronized(ByteBufCodecs.BOOL));
 
+    /** Welke upgrades er in een stuk harnas zitten (zie SuitUpgrades; ingebouwd aan de werkbank). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.workbench.SuitUpgrades>> SUIT_UPGRADES =
+            COMPONENTS.registerComponentType("suit_upgrades", builder -> builder
+                    .persistent(com.senne.starktech.workbench.SuitUpgrades.CODEC)
+                    .networkSynchronized(com.senne.starktech.workbench.SuitUpgrades.STREAM_CODEC));
+
     /** Welke upgrades er in de bril zitten. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithUpgrades>> UPGRADES =
             COMPONENTS.registerComponentType("upgrades", builder -> builder

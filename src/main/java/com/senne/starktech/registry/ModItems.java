@@ -86,6 +86,22 @@ public final class ModItems {
     public static final DeferredItem<StarkSuitItem> STARK_BOOTS = ITEMS.registerItem("stark_boots",
             properties -> new StarkSuitItem(ArmorItem.Type.BOOTS, properties),
             new Item.Properties().rarity(Rarity.EPIC));
+    /** De harnas-werkbank, en de upgrades die je daar in het harnas bouwt. */
+    public static final DeferredItem<BlockItem> SUIT_WORKBENCH = ITEMS.registerSimpleBlockItem("suit_workbench",
+            ModBlocks.SUIT_WORKBENCH, new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<com.senne.starktech.workbench.SuitModuleItem> THRUSTER_UPGRADE = ITEMS.registerItem(
+            "thruster_upgrade", properties -> new com.senne.starktech.workbench.SuitModuleItem(
+                    com.senne.starktech.workbench.SuitModuleItem.Kind.THRUSTERS, properties),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<com.senne.starktech.workbench.SuitModuleItem> ARMOR_PLATING = ITEMS.registerItem(
+            "armor_plating", properties -> new com.senne.starktech.workbench.SuitModuleItem(
+                    com.senne.starktech.workbench.SuitModuleItem.Kind.PLATING, properties),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<com.senne.starktech.workbench.SuitModuleItem> REPULSOR_CAPACITOR = ITEMS.registerItem(
+            "repulsor_capacitor", properties -> new com.senne.starktech.workbench.SuitModuleItem(
+                    com.senne.starktech.workbench.SuitModuleItem.Kind.CAPACITOR, properties),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+
     /** Mini-raketten voor op de borstplaat (te maken met een Hydra-onderdeel). */
     public static final DeferredItem<RocketPackItem> ROCKET_PACK = ITEMS.registerItem("rocket_pack",
             RocketPackItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));

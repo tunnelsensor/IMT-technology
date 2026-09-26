@@ -161,8 +161,11 @@ public final class EdithSuit {
         if (player.tickCount % 20 != 0) {
             return;
         }
-        int cost = speed > SuitBalance.BOOST_SPEED ? SuitBalance.DRAIN_BOOST
+        int drain = speed > SuitBalance.BOOST_SPEED ? SuitBalance.DRAIN_BOOST
                 : speed > SuitBalance.CRUISE_SPEED ? SuitBalance.DRAIN_FLY : SuitBalance.DRAIN_HOVER;
+        // Stuwraket-upgrades in de laarzen: zuiniger vliegen.
+        int cost = (int) Math.ceil(drain * Math.max(0.1, 1 - com.senne.starktech.workbench.WorkbenchBalance.THRUSTER_SAVING
+                * com.senne.starktech.workbench.SuitUpgrades.thrustersOf(player)));
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
             return; // de volgende tick merkt dat de batterij leeg is en zet het vliegen uit
@@ -199,7 +202,11 @@ public final class EdithSuit {
         if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             return;
         }
-        float absorbed = event.getAmount() * SuitBalance.POWERED_REDUCTION_PER_PIECE * pieces;
+        // Elke gedragen stuk houdt een deel tegen, en de bepantsering (werkbank) er nog wat bij.
+        double share = Math.min(0.9, SuitBalance.POWERED_REDUCTION_PER_PIECE * pieces
+                + com.senne.starktech.workbench.WorkbenchBalance.PLATING_REDUCTION
+                * com.senne.starktech.workbench.SuitUpgrades.platingOf(player));
+        float absorbed = (float) (event.getAmount() * share);
         int cost = (int) Math.ceil(absorbed * SuitBalance.REDUCTION_COST_PER_DAMAGE);
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
@@ -280,7 +287,7 @@ public final class EdithSuit {
             if (target.getBoundingBox().inflate(SuitBalance.REPULSOR_WIDTH).clip(from, to).isEmpty()) {
                 continue;
             }
-            target.hurt(ModDamageTypes.droneLaser(level, player, player), SuitBalance.REPULSOR_DAMAGE);
+            target.hurt(ModDamageTypes.droneLaser(level, player, player), repulsorDamage(player));
             Vec3 push = target.position().subtract(player.position()).normalize()
                     .scale(SuitBalance.REPULSOR_KNOCKBACK);
             target.push(push.x, 0.15, push.z);
@@ -302,6 +309,12 @@ public final class EdithSuit {
         if (hits > 0) {
             StarkAdvancements.award(player, StarkAdvancements.REPULSOR);
         }
+    }
+
+    /** De schade van een repulsorstoot: meer met condensatoren in de borstplaat (werkbank). */
+    public static float repulsorDamage(ServerPlayer player) {
+        return (float) (SuitBalance.REPULSOR_DAMAGE * (1 + com.senne.starktech.workbench.WorkbenchBalance.CAPACITOR_DAMAGE
+                * com.senne.starktech.workbench.SuitUpgrades.capacitorsOf(player)));
     }
 
     // ================================================================ Opruimen

@@ -92,6 +92,7 @@ public class StarkTechClient {
     private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.CHARGING_STATION.get(), ChargingStationScreen::new);
         event.register(ModMenus.CHARGER.get(), ChargerScreen::new);
+        event.register(ModMenus.SUIT_WORKBENCH.get(), SuitWorkbenchScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {

@@ -39,7 +39,8 @@ public final class BalanceConfig {
             com.senne.starktech.raid.RaidBalance.class,
             com.senne.starktech.arsenal.ArsenalBalance.class,
             com.senne.starktech.shield.DomeSettings.class,
-            com.senne.starktech.security.SecurityBalance.class);
+            com.senne.starktech.security.SecurityBalance.class,
+            com.senne.starktech.workbench.WorkbenchBalance.class);
 
     /** Eén instelbaar getal: waar het staat, de regel in het bestand, en de standaardwaarde. */
     private record Entry(Field field, ModConfigSpec.ConfigValue<?> value, Object fallback) {}

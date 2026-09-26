@@ -354,7 +354,8 @@ gebeurt — je eerste drone de ruimte in sturen, een satellietaanval, een drone 
 harnas vliegen.
 
 ### Het harnas
-Craft een **borstplaat**, **broek** en **laarzen** (netherite, Stark-chips, amethist). Er is geen
+Het harnas maak je aan de **harnas-werkbank** (zie hieronder): een **borstplaat**, **broek** en
+**laarzen** (netherite, Stark-chips, amethist, ijzer, redstone). Er is geen
 helm: die plek is van de bril, en dat is de bedoeling — **zonder de bril doet het harnas niets
 bijzonders**. Het is dan gewoon een goed pak metaal. De bril levert de stroom; het harnas heeft
 geen eigen batterij.
@@ -397,6 +398,24 @@ Met de bril op en energie erin:
   **plek waar je kijkt**. Ze ontploffen zonder blokken te slopen en raken jou, je team en je
   drones nooit. Je hebt het hele harnas nodig; een salvo kost 900 energie en daarna moet het
   pakket 12 seconden herladen (links in de HUD: ROCKETS). Munitie is er niet.
+
+### De harnas-werkbank (Tony's lab)
+Craft een **Suit Workbench** (Stark-chips, een redstoneblok, een crafting table, een aambeeld en
+ijzer), of gebruik die in het lab van een Stark Tower. Hij heeft **stroom** nodig: een Stark-kabel
+naar een zonnepaneel of warmtegenerator, of er direct tegenaan. Klik erop voor zijn scherm:
+
+- **Bouwen**: leg de materialen in de negen vakken links en druk op **Chestplate**, **Leggings** of
+  **Boots** (houd de muis op een knop en je ziet wat het kost; een grijze knop betekent dat er iets
+  ontbreekt). De materialen gaan eruit, er loopt een balkje vol, en het stuk verschijnt in het vak
+  **Suit**. Het harnas kun je niet meer in de crafting table maken.
+- **Upgraden**: leg een stuk harnas in het vak **Suit** en een upgrade in het vak **Upgrade**; het
+  inbouwen begint vanzelf. De upgrades (te craften met Stark-chips, en soms te vinden in de kisten
+  van een Stark Tower):
+  - **Thruster Upgrade** (in de laarzen, tot 3): sneller vliegen en minder energie.
+  - **Armor Plating** (in elk stuk, tot 2 per stuk): het harnas houdt meer schade tegen.
+  - **Repulsor Capacitor** (in de borstplaat, tot 2): een sterkere repulsor.
+  - Het **raketpakket** kan hier ook in de borstplaat (of met een rechtsklik, zie boven).
+  In de tooltip van een stuk harnas zie je welke upgrades erin zitten.
 
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij

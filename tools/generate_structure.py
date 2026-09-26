@@ -552,6 +552,12 @@ def build_lab():
         for h in (y + 4, y + 3):
             put(x1 - 5, h, z, "minecraft:chain", {"axis": "y", "waterlogged": "false"})
 
+    # De harnas-werkbank voor de pakstelling: hier bouw je het harnas en zet je er upgrades in.
+    # Stroom komt van een warmtegenerator ernaast, op een gloeiend magmablok in de vloer.
+    put(x1 - 8, y, MID, "starktech:suit_workbench", {"facing": "west"})
+    put(x1 - 8, y, MID + 1, "starktech:heat_generator", {"facing": "west"})
+    put(x1 - 8, y - 1, MID + 1, "minecraft:magma_block")
+
     # Een teslaspoel in de hoek.
     tx, tz = x1 - 4, z1 - 5
     put(tx, y, tz, COPPER)

@@ -32,6 +32,16 @@ public class StarkSuitItem extends ArmorItem {
         tooltip.add(Component.translatable("tooltip.starktech.suit").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.suit.needs_glasses")
                 .withStyle(ChatFormatting.DARK_AQUA));
+        com.senne.starktech.workbench.SuitUpgrades upgrades = com.senne.starktech.workbench.SuitUpgrades.of(stack);
+        if (upgrades.thrusters() > 0) {
+            tooltip.add(Component.translatable("tooltip.starktech.suit.thrusters", upgrades.thrusters()).withStyle(ChatFormatting.GOLD));
+        }
+        if (upgrades.plating() > 0) {
+            tooltip.add(Component.translatable("tooltip.starktech.suit.plating", upgrades.plating()).withStyle(ChatFormatting.GOLD));
+        }
+        if (upgrades.capacitor() > 0) {
+            tooltip.add(Component.translatable("tooltip.starktech.suit.capacitor", upgrades.capacitor()).withStyle(ChatFormatting.GOLD));
+        }
         if (RocketPackItem.installedOn(stack)) {
             tooltip.add(Component.translatable("tooltip.starktech.suit.rocket_pack").withStyle(ChatFormatting.GOLD));
         }

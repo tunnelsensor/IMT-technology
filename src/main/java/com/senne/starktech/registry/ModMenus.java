@@ -27,4 +27,9 @@ public final class ModMenus {
      */
     public static final DeferredHolder<MenuType<?>, MenuType<ChargerMenu>> CHARGER =
             MENUS.register("charger", () -> IMenuTypeExtension.create(ChargerMenu::new));
+
+    /** Het scherm van de harnas-werkbank. */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.workbench.SuitWorkbenchMenu>> SUIT_WORKBENCH =
+            MENUS.register("suit_workbench", () -> new MenuType<>(com.senne.starktech.workbench.SuitWorkbenchMenu::new,
+                    FeatureFlags.DEFAULT_FLAGS));
 }

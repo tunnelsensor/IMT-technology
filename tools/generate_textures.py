@@ -1721,6 +1721,83 @@ def stark_laptop():
     save(im, "item/stark_laptop.png")
 
 
+def workbench_textures():
+    """
+    De harnas-werkbank (Tony's lab) en de drie upgrades die je er inbouwt.
+
+    - bovenkant: een blauwdruk-mat met raster, en de omtrek van een borstplaat met reactor;
+    - zijkant: grijze laden met handgrepen;
+    - voorkant: een gereedschapswand met een rode Stark-streep;
+    - upgrades: een straalbuis met een blauwe vlam, een rood-gouden pantserplaat en een
+      gloeiende condensator.
+    """
+    red = (168, 28, 30, 255)
+    red_dark = (106, 16, 20, 255)
+    gold = (224, 178, 62, 255)
+    steel = (92, 98, 108, 255)
+    steel_dark = (58, 62, 70, 255)
+    steel_light = (140, 146, 156, 255)
+    blueprint = (18, 52, 88, 255)
+    grid = (40, 90, 140, 255)
+
+    top = img(16, 16, blueprint)
+    d = ImageDraw.Draw(top)
+    for i in range(0, 16, 4):
+        d.line([i, 0, i, 15], fill=grid)
+        d.line([0, i, 15, i], fill=grid)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    # De omtrek van een borstplaat, met in het midden de reactor.
+    d.polygon([(4, 3), (11, 3), (12, 6), (11, 12), (4, 12), (3, 6)], outline=(200, 230, 255, 255))
+    px(top, [(7, 7), (8, 7), (7, 8), (8, 8)], CYAN)
+    save(top, "block/suit_workbench_top.png")
+
+    side = img(16, 16, steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for y0 in (2, 7, 12):
+        d.rectangle([2, y0, 13, y0 + 3], fill=steel_dark, outline=steel_light)
+        d.line([6, y0 + 1, 9, y0 + 1], fill=steel_light)
+    save(side, "block/suit_workbench_side.png")
+
+    front = img(16, 16, steel_dark)
+    d = ImageDraw.Draw(front)
+    d.rectangle([0, 0, 15, 15], outline=steel)
+    d.line([0, 2, 15, 2], fill=red)
+    d.line([0, 3, 15, 3], fill=gold)
+    # Gereedschap aan de wand: een sleutel, een schroevendraaier, een hamer.
+    d.line([3, 6, 3, 12], fill=steel_light)
+    px(front, [(2, 6), (4, 6)], steel_light)
+    d.line([7, 6, 7, 11], fill=steel_light)
+    px(front, [(7, 12)], red)
+    d.line([11, 7, 11, 12], fill=(120, 80, 40, 255))
+    d.rectangle([9, 5, 13, 6], fill=steel_light)
+    save(front, "block/suit_workbench_front.png")
+
+    thrusters = img(16, 16)
+    d = ImageDraw.Draw(thrusters)
+    d.polygon([(5, 2), (10, 2), (12, 8), (3, 8)], fill=steel, outline=steel_dark)
+    d.line([4, 5, 11, 5], fill=gold)
+    d.polygon([(4, 9), (11, 9), (9, 14), (6, 14)], fill=CYAN_DIM)
+    d.polygon([(6, 9), (9, 9), (8, 13), (7, 13)], fill=CYAN)
+    save(thrusters, "item/thruster_upgrade.png")
+
+    plating = img(16, 16)
+    d = ImageDraw.Draw(plating)
+    d.polygon([(3, 2), (12, 2), (13, 8), (8, 14), (2, 8)], fill=red, outline=red_dark)
+    d.line([4, 5, 11, 5], fill=gold)
+    d.line([4, 6, 11, 6], fill=(246, 214, 120, 255))
+    px(plating, [(4, 3), (11, 3), (4, 9), (11, 9)], steel_light)
+    save(plating, "item/armor_plating.png")
+
+    capacitor = img(16, 16)
+    d = ImageDraw.Draw(capacitor)
+    d.ellipse([2, 2, 13, 13], fill=steel_dark, outline=gold)
+    d.ellipse([4, 4, 11, 11], fill=CYAN_DIM)
+    d.ellipse([6, 6, 9, 9], fill=CYAN)
+    px(capacitor, [(7, 7)], (235, 250, 255, 255))
+    save(capacitor, "item/repulsor_capacitor.png")
+
+
 def rocket_ammo():
     """Munitie voor het torentje: drie kleine raketten met rode neuzen, samengebonden."""
     im = img(16, 16)
@@ -1824,3 +1901,4 @@ if __name__ == "__main__":
     rocket_ammo()
     security_textures()
     stark_laptop()
+    workbench_textures()
