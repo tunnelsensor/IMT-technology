@@ -1615,6 +1615,38 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * De drie satellietaanvallen in het G-menu kiezen de stand én vuren meteen. Een stand die
+     * nog op slot zit, doet niets (en kost niets).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "satellite_upgrade")
+    public static void menu_satellite_options_pick_the_mode_and_fire(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        ItemStack glasses = EdithData.getWornGlasses(owner);
+        Husk target = spawnDummyEnemy(helper, new BlockPos(12, 3, 12));
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.position());
+        int full = EdithData.getEnergy(glasses);
+
+        EdithServer.handleAction(owner, EdithAction.STRIKE_BOMBARDMENT.ordinal());
+        if (EdithData.getEnergy(glasses) != full || SatelliteStrikes.pendingFor(owner.getUUID()) != null) {
+            throw new GameTestAssertException("Het bombardement vuurde terwijl het nog op slot zat");
+        }
+
+        SatelliteWorkshop.install(owner, SatelliteUpgrade.BOMBARDMENT, 1);
+        EdithServer.handleAction(owner, EdithAction.STRIKE_BOMBARDMENT.ordinal());
+        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.BOMBARDMENT) {
+            throw new GameTestAssertException("De satelliet staat niet op bombardement maar op "
+                    + EdithData.getSatelliteMode(glasses));
+        }
+        if (SatelliteStrikes.pendingFor(owner.getUUID()) == null
+                || EdithData.getEnergy(glasses) != full - EdithBalance.SATELLITE_COST_BOMBARDMENT) {
+            throw new GameTestAssertException("Het bombardement vuurde niet (of kostte niet "
+                    + EdithBalance.SATELLITE_COST_BOMBARDMENT + ")");
+        }
+        SatelliteStrikes.cancel(owner.getUUID());
+        helper.succeed();
+    }
+
     // ================================================================ Fase 15: het drone-arsenaal
 
     /**

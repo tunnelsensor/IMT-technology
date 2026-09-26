@@ -235,10 +235,13 @@ final class ShowcaseFeatures {
                 .action(10, EdithAction.ORE_SCAN)
                 .pause(160));
 
-        add("E.D.I.T.H. menu (G)", "Het ronde menu met alle functies, tabblad voor tabblad "
-                + "(combat, drones, transport, tech, illusie, scanner, navigatie, systems).", start, 180, 0, s -> {
+        add("E.D.I.T.H. menu (G)", "Het ronde menu met alle functies, tabblad voor tabblad: Combat "
+                + "(repulsor, raketten, rayshield), Satellite & Arsenal (de drie satellietaanvallen apart, "
+                + "het satellietscherm en het arsenaal), Drones, Recon drones (camera en spion), Transport, "
+                + "Tech, Illusion, Information (ertsen, dreigingen, doelanalyse), Navigation en Systems "
+                + "(nu met nachtzicht). Bij een stand die je nog niet vrijspeelde staat LOCKED.", start, 180, 0, s -> {
             s.open(10, EdithMenuScreen::new);
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < com.senne.starktech.client.MenuTab.values().length; i++) {
                 s.step(45, () -> press(InputConstants.KEY_RIGHT));
             }
             s.close(45);
@@ -346,7 +349,7 @@ final class ShowcaseFeatures {
                 .lookAt(10, mob(TARGETS.get(1)))
                 .pause(240));
 
-        add("Satellite upgrades", "Het satellietscherm (G > Combat > Satellite): links de satelliet met al "
+        add("Satellite upgrades", "Het satellietscherm (G > Satellite & Arsenal > Satellite): links de satelliet met al "
                 + "zijn getallen, rechts de upgrades met hun kosten. Kijk hoe de satelliet groeit: niveau 1, 4, 7 "
                 + "en tot slot de creative-knop 'Max all' (langere panelen, raketkokers, het kanon, een grotere "
                 + "schotel, condensatoren, een grote reactor).", start, 180, 0, s -> s

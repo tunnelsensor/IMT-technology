@@ -31,7 +31,7 @@ import net.minecraft.world.item.ItemStack;
 /**
  * Het ronde E.D.I.T.H.-menu (toets G), in het midden van je scherm.
  *
- * Het menu is opgedeeld in tabbladen (Gevecht, Scanner, Navigatie, Systemen). Met het
+ * Het menu is opgedeeld in tabbladen (zie MenuTab: Combat, Satellite & Arsenal, Drones, ...). Met het
  * scrollwiel draai je naar het volgende tabblad; in het midden van de cirkel zie je op welk
  * tabblad je zit. Zolang het menu open is, verdwijnt de HUD links (en het kompas en de
  * meldingen), zodat niets de cirkel in de weg zit (zie EdithHud).
@@ -39,7 +39,7 @@ import net.minecraft.world.item.ItemStack;
  * Bediening:
  * - G ingedrukt houden, scrollen naar het juiste tabblad, muis naar een optie, G loslaten
  * - of: kort op G tikken (het menu blijft open), scrollen en op een optie klikken
- * - pijltjes links/rechts of de cijfers 1-4 wisselen ook van tabblad
+ * - pijltjes links/rechts of de cijfers 1-9 en 0 wisselen ook van tabblad
  * - sluiten: Esc, nog eens G, of in het midden klikken
  */
 public class EdithMenuScreen extends Screen {
@@ -66,6 +66,7 @@ public class EdithMenuScreen extends Screen {
 
     // ---------------------------------------------------------------- De opties per tabblad (met de klok mee vanaf boven)
 
+    /** Tabblad Combat: wat je zelf doet, met het harnas en het schild. */
     private static final List<Option> COMBAT = List.of(
             // Aan/uit: vuren doe je daarna met de aanvalsknop.
             new Option(Component.translatable(EdithAction.REPULSOR.translationKey()),
@@ -74,16 +75,32 @@ public class EdithMenuScreen extends Screen {
                             : new Status(Component.translatable("screen.starktech.cost", SuitBalance.REPULSOR_COST), GREY),
                     RepulsorControl::toggle),
             action(EdithAction.ROCKETS),
-            action(EdithAction.TOGGLE_SHIELD),
+            action(EdithAction.TOGGLE_SHIELD));
+
+    /** Tabblad Satellite & Arsenal: de drie aanvallen apart, en de schermen van satelliet en arsenaal. */
+    private static final List<Option> SATELLITE = List.of(
+            action(EdithAction.STRIKE_PRECISION),
+            action(EdithAction.STRIKE_BOMBARDMENT),
+            action(EdithAction.STRIKE_SWEEP),
+            // Het satellietscherm: upgraden en zien wat hij kan.
+            open("screen.starktech.menu.satellite", HudStyle.ORANGE, SatelliteScreen::new),
+            open("screen.starktech.menu.arsenal", HudStyle.CYAN, ArsenalScreen::new));
+
+    /** Tabblad Drones: aanvallen en beschermen. */
+    private static final List<Option> DRONES = List.of(
             action(EdithAction.LAUNCH_DRONES),
             action(EdithAction.DRONE_STRIKE),
             action(EdithAction.TOGGLE_GUARD_DRONES),
-            action(EdithAction.SATELLITE_STRIKE),
-            action(EdithAction.SATELLITE_MODE),
-            // Het satellietscherm: upgraden en zien wat hij kan.
-            open("screen.starktech.menu.satellite", HudStyle.ORANGE, SatelliteScreen::new),
+            action(EdithAction.DRONE_FORMATION),
             action(EdithAction.STAND_DOWN),
             action(EdithAction.CLEAR_MARKS));
+
+    /** Tabblad Recon drones: kijken zonder dat iemand het merkt. */
+    private static final List<Option> RECON = List.of(
+            action(EdithAction.DRONE_CAMERA),
+            action(EdithAction.SPY_DRONE),
+            action(EdithAction.SPY_VIEW),
+            action(EdithAction.SPY_REPORT));
 
     /** Tabblad Illusie: wat de cloakingdrones projecteren. */
     private static final List<Option> ILLUSION = List.of(
@@ -106,20 +123,11 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.CARGO_DRONE),
             action(EdithAction.CARRY_ENTITY));
 
-    /** Tabblad Drones: je arsenaal, de camera, de spion en zijn rapport. */
-    private static final List<Option> DRONES = List.of(
-            open("screen.starktech.menu.arsenal", HudStyle.CYAN, ArsenalScreen::new),
-            action(EdithAction.DRONE_FORMATION),
-            action(EdithAction.DRONE_CAMERA),
-            action(EdithAction.SPY_DRONE),
-            action(EdithAction.SPY_VIEW),
-            action(EdithAction.SPY_REPORT));
-
-    private static final List<Option> SCANNER = List.of(
+    /** Tabblad Information: wat de bril je laat zien. */
+    private static final List<Option> INFORMATION = List.of(
             action(EdithAction.ORE_SCAN),
-            action(EdithAction.TOGGLE_NIGHT_VISION),
-            action(EdithAction.TOGGLE_TARGET_ANALYSIS),
-            action(EdithAction.TOGGLE_THREAT_SCAN));
+            action(EdithAction.TOGGLE_THREAT_SCAN),
+            action(EdithAction.TOGGLE_TARGET_ANALYSIS));
 
     private static final List<Option> NAVIGATION = List.of(
             open("screen.starktech.menu.navigation", HudStyle.CYAN, NavigationScreen::new),
@@ -139,16 +147,19 @@ public class EdithMenuScreen extends Screen {
                     glasses -> EdithClientConfig.voiceTextInHud()
                             ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.starktech.off"), GREY),
-                    EdithClientConfig::toggleVoiceTextInHud));
+                    EdithClientConfig::toggleVoiceTextInHud),
+            action(EdithAction.TOGGLE_NIGHT_VISION));
 
     private static List<Option> optionsOf(MenuTab tab) {
         return switch (tab) {
             case COMBAT -> COMBAT;
+            case SATELLITE -> SATELLITE;
             case DRONES -> DRONES;
+            case RECON -> RECON;
             case TRANSPORT -> TRANSPORT;
             case TECH -> TECH;
             case ILLUSION -> ILLUSION;
-            case SCANNER -> SCANNER;
+            case INFORMATION -> INFORMATION;
             case NAVIGATION -> NAVIGATION;
             case SYSTEMS -> SYSTEMS;
         };
@@ -263,14 +274,16 @@ public class EdithMenuScreen extends Screen {
      * Op het tabblad Systemen staat hier ook de info over de bril.
      */
     private void renderCenter(GuiGraphics g, int cx, int cy, MenuTab tab, float t) {
-        HudStyle.brackets(g, cx - 48, cy - 20, cx + 48, cy + 20, 6, HudStyle.argb(220, HudStyle.CYAN));
+        // Het kader groeit mee met een lange naam zoals "SATELLITE & ARSENAL".
+        int half = Math.max(48, font.width(tab.label()) / 2 + 16);
+        HudStyle.brackets(g, cx - half, cy - 20, cx + half, cy + 20, 6, HudStyle.argb(220, HudStyle.CYAN));
         g.drawCenteredString(font, "E.D.I.T.H.", cx, cy - 15, HudStyle.argb(200, HudStyle.CYAN));
 
         // Naam van het tabblad, schuift even mee in de scrollrichting.
         int slide = (int) ((1.0f - t) * 10 * tabDirection);
         g.drawCenteredString(font, tab.label(), cx + slide, cy - 4, HudStyle.argb(255, HudStyle.WHITE));
-        g.drawString(font, "‹", cx - 44, cy - 4, HudStyle.argb(150, HudStyle.CYAN), false);
-        g.drawString(font, "›", cx + 40, cy - 4, HudStyle.argb(150, HudStyle.CYAN), false);
+        g.drawString(font, "‹", cx - half + 4, cy - 4, HudStyle.argb(150, HudStyle.CYAN), false);
+        g.drawString(font, "›", cx + half - 8, cy - 4, HudStyle.argb(150, HudStyle.CYAN), false);
 
         // Een puntje per tabblad; het huidige is gevuld.
         MenuTab[] tabs = MenuTab.values();
@@ -321,6 +334,9 @@ public class EdithMenuScreen extends Screen {
             case DRONE_STRIKE -> costOrCooldown(EdithBalance.STRIKE_DRONE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
             case ROCKETS -> costOrCooldown(SuitBalance.ROCKET_COST, EdithClientState.cooldown(EdithCooldown.ROCKETS));
             case SATELLITE_STRIKE -> costOrCooldown(satelliteCost(glasses), EdithClientState.cooldown(EdithCooldown.SATELLITE));
+            case STRIKE_PRECISION -> satelliteStatus(SatelliteMode.PRECISION);
+            case STRIKE_BOMBARDMENT -> satelliteStatus(SatelliteMode.BOMBARDMENT);
+            case STRIKE_SWEEP -> satelliteStatus(SatelliteMode.SWEEP);
             case SATELLITE_MODE -> new Status(Component.translatable(glasses.isEmpty()
                     ? SatelliteMode.PRECISION.translationKey()
                     : EdithData.getSatelliteMode(glasses).translationKey()), HudStyle.ORANGE);
@@ -377,6 +393,23 @@ public class EdithMenuScreen extends Screen {
             }
             default -> new Status(Component.empty(), HudStyle.WHITE);
         };
+    }
+
+    /**
+     * Onder een van de drie satellietaanvallen: LOCKED als je die stand nog niet vrijspeelde;
+     * bij de schuivende laser met een beginpunt: dat je nu het eind moet kiezen; anders de
+     * kosten of de wachttijd.
+     */
+    private static Status satelliteStatus(SatelliteMode mode) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && !mc.player.getData(com.senne.starktech.registry.ModAttachments.SATELLITE).unlocked(mode)) {
+            return new Status(Component.translatable("screen.starktech.locked"), GREY);
+        }
+        if (mode == SatelliteMode.SWEEP && EdithClientState.pings.stream()
+                .anyMatch(ping -> ping.sender().equals(com.senne.starktech.network.PingMarkerPayload.SWEEP_START))) {
+            return new Status(Component.translatable("screen.starktech.sweep.pick_end"), HudStyle.ORANGE);
+        }
+        return costOrCooldown(mode.cost(), EdithClientState.cooldown(EdithCooldown.SATELLITE));
     }
 
     /** Wat een satelliet-aanval kost, in de stand die nu in de bril staat. */
@@ -479,8 +512,10 @@ public class EdithMenuScreen extends Screen {
             turn(key == InputConstants.KEY_RIGHT ? 1 : -1);
             return true;
         }
-        if (key >= InputConstants.KEY_1 && key < InputConstants.KEY_1 + tabs.length) {
-            MenuTab tab = tabs[key - InputConstants.KEY_1];
+        // 1 tot 9 zijn de eerste negen tabbladen, 0 het tiende.
+        int index = key == InputConstants.KEY_0 ? 9 : key - InputConstants.KEY_1;
+        if (key >= InputConstants.KEY_0 && key <= InputConstants.KEY_9 && index < tabs.length) {
+            MenuTab tab = tabs[index];
             selectTab(tab, tab.ordinal() > EdithClientState.menuTab.ordinal() ? 1 : -1);
             return true;
         }

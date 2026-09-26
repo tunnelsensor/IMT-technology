@@ -76,14 +76,19 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 
 | Tabblad | Wat erin zit |
 |---------|--------------|
-| **Gevecht** | Repulsor, rayshield, drones, één drone, escorte, satelliet + stand, satellietscherm (upgrades), stand down, markeringen wissen |
-| **Drones** | Arsenaal, drone-camera, spionagedrone, meekijken, rapport |
+| **Combat** | Repulsor, mini-raketten, rayshield |
+| **Satellite & Arsenal** | Precisie-straal, bombardement, schuivende laser (elk apart: kiezen = meteen vuren), satellietscherm (upgrades), arsenaal |
+| **Drones** | Zwerm, één drone, escorte, escortevorm, stand down, markeringen wissen |
+| **Recon drones** | Drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
-| **Illusie** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
-| **Scanner** | Ertsen-scan, nachtzicht, doelwit-analyse, dreigingsscan |
-| **Navigatie** | Waypoints, ping, comms |
-| **Systemen** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst aan/uit |
+| **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
+| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse |
+| **Navigation** | Waypoints, ping, comms |
+| **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
+
+Wisselen van tabblad: scrollen, de pijltjes links/rechts, of meteen met de cijfers **1** tot
+**9** en **0** (het tiende tabblad).
 
 ---
 
@@ -98,7 +103,7 @@ Alles wat drones gebruikt — de zwerm, de escorte, de verkenner, de spion, tran
 en de illusies — haalt ze uit dat arsenaal. Hangt er niets meer, dan vertrekt er niets, en zegt
 E.D.I.T.H. dat (je raakt dan geen energie kwijt).
 
-Open het arsenaal met **G > Drones > Arsenaal**. Per drone zie je hoe heel hij nog is en waar
+Open het arsenaal met **G > Satellite & Arsenal > Arsenal**. Per drone zie je hoe heel hij nog is en waar
 hij uithangt:
 
 - **In orbit** — klaar voor gebruik. Met **Recall** komt hij in een boog uit de lucht en landt
@@ -148,16 +153,19 @@ naar jouw spel).
 - **Iemand vervoeren**: pakt een speler (alleen met PvP aan), dier of monster op.
 
 ### Satelliet (K)
-Drie standen (kies in Gevecht > Satelliet-stand):
+Drie standen. In **G > Satellite & Arsenal** staan ze elk apart: kies er een en hij vuurt
+meteen in die stand (een stand die nog op slot zit, staat er als LOCKED). **K** vuurt daarna in
+de stand die je het laatst gebruikte.
 - **Precisie** — veel schade, **geen** blokschade. Heb je vanaf het begin.
 - **Bombardement** — een regen van inslagen, flinke kraters. Eerst vrijspelen.
 - **Schuivende laser** — een streep die over de grond kruipt, van een begin- naar een eindpunt
   dat jij kiest: kijk naar het begin en druk **K** (daar komt een markering), kijk naar het eind
-  en druk nog eens **K**. Een beginpunt blijft een halve minuut bewaard. Eerst vrijspelen.
+  en druk nog eens **K** (of kies twee keer Sweeping laser in het menu; ertussen staat er
+  PICK END onder). Een beginpunt blijft een halve minuut bewaard. Eerst vrijspelen.
 Hij volgt bewegende doelwitten (lock-on), richt tot 500 blokken, en je kunt ook op je waypoint
 of je laatste ping mikken. Bij de inslag komt er een schokgolf en schudt je beeld.
 
-**Upgraden** doe je in het satellietscherm (G > Gevecht > Satellite). Zes onderdelen, elk tot
+**Upgraden** doe je in het satellietscherm (G > Satellite & Arsenal > Satellite). Zes onderdelen, elk tot
 niveau 10: de drie standen (vrijspelen, dan sterker), opladen (kortere wachttijd), kracht (meer
 schade voor alles) en richten (sneller richten, verder weg). Een niveau kost spullen uit je
 rugzak (ijzer, redstone en Stark-chips; later goud, diamant en netherite), en een paar drones
@@ -197,7 +205,7 @@ eerst bij de generator die het meest heeft.
   rest van het net.
 
 ### Rayshield
-- **Persoonlijk schild** (Gevecht): vangt pijlen, vuurballen, explosies en lasers op. Elke
+- **Persoonlijk schild** (G > Combat > Rayshield): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
 - **Laserzender** (volledig blok met een lens aan de voorkant): een doorzichtig energieveld
   met lopende scanlijnen waar niemand door komt. Het schuift uit de lens naar voren tot het
@@ -331,7 +339,7 @@ Met de bril op en energie erin:
   buitenaf zie je geen loopbeweging: wie vooruit vliegt, helt voorover tot bijna liggend, met
   de benen recht, en de vlammen wijzen dan langs je lichaam naar achteren.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
-- **Repulsor** (toets **I**, of G > Gevecht): zet de repulsor **aan of uit**. Staat hij aan,
+- **Repulsor** (toets **I**, of G > Combat): zet de repulsor **aan of uit**. Staat hij aan,
   dan is je aanvalsknop (linkermuisknop) de repulsor: klikken vuurt, ingedrukt houden vuurt
   elke seconde. Slaan en blokken breken gaat dan niet; zet hem uit om weer te hakken. Rond je
   vizier staat een ring die na elk schot weer volloopt. Een stoot raakt alles op zijn weg en
@@ -339,7 +347,7 @@ Met de bril op en energie erin:
   reactor) en het kost 200 energie per stoot. Met een lege hand zie je je arm omhoog gaan,
   de hand geknikt met een gloeiende handpalm; bij een schot flitst hij op en slaat je arm
   terug. Anderen zien je arm vooruit wijzen en je handpalm oplichten als je schiet.
-- **Mini-raketten** (toets **X**, G > Gevecht, of zeg "fire rockets"): een salvo van zes
+- **Mini-raketten** (toets **X**, G > Combat, of zeg "fire rockets"): een salvo van zes
   raketten uit twee buizen op je rug. Daarvoor heb je een **raketpakket** nodig: craft het met
   een **Hydra-onderdeel** in het midden, een Stark-chip eronder, buskruit en ijzer. Trek de
   borstplaat aan en klik rechts met het pakket in je hand; dan zit het vast op DIE borstplaat
@@ -403,10 +411,10 @@ alleen een token in `config/starktech-spotify.json`. Spotify moet ergens open st
 telefoon of speaker), want daar speelt de muziek. Starten van muziek werkt alleen met Premium.
 
 ### Stem en spraakbesturing
-Via **G > Systemen** installeer je de stem (Piper) en de spraakbesturing. Push-to-talk is **Z**.
-Praat E.D.I.T.H. terwijl jij begint te praten, dan zwijgt ze meteen. In **G > Systemen >
-Spraaktekst** zet je aan of uit of je in de HUD ziet wat je zei en wat zij antwoordt.
-Alle zinnen kun je zelf aanpassen in **G > Systemen > Commando's** (of in
+Via **G > Systems** installeer je de stem (Piper) en de spraakbesturing. Push-to-talk is **Z**.
+Praat E.D.I.T.H. terwijl jij begint te praten, dan zwijgt ze meteen. In **G > Systems >
+Voice text** zet je aan of uit of je in de HUD ziet wat je zei en wat zij antwoordt.
+Alle zinnen kun je zelf aanpassen in **G > Systems > Commands** (of in
 `config/starktech-voice.json`).
 
 ---

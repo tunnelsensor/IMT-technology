@@ -4,28 +4,31 @@ import net.minecraft.network.chat.Component;
 
 /**
  * De tabbladen van het ronde E.D.I.T.H.-menu (toets G, zie EdithMenuScreen).
- * Met het scrollwiel draai je van het ene tabblad naar het volgende.
+ * Met het scrollwiel draai je van het ene tabblad naar het volgende; de cijfers 1-9 en 0
+ * springen er meteen heen.
  *
- * - COMBAT:     doelwit-analyse, dreigingsscan, drones, satelliet, stand down, markeringen wissen
- * - DRONES:     drone-camera, spionagedrone, meekijken, rapport
- * - TRANSPORT:  zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren
- * - TECH:       redstone-relais, hacken (en later muziek)
- * - ILLUSION:   valse muur, nep-leger, stuk wereld kopiëren, onzichtbaar veld
- * - SCANNER:    ertsen-scan en nachtzicht
- * - NAVIGATION: navigatie, ping, comms
- * - SYSTEMS:    eigendom overdragen, stem, spraakbesturing en spraakcommando's bewerken (en in het midden: energie, verbruik)
+ * - COMBAT:      repulsor, raketten, rayshield (wat je zelf doet)
+ * - SATELLITE:   de drie satellietaanvallen, het satellietscherm en het arsenaal
+ * - DRONES:      zwerm, één drone, escorte en hun vorm, stand down, markeringen wissen
+ * - RECON:       drone-camera, spionagedrone, meekijken, rapport
+ * - TRANSPORT:   zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren
+ * - TECH:        redstone-relais, muziek, hacken
+ * - ILLUSION:    valse muur, nep-leger, onzichtbaar veld, stoppen
+ * - INFORMATION: ertsen-scan, dreigingsscan, doelwit-analyse
+ * - NAVIGATION:  navigatie, ping, comms
+ * - SYSTEMS:     eigendom overdragen, stem, spraakbesturing, nachtzicht (en in het midden: energie, verbruik)
+ *
+ * De volgorde hier is de volgorde in het menu.
  */
 public enum MenuTab {
     COMBAT("combat"),
-    /** Fase 6: alles met drones (camera, spion, rapport). */
+    SATELLITE("satellite"),
     DRONES("drones"),
-    /** Fase 7: vervoer met drones (zelf vliegen, autopiloot, vracht, iemand oppakken). */
+    RECON("recon"),
     TRANSPORT("transport"),
-    /** Fase 9 en later: techniek in je wereld (redstone, en straks schild en muziek). */
     TECH("tech"),
-    /** Fase 12: illusies van cloakingdrones. */
     ILLUSION("illusion"),
-    SCANNER("scanner"),
+    INFORMATION("information"),
     NAVIGATION("navigation"),
     SYSTEMS("systems");
 

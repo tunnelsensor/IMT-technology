@@ -73,7 +73,11 @@ public enum EdithAction {
     /** De volgende vorm voor je escortedrones (zie DroneFormation). */
     DRONE_FORMATION("drone_formation", null),
     /** Een salvo mini-raketten uit het harnas (zie SuitRockets). */
-    ROCKETS("rockets", null);
+    ROCKETS("rockets", null),
+    // De satelliet in één keer: stand kiezen én vuren (de drie opties in het G-menu).
+    STRIKE_PRECISION("strike_precision", null),
+    STRIKE_BOMBARDMENT("strike_bombardment", null),
+    STRIKE_SWEEP("strike_sweep", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

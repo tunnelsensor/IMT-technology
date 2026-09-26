@@ -246,6 +246,18 @@ public final class VisualCheck {
             t.shot(40, "10_holo_side");
         }
 
+        // --- Het G-menu: elk tabblad apart.
+        if (want("menu")) {
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.open(20, EdithMenuScreen::new);
+            for (com.senne.starktech.client.MenuTab tab : com.senne.starktech.client.MenuTab.values()) {
+                t.step(0, () -> com.senne.starktech.client.EdithClientState.menuTab = tab);
+                t.shot(10, String.format("m%02d_menu_%s", tab.ordinal() + 1, tab.name().toLowerCase()));
+            }
+            t.step(0, () -> com.senne.starktech.client.EdithClientState.menuTab = com.senne.starktech.client.MenuTab.COMBAT);
+            t.close(0);
+        }
+
         // --- De schermen
         if (want("screens")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

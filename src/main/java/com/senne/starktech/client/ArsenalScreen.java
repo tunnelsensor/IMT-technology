@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * drone) stuur je hem weer omhoog. Een drone die ergens aan het werk is, kun je niet aanraken;
  * daarvoor is "stand down".
  *
- * Openen: G-menu > tabblad Drones > Arsenaal.
+ * Openen: G-menu > tabblad Satellite & Arsenal > Arsenal.
  */
 public class ArsenalScreen extends Screen {
     /** Breedte van de lijst rechts. */

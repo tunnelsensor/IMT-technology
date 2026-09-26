@@ -397,6 +397,9 @@ public final class EdithServer {
             // Fase 15
             case REPULSOR -> EdithSuit.repulsor(player);
             case ROCKETS -> com.senne.starktech.suit.SuitRockets.fire(player);
+            case STRIKE_PRECISION -> satelliteStrike(player, glasses, SatelliteMode.PRECISION);
+            case STRIKE_BOMBARDMENT -> satelliteStrike(player, glasses, SatelliteMode.BOMBARDMENT);
+            case STRIKE_SWEEP -> satelliteStrike(player, glasses, SatelliteMode.SWEEP);
             case DRONE_FORMATION -> {
                 com.senne.starktech.drone.DroneFormation next = EdithData.getFormation(glasses).next();
                 EdithData.setFormation(glasses, next);
@@ -790,6 +793,23 @@ public final class EdithServer {
      * 3. je bestemming uit de navigatie;
      * 4. je laatste ping.
      */
+    /**
+     * Een satellietaanval in een bepaalde stand (de drie opties in het G-menu): eerst de stand
+     * kiezen, dan meteen vuren. Daarna vuurt K ook in die stand.
+     */
+    private static void satelliteStrike(ServerPlayer player, ItemStack glasses, SatelliteMode mode) {
+        if (!SatelliteWorkshop.get(player).unlocked(mode)) {
+            send(player, Component.translatable("satellite.starktech.msg.locked", Component.translatable(mode.translationKey())),
+                    EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        if (EdithData.getSatelliteMode(glasses) != mode) {
+            EdithData.setSatelliteMode(glasses, mode);
+            state(player).sweepStart = null; // een half gekozen laserlijn geldt niet voor een andere stand
+        }
+        satelliteStrike(player, glasses);
+    }
+
     private static void satelliteStrike(ServerPlayer player, ItemStack glasses) {
         PlayerState state = state(player);
         if (SatelliteStrikes.pendingFor(player.getUUID()) != null || !checkCooldown(player, state, EdithCooldown.SATELLITE)) {

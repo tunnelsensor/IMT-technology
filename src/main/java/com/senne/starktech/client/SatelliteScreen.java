@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * Een niveau kost onderdelen uit je rugzak, en drones uit je arsenaal brengen ze naar boven.
  * Wat je nog mist, staat in het rood (en in de uitleg als je over de knop gaat).
  *
- * Openen: G-menu > Combat > Satellite.
+ * Openen: G-menu > Satellite & Arsenal > Satellite.
  */
 public class SatelliteScreen extends Screen {
     private static final int HEADER_H = 18;
