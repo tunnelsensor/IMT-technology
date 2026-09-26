@@ -14,7 +14,7 @@ reling en lampjes. Van onder naar boven:
     1-11    de lobby: receptie met logowand, werkhoek, laadstation, zithoeken, vitrines
    12-22    het lab: watertanks, een pakstelling, een teslaspoel, werkbanken
    23-33    het archief: boekenkasten, leestafels, kaartentafel, betoveringstafel
-   34-44    de hangar: landingscirkel, dockingstations, een hangardeur, generatoren
+   34-44    de hangar: landingscirkel, drone-docks voor je arsenaal, een hangardeur, generatoren
    45-55    de woonverdieping: keuken, eettafel, tv-hoek, slaapkamer
    56-66    de beveiliging: schermenwand, serverkasten, een holotafel, de verborgen krachtcentrale
    67-76    de lasergang: negen rayshields en de omweg met drie deuren
@@ -628,8 +628,13 @@ def build_archive():
 
 def build_hangar():
     """
-    De hangar: een landingscirkel met waarschuwingsstrepen in de vloer, dockingstations voor
-    drones, werkbanken, generatoren met lava-ketels en een grote open hangardeur naar het oosten.
+    De hangar: een landingscirkel met waarschuwingsstrepen in de vloer, zes drone-docks voor
+    je arsenaal, werkbanken, generatoren met lava-ketels en een grote open hangardeur naar het
+    oosten.
+
+    De drone-docks staan langs de noordmuur. Na het hacken van de toren staan daar je eigen
+    drones op, en worden ze gerepareerd: een kabel langs de muur brengt stroom van een
+    warmtegenerator in de hoek (met een ketel lava ernaast).
     """
     terrace(HANGAR_Y - 1, ARCHIVE_IN, HANGAR_IN)
     curtain_wall(HANGAR_Y, LIVING_Y - 1, HANGAR_IN, DARK_GLASS)
@@ -650,14 +655,21 @@ def build_hangar():
     for (dx, dz) in ((-5, -5), (-5, 5), (5, -5), (5, 5)):
         put(MID + dx, ground, MID + dz, LIGHT)
 
-    # Dockingstations langs de noordmuur: een rooster met een brandend lampje.
-    for x in range(x0 + 4, x1 - 2, 4):
-        put(x, y, z0 + 1, "minecraft:waxed_copper_grate")
-        bulb(x, y + 1, z0 + 1)
-        put(x, y + 2, z0 + 1, "minecraft:lightning_rod", {"facing": "up", "powered": "false", "waterlogged": "false"})
+    # Drone-docks langs de noordmuur, met een kabel ertussen naar de generator in de hoek. Boven
+    # elke dock hangt een lamp met een laadpen aan het plafond.
+    docks = list(range(x0 + 4, x1 - 2, 4))
+    for x in range(x0 + 2, docks[-1] + 1):
+        if x in docks:
+            put(x, y, z0 + 1, "starktech:drone_dock", {"facing": "south"})
+            bulb(x, LIVING_Y - 2, z0 + 1)
+            put(x, LIVING_Y - 3, z0 + 1, "minecraft:lightning_rod", {"facing": "down", "powered": "false", "waterlogged": "false"})
+        else:
+            cable(x, y, z0 + 1)
+    put(x0 + 1, y, z0 + 1, "starktech:heat_generator", {"facing": "south"})
+    put(x0 + 1, y, z0 + 2, "minecraft:lava_cauldron")
 
     # Gereedschapsrekken langs de westmuur (niet voor de hangardeur).
-    for z in range(z0 + 2, z1 - 1, 4):
+    for z in range(z0 + 6, z1 - 1, 4):
         put(x0 + 1, y, z, "minecraft:barrel", {"facing": "up", "open": "false"})
         if abs(z - MID) > 3:
             put(x1 - 1, y, z, "minecraft:barrel", {"facing": "up", "open": "false"})
@@ -1171,7 +1183,8 @@ def build():
 
 # Blokken waar een Stark-kabel op aansluit (zie PowerConnectable in de mod).
 POWER_BLOCKS = {"starktech:cable", "starktech:laser_emitter", "starktech:heat_generator", "starktech:solar_panel",
-                "starktech:charging_station", "starktech:dome_generator", "starktech:holo_table"}
+                "starktech:charging_station", "starktech:dome_generator", "starktech:holo_table",
+                "starktech:suit_workbench", "starktech:drone_dock"}
 
 
 def cable(x, y, z):

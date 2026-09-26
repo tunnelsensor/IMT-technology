@@ -86,6 +86,9 @@ public final class ModItems {
     public static final DeferredItem<StarkSuitItem> STARK_BOOTS = ITEMS.registerItem("stark_boots",
             properties -> new StarkSuitItem(ArmorItem.Type.BOOTS, properties),
             new Item.Properties().rarity(Rarity.EPIC));
+    /** Een drone-dock voor je hangar. */
+    public static final DeferredItem<BlockItem> DRONE_DOCK = ITEMS.registerSimpleBlockItem("drone_dock",
+            ModBlocks.DRONE_DOCK, new Item.Properties().rarity(Rarity.UNCOMMON));
     /** De harnas-werkbank, en de upgrades die je daar in het harnas bouwt. */
     public static final DeferredItem<BlockItem> SUIT_WORKBENCH = ITEMS.registerSimpleBlockItem("suit_workbench",
             ModBlocks.SUIT_WORKBENCH, new Item.Properties().rarity(Rarity.RARE));

@@ -305,7 +305,7 @@ public class ArsenalScreen extends Screen {
             case DEPLOYED -> HudStyle.ORANGE;
             case GROUNDED -> HudStyle.WHITE;
         };
-        String where = font.plainSubstrByWidth(Component.translatable(drone.state().translationKey()).getString(), 62);
+        String where = font.plainSubstrByWidth(Component.translatable(drone.whereKey()).getString(), 62);
         g.drawString(font, where, x + 62, y + 4, HudStyle.argb(210, stateColor), true);
     }
 

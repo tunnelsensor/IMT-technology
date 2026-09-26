@@ -14,6 +14,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Het stroomnet van Stark Tech: zonnepanelen en warmtegeneratoren leveren, en alles wat via
@@ -22,7 +23,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
  * Hoe het werkt:
  * - Een apparaat dat stroom wil, vraagt {@link #draw}. Wij zoeken vanaf dat apparaat alle
  *   leveranciers op: we kijken naar zijn zes buren, en volgen elke kabel die we tegenkomen
- *   (net als water dat door buizen loopt).
+ *   (net als water dat door buizen loopt). Drone-docks geven de stroom ook door, zodat een rij
+ *   docks in een hangar aan één kabel genoeg heeft.
  * - We halen de stroom eerst bij de leverancier die het meest heeft, zodat ze ongeveer even vol
  *   blijven.
  * - Het zoeken kost wat werk, dus we onthouden het resultaat per apparaat. Komt er ergens een
@@ -103,7 +105,8 @@ public final class StarkGrid {
 
     /**
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
-     * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels geleiden.)
+     * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels en drone-docks
+     * geleiden.)
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
@@ -127,7 +130,8 @@ public final class StarkGrid {
             if (!seen.add(next) || !level.isLoaded(next)) {
                 continue;
             }
-            if (level.getBlockState(next).is(ModBlocks.CABLE.get())) {
+            BlockState state = level.getBlockState(next);
+            if (state.is(ModBlocks.CABLE.get()) || state.is(ModBlocks.DRONE_DOCK.get())) {
                 cables.add(next);
                 continue;
             }

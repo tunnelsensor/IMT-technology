@@ -133,4 +133,18 @@ public record EdithArsenal(List<ArsenalDrone> drones) {
         }
         return changed ? new EdithArsenal(list) : this;
     }
+
+    /**
+     * Alle "staat in de hangar"-vlaggen weg. Bij het inloggen: de drone-docks die geladen zijn,
+     * zetten ze binnen een halve seconde weer aan (een dock die intussen kapot is, niet).
+     */
+    public EdithArsenal undocked() {
+        List<ArsenalDrone> list = new ArrayList<>(drones.size());
+        boolean changed = false;
+        for (ArsenalDrone drone : drones) {
+            list.add(drone.withDocked(false));
+            changed |= drone.docked();
+        }
+        return changed ? new EdithArsenal(list) : this;
+    }
 }

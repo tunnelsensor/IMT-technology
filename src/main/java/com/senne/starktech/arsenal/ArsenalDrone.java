@@ -19,8 +19,10 @@ import net.minecraft.util.Mth;
  * @param id     het vaste nummer van deze drone; hiermee vindt de drone in de wereld zichzelf terug
  * @param health hoeveel levenspunten hij nog heeft
  * @param state  waar hij nu is (zie {@link State})
+ * @param docked heeft hij een vaste plek op een drone-dock in je hangar (zie DroneDockBlockEntity)?
+ *               Klaar voor gebruik staat hij dan daar, en niet in een baan om de planeet.
  */
-public record ArsenalDrone(UUID id, float health, State state) {
+public record ArsenalDrone(UUID id, float health, State state, boolean docked) {
 
     /** Waar een drone zich bevindt. */
     public enum State {
@@ -44,14 +46,21 @@ public record ArsenalDrone(UUID id, float health, State state) {
     public static final Codec<ArsenalDrone> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             UUIDUtil.CODEC.fieldOf("id").forGetter(ArsenalDrone::id),
             Codec.FLOAT.optionalFieldOf("health", (float) ArsenalBalance.DRONE_MAX_HEALTH).forGetter(ArsenalDrone::health),
-            Codec.INT.optionalFieldOf("state", State.ORBIT.ordinal()).xmap(State::byId, Enum::ordinal).forGetter(ArsenalDrone::state)
+            Codec.INT.optionalFieldOf("state", State.ORBIT.ordinal()).xmap(State::byId, Enum::ordinal).forGetter(ArsenalDrone::state),
+            Codec.BOOL.optionalFieldOf("docked", false).forGetter(ArsenalDrone::docked)
     ).apply(instance, ArsenalDrone::new));
 
     public static final StreamCodec<ByteBuf, ArsenalDrone> STREAM_CODEC = StreamCodec.composite(
             UUIDUtil.STREAM_CODEC, ArsenalDrone::id,
             ByteBufCodecs.FLOAT, ArsenalDrone::health,
             ByteBufCodecs.VAR_INT.map(State::byId, Enum::ordinal), ArsenalDrone::state,
+            ByteBufCodecs.BOOL, ArsenalDrone::docked,
             ArsenalDrone::new);
+
+    /** Een drone zonder vaste plek in een hangar. */
+    public ArsenalDrone(UUID id, float health, State state) {
+        this(id, health, state, false);
+    }
 
     /** Een gloednieuwe drone, helemaal heel. */
     public static ArsenalDrone fresh(UUID id) {
@@ -77,10 +86,19 @@ public record ArsenalDrone(UUID id, float health, State state) {
     }
 
     public ArsenalDrone withState(State newState) {
-        return new ArsenalDrone(id, health, newState);
+        return new ArsenalDrone(id, health, newState, docked);
     }
 
     public ArsenalDrone withHealth(float newHealth) {
-        return new ArsenalDrone(id, newHealth, state);
+        return new ArsenalDrone(id, newHealth, state, docked);
+    }
+
+    public ArsenalDrone withDocked(boolean newDocked) {
+        return new ArsenalDrone(id, health, state, newDocked);
+    }
+
+    /** Waar hij is, voor het arsenaalscherm: "In hangar" in plaats van "In orbit" als hij op een dock staat. */
+    public String whereKey() {
+        return docked && state == State.ORBIT ? "arsenal.starktech.state.docked" : state.translationKey();
     }
 }

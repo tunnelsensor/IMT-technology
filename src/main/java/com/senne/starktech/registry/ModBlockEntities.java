@@ -62,4 +62,9 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("suit_workbench",
                     () -> new BlockEntityType<>(com.senne.starktech.workbench.SuitWorkbenchBlockEntity::new,
                             java.util.Set.of(ModBlocks.SUIT_WORKBENCH.get()), null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.arsenal.DroneDockBlockEntity>> DRONE_DOCK =
+            BLOCK_ENTITIES.register("drone_dock",
+                    () -> new BlockEntityType<>(com.senne.starktech.arsenal.DroneDockBlockEntity::new,
+                            java.util.Set.of(ModBlocks.DRONE_DOCK.get()), null));
 }

@@ -180,4 +180,15 @@ public final class ModBlocks {
                     .strength(3.5f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
+
+    /** Een drone-dock voor de hangar: hier staat een drone uit je arsenaal, en wordt hij gerepareerd. */
+    public static final DeferredBlock<com.senne.starktech.arsenal.DroneDockBlock> DRONE_DOCK = BLOCKS.registerBlock(
+            "drone_dock", com.senne.starktech.arsenal.DroneDockBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> 5)
+                    .noOcclusion());
 }

@@ -49,4 +49,14 @@ public final class ArsenalBalance {
      */
     @Tunable(section = "drones", comment = "Health one iron ingot repairs on a drone")
     public static double REPAIR_PER_INGOT = 3.0;
+
+    /**
+     * Een drone op een drone-dock in je hangar wordt vanzelf gerepareerd, met stroom van het net:
+     * zoveel levenspunten per seconde (een drone die op is, is zo in 48 seconden weer heel)...
+     */
+    @Tunable(section = "drones", comment = "Health a drone dock repairs per second on the drone standing on it")
+    public static double DOCK_REPAIR_PER_SECOND = 0.25;
+    /** ...en dat kost zoveel stroom per levenspunt. */
+    @Tunable(section = "drones", comment = "Energy a drone dock uses per point of health it repairs")
+    public static int DOCK_ENERGY_PER_HEALTH = 40;
 }

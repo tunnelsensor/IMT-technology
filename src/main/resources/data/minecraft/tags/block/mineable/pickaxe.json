@@ -12,6 +12,7 @@
     "starktech:hydra_turret",
     "starktech:security_turret",
     "starktech:security_core",
-    "starktech:suit_workbench"
+    "starktech:suit_workbench",
+    "starktech:drone_dock"
   ]
 }

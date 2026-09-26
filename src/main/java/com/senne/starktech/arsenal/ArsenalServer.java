@@ -84,7 +84,7 @@ public final class ArsenalServer {
         if (drone == null) {
             return;
         }
-        set(player, arsenal.replace(new ArsenalDrone(id, health, ArsenalDrone.State.ORBIT)));
+        set(player, arsenal.replace(drone.withState(ArsenalDrone.State.ORBIT).withHealth(health)));
     }
 
     /** Boekt een drone als "onderweg", bijvoorbeeld zolang hij naar boven klimt. */
@@ -102,6 +102,15 @@ public final class ArsenalServer {
         ArsenalDrone drone = arsenal.find(id);
         if (drone != null) {
             set(player, arsenal.replace(drone.withHealth(health)));
+        }
+    }
+
+    /** Zet de "staat in de hangar"-vlag van een drone (zie DroneDockBlockEntity). */
+    public static void setDocked(ServerPlayer player, UUID id, boolean docked) {
+        EdithArsenal arsenal = get(player);
+        ArsenalDrone drone = arsenal.find(id);
+        if (drone != null && drone.docked() != docked) {
+            set(player, arsenal.replace(drone.withDocked(docked)));
         }
     }
 
@@ -195,7 +204,7 @@ public final class ArsenalServer {
             return;
         }
         EdithArsenal arsenal = get(player);
-        EdithArsenal cleaned = arsenal.groundDeployed();
+        EdithArsenal cleaned = arsenal.groundDeployed().undocked();
         if (cleaned != arsenal) {
             set(player, cleaned);
         }

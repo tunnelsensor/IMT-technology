@@ -105,6 +105,7 @@ public class StarkTechClient {
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TURRET.get(), com.senne.starktech.client.turret.TurretRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.DRONE_DOCK.get(), com.senne.starktech.client.drone.DroneDockRenderer::new);
     }
 
     private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {

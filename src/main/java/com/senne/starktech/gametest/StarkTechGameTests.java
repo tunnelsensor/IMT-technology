@@ -253,7 +253,7 @@ public final class StarkTechGameTests {
     }
 
     /**
-     * Het configbestand starktech-balance.toml: alle 136 getallen staan erin, en verander je er
+     * Het configbestand starktech-balance.toml: alle 138 getallen staan erin, en verander je er
      * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
@@ -262,9 +262,9 @@ public final class StarkTechGameTests {
         if (!spec.isLoaded()) {
             throw new GameTestAssertException("starktech-balance.toml is niet geladen");
         }
-        if (com.senne.starktech.edith.BalanceConfig.size() != 136) {
+        if (com.senne.starktech.edith.BalanceConfig.size() != 138) {
             throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
-                    + " getallen in het bestand in plaats van 136");
+                    + " getallen in het bestand in plaats van 138");
         }
         net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
@@ -485,6 +485,98 @@ public final class StarkTechGameTests {
             float with = hurtAndMeasure(owner, 10);
             if (without <= 0 || with >= without) {
                 throw new GameTestAssertException("Met bepantsering kwam er niet minder schade door (" + with + " tegen " + without + ")");
+            }
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Drone-docks in de hangar
+
+    /**
+     * Een drone-dock pakt een drone uit het arsenaal van zijn eigenaar ("In hangar" in het
+     * arsenaal) en repareert hem met stroom van het net. Afgebroken: de drone staat niet meer
+     * in de hangar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "drone_dock")
+    public static void drone_dock_repairs_its_drone(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        owner.setData(ModAttachments.ARSENAL, EdithArsenal.EMPTY);
+        UUID id = ArsenalServer.add(owner);
+        ArsenalServer.returnToOrbit(owner, id, 3.0f);
+        BlockPos pos = new BlockPos(6, 3, 6);
+        helper.setBlock(pos, ModBlocks.DRONE_DOCK.get());
+        helper.setBlock(pos.east(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(pos.east())).fill(20_000);
+        var dock = (com.senne.starktech.arsenal.DroneDockBlockEntity) helper.getBlockEntity(pos);
+        dock.setOwner(owner.getUUID());
+
+        helper.startSequence()
+                .thenWaitUntil(() -> {
+                    ArsenalDrone drone = ArsenalServer.get(owner).find(id);
+                    if (drone == null || !drone.docked() || !dock.present()) {
+                        throw new GameTestAssertException("De drone staat nog niet op de dock: " + drone);
+                    }
+                    if (drone.health() < 3.5f) {
+                        throw new GameTestAssertException("De drone wordt niet gerepareerd: " + drone.health());
+                    }
+                })
+                .thenExecute(() -> helper.destroyBlock(pos))
+                .thenExecuteAfter(1, () -> {
+                    ArsenalDrone drone = ArsenalServer.get(owner).find(id);
+                    if (drone == null || drone.docked()) {
+                        throw new GameTestAssertException("Na het afbreken staat de drone nog in de hangar: " + drone);
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /** Eén drone, twee docks: hij staat maar op één van de twee. */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "drone_dock")
+    public static void one_drone_one_dock(GameTestHelper helper) {
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        owner.setData(ModAttachments.ARSENAL, EdithArsenal.EMPTY);
+        ArsenalServer.add(owner);
+        List<com.senne.starktech.arsenal.DroneDockBlockEntity> docks = new java.util.ArrayList<>();
+        for (BlockPos pos : List.of(new BlockPos(6, 3, 6), new BlockPos(9, 3, 6))) {
+            helper.setBlock(pos, ModBlocks.DRONE_DOCK.get());
+            var dock = (com.senne.starktech.arsenal.DroneDockBlockEntity) helper.getBlockEntity(pos);
+            dock.setOwner(owner.getUUID());
+            docks.add(dock);
+        }
+        helper.runAfterDelay(40, () -> {
+            long taken = docks.stream().filter(com.senne.starktech.arsenal.DroneDockBlockEntity::hasDrone).count();
+            if (taken != 1) {
+                throw new GameTestAssertException("De drone staat op " + taken + " docks in plaats van 1");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * De hangar van de Stark Tower: zes drone-docks langs de noordmuur, en ze krijgen stroom van
+     * de warmtegenerator in de hoek (via de kabel langs de muur).
+     */
+    @GameTest(template = "stark_tower", timeoutTicks = 100, batch = "tower_hangar")
+    public static void stark_tower_hangar_has_powered_docks(GameTestHelper helper) {
+        helper.runAfterDelay(40, () -> {
+            List<BlockPos> docks = new java.util.ArrayList<>();
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 41; z++) {
+                    for (int y = 30; y < 45; y++) {
+                        if (helper.getBlockState(pos.set(x, y, z)).is(ModBlocks.DRONE_DOCK.get())) {
+                            docks.add(pos.immutable());
+                        }
+                    }
+                }
+            }
+            if (docks.size() != 6) {
+                throw new GameTestAssertException("Er staan " + docks.size() + " drone-docks in de hangar in plaats van 6");
+            }
+            for (BlockPos dock : docks) {
+                if (com.senne.starktech.energy.StarkGrid.available(helper.getLevel(), helper.absolutePos(dock)) <= 0) {
+                    throw new GameTestAssertException("De drone-dock op " + dock + " heeft geen stroom");
+                }
             }
             helper.succeed();
         });

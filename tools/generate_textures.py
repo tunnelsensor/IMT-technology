@@ -1798,6 +1798,50 @@ def workbench_textures():
     save(capacitor, "item/repulsor_capacitor.png")
 
 
+def drone_dock_textures():
+    """
+    De drone-dock voor de hangar:
+
+    - bovenkant: donker staal met gele en zwarte waarschuwingsstrepen langs de rand en blauwe
+      lampjes in de hoeken (het midden valt onder de landingsplaat);
+    - landingsplaat: een blauwe ring met een kruis, zoals de landingscirkel in de hangar;
+    - zijkant: staal, met onderaan dezelfde strepen (het platform is maar 3 pixels hoog).
+    """
+    steel = (70, 76, 86, 255)
+    steel_dark = (44, 48, 56, 255)
+    steel_light = (128, 134, 146, 255)
+    yellow = (230, 190, 40, 255)
+    black = (26, 26, 30, 255)
+
+    top = img(16, 16, steel)
+    d = ImageDraw.Draw(top)
+    for i in range(16):
+        stripe = yellow if (i // 2) % 2 == 0 else black
+        for (x, y) in ((i, 0), (i, 1), (i, 14), (i, 15), (0, i), (1, i), (14, i), (15, i)):
+            top.putpixel((x, y), stripe)
+    d.rectangle([2, 2, 13, 13], outline=steel_dark)
+    px(top, [(2, 2), (13, 2), (2, 13), (13, 13)], CYAN)
+    save(top, "block/drone_dock_top.png")
+
+    pad = img(16, 16, steel_dark)
+    d = ImageDraw.Draw(pad)
+    d.ellipse([4, 4, 11, 11], outline=CYAN)
+    d.line([7, 5, 7, 10], fill=CYAN_DIM)
+    d.line([8, 5, 8, 10], fill=CYAN_DIM)
+    d.line([5, 7, 10, 7], fill=CYAN_DIM)
+    d.line([5, 8, 10, 8], fill=CYAN_DIM)
+    d.rectangle([3, 3, 12, 12], outline=steel_light)
+    save(pad, "block/drone_dock_pad.png")
+
+    side = img(16, 16, steel)
+    for x in range(16):
+        side.putpixel((x, 12), steel_light)
+        side.putpixel((x, 13), steel_light)
+        side.putpixel((x, 14), yellow if (x // 2) % 2 == 0 else black)
+        side.putpixel((x, 15), steel_dark)
+    save(side, "block/drone_dock_side.png")
+
+
 def rocket_ammo():
     """Munitie voor het torentje: drie kleine raketten met rode neuzen, samengebonden."""
     im = img(16, 16)
@@ -1902,3 +1946,4 @@ if __name__ == "__main__":
     security_textures()
     stark_laptop()
     workbench_textures()
+    drone_dock_textures()

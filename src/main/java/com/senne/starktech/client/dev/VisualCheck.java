@@ -352,6 +352,53 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- Drone-docks: drie drones uit je arsenaal (één beschadigd), één vertrekt en komt terug.
+        if (want("docks")) {
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                player.setData(com.senne.starktech.registry.ModAttachments.ARSENAL,
+                        com.senne.starktech.arsenal.EdithArsenal.EMPTY);
+                for (int i = 0; i < 3; i++) {
+                    java.util.UUID id = com.senne.starktech.arsenal.ArsenalServer.add(player);
+                    if (i == 1) {
+                        com.senne.starktech.arsenal.ArsenalServer.returnToOrbit(player, id, 4.0f);
+                    }
+                }
+                level.setBlockAndUpdate(new BlockPos(-85, -60, 66), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(new BlockPos(-85, -60, 66)) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                for (int x = -84; x <= -82; x++) {
+                    BlockPos pos = new BlockPos(x, -60, 66);
+                    level.setBlockAndUpdate(pos, ModBlocks.DRONE_DOCK.get().defaultBlockState()
+                            .setValue(com.senne.starktech.arsenal.DroneDockBlock.FACING, net.minecraft.core.Direction.NORTH));
+                    if (level.getBlockEntity(pos) instanceof com.senne.starktech.arsenal.DroneDockBlockEntity dock) {
+                        dock.setOwner(player.getUUID());
+                    }
+                }
+            });
+            t.close(10);
+            t.view(0, -82.5, -59, 62.5, 0, 25);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.shot(40, "d01_docks");
+            // Eén drone gaat op pad (zoals bij een zwerm): hij stijgt op, en daarna een hologram.
+            t.onServer(0, player -> com.senne.starktech.arsenal.ArsenalServer.checkOut(player, 1));
+            t.shot(16, "d02_docks_liftoff");
+            t.shot(60, "d03_docks_away");
+            t.onServer(0, player -> {
+                for (com.senne.starktech.arsenal.ArsenalDrone drone : com.senne.starktech.arsenal.ArsenalServer.get(player).drones()) {
+                    if (drone.state() == com.senne.starktech.arsenal.ArsenalDrone.State.DEPLOYED) {
+                        com.senne.starktech.arsenal.ArsenalServer.returnToOrbit(player, drone.id(), drone.health());
+                    }
+                }
+            });
+            t.shot(18, "d04_docks_landing");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.open(20, ArsenalScreen::new);
+            t.shot(20, "d05_docks_arsenal");
+            t.close(0);
+        }
+
         // --- Het G-menu: elk tabblad apart.
         if (want("menu")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);
