@@ -6,9 +6,9 @@ Gebruik (vanuit de hoofdmap van het project):
 
 Het resultaat komt in src/main/resources/data/starktech/structure/stark_tower.nbt.
 
-De toren is 41 x 110 x 41 blokken en loopt trapsgewijs naar boven toe smaller: elke keer dat
-de gevel een stukje naar binnen springt, blijft de vloer eronder liggen als terras met een
-reling en lampjes. Van onder naar boven:
+De toren is 41 x 110 x 41 blokken (met het voorplein erbij 41 x 110 x 55) en loopt
+trapsgewijs naar boven toe smaller: elke keer dat de gevel een stukje naar binnen springt,
+blijft de vloer eronder liggen als terras met een reling en lampjes. Van onder naar boven:
 
     0       het plein, met opritten, lichtmasten en plantenbakken
     1-11    de lobby: receptie met logowand, werkhoek, laadstation, zithoeken, vitrines
@@ -44,8 +44,13 @@ OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "d
 # Minecraft 1.21.1 "world_version" (zie version.json in de Minecraft-jar).
 DATA_VERSION = 3955
 
-# Afmetingen van de toren: breedte (x), hoogte (y), diepte (z)
-SIZE_X, SIZE_Y, SIZE_Z = 41, 110, 41
+# Afmetingen van de toren: breedte (x), hoogte (y), diepte (z). De mal is aan de zuidkant
+# langer dan de toren zelf: daar ligt het voorplein (FORECOURT blokken diep). Zo blijft alles in
+# de toren op dezelfde plek staan.
+SIZE_X, SIZE_Y = 41, 110
+TOWER_Z = 41
+FORECOURT = 14
+SIZE_Z = TOWER_Z + FORECOURT
 
 # De vloer van elke verdieping, en hoe ver de gevel daar naar binnen staat.
 # (Grotere inset = smaller; daardoor ontstaan de terrassen.)
@@ -191,7 +196,7 @@ def spawner(x, y, z, mob):
 
 def bounds(inset):
     """De vier randen van de gevel bij deze inset."""
-    return inset, inset, SIZE_X - 1 - inset, SIZE_Z - 1 - inset
+    return inset, inset, SIZE_X - 1 - inset, TOWER_Z - 1 - inset
 
 
 def stairs(x, y, z, facing, block=QUARTZ_STAIRS):
@@ -298,9 +303,13 @@ def curtain_wall(y0, y1, inset, glass=GLASS):
     x0, z0, x1, z1 = bounds(inset)
     for y in range(y0, y1 + 1):
         frame(y, x0, z0, x1, z1, glass)
-        # De hoeken zijn koperen ribben: die lopen over de hele hoogte door.
+        # De hoeken zijn koperen ribben: die lopen over de hele hoogte door, met om de drie
+        # blokken een koperen lamp erin (zo zie je de toren 's nachts van ver).
         for (x, z) in ((x0, z0), (x0, z1), (x1, z0), (x1, z1)):
-            put(x, y, z, COPPER)
+            if y % 3 == 0:
+                bulb(x, y, z)
+            else:
+                put(x, y, z, COPPER)
         # Stalen kolommen ertussen, om de zes blokken.
         for x in range(x0 + 6, x1, 6):
             put(x, y, z0, FRAME_BLOCK)
@@ -388,22 +397,134 @@ def stark_logo(y, z):
 # --------------------------------------------------------------------- Het plein en de lobby
 
 def build_plaza():
-    """Het plein onderaan: een brede voet met lichtmasten en plantenbakken bij de ingang."""
-    fill(0, 0, 0, SIZE_X - 1, 0, SIZE_Z - 1, "minecraft:polished_andesite")
-    fill(2, 0, 2, SIZE_X - 3, 0, SIZE_Z - 3, FLOOR)
+    """Het plein onderaan: een brede voet met lichtmasten, en aan de zuidkant het voorplein."""
+    fill(0, 0, 0, SIZE_X - 1, 0, TOWER_Z - 1, "minecraft:polished_andesite")
+    fill(2, 0, 2, SIZE_X - 3, 0, TOWER_Z - 1, FLOOR)
     for x in range(2, SIZE_X - 2):
         put(x, 0, MID, STRIPE)
-    for z in range(2, SIZE_Z - 2):
+    for z in range(2, TOWER_Z):
         put(MID, 0, z, STRIPE)
-    # Lichtmasten rond het plein.
+    # Lichtmasten aan de noordkant (aan de zuidkant staan ze op het voorplein).
     for x in range(3, SIZE_X - 3, 8):
-        for z in (1, SIZE_Z - 2):
-            put(x, 0, z, LIGHT)
-            put(x, 1, z, RAIL, BARS)
-            put(x, 2, z, "minecraft:end_rod", {"facing": "up"})
-    # Plantenbakken links en rechts van de ingang.
-    for x in (13, 14, 15, 25, 26, 27):
-        planter(x, 0, SIZE_Z - 1, flowering=x % 2 == 1)
+        put(x, 0, 1, LIGHT)
+        put(x, 1, 1, RAIL, BARS)
+        put(x, 2, 1, "minecraft:end_rod", {"facing": "up"})
+    build_forecourt()
+
+
+def tree(x, z, height=4):
+    """Een boompje in een bak: een stam van eik op mos, met een kruin van bloeiende azalea."""
+    put(x, 0, z, "minecraft:moss_block")
+    for h in range(1, height + 1):
+        put(x, h, z, "minecraft:oak_log", {"axis": "y"})
+    for dx in range(-2, 3):
+        for dz in range(-2, 3):
+            for dy in range(height - 1, height + 2):
+                if abs(dx) + abs(dz) + max(0, dy - height) * 2 > 3 or (dx == 0 and dz == 0 and dy <= height):
+                    continue
+                kind = "minecraft:flowering_azalea_leaves" if (dx + dz + dy) % 3 == 0 else "minecraft:azalea_leaves"
+                put(x + dx, dy, z + dz, kind, {"distance": "1", "persistent": "true", "waterlogged": "false"})
+
+
+def lamp_post(x, z):
+    """Een lantaarnpaal: ijzeren staven met een lantaarn eraan, en een lichtje in de voet."""
+    put(x, 0, z, LIGHT)
+    for h in range(1, 4):
+        put(x, h, z, RAIL, BARS)
+    put(x, 4, z, TRIM)
+    put(x, 5, z, "minecraft:end_rod", {"facing": "up"})
+    for (dx, dz) in ((1, 0), (-1, 0)):
+        put(x + dx, 3, z + dz, "minecraft:lantern", {"hanging": "true", "waterlogged": "false"})
+        put(x + dx, 4, z + dz, "minecraft:smooth_quartz_slab", {"type": "top", "waterlogged": "false"})
+
+
+def flag(x, z, towards):
+    """Een vlaggenmast van 9 hoog met een rood-gouden vlag (van wol) die naar {@code towards} wappert."""
+    put(x, 0, z, TRIM)
+    for h in range(1, 10):
+        put(x, h, z, RAIL, BARS)
+    put(x, 10, z, "minecraft:lightning_rod", {"facing": "up", "powered": "false", "waterlogged": "false"})
+    for i in range(1, 4):
+        for h in (7, 8, 9):
+            colour = "minecraft:yellow_wool" if h == 8 and i == 2 else "minecraft:red_wool"
+            put(x + towards * i, h, z, colour)
+
+
+def build_forecourt():
+    """
+    Het voorplein aan de zuidkant (voor de ingang): een geplaveid plein met een ronde fontein, met
+    in het midden het arc-reactor-embleem op een sokkel. Paden lopen van de ingang om de fontein
+    heen naar voren, met bankjes rond de fontein, bomen in de hoeken, lantaarnpalen langs de rand
+    en twee vlaggenmasten voorin.
+    """
+    z0, z1 = TOWER_Z, SIZE_Z - 1
+    fill(0, 0, z0, SIZE_X - 1, 0, z1, "minecraft:polished_andesite")
+    # Tegels: lichtgrijs met witte voegen om de vier blokken.
+    for x in range(2, SIZE_X - 2):
+        for z in range(z0, z1 - 1):
+            grout = (x - MID) % 4 == 0 or (z - z0) % 4 == 3
+            put(x, 0, z, FLOOR if grout else "minecraft:light_gray_concrete")
+    # Het pad van de ingang naar voren: wit, met de blauwe streep in het midden.
+    for z in range(z0 - 2, z1 - 1):
+        for x in range(MID - 2, MID + 3):
+            put(x, 0, z, FLOOR)
+        put(MID, 0, z, STRIPE)
+
+    # De fontein: een rand van quartz, water op donkere prismarine, in het midden een sokkel
+    # met het arc-reactor-embleem (dat 's nachts gloeit).
+    fx, fz = MID, z0 + 7
+    for dx in range(-5, 6):
+        for dz in range(-5, 6):
+            d = dx * dx + dz * dz
+            if d <= 4 * 4 + 2:
+                put(fx + dx, 0, fz + dz, "minecraft:dark_prismarine")
+                put(fx + dx, 1, fz + dz, "minecraft:water", {"level": "0"})
+            elif d <= 5 * 5 + 3:
+                # Een rand van volle blokken: een halve plaat naast water maakt Minecraft bij het
+                # neerzetten "nat", en daaruit stroomt het water dan het plein over.
+                put(fx + dx, 0, fz + dz, TRIM)
+                put(fx + dx, 1, fz + dz, TRIM)
+    for dx in (-1, 0, 1):
+        for dz in (-1, 0, 1):
+            put(fx + dx, 1, fz + dz, TRIM)
+    put(fx, 2, fz, TRIM)
+    put(fx, 3, fz, TRIM)
+    arc_reactor(fx, 6, fz)
+    for (dx, dz) in ((2, 2), (-2, 2), (2, -2), (-2, -2)):
+        put(fx + dx, 0, fz + dz, LIGHT)
+
+    # Bankjes rond de fontein (de rugleuning aan de buitenkant).
+    for dz in range(-2, 3):
+        stairs(fx - 7, 1, fz + dz, "west")
+        stairs(fx + 7, 1, fz + dz, "east")
+    # Bomen in de hoeken, lantaarnpalen langs de rand, vlaggen voorin.
+    for (x, z) in ((5, z0 + 3), (SIZE_X - 6, z0 + 3), (5, z1 - 4), (SIZE_X - 6, z1 - 4)):
+        tree(x, z)
+    for z in (z0 + 1, z0 + 7, z1 - 2):
+        lamp_post(2, z)
+        lamp_post(SIZE_X - 3, z)
+    flag(MID - 9, z1 - 1, -1)
+    flag(MID + 9, z1 - 1, 1)
+    # Een lage haag langs de voorkant, met een opening voor het pad.
+    for x in range(1, SIZE_X - 1):
+        if abs(x - MID) > 3:
+            put(x, 1, z1, "minecraft:azalea_leaves", {"distance": "1", "persistent": "true", "waterlogged": "false"})
+
+
+def build_canopy():
+    """
+    Een luifel boven de ingang: een dak van quartz met lampen erin dat vier blokken naar voren
+    steekt, op twee zuilen, met een koperen rand.
+    """
+    x0, z0, x1, z1 = bounds(LOBBY_IN)
+    y = LOBBY_Y + 5
+    for x in range(MID - 3, MID + 4):
+        for z in range(z1 + 1, z1 + 5):
+            edge = abs(x - MID) == 3 or z == z1 + 4
+            put(x, y, z, COPPER if edge else (LIGHT if (x + z) % 2 == 0 else TRIM))
+    for x in (MID - 3, MID + 3):
+        for h in range(LOBBY_Y, y):
+            put(x, h, z1 + 4, "minecraft:quartz_pillar", {"axis": "y"})
 
 
 def build_lobby():
@@ -1215,6 +1336,7 @@ def build_routes():
 def build():
     build_plaza()
     build_lobby()
+    build_canopy()
     build_lab()
     build_archive()
     build_hangar()

@@ -1001,8 +1001,10 @@ public final class VisualCheck {
         t.shot(40, "t01_outside_south");
         t.view(0, x - 40, y + 70, z - 30, -50, 25);
         t.shot(30, "t02_outside_northwest_high");
-        t.view(0, x + 20.5, y + 2, z + 52, 180, -12);
+        t.view(0, x + 20.5, y + 3, z + 70, 180, -8);
         t.shot(30, "t03_outside_entrance");
+        t.view(0, x + 34, y + 22, z + 72, 155, 32);
+        t.shot(30, "t06_forecourt");
         t.view(0, x + 20.5, y + 112, z + 30, 180, 25);
         t.shot(30, "t05_crown");
         t.command(0, "time set midnight");
