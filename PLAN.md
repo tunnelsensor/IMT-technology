@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 87 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 75 functies één voor één zien (of een
+**Stand van zaken:** 93 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 76 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -473,8 +473,28 @@ wilt. Eerst de kleine dingen, dan de grote.
         raketpakket. Het harnas staat niet meer in de crafting table. In het lab van de toren staat
         een werkbank met stroom, en in de kisten zit soms een upgrade. Vier nieuwe tests.
         (mijn invulling) Welke upgrades, hoeveel ze doen, en de recepten.
-  - [ ] **Landingsplatform en hangar**: landen met het harnas op het dak, en je arsenaal-drones
-        staan in de hangar
+  - [x] **Landingsplatform en hangar** — `ae1af9d`, `47d5e7d`
+        *Hangar:* een nieuw blok, de Drone Dock. Een dock pakt zelf een drone uit het arsenaal van
+        zijn eigenaar, en die drone staat dan echt op het platform (het 3D-model, met zijn schade).
+        Met stroom van het net repareert de dock hem (0,25 leven per seconde). Gaat de drone op pad,
+        dan stijgt hij op met een wolkje en blijft er een blauw hologram op zijn plek; komt hij
+        terug, dan landt hij weer. Docks naast elkaar geven stroom door, net als een kabel. In het
+        arsenaalscherm staat zo'n drone als "In hangar". De hangar van de toren heeft zes docks
+        langs de noordmuur, met een kabel naar een warmtegenerator in de hoek; ze zijn van wie de
+        toren gehackt heeft. Een dock die je zelf neerzet, is van jou.
+        *Dak:* een nieuw blok, de Landing Pad. De toren heeft een platform van 9 x 9 dat aan de
+        oostkant uit het dak steekt (zoals in The Avengers), met eronder een gloeiende
+        warmtegenerator als stroombron. Tijdens het vliegen wijst de HUD je dichtstbijzijnde
+        platform aan (groen ruitje met afstand, dichtbij ook het landingsvak van 5 x 5). Land je
+        erop met de stuwraketten aan, dan zegt E.D.I.T.H. "Welcome home"; zolang je erop staat,
+        laadt je bril op en wordt je harnas gerepareerd. Je platforms worden per speler onthouden,
+        dus de weg naar huis werkt ook van ver. Showcase: "Stark Tower: hangar and landing pad".
+        Vijf nieuwe tests.
+        Onderweg gevonden: de server kon crashen als een rayshield aanging naast een wand die nog
+        aan het schuiven was — opgelost (`3fa38d1`).
+        (mijn invulling) Alles hierboven: hoe de docks en het platform werken en eruitzien, de
+        getallen, en dat drones niet echt uit de hangar naar buiten vliegen (ze stijgen op en zijn
+        weg, zoals uit hun baan).
   - [ ] **Inrichting en buitenkant** mooier afgewerkt, met meer detail
 - [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
