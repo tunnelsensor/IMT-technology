@@ -445,13 +445,19 @@ wilt. Eerst de kleine dingen, dan de grote.
         testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
-- [ ] **De Stark Tower verder uitbreiden** (jouw keuze op 26 september: alle vijf)
+- [ ] **De Stark Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
+  - [ ] **Beveiliging die leeft**: Stark-torentjes op de gangen en bij de kluis, en
+        beveiligingsdrones die door de toren patrouilleren; ze vallen indringers aan
+  - [ ] **De toren overnemen met een laptop** (jouw idee): geen bril nodig. Je speelt in een
+        scherm een kleine hack-minigame; ondertussen blijft de beveiliging je aanvallen, dus snel
+        en nauwkeurig zijn. Daarna is de beveiliging van jou en valt ze jou niet meer aan (ook
+        de lasers niet), en is de toren je basis
+  - [ ] **Tony's lab** met een harnas-werkbank: het harnas maak je daar (niet meer in de crafting
+        table), en je bouwt er upgrades in met een voortgangsbalk: stuwraketten, bepantsering,
+        repulsor-condensator en het raketpakket
+  - [ ] **Landingsplatform en hangar**: landen met het harnas op het dak, en je arsenaal-drones
+        staan in de hangar
   - [ ] **Inrichting en buitenkant** mooier afgewerkt, met meer detail
-  - [ ] **Tony's lab** met een harnas-werkbank: daar maak en upgrade je harnasdelen
-  - [ ] **Beveiliging die leeft**: Stark-beveiligingsdrones of -torentjes die indringers aanvallen
-  - [ ] **Landingsplatform en hangar** bovenop: landen met het harnas, je arsenaal-drones staan er
-  - [ ] **De toren overnemen**: heb je de kluis gehaald, dan wordt hij jouw basis (lasers en
-        beveiliging werken voor jou, en je kunt er laden en spullen kwijt)
 - [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
         Tot 16 blokken opzij en 48 diep, als gekleurde blokjes in een doorzichtig blok aarde,
