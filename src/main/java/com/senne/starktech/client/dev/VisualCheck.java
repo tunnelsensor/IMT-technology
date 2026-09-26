@@ -1021,6 +1021,17 @@ public final class VisualCheck {
             t.view(0, x + corner, y + floors[i] + 1, z + corner, 135, 12);
             t.shot(30, String.format("t%02d_%s", 10 + i, names[i]));
         }
+        // De nieuwe inrichting van dichtbij.
+        t.view(0, x + 20.5, y + 13, z + 19.5, 180, 8);
+        t.shot(30, "t20_hall_of_armor");
+        t.view(0, x + 29.5, y + 2, z + 17.5, 180, 10);
+        t.shot(30, "t21_meeting_room");
+        t.view(0, x + 9.5, y + 2, z + 14.5, 180, 10);
+        t.shot(30, "t22_coffee_bar");
+        t.view(0, x + 24.5, y + 46, z + 16, 270, 5);
+        t.shot(30, "t23_aquarium");
+        t.view(0, x + 12.5, y + 25, z + 22.5, 0, -10);
+        t.shot(30, "t24_globe");
         t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
     }

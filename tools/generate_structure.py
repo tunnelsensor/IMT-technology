@@ -1302,6 +1302,201 @@ def build_landing_platform(roof_x1):
     put(cx + 1, y - 1, cz, "minecraft:magma_block")
 
 
+# --------------------------------------------------------------------- Extra inrichting
+
+def free(x, y, z):
+    """Staat hier nog niets (of lucht)?"""
+    block = blocks.get((x, y, z))
+    return block is None or block[0] == "minecraft:air"
+
+
+def sign(x, y, z, facing, text):
+    """Een bordje tegen een muur, met één regel tekst."""
+    put(x, y, z, "minecraft:birch_wall_sign", {"facing": facing, "waterlogged": "false"},
+        {"id": "minecraft:sign", "front_text": {"messages": ['"%s"' % text, '""', '""', '""']}})
+
+
+# Harnassen voor de vitrines: benen, romp en hoofd (van onderen naar boven).
+SUITS = {
+    "MARK I": ("minecraft:iron_block", "minecraft:iron_block", "minecraft:iron_block"),
+    "MARK II": ("minecraft:light_gray_concrete", "minecraft:light_gray_concrete", "minecraft:iron_block"),
+    "MARK III": ("minecraft:red_concrete", "minecraft:red_concrete", "minecraft:gold_block"),
+    "MARK VII": ("minecraft:gold_block", "minecraft:red_concrete", "minecraft:gold_block"),
+    "MARK XLII": ("minecraft:gold_block", "minecraft:gold_block", "minecraft:red_concrete"),
+    "MARK L": ("minecraft:red_concrete", "minecraft:red_concrete", "minecraft:gold_block"),
+}
+
+
+def suit_capsule(cx, y, cz, mark):
+    """
+    Een vitrine van 3 x 3 met een harnas erin (Tony's Hall of Armor): een voet en een dak van
+    quartz met een lamp, koperen hoeken achter, glas opzij, en vooraan (zuid) open met helder glas
+    op de hoeken, zodat je het harnas goed ziet. Voor de voet een bordje met de naam.
+    """
+    legs, torso, head = SUITS[mark]
+    for dx in (-1, 0, 1):
+        for dz in (-1, 0, 1):
+            put(cx + dx, y, cz + dz, LIGHT if dx == 0 and dz == 0 else TRIM)
+            put(cx + dx, y + 4, cz + dz, LIGHT if dx == 0 and dz == 0 else TRIM)
+            if dx == 0 and dz == 0:
+                continue
+            for h in (1, 2, 3):
+                if dz == 1:
+                    block = "minecraft:air" if dx == 0 else "minecraft:glass"
+                elif dz == -1 and dx:
+                    block = COPPER
+                else:
+                    block = GLASS
+                put(cx + dx, y + h, cz + dz, block)
+    put(cx, y + 1, cz, legs)
+    put(cx, y + 2, cz, torso)
+    put(cx, y + 3, cz, head)
+    sign(cx, y, cz + 2, "south", mark)
+
+
+def globe(cx, y, cz):
+    """Een wereldbol van 7 blokken op een voet: blauwe zee met groene stukken land en witte polen."""
+    for h in range(3):
+        put(cx, y + h, cz, "minecraft:quartz_pillar", {"axis": "y"})
+    cy = y + 6
+    for dx in range(-3, 4):
+        for dy in range(-3, 4):
+            for dz in range(-3, 4):
+                if dx * dx + dy * dy + dz * dz <= 10:
+                    if abs(dy) == 3:
+                        block = "minecraft:white_concrete"
+                    elif (dx * 3 + dz * 5 + dy * 7) % 5 in (0, 1):
+                        block = "minecraft:lime_concrete"
+                    else:
+                        block = "minecraft:light_blue_concrete"
+                    put(cx + dx, cy + dy, cz + dz, block)
+
+
+def window_plants(y, inset, skip=()):
+    """
+    Plantjes in potten langs de ramen, telkens tussen twee stalen kolommen, maar alleen waar
+    niets in de weg staat. {@code skip}: plekken (x, z) waar hij er beslist geen neerzet.
+    """
+    x0, z0, x1, z1 = bounds(inset)
+    kinds = ["potted_fern", "potted_bamboo", "potted_flowering_azalea_bush", "potted_azalea_bush"]
+    spots = []
+    for x in range(x0 + 3, x1, 6):
+        spots += [(x, z0 + 1, 0, 1), (x, z1 - 1, 0, -1)]
+    for z in range(z0 + 3, z1, 6):
+        spots += [(x0 + 1, z, 1, 0), (x1 - 1, z, -1, 0)]
+    for i, (x, z, ix, iz) in enumerate(spots):
+        if (x, z) in skip:
+            continue
+        around = [(x, z), (x + ix, z + iz), (x + iz, z + ix), (x - iz, z - ix)]
+        if all(free(ax, y, az) and free(ax, y + 1, az) for (ax, az) in around):
+            plant(x, y, z, kinds[i % len(kinds)])
+
+
+def furnish():
+    """
+    Meer inrichting, verdieping voor verdieping (de grote witte vloeren waren nogal leeg):
+
+    - lobby: een vergaderzaal met glazen wanden, en een koffiebar;
+    - lab: de Hall of Armor (vijf harnassen in glazen vitrines) en twee werkplekken met schermen;
+    - archief: een wereldbol en een leeshoek met fauteuils;
+    - woonverdieping: een aquarium tegen de oostgevel en een pooltafel;
+    - penthouse: een zithoek en nog een harnas in een vitrine;
+    - overal: plantjes langs de ramen.
+    """
+    # --- Lobby
+    y = LOBBY_Y
+    for x in range(24, 35):
+        for z in range(7, 12):
+            if x in (24, 34) or z in (7, 11):
+                for h in range(3):
+                    put(x, y + h, z, GLASS)
+                put(x, y + 3, z, TRIM)
+    for h in (0, 1):
+        put(24, y + h, 9, "minecraft:air")   # de deur
+    for x in range(27, 32):
+        top_slab(x, y, 9)
+    for x in (27, 29, 31):
+        stairs(x, y, 8, "north", "minecraft:dark_oak_stairs")
+        stairs(x, y, 10, "south", "minecraft:dark_oak_stairs")
+    hanging_lamp(29, LAB_Y - 2, 9, 3)
+    plant(25, y, 8, "potted_bamboo")
+    plant(33, y, 10, "potted_flowering_azalea_bush")
+    # De koffiebar: een toonbank met een koffiemachine, krukjes ervoor en tonnen erachter.
+    for x in range(6, 13):
+        put(x, y, 8, TRIM)
+        put(x, y, 7, "minecraft:barrel", {"facing": "south", "open": "false"})
+    put(7, y + 1, 8, "minecraft:brewing_stand", {"has_bottle_0": "true", "has_bottle_1": "false", "has_bottle_2": "true"})
+    put(10, y + 1, 8, "minecraft:decorated_pot", {"cracked": "false", "facing": "south", "waterlogged": "false"})
+    table_lamp(12, y + 1, 8)
+    for x in (7, 9, 11):
+        bottom_slab(x, y, 10, "minecraft:dark_oak_slab")
+
+    # --- Lab: Hall of Armor, en werkplekken
+    y = LAB_Y
+    for cx, mark in zip((12, 16, 20, 24, 28), ("MARK I", "MARK II", "MARK III", "MARK VII", "MARK XLII")):
+        suit_capsule(cx, y, 12, mark)
+    for x in range(11, 30):
+        put(x, y - 1, 15, STRIPE)   # een blauwe loper ervoor, in de vloer
+    for x0 in (24, 30):
+        desk(x0, y, 26, 4, chairs=(1, 2))
+        screen(x0, y + 1, 25, 4, 3)
+
+    # --- Archief: wereldbol en leeshoek
+    y = ARCHIVE_Y
+    globe(12, y, 31)
+    put(9, y, 31, "minecraft:cartography_table")
+    put(15, y, 31, "minecraft:lectern", {"facing": "west", "has_book": "false", "powered": "false"})
+    rug(25, 15, 29, 19, y, "red")
+    top_slab(27, y, 17, "minecraft:dark_oak_slab")
+    stairs(27, y, 15, "north", "minecraft:spruce_stairs")
+    stairs(27, y, 19, "south", "minecraft:spruce_stairs")
+    stairs(25, y, 17, "west", "minecraft:spruce_stairs")
+    stairs(29, y, 17, "east", "minecraft:spruce_stairs")
+    put(29, y, 15, "minecraft:dark_oak_fence")
+    table_lamp(29, y + 1, 15)
+
+    # --- Woonverdieping: aquarium en pooltafel
+    y = LIVING_Y
+    for z in range(11, 21):
+        for h in range(4):
+            put(30, y + h, z, GLASS)
+    for x in (31, 32):
+        for h in range(4):
+            put(x, y + h, 11, GLASS)
+            put(x, y + h, 20, GLASS)
+        for z in range(12, 20):
+            for h in range(3):
+                put(x, y + h, z, "minecraft:water", {"level": "0"})
+            put(x, y + 3, z, GLASS)
+    for (x, z) in ((31, 13), (32, 16), (31, 18)):
+        put(x, y, z, "minecraft:sea_pickle", {"pickles": "4", "waterlogged": "true"})
+    for (x, z) in ((32, 12), (31, 15), (32, 19)):
+        put(x, y, z, "minecraft:seagrass")
+    put(32, y, 14, "minecraft:tube_coral_block")
+    put(31, y, 17, "minecraft:brain_coral_block")
+    for x in range(22, 26):
+        for z in (12, 13):
+            top_slab(x, y, z, "minecraft:dark_oak_slab")
+            put(x, y + 1, z, "minecraft:green_carpet")
+    hanging_lamp(23, SECURITY_Y - 2, 12, 3)
+
+    # --- Penthouse: zithoek en een harnas
+    y = PENTHOUSE_Y + 1
+    rug(22, 15, 26, 19, y, "light_blue")
+    for x in (23, 24, 25):
+        stairs(x, y, 15, "north", "minecraft:quartz_stairs")
+        stairs(x, y, 19, "south", "minecraft:quartz_stairs")
+    top_slab(24, y, 17)
+    suit_capsule(21, y, 24, "MARK L")
+
+    # --- Plantjes langs de ramen
+    window_plants(LOBBY_Y, LOBBY_IN, skip={(MID + dx, 37) for dx in range(-4, 5)})
+    window_plants(LAB_Y, LAB_IN)
+    window_plants(ARCHIVE_Y, ARCHIVE_IN)
+    window_plants(LIVING_Y, LIVING_IN)
+    window_plants(PENTHOUSE_Y + 1, PENTHOUSE_IN)
+
+
 # --------------------------------------------------------------------- De route naar boven
 
 def build_routes():
@@ -1347,6 +1542,7 @@ def build():
     build_vault()
     build_penthouse()
     build_roof()
+    furnish()
     build_routes()
     connect_cables()
 
