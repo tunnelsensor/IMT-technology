@@ -324,6 +324,13 @@ wilt. Eerst de kleine dingen, dan de grote.
       vangt nu echt pijlen op. De sweep kiest een begin en eind, het leger valt Happy aan.
       Onderweg gevonden: Happy ging dood door raiddrones (en was daarna niet meer te hacken of af
       te leiden); hij is nu onkwetsbaar in de showcase.
+- [x] Eerst een inhoudstafel, en een kopje NIEUW — `09ed998`
+      Terwijl het spel opstart zie je alle functies per deel, met bovenaan NIEUW (wat je nog
+      niet zag). Kies: Enter = alles, `n` = de nieuwe, nummers, `10-15` of een deel (`drones`),
+      ook gemengd. Tijdens het kijken brengt `i` de inhoud terug. Een functie gaat uit NIEUW
+      als hij tot het eind speelde of je hem pas na 8 seconden stopte; dat staat in
+      `showcase-gezien.json` (niet in git). De 16 functies die er sinds je laatste keer bij
+      kwamen, staan nu bij NIEUW.
 
 **Rayshields**
 - [x] Laserpoort: de wand komt altijd van één kant: hij schuift uit de zender naar het eind (en
