@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 77 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 80 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 73 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -446,8 +446,15 @@ wilt. Eerst de kleine dingen, dan de grote.
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
 - [ ] **De Stark Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
-  - [ ] **Beveiliging die leeft**: Stark-torentjes op de gangen en bij de kluis, en
-        beveiligingsdrones die door de toren patrouilleren; ze vallen indringers aan
+  - [x] **Beveiliging die leeft** — `af0d24f`
+        Een Stark Security Core op de beveiligingsverdieping (in de rij serverkasten) beschermt
+        de hele toren. Beveiligingstorentjes (wit met rood) bij de lift, op de
+        beveiligingsverdieping en in de kluis (in plaats van de vier spawners), en vier
+        beveiligingsdrones die rond de kern patrouilleren; een neergeschoten drone vervangt de
+        kern na 45 s. Zolang niemand de kern hackt, is iedereen een indringer (behalve in
+        creative); daarna laten torentjes, drones én laserwanden de eigenaar en zijn team met
+        rust. De drones zijn geen "monsters", zodat je eigen torentjes en escorte ze na de hack
+        niet neerschieten. Drie nieuwe tests.
   - [ ] **De toren overnemen met een laptop** (jouw idee): geen bril nodig. Je speelt in een
         scherm een kleine hack-minigame; ondertussen blijft de beveiliging je aanvallen, dus snel
         en nauwkeurig zijn. Daarna is de beveiliging van jou en valt ze jou niet meer aan (ook
