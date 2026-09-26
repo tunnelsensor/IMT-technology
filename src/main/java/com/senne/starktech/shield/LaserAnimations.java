@@ -2,7 +2,6 @@ package com.senne.starktech.shield;
 
 import com.senne.starktech.registry.ModBlocks;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -74,16 +73,20 @@ public final class LaserAnimations {
         if (RUNNING.isEmpty()) {
             return;
         }
-        Iterator<Sliding> it = RUNNING.iterator();
-        while (it.hasNext()) {
-            Sliding sliding = it.next();
+        // We lopen door een kopie van de lijst: een blok neerzetten laat de buren reageren, en een
+        // zender ernaast kan dan zelf een wand starten of stoppen (en dus RUNNING veranderen).
+        // Door de echte lijst lopen terwijl die verandert, liet de server crashen.
+        for (Sliding sliding : List.copyOf(RUNNING)) {
+            if (!RUNNING.contains(sliding)) {
+                continue; // intussen vervangen of gestopt
+            }
             if (--sliding.cooldown > 0) {
                 continue;
             }
             sliding.cooldown = TICKS_PER_STEP;
             ServerLevel level = event.getServer().getLevel(sliding.dimension);
             if (level == null || sliding.step >= sliding.cells.size()) {
-                it.remove();
+                RUNNING.remove(sliding);
                 continue;
             }
             BlockPos target = nextCell(sliding);
