@@ -445,7 +445,7 @@ wilt. Eerst de kleine dingen, dan de grote.
         testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
-- [ ] **De Stark Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
+- [x] **De Stark Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
   - [x] **Beveiliging die leeft** — `af0d24f`
         Een Stark Security Core op de beveiligingsverdieping (in de rij serverkasten) beschermt
         de hele toren. Beveiligingstorentjes (wit met rood) bij de lift, op de
@@ -495,7 +495,20 @@ wilt. Eerst de kleine dingen, dan de grote.
         (mijn invulling) Alles hierboven: hoe de docks en het platform werken en eruitzien, de
         getallen, en dat drones niet echt uit de hangar naar buiten vliegen (ze stijgen op en zijn
         weg, zoals uit hun baan).
-  - [ ] **Inrichting en buitenkant** mooier afgewerkt, met meer detail
+  - [x] **Inrichting en buitenkant** mooier afgewerkt, met meer detail — `6a99853`, `9fefc87`
+        *Buiten:* een voorplein van 14 blokken diep aan de zuidkant (de toren zelf staat nog op
+        dezelfde plek): tegels, een ronde fontein met het arc-reactor-embleem op een sokkel,
+        bankjes, vier bomen, lantaarnpalen, twee vlaggenmasten en een lage haag. Een luifel met
+        lampen boven de ingang, en in de koperen hoekribben om de drie blokken een lamp, zodat de
+        toren 's nachts opvalt.
+        *Binnen:* lobby: een glazen vergaderzaal en een koffiebar; lab: de Hall of Armor (vijf
+        harnassen in vitrines met naambordjes: Mark I, II, III, VII en XLII) en twee werkplekken
+        met schermen; archief: een wereldbol en een leeshoek; woonverdieping: een aquariumwand en
+        een pooltafel; penthouse: een zithoek en nog een harnas (Mark L). Overal plantjes langs de
+        ramen, waar niets in de weg staat.
+        Onderweg: de rand van de fontein was eerst van halve platen, en die maakt Minecraft bij
+        het neerzetten "nat", waarna het water het plein over stroomde. Nu volle blokken.
+        (mijn invulling) Alles hierboven.
 - [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
         Tot 16 blokken opzij en 48 diep, als gekleurde blokjes in een doorzichtig blok aarde,
