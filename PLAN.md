@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 93 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 76 functies één voor één zien (of een
+**Stand van zaken:** 95 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 77 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -544,17 +544,43 @@ wilt. Eerst de kleine dingen, dan de grote.
 
 ### 5. De AI-stem (als laatste)
 
-- [ ] **Drie standen om uit te kiezen:** vaste zinnen (zoals nu), een lokaal taalmodel, of een
-      taalmodel in de cloud via de Claude API (jouw keuze op 26 september: lokaal én Claude,
-      te kiezen in het G-menu)
-- [ ] Ze **praat én doet dingen**: gewone taal ("stuur twee drones naar die zombie", "hoeveel
-      energie heb ik?") wordt een actie of een antwoord; het woordenboek blijft de snelle reserve
-- [ ] De API-sleutel vul je **in het spel** in
-- [ ] De mod kiest aan de hand van je pc-specs welk lokaal model wordt geïnstalleerd
-- [ ] Ze onthoudt dingen permanent ("mijn basis heet Thuis") én leert van jouw manier van praten
-- [ ] Verstaat ze je verkeerd, dan vraagt ze "bedoelde je X?" of vraagt ze je het te herhalen
-- [ ] Ze mag uit zichzelf praten, aan/uit te zetten in het G-menu
-- [ ] Op een server hoor je alleen je eigen bril
+Alles hieronder zit in `1e91264` (showcase: "AI Brain", `52bc4eb`). Twee nieuwe tests, en een
+visuele check (`runVisualCheck -Ponly=brain`) die zinnen naar het echte lokale model stuurt.
+
+- [x] **Drie standen om uit te kiezen** in **G > Systems > AI Brain**: Phrase book (het
+      woordenboek), Local model, of Claude
+- [x] Ze **praat én doet dingen**: gewone taal wordt een antwoord en/of acties. Beide breinen
+      krijgen dezelfde instructies (assets/starktech/edith/brain_prompt.txt), je toestand (leven,
+      batterij, tijd, weer, plek, vijanden, waar je naar kijkt, route, waypoints, relais) en wat ze
+      onthouden heeft, en moeten één vast JSON-antwoord geven (het model kán niets anders
+      schrijven). Lukt het brein niet (geen internet, geen sleutel, model start niet), dan zegt ze
+      dat en gebruikt ze het woordenboek.
+- [x] De API-sleutel vul je **in het spel** in (sterretjes; bewaard in
+      .minecraft/starktech/ai/claude-key.txt, gaat alleen naar Anthropic). Claude loopt via de
+      officiële Anthropic-SDK, model claude-opus-5 (te veranderen in config/starktech-client.toml),
+      met "effort low" (snel), prompt caching en een automatische fallback als Claude een vraag
+      weigert. Getest tot en met het inloggen (een verkeerde sleutel geeft netjes "Claude did not
+      accept the API key"); met een echte sleutel nog niet, want dat kost geld: probeer jij het.
+- [x] De mod kiest aan de hand van je pc welk lokaal model hij downloadt: Qwen3.5 2B, 4B of 9B,
+      naar het geheugen van je videokaart (jouw pc: 4B, 2,7 GB; ± 1 seconde per zin). De vorige
+      keer (19 september) vond je 2B "nog niet zo slim"; 4B deed het in de test goed.
+- [x] Ze **onthoudt dingen permanent** ("onthoud dat mijn basis Stark Hoeve heet" → later "hoe
+      heet mijn basis?" → "Je basis heet Stark Hoeve"), in .minecraft/starktech/ai/memory.json;
+      "Forget everything" in het scherm wist het. Ze **leert van jouw manier van praten**: begrijpt
+      het brein een nieuwe zin, dan zet ze die in het woordenboek (commando's "Learned: ...").
+- [x] Weet ze niet wat je bedoelt, dan vraagt ze het ("Wil je een drone sturen of ...?"); zeg je
+      daarna "ja", dan doet ze wat ze voorstelde.
+- [x] Ze mag **uit zichzelf praten** ("Speaks on her own" in het scherm AI Brain): bij weinig
+      leven, een bijna lege batterij, een groep vijanden, de nacht, en als je op je bestemming
+      bent; hooguit één keer per minuut. Getest: "You're low on health. Stay alert, that Husk is
+      close."
+- [x] Op een server hoor je alleen je eigen bril: het brein draait in jouw eigen spel, met jouw
+      toestand, en haar meldingen gaan alleen naar jou.
+- Ze antwoordt in de taal waarin jij praat (Nederlands of Engels); dat raden we aan de woordjes.
+- Nadeel: de Claude-SDK moet mee in de mod-jar (met Kotlin, Jackson en OkHttp): de jar is nu
+  ± 28 MB in plaats van 1,6 MB. Getest dat een echte NeoForge-server ermee opstart.
+- (mijn invulling) De modelkeuze per pc, de instructies, wanneer ze uit zichzelf praat, wat ze
+  wel en niet leert.
 
 ---
 
