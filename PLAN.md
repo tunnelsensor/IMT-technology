@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 71 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 72 functies één voor één zien (of een
+**Stand van zaken:** 74 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 73 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -432,11 +432,19 @@ wilt. Eerst de kleine dingen, dan de grote.
         (beide gevonden, met al hun kisten, in een savanne en een berkenbos).
         Aannames (zeg het als je het anders wilt): de buit, hoe vaak hij voorkomt (ongeveer even
         vaak als de toren) en de raiddrones als bewaking.
-  - [ ] **Hydra-bunker, in een berg** (Winter Soldier-stijl): een ingang in een rotswand,
-        gangen de berg in, en achterin de buit. Bewaakt door **Hydra-soldaten** (een nieuw
-        wezen met een lasergeweer) én **torentjes** en laserwanden. De beloning is **Hydra-tech**:
-        onderdelen die je nodig hebt om het raketpakket en de torentjes te maken. Zo is de
-        bunker de weg naar de nieuwe tech.
+  - [x] **Hydra-bunker, in een berg** (Winter Soldier-stijl) — `163771b`
+        Een eigen structuursoort (HydraBunkerStructure) zoekt in bergbiomen een rotswand: voor de
+        deur vlak en open (16 blokken uitzicht, dus geen kuil of grot), achter de deur over de
+        hele bunker minstens 9 blokken berg. De bunker draait mee zodat de ingang naar buiten
+        kijkt. Binnen (tools/generate_bunker.py): gevel met embleem en twee torentjes, gang met
+        controlepost, grote hal, slaapzaal, reactorkamer (generatoren in lava, kabel over het
+        plafond), kluisgang met twee laserwanden van 3 x 3 die uitgaan zonder reactor, en de
+        kluis (altijd 2-3 Hydra-onderdelen, cryo-cel). Acht soldaten (geen spawner, dus niet te
+        farmen) en vijf Hydra-torentjes. Vinden: de zwarte doos van een satellietwrak heeft nu
+        altijd een kaart "Hydra Intel" met een kruis op de dichtstbijzijnde bunker. In drie
+        testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
+        (kluis en bewakers, lasers en reactor, alle buittabellen laden).
+        (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
 - [ ] De Stark Tower verder uitbreiden (nog te bespreken)
 - [ ] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
@@ -469,7 +477,7 @@ wilt. Eerst de kleine dingen, dan de grote.
         hij staat in de redstone-lijst van E.D.I.T.H. onder Turrets. Rechtsklik = status, shift =
         raketten eruit. Hydra Turret: zwart/rood, geen stroom nodig, schiet op spelers en drones;
         gesloopt geeft hij ijzer en soms een Hydra-onderdeel. Vier nieuwe tests.
-  - [ ] Daarna de bunker (zie hierboven), met de soldaten en torentjes erin
+  - [x] Daarna de bunker (zie hierboven), met de soldaten en torentjes erin
 
 ### 5. De AI-stem (als laatste)
 
