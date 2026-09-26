@@ -934,6 +934,29 @@ final class ShowcaseFeatures {
                 .view(20, STARK_TOWER.getX() + 20.5, STARK_TOWER.getY() + 80, STARK_TOWER.getZ() + 15.5, 0, 25)
                 .pause(80));
 
+        add("Stark Tower: security and hack", "De beveiliging van de toren, in survival. Je staat op de "
+                + "beveiligingsverdieping naast de Stark Security Core (de serverkast met het rode lampje, in de rij "
+                + "serverkasten). De kern stuurt vier beveiligingsdrones met rode lampjes de lucht in, en die en de "
+                + "beveiligingstorentjes schieten op je (hier ben je onkwetsbaar). Dan klik je met de Stark Laptop op "
+                + "de kern: het alarm gaat af en de hack begint (hier speelt hij zichzelf): drie lagen, spatie als de "
+                + "cursor in het groene vak staat. Daarna is de toren van jou: het lampje wordt groen, de drones "
+                + "worden blauw en laten je met rust.", GameType.SURVIVAL, towerPoint(12.5, 57, 20.5), 90, 12, s -> {
+            BlockPos core = STARK_TOWER.offset(10, 57, 20);
+            s.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.clearOwner();
+                }
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                        new ItemStack(ModItems.STARK_LAPTOP.get()));
+            })
+                    .pause(180)
+                    .step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = true)
+                    .onServer(0, player -> com.senne.starktech.security.TowerHack.start(player, core))
+                    .pause(220)
+                    .step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = false)
+                    .pause(80);
+        });
+
         add("Crashed satellite", "Een nieuwe structuur: het wrak van een oude Stark-satelliet in een krater. "
                 + "Eerst van boven: de rook (blauw uit de romp, van de reactor), de voor aan de oostkant waar hij "
                 + "binnenkwam, het zonnepaneel dat nog schuin omhoog steekt, het afgebroken paneel op de helling, "

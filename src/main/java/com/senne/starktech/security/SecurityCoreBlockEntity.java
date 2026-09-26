@@ -50,6 +50,16 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
     }
 
+    /** Weer van niemand (voor de showcase, die de hack elke keer opnieuw wil laten zien). */
+    public void clearOwner() {
+        ownerId = null;
+        ownerName = "";
+        setChanged();
+        if (level != null) {
+            level.setBlock(worldPosition, getBlockState().setValue(SecurityCoreBlock.CLAIMED, false), Block.UPDATE_ALL);
+        }
+    }
+
     // ================================================================ Aanmelden
 
     @Override
