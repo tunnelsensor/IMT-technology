@@ -268,8 +268,8 @@ kaart heeft een rood kruis op de dichtstbijzijnde Hydra-bunker. In de kratten er
 brokstukken. Maar het wrak wordt bewaakt (zie Raiddrones).
 - **Blokken slopen uitzetten**: `/gamerule starktechRaidGriefing false`. Dan kunnen ze nog wel
   schieten, maar laten ze je muren heel.
-- **Instellen per wereld** in `<wereld>/serverconfig/starktech-server.toml`: `raids.enabled`,
-  `raids.minMinutes`, `raids.maxMinutes` en `raids.size` (hoeveel drones per golf, standaard 4).
+- **Instellen** in `config/starktech-server.toml`: `raids.enabled`, `raids.minMinutes`,
+  `raids.maxMinutes` en `raids.size` (hoeveel drones per golf, standaard 4). Zie ook hoofdstuk 6.
 
 ### Hydra-soldaten
 Hydra wil Stark-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
@@ -445,11 +445,21 @@ Alle zinnen kun je zelf aanpassen in **G > Systems > Commands** (of in
 
 | Bestand | Wat |
 |---------|-----|
-| `<wereld>/serverconfig/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
+| `config/starktech-balance.toml` | **Alle getallen** (120 stuks): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
+| `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
 | `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |
-| `src/main/java/.../edith/EdithBalance.java` | Alle getallen: kosten, schade, bereik, wachttijden |
+| `src/main/java/.../edith/EdithBalance.java` (en `SuitBalance`, `TurretBalance`...) | De standaardwaarden van die getallen |
+
+De twee `starktech-...toml`-bestanden gelden voor **al je werelden** (op een server: de map
+`config` van de server; spelers krijgen de getallen van de server vanzelf mee). Moet **één
+wereld** anders zijn, bijvoorbeeld "in deze wereld is de satelliet te sterk"? Kopieer het bestand
+naar `<wereld>/serverconfig/` en pas het daar aan: die kopie gaat voor. Het spel leest het bestand
+opnieuw als je het opslaat terwijl je speelt; je hoeft niets te herstarten.
+
+Een nieuw getal instelbaar maken (voor jezelf als modder): zet `@Tunable(section = "...",
+comment = "...")` erboven in het balance-bestand en haal `final` weg.
 
 ---
 

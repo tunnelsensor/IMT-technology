@@ -251,6 +251,40 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Het configbestand starktech-balance.toml: alle 120 getallen staan erin, en verander je er
+     * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
+    public static void balance_config_changes_the_numbers(GameTestHelper helper) {
+        var spec = com.senne.starktech.edith.BalanceConfig.SPEC;
+        if (!spec.isLoaded()) {
+            throw new GameTestAssertException("starktech-balance.toml is niet geladen");
+        }
+        if (com.senne.starktech.edith.BalanceConfig.size() != 120) {
+            throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
+                    + " getallen in het bestand in plaats van 120");
+        }
+        net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
+        net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
+        int oldCost = cost.get();
+        double oldDamage = damage.get();
+        try {
+            cost.set(123);
+            damage.set(9.5);
+            com.senne.starktech.edith.BalanceConfig.reapply();
+            if (EdithBalance.ORE_SCAN_COST != 123 || SuitBalance.REPULSOR_DAMAGE != 9.5f) {
+                throw new GameTestAssertException("De nieuwe getallen tellen niet: ertsen-scan kost "
+                        + EdithBalance.ORE_SCAN_COST + ", repulsor doet " + SuitBalance.REPULSOR_DAMAGE);
+            }
+        } finally {
+            cost.set(oldCost);
+            damage.set(oldDamage);
+            com.senne.starktech.edith.BalanceConfig.reapply();
+        }
+        helper.succeed();
+    }
+
     // ================================================================ De Hydra-bunker
     // In de test ligt alles één blok hoger dan in tools/generate_bunker.py (y + 1).
 

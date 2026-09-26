@@ -1,5 +1,7 @@
 package com.senne.starktech.hydra;
 
+import com.senne.starktech.edith.Tunable;
+
 /**
  * De getallen van Hydra: hun soldaten (en straks hun torentjes en bunker).
  */
@@ -14,11 +16,14 @@ public final class HydraBalance {
     /** Hoe snel hij loopt. */
     public static final double SOLDIER_SPEED = 0.27;
     /** Schade van één laserschot (4 = 2 hartjes). */
-    public static final float LASER_DAMAGE = 4.0f;
+    @Tunable(section = "hydra", comment = "Damage of one Hydra soldier rifle shot")
+    public static float LASER_DAMAGE = 4.0f;
     /** Ticks tussen twee schoten (35 = bijna 2 seconden). */
-    public static final int FIRE_INTERVAL = 35;
+    @Tunable(section = "hydra", comment = "Ticks between two Hydra soldier shots")
+    public static int FIRE_INTERVAL = 35;
     /** Tot hoe ver hij schiet (blokken). */
-    public static final float ATTACK_RANGE = 18.0f;
+    @Tunable(section = "hydra", comment = "How far a Hydra soldier shoots (blocks)")
+    public static float ATTACK_RANGE = 18.0f;
     /** Hoeveel ervaring hij laat vallen. */
     public static final int XP_REWARD = 10;
 }

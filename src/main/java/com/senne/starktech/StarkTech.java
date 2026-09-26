@@ -56,6 +56,15 @@ public class StarkTech {
         // Instellingen van de wereld/server (bv. hoeveel drones er maximaal mogen).
         // Deze worden ook naar de spelers gestuurd, zodat het menu dezelfde getallen toont.
         modContainer.registerConfig(ModConfig.Type.SERVER, EdithConfig.SPEC);
+        // Alle getallen (schade, kosten, wachttijden...) per wereld: starktech-balance.toml.
+        modContainer.registerConfig(ModConfig.Type.SERVER, com.senne.starktech.edith.BalanceConfig.SPEC,
+                "starktech-balance.toml");
+        modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Loading event) ->
+                com.senne.starktech.edith.BalanceConfig.onLoad(event));
+        modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Reloading event) ->
+                com.senne.starktech.edith.BalanceConfig.onLoad(event));
+        modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Unloading event) ->
+                com.senne.starktech.edith.BalanceConfig.onLoad(event));
 
         // Registers: vertellen het spel welke dingen onze mod toevoegt.
         ModDataComponents.COMPONENTS.register(modEventBus);

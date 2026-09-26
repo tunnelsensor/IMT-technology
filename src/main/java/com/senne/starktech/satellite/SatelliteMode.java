@@ -13,21 +13,22 @@ import com.senne.starktech.edith.EdithBalance;
  *                Goed tegen een rij vijanden; hij maakt geen krater.
  */
 public enum SatelliteMode {
-    PRECISION("precision", EdithBalance.SATELLITE_COST_PRECISION),
-    BOMBARDMENT("bombardment", EdithBalance.SATELLITE_COST_BOMBARDMENT),
-    SWEEP("sweep", EdithBalance.SATELLITE_COST_SWEEP);
+    // De kosten staan er als "() -> getal", zodat een ander getal uit het configbestand meteen telt.
+    PRECISION("precision", () -> EdithBalance.SATELLITE_COST_PRECISION),
+    BOMBARDMENT("bombardment", () -> EdithBalance.SATELLITE_COST_BOMBARDMENT),
+    SWEEP("sweep", () -> EdithBalance.SATELLITE_COST_SWEEP);
 
     private final String id;
-    private final int cost;
+    private final java.util.function.IntSupplier cost;
 
-    SatelliteMode(String id, int cost) {
+    SatelliteMode(String id, java.util.function.IntSupplier cost) {
         this.id = id;
         this.cost = cost;
     }
 
     /** Wat deze stand aan energie kost. */
     public int cost() {
-        return cost;
+        return cost.getAsInt();
     }
 
     public String translationKey() {

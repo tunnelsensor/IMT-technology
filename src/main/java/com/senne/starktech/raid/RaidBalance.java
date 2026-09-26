@@ -1,5 +1,7 @@
 package com.senne.starktech.raid;
 
+import com.senne.starktech.edith.Tunable;
+
 /**
  * De getallen van de raiddrones. Hoeveel er komen en hoe vaak staat in de serverconfig
  * (EdithConfig), want dat wil je per wereld kunnen instellen.
@@ -11,15 +13,18 @@ public final class RaidBalance {
     /** Levenspunten (10 = 5 hartjes). Was 16; na jouw feedback afgezwakt. */
     public static final double HEALTH = 10.0;
     /** Schade van één laserschot (3 = 1,5 hartje). Was 5. */
-    public static final float LASER_DAMAGE = 3.0f;
+    @Tunable(section = "raids", comment = "Damage of one raid drone laser shot")
+    public static float LASER_DAMAGE = 3.0f;
     /** Ticks tussen twee schoten (40 = 2 seconden). Was 25. */
-    public static final int FIRE_INTERVAL = 40;
+    @Tunable(section = "raids", comment = "Ticks between two raid drone shots")
+    public static int FIRE_INTERVAL = 40;
     /** Hoeveel ervaring hij laat vallen. */
     public static final int XP_REWARD = 8;
 
     // ---------------------------------------------------------------- Jagen
     /** Tot hoe ver hij schiet (in blokken). */
-    public static final double ATTACK_RANGE = 18.0;
+    @Tunable(section = "raids", comment = "How far a raid drone shoots (blocks)")
+    public static double ATTACK_RANGE = 18.0;
     /** Tot hoe ver hij een doelwit zoekt. */
     public static final double FIND_RANGE = 48.0;
     /** Verder dan dit geeft hij zijn doelwit op. */
@@ -33,7 +38,8 @@ public final class RaidBalance {
 
     // ---------------------------------------------------------------- Muren slopen
     /** Ticks tussen twee blokken. 30 ticks = anderhalve seconde. */
-    public static final int BREAK_INTERVAL = 30;
+    @Tunable(section = "raids", comment = "Ticks between two blocks a raid drone breaks while hunting you")
+    public static int BREAK_INTERVAL = 30;
     /** Hoe ver vooruit hij blokken weghaalt (in blokken). */
     public static final double BREAK_REACH = 6.0;
 
@@ -44,7 +50,8 @@ public final class RaidBalance {
      * Na een golf bij het wrak van een satelliet duurt het zo lang (ticks) voordat het wrak ze
      * opnieuw roept: 12000 ticks = 10 minuten.
      */
-    public static final int CRASH_SITE_COOLDOWN = 12_000;
+    @Tunable(section = "raids", comment = "Shortest wait between two raids at the same crashed satellite (ticks)")
+    public static int CRASH_SITE_COOLDOWN = 12_000;
     /** Hoe ver de drones van een golf uit elkaar liggen als ze aankomen. */
     public static final double SPREAD = 8.0;
 
@@ -55,7 +62,8 @@ public final class RaidBalance {
      */
     public static final int HEAT_PER_TOWER_BLOCK = 4;
     /** Bij deze hoeveelheid aandacht begint er een raid. */
-    public static final int HEAT_FOR_RAID = 100;
+    @Tunable(section = "raids", comment = "How much attention breaking Stark Tower blocks takes before a raid comes")
+    public static int HEAT_FOR_RAID = 100;
     /** Hoeveel aandacht er per minuut vanzelf weer afgaat. */
     public static final int HEAT_COOLDOWN_PER_MINUTE = 10;
 }

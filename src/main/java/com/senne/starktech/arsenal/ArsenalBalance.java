@@ -1,5 +1,7 @@
 package com.senne.starktech.arsenal;
 
+import com.senne.starktech.edith.Tunable;
+
 /**
  * De getallen van het arsenaal. Net als EdithBalance: pas ze aan, bouw opnieuw, klaar.
  */
@@ -38,11 +40,13 @@ public final class ArsenalBalance {
      * Welk deel van de bouwkosten je terugkrijgt als een drone wordt neergehaald.
      * De rest is verloren: een kapotte drone vervang je door een nieuwe te bouwen.
      */
-    public static final double WRECK_RECOVERY = 0.10;
+    @Tunable(section = "drones", comment = "Share of a drone's build cost you get back as scrap when it is shot down (0-1)")
+    public static double WRECK_RECOVERY = 0.10;
 
     /**
      * Hoeveel levenspunten één reparatie-onderdeel (een ijzerstaaf) herstelt.
      * Een drone die helemaal op is, kost dus DRONE_MAX_HEALTH / REPAIR_PER_INGOT staven.
      */
-    public static final double REPAIR_PER_INGOT = 3.0;
+    @Tunable(section = "drones", comment = "Health one iron ingot repairs on a drone")
+    public static double REPAIR_PER_INGOT = 3.0;
 }

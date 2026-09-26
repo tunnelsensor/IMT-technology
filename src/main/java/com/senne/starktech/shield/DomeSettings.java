@@ -1,5 +1,7 @@
 package com.senne.starktech.shield;
 
+import com.senne.starktech.edith.Tunable;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -26,23 +28,29 @@ public final class DomeSettings {
     public static final int DEFAULT_STRENGTH = 2;
 
     /** Hoe lang hij uitvalt als zijn schildkracht op is (ticks). 200 ticks = 10 seconden. */
-    public static final int DOWN_TICKS = 200;
+    @Tunable(section = "shields", comment = "How long a broken dome stays down before it comes back (ticks)")
+    public static int DOWN_TICKS = 200;
     /** Na het uitvallen komt hij terug met dit deel van zijn schildkracht. */
     public static final float COMEBACK_SHIELD = 0.25f;
 
     // ---------------------------------------------------------------- Wat een treffer kost
     /** Een pijl, sneeuwbal, drietand of ander klein projectiel. */
-    public static final int COST_PROJECTILE = 15;
+    @Tunable(section = "shields", comment = "Dome strength lost per arrow or projectile it stops")
+    public static int COST_PROJECTILE = 15;
     /** Een vuurbal (ghast, blaze, wither-schedel). */
-    public static final int COST_FIREBALL = 60;
+    @Tunable(section = "shields", comment = "Dome strength lost per fireball it stops")
+    public static int COST_FIREBALL = 60;
     /** Een monster of raiddrone naar buiten duwen (elke halve seconde). */
     public static final int COST_PUSH = 5;
     /** Een laserschot van een raiddrone of van de drone van iemand anders. */
-    public static final int COST_LASER = 30;
+    @Tunable(section = "shields", comment = "Dome strength lost per laser shot it stops")
+    public static int COST_LASER = 30;
     /** Een precisiestraal van een satelliet. */
-    public static final int COST_SATELLITE_BEAM = 350;
+    @Tunable(section = "shields", comment = "Dome strength lost when it stops a satellite precision beam")
+    public static int COST_SATELLITE_BEAM = 350;
     /** Eén inslag van een satellietbombardement. */
-    public static final int COST_SATELLITE_IMPACT = 150;
+    @Tunable(section = "shields", comment = "Dome strength lost per bombardment impact it stops")
+    public static int COST_SATELLITE_IMPACT = 150;
     /** Eén treffer van de schuivende satellietlaser. */
     public static final int COST_SATELLITE_SWEEP = 40;
 

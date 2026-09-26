@@ -5,8 +5,8 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * Instellingen van de wereld/server: hoeveel drones er maximaal mogen, hoe ver E.D.I.T.H.
- * redstone mag aansturen, enzovoort. Ze staan in het bestand
- * <wereldmap>/serverconfig/starktech-server.toml (of in de map serverconfig van je server).
+ * redstone mag aansturen, enzovoort. Ze staan in het bestand config/starktech-server.toml (voor
+ * al je werelden); een kopie in <wereldmap>/serverconfig/ geldt alleen voor die wereld.
  *
  * Waarom een config en geen vast getal? Op een server met veel spelers kunnen honderden
  * drones het spel laten haperen. De eigenaar van de wereld kan hier dus zelf kiezen

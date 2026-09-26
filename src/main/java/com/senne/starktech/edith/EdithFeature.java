@@ -6,19 +6,21 @@ package com.senne.starktech.edith;
  * elke functie één "bit" is (bitmask).
  */
 public enum EdithFeature {
-    NIGHT_VISION("night_vision", EdithBalance.DRAIN_NIGHT_VISION, false),
-    THREAT_SCAN("threat_scan", EdithBalance.DRAIN_THREAT_SCAN, false),
-    TARGET_ANALYSIS("target_analysis", EdithBalance.DRAIN_TARGET_ANALYSIS, true),
+    // Het verbruik staat er als "() -> getal": zo lezen we het elke keer opnieuw, en telt een
+    // ander getal uit het configbestand (starktech-balance.toml) meteen mee.
+    NIGHT_VISION("night_vision", () -> EdithBalance.DRAIN_NIGHT_VISION, false),
+    THREAT_SCAN("threat_scan", () -> EdithBalance.DRAIN_THREAT_SCAN, false),
+    TARGET_ANALYSIS("target_analysis", () -> EdithBalance.DRAIN_TARGET_ANALYSIS, true),
     // Fase 2. Nieuwe functies altijd ONDERAAN toevoegen, anders kloppen opgeslagen brillen niet meer.
-    GUARD_DRONES("guard_drones", EdithBalance.DRAIN_GUARD_DRONES, false),
+    GUARD_DRONES("guard_drones", () -> EdithBalance.DRAIN_GUARD_DRONES, false),
     // Fase 11: het persoonlijke rayshield.
-    SHIELD("shield", EdithBalance.DRAIN_SHIELD, false);
+    SHIELD("shield", () -> EdithBalance.DRAIN_SHIELD, false);
 
     private final String id;
-    private final int drainPerSecond;
+    private final java.util.function.IntSupplier drainPerSecond;
     private final boolean enabledByDefault;
 
-    EdithFeature(String id, int drainPerSecond, boolean enabledByDefault) {
+    EdithFeature(String id, java.util.function.IntSupplier drainPerSecond, boolean enabledByDefault) {
         this.id = id;
         this.drainPerSecond = drainPerSecond;
         this.enabledByDefault = enabledByDefault;
@@ -29,7 +31,7 @@ public enum EdithFeature {
     }
 
     public int drainPerSecond() {
-        return drainPerSecond;
+        return drainPerSecond.getAsInt();
     }
 
     /** Sleutel voor de vertaling, bv. "edith.starktech.feature.night_vision". */
