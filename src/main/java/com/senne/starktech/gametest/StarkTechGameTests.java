@@ -582,6 +582,60 @@ public final class StarkTechGameTests {
         });
     }
 
+    // ================================================================ Het AI-brein
+
+    /**
+     * Het antwoord van het brein lezen: een verzonnen actie valt weg, een waarde bij een actie
+     * zonder waarde ook, en als ze twijfelt ("bedoelde je ...?") doet ze niets. Kapot JSON geeft
+     * een fout (dan gebruikt ze het woordenboek).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "brain")
+    public static void brain_answer_is_read_safely(GameTestHelper helper) {
+        var decision = com.senne.starktech.client.voice.BrainDecision.parse("""
+                {"reply": "On it.", "actions": [{"action": "fly_to_the_moon", "value": ""},
+                 {"action": "ore_scan", "value": "everything"}, {"action": "navigate_to", "value": "Thuis"}],
+                 "remember": "The base is called Thuis.", "forget": "", "unsure": false}""");
+        if (decision.actions().size() != 2
+                || decision.actions().get(0).action() != com.senne.starktech.client.voice.VoiceAction.ORE_SCAN
+                || !decision.actions().get(0).value().isEmpty()
+                || !decision.actions().get(1).value().equals("Thuis")) {
+            throw new GameTestAssertException("De acties zijn verkeerd gelezen: " + decision.actions());
+        }
+        var unsure = com.senne.starktech.client.voice.BrainDecision.parse("""
+                {"reply": "Did you mean the ore scan?", "actions": [{"action": "ore_scan", "value": ""}],
+                 "remember": "", "forget": "", "unsure": true}""");
+        if (!unsure.actions().isEmpty()) {
+            throw new GameTestAssertException("Bij twijfel voerde ze toch een actie uit");
+        }
+        try {
+            com.senne.starktech.client.voice.BrainDecision.parse("Sure! Launching drones.");
+            throw new GameTestAssertException("Geen JSON werd niet geweigerd");
+        } catch (IllegalArgumentException expected) {
+            // goed zo
+        }
+        helper.succeed();
+    }
+
+    /** Ze antwoordt in de taal waarin je praat: dat raden we aan de woordjes. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "brain")
+    public static void brain_hears_the_language(GameTestHelper helper) {
+        String[][] cases = {
+                {"hoeveel energie heb ik nog", "en_us", "Dutch"},
+                {"what time is it and is it going to rain", "nl_nl", "English"},
+                {"send the drones after that zombie", "nl_nl", "English"},
+                {"zet nachtzicht aan", "en_us", "Dutch"},
+                {"ok", "nl_nl", "Dutch"},
+                {"ok", "en_us", "English"},
+        };
+        for (String[] test : cases) {
+            String got = com.senne.starktech.client.voice.BrainLanguage.of(test[0], test[1]);
+            if (!got.equals(test[2])) {
+                throw new GameTestAssertException("\"" + test[0] + "\" gaf " + got + " in plaats van " + test[2]);
+            }
+        }
+        helper.succeed();
+    }
+
     // ================================================================ Het landingsplatform
 
     /**

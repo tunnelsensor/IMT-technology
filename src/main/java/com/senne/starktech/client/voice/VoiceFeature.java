@@ -13,7 +13,9 @@ public enum VoiceFeature {
     /** E.D.I.T.H. spreekt haar meldingen uit (Piper, tekst naar spraak). */
     SPEECH("speech"),
     /** Jij praat tegen E.D.I.T.H.: het oor schrijft het uit, het woordenboek zegt wat ze doet. */
-    COMMANDS("commands");
+    COMMANDS("commands"),
+    /** Het lokale brein: een taalmodel op je pc dat gewone taal begrijpt (zie EdithBrain). */
+    BRAIN("brain");
 
     private final String id;
 
@@ -23,9 +25,11 @@ public enum VoiceFeature {
 
     /** Welke onderdelen deze functie nodig heeft. Voor de stem hangt dat af van je taal. */
     public List<VoicePack> packs() {
-        return this == SPEECH
-                ? List.of(VoicePack.PIPER, EdithSpeech.voicePack())
-                : List.of(VoicePack.LLAMA, VoicePack.EAR);
+        return switch (this) {
+            case SPEECH -> List.of(VoicePack.PIPER, EdithSpeech.voicePack());
+            case COMMANDS -> List.of(VoicePack.LLAMA, VoicePack.EAR);
+            case BRAIN -> List.of(VoicePack.LLAMA, BrainModel.current().pack());
+        };
     }
 
     public boolean isInstalled() {
@@ -45,11 +49,19 @@ public enum VoiceFeature {
         if (!EdithClientConfig.SPEC.isLoaded()) {
             return false;
         }
-        return this == SPEECH ? EdithClientConfig.VOICE.get() : EdithClientConfig.VOICE_COMMANDS.get();
+        return switch (this) {
+            case SPEECH -> EdithClientConfig.VOICE.get();
+            case COMMANDS -> EdithClientConfig.VOICE_COMMANDS.get();
+            case BRAIN -> EdithClientConfig.BRAIN.get() == BrainMode.LOCAL;
+        };
     }
 
     public void setEnabled(boolean enabled) {
         if (!EdithClientConfig.SPEC.isLoaded()) {
+            return;
+        }
+        if (this == BRAIN) {
+            EdithBrain.setMode(enabled ? BrainMode.LOCAL : BrainMode.DICTIONARY);
             return;
         }
         (this == SPEECH ? EdithClientConfig.VOICE : EdithClientConfig.VOICE_COMMANDS).set(enabled);
@@ -58,7 +70,11 @@ public enum VoiceFeature {
 
     /** Naam in het G-menu, bv. "Stem". */
     public Component menuLabel() {
-        return Component.translatable(this == SPEECH ? "screen.starktech.menu.voice" : "screen.starktech.menu.voice_commands");
+        return Component.translatable(switch (this) {
+            case SPEECH -> "screen.starktech.menu.voice";
+            case COMMANDS -> "screen.starktech.menu.voice_commands";
+            case BRAIN -> "screen.starktech.menu.brain";
+        });
     }
 
     /** Naam in een zin, bv. "Ik download [mijn stem]". */

@@ -192,6 +192,7 @@ public final class StatusPanelWidget implements HudWidget {
         String key = switch (stage) {
             case LISTENING -> "hud.starktech.voice.listening";
             case STARTING -> "hud.starktech.voice.starting";
+            case THINKING -> "hud.starktech.voice.thinking";
             default -> "hud.starktech.voice.processing";
         };
         Component label = Component.translatable(key);

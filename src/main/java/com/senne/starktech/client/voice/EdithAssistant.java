@@ -20,18 +20,20 @@ public final class EdithAssistant {
         /** Het oor start nog op (alleen de eerste keer). */
         STARTING,
         /** Het oor schrijft uit wat je zei. */
-        HEARING
+        HEARING,
+        /** Het brein denkt na over wat je zei (zie EdithBrain). */
+        THINKING
     }
 
     private static volatile Stage stage = Stage.IDLE;
     private static volatile boolean preloadStarted;
 
     public static Stage stage() {
-        return stage;
+        return stage == Stage.IDLE && EdithBrain.isThinking() ? Stage.THINKING : stage;
     }
 
     public static boolean isBusy() {
-        return stage != Stage.IDLE;
+        return stage() != Stage.IDLE;
     }
 
     static void setStage(Stage newStage) {

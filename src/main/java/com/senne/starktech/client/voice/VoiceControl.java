@@ -66,6 +66,8 @@ public final class VoiceControl {
                 && VoiceInstaller.state(VoiceFeature.COMMANDS) == VoiceInstaller.State.INSTALLED) {
             EdithAssistant.preload();
         }
+        // Het brein: opwarmen, en eventueel uit zichzelf iets zeggen (het kijkt zelf of het kan).
+        EdithBrain.tick(mc);
     }
 
     private static void startListening() {
@@ -108,6 +110,14 @@ public final class VoiceControl {
         }
     }
 
+    /**
+     * Doet alsof het oor deze zin hoorde (hoofd-thread). Voor de ontwikkeltests: zo kunnen die
+     * het brein proberen zonder microfoon.
+     */
+    public static void hear(String text) {
+        onHeard(text);
+    }
+
     /** Het oor hoorde iets (hoofd-thread): zoek het op in het woordenboek en voer het uit. */
     static void onHeard(String heard) {
         if (!EdithClientState.authorized) {
@@ -119,6 +129,15 @@ public final class VoiceControl {
             EdithClientState.addNotification(Component.translatable("edith.starktech.voice.heard", heard),
                     EdithMessagePayload.Level.COMMS, false);
         }
+        // Een brein gekozen (lokaal model of Claude)? Dan denkt dat na; anders het woordenboek.
+        if (EdithBrain.handle(heard)) {
+            return;
+        }
+        runDictionary(heard);
+    }
+
+    /** Zoekt wat je zei op in het woordenboek en voert het uit (ook de reserve van het brein). */
+    static void runDictionary(String heard) {
         List<VoiceMatcher.Match> matches = VoiceCommandStore.match(heard);
         if (matches.isEmpty()) {
             lastUnknown = heard;
@@ -158,7 +177,7 @@ public final class VoiceControl {
     }
 
     /** Eén actie uitvoeren. De server controleert zelf nog of het mag (energie, wachttijd...). */
-    private static void execute(VoiceAction action, String value, boolean quiet) {
+    static void execute(VoiceAction action, String value, boolean quiet) {
         Minecraft mc = Minecraft.getInstance();
         switch (action) {
             case LAUNCH_DRONES -> EdithClientEvents.sendAction(EdithAction.LAUNCH_DRONES);
@@ -396,6 +415,7 @@ public final class VoiceControl {
     public static void shutdown() {
         EdithSpeech.shutdown();
         EdithAssistant.shutdown();
+        EdithBrain.stopLocal();
     }
 
     // ---------------------------------------------------------------- Hulpjes
@@ -410,7 +430,7 @@ public final class VoiceControl {
      * Staat "Spraaktekst" uit (G > Systemen), dan spreekt ze het alleen uit en komt het
      * niet als tekst in je HUD te staan.
      */
-    private static void tell(Component message, EdithMessagePayload.Level level) {
+    static void tell(Component message, EdithMessagePayload.Level level) {
         if (EdithClientConfig.voiceTextInHud()) {
             EdithClientState.addNotification(message, level);
         } else {

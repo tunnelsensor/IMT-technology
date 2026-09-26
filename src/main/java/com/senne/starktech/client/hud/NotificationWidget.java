@@ -5,6 +5,9 @@ import static com.senne.starktech.client.hud.HudStyle.argb;
 import static com.senne.starktech.client.hud.HudStyle.colorFor;
 
 import com.senne.starktech.client.EdithClientState;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
@@ -22,6 +25,23 @@ public final class NotificationWidget implements HudWidget {
         return !c.menuOpen && !EdithClientState.NOTIFICATIONS.isEmpty();
     }
 
+    /** Knipt een tekst in regels van hooguit {@code width} pixels breed (op de spaties). */
+    static List<String> wrap(Font font, String text, int width) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split(" ")) {
+            String candidate = line.isEmpty() ? word : line + " " + word;
+            if (!line.isEmpty() && font.width(candidate) > width) {
+                lines.add(line.toString());
+                line = new StringBuilder(word);
+            } else {
+                line = new StringBuilder(candidate);
+            }
+        }
+        lines.add(line.toString());
+        return lines;
+    }
+
     @Override
     public void render(HudContext c) {
         GuiGraphics g = c.g;
@@ -37,21 +57,32 @@ public final class NotificationWidget implements HudWidget {
             }
             String full = n.text().getString();
             int chars = (int) Math.min(full.length(), age / MILLIS_PER_CHAR);
-            String shown = full.substring(0, chars);
             int color = colorFor(n.level());
             String prefix = "E.D.I.T.H. › ";
-            int totalWidth = c.font.width(prefix + full);
+            int prefixWidth = c.font.width(prefix);
+            // Een lange melding (bv. een antwoord van het AI-brein) over meerdere regels.
+            List<String> lines = wrap(c.font, full, Math.max(80, Math.min(c.width - 40, 360) - prefixWidth));
+            int textWidth = lines.stream().mapToInt(c.font::width).max().orElse(0);
+            int totalWidth = prefixWidth + textWidth;
+            int height = lines.size() * 10;
             int x = c.width / 2 - totalWidth / 2;
             // Zou de melding over het paneel links vallen? Schuif hem er dan naast (als dat past).
             int besidePanel = c.panelRight + 8;
             if (x < besidePanel && besidePanel + totalWidth + 10 <= c.width) {
                 x = besidePanel;
             }
-            g.fill(x - 4, y - 2, x + totalWidth + 4, y + 10, argb(alpha / 3, 0x001018));
-            g.fill(x - 4, y - 2, x - 3, y + 10, argb(alpha, color));
+            g.fill(x - 4, y - 2, x + totalWidth + 4, y + height, argb(alpha / 3, 0x001018));
+            g.fill(x - 4, y - 2, x - 3, y + height, argb(alpha, color));
             g.drawString(c.font, prefix, x, y, argb(alpha * 2 / 3, color), true);
-            g.drawString(c.font, shown, x + c.font.width(prefix), y, argb(alpha, WHITE), true);
-            y += 14;
+            // Letter voor letter verschijnen, regel na regel.
+            int left = chars;
+            for (int i = 0; i < lines.size() && left > 0; i++) {
+                String line = lines.get(i);
+                g.drawString(c.font, line.substring(0, Math.min(line.length(), left)), x + prefixWidth, y + i * 10,
+                        argb(alpha, WHITE), true);
+                left -= line.length() + 1;
+            }
+            y += height + 4;
         }
     }
 }

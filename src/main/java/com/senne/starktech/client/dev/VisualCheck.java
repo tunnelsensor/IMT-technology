@@ -352,6 +352,77 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- Het AI-brein (lokaal model): zinnen alsof je ze zei, en wat ze ermee doet (zie de log:
+        // "E.D.I.T.H. brain"). Het model moet in run-visual/starktech/voice/brain_medium staan.
+        if (want("brain")) {
+            t.onServer(0, player -> {
+                DevWorld.wearGlasses(player);
+                DevWorld.refill(player);
+                com.senne.starktech.client.voice.EdithMemory.forgetAll();
+                DevWorld.spawnStill(player.serverLevel(), EntityType.ZOMBIE, new BlockPos(0, -60, -8), 0);
+            });
+            t.step(0, () -> {
+                com.senne.starktech.client.EdithClientConfig.BRAIN_MODEL.set("medium");
+                com.senne.starktech.client.voice.EdithBrain.setMode(com.senne.starktech.client.voice.BrainMode.LOCAL);
+            });
+            t.view(20, 0.5, -60, 0.5, 180, 5);
+            String[] said = {
+                    "hoeveel energie heb ik nog",
+                    "zet nachtzicht aan en scan naar ertsen",
+                    "onthoud dat mijn basis Stark Hoeve heet",
+                    "hoe heet mijn basis?",
+                    "doe iets met de ding",
+                    "send the drones after that zombie",
+                    "what time is it and is it going to rain",
+                    "sla deze plek op als kampvuur",
+            };
+            for (int i = 0; i < said.length; i++) {
+                String text = said[i];
+                t.step(0, () -> com.senne.starktech.client.voice.VoiceControl.hear(text));
+                t.pause(2);
+                t.waitUntil(1200, () -> !com.senne.starktech.client.voice.EdithBrain.isThinking());
+                t.shot(10, String.format("b%02d_brain", i + 1));
+            }
+            // Uit zichzelf praten: je leven zakt onder de drie hartjes, en ze zegt er iets van.
+            t.step(0, () -> {
+                com.senne.starktech.client.EdithClientConfig.PROACTIVE.set(true);
+                com.senne.starktech.client.voice.EdithMemory.clearConversation();
+            });
+            t.command(0, "gamemode survival @a");
+            t.onServer(20, player -> player.setHealth(4.0f));
+            t.pause(40);
+            t.waitUntil(1200, () -> !com.senne.starktech.client.voice.EdithBrain.isThinking());
+            t.shot(30, "b08b_brain_speaks_up");
+            t.step(0, () -> com.senne.starktech.client.EdithClientConfig.PROACTIVE.set(false));
+            t.command(0, "gamemode creative @a");
+            t.onServer(0, player -> player.setHealth(player.getMaxHealth()));
+            // Claude met een verkeerde sleutel: ze moet zeggen dat de sleutel niet klopt en het
+            // woordenboek gebruiken (zo zien we dat de SDK in het spel werkt, zonder kosten).
+            t.step(0, () -> {
+                try {
+                    com.senne.starktech.client.voice.EdithBrain.saveClaudeKey("sk-ant-api03-not-a-real-key-for-testing");
+                } catch (java.io.IOException e) {
+                    throw new RuntimeException(e);
+                }
+                com.senne.starktech.client.voice.EdithBrain.choose(com.senne.starktech.client.voice.BrainMode.CLAUDE);
+            });
+            t.step(20, () -> com.senne.starktech.client.voice.VoiceControl.hear("night vision on"));
+            t.pause(2);
+            t.waitUntil(1200, () -> !com.senne.starktech.client.voice.EdithBrain.isThinking());
+            t.shot(20, "b09_brain_claude_bad_key");
+            t.step(0, () -> {
+                try {
+                    com.senne.starktech.client.voice.EdithBrain.saveClaudeKey("");
+                } catch (java.io.IOException e) {
+                    throw new RuntimeException(e);
+                }
+                com.senne.starktech.client.voice.EdithBrain.setMode(com.senne.starktech.client.voice.BrainMode.DICTIONARY);
+            });
+            t.open(10, com.senne.starktech.client.BrainScreen::new);
+            t.shot(20, "b10_brain_screen");
+            t.close(0);
+        }
+
         // --- Drone-docks: drie drones uit je arsenaal (één beschadigd), één vertrekt en komt terug.
         if (want("docks")) {
             t.onServer(0, player -> {

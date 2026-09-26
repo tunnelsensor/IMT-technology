@@ -139,6 +139,8 @@ public class EdithMenuScreen extends Screen {
             action(EdithAction.AUTHORIZE_TRANSFER),
             voice(VoiceFeature.SPEECH),
             voice(VoiceFeature.COMMANDS),
+            new Option(Component.translatable("screen.starktech.menu.brain"), glasses -> brainStatus(),
+                    () -> Minecraft.getInstance().setScreen(new BrainScreen())),
             new Option(Component.translatable("screen.starktech.menu.voice_edit"),
                     glasses -> new Status(Component.translatable("screen.starktech.menu.edit"), HudStyle.CYAN),
                     () -> Minecraft.getInstance().setScreen(new VoiceCommandsScreen(null))),
@@ -181,6 +183,16 @@ public class EdithMenuScreen extends Screen {
     /** Stem of spraakbesturing: eerst installeren (downloaden), daarna aan/uit zetten. */
     private static Option voice(VoiceFeature feature) {
         return new Option(feature.menuLabel(), glasses -> voiceStatus(feature), () -> VoiceControl.choose(feature));
+    }
+
+    /** Welk brein ze gebruikt (of hoe ver de download van het lokale brein is). */
+    private static Status brainStatus() {
+        if (VoiceInstaller.state(VoiceFeature.BRAIN) == VoiceInstaller.State.INSTALLING) {
+            return new Status(Component.literal(VoiceInstaller.percent(VoiceFeature.BRAIN) + "%"), HudStyle.ORANGE);
+        }
+        com.senne.starktech.client.voice.BrainMode mode = com.senne.starktech.client.voice.EdithBrain.mode();
+        return new Status(Component.translatable(mode.translationKey()),
+                mode == com.senne.starktech.client.voice.BrainMode.DICTIONARY ? GREY : HudStyle.CYAN);
     }
 
     private static Status voiceStatus(VoiceFeature feature) {

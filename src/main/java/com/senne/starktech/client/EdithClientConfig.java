@@ -50,6 +50,27 @@ public final class EdithClientConfig {
                     "Redirect URI in that app: http://127.0.0.1:8899/starktech")
             .define("spotifyClientId", "");
 
+    /** Hoe E.D.I.T.H. begrijpt wat je zegt (G > Systemen > AI Brain). */
+    public static final ModConfigSpec.EnumValue<com.senne.starktech.client.voice.BrainMode> BRAIN = BUILDER
+            .comment("How E.D.I.T.H. understands what you say: DICTIONARY (fixed phrases), LOCAL (a language model on this PC)"
+                    + " or CLAUDE (the Claude API with your own key). Choose it in G > Systems > AI Brain.")
+            .defineEnum("brain", com.senne.starktech.client.voice.BrainMode.DICTIONARY);
+
+    /** Welk lokaal model (auto = de mod kiest bij je pc, zie BrainModel). */
+    public static final ModConfigSpec.ConfigValue<String> BRAIN_MODEL = BUILDER
+            .comment("Local brain size: auto (chosen for your PC the first time), small (2B), medium (4B) or large (9B)")
+            .define("brainModel", "auto");
+
+    /** Welk Claude-model het brein gebruikt. */
+    public static final ModConfigSpec.ConfigValue<String> CLAUDE_MODEL = BUILDER
+            .comment("The Claude model for the CLAUDE brain (it must support structured outputs and effort)")
+            .define("claudeModel", "claude-opus-5");
+
+    /** Mag ze uit zichzelf praten (zie EdithInitiative)? */
+    public static final ModConfigSpec.BooleanValue PROACTIVE = BUILDER
+            .comment("Let E.D.I.T.H. speak up on her own at important moments (needs the LOCAL or CLAUDE brain)")
+            .define("speaksOnHerOwn", false);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     /** Mag de spraaktekst in de HUD? (Zolang de instellingen nog niet geladen zijn: ja.) */
