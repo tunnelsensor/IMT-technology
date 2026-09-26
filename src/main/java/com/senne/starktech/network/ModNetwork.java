@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "10";
+    private static final String PROTOCOL_VERSION = "11";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -103,6 +103,12 @@ public final class ModNetwork {
                 EdithDomes.handleAction(player, payload);
             }
         });
+        // De laptop-hack: de minigame is klaar of afgebroken.
+        registrar.playToServer(HackResultPayload.TYPE, HackResultPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.security.TowerHack.handleResult(player, payload);
+            }
+        });
         registrar.playToServer(HoloActionPayload.TYPE, HoloActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 HoloTables.handleAction(player, payload);
@@ -124,6 +130,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onDroneCamera(payload, context));
         registrar.playToClient(PingMarkerPayload.TYPE, PingMarkerPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onPing(payload, context));
+        registrar.playToClient(HackScreenPayload.TYPE, HackScreenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onHackScreen(payload, context));
         registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,

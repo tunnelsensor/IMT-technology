@@ -103,6 +103,10 @@ public final class ModItems {
             ModBlocks.SECURITY_TURRET, new Item.Properties().rarity(Rarity.RARE));
     public static final DeferredItem<BlockItem> SECURITY_CORE = ITEMS.registerSimpleBlockItem("security_core",
             ModBlocks.SECURITY_CORE, new Item.Properties().rarity(Rarity.EPIC));
+    /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
+    public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(
+            "stark_laptop", com.senne.starktech.security.StarkLaptopItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
     public static final DeferredItem<Item> ROCKET_AMMO = ITEMS.registerSimpleItem("rocket_ammo",
             new Item.Properties());
 

@@ -50,6 +50,14 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   toren: dan brandt het lampje groen, worden de lampjes van de drones blauw, laten torentjes,
   drones en laserwanden jou en je team met rust, en bewaken ze de toren voor jou. Andere
   spelers vallen ze dan alleen aan als PvP aan staat.
+- **Hacken** doe je met een **Stark Laptop** (drie zwarte glasruiten, redstone met een
+  Stark-chip ertussen, drie ijzer; een bril heb je er niet voor nodig). Klik ermee op de kern:
+  het alarm gaat af en alle drones komen op je af. Op je scherm verschijnt de hack in drie lagen
+  (Firewall, Encryption, Override): een cursor schuift heen en weer, en je drukt op **spatie**
+  (of klikt) als hij in het groene vak staat. Mis je, dan ben je een treffer kwijt; elke laag
+  gaat sneller. Het spel loopt ondertussen door: je kunt niet weglopen, en de beveiliging
+  schiet op je. Loop je weg (verder dan 6 blokken), ga je dood of druk je op Esc, dan is de
+  hack afgebroken.
 
 ---
 

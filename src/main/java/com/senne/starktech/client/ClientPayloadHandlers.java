@@ -60,6 +60,16 @@ public final class ClientPayloadHandlers {
     }
 
     /** Het instelscherm van een schildkoepel openen. */
+    /** Het hack-scherm van de laptop openen, of (afgebroken) weer sluiten. */
+    public static void onHackScreen(com.senne.starktech.network.HackScreenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (payload.open()) {
+            mc.setScreen(new HackScreen(payload.pos()));
+        } else if (mc.screen instanceof HackScreen hack && hack.core().equals(payload.pos())) {
+            hack.closeFromServer();
+        }
+    }
+
     public static void onDomeOpen(DomeOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

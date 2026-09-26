@@ -351,6 +351,58 @@ public final class StarkTechGameTests {
         });
     }
 
+    /** Hack je de kern met de laptop (en duurt dat lang genoeg), dan is de toren van jou. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "security")
+    public static void laptop_hack_takes_the_tower(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        var core = placeCore(helper, pos, null);
+        ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
+        if (!com.senne.starktech.security.TowerHack.isHacking(hacker)) {
+            throw new GameTestAssertException("De hack begon niet");
+        }
+        helper.runAfterDelay(com.senne.starktech.security.TowerHack.MIN_TICKS + 5, () -> {
+            com.senne.starktech.security.TowerHack.handleResult(hacker,
+                    new com.senne.starktech.network.HackResultPayload(helper.absolutePos(pos), true));
+            if (!hacker.getUUID().equals(core.ownerId())) {
+                throw new GameTestAssertException("Na de hack is de toren niet van de hacker");
+            }
+            helper.assertBlockProperty(pos, com.senne.starktech.security.SecurityCoreBlock.CLAIMED, true);
+            helper.succeed();
+        });
+    }
+
+    /** Een hack die onmogelijk snel "klaar" is (een valsspelend spel), telt niet. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "security")
+    public static void laptop_hack_too_fast_is_rejected(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        var core = placeCore(helper, pos, null);
+        ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
+        com.senne.starktech.security.TowerHack.handleResult(hacker,
+                new com.senne.starktech.network.HackResultPayload(helper.absolutePos(pos), true));
+        if (core.ownerId() != null) {
+            throw new GameTestAssertException("Een hack van 0 seconden werd goedgekeurd");
+        }
+        helper.succeed();
+    }
+
+    /** Loop je tijdens de hack weg bij de kern, dan is hij afgebroken. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "security")
+    public static void laptop_hack_breaks_off_when_you_walk_away(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        placeCore(helper, pos, null);
+        ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
+        Vec3 far = helper.absoluteVec(new Vec3(12.5, 3, 22.5));
+        hacker.teleportTo(far.x, far.y, far.z);
+        com.senne.starktech.security.TowerHack.check(hacker);
+        if (com.senne.starktech.security.TowerHack.isHacking(hacker)) {
+            throw new GameTestAssertException("De hack liep door terwijl de hacker 10 blokken verderop stond");
+        }
+        helper.succeed();
+    }
+
     // ================================================================ De Hydra-bunker
     // In de test ligt alles één blok hoger dan in tools/generate_bunker.py (y + 1).
 

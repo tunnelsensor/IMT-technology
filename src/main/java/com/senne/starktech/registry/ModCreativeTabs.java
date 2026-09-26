@@ -54,6 +54,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.HYDRA_TURRET.get());
                 output.accept(ModItems.SECURITY_TURRET.get());
                 output.accept(ModItems.SECURITY_CORE.get());
+                output.accept(ModItems.STARK_LAPTOP.get());
                 output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
             })
             .build());

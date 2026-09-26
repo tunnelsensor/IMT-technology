@@ -299,6 +299,23 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- De laptop-hack: een tweede kern (van niemand), en de minigame die zichzelf speelt.
+        if (want("hack")) {
+            BlockPos core = new BlockPos(-60, -60, 60);
+            t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get()
+                    .defaultBlockState()));
+            t.view(20, -59.5, -59.5, 57.5, 0, 10);
+            t.step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = true);
+            t.onServer(0, player -> com.senne.starktech.security.TowerHack.start(player, core));
+            t.shot(10, "k01_hack_start");
+            t.shot(50, "k02_hack_layer1");
+            t.shot(80, "k03_hack_layer2");
+            t.shot(90, "k04_hack_layer3");
+            t.shot(120, "k05_hack_done");
+            t.step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = false);
+            t.shot(40, "k06_hack_core_green");
+        }
+
         // --- Het G-menu: elk tabblad apart.
         if (want("menu")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

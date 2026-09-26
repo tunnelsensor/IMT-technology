@@ -144,6 +144,9 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithSuit::onServerStopped);
         NeoForge.EVENT_BUS.addListener(SuitRockets::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(SuitRockets::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.starktech.security.SecurityCores.clear());
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan

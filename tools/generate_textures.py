@@ -1704,6 +1704,23 @@ def security_textures():
     save(alarm, "entity/drone/security_drone_lights_alarm.png")
 
 
+def stark_laptop():
+    """De Stark-laptop: open, met een blauw scherm vol code en een rood lampje."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    # Het scherm (achterkant van het deksel en het beeld).
+    d.rectangle([2, 2, 13, 9], fill=METAL_DARK, outline=METAL_3)
+    d.rectangle([3, 3, 12, 8], fill=(8, 30, 40, 255))
+    for y, length in ((4, 6), (5, 4), (6, 7), (7, 3)):
+        d.line([4, y, 4 + length, y], fill=CYAN_DIM)
+    px(im, [(11, 4)], (255, 60, 50, 255))
+    # Het toetsenbord, schuin eronder.
+    d.polygon([(1, 11), (14, 11), (15, 14), (0, 14)], fill=METAL_2, outline=METAL_1)
+    for x in range(2, 14, 2):
+        px(im, [(x, 12), (x + 1, 13)], METAL_3)
+    save(im, "item/stark_laptop.png")
+
+
 def rocket_ammo():
     """Munitie voor het torentje: drie kleine raketten met rode neuzen, samengebonden."""
     im = img(16, 16)
@@ -1806,3 +1823,4 @@ if __name__ == "__main__":
     turret_textures()
     rocket_ammo()
     security_textures()
+    stark_laptop()
