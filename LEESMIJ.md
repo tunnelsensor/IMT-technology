@@ -298,8 +298,14 @@ een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaa
 ### Hydra-soldaten
 Hydra wil Stark-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
 embleem op borst en helm. Zien ze je, dan leggen ze hun **lasergeweer** aan en schieten ze rode
-laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones,
-en raak je er één, dan komen de anderen ook. Ze bewaken de Hydra-bunker (zie hieronder).
+laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones.
+Ze bewaken de Hydra-bunker (zie hieronder).
+
+Ze vechten als **ploeg**: ziet één soldaat je, dan weten de soldaten in de buurt het ook. Ze
+verdelen zich rondom je (omsingelen), stappen tijdens het schieten opzij en lopen achteruit als
+je te dichtbij komt. Verstop je je achter een muur, dan zoeken ze een plek om de muur heen van
+waaruit ze je wel zien; zit je binnen, dan zoeken ze een weg naar binnen, en **deuren doen ze
+gewoon open**.
 
 - Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je nodig voor
   de nieuwste tech: het raketpakket (zie Het harnas) en de torentjes (zie Torentjes).

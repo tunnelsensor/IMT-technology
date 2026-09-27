@@ -22,7 +22,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
-import net.minecraft.world.entity.ai.goal.RangedAttackGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -40,8 +39,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * Hij loopt rond tot hij iemand ziet. Dan legt hij zijn lasergeweer aan (twee handen, zoals een
  * kruisboog) en schiet om de zoveel tijd een rode laserstraal: meteen raak, als hij je kan zien.
- * Hij schiet op spelers en op Stark-drones (jouw escorte krijgt het dus ook te verduren). Raak je
- * er één, dan komen de soldaten in de buurt ook op je af.
+ * Hij schiet op spelers en op Stark-drones (jouw escorte krijgt het dus ook te verduren). Hoe hij
+ * vecht staat in HydraCombatGoal: als ploeg, ze omsingelen je, zoeken een plek van waaruit ze je
+ * zien als je je verstopt, en doen deuren open om bij je te komen.
  *
  * Staat zijn doelwit onder een schildkoepel, dan stuit het schot op de koepel, net als bij de
  * raiddrones. Soms laat hij een Hydra-onderdeel vallen (zie de loot table
@@ -51,6 +51,10 @@ public class HydraSoldierEntity extends Monster implements RangedAttackMob {
     public HydraSoldierEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         this.xpReward = HydraBalance.XP_REWARD;
+        // Deuren mogen in zijn route zitten: hij doet ze open (zie OpenDoorGoal hieronder).
+        if (getNavigation() instanceof net.minecraft.world.entity.ai.navigation.GroundPathNavigation ground) {
+            ground.setCanOpenDoors(true);
+        }
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -58,16 +62,18 @@ public class HydraSoldierEntity extends Monster implements RangedAttackMob {
                 .add(Attributes.MAX_HEALTH, HydraBalance.SOLDIER_HEALTH)
                 .add(Attributes.ARMOR, HydraBalance.SOLDIER_ARMOR)
                 .add(Attributes.MOVEMENT_SPEED, HydraBalance.SOLDIER_SPEED)
-                .add(Attributes.FOLLOW_RANGE, 32.0)
+                // Ver vooruit denken: zo vindt hij ook een lange weg om een gebouw heen.
+                .add(Attributes.FOLLOW_RANGE, 48.0)
                 .add(Attributes.ATTACK_DAMAGE, HydraBalance.LASER_DAMAGE);
     }
 
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(1, new FloatGoal(this));
-        // Op afstand blijven en schieten: dezelfde aanpak als een skelet met een boog.
-        goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0, HydraBalance.FIRE_INTERVAL,
-                HydraBalance.FIRE_INTERVAL + 10, HydraBalance.ATTACK_RANGE));
+        // Vechten als ploeg (omsingelen, een schietplek zoeken, een weg naar binnen).
+        goalSelector.addGoal(2, new HydraCombatGoal(this));
+        // Een deur op zijn route doet hij open (en weer dicht).
+        goalSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(this, true));
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 12.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));

@@ -2702,6 +2702,61 @@ public final class StarkTechGameTests {
     }
 
     /**
+     * Verstop je je achter een muur, dan blijft een Hydra-soldaat daar niet staan wachten: hij
+     * zoekt een plek om de muur heen van waaruit hij je wél ziet, en schiet dan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 500, batch = "hydra")
+    public static void hydra_soldier_flanks_around_a_wall(GameTestHelper helper) {
+        // Een muur van drie hoog midden in de arena, met aan beide kanten een doorgang.
+        for (int z = 5; z <= 19; z++) {
+            for (int y = 2; y <= 4; y++) {
+                helper.setBlock(new BlockPos(12, y, z), Blocks.STONE_BRICKS);
+            }
+        }
+        ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(19, 2, 12));
+        HydraSoldierEntity soldier = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), new BlockPos(5, 2, 12));
+        soldier.finalizeSpawn(helper.getLevel(), helper.getLevel().getCurrentDifficultyAt(soldier.blockPosition()),
+                net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+        if (soldier.hasLineOfSight(player)) {
+            throw new GameTestAssertException("De soldaat ziet de speler al door de muur heen (test klopt niet)");
+        }
+        soldier.setTarget(player);
+        float start = player.getHealth();
+        helper.succeedWhen(() -> {
+            if (player.getHealth() >= start) {
+                throw new GameTestAssertException("De soldaat vond nog geen plek om de muur heen ("
+                        + soldier.blockPosition() + ")");
+            }
+        });
+    }
+
+    /**
+     * Ziet één soldaat je, dan weten zijn maten in de buurt het ook, zelfs een maat die je zelf
+     * niet kan zien (hier: in een dicht hokje).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "hydra")
+    public static void hydra_soldiers_alert_each_other(GameTestHelper helper) {
+        BlockPos hut = new BlockPos(18, 2, 18);
+        for (BlockPos pos : BlockPos.betweenClosed(hut.offset(-1, 0, -1), hut.offset(1, 2, 1))) {
+            if (!(pos.getX() == hut.getX() && pos.getZ() == hut.getZ() && pos.getY() < hut.getY() + 2)) {
+                helper.setBlock(pos, Blocks.STONE_BRICKS);
+            }
+        }
+        ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(4, 2, 4));
+        HydraSoldierEntity first = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), new BlockPos(8, 2, 6));
+        HydraSoldierEntity mate = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), hut);
+        if (mate.hasLineOfSight(player)) {
+            throw new GameTestAssertException("De soldaat in het hokje ziet de speler toch (test klopt niet)");
+        }
+        first.setTarget(player);
+        helper.succeedWhen(() -> {
+            if (mate.getTarget() != player) {
+                throw new GameTestAssertException("De tweede soldaat weet niet dat er iemand is");
+            }
+        });
+    }
+
+    /**
      * De formaties van de escorte: in het schild hangen ze dicht om je heen (en niet op elkaar),
      * in de pijl achter je (tegen je kijkrichting in), en in de wijde cirkel op vijf blokken.
      */
