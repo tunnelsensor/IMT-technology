@@ -588,15 +588,34 @@ Jouw notities, per onderwerp. Alles uit het notitiebestand staat hier, dus dat b
 weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, dan de grote.
 
 **Kleine dingen**
-- [ ] De welkomstzin ("Welcome back, Dev. All systems online.") klinkt de eerste keer twee keer,
-      nog voor je in de wereld bent
-- [ ] Staat "Voice text" uit, dan toont E.D.I.T.H. **geen enkele** tekst meer (ook niet "Target 1
-      marked", drones, escorte, formaties...): ze zegt het alleen
-- [ ] AI-brein alleen Engels: verstaat en spreekt geen Nederlands, en er zit nergens nog
-      Nederlands in
-- [ ] Het harnas is niet stapelbaar
-- [ ] Satellietscherm: het vak met de 3D-satelliet iets kleiner, zodat de rest beter past
-- [ ] Satellietwrak: de kaart naar de bunker blijft weg (door jou weggehaald in `29a674c`)
+- [x] De welkomstzin ("Welcome back, Dev. All systems online.") klinkt de eerste keer twee keer,
+      nog voor je in de wereld bent — `3ff3c0e`
+      Bij het inloggen kwam de zin van de server binnen vóórdat jouw spel doorhad dat je de bril
+      droeg (het laadscherm stond er nog). Dan zei ze hem meteen, en daarna nog eens in de
+      opstartanimatie. Nu wacht de animatie tot het laadscherm weg is, en bewaart ze de zin tot
+      het goede moment.
+- [x] Staat "Voice text" uit, dan toont E.D.I.T.H. **geen enkele** tekst meer (ook niet "Target 1
+      marked", drones, escorte, formaties...): ze zegt het alleen — `7ab75f1`
+      Ook de welkomstzin in de opstartanimatie niet (alleen het golfje dat laat zien dat ze
+      praat). (mijn invulling) Is haar stem niet geïnstalleerd, dan komt de tekst er toch:
+      anders hoor én zie je niets.
+- [x] AI-brein alleen Engels: verstaat en spreekt geen Nederlands, en er zit nergens nog
+      Nederlands in — `1560aa7`
+      Het oor zegt zelf welke taal het hoorde; is dat geen Engels, dan zegt ze "Sorry, I only
+      understand English." en doet ze niets (Engels met een accent, dat het oor voor Nederlands
+      aanzag, telt wel). Het brein antwoordt altijd Engels, de Nederlandse voorbeelden zijn uit
+      haar instructies, en het woordenboek verloor 178 Nederlandse woorden en zinnen
+      ("droontjes", "aanzetten", "weerbericht"...). Je opgeslagen woordenboek wordt vanzelf zo
+      opgeschoond (ook Nederlandse zinnen die ze geleerd had); je eigen Engelse zinnen blijven.
+      Haar stem was al Engels.
+- [x] Het harnas is niet stapelbaar — `092f392`
+      Het had geen duurzaamheid, en dan laat Minecraft het tot 64 stapelen.
+- [x] Satellietscherm: het vak met de 3D-satelliet iets kleiner, zodat de rest beter past — `a7e6748`
+      Op jouw schermformaat van 144 x 104 naar 128 x 72; de tabel eronder krijgt ruimere regels en
+      de onderdelen rechts meer breedte. Nagekeken op screenshots (`-Ponly=satellite -Psize=1600x900`).
+- [x] Satellietwrak: de kaart naar de bunker blijft weg (door jou weggehaald in `29a674c`) — `8d9c732`
+      Ook de rest opgeruimd: de naam van de kaart, de structuur-tag, de controle in
+      `runStructureCheck`, en de uitleg in de showcase en LEESMIJ.md.
 
 **HUD en satelliet**
 - [ ] Doelwit-analyse bij het wezen zelf in plaats van in een paneel rechts: beugels om het
