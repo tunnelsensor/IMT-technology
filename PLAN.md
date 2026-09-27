@@ -698,11 +698,30 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       getekende kabels, en een kabel die in een muur zat laat de muur heel. Twee nieuwe tests;
       screenshots `-Ponly=power`.
       (mijn invulling) Ingedrukt houden in plaats van twee klikken (dat voelt meer als tekenen).
-- [ ] Alle torentjes en beveiliging hebben stroom nodig; zonder stroom doen ze niets
-- [ ] Een elektriciteitskast waar kabels samenkomen, met schakelaars om stroomgroepen aan en uit te
+- [x] Alle torentjes en beveiliging hebben stroom nodig; zonder stroom doen ze niets — `744a668`
+      Stark-, Hydra- en beveiligingstorentjes: zonder stroom hangt de loop omlaag en valt er geen
+      schot; elk laserschot (60) en elke raket (20) kost stroom. De beveiligingskern van de toren
+      ook: zonder stroom geen drones, en de drones zakken met gedoofde lampjes naar de grond.
+- [x] Een elektriciteitskast waar kabels samenkomen, met schakelaars om stroomgroepen aan en uit te
       zetten; ook te bedienen via het redstone-tabblad (op afstand alleen door de eigenaar). Wie
       bij de kast staat kan hem bedienen, dus in de toren en de bunker staat hij in een zwaar
       bewaakte, dichte kamer. Een kabel doorknippen zet een deel van de stroom uit. Jouw keuze.
+      — `744a668`
+      De **Power Cabinet**: een schakelaar per kant (voor, achter, links, rechts, boven, onder);
+      het net loopt alleen door kanten die aan staan. Rechtsklik = het scherm; "Link to E.D.I.T.H."
+      (alleen de eigenaar) zet de zes schakelaars in het redstone-tabblad, ook met je stem.
+      *Toren:* de krachtcentrale kreeg een mantel van obsidiaan met de kast erin: één kant voor
+      de lasers en de kluis (met de vier kluistorentjes), één voor de kern en alle andere
+      torentjes (de lobby via de koperen zuil van de lift). Twee torentjes erbij op de
+      beveiligingsverdieping (één bij de krachtcentrale, één bij de lift; er stond er een ín
+      de krachtcentrale, die was al die tijd weg). *Bunker:* de kast in de hoek van de
+      reactorkamer, met een torentje en een soldaat ernaast; de lasers aan de ene kant, alle
+      zes Hydra-torentjes (door de vloer) aan de andere.
+      Kabels in de gebouwen zijn nu onzichtbare markers die bij het bouwen een getekende kabel
+      worden, zodat het blok op die plek (koperen zuil, vloer) blijft staan. Zes nieuwe tests;
+      screenshots `-Ponly=cabinet`.
+      (mijn invulling) De indeling van de kasten en waar de kabels lopen, de extra torentjes, de
+      obsidiaan mantel, en de recepten.
 
 **Groot**
 - [ ] De toren hacken als een echte terminal: commando's typen, zoeken welke poort openstaat,
