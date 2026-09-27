@@ -618,14 +618,27 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       `runStructureCheck`, en de uitleg in de showcase en LEESMIJ.md.
 
 **HUD en satelliet**
-- [ ] Doelwit-analyse bij het wezen zelf in plaats van in een paneel rechts: beugels om het
+- [x] Doelwit-analyse bij het wezen zelf in plaats van in een paneel rechts: beugels om het
       wezen en een lijntje naar een kaartje ernaast (naam, leven, pantser, afstand, dreiging,
-      wat hij vasthoudt). Jouw keuze.
-- [ ] Satelliet zonder standen: elke aanval een eigen toets die meteen vuurt: **K** = precisie,
-      **P** = bombardement, **C** = schuivende laser (1x = begin, 2x = eind). Jouw keuze.
-- [ ] Satelliet: een echte raket die uit de ruimte neerkomt in plaats van een bliksemschicht.
+      wat hij vasthoudt). Jouw keuze. — `f2ccb17`
+      Het lijntje groeit uit de hoek van de beugels als je een nieuw doelwit aankijkt, daarna
+      verschijnt het kaartje (de naam letter voor letter). Het kaartje loopt mee met het wezen
+      en springt naar links als het rechts niet past. Screenshot: `-Ponly=hud`.
+- [x] Satelliet zonder standen: elke aanval een eigen toets die meteen vuurt: **K** = precisie,
+      **P** = bombardement, **C** = schuivende laser (1x = begin, 2x = eind). Jouw keuze. — `8d89f30`
+      Ook het G-menu en je stem vuren meteen ("precision strike", "missile barrage"...). Met een
+      werkende bril op opent P niet meer het scherm "sociale interacties" van Minecraft. Een
+      half gekozen laserlijn vervalt als je K of P gebruikt. Nieuwe test.
+- [x] Satelliet: een echte raket die uit de ruimte neerkomt in plaats van een bliksemschicht.
       Precisie = één raket (volgt een bewegend doel), bombardement = een regen raketten. De
       schuivende laser blijft een laser; de rode richtstraal tijdens het opladen blijft. Jouw keuze.
+      — `8d89f30`
+      Een witte raket met rode neus en vinnen en een gloeiende vlam, 150 blokken boven het doel
+      losgelaten. Hij komt schuin binnen en duikt het laatste stuk bijna loodrecht (zo raakt hij
+      geen muur naast het doelwit), met een dik rookspoor en een fluittoon die je bij het doel
+      hoort aankomen. Hij vertrekt zo dat hij inslaat als het aftellen op nul staat. Schade,
+      kraters en schokgolf komen bij de inslag; een dak of andermans koepel vangt hem op. Twee
+      nieuwe geluiden (`satellite_missile`, `satellite_impact`). Screenshots: `-Ponly=missile`.
 
 **Harnas**
 - [ ] Mini-raketten upgraden: sterkere raketten en meer raketten per salvo
