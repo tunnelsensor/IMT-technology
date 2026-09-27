@@ -109,7 +109,7 @@ public final class EdithSpeech {
      * niet geïnstalleerd is, of als het volume op 0 staat.
      */
     public static void say(Component message, EdithMessagePayload.Level level) {
-        if (!VoiceFeature.SPEECH.isEnabled() || VoiceInstaller.state(VoiceFeature.SPEECH) != VoiceInstaller.State.INSTALLED) {
+        if (!available()) {
             return;
         }
         if ((level == EdithMessagePayload.Level.INFO || level == EdithMessagePayload.Level.BOOT) && Util.getMillis() < holdInfoUntil) {
@@ -132,6 +132,11 @@ public final class EdithSpeech {
         }
         QUEUE.offerLast(new Utterance(text, voicePack(), volume));
         startWorker();
+    }
+
+    /** Kan E.D.I.T.H. praten? (Haar stem staat aan en is geïnstalleerd.) */
+    public static boolean available() {
+        return VoiceFeature.SPEECH.isEnabled() && VoiceInstaller.state(VoiceFeature.SPEECH) == VoiceInstaller.State.INSTALLED;
     }
 
     /** Maakt een melding klaar om uit te spreken: "E.D.I.T.H." wordt "Edith", tekens als › weg. */

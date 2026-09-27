@@ -62,11 +62,19 @@ public final class EdithClientState {
         addNotification(text, level, true);
     }
 
-    /** Idem, maar met speak = false wordt hij alleen getoond (niet uitgesproken). */
+    /**
+     * Idem, maar met speak = false wordt hij alleen getoond (niet uitgesproken).
+     *
+     * Staat "Voice text" uit (G > Systems), dan komt er GEEN tekst van E.D.I.T.H. in beeld: ze
+     * zegt het alleen. Behalve als haar stem niet geïnstalleerd is: dan zou je niets horen én
+     * niets zien, dus dan tonen we het toch.
+     */
     public static void addNotification(Component text, EdithMessagePayload.Level level, boolean speak) {
-        NOTIFICATIONS.add(new Notification(text, level, Util.getMillis()));
-        while (NOTIFICATIONS.size() > MAX_NOTIFICATIONS) {
-            NOTIFICATIONS.removeFirst();
+        if (EdithClientConfig.voiceTextInHud() || !EdithSpeech.available()) {
+            NOTIFICATIONS.add(new Notification(text, level, Util.getMillis()));
+            while (NOTIFICATIONS.size() > MAX_NOTIFICATIONS) {
+                NOTIFICATIONS.removeFirst();
+            }
         }
         if (speak) {
             EdithSpeech.say(text, level);

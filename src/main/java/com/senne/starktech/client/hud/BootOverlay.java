@@ -98,7 +98,7 @@ public final class BootOverlay {
         logo(g, font, cx, cy - 56, age);
         loadingBar(g, font, cx, cy - 8, age, player, glasses);
         identity(g, font, cx, cy + 18, age, player, glasses);
-        greeting(g, font, w, cx, cy + 70, age, bootStart, player);
+        greeting(g, font, w, cx, cy + 70, age, player);
         online(g, font, w, h, cx, h / 2, age);
     }
 

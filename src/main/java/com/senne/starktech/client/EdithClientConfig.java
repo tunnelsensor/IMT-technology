@@ -36,9 +36,12 @@ public final class EdithClientConfig {
             .comment("Run E.D.I.T.H.'s AI on your graphics card (much faster). Set to false if it makes your game stutter.")
             .define("aiGpu", true);
 
-    /** Staat de tekst van wat je vraagt en wat E.D.I.T.H. antwoordt in de HUD? (Ze praat altijd.) */
+    /**
+     * Staat de tekst van E.D.I.T.H. in de HUD (wat ze zegt, en wat jij tegen haar zei)? Uit = ze
+     * praat alleen, er verschijnt geen tekst.
+     */
     public static final ModConfigSpec.BooleanValue VOICE_TEXT_IN_HUD = BUILDER
-            .comment("Show in the HUD what you said and what E.D.I.T.H. replies (turn off if you only want her voice)")
+            .comment("Show E.D.I.T.H.'s messages as text in the HUD (turn off if you only want to hear her voice)")
             .define("voiceTextInHud", true);
 
     /**

@@ -2,7 +2,6 @@ package com.senne.starktech.client.voice;
 
 import com.senne.starktech.client.CommsScreen;
 import com.senne.starktech.client.DroneCamera;
-import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.client.EdithClientEvents;
 import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.client.EdithKeys;
@@ -123,12 +122,10 @@ public final class VoiceControl {
         if (!EdithClientState.authorized) {
             return; // bril afgezet terwijl ze luisterde
         }
-        // Laat zien wat E.D.I.T.H. hoorde (niet uitspreken). Dit kun je uitzetten:
-        // G > Systemen > Spraaktekst.
-        if (EdithClientConfig.voiceTextInHud()) {
-            EdithClientState.addNotification(Component.translatable("edith.starktech.voice.heard", heard),
-                    EdithMessagePayload.Level.COMMS, false);
-        }
+        // Laat zien wat E.D.I.T.H. hoorde (niet uitspreken). Staat "Voice text" uit (G > Systems),
+        // dan laat addNotification het zelf weg.
+        EdithClientState.addNotification(Component.translatable("edith.starktech.voice.heard", heard),
+                EdithMessagePayload.Level.COMMS, false);
         // Een brein gekozen (lokaal model of Claude)? Dan denkt dat na; anders het woordenboek.
         if (EdithBrain.handle(heard)) {
             return;
@@ -426,15 +423,9 @@ public final class VoiceControl {
 
     /**
      * Een melding van E.D.I.T.H. (in de HUD, en uitgesproken als haar stem aan staat).
-     *
-     * Staat "Spraaktekst" uit (G > Systemen), dan spreekt ze het alleen uit en komt het
-     * niet als tekst in je HUD te staan.
+     * Staat "Voice text" uit (G > Systems), dan zegt ze het alleen (zie addNotification).
      */
     static void tell(Component message, EdithMessagePayload.Level level) {
-        if (EdithClientConfig.voiceTextInHud()) {
-            EdithClientState.addNotification(message, level);
-        } else {
-            EdithSpeech.say(message, level);
-        }
+        EdithClientState.addNotification(message, level);
     }
 }
