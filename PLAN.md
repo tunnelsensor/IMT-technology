@@ -779,6 +779,13 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       `k026_hack_restored`.
       (mijn invulling) Alleen wie hem neerzette kan hem gebruiken; na de overname krijg je de laptop
       terug; afbreken = opnieuw beginnen; de tekst van het briefje.
+- [x] Laserdeuren met redstone maar zonder stroom maken heel veel lawaai: ze moeten dan gewoon
+      niet aangaan (27 september). **Gedaan**: zonder stroom wachten ze stil (vroeger klikte elke
+      zender om de 2 seconden); alleen bij het aanzetten van de redstone één zacht klikje, bij de
+      zender waar de redstone op zit. Aangaan kan pas met stroom voor 5 seconden, zodat hij niet
+      aan-uit-aan flikkert bij een beetje stroom. Test: bijna lege generator = blijft uit, vol =
+      gaat vanzelf aan.
+      (mijn invulling) De 5 seconden en het ene klikje.
 
 ---
 

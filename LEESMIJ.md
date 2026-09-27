@@ -279,7 +279,10 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   terugkijkt), en bij het uitgaan weer terug de zender in, net als de ray shields uit Star Wars.
   Eén zender is genoeg. **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood,
   paars. Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
-  staat). Wil je hem met E.D.I.T.H. schakelen, zet er dan een relais naast.
+  staat; om aan te gaan moet het net stroom hebben voor minstens 5 seconden). Zonder stroom
+  blijft hij gewoon uit: je hoort één zacht klikje als je de redstone aanzet, en daarna wacht
+  hij stil tot er weer stroom is (dan gaat hij vanzelf aan). Wil je hem met E.D.I.T.H.
+  schakelen, zet er dan een relais naast.
   **Zenders die tegen elkaar aan zitten, zijn één laserpoort**: redstone op één ervan zet ze
   allemaal aan, en ze geven de stroom van één kabel aan elkaar door. Zet er bijvoorbeeld drie
   op elkaar voor een wand van drie hoog, met één hendel.

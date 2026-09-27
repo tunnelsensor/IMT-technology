@@ -2614,6 +2614,32 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Te weinig stroom (een bijna lege generator): de laserpoort blijft gewoon uit, in plaats van
+     * steeds even aan en weer uit te gaan. Komt er genoeg stroom bij, dan gaat hij vanzelf aan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 160, batch = "grid")
+    public static void laser_gate_waits_for_enough_power(GameTestHelper helper) {
+        BlockPos emitter = new BlockPos(1, 3, 4);
+        helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+        helper.setBlock(emitter.west(), ModBlocks.HEAT_GENERATOR.get());
+        var generator = (ChargerBlockEntity) helper.getBlockEntity(emitter.west());
+        generator.fill(40); // genoeg voor twee seconden, niet genoeg om aan te gaan
+        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
+        helper.runAfterDelay(60, () -> {
+            if (helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
+                throw new GameTestAssertException("De laserpoort ging aan met maar een beetje stroom");
+            }
+            generator.fill(5_000);
+            helper.succeedWhen(() -> {
+                if (!helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
+                    throw new GameTestAssertException("Met genoeg stroom ging de laserpoort niet vanzelf aan");
+                }
+            });
+        });
+    }
+
     /** De holotafel heeft stroom nodig: zonder generator blijft hij uit, met een generator gaat hij aan. */
     @GameTest(template = ARENA, timeoutTicks = 80, batch = "grid")
     public static void holo_table_needs_power(GameTestHelper helper) {

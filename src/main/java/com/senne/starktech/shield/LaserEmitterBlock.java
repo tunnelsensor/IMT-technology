@@ -141,7 +141,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
                                    BlockPos fromPos, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel) {
-            update(serverLevel, pos, state);
+            update(serverLevel, pos, state, false);
         }
     }
 
@@ -150,7 +150,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (level instanceof ServerLevel serverLevel) {
-            update(serverLevel, pos, state);
+            update(serverLevel, pos, state, false);
         }
     }
 
@@ -169,24 +169,41 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     /** Zo vaak (ticks) betaalt hij zijn stroom, en kijkt hij of die er (weer) is. */
     private static final int UPKEEP_INTERVAL = 20;
+    /**
+     * Zoveel seconden stroom moet het net hebben voordat de wand aangaat. Anders ging hij bij een
+     * klein beetje stroom (een zonnepaneel) steeds even aan en weer uit, met veel lawaai.
+     */
+    private static final int START_SECONDS = 5;
 
     /**
-     * Moet de wand aan of uit? Aan als er redstone op staat én er stroom is voor de eerste
-     * seconde. Zonder stroom proberen we het elke twee seconden opnieuw.
+     * Moet de wand aan of uit? Aan als er redstone op staat én er genoeg stroom is. Zonder stroom
+     * blijft hij gewoon uit en kijkt hij elke twee seconden stil of er weer stroom is.
+     *
+     * @param retry true als dit zo'n stille herhaling is. Alleen als je de redstone net aanzet,
+     *              klikt de zender waar de redstone op zit één keer ("geen stroom").
      */
-    private void update(ServerLevel level, BlockPos pos, BlockState state) {
+    private void update(ServerLevel level, BlockPos pos, BlockState state, boolean retry) {
         boolean wanted = groupHasSignal(level, pos);
         boolean on = state.getValue(POWERED);
         if (!wanted && on) {
             setActive(level, pos, state, false);
         } else if (wanted && !on) {
-            if (pay(level, pos)) {
+            if (canStart(level, pos) && pay(level, pos)) {
                 setActive(level, pos, state, true);
             } else {
-                noPower(level, pos);
-                level.scheduleTick(pos, this, UPKEEP_INTERVAL * 2);
+                if (!retry && level.hasNeighborSignal(pos) && !level.getBlockTicks().hasScheduledTick(pos, this)) {
+                    noPower(level, pos);
+                }
+                if (!level.getBlockTicks().hasScheduledTick(pos, this)) {
+                    level.scheduleTick(pos, this, UPKEEP_INTERVAL * 2);
+                }
             }
         }
+    }
+
+    /** Heeft het net genoeg stroom om de wand een paar seconden aan te houden? */
+    private static boolean canStart(ServerLevel level, BlockPos pos) {
+        return StarkGrid.available(level, pos) >= EdithBalance.LASER_UPKEEP * UPKEEP_INTERVAL * START_SECONDS;
     }
 
     /** Eén seconde stroom betalen. Lukt het niet, dan halen we niets weg. */
@@ -199,9 +216,13 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         return true;
     }
 
-    /** Geen stroom: een droog klikje en een rookpluimpje bij de lens. */
+    /** Geen stroom: een zacht droog klikje en een rookpluimpje bij de lens. */
     private static void noPower(ServerLevel level, BlockPos pos) {
-        level.playSound(null, pos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.3f, 1.8f);
+        level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.3f, 1.6f);
+        smoke(level, pos);
+    }
+
+    private static void smoke(ServerLevel level, BlockPos pos) {
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
                 pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 3, 0.2, 0.1, 0.2, 0.01);
     }
@@ -218,12 +239,13 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
             } else if (pay(level, pos)) {
                 level.scheduleTick(pos, this, UPKEEP_INTERVAL);
             } else {
+                // De stroom is op: de wand gaat uit (dat geluid is genoeg), en daarna wacht hij stil.
                 setActive(level, pos, state, false);
-                noPower(level, pos);
+                smoke(level, pos);
                 level.scheduleTick(pos, this, UPKEEP_INTERVAL * 2);
             }
         } else {
-            update(level, pos, state);
+            update(level, pos, state, true);
         }
     }
 
