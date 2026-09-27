@@ -675,8 +675,15 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       schuift. Screenshots: `-Ponly=laser`.
 
 **Vijanden**
-- [ ] Hydra-soldaten slimmer: samen aanvallen (niet allemaal recht op je af), en zit je achter een
-      muur, dan zoeken ze een weg naar je toe in plaats van te blijven staan
+- [x] Hydra-soldaten slimmer: samen aanvallen (niet allemaal recht op je af), en zit je achter een
+      muur, dan zoeken ze een weg naar je toe in plaats van te blijven staan — `7ac5399`
+      Een eigen gevechts-AI (`HydraCombatGoal`): soldaten met hetzelfde doelwit vormen een ploeg.
+      Ziet één je, dan weten de anderen in de buurt het ook. Ze verdelen zich rondom je; zie je
+      ze niet (muur), dan zoekt elk aan zijn eigen kant een plek waar hij kan komen en van waaruit
+      hij je ziet; zit je binnen, dan zoeken ze een weg naar binnen en doen ze deuren open. Tijdens
+      het schieten stappen ze opzij, en ze lopen achteruit als je te dichtbij komt. Twee nieuwe
+      tests (om een muur heen, en een maat in een hokje waarschuwen).
+      (mijn invulling) Hoe ze precies samenwerken; geen granaten of zelf muren slopen.
 
 **Stroom** (in deze volgorde: eerst de kabels, want de rest bouwt erop)
 - [ ] Kabels tekenen in plaats van blokken: met een kabelrol klik je een begin- en eindpunt en ligt
