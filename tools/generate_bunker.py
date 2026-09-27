@@ -120,8 +120,20 @@ def banner(x, y, z, facing):
 
 
 def cable(x, y, z):
-    """Een Stark-kabel. Met welke buren hij verbonden is, rekent connect_cables() uit."""
-    put(x, y, z, "starktech:cable")
+    """
+    Een Stark-kabel. In de mod is een kabel geen blok meer maar een getekende lijn; dit oude
+    kabelblok wordt bij het laden meteen zo'n lijn (zie StarkCables.convertLegacy).
+
+    Stond hier al een blok (een muur, vloer of plafond), dan loopt de kabel daar IN: dan zetten
+    we placement=embedded en komt dat soort blok na het omzetten terug. Anders ligt hij open
+    (placement=open) en wordt de plek lucht. Met welke buren hij verbonden is, rekent
+    connect_cables() aan het eind uit (alleen voor het oude model, zolang hij nog een blok is).
+    """
+    before = blocks.get((x, y, z))
+    inside = before is not None and before[0] not in ("minecraft:air", "minecraft:cave_air", "starktech:cable")
+    if before is not None and before[0] == "starktech:cable":
+        inside = before[1].get("placement") == "embedded"
+    put(x, y, z, "starktech:cable", {"placement": "embedded" if inside else "open"})
 
 
 # --------------------------------------------------------------------- Ingang
@@ -319,7 +331,7 @@ def connect_cables():
     for (x, y, z), (block, props, nbt) in list(blocks.items()):
         if block != "starktech:cable":
             continue
-        props = {}
+        props = {"placement": props.get("placement", "open")}
         for name, (dx, dy, dz) in sides.items():
             neighbour = blocks.get((x + dx, y + dy, z + dz))
             props[name] = "true" if neighbour and neighbour[0] in POWER_BLOCKS else "false"

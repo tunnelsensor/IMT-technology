@@ -211,11 +211,24 @@ hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit
 `hack.allowed = false` in de serverconfig.
 
 ### Stroom en kabels
-Zonnepanelen en warmtegeneratoren maken stroom. Met **Stark-kabels** (koper, redstone, koper
-geeft 8 kabels) breng je die naar alles wat stroom gebruikt: het laadstation, de laserzender, de
-holotafel en de schildkoepel. Kabels sluiten vanzelf op elkaar en op apparaten aan; een apparaat
-dat direct tegen een generator staat, heeft geen kabel nodig. Een apparaat haalt zijn stroom
-eerst bij de generator die het meest heeft.
+Zonnepanelen en warmtegeneratoren maken stroom. Met **Stark-kabel** (koper, redstone, koper
+geeft 8 stuks) breng je die naar alles wat stroom gebruikt: het laadstation, de laserzender, de
+holotafel, de schildkoepel, de torentjes... Een apparaat dat direct tegen een generator staat,
+heeft geen kabel nodig. Een apparaat haalt zijn stroom eerst bij de generator die het meest heeft.
+
+Kabels zijn **geen blokken**: je **tekent** ze.
+- Neem de kabel in je hand, **houd de rechtermuisknop ingedrukt** en kijk rond: waar je kijkt,
+  komt een dun kabeltje te liggen, over de vloer, tegen een muur op, onder een plafond. Kijk je
+  een stuk verder, dan trekt hij netjes een lijn (langs de oppervlakken). Elk stukje kost één kabel.
+- Kabels die naast elkaar liggen zitten aan elkaar vast; een apparaat naast een kabel (of er
+  bovenop gezet) ook.
+- Omdat het geen blok is, kun je er gewoon **blokken overheen bouwen**: bouw een muur of vloer
+  over een kabel en hij loopt erin door. Zo werk je kabels weg. Verborgen kabels zie je alleen
+  **met de bril op**: dan lichten ze blauw op door de muur heen (tot 24 blokken ver).
+- **Shift + rechtsklik** met kabel in je hand op een kabel: oprapen. Een **schaar** (rechtsklik)
+  knipt een kabel door; er valt een stukje uit. Een kabel in een muur moet je eerst vrijhakken.
+- Oude kabelblokken (uit een oudere versie, en in de Stark Tower en de Hydra-bunker) worden
+  vanzelf zo'n getekende kabel.
 - Een **zonnepaneel** werkt alleen overdag onder open hemel. Het is een schuin paneel op een
   paaltje (je loopt er gewoon overheen).
 - Een **warmtegenerator** stookt brandstof, en haalt gratis warmte uit lava, magma of vuur om

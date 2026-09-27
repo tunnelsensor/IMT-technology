@@ -2121,6 +2121,76 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Getekende kabels: een route over de vloer loopt aan één stuk van begin tot eind. Stroom
+     * gaat over de kabel, ook als je er een muur overheen bouwt (dan zit hij in de muur). Knip je
+     * één stukje weg, dan houdt de stroom daar op.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "cables")
+    public static void drawn_cables_carry_power_under_walls(GameTestHelper helper) {
+        var level = helper.getLevel();
+        BlockPos generator = new BlockPos(2, 2, 6);
+        helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(5_000);
+        List<BlockPos> route = com.senne.starktech.energy.StarkCables.route(level,
+                helper.absolutePos(new BlockPos(3, 2, 6)), helper.absolutePos(new BlockPos(9, 2, 11)));
+        for (int i = 1; i < route.size(); i++) {
+            if (route.get(i).distManhattan(route.get(i - 1)) != 1) {
+                throw new GameTestAssertException("De getekende route heeft een gat bij " + route.get(i));
+            }
+        }
+        if (!route.getLast().equals(helper.absolutePos(new BlockPos(9, 2, 11)))) {
+            throw new GameTestAssertException("De route eindigt niet waar je keek: " + route.getLast());
+        }
+        for (BlockPos pos : route) {
+            com.senne.starktech.energy.StarkCables.add(level, pos);
+        }
+        BlockPos device = helper.absolutePos(new BlockPos(10, 2, 11));
+        if (com.senne.starktech.energy.StarkGrid.available(level, device) <= 0) {
+            throw new GameTestAssertException("Er komt geen stroom over de getekende kabel");
+        }
+        // Een muur over de hele kabel heen: hij loopt erin door.
+        for (BlockPos pos : route) {
+            level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        if (com.senne.starktech.energy.StarkGrid.available(level, device) <= 0) {
+            throw new GameTestAssertException("Onder de muur gaat de stroom niet meer door");
+        }
+        // Eén stukje weg (doorgeknipt): dan is het net onderbroken.
+        com.senne.starktech.energy.StarkCables.remove(level, route.get(route.size() / 2));
+        if (com.senne.starktech.energy.StarkGrid.available(level, device) > 0) {
+            throw new GameTestAssertException("De stroom sprong over het doorgeknipte stuk");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Oude kabelblokken (uit een oude wereld of een gebouw) worden vanzelf een getekende kabel.
+     * Een kabel die in een muur zat, laat de muur heel; een kabel op de vloer laat lucht achter.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "cables")
+    public static void old_cable_blocks_become_drawn_cables(GameTestHelper helper) {
+        // In een muur: stenen aan beide kanten (noord en zuid), een vloer eronder.
+        BlockPos inWall = new BlockPos(5, 2, 5);
+        helper.setBlock(inWall.north(), Blocks.STONE_BRICKS);
+        helper.setBlock(inWall.south(), Blocks.STONE_BRICKS);
+        helper.setBlock(inWall.above(), Blocks.STONE_BRICKS);
+        helper.setBlock(inWall, ModBlocks.CABLE.get());
+        // Op de vloer, vrij.
+        BlockPos onFloor = new BlockPos(12, 2, 12);
+        helper.setBlock(onFloor, ModBlocks.CABLE.get());
+        helper.runAfterDelay(3, () -> {
+            var level = helper.getLevel();
+            if (!com.senne.starktech.energy.StarkCables.has(level, helper.absolutePos(inWall))
+                    || !com.senne.starktech.energy.StarkCables.has(level, helper.absolutePos(onFloor))) {
+                throw new GameTestAssertException("De oude kabelblokken zijn geen kabel geworden");
+            }
+            helper.assertBlockPresent(Blocks.STONE_BRICKS, inWall);
+            helper.assertBlockPresent(Blocks.AIR, onFloor);
+            helper.succeed();
+        });
+    }
+
     /** Generator (met {@code energy} erin) - vier kabels - laadstation zonder bril, op rij z. */
     private static BlockPos storeRow(GameTestHelper helper, int z, int energy) {
         BlockPos source = new BlockPos(1, 3, z);

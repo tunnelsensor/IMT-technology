@@ -123,6 +123,14 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithTransport::onFallDamage);
         // Fase 9: redstone-relais (pulsen aftellen)
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerTick);
+        // Getekende kabels: oude kabelblokken omzetten, en knippen met een schaar.
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.StarkCables::onChunkLoad);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.StarkCables::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.CableSpoolItem::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.CableSpoolItem::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.CableSpoolItem::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.starktech.energy.StarkCables.clear());
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerStopped);
         // Fase 12: cloakingdrones en hun illusies
         NeoForge.EVENT_BUS.addListener(EdithIllusions::onServerTick);

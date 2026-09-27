@@ -18,7 +18,9 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Het stroomnet van Stark Tech: zonnepanelen en warmtegeneratoren leveren, en alles wat via
- * Stark-kabels (of er direct tegenaan) met ze verbonden is, kan die stroom gebruiken.
+ * Stark-kabels (of er direct tegenaan) met ze verbonden is, kan die stroom gebruiken. Kabels zijn
+ * getekende lijnen (zie StarkCables): een apparaat hangt eraan als er een kabel naast ligt, of
+ * als het er bovenop gezet is.
  *
  * Hoe het werkt:
  * - Een apparaat dat stroom wil, vraagt {@link #draw}. Wij zoeken vanaf dat apparaat alle
@@ -107,13 +109,17 @@ public final class StarkGrid {
     /**
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
      * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels, drone-docks
-     * en laserzenders geleiden.)
+     * en laserzenders geleiden. Staat een apparaat op een kabel, dan loopt de kabel eronder door.)
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
         ArrayDeque<BlockPos> cables = new ArrayDeque<>();
         seen.add(device);
+        // Staat het apparaat zelf op een kabel (erbovenop gebouwd)? Dan hangt het daar ook aan.
+        if (StarkCables.has(level, device)) {
+            cables.add(device);
+        }
         look(level, device, sources, seen, cables);
         int followed = 0;
         while (!cables.isEmpty() && followed < MAX_CABLES) {
@@ -132,14 +138,14 @@ public final class StarkGrid {
                 continue;
             }
             BlockState state = level.getBlockState(next);
-            if (state.is(ModBlocks.CABLE.get()) || state.is(ModBlocks.DRONE_DOCK.get())
-                    || state.is(ModBlocks.LASER_EMITTER.get())) {
-                cables.add(next);
-                continue;
-            }
+            // Een leverancier kan ook OP een kabel staan: dan is de plek allebei.
             BlockEntity entity = level.getBlockEntity(next);
             if (entity instanceof EnergySource) {
                 sources.add(next);
+            }
+            if (StarkCables.has(level, next) || state.is(ModBlocks.DRONE_DOCK.get())
+                    || state.is(ModBlocks.LASER_EMITTER.get())) {
+                cables.add(next);
             }
         }
     }

@@ -769,6 +769,21 @@ def cable_textures():
     px(core, [(6, 7), (9, 8), (7, 6), (8, 9)], CYAN_DIM)
     save(core, "block/cable_core.png")
 
+    # De rol kabel (het item waarmee je kabels tekent): een koperen spoel met donkere kabel
+    # erop gewikkeld, een blauwe streep, en een los eindje dat naar beneden hangt.
+    spool = img(16, 16)
+    d = ImageDraw.Draw(spool)
+    d.rectangle([2, 2, 4, 13], fill=copper, outline=(112, 56, 28, 255))      # linker flens
+    d.rectangle([11, 2, 13, 13], fill=copper, outline=(112, 56, 28, 255))    # rechter flens
+    d.rectangle([5, 4, 10, 11], fill=rubber)
+    for y in (5, 7, 9):
+        d.line([5, y, 10, y], fill=rubber_hi)
+    d.line([5, 8, 10, 8], fill=CYAN_DIM)
+    px(spool, [(7, 8), (8, 8)], CYAN)
+    d.line([10, 11, 12, 14], fill=rubber)
+    px(spool, [(12, 15)], copper)
+    save(spool, "item/cable_spool.png")
+
 
 # --------------------------------------------------------------------- Fase 9: redstone-relais
 

@@ -52,6 +52,7 @@ public class StarkTechClient {
 
         // Gebeurtenissen tijdens het spelen
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTick);
+        NeoForge.EVENT_BUS.addListener(CableRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTickPre);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onComputeFov);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onPlayerTurn);

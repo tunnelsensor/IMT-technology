@@ -32,6 +32,17 @@ public final class ModAttachments {
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), EdithWaypoints.STREAM_CODEC)
                     .build());
 
+    /**
+     * De getekende kabels in een chunk (zie StarkCables). Opgeslagen met de chunk, en naar
+     * iedereen gestuurd die de chunk ziet (om ze te tekenen). Een lege lijst bewaren we niet.
+     */
+    public static final Supplier<AttachmentType<com.senne.starktech.energy.CableCells>> CABLES = ATTACHMENTS.register("cables",
+            () -> AttachmentType.builder(() -> com.senne.starktech.energy.CableCells.EMPTY)
+                    .serialize(com.senne.starktech.energy.CableCells.CODEC, cells -> !cells.isEmpty())
+                    .sync((holder, player) -> player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), com.senne.starktech.energy.CableCells.STREAM_CODEC)
+                    .build());
+
     /** De redstone-relais die deze speler heeft aangemeld (fase 9). */
     public static final Supplier<AttachmentType<EdithRelays>> RELAYS = ATTACHMENTS.register("relays",
             () -> AttachmentType.builder(() -> EdithRelays.EMPTY)

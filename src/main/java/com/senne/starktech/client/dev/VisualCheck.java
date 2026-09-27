@@ -688,8 +688,10 @@ public final class VisualCheck {
         // een laadstation. De kabel moet netjes aansluiten op alles wat hij raakt.
         if (want("power")) {
             t.onServer(0, VisualCheck::buildPowerLine);
-            t.view(20, 24.5, -58.5, -16.5, 200, 30);
+            t.view(20, 30.5, -56.5, -13.5, 128, 28);
             t.shot(20, "95_power_cables");
+            t.view(0, 22.5, -57.0, -12.5, 170, 40);
+            t.shot(20, "96_power_cables_hidden");
         }
 
         // --- De Stark Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
@@ -1166,25 +1168,46 @@ public final class VisualCheck {
         level.setBlockAndUpdate(centre.offset(2, 0, 0), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
     }
 
-    /** Generator - kabels (met een hoek en een stukje omhoog) - laadstation, bij x 20..27, z -20. */
+    /**
+     * Getekende kabels bij x 20..28, z -20: van een generator over de vloer, tegen een muurtje op,
+     * eroverheen en aan de andere kant weer naar beneden, naar een laadstation. Ernaast een tweede
+     * kabel waar een rij stenen overheen gebouwd is (die zie je alleen met de bril, door de stenen heen).
+     */
     private static void buildPowerLine(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos start = new BlockPos(20, -60, -20);
-        List<BlockPos> path = List.of(start.east(1), start.east(2), start.east(3), start.east(3).south(),
-                start.east(3).south(2), start.east(3).south(2).above(), start.east(4).south(2).above(),
-                start.east(5).south(2).above());
         level.setBlockAndUpdate(start, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
-        for (BlockPos pos : path) {
-            level.setBlockAndUpdate(pos, ModBlocks.CABLE.get().defaultBlockState());
+        // Het muurtje van drie hoog bij x = 24.
+        for (int y = -60; y <= -58; y++) {
+            for (int z = -21; z <= -19; z++) {
+                level.setBlockAndUpdate(new BlockPos(24, y, z), Blocks.STONE_BRICKS.defaultBlockState());
+            }
         }
-        // Pas na het leggen van alle kabels: dan kent elke kabel zijn buren al.
-        for (BlockPos pos : path) {
-            BlockState placed = ModBlocks.CABLE.get().getStateForPlacement(
-                    new net.minecraft.world.item.context.DirectionalPlaceContext(level, pos, Direction.DOWN, ItemStack.EMPTY, Direction.UP));
-            level.setBlockAndUpdate(pos, placed);
+        List<BlockPos> path = new java.util.ArrayList<>();
+        for (int x = 21; x <= 23; x++) {
+            path.add(new BlockPos(x, -60, -20));           // over de vloer
         }
-        level.setBlockAndUpdate(start.east(6).south(2).above(), ModBlocks.CHARGING_STATION.get().defaultBlockState());
-        level.setBlockAndUpdate(start.east(6).south(2), Blocks.STONE.defaultBlockState());
+        path.add(new BlockPos(23, -59, -20));              // tegen het muurtje op
+        path.add(new BlockPos(23, -58, -20));
+        path.add(new BlockPos(23, -57, -20));
+        path.add(new BlockPos(24, -57, -20));              // eroverheen
+        path.add(new BlockPos(25, -57, -20));
+        path.add(new BlockPos(25, -58, -20));              // aan de andere kant naar beneden
+        path.add(new BlockPos(25, -59, -20));
+        path.add(new BlockPos(25, -60, -20));
+        path.add(new BlockPos(26, -60, -20));
+        for (BlockPos pos : path) {
+            com.senne.starktech.energy.StarkCables.add(level, pos);
+        }
+        level.setBlockAndUpdate(new BlockPos(27, -60, -20), ModBlocks.CHARGING_STATION.get().defaultBlockState());
+        // De verborgen kabel: over de vloer, en dan stenen erbovenop gebouwd.
+        for (int x = 20; x <= 26; x++) {
+            BlockPos pos = new BlockPos(x, -60, -17);
+            com.senne.starktech.energy.StarkCables.add(level, pos);
+            level.setBlockAndUpdate(pos, Blocks.POLISHED_ANDESITE.defaultBlockState());
+        }
+        com.senne.starktech.energy.StarkCables.add(level, new BlockPos(20, -60, -18));
+        com.senne.starktech.energy.StarkCables.add(level, new BlockPos(20, -60, -19));
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */

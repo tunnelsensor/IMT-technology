@@ -63,7 +63,9 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
     /** De Stark-kabel voor het stroomnet. */
-    public static final DeferredItem<BlockItem> CABLE = ITEMS.registerSimpleBlockItem("cable", ModBlocks.CABLE);
+    /** Een rol Stark-kabel: daarmee teken je kabels (zie CableSpoolItem). Vroeger een blok. */
+    public static final DeferredItem<com.senne.starktech.energy.CableSpoolItem> CABLE = ITEMS.registerItem("cable",
+            com.senne.starktech.energy.CableSpoolItem::new, new Item.Properties());
 
     // Fase 11: rayshield (de laserwand zelf heeft geen item: die hoort bij de zenders)
     /** Fase 12: de E.M.P.-zender waarmee je illusies platlegt. */

@@ -18,13 +18,28 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * De Stark-kabel: verbindt zonnepanelen en warmtegeneratoren met alles wat stroom gebruikt.
+ * Het OUDE kabelblok. Sinds 27 september zijn kabels geen blokken meer maar lijnen die je tekent
+ * (zie CableSpoolItem en StarkCables). Dit blok bestaat alleen nog zodat oude werelden en de
+ * gebouwen (die met tools/generate_structure.py en generate_bunker.py gemaakt zijn) blijven
+ * werken: zodra zo'n blok in de wereld staat, wordt het een kabel op dezelfde plek (zie
+ * StarkCables.convertLegacy) en verdwijnt het blok.
  *
- * Hij maakt vanzelf verbinding met de kabels en apparaten om hem heen (net als een muur met
- * zijn buren): voor elke kant een aan/uit-stand (north, east, ...), en het model tekent dan
- * een verbindingsstukje naar die kant. De stroom zelf regelt StarkGrid.
+ * PLACEMENT zegt wat er na het omzetten op die plek moet komen: EMBEDDED = de kabel zat in een
+ * muur of plafond (dan komt het blok van de muur terug), OPEN = hij lag vrij (dan lucht).
+ * De generators zetten dat zelf; in een oude wereld staat er UNKNOWN en raden we het.
  */
 public class StarkCableBlock extends Block {
+    public enum Placement implements net.minecraft.util.StringRepresentable {
+        UNKNOWN, EMBEDDED, OPEN;
+
+        @Override
+        public String getSerializedName() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
+    public static final net.minecraft.world.level.block.state.properties.EnumProperty<Placement> PLACEMENT =
+            net.minecraft.world.level.block.state.properties.EnumProperty.create("placement", Placement.class);
     public static final MapCodec<StarkCableBlock> CODEC = simpleCodec(StarkCableBlock::new);
 
     /** Per richting: loopt er een stukje kabel naar die kant? (Dezelfde namen als bij chorus.) */
@@ -42,7 +57,7 @@ public class StarkCableBlock extends Block {
 
     public StarkCableBlock(Properties properties) {
         super(properties);
-        BlockState state = stateDefinition.any();
+        BlockState state = stateDefinition.any().setValue(PLACEMENT, Placement.UNKNOWN);
         for (BooleanProperty side : SIDES.values()) {
             state = state.setValue(side, false);
         }
@@ -57,6 +72,7 @@ public class StarkCableBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         SIDES.values().forEach(builder::add);
+        builder.add(PLACEMENT);
     }
 
     @Override
@@ -93,12 +109,17 @@ public class StarkCableBlock extends Block {
         return state.setValue(SIDES.get(direction), connectsTo(neighbour));
     }
 
-    /** Een kabel erbij of eraf verandert het net: StarkGrid moet opnieuw zoeken. */
+    /**
+     * In de wereld gezet (door een gebouw, of met /setblock): na deze servertik wordt het een
+     * getekende kabel (zie StarkCables.queue; geen geplande blok-tik, want die wist het spel soms
+     * na het neerzetten van een gebouw). Tijdens het maken van de wereld gebeurt dit niet; dan
+     * zet StarkCables.onChunkLoad het om zodra de chunk laadt.
+     */
     @Override
     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
-        if (!oldState.is(this)) {
-            StarkGrid.changed();
+        if (!oldState.is(this) && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            StarkCables.queue(serverLevel, pos);
         }
     }
 
