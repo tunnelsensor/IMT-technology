@@ -661,10 +661,18 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       elk nieuw getal met de hand omhoog).
 
 **Rayshields**
-- [ ] Laserpoorten die aan elkaar hangen worden één geheel: één blok met redstone zet ze allemaal aan
-- [ ] De laserwand dunner, in de stijl van de koepel, met een animatie van links naar rechts in
+- [x] Laserpoorten die aan elkaar hangen worden één geheel: één blok met redstone zet ze allemaal aan
+      — `b31e7d9`
+      Zenders die tegen elkaar aan zitten (in welke richting ook) zijn één poort. Ze geven ook de
+      stroom van één kabel aan elkaar door. Nieuwe test (drie op elkaar: redstone onder, stroom
+      boven, alle drie gaan aan en weer uit).
+      (mijn invulling) Dat ze ook stroom doorgeven.
+- [x] De laserwand dunner, in de stijl van de koepel, met een animatie van links naar rechts in
       plaats van omhoog, en veel subtieler: geen witte lijnen maar de eigen kleur, iets lichter of
-      donkerder
+      donkerder — `b31e7d9`
+      Half zo dik (1 pixel), een honingraat van zeshoeken die naadloos over de blokken doorloopt
+      (randen iets lichter, een paar vakjes iets donkerder, de rest doorzichtig) en rustig opzij
+      schuift. Screenshots: `-Ponly=laser`.
 
 **Vijanden**
 - [ ] Hydra-soldaten slimmer: samen aanvallen (niet allemaal recht op je af), en zit je achter een
