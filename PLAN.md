@@ -582,6 +582,66 @@ visuele check (`runVisualCheck -Ponly=brain`) die zinnen naar het echte lokale m
 - (mijn invulling) De modelkeuze per pc, de instructies, wanneer ze uit zichzelf praat, wat ze
   wel en niet leert.
 
+### 6. Uit de derde showcase (26 en 27 september)
+
+Jouw notities, per onderwerp. Alles uit het notitiebestand staat hier, dus dat bestand is
+weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, dan de grote.
+
+**Kleine dingen**
+- [ ] De welkomstzin ("Welcome back, Dev. All systems online.") klinkt de eerste keer twee keer,
+      nog voor je in de wereld bent
+- [ ] Staat "Voice text" uit, dan toont E.D.I.T.H. **geen enkele** tekst meer (ook niet "Target 1
+      marked", drones, escorte, formaties...): ze zegt het alleen
+- [ ] AI-brein alleen Engels: verstaat en spreekt geen Nederlands, en er zit nergens nog
+      Nederlands in
+- [ ] Het harnas is niet stapelbaar
+- [ ] Satellietscherm: het vak met de 3D-satelliet iets kleiner, zodat de rest beter past
+- [ ] Satellietwrak: de kaart naar de bunker blijft weg (door jou weggehaald in `29a674c`)
+
+**HUD en satelliet**
+- [ ] Doelwit-analyse bij het wezen zelf in plaats van in een paneel rechts: beugels om het
+      wezen en een lijntje naar een kaartje ernaast (naam, leven, pantser, afstand, dreiging,
+      wat hij vasthoudt). Jouw keuze.
+- [ ] Satelliet zonder standen: elke aanval een eigen toets die meteen vuurt: **K** = precisie,
+      **P** = bombardement, **C** = schuivende laser (1x = begin, 2x = eind). Jouw keuze.
+- [ ] Satelliet: een echte raket die uit de ruimte neerkomt in plaats van een bliksemschicht.
+      Precisie = één raket (volgt een bewegend doel), bombardement = een regen raketten. De
+      schuivende laser blijft een laser; de rode richtstraal tijdens het opladen blijft. Jouw keuze.
+
+**Harnas**
+- [ ] Mini-raketten upgraden: sterkere raketten en meer raketten per salvo
+- [ ] Landingsplatform: een scherm met een batterij, zodat het platform stroom opslaat en je
+      sneller oplaadt
+
+**Rayshields**
+- [ ] Laserpoorten die aan elkaar hangen worden één geheel: één blok met redstone zet ze allemaal aan
+- [ ] De laserwand dunner, in de stijl van de koepel, met een animatie van links naar rechts in
+      plaats van omhoog, en veel subtieler: geen witte lijnen maar de eigen kleur, iets lichter of
+      donkerder
+
+**Vijanden**
+- [ ] Hydra-soldaten slimmer: samen aanvallen (niet allemaal recht op je af), en zit je achter een
+      muur, dan zoeken ze een weg naar je toe in plaats van te blijven staan
+
+**Stroom** (in deze volgorde: eerst de kabels, want de rest bouwt erop)
+- [ ] Kabels tekenen in plaats van blokken: met een kabelrol klik je een begin- en eindpunt en ligt
+      er een platte kabel over de grond of muur. Geen blok, dus je kunt er blokken op zetten (dan
+      zit de kabel in de muur). Met de bril zie je verborgen kabels, een schaar knipt ze door.
+      Jouw keuze.
+- [ ] Alle torentjes en beveiliging hebben stroom nodig; zonder stroom doen ze niets
+- [ ] Een elektriciteitskast waar kabels samenkomen, met schakelaars om stroomgroepen aan en uit te
+      zetten; ook te bedienen via het redstone-tabblad (op afstand alleen door de eigenaar). Wie
+      bij de kast staat kan hem bedienen, dus in de toren en de bunker staat hij in een zwaar
+      bewaakte, dichte kamer. Een kabel doorknippen zet een deel van de stroom uit. Jouw keuze.
+
+**Groot**
+- [ ] De toren hacken als een echte terminal: commando's typen, zoeken welke poort openstaat,
+      daarlangs inbreken, het beveiligingsprogramma vinden en overnemen, met verschillende
+      puzzels (niet alleen op het goede moment op spatie drukken)
+- [ ] De harnas-werkbank als hologram zonder scherm: boven de werkbank zweeft het harnas; kijk
+      naar een stuk en rechtsklik = bouwen (materiaal uit je rugzak, het stuk bouwt zich op in het
+      hologram en vliegt naar je toe), upgrade in je hand + klik op een stuk = inbouwen. Jouw keuze.
+
 ---
 
 ## Nog nooit in het spel bekeken
