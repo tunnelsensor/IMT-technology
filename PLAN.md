@@ -641,9 +641,24 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       nieuwe geluiden (`satellite_missile`, `satellite_impact`). Screenshots: `-Ponly=missile`.
 
 **Harnas**
-- [ ] Mini-raketten upgraden: sterkere raketten en meer raketten per salvo
-- [ ] Landingsplatform: een scherm met een batterij, zodat het platform stroom opslaat en je
-      sneller oplaadt
+- [x] Mini-raketten upgraden: sterkere raketten en meer raketten per salvo — `c6fbe64`
+      Twee nieuwe upgrades voor de borstplaat (alleen met een raketpakket erop), elk tot 3 keer:
+      **Rocket Magazine** (2 raketten meer per salvo, tot 12) en **Rocket Warhead** (40% meer
+      schade, ook de splash). Inbouwen aan de werkbank; recepten met Stark-chips, ijzer en buskruit
+      of TNT. Een ouder harnas leest gewoon 0 upgrades. Nieuwe test.
+      (mijn invulling) Welke upgrades, hoeveel ze doen, de recepten, en dat de energie per salvo
+      gelijk blijft.
+- [x] Landingsplatform: een scherm met een batterij, zodat het platform stroom opslaat en je
+      sneller oplaadt — `39d34aa`
+      Rechtsklik op je eigen platform opent zijn scherm. De batterij (10.000) vult zich langzaam
+      met wat het net over heeft (300 per seconde; de generatoren houden de helft achter, zoals
+      bij het laadstation) en laadt je bril op met 1600 per seconde, vier keer zo snel als het net
+      alleen (400). Een vakje voor tot 4 **Battery Upgrades**, elk +15.000. Het scherm toont de
+      batterij, het net, hoe snel hij vult en hoe snel hij jou oplaadt. Screenshot:
+      `-Ponly=padscreen`. Nieuwe test.
+      (mijn invulling) Dat de batterij met Battery Upgrades groter wordt, en alle getallen.
+      Onderweg: de test die de getallen in het configbestand telde, telt nu zelf (hij moest bij
+      elk nieuw getal met de hand omhoog).
 
 **Rayshields**
 - [ ] Laserpoorten die aan elkaar hangen worden één geheel: één blok met redstone zet ze allemaal aan
