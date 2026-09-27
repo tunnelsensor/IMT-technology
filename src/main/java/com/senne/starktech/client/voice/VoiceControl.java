@@ -190,9 +190,10 @@ public final class VoiceControl {
             case ESCORT_OFF -> setFeature(EdithFeature.GUARD_DRONES, false, quiet);
             case ESCORT_TOGGLE -> EdithClientEvents.sendAction(EdithAction.TOGGLE_GUARD_DRONES);
             case SATELLITE_STRIKE -> EdithClientEvents.sendAction(EdithAction.SATELLITE_STRIKE);
-            case SATELLITE_PRECISION -> EdithClientEvents.sendAction(EdithAction.SATELLITE_PRECISION);
-            case SATELLITE_BOMBARDMENT -> EdithClientEvents.sendAction(EdithAction.SATELLITE_BOMBARDMENT);
-            case SATELLITE_SWEEP -> EdithClientEvents.sendAction(EdithAction.SATELLITE_SWEEP);
+            // Geen standen meer: de aanval noemen = meteen vuren (net als K, P en C).
+            case SATELLITE_PRECISION -> EdithClientEvents.sendAction(EdithAction.STRIKE_PRECISION);
+            case SATELLITE_BOMBARDMENT -> EdithClientEvents.sendAction(EdithAction.STRIKE_BOMBARDMENT);
+            case SATELLITE_SWEEP -> EdithClientEvents.sendAction(EdithAction.STRIKE_SWEEP);
             case DRONE_STRIKE -> EdithClientEvents.sendAction(EdithAction.DRONE_STRIKE);
             case ROCKETS -> EdithClientEvents.sendAction(EdithAction.ROCKETS);
             case STAND_DOWN -> EdithClientEvents.sendAction(EdithAction.STAND_DOWN);

@@ -97,8 +97,9 @@
       ],
       "phrases": [
         "precision",
-        "precision beam",
-        "set the satellite to precision",
+        "precision missile",
+        "precision strike",
+        "fire a precision missile",
         "careful shot",
         "no block damage"
       ]
@@ -113,7 +114,8 @@
       "phrases": [
         "bombardment",
         "carpet bomb",
-        "set the satellite to bombardment",
+        "fire a bombardment",
+        "missile barrage",
         "make a crater",
         "blow it all up"
       ]
@@ -129,7 +131,8 @@
         "sweep",
         "sweeping laser",
         "sweep the ground",
-        "set the satellite to sweep"
+        "fire the sweeping laser",
+        "laser sweep"
       ]
     },
     {

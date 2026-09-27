@@ -345,13 +345,10 @@ public class EdithMenuScreen extends Screen {
             case LAUNCH_DRONES -> costOrCooldown(EdithBalance.SWARM_COST, EdithClientState.cooldown(EdithCooldown.SWARM));
             case DRONE_STRIKE -> costOrCooldown(EdithBalance.STRIKE_DRONE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
             case ROCKETS -> costOrCooldown(SuitBalance.ROCKET_COST, EdithClientState.cooldown(EdithCooldown.ROCKETS));
-            case SATELLITE_STRIKE -> costOrCooldown(satelliteCost(glasses), EdithClientState.cooldown(EdithCooldown.SATELLITE));
+            case SATELLITE_STRIKE -> satelliteStatus(SatelliteMode.PRECISION);
             case STRIKE_PRECISION -> satelliteStatus(SatelliteMode.PRECISION);
             case STRIKE_BOMBARDMENT -> satelliteStatus(SatelliteMode.BOMBARDMENT);
             case STRIKE_SWEEP -> satelliteStatus(SatelliteMode.SWEEP);
-            case SATELLITE_MODE -> new Status(Component.translatable(glasses.isEmpty()
-                    ? SatelliteMode.PRECISION.translationKey()
-                    : EdithData.getSatelliteMode(glasses).translationKey()), HudStyle.ORANGE);
             case DRONE_FORMATION -> new Status(Component.translatable(
                     EdithData.getFormation(glasses).translationKey()), HudStyle.CYAN);
             case CLEAR_MARKS -> new Status(Component.translatable("screen.starktech.marked_count", EdithClientState.markedIds.size()),
@@ -408,7 +405,7 @@ public class EdithMenuScreen extends Screen {
     }
 
     /**
-     * Onder een van de drie satellietaanvallen: LOCKED als je die stand nog niet vrijspeelde;
+     * Onder een van de drie satellietaanvallen: LOCKED als je die aanval nog niet vrijspeelde;
      * bij de schuivende laser met een beginpunt: dat je nu het eind moet kiezen; anders de
      * kosten of de wachttijd.
      */
@@ -422,11 +419,6 @@ public class EdithMenuScreen extends Screen {
             return new Status(Component.translatable("screen.starktech.sweep.pick_end"), HudStyle.ORANGE);
         }
         return costOrCooldown(mode.cost(), EdithClientState.cooldown(EdithCooldown.SATELLITE));
-    }
-
-    /** Wat een satelliet-aanval kost, in de stand die nu in de bril staat. */
-    private static int satelliteCost(ItemStack glasses) {
-        return glasses.isEmpty() ? SatelliteMode.PRECISION.cost() : EdithData.getSatelliteMode(glasses).cost();
     }
 
     /** Kosten als de functie klaar is, anders de resterende wachttijd. */

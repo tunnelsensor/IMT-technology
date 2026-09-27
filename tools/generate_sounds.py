@@ -455,6 +455,40 @@ def satellite_fire():
     return finish(total, peak=0.65)
 
 
+def satellite_missile():
+    """
+    Een raket uit de ruimte komt neer: een fluittoon die zakt (zoals iets dat op je af valt),
+    met aanzwellend geraas van lucht en een brullende motor eronder. Duurt ongeveer zo lang als
+    de raket valt; klinkt op de plek van het doel, dus daar hoor je hem aankomen.
+    """
+    duration = 1.7
+    t = seconds(duration)
+    grow = np.linspace(0.12, 1, len(t)) ** 1.6
+    whistle = np.sin(sweep(2600, 650, duration, curve=1.4)) * 0.3
+    rush = bandpass(noise(duration), 700, 5000) * 0.55
+    roar = lowpass(noise(duration), 220) * 1.1
+    return finish(fade((whistle + rush + roar) * grow, 0.25, 0.02), peak=0.6)
+
+
+def satellite_impact():
+    """
+    De raket slaat in: een scherpe knal, een diepe dreun, een drukgolf van ruis en een lang
+    gerommel met wat neervallend puin. Zonder de zingende straal van satellite_fire.
+    """
+    total = np.zeros(int(RATE * 3.2))
+    crack = bandpass(noise(0.25), 800, 9000) * decay(0.25, 16)
+    place(total, fade(crack * 1.3, 0.001, 0.05), 0.0)
+    boom = np.sin(sweep(80, 25, 1.4, curve=0.5)) * decay(1.4, 2.8)
+    place(total, fade(boom * 1.7, 0.002, 0.2), 0.01)
+    blast = lowpass(noise(0.8), 1200) * decay(0.8, 5)
+    place(total, fade(blast * 1.2, 0.002, 0.1), 0.0)
+    rumble = lowpass(noise(3.0), 300) * decay(3.0, 1.2)
+    place(total, fade(rumble * 1.4, 0.05, 0.5), 0.05)
+    debris = bandpass(noise(1.5), 2000, 7000) * decay(1.5, 3) * (rng.uniform(0, 1, int(RATE * 1.5)) > 0.97)
+    place(total, debris * 0.8, 0.3)
+    return finish(total, peak=0.65)
+
+
 # ---------------------------------------------------------------- comms
 
 def comms_message():
@@ -492,6 +526,8 @@ SOUNDS = {
     "satellite_lock": satellite_lock,
     "satellite_charge": satellite_charge,
     "satellite_fire": satellite_fire,
+    "satellite_missile": satellite_missile,
+    "satellite_impact": satellite_impact,
     "comms_message": comms_message,
     "comms_ping": comms_ping,
     "repulsor_arm": repulsor_arm,

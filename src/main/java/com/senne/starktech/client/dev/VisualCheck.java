@@ -881,6 +881,24 @@ public final class VisualCheck {
             t.shot(30, "63_arsenal_with_satellite");
             t.close(0);
         }
+
+        // --- Satellietraketten: eentje die valt en inslaat (precisie), en een bombardement
+        if (want("missile")) {
+            BlockPos aim = new BlockPos(30, -60, -30); // op een lege plek, ver van de heuvel
+            Vec3 aimAt = Vec3.atBottomCenterOf(aim);
+            t.view(0, aim.getX() + 0.5, -59, aim.getZ() + 24.5, 180, -32);
+            t.onServer(20, player -> com.senne.starktech.satellite.SatelliteStrikes.start(player.serverLevel(), aimAt,
+                    player.getUUID(), com.senne.starktech.satellite.SatelliteMode.PRECISION, null, null));
+            t.shot(46, "90_missile_high");
+            t.shot(5, "91_missile_low");
+            t.view(0, aim.getX() + 0.5, -59, aim.getZ() + 24.5, 180, -8);
+            t.shot(7, "92_missile_impact");
+            t.shot(10, "93_missile_after");
+            t.onServer(60, player -> com.senne.starktech.satellite.SatelliteStrikes.start(player.serverLevel(), aimAt,
+                    player.getUUID(), com.senne.starktech.satellite.SatelliteMode.BOMBARDMENT, null, null));
+            t.shot(62, "94_bombardment");
+            t.shot(25, "95_bombardment_more");
+        }
 }
 
     // ================================================================ De wereld inrichten

@@ -35,7 +35,15 @@ public final class EdithKeys {
     /** Markeer (of ontmarkeer) het wezen waar je naar kijkt. */
     public static final KeyMapping MARK_TARGET = key("mark_target", InputConstants.KEY_R);
     public static final KeyMapping LAUNCH_DRONES = key("launch_drones", InputConstants.KEY_J);
+    /**
+     * De satelliet: elke aanval een eigen toets die meteen vuurt (geen standen meer).
+     * K = precisieraket, P = bombardement, C = schuivende laser (1x = begin, 2x = eind).
+     * P en C doen in gewoon Minecraft ook iets kleins (sociale interacties, creative-werkbalk
+     * opslaan); met een werkende bril op zijn ze van E.D.I.T.H. (zie EdithClientEvents).
+     */
     public static final KeyMapping SATELLITE = key("satellite", InputConstants.KEY_K);
+    public static final KeyMapping SATELLITE_BOMBARDMENT = key("satellite_bombardment", InputConstants.KEY_P);
+    public static final KeyMapping SATELLITE_SWEEP = key("satellite_sweep", InputConstants.KEY_C);
     // Fase 3
     public static final KeyMapping DRONE_CAMERA = key("drone_camera", InputConstants.KEY_Y);
     public static final KeyMapping NAVIGATION = key("navigation", InputConstants.KEY_M);
@@ -77,6 +85,8 @@ public final class EdithKeys {
         event.register(MARK_TARGET);
         event.register(LAUNCH_DRONES);
         event.register(SATELLITE);
+        event.register(SATELLITE_BOMBARDMENT);
+        event.register(SATELLITE_SWEEP);
         event.register(DRONE_CAMERA);
         event.register(NAVIGATION);
         event.register(PING);

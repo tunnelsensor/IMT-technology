@@ -39,6 +39,9 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> SATELLITE_CHARGE = register("satellite.charge");
     /** Fase 8: het inslaan van de satelliet. */
     public static final DeferredHolder<SoundEvent, SoundEvent> SATELLITE_FIRE = register("satellite.fire");
+    /** Een raket van de satelliet valt (gefluit) en slaat in (dreun). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> SATELLITE_MISSILE = register("satellite.missile");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SATELLITE_IMPACT = register("satellite.impact");
     // Fase 3
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_MESSAGE = register("comms.message");
     // Het harnas: eigen geluiden (zie tools/generate_sounds.py)

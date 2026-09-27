@@ -127,6 +127,22 @@
       }
     ]
   },
+  "satellite.missile": {
+    "subtitle": "subtitles.starktech.satellite.missile",
+    "sounds": [
+      {
+        "name": "starktech:satellite_missile"
+      }
+    ]
+  },
+  "satellite.impact": {
+    "subtitle": "subtitles.starktech.satellite.impact",
+    "sounds": [
+      {
+        "name": "starktech:satellite_impact"
+      }
+    ]
+  },
   "comms.message": {
     "subtitle": "subtitles.starktech.comms.message",
     "sounds": [

@@ -11,7 +11,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
 /**
- * Tekent laserstralen en de satellietstraal met deeltjes (particles).
+ * Tekent laserstralen, de richtstraal en de laser van de satelliet, en de inslag van een
+ * satellietraket, met deeltjes (particles).
  */
 public final class BeamEffects {
     private BeamEffects() {}
@@ -26,8 +27,6 @@ public final class BeamEffects {
 
     private static final DustParticleOptions LASER = new DustParticleOptions(color(0x7FE8FF), 0.6f);
     private static final DustParticleOptions TARGETING = new DustParticleOptions(color(0xFF3030), 1.0f);
-    private static final DustParticleOptions ORBITAL = new DustParticleOptions(color(0xDDF8FF), 2.5f);
-    private static final DustParticleOptions PRECISION = new DustParticleOptions(color(0xFFFFFF), 1.2f);
     private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
     private static final DustParticleOptions HYDRA = new DustParticleOptions(color(0xFF2A1A), 0.7f);
 
@@ -103,29 +102,49 @@ public final class BeamEffects {
         }
     }
 
-    /** Dikke, felle straal: de satelliet vuurt. */
+    /**
+     * Een raket van het bombardement slaat in (de explosie zelf tekent Minecraft al): een flits,
+     * een vuurzuil, vonken die alle kanten op vliegen en een ring van rook over de grond.
+     */
     private static void satelliteFire(ClientLevel level, Vec3 top, Vec3 target) {
         RandomSource random = level.getRandom();
-        for (int ring = 0; ring < 4; ring++) {
-            double ox = (random.nextDouble() - 0.5) * 1.2;
-            double oz = (random.nextDouble() - 0.5) * 1.2;
-            line(level, top.add(ox, 0, oz), target.add(ox, 0, oz), 0.6, ORBITAL, true);
+        level.addAlwaysVisibleParticle(ParticleTypes.FLASH, true, target.x, target.y + 1, target.z, 0, 0, 0);
+        for (int i = 0; i < 30; i++) {
+            level.addAlwaysVisibleParticle(ParticleTypes.FLAME, true, target.x, target.y + 0.5, target.z,
+                    (random.nextDouble() - 0.5) * 0.5, random.nextDouble() * 0.9, (random.nextDouble() - 0.5) * 0.5);
         }
-        for (int i = 0; i < 40; i++) {
-            level.addAlwaysVisibleParticle(ParticleTypes.END_ROD, true, target.x, target.y + 0.5, target.z,
-                    (random.nextDouble() - 0.5) * 1.2, random.nextDouble() * 0.8, (random.nextDouble() - 0.5) * 1.2);
+        for (int i = 0; i < 24; i++) {
+            level.addAlwaysVisibleParticle(ParticleTypes.LAVA, true, target.x, target.y + 0.5, target.z, 0, 0, 0);
         }
+        smokeRing(level, target, 36, 0.45);
     }
 
-    /** Precisie-straal: één dunne, oogverblindend witte lijn met een flits op het doel. */
+    /**
+     * De precisieraket slaat in: geen krater, maar wel een felle witte flits, een bol vuur en
+     * vonken, en een ring van rook.
+     */
     private static void satellitePrecision(ClientLevel level, Vec3 top, Vec3 target) {
-        line(level, top, target, 0.4, PRECISION, true);
         RandomSource random = level.getRandom();
-        for (int i = 0; i < 30; i++) {
-            level.addAlwaysVisibleParticle(ParticleTypes.END_ROD, true, target.x, target.y + 0.4, target.z,
-                    (random.nextDouble() - 0.5) * 0.5, random.nextDouble() * 0.5, (random.nextDouble() - 0.5) * 0.5);
-        }
         level.addAlwaysVisibleParticle(ParticleTypes.FLASH, true, target.x, target.y + 0.5, target.z, 0, 0, 0);
+        level.addAlwaysVisibleParticle(ParticleTypes.EXPLOSION_EMITTER, true, target.x, target.y + 0.5, target.z, 0, 0, 0);
+        for (int i = 0; i < 40; i++) {
+            level.addAlwaysVisibleParticle(ParticleTypes.END_ROD, true, target.x, target.y + 0.4, target.z,
+                    (random.nextDouble() - 0.5) * 0.9, random.nextDouble() * 0.7, (random.nextDouble() - 0.5) * 0.9);
+        }
+        for (int i = 0; i < 20; i++) {
+            level.addAlwaysVisibleParticle(ParticleTypes.FLAME, true, target.x, target.y + 0.4, target.z,
+                    (random.nextDouble() - 0.5) * 0.6, random.nextDouble() * 0.5, (random.nextDouble() - 0.5) * 0.6);
+        }
+        smokeRing(level, target, 28, 0.35);
+    }
+
+    /** Rook die in een ring over de grond wegrolt (de drukgolf van een inslag). */
+    private static void smokeRing(ClientLevel level, Vec3 center, int count, double speed) {
+        for (int i = 0; i < count; i++) {
+            double angle = i * (Math.PI * 2 / count);
+            level.addAlwaysVisibleParticle(ParticleTypes.LARGE_SMOKE, true, center.x, center.y + 0.3, center.z,
+                    Math.cos(angle) * speed, 0.02, Math.sin(angle) * speed);
+        }
     }
 
     /** De schuivende laser: een brede oranje streep die over de grond kruipt. */

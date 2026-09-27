@@ -360,7 +360,7 @@ public final class EdithServer {
             case ORE_SCAN -> oreScan(player, glasses);
             case AUTHORIZE_TRANSFER -> toggleTransfer(player, glasses);
             case LAUNCH_DRONES -> launchDrones(player, glasses);
-            case SATELLITE_STRIKE -> satelliteStrike(player, glasses);
+            case SATELLITE_STRIKE -> satelliteStrike(player, glasses, SatelliteMode.PRECISION);
             case CLEAR_MARKS -> clearMarks(player);
             case DRONE_CAMERA -> toggleScout(player, glasses);
             // Fase 5
@@ -375,17 +375,6 @@ public final class EdithServer {
             case TRANSPORT_AUTOPILOT -> transport(player, glasses, true);
             case CARGO_DRONE -> cargo(player, glasses);
             case CARRY_ENTITY -> carry(player, glasses);
-            // Fase 8
-            case SATELLITE_MODE -> {
-                // Doorbladeren slaat de standen over die je nog niet vrijgespeeld hebt.
-                SatelliteMode next = SatelliteWorkshop.get(player).nextUnlocked(EdithData.getSatelliteMode(glasses));
-                EdithData.setSatelliteMode(glasses, next);
-                send(player, Component.translatable("edith.starktech.msg.satellite_mode",
-                        Component.translatable(next.translationKey()), next.cost()), EdithMessagePayload.Level.INFO);
-            }
-            case SATELLITE_PRECISION -> setSatelliteMode(player, glasses, SatelliteMode.PRECISION);
-            case SATELLITE_BOMBARDMENT -> setSatelliteMode(player, glasses, SatelliteMode.BOMBARDMENT);
-            case SATELLITE_SWEEP -> setSatelliteMode(player, glasses, SatelliteMode.SWEEP);
             // Fase 10
             case HACK_PLAYER -> hackPlayer(player);
             case HACK_STOP -> EdithHack.stopAll(player, true);
@@ -772,30 +761,16 @@ public final class EdithServer {
 
     // ---------------------------------------------------------------- Satelliet
 
-    private static void setSatelliteMode(ServerPlayer player, ItemStack glasses, SatelliteMode mode) {
-        if (!SatelliteWorkshop.get(player).unlocked(mode)) {
-            send(player, Component.translatable("satellite.starktech.msg.locked", Component.translatable(mode.translationKey())),
-                    EdithMessagePayload.Level.WARNING);
-            return;
-        }
-        EdithData.setSatelliteMode(glasses, mode);
-        state(player).sweepStart = null; // een half gekozen laserlijn geldt niet voor een andere stand
-        send(player, Component.translatable("edith.starktech.msg.satellite_mode",
-                Component.translatable(mode.translationKey()), mode.cost()), EdithMessagePayload.Level.INFO);
-    }
-
     /**
-     * Richt de satelliet en start het opladen.
+     * Een satellietaanval: K = precisieraket, P = bombardement, C = schuivende laser. Er zijn geen
+     * standen om in te stellen; welke aanval het is, zit in de toets. (De bril onthoudt wel welke
+     * aanval er onderweg is, voor de HUD.)
      *
      * Waar hij op richt, in deze volgorde:
-     * 1. het WEZEN waar je naar kijkt (dan volgt de straal het, ook als het wegloopt);
+     * 1. het WEZEN waar je naar kijkt (dan volgt de raket het, ook als het wegloopt);
      * 2. het blok waar je naar kijkt (tot 500 blokken ver);
      * 3. je bestemming uit de navigatie;
      * 4. je laatste ping.
-     */
-    /**
-     * Een satellietaanval in een bepaalde stand (de drie opties in het G-menu): eerst de stand
-     * kiezen, dan meteen vuren. Daarna vuurt K ook in die stand.
      */
     private static void satelliteStrike(ServerPlayer player, ItemStack glasses, SatelliteMode mode) {
         if (!SatelliteWorkshop.get(player).unlocked(mode)) {
@@ -803,25 +778,15 @@ public final class EdithServer {
                     EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (EdithData.getSatelliteMode(glasses) != mode) {
-            EdithData.setSatelliteMode(glasses, mode);
-            state(player).sweepStart = null; // een half gekozen laserlijn geldt niet voor een andere stand
-        }
-        satelliteStrike(player, glasses);
-    }
-
-    private static void satelliteStrike(ServerPlayer player, ItemStack glasses) {
         PlayerState state = state(player);
+        // Een half gekozen laserlijn (alleen het beginpunt) vervalt als je iets anders afvuurt.
+        if (mode != SatelliteMode.SWEEP) {
+            state.sweepStart = null;
+        }
         if (SatelliteStrikes.pendingFor(player.getUUID()) != null || !checkCooldown(player, state, EdithCooldown.SATELLITE)) {
             return;
         }
         SatelliteUpgrades upgrades = SatelliteWorkshop.get(player);
-        SatelliteMode mode = EdithData.getSatelliteMode(glasses);
-        // Staat de bril nog op een stand die (nog) niet vrijgespeeld is? Dan de precisie-straal.
-        if (!upgrades.unlocked(mode)) {
-            mode = SatelliteMode.PRECISION;
-            EdithData.setSatelliteMode(glasses, mode);
-        }
         double range = SatelliteStats.range(upgrades.targeting());
         UUID locked = null;
         Vec3 target = null;
@@ -876,6 +841,7 @@ public final class EdithServer {
             return;
         }
         state.sweepStart = null;
+        EdithData.setSatelliteMode(glasses, mode); // voor de HUD: welke aanval er onderweg is
         startCooldown(player, state, EdithCooldown.SATELLITE, SatelliteStats.cooldownTicks(upgrades.recharge()));
         SatelliteStrikes.start(player.serverLevel(), target, player.getUUID(), mode, locked, sweepTo);
         StarkAdvancements.award(player, StarkAdvancements.SATELLITE);

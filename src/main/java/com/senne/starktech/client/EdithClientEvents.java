@@ -112,6 +112,22 @@ public final class EdithClientEvents {
         }
     }
 
+    /**
+     * P is in gewoon Minecraft "sociale interacties" (op een server opent dat een scherm). Draag
+     * je een werkende bril en zit het bombardement op dezelfde toets, dan is P van E.D.I.T.H.:
+     * dan slikken we de klik van Minecraft in, vóór Minecraft hem zelf verwerkt (deze "Pre"-tick
+     * komt eerder dan de toetsen van Minecraft).
+     */
+    public static void onClientTickPre(ClientTickEvent.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (EdithClientState.operational && mc.screen == null
+                && EdithKeys.SATELLITE_BOMBARDMENT.getKey().equals(mc.options.keySocialInteractions.getKey())) {
+            while (mc.options.keySocialInteractions.consumeClick()) {
+                // de klik weggooien
+            }
+        }
+    }
+
     private static void handleKeys(Minecraft mc) {
         // consumeClick() geeft true voor elke keer dat de toets is ingedrukt.
         while (EdithKeys.MENU.consumeClick()) {
@@ -143,7 +159,13 @@ public final class EdithClientEvents {
             sendAction(EdithAction.STAND_DOWN);
         }
         while (EdithKeys.SATELLITE.consumeClick()) {
-            sendAction(EdithAction.SATELLITE_STRIKE);
+            sendAction(EdithAction.STRIKE_PRECISION);
+        }
+        while (EdithKeys.SATELLITE_BOMBARDMENT.consumeClick()) {
+            sendAction(EdithAction.STRIKE_BOMBARDMENT);
+        }
+        while (EdithKeys.SATELLITE_SWEEP.consumeClick()) {
+            sendAction(EdithAction.STRIKE_SWEEP);
         }
         while (EdithKeys.DRONE_CAMERA.consumeClick()) {
             sendAction(EdithAction.DRONE_CAMERA);

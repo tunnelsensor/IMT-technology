@@ -1515,6 +1515,68 @@ def mini_rocket():
     save(im, "entity/mini_rocket.png")
 
 
+def orbital_missile():
+    """
+    De raket van de satelliet (64 x 64): een lange witte romp met een rode band achter de neus,
+    gouden streepjes, zwarte vinnen met rode punten, een donkere straalpijp en een vlam.
+    Het -Z-vlak ("front" in box_regions) is de staart, net als bij de mini-raket.
+    """
+    im = img(64, 64)
+    white = (232, 236, 240, 255)
+    white_dark = (178, 186, 196, 255)
+    body = box_regions(0, 0, 4, 4, 24)
+    for name in ("top", "bottom", "east", "west", "back"):
+        fill_region(im, body[name], white)
+    # Langs de romp (24 lang): "top" en "bottom" lopen van boven (staart) naar beneden (neus),
+    # de zijkanten van links (staart) naar rechts (neus).
+    for name in ("top", "bottom"):
+        x, y, w, h = body[name]
+        for xx in range(x, x + w):
+            for yy in (y + 18, y + 19, y + 20):
+                px(im, [(xx, yy)], RED)
+            px(im, [(xx, y + 6), (xx, y + 12)], GOLD)
+        px(im, [(x, yy) for yy in range(y, y + h)], white_dark)
+    for name in ("east", "west"):
+        x, y, w, h = body[name]
+        for yy in range(y, y + h):
+            for xx in (x + 18, x + 19, x + 20):
+                px(im, [(xx, yy)], RED)
+            px(im, [(x + 6, yy), (x + 12, yy)], GOLD)
+        px(im, [(xx, y + h - 1) for xx in range(x, x + w)], white_dark)
+    fill_region(im, body["front"], METAL_DARK)
+    for name, (u, v, w, h, d) in {"nose": (0, 28, 3, 3, 3), "tip": (12, 28, 1, 1, 2)}.items():
+        for region in box_regions(u, v, w, h, d).values():
+            fill_region(im, region, RED)
+    for u, v, w, h, d in ((20, 28, 1, 10, 5), (32, 28, 10, 1, 5)):
+        regions = box_regions(u, v, w, h, d)
+        for region in regions.values():
+            fill_region(im, region, METAL_1)
+        # De buitenste pixels van elke vin rood.
+        for name in ("east", "west"):
+            x, y, rw, rh = regions[name]
+            if rh >= 10:
+                px(im, [(xx, y) for xx in range(x, x + rw)] + [(xx, y + rh - 1) for xx in range(x, x + rw)], RED)
+        for name in ("top", "bottom"):
+            x, y, rw, rh = regions[name]
+            if rw >= 10:
+                px(im, [(x, yy) for yy in range(y, y + rh)] + [(x + rw - 1, yy) for yy in range(y, y + rh)], RED)
+    for region in box_regions(0, 44, 3, 3, 2).values():
+        fill_region(im, region, METAL_2)
+    # De vlam: geel-wit bij de straalpijp, naar oranje aan het eind.
+    flame = box_regions(12, 44, 3, 3, 8)
+    for name, (x, y, w, h) in flame.items():
+        for xx in range(x, x + w):
+            for yy in range(y, y + h):
+                along = (xx - x) / max(1, w - 1) if name in ("east", "west") else (yy - y) / max(1, h - 1)
+                if name in ("front", "back"):
+                    along = 0.0 if name == "back" else 1.0
+                r = 255
+                g = int(240 - 150 * along)
+                b = int(170 - 150 * along)
+                im.putpixel((xx, yy), (r, g, b, 255))
+    save(im, "entity/orbital_missile.png")
+
+
 def rocket_pack():
     """Het raketpakket: twee rode lanceerbuizen naast elkaar, met raketneuzen erin."""
     im = img(16, 16)
@@ -1970,6 +2032,7 @@ if __name__ == "__main__":
     hydra_rifle()
     hydra_soldier()
     mini_rocket()
+    orbital_missile()
     rocket_pack()
     turret_textures()
     rocket_ammo()

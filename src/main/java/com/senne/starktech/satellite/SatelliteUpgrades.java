@@ -64,18 +64,6 @@ public record SatelliteUpgrades(List<Integer> levels) {
         return level(SatelliteUpgrade.of(mode)) > 0;
     }
 
-    /** De eerstvolgende vrijgespeelde stand na {@code from} (voor het doorbladeren in het G-menu). */
-    public SatelliteMode nextUnlocked(SatelliteMode from) {
-        SatelliteMode mode = from;
-        for (int i = 0; i < SatelliteMode.values().length; i++) {
-            mode = mode.next();
-            if (unlocked(mode)) {
-                return mode;
-            }
-        }
-        return SatelliteMode.PRECISION;
-    }
-
     // Gemakjes voor de rest van de mod.
     public int precision() {
         return level(SatelliteUpgrade.PRECISION);

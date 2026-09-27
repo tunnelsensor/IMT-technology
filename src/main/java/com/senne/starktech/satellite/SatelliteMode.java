@@ -3,14 +3,15 @@ package com.senne.starktech.satellite;
 import com.senne.starktech.edith.EdithBalance;
 
 /**
- * De drie standen van de satelliet. Je kiest ze in het G-menu (of met je stem);
- * de keuze wordt in de bril zelf opgeslagen.
+ * De drie aanvallen van de satelliet. Elk heeft een eigen toets die meteen vuurt (K, P en C),
+ * een eigen optie in het G-menu en eigen spraakcommando's; er is geen "stand" om in te stellen.
+ * De bril onthoudt alleen welke aanval er onderweg is (voor de HUD).
  *
- * - PRECISION:   één dunne, felle straal. Veel schade op één plek, maar GEEN schade aan blokken.
- *                Perfect als je in je eigen basis of in een dorp schiet.
- * - BOMBARDMENT: een regen van inslagen rond het doel. Maakt een flinke krater.
- * - SWEEP:       een laser die een paar seconden over de grond schuift, weg van jou.
- *                Goed tegen een rij vijanden; hij maakt geen krater.
+ * - PRECISION:   één raket uit de ruimte. Veel schade op één plek, maar GEEN schade aan blokken.
+ *                Perfect als je in je eigen basis of in een dorp schiet. (K)
+ * - BOMBARDMENT: een regen van raketten rond het doel. Maakt flinke kraters. (P)
+ * - SWEEP:       een laser die een paar seconden over de grond schuift, van het beginpunt naar
+ *                het eindpunt dat je koos. Goed tegen een rij vijanden; geen krater. (C)
  */
 public enum SatelliteMode {
     // De kosten staan er als "() -> getal", zodat een ander getal uit het configbestand meteen telt.
@@ -33,12 +34,6 @@ public enum SatelliteMode {
 
     public String translationKey() {
         return "edith.starktech.satellite.mode." + id;
-    }
-
-    /** De volgende stand (na de laatste komt weer de eerste). */
-    public SatelliteMode next() {
-        SatelliteMode[] all = values();
-        return all[(ordinal() + 1) % all.length];
     }
 
     public static SatelliteMode byId(int id) {

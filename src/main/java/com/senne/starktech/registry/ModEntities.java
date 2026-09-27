@@ -67,6 +67,17 @@ public final class ModEntities {
                     .noSave()
                     .build("mini_rocket"));
 
+    /** Een raket van de satelliet: valt uit de ruimte op zijn doel (zie OrbitalMissileEntity). */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.starktech.satellite.OrbitalMissileEntity>> ORBITAL_MISSILE =
+            ENTITIES.register("orbital_missile", () -> EntityType.Builder.<com.senne.starktech.satellite.OrbitalMissileEntity>of(
+                            com.senne.starktech.satellite.OrbitalMissileEntity::new, MobCategory.MISC)
+                    .sized(0.6f, 0.6f)
+                    .clientTrackingRange(20)   // 320 blokken: je ziet hem van ver vallen
+                    .updateInterval(1)
+                    .fireImmune()
+                    .noSave()
+                    .build("orbital_missile"));
+
     /** Levenspunten, snelheid enz. van elk wezen. */
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(STARK_DRONE.get(), StarkDroneEntity.createAttributes().build());

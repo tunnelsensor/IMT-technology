@@ -963,7 +963,9 @@ public final class StarkTechGameTests {
         });
     }
 
-    @GameTest(template = ARENA, timeoutTicks = 300, batch = "satellite")
+    // skyAccess: zonder dat krijgt een testarena een onzichtbaar dak van barrier-blokken, en daar
+    // zou de raket op inslaan (zoals hij in het echt op een dak inslaat).
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "satellite", skyAccess = true)
     public static void satellite_strike(GameTestHelper helper) {
         satelliteStrike(helper);
     }
@@ -2268,33 +2270,36 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
-    /** Bombardement en de schuivende laser zitten op slot tot je ze vrijspeelt. */
+    /**
+     * Geen standen meer: elke satellietaanval heeft een eigen toets en vuurt meteen. De eerste
+     * druk op de laser (C) kiest alleen het beginpunt; K daarna vuurt gewoon de precisieraket.
+     */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "satellite_upgrade")
-    public static void satellite_modes_start_locked(GameTestHelper helper) {
+    public static void satellite_keys_fire_straight_away(GameTestHelper helper) {
         ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
         ItemStack glasses = EdithData.getWornGlasses(owner);
+        Husk target = spawnDummyEnemy(helper, new BlockPos(12, 3, 12));
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.position());
+        int full = EdithData.getEnergy(glasses);
 
-        EdithServer.handleAction(owner, EdithAction.SATELLITE_BOMBARDMENT.ordinal());
-        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.PRECISION) {
-            throw new GameTestAssertException("Het bombardement was te kiezen zonder het vrij te spelen");
+        SatelliteWorkshop.install(owner, SatelliteUpgrade.SWEEP, 1);
+        EdithServer.handleAction(owner, EdithAction.STRIKE_SWEEP.ordinal());
+        if (SatelliteStrikes.pendingFor(owner.getUUID()) != null || EdithData.getEnergy(glasses) != full) {
+            throw new GameTestAssertException("De eerste druk op de laser vuurde al (dat is alleen het beginpunt)");
         }
-        // Doorbladeren slaat de standen op slot over.
-        EdithServer.handleAction(owner, EdithAction.SATELLITE_MODE.ordinal());
-        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.PRECISION) {
-            throw new GameTestAssertException("Doorbladeren kwam uit op " + EdithData.getSatelliteMode(glasses));
+        EdithServer.handleAction(owner, EdithAction.STRIKE_PRECISION.ordinal());
+        SatelliteStrikes.Strike strike = SatelliteStrikes.pendingFor(owner.getUUID());
+        if (strike == null || strike.mode() != SatelliteMode.PRECISION
+                || EdithData.getEnergy(glasses) != full - EdithBalance.SATELLITE_COST_PRECISION) {
+            throw new GameTestAssertException("K vuurde niet meteen de precisieraket: " + (strike == null ? "niets" : strike.mode()));
         }
-
-        SatelliteWorkshop.install(owner, SatelliteUpgrade.BOMBARDMENT, 1);
-        EdithServer.handleAction(owner, EdithAction.SATELLITE_BOMBARDMENT.ordinal());
-        if (EdithData.getSatelliteMode(glasses) != SatelliteMode.BOMBARDMENT) {
-            throw new GameTestAssertException("Na het vrijspelen was het bombardement niet te kiezen");
-        }
+        SatelliteStrikes.cancel(owner.getUUID());
         helper.succeed();
     }
 
     /**
-     * De drie satellietaanvallen in het G-menu kiezen de stand én vuren meteen. Een stand die
-     * nog op slot zit, doet niets (en kost niets).
+     * De drie satellietaanvallen in het G-menu vuren meteen. Een aanval die nog op slot zit,
+     * doet niets (en kost niets).
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "satellite_upgrade")
     public static void menu_satellite_options_pick_the_mode_and_fire(GameTestHelper helper) {

@@ -43,12 +43,6 @@ public enum EdithAction {
     CARGO_DRONE("cargo_drone", null),
     /** Pak iemand of iets op en zet het bij je bestemming neer. */
     CARRY_ENTITY("carry_entity", null),
-    // Fase 8: de standen van de satelliet
-    /** Volgende stand van de satelliet. */
-    SATELLITE_MODE("satellite_mode", null),
-    SATELLITE_PRECISION("satellite_precision", null),
-    SATELLITE_BOMBARDMENT("satellite_bombardment", null),
-    SATELLITE_SWEEP("satellite_sweep", null),
     // Fase 10
     /** De speler waar je naar kijkt hacken (of de hack stoppen). */
     HACK_PLAYER("hack_player", null),
@@ -74,7 +68,9 @@ public enum EdithAction {
     DRONE_FORMATION("drone_formation", null),
     /** Een salvo mini-raketten uit het harnas (zie SuitRockets). */
     ROCKETS("rockets", null),
-    // De satelliet in één keer: stand kiezen én vuren (de drie opties in het G-menu).
+    // De drie aanvallen van de satelliet, elk met een eigen toets (K, P en C) en een eigen optie in
+    // het G-menu. Er zijn geen "standen" meer: kiezen = meteen vuren. SATELLITE_STRIKE (hierboven,
+    // bv. "nuke it" met je stem) is de precisieraket.
     STRIKE_PRECISION("strike_precision", null),
     STRIKE_BOMBARDMENT("strike_bombardment", null),
     STRIKE_SWEEP("strike_sweep", null);

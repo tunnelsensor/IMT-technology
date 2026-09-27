@@ -20,8 +20,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -36,9 +34,14 @@ import org.jetbrains.annotations.Nullable;
  * los als de tijd om is.
  *
  * Nieuw sinds fase 8:
- * - hij kan een BEWEGEND doelwit volgen (lock-on): de straal blijft op het wezen gericht;
- * - drie standen (zie SatelliteMode): precisie, bombardement en een schuivende laser;
+ * - hij kan een BEWEGEND doelwit volgen (lock-on): de richtstraal blijft op het wezen gericht;
+ * - drie aanvallen (zie SatelliteMode): precisie, bombardement en een schuivende laser;
  * - een schokgolf die wezens wegblaast, en het beeld schudt even bij de inslag.
+ *
+ * Precisie en bombardement zijn echte raketten die uit de ruimte neerkomen (zie
+ * OrbitalMissileEntity; vroeger een bliksemschicht). Zo'n raket doet er even over om te vallen,
+ * dus hij vertrekt al voor het einde van het aftellen: dan slaat hij in als de teller op nul
+ * staat. De schade komt pas bij de inslag. De schuivende laser blijft een laser.
  */
 public final class SatelliteStrikes {
     private SatelliteStrikes() {}
@@ -66,6 +69,8 @@ public final class SatelliteStrikes {
         int fireTicksLeft;
         /** Hoe lang hij in totaal vuurt; zo weten we welke inslag de eerste is. */
         final int fireTicks;
+        /** Precisie: is de raket al onderweg? */
+        boolean launched;
         /** De upgrades van de eigenaar op het moment van richten (zie SatelliteStats). */
         final SatelliteUpgrades upgrades;
 
@@ -165,20 +170,34 @@ public final class SatelliteStrikes {
                     level.playSound(null, strike.target.x, strike.target.y, strike.target.z,
                             ModSounds.SATELLITE_LOCK.get(), SoundSource.PLAYERS, 1.5f, 1.4f);
                 }
+            }
+            // Een raket vertrekt al voor het einde van het aftellen (zo lang als hij valt), zodat
+            // hij op nul inslaat. De laser vuurt pas op nul.
+            int launchAt = strike.mode == SatelliteMode.SWEEP ? 0 : OrbitalMissileEntity.FALL_TICKS;
+            if (strike.ticksLeft > launchAt) {
                 continue;
             }
 
-            // Vuren.
+            // Vuren. De aanval blijft in de lijst tot het aftellen op nul staat, zodat de HUD
+            // blijft aftellen terwijl de raket valt.
             switch (strike.mode) {
                 case PRECISION -> {
-                    firePrecision(level, strike);
-                    it.remove();
+                    if (!strike.launched) {
+                        strike.launched = true;
+                        firePrecision(level, strike);
+                    }
+                    if (strike.ticksLeft <= 0) {
+                        it.remove();
+                    }
                 }
                 case BOMBARDMENT -> {
-                    if (strike.fireTicksLeft % EdithBalance.BOMBARDMENT_INTERVAL == 0) {
-                        fireBombardmentShot(level, strike);
+                    if (strike.fireTicksLeft > 0) {
+                        if (strike.fireTicksLeft % EdithBalance.BOMBARDMENT_INTERVAL == 0) {
+                            fireBombardmentShot(level, strike);
+                        }
+                        strike.fireTicksLeft--;
                     }
-                    if (--strike.fireTicksLeft <= 0) {
+                    if (strike.fireTicksLeft <= 0 && strike.ticksLeft <= 0) {
                         it.remove();
                     }
                 }
@@ -194,55 +213,69 @@ public final class SatelliteStrikes {
 
     // ================================================================ De drie standen
 
-    /** Precisie: één felle straal, veel schade op één plek, geen blokschade. */
+    /** Precisie: één raket, veel schade op één plek, geen blokschade. */
     private static void firePrecision(ServerLevel level, Strike strike) {
-        Vec3 pos = strike.target;
-        // Onder de schildkoepel van iemand anders? Dan stuit de straal op de koepel.
-        Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, DomeSettings.COST_SATELLITE_BEAM);
+        UUID ownerId = strike.ownerId;
+        SatelliteUpgrades upgrades = strike.upgrades;
+        // Onder de schildkoepel van iemand anders? Dan slaat de raket op de koepel in.
+        Vec3 shield = EdithDomes.blockedAt(level, strike.target, null, ownerId, 0);
         if (shield != null) {
-            sendBeam(level, shield, BeamEffectPayload.Kind.SATELLITE_PRECISION);
-            level.playSound(null, shield.x, shield.y, shield.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 3.0f, 1.3f);
+            Vec3 target = strike.target;
+            OrbitalMissileEntity.launch(level, shield, null, at -> {
+                Vec3 hit = EdithDomes.blockedAt(level, target, null, ownerId, DomeSettings.COST_SATELLITE_BEAM);
+                impactEffect(level, hit != null ? hit : at, BeamEffectPayload.Kind.SATELLITE_PRECISION, 1.3f);
+            });
             return;
         }
-        sendBeam(level, pos, BeamEffectPayload.Kind.SATELLITE_PRECISION);
-        visualLightning(level, pos);
-        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(strike.ownerId);
-        DamageSource source = ModDamageTypes.orbitalLaser(level, owner);
-        double radius = SatelliteStats.precisionRadius(strike.upgrades.precision());
-        float damage = SatelliteStats.precisionDamage(strike.upgrades.precision(), strike.upgrades.power());
-        for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, new AABB(pos, pos).inflate(radius))) {
-            if (mayHurt(owner, victim)) {
-                victim.hurt(source, damage);
+        OrbitalMissileEntity.launch(level, strike.target, strike.lockedId, pos -> {
+            impactEffect(level, pos, BeamEffectPayload.Kind.SATELLITE_PRECISION, 1.3f);
+            ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+            DamageSource source = ModDamageTypes.orbitalLaser(level, owner);
+            double radius = SatelliteStats.precisionRadius(upgrades.precision());
+            float damage = SatelliteStats.precisionDamage(upgrades.precision(), upgrades.power());
+            for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, new AABB(pos, pos).inflate(radius))) {
+                if (mayHurt(owner, victim)) {
+                    victim.hurt(source, damage);
+                }
             }
-        }
-        level.playSound(null, pos.x, pos.y, pos.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 3.0f, 1.3f);
+        });
     }
 
-    /** Bombardement: meerdere inslagen rond het doel, met kraters en een schokgolf. */
+    /** Bombardement: een regen raketten rond het doel, met kraters en een schokgolf. */
     private static void fireBombardmentShot(ServerLevel level, Strike strike) {
         double spread = SatelliteStats.bombardmentSpread(strike.upgrades.bombardment());
-        // De eerste inslag zit precies op het doel; daarna eromheen.
+        // De eerste raket gaat precies op het doel; daarna eromheen.
         boolean first = strike.fireTicksLeft == strike.fireTicks;
-        Vec3 pos = first
+        Vec3 aim = first
                 ? strike.target
                 : strike.target.add((level.getRandom().nextDouble() - 0.5) * 2 * spread, 0, (level.getRandom().nextDouble() - 0.5) * 2 * spread);
-        pos = onGround(level, pos);
-        Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, DomeSettings.COST_SATELLITE_IMPACT);
+        Vec3 pos = onGround(level, aim);
+        UUID ownerId = strike.ownerId;
+        SatelliteUpgrades upgrades = strike.upgrades;
+        Vec3 shield = EdithDomes.blockedAt(level, pos, null, ownerId, 0);
         if (shield != null) {
-            sendBeam(level, shield, BeamEffectPayload.Kind.SATELLITE_FIRE);
-            level.playSound(null, shield.x, shield.y, shield.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 4.0f, 0.9f);
+            OrbitalMissileEntity.launch(level, shield, null, at -> {
+                Vec3 hit = EdithDomes.blockedAt(level, pos, null, ownerId, DomeSettings.COST_SATELLITE_IMPACT);
+                impactEffect(level, hit != null ? hit : at, BeamEffectPayload.Kind.SATELLITE_FIRE, 0.9f);
+            });
             return;
         }
-        sendBeam(level, pos, BeamEffectPayload.Kind.SATELLITE_FIRE);
-        visualLightning(level, pos);
-        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(strike.ownerId);
-        Level.ExplosionInteraction interaction = EdithBalance.SATELLITE_BREAKS_BLOCKS
-                ? Level.ExplosionInteraction.MOB   // volgt de spelregel mobGriefing
-                : Level.ExplosionInteraction.NONE;
-        level.explode(owner, pos.x, pos.y, pos.z,
-                SatelliteStats.explosionPower(strike.upgrades.bombardment(), strike.upgrades.power()), false, interaction);
-        shockwave(level, pos, owner);
-        level.playSound(null, pos.x, pos.y, pos.z, ModSounds.SATELLITE_FIRE.get(), SoundSource.PLAYERS, 4.0f, 0.9f);
+        OrbitalMissileEntity.launch(level, pos, null, at -> {
+            impactEffect(level, at, BeamEffectPayload.Kind.SATELLITE_FIRE, 0.9f);
+            ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+            Level.ExplosionInteraction interaction = EdithBalance.SATELLITE_BREAKS_BLOCKS
+                    ? Level.ExplosionInteraction.MOB   // volgt de spelregel mobGriefing
+                    : Level.ExplosionInteraction.NONE;
+            level.explode(owner, at.x, at.y, at.z,
+                    SatelliteStats.explosionPower(upgrades.bombardment(), upgrades.power()), false, interaction);
+            shockwave(level, at, owner);
+        });
+    }
+
+    /** De inslag van een raket: vuur en rook (zie BeamEffects) en een dreun. */
+    private static void impactEffect(ServerLevel level, Vec3 at, BeamEffectPayload.Kind kind, float pitch) {
+        ModNetwork.sendNear(level, at, 200, new BeamEffectPayload(at, at, kind));
+        level.playSound(null, at.x, at.y, at.z, ModSounds.SATELLITE_IMPACT.get(), SoundSource.PLAYERS, 4.0f, pitch);
     }
 
     /**
@@ -323,16 +356,6 @@ public final class SatelliteStrikes {
         // Nooit hoger dan waar we al waren + 3, anders springt de laser over een muur heen.
         double y = Math.min(ground, pos.y + 3);
         return new Vec3(pos.x, y, pos.z);
-    }
-
-    /** Een bliksemschicht als effect (doet zelf geen schade en steekt niets in brand). */
-    private static void visualLightning(ServerLevel level, Vec3 pos) {
-        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-        if (bolt != null) {
-            bolt.setVisualOnly(true);
-            bolt.moveTo(pos);
-            level.addFreshEntity(bolt);
-        }
     }
 
     private static void sendBeam(ServerLevel level, Vec3 target, BeamEffectPayload.Kind kind) {

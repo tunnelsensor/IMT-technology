@@ -73,7 +73,9 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
 | **R** | Doelwit markeren waar je naar kijkt |
 | **J** | Zwerm aanvalsdrones |
 | **L** | Eén drone op één doelwit |
-| **K** | Satelliet-aanval |
+| **K** | Satelliet: precisieraket |
+| **P** | Satelliet: bombardement |
+| **C** | Satelliet: schuivende laser (1x = begin, 2x = eind) |
 | **,** | Stand down: alle aanvallen afbreken |
 | **.** | Spionagedrone sturen / terugroepen |
 | **;** | Speler hacken waar je naar kijkt |
@@ -95,7 +97,7 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 | Tabblad | Wat erin zit |
 |---------|--------------|
 | **Combat** | Repulsor, mini-raketten, rayshield |
-| **Satellite & Arsenal** | Precisie-straal, bombardement, schuivende laser (elk apart: kiezen = meteen vuren), satellietscherm (upgrades), arsenaal |
+| **Satellite & Arsenal** | Precisieraket, bombardement, schuivende laser (kiezen = meteen vuren), satellietscherm (upgrades), arsenaal |
 | **Drones** | Zwerm, één drone, escorte, escortevorm, stand down, markeringen wissen |
 | **Recon drones** | Drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
@@ -170,21 +172,24 @@ naar jouw spel).
 - **Vrachtdrone**: leegt de kist waar je naar kijkt en brengt alles naar je waypoint.
 - **Iemand vervoeren**: pakt een speler (alleen met PvP aan), dier of monster op.
 
-### Satelliet (K)
-Drie standen. In **G > Satellite & Arsenal** staan ze elk apart: kies er een en hij vuurt
-meteen in die stand (een stand die nog op slot zit, staat er als LOCKED). **K** vuurt daarna in
-de stand die je het laatst gebruikte.
-- **Precisie** — veel schade, **geen** blokschade. Heb je vanaf het begin.
-- **Bombardement** — een regen van inslagen, flinke kraters. Eerst vrijspelen.
-- **Schuivende laser** — een streep die over de grond kruipt, van een begin- naar een eindpunt
-  dat jij kiest: kijk naar het begin en druk **K** (daar komt een markering), kijk naar het eind
-  en druk nog eens **K** (of kies twee keer Sweeping laser in het menu; ertussen staat er
-  PICK END onder). Een beginpunt blijft een halve minuut bewaard. Eerst vrijspelen.
-Hij volgt bewegende doelwitten (lock-on), richt tot 500 blokken, en je kunt ook op je waypoint
-of je laatste ping mikken. Bij de inslag komt er een schokgolf en schudt je beeld.
+### Satelliet (K, P en C)
+Drie aanvallen, elk met een eigen toets die meteen vuurt (geen standen om in te stellen). Ook in
+**G > Satellite & Arsenal** staan ze elk apart; wat nog op slot zit, staat er als LOCKED.
+- **Precisieraket (K)** — een echte raket die uit de ruimte neerkomt: veel schade, **geen**
+  blokschade. Heb je vanaf het begin.
+- **Bombardement (P)** — een regen van raketten rond het doel, met flinke kraters. Eerst vrijspelen.
+- **Schuivende laser (C)** — een streep die over de grond kruipt, van een begin- naar een eindpunt
+  dat jij kiest: kijk naar het begin en druk **C** (daar komt een markering), kijk naar het eind
+  en druk nog eens **C** (in het menu: twee keer Sweeping laser; ertussen staat er PICK END
+  onder). Een beginpunt blijft een halve minuut bewaard, of tot je K of P gebruikt. Eerst vrijspelen.
+Eerst verschijnt een rode richtstraal; de raket vertrekt zo dat hij inslaat als het aftellen op
+nul staat (je hoort hem aankomen). Hij volgt bewegende doelwitten (lock-on), richt tot 500
+blokken, en je kunt ook op je waypoint of je laatste ping mikken. Bij de inslag komt er een
+schokgolf en schudt je beeld. P en C doen in gewoon Minecraft ook iets kleins (sociale
+interacties, creative-werkbalk opslaan); met een werkende bril op is P van E.D.I.T.H.
 
 **Upgraden** doe je in het satellietscherm (G > Satellite & Arsenal > Satellite). Zes onderdelen, elk tot
-niveau 10: de drie standen (vrijspelen, dan sterker), opladen (kortere wachttijd), kracht (meer
+niveau 10: de drie aanvallen (vrijspelen, dan sterker), opladen (kortere wachttijd), kracht (meer
 schade voor alles) en richten (sneller richten, verder weg). Een niveau kost spullen uit je
 rugzak (ijzer, redstone en Stark-chips; later goud, diamant en netherite), en een paar drones
 uit je arsenaal brengen ze naar boven — die komen daarna gewoon terug. De satelliet zelf krijgt
@@ -581,6 +586,7 @@ showcase en staat hij bij NIEUW.
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
-  `rockets`, `turrets`, `menu`, `bunker`; meerdere met komma's).
+  `rockets`, `turrets`, `menu`, `bunker`, `missile`; meerdere met komma's). Op een ander
+  schermformaat: `-Psize=1600x900`.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

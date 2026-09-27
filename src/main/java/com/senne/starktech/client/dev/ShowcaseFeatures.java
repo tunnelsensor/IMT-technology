@@ -321,32 +321,30 @@ final class ShowcaseFeatures {
         });
 
         add("Satellite: precision (K)", "De satelliet: eerst een rode richtstraal en een ring op de "
-                + "grond, dan een dunne, felle straal. Richt op de verre husk.", range, 180, 0, s -> s
+                + "grond, dan valt er een echte raket uit de ruimte (je hoort hem aankomen) die precies op nul "
+                + "inslaat. Geen standen meer: K vuurt meteen. Richt op de verre husk.", range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
-                .action(5, EdithAction.SATELLITE_PRECISION)
                 .lookAt(10, mob(FAR_TARGET))
-                .action(10, EdithAction.SATELLITE_STRIKE)
+                .action(10, EdithAction.STRIKE_PRECISION)
                 .pause(220));
 
-        add("Satellite: bombardment", "Dezelfde satelliet, andere stand: een regen van inslagen rond "
-                + "het doel.", range, 180, 0, s -> s
+        add("Satellite: bombardment (P)", "Een eigen toets, P: een regen van raketten rond het doel, "
+                + "elk met een krater.", range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
-                .action(5, EdithAction.SATELLITE_BOMBARDMENT)
                 .lookAt(10, mob(TARGETS.get(1)))
-                .action(10, EdithAction.SATELLITE_STRIKE)
-                .pause(240));
+                .action(10, EdithAction.STRIKE_BOMBARDMENT)
+                .pause(260));
 
-        add("Satellite: sweep", "De schuivende laser, met een zelfgekozen begin en eind: kijk naar de linker "
-                + "husk en druk K (het beginpunt krijgt een markering), kijk naar de rechter husk en druk nog "
-                + "eens K. Na het opladen trekt de laser van links naar rechts over alle drie.",
+        add("Satellite: sweep (C)", "De schuivende laser op C, met een zelfgekozen begin en eind: kijk naar de "
+                + "linker husk en druk C (het beginpunt krijgt een markering), kijk naar de rechter husk en druk "
+                + "nog eens C. Na het opladen trekt de laser van links naar rechts over alle drie.",
                 range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::unlockSatelliteModes)
-                .action(5, EdithAction.SATELLITE_SWEEP)
                 .lookAt(10, mob(TARGETS.get(0)))
-                .action(10, EdithAction.SATELLITE_STRIKE)
+                .action(10, EdithAction.STRIKE_SWEEP)
                 .pause(30)
                 .lookAt(20, mob(TARGETS.get(2)))
-                .action(10, EdithAction.SATELLITE_STRIKE)
+                .action(10, EdithAction.STRIKE_SWEEP)
                 .lookAt(10, mob(TARGETS.get(1)))
                 .pause(240));
 
