@@ -79,6 +79,9 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.suit.FlightPose::onRenderPlayerPre);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.suit.FlightPose::onRenderPlayerPost);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.suit.FlightPose::onClientTick);
+        // De harnas-werkbank: waar je naar kijkt op het hologram, en je klik daarop.
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.workbench.WorkbenchHologram::onClientTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.workbench.WorkbenchHologram::onInteraction);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
@@ -89,12 +92,14 @@ public class StarkTechClient {
     /** De HUD komt boven de camera-effecten maar onder de hotbar, chat en menu's. */
     private static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.CAMERA_OVERLAYS, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_hud"), new EdithHud());
+        // Het kaartje naast je vizier als je naar het werkbank-hologram kijkt.
+        event.registerAbove(VanillaGuiLayers.CROSSHAIR, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "workbench_hint"),
+                com.senne.starktech.client.workbench.WorkbenchHologram::renderHint);
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.CHARGING_STATION.get(), ChargingStationScreen::new);
         event.register(ModMenus.CHARGER.get(), ChargerScreen::new);
-        event.register(ModMenus.SUIT_WORKBENCH.get(), SuitWorkbenchScreen::new);
         event.register(ModMenus.LANDING_PAD.get(), com.senne.starktech.client.LandingPadScreen::new);
     }
 
@@ -110,6 +115,8 @@ public class StarkTechClient {
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TURRET.get(), com.senne.starktech.client.turret.TurretRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DRONE_DOCK.get(), com.senne.starktech.client.drone.DroneDockRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.SUIT_WORKBENCH.get(),
+                com.senne.starktech.client.workbench.SuitHologramRenderer::new);
     }
 
     private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {

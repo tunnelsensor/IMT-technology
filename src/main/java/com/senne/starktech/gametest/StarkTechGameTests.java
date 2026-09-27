@@ -430,46 +430,119 @@ public final class StarkTechGameTests {
         return (com.senne.starktech.workbench.SuitWorkbenchBlockEntity) helper.getBlockEntity(pos);
     }
 
-    /** Met de materialen erin en stroom erbij bouwt de werkbank een borstplaat. */
+    /** Een nep-speler die naast de werkbank staat en NIET gratis bouwt (zoals in survival). */
+    @SuppressWarnings("removal")
+    private static ServerPlayer benchUser(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.getAbilities().instabuild = false;
+        net.minecraft.world.phys.Vec3 spot = helper.absoluteVec(new net.minecraft.world.phys.Vec3(12.5, 3, 10.5));
+        player.moveTo(spot.x, spot.y, spot.z);
+        for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
+            player.setItemSlot(slot, ItemStack.EMPTY);
+        }
+        return player;
+    }
+
+    /**
+     * Op het hologram klikken met de materialen in je rugzak: de werkbank bouwt een borstplaat,
+     * en die vliegt naar je toe en gaat meteen aan. Zonder genoeg materiaal gebeurt er niets.
+     */
     @GameTest(template = ARENA, timeoutTicks = 400, batch = "workbench")
     public static void workbench_builds_a_chestplate(GameTestHelper helper) {
         var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
-        bench.setItem(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 5));
-        bench.setItem(1, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 1));
-        bench.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 3));
-        if (!bench.startBuild(com.senne.starktech.workbench.Blueprint.CHESTPLATE)) {
+        ServerPlayer player = benchUser(helper);
+        var inventory = player.getInventory();
+        inventory.setItem(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 5));
+        inventory.setItem(1, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 1));
+        inventory.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 1));
+        if (bench.interact(player, com.senne.starktech.workbench.HoloPiece.CHEST)) {
+            throw new GameTestAssertException("Het bouwen begon zonder genoeg Stark-chips");
+        }
+        if (inventory.getItem(0).getCount() != 5) {
+            throw new GameTestAssertException("Er ging toch materiaal weg terwijl het bouwen niet begon");
+        }
+        inventory.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 3));
+        if (!bench.interact(player, com.senne.starktech.workbench.HoloPiece.CHEST)) {
             throw new GameTestAssertException("Het bouwen begon niet");
         }
-        if (!bench.getItem(0).isEmpty() || bench.getItem(2).getCount() != 1) {
-            throw new GameTestAssertException("De materialen zijn niet (goed) gebruikt");
+        if (!inventory.getItem(0).isEmpty() || inventory.getItem(2).getCount() != 1) {
+            throw new GameTestAssertException("De materialen zijn niet (goed) uit de rugzak gehaald");
         }
         helper.succeedWhen(() -> {
-            if (!bench.getItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK).is(ModItems.STARK_CHESTPLATE.get())) {
-                throw new GameTestAssertException("De borstplaat is nog niet klaar");
+            if (!player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).is(ModItems.STARK_CHESTPLATE.get())) {
+                throw new GameTestAssertException("De borstplaat is nog niet naar de speler gevlogen");
             }
         });
     }
 
     /**
-     * Laarzen en een stuwraket-upgrade: die bouwt hij in. Een condensator hoort in de borstplaat,
-     * dus die past niet in laarzen.
+     * Laarzen op het hologram leggen en er een stuwraket-upgrade in bouwen. Een condensator
+     * hoort in de borstplaat, dus die past niet in laarzen.
      */
     @GameTest(template = ARENA, timeoutTicks = 300, batch = "workbench")
     public static void workbench_installs_upgrades(GameTestHelper helper) {
         var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
-        ItemStack boots = new ItemStack(ModItems.STARK_BOOTS.get());
-        if (((com.senne.starktech.workbench.SuitModuleItem) ModItems.REPULSOR_CAPACITOR.get()).canApplyTo(boots)) {
-            throw new GameTestAssertException("Een repulsor-condensator paste in laarzen");
+        ServerPlayer player = benchUser(helper);
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        var boots = com.senne.starktech.workbench.HoloPiece.BOOTS;
+        player.setItemInHand(hand, new ItemStack(ModItems.STARK_BOOTS.get()));
+        if (!bench.interact(player, boots) || !player.getMainHandItem().isEmpty()
+                || !bench.laid(boots).is(ModItems.STARK_BOOTS.get())) {
+            throw new GameTestAssertException("De laarzen gingen niet op het hologram");
         }
-        bench.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK, boots);
-        bench.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE, new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
+        player.setItemInHand(hand, new ItemStack(ModItems.REPULSOR_CAPACITOR.get()));
+        if (bench.interact(player, boots) || player.getMainHandItem().getCount() != 1) {
+            throw new GameTestAssertException("Een repulsor-condensator ging in laarzen");
+        }
+        player.setItemInHand(hand, new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
+        if (!bench.interact(player, boots)) {
+            throw new GameTestAssertException("Het inbouwen begon niet");
+        }
         helper.succeedWhen(() -> {
-            ItemStack result = bench.getItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_WORK);
-            if (com.senne.starktech.workbench.SuitUpgrades.of(result).thrusters() != 1
-                    || !bench.getItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE).isEmpty()) {
+            if (com.senne.starktech.workbench.SuitUpgrades.of(bench.laid(boots)).thrusters() != 1
+                    || !player.getMainHandItem().isEmpty()) {
                 throw new GameTestAssertException("De stuwraket-upgrade zit er nog niet in");
             }
         });
+    }
+
+    /** Met lege hand op een stuk dat er ligt klikken: het vliegt naar je toe en gaat aan. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "workbench")
+    public static void workbench_hands_you_a_piece(GameTestHelper helper) {
+        var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
+        ServerPlayer player = benchUser(helper);
+        var legs = com.senne.starktech.workbench.HoloPiece.LEGS;
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.STARK_LEGGINGS.get()));
+        bench.interact(player, legs);
+        if (!bench.interact(player, legs)) {
+            throw new GameTestAssertException("De broek pakken lukte niet");
+        }
+        helper.succeedWhen(() -> {
+            if (!player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS).is(ModItems.STARK_LEGGINGS.get())
+                    || !bench.laid(legs).isEmpty()) {
+                throw new GameTestAssertException("De broek is niet naar de speler gevlogen");
+            }
+        });
+    }
+
+    /**
+     * Een werkbank uit een oudere versie (met vakjes): het harnasstuk uit het werkvak komt op
+     * het hologram, de materialen vallen eruit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "workbench")
+    public static void workbench_empties_an_old_bench(GameTestHelper helper) {
+        var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
+        net.minecraft.core.NonNullList<ItemStack> old = net.minecraft.core.NonNullList.withSize(11, ItemStack.EMPTY);
+        old.set(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 4));
+        old.set(9, new ItemStack(ModItems.STARK_CHESTPLATE.get()));
+        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+        net.minecraft.world.ContainerHelper.saveAllItems(tag, old, helper.getLevel().registryAccess());
+        bench.loadWithComponents(tag, helper.getLevel().registryAccess());
+        if (!bench.laid(com.senne.starktech.workbench.HoloPiece.CHEST).is(ModItems.STARK_CHESTPLATE.get())) {
+            throw new GameTestAssertException("De borstplaat uit het werkvak ligt niet op het hologram");
+        }
+        helper.succeedWhen(() -> helper.assertItemEntityPresent(net.minecraft.world.item.Items.NETHERITE_INGOT,
+                new BlockPos(12, 4, 12), 3));
     }
 
     /** Het harnas maak je aan de werkbank: in de crafting table staat het niet meer. */

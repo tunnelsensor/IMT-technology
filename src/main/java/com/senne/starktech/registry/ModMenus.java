@@ -30,9 +30,4 @@ public final class ModMenus {
     /** Het scherm van een landingsplatform: zijn batterij (zie LandingPadMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.suit.LandingPadMenu>> LANDING_PAD =
             MENUS.register("landing_pad", () -> IMenuTypeExtension.create(com.senne.starktech.suit.LandingPadMenu::new));
-
-    /** Het scherm van de harnas-werkbank. */
-    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.workbench.SuitWorkbenchMenu>> SUIT_WORKBENCH =
-            MENUS.register("suit_workbench", () -> new MenuType<>(com.senne.starktech.workbench.SuitWorkbenchMenu::new,
-                    FeatureFlags.DEFAULT_FLAGS));
 }

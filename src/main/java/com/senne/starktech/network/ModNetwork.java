@@ -97,12 +97,19 @@ public final class ModNetwork {
             }
         });
         // Fase 15: de holotafel
-        // De schildkoepel: een knop in zijn scherm.
+        // De stroomkast: een schakelaar op zijn deurtje.
         registrar.playToServer(CabinetActionPayload.TYPE, CabinetActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof net.minecraft.server.level.ServerPlayer player) {
                 com.senne.starktech.energy.PowerCabinets.handleAction(player, payload);
             }
         });
+        // De harnas-werkbank: een klik op een stuk van het hologram.
+        registrar.playToServer(WorkbenchClickPayload.TYPE, WorkbenchClickPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                WorkbenchClickPayload.handle(player, payload);
+            }
+        });
+        // De schildkoepel: een knop in zijn scherm.
         registrar.playToServer(DomeActionPayload.TYPE, DomeActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 EdithDomes.handleAction(player, payload);

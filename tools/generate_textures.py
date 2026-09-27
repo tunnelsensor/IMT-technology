@@ -2123,6 +2123,30 @@ def hydra_soldier():
     save(im, "entity/hydra_soldier.png")
 
 
+def suit_hologram():
+    """
+    Het harnas als hologram (boven de harnas-werkbank): dezelfde plaatjes als het harnas, maar
+    in grijstinten, want het spel kleurt ze zelf blauw. Donkere stukken blijven een beetje
+    zichtbaar (anders valt het hologram uit elkaar), en om de rij is het iets donkerder: de
+    lijntjes van een hologram. Maak eerst het harnas (stark_suit), want deze leest dat plaatje.
+    """
+    for n in (1, 2):
+        src = Image.open(ROOT / f"models/armor/stark_layer_{n}.png").convert("RGBA")
+        out = img(src.width, src.height)
+        for y in range(src.height):
+            for x in range(src.width):
+                r, g, b, a = src.getpixel((x, y))
+                if a == 0:
+                    continue
+                light = (0.3 * r + 0.59 * g + 0.11 * b) / 255.0
+                v = 0.62 + 0.38 * light
+                if y % 2 == 1:
+                    v *= 0.84
+                c = int(255 * min(1.0, v))
+                out.putpixel((x, y), (c, c, c, a))
+        save(out, f"entity/suit_hologram_{n}.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -2146,6 +2170,7 @@ if __name__ == "__main__":
     stark_drone_item()
     holo_table_textures()
     stark_suit()
+    suit_hologram()
     hydra_circuit()
     hydra_rifle()
     hydra_soldier()

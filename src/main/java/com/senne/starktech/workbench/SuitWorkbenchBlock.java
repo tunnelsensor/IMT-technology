@@ -5,7 +5,7 @@ import com.senne.starktech.energy.PowerConnectable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Containers;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -27,7 +27,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * De harnas-werkbank (Tony's lab): hier bouw je het Stark-harnas en bouw je er upgrades in.
- * Hij heeft stroom nodig van het net (zie SuitWorkbenchBlockEntity).
+ * Dat gaat niet met een scherm, maar met het hologram dat erboven zweeft (zie
+ * SuitWorkbenchBlockEntity). Hij heeft stroom nodig van het net.
  */
 public class SuitWorkbenchBlock extends BaseEntityBlock implements PowerConnectable {
     public static final MapCodec<SuitWorkbenchBlock> CODEC = simpleCodec(SuitWorkbenchBlock::new);
@@ -89,8 +90,9 @@ public class SuitWorkbenchBlock extends BaseEntityBlock implements PowerConnecta
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof SuitWorkbenchBlockEntity bench) {
-            player.openMenu(bench);
+        // Op het blok zelf klikken doet niets; het werk gebeurt op het hologram erboven.
+        if (!level.isClientSide) {
+            player.displayClientMessage(Component.translatable("workbench.starktech.hint"), true);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -99,7 +101,7 @@ public class SuitWorkbenchBlock extends BaseEntityBlock implements PowerConnecta
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof SuitWorkbenchBlockEntity bench) {
-            Containers.dropContents(level, pos, bench);
+            bench.dropAll(level);
         }
         super.onRemove(state, level, pos, newState, moved);
     }

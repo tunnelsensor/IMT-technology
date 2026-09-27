@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -316,9 +317,13 @@ public final class VisualCheck {
             t.shot(40, "k06_hack_core_green");
         }
 
-        // --- De harnas-werkbank: het blok, het scherm met materialen, en een borstplaat bouwen.
+        // --- De harnas-werkbank: het hologram, erop klikken om te bouwen (het stuk vliegt naar je
+        // toe), en laarzen erop leggen en er een upgrade in bouwen. Met echte rechtsklikken.
         if (want("workbench")) {
             BlockPos bench = new BlockPos(-80, -60, 60);
+            Vec3 chest = new Vec3(-79.5, -57.8, 60.5);
+            Vec3 boots = new Vec3(-79.5, -58.8, 60.5);
+            Runnable click = () -> KeyMapping.click(Minecraft.getInstance().options.keyUse.getKey());
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
                 level.setBlockAndUpdate(bench, ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
@@ -326,30 +331,44 @@ public final class VisualCheck {
                 if (level.getBlockEntity(bench.east()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
                     generator.fill(20_000);
                 }
-                if (level.getBlockEntity(bench) instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be) {
-                    be.setItem(0, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 16));
-                    be.setItem(1, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 4));
-                    be.setItem(2, new ItemStack(ModItems.STARK_CHIP.get(), 8));
-                    be.setItem(3, new ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 6));
-                    be.setItem(com.senne.starktech.workbench.SuitWorkbenchBlockEntity.SLOT_MODULE,
-                            new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
-                }
+                player.getInventory().clearContent();
+                player.getInventory().setItem(1, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 8));
+                player.getInventory().setItem(2, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 2));
+                player.getInventory().setItem(3, new ItemStack(ModItems.STARK_CHIP.get(), 3));
+                player.getInventory().selected = 0;
             });
+            // In survival (om te zien wat het kost), maar zonder slijmen die je wegduwen.
+            t.command(0, "difficulty peaceful");
+            t.command(0, "gamemode survival @a");
             t.close(10);
-            t.view(0, -79.5, -59, 57.5, 0, 20);
+            t.stand(0, -77.8, -60, 58.2, 50, 15);
+            t.lookAt(10, new Vec3(-79.5, -58.6, 60.5));
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
-            t.shot(20, "w01_workbench_block");
+            t.shot(20, "w01_workbench_hologram");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-            t.onServer(0, player -> {
-                if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be) {
-                    player.openMenu(be);
-                }
-            });
-            t.shot(20, "w02_workbench_screen");
-            t.onServer(0, player -> player.containerMenu.clickMenuButton(player, 0));
-            t.shot(60, "w03_workbench_building");
-            t.shot(180, "w04_workbench_done");
-            t.close(0);
+            t.stand(0, -79.5, -60, 57.6, 0, 0);
+            t.lookAt(10, chest);
+            t.shot(10, "w02_workbench_hover_chest");
+            t.step(0, click);
+            t.shot(80, "w03_workbench_building");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.waitUntil(400, () -> Minecraft.getInstance().level.getBlockEntity(bench)
+                    instanceof com.senne.starktech.workbench.SuitWorkbenchBlockEntity be && !be.flying().isEmpty());
+            t.shot(7, "w04_workbench_flying");
+            t.shot(30, "w05_workbench_wearing");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.onServer(0, player -> player.getInventory().setItem(0, new ItemStack(ModItems.STARK_BOOTS.get())));
+            t.lookAt(10, boots);
+            t.shot(5, "w06_workbench_hover_lay");
+            t.step(0, click);
+            t.onServer(10, player -> player.getInventory().setItem(0, new ItemStack(ModItems.THRUSTER_UPGRADE.get())));
+            t.shot(10, "w07_workbench_hover_install");
+            t.step(0, click);
+            t.shot(40, "w08_workbench_installing");
+            t.onServer(80, player -> player.getInventory().setItem(0, ItemStack.EMPTY));
+            t.shot(10, "w09_workbench_upgraded");
+            t.command(0, "gamemode creative @a");
+            t.command(0, "difficulty easy");
         }
 
         // --- Het AI-brein (lokaal model): zinnen alsof je ze zei, en wat ze ermee doet (zie de log:

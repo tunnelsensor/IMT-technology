@@ -462,15 +462,27 @@ Met de bril op en energie erin:
 ### De harnas-werkbank (Tony's lab)
 Craft een **Suit Workbench** (Stark-chips, een redstoneblok, een crafting table, een aambeeld en
 ijzer), of gebruik die in het lab van een Stark Tower. Hij heeft **stroom** nodig: een Stark-kabel
-naar een zonnepaneel of warmtegenerator, of er direct tegenaan. Klik erop voor zijn scherm:
+naar een zonnepaneel of warmtegenerator, of er direct tegenaan.
 
-- **Bouwen**: leg de materialen in de negen vakken links en druk op **Chestplate**, **Leggings** of
-  **Boots** (houd de muis op een knop en je ziet wat het kost; een grijze knop betekent dat er iets
-  ontbreekt). De materialen gaan eruit, er loopt een balkje vol, en het stuk verschijnt in het vak
-  **Suit**. Het harnas kun je niet meer in de crafting table maken.
-- **Upgraden**: leg een stuk harnas in het vak **Suit** en een upgrade in het vak **Upgrade**; het
-  inbouwen begint vanzelf. De upgrades (te craften met Stark-chips, en soms te vinden in de kisten
-  van een Stark Tower):
+Er is **geen scherm**: boven de werkbank zweeft het harnas als een blauw **hologram** dat langzaam
+ronddraait (zonder stroom flikkert het). **Kijk naar een stuk** (borstplaat, broek of laarzen): het
+licht op, en naast je vizier staat een kaartje met wat een **rechtsklik** zou doen. Met **shift**
+ingedrukt doet rechtsklikken weer het gewone.
+
+- **Bouwen** (lege hand, of iets anders dan harnas of upgrades): klik op een stuk dat nog een
+  hologram is. Het kaartje laat zien wat het kost en wat je bij je hebt (groen = genoeg, rood = te
+  weinig). De materialen komen uit je **rugzak** (je hotbar, de rest van je inventaris en je tweede
+  hand; in creative is het gratis). Het stuk bouwt zich plaatje voor plaatje op in het hologram,
+  met een scanring die op en neer gaat. Klaar? Dan **vliegt het naar je toe** en gaat het meteen
+  aan (heb je daar al iets, dan komt het in je rugzak). Ben je intussen verder dan 24 blokken weg,
+  dan blijft het op de werkbank liggen. Het harnas kun je niet in de crafting table maken.
+- **Neerleggen**: houd een stuk harnas vast en klik op het hologram: het ligt dan echt (in zijn
+  eigen kleuren) op zijn plek. Lag daar al een stuk, dan wisselen ze.
+- **Pakken**: klik met een lege hand op een stuk dat erop ligt: het vliegt naar je toe. Het kaartje
+  laat zien welke upgrades erin zitten.
+- **Upgraden**: houd een upgrade vast en klik op het stuk (dat moet erop liggen). Het kaartje zegt
+  of hij past. Het item draait om het stuk en krimpt erin weg, en een ring loopt vol. De upgrades
+  (te craften met Stark-chips, en soms te vinden in de kisten van een Stark Tower):
   - **Thruster Upgrade** (in de laarzen, tot 3): sneller vliegen en minder energie.
   - **Armor Plating** (in elk stuk, tot 2 per stuk): het harnas houdt meer schade tegen.
   - **Repulsor Capacitor** (in de borstplaat, tot 2): een sterkere repulsor.
@@ -479,7 +491,11 @@ naar een zonnepaneel of warmtegenerator, of er direct tegenaan. Klik erop voor z
     Craft: ijzer, buskruit, Stark-chips en een trechter.
   - **Rocket Warhead** (borstplaat met raketpakket, tot 3): 40% meer schade per raket. Craft:
     ijzer, blazepoeder, Stark-chips en TNT.
-  In de tooltip van een stuk harnas zie je welke upgrades erin zitten.
+  In de tooltip van een stuk harnas zie je ook welke upgrades erin zitten.
+- De werkbank doet één ding tegelijk. Breek je hem af, dan vallen alle stukken eruit, en ook de
+  upgrade of de materialen van wat hij aan het maken was.
+- Een werkbank uit een oudere versie (met vakjes) legt het stuk uit zijn werkvak op het hologram
+  en laat de rest van zijn spullen eruit vallen.
 
 ### Landingsplatform
 Een **Landing Pad** zet je neer en is van jou (het platform op het dak van een Stark Tower is van
