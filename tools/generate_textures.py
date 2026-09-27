@@ -871,31 +871,62 @@ def shield_textures():
 
 def rayshield_walls():
     """
-    Het energieveld van de rayshield, in elke kleur en met een scanlijn die omhoog loopt.
+    Het energieveld van de rayshield-laserpoort, in elke kleur: een raster van zeshoeken zoals op
+    de schildkoepel, dat rustig van links naar rechts schuift.
 
-    Elke texture is 16 breed en 16*FRAMES hoog: Minecraft speelt die frames onder elkaar af
-    als animatie (zie het .mcmeta-bestand ernaast). Zo lopen de lijnen echt, net als de ray
-    shields uit Star Wars.
+    Subtiel, op jouw vraag (27 september): geen witte lijnen meer, alleen de eigen kleur. De
+    randen van de zeshoeken zijn iets lichter, een paar vakjes iets donkerder, en het veld zelf
+    is flink doorzichtig. Het plaatje herhaalt naadloos (links = rechts, boven = onder), dus
+    naast elkaar vormen de blokken één doorlopend veld zonder naden.
+
+    Elke texture is 32 breed en 32*FRAMES hoog: Minecraft speelt die frames onder elkaar af als
+    animatie (zie het .mcmeta-bestand ernaast). Per frame schuift het raster 4 pixels op; na 8
+    frames is het precies één rasterbreedte verder, zodat de lus niet hapert.
     """
+    import math
+    size = 32
     frames = 8
+    shift = size // frames
+    # De middens van de zeshoeken: rijen van 16 breed, om de beurt 8 opgeschoven, 16 hoog.
+    centres = []
+    for row in range(-2, 5):
+        for col in range(-2, 5):
+            centres.append((col * 16 + (row % 2) * 8 + 8, row * 16 + 8))
+
+    def edge_distance(x, y):
+        best = second = 1e9
+        best_centre = None
+        for cx, cy in centres:
+            d = math.hypot(x - cx, y - cy)
+            if d < best:
+                best, second, best_centre = d, best, (cx, cy)
+            elif d < second:
+                second = d
+        return (second - best) / 2, best_centre
+
+    # Het raster één keer uitrekenen (per pixel: hoe ver van een rand, en in welk vakje).
+    pattern = [[edge_distance(x + 0.5, y + 0.5) for x in range(size)] for y in range(size)]
+
     for name, (r, g, b) in RAYSHIELD_COLORS.items():
-        sheet = img(16, 16 * frames)
-        d = ImageDraw.Draw(sheet)
+        def tint(amount, alpha):
+            return (max(0, min(255, r + amount)), max(0, min(255, g + amount)), max(0, min(255, b + amount)), alpha)
+        sheet = img(size, size * frames)
         for frame in range(frames):
-            top = frame * 16
-            # Grondtoon: flink doorzichtig, zodat je er doorheen kijkt.
-            d.rectangle([0, top, 15, top + 15], fill=(r, g, b, 70))
-            # Vaste, rustige lijnen in het veld.
-            for y in range(0, 16, 4):
-                d.line([0, top + y, 15, top + y], fill=(min(255, r + 60), min(255, g + 60), min(255, b + 60), 110))
-            # De scanlijn die per frame een stukje omhoog schuift (16 / frames = 2 pixels).
-            scan = 15 - (frame * 16 // frames)
-            d.line([0, top + scan, 15, top + scan], fill=(255, 255, 255, 190))
-            if scan > 0:
-                d.line([0, top + scan - 1, 15, top + scan - 1],
-                       fill=(min(255, r + 120), min(255, g + 120), min(255, b + 120), 140))
-            # Randen: een helderdere omlijsting, alsof het veld ergens in gespannen staat.
-            d.rectangle([0, top, 15, top + 15], outline=(min(255, r + 90), min(255, g + 90), min(255, b + 90), 150))
+            top = frame * size
+            for y in range(size):
+                for x in range(size):
+                    # Van links naar rechts: pixel x toont wat eerder links stond.
+                    edge, centre = pattern[y][(x - frame * shift) % size]
+                    line = max(0.0, 1 - edge / 1.2)       # de rand van een zeshoek
+                    glow = max(0.0, 1 - edge / 4.0) * 0.4  # zachte gloed tegen de rand
+                    # Een paar vakjes net iets donkerder, verspreid (vast patroon, per vakje).
+                    darker = ((int(centre[0]) * 7 + int(centre[1]) * 13) // 8) % 5 == 0
+                    if line > 0.05:
+                        sheet.putpixel((x, top + y), tint(45, int(70 + 70 * line)))
+                    elif darker:
+                        sheet.putpixel((x, top + y), tint(-35, int(58 + 40 * glow)))
+                    else:
+                        sheet.putpixel((x, top + y), tint(int(20 * glow), int(52 + 45 * glow)))
         save(sheet, "block/laser_wall_%s.png" % name)
 
 

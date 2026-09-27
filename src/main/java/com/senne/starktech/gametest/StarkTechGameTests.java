@@ -1145,6 +1145,41 @@ public final class StarkTechGameTests {
     }
 
     /**
+     * Zenders die tegen elkaar aan zitten zijn één laserpoort: redstone op de onderste en stroom
+     * op de bovenste zet alle drie aan (een wand van drie hoog), en zonder redstone gaan ze
+     * allemaal weer uit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "laser_group")
+    public static void touching_laser_emitters_are_one_gate(GameTestHelper helper) {
+        BlockPos bottom = new BlockPos(1, 2, 8);
+        for (int i = 0; i < 3; i++) {
+            helper.setBlock(bottom.above(i), ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                    .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+        }
+        // Stroom alleen bij de bovenste (de zenders geven hem door), redstone alleen bij de onderste.
+        helper.setBlock(bottom.above(3), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(bottom.above(3))).fill(5_000);
+        helper.setBlock(bottom.west(), Blocks.REDSTONE_BLOCK);
+        helper.startSequence()
+                .thenWaitUntil(() -> {
+                    for (int i = 0; i < 3; i++) {
+                        if (countWall(helper, bottom.above(i), 4) < 4) {
+                            throw new GameTestAssertException("Rij " + (i + 1) + " van de laserpoort is niet dicht");
+                        }
+                    }
+                })
+                .thenExecute(() -> helper.setBlock(bottom.west(), Blocks.AIR))
+                .thenWaitUntil(() -> {
+                    for (int i = 0; i < 3; i++) {
+                        if (countWall(helper, bottom.above(i), 4) > 0) {
+                            throw new GameTestAssertException("Rij " + (i + 1) + " ging niet mee uit");
+                        }
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
      * Twee zenders tegenover elkaar die allebei aan staan, delen één wand (die maar van één kant
      * komt). Gaat er één uit, dan blijft de wand staan zolang de andere nog aan is.
      */

@@ -24,7 +24,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * - Een apparaat dat stroom wil, vraagt {@link #draw}. Wij zoeken vanaf dat apparaat alle
  *   leveranciers op: we kijken naar zijn zes buren, en volgen elke kabel die we tegenkomen
  *   (net als water dat door buizen loopt). Drone-docks geven de stroom ook door, zodat een rij
- *   docks in een hangar aan één kabel genoeg heeft.
+ *   docks in een hangar aan één kabel genoeg heeft; laserzenders ook, zodat een laserpoort van
+ *   meerdere zenders aan één kabel genoeg heeft.
  * - We halen de stroom eerst bij de leverancier die het meest heeft, zodat ze ongeveer even vol
  *   blijven.
  * - Het zoeken kost wat werk, dus we onthouden het resultaat per apparaat. Komt er ergens een
@@ -105,8 +106,8 @@ public final class StarkGrid {
 
     /**
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
-     * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels en drone-docks
-     * geleiden.)
+     * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels, drone-docks
+     * en laserzenders geleiden.)
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
@@ -131,7 +132,8 @@ public final class StarkGrid {
                 continue;
             }
             BlockState state = level.getBlockState(next);
-            if (state.is(ModBlocks.CABLE.get()) || state.is(ModBlocks.DRONE_DOCK.get())) {
+            if (state.is(ModBlocks.CABLE.get()) || state.is(ModBlocks.DRONE_DOCK.get())
+                    || state.is(ModBlocks.LASER_EMITTER.get())) {
                 cables.add(next);
                 continue;
             }

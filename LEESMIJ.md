@@ -230,13 +230,16 @@ eerst bij de generator die het meest heeft.
 ### Rayshield
 - **Persoonlijk schild** (G > Combat > Rayshield): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
-- **Laserzender** (volledig blok met een lens aan de voorkant): een doorzichtig energieveld
-  met lopende scanlijnen waar niemand door komt. Het schuift uit de lens naar voren tot het
-  eerste blok (of een tweede zender die terugkijkt), en bij het uitgaan weer terug de zender
-  in, net als de ray shields uit Star Wars. Eén zender is genoeg.
-  **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood, paars.
-  Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
+- **Laserzender** (volledig blok met een lens aan de voorkant): een dun, doorzichtig energieveld
+  met een honingraat van zeshoeken (zoals de koepel) die rustig opzij schuift, en waar niemand
+  door komt. Het schuift uit de lens naar voren tot het eerste blok (of een tweede zender die
+  terugkijkt), en bij het uitgaan weer terug de zender in, net als de ray shields uit Star Wars.
+  Eén zender is genoeg. **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood,
+  paars. Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
   staat). Wil je hem met E.D.I.T.H. schakelen, zet er dan een relais naast.
+  **Zenders die tegen elkaar aan zitten, zijn één laserpoort**: redstone op één ervan zet ze
+  allemaal aan, en ze geven de stroom van één kabel aan elkaar door. Zet er bijvoorbeeld drie
+  op elkaar voor een wand van drie hoog, met één hendel.
 - **Schildkoepel-generator** (blok, op stroom): een koepel om je basis. **Rechtsklik** opent
   zijn scherm: aan/uit, kleur, bereik (8 tot 32 blokken) en sterkte (1 tot 5). Groter en
   sterker kost meer stroom. De koepel houdt alles tegen wat niet van jou of je team komt:

@@ -47,6 +47,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * De wand loopt in de richting waarin de zender kijkt, tot maximaal LASER_MAX_LENGTH blokken,
  * en stopt bij de tegenoverliggende zender (of bij het eerste blok dat in de weg staat).
+ *
+ * Zenders die tegen elkaar aan zitten, zijn samen ÉÉN laserpoort (jouw wens, 27 september):
+ * redstone op één ervan zet ze allemaal aan, en de stroom van een kabel loopt door de hele rij.
+ * Zo bouw je een wand van 3 x 3 met één hendel en één kabel.
  */
 public class LaserEmitterBlock extends Block implements PowerConnectable {
     public static final MapCodec<LaserEmitterBlock> CODEC = simpleCodec(LaserEmitterBlock::new);
@@ -92,7 +96,47 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     // ---------------------------------------------------------------- Aan en uit
 
-    /** Redstone erop? Dan gaat de wand aan (als er stroom is); eraf, dan weer uit. */
+    /** Zo veel zenders tellen we hooguit mee in één laserpoort (tegen eindeloos zoeken). */
+    private static final int MAX_GROUP = 64;
+
+    /**
+     * De zenders die aan elkaar vastzitten (in welke richting ook), te beginnen bij {@code start}:
+     * samen één laserpoort.
+     */
+    public static List<BlockPos> group(Level level, BlockPos start) {
+        List<BlockPos> members = new ArrayList<>();
+        java.util.Set<BlockPos> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<BlockPos> todo = new java.util.ArrayDeque<>();
+        todo.add(start.immutable());
+        seen.add(start.immutable());
+        while (!todo.isEmpty() && members.size() < MAX_GROUP) {
+            BlockPos pos = todo.poll();
+            members.add(pos);
+            for (Direction direction : Direction.values()) {
+                BlockPos next = pos.relative(direction);
+                if (seen.add(next) && level.isLoaded(next) && level.getBlockState(next).is(ModBlocks.LASER_EMITTER.get())) {
+                    todo.add(next);
+                }
+            }
+        }
+        return members;
+    }
+
+    /** Staat er redstone op een van de zenders van deze laserpoort? */
+    private static boolean groupHasSignal(Level level, BlockPos pos) {
+        for (BlockPos member : group(level, pos)) {
+            if (level.hasNeighborSignal(member)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Redstone erop of eraf (bij deze zender of een zender van dezelfde poort)? Dan de wand aan
+     * (als er stroom is) of uit. Verandert deze zender, dan horen zijn buren dat vanzelf, en die
+     * kijken dan zelf ook weer: zo gaat de hele poort mee.
+     */
     @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
                                    BlockPos fromPos, boolean movedByPiston) {
@@ -119,6 +163,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (!oldState.is(this)) {
             level.scheduleTick(pos, this, UPKEEP_INTERVAL);
+            StarkGrid.changed(); // zenders geven stroom aan elkaar door
         }
     }
 
@@ -130,7 +175,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
      * seconde. Zonder stroom proberen we het elke twee seconden opnieuw.
      */
     private void update(ServerLevel level, BlockPos pos, BlockState state) {
-        boolean wanted = level.hasNeighborSignal(pos);
+        boolean wanted = groupHasSignal(level, pos);
         boolean on = state.getValue(POWERED);
         if (!wanted && on) {
             setActive(level, pos, state, false);
@@ -168,7 +213,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
         if (state.getValue(POWERED)) {
-            if (!level.hasNeighborSignal(pos)) {
+            if (!groupHasSignal(level, pos)) {
                 setActive(level, pos, state, false);
             } else if (pay(level, pos)) {
                 level.scheduleTick(pos, this, UPKEEP_INTERVAL);
@@ -204,6 +249,9 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && state.getValue(POWERED) && !newState.is(this)) {
             clearWall((ServerLevel) level, pos, state.getValue(FACING));
+        }
+        if (!newState.is(this)) {
+            StarkGrid.changed();
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
