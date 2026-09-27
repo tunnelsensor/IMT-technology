@@ -90,6 +90,14 @@ public final class SuitBalance {
     /** ...en dat kost zoveel stroom per punt. */
     @Tunable(section = "suit", comment = "Energy per point of durability a landing pad repairs")
     public static int PAD_REPAIR_ENERGY = 10;
+    @Tunable(section = "suit", comment = "How much a landing pad's own battery holds without battery cells")
+    public static int PAD_BATTERY_BASE = 10000;
+    @Tunable(section = "suit", comment = "Extra landing pad battery per Battery Upgrade in its battery slot (up to 4)")
+    public static int PAD_BATTERY_PER_CELL = 15000;
+    @Tunable(section = "suit", comment = "How fast a landing pad fills its battery from the grid's spare energy (per second)")
+    public static int PAD_BATTERY_FILL = 300;
+    @Tunable(section = "suit", comment = "How fast a landing pad charges your glasses from its own battery (per second)")
+    public static int PAD_BATTERY_CHARGE = 1600;
 
     // ---------------------------------------------------------------- Repulsor
     /** Schade van één repulsorstoot (7 = 3,5 hartje). */

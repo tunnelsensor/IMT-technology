@@ -425,6 +425,18 @@ naar een zonnepaneel of warmtegenerator, of er direct tegenaan. Klik erop voor z
     ijzer, blazepoeder, Stark-chips en TNT.
   In de tooltip van een stuk harnas zie je welke upgrades erin zitten.
 
+### Landingsplatform
+Een **Landing Pad** zet je neer en is van jou (het platform op het dak van een Stark Tower is van
+wie de toren gehackt heeft). Tijdens het vliegen wijst de HUD je dichtstbijzijnde platform aan;
+land je erop met de stuwraketten aan, dan zegt E.D.I.T.H. "Welcome home". Zolang je erop staat
+(5 x 5 blokken), laadt je bril op en wordt je harnas gerepareerd.
+- **Rechtsklik** opent zijn scherm: een eigen **batterij**. Die vult het platform langzaam (300 per
+  seconde) met wat het net **over** heeft (net als het laadstation laat het de helft van de
+  generatoren voor de rest). Sta je erop, dan laadt hij je bril eerst uit die batterij (1600 per
+  seconde) en pas daarna rechtstreeks uit het net (400 per seconde).
+- In het vakje **Cells** passen tot 4 **Battery Upgrades**: elke maakt de batterij 15.000
+  groter (standaard 10.000). Breek je het platform af, dan vallen ze eruit.
+
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij
 projecteert een hologram boven zich dat langzaam ronddraait (als hij **stroom** heeft; zonder

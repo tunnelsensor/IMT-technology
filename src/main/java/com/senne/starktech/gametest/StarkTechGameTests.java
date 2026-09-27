@@ -252,9 +252,20 @@ public final class StarkTechGameTests {
         });
     }
 
+    /** Telt de getallen in een (geneste) config: elk kopje is weer een config met getallen erin. */
+    private static int countValues(com.electronwill.nightconfig.core.UnmodifiableConfig config) {
+        int count = 0;
+        for (Object value : config.valueMap().values()) {
+            count += value instanceof com.electronwill.nightconfig.core.UnmodifiableConfig inner ? countValues(inner) : 1;
+        }
+        return count;
+    }
+
     /**
-     * Het configbestand starktech-balance.toml: alle 143 getallen staan erin, en verander je er
-     * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
+     * Het configbestand starktech-balance.toml: alle @Tunable-getallen staan erin (ruim 140), en
+     * verander je er een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het
+     * nieuwe getal. We tellen de regels in het geladen bestand, zodat er geen vast getal in deze
+     * test hoeft (dat moest bij elk nieuw getal omhoog).
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
     public static void balance_config_changes_the_numbers(GameTestHelper helper) {
@@ -262,9 +273,10 @@ public final class StarkTechGameTests {
         if (!spec.isLoaded()) {
             throw new GameTestAssertException("starktech-balance.toml is niet geladen");
         }
-        if (com.senne.starktech.edith.BalanceConfig.size() != 143) {
-            throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
-                    + " getallen in het bestand in plaats van 143");
+        int inFile = countValues(spec.getValues());
+        if (inFile != com.senne.starktech.edith.BalanceConfig.size() || inFile < 140) {
+            throw new GameTestAssertException("Er staan " + inFile + " getallen in het bestand, maar er zijn er "
+                    + com.senne.starktech.edith.BalanceConfig.size() + " met @Tunable");
         }
         net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
@@ -722,6 +734,47 @@ public final class StarkTechGameTests {
                 .thenExecuteAfter(1, () -> {
                     if (com.senne.starktech.suit.LandingPads.of(owner).pads().contains(here)) {
                         throw new GameTestAssertException("Het afgebroken platform staat nog op de lijst");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Het platform heeft een eigen batterij: die vult hij met wat het net over heeft, en daaruit
+     * laadt hij je bril sneller op dan alleen uit het net. Batterijcellen maken hem groter.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "landing_pad")
+    public static void landing_pad_battery_charges_faster(GameTestHelper helper) {
+        BlockPos padPos = new BlockPos(6, 2, 6);
+        helper.setBlock(padPos, ModBlocks.LANDING_PAD.get());
+        helper.setBlock(padPos.below(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(padPos.below())).fill(20_000);
+        var pad = (com.senne.starktech.suit.LandingPadBlockEntity) helper.getBlockEntity(padPos);
+        int base = pad.capacity();
+        pad.cells().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
+        if (pad.capacity() != base + 2 * SuitBalance.PAD_BATTERY_PER_CELL) {
+            throw new GameTestAssertException("Twee batterijcellen maakten de batterij niet groter: " + pad.capacity());
+        }
+        ServerPlayer[] owner = new ServerPlayer[1];
+        int[] before = new int[1];
+        helper.startSequence()
+                // Niemand op het platform: de batterij vult zich uit het overschot van het net.
+                .thenWaitUntil(() -> {
+                    if (pad.energy() < 2 * SuitBalance.PAD_BATTERY_FILL) {
+                        throw new GameTestAssertException("De batterij vult niet: " + pad.energy());
+                    }
+                })
+                .thenExecute(() -> {
+                    owner[0] = makeSuitOwner(helper, padPos.above());
+                    pad.setOwner(owner[0].getUUID());
+                    EdithData.setEnergy(EdithData.getWornGlasses(owner[0]), 100);
+                    before[0] = pad.energy();
+                })
+                // Er loopt stroom uit de batterij naar je bril, meer dan het net alleen per seconde geeft.
+                .thenWaitUntil(() -> {
+                    int glasses = EdithData.getEnergy(EdithData.getWornGlasses(owner[0]));
+                    if (glasses < 100 + SuitBalance.PAD_CHARGE_PER_SECOND + 200 || pad.energy() >= before[0]) {
+                        throw new GameTestAssertException("De bril laadt niet sneller op uit de batterij: " + glasses);
                     }
                 })
                 .thenSucceed();

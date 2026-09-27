@@ -882,6 +882,31 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- Het scherm van een landingsplatform (zijn batterij), met twee batterijcellen erin
+        if (want("padscreen")) {
+            BlockPos padAt = new BlockPos(-4, -61, -4);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(padAt.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                level.setBlockAndUpdate(padAt, ModBlocks.LANDING_PAD.get().defaultBlockState());
+                if (level.getBlockEntity(padAt.below()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                if (level.getBlockEntity(padAt) instanceof com.senne.starktech.suit.LandingPadBlockEntity pad) {
+                    pad.setOwner(player.getUUID());
+                    pad.cells().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
+                }
+            });
+            t.stand(0, padAt.getX() + 0.5, -60, padAt.getZ() + 2.5, 180, 30);
+            t.onServer(80, player -> {
+                if (player.serverLevel().getBlockEntity(padAt) instanceof com.senne.starktech.suit.LandingPadBlockEntity pad) {
+                    player.openMenu(pad, padAt);
+                }
+            });
+            t.shot(30, "p05_pad_screen");
+            t.close(0);
+        }
+
         // --- Satellietraketten: eentje die valt en inslaat (precisie), en een bombardement
         if (want("missile")) {
             BlockPos aim = new BlockPos(30, -60, -30); // op een lege plek, ver van de heuvel

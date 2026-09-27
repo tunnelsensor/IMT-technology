@@ -2,7 +2,6 @@ package com.senne.starktech.suit;
 
 import com.mojang.serialization.MapCodec;
 import com.senne.starktech.energy.PowerConnectable;
-import com.senne.starktech.energy.StarkGrid;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -71,17 +70,22 @@ public class LandingPadBlock extends BaseEntityBlock implements PowerConnectable
         }
     }
 
-    /** Rechtsklik: van wie is dit platform, en hoeveel stroom heeft het? (Boven je hotbar.) */
+    /**
+     * Rechtsklik: is het jouw platform, dan opent zijn scherm (de batterij). Anders zie je boven
+     * je hotbar van wie hij is.
+     */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
         if (!level.isClientSide && level instanceof ServerLevel serverLevel
                 && level.getBlockEntity(pos) instanceof LandingPadBlockEntity pad) {
             UUID owner = pad.ownerId(serverLevel);
-            Component text = owner == null ? Component.translatable("block.starktech.landing_pad.no_owner")
-                    : !owner.equals(player.getUUID()) ? Component.translatable("block.starktech.landing_pad.not_yours")
-                    : Component.translatable("block.starktech.landing_pad.yours", StarkGrid.available(level, pos));
-            player.displayClientMessage(text, true);
+            if (owner != null && owner.equals(player.getUUID())) {
+                player.openMenu(pad, pos);
+            } else {
+                player.displayClientMessage(Component.translatable(owner == null
+                        ? "block.starktech.landing_pad.no_owner" : "block.starktech.landing_pad.not_yours"), true);
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -91,6 +95,8 @@ public class LandingPadBlock extends BaseEntityBlock implements PowerConnectable
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof LandingPadBlockEntity pad) {
             pad.onBroken();
+            // De batterijcellen vallen eruit (de stroom in de batterij is weg).
+            net.minecraft.world.Containers.dropContents(level, pos, pad.cells());
         }
         super.onRemove(state, level, pos, newState, moved);
     }

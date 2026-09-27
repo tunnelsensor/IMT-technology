@@ -2,7 +2,10 @@ package com.senne.starktech.suit;
 
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.energy.EnergySource;
 import com.senne.starktech.energy.StarkGrid;
+import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModBlocks;
@@ -19,6 +22,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,9 +43,12 @@ import org.jetbrains.annotations.Nullable;
  * - Hij zet zichzelf op de lijst van zijn eigenaar (zie LandingPads): zo wijst de HUD je
  *   tijdens het vliegen de weg ernaartoe.
  * - Sta je erop (in een vierkant van 5 x 5 eromheen), dan laadt hij je bril op en repareert hij
- *   je harnas, met stroom van het net. Land je er met het harnas, dan zegt E.D.I.T.H. "welkom thuis".
+ *   je harnas. Land je er met het harnas, dan zegt E.D.I.T.H. "welkom thuis".
+ * - Hij heeft een eigen BATTERIJ (rechtsklik = zijn scherm). Die vult hij langzaam met wat het
+ *   net over heeft, en daaruit laadt hij je bril veel sneller op dan rechtstreeks uit het net. In
+ *   het scherm zit een vakje voor Battery Upgrades: elke maakt de batterij groter.
  */
-public class LandingPadBlockEntity extends BlockEntity {
+public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
     /** Zo ver opzij (in blokken, vanaf het midden) telt nog als "op het platform". */
     public static final double ZONE = 2.5;
     private static final int CHECK_TICKS = 20;
@@ -48,8 +61,87 @@ public class LandingPadBlockEntity extends BlockEntity {
     /** Op wiens lijst hij nu staat (om hem eraf te halen als de eigenaar verandert). */
     private @Nullable UUID listedFor;
 
+    /** Hoeveel stroom er in de eigen batterij zit. */
+    private int energy;
+    /** Het vakje voor batterijcellen (Battery Upgrades), hooguit MAX_CELLS. */
+    public static final int MAX_CELLS = 4;
+    private final SimpleContainer cells = new SimpleContainer(1) {
+        @Override
+        public boolean canPlaceItem(int slot, ItemStack stack) {
+            return stack.is(ModItems.BATTERY_UPGRADE.get());
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return MAX_CELLS;
+        }
+
+        @Override
+        public boolean stillValid(Player player) {
+            return Container.stillValidBlockEntity(LandingPadBlockEntity.this, player);
+        }
+    };
+    /** Wat er de vorige seconde gebeurde (voor het scherm): uit het net erin, en naar jou toe. */
+    private int filledLastSecond;
+    private int chargedLastSecond;
+
+    /** Wat het scherm te zien krijgt; zie LandingPadMenu (getallen boven 32767 in twee helften). */
+    private final ContainerData data = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case LandingPadMenu.DATA_ENERGY_LOW -> energy & 0xFFFF;
+                case LandingPadMenu.DATA_ENERGY_HIGH -> (energy >>> 16) & 0xFFFF;
+                case LandingPadMenu.DATA_CAPACITY_LOW -> capacity() & 0xFFFF;
+                case LandingPadMenu.DATA_CAPACITY_HIGH -> (capacity() >>> 16) & 0xFFFF;
+                case LandingPadMenu.DATA_GRID -> level == null ? 0 : Math.min(0x7FFF, StarkGrid.available(level, worldPosition) / 10);
+                case LandingPadMenu.DATA_FILLED -> filledLastSecond;
+                case LandingPadMenu.DATA_CHARGED -> chargedLastSecond;
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            // Alleen de server rekent; het scherm leest alleen.
+        }
+
+        @Override
+        public int getCount() {
+            return LandingPadMenu.DATA_COUNT;
+        }
+    };
+
     public LandingPadBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LANDING_PAD.get(), pos, state);
+        cells.addListener(container -> setChanged());
+    }
+
+    /** Hoeveel er in de eigen batterij past: een basis, plus een stuk per batterijcel. */
+    public int capacity() {
+        int count = Math.min(MAX_CELLS, cells.getItem(0).getCount());
+        return SuitBalance.PAD_BATTERY_BASE + count * SuitBalance.PAD_BATTERY_PER_CELL;
+    }
+
+    public int energy() {
+        return energy;
+    }
+
+    /** Het vakje met batterijcellen (voor het scherm, en om ze te laten vallen bij afbreken). */
+    public SimpleContainer cells() {
+        return cells;
+    }
+
+    // ---------------------------------------------------------------- Het scherm
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.starktech.landing_pad");
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new LandingPadMenu(containerId, inventory, cells, data);
     }
 
     public void setOwner(UUID owner) {
@@ -72,6 +164,10 @@ public class LandingPadBlockEntity extends BlockEntity {
         if ((level.getGameTime() + pos.asLong()) % CHECK_TICKS != 0) {
             return;
         }
+        // Past er minder in dan er zit (een batterijcel eruit gehaald)? Dan loopt het over.
+        energy = Math.min(energy, capacity());
+        filledLastSecond = fillFromGrid(level, pos);
+        chargedLastSecond = 0;
         UUID ownerId = ownerId(level);
         list(level, ownerId);
         if (ownerId == null) {
@@ -79,9 +175,38 @@ public class LandingPadBlockEntity extends BlockEntity {
         }
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, zone())) {
             if (ownerId.equals(player.getUUID()) && !player.isSpectator()) {
-                service(level, pos, player);
+                chargedLastSecond += service(level, pos, player);
             }
         }
+        if (filledLastSecond > 0 || chargedLastSecond > 0) {
+            setChanged();
+        }
+    }
+
+    /**
+     * De eigen batterij bijvullen uit het net, maar alleen met wat over is: net als het
+     * laadstation houden de generatoren de helft achter (STATION_GRID_RESERVE), zodat torentjes,
+     * laserpoorten en de koepel op hetzelfde net altijd voorgaan.
+     */
+    private int fillFromGrid(ServerLevel level, BlockPos pos) {
+        int room = capacity() - energy;
+        if (room <= 0) {
+            return 0;
+        }
+        long stored = 0;
+        long gridCapacity = 0;
+        for (EnergySource source : StarkGrid.sources(level, pos)) {
+            stored += source.energy();
+            gridCapacity += source.capacity();
+        }
+        long spare = stored - (long) (gridCapacity * EdithBalance.STATION_GRID_RESERVE);
+        int wanted = (int) Math.min(Math.min(spare, room), SuitBalance.PAD_BATTERY_FILL);
+        if (wanted <= 0) {
+            return 0;
+        }
+        int got = StarkGrid.draw(level, pos, wanted);
+        energy += got;
+        return got;
     }
 
     /** Het vierkant boven het platform waar je "erop" staat. */
@@ -111,15 +236,22 @@ public class LandingPadBlockEntity extends BlockEntity {
         }
     }
 
-    /** Bril opladen en harnas repareren, zolang het net stroom heeft. */
-    private static void service(ServerLevel level, BlockPos pos, ServerPlayer player) {
+    /**
+     * Bril opladen en harnas repareren. Eerst uit de eigen batterij (snel), en wat dan nog
+     * ontbreekt rechtstreeks uit het net (langzamer). Geeft terug hoeveel de bril erbij kreeg.
+     */
+    private int service(ServerLevel level, BlockPos pos, ServerPlayer player) {
         boolean worked = false;
+        int charged = 0;
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (!glasses.isEmpty() && EdithData.isAuthorized(glasses, player)) {
             int missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses);
-            int got = StarkGrid.draw(level, pos, Math.min(missing, SuitBalance.PAD_CHARGE_PER_SECOND));
-            if (got > 0) {
-                EdithData.addEnergy(glasses, got);
+            int fromBattery = Math.min(Math.min(missing, energy), SuitBalance.PAD_BATTERY_CHARGE);
+            energy -= fromBattery;
+            int fromGrid = StarkGrid.draw(level, pos, Math.min(missing - fromBattery, SuitBalance.PAD_CHARGE_PER_SECOND));
+            charged = fromBattery + fromGrid;
+            if (charged > 0) {
+                EdithData.addEnergy(glasses, charged);
                 worked = true;
             }
         }
@@ -138,6 +270,7 @@ public class LandingPadBlockEntity extends BlockEntity {
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + 0.1, player.getZ(),
                     6, 0.4, 0.05, 0.4, 0.05);
         }
+        return charged;
     }
 
     // ================================================================ Landen
@@ -205,6 +338,10 @@ public class LandingPadBlockEntity extends BlockEntity {
         if (listedFor != null) {
             tag.putUUID("ListedFor", listedFor);
         }
+        tag.putInt("Energy", energy);
+        if (!cells.getItem(0).isEmpty()) {
+            tag.put("Cells", cells.getItem(0).save(registries));
+        }
     }
 
     @Override
@@ -212,5 +349,7 @@ public class LandingPadBlockEntity extends BlockEntity {
         super.loadAdditional(tag, registries);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         listedFor = tag.hasUUID("ListedFor") ? tag.getUUID("ListedFor") : null;
+        energy = tag.getInt("Energy");
+        cells.setItem(0, tag.contains("Cells") ? ItemStack.parseOptional(registries, tag.getCompound("Cells")) : ItemStack.EMPTY);
     }
 }
