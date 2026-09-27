@@ -736,9 +736,16 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       timingbalk. Tab vult aan, pijltje omhoog herhaalt. Nieuwe test die de terminal uitspeelt;
       screenshots `-Ponly=hack`.
       (mijn invulling) De puzzels zelf, de commando's en de teksten.
-- [ ] De harnas-werkbank als hologram zonder scherm: boven de werkbank zweeft het harnas; kijk
+- [x] De harnas-werkbank als hologram zonder scherm: boven de werkbank zweeft het harnas; kijk
       naar een stuk en rechtsklik = bouwen (materiaal uit je rugzak, het stuk bouwt zich op in het
       hologram en vliegt naar je toe), upgrade in je hand + klik op een stuk = inbouwen. Jouw keuze.
+      **Gedaan** (3fbd94e): het echte harnasmodel als blauw hologram dat ronddraait; waar je naar
+      kijkt licht op, met een kaartje naast je vizier (kosten groen/rood, of wat een klik doet).
+      Het scherm is weg. Tests: bouwen uit de rugzak, laarzen neerleggen + upgrade, een stuk
+      pakken, een oude werkbank leegmaken. Screenshots `-Ponly=workbench`.
+      (mijn invulling) Een klaar stuk gaat meteen aan als die plek vrij is (anders in je rugzak);
+      met een lege hand pak je een stuk dat erop ligt; met shift doet rechtsklikken het gewone;
+      één ding tegelijk; in creative gratis; verder dan 24 blokken weg = het blijft liggen.
 
 ---
 
