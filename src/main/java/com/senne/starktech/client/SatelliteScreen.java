@@ -97,6 +97,8 @@ public class SatelliteScreen extends Screen {
     private int boxY0;
     private int boxX1;
     private int boxY1;
+    /** Hoe hoog een regel van de tabel is (8, of wat meer als er plek over is). */
+    private int tableRow = TABLE_ROW;
     private boolean dragging;
 
     public SatelliteScreen() {
@@ -128,7 +130,9 @@ public class SatelliteScreen extends Screen {
         panelH = Math.min(height - 12, 270);
         left = (width - panelW) / 2;
         top = (height - panelH) / 2;
-        leftW = Mth.clamp(Math.round(panelW * 0.30f), 118, 150);
+        // De linkerkolom (satelliet + tabel) iets smaller dan vroeger (30%), zodat de onderdelen
+        // rechts meer plek hebben.
+        leftW = Mth.clamp(Math.round(panelW * 0.27f), 112, 136);
         rowsX = left + leftW + 10;
         rowsW = left + panelW - 6 - rowsX;
         // Van rechts naar links: de knop, dan het kostenvakje, dan de naam, blokjes en uitleg.
@@ -342,14 +346,19 @@ public class SatelliteScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         float seconds = (Util.getMillis() % 3_600_000L) / 1000.0f;
 
-        // Links onder: de tabel met alle getallen. Eerst uitrekenen hoe hoog die wordt; de
-        // satelliet krijgt de rest.
+        // Links: bovenaan de satelliet in een vak, eronder de tabel met alle getallen. Het vak is
+        // hooguit ruim half zo hoog als breed (vroeger kreeg hij alles wat de tabel overliet); wat
+        // er dan overblijft, geeft de tabel wat meer lucht.
         List<StatGroup> groups = stats();
+        int columnH = panelH - HEADER_H - FOOTER_H - 4;
+        int boxMaxH = Math.round(leftW * 0.55f);
+        int tableLines = groups.stream().mapToInt(group -> 1 + group.lines().size()).sum();
+        tableRow = Mth.clamp((columnH - boxMaxH - 3 - 2 * (groups.size() - 1)) / tableLines, TABLE_ROW, TABLE_ROW + 2);
         int statsH = tableHeight(groups);
         boxX0 = left + 2;
         boxY0 = top + HEADER_H;
         boxX1 = left + leftW;
-        boxY1 = top + panelH - FOOTER_H - statsH - 4;
+        boxY1 = boxY0 + Math.max(36, Math.min(boxMaxH, columnH - statsH - 3));
         g.fill(boxX0, boxY0, boxX1, boxY1, HudStyle.argb(235, 0x02050C));
         view.renderSatelliteCloseUp(g, boxX0, boxY0, boxX1, boxY1, shown, seconds);
         HudStyle.brackets(g, boxX0, boxY0, boxX1, boxY1, 6, HudStyle.argb(160, HudStyle.ORANGE));
@@ -533,10 +542,10 @@ public class SatelliteScreen extends Screen {
     }
 
     /** Hoe hoog de tabel wordt: per groep een kopregel en een regel per getal, met een kiertje ertussen. */
-    private static int tableHeight(List<StatGroup> groups) {
+    private int tableHeight(List<StatGroup> groups) {
         int height = 0;
         for (StatGroup group : groups) {
-            height += TABLE_ROW * (1 + group.lines().size()) + 2;
+            height += tableRow * (1 + group.lines().size()) + 2;
         }
         return height - 2;
     }
@@ -547,26 +556,27 @@ public class SatelliteScreen extends Screen {
      */
     private void drawTable(GuiGraphics g, List<StatGroup> groups, int x0, int x1, int y) {
         int valueX = x1 - Math.round((x1 - x0) * 0.36f); // de grens tussen de twee kolommen
+        int textDy = 1 + (tableRow - TABLE_ROW) / 2;       // tekst in het midden van de regel
         for (StatGroup group : groups) {
             int colour = group.locked() ? 0x8A9BA0 : group.colour();
             int groupTop = y;
-            g.fill(x0, y, x1, y + TABLE_ROW, HudStyle.argb(group.locked() ? 35 : 60, colour));
-            small(g, group.title().getString().toUpperCase(), x0 + 3, y + 1, HudStyle.argb(240, colour));
+            g.fill(x0, y, x1, y + tableRow, HudStyle.argb(group.locked() ? 35 : 60, colour));
+            small(g, group.title().getString().toUpperCase(), x0 + 3, y + textDy, HudStyle.argb(240, colour));
             if (group.locked()) {
-                smallRight(g, Component.translatable("satellite.starktech.upgrade.locked").getString(), x1 - 3, y + 1,
+                smallRight(g, Component.translatable("satellite.starktech.upgrade.locked").getString(), x1 - 3, y + textDy,
                         HudStyle.argb(170, 0x8A9BA0));
             }
-            y += TABLE_ROW;
+            y += tableRow;
             int alpha = group.locked() ? 90 : 220;
             for (int i = 0; i < group.lines().size(); i++) {
                 Stat stat = group.lines().get(i);
-                g.fill(x0, y, x1, y + TABLE_ROW, i % 2 == 0 ? HudStyle.argb(170, 0x02050C) : HudStyle.argb(150, 0x172833));
+                g.fill(x0, y, x1, y + tableRow, i % 2 == 0 ? HudStyle.argb(170, 0x02050C) : HudStyle.argb(150, 0x172833));
                 String label = font.plainSubstrByWidth(stat.label().getString(), (int) ((valueX - x0 - 6) / 0.75f));
-                small(g, label, x0 + 4, y + 1, HudStyle.argb(alpha, HudStyle.WHITE));
-                smallRight(g, group.locked() ? "-" : stat.value(), x1 - 3, y + 1, HudStyle.argb(alpha, HudStyle.WHITE));
-                y += TABLE_ROW;
+                small(g, label, x0 + 4, y + textDy, HudStyle.argb(alpha, HudStyle.WHITE));
+                smallRight(g, group.locked() ? "-" : stat.value(), x1 - 3, y + textDy, HudStyle.argb(alpha, HudStyle.WHITE));
+                y += tableRow;
             }
-            g.fill(valueX, groupTop + TABLE_ROW, valueX + 1, y, HudStyle.argb(45, colour));
+            g.fill(valueX, groupTop + tableRow, valueX + 1, y, HudStyle.argb(45, colour));
             g.renderOutline(x0, groupTop, x1 - x0, y - groupTop, HudStyle.argb(90, colour));
             y += 2;
         }

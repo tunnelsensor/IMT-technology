@@ -81,7 +81,9 @@ neoForge {
             systemProperty 'starktech.visualcheck', 'true'
             // Alleen een stuk van de rondleiding: gradlew runVisualCheck -Ponly=satellite
             systemProperty 'starktech.visualcheck.only', (project.findProperty('only') ?: '').toString()
-            programArguments.addAll '--width', '1280', '--height', '720'
+            // Ook op een ander formaat: gradlew runVisualCheck -Psize=1600x900 (zoals de showcase)
+            def size = (project.findProperty('size') ?: '1280x720').toString().split('x')
+            programArguments.addAll '--width', size[0], '--height', size[1]
         }
 
         // Komen onze structuren echt in een gewone wereld? Start een server, zoekt de
