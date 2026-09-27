@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.EdithArsenal;
+import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.client.OreType;
 import com.senne.starktech.client.arsenal.OrbitView;
 import com.senne.starktech.holo.HoloMode;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -27,6 +29,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -55,6 +58,10 @@ import org.joml.Matrix4f;
  *
  * De drones en de satelliet zijn hun echte 3D-modellen (dezelfde als in het arsenaalscherm),
  * maar doorschijnend en in de kleur van het hologram.
+ *
+ * Een bril is niet nodig, behalve voor wat van E.D.I.T.H. is: je waypoints op de kaart, en de
+ * standen arsenaal en satelliet (zonder bril staat er dan een rood kruis en een bordje). Elke
+ * speler ziet dat volgens zijn eigen bril.
  */
 public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEntity> {
     /** Hoe groot het hologram is (in blokken, van rand tot rand). */
@@ -126,12 +133,42 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
         }
         baseRing(poseStack, lines, rgb, time);
 
-        switch (table.mode()) {
-            case MAP -> renderMap(table, level, poseStack, lines, rgb, time);
-            case BLUEPRINT -> renderBlueprint(table, level, poseStack, buffers, lines, rgb);
-            case ARSENAL -> renderArsenal(poseStack, buffers, lines, rgb, time);
-            case SATELLITE -> renderSatellite(poseStack, buffers, lines, rgb, time);
-            case ORES -> renderOres(table, level, poseStack, lines, rgb, time);
+        // Jouw drones en je satelliet zijn van E.D.I.T.H.: zonder je eigen bril op zie je ze niet.
+        boolean locked = table.mode().needsGlasses() && !EdithClientState.authorized;
+        if (locked) {
+            cross(poseStack, lines, 0.25f, 0xFF4545, 160);
+        } else {
+            switch (table.mode()) {
+                case MAP -> renderMap(table, level, poseStack, lines, rgb, time);
+                case BLUEPRINT -> renderBlueprint(table, level, poseStack, buffers, lines, rgb);
+                case ARSENAL -> renderArsenal(poseStack, buffers, lines, rgb, time);
+                case SATELLITE -> renderSatellite(poseStack, buffers, lines, rgb, time);
+                case ORES -> renderOres(table, level, poseStack, lines, rgb, time);
+            }
+        }
+        poseStack.popPose();
+        if (locked) {
+            // Als laatste: tekst gebruikt een andere buffer, en daarna mag "lines" niet meer.
+            lockedLabel(table, poseStack, buffers);
+        }
+    }
+
+    /** Een zwevend bordje boven de tafel, altijd naar jou toe: "E.D.I.T.H. glasses required". */
+    private static void lockedLabel(HoloTableBlockEntity table, PoseStack poseStack, MultiBufferSource buffers) {
+        Minecraft mc = Minecraft.getInstance();
+        Font font = mc.font;
+        Component[] lines = {
+                Component.translatable("holo.starktech.locked"),
+                Component.translatable("holo.starktech.locked." + table.mode().getSerializedName())};
+        poseStack.pushPose();
+        poseStack.translate(0.5, LIFT + 0.45, 0.5);
+        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+        poseStack.scale(0.012f, -0.012f, 0.012f);
+        for (int i = 0; i < lines.length; i++) {
+            float x = -font.width(lines[i]) / 2.0f;
+            int colour = i == 0 ? 0xFFFF6B5B : 0xFFE8FBFF;
+            font.drawInBatch(lines[i], x, i * 11, colour, false, poseStack.last().pose(), buffers,
+                    Font.DisplayMode.NORMAL, 0x60000000, LightTexture.FULL_BRIGHT);
         }
         poseStack.popPose();
     }
@@ -216,11 +253,12 @@ public class HoloTableRenderer implements BlockEntityRenderer<HoloTableBlockEnti
         return height >= 0 ? height * RELIEF_UP : height * RELIEF_DOWN;
     }
 
-    /** Je waypoints als paaltjes in hun eigen kleur, zodat je ze uit elkaar houdt. */
+    /** Je waypoints als paaltjes in hun eigen kleur, zodat je ze uit elkaar houdt (alleen met de bril op). */
     private void renderWaypoints(HoloTableBlockEntity table, Level level, PoseStack poseStack,
                                  VertexConsumer lines, HoloMapData.Snapshot snapshot) {
         Player player = Minecraft.getInstance().player;
-        if (player == null) {
+        // Je waypoints zitten in E.D.I.T.H.: zonder je bril op staan ze niet op de kaart.
+        if (player == null || !EdithClientState.authorized) {
             return;
         }
         EdithWaypoints data = player.getData(ModAttachments.WAYPOINTS);

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  * Alles wat je hier kiest gaat meteen naar de tafel, zodat je het hologram achter het scherm
  * ziet veranderen terwijl je klikt. Er is dus geen "opslaan"-knop.
  *
- * Openen: rechtsklik op de tafel met een lege hand (met de bril op).
+ * Openen: rechtsklik op de tafel met een lege hand (een bril is niet nodig).
  *
  * Elke regel heeft links een naam en rechts de knoppen. Alles is zo uitgerekend dat het
  * past op het kleinste scherm dat Minecraft toestaat (240 beeldpunten hoog): eerder liepen de
@@ -118,6 +118,10 @@ public class HoloTableScreen extends Screen {
             Button button = Button.builder(mode.label(), b -> send(HoloActionPayload.Op.MODE, mode.ordinal()))
                     .bounds(valueX + column * (modeW + 4), rowY(row), modeW, 20).build();
             button.active = table.mode() != mode;
+            if (mode.needsGlasses() && !EdithClientState.authorized) {
+                button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                        Component.translatable("screen.starktech.holo.needs_glasses")));
+            }
             addRenderableWidget(button);
         }
 
@@ -180,7 +184,7 @@ public class HoloTableScreen extends Screen {
     public void tick() {
         super.tick();
         HoloTableBlockEntity table = table();
-        if (table == null || !EdithClientState.authorized) {
+        if (table == null) {
             onClose();
             return;
         }
@@ -268,10 +272,14 @@ public class HoloTableScreen extends Screen {
 
         // De uitleg onderaan, over zoveel regels als nodig, links van "Done".
         int hintWidth = PANEL_W - MARGIN * 2 - DONE_W - 8;
-        List<FormattedCharSequence> hint = font.split(Component.translatable("screen.starktech.holo.hint"), hintWidth);
+        // Een stand van E.D.I.T.H. zonder bril op? Dan zegt de uitleg dat (in het rood).
+        boolean locked = table.mode().needsGlasses() && !EdithClientState.authorized;
+        List<FormattedCharSequence> hint = font.split(Component.translatable(locked
+                ? "screen.starktech.holo.needs_glasses" : "screen.starktech.holo.hint"), hintWidth);
         int hintY = footerY() + 10 - hint.size() * 5;
         for (FormattedCharSequence line : hint) {
-            g.drawString(font, line, left + MARGIN, hintY, HudStyle.argb(150, HudStyle.WHITE), false);
+            g.drawString(font, line, left + MARGIN, hintY,
+                    locked ? HudStyle.argb(230, HudStyle.RED) : HudStyle.argb(150, HudStyle.WHITE), false);
             hintY += 10;
         }
     }

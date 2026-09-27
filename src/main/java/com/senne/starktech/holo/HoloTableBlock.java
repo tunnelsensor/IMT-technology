@@ -1,7 +1,6 @@
 package com.senne.starktech.holo;
 
 import com.mojang.serialization.MapCodec;
-import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.shield.ShieldColor;
 import net.minecraft.core.BlockPos;
@@ -39,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * - **rechtsklik met een voorwerp**: laat het recept van dat voorwerp zien
  * - **sluipen + rechtsklik**: meteen de volgende kleur, zonder scherm
  *
- * Je hebt de bril op nodig: zonder E.D.I.T.H. is het een dure tafel.
+ * Een bril heb je er niet voor nodig: de tafel projecteert zelf (hij heeft wel stroom nodig).
  */
 public class HoloTableBlock extends BaseEntityBlock implements PowerConnectable {
     public static final MapCodec<HoloTableBlock> CODEC = simpleCodec(HoloTableBlock::new);
@@ -106,10 +105,6 @@ public class HoloTableBlock extends BaseEntityBlock implements PowerConnectable 
         if (stack.isEmpty() || player.isShiftKeyDown()) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        if (!hasGlasses(player)) {
-            tellNoGlasses(level, player);
-            return ItemInteractionResult.SUCCESS;
-        }
         if (level.getBlockEntity(pos) instanceof HoloTableBlockEntity table) {
             table.setBlueprint(stack);
             if (!level.isClientSide) {
@@ -124,10 +119,6 @@ public class HoloTableBlock extends BaseEntityBlock implements PowerConnectable 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (!hasGlasses(player)) {
-            tellNoGlasses(level, player);
-            return InteractionResult.sidedSuccess(level.isClientSide);
-        }
         if (player.isShiftKeyDown()) {
             if (!level.isClientSide) {
                 ShieldColor colour = state.getValue(COLOR).next();
@@ -143,14 +134,4 @@ public class HoloTableBlock extends BaseEntityBlock implements PowerConnectable 
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    private static boolean hasGlasses(Player player) {
-        ItemStack glasses = EdithData.getWornGlasses(player);
-        return !glasses.isEmpty() && EdithData.isAuthorized(glasses, player);
-    }
-
-    private static void tellNoGlasses(Level level, Player player) {
-        if (!level.isClientSide) {
-            player.displayClientMessage(Component.translatable("holo.starktech.need_glasses"), true);
-        }
-    }
 }

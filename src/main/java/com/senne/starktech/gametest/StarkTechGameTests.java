@@ -2219,23 +2219,30 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
-    /** Zonder bril doet de tafel niets; hij is dan een dure tafel. */
+    /** De tafel werkt ook zonder bril: sluipen + klik = volgende kleur, een voorwerp = het recept. */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "holo")
-    public static void holo_table_needs_the_glasses(GameTestHelper helper) {
+    public static void holo_table_works_without_glasses(GameTestHelper helper) {
         BlockPos pos = new BlockPos(2, 2, 2);
         helper.setBlock(pos, ModBlocks.HOLO_TABLE.get().defaultBlockState());
         if (!(helper.getBlockEntity(pos) instanceof HoloTableBlockEntity table)) {
             throw new GameTestAssertException("De holotafel heeft geen block entity");
         }
         // Een speler zonder bril.
-        ServerPlayer stranger = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(helper.absolutePos(pos)),
                 Direction.UP, helper.absolutePos(pos), false);
 
-        HoloMode before = table.mode();
-        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), stranger, hit);
-        if (table.mode() != before) {
-            throw new GameTestAssertException("De stand veranderde zonder bril");
+        var before = helper.getBlockState(pos).getValue(HoloTableBlock.COLOR);
+        player.setShiftKeyDown(true);
+        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), player, hit);
+        if (helper.getBlockState(pos).getValue(HoloTableBlock.COLOR) == before) {
+            throw new GameTestAssertException("Zonder bril veranderde de kleur niet");
+        }
+        player.setShiftKeyDown(false);
+        helper.getBlockState(pos).useItemOn(new ItemStack(ModItems.STARK_CHIP.get()), helper.getLevel(), player,
+                net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+        if (!table.blueprint().is(ModItems.STARK_CHIP.get())) {
+            throw new GameTestAssertException("Zonder bril kwam het recept niet op tafel");
         }
         helper.succeed();
     }

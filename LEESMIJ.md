@@ -529,7 +529,10 @@ land je erop met de stuwraketten aan, dan zegt E.D.I.T.H. "Welcome home". Zolang
 ### Holotafel
 Craft een **holotafel** (getint glas, amethist, een Stark-chip en ijzer) en zet hem neer. Hij
 projecteert een hologram boven zich dat langzaam ronddraait (als hij **stroom** heeft; zonder
-stroom knippert er alleen een rood ringetje), en je bedient hem met de bril op:
+stroom knippert er alleen een rood ringetje). Je hebt er **geen bril** voor nodig, behalve voor
+wat van E.D.I.T.H. is: je **waypoints** op de kaart, en de standen **Arsenal** en **Satellite**.
+Zonder bril staat daar een rood kruis met "E.D.I.T.H. glasses required" (iedereen ziet het
+volgens zijn eigen bril). Bedienen:
 
 | Wat je doet | Wat er gebeurt |
 |---|---|
@@ -545,7 +548,7 @@ is geen opslaan-knop. Met **Take off** haal je het voorwerp weer van tafel.
 Vijf standen:
 
 - **Map** — een reliëfkaart van 96 bij 96 blokken rond de tafel: hoe hoger de grond, hoe hoger
-  en feller het staafje. Je waypoints staan er als gekleurde paaltjes in, en het leeft:
+  en feller het staafje. Je waypoints staan er als gekleurde paaltjes in (met de bril op), en het leeft:
   spelers zijn witte stipjes, vijanden rode, dieren groene.
 - **Blueprint** — het recept van wat je op tafel legt, als zwevend 3x3-rooster met het
   resultaat erboven. Mag een onderdeel uit een hele groep komen (bijvoorbeeld "een ijzerstaaf"),

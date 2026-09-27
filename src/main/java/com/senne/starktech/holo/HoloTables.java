@@ -1,6 +1,5 @@
 package com.senne.starktech.holo;
 
-import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.network.HoloActionPayload;
 import com.senne.starktech.network.HoloOpenPayload;
 import com.senne.starktech.network.ModNetwork;
@@ -11,7 +10,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -61,8 +59,8 @@ public final class HoloTables {
     /**
      * De tafel waar deze speler bij mag, of null.
      *
-     * Drie dingen moeten kloppen: er staat daar echt een holotafel, je staat er dichtbij
-     * genoeg bij, en je draagt je eigen bril.
+     * Twee dingen moeten kloppen: er staat daar echt een holotafel, en je staat er dichtbij
+     * genoeg bij. (Een bril is niet nodig.)
      */
     private static @Nullable HoloTableBlockEntity table(ServerPlayer player, BlockPos pos) {
         ServerLevel level = player.serverLevel();
@@ -70,10 +68,6 @@ public final class HoloTables {
             return null;
         }
         if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > REACH * REACH) {
-            return null;
-        }
-        ItemStack glasses = EdithData.getWornGlasses(player);
-        if (glasses.isEmpty() || !EdithData.isAuthorized(glasses, player)) {
             return null;
         }
         return level.getBlockEntity(pos) instanceof HoloTableBlockEntity table ? table : null;

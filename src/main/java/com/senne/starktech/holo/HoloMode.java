@@ -33,6 +33,14 @@ public enum HoloMode implements StringRepresentable {
         return all[Math.floorMod(id, all.length)];
     }
 
+    /**
+     * Hoort deze stand bij E.D.I.T.H. (jouw drones, jouw satelliet)? Dan zie je hem alleen met je
+     * eigen bril op. De kaart, het recept en de ertsen laat de tafel zelf zien.
+     */
+    public boolean needsGlasses() {
+        return this == ARSENAL || this == SATELLITE;
+    }
+
     public Component label() {
         return Component.translatable("holo.starktech.mode." + name);
     }

@@ -245,6 +245,17 @@ public final class VisualCheck {
             t.shot(40, "09_holo_from_above");
             t.view(0, 3.2, -60, 2.8, 130, 18);
             t.shot(40, "10_holo_side");
+            // Zonder bril: de kaart werkt (zonder waypoints), arsenaal en satelliet niet.
+            t.onServer(0, player -> player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, ItemStack.EMPTY));
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.shot(40, "11_holo_map_no_glasses");
+            onTable(t, table -> table.setMode(HoloMode.ARSENAL));
+            t.shot(30, "11a_holo_arsenal_no_glasses");
+            t.open(0, () -> new HoloTableScreen(TABLE));
+            t.shot(20, "11b_holo_screen_no_glasses");
+            t.close(0);
+            onTable(t, table -> table.setMode(HoloMode.MAP));
+            t.onServer(0, DevWorld::wearGlasses);
         }
 
         // --- De Hydra-bunker in een (zelfgebouwde) berg: van buiten, en dan kamer voor kamer.

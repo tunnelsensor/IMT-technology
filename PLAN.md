@@ -786,6 +786,14 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       aan-uit-aan flikkert bij een beetje stroom. Test: bijna lege generator = blijft uit, vol =
       gaat vanzelf aan.
       (mijn invulling) De 5 seconden en het ene klikje.
+- [x] De holotafel moet werken zonder de bril; wat echt van de bril is (zoals waypoints) wel met
+      bril, de kaart enzo niet (27 september). **Gedaan**: bedienen (scherm, recept, kleur) kan
+      zonder bril. De kaart, het recept en de ertsen laat de tafel zelf zien; je waypoints op de
+      kaart en de standen Arsenal en Satellite alleen met je eigen bril op (anders een rood kruis
+      met een bordje, en een rode uitleg in het scherm). Test: zonder bril kleur wisselen en een
+      recept op tafel leggen; screenshots `11_holo_map_no_glasses`, `11a_holo_arsenal_no_glasses`.
+      (mijn invulling) Welke dingen "van de bril" zijn: waypoints, drones en satelliet (spelers en
+      mobs op de kaart en de ertsen niet).
 
 ---
 
