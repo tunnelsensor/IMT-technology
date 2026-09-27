@@ -367,11 +367,13 @@ public final class StarkTechGameTests {
     }
 
     /** Hack je de kern met de laptop (en duurt dat lang genoeg), dan is de toren van jou. */
-    @GameTest(template = ARENA, timeoutTicks = 200, batch = "security")
+    @GameTest(template = ARENA, timeoutTicks = 260, batch = "security")
     public static void laptop_hack_takes_the_tower(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         var core = placeCore(helper, pos, null);
         ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        // De beveiliging schiet tijdens de hack echt op je; in deze test overleeft de hacker dat.
+        hacker.getAbilities().invulnerable = true;
         com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
         if (!com.senne.starktech.security.TowerHack.isHacking(hacker)) {
             throw new GameTestAssertException("De hack begon niet");
@@ -2259,6 +2261,59 @@ public final class StarkTechGameTests {
         com.senne.starktech.energy.StarkCables.remove(level, route.get(route.size() / 2));
         if (com.senne.starktech.energy.StarkGrid.available(level, device) > 0) {
             throw new GameTestAssertException("De stroom sprong over het doorgeknipte stuk");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De hack-terminal van de laptop, helemaal uitgespeeld: een verkeerde poort wordt geweigerd,
+     * het firewall-logboek verraadt de open poort, een fout wachtwoord geeft de "likeness", het
+     * goede wachtwoord geeft een shell, de config noemt de beveiligingsdaemon, en override op het
+     * goede procesnummer brengt je bij de laatste stap.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "hack")
+    public static void hack_terminal_can_be_solved(GameTestHelper helper) {
+        var terminal = new com.senne.starktech.security.HackTerminal(42L);
+        long now = 0;
+        terminal.run("connect 22", now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.RECON) {
+            throw new GameTestAssertException("Een gefilterde poort liet je toch binnen");
+        }
+        terminal.run("logs", now);
+        boolean logKnows = terminal.output().stream().anyMatch(line -> line.text().contains("ALLOW")
+                && line.text().contains(":" + terminal.openPort() + " "));
+        if (!logKnows) {
+            throw new GameTestAssertException("Het firewall-logboek noemt de open poort niet");
+        }
+        terminal.run("connect " + terminal.openPort(), now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.LOGIN) {
+            throw new GameTestAssertException("De open poort gaf geen inlogscherm");
+        }
+        String wrong = terminal.candidates().stream().filter(word -> !word.equals(terminal.password())).findFirst().orElseThrow();
+        terminal.run("login " + wrong, now);
+        int likeness = com.senne.starktech.security.HackTerminal.likeness(wrong, terminal.password());
+        if (terminal.output().stream().noneMatch(line -> line.text().contains("Likeness " + likeness + "/"))) {
+            throw new GameTestAssertException("Een fout wachtwoord gaf niet de juiste likeness (" + likeness + ")");
+        }
+        terminal.run("login " + terminal.password().toLowerCase(), now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.SHELL) {
+            throw new GameTestAssertException("Het goede wachtwoord gaf geen shell");
+        }
+        terminal.run("cd etc", now);
+        terminal.run("cat security.conf", now);
+        if (terminal.output().stream().noneMatch(line -> line.text().equals("daemon = " + terminal.guard()))) {
+            throw new GameTestAssertException("De config noemt de beveiligingsdaemon niet");
+        }
+        if (!terminal.complete("cat sec").equals("cat security.conf")) {
+            throw new GameTestAssertException("Tab vulde de bestandsnaam niet aan: " + terminal.complete("cat sec"));
+        }
+        terminal.run("override " + (terminal.guardPid() + 1), now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.SHELL) {
+            throw new GameTestAssertException("Override op het verkeerde proces ging toch door");
+        }
+        terminal.run("override " + terminal.guardPid(), now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.OVERRIDE) {
+            throw new GameTestAssertException("Override op de beveiligingsdaemon ging niet door");
         }
         helper.succeed();
     }

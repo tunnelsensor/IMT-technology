@@ -23,8 +23,9 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  *
  * 1. Je klikt met de laptop op de beveiligingskern: de hack begint. Het alarm gaat af, en alle
  *    beveiligingsdrones van de toren komen op je af.
- * 2. In je spel opent het hack-scherm (client/HackScreen) met de minigame. Het spel loopt door:
- *    terwijl jij hackt, schieten de torentjes en drones gewoon op je.
+ * 2. In je spel opent het hack-scherm (client/HackScreen): een terminal waarin je de open poort
+ *    zoekt, inbreekt, het beveiligingsprogramma vindt en overneemt (zie HackTerminal). Het spel
+ *    loopt door: terwijl jij typt, schieten de torentjes en drones gewoon op je.
  * 3. Ben je klaar, dan zegt je spel dat tegen de server. Die kijkt of het klopt: sta je nog bij
  *    de kern, leef je nog, en duurde het niet onmogelijk kort? Dan is de toren van jou.
  *
@@ -37,7 +38,7 @@ public final class TowerHack {
     /** Zo dicht bij de kern moet je blijven (in blokken). */
     public static final double MAX_DISTANCE = 6.0;
     /** Sneller dan dit kan niemand de minigame uitspelen (in ticks): anders klopt er iets niet. */
-    public static final int MIN_TICKS = 80;
+    public static final int MIN_TICKS = 160;
 
     private record Session(BlockPos core, long startedAt) {}
 

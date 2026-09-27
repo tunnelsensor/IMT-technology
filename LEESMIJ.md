@@ -59,12 +59,21 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   **schaar** knip je ze door (eerst de vloer openhakken).
 - **Hacken** doe je met een **Stark Laptop** (drie zwarte glasruiten, redstone met een
   Stark-chip ertussen, drie ijzer; een bril heb je er niet voor nodig). Klik ermee op de kern:
-  het alarm gaat af en alle drones komen op je af. Op je scherm verschijnt de hack in drie lagen
-  (Firewall, Encryption, Override): een cursor schuift heen en weer, en je drukt op **spatie**
-  (of klikt) als hij in het groene vak staat. Mis je, dan ben je een treffer kwijt; elke laag
-  gaat sneller. Het spel loopt ondertussen door: je kunt niet weglopen, en de beveiliging
-  schiet op je. Loop je weg (verder dan 6 blokken), ga je dood of druk je op Esc, dan is de
-  hack afgebroken.
+  het alarm gaat af en alle drones komen op je af. Op je scherm opent een **terminal**, waarin
+  je commando's typt (Enter = uitvoeren, **Tab** = aanvullen, pijltje omhoog = vorige commando,
+  scrollwiel = terug, `help` = wat je hier kunt):
+  1. **Recon**: `scan` laat de poorten zien, maar ze staan allemaal op "filtered". Lees het
+     firewall-logboek met `logs`: daar staan twee poorten die voor onderhoud open zijn gezet...
+     en één daarvan is later weer dichtgezet. `connect <poort>` op de goede.
+  2. **Breach**: een geheugendump met acht woorden tussen de tekens. Eén is het wachtwoord:
+     `login <woord>`. Fout? Dan zegt hij hoeveel letters op de goede plek staan ("likeness").
+     Na vier fouten is hij even geblokkeerd en krijg je een nieuwe dump.
+  3. **Search**: nu ben je binnen. Zoek met `ls`, `cd` en `cat` hoe het beveiligingsprogramma
+     heet (er draaien er een paar met zo'n naam) en zijn nummer met `ps`.
+  4. **Override**: `override <nummer>`, en dan nog vier keer **spatie** (of klikken) als de
+     heen-en-weer schuivende cursor in het groene vak staat.
+  Het spel loopt ondertussen door: je kunt niet weglopen, en de beveiliging schiet op je. Loop
+  je weg (verder dan 6 blokken), ga je dood of druk je op Esc, dan is de hack afgebroken.
 
 ---
 

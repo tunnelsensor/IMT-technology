@@ -307,11 +307,11 @@ public final class VisualCheck {
             t.view(20, -59.5, -59.5, 57.5, 0, 10);
             t.step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = true);
             t.onServer(0, player -> com.senne.starktech.security.TowerHack.start(player, core));
-            t.shot(10, "k01_hack_start");
-            t.shot(50, "k02_hack_layer1");
-            t.shot(80, "k03_hack_layer2");
-            t.shot(90, "k04_hack_layer3");
-            t.shot(120, "k05_hack_done");
+            t.shot(20, "k01_hack_start");
+            t.shot(220, "k02_hack_recon");
+            t.shot(160, "k03_hack_login");
+            t.shot(180, "k04_hack_shell");
+            t.waitUntil(900, () -> !(Minecraft.getInstance().screen instanceof com.senne.starktech.client.HackScreen));
             t.step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = false);
             t.shot(40, "k06_hack_core_green");
         }
