@@ -19,8 +19,11 @@ import java.util.Random;
  *       firewall-logboek ({@code logs}) staan twee poorten die toegelaten zijn; één daarvan is later
  *       weer dichtgezet. Met {@code connect <poort>} op de goede kom je binnen.</li>
  *   <li><b>LOGIN</b>: een geheugendump vol tekens met woorden ertussen. Eén woord is het wachtwoord.
- *       Typ {@code login <woord>}; is het fout, dan zegt de terminal hoeveel letters op de goede
- *       plek staan ("likeness"). Vier pogingen, daarna even geblokkeerd en een nieuwe dump.</li>
+ *       Typ {@code login <woord>} (of alleen het woord). Is het fout, dan laat de terminal zien
+ *       welke letters op dezelfde plek staan als in het wachtwoord ({@code ROCKET -> __CKET}),
+ *       streept hij de woorden door die daardoor niet meer kunnen, en zegt hij welke er nog over
+ *       zijn. De woorden lijken expres op elkaar, anders leer je niets van een fout woord. Vijf
+ *       pogingen, daarna even geblokkeerd en een nieuwe dump.</li>
  *   <li><b>SHELL</b>: zoek in de bestanden ({@code ls}, {@code cd}, {@code cat}) hoe het
  *       beveiligingsprogramma heet (er draaien er een paar met zo'n naam), en met {@code ps} zijn
  *       procesnummer.</li>
@@ -39,16 +42,31 @@ public final class HackTerminal {
 
     public record Line(String text, Kind kind) {}
 
-    private static final String[] WORDS = {"SHIELD", "PEPPER", "FRIDAY", "JARVIS", "HAMMER", "MALIBU", "STRIKE",
-            "ORBITS", "VECTOR", "CIPHER", "SYSTEM", "ROCKET", "MATRIX", "NEURAL", "SIGNAL", "FUSION", "TITANS",
-            "LEGION", "DRONES", "SECURE", "ACCESS", "BREACH", "KERNEL", "BINARY", "REPULS", "ARMORS", "VAULTS",
-            "SENSOR", "LAUNCH", "CANNON", "TARGET", "BEACON"};
+    /**
+     * De woorden voor de geheugendump, allemaal 6 letters. Veel eindigen hetzelfde (-ET, -ER, -ON,
+     * ...): zo lijken de woorden in een dump op elkaar en vertelt elk fout woord je iets.
+     */
+    private static final String[] WORDS = {
+            "ROCKET", "POCKET", "SOCKET", "JACKET", "TARGET", "MAGNET", "PLANET", "HELMET", "TABLET", "GADGET",
+            "SECRET", "BUCKET",
+            "HAMMER", "HACKER", "LOCKER", "DOCKER", "BUFFER", "FILTER", "ROUTER", "SERVER", "SENDER", "RENDER",
+            "MASTER", "POSTER", "TESTER", "SILVER", "COPPER", "LEADER", "READER", "HEADER", "LOADER", "CUTTER",
+            "BORDER",
+            "CANNON", "BEACON", "PISTON", "PROTON", "PHOTON", "CARBON", "BUTTON", "LEGION", "FUSION", "VISION",
+            "MOTION", "OPTION",
+            "SIGNAL", "PORTAL", "NEURAL", "VECTOR", "SENSOR", "DOCTOR", "MIRROR",
+            "JARVIS", "FRIDAY", "PEPPER", "MALIBU", "SHIELD", "STRIKE", "ORBITS", "CIPHER", "SYSTEM", "MATRIX",
+            "TITANS", "DRONES", "SECURE", "ACCESS", "BREACH", "KERNEL", "BINARY", "ARMORS", "VAULTS", "LAUNCH"};
+    /** Zoveel woorden staan er in een dump (het wachtwoord meegeteld). */
+    private static final int DUMP_WORDS = 8;
+    /** Uit zoveel woorden die het meest op het wachtwoord lijken, kiest hij de andere woorden. */
+    private static final int CLOSEST = 12;
     private static final String[] GUARDS = {"sentinel", "aegis", "warden", "argus", "vigil", "bastion", "citadel"};
     private static final String[] NAMED_PORTS = {"jarvis-sync", "friday-link", "karen-api", "holo-stream",
             "vault-mon", "suit-telemetry"};
     private static final String JUNK = "!@#$%^&*()[]{}<>?/\\|+=-_;:'\",.";
     /** Zo vaak mag je een fout wachtwoord proberen, en zo lang ben je daarna geblokkeerd (ms). */
-    public static final int ATTEMPTS = 4;
+    public static final int ATTEMPTS = 5;
     public static final long LOCKOUT_MILLIS = 4000;
     /** Zoveel poorten scant hij per seconde. */
     private static final int SCAN_RATE = 1500;
@@ -67,6 +85,10 @@ public final class HackTerminal {
 
     // LOGIN
     private List<String> candidates = List.of();
+    /** De woorden die nog het wachtwoord kunnen zijn (de rest is doorgestreept). */
+    private final List<String> possible = new ArrayList<>();
+    /** De regels van de dump (elke regel: rommel, een woord, rommel), zodat hij niet verspringt. */
+    private final List<String[]> dumpRows = new ArrayList<>();
     private String password = "";
     private int attemptsLeft;
     private long lockedUntil;
@@ -208,6 +230,11 @@ public final class HackTerminal {
         return candidates;
     }
 
+    /** De woorden die na je foute pogingen nog het wachtwoord kunnen zijn. */
+    public List<String> possible() {
+        return possible;
+    }
+
     /** De laatste timingbalk is gehaald: de toren is van jou. */
     public void overrideDone() {
         stage = Stage.DONE;
@@ -253,9 +280,10 @@ public final class HackTerminal {
                 hint("Every port looks filtered. The firewall log knows which one is really open.");
             }
             case LOGIN -> {
-                normal("login <word>     try a password from the memory dump");
+                normal("login <word>     try a password from the memory dump (or just type the word)");
                 normal("dump             show the memory dump again");
-                hint("A wrong word tells you how many letters are right AND in the right place.");
+                hint("A wrong word shows which of its letters are in the same place as in the password,");
+                hint("like ROCKET -> __CKET. Words that can't be the password get crossed out.");
             }
             case SHELL -> {
                 normal("ls [dir]         list files       cd <dir>   change directory");
@@ -350,31 +378,54 @@ public final class HackTerminal {
 
     // ---------------------------------------------------------------- LOGIN
 
-    /** Een nieuwe geheugendump met acht woorden, waarvan één het wachtwoord is. */
+    /**
+     * Een nieuwe geheugendump met acht woorden, waarvan één het wachtwoord is. De andere zeven
+     * kiest hij uit de woorden die het meest op het wachtwoord lijken (dezelfde letters op
+     * dezelfde plek), zodat een fout woord je echt iets vertelt.
+     */
     private void newDump() {
-        List<String> pool = new ArrayList<>(List.of(WORDS));
-        Collections.shuffle(pool, random);
-        candidates = List.copyOf(pool.subList(0, 8));
-        password = candidates.get(random.nextInt(candidates.size()));
+        password = WORDS[random.nextInt(WORDS.length)];
+        List<String> others = new ArrayList<>(List.of(WORDS));
+        others.remove(password);
+        Collections.shuffle(others, random);
+        // Meest gelijkend eerst (bij gelijkspel blijft de willekeurige volgorde staan).
+        others.sort(java.util.Comparator.comparingInt(word -> -likeness(word, password)));
+        List<String> close = new ArrayList<>(others.subList(0, CLOSEST));
+        Collections.shuffle(close, random);
+        List<String> words = new ArrayList<>(close.subList(0, DUMP_WORDS - 1));
+        words.add(password);
+        Collections.shuffle(words, random);
+        candidates = List.copyOf(words);
+        possible.clear();
+        possible.addAll(candidates);
         attemptsLeft = ATTEMPTS;
+        dumpRows.clear();
+        for (String word : candidates) {
+            dumpRows.add(new String[] {junk(random.nextInt(9)), word, ""});
+        }
+        for (String[] row : dumpRows) {
+            row[2] = junk(Math.max(0, 18 - row[0].length() - row[1].length()));
+        }
         dump();
+        hint("One of these words is the password. Type one to try it.");
+        hint("A wrong word shows which letters are in the right place.");
     }
 
+    private String junk(int length) {
+        StringBuilder junk = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            junk.append(JUNK.charAt(random.nextInt(JUNK.length())));
+        }
+        return junk.toString();
+    }
+
+    /** De dump laten zien; doorgestreepte woorden worden streepjes. */
     private void dump() {
         header("MEMORY DUMP 0xF400-0xF4E0   attempts left: " + attemptsLeft);
-        List<String> words = new ArrayList<>(candidates);
-        Collections.shuffle(words, random);
-        for (int row = 0; row < words.size(); row++) {
-            StringBuilder junk = new StringBuilder();
-            int before = random.nextInt(9);
-            for (int i = 0; i < before; i++) {
-                junk.append(JUNK.charAt(random.nextInt(JUNK.length())));
-            }
-            junk.append(words.get(row));
-            while (junk.length() < 18) {
-                junk.append(JUNK.charAt(random.nextInt(JUNK.length())));
-            }
-            normal(String.format("0x%04X  %s", 0xF400 + row * 16, junk));
+        for (int row = 0; row < dumpRows.size(); row++) {
+            String[] parts = dumpRows.get(row);
+            String word = possible.contains(parts[1]) ? parts[1] : "-".repeat(parts[1].length());
+            normal(String.format("0x%04X  %s%s%s", 0xF400 + row * 16, parts[0], word, parts[2]));
         }
     }
 
@@ -399,13 +450,46 @@ public final class HackTerminal {
             error("'" + word + "' is not in the memory dump");
             return;
         }
+        if (!possible.contains(word)) {
+            error(word + " is already crossed out: it can't be the password.");
+            return;
+        }
         attemptsLeft--;
-        error("ACCESS DENIED. Likeness " + likeness(word, password) + "/" + password.length()
-                + "   attempts left: " + attemptsLeft);
+        int same = likeness(word, password);
+        error("ACCESS DENIED. Likeness " + same + "/" + password.length() + "   attempts left: " + attemptsLeft);
+        String pattern = pattern(word, password);
+        hint(word + " -> " + pattern + "   " + (same == 0 ? "no letters in the right place"
+                : same == 1 ? "1 letter in the right place" : same + " letters in the right place"));
+        // Alles wat niet hetzelfde patroon geeft, kan het wachtwoord niet zijn.
+        List<String> out = new ArrayList<>();
+        possible.removeIf(candidate -> {
+            boolean gone = !pattern(word, candidate).equals(pattern);
+            if (gone) {
+                out.add(candidate);
+            }
+            return gone;
+        });
+        out.remove(word);
+        if (!out.isEmpty()) {
+            normal("Crossed out: " + String.join(", ", out) + " (they don't match " + pattern + ")");
+        }
+        good("Still possible: " + String.join("  ", possible));
         if (attemptsLeft <= 0) {
             error("TOO MANY ATTEMPTS. Terminal locked, new memory dump coming...");
             lockedUntil = now + LOCKOUT_MILLIS;
         }
+    }
+
+    /**
+     * Welke letters van {@code guess} op dezelfde plek staan in {@code password}; de andere
+     * worden een streepje. ROCKET tegen POCKET geeft "_OCKET".
+     */
+    public static String pattern(String guess, String password) {
+        StringBuilder pattern = new StringBuilder();
+        for (int i = 0; i < guess.length(); i++) {
+            pattern.append(i < password.length() && guess.charAt(i) == password.charAt(i) ? guess.charAt(i) : '_');
+        }
+        return pattern.toString();
     }
 
     /** Hoeveel letters staan op dezelfde plek in beide woorden? */
@@ -533,7 +617,7 @@ public final class HackTerminal {
                 default -> List.of();
             });
         } else if (stage == Stage.LOGIN) {
-            options.addAll(candidates);
+            options.addAll(possible);
         } else if (stage == Stage.SHELL && (parts[0].equals("cat") || parts[0].equals("cd") || parts[0].equals("ls"))) {
             int slash = last.lastIndexOf('/');
             String dirPart = slash >= 0 ? last.substring(0, slash + 1) : "";

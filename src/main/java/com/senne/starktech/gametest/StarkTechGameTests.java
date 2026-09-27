@@ -2368,6 +2368,13 @@ public final class StarkTechGameTests {
         if (terminal.output().stream().noneMatch(line -> line.text().contains("Likeness " + likeness + "/"))) {
             throw new GameTestAssertException("Een fout wachtwoord gaf niet de juiste likeness (" + likeness + ")");
         }
+        String pattern = com.senne.starktech.security.HackTerminal.pattern(wrong, terminal.password());
+        if (terminal.output().stream().noneMatch(line -> line.text().startsWith(wrong + " -> " + pattern))) {
+            throw new GameTestAssertException("De terminal liet niet zien welke letters goed staan (" + pattern + ")");
+        }
+        if (terminal.possible().contains(wrong) || !terminal.possible().contains(terminal.password())) {
+            throw new GameTestAssertException("Het doorstrepen klopt niet: " + terminal.possible());
+        }
         terminal.run("login " + terminal.password().toLowerCase(), now);
         if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.SHELL) {
             throw new GameTestAssertException("Het goede wachtwoord gaf geen shell");
@@ -2387,6 +2394,44 @@ public final class StarkTechGameTests {
         terminal.run("override " + terminal.guardPid(), now);
         if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.OVERRIDE) {
             throw new GameTestAssertException("Override op de beveiligingsdaemon ging niet door");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Het wachtwoord raden moet te doen zijn: 300 keer spelen, elke keer het eerste woord gokken
+     * dat nog kan. Het wachtwoord mag nooit doorgestreept worden, gemiddeld moet het in 3 keer
+     * lukken, en (bijna) altijd voordat de pogingen op zijn.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "hack")
+    public static void hack_password_is_fair(GameTestHelper helper) {
+        int games = 300;
+        int guesses = 0;
+        int locked = 0;
+        for (long seed = 0; seed < games; seed++) {
+            var terminal = new com.senne.starktech.security.HackTerminal(seed);
+            terminal.run("connect " + terminal.openPort(), 0);
+            int wrong = 0;
+            while (terminal.stage() == com.senne.starktech.security.HackTerminal.Stage.LOGIN) {
+                if (!terminal.possible().contains(terminal.password())) {
+                    throw new GameTestAssertException("Het wachtwoord werd doorgestreept (spel " + seed + ")");
+                }
+                String guess = terminal.possible().getFirst();
+                terminal.run(guess, 0);
+                guesses++;
+                if (!guess.equals(terminal.password())) {
+                    wrong++;
+                }
+                if (wrong >= com.senne.starktech.security.HackTerminal.ATTEMPTS) {
+                    locked++;
+                    break;
+                }
+            }
+        }
+        double average = guesses / (double) games;
+        if (average > 3.0 || locked > games / 100) {
+            throw new GameTestAssertException("Het wachtwoord is te moeilijk: gemiddeld " + average
+                    + " pogingen, " + locked + " van de " + games + " keer geblokkeerd");
         }
         helper.succeed();
     }

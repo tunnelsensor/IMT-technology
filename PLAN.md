@@ -746,6 +746,13 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       (mijn invulling) Een klaar stuk gaat meteen aan als die plek vrij is (anders in je rugzak);
       met een lege hand pak je een stuk dat erop ligt; met shift doet rechtsklikken het gewone;
       één ding tegelijk; in creative gratis; verder dan 24 blokken weg = het blijft liggen.
+- [x] Het wachtwoord raden bij de hack is niet leuk en te moeilijk: maak de aanwijzingen
+      duidelijker (27 september). **Gedaan**: de woorden in een dump lijken nu op elkaar
+      (ROCKET, POCKET, PLANET, ...), een fout woord laat zien welke letters goed staan
+      (`ROCKET -> ____ET`), de terminal streept zelf door wat niet meer kan en noemt wat er nog
+      over is; Tab vult alleen die aan. Vijf pogingen in plaats van vier. Nieuwe test speelt het
+      300 keer: gemiddeld minder dan 3 pogingen.
+      (mijn invulling) Het automatisch doorstrepen, de woordenlijst en de vijf pogingen.
 
 ---
 

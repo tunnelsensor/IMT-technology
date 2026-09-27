@@ -65,9 +65,12 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   1. **Recon**: `scan` laat de poorten zien, maar ze staan allemaal op "filtered". Lees het
      firewall-logboek met `logs`: daar staan twee poorten die voor onderhoud open zijn gezet...
      en één daarvan is later weer dichtgezet. `connect <poort>` op de goede.
-  2. **Breach**: een geheugendump met acht woorden tussen de tekens. Eén is het wachtwoord:
-     `login <woord>`. Fout? Dan zegt hij hoeveel letters op de goede plek staan ("likeness").
-     Na vier fouten is hij even geblokkeerd en krijg je een nieuwe dump.
+  2. **Breach**: een geheugendump met acht woorden tussen de tekens die op elkaar lijken. Eén is
+     het wachtwoord: typ het woord (of `login <woord>`). Fout? Dan zie je welke letters op
+     dezelfde plek staan als in het wachtwoord (`ROCKET -> ____ET`), streept de terminal de
+     woorden door die daardoor niet meer kunnen, en zegt hij welke er nog over zijn ("Still
+     possible"). Meestal heb je het in 2 of 3 keer. Na vijf fouten is hij even geblokkeerd en
+     krijg je een nieuwe dump.
   3. **Search**: nu ben je binnen. Zoek met `ls`, `cd` en `cat` hoe het beveiligingsprogramma
      heet (er draaien er een paar met zo'n naam) en zijn nummer met `ps`.
   4. **Override**: `override <nummer>`, en dan nog vier keer **spatie** (of klikken) als de
