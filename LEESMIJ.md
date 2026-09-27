@@ -281,9 +281,7 @@ en sneeuwvlaktes; de rook van de smeulende brokstukken zie je van ver. In het mi
 romp (opengescheurd, de reactor gloeit nog), een zonnepaneel dat schuin omhoog steekt en de
 schotel op de helling. In de romp staat de **zwarte doos**: een kist met wat je voor de
 satelliet-upgrades nodig hebt (netherite, diamanten, goud, Stark-chips, soms een upgrade of
-een drone) en altijd een kaart **Hydra Intel**: de satelliet ving nog Hydra-verkeer op, en de
-kaart heeft een rood kruis op de dichtstbijzijnde Hydra-bunker. In de kratten eromheen liggen
-brokstukken. Maar het wrak wordt bewaakt (zie Raiddrones).
+een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaakt (zie Raiddrones).
 - **Blokken slopen uitzetten**: `/gamerule starktechRaidGriefing false`. Dan kunnen ze nog wel
   schieten, maar laten ze je muren heel.
 - **Instellen** in `config/starktech-server.toml`: `raids.enabled`, `raids.minMinutes`,
@@ -327,8 +325,8 @@ ijzer en soms een Hydra-onderdeel.
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
-een uitsparing in een rotswand met een betonnen gevel en het rode Hydra-embleem. De kaart
-**Hydra Intel** uit de zwarte doos van een neergestorte satelliet wijst je de weg.
+een uitsparing in een rotswand met een betonnen gevel en het rode Hydra-embleem. Er is geen
+kaart naartoe: je moet hem zelf vinden.
 
 Wat je binnen tegenkomt:
 - **Bij de deur** twee Hydra-torentjes; daarna een gang met een controlepost.
@@ -570,7 +568,7 @@ showcase en staat hij bij NIEUW.
 - **Komen de structuren echt in de wereld?** `gradlew runStructureCheck` start een server met
   een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Stark Tower, het
   dichtstbijzijnde satellietwrak en de dichtstbijzijnde Hydra-bunker, en schrijft in het log
-  (`[structures]`) waar ze liggen, waar de kisten staan, waar de Hydra Intel-kaart naartoe wijst,
+  (`[structures]`) waar ze liggen, waar de kisten staan,
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.

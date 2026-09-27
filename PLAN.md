@@ -440,11 +440,11 @@ wilt. Eerst de kleine dingen, dan de grote.
         controlepost, grote hal, slaapzaal, reactorkamer (generatoren in lava, kabel over het
         plafond), kluisgang met twee laserwanden van 3 x 3 die uitgaan zonder reactor, en de
         kluis (altijd 2-3 Hydra-onderdelen, cryo-cel). Acht soldaten (geen spawner, dus niet te
-        farmen) en vijf Hydra-torentjes. Vinden: de zwarte doos van een satellietwrak heeft nu
-        altijd een kaart "Hydra Intel" met een kruis op de dichtstbijzijnde bunker. In drie
+        farmen) en vijf Hydra-torentjes. Vinden: eerst lag er een kaart "Hydra Intel" in de zwarte
+        doos van een satellietwrak; die heb jij er op 26 september uitgehaald (`29a674c`). In drie
         testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
-        (mijn invulling) De indeling, de kaart in de zwarte doos, en dat soldaten niet terugkomen.
+        (mijn invulling) De indeling, en dat soldaten niet terugkomen.
 - [x] **De Stark Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
   - [x] **Beveiliging die leeft** — `af0d24f`
         Een Stark Security Core op de beveiligingsverdieping (in de rij serverkasten) beschermt

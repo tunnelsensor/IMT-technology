@@ -1078,8 +1078,8 @@ final class ShowcaseFeatures {
                 + "de reactorkamer (twee warmtegeneratoren in lava; hun kabel loopt over het plafond van de hal "
                 + "naar achteren), de kluisgang met twee rode laserwanden, en de kluis met Hydra-onderdelen en "
                 + "een cryo-cel. De laserwanden gaan uit als je de generatoren sloopt of de kabel doorknipt. "
-                + "Hier in creative laten de soldaten en torentjes je met rust. Zoeken? De zwarte doos van een "
-                + "neergestorte satelliet heeft een kaart 'Hydra Intel' met een kruis op de dichtstbijzijnde bunker.",
+                + "Hier in creative laten de soldaten en torentjes je met rust. Vinden doe je hem door te "
+                + "zoeken in de bergen (er ligt geen kaart meer in het satellietwrak).",
                 new Vec3(HYDRA_BUNKER.getX() + 0.5, -52, HYDRA_BUNKER.getZ() - 22), 0, 12, s -> {
             BlockPos b = HYDRA_BUNKER;
             s.onServer(0, player -> DevWorld.placeHydraBunker(player.serverLevel(), b))

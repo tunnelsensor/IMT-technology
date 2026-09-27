@@ -91,9 +91,6 @@ public final class StructureCheck {
                             && container.getLootTable() != null) {
                         StarkTech.LOGGER.info("[structures] {}:   kist {} op {} ({} t.o.v. de grond)", name,
                                 container.getLootTable().location(), pos, pos.getY() - ground);
-                        if (container.getLootTable().location().getPath().equals("chests/crashed_satellite")) {
-                            intelMap(container);
-                        }
                     }
                 }
             }
@@ -124,21 +121,5 @@ public final class StructureCheck {
         }
         StarkTech.LOGGER.info("[structures] hydra_bunker:   {} soldaten, {} Hydra-torentjes, {} laserzenders, "
                 + "{} overgebleven structuurblokken", soldiers, turrets, emitters, markers);
-    }
-
-    /** Open de zwarte doos en kijk waar de Hydra Intel-kaart naartoe wijst. */
-    private static void intelMap(RandomizableContainerBlockEntity box) {
-        box.unpackLootTable(null);
-        for (int slot = 0; slot < box.getContainerSize(); slot++) {
-            var stack = box.getItem(slot);
-            var decorations = stack.get(net.minecraft.core.component.DataComponents.MAP_DECORATIONS);
-            if (decorations != null && !decorations.decorations().isEmpty()) {
-                decorations.decorations().values().forEach(entry -> StarkTech.LOGGER.info(
-                        "[structures] crashed_satellite:   {} wijst naar x {} z {}", stack.getHoverName().getString(),
-                        (int) entry.x(), (int) entry.z()));
-                return;
-            }
-        }
-        StarkTech.LOGGER.warn("[structures] crashed_satellite:   geen kaart met een kruis in de zwarte doos");
     }
 }
