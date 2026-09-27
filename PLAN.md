@@ -686,10 +686,18 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       (mijn invulling) Hoe ze precies samenwerken; geen granaten of zelf muren slopen.
 
 **Stroom** (in deze volgorde: eerst de kabels, want de rest bouwt erop)
-- [ ] Kabels tekenen in plaats van blokken: met een kabelrol klik je een begin- en eindpunt en ligt
+- [x] Kabels tekenen in plaats van blokken: met een kabelrol klik je een begin- en eindpunt en ligt
       er een platte kabel over de grond of muur. Geen blok, dus je kunt er blokken op zetten (dan
       zit de kabel in de muur). Met de bril zie je verborgen kabels, een schaar knipt ze door.
-      Jouw keuze.
+      Jouw keuze. — `1beaca7`
+      Tekenen gaat met de rechtermuisknop ingedrukt: waar je kijkt komt de kabel; kijk je verder
+      weg, dan trekt hij een lijn langs de oppervlakken. Shift + rechtsklik raapt op. De kabel is
+      data bij de chunk (geen entity: honderden entities zouden laggen). Getekend als een dun
+      kabeltje tegen vloer en muur, met nette hoeken; verborgen kabels lichten met de bril blauw
+      op door de muur. Oude kabelblokken (oude werelden, de toren en de bunker) worden vanzelf
+      getekende kabels, en een kabel die in een muur zat laat de muur heel. Twee nieuwe tests;
+      screenshots `-Ponly=power`.
+      (mijn invulling) Ingedrukt houden in plaats van twee klikken (dat voelt meer als tekenen).
 - [ ] Alle torentjes en beveiliging hebben stroom nodig; zonder stroom doen ze niets
 - [ ] Een elektriciteitskast waar kabels samenkomen, met schakelaars om stroomgroepen aan en uit te
       zetten; ook te bedienen via het redstone-tabblad (op afstand alleen door de eigenaar). Wie
