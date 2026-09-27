@@ -71,8 +71,12 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
      woorden door die daardoor niet meer kunnen, en zegt hij welke er nog over zijn ("Still
      possible"). Meestal heb je het in 2 of 3 keer. Na vijf fouten is hij even geblokkeerd en
      krijg je een nieuwe dump.
-  3. **Search**: nu ben je binnen. Zoek met `ls`, `cd` en `cat` hoe het beveiligingsprogramma
-     heet (er draaien er een paar met zo'n naam) en zijn nummer met `ps`.
+  3. **Search**: nu ben je binnen, en de terminal zegt: lees de README (`cat README.txt`). Daarin
+     staat stap voor stap wat je doet: `cat security.conf` voor de geheime naam van het
+     beveiligingsprogramma, `ps` voor zijn nummer (er draaien er een paar met zo'n naam: alleen de
+     naam uit security.conf telt), en dan `override <nummer>`. `cat` vindt een bestand ook zonder
+     het hele pad, en een foute poging zegt wat je moet doen (typ je de naam in plaats van het
+     nummer, dan zegt hij dat het nummer in `ps` staat).
   4. **Override**: `override <nummer>`, en dan nog vier keer **spatie** (of klikken) als de
      heen-en-weer schuivende cursor in het groene vak staat.
   Het spel loopt ondertussen door: je kunt niet weglopen, en de beveiliging schiet op je. Loop

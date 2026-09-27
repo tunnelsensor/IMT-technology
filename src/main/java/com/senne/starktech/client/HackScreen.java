@@ -45,6 +45,11 @@ public class HackScreen extends Screen {
 
     private final BlockPos core;
     private final HackTerminal terminal;
+
+    /** De puzzel achter dit scherm (voor de screenshots). */
+    public HackTerminal terminal() {
+        return terminal;
+    }
     private final RandomSource random = RandomSource.create();
     private String input = "";
     private final List<String> history = new ArrayList<>();
@@ -269,8 +274,8 @@ public class HackScreen extends Screen {
                 }
                 case 6 -> autoQueue.add("login " + terminal.password().toLowerCase());
                 case 7 -> autoQueue.add("ls");
-                case 8 -> autoQueue.add("cat home/tony/notes.txt");
-                case 9 -> autoQueue.add("cat etc/security.conf");
+                case 8 -> autoQueue.add("cat README.txt");
+                case 9 -> autoQueue.add("cat security.conf");
                 case 10 -> autoQueue.add("ps");
                 case 11 -> autoQueue.add("override " + terminal.guardPid());
                 default -> { }

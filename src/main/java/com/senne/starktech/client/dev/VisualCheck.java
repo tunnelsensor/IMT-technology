@@ -311,7 +311,10 @@ public final class VisualCheck {
             t.shot(20, "k01_hack_start");
             t.shot(220, "k02_hack_recon");
             t.shot(160, "k03_hack_login");
-            t.shot(180, "k04_hack_shell");
+            t.waitUntil(600, () -> Minecraft.getInstance().screen instanceof com.senne.starktech.client.HackScreen hack
+                    && hack.terminal().output().stream().anyMatch(line -> line.text().startsWith("Do NOT kill")));
+            t.shot(5, "k035_hack_readme");
+            t.shot(70, "k04_hack_shell");
             t.waitUntil(900, () -> !(Minecraft.getInstance().screen instanceof com.senne.starktech.client.HackScreen));
             t.step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = false);
             t.shot(40, "k06_hack_core_green");

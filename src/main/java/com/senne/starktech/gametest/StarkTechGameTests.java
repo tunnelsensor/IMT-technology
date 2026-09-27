@@ -2379,10 +2379,23 @@ public final class StarkTechGameTests {
         if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.SHELL) {
             throw new GameTestAssertException("Het goede wachtwoord gaf geen shell");
         }
-        terminal.run("cd etc", now);
+        terminal.run("ls", now);
+        if (terminal.output().getLast().text().indexOf("README.txt") != 0) {
+            throw new GameTestAssertException("De README staat niet bovenaan: " + terminal.output().getLast().text());
+        }
+        terminal.run("cat README.txt", now);
+        if (terminal.output().stream().noneMatch(line -> line.text().contains("cat security.conf"))
+                || terminal.output().stream().noneMatch(line -> line.text().contains("override <PID>"))) {
+            throw new GameTestAssertException("De README legt de stappen niet uit");
+        }
+        // Vanaf de map waar je binnenkomt: cat vindt het bestand ook zonder pad.
         terminal.run("cat security.conf", now);
         if (terminal.output().stream().noneMatch(line -> line.text().equals("daemon = " + terminal.guard()))) {
             throw new GameTestAssertException("De config noemt de beveiligingsdaemon niet");
+        }
+        terminal.run("override " + terminal.guard(), now);
+        if (!terminal.output().getLast().text().contains("'ps'")) {
+            throw new GameTestAssertException("Override met een naam zei niet waar het nummer staat");
         }
         if (!terminal.complete("cat sec").equals("cat security.conf")) {
             throw new GameTestAssertException("Tab vulde de bestandsnaam niet aan: " + terminal.complete("cat sec"));

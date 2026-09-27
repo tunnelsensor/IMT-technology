@@ -753,6 +753,13 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       over is; Tab vult alleen die aan. Vijf pogingen in plaats van vier. Nieuwe test speelt het
       300 keer: gemiddeld minder dan 3 pogingen.
       (mijn invulling) Het automatisch doorstrepen, de woordenlijst en de vijf pogingen.
+- [x] De stap Search is ook te moeilijk en niet duidelijk: maak het simpeler, bv. met een README
+      waar je de instructies uit haalt (27 september). **Gedaan**: na het inloggen zegt de
+      terminal "type cat README.txt"; de README staat bovenaan en legt de drie stappen uit
+      (`cat security.conf`, `ps`, `override <PID>`). `cat` vindt een bestand ook op alleen zijn
+      naam (en Tab vult dat aan), en foute pogingen zeggen wat je moet doen. Test uitgebreid;
+      screenshot `k035_hack_readme`.
+      (mijn invulling) De tekst van de README en de hulpzinnen bij fouten.
 
 ---
 

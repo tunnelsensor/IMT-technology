@@ -24,9 +24,11 @@ import java.util.Random;
  *       streept hij de woorden door die daardoor niet meer kunnen, en zegt hij welke er nog over
  *       zijn. De woorden lijken expres op elkaar, anders leer je niets van een fout woord. Vijf
  *       pogingen, daarna even geblokkeerd en een nieuwe dump.</li>
- *   <li><b>SHELL</b>: zoek in de bestanden ({@code ls}, {@code cd}, {@code cat}) hoe het
- *       beveiligingsprogramma heet (er draaien er een paar met zo'n naam), en met {@code ps} zijn
- *       procesnummer.</li>
+ *   <li><b>SHELL</b>: in de map waar je binnenkomt staat een {@code README.txt} (de terminal zegt
+ *       dat je die moet lezen). Daarin staat stap voor stap wat je doet: de echte naam van het
+ *       beveiligingsprogramma staat in {@code /etc/security.conf} (er draaien er een paar met zo'n
+ *       naam), en met {@code ps} vind je zijn procesnummer. {@code cat} vindt een bestand ook
+ *       zonder het hele pad ({@code cat security.conf} werkt overal).</li>
  *   <li><b>OVERRIDE</b>: {@code override <nummer>}. Dan nog één laag met de timingbalk (die tekent
  *       het scherm zelf; zie HackScreen), en de toren is van jou.</li>
  * </ol>
@@ -150,6 +152,15 @@ public final class HackTerminal {
             } while (processes.containsValue(pid));
             processes.put(proc, pid);
         }
+        // De README staat bovenaan in de map waar je binnenkomt: stap voor stap wat je moet doen.
+        files.put("/README.txt", "=== MAINTENANCE README (for Happy, who keeps calling me) ===\n"
+                + "The tower security runs as a daemon with a secret name.\n"
+                + "To take it over:\n"
+                + "1. Read its secret name, type: cat security.conf\n"
+                + "2. Find its number (PID), type: ps\n"
+                + "   Careful: several daemons sound like security. Only the name from step 1 counts.\n"
+                + "3. Take it over, type: override <PID>   (the number, not the name)\n"
+                + "Do NOT kill it: the watchdog just restarts it. - T");
         files.put("/home/tony/notes.txt", "TODO: rename the security daemon (again).\n"
                 + "Rhodey keeps killing it by name. New name is in /etc/security.conf.\n"
                 + "Also: stop leaving the maintenance port open. - T");
@@ -158,7 +169,7 @@ public final class HackTerminal {
         files.put("/etc/hostname", "stark-sec-core");
         files.put("/var/log/boot.log", "[ ok ] turret-ctl online\n[ ok ] cam-feed online\n[ ok ] " + guard
                 + " online (watchdog)\n[warn] coffee-maker: low on beans");
-        files.put("/opt/jarvis/readme.txt", "JARVIS maintenance shell. Unauthorized access will be reported to\n"
+        files.put("/opt/jarvis/warning.txt", "JARVIS maintenance shell. Unauthorized access will be reported to\n"
                 + "Mr. Stark, Miss Potts and Happy. Mostly Happy.");
         header("STARK INDUSTRIES // TOWER SECURITY NODE 10.4.0.1");
         hint("Type 'help' for commands. Tab completes, arrow up repeats.");
@@ -289,7 +300,7 @@ public final class HackTerminal {
                 normal("ls [dir]         list files       cd <dir>   change directory");
                 normal("cat <file>       read a file      ps         list processes");
                 normal("override <pid>   take over a process");
-                hint("Several daemons sound like security. Find the real name in the config.");
+                hint("Not sure what to do? Read the README: cat README.txt");
             }
             default -> { }
         }
@@ -443,7 +454,7 @@ public final class HackTerminal {
         if (word.equals(password)) {
             good("ACCESS GRANTED. Welcome back, Mr. Stark.");
             stage = Stage.SHELL;
-            hint("You are in. Find the security daemon and override it.");
+            hint("You are in. Tony left instructions: type  cat README.txt");
             return;
         }
         if (!candidates.contains(word)) {
@@ -525,10 +536,10 @@ public final class HackTerminal {
                 }
             }
             case "cat", "less", "more" -> {
-                String file = resolve(argument);
-                String content = files.get(file);
+                String file = find(argument);
+                String content = file == null ? null : files.get(file);
                 if (content == null) {
-                    error("cat: " + argument + ": no such file");
+                    error("cat: " + argument + ": no such file (try 'ls' to see the files here)");
                 } else {
                     for (String line : content.split("\n")) {
                         normal(line);
@@ -547,14 +558,21 @@ public final class HackTerminal {
                 try {
                     pid = Integer.parseInt(argument);
                 } catch (NumberFormatException e) {
-                    error("usage: override <pid>");
+                    // Een naam in plaats van een nummer? Dan zeggen waar het nummer staat.
+                    if (processes.containsKey(argument.toLowerCase(Locale.ROOT))) {
+                        error("override needs the number (PID) of '" + argument.toLowerCase(Locale.ROOT)
+                                + "', not its name. Type 'ps' to see the numbers.");
+                    } else {
+                        error("usage: override <pid>   (the numbers are in 'ps')");
+                    }
                     return;
                 }
                 if (pid != processes.get(guard)) {
                     String name = processes.entrySet().stream().filter(entry -> entry.getValue() == pid)
                             .map(Map.Entry::getKey).findFirst().orElse(null);
-                    error(name == null ? "override: no process " + pid
-                            : "override: '" + name + "' is not the security daemon");
+                    error(name == null ? "override: no process " + pid + " (the numbers are in 'ps')"
+                            : "override: '" + name + "' is not the security daemon. Its real name is in"
+                            + " security.conf.");
                     return;
                 }
                 header("OVERRIDING '" + guard.toUpperCase(Locale.ROOT) + "' - SYNCHRONIZE THE HANDSHAKE");
@@ -565,6 +583,21 @@ public final class HackTerminal {
             case "whoami" -> normal("root (probably not Tony)");
             default -> error(command + ": command not found (try 'help')");
         }
+    }
+
+    /**
+     * Het bestand bij wat je typt: eerst gewoon (vanaf de map waar je bent), en anders zoeken op
+     * alleen de naam, zodat {@code cat security.conf} ook werkt als je niet in /etc staat.
+     */
+    private String find(String argument) {
+        String path = resolve(argument);
+        if (files.containsKey(path)) {
+            return path;
+        }
+        String name = argument.contains("/") ? argument.substring(argument.lastIndexOf('/') + 1) : argument;
+        List<String> matches = files.keySet().stream()
+                .filter(file -> file.substring(file.lastIndexOf('/') + 1).equalsIgnoreCase(name)).toList();
+        return matches.size() == 1 ? matches.getFirst() : null;
     }
 
     /** Maakt van "../etc" of "notes.txt" een volledig pad. */
@@ -624,6 +657,15 @@ public final class HackTerminal {
             String dir = dirPart.isEmpty() ? cwd : resolve(dirPart);
             for (String child : children(dir)) {
                 options.add(dirPart + child);
+            }
+            if (parts[0].equals("cat") && dirPart.isEmpty()) {
+                // cat vindt een bestand ook op alleen zijn naam (zie find), dus Tab ook.
+                for (String file : files.keySet()) {
+                    String name = file.substring(file.lastIndexOf('/') + 1);
+                    if (!options.contains(name)) {
+                        options.add(name);
+                    }
+                }
             }
         }
         List<String> matches = options.stream()
