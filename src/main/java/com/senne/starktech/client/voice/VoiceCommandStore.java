@@ -48,6 +48,15 @@ public final class VoiceCommandStore {
                     use(saved);
                     return;
                 }
+                if (saved.version == 2) {
+                    // Versie 2 had nog Nederlandse synoniemen en zinnen. E.D.I.T.H. is nu alleen
+                    // Engels: die halen we eruit, je eigen (Engelse) werk blijft staan.
+                    int removed = EnglishOnly.strip(saved);
+                    saved.save(file);
+                    StarkTech.LOGGER.info("E.D.I.T.H.: removed {} Dutch words and phrases from your voice dictionary", removed);
+                    use(saved);
+                    return;
+                }
                 // Een woordenboek van een oudere versie (versie 1 was nog deels Nederlands).
                 // We zetten het opzij, zodat je eigen zinnen niet verloren gaan, en gaan verder
                 // met het nieuwe standaard-woordenboek.

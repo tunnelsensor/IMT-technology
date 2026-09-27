@@ -75,12 +75,18 @@ public final class EdithAssistant {
                 EdithEar.SERVER.start();
             }
             stage = Stage.HEARING;
-            String text = EdithEar.transcribe(pcm);
-            if (text.isBlank()) {
+            EnglishOnly.Heard heard = EdithEar.transcribe(pcm);
+            if (heard.text().isBlank()) {
                 post(() -> VoiceControl.onHeardNothing());
                 return;
             }
-            post(() -> VoiceControl.onHeard(text));
+            // Alleen Engels: een andere taal voeren we niet uit.
+            if (!EnglishOnly.accepted(heard)) {
+                StarkTech.LOGGER.info("E.D.I.T.H.: heard {} instead of English: \"{}\"", heard.language(), heard.text());
+                post(() -> VoiceControl.onNotEnglish());
+                return;
+            }
+            post(() -> VoiceControl.onHeard(heard.text()));
         } catch (Throwable t) {
             StarkTech.LOGGER.warn("E.D.I.T.H.: speech recognition failed", t);
             String reason = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();

@@ -101,6 +101,11 @@ public final class VoiceControl {
         tell("edith.starktech.voice.nothing_heard", EdithMessagePayload.Level.INFO);
     }
 
+    /** Je praatte geen Engels: dat verstaat ze niet (zie EnglishOnly). */
+    static void onNotEnglish() {
+        tell("edith.starktech.voice.english_only", EdithMessagePayload.Level.WARNING);
+    }
+
     static void onError(String reason) {
         if (reason.equals("mic")) {
             tell("edith.starktech.voice.mic_error", EdithMessagePayload.Level.ALERT);

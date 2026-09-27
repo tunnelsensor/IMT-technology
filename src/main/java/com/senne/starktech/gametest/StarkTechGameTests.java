@@ -593,12 +593,12 @@ public final class StarkTechGameTests {
     public static void brain_answer_is_read_safely(GameTestHelper helper) {
         var decision = com.senne.starktech.client.voice.BrainDecision.parse("""
                 {"reply": "On it.", "actions": [{"action": "fly_to_the_moon", "value": ""},
-                 {"action": "ore_scan", "value": "everything"}, {"action": "navigate_to", "value": "Thuis"}],
-                 "remember": "The base is called Thuis.", "forget": "", "unsure": false}""");
+                 {"action": "ore_scan", "value": "everything"}, {"action": "navigate_to", "value": "Oak Hill"}],
+                 "remember": "The base is called Oak Hill.", "forget": "", "unsure": false}""");
         if (decision.actions().size() != 2
                 || decision.actions().get(0).action() != com.senne.starktech.client.voice.VoiceAction.ORE_SCAN
                 || !decision.actions().get(0).value().isEmpty()
-                || !decision.actions().get(1).value().equals("Thuis")) {
+                || !decision.actions().get(1).value().equals("Oak Hill")) {
             throw new GameTestAssertException("De acties zijn verkeerd gelezen: " + decision.actions());
         }
         var unsure = com.senne.starktech.client.voice.BrainDecision.parse("""
@@ -616,22 +616,55 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
-    /** Ze antwoordt in de taal waarin je praat: dat raden we aan de woordjes. */
+    /**
+     * Ze verstaat alleen Engels: het oor zegt in welke taal je praatte, en een andere taal voert
+     * ze niet uit (behalve Engels met een accent, dat het oor voor Nederlands aanzag). Een oud
+     * woordenboek raakt zijn Nederlandse woorden kwijt, maar houdt je eigen Engelse zinnen.
+     */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "brain")
-    public static void brain_hears_the_language(GameTestHelper helper) {
-        String[][] cases = {
-                {"hoeveel energie heb ik nog", "en_us", "Dutch"},
-                {"what time is it and is it going to rain", "nl_nl", "English"},
-                {"send the drones after that zombie", "nl_nl", "English"},
-                {"zet nachtzicht aan", "en_us", "Dutch"},
-                {"ok", "nl_nl", "Dutch"},
-                {"ok", "en_us", "English"},
+    public static void brain_only_understands_english(GameTestHelper helper) {
+        Object[][] cases = {
+                {"language Dutch<asr_text>Hoeveel energie heb ik nog?", false},
+                {"language English<asr_text>Send the drones after that zombie.", true},
+                {"language Dutch<asr_text>Send the drones.", true},     // Engels met een accent
+                {"language French<asr_text>Bonjour Edith.", false},
+                {"language None<asr_text>", true},                      // niets gezegd: gewoon leeg
+                {"Launch drones", true},                                // zonder taal: Engels
         };
-        for (String[] test : cases) {
-            String got = com.senne.starktech.client.voice.BrainLanguage.of(test[0], test[1]);
-            if (!got.equals(test[2])) {
-                throw new GameTestAssertException("\"" + test[0] + "\" gaf " + got + " in plaats van " + test[2]);
+        for (Object[] test : cases) {
+            var heard = com.senne.starktech.client.voice.EnglishOnly.parse((String) test[0]);
+            if (com.senne.starktech.client.voice.EnglishOnly.accepted(heard) != (Boolean) test[1]) {
+                throw new GameTestAssertException("\"" + test[0] + "\" werd " + (((Boolean) test[1]) ? "geweigerd" : "aangenomen"));
             }
+        }
+        if (!com.senne.starktech.client.voice.EnglishOnly.parse("language English<asr_text> Lights on. ").text().equals("Lights on.")) {
+            throw new GameTestAssertException("De tekst na <asr_text> werd verkeerd gelezen");
+        }
+
+        // Een woordenboek uit versie 2: Nederlandse synoniemen, een Nederlandse zin en een
+        // geleerde Nederlandse zin. Die moeten weg; de rest blijft.
+        var dictionary = com.senne.starktech.client.voice.VoiceDictionary.parse("""
+                {"version": 2,
+                 "commands": [
+                   {"name": "Never mind", "actions": [], "phrases": ["nee", "cancel", "my own phrase"]},
+                   {"name": "Learned: night_vision_on", "actions": [], "phrases": ["zet het licht aan"]}],
+                 "synonyms": [{"word": "drones", "synonyms": ["droontjes", "robots"]},
+                              {"word": "map", "synonyms": ["plattegrond"]}],
+                 "ignore": []}""");
+        int removed = com.senne.starktech.client.voice.EnglishOnly.strip(dictionary);
+        if (removed != 4 || !dictionary.commands.getFirst().phrases.equals(java.util.List.of("cancel", "my own phrase"))
+                || dictionary.commands.size() != 1 || dictionary.synonyms.size() != 1
+                || !dictionary.synonyms.getFirst().synonyms().equals(java.util.List.of("robots"))) {
+            throw new GameTestAssertException("Opschonen ging mis (" + removed + " weg): " + dictionary.toJson());
+        }
+        // En het standaard-woordenboek zelf heeft geen Nederlands meer.
+        try {
+            var standard = com.senne.starktech.client.voice.VoiceDictionary.loadDefault();
+            if (com.senne.starktech.client.voice.EnglishOnly.strip(standard) != 0) {
+                throw new GameTestAssertException("Het standaard-woordenboek bevat nog Nederlandse woorden");
+            }
+        } catch (java.io.IOException e) {
+            throw new GameTestAssertException("Standaard-woordenboek niet gevonden: " + e);
         }
         helper.succeed();
     }

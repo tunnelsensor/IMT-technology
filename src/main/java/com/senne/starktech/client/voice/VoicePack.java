@@ -33,7 +33,10 @@ public enum VoicePack {
      */
     LLAMA(flatZip("https://github.com/ggml-org/llama.cpp/releases/download/b11047/llama-b11047-bin-win-vulkan-x64.zip",
             31_837_591L, "fa7c949c4b75871b9719ac3f401c30813aec860f8fba9c06dfb3b98318ac2155")),
-    /** Het "oor": Qwen3-ASR zet je stem om in tekst (Nederlands, Engels en nog 28 talen). */
+    /**
+     * Het "oor": Qwen3-ASR zet je stem om in tekst. Het herkent 30 talen, maar E.D.I.T.H. doet
+     * alleen iets met Engels (zie EnglishOnly).
+     */
     EAR(
             file("https://huggingface.co/ggml-org/Qwen3-ASR-0.6B-GGUF/resolve/928ab958557df9aa2ef1c93e0e83c7ad0933fae2/Qwen3-ASR-0.6B-Q8_0.gguf",
                     "model.gguf", 804_749_248L, "bca259818b50ca7c4c05e9bdb35a5dc04fa039653a6d6f3f0f331f96f6aa1971"),

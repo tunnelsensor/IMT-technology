@@ -32,9 +32,10 @@ public final class VoiceDictionary {
     /**
      * De versie van het standaard-woordenboek. Hoger dit getal zodra de standaard-zinnen
      * veranderen: opgeslagen woordenboeken van een oudere versie worden dan opzij gezet
-     * (met een .old ernaast) en vervangen door het nieuwe. Versie 1 was nog deels Nederlands.
+     * (met een .old ernaast) en vervangen door het nieuwe. Versie 1 was nog deels Nederlands;
+     * versie 2 had nog Nederlandse synoniemen (die halen we eruit, zie VoiceCommandStore).
      */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 
     /** Eén actie in een commando, met een eventuele vaste waarde. */
     public record ActionRef(VoiceAction action, String value) {}

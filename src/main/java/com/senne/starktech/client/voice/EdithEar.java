@@ -12,7 +12,8 @@ import java.util.List;
 
 /**
  * Het "oor" van E.D.I.T.H.: zet wat je zei (geluid) om in tekst, met het AI-model Qwen3-ASR.
- * Het herkent zelf of je Nederlands of Engels praat (en nog 28 andere talen).
+ * Het model zegt er zelf bij in welke taal je praatte; E.D.I.T.H. doet alleen iets met Engels
+ * (zie EnglishOnly).
  */
 final class EdithEar {
     private EdithEar() {}
@@ -21,11 +22,8 @@ final class EdithEar {
             "-m", VoicePack.EAR.dir().resolve("model.gguf").toString(),
             "--mmproj", VoicePack.EAR.dir().resolve("audio.gguf").toString()));
 
-    /** Het model zet dit voor de tekst: "language Dutch<asr_text>Help, ik word aangevallen." */
-    private static final String TEXT_START = "<asr_text>";
-
-    /** Geluid (16000 metingen per seconde, 16 bit, mono) omzetten in tekst. */
-    static String transcribe(byte[] pcm) throws Exception {
+    /** Geluid (16000 metingen per seconde, 16 bit, mono) omzetten in tekst (en de taal). */
+    static EnglishOnly.Heard transcribe(byte[] pcm) throws Exception {
         SERVER.start();
         JsonObject audio = new JsonObject();
         audio.addProperty("data", Base64.getEncoder().encodeToString(wav(pcm)));
@@ -49,8 +47,7 @@ final class EdithEar {
         String text = JsonParser.parseString(reply).getAsJsonObject()
                 .getAsJsonArray("choices").get(0).getAsJsonObject()
                 .getAsJsonObject("message").get("content").getAsString();
-        int start = text.indexOf(TEXT_START);
-        return (start >= 0 ? text.substring(start + TEXT_START.length()) : text).trim();
+        return EnglishOnly.parse(text);
     }
 
     /** Maakt van losse geluidsmetingen een echt WAV-bestand (met de 44 bytes "kop" ervoor). */

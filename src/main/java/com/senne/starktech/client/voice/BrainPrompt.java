@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
@@ -167,12 +166,7 @@ public final class BrainPrompt {
         }
     }
 
-    /** Het bericht voor deze zin: STATUS, wat ze onthouden heeft, en wat je zei (en in welke taal). */
-    public static String turn(String status, List<String> memory, String heard, String language) {
-        return turn(status, memory, heard).replace("PLAYER SAID: ", "PLAYER SAID (in " + language + ", so reply in " + language + "): ");
-    }
-
-    /** Het bericht voor deze zin, zonder taal (zie hierboven). */
+    /** Het bericht voor deze zin: STATUS, wat ze onthouden heeft, en wat je zei. */
     public static String turn(String status, List<String> memory, String heard) {
         StringBuilder text = new StringBuilder(status).append("\n\nREMEMBER\n");
         if (memory.isEmpty()) {
@@ -184,18 +178,14 @@ public final class BrainPrompt {
         return text.append("\nPLAYER SAID: \"").append(heard).append('"').toString();
     }
 
-    /**
-     * Het bericht voor iets dat ze uit zichzelf mag zeggen (zie EdithInitiative). Er is geen zin
-     * van jou om de taal van over te nemen, dus zeggen we welke taal: die van je spel.
-     */
-    public static String event(String status, List<String> memory, String event, String gameLanguage) {
+    /** Het bericht voor iets dat ze uit zichzelf mag zeggen (zie EdithInitiative). */
+    public static String event(String status, List<String> memory, String event) {
         StringBuilder text = new StringBuilder(turn(status, memory, ""));
         int said = text.lastIndexOf("PLAYER SAID");
         text.setLength(said);
-        String language = gameLanguage.toLowerCase(Locale.ROOT).startsWith("nl") ? "Dutch" : "English";
         return text.append("EVENT (the player said nothing): ").append(event)
-                .append("\nYou may speak up on your own: one short, useful remark in ").append(language)
-                .append(", and no actions. If it is not worth saying anything, leave reply empty.").toString();
+                .append("\nYou may speak up on your own: one short, useful remark and no actions.")
+                .append(" If it is not worth saying anything, leave reply empty.").toString();
     }
 
     static String toJson(Map<String, Object> map) {

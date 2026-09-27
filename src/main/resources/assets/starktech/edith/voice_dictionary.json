@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 3,
   "commands": [
     {
       "name": "Launch drones",
@@ -96,7 +96,6 @@
         }
       ],
       "phrases": [
-        "precisiestraal",
         "precision",
         "precision beam",
         "set the satellite to precision",
@@ -127,7 +126,6 @@
         }
       ],
       "phrases": [
-        "satelliet laser",
         "sweep",
         "sweeping laser",
         "sweep the ground",
@@ -170,7 +168,6 @@
         }
       ],
       "phrases": [
-        "spioneer",
         "spy on him",
         "spy on her",
         "spy on that",
@@ -199,7 +196,6 @@
         }
       ],
       "phrases": [
-        "spionbeeld",
         "show me the feed",
         "watch along",
         "spy camera",
@@ -218,7 +214,6 @@
         }
       ],
       "phrases": [
-        "spionagerapport",
         "report",
         "spy report",
         "show the report",
@@ -544,7 +539,6 @@
         }
       ],
       "phrases": [
-        "satelliet",
         "satellite strike",
         "orbital strike",
         "fire the satellite",
@@ -602,8 +596,6 @@
       ],
       "phrases": [
         "drone camera",
-        "spioneer",
-        "verkenner",
         "recon",
         "scout",
         "scout ahead",
@@ -1064,7 +1056,6 @@
         }
       ],
       "phrases": [
-        "weerbericht",
         "what's the weather",
         "weather",
         "how's the weather",
@@ -1131,7 +1122,6 @@
         }
       ],
       "phrases": [
-        "coordinaten",
         "where am i",
         "coordinates",
         "which biome",
@@ -1214,8 +1204,6 @@
       "actions": [],
       "reply": "@voice.starktech.reply.thanks",
       "phrases": [
-        "merci",
-        "top",
         "thanks",
         "thank you",
         "good job",
@@ -1238,7 +1226,6 @@
       "actions": [],
       "reply": "@voice.starktech.reply.cancel",
       "phrases": [
-        "nee",
         "cancel",
         "never mind",
         "forget it",
@@ -1273,7 +1260,6 @@
       "word": "drones",
       "synonyms": [
         "drone",
-        "droontjes",
         "swarm",
         "robots",
         "robot"
@@ -1285,22 +1271,15 @@
         "attacks",
         "attacking",
         "attacked",
-        "vernietigen",
         "destroy",
         "kill",
-        "afmaken",
         "take out",
-        "schieten",
-        "shoot",
-        "kapot",
-        "neer"
+        "shoot"
       ]
     },
     {
       "word": "help",
       "synonyms": [
-        "helpen",
-        "redden",
         "save",
         "rescue",
         "sos",
@@ -1311,24 +1290,16 @@
     {
       "word": "on",
       "synonyms": [
-        "activeren",
-        "inschakelen",
         "enable",
         "activate",
-        "start",
-        "starten",
-        "aanzetten",
-        "opstarten"
+        "start"
       ]
     },
     {
       "word": "off",
       "synonyms": [
-        "uitschakelen",
-        "deactiveren",
         "disable",
         "deactivate",
-        "uitzetten",
         "stop",
         "halt"
       ]
@@ -1336,7 +1307,6 @@
     {
       "word": "enemy",
       "synonyms": [
-        "vijandig",
         "monster",
         "monsters",
         "enemies",
@@ -1346,70 +1316,47 @@
         "hostiles",
         "threat",
         "threats",
-        "dreiging",
-        "dreigingen",
-        "beest",
-        "beesten",
         "zombie",
         "zombies",
-        "skelet",
-        "skeletten",
         "skeleton",
         "skeletons",
         "creeper",
         "creepers",
-        "spin",
-        "spinnen",
         "spider",
         "spiders",
         "enderman",
-        "heks",
         "witch",
-        "tegenstander",
-        "tegenstanders",
         "bad guys"
       ]
     },
     {
       "word": "radar",
       "synonyms": [
-        "dreigings scan",
         "threat scan",
         "threatscan",
-        "vijandscan",
-        "vijandenscan",
         "enemy scan",
         "enemy detection",
-        "vijanddetectie",
         "sonar",
         "xray",
-        "x ray",
-        "rontgen"
+        "x ray"
       ]
     },
     {
       "word": "night vision",
       "synonyms": [
-        "nachtkijker",
         "nightvision",
-        "infrarood",
         "infrared",
         "lights",
         "light",
         "lamp",
-        "zaklamp",
         "flashlight"
       ]
     },
     {
       "word": "analysis",
       "synonyms": [
-        "doelwitanalyse",
-        "doelanalyse",
         "target analysis",
-        "targetanalyse",
         "target info",
-        "analyseer",
         "analyze"
       ]
     },
@@ -1417,30 +1364,21 @@
       "word": "ore",
       "synonyms": [
         "ores",
-        "diamant",
         "diamond",
         "diamonds",
         "iron",
         "gold",
-        "steenkool",
         "coal",
         "copper",
         "redstone",
         "lapis",
-        "smaragd",
-        "smaragden",
         "emerald",
         "emeralds",
-        "netheriet",
         "netherite",
         "ancient debris",
         "debris",
-        "mineralen",
         "minerals",
-        "grondstoffen",
         "resources",
-        "schat",
-        "schatten",
         "treasure"
       ]
     },
@@ -1448,25 +1386,17 @@
       "word": "scan",
       "synonyms": [
         "scanner",
-        "zoeken",
-        "vinden",
         "find",
         "search",
         "detect",
-        "detecteer",
-        "speur",
         "look for"
       ]
     },
     {
       "word": "satellite",
       "synonyms": [
-        "sateliet",
-        "satteliet",
-        "orbitaal",
         "orbital",
         "orbit",
-        "ruimtelaser",
         "space laser",
         "laser",
         "space"
@@ -1475,12 +1405,9 @@
     {
       "word": "blow up",
       "synonyms": [
-        "blazen",
         "nuke",
-        "bombardeer",
         "bomb",
         "explode",
-        "ontplof",
         "blow"
       ]
     },
@@ -1494,22 +1421,17 @@
     {
       "word": "mark",
       "synonyms": [
-        "markeren",
         "marker",
         "tag",
-        "taggen",
         "lock on",
         "lock",
         "select",
-        "paint",
-        "aanwijzen"
+        "paint"
       ]
     },
     {
       "word": "target",
       "synonyms": [
-        "doel",
-        "doelen",
         "targets",
         "marks",
         "marked"
@@ -1518,8 +1440,6 @@
     {
       "word": "clear",
       "synonyms": [
-        "wissen",
-        "verwijderen",
         "remove",
         "delete",
         "reset"
@@ -1528,30 +1448,22 @@
     {
       "word": "recon drone",
       "synonyms": [
-        "verkennings drone",
-        "verkenningsdroon",
-        "verkenningsdrones",
         "scout drone",
         "scoutdrone",
         "spy drone",
         "camera drone",
         "dronecamera",
-        "drone camera",
-        "verkennersdrone"
+        "drone camera"
       ]
     },
     {
       "word": "scout",
       "synonyms": [
-        "scouten",
         "scouting",
         "recon",
         "reconnaissance",
-        "spioneer",
-        "spioneren",
         "spy",
         "explore",
-        "verkenner",
         "look around"
       ]
     },
@@ -1571,9 +1483,7 @@
         "route",
         "course",
         "gps",
-        "gids",
         "guide",
-        "leid",
         "lead"
       ]
     },
@@ -1581,17 +1491,14 @@
       "word": "home",
       "synonyms": [
         "base",
-        "huisje",
         "camp",
         "hq",
-        "hoofdkwartier",
         "headquarters"
       ]
     },
     {
       "word": "go",
       "synonyms": [
-        "brengen",
         "take",
         "bring"
       ]
@@ -1599,12 +1506,8 @@
     {
       "word": "send",
       "synonyms": [
-        "zend",
-        "sturen",
-        "lanceren",
         "launch",
         "deploy",
-        "inzetten",
         "release",
         "unleash"
       ]
@@ -1621,10 +1524,8 @@
       "word": "everyone",
       "synonyms": [
         "team",
-        "teamgenoten",
         "everybody",
         "others",
-        "anderen",
         "friends",
         "squad",
         "crew",
@@ -1634,19 +1535,14 @@
     {
       "word": "say",
       "synonyms": [
-        "zeggen",
-        "vertellen",
         "tell",
         "let know",
-        "meld",
-        "inform",
-        "informeer"
+        "inform"
       ]
     },
     {
       "word": "time",
       "synonyms": [
-        "klok",
         "clock",
         "what time"
       ]
@@ -1654,37 +1550,27 @@
     {
       "word": "night",
       "synonyms": [
-        "avond",
         "evening"
       ]
     },
     {
       "word": "weather",
       "synonyms": [
-        "regent",
         "rain",
         "raining",
         "storm",
-        "onweert",
         "thunder",
-        "sneeuw",
         "snow",
         "snowing",
-        "bewolkt",
-        "zonnig",
         "sunny",
-        "forecast",
-        "weersvoorspelling"
+        "forecast"
       ]
     },
     {
       "word": "battery",
       "synonyms": [
-        "accu",
         "energy",
         "power",
-        "stroom",
-        "lading",
         "charge",
         "percentage"
       ]
@@ -1692,14 +1578,8 @@
     {
       "word": "health",
       "synonyms": [
-        "leven",
-        "hartjes",
-        "hart",
-        "harten",
         "hp",
-        "hearts",
-        "levenspunten",
-        "conditie"
+        "hearts"
       ]
     },
     {
@@ -1707,8 +1587,6 @@
       "synonyms": [
         "food",
         "hungry",
-        "voedsel",
-        "hongerig",
         "starving"
       ]
     },
@@ -1717,20 +1595,16 @@
       "synonyms": [
         "report",
         "sitrep",
-        "systeem check",
         "systems check",
         "system check",
         "diagnose",
-        "diagnostics",
-        "overzicht"
+        "diagnostics"
       ]
     },
     {
       "word": "ready",
       "synonyms": [
-        "beschikbaar",
         "available",
-        "opgeladen",
         "charged"
       ]
     },
@@ -1738,7 +1612,6 @@
       "word": "cooldown",
       "synonyms": [
         "cooldowns",
-        "oplaadtijd",
         "recharge"
       ]
     },
@@ -1748,7 +1621,6 @@
         "bodyguard",
         "bodyguards",
         "protection",
-        "bewaking",
         "escort drones",
         "guard drones"
       ]
@@ -1756,53 +1628,38 @@
     {
       "word": "protect",
       "synonyms": [
-        "beschermen",
         "guard",
         "cover",
-        "verdedigen",
-        "defend",
-        "bewaken"
+        "defend"
       ]
     },
     {
       "word": "place",
       "synonyms": [
-        "locatie",
         "spot",
         "location",
-        "positie",
-        "punt",
-        "waypoint",
-        "plekje"
+        "waypoint"
       ]
     },
     {
       "word": "save",
       "synonyms": [
-        "onthouden",
-        "bewaren",
-        "opslaan",
         "remember",
-        "noteer",
         "store"
       ]
     },
     {
       "word": "call",
       "synonyms": [
-        "noemen",
         "name"
       ]
     },
     {
       "word": "death point",
       "synonyms": [
-        "sterfplaats",
-        "stierf",
         "died",
         "deathpoint",
         "death location",
-        "graf",
         "grave",
         "stuff",
         "loot"
@@ -1812,15 +1669,12 @@
       "word": "coordinates",
       "synonyms": [
         "coords",
-        "coordinaat",
         "xyz"
       ]
     },
     {
       "word": "biome",
       "synonyms": [
-        "bioom",
-        "biomen",
         "biomes"
       ]
     },
@@ -1831,46 +1685,27 @@
       ]
     },
     {
-      "word": "destination",
-      "synonyms": [
-        "eindpunt"
-      ]
-    },
-    {
-      "word": "map",
-      "synonyms": [
-        "plattegrond"
-      ]
-    },
-    {
       "word": "comms",
       "synonyms": [
-        "communicatie",
         "communications",
-        "chat",
-        "berichtenscherm"
+        "chat"
       ]
     },
     {
       "word": "open",
       "synonyms": [
-        "openen",
-        "tonen",
         "show",
         "display",
-        "bekijk",
         "view"
       ]
     },
     {
       "word": "cancel",
       "synonyms": [
-        "annuleren",
         "never mind",
         "nevermind",
         "forget it",
         "nothing",
-        "nee",
         "no",
         "nope"
       ]
@@ -1878,10 +1713,6 @@
     {
       "word": "thanks",
       "synonyms": [
-        "dankje",
-        "dankjewel",
-        "dankuwel",
-        "merci",
         "thank you",
         "thx",
         "cheers",
@@ -1894,8 +1725,6 @@
       "synonyms": [
         "hey",
         "hi",
-        "goedemiddag",
-        "goedendag",
         "good morning",
         "good evening",
         "yo",
@@ -1903,24 +1732,9 @@
       ]
     },
     {
-      "word": "joke",
-      "synonyms": [
-        "grapje",
-        "mopje"
-      ]
-    },
-    {
-      "word": "dark",
-      "synonyms": [
-        "duister",
-        "pikdonker"
-      ]
-    },
-    {
       "word": "everything",
       "synonyms": [
-        "all systems",
-        "overal"
+        "all systems"
       ]
     },
     {
@@ -1930,7 +1744,6 @@
         "battle",
         "battle mode",
         "fight",
-        "oorlog",
         "war"
       ]
     },
@@ -1945,20 +1758,14 @@
     {
       "word": "track",
       "synonyms": [
-        "nummers",
-        "liedjes",
         "song",
         "songs",
-        "tracks",
-        "muziekje",
-        "plaatje",
-        "deuntje"
+        "tracks"
       ]
     },
     {
       "word": "music",
       "synonyms": [
-        "muziekjes",
         "tunes",
         "spotify"
       ]
@@ -1966,30 +1773,20 @@
     {
       "word": "play",
       "synonyms": [
-        "spelen",
-        "afspelen",
-        "draaien",
-        "playing",
-        "opzetten"
+        "playing"
       ]
     },
     {
       "word": "pause",
       "synonyms": [
-        "pauzeren",
-        "paused",
-        "pauzeert"
+        "paused"
       ]
     },
     {
       "word": "resume",
       "synonyms": [
-        "hervat",
-        "hervatten",
-        "doorgaan",
         "continue",
-        "unpause",
-        "verdergaan"
+        "unpause"
       ]
     }
   ],

@@ -473,6 +473,7 @@
   "edith.starktech.voice.disabled": "Voice control is switched off. Turn it on via G > Systems.",
   "edith.starktech.voice.heard": "Heard: \"%s\"",
   "edith.starktech.voice.nothing_heard": "I didn't hear anything.",
+  "edith.starktech.voice.english_only": "Sorry, I only understand English.",
   "edith.starktech.voice.mic_error": "I can't use your microphone. Check whether apps may use your microphone in the Windows privacy settings.",
   "edith.starktech.voice.already_on": "%s is already on.",
   "edith.starktech.voice.already_off": "%s is already off.",

@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * spelen we af en gooien we daarna weg. Alles gebeurt op een eigen thread, zodat het spel niet
  * hoeft te wachten.
  *
- * De stem volgt de taal van je spel: Nederlands → Vlaamse stem, anders een Engelse stem.
+ * Ze praat alleen Engels (de Engelse stem "Lessac"), wat de taal van je spel ook is.
  * Het volume volgt de schuif "Stem/Spraak" (Voice/Speech) in de geluidsinstellingen van Minecraft.
  */
 public final class EdithSpeech {

@@ -183,8 +183,7 @@ public final class EdithBrain {
         }
         Minecraft mc = Minecraft.getInstance();
         String status = BrainPrompt.status(mc);
-        String message = BrainPrompt.turn(status, EdithMemory.facts(), heard,
-                BrainLanguage.of(heard, mc.getLanguageManager().getSelected()));
+        String message = BrainPrompt.turn(status, EdithMemory.facts(), heard);
         List<EdithMemory.Turn> history = EdithMemory.recentTurns();
         // Was haar vorige beurt een vraag ("bedoelde je ...?")? Dan is dit het antwoord daarop.
         boolean confirming = !history.isEmpty() && wasQuestion(history.getLast());
@@ -276,8 +275,7 @@ public final class EdithBrain {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        String message = BrainPrompt.event(BrainPrompt.status(mc), EdithMemory.facts(), event,
-                mc.getLanguageManager().getSelected());
+        String message = BrainPrompt.event(BrainPrompt.status(mc), EdithMemory.facts(), event);
         thinking = true;
         WORKER.execute(() -> {
             try {
