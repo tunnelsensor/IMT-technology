@@ -36,12 +36,16 @@ public final class EdithClientState {
     /** Moment (in milliseconden) waarop de bril werd opgezet, voor de opstart-animatie. */
     public static long bootStartMillis;
     /**
+     * Bril op, maar de opstart-animatie wacht nog: bij het inloggen staat er eerst een laadscherm,
+     * en de animatie begint pas als je de wereld echt ziet.
+     */
+    public static boolean bootPending;
+    /**
      * De welkomstzin van de server bij het opzetten ("Welcome back, ..."). De opstart-animatie
-     * zegt hem pas als je identiteit bevestigd is (zie BootOverlay), niet meteen.
+     * zegt hem pas als je identiteit bevestigd is (zie BootOverlay), niet meteen. Bij het afzetten
+     * van de bril vergeten we hem weer.
      */
     public static @Nullable Component bootGreeting;
-    /** Wanneer die zin binnenkwam. */
-    public static long bootGreetingMillis;
     /** Heeft de animatie van deze opstart de zin al gezegd? */
     public static boolean bootGreetingSaid;
 

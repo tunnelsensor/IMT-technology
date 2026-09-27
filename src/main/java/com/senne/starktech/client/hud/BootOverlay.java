@@ -9,6 +9,7 @@ import static com.senne.starktech.client.hud.HudStyle.brackets;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.senne.starktech.client.EdithClientEvents;
+import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.client.voice.EdithSpeech;
 import com.senne.starktech.edith.EdithData;
@@ -305,11 +306,11 @@ public final class BootOverlay {
      * moment dat je identiteit bevestigd is, en hij verschijnt getypt onderin, met een golfje
      * dat laat zien dat ze praat.
      */
-    private static void greeting(GuiGraphics g, Font font, int w, int cx, int y, long age, long bootStart, Player player) {
+    private static void greeting(GuiGraphics g, Font font, int w, int cx, int y, long age, Player player) {
         if (age < CONFIRMED_AT || age > BOOT_MILLIS) {
             return;
         }
-        Component text = EdithClientState.bootGreeting != null && EdithClientState.bootGreetingMillis >= bootStart - 2000
+        Component text = EdithClientState.bootGreeting != null
                 ? EdithClientState.bootGreeting
                 : Component.translatable("edith.starktech.msg.welcome_back", player.getGameProfile().getName());
         if (!EdithClientState.bootGreetingSaid) {
@@ -318,8 +319,10 @@ public final class BootOverlay {
             EdithSpeech.say(text, EdithMessagePayload.Level.BOOT);
             EdithClientState.addNotification(text, EdithMessagePayload.Level.BOOT, false);
         }
+        // "Voice text" uit: dan alleen het golfje (ze praat), zonder de zin eronder.
+        boolean showText = EdithClientConfig.voiceTextInHud() || !EdithSpeech.available();
         int fade = fadeOut(age, BOOT_MILLIS - 400, BOOT_MILLIS);
-        String full = "“" + text.getString() + "”";
+        String full = showText ? "“" + text.getString() + "”" : "";
         int shown = (int) Math.min(full.length(), (age - CONFIRMED_AT) / 22);
         String typed = font.plainSubstrByWidth(full.substring(0, shown), w - 40);
         g.drawCenteredString(font, typed, cx, y, argb(fade, WHITE));

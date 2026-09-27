@@ -14,6 +14,7 @@ import com.senne.starktech.registry.ModSounds;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -58,6 +59,16 @@ public final class EdithClientEvents {
         EdithClientState.operational = EdithClientState.authorized && EdithData.getEnergy(glasses) > 0;
 
         if (EdithClientState.wearing && !wasWearing) {
+            EdithClientState.bootPending = true;
+        } else if (!EdithClientState.wearing && wasWearing) {
+            EdithClientState.bootPending = false;
+            EdithClientState.bootGreeting = null;
+        }
+        // De opstart-animatie pas laten beginnen als je de wereld ziet. Bij het inloggen staat er
+        // eerst nog een laadscherm; begon hij toen al, dan zag je hem niet en zei E.D.I.T.H. haar
+        // welkomstzin nog voor je in de wereld was (en daarna nog een keer).
+        if (EdithClientState.bootPending && !(mc.screen instanceof ReceivingLevelScreen)) {
+            EdithClientState.bootPending = false;
             EdithClientState.bootStartMillis = Util.getMillis();
             EdithClientState.bootGreetingSaid = false;
         }

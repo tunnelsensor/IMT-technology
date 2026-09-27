@@ -109,11 +109,16 @@ public final class ClientPayloadHandlers {
     public static void onMessage(EdithMessagePayload payload, IPayloadContext context) {
         // De welkomstzin bij het opzetten: die zegt de opstart-animatie zelf, op het moment dat
         // je identiteit bevestigd is. Is die animatie al voorbij, dan gewoon meteen.
+        // Let op: bij het inloggen komt de zin vaak binnen voordat jouw spel zelf gezien heeft dat
+        // je de bril draagt (of terwijl het laadscherm er nog staat). Ook dan bewaren we hem,
+        // anders klonk hij twee keer: nu meteen, en straks nog eens in de animatie.
         long bootAge = Util.getMillis() - EdithClientState.bootStartMillis;
-        if (payload.level() == EdithMessagePayload.Level.BOOT && bootAge < BootOverlay.CONFIRMED_AT) {
+        boolean bootNotStarted = EdithClientState.bootPending || !EdithClientState.wearing;
+        if (payload.level() == EdithMessagePayload.Level.BOOT && (bootNotStarted || bootAge < BootOverlay.CONFIRMED_AT)) {
             EdithClientState.bootGreeting = payload.message();
-            EdithClientState.bootGreetingMillis = Util.getMillis();
-            EdithClientEvents.playUi(ModSounds.EDITH_BOOT.get(), 1.0f);
+            if (!bootNotStarted) {
+                EdithClientEvents.playUi(ModSounds.EDITH_BOOT.get(), 1.0f);
+            }
             return;
         }
         EdithClientState.addNotification(payload.message(), payload.level());
