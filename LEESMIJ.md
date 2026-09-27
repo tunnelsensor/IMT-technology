@@ -77,8 +77,10 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
      naam uit security.conf telt), en dan `override <nummer>`. `cat` vindt een bestand ook zonder
      het hele pad, en een foute poging zegt wat je moet doen (typ je de naam in plaats van het
      nummer, dan zegt hij dat het nummer in `ps` staat).
-  4. **Override**: `override <nummer>`, en dan nog vier keer **spatie** (of klikken) als de
-     heen-en-weer schuivende cursor in het groene vak staat.
+  4. **Override**: `override <nummer>` opent de console van het beveiligingsprogramma. `status`
+     laat zijn instellingen zien. Zet eerst de waakhond uit met `disable watchdog` (anders zet hij
+     de eigenaar meteen terug), en maak jezelf dan eigenaar met `set owner <jouw naam>` (`whoami`
+     zegt hoe je heet; Tab vult het aan).
   Het spel loopt ondertussen door: je kunt niet weglopen, en de beveiliging schiet op je. Loop
   je weg (verder dan 6 blokken), ga je dood of druk je op Esc, dan is de hack afgebroken.
 

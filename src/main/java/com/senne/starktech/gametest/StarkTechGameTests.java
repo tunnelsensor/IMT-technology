@@ -2346,7 +2346,7 @@ public final class StarkTechGameTests {
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "hack")
     public static void hack_terminal_can_be_solved(GameTestHelper helper) {
-        var terminal = new com.senne.starktech.security.HackTerminal(42L);
+        var terminal = new com.senne.starktech.security.HackTerminal(42L, "Dev");
         long now = 0;
         terminal.run("connect 22", now);
         if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.RECON) {
@@ -2408,6 +2408,26 @@ public final class StarkTechGameTests {
         if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.OVERRIDE) {
             throw new GameTestAssertException("Override op de beveiligingsdaemon ging niet door");
         }
+        // De console: met de waakhond nog aan zet hij de eigenaar terug, een andere naam kent hij
+        // niet, en na "disable watchdog" + "set owner <jouw naam>" is hij van jou.
+        terminal.run("set owner Dev", now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.OVERRIDE
+                || terminal.output().stream().noneMatch(line -> line.text().contains("disable watchdog"))) {
+            throw new GameTestAssertException("Met de waakhond aan ging de eigenaar toch om (of geen hint)");
+        }
+        if (!terminal.complete("disable wat").equals("disable watchdog")
+                || !terminal.complete("set owner D").equals("set owner Dev")) {
+            throw new GameTestAssertException("Tab vulde de console niet aan");
+        }
+        terminal.run("disable watchdog", now);
+        terminal.run("set owner Rhodey", now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.OVERRIDE) {
+            throw new GameTestAssertException("Een andere naam dan de jouwe werd toch eigenaar");
+        }
+        terminal.run("set owner dev", now);
+        if (terminal.stage() != com.senne.starktech.security.HackTerminal.Stage.DONE) {
+            throw new GameTestAssertException("disable watchdog + set owner <naam> nam de toren niet over");
+        }
         helper.succeed();
     }
 
@@ -2422,7 +2442,7 @@ public final class StarkTechGameTests {
         int guesses = 0;
         int locked = 0;
         for (long seed = 0; seed < games; seed++) {
-            var terminal = new com.senne.starktech.security.HackTerminal(seed);
+            var terminal = new com.senne.starktech.security.HackTerminal(seed, "Dev");
             terminal.run("connect " + terminal.openPort(), 0);
             int wrong = 0;
             while (terminal.stage() == com.senne.starktech.security.HackTerminal.Stage.LOGIN) {

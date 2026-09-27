@@ -27,17 +27,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
  *       scrollwiel = terugscrollen, Esc = afbreken.</li>
  *   <li>Een scan loopt even (met een voortgangsbalk); na te veel foute wachtwoorden ben je even
  *       geblokkeerd.</li>
- *   <li>De laatste stap (OVERRIDE) is de timingbalk van vroeger: SPATIE of klik als de cursor in
- *       het groene vak staat, vier keer.</li>
+ *   <li>De laatste stap (OVERRIDE) is de console van het beveiligingsprogramma: ook commando's
+ *       ({@code disable watchdog}, {@code set owner <jouw naam>}). Je naam komt van je account.</li>
  * </ul>
  *
  * Het spel loopt door terwijl dit scherm open is: de beveiliging schiet op je. Snel zijn dus.
  */
 public class HackScreen extends Screen {
-    /** Zoveel treffers in de laatste stap, hoe snel de cursor gaat en hoe breed het vak is. */
-    private static final int OVERRIDE_HITS = 4;
-    private static final double OVERRIDE_SPEED = 0.7;
-    private static final double OVERRIDE_ZONE = 0.16;
     private static final int LINE_H = 10;
 
     /** Voor de showcase: het scherm speelt zichzelf (en maakt onderweg een paar fouten). */
@@ -57,13 +53,9 @@ public class HackScreen extends Screen {
     private int scroll;
     private int shownLines;
 
-    // De timingbalk van de laatste stap.
-    private int hits;
-    private double zoneStart;
-    private long barStart;
-    private long flashUntil;
-    private boolean flashGood;
+    /** Wanneer de hack gelukt is (het scherm blijft dan nog even staan). */
     private long doneAt;
+    private final String playerName;
 
     // De showcase: wat hij nog gaat typen.
     private final Deque<String> autoQueue = new ArrayDeque<>();
@@ -73,7 +65,9 @@ public class HackScreen extends Screen {
     public HackScreen(BlockPos core) {
         super(Component.translatable("screen.starktech.hack"));
         this.core = core;
-        this.terminal = new HackTerminal(random.nextLong());
+        var player = net.minecraft.client.Minecraft.getInstance().player;
+        this.playerName = player == null ? "player" : player.getGameProfile().getName();
+        this.terminal = new HackTerminal(random.nextLong(), playerName);
     }
 
     @Override
@@ -93,9 +87,6 @@ public class HackScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (terminal.stage() == HackTerminal.Stage.OVERRIDE) {
-            return true; // spatie telt al in keyPressed
-        }
         if (codePoint >= ' ' && codePoint != 127 && input.length() < 48 && !done()) {
             input += codePoint;
             scroll = 0;
@@ -108,12 +99,6 @@ public class HackScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == InputConstants.KEY_ESCAPE) {
             return super.keyPressed(keyCode, scanCode, modifiers); // afbreken
-        }
-        if (terminal.stage() == HackTerminal.Stage.OVERRIDE) {
-            if (keyCode == InputConstants.KEY_SPACE) {
-                press();
-            }
-            return true;
         }
         switch (keyCode) {
             case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> submit();
@@ -160,9 +145,10 @@ public class HackScreen extends Screen {
         HackTerminal.Line last = terminal.output().isEmpty() ? null : terminal.output().getLast();
         if (terminal.stage() != before) {
             EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.0f + terminal.stage().ordinal() * 0.2f);
-            if (terminal.stage() == HackTerminal.Stage.OVERRIDE) {
-                barStart = now;
-                newZone();
+            if (done()) {
+                // Jij bent de eigenaar: de toren is van jou.
+                doneAt = now;
+                PacketDistributor.sendToServer(new HackResultPayload(core, true));
             }
         } else if (last != null && last.kind() == HackTerminal.Kind.ERROR) {
             EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_BASS.value(), 0.6f);
@@ -181,52 +167,7 @@ public class HackScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (terminal.stage() == HackTerminal.Stage.OVERRIDE) {
-            press();
-        }
         return true;
-    }
-
-    // ================================================================ De laatste stap: de timingbalk
-
-    private double cursor() {
-        double t = (Util.getMillis() - barStart) / 1000.0 * OVERRIDE_SPEED * 2;
-        double phase = t % 2;
-        return phase < 1 ? phase : 2 - phase;
-    }
-
-    private boolean inZone() {
-        double c = cursor();
-        return c >= zoneStart && c <= zoneStart + OVERRIDE_ZONE;
-    }
-
-    private void newZone() {
-        zoneStart = 0.05 + random.nextDouble() * (0.9 - OVERRIDE_ZONE);
-    }
-
-    private void press() {
-        if (terminal.stage() != HackTerminal.Stage.OVERRIDE) {
-            return;
-        }
-        long now = Util.getMillis();
-        if (inZone()) {
-            hits++;
-            flashGood = true;
-            EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_BIT.value(), 1.2f + hits * 0.1f);
-            if (hits >= OVERRIDE_HITS) {
-                terminal.overrideDone();
-                doneAt = now;
-                EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.6f);
-                PacketDistributor.sendToServer(new HackResultPayload(core, true));
-                return;
-            }
-            newZone();
-        } else {
-            hits = Math.max(0, hits - 1);
-            flashGood = false;
-            EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_BASS.value(), 0.6f);
-        }
-        flashUntil = now + 250;
     }
 
     // ================================================================ Elke tick
@@ -248,16 +189,11 @@ public class HackScreen extends Screen {
 
     /**
      * De showcase: typt de oplossing zelf, letter voor letter, met een paar echte fouten erin
-     * (een verkeerde poort, een fout wachtwoord, de verkeerde daemon), zodat je die ook ziet.
+     * (een verkeerde poort, een fout wachtwoord, de eigenaar zetten met de waakhond nog aan),
+     * zodat je die ook ziet.
      */
     private void autoPlay(long now) {
         if (now < autoNext || terminal.busy(now)) {
-            return;
-        }
-        if (terminal.stage() == HackTerminal.Stage.OVERRIDE) {
-            if (now - barStart > 400 && Math.abs(cursor() - (zoneStart + OVERRIDE_ZONE / 2)) < OVERRIDE_ZONE / 4) {
-                press();
-            }
             return;
         }
         if (autoQueue.isEmpty()) {
@@ -278,6 +214,9 @@ public class HackScreen extends Screen {
                 case 9 -> autoQueue.add("cat security.conf");
                 case 10 -> autoQueue.add("ps");
                 case 11 -> autoQueue.add("override " + terminal.guardPid());
+                case 12 -> autoQueue.add("set owner " + playerName);
+                case 13 -> autoQueue.add("disable watchdog");
+                case 14 -> autoQueue.add("set owner " + playerName);
                 default -> { }
             }
             autoNext = now + 700;
@@ -344,10 +283,9 @@ public class HackScreen extends Screen {
         }
         g.fill(x0 + 4, y0 + 17, x0 + w - 4, y0 + 18, HudStyle.argb(120, 0x3FFF7A));
 
-        // Het gebied voor de tekst (onderaan minder als de timingbalk er staat).
-        boolean overrideBar = terminal.stage() == HackTerminal.Stage.OVERRIDE || done();
+        // Het gebied voor de tekst.
         int textTop = y0 + 22;
-        int textBottom = y0 + h - (overrideBar ? 58 : 28);
+        int textBottom = y0 + h - 28;
         int textWidth = w - 16;
         List<HackTerminal.Line> visual = wrap(terminal.output(), textWidth);
         shownLines = Math.max(1, (textBottom - textTop) / LINE_H);
@@ -365,8 +303,9 @@ public class HackScreen extends Screen {
 
         // De invoerregel (of wat er bezig is).
         int inputY = y0 + h - 22;
-        if (overrideBar) {
-            drawBar(g, x0 + 20, y0 + h - 52, x0 + w - 20, y0 + h - 34, now);
+        if (done()) {
+            g.drawString(font, Component.translatable("screen.starktech.hack.granted"), x0 + 8, inputY,
+                    HudStyle.argb(255, HudStyle.GREEN), false);
         } else if (terminal.busy(now)) {
             double progress = terminal.scanProgress(now);
             String busy = progress >= 0 ? "scanning " + (int) (progress * 100) + "%" : "LOCKED - please wait";
@@ -376,7 +315,7 @@ public class HackScreen extends Screen {
                 g.fill(bx, inputY + 2, x0 + w - 10, inputY + 6, HudStyle.argb(120, 0x3FFF7A));
                 g.fill(bx, inputY + 2, bx + (int) ((x0 + w - 10 - bx) * progress), inputY + 6, HudStyle.argb(255, 0x3FFF7A));
             }
-        } else if (!done()) {
+        } else {
             String line = terminal.prompt() + input;
             line = font.plainSubstrByWidth(line, textWidth - 8);
             g.drawString(font, line, x0 + 8, inputY, HudStyle.argb(255, HudStyle.WHITE), false);
@@ -387,30 +326,6 @@ public class HackScreen extends Screen {
         }
         g.drawCenteredString(font, Component.translatable("screen.starktech.hack.warning"), x0 + w / 2, y0 + h - 10,
                 HudStyle.argb(200, HudStyle.ORANGE));
-    }
-
-    /** De timingbalk: het groene vak, de cursor, en de treffers als blokjes erboven. */
-    private void drawBar(GuiGraphics g, int bx0, int by0, int bx1, int by1, long now) {
-        int need = OVERRIDE_HITS;
-        int px0 = (bx0 + bx1) / 2 - need * 6;
-        for (int i = 0; i < need; i++) {
-            int colour = i < hits || done() ? HudStyle.GREEN : 0x33505A;
-            g.fill(px0 + i * 12 + 2, by0 - 9, px0 + i * 12 + 10, by0 - 4, HudStyle.argb(255, colour));
-        }
-        g.fill(bx0, by0, bx1, by1, HudStyle.argb(255, 0x0A2518));
-        HudStyle.brackets(g, bx0, by0, bx1, by1, 4, HudStyle.argb(200, 0x3FFF7A));
-        if (done()) {
-            g.drawCenteredString(font, Component.translatable("screen.starktech.hack.granted"), (bx0 + bx1) / 2, by0 + 5,
-                    HudStyle.argb(255, HudStyle.GREEN));
-            return;
-        }
-        boolean flashing = now < flashUntil;
-        int zoneColour = flashing ? (flashGood ? HudStyle.GREEN : HudStyle.RED) : 0x2FB36A;
-        int zx0 = bx0 + (int) ((bx1 - bx0) * zoneStart);
-        int zx1 = bx0 + (int) ((bx1 - bx0) * (zoneStart + OVERRIDE_ZONE));
-        g.fill(zx0, by0 + 2, zx1, by1 - 2, HudStyle.argb(flashing ? 230 : 170, zoneColour));
-        int cursorX = bx0 + (int) ((bx1 - bx0) * cursor());
-        g.fill(cursorX - 1, by0 - 3, cursorX + 1, by1 + 3, HudStyle.argb(255, HudStyle.WHITE));
     }
 
     /** Knipt lange regels op de breedte van de terminal (de rest op de volgende regel). */

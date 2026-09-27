@@ -760,6 +760,13 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       naam (en Tab vult dat aan), en foute pogingen zeggen wat je moet doen. Test uitgebreid;
       screenshot `k035_hack_readme`.
       (mijn invulling) De tekst van de README en de hulpzinnen bij fouten.
+- [x] De override-minigame moet meer iets zijn als een commando: override, dan iets met disable,
+      set owner en je naam (27 september). **Gedaan**: de timingbalk is weg. `override <PID>` opent
+      de console van het beveiligingsprogramma (`status` toont owner, watchdog, turrets, drones);
+      `disable watchdog` en dan `set owner <jouw naam>`. Met de waakhond nog aan zet hij de
+      eigenaar terug; een andere naam dan de jouwe kent hij niet. Test speelt de console uit;
+      screenshot `k05_hack_takeover`.
+      (mijn invulling) Dat de waakhond eerst uit moet, en de teksten van de console.
 
 ---
 

@@ -29,8 +29,10 @@ import java.util.Random;
  *       beveiligingsprogramma staat in {@code /etc/security.conf} (er draaien er een paar met zo'n
  *       naam), en met {@code ps} vind je zijn procesnummer. {@code cat} vindt een bestand ook
  *       zonder het hele pad ({@code cat security.conf} werkt overal).</li>
- *   <li><b>OVERRIDE</b>: {@code override <nummer>}. Dan nog één laag met de timingbalk (die tekent
- *       het scherm zelf; zie HackScreen), en de toren is van jou.</li>
+ *   <li><b>OVERRIDE</b>: {@code override <nummer>} opent de console van het beveiligingsprogramma.
+ *       {@code status} laat zijn instellingen zien. Eerst {@code disable watchdog} (anders zet de
+ *       waakhond de eigenaar meteen terug), dan {@code set owner <jouw naam>}, en de toren is van
+ *       jou. {@code whoami} zegt hoe je heet.</li>
  * </ol>
  *
  * Deze klasse is alleen de logica (geen scherm), zodat de tests hem kunnen uitspelen. Alles wat
@@ -95,14 +97,22 @@ public final class HackTerminal {
     private int attemptsLeft;
     private long lockedUntil;
 
+    // OVERRIDE: de console van het beveiligingsprogramma
+    /** Hoe de speler heet: dat moet de nieuwe eigenaar worden. */
+    private final String playerName;
+    private boolean watchdog = true;
+    private String owner = "stark-industries";
+
     // SHELL
     private final String guard;
     private final Map<String, Integer> processes = new LinkedHashMap<>();
     private final Map<String, String> files = new LinkedHashMap<>();
     private String cwd = "/";
 
-    public HackTerminal(long seed) {
+    /** @param playerName hoe de speler heet (die moet in de laatste stap de eigenaar worden) */
+    public HackTerminal(long seed, String playerName) {
         this.random = new Random(seed);
+        this.playerName = playerName;
         // De poorten: bekende diensten (allemaal gefilterd) en een paar met een Stark-naam.
         for (int port : new int[] {22, 80, 443, 3306, 5432, 8080, 8443}) {
             ports.put(port, switch (port) {
@@ -160,6 +170,7 @@ public final class HackTerminal {
                 + "2. Find its number (PID), type: ps\n"
                 + "   Careful: several daemons sound like security. Only the name from step 1 counts.\n"
                 + "3. Take it over, type: override <PID>   (the number, not the name)\n"
+                + "4. In its console: disable watchdog, then: set owner <your name>\n"
                 + "Do NOT kill it: the watchdog just restarts it. - T");
         files.put("/home/tony/notes.txt", "TODO: rename the security daemon (again).\n"
                 + "Rhodey keeps killing it by name. New name is in /etc/security.conf.\n"
@@ -190,7 +201,8 @@ public final class HackTerminal {
         return switch (stage) {
             case RECON -> "kali@laptop:~$ ";
             case LOGIN -> "password: ";
-            case SHELL, OVERRIDE, DONE -> "root@stark-sec-core:" + cwd + "# ";
+            case SHELL -> "root@stark-sec-core:" + cwd + "# ";
+            case OVERRIDE, DONE -> guard + "> ";
         };
     }
 
@@ -246,17 +258,16 @@ public final class HackTerminal {
         return possible;
     }
 
-    /** De laatste timingbalk is gehaald: de toren is van jou. */
+    /** Klaar (of door de server afgebroken): er kan niets meer getypt worden. */
     public void overrideDone() {
         stage = Stage.DONE;
-        good("SECURITY DAEMON '" + guard.toUpperCase(Locale.ROOT) + "' NOW TAKES ORDERS FROM YOU.");
     }
 
     // ================================================================ Een commando uitvoeren
 
     public void run(String rawInput, long now) {
         String input = rawInput.strip();
-        if (busy(now) || stage == Stage.OVERRIDE || stage == Stage.DONE) {
+        if (busy(now) || stage == Stage.DONE) {
             return;
         }
         output.add(new Line(prompt() + input, Kind.INPUT));
@@ -278,6 +289,7 @@ public final class HackTerminal {
             case RECON -> recon(command, argument, now);
             case LOGIN -> login(command, argument, now);
             case SHELL -> shell(command, argument);
+            case OVERRIDE -> console(command, argument);
             default -> { }
         }
     }
@@ -301,6 +313,13 @@ public final class HackTerminal {
                 normal("cat <file>       read a file      ps         list processes");
                 normal("override <pid>   take over a process");
                 hint("Not sure what to do? Read the README: cat README.txt");
+            }
+            case OVERRIDE -> {
+                normal("status             show the settings of " + guard);
+                normal("disable <setting>  switch a setting off (enable switches it on again)");
+                normal("set owner <name>   give " + guard + " a new owner");
+                normal("whoami             your name");
+                hint("Take it over: disable watchdog, then set owner <your name>.");
             }
             default -> { }
         }
@@ -575,9 +594,10 @@ public final class HackTerminal {
                             + " security.conf.");
                     return;
                 }
-                header("OVERRIDING '" + guard.toUpperCase(Locale.ROOT) + "' - SYNCHRONIZE THE HANDSHAKE");
-                hint("SPACE or click when the cursor is in the green zone.");
+                header("ATTACHED TO '" + guard.toUpperCase(Locale.ROOT) + "' (PID " + pid + ") - DAEMON CONSOLE");
                 stage = Stage.OVERRIDE;
+                status();
+                hint("Take it over: disable watchdog, then set owner <your name>.");
             }
             case "pwd" -> normal(cwd);
             case "whoami" -> normal("root (probably not Tony)");
@@ -598,6 +618,74 @@ public final class HackTerminal {
         List<String> matches = files.keySet().stream()
                 .filter(file -> file.substring(file.lastIndexOf('/') + 1).equalsIgnoreCase(name)).toList();
         return matches.size() == 1 ? matches.getFirst() : null;
+    }
+
+    // ---------------------------------------------------------------- OVERRIDE
+
+    /**
+     * De console van het beveiligingsprogramma. Twee dingen om te doen: de waakhond uitzetten
+     * (anders zet die de eigenaar meteen terug) en jezelf eigenaar maken.
+     */
+    private void console(String command, String argument) {
+        String arg = argument.toLowerCase(Locale.ROOT);
+        switch (command) {
+            case "status", "show", "config" -> status();
+            case "whoami" -> normal(playerName);
+            case "disable", "enable" -> {
+                boolean on = command.equals("enable");
+                if (arg.isEmpty()) {
+                    error("usage: " + command + " <setting>   (try: " + command + " watchdog)");
+                } else if (arg.equals("watchdog")) {
+                    watchdog = on;
+                    if (on) {
+                        normal("watchdog = on");
+                    } else {
+                        good("watchdog = off. It won't reset the owner any more.");
+                    }
+                } else if (arg.equals("owner") || arg.equals("turrets") || arg.equals("drones")) {
+                    error(command + ": '" + arg + "' can't be switched off. Try: set owner <your name>");
+                } else {
+                    error(command + ": no setting '" + arg + "' (see 'status')");
+                }
+            }
+            case "set" -> {
+                // "set owner naam" of "set owner=naam"
+                String[] parts = argument.replace("=", " ").strip().split("\\s+", 2);
+                if (parts.length < 2 || !parts[0].equalsIgnoreCase("owner")) {
+                    error("usage: set owner <name>");
+                    return;
+                }
+                String name = parts[1].strip();
+                if (watchdog) {
+                    error("WATCHDOG: owner change reverted (owner = " + owner + ").");
+                    hint("Switch the watchdog off first: disable watchdog");
+                    return;
+                }
+                if (!name.equalsIgnoreCase(playerName)) {
+                    error("set owner: no user '" + name + "' on this network. Type 'whoami' for your name.");
+                    return;
+                }
+                owner = playerName;
+                good("owner = " + owner);
+                good("SECURITY DAEMON '" + guard.toUpperCase(Locale.ROOT) + "' NOW TAKES ORDERS FROM "
+                        + playerName.toUpperCase(Locale.ROOT) + ".");
+                stage = Stage.DONE;
+            }
+            case "kill" -> error("kill: you are INSIDE the daemon now. Take it over instead (see 'help').");
+            default -> error(command + ": unknown command (try 'help')");
+        }
+    }
+
+    /** De instellingen van het beveiligingsprogramma. */
+    private void status() {
+        normal("owner     = " + owner);
+        if (watchdog) {
+            output.add(new Line("watchdog  = on   (puts the owner back if anyone changes it)", Kind.ERROR));
+        } else {
+            normal("watchdog  = off");
+        }
+        normal("turrets   = fire at intruders");
+        normal("drones    = hunt intruders");
     }
 
     /** Maakt van "../etc" of "notes.txt" een volledig pad. */
@@ -647,10 +735,20 @@ public final class HackTerminal {
                 case RECON -> List.of("scan", "logs", "connect", "help", "clear");
                 case LOGIN -> List.of("login", "dump", "help", "clear");
                 case SHELL -> List.of("ls", "cd", "cat", "ps", "override", "help", "clear", "kill", "pwd");
+                case OVERRIDE -> List.of("status", "disable", "enable", "set", "whoami", "help", "clear");
                 default -> List.of();
             });
         } else if (stage == Stage.LOGIN) {
             options.addAll(possible);
+        } else if (stage == Stage.OVERRIDE) {
+            // disable/enable -> watchdog; set -> owner; set owner -> jouw naam.
+            if (parts.length == 2 && (parts[0].equals("disable") || parts[0].equals("enable"))) {
+                options.add("watchdog");
+            } else if (parts.length == 2 && parts[0].equals("set")) {
+                options.add("owner");
+            } else if (parts.length == 3 && parts[0].equals("set") && parts[1].equals("owner")) {
+                options.add(playerName);
+            }
         } else if (stage == Stage.SHELL && (parts[0].equals("cat") || parts[0].equals("cd") || parts[0].equals("ls"))) {
             int slash = last.lastIndexOf('/');
             String dirPart = slash >= 0 ? last.substring(0, slash + 1) : "";
