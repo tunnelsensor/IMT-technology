@@ -115,10 +115,10 @@ public final class ModNetwork {
                 EdithDomes.handleAction(player, payload);
             }
         });
-        // De laptop-hack: de minigame is klaar of afgebroken.
-        registrar.playToServer(HackResultPayload.TYPE, HackResultPayload.STREAM_CODEC, (payload, context) -> {
+        // De laptop-hack: een commando getypt in de terminal van de laptop.
+        registrar.playToServer(HackCommandPayload.TYPE, HackCommandPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
-                com.senne.starktech.security.TowerHack.handleResult(player, payload);
+                com.senne.starktech.security.TowerHack.handleCommand(player, payload);
             }
         });
         registrar.playToServer(HoloActionPayload.TYPE, HoloActionPayload.STREAM_CODEC, (payload, context) -> {

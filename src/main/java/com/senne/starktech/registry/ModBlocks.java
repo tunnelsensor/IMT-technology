@@ -181,6 +181,20 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> 4));
 
+    /**
+     * De Stark-laptop, opengeklapt op een beveiligingskern (daar loopt de hack). Het item is
+     * StarkLaptopItem; dit blok ontstaat als je daarmee op de kern klikt.
+     */
+    public static final DeferredBlock<com.senne.starktech.security.StarkLaptopBlock> STARK_LAPTOP = BLOCKS.registerBlock(
+            "stark_laptop", com.senne.starktech.security.StarkLaptopBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(0.5f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> 5)
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
+
     /** De harnas-werkbank: het harnas bouwen en er upgrades in zetten (Tony's lab). */
     public static final DeferredBlock<com.senne.starktech.workbench.SuitWorkbenchBlock> SUIT_WORKBENCH = BLOCKS.registerBlock(
             "suit_workbench", com.senne.starktech.workbench.SuitWorkbenchBlock::new,

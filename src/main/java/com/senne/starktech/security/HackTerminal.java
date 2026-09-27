@@ -37,6 +37,11 @@ import java.util.Random;
  *
  * Deze klasse is alleen de logica (geen scherm), zodat de tests hem kunnen uitspelen. Alles wat
  * de terminal zegt, is Engels (je ziet het in het spel).
+ *
+ * Alles hangt af van het getal {@code seed} (de poorten, de woorden, de namen): met hetzelfde getal
+ * en dezelfde commando's kom je precies op hetzelfde uit. Daarom onthoudt de laptop alleen dat getal
+ * en wat je typte ({@link #replay}): zo ben je je voortgang niet kwijt als je het scherm sluit, en
+ * kan de server nakijken of je de hack echt uitspeelde.
  */
 public final class HackTerminal {
     public enum Stage { RECON, LOGIN, SHELL, OVERRIDE, DONE }
@@ -163,15 +168,20 @@ public final class HackTerminal {
             processes.put(proc, pid);
         }
         // De README staat bovenaan in de map waar je binnenkomt: stap voor stap wat je moet doen.
-        files.put("/README.txt", "=== MAINTENANCE README (for Happy, who keeps calling me) ===\n"
-                + "The tower security runs as a daemon with a secret name.\n"
-                + "To take it over:\n"
-                + "1. Read its secret name, type: cat security.conf\n"
-                + "2. Find its number (PID), type: ps\n"
-                + "   Careful: several daemons sound like security. Only the name from step 1 counts.\n"
-                + "3. Take it over, type: override <PID>   (the number, not the name)\n"
-                + "4. In its console: disable watchdog, then: set owner <your name>\n"
-                + "Do NOT kill it: the watchdog just restarts it. - T");
+        // Een briefje van Tony aan Happy: geen kant-en-klare commando's, wel alle aanwijzingen.
+        files.put("/README.txt", "Happy,\n"
+                + "Yes, this is the maintenance shell. No, you can't break anything. Probably.\n"
+                + "The tower security is a daemon. I rename it every week, because Rhodey keeps\n"
+                + "killing it by name. Its current name is written in the security config\n"
+                + "somewhere in /etc. You know how to read a file. You cat it.\n"
+                + "Don't trust the process list blindly: a few daemons there only SOUND like\n"
+                + "security. Decoys. Only the name from the config is the real one, and 'ps'\n"
+                + "shows you its number.\n"
+                + "If the tower ever goes rogue: override the daemon by its number. Inside, a\n"
+                + "watchdog keeps putting the owner back, so shut that thing up first. Then make\n"
+                + "yourself the owner. Type 'help' in there if you get lost.\n"
+                + "And do NOT kill it. It just comes back angrier.\n"
+                + "- Tony");
         files.put("/home/tony/notes.txt", "TODO: rename the security daemon (again).\n"
                 + "Rhodey keeps killing it by name. New name is in /etc/security.conf.\n"
                 + "Also: stop leaving the maintenance port open. - T");
@@ -256,6 +266,28 @@ public final class HackTerminal {
     /** De woorden die na je foute pogingen nog het wachtwoord kunnen zijn. */
     public List<String> possible() {
         return possible;
+    }
+
+    /**
+     * Speelt de commando's opnieuw af op een nieuwe terminal met hetzelfde getal: je komt precies
+     * uit waar je was. Een scan of een blokkade na te veel foute wachtwoorden is dan meteen voorbij.
+     */
+    public static HackTerminal replay(long seed, String playerName, List<String> commands) {
+        HackTerminal terminal = new HackTerminal(seed, playerName);
+        long now = 0;
+        for (String command : commands) {
+            terminal.run(command, now);
+            // Ruim na de langste scan (65535 poorten) en de blokkade: alles is dan klaar.
+            now += 100_000;
+            terminal.tick(now);
+            now += 100_000;
+        }
+        return terminal;
+    }
+
+    /** Een regel "je gaat verder waar je was" (als het scherm opnieuw opengaat). */
+    public void restored() {
+        hint("Session restored from the laptop. You are where you left off.");
     }
 
     /** Klaar (of door de server afgebroken): er kan niets meer getypt worden. */
@@ -473,7 +505,7 @@ public final class HackTerminal {
         if (word.equals(password)) {
             good("ACCESS GRANTED. Welcome back, Mr. Stark.");
             stage = Stage.SHELL;
-            hint("You are in. Tony left instructions: type  cat README.txt");
+            hint("You are in. Tony left a note in README.txt (read a file with: cat <file>)");
             return;
         }
         if (!candidates.contains(word)) {
@@ -597,7 +629,7 @@ public final class HackTerminal {
                 header("ATTACHED TO '" + guard.toUpperCase(Locale.ROOT) + "' (PID " + pid + ") - DAEMON CONSOLE");
                 stage = Stage.OVERRIDE;
                 status();
-                hint("Take it over: disable watchdog, then set owner <your name>.");
+                hint("You're inside " + guard + ". Type 'help' to see what you can change.");
             }
             case "pwd" -> normal(cwd);
             case "whoami" -> normal("root (probably not Tony)");

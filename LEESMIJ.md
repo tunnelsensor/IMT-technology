@@ -59,8 +59,9 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   **schaar** knip je ze door (eerst de vloer openhakken).
 - **Hacken** doe je met een **Stark Laptop** (drie zwarte glasruiten, redstone met een
   Stark-chip ertussen, drie ijzer; een bril heb je er niet voor nodig). Klik ermee op de kern:
-  het alarm gaat af en alle drones komen op je af. Op je scherm opent een **terminal**, waarin
-  je commando's typt (Enter = uitvoeren, **Tab** = aanvullen, pijltje omhoog = vorige commando,
+  je zet de laptop **opengeklapt bovenop de kern** (er moet daar dus plek zijn), het alarm gaat
+  af en alle drones komen op je af. Op je scherm opent de **terminal** van de laptop, waarin je
+  commando's typt (Enter = uitvoeren, **Tab** = aanvullen, pijltje omhoog = vorige commando,
   scrollwiel = terug, `help` = wat je hier kunt):
   1. **Recon**: `scan` laat de poorten zien, maar ze staan allemaal op "filtered". Lees het
      firewall-logboek met `logs`: daar staan twee poorten die voor onderhoud open zijn gezet...
@@ -71,18 +72,22 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
      woorden door die daardoor niet meer kunnen, en zegt hij welke er nog over zijn ("Still
      possible"). Meestal heb je het in 2 of 3 keer. Na vijf fouten is hij even geblokkeerd en
      krijg je een nieuwe dump.
-  3. **Search**: nu ben je binnen, en de terminal zegt: lees de README (`cat README.txt`). Daarin
-     staat stap voor stap wat je doet: `cat security.conf` voor de geheime naam van het
-     beveiligingsprogramma, `ps` voor zijn nummer (er draaien er een paar met zo'n naam: alleen de
-     naam uit security.conf telt), en dan `override <nummer>`. `cat` vindt een bestand ook zonder
-     het hele pad, en een foute poging zegt wat je moet doen (typ je de naam in plaats van het
-     nummer, dan zegt hij dat het nummer in `ps` staat).
+  3. **Search**: nu ben je binnen, en Tony heeft een briefje achtergelaten: `README.txt` (lees het
+     met `cat README.txt`). Er staan geen kant-en-klare commando's in, wel alle aanwijzingen: de
+     geheime naam van het beveiligingsprogramma staat in de security-config in `/etc`, een paar
+     programma's in `ps` klinken alleen maar als beveiliging (nep), en je neemt het over met zijn
+     nummer. `cat` vindt een bestand ook zonder het hele pad, en een foute poging zegt wat je moet
+     doen (typ je de naam in plaats van het nummer, dan zegt hij dat het nummer in `ps` staat).
   4. **Override**: `override <nummer>` opent de console van het beveiligingsprogramma. `status`
      laat zijn instellingen zien. Zet eerst de waakhond uit met `disable watchdog` (anders zet hij
      de eigenaar meteen terug), en maak jezelf dan eigenaar met `set owner <jouw naam>` (`whoami`
      zegt hoe je heet; Tab vult het aan).
-  Het spel loopt ondertussen door: je kunt niet weglopen, en de beveiliging schiet op je. Loop
-  je weg (verder dan 6 blokken), ga je dood of druk je op Esc, dan is de hack afgebroken.
+  Het spel loopt ondertussen door, en de beveiliging schiet op je. **Je voortgang staat op de
+  laptop**: druk je op Esc, loop je weg (verder dan 6 blokken) of ga je dood, dan gaat alleen het
+  scherm dicht. Rechtsklik op de laptop en je gaat verder waar je was (ook na opnieuw inloggen).
+  Alleen wie de laptop neerzette, kan hem gebruiken. Is de toren van jou, dan klap je de laptop
+  dicht en zit hij weer in je rugzak; breek je hem eerder af, dan krijg je hem ook terug (maar
+  begin je opnieuw).
 
 ---
 

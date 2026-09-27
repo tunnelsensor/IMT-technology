@@ -59,13 +59,12 @@ public final class ClientPayloadHandlers {
         }
     }
 
-    /** Het instelscherm van een schildkoepel openen. */
-    /** Het hack-scherm van de laptop openen, of (afgebroken) weer sluiten. */
+    /** De terminal van de laptop openen (met alles wat je al typte), of weer sluiten. */
     public static void onHackScreen(com.senne.starktech.network.HackScreenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (payload.open()) {
-            mc.setScreen(new HackScreen(payload.pos()));
-        } else if (mc.screen instanceof HackScreen hack && hack.core().equals(payload.pos())) {
+            mc.setScreen(new HackScreen(payload.pos(), payload.seed(), payload.commands()));
+        } else if (mc.screen instanceof HackScreen hack && hack.laptop().equals(payload.pos())) {
             hack.closeFromServer();
         }
     }

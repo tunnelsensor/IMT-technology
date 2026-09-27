@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "starktech:block/stark_laptop"
+    },
+    "facing=east": {
+      "model": "starktech:block/stark_laptop",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "starktech:block/stark_laptop",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "starktech:block/stark_laptop",
+      "y": 270
+    }
+  }
+}

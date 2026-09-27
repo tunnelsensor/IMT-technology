@@ -1829,6 +1829,41 @@ def stark_laptop():
     save(im, "item/stark_laptop.png")
 
 
+def stark_laptop_block():
+    """
+    De Stark-laptop als blok (opengeklapt op een beveiligingskern): de kast, het toetsenbord en
+    het scherm met de terminal (groene tekst op zwart, een kopregel en een knipperend blokje).
+    """
+    case = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(case)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.line([1, 1, 14, 1], fill=METAL_3)
+    px(case, [(13, 13)], (255, 60, 50, 255))          # een rood lampje
+    save(case, "block/stark_laptop_case.png")
+
+    keys = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(keys)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    for row in range(4):                               # vier rijen toetsen
+        for col in range(7):
+            x = 1 + col * 2
+            y = 3 + row * 2
+            px(keys, [(x, y)], METAL_3)
+    d.rectangle([5, 12, 10, 14], fill=METAL_1, outline=METAL_3)   # het touchpad
+    save(keys, "block/stark_laptop_keyboard.png")
+
+    green = (70, 240, 130, 255)
+    green_dim = (30, 120, 70, 255)
+    screen = img(16, 16, (6, 16, 10, 255))
+    d = ImageDraw.Draw(screen)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.line([2, 2, 13, 2], fill=CYAN)                   # de kopregel
+    for y, length, colour in ((4, 9, green), (6, 6, green_dim), (8, 10, green), (10, 4, green_dim)):
+        d.line([2, y, 2 + length, y], fill=colour)
+    d.rectangle([2, 12, 3, 13], fill=green)            # de cursor
+    save(screen, "block/stark_laptop_screen.png")
+
+
 def workbench_textures():
     """
     De harnas-werkbank (Tony's lab) en de drie upgrades die je er inbouwt.
@@ -2181,6 +2216,7 @@ if __name__ == "__main__":
     rocket_ammo()
     security_textures()
     stark_laptop()
+    stark_laptop_block()
     workbench_textures()
     drone_dock_textures()
     landing_pad_textures()

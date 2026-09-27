@@ -11,8 +11,9 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 
 /**
- * De Stark-laptop: klik ermee op de beveiligingskern van een Stark Tower om hem te hacken (zie
- * TowerHack). Je hebt er geen bril voor nodig.
+ * De Stark-laptop: klik ermee op de beveiligingskern van een Stark Tower, dan zet je hem
+ * opengeklapt bovenop de kern en begint de hack (zie TowerHack). Je hebt er geen bril voor nodig.
+ * Is de toren van jou, dan krijg je hem terug.
  */
 public class StarkLaptopItem extends Item {
     public StarkLaptopItem(Properties properties) {
@@ -25,7 +26,7 @@ public class StarkLaptopItem extends Item {
             return InteractionResult.PASS;
         }
         if (context.getPlayer() instanceof ServerPlayer player) {
-            TowerHack.start(player, context.getClickedPos());
+            TowerHack.placeLaptop(player, context.getClickedPos(), context.getItemInHand());
         }
         return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
     }

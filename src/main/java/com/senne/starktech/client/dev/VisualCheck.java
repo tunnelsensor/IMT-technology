@@ -300,19 +300,36 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
-        // --- De laptop-hack: een tweede kern (van niemand), en de minigame die zichzelf speelt.
+        // --- De laptop-hack: een tweede kern (van niemand), de laptop erop, en de terminal die
+        // zichzelf speelt. Halverwege Esc: de laptop staat op de kern en weet nog alles.
         if (want("hack")) {
             BlockPos core = new BlockPos(-60, -60, 60);
-            t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get()
-                    .defaultBlockState()));
+            java.util.function.Predicate<String> said = text -> Minecraft.getInstance().screen
+                    instanceof com.senne.starktech.client.HackScreen hack
+                    && hack.terminal().output().stream().anyMatch(line -> line.text().startsWith(text));
+            t.onServer(0, player -> {
+                player.serverLevel().setBlockAndUpdate(core.above(), net.minecraft.world.level.block.Blocks.AIR
+                        .defaultBlockState());
+                player.serverLevel().setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+            });
             t.view(20, -59.5, -59.5, 57.5, 0, 10);
-            t.step(0, () -> com.senne.starktech.client.HackScreen.autoPlay = true);
-            t.onServer(0, player -> com.senne.starktech.security.TowerHack.start(player, core));
+            t.step(0, com.senne.starktech.client.HackScreen::startAutoPlay);
+            t.onServer(0, player -> com.senne.starktech.security.TowerHack.placeLaptop(player, core,
+                    new ItemStack(ModItems.STARK_LAPTOP.get())));
             t.shot(20, "k01_hack_start");
             t.shot(220, "k02_hack_recon");
-            t.shot(160, "k03_hack_login");
             t.waitUntil(600, () -> Minecraft.getInstance().screen instanceof com.senne.starktech.client.HackScreen hack
-                    && hack.terminal().output().stream().anyMatch(line -> line.text().startsWith("Do NOT kill")));
+                    && hack.terminal().stage() == com.senne.starktech.security.HackTerminal.Stage.LOGIN);
+            // Esc: alleen het scherm gaat dicht.
+            t.close(10);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.shot(10, "k025_hack_laptop_on_core");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> com.senne.starktech.security.TowerHack.open(player, core.above()));
+            t.shot(15, "k026_hack_restored");
+            t.waitUntil(600, () -> said.test("Still possible"));
+            t.shot(5, "k03_hack_login");
+            t.waitUntil(600, () -> said.test("- Tony"));
             t.shot(5, "k035_hack_readme");
             t.shot(70, "k04_hack_shell");
             t.waitUntil(900, () -> Minecraft.getInstance().screen instanceof com.senne.starktech.client.HackScreen hack

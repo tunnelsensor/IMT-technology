@@ -2,7 +2,7 @@ package com.senne.starktech.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.senne.starktech.client.hud.HudStyle;
-import com.senne.starktech.network.HackResultPayload;
+import com.senne.starktech.network.HackCommandPayload;
 import com.senne.starktech.security.HackTerminal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -24,7 +24,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
  *
  * <ul>
  *   <li>Enter = uitvoeren, Tab = aanvullen, pijltje omhoog/omlaag = vorige commando's,
- *       scrollwiel = terugscrollen, Esc = afbreken.</li>
+ *       scrollwiel = terugscrollen, Esc = dicht.</li>
+ *   <li>De terminal hoort bij de laptop op de kern: elk commando gaat ernaartoe en de laptop
+ *       onthoudt het. Gaat het scherm open, dan speelt dit scherm alles wat je al typte na
+ *       (HackTerminal.replay), en ga je verder waar je was. Esc is dus niet erg.</li>
  *   <li>Een scan loopt even (met een voortgangsbalk); na te veel foute wachtwoorden ben je even
  *       geblokkeerd.</li>
  *   <li>De laatste stap (OVERRIDE) is de console van het beveiligingsprogramma: ook commando's
@@ -38,8 +41,20 @@ public class HackScreen extends Screen {
 
     /** Voor de showcase: het scherm speelt zichzelf (en maakt onderweg een paar fouten). */
     public static boolean autoPlay;
+    /**
+     * Bij welk commando de showcase is. Dit hoort niet bij één scherm: sluit je het scherm en open
+     * je de laptop weer, dan gaat hij verder waar hij was (net als de terminal zelf).
+     */
+    private static int autoStep;
 
-    private final BlockPos core;
+    /** De showcase laten beginnen bij het eerste commando. */
+    public static void startAutoPlay() {
+        autoPlay = true;
+        autoStep = 0;
+    }
+
+    /** Waar de laptop staat (bovenop de kern). */
+    private final BlockPos laptop;
     private final HackTerminal terminal;
 
     /** De puzzel achter dit scherm (voor de screenshots). */
@@ -59,15 +74,24 @@ public class HackScreen extends Screen {
 
     // De showcase: wat hij nog gaat typen.
     private final Deque<String> autoQueue = new ArrayDeque<>();
-    private int autoStep;
     private long autoNext;
 
-    public HackScreen(BlockPos core) {
+    /**
+     * @param laptop   waar de laptop staat
+     * @param seed     het getal van de puzzel (van de laptop)
+     * @param commands wat je al typte (van de laptop): dat spelen we na
+     */
+    public HackScreen(BlockPos laptop, long seed, List<String> commands) {
         super(Component.translatable("screen.starktech.hack"));
-        this.core = core;
+        this.laptop = laptop;
         var player = net.minecraft.client.Minecraft.getInstance().player;
         this.playerName = player == null ? "player" : player.getGameProfile().getName();
-        this.terminal = new HackTerminal(random.nextLong(), playerName);
+        this.terminal = HackTerminal.replay(seed, playerName, commands);
+        if (!commands.isEmpty()) {
+            terminal.restored();
+            history.addAll(commands);
+            historyIndex = history.size();
+        }
     }
 
     @Override
@@ -75,8 +99,8 @@ public class HackScreen extends Screen {
         return false;
     }
 
-    public BlockPos core() {
-        return core;
+    public BlockPos laptop() {
+        return laptop;
     }
 
     private boolean done() {
@@ -138,6 +162,8 @@ public class HackScreen extends Screen {
         terminal.run(input, now);
         if (!input.isBlank()) {
             history.add(input);
+            // De laptop onthoudt het (en de server kijkt of de toren nu van jou is).
+            PacketDistributor.sendToServer(new HackCommandPayload(laptop, input.strip()));
         }
         historyIndex = history.size();
         input = "";
@@ -146,9 +172,8 @@ public class HackScreen extends Screen {
         if (terminal.stage() != before) {
             EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.0f + terminal.stage().ordinal() * 0.2f);
             if (done()) {
-                // Jij bent de eigenaar: de toren is van jou.
+                // Jij bent de eigenaar: de toren is van jou (de server heeft het ook nagespeeld).
                 doneAt = now;
-                PacketDistributor.sendToServer(new HackResultPayload(core, true));
             }
         } else if (last != null && last.kind() == HackTerminal.Kind.ERROR) {
             EdithClientEvents.playUi(SoundEvents.NOTE_BLOCK_BASS.value(), 0.6f);
@@ -235,19 +260,18 @@ public class HackScreen extends Screen {
 
     // ================================================================ Dicht
 
-    /** Dicht: was de hack nog niet klaar, dan is hij afgebroken. */
+    /** Dicht terwijl de showcase nog aan het typen was: dat commando straks opnieuw. */
     @Override
-    public void onClose() {
-        if (!done()) {
-            PacketDistributor.sendToServer(new HackResultPayload(core, false));
+    public void removed() {
+        if (!autoQueue.isEmpty()) {
+            autoStep = Math.max(0, autoStep - 1);
         }
-        super.onClose();
+        super.removed();
     }
 
-    /** Door de server gesloten (te ver weg, dood): niets meer terugsturen. */
+    /** Door de server gesloten (weggelopen, dood, of de laptop is weg). Je voortgang blijft op de laptop. */
     public void closeFromServer() {
-        terminal.overrideDone();
-        super.onClose();
+        onClose();
     }
 
     // ================================================================ Tekenen

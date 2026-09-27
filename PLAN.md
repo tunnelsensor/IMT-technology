@@ -767,6 +767,18 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       eigenaar terug; een andere naam dan de jouwe kent hij niet. Test speelt de console uit;
       screenshot `k05_hack_takeover`.
       (mijn invulling) Dat de waakhond eerst uit moet, en de teksten van de console.
+- [x] De README iets minder "straight to the point"; je laptop moet je neerzetten op het
+      beveiligingsblok; en je voortgang niet kwijt als je Esc doet (27 september). **Gedaan**: de
+      README is een briefje van Tony met aanwijzingen (config in /etc, nep-namen in `ps`, override
+      op nummer, eerst de waakhond stil, dan jezelf eigenaar) in plaats van letterlijke commando's.
+      De laptop klik je op de kern: hij staat dan opengeklapt bovenop (nieuw blok met model), en
+      rechtsklik opent de terminal. De laptop onthoudt het getal van de puzzel en elk commando;
+      openen speelt dat na, dus Esc/weglopen/doodgaan sluit alleen het scherm. De server speelt ook
+      zelf na of je klaar bent (vroeger meldde het spel alleen "klaar"). Tests: laptop op de kern
+      + uitspelen, te snel, voortgang bewaard; screenshots `k025_hack_laptop_on_core`,
+      `k026_hack_restored`.
+      (mijn invulling) Alleen wie hem neerzette kan hem gebruiken; na de overname krijg je de laptop
+      terug; afbreken = opnieuw beginnen; de tekst van het briefje.
 
 ---
 

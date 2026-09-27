@@ -366,7 +366,30 @@ public final class StarkTechGameTests {
         });
     }
 
-    /** Hack je de kern met de laptop (en duurt dat lang genoeg), dan is de toren van jou. */
+    /**
+     * De oplossing van de hack op deze laptop, zoals een speler die alles in één keer goed doet:
+     * de open poort, het wachtwoord, override op de beveiligingsdaemon, de waakhond uit en jezelf
+     * eigenaar.
+     */
+    private static java.util.List<String> hackSolution(com.senne.starktech.security.StarkLaptopBlockEntity laptop) {
+        var terminal = new com.senne.starktech.security.HackTerminal(laptop.seed(), laptop.ownerName());
+        String connect = "connect " + terminal.openPort();
+        terminal.run(connect, 0); // pas daarna staat het wachtwoord vast
+        return java.util.List.of(connect, "login " + terminal.password(), "override " + terminal.guardPid(),
+                "disable watchdog", "set owner " + laptop.ownerName());
+    }
+
+    private static void typeOnLaptop(ServerPlayer hacker, BlockPos laptopAbsolute, java.util.List<String> commands) {
+        for (String command : commands) {
+            com.senne.starktech.security.TowerHack.handleCommand(hacker,
+                    new com.senne.starktech.network.HackCommandPayload(laptopAbsolute, command));
+        }
+    }
+
+    /**
+     * Met de laptop op de kern klikken zet hem erop (en de hack begint). Speel je de terminal uit
+     * (en duurt dat lang genoeg), dan is de toren van jou en krijg je de laptop terug.
+     */
     @GameTest(template = ARENA, timeoutTicks = 260, batch = "security")
     public static void laptop_hack_takes_the_tower(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
@@ -374,48 +397,73 @@ public final class StarkTechGameTests {
         ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
         // De beveiliging schiet tijdens de hack echt op je; in deze test overleeft de hacker dat.
         hacker.getAbilities().invulnerable = true;
-        com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
-        if (!com.senne.starktech.security.TowerHack.isHacking(hacker)) {
-            throw new GameTestAssertException("De hack begon niet");
+        hacker.getAbilities().instabuild = false; // anders blijft de laptop (zoals in creative) in je hand
+        ItemStack laptopItem = new ItemStack(ModItems.STARK_LAPTOP.get());
+        if (!com.senne.starktech.security.TowerHack.placeLaptop(hacker, helper.absolutePos(pos), laptopItem)) {
+            throw new GameTestAssertException("De laptop ging niet op de kern");
         }
+        helper.assertBlockPresent(ModBlocks.STARK_LAPTOP.get(), pos.above());
+        if (!laptopItem.isEmpty() || !com.senne.starktech.security.TowerHack.isHacking(hacker)) {
+            throw new GameTestAssertException("De laptop bleef in je hand, of de terminal ging niet open");
+        }
+        var laptop = (com.senne.starktech.security.StarkLaptopBlockEntity) helper.getBlockEntity(pos.above());
         helper.runAfterDelay(com.senne.starktech.security.TowerHack.MIN_TICKS + 5, () -> {
-            com.senne.starktech.security.TowerHack.handleResult(hacker,
-                    new com.senne.starktech.network.HackResultPayload(helper.absolutePos(pos), true));
+            typeOnLaptop(hacker, helper.absolutePos(pos.above()), hackSolution(laptop));
             if (!hacker.getUUID().equals(core.ownerId())) {
                 throw new GameTestAssertException("Na de hack is de toren niet van de hacker");
             }
             helper.assertBlockProperty(pos, com.senne.starktech.security.SecurityCoreBlock.CLAIMED, true);
+            helper.assertBlockNotPresent(ModBlocks.STARK_LAPTOP.get(), pos.above());
+            if (!hacker.getInventory().contains(new ItemStack(ModItems.STARK_LAPTOP.get()))) {
+                throw new GameTestAssertException("De hacker kreeg de laptop niet terug");
+            }
             helper.succeed();
         });
     }
 
-    /** Een hack die onmogelijk snel "klaar" is (een valsspelend spel), telt niet. */
+    /** Een hack die onmogelijk snel klaar is (een valsspelend spel), telt niet. */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "security")
     public static void laptop_hack_too_fast_is_rejected(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         var core = placeCore(helper, pos, null);
         ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
-        com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
-        com.senne.starktech.security.TowerHack.handleResult(hacker,
-                new com.senne.starktech.network.HackResultPayload(helper.absolutePos(pos), true));
+        com.senne.starktech.security.TowerHack.placeLaptop(hacker, helper.absolutePos(pos),
+                new ItemStack(ModItems.STARK_LAPTOP.get()));
+        var laptop = (com.senne.starktech.security.StarkLaptopBlockEntity) helper.getBlockEntity(pos.above());
+        typeOnLaptop(hacker, helper.absolutePos(pos.above()), hackSolution(laptop));
         if (core.ownerId() != null) {
             throw new GameTestAssertException("Een hack van 0 seconden werd goedgekeurd");
         }
         helper.succeed();
     }
 
-    /** Loop je tijdens de hack weg bij de kern, dan is hij afgebroken. */
+    /**
+     * Loop je weg bij de laptop, dan gaat het scherm dicht, maar je voortgang blijft op de laptop:
+     * open je hem weer, dan sta je nog bij het wachtwoord.
+     */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "security")
-    public static void laptop_hack_breaks_off_when_you_walk_away(GameTestHelper helper) {
+    public static void laptop_hack_keeps_progress(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         placeCore(helper, pos, null);
         ServerPlayer hacker = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
-        com.senne.starktech.security.TowerHack.start(hacker, helper.absolutePos(pos));
+        com.senne.starktech.security.TowerHack.placeLaptop(hacker, helper.absolutePos(pos),
+                new ItemStack(ModItems.STARK_LAPTOP.get()));
+        var laptop = (com.senne.starktech.security.StarkLaptopBlockEntity) helper.getBlockEntity(pos.above());
+        typeOnLaptop(hacker, helper.absolutePos(pos.above()), hackSolution(laptop).subList(0, 1));
         Vec3 far = helper.absoluteVec(new Vec3(12.5, 3, 22.5));
         hacker.teleportTo(far.x, far.y, far.z);
         com.senne.starktech.security.TowerHack.check(hacker);
         if (com.senne.starktech.security.TowerHack.isHacking(hacker)) {
-            throw new GameTestAssertException("De hack liep door terwijl de hacker 10 blokken verderop stond");
+            throw new GameTestAssertException("Het scherm bleef open terwijl de hacker 10 blokken verderop stond");
+        }
+        if (laptop.terminal().stage() != com.senne.starktech.security.HackTerminal.Stage.LOGIN) {
+            throw new GameTestAssertException("De laptop vergat de voortgang: " + laptop.commands());
+        }
+        Vec3 back = helper.absoluteVec(new Vec3(12.5, 3, 15.5));
+        hacker.teleportTo(back.x, back.y, back.z);
+        com.senne.starktech.security.TowerHack.open(hacker, helper.absolutePos(pos.above()));
+        if (!com.senne.starktech.security.TowerHack.isHacking(hacker)) {
+            throw new GameTestAssertException("De laptop ging niet weer open");
         }
         helper.succeed();
     }
@@ -2384,9 +2432,10 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("De README staat niet bovenaan: " + terminal.output().getLast().text());
         }
         terminal.run("cat README.txt", now);
-        if (terminal.output().stream().noneMatch(line -> line.text().contains("cat security.conf"))
-                || terminal.output().stream().noneMatch(line -> line.text().contains("override <PID>"))) {
-            throw new GameTestAssertException("De README legt de stappen niet uit");
+        if (terminal.output().stream().noneMatch(line -> line.text().contains("security config"))
+                || terminal.output().stream().noneMatch(line -> line.text().contains("'ps'"))
+                || terminal.output().stream().noneMatch(line -> line.text().contains("override the daemon"))) {
+            throw new GameTestAssertException("De README geeft niet alle aanwijzingen");
         }
         // Vanaf de map waar je binnenkomt: cat vindt het bestand ook zonder pad.
         terminal.run("cat security.conf", now);
