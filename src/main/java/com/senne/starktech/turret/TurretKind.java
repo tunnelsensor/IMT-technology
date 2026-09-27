@@ -9,11 +9,15 @@ import net.minecraft.util.StringRepresentable;
  * De soorten torentjes. Ze hebben dezelfde kop en hetzelfde brein (TurretBlockEntity), maar
  * verschillen in wat ze nodig hebben en op wie ze schieten (zie TurretTargeting).
  *
- * - STARK:    jouw torentje. Laser op stroom van het net, raketten als munitie. Schiet op
- *             monsters (en spelers alleen met PvP, nooit jou of je team).
- * - HYDRA:    in de Hydra-bunker. Geen stroom of munitie nodig; schiet op spelers en drones.
- * - SECURITY: in de Stark Tower. Geen stroom of munitie nodig; schiet op indringers, en wie
+ * - STARK:    jouw torentje. Raketten als munitie. Schiet op monsters (en spelers alleen met
+ *             PvP, nooit jou of je team).
+ * - HYDRA:    in de Hydra-bunker (stroom van de reactor). Schiet op spelers en drones.
+ * - SECURITY: in de Stark Tower (stroom van de krachtcentrale). Schiet op indringers, en wie
  *             dat is, zegt de beveiligingskern van de toren (zie SecurityCores).
+ *
+ * ALLE torentjes hebben stroom van het net nodig (jouw wens, 27 september): zonder stroom
+ * hangt de loop omlaag en doen ze niets, en elk schot kost stroom. Knip je de kabel naar een
+ * torentje door (of zet je de schakelaar in de stroomkast uit), dan is hij uit.
  */
 public enum TurretKind implements StringRepresentable {
     STARK,
@@ -25,11 +29,6 @@ public enum TurretKind implements StringRepresentable {
     @Override
     public String getSerializedName() {
         return name().toLowerCase(Locale.ROOT);
-    }
-
-    /** Haalt de laser stroom van het net? */
-    public boolean needsPower() {
-        return this == STARK;
     }
 
     /** Kun je er raketten in doen? (En heeft hij een eigenaar die hem neerzette?) */

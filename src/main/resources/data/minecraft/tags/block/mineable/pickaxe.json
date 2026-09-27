@@ -14,6 +14,7 @@
     "starktech:security_core",
     "starktech:suit_workbench",
     "starktech:drone_dock",
-    "starktech:landing_pad"
+    "starktech:landing_pad",
+    "starktech:power_cabinet"
   ]
 }

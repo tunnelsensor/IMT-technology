@@ -78,7 +78,7 @@ EAST_LADDER_X, EAST_LADDER_Z = 29, MID
 
 # --------------------------------------------------------------------- Heel kleine NBT-schrijver
 
-TAG_END, TAG_INT, TAG_STRING, TAG_LIST, TAG_COMPOUND = 0, 3, 8, 9, 10
+TAG_END, TAG_INT, TAG_DOUBLE, TAG_STRING, TAG_LIST, TAG_COMPOUND = 0, 3, 6, 8, 9, 10
 
 
 class Int:
@@ -86,9 +86,17 @@ class Int:
         self.value = value
 
 
+class Double:
+    """Een kommagetal in NBT (bijvoorbeeld de plek van een entity)."""
+    def __init__(self, value):
+        self.value = value
+
+
 def tag_type(value):
     if isinstance(value, Int):
         return TAG_INT
+    if isinstance(value, Double):
+        return TAG_DOUBLE
     if isinstance(value, str):
         return TAG_STRING
     if isinstance(value, list):
@@ -102,6 +110,8 @@ def write_payload(out, value):
     t = tag_type(value)
     if t == TAG_INT:
         out += struct.pack(">i", value.value)
+    elif t == TAG_DOUBLE:
+        out += struct.pack(">d", value.value)
     elif t == TAG_STRING:
         data = value.encode("utf-8")
         out += struct.pack(">H", len(data)) + data
@@ -952,6 +962,10 @@ def build_power_plant():
     """
     y0, y1 = SECURITY_Y + 1, LASERS_Y - 2
     fill(POWER_X - 2, y0, POWER_Z - 2, POWER_X + 2, y1, POWER_Z + 2, "minecraft:deepslate_bricks")
+    # Een mantel van obsidiaan: wie bij de stroomkast wil, moet zich er lang doorheen hakken,
+    # terwijl de beveiliging op hem schiet.
+    for y in range(y0, y1 + 1):
+        frame(y, POWER_X - 2, POWER_Z - 2, POWER_X + 2, POWER_Z + 2, "minecraft:obsidian")
     for gy in (SECURITY_Y + 2, SECURITY_Y + 5):
         for dx in (-1, 0, 1):
             for dz in (-1, 0, 1):
@@ -1528,6 +1542,75 @@ def build_routes():
             put(EAST_LADDER_X + 1, y, EAST_LADDER_Z, "minecraft:polished_deepslate")
 
 
+def route(*points):
+    """
+    Een kabel langs deze punten: van elk punt naar het volgende in rechte stukken, eerst langs
+    x, dan z, dan y. Zo trek je een kabel door een vloer of een muur.
+    """
+    for (ax, ay, az), (bx, by, bz) in zip(points, points[1:]):
+        x, y, z = ax, ay, az
+        cable(x, y, z)
+        while x != bx:
+            x += 1 if bx > x else -1
+            cable(x, y, z)
+        while z != bz:
+            z += 1 if bz > z else -1
+            cable(x, y, z)
+        while y != by:
+            y += 1 if by > y else -1
+            cable(x, y, z)
+
+
+def wire_security():
+    """
+    De stroom voor de beveiliging (jouw wens, 27 september: torentjes en beveiliging werken
+    alleen op stroom, en de stroomplek is goed beschermd).
+
+    In het dichtgemetselde blok van de krachtcentrale (met een mantel van obsidiaan) zit een
+    STROOMKAST, halverwege de kabel die van de generatoren omhoog loopt. Hij heeft drie groepen:
+    - onder en rechts: de stroom van de twee generatoren;
+    - boven: de lasers van de lasergang en de kluis (met de vier kluistorentjes);
+    - achter/links (de noordkant): de beveiliging: de beveiligingskern, de torentjes op de
+      beveiligingsverdieping, en via de koperen zuil van de liftkoker de twee torentjes in de
+      lobby.
+    Alle kabels lopen verborgen in vloeren en in de zuil: met de bril zie je ze door de muren
+    heen. Knip je er een door, dan valt alles daarachter uit.
+    """
+    cabinet = (POWER_X, LASERS_Y - 4, POWER_Z)                    # (29, 63, 12)
+    cables.discard(cabinet)
+    put(*cabinet, "starktech:power_cabinet", {"facing": "west"})
+    cx, cy, cz = cabinet
+    # Generator A (onderaan) via de oostmantel naar de rechterkant van de kast.
+    route((cx + 1, cy, cz), (cx + 2, cy, cz), (cx + 2, SECURITY_Y + 3, cz), (cx, SECURITY_Y + 3, cz))
+    # De beveiliging: via de noordmantel omlaag de vloer in.
+    floor = SECURITY_Y
+    x0, z0, x1, z1 = bounds(SECURITY_IN)
+    route((cx, cy, cz - 1), (cx, cy, cz - 2), (cx, floor, cz - 2))
+    # In de vloer naar het torentje in de noordwesthoek en de beveiligingskern.
+    route((cx, floor, z0 + 2), (x0 + 2, floor, z0 + 2), (x0 + 2, floor, MID))
+    # Twee extra torentjes: één bij de krachtcentrale, één bij de uitgang van de lift.
+    guard_power = (cx - 4, SECURITY_Y + 1, MID - 3)                # (25, 57, 17)
+    guard_lift = (MID + 4, SECURITY_Y + 1, MID + 6)                # (24, 57, 26)
+    security_turret(*guard_power)
+    security_turret(*guard_lift)
+    route((cx, floor, z0 + 2), (cx, floor, guard_lift[2]), (guard_lift[0], floor, guard_lift[2]))
+    route((cx, floor, guard_power[2]), (guard_power[0], floor, guard_power[2]))
+    # Naar de koperen zuil van de liftkoker, daarin omlaag tot de lobby, en in de lobbyvloer
+    # naar de twee torentjes bij de lift.
+    column = (SHAFT_X + 1, SHAFT_Z + 1)
+    route((guard_lift[0], floor, guard_lift[2]), (guard_lift[0], floor, column[1]), (column[0], floor, column[1]),
+          (column[0], 0, column[1]))
+    route((column[0], 0, column[1]), (column[0], 0, MID + 6), (MID - 5, 0, MID + 6))
+    route((column[0], 0, MID + 6), (MID + 5, 0, MID + 6))
+    # De vier kluistorentjes hangen aan de lasers: in de kluisvloer, vanaf de zenders van de val.
+    vx0, vz0, vx1, vz1 = bounds(VAULT_IN)
+    plate_z = MID + 3
+    route((MID + 2, VAULT_Y, plate_z), (vx1 - 2, VAULT_Y, plate_z), (vx1 - 2, VAULT_Y, vz0 + 2))
+    route((vx1 - 2, VAULT_Y, plate_z), (vx1 - 2, VAULT_Y, vz1 - 2))
+    route((MID - 2, VAULT_Y, plate_z), (vx0 + 2, VAULT_Y, plate_z), (vx0 + 2, VAULT_Y, vz0 + 2))
+    route((vx0 + 2, VAULT_Y, plate_z), (vx0 + 2, VAULT_Y, vz1 - 2))
+
+
 def build():
     build_plaza()
     build_lobby()
@@ -1544,7 +1627,7 @@ def build():
     build_roof()
     furnish()
     build_routes()
-    connect_cables()
+    wire_security()
 
 
 # Blokken waar een Stark-kabel op aansluit (zie PowerConnectable in de mod).
@@ -1553,35 +1636,29 @@ POWER_BLOCKS = {"starktech:cable", "starktech:laser_emitter", "starktech:heat_ge
                 "starktech:suit_workbench", "starktech:drone_dock"}
 
 
+# De plekken met een Stark-kabel (zie cable() en cable_markers()).
+cables = set()
+
+
 def cable(x, y, z):
     """
-    Een Stark-kabel. In de mod is een kabel geen blok meer maar een getekende lijn; dit oude
-    kabelblok wordt bij het laden meteen zo'n lijn (zie StarkCables.convertLegacy).
-
-    Stond hier al een blok (een muur, vloer of plafond), dan loopt de kabel daar IN: dan zetten
-    we placement=embedded en komt dat soort blok na het omzetten terug. Anders ligt hij open
-    (placement=open) en wordt de plek lucht. Met welke buren hij verbonden is, rekent
-    connect_cables() aan het eind uit (alleen voor het oude model, zolang hij nog een blok is).
+    Een Stark-kabel. In de mod is een kabel geen blok maar een getekende lijn die bij de chunk
+    hoort; het blok dat hier staat (een muur, vloer, plafond, of lucht) blijft dus gewoon staan.
+    We zetten er een onzichtbare "marker" neer (een gewone Minecraft-entity met een labeltje);
+    zodra die in de wereld komt, maakt de mod er een kabel van en haalt hij de marker weg
+    (zie StarkCables.onEntityJoin).
     """
-    before = blocks.get((x, y, z))
-    inside = before is not None and before[0] not in ("minecraft:air", "minecraft:cave_air", "starktech:cable")
-    if before is not None and before[0] == "starktech:cable":
-        inside = before[1].get("placement") == "embedded"
-    put(x, y, z, "starktech:cable", {"placement": "embedded" if inside else "open"})
+    if 0 <= x < SIZE_X and 0 <= y < SIZE_Y and 0 <= z < SIZE_Z:
+        cables.add((x, y, z))
 
 
-def connect_cables():
-    """Zet bij elke kabel de kanten aan waar een andere kabel of een apparaat met stroom zit."""
-    sides = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0),
-             "up": (0, 1, 0), "down": (0, -1, 0)}
-    for (x, y, z), (block, props, nbt) in list(blocks.items()):
-        if block != "starktech:cable":
-            continue
-        props = {"placement": props.get("placement", "open")}
-        for name, (dx, dy, dz) in sides.items():
-            neighbour = blocks.get((x + dx, y + dy, z + dz))
-            props[name] = "true" if neighbour and neighbour[0] in POWER_BLOCKS else "false"
-        blocks[(x, y, z)] = (block, props, nbt)
+def cable_markers():
+    """De markers voor alle kabels, zoals ze in het NBT-bestand bij "entities" horen."""
+    return [{
+        "blockPos": [Int(x), Int(y), Int(z)],
+        "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
+        "nbt": {"id": "minecraft:marker", "data": {"starktech_cable": Int(1)}},
+    } for (x, y, z) in sorted(cables)]
 
 
 def to_nbt():
@@ -1602,7 +1679,7 @@ def to_nbt():
         block_list.append(entry)
     return {
         "size": [Int(SIZE_X), Int(SIZE_Y), Int(SIZE_Z)],
-        "entities": [],
+        "entities": cable_markers(),
         "blocks": block_list,
         "palette": palette,
         "DataVersion": Int(DATA_VERSION),

@@ -36,4 +36,8 @@ public final class SecurityBalance {
     public static final double PATROL_RADIUS = 10.0;
     /** Hoe hard hij bijstuurt (zoals een raiddrone, iets rustiger). */
     public static final double ACCELERATION = 0.05;
+
+    /** Stroom die de beveiligingskern elke twee seconden van het net haalt (anders staat hij uit). */
+    @Tunable(section = "security", comment = "Grid power the tower security core uses every two seconds (without it, it and its drones are off)")
+    public static int CORE_UPKEEP = 20;
 }

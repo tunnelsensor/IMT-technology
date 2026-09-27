@@ -70,6 +70,13 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    public static void onCabinetOpen(com.senne.starktech.network.CabinetOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new PowerCabinetScreen(payload.pos(), payload.owner()));
+        }
+    }
+
     public static void onDomeOpen(DomeOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

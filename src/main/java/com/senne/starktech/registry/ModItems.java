@@ -76,6 +76,8 @@ public final class ModItems {
             ModBlocks.LASER_EMITTER);
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
             ModBlocks.DOME_GENERATOR);
+    public static final DeferredItem<BlockItem> POWER_CABINET = ITEMS.registerSimpleBlockItem("power_cabinet",
+            ModBlocks.POWER_CABINET, new Item.Properties().rarity(Rarity.UNCOMMON));
     // ---------------------------------------------------------------- Fase 15: het harnas
     /** De borstplaat: hier zit de reactor, dus hier komt de repulsor vandaan. */
     // stacksTo(1): het harnas heeft geen duurzaamheid, en dan laat Minecraft het anders tot 64

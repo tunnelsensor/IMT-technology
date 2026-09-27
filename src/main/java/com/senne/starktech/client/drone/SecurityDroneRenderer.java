@@ -48,7 +48,8 @@ public class SecurityDroneRenderer extends MobRenderer<SecurityDroneEntity, Dron
         public void render(PoseStack poseStack, MultiBufferSource buffers, int light, SecurityDroneEntity drone,
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
-            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
+            // Geen stroom (de kern staat uit): de lampjes zijn uit.
+            if (drone.isOffline() || DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
                 return;
             }
             getParentModel().renderToBuffer(poseStack, buffers.getBuffer(drone.isClaimed() ? CALM : ALARM), light,

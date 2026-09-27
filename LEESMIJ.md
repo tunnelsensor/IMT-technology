@@ -50,6 +50,13 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   toren: dan brandt het lampje groen, worden de lampjes van de drones blauw, laten torentjes,
   drones en laserwanden jou en je team met rust, en bewaken ze de toren voor jou. Andere
   spelers vallen ze dan alleen aan als PvP aan staat.
+- Alle beveiliging draait op **stroom** van de verborgen krachtcentrale op de
+  beveiligingsverdieping (een dicht blok met een mantel van **obsidiaan**). Daarin zit de
+  **stroomkast**: een schakelaar voor de lasers en de kluis, en een voor de beveiliging (de
+  kern, de torentjes en via de koperen zuil van de lift ook de lobby). Zonder stroom hangen de
+  lopen van de torentjes omlaag en zakken de drones met gedoofde lampjes naar de grond. De
+  kabels lopen verborgen in de vloeren: met de bril zie je ze door de vloer heen, en met een
+  **schaar** knip je ze door (eerst de vloer openhakken).
 - **Hacken** doe je met een **Stark Laptop** (drie zwarte glasruiten, redstone met een
   Stark-chip ertussen, drie ijzer; een bril heb je er niet voor nodig). Klik ermee op de kern:
   het alarm gaat af en alle drones komen op je af. Op je scherm verschijnt de hack in drie lagen
@@ -330,12 +337,14 @@ twee Stark-chips ernaast, een dispenser erboven, een observer eronder en ijzer i
 Zet hem neer: hij is van jou. De kop kijkt rustig rond; komt er een monster (ook raiddrones en
 Hydra-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten tot het neer is.
 
-- **Laser**: tot 16 blokken, 4 schade per seconde. Elk schot haalt 60 stroom van het net: sluit
-  hem aan met een Stark-kabel op een zonnepaneel of warmtegenerator (of zet die er direct
-  tegenaan). Eén zonnepaneel houdt één torentje makkelijk bij. Geen stroom = geen laser.
+- **Stroom**: elk torentje heeft stroom van het net nodig. Sluit hem aan met een Stark-kabel op
+  een zonnepaneel of warmtegenerator (of zet die er direct tegenaan). Zonder stroom doet hij
+  niets en hangt de loop omlaag (rechtsklik zegt dan "OFF (no power)").
+- **Laser**: tot 16 blokken, 4 schade per seconde. Elk schot kost 60 stroom. Eén zonnepaneel
+  houdt één torentje makkelijk bij.
 - **Raketten**: klik rechts met **Rocket Ammo** (4 stuks uit een ijzerklompje-kruis met buskruit
   en redstone) of zet er een trechter boven. Dan gaat er om de 2,5 seconde ook een raket in een
-  boogje op af, tot 24 blokken ver. Er passen 64 in.
+  boogje op af, tot 24 blokken ver (20 stroom per raket). Er passen 64 in.
 - **Op wie**: monsters. Spelers alleen als PvP aan staat, en nooit jij of je team. Dieren,
   dorpelingen, je huisdieren en E.D.I.T.H.-drones laat hij met rust. Wat hij neerhaalt telt
   als jouw buit.
@@ -345,9 +354,22 @@ Hydra-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten 
 - **Hoe staat hij ervoor?** Klik rechts met een lege hand: aan/uit, stroom en raketten. Met
   shift haal je de raketten eruit.
 
-In de Hydra-bunker staan **Hydra Turrets** (zwart met rood): die hebben geen stroom nodig en
-schieten op jou en je drones. Ook die gaan uit met redstone. Sloop je er een, dan krijg je
-ijzer en soms een Hydra-onderdeel.
+In de Hydra-bunker staan **Hydra Turrets** (zwart met rood): die schieten op jou en je drones,
+en ook zij draaien op stroom (van de reactor). Ook die gaan uit met redstone. Sloop je er een,
+dan krijg je ijzer en soms een Hydra-onderdeel.
+
+### De stroomkast
+Een **Power Cabinet** (ijzer, twee hendels, een Stark-chip en twee Stark-kabel) is een punt waar
+kabels van alle kanten samenkomen, met achter het deurtje **een schakelaar per kant** (voor,
+achter, links, rechts, boven, onder). Alles wat aan de kanten hangt die aan staan, zit aan elkaar
+vast; zet je een kant uit, dan krijgt wat daar aan hangt geen stroom meer uit de kast.
+Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
+- **Rechtsklik** opent het deurtje (iedereen die ervoor staat, kan schakelen). Per kant zie je
+  een lampje, of er iets aan hangt ("wired"), en de schakelaar.
+- **Link to E.D.I.T.H.** (alleen de eigenaar: wie hem neerzette, of in een Stark Tower wie de
+  toren hackte) zet de zes schakelaars in je redstone-lijst (toets **'**), onder **Power
+  cabinets**, zodat je ze op afstand of met je stem schakelt ("turn off cabinet 1 left").
+- In de Stark Tower en de Hydra-bunker staat er een op een goed bewaakte plek.
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
@@ -360,10 +382,13 @@ Wat je binnen tegenkomt:
 - **De grote hal**: zuilen, kratten met voorraden (buskruit, ijzer, redstone, soms raketten),
   Hydra-vaandels, soldaten en een torentje op een verhoging.
 - **Links de slaapzaal** (bedden, kisten met wat soldaten bij zich hebben, soms een
-  Hydra-onderdeel), **rechts de reactorkamer**: twee warmtegeneratoren in een bak lava.
+  Hydra-onderdeel), **rechts de reactorkamer**: twee warmtegeneratoren in een bak lava, en in de
+  hoek de **stroomkast**, bewaakt door een soldaat en een torentje. De kast heeft een schakelaar
+  voor de laserwanden (boven) en een voor alle Hydra-torentjes (onder; hun kabels lopen door de
+  vloer van de hele bunker).
 - **De kluisgang** met twee rode laserwanden. Die krijgen hun stroom van de reactor, via de
-  kabel over het plafond van de hal. **Sloop de generatoren of knip de kabel door**, en ze gaan
-  uit. (Of graaf je eromheen: het is een berg.)
+  kabel onder het plafond van de hal. **Zet ze uit in de stroomkast, sloop de generatoren of
+  knip de kabel door**, en ze gaan uit. (Of graaf je eromheen: het is een berg.)
 - **De kluis**: twee kisten met altijd 2 à 3 **Hydra-onderdelen**, en verder diamanten, goud,
   raketmunitie, Stark-chips en soms een raketpakket. Plus twee torentjes en een cryo-cel.
 
@@ -625,7 +650,7 @@ showcase en staat hij bij NIEUW.
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
-  `rockets`, `turrets`, `menu`, `bunker`, `missile`; meerdere met komma's). Op een ander
+  `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

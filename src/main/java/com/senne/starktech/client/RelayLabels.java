@@ -22,6 +22,10 @@ public final class RelayLabels {
             return false; // te ver weg om te weten
         }
         BlockState state = mc.level.getBlockState(relay.pos());
+        if (relay.channel() >= 0 && state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock) {
+            return com.senne.starktech.energy.PowerCabinetBlock.isOn(state,
+                    net.minecraft.core.Direction.from3DDataValue(relay.channel()));
+        }
         return state.getBlock() instanceof RelayBlock && state.getValue(RelayBlock.POWERED);
     }
 
@@ -35,7 +39,8 @@ public final class RelayLabels {
     public enum Kind {
         RELAY("screen.starktech.relays.kind.relay"),
         DOME("screen.starktech.relays.kind.dome"),
-        TURRET("screen.starktech.relays.kind.turret");
+        TURRET("screen.starktech.relays.kind.turret"),
+        CABINET("screen.starktech.relays.kind.cabinet");
 
         public final String key;
 
@@ -56,6 +61,9 @@ public final class RelayLabels {
         }
         if (block instanceof com.senne.starktech.turret.TurretBlock) {
             return Kind.TURRET;
+        }
+        if (block instanceof com.senne.starktech.energy.PowerCabinetBlock) {
+            return Kind.CABINET;
         }
         return Kind.RELAY;
     }

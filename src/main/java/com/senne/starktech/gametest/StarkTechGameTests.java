@@ -304,6 +304,7 @@ public final class StarkTechGameTests {
     private static com.senne.starktech.security.SecurityCoreBlockEntity placeCore(GameTestHelper helper, BlockPos pos,
                                                                                    @Nullable ServerPlayer owner) {
         helper.setBlock(pos, ModBlocks.SECURITY_CORE.get());
+        powerTurret(helper, pos.below()); // de kern heeft stroom nodig
         var core = (com.senne.starktech.security.SecurityCoreBlockEntity) helper.getBlockEntity(pos);
         if (owner != null) {
             core.setOwner(owner);
@@ -316,6 +317,7 @@ public final class StarkTechGameTests {
     public static void security_turret_shoots_intruders(GameTestHelper helper) {
         placeCore(helper, new BlockPos(2, 3, 2), null);
         helper.setBlock(new BlockPos(12, 3, 12), ModBlocks.SECURITY_TURRET.get());
+        powerTurret(helper, new BlockPos(12, 2, 12));
         ServerPlayer intruder = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
         helper.succeedWhen(() -> {
             if (intruder.getHealth() >= intruder.getMaxHealth()) {
@@ -333,6 +335,7 @@ public final class StarkTechGameTests {
         ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
         placeCore(helper, new BlockPos(2, 3, 2), owner);
         helper.setBlock(new BlockPos(12, 3, 12), ModBlocks.SECURITY_TURRET.get());
+        powerTurret(helper, new BlockPos(12, 2, 12));
         Husk monster = spawnDummyEnemy(helper, new BlockPos(18, 3, 12));
         // Een laserwand waar de eigenaar in staat.
         helper.setBlock(new BlockPos(12, 3, 18), ModBlocks.LASER_WALL.get());
@@ -862,8 +865,8 @@ public final class StarkTechGameTests {
             }
         }
         int turrets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.HYDRA_TURRET.get()));
-        if (turrets != 5) {
-            throw new GameTestAssertException("Er staan " + turrets + " Hydra-torentjes in plaats van 5");
+        if (turrets != 6) {
+            throw new GameTestAssertException("Er staan " + turrets + " Hydra-torentjes in plaats van 6");
         }
         int soldiers = countInBunker(helper, pos -> helper.getLevel().getBlockEntity(helper.absolutePos(pos))
                 instanceof net.minecraft.world.level.block.entity.StructureBlockEntity marker
@@ -872,6 +875,33 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("Er zijn " + soldiers + " plekken voor een soldaat in plaats van 8");
         }
         helper.succeed();
+    }
+
+    /**
+     * Alle Hydra-torentjes hangen via verborgen kabels aan de stroomkast in de reactorkamer, en
+     * hebben dus stroom.
+     */
+    @GameTest(template = "hydra_bunker", timeoutTicks = 100, batch = "bunker")
+    public static void hydra_bunker_turrets_have_power(GameTestHelper helper) {
+        helper.runAfterDelay(40, () -> {
+            int cabinets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.POWER_CABINET.get()));
+            if (cabinets != 1) {
+                throw new GameTestAssertException("Er staan " + cabinets + " stroomkasten in de bunker in plaats van 1");
+            }
+            List<BlockPos> dark = new java.util.ArrayList<>();
+            countInBunker(helper, pos -> {
+                if (helper.getBlockState(pos).is(ModBlocks.HYDRA_TURRET.get())
+                        && com.senne.starktech.energy.StarkGrid.available(helper.getLevel(), helper.absolutePos(pos))
+                        < com.senne.starktech.turret.TurretBalance.LASER_COST) {
+                    dark.add(pos.immutable());
+                }
+                return false;
+            });
+            if (!dark.isEmpty()) {
+                throw new GameTestAssertException("Deze Hydra-torentjes hebben geen stroom: " + dark);
+            }
+            helper.succeed();
+        });
     }
 
     /**
@@ -912,6 +942,47 @@ public final class StarkTechGameTests {
      * De lasergang in de Stark Tower gaat aan met stroom uit de verborgen krachtcentrale: na het
      * neerzetten van de toren moeten er laserwanden in de gang staan (acht rijen van drie).
      */
+    @GameTest(template = "stark_tower", timeoutTicks = 100, batch = "tower_power")
+    public static void stark_tower_security_has_power(GameTestHelper helper) {
+        helper.runAfterDelay(40, () -> {
+            var level = helper.getLevel();
+            List<BlockPos> security = new java.util.ArrayList<>();
+            BlockPos cabinet = null;
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 55; z++) {
+                    for (int y = 0; y < 100; y++) {
+                        BlockState state = helper.getBlockState(pos.set(x, y, z));
+                        if (state.is(ModBlocks.SECURITY_TURRET.get()) || state.is(ModBlocks.SECURITY_CORE.get())) {
+                            security.add(pos.immutable());
+                        } else if (state.is(ModBlocks.POWER_CABINET.get())) {
+                            cabinet = pos.immutable();
+                        }
+                    }
+                }
+            }
+            if (cabinet == null) {
+                throw new GameTestAssertException("Er staat geen stroomkast in de krachtcentrale");
+            }
+            if (security.size() != 10) {
+                throw new GameTestAssertException("Er staan " + security.size() + " torentjes + kern in plaats van 10");
+            }
+            List<BlockPos> dark = security.stream().filter(p -> com.senne.starktech.energy.StarkGrid.available(level,
+                    helper.absolutePos(p)) < com.senne.starktech.turret.TurretBalance.LASER_COST).toList();
+            if (!dark.isEmpty()) {
+                throw new GameTestAssertException("Deze beveiliging heeft geen stroom: " + dark);
+            }
+            // De schakelaar van de beveiliging (de noordkant van de kast) uit: dan valt de kern uit.
+            com.senne.starktech.energy.PowerCabinets.setSwitch(level, helper.absolutePos(cabinet), Direction.NORTH, false);
+            BlockPos core = security.stream().filter(p -> helper.getBlockState(p).is(ModBlocks.SECURITY_CORE.get()))
+                    .findFirst().orElseThrow();
+            if (com.senne.starktech.energy.StarkGrid.available(level, helper.absolutePos(core)) > 0) {
+                throw new GameTestAssertException("Met de schakelaar uit heeft de beveiligingskern nog stroom");
+            }
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = "stark_tower", timeoutTicks = 300, batch = "tower_power")
     public static void stark_tower_lasers_have_power(GameTestHelper helper) {
         // Een toren uit de wereldgeneratie krijgt geen "je bent geplaatst"-seintje: de zenders
@@ -1897,6 +1968,7 @@ public final class StarkTechGameTests {
         BlockPos pos = new BlockPos(12, 3, 4);
         ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(2, 3, 2));
         TurretBlockEntity turret = placeTurret(helper, pos, false, owner);
+        powerTurret(helper, pos.east());
         turret.ammo().insertItem(0, new ItemStack(ModItems.ROCKET_AMMO.get(), 4), false);
         Husk monster = spawnDummyEnemy(helper, new BlockPos(12, 3, 18));
         float full = monster.getMaxHealth();
@@ -1916,11 +1988,38 @@ public final class StarkTechGameTests {
     public static void hydra_turret_shoots_players(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         placeTurret(helper, pos, true, null);
+        powerTurret(helper, pos.east());
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
         helper.succeedWhen(() -> {
             if (player.getHealth() >= player.getMaxHealth()) {
                 throw new GameTestAssertException("Het Hydra-torentje heeft de speler nog niet geraakt");
             }
+        });
+    }
+
+    /**
+     * Zonder stroom doet geen enkel torentje iets (ook Hydra's niet): de loop hangt omlaag en er
+     * valt geen schot. En een beveiligingskern zonder stroom stuurt geen drones.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "turrets")
+    public static void turrets_and_security_need_power(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(12, 3, 12);
+        placeTurret(helper, pos, true, null);
+        ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
+        helper.setBlock(new BlockPos(3, 3, 3), ModBlocks.SECURITY_CORE.get());
+        helper.runAfterDelay(100, () -> {
+            if (player.getHealth() < player.getMaxHealth()) {
+                throw new GameTestAssertException("Een torentje zonder stroom schoot toch");
+            }
+            if (helper.getBlockState(pos).getValue(com.senne.starktech.turret.TurretBlock.ONLINE)) {
+                throw new GameTestAssertException("Het torentje staat als ONLINE, maar er is geen stroom");
+            }
+            int drones = helper.getLevel().getEntitiesOfClass(com.senne.starktech.security.SecurityDroneEntity.class,
+                    new net.minecraft.world.phys.AABB(helper.absolutePos(new BlockPos(3, 3, 3))).inflate(16)).size();
+            if (drones > 0) {
+                throw new GameTestAssertException("Een kern zonder stroom stuurde toch " + drones + " drones");
+            }
+            helper.succeed();
         });
     }
 
@@ -2160,6 +2259,47 @@ public final class StarkTechGameTests {
         com.senne.starktech.energy.StarkCables.remove(level, route.get(route.size() / 2));
         if (com.senne.starktech.energy.StarkGrid.available(level, device) > 0) {
             throw new GameTestAssertException("De stroom sprong over het doorgeknipte stuk");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De stroomkast: een generator aan de achterkant, kabels naar links en rechts. Zet je de
+     * schakelaar van één kant uit, dan krijgt alleen die kant geen stroom meer. De eigenaar meldt
+     * de schakelaars aan bij E.D.I.T.H. en zet hem op afstand weer aan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "cables")
+    public static void power_cabinet_switches_cut_one_side(GameTestHelper helper) {
+        var level = helper.getLevel();
+        BlockPos cabinet = new BlockPos(10, 2, 10);
+        helper.setBlock(cabinet, ModBlocks.POWER_CABINET.get());
+        helper.setBlock(cabinet.south(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(cabinet.south())).fill(5_000);
+        for (int i = 1; i <= 3; i++) {
+            com.senne.starktech.energy.StarkCables.add(level, helper.absolutePos(cabinet.east(i)));
+            com.senne.starktech.energy.StarkCables.add(level, helper.absolutePos(cabinet.west(i)));
+        }
+        BlockPos east = helper.absolutePos(cabinet.east(4));
+        BlockPos west = helper.absolutePos(cabinet.west(4));
+        if (com.senne.starktech.energy.StarkGrid.available(level, east) <= 0
+                || com.senne.starktech.energy.StarkGrid.available(level, west) <= 0) {
+            throw new GameTestAssertException("Via de stroomkast komt er geen stroom aan beide kanten");
+        }
+        com.senne.starktech.energy.PowerCabinets.setSwitch(level, helper.absolutePos(cabinet), Direction.EAST, false);
+        if (com.senne.starktech.energy.StarkGrid.available(level, east) > 0) {
+            throw new GameTestAssertException("De oostkant staat uit, maar krijgt nog stroom");
+        }
+        if (com.senne.starktech.energy.StarkGrid.available(level, west) <= 0) {
+            throw new GameTestAssertException("De westkant staat aan, maar kreeg geen stroom meer");
+        }
+        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
+        ((com.senne.starktech.energy.PowerCabinetBlockEntity) helper.getBlockEntity(cabinet)).setOwner(owner.getUUID());
+        EdithRedstone.registerChannel(owner, helper.absolutePos(cabinet), Direction.EAST.get3DDataValue(),
+                "cabinet east", "Cabinet 1");
+        EdithRedstone.handleAction(owner, com.senne.starktech.network.RelayActionPayload.switchNamed("cabinet east",
+                EdithRedstone.Op.ON));
+        if (com.senne.starktech.energy.StarkGrid.available(level, east) <= 0) {
+            throw new GameTestAssertException("E.D.I.T.H. zette de oostkant niet weer aan");
         }
         helper.succeed();
     }

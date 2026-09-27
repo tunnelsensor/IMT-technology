@@ -24,6 +24,9 @@ public final class TurretBalance {
      */
     @Tunable(section = "turrets", comment = "Grid energy one Stark turret laser shot uses")
     public static int LASER_COST = 60;
+    /** Stroom per raket (de lanceerbuis werkt ook op het net). */
+    @Tunable(section = "turrets", comment = "Grid power per rocket a Stark turret fires")
+    public static int ROCKET_POWER = 20;
 
     /** Raketten (munitie in het torentje) reiken iets verder dan de laser. */
     @Tunable(section = "turrets", comment = "How far a Stark turret fires rockets (blocks)")

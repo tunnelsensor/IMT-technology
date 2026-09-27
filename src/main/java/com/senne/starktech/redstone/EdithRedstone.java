@@ -51,11 +51,14 @@ public final class EdithRedstone {
     private static final class Pulse {
         final ResourceKey<Level> dimension;
         final BlockPos pos;
+        /** Welk kanaal (een kant van een stroomkast), of -1 = het hele blok. */
+        final int channel;
         int ticksLeft;
 
-        Pulse(ResourceKey<Level> dimension, BlockPos pos, int ticksLeft) {
+        Pulse(ResourceKey<Level> dimension, BlockPos pos, int channel, int ticksLeft) {
             this.dimension = dimension;
             this.pos = pos;
+            this.channel = channel;
             this.ticksLeft = ticksLeft;
         }
     }
@@ -85,6 +88,34 @@ public final class EdithRedstone {
         player.setData(ModAttachments.RELAYS, data.with(relay));
         StarkAdvancements.award(player, StarkAdvancements.RELAY);
         EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
+    }
+
+    /**
+     * Meldt één schakelaar van een blok aan (een kant van een stroomkast), met een eigen naam en
+     * groep. Stond hij er al, dan gebeurt er niets.
+     */
+    public static void registerChannel(ServerPlayer player, BlockPos pos, int channel, String name, String group) {
+        EdithRelays data = player.getData(ModAttachments.RELAYS);
+        if (data.indexAt(player.level().dimension(), pos, channel) >= 0) {
+            return;
+        }
+        if (data.relays().size() >= EdithBalance.MAX_RELAYS) {
+            EdithServer.send(player, Component.translatable("edith.starktech.msg.relays_full", EdithBalance.MAX_RELAYS),
+                    EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        player.setData(ModAttachments.RELAYS, data.with(new Relay(name, group, player.level().dimension(), pos, channel)));
+    }
+
+    /** Een naam voor de volgende stroomkast van deze speler: "Cabinet 1", "Cabinet 2"... */
+    public static String nextCabinetGroup(ServerPlayer player) {
+        java.util.Set<String> groups = player.getData(ModAttachments.RELAYS).groups();
+        String base = Component.translatable("screen.starktech.cabinet.group").getString();
+        int number = 1;
+        while (groups.contains(base + " " + number)) {
+            number++;
+        }
+        return base + " " + number;
     }
 
     /**
@@ -183,7 +214,7 @@ public final class EdithRedstone {
         }
         String name = clean(payload.name(), EdithBalance.MAX_RELAY_NAME, relay.name());
         String group = clean(payload.group(), EdithBalance.MAX_RELAY_NAME, Relay.DEFAULT_GROUP);
-        player.setData(ModAttachments.RELAYS, data.replace(payload.index(), new Relay(name, group, relay.dimension(), relay.pos())));
+        player.setData(ModAttachments.RELAYS, data.replace(payload.index(), relay.withName(name).withGroup(group)));
         EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_named", name, group),
                 EdithMessagePayload.Level.INFO);
     }
@@ -242,6 +273,21 @@ public final class EdithRedstone {
             level.getChunk(pos);
         }
         BlockState state = level.getBlockState(pos);
+        // Eén schakelaar van een stroomkast (één kant).
+        if (relay.channel() >= 0 && state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock) {
+            net.minecraft.core.Direction side = net.minecraft.core.Direction.from3DDataValue(relay.channel());
+            boolean now = com.senne.starktech.energy.PowerCabinetBlock.isOn(state, side);
+            boolean wanted = switch (op) {
+                case ON, PULSE -> true;
+                case OFF -> false;
+                case TOGGLE -> !now;
+            };
+            com.senne.starktech.energy.PowerCabinets.setSwitch(level, pos, side, wanted);
+            if (op == Op.PULSE) {
+                PULSES.add(new Pulse(relay.dimension(), pos, relay.channel(), EdithBalance.RELAY_PULSE_TICKS));
+            }
+            return true;
+        }
         // E.D.I.T.H. kan een relais schakelen, maar ook een laserzender of schildkoepel
         // (die doen er zelf nog iets bij; zie EdithSwitchable).
         if (state.getBlock() instanceof EdithSwitchable switchable) {
@@ -255,7 +301,7 @@ public final class EdithRedstone {
                 switchable.setSwitched(level, pos, state, wanted);
             }
             if (op == Op.PULSE) {
-                PULSES.add(new Pulse(relay.dimension(), pos, EdithBalance.RELAY_PULSE_TICKS));
+                PULSES.add(new Pulse(relay.dimension(), pos, relay.channel(), EdithBalance.RELAY_PULSE_TICKS));
             }
             return true;
         }
@@ -273,7 +319,7 @@ public final class EdithRedstone {
             level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4f, wanted ? 0.7f : 0.55f);
         }
         if (op == Op.PULSE) {
-            PULSES.add(new Pulse(relay.dimension(), pos, EdithBalance.RELAY_PULSE_TICKS));
+            PULSES.add(new Pulse(relay.dimension(), pos, relay.channel(), EdithBalance.RELAY_PULSE_TICKS));
         }
         return true;
     }
@@ -299,7 +345,10 @@ public final class EdithRedstone {
                 level.getChunk(pulse.pos);
             }
             BlockState state = level.getBlockState(pulse.pos);
-            if (state.getBlock() instanceof EdithSwitchable switchable && switchable.isSwitchedOn(state)) {
+            if (pulse.channel >= 0 && state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock) {
+                com.senne.starktech.energy.PowerCabinets.setSwitch(level, pulse.pos,
+                        net.minecraft.core.Direction.from3DDataValue(pulse.channel), false);
+            } else if (state.getBlock() instanceof EdithSwitchable switchable && switchable.isSwitchedOn(state)) {
                 switchable.setSwitched(level, pulse.pos, state, false);
             } else if (state.getBlock() instanceof RelayBlock && state.getValue(RelayBlock.POWERED)) {
                 level.setBlock(pulse.pos, state.setValue(RelayBlock.POWERED, false), Block.UPDATE_ALL);

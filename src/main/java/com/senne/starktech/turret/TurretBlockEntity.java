@@ -116,9 +116,10 @@ public class TurretBlockEntity extends BlockEntity {
         setChanged();
     }
 
-    /** Staat hij aan? (Niet uitgezet met redstone of door E.D.I.T.H.) */
+    /** Staat hij aan? (Niet uitgezet met redstone of door E.D.I.T.H., en er is stroom.) */
     public static boolean isActive(BlockState state) {
-        return state.getValue(TurretBlock.ENABLED) && !state.getValue(TurretBlock.POWERED);
+        return state.getValue(TurretBlock.ENABLED) && !state.getValue(TurretBlock.POWERED)
+                && state.getValue(TurretBlock.ONLINE);
     }
 
     /** Waar de loop zit: midden in de kop. */
@@ -129,6 +130,14 @@ public class TurretBlockEntity extends BlockEntity {
     // ================================================================ Server
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
+        // Eén keer per seconde: is er stroom op het net? Dat zetten we in het blok.
+        if ((level.getGameTime() + pos.hashCode()) % 20 == 0) {
+            boolean online = StarkGrid.available(level, pos) >= TurretBalance.LASER_COST;
+            if (online != state.getValue(TurretBlock.ONLINE)) {
+                state = state.setValue(TurretBlock.ONLINE, online);
+                level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+            }
+        }
         if (laserCooldown > 0) {
             laserCooldown--;
         }
@@ -200,13 +209,11 @@ public class TurretBlockEntity extends BlockEntity {
 
     private void fireLaser(ServerLevel level, LivingEntity target) {
         TurretKind kind = kind();
-        // Het Stark-torentje betaalt elk schot aan het stroomnet; geen stroom = geen laser.
-        if (kind.needsPower()) {
-            if (StarkGrid.available(level, worldPosition) < TurretBalance.LASER_COST) {
-                return;
-            }
-            StarkGrid.draw(level, worldPosition, TurretBalance.LASER_COST);
+        // Elk schot kost stroom van het net; geen stroom = geen laser.
+        if (StarkGrid.available(level, worldPosition) < TurretBalance.LASER_COST) {
+            return;
         }
+        StarkGrid.draw(level, worldPosition, TurretBalance.LASER_COST);
         laserCooldown = kind.laserInterval();
 
         Vec3 muzzle = muzzle();
@@ -227,10 +234,15 @@ public class TurretBlockEntity extends BlockEntity {
     }
 
     private void fireRocket(ServerLevel level, LivingEntity target) {
+        // Ook de lanceerbuis werkt op stroom (een beetje per raket).
+        if (StarkGrid.available(level, worldPosition) < TurretBalance.ROCKET_POWER) {
+            return;
+        }
         MiniRocketEntity rocket = ModEntities.MINI_ROCKET.get().create(level);
         if (rocket == null) {
             return;
         }
+        StarkGrid.draw(level, worldPosition, TurretBalance.ROCKET_POWER);
         rocketCooldown = TurretBalance.ROCKET_INTERVAL;
         ammo.extractItem(0, 1, false);
         Vec3 muzzle = muzzle();

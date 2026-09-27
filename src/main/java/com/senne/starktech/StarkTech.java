@@ -125,6 +125,7 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithRedstone::onServerTick);
         // Getekende kabels: oude kabelblokken omzetten, en knippen met een schaar.
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.StarkCables::onChunkLoad);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.StarkCables::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.StarkCables::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.CableSpoolItem::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.energy.CableSpoolItem::onRightClickItem);

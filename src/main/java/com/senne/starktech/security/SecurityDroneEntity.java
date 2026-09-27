@@ -45,6 +45,9 @@ public class SecurityDroneEntity extends PathfinderMob {
     /** Is de toren van iemand? (Voor de kleur van de lampjes in je spel.) */
     private static final EntityDataAccessor<Boolean> CLAIMED =
             SynchedEntityData.defineId(SecurityDroneEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Heeft zijn kern stroom? Zonder stroom zakt hij naar de grond en gaan zijn lampjes uit. */
+    private static final EntityDataAccessor<Boolean> OFFLINE =
+            SynchedEntityData.defineId(SecurityDroneEntity.class, EntityDataSerializers.BOOLEAN);
 
     private @Nullable BlockPos home;
     private int fireCooldown;
@@ -71,6 +74,12 @@ public class SecurityDroneEntity extends PathfinderMob {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(CLAIMED, false);
+        builder.define(OFFLINE, false);
+    }
+
+    /** Staat hij uit (geen stroom bij zijn kern)? */
+    public boolean isOffline() {
+        return entityData.get(OFFLINE);
     }
 
     public boolean isClaimed() {
@@ -105,6 +114,17 @@ public class SecurityDroneEntity extends PathfinderMob {
         }
         SecurityCoreBlockEntity core = home == null ? null : SecurityCores.coreAt(level, home);
         entityData.set(CLAIMED, core != null && core.ownerId() != null);
+        // Geen stroom bij de kern: niets doen, langzaam naar de grond zakken.
+        boolean offline = core != null && !core.isOnline();
+        entityData.set(OFFLINE, offline);
+        if (offline) {
+            setTarget(null);
+            getNavigation().stop();
+            if (!onGround()) {
+                setDeltaMovement(getDeltaMovement().multiply(0.5, 0, 0.5).add(0, -0.06, 0));
+            }
+            return;
+        }
 
         LivingEntity target = getTarget();
         if (target == null || !stillATarget(level, core, target)) {

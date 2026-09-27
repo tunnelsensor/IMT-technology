@@ -60,6 +60,17 @@ public record EdithRelays(List<Relay> relays) {
         return -1;
     }
 
+    /** Het nummer van dit kanaal (een kant van een stroomkast) op deze plek, of -1. */
+    public int indexAt(ResourceKey<Level> dimension, BlockPos pos, int channel) {
+        for (int i = 0; i < relays.size(); i++) {
+            Relay relay = relays.get(i);
+            if (relay.pos().equals(pos) && relay.dimension() == dimension && relay.channel() == channel) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public @Nullable Relay get(int index) {
         return index >= 0 && index < relays.size() ? relays.get(index) : null;
     }

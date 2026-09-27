@@ -909,6 +909,29 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- De stroomkast: een generator erachter, kabels links en rechts, één kant uit
+        if (want("cabinet")) {
+            BlockPos at = new BlockPos(-4, -60, 4);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(at, ModBlocks.POWER_CABINET.get().defaultBlockState());
+                level.setBlockAndUpdate(at.north(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                for (int i = 1; i <= 3; i++) {
+                    com.senne.starktech.energy.StarkCables.add(level, at.east(i));
+                    com.senne.starktech.energy.StarkCables.add(level, at.west(i));
+                }
+                if (level.getBlockEntity(at) instanceof com.senne.starktech.energy.PowerCabinetBlockEntity cabinet) {
+                    cabinet.setOwner(player.getUUID());
+                }
+                com.senne.starktech.energy.PowerCabinets.setSwitch(level, at, Direction.WEST, false);
+            });
+            t.stand(10, at.getX() + 0.5, -60, at.getZ() + 3.5, 180, 25);
+            t.shot(20, "c01_cabinet");
+            t.onServer(0, player -> com.senne.starktech.energy.PowerCabinets.open(player, at));
+            t.shot(20, "c02_cabinet_screen");
+            t.close(0);
+        }
+
         // --- Satellietraketten: eentje die valt en inslaat (precisie), en een bombardement
         if (want("missile")) {
             BlockPos aim = new BlockPos(30, -60, -30); // op een lege plek, ver van de heuvel

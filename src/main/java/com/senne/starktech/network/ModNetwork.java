@@ -98,6 +98,11 @@ public final class ModNetwork {
         });
         // Fase 15: de holotafel
         // De schildkoepel: een knop in zijn scherm.
+        registrar.playToServer(CabinetActionPayload.TYPE, CabinetActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof net.minecraft.server.level.ServerPlayer player) {
+                com.senne.starktech.energy.PowerCabinets.handleAction(player, payload);
+            }
+        });
         registrar.playToServer(DomeActionPayload.TYPE, DomeActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 EdithDomes.handleAction(player, payload);
@@ -134,6 +139,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onHackScreen(payload, context));
         registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
+        registrar.playToClient(CabinetOpenPayload.TYPE, CabinetOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onCabinetOpen(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
         // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server

@@ -33,7 +33,7 @@ noemen, laat Minecraft zoals ze waren: dat is de berg zelf, om de kamers heen.
 """
 from pathlib import Path
 
-from generate_structure import DATA_VERSION, Int, write_nbt
+from generate_structure import DATA_VERSION, Double, Int, write_nbt
 
 OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "starktech" / "structure" / "hydra_bunker.nbt"
 
@@ -119,21 +119,17 @@ def banner(x, y, z, facing):
         ]})
 
 
+# De plekken met een Stark-kabel (zie cable()).
+cables = set()
+
+
 def cable(x, y, z):
     """
-    Een Stark-kabel. In de mod is een kabel geen blok meer maar een getekende lijn; dit oude
-    kabelblok wordt bij het laden meteen zo'n lijn (zie StarkCables.convertLegacy).
-
-    Stond hier al een blok (een muur, vloer of plafond), dan loopt de kabel daar IN: dan zetten
-    we placement=embedded en komt dat soort blok na het omzetten terug. Anders ligt hij open
-    (placement=open) en wordt de plek lucht. Met welke buren hij verbonden is, rekent
-    connect_cables() aan het eind uit (alleen voor het oude model, zolang hij nog een blok is).
+    Een Stark-kabel: een onzichtbare marker die de mod in de wereld omzet in een getekende kabel
+    (zie cable() in generate_structure.py). Het blok op die plek blijft gewoon staan.
     """
-    before = blocks.get((x, y, z))
-    inside = before is not None and before[0] not in ("minecraft:air", "minecraft:cave_air", "starktech:cable")
-    if before is not None and before[0] == "starktech:cable":
-        inside = before[1].get("placement") == "embedded"
-    put(x, y, z, "starktech:cable", {"placement": "embedded" if inside else "open"})
+    if 0 <= x < SIZE_X and 0 <= y < SIZE_Y and 0 <= z < SIZE_Z:
+        cables.add((x, y, z))
 
 
 # --------------------------------------------------------------------- Ingang
@@ -324,18 +320,47 @@ def build_vault():
 
 # --------------------------------------------------------------------- Bestand
 
-def connect_cables():
-    """Zet bij elke kabel de kanten aan waar een andere kabel of een apparaat met stroom zit."""
-    sides = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0),
-             "up": (0, 1, 0), "down": (0, -1, 0)}
-    for (x, y, z), (block, props, nbt) in list(blocks.items()):
-        if block != "starktech:cable":
-            continue
-        props = {"placement": props.get("placement", "open")}
-        for name, (dx, dy, dz) in sides.items():
-            neighbour = blocks.get((x + dx, y + dy, z + dz))
-            props[name] = "true" if neighbour and neighbour[0] in POWER_BLOCKS else "false"
-        blocks[(x, y, z)] = (block, props, nbt)
+def route(*points):
+    """Een kabel langs deze punten, in rechte stukken: eerst langs x, dan z, dan y."""
+    for (ax, ay, az), (bx, by, bz) in zip(points, points[1:]):
+        x, y, z = ax, ay, az
+        cable(x, y, z)
+        while x != bx:
+            x += 1 if bx > x else -1
+            cable(x, y, z)
+        while z != bz:
+            z += 1 if bz > z else -1
+            cable(x, y, z)
+        while y != by:
+            y += 1 if by > y else -1
+            cable(x, y, z)
+
+
+def wire_reactor():
+    """
+    De stroomkast in de hoek van de reactorkamer (jouw wens, 27 september: alle torentjes op
+    stroom, en een kast met schakelaars op een goed bewaakte plek). Een Hydra-torentje en een
+    soldaat staan ernaast.
+
+    - noordkant (de kant van de lavabak): de stroom van de twee generatoren, langs de oostmuur;
+    - boven: de laserwanden in de kluisgang (de kabel onder het plafond door de hal);
+    - onder: de vijf Hydra-torentjes (en die in de reactorkamer), in de vloer door de hele bunker.
+    """
+    cabinet = (33, 1, 26)
+    put(*cabinet, "starktech:power_cabinet", {"facing": "west"})
+    # De stroom: de kabel van de generatoren liep meteen de hal in; nu eerst naar de kast.
+    cables.discard((29, 5, 21))
+    route((31, 5, 21), (33, 5, 21), (33, 1, 21), (33, 1, 25))
+    # Van de kast omhoog en onder het plafond naar de lijn naar de lasers.
+    route((33, 2, 26), (33, 5, 26), (28, 5, 26), (28, 5, 21))
+    # Een Hydra-torentje bij de kast.
+    turret(30, 1, 26)
+    # De torentjes: in de vloer, via een lijn door het midden van de bunker.
+    route((33, 0, 26), (MID - 6, 0, 26), (MID - 6, 0, 39), (MID + 5, 0, 39))
+    route((MID - 6, 0, 26), (MID - 6, 0, 1), (MID + 3, 0, 1))
+    route((MID - 6, 0, 27), (MID - 6, 2, 27))       # het torentje achterin de hal (op een zuil)
+    route((MID - 3, 0, 1), (MID - 3, 2, 1))         # de twee bij de kluis (op een richel)
+    route((MID + 3, 0, 1), (MID + 3, 2, 1))
 
 
 def build():
@@ -347,8 +372,8 @@ def build():
     build_vault_corridor()
     build_vault()
     build_power_lines()
+    wire_reactor()
     build_entrance()
-    connect_cables()
 
 
 def to_nbt():
@@ -367,7 +392,11 @@ def to_nbt():
         block_list.append(entry)
     return {
         "size": [Int(SIZE_X), Int(SIZE_Y), Int(SIZE_Z)],
-        "entities": [],
+        "entities": [{
+            "blockPos": [Int(x), Int(y), Int(z)],
+            "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
+            "nbt": {"id": "minecraft:marker", "data": {"starktech_cable": Int(1)}},
+        } for (x, y, z) in sorted(cables)],
         "blocks": block_list,
         "palette": palette,
         "DataVersion": Int(DATA_VERSION),

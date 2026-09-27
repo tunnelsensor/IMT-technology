@@ -315,6 +315,24 @@ public final class StarkCables {
         }
     }
 
+    /**
+     * De gebouwen (Stark Tower, Hydra-bunker) hebben een onzichtbare "marker" op elke plek waar
+     * een kabel hoort (zie cable() in tools/generate_structure.py). Komt zo'n marker in de wereld,
+     * dan leggen we daar een kabel en laten we de marker zelf niet toe. Zo blijft het blok op die
+     * plek (een koperen zuil, een vloer, een plafond) gewoon staan, met de kabel erin.
+     */
+    public static void onEntityJoin(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level)
+                || !(event.getEntity() instanceof net.minecraft.world.entity.Marker marker)) {
+            return;
+        }
+        net.minecraft.nbt.CompoundTag tag = marker.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+        if (tag.getCompound("data").getBoolean("starktech_cable")) {
+            add(level, marker.blockPosition());
+            event.setCanceled(true);
+        }
+    }
+
     /** Bij het afsluiten: de wachtrij vergeten. */
     public static void clear() {
         synchronized (TO_CONVERT) {

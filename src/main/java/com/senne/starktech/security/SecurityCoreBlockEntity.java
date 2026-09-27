@@ -21,12 +21,23 @@ import org.jetbrains.annotations.Nullable;
  * Elke twee seconden telt de kern zijn drones. Zijn het er minder dan MAX_DRONES (eentje
  * neergeschoten), dan stuurt hij na DRONE_RESPAWN ticks een nieuwe. Zo blijft een toren die van
  * niemand is gevaarlijk; na het hacken zijn diezelfde drones jouw bewakers.
+ *
+ * De kern heeft STROOM nodig (van de krachtcentrale van de toren): elke twee seconden betaalt
+ * hij CORE_UPKEEP. Is er geen stroom, dan stuurt hij geen drones, en de drones die er zijn doen
+ * niets meer: ze zakken naar de grond en hun lampjes gaan uit (zie SecurityDroneEntity).
  */
 public class SecurityCoreBlockEntity extends BlockEntity {
     private @Nullable UUID ownerId;
     private String ownerName = "";
     /** Tot wanneer (speltijd) hij wacht voor hij een nieuwe drone stuurt. */
     private long nextDrone;
+    /** Had de kern bij de laatste telling stroom? */
+    private boolean online = true;
+
+    /** Heeft de kern stroom (en werken zijn drones dus)? */
+    public boolean isOnline() {
+        return online;
+    }
 
     public SecurityCoreBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SECURITY_CORE.get(), pos, state);
@@ -93,6 +104,11 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
         }
+        online = com.senne.starktech.energy.StarkGrid.available(level, pos) >= SecurityBalance.CORE_UPKEEP;
+        if (!online) {
+            return;
+        }
+        com.senne.starktech.energy.StarkGrid.draw(level, pos, SecurityBalance.CORE_UPKEEP);
         int drones = level.getEntitiesOfClass(SecurityDroneEntity.class, area(),
                 drone -> pos.equals(drone.home())).size();
         if (drones >= SecurityBalance.MAX_DRONES) {

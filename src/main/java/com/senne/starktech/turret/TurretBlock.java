@@ -64,6 +64,11 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     /** Heeft E.D.I.T.H. het aan staan? (Uitzetten kan ook via je redstone-scherm of je stem.) */
     public static final BooleanProperty ENABLED = BlockStateProperties.ENABLED;
+    /**
+     * Heeft hij stroom van het net? Zonder stroom doet hij niets en hangt de loop omlaag. Dit
+     * staat in het blok (niet alleen op de server), zodat jouw spel het ook weet.
+     */
+    public static final BooleanProperty ONLINE = BooleanProperty.create("online");
 
     private static final VoxelShape SHAPE = Block.box(2, 0, 2, 14, 15, 14);
 
@@ -72,7 +77,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
     public TurretBlock(TurretKind kind, BlockBehaviour.Properties properties) {
         super(properties);
         this.kind = kind;
-        registerDefaultState(stateDefinition.any().setValue(POWERED, false).setValue(ENABLED, true));
+        registerDefaultState(stateDefinition.any().setValue(POWERED, false).setValue(ENABLED, true).setValue(ONLINE, false));
     }
 
     public TurretKind kind() {
@@ -90,7 +95,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(POWERED, ENABLED);
+        builder.add(POWERED, ENABLED, ONLINE);
     }
 
     @Override
@@ -204,7 +209,8 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
         Component onOff = TurretBlockEntity.isActive(state)
                 ? Component.translatable("turret.starktech.status.online").withStyle(ChatFormatting.GREEN)
                 : Component.translatable(state.getValue(POWERED) ? "turret.starktech.status.off_redstone"
-                        : "turret.starktech.status.off_edith").withStyle(ChatFormatting.RED);
+                        : !state.getValue(ENABLED) ? "turret.starktech.status.off_edith"
+                        : "turret.starktech.status.off_power").withStyle(ChatFormatting.RED);
         if (kind == TurretKind.HYDRA) {
             player.displayClientMessage(Component.translatable("turret.starktech.status.hydra", onOff), true);
             return;

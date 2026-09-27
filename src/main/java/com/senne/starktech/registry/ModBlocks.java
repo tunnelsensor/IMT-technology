@@ -120,6 +120,15 @@ public final class ModBlocks {
                     .noOcclusion()
                     .isValidSpawn((state, level, pos, type) -> false));
 
+    /** De stroomkast: schakelaars voor de kabels die erop uitkomen (zie PowerCabinetBlock). */
+    public static final DeferredBlock<com.senne.starktech.energy.PowerCabinetBlock> POWER_CABINET = BLOCKS.registerBlock(
+            "power_cabinet", com.senne.starktech.energy.PowerCabinetBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(5.0f, 1200.0f)   // zwaar staal: explosies krijgen hem niet stuk
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     /** De schildkoepel-generator. */
     public static final DeferredBlock<DomeGeneratorBlock> DOME_GENERATOR = BLOCKS.registerBlock("dome_generator",
             DomeGeneratorBlock::new,

@@ -55,6 +55,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.EMP.get());
                 output.accept(ModItems.LASER_EMITTER.get());
                 output.accept(ModItems.DOME_GENERATOR.get());
+                output.accept(ModItems.POWER_CABINET.get());
                 output.accept(ModItems.HOLO_TABLE.get());
                 output.accept(ModItems.STARK_TURRET.get());
                 output.accept(ModItems.ROCKET_AMMO.get());

@@ -1926,6 +1926,58 @@ def workbench_textures():
     save(magazine, "item/rocket_magazine.png")
 
 
+def power_cabinet_textures():
+    """
+    De stroomkast: een grijze stalen kast.
+    - voorkant: een deurtje met een geel-zwart hoogspanningsbordje, zes kleine schakelaars in twee
+      rijen (groen lampje erboven) en een handgreep;
+    - zijkant: staal met een ronde doorvoer in het midden (daar komt een kabel binnen);
+    - bovenkant: staal met een ventilatierooster.
+    """
+    steel = (104, 110, 120, 255)
+    steel_dark = (66, 70, 78, 255)
+    steel_light = (150, 156, 166, 255)
+    yellow = (240, 196, 40, 255)
+    black = (24, 24, 28, 255)
+    green = (80, 230, 120, 255)
+
+    front = img(16, 16, steel)
+    d = ImageDraw.Draw(front)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.rectangle([1, 1, 14, 14], outline=steel_light)
+    # Het bordje: een geel driehoekje met een zwarte bliksem.
+    d.polygon([(8, 2), (11, 6), (5, 6)], fill=yellow, outline=black)
+    px(front, [(8, 3), (7, 4), (8, 4), (8, 5)], black)
+    # Zes schakelaars in twee rijen, elk met een lampje erboven.
+    for row, y in enumerate((8, 12)):
+        for x in (4, 7, 10):
+            px(front, [(x, y - 1)], green)
+            d.rectangle([x, y, x + 1, y + 1], fill=black)
+            px(front, [(x, y)], steel_light)
+    # De handgreep.
+    d.line([13, 8, 13, 12], fill=steel_dark)
+    save(front, "block/power_cabinet_front.png")
+
+    side = img(16, 16, steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for y in (3, 12):
+        d.line([2, y, 13, y], fill=steel_light)
+    d.ellipse([5, 5, 10, 10], fill=black, outline=steel_dark)
+    d.ellipse([6, 6, 9, 9], fill=(40, 44, 50, 255))
+    px(side, [(7, 7), (8, 8)], (190, 110, 60, 255))
+    save(side, "block/power_cabinet_side.png")
+
+    top = img(16, 16, steel)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for y in range(4, 12, 2):
+        d.line([4, y, 11, y], fill=steel_dark)
+    for x, y in ((1, 1), (14, 1), (1, 14), (14, 14)):
+        px(top, [(x, y)], steel_light)
+    save(top, "block/power_cabinet_top.png")
+
+
 def drone_dock_textures():
     """
     De drone-dock voor de hangar:
@@ -2107,3 +2159,4 @@ if __name__ == "__main__":
     workbench_textures()
     drone_dock_textures()
     landing_pad_textures()
+    power_cabinet_textures()

@@ -30,6 +30,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(SolarPanelBlockEntity::new,
                             java.util.Set.of(ModBlocks.SOLAR_PANEL.get()), null));
 
+    /** De stroomkast: van wie hij is (voor schakelen op afstand). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.energy.PowerCabinetBlockEntity>> POWER_CABINET =
+            BLOCK_ENTITIES.register("power_cabinet",
+                    () -> new BlockEntityType<>(com.senne.starktech.energy.PowerCabinetBlockEntity::new,
+                            java.util.Set.of(ModBlocks.POWER_CABINET.get()), null));
+
     /** De schildkoepel-generator: zijn instellingen, schildkracht en of de koepel staat. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DomeGeneratorBlockEntity>> DOME_GENERATOR =
             BLOCK_ENTITIES.register("dome_generator",

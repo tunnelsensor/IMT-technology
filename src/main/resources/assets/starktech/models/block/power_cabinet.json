@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "starktech:block/power_cabinet_front",
+    "side": "starktech:block/power_cabinet_side",
+    "top": "starktech:block/power_cabinet_top"
+  }
+}

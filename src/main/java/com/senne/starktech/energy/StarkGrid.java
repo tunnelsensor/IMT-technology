@@ -132,12 +132,27 @@ public final class StarkGrid {
     /** Bekijkt de zes buren van {@code from}: een leverancier onthouden we, een kabel volgen we. */
     private static void look(Level level, BlockPos from, List<BlockPos> sources, Set<BlockPos> seen,
                              ArrayDeque<BlockPos> cables) {
+        BlockState fromState = level.getBlockState(from);
+        boolean fromCabinet = fromState.getBlock() instanceof PowerCabinetBlock;
         for (Direction direction : Direction.values()) {
+            // Uit een stroomkast gaat de stroom alleen naar de kanten waarvan de schakelaar aan staat.
+            if (fromCabinet && !PowerCabinetBlock.isOn(fromState, direction)) {
+                continue;
+            }
             BlockPos next = from.relative(direction);
-            if (!seen.add(next) || !level.isLoaded(next)) {
+            if (seen.contains(next) || !level.isLoaded(next)) {
                 continue;
             }
             BlockState state = level.getBlockState(next);
+            // In een stroomkast kom je alleen via een kant die aan staat.
+            if (state.getBlock() instanceof PowerCabinetBlock) {
+                if (PowerCabinetBlock.isOn(state, direction.getOpposite())) {
+                    seen.add(next);
+                    cables.add(next);
+                }
+                continue;
+            }
+            seen.add(next);
             // Een leverancier kan ook OP een kabel staan: dan is de plek allebei.
             BlockEntity entity = level.getBlockEntity(next);
             if (entity instanceof EnergySource) {
