@@ -724,9 +724,18 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       obsidiaan mantel, en de recepten.
 
 **Groot**
-- [ ] De toren hacken als een echte terminal: commando's typen, zoeken welke poort openstaat,
+- [x] De toren hacken als een echte terminal: commando's typen, zoeken welke poort openstaat,
       daarlangs inbreken, het beveiligingsprogramma vinden en overnemen, met verschillende
-      puzzels (niet alleen op het goede moment op spatie drukken)
+      puzzels (niet alleen op het goede moment op spatie drukken) — `0f1fe57`
+      Vier stappen. *Recon:* `scan` toont alleen "filtered" poorten; in het firewall-logboek
+      (`logs`) staan twee poorten die voor onderhoud open zijn gezet, waarvan er één later weer
+      dicht is. *Breach:* een geheugendump met acht woorden; een fout wachtwoord zegt hoeveel
+      letters op de goede plek staan, na vier fouten even geblokkeerd. *Search:* met `ls`, `cd`
+      en `cat` de codenaam van het beveiligingsprogramma vinden (er draaien er een paar met zo'n
+      naam), met `ps` zijn nummer. *Override:* `override <nummer>` en dan vier keer de
+      timingbalk. Tab vult aan, pijltje omhoog herhaalt. Nieuwe test die de terminal uitspeelt;
+      screenshots `-Ponly=hack`.
+      (mijn invulling) De puzzels zelf, de commando's en de teksten.
 - [ ] De harnas-werkbank als hologram zonder scherm: boven de werkbank zweeft het harnas; kijk
       naar een stuk en rechtsklik = bouwen (materiaal uit je rugzak, het stuk bouwt zich op in het
       hologram en vliegt naar je toe), upgrade in je hand + klik op een stuk = inbouwen. Jouw keuze.
