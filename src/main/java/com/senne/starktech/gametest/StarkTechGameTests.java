@@ -253,7 +253,7 @@ public final class StarkTechGameTests {
     }
 
     /**
-     * Het configbestand starktech-balance.toml: alle 141 getallen staan erin, en verander je er
+     * Het configbestand starktech-balance.toml: alle 143 getallen staan erin, en verander je er
      * een (zoals de wereldeigenaar in het bestand doet), dan rekent de mod met het nieuwe getal.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "balance")
@@ -262,9 +262,9 @@ public final class StarkTechGameTests {
         if (!spec.isLoaded()) {
             throw new GameTestAssertException("starktech-balance.toml is niet geladen");
         }
-        if (com.senne.starktech.edith.BalanceConfig.size() != 141) {
+        if (com.senne.starktech.edith.BalanceConfig.size() != 143) {
             throw new GameTestAssertException("Er staan " + com.senne.starktech.edith.BalanceConfig.size()
-                    + " getallen in het bestand in plaats van 141");
+                    + " getallen in het bestand in plaats van 143");
         }
         net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
@@ -490,7 +490,7 @@ public final class StarkTechGameTests {
             float without = hurtAndMeasure(owner, 10);
             for (ItemStack piece : owner.getInventory().armor) {
                 if (piece.getItem() instanceof StarkSuitItem) {
-                    com.senne.starktech.workbench.SuitUpgrades.set(piece, new com.senne.starktech.workbench.SuitUpgrades(0, 2, 0));
+                    com.senne.starktech.workbench.SuitUpgrades.set(piece, new com.senne.starktech.workbench.SuitUpgrades(0, 2, 0, 0, 0));
                 }
             }
             float with = hurtAndMeasure(owner, 10);
@@ -1688,6 +1688,52 @@ public final class StarkTechGameTests {
                         + target.getHealth() + "/" + full + ")");
             }
         });
+    }
+
+    /**
+     * Raket-upgrades: een raketkop of magazijn past pas op een borstplaat met raketpakket, en
+     * hooguit drie keer. Een magazijn geeft twee raketten meer per salvo, een raketkop 40% meer
+     * schade; een oud harnas zonder deze upgrades schiet gewoon zes gewone raketten.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "suit")
+    public static void rocket_upgrades_add_rockets_and_damage(GameTestHelper helper) {
+        ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
+        wearSuit(owner);
+        ItemStack chest = owner.getItemBySlot(EquipmentSlot.CHEST);
+        var warhead = (com.senne.starktech.workbench.SuitModuleItem) ModItems.ROCKET_WARHEAD.get();
+        var magazine = (com.senne.starktech.workbench.SuitModuleItem) ModItems.ROCKET_MAGAZINE.get();
+        if (warhead.canApplyTo(chest) || magazine.canApplyTo(chest)) {
+            throw new GameTestAssertException("Een raket-upgrade paste zonder raketpakket");
+        }
+        if (SuitRockets.salvoSize(owner) != SuitBalance.ROCKET_SALVO || SuitRockets.damageScale(owner) != 1.0f) {
+            throw new GameTestAssertException("Zonder upgrades is het salvo niet gewoon " + SuitBalance.ROCKET_SALVO);
+        }
+        chest.set(ModDataComponents.ROCKET_PACK.get(), true);
+        for (int i = 0; i < 3; i++) {
+            if (!magazine.canApplyTo(chest) || !warhead.canApplyTo(chest)) {
+                throw new GameTestAssertException("Upgrade " + (i + 1) + " paste niet");
+            }
+            magazine.applyTo(chest);
+            warhead.applyTo(chest);
+        }
+        if (magazine.canApplyTo(chest) || warhead.canApplyTo(chest)) {
+            throw new GameTestAssertException("Er paste een vierde raket-upgrade in");
+        }
+        int size = SuitRockets.salvoSize(owner);
+        if (size != SuitBalance.ROCKET_SALVO + 3 * com.senne.starktech.workbench.WorkbenchBalance.MAGAZINE_ROCKETS) {
+            throw new GameTestAssertException("Met drie magazijnen telt een salvo " + size + " raketten");
+        }
+        if (Math.abs(SuitRockets.damageScale(owner) - (1 + 3 * com.senne.starktech.workbench.WorkbenchBalance.WARHEAD_DAMAGE)) > 1e-4) {
+            throw new GameTestAssertException("Met drie raketkoppen is de schade x" + SuitRockets.damageScale(owner));
+        }
+        // De upgrades gaan mee met de borstplaat (ook na opslaan en laden).
+        var saved = com.senne.starktech.workbench.SuitUpgrades.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE,
+                com.senne.starktech.workbench.SuitUpgrades.of(chest)).getOrThrow();
+        var loaded = com.senne.starktech.workbench.SuitUpgrades.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, saved).getOrThrow();
+        if (loaded.warheads() != 3 || loaded.magazines() != 3) {
+            throw new GameTestAssertException("Na opslaan en laden: " + loaded);
+        }
+        helper.succeed();
     }
 
     // ================================================================ Torentjes

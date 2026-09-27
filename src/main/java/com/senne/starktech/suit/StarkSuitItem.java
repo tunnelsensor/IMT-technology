@@ -45,6 +45,12 @@ public class StarkSuitItem extends ArmorItem {
         if (RocketPackItem.installedOn(stack)) {
             tooltip.add(Component.translatable("tooltip.starktech.suit.rocket_pack").withStyle(ChatFormatting.GOLD));
         }
+        if (upgrades.warheads() > 0) {
+            tooltip.add(Component.translatable("tooltip.starktech.suit.warheads", upgrades.warheads()).withStyle(ChatFormatting.GOLD));
+        }
+        if (upgrades.magazines() > 0) {
+            tooltip.add(Component.translatable("tooltip.starktech.suit.magazines", upgrades.magazines()).withStyle(ChatFormatting.GOLD));
+        }
     }
 
     /** Hoeveel stukken harnas deze speler draagt (0 tot 3). */

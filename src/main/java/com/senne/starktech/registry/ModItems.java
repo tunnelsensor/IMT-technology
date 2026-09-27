@@ -109,6 +109,15 @@ public final class ModItems {
             "repulsor_capacitor", properties -> new com.senne.starktech.workbench.SuitModuleItem(
                     com.senne.starktech.workbench.SuitModuleItem.Kind.CAPACITOR, properties),
             new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** Sterkere mini-raketten (raketkop) en meer per salvo (magazijn); alleen met een raketpakket. */
+    public static final DeferredItem<com.senne.starktech.workbench.SuitModuleItem> ROCKET_WARHEAD = ITEMS.registerItem(
+            "rocket_warhead", properties -> new com.senne.starktech.workbench.SuitModuleItem(
+                    com.senne.starktech.workbench.SuitModuleItem.Kind.WARHEAD, properties),
+            new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<com.senne.starktech.workbench.SuitModuleItem> ROCKET_MAGAZINE = ITEMS.registerItem(
+            "rocket_magazine", properties -> new com.senne.starktech.workbench.SuitModuleItem(
+                    com.senne.starktech.workbench.SuitModuleItem.Kind.MAGAZINE, properties),
+            new Item.Properties().rarity(Rarity.RARE));
 
     /** Mini-raketten voor op de borstplaat (te maken met een Hydra-onderdeel). */
     public static final DeferredItem<RocketPackItem> ROCKET_PACK = ITEMS.registerItem("rocket_pack",

@@ -400,7 +400,8 @@ Met de bril op en energie erin:
   **gemarkeerde doelwitten** (R; ze worden verdeeld), anders **wat je aankijkt**, anders de
   **plek waar je kijkt**. Ze ontploffen zonder blokken te slopen en raken jou, je team en je
   drones nooit. Je hebt het hele harnas nodig; een salvo kost 900 energie en daarna moet het
-  pakket 12 seconden herladen (links in de HUD: ROCKETS). Munitie is er niet.
+  pakket 12 seconden herladen (links in de HUD: ROCKETS). Munitie is er niet. Meer raketten of
+  sterkere raketten? Bouw een **Rocket Magazine** of **Rocket Warhead** in (zie de werkbank).
 
 ### De harnas-werkbank (Tony's lab)
 Craft een **Suit Workbench** (Stark-chips, een redstoneblok, een crafting table, een aambeeld en
@@ -418,6 +419,10 @@ naar een zonnepaneel of warmtegenerator, of er direct tegenaan. Klik erop voor z
   - **Armor Plating** (in elk stuk, tot 2 per stuk): het harnas houdt meer schade tegen.
   - **Repulsor Capacitor** (in de borstplaat, tot 2): een sterkere repulsor.
   - Het **raketpakket** kan hier ook in de borstplaat (of met een rechtsklik, zie boven).
+  - **Rocket Magazine** (borstplaat met raketpakket, tot 3): 2 raketten meer per salvo (tot 12).
+    Craft: ijzer, buskruit, Stark-chips en een trechter.
+  - **Rocket Warhead** (borstplaat met raketpakket, tot 3): 40% meer schade per raket. Craft:
+    ijzer, blazepoeder, Stark-chips en TNT.
   In de tooltip van een stuk harnas zie je welke upgrades erin zitten.
 
 ### Holotafel
@@ -485,7 +490,7 @@ Alle zinnen kun je zelf aanpassen in **G > Systems > Commands** (of in
 
 | Bestand | Wat |
 |---------|-----|
-| `config/starktech-balance.toml` | **Alle getallen** (120 stuks): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
+| `config/starktech-balance.toml` | **Alle getallen** (ruim 140): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
 | `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
 | `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |

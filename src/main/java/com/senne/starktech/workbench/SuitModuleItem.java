@@ -1,5 +1,6 @@
 package com.senne.starktech.workbench;
 
+import com.senne.starktech.suit.RocketPackItem;
 import com.senne.starktech.suit.StarkSuitItem;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -15,12 +16,15 @@ import net.minecraft.world.item.TooltipFlag;
  * - STUWRAKETTEN: in de laarzen, tot 3 keer: sneller en zuiniger vliegen.
  * - BEPANTSERING: in elk stuk, tot 2 keer per stuk: het harnas houdt meer schade tegen.
  * - CONDENSATOR:  in de borstplaat, tot 2 keer: een sterkere repulsor.
+ * - RAKETKOP:     in de borstplaat met raketpakket, tot 3 keer: sterkere mini-raketten.
+ * - MAGAZIJN:     in de borstplaat met raketpakket, tot 3 keer: meer raketten per salvo.
  *
- * (Het raketpakket is een apart item, RocketPackItem; dat kan ook aan de werkbank.)
+ * (Het raketpakket is een apart item, RocketPackItem; dat kan ook aan de werkbank. De twee
+ * raket-upgrades passen pas als het pakket erop zit.)
  */
 public class SuitModuleItem extends Item {
     public enum Kind {
-        THRUSTERS, PLATING, CAPACITOR
+        THRUSTERS, PLATING, CAPACITOR, WARHEAD, MAGAZINE
     }
 
     private final Kind kind;
@@ -44,6 +48,8 @@ public class SuitModuleItem extends Item {
             case THRUSTERS -> suit.getType() == ArmorItem.Type.BOOTS && upgrades.thrusters() < WorkbenchBalance.MAX_THRUSTERS;
             case PLATING -> upgrades.plating() < WorkbenchBalance.MAX_PLATING;
             case CAPACITOR -> suit.getType() == ArmorItem.Type.CHESTPLATE && upgrades.capacitor() < WorkbenchBalance.MAX_CAPACITORS;
+            case WARHEAD -> RocketPackItem.installedOn(piece) && upgrades.warheads() < WorkbenchBalance.MAX_WARHEADS;
+            case MAGAZINE -> RocketPackItem.installedOn(piece) && upgrades.magazines() < WorkbenchBalance.MAX_MAGAZINES;
         };
     }
 
@@ -51,9 +57,11 @@ public class SuitModuleItem extends Item {
     public void applyTo(ItemStack piece) {
         SuitUpgrades u = SuitUpgrades.of(piece);
         SuitUpgrades.set(piece, switch (kind) {
-            case THRUSTERS -> new SuitUpgrades(u.thrusters() + 1, u.plating(), u.capacitor());
-            case PLATING -> new SuitUpgrades(u.thrusters(), u.plating() + 1, u.capacitor());
-            case CAPACITOR -> new SuitUpgrades(u.thrusters(), u.plating(), u.capacitor() + 1);
+            case THRUSTERS -> new SuitUpgrades(u.thrusters() + 1, u.plating(), u.capacitor(), u.warheads(), u.magazines());
+            case PLATING -> new SuitUpgrades(u.thrusters(), u.plating() + 1, u.capacitor(), u.warheads(), u.magazines());
+            case CAPACITOR -> new SuitUpgrades(u.thrusters(), u.plating(), u.capacitor() + 1, u.warheads(), u.magazines());
+            case WARHEAD -> new SuitUpgrades(u.thrusters(), u.plating(), u.capacitor(), u.warheads() + 1, u.magazines());
+            case MAGAZINE -> new SuitUpgrades(u.thrusters(), u.plating(), u.capacitor(), u.warheads(), u.magazines() + 1);
         });
     }
 

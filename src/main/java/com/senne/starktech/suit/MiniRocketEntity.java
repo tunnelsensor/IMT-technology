@@ -42,6 +42,8 @@ public class MiniRocketEntity extends Projectile {
     private int age;
     /** Raketten van een torentje raken alleen monsters (en hun eigen doelwit), nooit iemand anders. */
     private boolean onlyEnemies;
+    /** Hoeveel harder hij aankomt dan normaal (raketkoppen in het harnas; 1 = normaal). */
+    private float damageScale = 1.0f;
 
     public MiniRocketEntity(EntityType<? extends MiniRocketEntity> type, Level level) {
         super(type, level);
@@ -58,6 +60,11 @@ public class MiniRocketEntity extends Projectile {
         faceMotion();
         this.targetId = target == null ? null : target.getUUID();
         this.aimPoint = target == null ? aim : target.getBoundingBox().getCenter();
+    }
+
+    /** Sterkere raket (raketkoppen): de schade keer dit getal. */
+    public void setDamageScale(float scale) {
+        this.damageScale = scale;
     }
 
     /** Voor torentjes: raak alleen monsters en je eigen doelwit. */
@@ -184,13 +191,13 @@ public class MiniRocketEntity extends Projectile {
             // Een salvo raakt hetzelfde doelwit vlak na elkaar. Normaal is een wezen na een klap
             // een halve seconde onkwetsbaar; dan zou alleen de eerste raket tellen.
             living.invulnerableTime = 0;
-            living.hurt(damageSources().explosion(this, owner), SuitBalance.ROCKET_DAMAGE);
+            living.hurt(damageSources().explosion(this, owner), SuitBalance.ROCKET_DAMAGE * damageScale);
         }
         AABB area = new AABB(at, at).inflate(SuitBalance.ROCKET_SPLASH_RADIUS);
         for (LivingEntity nearby : level.getEntitiesOfClass(LivingEntity.class, area,
                 e -> e != direct && e != owner && e.isAlive() && canHitEntity(e))) {
             if (nearby.getBoundingBox().getCenter().distanceTo(at) <= SuitBalance.ROCKET_SPLASH_RADIUS + 0.5) {
-                nearby.hurt(damageSources().explosion(this, owner), SuitBalance.ROCKET_SPLASH_DAMAGE);
+                nearby.hurt(damageSources().explosion(this, owner), SuitBalance.ROCKET_SPLASH_DAMAGE * damageScale);
             }
         }
         level.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y, at.z, 1, 0, 0, 0, 0);

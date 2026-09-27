@@ -23,9 +23,15 @@ public final class WorkbenchBalance {
     public static double PLATING_REDUCTION = 0.05;
     @Tunable(section = "workbench", comment = "Extra repulsor damage per capacitor (0.35 = 35%)")
     public static double CAPACITOR_DAMAGE = 0.35;
+    @Tunable(section = "workbench", comment = "Extra mini-rocket damage (direct hit and splash) per warhead (0.4 = 40%)")
+    public static double WARHEAD_DAMAGE = 0.4;
+    @Tunable(section = "workbench", comment = "Extra mini-rockets per salvo per rocket magazine")
+    public static int MAGAZINE_ROCKETS = 2;
 
     /** Hoeveel van elke upgrade er hooguit in één stuk past. */
     public static final int MAX_THRUSTERS = 3;
     public static final int MAX_PLATING = 2;
     public static final int MAX_CAPACITORS = 2;
+    public static final int MAX_WARHEADS = 3;
+    public static final int MAX_MAGAZINES = 3;
 }

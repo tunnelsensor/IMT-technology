@@ -42,6 +42,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.THRUSTER_UPGRADE.get());
                 output.accept(ModItems.ARMOR_PLATING.get());
                 output.accept(ModItems.REPULSOR_CAPACITOR.get());
+                output.accept(ModItems.ROCKET_WARHEAD.get());
+                output.accept(ModItems.ROCKET_MAGAZINE.get());
                 output.accept(ModItems.BATTERY_UPGRADE.get());
                 output.accept(ModItems.SCANNER_UPGRADE.get());
                 output.accept(ModItems.DRONE_UPGRADE.get());

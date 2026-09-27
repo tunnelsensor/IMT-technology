@@ -1859,6 +1859,26 @@ def workbench_textures():
     px(capacitor, [(7, 7)], (235, 250, 255, 255))
     save(capacitor, "item/repulsor_capacitor.png")
 
+    # Raketkop: een rode neuskegel met een gouden band en een geel-oranje ontploffingsteken.
+    warhead = img(16, 16)
+    d = ImageDraw.Draw(warhead)
+    d.polygon([(8, 1), (12, 7), (12, 14), (4, 14), (4, 7)], fill=red, outline=red_dark)
+    d.line([4, 10, 12, 10], fill=gold)
+    d.line([4, 11, 12, 11], fill=(246, 214, 120, 255))
+    px(warhead, [(7, 5), (8, 5), (7, 6), (8, 6), (6, 7), (9, 7)], (255, 200, 60, 255))
+    px(warhead, [(8, 3), (8, 4)], (255, 236, 150, 255))
+    save(warhead, "item/rocket_warhead.png")
+
+    # Magazijn: een stalen houder met vier kleine raketten met rode neuzen.
+    magazine = img(16, 16)
+    d = ImageDraw.Draw(magazine)
+    d.rectangle([2, 6, 13, 14], fill=steel_dark, outline=steel)
+    d.line([2, 11, 13, 11], fill=gold)
+    for x0 in (3, 6, 9, 12):
+        d.line([x0, 3, x0, 9], fill=steel_light)
+        px(magazine, [(x0, 2), (x0, 3)], red)
+    save(magazine, "item/rocket_magazine.png")
+
 
 def drone_dock_textures():
     """
