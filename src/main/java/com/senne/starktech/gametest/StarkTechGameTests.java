@@ -469,6 +469,17 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /** Stukken harnas stapel je niet: elk stuk is er één (ze hebben hun eigen upgrades). */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "workbench")
+    public static void suit_pieces_do_not_stack(GameTestHelper helper) {
+        for (var piece : List.of(ModItems.STARK_CHESTPLATE, ModItems.STARK_LEGGINGS, ModItems.STARK_BOOTS)) {
+            if (new ItemStack(piece.get()).getMaxStackSize() != 1) {
+                throw new GameTestAssertException(piece.getId() + " is nog stapelbaar");
+            }
+        }
+        helper.succeed();
+    }
+
     /** Bepantsering (werkbank) laat het harnas meer schade tegenhouden. */
     @GameTest(template = ARENA, timeoutTicks = 120, batch = "workbench")
     public static void armor_plating_stops_more_damage(GameTestHelper helper) {

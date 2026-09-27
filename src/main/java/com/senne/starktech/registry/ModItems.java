@@ -76,16 +76,18 @@ public final class ModItems {
             ModBlocks.DOME_GENERATOR);
     // ---------------------------------------------------------------- Fase 15: het harnas
     /** De borstplaat: hier zit de reactor, dus hier komt de repulsor vandaan. */
+    // stacksTo(1): het harnas heeft geen duurzaamheid, en dan laat Minecraft het anders tot 64
+    // op elkaar stapelen.
     public static final DeferredItem<StarkSuitItem> STARK_CHESTPLATE = ITEMS.registerItem("stark_chestplate",
             properties -> new StarkSuitItem(ArmorItem.Type.CHESTPLATE, properties),
-            new Item.Properties().rarity(Rarity.EPIC));
+            new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
     public static final DeferredItem<StarkSuitItem> STARK_LEGGINGS = ITEMS.registerItem("stark_leggings",
             properties -> new StarkSuitItem(ArmorItem.Type.LEGGINGS, properties),
-            new Item.Properties().rarity(Rarity.EPIC));
+            new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
     /** De laarzen: hiermee land je zonder schade. */
     public static final DeferredItem<StarkSuitItem> STARK_BOOTS = ITEMS.registerItem("stark_boots",
             properties -> new StarkSuitItem(ArmorItem.Type.BOOTS, properties),
-            new Item.Properties().rarity(Rarity.EPIC));
+            new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
     /** Een drone-dock voor je hangar. */
     public static final DeferredItem<BlockItem> DRONE_DOCK = ITEMS.registerSimpleBlockItem("drone_dock",
             ModBlocks.DRONE_DOCK, new Item.Properties().rarity(Rarity.UNCOMMON));
