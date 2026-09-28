@@ -1,124 +1,556 @@
 {
   "variants": {
-    "facing=north,color=blue": {
-      "model": "starktech:block/laser_wall_blue",
-      "y": 90
-    },
-    "facing=south,color=blue": {
-      "model": "starktech:block/laser_wall_blue",
-      "y": 90
-    },
-    "facing=east,color=blue": {
-      "model": "starktech:block/laser_wall_blue"
-    },
-    "facing=west,color=blue": {
-      "model": "starktech:block/laser_wall_blue"
-    },
-    "facing=up,color=blue": {
-      "model": "starktech:block/laser_wall_blue"
-    },
-    "facing=down,color=blue": {
-      "model": "starktech:block/laser_wall_blue"
-    },
-    "facing=north,color=cyan": {
-      "model": "starktech:block/laser_wall_cyan",
-      "y": 90
-    },
-    "facing=south,color=cyan": {
-      "model": "starktech:block/laser_wall_cyan",
-      "y": 90
-    },
-    "facing=east,color=cyan": {
-      "model": "starktech:block/laser_wall_cyan"
-    },
-    "facing=west,color=cyan": {
-      "model": "starktech:block/laser_wall_cyan"
-    },
-    "facing=up,color=cyan": {
-      "model": "starktech:block/laser_wall_cyan"
-    },
-    "facing=down,color=cyan": {
-      "model": "starktech:block/laser_wall_cyan"
-    },
-    "facing=north,color=green": {
-      "model": "starktech:block/laser_wall_green",
-      "y": 90
-    },
-    "facing=south,color=green": {
-      "model": "starktech:block/laser_wall_green",
-      "y": 90
-    },
-    "facing=east,color=green": {
-      "model": "starktech:block/laser_wall_green"
-    },
-    "facing=west,color=green": {
-      "model": "starktech:block/laser_wall_green"
-    },
-    "facing=up,color=green": {
-      "model": "starktech:block/laser_wall_green"
-    },
-    "facing=down,color=green": {
-      "model": "starktech:block/laser_wall_green"
-    },
-    "facing=north,color=yellow": {
-      "model": "starktech:block/laser_wall_yellow",
-      "y": 90
-    },
-    "facing=south,color=yellow": {
-      "model": "starktech:block/laser_wall_yellow",
-      "y": 90
-    },
-    "facing=east,color=yellow": {
-      "model": "starktech:block/laser_wall_yellow"
-    },
-    "facing=west,color=yellow": {
-      "model": "starktech:block/laser_wall_yellow"
-    },
-    "facing=up,color=yellow": {
-      "model": "starktech:block/laser_wall_yellow"
-    },
-    "facing=down,color=yellow": {
-      "model": "starktech:block/laser_wall_yellow"
-    },
-    "facing=north,color=red": {
-      "model": "starktech:block/laser_wall_red",
-      "y": 90
-    },
-    "facing=south,color=red": {
-      "model": "starktech:block/laser_wall_red",
-      "y": 90
-    },
-    "facing=east,color=red": {
-      "model": "starktech:block/laser_wall_red"
-    },
-    "facing=west,color=red": {
-      "model": "starktech:block/laser_wall_red"
-    },
-    "facing=up,color=red": {
-      "model": "starktech:block/laser_wall_red"
-    },
-    "facing=down,color=red": {
-      "model": "starktech:block/laser_wall_red"
-    },
-    "facing=north,color=purple": {
-      "model": "starktech:block/laser_wall_purple",
-      "y": 90
-    },
-    "facing=south,color=purple": {
-      "model": "starktech:block/laser_wall_purple",
-      "y": 90
-    },
-    "facing=east,color=purple": {
-      "model": "starktech:block/laser_wall_purple"
-    },
-    "facing=west,color=purple": {
-      "model": "starktech:block/laser_wall_purple"
-    },
-    "facing=up,color=purple": {
-      "model": "starktech:block/laser_wall_purple"
-    },
-    "facing=down,color=purple": {
-      "model": "starktech:block/laser_wall_purple"
-    }
+    "facing=north,color=blue": [
+      {
+        "model": "starktech:block/laser_wall_blue",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=blue": [
+      {
+        "model": "starktech:block/laser_wall_blue",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=blue": [
+      {
+        "model": "starktech:block/laser_wall_blue"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=west,color=blue": [
+      {
+        "model": "starktech:block/laser_wall_blue"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=up,color=blue": [
+      {
+        "model": "starktech:block/laser_wall_blue"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=down,color=blue": [
+      {
+        "model": "starktech:block/laser_wall_blue"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=north,color=cyan": [
+      {
+        "model": "starktech:block/laser_wall_cyan",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=cyan": [
+      {
+        "model": "starktech:block/laser_wall_cyan",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=cyan": [
+      {
+        "model": "starktech:block/laser_wall_cyan"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=west,color=cyan": [
+      {
+        "model": "starktech:block/laser_wall_cyan"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=up,color=cyan": [
+      {
+        "model": "starktech:block/laser_wall_cyan"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=down,color=cyan": [
+      {
+        "model": "starktech:block/laser_wall_cyan"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=north,color=green": [
+      {
+        "model": "starktech:block/laser_wall_green",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_green_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_green_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_green_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=green": [
+      {
+        "model": "starktech:block/laser_wall_green",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_green_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_green_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_green_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=green": [
+      {
+        "model": "starktech:block/laser_wall_green"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=west,color=green": [
+      {
+        "model": "starktech:block/laser_wall_green"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=up,color=green": [
+      {
+        "model": "starktech:block/laser_wall_green"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=down,color=green": [
+      {
+        "model": "starktech:block/laser_wall_green"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=north,color=yellow": [
+      {
+        "model": "starktech:block/laser_wall_yellow",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=yellow": [
+      {
+        "model": "starktech:block/laser_wall_yellow",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=yellow": [
+      {
+        "model": "starktech:block/laser_wall_yellow"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=west,color=yellow": [
+      {
+        "model": "starktech:block/laser_wall_yellow"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=up,color=yellow": [
+      {
+        "model": "starktech:block/laser_wall_yellow"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=down,color=yellow": [
+      {
+        "model": "starktech:block/laser_wall_yellow"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=north,color=red": [
+      {
+        "model": "starktech:block/laser_wall_red",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_red_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_red_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_red_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=red": [
+      {
+        "model": "starktech:block/laser_wall_red",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_red_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_red_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_red_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=red": [
+      {
+        "model": "starktech:block/laser_wall_red"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=west,color=red": [
+      {
+        "model": "starktech:block/laser_wall_red"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=up,color=red": [
+      {
+        "model": "starktech:block/laser_wall_red"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=down,color=red": [
+      {
+        "model": "starktech:block/laser_wall_red"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=north,color=purple": [
+      {
+        "model": "starktech:block/laser_wall_purple",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=purple": [
+      {
+        "model": "starktech:block/laser_wall_purple",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_2",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_3",
+        "y": 90
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=purple": [
+      {
+        "model": "starktech:block/laser_wall_purple"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=west,color=purple": [
+      {
+        "model": "starktech:block/laser_wall_purple"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=up,color=purple": [
+      {
+        "model": "starktech:block/laser_wall_purple"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=down,color=purple": [
+      {
+        "model": "starktech:block/laser_wall_purple"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "starktech:block/laser_wall_purple_4"
+      }
+    ]
   }
 }

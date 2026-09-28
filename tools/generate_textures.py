@@ -42,6 +42,9 @@ RAYSHIELD_COLORS = {
     "red": (235, 70, 60),
     "purple": (190, 90, 245),
 }
+# Hoeveel verschillende plaatjes elke rayshield-kleur krijgt (zie rayshield_walls). Zelfde
+# getal als in tools/generate_block_models.py.
+RAYSHIELD_VARIANTS = 4
 
 
 def img(w, h, fill=CLEAR):
@@ -886,63 +889,139 @@ def shield_textures():
 
 def rayshield_walls():
     """
-    Het energieveld van de rayshield-laserpoort, in elke kleur: een raster van zeshoeken zoals op
-    de schildkoepel, dat rustig van links naar rechts schuift.
+    Het energieveld van de rayshield-laserpoort, in elke kleur.
 
-    Subtiel, op jouw vraag (27 september): geen witte lijnen meer, alleen de eigen kleur. De
-    randen van de zeshoeken zijn iets lichter, een paar vakjes iets donkerder, en het veld zelf
-    is flink doorzichtig. Het plaatje herhaalt naadloos (links = rechts, boven = onder), dus
-    naast elkaar vormen de blokken één doorlopend veld zonder naden.
+    Op jouw vraag (28 september): geen lijnen over het hele veld, maar een zachte, wolkerige
+    ondergrond in de eigen kleur (redelijk subtiel, een beetje lichter en donkerder), met af en
+    toe op een willekeurige plek een klein kronkeltje: een kort, fel lijntje dat zich uitrolt,
+    even kronkelt en weer uitdooft.
+
+    - De ondergrond is ruis: willekeurige getallen op een grof en een fijn rooster, zacht in
+      elkaar overgevloeid. De grove vlekken drijven rustig naar rechts, de fijne korrel naar
+      boven. Het plaatje herhaalt naadloos (links = rechts, boven = onder), dus naast elkaar
+      vormen de blokken één doorlopend veld zonder naden.
+    - Kronkeltjes: alle blokken spelen dezelfde animatie tegelijk af. Met één plaatje zou dus
+      elk blok van de wand op hetzelfde moment op dezelfde plek een kronkeltje krijgen. Daarom
+      zijn er per kleur RAYSHIELD_VARIANTS plaatjes met dezelfde ondergrond maar elk hun eigen
+      kronkeltjes, op andere plekken en andere momenten. De blockstate laat Minecraft per blok
+      een variant kiezen (zie laser_wall_models() in tools/generate_block_models.py).
 
     Elke texture is 32 breed en 32*FRAMES hoog: Minecraft speelt die frames onder elkaar af als
-    animatie (zie het .mcmeta-bestand ernaast). Per frame schuift het raster 4 pixels op; na 8
-    frames is het precies één rasterbreedte verder, zodat de lus niet hapert.
+    animatie (zie het .mcmeta-bestand ernaast, frametime 1 = elke tick een nieuw frame, 20 per
+    seconde). Let op: "interpolate" doet niets bij frametime 1 (Minecraft mengt alleen tussen
+    frames die langer dan één tick duren), dus de vloeiendheid moet uit de frames zelf komen.
+    Daarom zijn het er 120 (6 seconden) en beweegt alles maar een fractie van een pixel per
+    frame. Na 120 frames staat alles weer precies op het begin, zodat de lus niet hapert.
     """
+    import json
     import math
+    import random
     size = 32
-    frames = 8
-    shift = size // frames
-    # De middens van de zeshoeken: rijen van 16 breed, om de beurt 8 opgeschoven, 16 hoog.
-    centres = []
-    for row in range(-2, 5):
-        for col in range(-2, 5):
-            centres.append((col * 16 + (row % 2) * 8 + 8, row * 16 + 8))
+    frames = 120
 
-    def edge_distance(x, y):
-        best = second = 1e9
-        best_centre = None
-        for cx, cy in centres:
-            d = math.hypot(x - cx, y - cy)
-            if d < best:
-                best, second, best_centre = d, best, (cx, cy)
-            elif d < second:
-                second = d
-        return (second - best) / 2, best_centre
+    # --- De ondergrond ---
+    def lattice(cells, seed):
+        rng = random.Random(seed)
+        return [[rng.uniform(-1, 1) for _ in range(cells)] for _ in range(cells)]
 
-    # Het raster één keer uitrekenen (per pixel: hoe ver van een rand, en in welk vakje).
-    pattern = [[edge_distance(x + 0.5, y + 0.5) for x in range(size)] for y in range(size)]
+    def noise(grid, x, y):
+        """Waarde-ruis: de rooster-getallen rond (x, y), zacht gemengd. Herhaalt om de 32 pixels."""
+        cells = len(grid)
+        gx, gy = x * cells / size, y * cells / size
+        x0, y0 = math.floor(gx), math.floor(gy)
+        fx, fy = gx - x0, gy - y0
+        fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)  # zachte overgang, geen knikken
 
-    for name, (r, g, b) in RAYSHIELD_COLORS.items():
-        def tint(amount, alpha):
-            return (max(0, min(255, r + amount)), max(0, min(255, g + amount)), max(0, min(255, b + amount)), alpha)
-        sheet = img(size, size * frames)
+        def at(i, j):
+            return grid[j % cells][i % cells]
+        upper = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * fx
+        lower = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * fx
+        return upper + (lower - upper) * fy
+
+    coarse = lattice(4, 11)  # vlekken van ongeveer 8 pixels
+    fine = lattice(8, 23)    # korrel van ongeveer 4 pixels
+    ground = []  # per frame: 32x32 getallen van ongeveer -1 tot 1
+    for frame in range(frames):
+        shift = frame / frames * size  # in één lus precies één plaatje verder
+        ground.append([[0.7 * noise(coarse, x + 0.5 - shift, y + 0.5)
+                        + 0.3 * noise(fine, x + 0.5, y + 0.5 + shift)
+                        for x in range(size)] for y in range(size)])
+
+    # --- De kronkeltjes ---
+    # Per variant 2 kronkeltjes per lus. De momenten worden over alle varianten verdeeld, zodat
+    # er over de hele wand gezien steeds ergens eentje kan opduiken en nooit alles tegelijk.
+    per_variant = 2
+    rng = random.Random(7)
+    slots = list(range(RAYSHIELD_VARIANTS * per_variant))
+    rng.shuffle(slots)
+    gap = frames / len(slots)
+    events = [[] for _ in range(RAYSHIELD_VARIANTS)]
+    for i, slot in enumerate(slots):
+        events[i % RAYSHIELD_VARIANTS].append({
+            "start": int(slot * gap + rng.uniform(0, gap * 0.6)),
+            "life": rng.randint(16, 24),            # hoe lang hij zichtbaar is (frames)
+            "x": rng.uniform(10, 22), "y": rng.uniform(10, 22),  # midden, ver genoeg van de rand
+            "angle": rng.uniform(0, math.pi),       # welke kant hij op ligt
+            "length": rng.uniform(7, 11),
+            "amp": rng.uniform(0.9, 1.5),           # hoe ver hij uitslaat
+            "wave": rng.uniform(4.0, 5.5),          # afstand tussen twee bochtjes
+            "phase": rng.uniform(0, 2 * math.pi),
+        })
+
+    def squiggle(event, frame):
+        """Hoe fel het kronkeltje is per pixel in dit frame: {(x, y): 0 tot 1}."""
+        age = (frame - event["start"]) % frames  # ook als hij over het einde van de lus loopt
+        if age >= event["life"]:
+            return {}
+        p = age / event["life"]
+        grow = min(1.0, p / 0.3)                     # eerst rolt hij zich uit...
+        fade = 1.0 if p < 0.5 else math.cos((p - 0.5) / 0.5 * math.pi / 2)  # ...en dooft dan uit
+        phase = event["phase"] + p * 3 * math.pi     # terwijl hij kronkelt
+        length = event["length"]
+        dx, dy = math.cos(event["angle"]), math.sin(event["angle"])
+        points = []
+        s = 0.0
+        while s <= grow * length:
+            bend = event["amp"] * math.sin(2 * math.pi * s / event["wave"] + phase) * math.sin(math.pi * s / length)
+            u = s - length / 2
+            points.append((event["x"] + u * dx - bend * dy, event["y"] + u * dy + bend * dx))
+            s += 0.25
+        result = {}
+        for y in range(size):
+            for x in range(size):
+                d = min((math.hypot(x + 0.5 - px_, y + 0.5 - py_) for px_, py_ in points), default=99)
+                if d > 3:
+                    continue
+                core = max(0.0, 1 - d / 0.9)
+                glow = 0.3 * math.exp(-(d * d) / (2 * 1.1 * 1.1))
+                result[(x, y)] = max(core, glow) * fade
+        return result
+
+    mcmeta = json.dumps({"animation": {"frametime": 1, "interpolate": True}}, indent=2) + "\n"
+    for variant in range(RAYSHIELD_VARIANTS):
+        spark = []
         for frame in range(frames):
-            top = frame * size
-            for y in range(size):
-                for x in range(size):
-                    # Van links naar rechts: pixel x toont wat eerder links stond.
-                    edge, centre = pattern[y][(x - frame * shift) % size]
-                    line = max(0.0, 1 - edge / 1.2)       # de rand van een zeshoek
-                    glow = max(0.0, 1 - edge / 4.0) * 0.4  # zachte gloed tegen de rand
-                    # Een paar vakjes net iets donkerder, verspreid (vast patroon, per vakje).
-                    darker = ((int(centre[0]) * 7 + int(centre[1]) * 13) // 8) % 5 == 0
-                    if line > 0.05:
-                        sheet.putpixel((x, top + y), tint(45, int(70 + 70 * line)))
-                    elif darker:
-                        sheet.putpixel((x, top + y), tint(-35, int(58 + 40 * glow)))
-                    else:
-                        sheet.putpixel((x, top + y), tint(int(20 * glow), int(52 + 45 * glow)))
-        save(sheet, "block/laser_wall_%s.png" % name)
+            lit = {}
+            for event in events[variant]:
+                for key, value in squiggle(event, frame).items():
+                    lit[key] = max(lit.get(key, 0.0), value)
+            spark.append(lit)
+
+        for name, (r, g, b) in RAYSHIELD_COLORS.items():
+            def tint(amount, alpha):
+                return (max(0, min(255, r + round(amount))), max(0, min(255, g + round(amount))),
+                        max(0, min(255, b + round(amount))), max(0, min(255, round(alpha))))
+            sheet = img(size, size * frames)
+            for frame in range(frames):
+                top = frame * size
+                for y in range(size):
+                    for x in range(size):
+                        n = ground[frame][y][x]
+                        s = spark[frame].get((x, y), 0.0)
+                        sheet.putpixel((x, top + y), tint(6 + 26 * n + 70 * s, 52 + 32 * n + 130 * s))
+            file = "laser_wall_%s" % name + ("_%d" % (variant + 1) if variant else "")
+            save(sheet, "block/%s.png" % file)
+            (ROOT / "block" / ("%s.png.mcmeta" % file)).write_text(mcmeta, encoding="utf-8", newline="\n")
 
 
 def charger_textures():

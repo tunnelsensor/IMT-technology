@@ -1,0 +1,8 @@
+{
+  "parent": "starktech:block/laser_wall_field",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "starktech:block/laser_wall_blue_4",
+    "field": "starktech:block/laser_wall_blue_4"
+  }
+}

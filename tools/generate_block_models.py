@@ -149,8 +149,83 @@ def heat_generator_states():
     blockstate("heat_generator", variants)
 
 
+# ================================================================ Rayshield-laserwand
+
+# Zelfde lijstjes als in tools/generate_textures.py (RAYSHIELD_COLORS en RAYSHIELD_VARIANTS):
+# pas ze daar ook aan als je hier iets verandert.
+RAYSHIELD_COLORS = ("blue", "cyan", "green", "yellow", "red", "purple")
+RAYSHIELD_VARIANTS = 4
+
+
+def rayshield_variant_name(color, variant):
+    """laser_wall_blue, laser_wall_blue_2, laser_wall_blue_3, ... (de eerste heeft geen nummer)."""
+    return "laser_wall_%s" % color + ("_%d" % (variant + 1) if variant else "")
+
+
+def laser_wall_models():
+    """
+    De laserwand: één dun, doorzichtig vlak (1 pixel dik) midden in het blok.
+
+    Het vlak zelf staat in laser_wall_field.json; per kleur en per variant is er een klein
+    modelletje dat alleen zegt welk plaatje erop moet. De varianten verschillen alleen in
+    waar en wanneer er een kronkeltje verschijnt. De blockstate geeft elke kleur een lijstje
+    varianten: Minecraft kiest dan per blok (op basis van de plek) er één uit, zodat niet elk
+    blok van de wand op hetzelfde moment op dezelfde plek een kronkeltje krijgt.
+    """
+    def face(uv):
+        return {"uv": uv, "texture": "#field"}
+
+    field = {
+        "parent": "block/block",
+        "render_type": "minecraft:translucent",
+        "elements": [{
+            "from": [0, 0, 7.5],
+            "to": [16, 16, 8.5],
+            "faces": {
+                "north": face([0, 0, 16, 16]),
+                "south": face([0, 0, 16, 16]),
+                "east": face([7.5, 0, 8.5, 16]),
+                "west": face([7.5, 0, 8.5, 16]),
+                "up": face([0, 7.5, 16, 8.5]),
+                "down": face([0, 7.5, 16, 8.5]),
+            },
+        }],
+    }
+    write(ROOT / "models" / "block" / "laser_wall_field.json", field)
+
+    for color in RAYSHIELD_COLORS:
+        for variant in range(RAYSHIELD_VARIANTS):
+            name = rayshield_variant_name(color, variant)
+            texture = "starktech:block/" + name
+            write(ROOT / "models" / "block" / (name + ".json"), {
+                "parent": "starktech:block/laser_wall_field",
+                "render_type": "minecraft:translucent",
+                "textures": {"particle": texture, "field": texture},
+            })
+
+    # Noord/zuid: het vlak een kwartslag gedraaid. Oost/west en omhoog/omlaag: zoals het is.
+    turn = {"north": 90, "south": 90, "east": 0, "west": 0, "up": 0, "down": 0}
+    variants = {}
+    for color in RAYSHIELD_COLORS:
+        for facing, y in turn.items():
+            options = []
+            for variant in range(RAYSHIELD_VARIANTS):
+                option = {"model": "starktech:block/" + rayshield_variant_name(color, variant)}
+                if y:
+                    option["y"] = y
+                options.append(option)
+            variants["facing=%s,color=%s" % (facing, color)] = options
+    blockstate("laser_wall", variants)
+
+
+def write(path, data):
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
+
+
 if __name__ == "__main__":
     solar_panel()
     heat_generator(False)
     heat_generator(True)
     heat_generator_states()
+    laser_wall_models()

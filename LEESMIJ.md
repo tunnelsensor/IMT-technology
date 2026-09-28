@@ -274,8 +274,8 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 - **Persoonlijk schild** (G > Combat > Rayshield): vangt pijlen, vuurballen, explosies en lasers op. Elke
   treffer kost energie; batterij leeg = schild weg.
 - **Laserzender** (volledig blok met een lens aan de voorkant): een dun, doorzichtig energieveld
-  met een honingraat van zeshoeken (zoals de koepel) die rustig opzij schuift, en waar niemand
-  door komt. Het schuift uit de lens naar voren tot het eerste blok (of een tweede zender die
+  met een zachte, wolkerige gloed waar af en toe op een willekeurige plek een klein kronkeltje
+  energie oplicht, en waar niemand door komt. Het schuift uit de lens naar voren tot het eerste blok (of een tweede zender die
   terugkijkt), en bij het uitgaan weer terug de zender in, net als de ray shields uit Star Wars.
   Eén zender is genoeg. **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood,
   paars. Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
