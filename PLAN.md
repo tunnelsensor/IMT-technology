@@ -795,6 +795,35 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       (mijn invulling) Welke dingen "van de bril" zijn: waypoints, drones en satelliet (spelers en
       mobs op de kaart en de ertsen niet).
 
+### 7. De beveiliging upgraden (28 september)
+
+Jouw wensen: de hack ongeveer zoals nu maar logischer; een desktop op de beveiligingskern waar je
+camera's, drones en torentjes bekijkt en bedient (alleen als de beveiliging van jou is); zelf een
+wachtwoord en je eigen mappen; anderen kunnen jouw beveiliging opnieuw hacken; elk systeem een
+IP-adres, en verbinden met SSH. Jouw antwoorden: een echte desktop met vensters; een
+bewakingsmuur met live beeldjes zoals de mod Vista (zonder lag, ook van ver); status, aan/uit en
+wie ze aanvallen; de kern en camera's ook zelf bouwen; SSH-inloggen overal maar hacken alleen ter
+plekke; bij een wachtwoord geen dump maar raden, social engineering (in het echt), woordenlijst of
+bruteforce; alleen a-z en 0-9, hoogstens 8 tekens; mappen beheren, notities, security.conf
+verstoppen, valstrikken; bij een overname alarm, je bestanden blijven, nieuw wachtwoord.
+Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eich.md`.
+
+- [x] **1. Fundament**: elke kern is een klein systeem — `4d0e0a1`
+      IP (10.x.y.z, uniek in de wereld; een nieuw bestand `starktech_network.dat` onthoudt welk
+      IP bij welke kern hoort), SSH-poort, naam (`stark-sec-core` in de toren), het wachtwoord
+      (alleen als hash, nooit leesbaar), mappen en bestanden met systeembestanden en
+      valstrikken, en een logboek. Een kern uit een oude wereld krijgt het bij de eerste tick.
+      Drie nieuwe tests.
+- [ ] **2. De hack op de server, de laptop in je hand, de stappen logisch na elkaar**
+- [ ] **3. Een wachtwoord kraken** (raden, woordenlijst, bruteforce)
+- [ ] **4. De Stark OS-desktop** (vensters, inloggen, Terminal, Logs, Settings)
+- [ ] **5. Bestanden, notities en valstrikken**
+- [ ] **6. Apparaten en toegang, en de kern zelf bouwen**
+- [ ] **7. Security Camera en de bewakingsmuur** (in de buurt)
+- [ ] **8. Echte camera's in de toren**
+- [ ] **9. SSH van overal**
+- [ ] **10. Camerabeeld van ver** (mixins, achter een schakelaar)
+
 ---
 
 ## Nog nooit in het spel bekeken

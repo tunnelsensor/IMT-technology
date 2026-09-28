@@ -2,10 +2,18 @@ package com.senne.starktech.security;
 
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModEntities;
+import com.senne.starktech.security.net.StarkNetworkData;
+import com.senne.starktech.security.os.EventLog;
+import com.senne.starktech.security.os.SystemDefaults;
+import com.senne.starktech.security.os.SystemPassword;
+import com.senne.starktech.security.os.VirtualFs;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.util.RandomSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
@@ -25,10 +33,29 @@ import org.jetbrains.annotations.Nullable;
  * De kern heeft STROOM nodig (van de krachtcentrale van de toren): elke twee seconden betaalt
  * hij CORE_UPKEEP. Is er geen stroom, dan stuurt hij geen drones, en de drones die er zijn doen
  * niets meer: ze zakken naar de grond en hun lampjes gaan uit (zie SecurityDroneEntity).
+ *
+ * Sinds 28 september is de kern ook een kleine COMPUTER (het "systeem"): hij heeft een IP-adres,
+ * een SSH-poort, een naam (hostname), een wachtwoord, mappen en bestanden (VirtualFs) en een
+ * logboek (EventLog). Dat wordt allemaal gemaakt bij de eerste tick ({@link #ensureSystem}), dus
+ * ook een kern uit een oude wereld krijgt het vanzelf.
  */
 public class SecurityCoreBlockEntity extends BlockEntity {
     private @Nullable UUID ownerId;
     private String ownerName = "";
+
+    // ---------------------------------------------------------------- Het systeem
+    /** Het IP-adres (10.x.y.z), leeg tot de eerste tick. */
+    private String ip = "";
+    private int sshPort;
+    private String hostname = "";
+    /** De echte naam van het beveiligingsprogramma (staat in security.conf). Leeg = nog geen systeem. */
+    private String daemon = "";
+    /** Het getal waar de rest uit komt (procesnummers, het logboek van de statuspagina). */
+    private long systemSeed;
+    /** Null = geen wachtwoord: dan heeft het systeem nog het oude geheugenlek van Tony's firmware. */
+    private @Nullable SystemPassword password;
+    private VirtualFs fs = new VirtualFs();
+    private EventLog log = new EventLog();
     /** Tot wanneer (speltijd) hij wacht voor hij een nieuwe drone stuurt. */
     private long nextDrone;
     /** Had de kern bij de laatste telling stroom? */
@@ -97,9 +124,123 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
     }
 
+    // ================================================================ Het systeem
+
+    /**
+     * Zorgt dat de kern een systeem heeft: een IP (uniek in de wereld, zie StarkNetworkData), een
+     * SSH-poort, een naam en de eerste bestanden. Heeft hij dat al, dan gebeurt er niets (behalve
+     * dat zijn IP weer in het netwerk staat, voor als dat verloren ging).
+     */
+    public void ensureSystem(ServerLevel level) {
+        GlobalPos here = GlobalPos.of(level.dimension(), worldPosition);
+        String allocated = StarkNetworkData.get(level).allocate(here, ip);
+        if (!allocated.equals(ip)) {
+            ip = allocated;
+            setChanged();
+        }
+        if (!daemon.isEmpty()) {
+            return;
+        }
+        systemSeed = level.random.nextLong();
+        daemon = SystemDefaults.DAEMONS[level.random.nextInt(SystemDefaults.DAEMONS.length)];
+        sshPort = 1024 + level.random.nextInt(8976);
+        fs = new VirtualFs();
+        if (ownerId == null) {
+            // Van niemand: dit is de kern van een Stark Tower (het systeem van Tony).
+            hostname = SystemDefaults.TONY_HOST;
+            SystemDefaults.tonyFiles(fs, daemon);
+        } else {
+            hostname = SystemDefaults.hostFor(ownerName);
+            SystemDefaults.playerFiles(fs, ownerName, daemon);
+        }
+        log.add(level.getGameTime(), EventLog.Type.SYSTEM, hostname + " online at " + ip);
+        setChanged();
+    }
+
+    /** Is het systeem al gemaakt? (Pas na de eerste tick.) */
+    public boolean hasSystem() {
+        return !daemon.isEmpty() && !ip.isEmpty();
+    }
+
+    public String ip() {
+        return ip;
+    }
+
+    public int sshPort() {
+        return sshPort;
+    }
+
+    public String hostname() {
+        return hostname;
+    }
+
+    public String daemon() {
+        return daemon;
+    }
+
+    public long systemSeed() {
+        return systemSeed;
+    }
+
+    public VirtualFs fs() {
+        return fs;
+    }
+
+    public EventLog log() {
+        return log;
+    }
+
+    /** Heeft het systeem een wachtwoord? Zonder heeft het het oude geheugenlek. */
+    public boolean hasPassword() {
+        return password != null;
+    }
+
+    public @Nullable SystemPassword password() {
+        return password;
+    }
+
+    /** Een nieuw wachtwoord (het moet SystemPassword.isValid zijn), of null om het te wissen. */
+    public void setPassword(@Nullable String newPassword, RandomSource random) {
+        password = newPassword == null ? null : SystemPassword.create(newPassword, random);
+        setChanged();
+    }
+
+    /** Klopt dit wachtwoord? (Zonder wachtwoord klopt niets: dan moet je eerst een instellen.) */
+    public boolean checkPassword(String attempt) {
+        return password != null && password.matches(attempt);
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
+        setChanged();
+    }
+
+    public void setSshPort(int port) {
+        this.sshPort = port;
+        setChanged();
+    }
+
+    /** Een regel in het logboek (met de speltijd van nu). */
+    public void logEvent(EventLog.Type type, String text) {
+        log.add(level == null ? 0 : level.getGameTime(), type, text);
+        setChanged();
+    }
+
+    /** De kern is afgebroken: zijn IP is weer vrij. */
+    public void releaseSystem(ServerLevel level) {
+        StarkNetworkData.get(level).release(GlobalPos.of(level.dimension(), worldPosition));
+    }
+
     // ================================================================ Drones
 
+    /** Staat deze kern (sinds hij geladen is) al in het netwerk? Niet bewaard: na laden opnieuw. */
+    private boolean registered;
+
     public void serverTick(ServerLevel level, BlockPos pos) {
+        if (!registered) {
+            ensureSystem(level);
+            registered = true;
+        }
         long now = level.getGameTime();
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
@@ -171,6 +312,17 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         tag.putString("OwnerName", ownerName);
         tag.putBoolean("Filled", filled);
         tag.putLong("NextDrone", nextDrone);
+        // Het systeem
+        tag.putString("Ip", ip);
+        tag.putInt("SshPort", sshPort);
+        tag.putString("Hostname", hostname);
+        tag.putString("Daemon", daemon);
+        tag.putLong("SystemSeed", systemSeed);
+        if (password != null) {
+            tag.put("Password", password.save());
+        }
+        tag.put("Files", fs.save());
+        tag.put("Log", log.save());
     }
 
     @Override
@@ -180,5 +332,15 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         ownerName = tag.getString("OwnerName");
         filled = tag.getBoolean("Filled");
         nextDrone = tag.getLong("NextDrone");
+        // Een kern uit een oude wereld heeft dit allemaal nog niet: dan blijft het leeg, en maakt
+        // ensureSystem het bij de eerste tick.
+        ip = tag.getString("Ip");
+        sshPort = tag.getInt("SshPort");
+        hostname = tag.getString("Hostname");
+        daemon = tag.getString("Daemon");
+        systemSeed = tag.getLong("SystemSeed");
+        password = SystemPassword.load(tag.getCompound("Password"));
+        fs = VirtualFs.load(tag.getCompound("Files"));
+        log = EventLog.load(tag.getList("Log", Tag.TAG_COMPOUND));
     }
 }

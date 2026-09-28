@@ -468,6 +468,138 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Elke kern is een klein systeem: twee kernen krijgen elk een eigen IP, een kern van niemand is
+     * Tony's systeem (met zijn README en het systeembestand security.conf), en breek je een kern
+     * af, dan is zijn IP weer vrij.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
+    public static void security_core_gets_a_system(GameTestHelper helper) {
+        var first = placeCore(helper, new BlockPos(4, 3, 4), null);
+        var second = placeCore(helper, new BlockPos(20, 3, 20), null);
+        ServerLevel level = helper.getLevel();
+        first.ensureSystem(level);
+        second.ensureSystem(level);
+        if (first.ip().isEmpty() || first.ip().equals(second.ip()) || !first.ip().startsWith("10.")) {
+            throw new GameTestAssertException("De kernen kregen geen eigen IP: " + first.ip() + " en " + second.ip());
+        }
+        var network = com.senne.starktech.security.net.StarkNetworkData.get(level);
+        if (!helper.absolutePos(new BlockPos(4, 3, 4)).equals(network.find(first.ip()).pos())) {
+            throw new GameTestAssertException("Het netwerk vindt de kern niet terug op zijn IP");
+        }
+        if (!first.hostname().equals("stark-sec-core") || !first.fs().isFile("/README.txt")) {
+            throw new GameTestAssertException("Een kern van niemand is niet het systeem van Tony");
+        }
+        var conf = first.fs().get("/etc/security.conf");
+        if (conf == null || !conf.isSystem() || !conf.content().contains("daemon = " + first.daemon())) {
+            throw new GameTestAssertException("security.conf ontbreekt of noemt het beveiligingsprogramma niet");
+        }
+        if (first.hasPassword() || first.sshPort() < 1024) {
+            throw new GameTestAssertException("Een nieuw systeem heeft al een wachtwoord, of een rare poort");
+        }
+        // Nog eens: niets verandert (hetzelfde IP).
+        String ip = first.ip();
+        first.ensureSystem(level);
+        if (!ip.equals(first.ip())) {
+            throw new GameTestAssertException("ensureSystem gaf de kern een ander IP");
+        }
+        helper.setBlock(new BlockPos(4, 3, 4), Blocks.AIR);
+        if (network.find(ip) != null) {
+            throw new GameTestAssertException("De kern is weg, maar zijn IP is nog bezet");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Het systeem blijft bewaard: wachtwoord (alleen als hash), mappen, een valstrik, het logboek.
+     * En een kern uit een oude wereld (zonder al die gegevens) laadt gewoon.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
+    public static void security_core_system_is_saved(GameTestHelper helper) {
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        var core = placeCore(helper, new BlockPos(12, 3, 12), owner);
+        ServerLevel level = helper.getLevel();
+        core.ensureSystem(level);
+        String home = "/home/" + com.senne.starktech.security.os.SystemDefaults.homeName(owner.getGameProfile().getName());
+        if (!core.fs().isDir(home) || core.hostname().equals("stark-sec-core")) {
+            throw new GameTestAssertException("Een kern van een speler kreeg geen thuismap of eigen naam");
+        }
+        core.setPassword("senne123", level.random);
+        core.fs().mkdir(home + "/secret");
+        core.fs().write(home + "/secret/passwords.txt", "nice try");
+        core.fs().setTrap(home + "/secret/passwords.txt", true);
+        core.fs().move("/etc/security.conf", home + "/secret/recipes.txt");
+        core.logEvent(com.senne.starktech.security.os.EventLog.Type.LOGIN, "test entry");
+
+        var registries = level.registryAccess();
+        var tag = core.saveWithFullMetadata(registries);
+        if (tag.toString().contains("senne123")) {
+            throw new GameTestAssertException("Het wachtwoord staat leesbaar in de save");
+        }
+        var copy = new com.senne.starktech.security.SecurityCoreBlockEntity(core.getBlockPos(), core.getBlockState());
+        copy.loadWithComponents(tag, registries);
+        if (!copy.checkPassword("senne123") || copy.checkPassword("senne124")) {
+            throw new GameTestAssertException("Het wachtwoord klopt niet meer na laden");
+        }
+        var trap = copy.fs().get(home + "/secret/passwords.txt");
+        var hidden = copy.fs().get(home + "/secret/recipes.txt");
+        if (trap == null || !trap.isTrap() || hidden == null || !hidden.isSystem()
+                || !(home + "/secret/recipes.txt").equals(copy.fs().systemFile())) {
+            throw new GameTestAssertException("De mappen, de valstrik of het verstopte security.conf zijn weg na laden");
+        }
+        if (!copy.ip().equals(core.ip()) || !copy.daemon().equals(core.daemon())
+                || copy.log().entries().stream().noneMatch(entry -> entry.text().equals("test entry"))) {
+            throw new GameTestAssertException("IP, daemon of logboek zijn weg na laden");
+        }
+        // Een oude kern: alleen de eigenaar, verder niets. Laadt, en heeft nog geen systeem.
+        var old = new com.senne.starktech.security.SecurityCoreBlockEntity(core.getBlockPos(), core.getBlockState());
+        var oldTag = new net.minecraft.nbt.CompoundTag();
+        oldTag.putString("OwnerName", "Old");
+        old.loadWithComponents(oldTag, registries);
+        if (old.hasSystem() || old.hasPassword() || old.fs().count() != 0) {
+            throw new GameTestAssertException("Een oude kern laadde met een half systeem");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De regels van de mappen: security.conf is een systeembestand (verplaatsen en hernoemen mag,
+     * weggooien en overschrijven niet), namen moeten kloppen, een map kan niet in zichzelf, en een
+     * te groot bestand past niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
+    public static void virtual_fs_rules(GameTestHelper helper) {
+        var fs = new com.senne.starktech.security.os.VirtualFs();
+        com.senne.starktech.security.os.SystemDefaults.tonyFiles(fs, "aegis");
+        if (fs.delete("/etc/security.conf") == null || fs.delete("/etc") == null || !fs.isFile("/etc/security.conf")) {
+            throw new GameTestAssertException("security.conf (of de map erom) kon weg");
+        }
+        if (fs.write("/etc/security.conf", "daemon = nope") == null) {
+            throw new GameTestAssertException("security.conf kon overschreven worden");
+        }
+        if (fs.mkdir("/home/tony/deep") != null || fs.move("/etc/security.conf", "/home/tony/deep/cake.txt") != null
+                || !"/home/tony/deep/cake.txt".equals(fs.systemFile())) {
+            throw new GameTestAssertException("security.conf verstoppen lukte niet");
+        }
+        if (fs.move("/home", "/home/tony/deep") == null) {
+            throw new GameTestAssertException("Een map ging in zichzelf");
+        }
+        if (fs.mkdir("/bad name") == null || fs.mkdir("/..") == null || fs.mkdir("/notes") != null) {
+            throw new GameTestAssertException("Een foute naam werd toch een map");
+        }
+        if (fs.write("/big.txt", "x".repeat(com.senne.starktech.security.os.VirtualFs.MAX_FILE_LENGTH + 1)) == null) {
+            throw new GameTestAssertException("Een te groot bestand paste toch");
+        }
+        if (fs.setTrap("/home/tony/deep/cake.txt", true) == null || fs.setTrap("/README.txt", true) != null
+                || fs.delete("/README.txt") != null || fs.isFile("/README.txt")) {
+            throw new GameTestAssertException("Valstrik zetten of een gewoon bestand weggooien liep fout");
+        }
+        if (!com.senne.starktech.security.os.VirtualFs.resolve("/home/tony", "../../etc/./x").equals("/etc/x")) {
+            throw new GameTestAssertException("Paden met .. en . kloppen niet");
+        }
+        helper.succeed();
+    }
+
     // ================================================================ De harnas-werkbank
 
     /** Een werkbank met een volle warmtegenerator ernaast. */

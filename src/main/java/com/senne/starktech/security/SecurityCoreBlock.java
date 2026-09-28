@@ -76,6 +76,16 @@ public class SecurityCoreBlock extends BaseEntityBlock {
         return new SecurityCoreBlockEntity(pos, state);
     }
 
+    /** Afgebroken (niet alleen een ander lampje): het IP van de kern is weer vrij. */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel
+                && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
+            core.releaseSystem(serverLevel);
+        }
+        super.onRemove(state, level, pos, newState, moved);
+    }
+
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
                                                                             BlockEntityType<T> type) {
