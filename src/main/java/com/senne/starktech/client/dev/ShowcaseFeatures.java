@@ -1008,6 +1008,74 @@ final class ShowcaseFeatures {
                     .pause(80);
         });
 
+        add("Stark OS desktop", "De Stark OS-desktop op de beveiligingskern (hier is de toren van jou). "
+                + "Rechtsklik met een lege hand op de kern opent hem: sleepbare vensters, icoontjes links en een "
+                + "taakbalk. Achter elkaar: Files met de map /etc (security.conf is een systeembestand: SYS, "
+                + "verplaatsen en hernoemen mag, weggooien niet), Tony's map met het rechtsklik-menu (Open, "
+                + "Rename, Delete, Mark as trap), zijn notitie in Notes, dan Devices (de torentjes, drones, "
+                + "laserpoorten en camera's van de toren, met hun status en schakelaars), Access (monsters en "
+                + "spelers aanvallen, vertrouwde spelers) en Logs (wat er op het systeem gebeurde).",
+                towerPoint(12.5, 57, 20.5), 90, 12, s -> {
+            BlockPos core = STARK_TOWER.offset(10, 57, 20);
+            s.onServer(0, player -> {
+                claimTowerCore(player, core);
+                com.senne.starktech.security.os.StarkOs.open(player, core);
+            })
+                    .pause(60)
+                    .step(0, () -> desktop(os -> os.tourFiles("/etc", "/etc/security.conf", false)))
+                    .pause(90)
+                    .step(0, () -> desktop(os -> os.tourFiles("/home/tony", "/home/tony/notes.txt", true)))
+                    .pause(80)
+                    .onServer(0, player -> {
+                        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                        args.putString("path", "/home/tony/notes.txt");
+                        com.senne.starktech.security.os.StarkOs.handleAction(player,
+                                new com.senne.starktech.network.OsActionPayload(core, "fs_open", args));
+                    })
+                    .pause(90)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.DEVICES)))
+                    .pause(110)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ACCESS)))
+                    .pause(80)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.LOGS)))
+                    .pause(80)
+                    .close(20);
+        });
+
+        add("Security cameras", "De bewakingsmuur van de toren (de app Cameras): zes camera's, drie op de "
+                + "beveiligingsverdieping en een in de lobby, de lasergang en de kluis. Elk beeldje is live, met een "
+                + "CRT-randje, de naam en een knipperend REC; de mod tekent ze zelf, een paar keer per seconde. Dan "
+                + "het grote beeld van de lobby en van de kluis: die camera draait een stukje naar rechts en weer "
+                + "terug (dat kan met de pijltjes of door het beeld te slepen). Daarna gaan de camera's uit "
+                + "(Devices > Cameras): overal NO SIGNAL. Tot slot een camera van dichtbij, aan het plafond: een wit "
+                + "huisje met een rode streep.", towerPoint(12.5, 57, 20.5), 90, 12, s -> {
+            BlockPos core = STARK_TOWER.offset(10, 57, 20);
+            BlockPos lobby = STARK_TOWER.offset(25, 7, 14);
+            BlockPos vault = STARK_TOWER.offset(20, 82, 10);
+            s.onServer(0, player -> {
+                claimTowerCore(player, core);
+                networkSwitch(player, core, "cameras", true);
+                com.senne.starktech.security.os.StarkOs.open(player, core);
+            })
+                    .step(5, () -> desktop(os -> os.tourCameras(null)))
+                    .pause(140)
+                    .step(0, () -> desktop(os -> os.tourCameras(lobby)))
+                    .pause(90)
+                    .step(0, () -> desktop(os -> os.tourCameras(vault)))
+                    .pause(70)
+                    .onServer(0, player -> aimCamera(player, core, vault, 20f))
+                    .pause(50)
+                    .onServer(0, player -> aimCamera(player, core, vault, -20f))
+                    .pause(50)
+                    .step(0, () -> desktop(os -> os.tourCameras(null)))
+                    .onServer(0, player -> networkSwitch(player, core, "cameras", false))
+                    .pause(70)
+                    .onServer(0, player -> networkSwitch(player, core, "cameras", true))
+                    .close(20)
+                    .lookAt(10, towerPoint(9.5, 65.3, 9.5))
+                    .pause(80);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -1189,6 +1257,46 @@ final class ShowcaseFeatures {
     /** Een punt in de Stark Tower, gemeten vanaf de hoek van het gebouw (zoals in generate_structure.py). */
     private static Vec3 towerPoint(double x, double y, double z) {
         return new Vec3(STARK_TOWER.getX() + x, STARK_TOWER.getY() + y, STARK_TOWER.getZ() + z);
+    }
+
+    /**
+     * De kern van de toren is (even) van jou, met een wachtwoord, zodat de desktop meteen opengaat
+     * zonder eerst om een wachtwoord te vragen. Alleen voor de showcase.
+     */
+    private static void claimTowerCore(net.minecraft.server.level.ServerPlayer player, BlockPos core) {
+        if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+            be.setOwner(player);
+            be.ensureSystem(player.serverLevel());
+            be.setPassword("jarvis1", player.serverLevel().random);
+        }
+    }
+
+    /** Iets doen met de Stark OS-desktop die nu openstaat (als hij openstaat). */
+    private static void desktop(Consumer<com.senne.starktech.client.os.StarkOsScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+            action.accept(os);
+        }
+    }
+
+    /** Een schakelaar van het hele netwerk, zoals de knoppen in Devices en Access. */
+    private static void networkSwitch(net.minecraft.server.level.ServerPlayer player, BlockPos core, String name, boolean on) {
+        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+        args.putString("name", name);
+        args.putBoolean("on", on);
+        com.senne.starktech.security.os.StarkOs.handleAction(player,
+                new com.senne.starktech.network.OsActionPayload(core, "flag", args));
+    }
+
+    /** Een camera een stukje draaien, zoals de pijltjes bij het grote beeld. */
+    private static void aimCamera(net.minecraft.server.level.ServerPlayer player, BlockPos core, BlockPos camera, float pan) {
+        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+        args.putInt("x", camera.getX());
+        args.putInt("y", camera.getY());
+        args.putInt("z", camera.getZ());
+        args.putFloat("pan", pan);
+        args.putFloat("tilt", 0f);
+        com.senne.starktech.security.os.StarkOs.handleAction(player,
+                new com.senne.starktech.network.OsActionPayload(core, "cam_aim", args));
     }
 
     /**

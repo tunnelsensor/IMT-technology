@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 123 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 77 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 79 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -881,9 +881,18 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       kabel aan het net van de toren (de lobby aan de beveiliging, de rest aan de lasers: knip je
       die door, dan geven ook de camera's NO SIGNAL). Tony's kern heeft nog steeds geen wachtwoord.
       Het NBT-bestand is opnieuw gemaakt (gecontroleerd: verder niets veranderd). Screenshots:
-      `-Ponly=towercams`. Eén nieuwe test.
-- [ ] **9. SSH van overal**
-- [ ] **10. Camerabeeld van ver** (mixins, achter een schakelaar)
+      `-Ponly=towercams`. Eén nieuwe test. Commit: `38c744e`.
+- [~] **9. SSH van overal** — opzijgezet, net als stap 2 en 3.
+      Het inlogvenster hiervoor werd door hetzelfde geautomatiseerde veiligheidsfilter
+      tegengehouden. Wat er al was (de serverkant), staat buiten de build in
+      `chapter7-wip/step9/` (een patch en twee netwerkberichten).
+- [~] **10. Camerabeeld van ver** (mixins, achter een schakelaar) — opzijgezet: alleen nuttig
+      met een sessie op afstand (stap 9). Bij de kern zelf hangen alle camera's binnen 30 blokken,
+      dus daar is het beeld altijd "in de buurt" en werkt het al (stap 7).
+- [x] **Showcase**: twee nieuwe functies na "Stark Tower: security and hack": "Stark OS desktop"
+      (Files met security.conf, het rechtsklik-menu, Notes, Devices, Access, Logs) en "Security
+      cameras" (de bewakingsmuur van de toren, het grote beeld, draaien, NO SIGNAL, een camera van
+      dichtbij). Ze staan in de showcase als NIEUW.
 
 ---
 
