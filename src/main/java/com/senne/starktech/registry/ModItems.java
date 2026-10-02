@@ -138,6 +138,8 @@ public final class ModItems {
             ModBlocks.HYDRA_TURRET, new Item.Properties().rarity(Rarity.RARE));
     public static final DeferredItem<BlockItem> SECURITY_TURRET = ITEMS.registerSimpleBlockItem("security_turret",
             ModBlocks.SECURITY_TURRET, new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<BlockItem> SECURITY_CAMERA = ITEMS.registerSimpleBlockItem("security_camera",
+            ModBlocks.SECURITY_CAMERA, new Item.Properties().rarity(Rarity.UNCOMMON));
     public static final DeferredItem<BlockItem> SECURITY_CORE = ITEMS.registerSimpleBlockItem("security_core",
             ModBlocks.SECURITY_CORE, new Item.Properties().rarity(Rarity.EPIC));
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */

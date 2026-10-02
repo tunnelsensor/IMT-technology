@@ -28,9 +28,10 @@ import org.jetbrains.annotations.Nullable;
  * ({@link FilesApp}, {@link NotesApp}); de muis en het toetsenbord gaan naar het venster bovenop.
  */
 public class StarkOsScreen extends Screen {
-    /** De apps op de desktop (later komt Cameras erbij). {@code glyph} is de letter op het icoontje. */
+    /** De apps op de desktop. {@code glyph} is de letter op het icoontje. */
     public enum App {
         STATUS("Status", "i", 240, 120),
+        CAMERAS("Cameras", "C", 336, 196),
         DEVICES("Devices", "D", 330, 196),
         ACCESS("Access", "A", 280, 190),
         FILES("Files", "F", 300, 190),
@@ -108,6 +109,7 @@ public class StarkOsScreen extends Screen {
     private final FilesApp files = new FilesApp(this);
     private final NotesApp notes = new NotesApp(this);
     private final DevicesApp devices = new DevicesApp(this);
+    private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
     /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
     private boolean gotFirstSnapshot;
@@ -196,6 +198,12 @@ public class StarkOsScreen extends Screen {
         openApp(app);
     }
 
+    /** Alleen voor de screenshot-rondleiding: de bewakingsmuur, of het grote beeld van deze camera. */
+    public void tourCameras(@Nullable BlockPos camera) {
+        openApp(App.CAMERAS);
+        cameras.tourBig(camera);
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -218,10 +226,10 @@ public class StarkOsScreen extends Screen {
                 return win;
             }
         }
-        // Rechts van de icoontjes, elk nieuw venster een stukje verder.
+        // Rechts van de icoontjes, elk nieuw venster een stukje verder; maar altijd helemaal in beeld.
         int offset = windows.size() * 16;
         int left = iconsRight() + 8;
-        int x = Math.min(left + offset, Math.max(left, width - app.w - 10));
+        int x = Math.max(0, Math.min(left + offset, width - app.w - 4));
         int y = Math.min(30 + offset, Math.max(24, height - app.h - TASKBAR_H - 4));
         Win win = new Win(app, x, y);
         windows.add(win);
@@ -354,6 +362,7 @@ public class StarkOsScreen extends Screen {
             case FILES -> files.mouseClicked(font, contentArea(win), mx, my, button);
             case NOTES -> notes.mouseClicked(font, contentArea(win), mx, my, button);
             case DEVICES -> devices.mouseClicked(font, contentArea(win), mx, my);
+            case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case SETTINGS -> {
                 int cx = win.x + 6;
@@ -398,6 +407,8 @@ public class StarkOsScreen extends Screen {
             files.mouseReleased(contentArea(win), (int) mouseX, (int) mouseY);
         } else if (win != null && win.app == App.NOTES) {
             notes.mouseReleased((int) mouseX, (int) mouseY, button);
+        } else if (win != null && win.app == App.CAMERAS) {
+            cameras.mouseReleased((int) mouseX, (int) mouseY);
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -416,6 +427,7 @@ public class StarkOsScreen extends Screen {
             case FILES -> files.mouseScrolled(scrollY);
             case NOTES -> notes.mouseScrolled((int) mouseX, (int) mouseY, scrollY);
             case DEVICES -> devices.mouseScrolled(scrollY);
+            case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
@@ -446,7 +458,8 @@ public class StarkOsScreen extends Screen {
         Win top = focused();
         if (top != null && top.app == App.FILES && files.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)) {
+                || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode)) {
             return true;
         }
         if (editingPassword) {
@@ -565,6 +578,7 @@ public class StarkOsScreen extends Screen {
         switch (win.app) {
             case STATUS -> renderStatus(g, area.x(), area.y());
             case DEVICES -> devices.render(g, font, area, mouseX, mouseY);
+            case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);

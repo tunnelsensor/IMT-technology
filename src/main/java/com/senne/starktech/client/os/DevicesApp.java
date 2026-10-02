@@ -10,13 +10,14 @@ import net.minecraft.nbt.Tag;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het Devices-venster van de Stark OS-desktop (jouw wens, 28 september: de torentjes, drones en
- * laserwanden bekijken en bedienen). Bovenaan twee schakelaars voor het hele netwerk (drones en
- * laserwanden), daaronder elk apparaat met zijn status:
+ * Het Devices-venster van de Stark OS-desktop (jouw wens, 28 september: de torentjes, drones,
+ * laserwanden en camera's bekijken en bedienen). Bovenaan drie schakelaars voor het hele netwerk
+ * (drones, laserwanden, camera's), daaronder elk apparaat met zijn status:
  * <ul>
  *   <li>torentjes: aan/uit (een eigen knop per torentje), stroom, raketten, waar hij op richt;</li>
  *   <li>drones: levens, wat hij doet, op wie hij schiet;</li>
- *   <li>laserpoorten: aan of open.</li>
+ *   <li>laserpoorten: aan of open;</li>
+ *   <li>camera's: beeld of niet (het beeld zelf zie je in de app Cameras).</li>
  * </ul>
  * De server zoekt zelf welke apparaten bij de kern horen (zie SecurityDevices) en stuurt de lijst
  * mee met elke momentopname.
@@ -42,7 +43,7 @@ final class DevicesApp {
     /** De lijst: per soort een kopje en dan de apparaten van die soort. */
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
-        String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}};
+        String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"camera", "CAMERAS"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {
             boolean any = false;
@@ -76,14 +77,15 @@ final class DevicesApp {
         CompoundTag access = access();
         int bx = a.x();
         bx = switchButton(g, font, bx, a.y(), "Drones", access.getBoolean("drones")) + 6;
-        switchButton(g, font, bx, a.y(), "Lasers", access.getBoolean("lasers"));
+        bx = switchButton(g, font, bx, a.y(), "Lasers", access.getBoolean("lasers")) + 6;
+        switchButton(g, font, bx, a.y(), "Cameras", access.getBoolean("cameras"));
         // De lijst.
         int top = listTop(a);
         int bottom = a.y() + a.h();
         OsDraw.field(g, a.x(), top - 1, a.x() + a.w(), bottom, false);
         List<Row> rows = rows();
         if (rows.isEmpty()) {
-            g.drawString(font, "No turrets, drones or laser gates", a.x() + 5, top + 4, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, "No turrets, drones, laser gates or cameras", a.x() + 5, top + 4, HudStyle.argb(255, OsDraw.GREY), false);
             g.drawString(font, "in this network's area yet.", a.x() + 5, top + 14, HudStyle.argb(255, OsDraw.GREY), false);
             return;
         }
@@ -154,8 +156,14 @@ final class DevicesApp {
             return;
         }
         String lasers = "Lasers: " + (access.getBoolean("lasers") ? "ON" : "OFF");
-        if (OsDraw.inside(mx, my, a.x() + dronesW + 6, a.y(), OsDraw.buttonWidth(font, lasers), OsDraw.BUTTON_H)) {
+        int lasersW = OsDraw.buttonWidth(font, lasers);
+        if (OsDraw.inside(mx, my, a.x() + dronesW + 6, a.y(), lasersW, OsDraw.BUTTON_H)) {
             flag("lasers", !access.getBoolean("lasers"));
+            return;
+        }
+        String cameras = "Cameras: " + (access.getBoolean("cameras") ? "ON" : "OFF");
+        if (OsDraw.inside(mx, my, a.x() + dronesW + lasersW + 12, a.y(), OsDraw.buttonWidth(font, cameras), OsDraw.BUTTON_H)) {
+            flag("cameras", !access.getBoolean("cameras"));
             return;
         }
         // De aan/uit-knop van een torentje.

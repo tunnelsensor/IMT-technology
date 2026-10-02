@@ -811,6 +811,108 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * De planner van de bewakingsmuur (zoals Vista): een beeld dat nog nooit getekend is, is meteen
+     * aan de beurt; daarna 5 keer per seconde (het grote beeld 10), minder als het spel onder de 60
+     * fps zakt (nooit minder dan 2), om de beurt (het langst wachtende eerst), per frame minstens één
+     * en verder binnen het tijdbudget. Een beeld dat niet meer op het scherm staat, wordt niet meer
+     * getekend, en na 5 seconden weggegooid.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_cameras")
+    public static void camera_feed_planner_picks_and_drops(GameTestHelper helper) {
+        var planner = new com.senne.starktech.client.os.camera.FeedPlanner();
+        planner.configure(5, 2, 3.0, 5000);
+        planner.want(1, 0, false);
+        planner.want(2, 0, false);
+        if (!planner.due(0, 120).equals(java.util.List.of(1L, 2L)) && !planner.due(0, 120).equals(java.util.List.of(2L, 1L))) {
+            throw new GameTestAssertException("Twee nieuwe beelden waren niet meteen aan de beurt: " + planner.due(0, 120));
+        }
+        planner.rendered(1, 0);
+        planner.rendered(2, 10);
+        if (!planner.due(100, 120).isEmpty()) {
+            throw new GameTestAssertException("Een beeld kwam al na 100 ms weer aan de beurt");
+        }
+        planner.want(1, 200, false);
+        planner.want(2, 200, false);
+        if (!planner.due(215, 120).equals(java.util.List.of(1L, 2L))) {
+            throw new GameTestAssertException("Na 200 ms niet allebei aan de beurt, de oudste eerst: " + planner.due(215, 120));
+        }
+        if (planner.interval(120, false) != 200 || planner.interval(30, false) != 400
+                || planner.interval(10, false) != 500 || planner.interval(120, true) != 100) {
+            throw new GameTestAssertException("De tijden tussen twee beelden kloppen niet");
+        }
+        if (!planner.mayRenderMore(0, 50) || planner.mayRenderMore(1, 3.5) || !planner.mayRenderMore(1, 1.0)) {
+            throw new GameTestAssertException("Het tijdbudget per frame klopt niet");
+        }
+        // Niet meer op het scherm: niet meer tekenen, en na 5 seconden weg.
+        if (!planner.due(600, 120).isEmpty()) {
+            throw new GameTestAssertException("Een beeld dat niet meer op het scherm staat, wordt nog getekend");
+        }
+        if (!planner.expired(4000).isEmpty() || planner.expired(5300).size() != 2 || !planner.isEmpty()) {
+            throw new GameTestAssertException("Ongebruikte beelden werden niet (of te vroeg) weggegooid");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De bewakingscamera: met stroom heeft hij beeld, met de camera's van zijn netwerk uit niet; de
+     * kern ziet hem (de bewakingsmuur krijgt hem door), en draaien vanaf de desktop gaat hooguit 60
+     * graden elke kant op.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "security_cameras")
+    public static void security_camera_power_network_and_aim(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        var core = placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        // Een camera aan een muurtje, die naar het zuiden kijkt, met stroom eronder.
+        BlockPos wall = new BlockPos(8, 4, 8);
+        helper.setBlock(wall, Blocks.STONE);
+        BlockPos cam = wall.south();
+        helper.setBlock(cam, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.starktech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.WALL)
+                .setValue(com.senne.starktech.security.CameraBlock.FACING, Direction.SOUTH));
+        powerTurret(helper, cam.below());
+        var camera = (com.senne.starktech.security.CameraBlockEntity) helper.getBlockEntity(cam);
+        BlockPos camAbs = helper.absolutePos(cam);
+        // Een tick later: dan heeft de kern zich aangemeld.
+        helper.runAfterDelay(2, () -> {
+            camera.updateOnline(level, camAbs, level.getBlockState(camAbs));
+            helper.assertBlockProperty(cam, com.senne.starktech.security.CameraBlock.ONLINE, true);
+            com.senne.starktech.security.os.StarkOs.open(owner, coreAbs);
+            osAction(owner, coreAbs, "flag", "name", "cameras", "on", "false");
+            helper.assertBlockProperty(cam, com.senne.starktech.security.CameraBlock.ONLINE, false);
+            osAction(owner, coreAbs, "flag", "name", "cameras", "on", "true");
+            helper.assertBlockProperty(cam, com.senne.starktech.security.CameraBlock.ONLINE, true);
+            // Draaien: 5 x 20 graden naar rechts wordt hooguit 60.
+            for (int i = 0; i < 5; i++) {
+                net.minecraft.nbt.CompoundTag aim = new net.minecraft.nbt.CompoundTag();
+                aim.putInt("x", camAbs.getX());
+                aim.putInt("y", camAbs.getY());
+                aim.putInt("z", camAbs.getZ());
+                aim.putFloat("pan", 20f);
+                aim.putFloat("tilt", -20f);
+                com.senne.starktech.security.os.StarkOs.handleAction(owner,
+                        new com.senne.starktech.network.OsActionPayload(coreAbs, "cam_aim", aim));
+            }
+            if (camera.pan() != 60f || camera.tilt() != -60f) {
+                throw new GameTestAssertException("Draaien ging verder dan 60 graden: pan " + camera.pan() + ", tilt " + camera.tilt());
+            }
+            var list = com.senne.starktech.security.SecurityDevices.cameras(level, core);
+            if (list.size() != 1) {
+                throw new GameTestAssertException("De kern ziet " + list.size() + " camera's in plaats van 1");
+            }
+            var seen = list.getCompound(0);
+            // Naar het zuiden = 0 graden; 60 naar rechts = 60. De lens zit aan de zuidkant van het blok.
+            if (seen.getFloat("yaw") != 60f || !"Camera 1".equals(seen.getString("name"))
+                    || seen.getDouble("ez") <= camAbs.getZ() + 0.5) {
+                throw new GameTestAssertException("De bewakingsmuur krijgt de camera verkeerd door: " + seen);
+            }
+            helper.succeed();
+        });
+    }
+
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
     private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();

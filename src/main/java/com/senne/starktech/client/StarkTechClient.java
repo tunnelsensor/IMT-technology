@@ -52,6 +52,9 @@ public class StarkTechClient {
 
         // Gebeurtenissen tijdens het spelen
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTick);
+        // De bewakingscamera's: hun beeldjes tekenen vlak voor elk frame (alleen als de muur open staat).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.os.camera.CameraFeeds::onRenderFrame);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.os.camera.CameraFeeds::onLoggingOut);
         NeoForge.EVENT_BUS.addListener(CableRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTickPre);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onComputeFov);

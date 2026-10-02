@@ -64,6 +64,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.starktech.security.SecurityCoreBlockEntity::new,
                             java.util.Set.of(ModBlocks.SECURITY_CORE.get()), null));
 
+    /** De bewakingscamera: zijn naam en hoe hij gedraaid en gekanteld is. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.CameraBlockEntity>> SECURITY_CAMERA =
+            BLOCK_ENTITIES.register("security_camera",
+                    () -> new BlockEntityType<>(com.senne.starktech.security.CameraBlockEntity::new,
+                            java.util.Set.of(ModBlocks.SECURITY_CAMERA.get()), null));
+
     /** De laptop op een kern: van wie hij is, en wat er al getypt is (de voortgang van de hack). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.StarkLaptopBlockEntity>> STARK_LAPTOP =
             BLOCK_ENTITIES.register("stark_laptop",

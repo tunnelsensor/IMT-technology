@@ -420,6 +420,132 @@ public final class VisualCheck {
             t.close(10);
         }
 
+        // --- De bewakingscamera's en de bewakingsmuur. Een dichte kamer op een "verdieping" boven de
+        // grond, ACHTER je (die heeft je spel dus nooit getekend): de camera erin moet hem toch laten
+        // zien. Plus een camera aan een paaltje die naar jou kijkt, en een aan een plafond.
+        if (want("cameras")) {
+            BlockPos core = new BlockPos(-140, -60, 43);
+            BlockPos roomCam = new BlockPos(-135, -53, 48);
+            BlockPos postCam = new BlockPos(-140, -58, 46);
+            BlockPos ceilingCam = new BlockPos(-131, -57, 44);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                // De kamer: binnen x -135..-129, y -55..-52, z 45..51, met wanden van steen.
+                for (int x = -136; x <= -128; x++) {
+                    for (int y = -56; y <= -51; y++) {
+                        for (int z = 44; z <= 52; z++) {
+                            boolean wall = x == -136 || x == -128 || y == -56 || y == -51 || z == 44 || z == 52;
+                            level.setBlockAndUpdate(new BlockPos(x, y, z), wall
+                                    ? Blocks.SMOOTH_STONE.defaultBlockState() : Blocks.AIR.defaultBlockState());
+                        }
+                    }
+                }
+                // Licht, een gekleurde muur, een kist en een torentje om naar te kijken.
+                level.setBlockAndUpdate(new BlockPos(-132, -51, 48), Blocks.GLOWSTONE.defaultBlockState());
+                level.setBlockAndUpdate(new BlockPos(-130, -51, 46), Blocks.GLOWSTONE.defaultBlockState());
+                net.minecraft.world.level.block.Block[] wool = {Blocks.RED_WOOL, Blocks.ORANGE_WOOL, Blocks.YELLOW_WOOL, Blocks.LIME_WOOL, Blocks.LIGHT_BLUE_WOOL,
+                        Blocks.BLUE_WOOL, Blocks.PURPLE_WOOL};
+                for (int z = 45; z <= 51; z++) {
+                    for (int y = -55; y <= -52; y++) {
+                        level.setBlockAndUpdate(new BlockPos(-128, y, z), wool[z - 45].defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(new BlockPos(-129, -55, 46), Blocks.CHEST.defaultBlockState());
+                level.setBlockAndUpdate(new BlockPos(-130, -55, 50), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
+                var cow = EntityType.COW.create(level);
+                if (cow != null) {
+                    cow.moveTo(-131.5, -55, 48.5, 90, 0);
+                    cow.setNoAi(true);
+                    level.addFreshEntity(cow);
+                }
+                // De camera's, elk met een warmtegenerator ernaast (stroom).
+                placeCamera(level, roomCam, net.minecraft.world.level.block.state.properties.AttachFace.WALL, Direction.EAST,
+                        roomCam.below(), "Upstairs");
+                level.setBlockAndUpdate(postCam.south(), Blocks.POLISHED_ANDESITE.defaultBlockState());
+                level.setBlockAndUpdate(postCam.south().below(), Blocks.POLISHED_ANDESITE.defaultBlockState());
+                placeCamera(level, postCam, net.minecraft.world.level.block.state.properties.AttachFace.WALL, Direction.NORTH,
+                        postCam.below(), "Courtyard");
+                placeCamera(level, ceilingCam, net.minecraft.world.level.block.state.properties.AttachFace.CEILING, Direction.WEST,
+                        ceilingCam.east(), "");
+                // De kern (van jou, met een wachtwoord, en stroom).
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(core.below()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("jarvis1", level.random);
+                }
+            });
+            // Jij staat er, met je rug naar de kamer (die ligt in het zuiden; jij kijkt naar het noorden).
+            t.stand(10, -139.5, -60, 40.5, 180, 0);
+            t.onServer(40, player -> {
+                for (BlockPos cam : List.of(roomCam, postCam, ceilingCam)) {
+                    if (player.serverLevel().getBlockEntity(cam) instanceof com.senne.starktech.security.CameraBlockEntity be) {
+                        be.updateOnline(player.serverLevel(), cam, player.serverLevel().getBlockState(cam));
+                    }
+                }
+                com.senne.starktech.security.os.StarkOs.open(player, core);
+            });
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourCameras(null);
+                }
+            });
+            t.shot(80, "c01_cameras_wall");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourCameras(roomCam);
+                }
+            });
+            t.shot(60, "c02_camera_upstairs_big");
+            t.onServer(0, player -> {
+                net.minecraft.nbt.CompoundTag aim = new net.minecraft.nbt.CompoundTag();
+                aim.putInt("x", roomCam.getX());
+                aim.putInt("y", roomCam.getY());
+                aim.putInt("z", roomCam.getZ());
+                aim.putFloat("pan", 20f);
+                aim.putFloat("tilt", -10f);
+                com.senne.starktech.security.os.StarkOs.handleAction(player,
+                        new com.senne.starktech.network.OsActionPayload(core, "cam_aim", aim));
+            });
+            t.shot(40, "c03_camera_upstairs_turned");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourCameras(postCam);
+                }
+            });
+            t.shot(60, "c04_camera_courtyard_big");
+            t.onServer(0, player -> {
+                net.minecraft.nbt.CompoundTag off = new net.minecraft.nbt.CompoundTag();
+                off.putString("name", "cameras");
+                off.putBoolean("on", false);
+                com.senne.starktech.security.os.StarkOs.handleAction(player,
+                        new com.senne.starktech.network.OsActionPayload(core, "flag", off));
+            });
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourCameras(null);
+                }
+            });
+            t.shot(20, "c05_cameras_switched_off");
+            t.onServer(0, player -> {
+                net.minecraft.nbt.CompoundTag on = new net.minecraft.nbt.CompoundTag();
+                on.putString("name", "cameras");
+                on.putBoolean("on", true);
+                com.senne.starktech.security.os.StarkOs.handleAction(player,
+                        new com.senne.starktech.network.OsActionPayload(core, "flag", on));
+            });
+            t.close(10);
+            // De camera aan het paaltje, van dichtbij (zijn lampje brandt weer).
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(10, -138.4, -58.6, 43.6, 22, 12);
+            t.shot(10, "c06_camera_block");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- De harnas-werkbank: het hologram, erop klikken om te bouwen (het stuk vliegt naar je
         // toe), en laarzen erop leggen en er een upgrade in bouwen. Met echte rechtsklikken.
         if (want("workbench")) {
@@ -1127,6 +1253,24 @@ public final class VisualCheck {
     }
 
     /** Twee laserpoorten met een redstoneblok achter elke zender (zie de sectie "laser"). */
+    /**
+     * Hangt een bewakingscamera op (aan de muur, het plafond of de vloer; het blok waaraan hij hangt
+     * moet er al staan) met een volle warmtegenerator op {@code power}, en geeft hem een naam.
+     */
+    private static void placeCamera(ServerLevel level, BlockPos pos, net.minecraft.world.level.block.state.properties.AttachFace face,
+                                    Direction facing, BlockPos power, String name) {
+        level.setBlockAndUpdate(pos, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.starktech.security.CameraBlock.FACE, face)
+                .setValue(com.senne.starktech.security.CameraBlock.FACING, facing));
+        level.setBlockAndUpdate(power, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(power) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(20_000);
+        }
+        if (!name.isEmpty() && level.getBlockEntity(pos) instanceof com.senne.starktech.security.CameraBlockEntity camera) {
+            camera.setName(name);
+        }
+    }
+
     private static void buildLaserGates(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockState power = Blocks.REDSTONE_BLOCK.defaultBlockState();

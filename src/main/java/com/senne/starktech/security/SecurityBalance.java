@@ -41,6 +41,10 @@ public final class SecurityBalance {
     @Tunable(section = "security", comment = "Grid power the tower security core uses every two seconds (without it, it and its drones are off)")
     public static int CORE_UPKEEP = 20;
 
+    /** Stroom die een bewakingscamera elke twee seconden van het net haalt (anders "NO SIGNAL"). */
+    @Tunable(section = "security", comment = "Grid power a security camera uses every two seconds (without it, it shows NO SIGNAL)")
+    public static int CAMERA_UPKEEP = 2;
+
     // ---------------------------------------------------------------- Het systeem (Stark OS)
     /** Zo lang (ticks) mag wie een valstrik-bestand opende niet meer op dat systeem (30 s). */
     @Tunable(section = "security", comment = "How long a trap file locks its reader out of that system (ticks)")

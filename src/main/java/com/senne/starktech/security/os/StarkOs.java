@@ -194,6 +194,8 @@ public final class StarkOs {
             case "flag" -> setFlag(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "dev_toggle" -> toggleTurret(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getBoolean("on"));
+            case "cam_aim" -> aimCamera(player, core, session,
+                    new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getFloat("pan"), args.getFloat("tilt"));
             case "trust_add" -> trust(player, core, session, args.getString("name").strip());
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
             default -> { } // onbekende opdracht: later uitgebreid (camera's)
@@ -228,12 +230,27 @@ public final class StarkOs {
                 com.senne.starktech.security.SecurityDevices.setLasers(player.serverLevel(), core, on);
                 text = on ? "Laser walls on" : "Laser walls off";
             }
+            case "cameras" -> {
+                com.senne.starktech.security.SecurityDevices.setCameras(player.serverLevel(), core, on);
+                text = on ? "Cameras on" : "Cameras off";
+            }
             default -> {
                 return;
             }
         }
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + ": " + text.toLowerCase(java.util.Locale.ROOT));
         notify(player, core, session, text, false);
+    }
+
+    /** Een camera een stukje draaien of kantelen (de pijltjes bij het grote camerabeeld). */
+    private static void aimCamera(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos,
+                                  float dPan, float dTilt) {
+        String error = com.senne.starktech.security.SecurityDevices.aimCamera(player.serverLevel(), core, pos, dPan, dTilt);
+        if (error != null) {
+            notify(player, core, session, error, true);
+            return;
+        }
+        sendSnapshot(player, core, session);
     }
 
     /** Eén torentje aan of uit. */
@@ -489,6 +506,7 @@ public final class StarkOs {
         access.putBoolean("pvp", level.getServer().isPvpAllowed());
         access.putBoolean("drones", core.dronesEnabled());
         access.putBoolean("lasers", core.lasersEnabled());
+        access.putBoolean("cameras", core.camerasEnabled());
         ListTag trusted = new ListTag();
         for (String name : core.trustedNames()) {
             trusted.add(net.minecraft.nbt.StringTag.valueOf(name));
@@ -497,6 +515,7 @@ public final class StarkOs {
         data.put("access", access);
         // De apparaten met hun status.
         data.put("devices", com.senne.starktech.security.SecurityDevices.snapshot(level, core));
+        data.put("cameras", com.senne.starktech.security.SecurityDevices.cameras(level, core));
         // De mappen: alleen als het scherm een oudere versie heeft.
         VirtualFs fs = core.fs();
         if (session.sentFs != fs || session.sentRevision != fs.revision()) {

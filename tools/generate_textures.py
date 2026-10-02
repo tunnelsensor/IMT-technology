@@ -1891,6 +1891,43 @@ def security_textures():
     save(alarm, "entity/drone/security_drone_lights_alarm.png")
 
 
+def security_camera_textures():
+    """
+    De bewakingscamera: een wit huisje met een rode streep (zoals de beveiligingsdrone), een
+    donker montageplaatje met boutjes, en de lens: donker glas met een ring en een lampje dat rood
+    brandt als de camera aan staat (security_camera_lens_on).
+    """
+    white = (214, 218, 224, 255)
+    shade = (176, 182, 192, 255)
+    edge = (130, 136, 146, 255)
+    red = (170, 30, 32, 255)
+    body = img(16, 16, white)
+    d = ImageDraw.Draw(body)
+    d.rectangle([0, 0, 15, 15], outline=edge)
+    d.rectangle([1, 11, 14, 14], fill=shade)
+    d.line([1, 4, 14, 4], fill=red)
+    d.line([1, 5, 14, 5], fill=red)
+    px(body, [(3, 8), (6, 8), (9, 8), (12, 8)], edge)  # koelgleufjes
+    save(body, "block/security_camera_body.png")
+
+    mount = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(mount)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.rectangle([2, 2, 13, 13], outline=METAL_3)
+    px(mount, [(3, 3), (12, 3), (3, 12), (12, 12)], (150, 156, 166, 255))  # boutjes
+    save(mount, "block/security_camera_mount.png")
+
+    for name, led in (("security_camera_lens", (90, 20, 20, 255)), ("security_camera_lens_on", (255, 50, 40, 255))):
+        lens = img(16, 16, METAL_DARK)
+        d = ImageDraw.Draw(lens)
+        d.ellipse([2, 2, 13, 13], fill=(70, 76, 86, 255))
+        d.ellipse([4, 4, 11, 11], fill=(16, 22, 34, 255))
+        d.ellipse([6, 6, 9, 9], fill=(28, 46, 78, 255))
+        px(lens, [(6, 6), (7, 6)], (120, 160, 220, 255))  # glinstering
+        d.rectangle([12, 1, 14, 3], fill=led)  # het lampje
+        save(lens, f"block/{name}.png")
+
+
 def stark_laptop():
     """De Stark-laptop: open, met een blauw scherm vol code en een rood lampje."""
     im = img(16, 16)

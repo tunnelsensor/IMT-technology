@@ -218,6 +218,53 @@ def laser_wall_models():
     blockstate("laser_wall", variants)
 
 
+# ================================================================ Bewakingscamera
+
+def security_camera():
+    """
+    De bewakingscamera, in drie soorten: aan de muur, aan het plafond en op de vloer. Elk model
+    kijkt naar het noorden (de muur zit dan aan de zuidkant); de blockstate draait het naar de
+    andere kanten. "_on" heeft een lens die licht geeft (de camera staat aan).
+
+    Aan de muur en het plafond kantelt de behuizing 22,5 graden omlaag. Waar de lens dan precies
+    zit, staat ook in CameraBlockEntity.eye (daar begint het camerabeeld): verander je hier de
+    vorm, pas dat daar dan ook aan.
+    """
+    textures = {"particle": "starktech:block/security_camera_body", "body": "starktech:block/security_camera_body",
+                "mount": "starktech:block/security_camera_mount"}
+    tilt = -22.5
+    shapes = {
+        # soort: (montage, arm, behuizing, lens, draaipunt of None)
+        "wall": (([5, 9, 15], [11, 15, 16]), ([7, 11, 12], [9, 13, 15]),
+                 ([5.5, 9, 4], [10.5, 13, 12]), ([6.5, 9.5, 3], [9.5, 12.5, 4]), [8, 11, 12]),
+        "ceiling": (([5, 15, 5], [11, 16, 11]), ([7, 11, 7], [9, 15, 9]),
+                    ([5.5, 8, 4], [10.5, 12, 12]), ([6.5, 8.5, 3], [9.5, 11.5, 4]), [8, 10, 10]),
+        "floor": (([5, 0, 5], [11, 1, 11]), ([7, 1, 7], [9, 5, 9]),
+                  ([5.5, 5, 4], [10.5, 9, 12]), ([6.5, 5.5, 3], [9.5, 8.5, 4]), None),
+    }
+    for kind, (mount, arm, housing, lens, pivot) in shapes.items():
+        rotation = ("x", tilt, pivot) if pivot else None
+        for on in (False, True):
+            lens_texture = "starktech:block/security_camera_lens" + ("_on" if on else "")
+            elements = [
+                box(mount[0], mount[1], "#mount"),
+                box(arm[0], arm[1], "#mount"),
+                box(housing[0], housing[1], "#body", rotation=rotation),
+                box(lens[0], lens[1], {"north": "#lens", "rest": "#mount"}, rotation=rotation, glow=on),
+            ]
+            save("security_camera_" + kind + ("_on" if on else ""), dict(textures, lens=lens_texture), elements)
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    variants = {}
+    for kind in shapes:
+        for facing, y in turn.items():
+            for on in (False, True):
+                option = {"model": "starktech:block/security_camera_" + kind + ("_on" if on else "")}
+                if y:
+                    option["y"] = y
+                variants["face=%s,facing=%s,online=%s" % (kind, facing, "true" if on else "false")] = option
+    blockstate("security_camera", variants)
+
+
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))

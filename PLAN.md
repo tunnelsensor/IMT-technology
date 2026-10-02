@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 120 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 122 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 77 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -855,8 +855,24 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       jou met een IP, en de desktop opent dan meteen Settings om een wachtwoord te zetten. Een kern
       waarvan het gebied een ander netwerk overlapt (binnen 60 blokken) lukt niet: "too close to
       another security network", en je houdt het item. Afbreken geeft de kern terug.
-      Screenshots: `-Ponly=os`. Twee nieuwe tests.
-- [ ] **7. Security Camera en de bewakingsmuur** (in de buurt)
+      Screenshots: `-Ponly=os`. Twee nieuwe tests. Commit: `0cdbeca`.
+- [x] **7. Security Camera en de bewakingsmuur** (in de buurt)
+      Een nieuw blok: de **Security Camera** (recept: ijzer, glas, observer, Stark-chip; 2 stuks), aan
+      de muur, het plafond of de vloer. Hij heeft een beetje stroom nodig (`CAMERA_UPKEEP`), hoort bij
+      de kern in wiens gebied hij hangt, en een naam uit een aambeeld komt bij zijn beeld te staan.
+      Rechtsklik zegt hoe hij ervoor staat. Nieuwe app **Cameras**: de bewakingsmuur met een live
+      beeldje per camera (CRT-randje, naam, knipperend REC; "NO SIGNAL" zonder stroom of als de
+      camera's uit staan, "OUT OF RANGE" buiten wat je spel klaar heeft staan). Klik = groot beeld,
+      draaien en kantelen met de pijltjes, de pijltjestoetsen of door het beeld te slepen (hooguit
+      60 graden). Het beeld tekent de mod zelf (`client/os/camera/FeedRenderer`): blokken, wezens
+      (ook jij) en blokken met een model (kisten, torentjes), met een EIGEN lijst van wat in beeld
+      is, dus een camera in een dichte kamer op een andere verdieping ziet zijn kamer wel. Tegen lag
+      (zoals Vista, `FeedPlanner`): alleen beelden die op het scherm staan, 5 per seconde (groot 10),
+      minder onder de 60 fps (nooit minder dan 2), om de beurt, samen hooguit 3 ms per frame, en na
+      5 s weggegooid; instelbaar in `config/starktech-client.toml`. Devices kreeg de schakelaar
+      "Cameras". Nieuw: een access transformer (`META-INF/accesstransformer.cfg`). Met
+      "Fabulous!"-graphics zie je geen water/glas in het beeld (dat tekent Minecraft dan apart).
+      Screenshots: `-Ponly=cameras`. Twee nieuwe tests.
 - [ ] **8. Echte camera's in de toren**
 - [ ] **9. SSH van overal**
 - [ ] **10. Camerabeeld van ver** (mixins, achter een schakelaar)

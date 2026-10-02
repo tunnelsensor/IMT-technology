@@ -171,6 +171,16 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion());
 
+    /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Stark OS-desktop. */
+    public static final DeferredBlock<com.senne.starktech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
+            "security_camera", com.senne.starktech.security.CameraBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.starktech.security.CameraBlock.ONLINE) ? 2 : 0));
+
     /** De beveiligingskern van de Stark Tower: heel sterk, zodat hacken de weg is. */
     public static final DeferredBlock<com.senne.starktech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
             "security_core", com.senne.starktech.security.SecurityCoreBlock::new,

@@ -1,0 +1,94 @@
+{
+  "variants": {
+    "face=wall,facing=north,online=false": {
+      "model": "starktech:block/security_camera_wall"
+    },
+    "face=wall,facing=north,online=true": {
+      "model": "starktech:block/security_camera_wall_on"
+    },
+    "face=wall,facing=east,online=false": {
+      "model": "starktech:block/security_camera_wall",
+      "y": 90
+    },
+    "face=wall,facing=east,online=true": {
+      "model": "starktech:block/security_camera_wall_on",
+      "y": 90
+    },
+    "face=wall,facing=south,online=false": {
+      "model": "starktech:block/security_camera_wall",
+      "y": 180
+    },
+    "face=wall,facing=south,online=true": {
+      "model": "starktech:block/security_camera_wall_on",
+      "y": 180
+    },
+    "face=wall,facing=west,online=false": {
+      "model": "starktech:block/security_camera_wall",
+      "y": 270
+    },
+    "face=wall,facing=west,online=true": {
+      "model": "starktech:block/security_camera_wall_on",
+      "y": 270
+    },
+    "face=ceiling,facing=north,online=false": {
+      "model": "starktech:block/security_camera_ceiling"
+    },
+    "face=ceiling,facing=north,online=true": {
+      "model": "starktech:block/security_camera_ceiling_on"
+    },
+    "face=ceiling,facing=east,online=false": {
+      "model": "starktech:block/security_camera_ceiling",
+      "y": 90
+    },
+    "face=ceiling,facing=east,online=true": {
+      "model": "starktech:block/security_camera_ceiling_on",
+      "y": 90
+    },
+    "face=ceiling,facing=south,online=false": {
+      "model": "starktech:block/security_camera_ceiling",
+      "y": 180
+    },
+    "face=ceiling,facing=south,online=true": {
+      "model": "starktech:block/security_camera_ceiling_on",
+      "y": 180
+    },
+    "face=ceiling,facing=west,online=false": {
+      "model": "starktech:block/security_camera_ceiling",
+      "y": 270
+    },
+    "face=ceiling,facing=west,online=true": {
+      "model": "starktech:block/security_camera_ceiling_on",
+      "y": 270
+    },
+    "face=floor,facing=north,online=false": {
+      "model": "starktech:block/security_camera_floor"
+    },
+    "face=floor,facing=north,online=true": {
+      "model": "starktech:block/security_camera_floor_on"
+    },
+    "face=floor,facing=east,online=false": {
+      "model": "starktech:block/security_camera_floor",
+      "y": 90
+    },
+    "face=floor,facing=east,online=true": {
+      "model": "starktech:block/security_camera_floor_on",
+      "y": 90
+    },
+    "face=floor,facing=south,online=false": {
+      "model": "starktech:block/security_camera_floor",
+      "y": 180
+    },
+    "face=floor,facing=south,online=true": {
+      "model": "starktech:block/security_camera_floor_on",
+      "y": 180
+    },
+    "face=floor,facing=west,online=false": {
+      "model": "starktech:block/security_camera_floor",
+      "y": 270
+    },
+    "face=floor,facing=west,online=true": {
+      "model": "starktech:block/security_camera_floor_on",
+      "y": 270
+    }
+  }
+}

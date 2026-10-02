@@ -36,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Laserpoorten:</b> zenders die aan elkaar vastzitten. Ze gaan met redstone; de kern kan
  *       ze allemaal tegelijk uitzetten (de schakelaar "Lasers").</li>
  *   <li><b>Drones:</b> de beveiligingsdrones van deze kern. De schakelaar "Drones" laat ze landen.</li>
+ *   <li><b>Camera's:</b> de bewakingscamera's in het gebied. De schakelaar "Cameras" zet ze uit
+ *       (dan geven ze "NO SIGNAL").</li>
  * </ul>
  *
  * Er is geen lijst die bijhoudt wat er gebouwd wordt: we kijken gewoon in het gebied, en
@@ -48,8 +50,9 @@ public final class SecurityDevices {
     /** Zo lang (ticks) onthouden we wat er in het gebied staat, voor we opnieuw kijken. */
     private static final int RESCAN = 40;
 
-    /** Wat er bij een kern hoort: torentjes, alle laserzenders, en van elke laserpoort één zender. */
-    public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, long time) {}
+    /** Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, en de camera's. */
+    public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> cameras,
+                        long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -65,6 +68,7 @@ public final class SecurityDevices {
         }
         List<BlockPos> turrets = new ArrayList<>();
         List<BlockPos> emitters = new ArrayList<>();
+        List<BlockPos> cameras = new ArrayList<>();
         AABB area = core.area();
         BlockPos corePos = core.getBlockPos();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
@@ -82,6 +86,8 @@ public final class SecurityDevices {
                     if (blockEntity instanceof TurretBlockEntity turret && SecurityCores.inArea(corePos, turret.getBlockPos())
                             && belongs(core, turret)) {
                         turrets.add(turret.getBlockPos().immutable());
+                    } else if (blockEntity instanceof CameraBlockEntity camera && SecurityCores.inArea(corePos, camera.getBlockPos())) {
+                        cameras.add(camera.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -116,7 +122,11 @@ public final class SecurityDevices {
                 gates.add(emitter);
             }
         }
-        Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), now);
+        // De camera's in een vaste volgorde (van boven naar beneden, dan noord naar zuid, west naar
+        // oost), zodat "Camera 1" niet steeds een andere is.
+        cameras.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
+                .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
+        Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras), now);
         CACHE.put(key, found);
         return found;
     }
@@ -169,6 +179,61 @@ public final class SecurityDevices {
         for (BlockPos emitter : scan(level, core).emitters()) {
             level.scheduleTick(emitter, ModBlocks.LASER_EMITTER.get(), 1);
         }
+    }
+
+    /**
+     * De camera's van het hele gebied aan of uit. Ze kijken zelf om de twee seconden; hier laten we
+     * ze dat meteen doen, zodat het beeld meteen verdwijnt of terugkomt.
+     */
+    public static void setCameras(ServerLevel level, SecurityCoreBlockEntity core, boolean on) {
+        core.setCamerasEnabled(on);
+        for (BlockPos pos : scan(level, core).cameras()) {
+            if (level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
+                camera.updateOnline(level, pos, level.getBlockState(pos));
+            }
+        }
+    }
+
+    /** Een camera een stukje draaien en/of kantelen (de pijltjes op de desktop). Foutmelding, of null. */
+    public static @Nullable String aimCamera(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, float dPan, float dTilt) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.inArea(core.getBlockPos(), pos)) {
+            return "that camera is not part of this network";
+        }
+        camera.aim(Math.max(-20f, Math.min(20f, dPan)), Math.max(-20f, Math.min(20f, dTilt)));
+        return null;
+    }
+
+    /** De naam van een camera op de desktop: zijn eigen naam, of anders "Camera 3". */
+    private static String cameraName(CameraBlockEntity camera, int number) {
+        return camera.name().isEmpty() ? "Camera " + number : camera.name();
+    }
+
+    /**
+     * De camera's voor de bewakingsmuur (de app Cameras): waar ze hangen, waar hun lens zit, waar
+     * ze heen kijken en of ze beeld hebben.
+     */
+    public static ListTag cameras(ServerLevel level, SecurityCoreBlockEntity core) {
+        ListTag list = new ListTag();
+        int number = 1;
+        for (BlockPos pos : scan(level, core).cameras()) {
+            if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera)) {
+                continue;
+            }
+            BlockState state = level.getBlockState(pos);
+            CompoundTag tag = position("camera", pos);
+            tag.putString("name", cameraName(camera, number++));
+            tag.putBoolean("on", state.getValue(CameraBlock.ONLINE));
+            net.minecraft.world.phys.Vec3 eye = CameraBlockEntity.eye(pos, state);
+            tag.putDouble("ex", eye.x);
+            tag.putDouble("ey", eye.y);
+            tag.putDouble("ez", eye.z);
+            tag.putFloat("yaw", camera.yaw());
+            tag.putFloat("pitch", camera.pitch());
+            tag.putFloat("pan", camera.pan());
+            tag.putFloat("tilt", camera.tilt());
+            list.add(tag);
+        }
+        return list;
     }
 
     // ================================================================ Voor de desktop
@@ -225,6 +290,18 @@ public final class SecurityDevices {
             device.putString("name", "Laser gate (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)"));
             device.putBoolean("on", on);
             device.putString("st", on ? "active" : core.lasersEnabled() ? "open" : "off (network)");
+            list.add(device);
+        }
+        int cameraNumber = 1;
+        for (BlockPos pos : found.cameras()) {
+            if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera)) {
+                continue;
+            }
+            boolean on = level.getBlockState(pos).getValue(CameraBlock.ONLINE);
+            CompoundTag device = position("camera", pos);
+            device.putString("name", cameraName(camera, cameraNumber++));
+            device.putBoolean("on", on);
+            device.putString("st", on ? "online" : core.camerasEnabled() ? "no power" : "off (network)");
             list.add(device);
         }
         return list;

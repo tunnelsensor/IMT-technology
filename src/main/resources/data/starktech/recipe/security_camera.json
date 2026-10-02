@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "O": {
+      "item": "minecraft:observer"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
+  },
+  "pattern": [
+    "III",
+    "GOC",
+    "III"
+  ],
+  "result": {
+    "id": "starktech:security_camera",
+    "count": 2
+  }
+}

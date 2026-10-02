@@ -74,6 +74,27 @@ public final class EdithClientConfig {
             .comment("Let E.D.I.T.H. speak up on her own at important moments (needs the LOCAL or CLAUDE brain)")
             .define("speaksOnHerOwn", false);
 
+    // ---------------------------------------------------------------- Bewakingscamera's (Stark OS)
+    /** Zo vaak per seconde wordt elk camerabeeld op de bewakingsmuur ververst (het grote beeld 2x zo vaak). */
+    public static final ModConfigSpec.IntValue CAMERA_FPS = BUILDER
+            .comment("Security camera wall: how often each camera image is refreshed per second (the big view twice as often)")
+            .defineInRange("cameraFeedFps", 5, 1, 30);
+
+    /** Zakt je spel onder de 60 fps, dan worden de beelden minder vaak ververst, maar nooit minder dan dit. */
+    public static final ModConfigSpec.IntValue CAMERA_MIN_FPS = BUILDER
+            .comment("Security camera wall: the slowest refresh per second when your game runs below 60 fps")
+            .defineInRange("cameraFeedMinFps", 2, 1, 30);
+
+    /** Zoveel milliseconden per frame mogen alle camerabeelden samen kosten (er komt altijd minstens één beeld). */
+    public static final ModConfigSpec.DoubleValue CAMERA_BUDGET_MS = BUILDER
+            .comment("Security camera wall: milliseconds per frame all camera images together may take")
+            .defineInRange("cameraFeedBudgetMs", 3.0, 0.5, 20.0);
+
+    /** Zover (blokken) kijkt een camera; daarachter vervaagt het beeld. */
+    public static final ModConfigSpec.IntValue CAMERA_DISTANCE = BUILDER
+            .comment("Security camera wall: how far a camera sees (blocks)")
+            .defineInRange("cameraFeedDistance", 48, 16, 96);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     /** Mag de spraaktekst in de HUD? (Zolang de instellingen nog niet geladen zijn: ja.) */
