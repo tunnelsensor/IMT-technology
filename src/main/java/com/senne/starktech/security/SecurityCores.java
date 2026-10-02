@@ -74,27 +74,30 @@ public final class SecurityCores {
         if (!entity.isAlive() || entity.isInvulnerable() || entity instanceof SecurityDroneEntity) {
             return false;
         }
+        boolean unclaimed = core == null || core.ownerId() == null;
         if (entity instanceof Player player) {
             if (player.isCreative() || player.isSpectator() || isFriend(level, core, player)) {
                 return false;
             }
-            // Van jou: andere spelers alleen met PvP. Van niemand: iedereen is een indringer.
-            return core == null || core.ownerId() == null || level.getServer().isPvpAllowed();
+            // Van niemand: iedereen is een indringer. Van jou: andere spelers alleen als de
+            // eigenaar dat op de desktop heeft aangezet (en dan nog alleen met PvP aan).
+            return unclaimed || core.attackPlayers() && level.getServer().isPvpAllowed();
         }
         if (entity instanceof StarkDroneEntity drone) {
             ServerPlayer owner = drone.getOwnerId() == null ? null
                     : level.getServer().getPlayerList().getPlayer(drone.getOwnerId());
             return owner != null && isIntruder(level, core, owner);
         }
-        return entity instanceof Enemy;
+        // Monsters: van niemand altijd, van jou alleen als "attack mobs" aan staat (standaard aan).
+        return entity instanceof Enemy && (unclaimed || core.attackMobs());
     }
 
-    /** Is deze speler de eigenaar van de kern (of zit hij in zijn team)? */
+    /** Is deze speler de eigenaar van de kern, zit hij in zijn team, of is hij vertrouwd? */
     public static boolean isFriend(ServerLevel level, @Nullable SecurityCoreBlockEntity core, Player player) {
         if (core == null || core.ownerId() == null) {
             return false;
         }
-        if (core.ownerId().equals(player.getUUID())) {
+        if (core.ownerId().equals(player.getUUID()) || core.isTrusted(player.getUUID())) {
             return true;
         }
         PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(core.ownerName());

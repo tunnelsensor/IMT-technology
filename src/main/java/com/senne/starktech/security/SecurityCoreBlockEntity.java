@@ -61,6 +61,23 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     /** Had de kern bij de laatste telling stroom? */
     private boolean online = true;
 
+    // ---------------------------------------------------------------- Toegang (de desktop regelt dit)
+    /**
+     * Vertrouwde spelers (naast de eigenaar en zijn team): de beveiliging schiet niet op hen. Ze
+     * mogen niet aan de desktop komen. UUID -> naam, zodat de lijst leesbaar blijft.
+     */
+    private final java.util.LinkedHashMap<UUID, String> trusted = new java.util.LinkedHashMap<>();
+    /** Schiet de beveiliging op monsters? (Standaard ja.) */
+    private boolean attackMobs = true;
+    /** Schiet de beveiliging op andere spelers? (Standaard nee; ook dan alleen met PvP aan.) */
+    private boolean attackPlayers;
+    /** Vliegen de beveiligingsdrones? Uit = ze landen bij de kern. */
+    private boolean dronesEnabled = true;
+    /** Staan de laserwanden in dit gebied aan? */
+    private boolean lasersEnabled = true;
+    /** Staan de camera's in dit gebied aan? */
+    private boolean camerasEnabled = true;
+
     /** Heeft de kern stroom (en werken zijn drones dus)? */
     public boolean isOnline() {
         return online;
@@ -220,6 +237,92 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    // ---------------------------------------------------------------- Toegang
+    public boolean attackMobs() {
+        return attackMobs;
+    }
+
+    public boolean attackPlayers() {
+        return attackPlayers;
+    }
+
+    public boolean dronesEnabled() {
+        return dronesEnabled;
+    }
+
+    public boolean lasersEnabled() {
+        return lasersEnabled;
+    }
+
+    public boolean camerasEnabled() {
+        return camerasEnabled;
+    }
+
+    public void setAttackMobs(boolean on) {
+        attackMobs = on;
+        setChanged();
+    }
+
+    public void setAttackPlayers(boolean on) {
+        attackPlayers = on;
+        setChanged();
+    }
+
+    public void setDronesEnabled(boolean on) {
+        dronesEnabled = on;
+        setChanged();
+    }
+
+    public void setLasersEnabled(boolean on) {
+        lasersEnabled = on;
+        setChanged();
+    }
+
+    public void setCamerasEnabled(boolean on) {
+        camerasEnabled = on;
+        setChanged();
+    }
+
+    /** Is deze speler vertrouwd (door de eigenaar toegevoegd)? */
+    public boolean isTrusted(UUID player) {
+        return trusted.containsKey(player);
+    }
+
+    /** De namen van de vertrouwde spelers, in de volgorde waarin ze erbij kwamen. */
+    public java.util.List<String> trustedNames() {
+        return java.util.List.copyOf(trusted.values());
+    }
+
+    public void addTrusted(UUID id, String name) {
+        trusted.put(id, name);
+        setChanged();
+    }
+
+    /** Haalt een vertrouwde speler weg op zijn naam (hoofdletters maken niet uit). */
+    public boolean removeTrusted(String name) {
+        boolean removed = trusted.values().removeIf(trustedName -> trustedName.equalsIgnoreCase(name));
+        if (removed) {
+            setChanged();
+        }
+        return removed;
+    }
+
+    /**
+     * Wist de toegang voor een nieuwe eigenaar (bij een overname): de vertrouwde lijst leeg, het
+     * wachtwoord weg (de nieuwe eigenaar zet zelf een nieuw), en de apparaten weer aan. De mappen en
+     * notities blijven staan (jouw wens, 28 september).
+     */
+    public void resetAccessForNewOwner() {
+        trusted.clear();
+        password = null;
+        attackMobs = true;
+        attackPlayers = false;
+        dronesEnabled = true;
+        lasersEnabled = true;
+        camerasEnabled = true;
+        setChanged();
+    }
+
     /** Een regel in het logboek (met de speltijd van nu). */
     public void logEvent(EventLog.Type type, String text) {
         log.add(level == null ? 0 : level.getGameTime(), type, text);
@@ -323,6 +426,20 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         tag.put("Files", fs.save());
         tag.put("Log", log.save());
+        // Toegang
+        tag.putBoolean("AttackMobs", attackMobs);
+        tag.putBoolean("AttackPlayers", attackPlayers);
+        tag.putBoolean("DronesOn", dronesEnabled);
+        tag.putBoolean("LasersOn", lasersEnabled);
+        tag.putBoolean("CamerasOn", camerasEnabled);
+        net.minecraft.nbt.ListTag trustedList = new net.minecraft.nbt.ListTag();
+        for (java.util.Map.Entry<UUID, String> entry : trusted.entrySet()) {
+            CompoundTag person = new CompoundTag();
+            person.putUUID("Id", entry.getKey());
+            person.putString("Name", entry.getValue());
+            trustedList.add(person);
+        }
+        tag.put("Trusted", trustedList);
     }
 
     @Override
@@ -342,5 +459,19 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         password = SystemPassword.load(tag.getCompound("Password"));
         fs = VirtualFs.load(tag.getCompound("Files"));
         log = EventLog.load(tag.getList("Log", Tag.TAG_COMPOUND));
+        // Toegang. Een oude kern (zonder deze sleutels) valt terug op de standaardwaarden: de
+        // beveiliging op monsters aan, op spelers uit, alle apparaten aan.
+        attackMobs = !tag.contains("AttackMobs") || tag.getBoolean("AttackMobs");
+        attackPlayers = tag.getBoolean("AttackPlayers");
+        dronesEnabled = !tag.contains("DronesOn") || tag.getBoolean("DronesOn");
+        lasersEnabled = !tag.contains("LasersOn") || tag.getBoolean("LasersOn");
+        camerasEnabled = !tag.contains("CamerasOn") || tag.getBoolean("CamerasOn");
+        trusted.clear();
+        for (Tag element : tag.getList("Trusted", Tag.TAG_COMPOUND)) {
+            CompoundTag person = (CompoundTag) element;
+            if (person.hasUUID("Id")) {
+                trusted.put(person.getUUID("Id"), person.getString("Name"));
+            }
+        }
     }
 }

@@ -600,6 +600,48 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * De toegang die de desktop regelt: een vertrouwde speler wordt niet beschoten, "attack mobs"
+     * uit laat monsters met rust, en al die instellingen plus de vertrouwde lijst blijven na
+     * opslaan en laden. Bij een overname (resetAccessForNewOwner) is de lijst weer leeg en het
+     * wachtwoord gewist.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
+    public static void security_access_flags_and_trusted(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(2, 3, 2));
+        var core = placeCore(helper, new BlockPos(12, 3, 12), owner);
+        Husk monster = spawnDummyEnemy(helper, new BlockPos(14, 3, 12));
+        if (!com.senne.starktech.security.SecurityCores.isIntruder(level, core, monster)) {
+            throw new GameTestAssertException("Een eigen kern ziet een monster standaard niet als indringer");
+        }
+        core.setAttackMobs(false);
+        if (com.senne.starktech.security.SecurityCores.isIntruder(level, core, monster)) {
+            throw new GameTestAssertException("Met 'attack mobs' uit werd het monster toch een doelwit");
+        }
+        ServerPlayer guest = makeSurvivalOwner(helper, new BlockPos(16, 3, 12));
+        if (com.senne.starktech.security.SecurityCores.isFriend(level, core, guest)) {
+            throw new GameTestAssertException("Een onbekende speler was al vriend");
+        }
+        core.addTrusted(guest.getUUID(), guest.getGameProfile().getName());
+        if (!com.senne.starktech.security.SecurityCores.isFriend(level, core, guest)
+                || com.senne.starktech.security.SecurityCores.isIntruder(level, core, guest)) {
+            throw new GameTestAssertException("Een vertrouwde speler wordt toch als indringer gezien");
+        }
+        var registries = level.registryAccess();
+        var copy = new com.senne.starktech.security.SecurityCoreBlockEntity(core.getBlockPos(), core.getBlockState());
+        copy.loadWithComponents(core.saveWithFullMetadata(registries), registries);
+        if (copy.attackMobs() || !copy.isTrusted(guest.getUUID()) || copy.trustedNames().size() != 1) {
+            throw new GameTestAssertException("De toegang (attack mobs / vertrouwde lijst) ging verloren na laden");
+        }
+        copy.setPassword("abcd12", level.random);
+        copy.resetAccessForNewOwner();
+        if (copy.hasPassword() || !copy.trustedNames().isEmpty() || !copy.attackMobs()) {
+            throw new GameTestAssertException("resetAccessForNewOwner liet de oude toegang staan");
+        }
+        helper.succeed();
+    }
+
     // ================================================================ De harnas-werkbank
 
     /** Een werkbank met een volle warmtegenerator ernaast. */
