@@ -283,6 +283,30 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    /**
+     * Spelers die de beveiliging een tijdje opjaagt, ook als "attack players" uit staat: wie een
+     * valstrik-bestand opende. UUID -> tot wanneer (speltijd). Niet bewaard: na herladen vergeten.
+     */
+    private final java.util.Map<UUID, Long> hunted = new java.util.HashMap<>();
+
+    /** Laat de beveiliging deze speler opjagen tot speltijd {@code until}. */
+    public void hunt(UUID player, long until) {
+        hunted.put(player, until);
+    }
+
+    /** Wordt deze speler nu opgejaagd? */
+    public boolean isHunted(UUID player) {
+        Long until = hunted.get(player);
+        if (until == null) {
+            return false;
+        }
+        if (level == null || level.getGameTime() >= until) {
+            hunted.remove(player);
+            return false;
+        }
+        return true;
+    }
+
     /** Is deze speler vertrouwd (door de eigenaar toegevoegd)? */
     public boolean isTrusted(UUID player) {
         return trusted.containsKey(player);

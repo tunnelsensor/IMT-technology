@@ -695,7 +695,7 @@ showcase en staat hij bij NIEUW.
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
-  `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`; meerdere met komma's). Op een ander
+  `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.

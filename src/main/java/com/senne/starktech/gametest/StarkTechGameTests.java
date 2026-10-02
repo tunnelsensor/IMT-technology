@@ -682,6 +682,103 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
+    private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
+        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+        for (int i = 0; i + 1 < keysAndValues.length; i += 2) {
+            if (keysAndValues[i + 1].equals("true") || keysAndValues[i + 1].equals("false")) {
+                args.putBoolean(keysAndValues[i], Boolean.parseBoolean(keysAndValues[i + 1]));
+            } else {
+                args.putString(keysAndValues[i], keysAndValues[i + 1]);
+            }
+        }
+        com.senne.starktech.security.os.StarkOs.handleAction(player,
+                new com.senne.starktech.network.OsActionPayload(core, op, args));
+    }
+
+    /**
+     * Files en Notes op de desktop, en de valstrikken: de eigenaar maakt mappen en notities,
+     * verstopt security.conf (weggooien lukt niet) en maakt een valstrik. Iemand anders die op het
+     * systeem zit (zoals straks met het wachtwoord via SSH) ziet niet welk bestand de valstrik is;
+     * opent hij hem, dan vliegt hij eruit, is hij buitengesloten, staat het in het logboek en jaagt
+     * de beveiliging op hem. Een te grote notitie past niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_os")
+    public static void security_files_notes_and_traps(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        BlockPos pos = new BlockPos(12, 3, 12);
+        var core = placeCore(helper, pos, owner);
+        BlockPos abs = helper.absolutePos(pos);
+        com.senne.starktech.security.os.StarkOs.open(owner, abs);
+        var fs = core.fs();
+        String home = "/home/" + com.senne.starktech.security.os.SystemDefaults.homeName(owner.getGameProfile().getName());
+
+        // De eigenaar ruimt op: een map, een notitie, security.conf verstoppen, een valstrik.
+        osAction(owner, abs, "fs_mkdir", "path", home + "/secret");
+        osAction(owner, abs, "fs_touch", "path", home + "/secret/passwords.txt");
+        osAction(owner, abs, "fs_save", "path", home + "/secret/passwords.txt", "text", "nice try");
+        osAction(owner, abs, "fs_save", "path", home + "/todo.txt", "text", "buy more turrets");
+        osAction(owner, abs, "fs_move", "from", "/etc/security.conf", "to", home + "/secret/recipes.txt");
+        osAction(owner, abs, "fs_delete", "path", home + "/secret/recipes.txt");
+        osAction(owner, abs, "fs_trap", "path", home + "/secret/passwords.txt", "on", "true");
+        var trapFile = fs.get(home + "/secret/passwords.txt");
+        if (trapFile == null || !trapFile.isTrap() || !"nice try".equals(trapFile.content())
+                || !"buy more turrets".equals(fs.get(home + "/todo.txt") == null ? null : fs.get(home + "/todo.txt").content())) {
+            throw new GameTestAssertException("Map, notitie of valstrik van de eigenaar kwam er niet");
+        }
+        if (!(home + "/secret/recipes.txt").equals(fs.systemFile()) || fs.isFile("/etc/security.conf")) {
+            throw new GameTestAssertException("security.conf verstoppen lukte niet, of verwijderen lukte wél");
+        }
+        // Een te grote notitie past niet (de oude tekst blijft).
+        osAction(owner, abs, "fs_save", "path", home + "/todo.txt",
+                "text", "x".repeat(com.senne.starktech.security.os.VirtualFs.MAX_FILE_LENGTH + 1));
+        if (!"buy more turrets".equals(fs.get(home + "/todo.txt").content())) {
+            throw new GameTestAssertException("Een te grote notitie werd toch bewaard");
+        }
+        // De eigenaar zelf kan zijn eigen valstrik gewoon openen.
+        osAction(owner, abs, "fs_open", "path", home + "/secret/passwords.txt");
+        if (!com.senne.starktech.security.os.StarkOs.hasDesktop(owner)) {
+            throw new GameTestAssertException("De eigenaar liep in zijn eigen valstrik");
+        }
+
+        // Iemand anders op het systeem (zoals straks met het wachtwoord via SSH).
+        ServerPlayer guest = makeSurvivalOwner(helper, new BlockPos(12, 3, 14));
+        if (!com.senne.starktech.security.os.StarkOs.openFor(guest, core, false)) {
+            throw new GameTestAssertException("De tweede speler kwam niet op het systeem");
+        }
+        osAction(guest, abs, "fs_trap", "path", home + "/todo.txt", "on", "true");
+        if (fs.get(home + "/todo.txt").isTrap()) {
+            throw new GameTestAssertException("Iemand anders dan de eigenaar kon een valstrik zetten");
+        }
+        fs.write(home + "/new.txt", "changed"); // zodat de volgende momentopname de mappen weer meestuurt
+        var snapshot = com.senne.starktech.security.os.StarkOs.snapshot(core, level,
+                com.senne.starktech.security.os.StarkOs.session(guest), false);
+        if (!snapshot.contains("fs") || snapshot.toString().contains("t:1b")) {
+            throw new GameTestAssertException("Een ander kreeg te zien welk bestand de valstrik is");
+        }
+        osAction(guest, abs, "fs_open", "path", home + "/todo.txt");
+        if (!com.senne.starktech.security.os.StarkOs.hasDesktop(guest)) {
+            throw new GameTestAssertException("Een gewoon bestand openen gooide de speler eruit");
+        }
+        osAction(guest, abs, "fs_open", "path", home + "/secret/passwords.txt");
+        if (com.senne.starktech.security.os.StarkOs.hasDesktop(guest)) {
+            throw new GameTestAssertException("De valstrik gooide de speler er niet uit");
+        }
+        if (com.senne.starktech.security.os.StarkOs.openFor(guest, core, false)
+                || com.senne.starktech.security.os.StarkOs.lockedSeconds(guest, core) <= 0) {
+            throw new GameTestAssertException("Na de valstrik kon de speler meteen weer op het systeem");
+        }
+        if (core.log().entries().stream().noneMatch(entry -> entry.type() == com.senne.starktech.security.os.EventLog.Type.TRAP)) {
+            throw new GameTestAssertException("De valstrik staat niet in het logboek");
+        }
+        if (!core.isHunted(guest.getUUID()) || core.attackPlayers()
+                || level.getServer().isPvpAllowed() && !com.senne.starktech.security.SecurityCores.isIntruder(level, core, guest)) {
+            throw new GameTestAssertException("De beveiliging jaagt niet op wie de valstrik opende");
+        }
+        helper.succeed();
+    }
+
     // ================================================================ De harnas-werkbank
 
     /** Een werkbank met een volle warmtegenerator ernaast. */

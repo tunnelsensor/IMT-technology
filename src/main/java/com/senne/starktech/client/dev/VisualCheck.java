@@ -351,6 +351,54 @@ public final class VisualCheck {
             t.shot(40, "k06_hack_core_green");
         }
 
+        // --- De Stark OS-desktop op een eigen kern: het Files-venster (met een verstopt
+        // security.conf en een valstrik), het rechtsklik-menu, en een notitie in Notes.
+        if (want("os")) {
+            BlockPos core = new BlockPos(-100, -60, 40);
+            java.util.function.Supplier<String> home = () -> "/home/" + com.senne.starktech.security.os.SystemDefaults
+                    .homeName(Minecraft.getInstance().getUser().getName());
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    String dir = "/home/" + com.senne.starktech.security.os.SystemDefaults.homeName(player.getGameProfile().getName());
+                    var fs = be.fs();
+                    fs.mkdir(dir + "/secret");
+                    fs.write(dir + "/secret/passwords.txt", "nice try");
+                    fs.setTrap(dir + "/secret/passwords.txt", true);
+                    fs.move("/etc/security.conf", dir + "/secret/recipes.txt");
+                    fs.write(dir + "/todo.txt", "- buy more turrets\n- ask Happy about the coffee machine\n"
+                            + "- hide security.conf (done: it's a recipe now)\n- set a trap for whoever reads this");
+                }
+            });
+            t.stand(10, -100.5, -60, 37.5, 0, 20);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
+            t.shot(20, "o01_os_desktop");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourFiles(home.get() + "/secret", home.get() + "/secret/passwords.txt", false);
+                }
+            });
+            t.shot(10, "o02_os_files");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourFiles(home.get() + "/secret", home.get() + "/secret/passwords.txt", true);
+                }
+            });
+            t.shot(10, "o03_os_files_menu");
+            t.onServer(0, player -> {
+                net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                args.putString("path", "/home/" + com.senne.starktech.security.os.SystemDefaults
+                        .homeName(player.getGameProfile().getName()) + "/todo.txt");
+                com.senne.starktech.security.os.StarkOs.handleAction(player,
+                        new com.senne.starktech.network.OsActionPayload(core, "fs_open", args));
+            });
+            t.shot(15, "o04_os_notes");
+            t.close(10);
+        }
+
         // --- De harnas-werkbank: het hologram, erop klikken om te bouwen (het stuk vliegt naar je
         // toe), en laarzen erop leggen en er een upgrade in bouwen. Met echte rechtsklikken.
         if (want("workbench")) {

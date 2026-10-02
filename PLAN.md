@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 95 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 118 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 77 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -829,7 +829,20 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       server maakt en alleen naar wie ingelogd is stuurt, dus het wachtwoord en de mappen komen
       nooit in het spel van een ander. De **Terminal**-app hoort bij de geparkeerde server-terminal
       (stap 2) en zit er dus nog niet bij. Twee nieuwe tests.
-- [ ] **5. Bestanden, notities en valstrikken**
+- [x] **5. Bestanden, notities en valstrikken**
+      Twee nieuwe apps op de desktop. **Files** werkt als de Verkenner: knoppen voor een map
+      omhoog, nieuwe map, nieuw bestand, hernoemen, verwijderen (met "Sure?") en valstrik;
+      dubbelklik opent, slepen naar een map verplaatst, rechtsklik geeft een menu met "Mark as
+      trap". `security.conf` (SYS) kun je verplaatsen en hernoemen, niet weggooien. **Notes** is
+      een teksteditor (het tekstvak van Minecraft zelf: selecteren, Ctrl+C/V, Ctrl+S, woordomslag;
+      hoogstens 4096 tekens); sluiten met wijzigingen bewaart vanzelf. Een **valstrik** gaat af als
+      iemand anders dan de eigenaar hem opent (straks via SSH met het wachtwoord, of de terminal):
+      een regel in het logboek, een E.D.I.T.H.-alarm voor de eigenaar, de lezer vliegt eruit en is
+      30 s buitengesloten (`TRAP_LOCKOUT` in de config), en de beveiliging jaagt dan op hem, ook
+      als "attack players" uit staat. Alleen de eigenaar ziet welk bestand een valstrik is. Fouten
+      en meldingen staan nu rechts in de taakbalk (het actiebalk-bericht zag je niet achter de
+      desktop). Screenshots: `-Ponly=os`. Eén nieuwe test.
+      De terminal-commando's (`mkdir`, `mv`, `rm`, `nano`) horen bij de geparkeerde terminal (stap 2).
 - [ ] **6. Apparaten en toegang, en de kern zelf bouwen** (de gegevens eronder zijn er al: `20d2b34`)
 - [ ] **7. Security Camera en de bewakingsmuur** (in de buurt)
 - [ ] **8. Echte camera's in de toren**

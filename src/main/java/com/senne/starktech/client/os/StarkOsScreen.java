@@ -4,7 +4,7 @@ import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.network.OsActionPayload;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
@@ -19,17 +19,20 @@ import org.jetbrains.annotations.Nullable;
  * vensters en een taakbalk, op de beveiligingskern. Het spel loopt door terwijl hij openstaat.
  *
  * Alles wat je ziet komt van de server (een momentopname in een CompoundTag, zie {@link #update});
- * dit scherm tekent het alleen. Wat je doet (een wachtwoord zetten, straks apparaten aan/uit) gaat
- * als een opdracht terug naar de server, die altijd zelf controleert of het mag.
+ * dit scherm tekent het alleen. Wat je doet (een wachtwoord zetten, een map maken) gaat als een
+ * opdracht terug naar de server, die altijd zelf controleert of het mag.
  *
  * Dit bestand is de vensterbeheerder: de achtergrond, de icoontjes links, de taakbalk onderaan, en
  * het slepen, focussen en sluiten van vensters. Elke app ({@link App}) tekent zichzelf in zijn
- * venster en handelt zijn eigen kliks af.
+ * venster en handelt zijn eigen kliks af. De grotere apps hebben een eigen bestand
+ * ({@link FilesApp}, {@link NotesApp}); de muis en het toetsenbord gaan naar het venster bovenop.
  */
 public class StarkOsScreen extends Screen {
-    /** De apps op de desktop. Later komen er meer bij (Devices, Access, Files, Notes, Cameras). */
+    /** De apps op de desktop. Later komen er meer bij (Devices, Access, Cameras). */
     public enum App {
         STATUS("Status", 240, 120),
+        FILES("Files", 300, 190),
+        NOTES("Notes", 320, 196),
         LOGS("Logs", 330, 200),
         SETTINGS("Settings", 270, 160);
 
@@ -62,7 +65,16 @@ public class StarkOsScreen extends Screen {
         }
     }
 
+    /** Het vak binnen een venster waar een app in tekent (onder de titelbalk). */
+    record Area(int x, int y, int w, int h) {}
+
     private static final int TITLE_H = 13;
+    /**
+     * Elk venster ligt een laagje (diepte) hoger dan het venster eronder. Tekst met een schaduw
+     * ligt in Minecraft net iets naar voren; zonder die lagen zou je hem door een venster erboven
+     * heen zien.
+     */
+    private static final int LAYER = 10;
     private static final int TASKBAR_H = 16;
     private static final int ICON = 30;
     private static final int LINE = 10;
@@ -78,10 +90,24 @@ public class StarkOsScreen extends Screen {
     private @Nullable Win dragging;
     private int dragDx;
     private int dragDy;
+    /** Het venster waar de muisknop in werd ingedrukt (voor slepen binnen een app). */
+    private @Nullable Win pressedIn;
 
     /** De tekst die je in het wachtwoordvak typt (alleen Settings gebruikt dit nu). */
     private boolean editingPassword;
     private String passwordText = "";
+
+    /**
+     * De apps met een eigen bestand. Ze bestaan altijd (ook als hun venster dicht is), zodat ze de
+     * gegevens van de server bijhouden.
+     */
+    private final FilesApp files = new FilesApp(this);
+    private final NotesApp notes = new NotesApp(this);
+
+    /** Een melding van de server (rechts in de taakbalk) en tot wanneer hij blijft staan. */
+    private String notice = "";
+    private boolean noticeError;
+    private long noticeUntil;
 
     public StarkOsScreen(BlockPos core, boolean remote) {
         super(Component.literal("Stark OS"));
@@ -93,9 +119,55 @@ public class StarkOsScreen extends Screen {
         return core;
     }
 
-    /** Een nieuwe momentopname van de server. */
+    /**
+     * Een nieuwe momentopname van de server. De mappenlijst zit er alleen in als hij veranderde, een
+     * geopend bestand en een melding maar één keer: die geven we meteen door.
+     */
     public void update(CompoundTag snapshot) {
         this.data = snapshot;
+        if (snapshot.contains("fs")) {
+            files.update(snapshot.getList("fs", Tag.TAG_COMPOUND));
+        }
+        if (snapshot.contains("file")) {
+            CompoundTag file = snapshot.getCompound("file");
+            Win win = openApp(App.NOTES);
+            notes.load(font != null ? font : net.minecraft.client.Minecraft.getInstance().font, contentArea(win),
+                    file.getString("p"), file.getString("c"), file.getBoolean("s"));
+        }
+        if (snapshot.contains("notice")) {
+            CompoundTag message = snapshot.getCompound("notice");
+            showNotice(message.getString("x"), message.getBoolean("err"));
+        }
+    }
+
+    /** Een melding rechts in de taakbalk, een paar seconden lang. */
+    void showNotice(String text, boolean error) {
+        notice = text;
+        noticeError = error;
+        noticeUntil = Util.getMillis() + 4000;
+    }
+
+    /** Stuurt een opdracht naar de server (die controleert altijd zelf of het mag). */
+    void send(String op, CompoundTag args) {
+        PacketDistributor.sendToServer(new OsActionPayload(core, op, args));
+    }
+
+    /** Ben jij de eigenaar van dit systeem? (Alleen die ziet en zet valstrikken.) */
+    boolean isOwner() {
+        return data.getBoolean("isOwner");
+    }
+
+    FilesApp files() {
+        return files;
+    }
+
+    /**
+     * Alleen voor de screenshot-rondleiding (VisualCheck): het Files-venster openen in deze map, met
+     * dit bestand gekozen, en eventueel het rechtsklik-menu erbij.
+     */
+    public void tourFiles(String folder, String select, boolean menu) {
+        Win win = openApp(App.FILES);
+        files.tourShow(contentArea(win), folder, select, menu);
     }
 
     @Override
@@ -112,34 +184,62 @@ public class StarkOsScreen extends Screen {
 
     // ================================================================ Vensters openen/focussen
 
-    private void openApp(App app) {
+    /** Opent een app (of zet zijn venster bovenop als het al open is). */
+    private Win openApp(App app) {
         for (Win win : windows) {
             if (win.app == app) {
                 focus(win);
-                return;
+                return win;
             }
         }
+        // Rechts van de icoontjes, elk nieuw venster een stukje verder.
         int offset = windows.size() * 16;
-        int x = Math.min(50 + offset, Math.max(50, width - app.w - 10));
+        int left = iconsRight() + 8;
+        int x = Math.min(left + offset, Math.max(left, width - app.w - 10));
         int y = Math.min(30 + offset, Math.max(24, height - app.h - TASKBAR_H - 4));
         Win win = new Win(app, x, y);
         windows.add(win);
+        focus(win);
+        return win;
     }
 
     /** Zet een venster bovenop (achteraan in de lijst = als laatste getekend = bovenop). */
     private void focus(Win win) {
         windows.remove(win);
         windows.add(win);
+        if (win.app != App.NOTES) {
+            notes.blur();
+        }
     }
 
     private @Nullable Win focused() {
         return windows.isEmpty() ? null : windows.getLast();
     }
 
+    /** Het bovenste venster op dit punt, of null. */
+    private @Nullable Win windowAt(int mx, int my) {
+        for (int i = windows.size() - 1; i >= 0; i--) {
+            Win win = windows.get(i);
+            if (mx >= win.x && mx < win.x + win.w && my >= win.y && my < win.y + win.h) {
+                return win;
+            }
+        }
+        return null;
+    }
+
+    /** Het vak binnen een venster waar zijn app in tekent. */
+    private static Area contentArea(Win win) {
+        return new Area(win.x + 6, win.y + TITLE_H + 3, win.w - 12, win.h - TITLE_H - 6);
+    }
+
     private void closeWindow(Win win) {
         windows.remove(win);
         if (win.app == App.SETTINGS) {
             editingPassword = false;
+        }
+        if (win.app == App.NOTES) {
+            notes.save(); // wat je typte, gaat niet verloren
+            notes.blur();
         }
     }
 
@@ -162,18 +262,9 @@ public class StarkOsScreen extends Screen {
             }
             return true;
         }
-        // Icoontjes links.
-        App icon = iconAt(mx, my);
-        if (icon != null) {
-            openApp(icon);
-            return true;
-        }
         // Vensters, van boven (achteraan) naar onder.
-        for (int i = windows.size() - 1; i >= 0; i--) {
-            Win win = windows.get(i);
-            if (mx < win.x || mx >= win.x + win.w || my < win.y || my >= win.y + win.h) {
-                continue;
-            }
+        Win win = windowAt(mx, my);
+        if (win != null) {
             focus(win);
             // Het kruisje rechtsboven.
             if (mx >= win.x + win.w - TITLE_H && my < win.y + TITLE_H) {
@@ -187,39 +278,66 @@ public class StarkOsScreen extends Screen {
                 dragDy = my - win.y;
                 return true;
             }
-            clickContent(win, mx, my);
+            pressedIn = win;
+            clickContent(win, mx, my, button);
+            return true;
+        }
+        // Icoontjes links (onder de vensters).
+        App icon = iconAt(mx, my);
+        if (icon != null) {
+            openApp(icon);
             return true;
         }
         // Op de lege desktop: stop met typen.
         editingPassword = false;
+        notes.blur();
         return true;
     }
 
+    /**
+     * Waar het icoontje van deze app staat: {x, y}. Onder elkaar langs de linkerkant; past het niet
+     * meer boven de taakbalk, dan begint een nieuwe kolom.
+     */
+    private int[] iconPos(int index) {
+        int perColumn = Math.max(1, (height - TASKBAR_H - 24) / (ICON + 14));
+        return new int[] {6 + (index / perColumn) * (ICON + 18), 24 + (index % perColumn) * (ICON + 14)};
+    }
+
+    /** Waar de kolommen met icoontjes ophouden (nieuwe vensters openen rechts daarvan). */
+    private int iconsRight() {
+        int[] last = iconPos(App.values().length - 1);
+        return last[0] + ICON;
+    }
+
     private @Nullable App iconAt(int mx, int my) {
-        int iy = 24;
         for (App app : App.values()) {
-            if (mx >= 6 && mx < 6 + ICON && my >= iy && my < iy + ICON) {
+            int[] pos = iconPos(app.ordinal());
+            if (mx >= pos[0] && mx < pos[0] + ICON && my >= pos[1] && my < pos[1] + ICON) {
                 return app;
             }
-            iy += ICON + 14;
         }
         return null;
     }
 
     /** Een klik binnen de inhoud van een venster (de app zelf). */
-    private void clickContent(Win win, int mx, int my) {
-        if (win.app == App.SETTINGS) {
-            int cx = win.x + 6;
-            int fieldY = win.y + TITLE_H + 60;
-            if (mx >= cx && mx < cx + 140 && my >= fieldY && my < fieldY + 14) {
-                editingPassword = true;
-                return;
+    private void clickContent(Win win, int mx, int my, int button) {
+        switch (win.app) {
+            case FILES -> files.mouseClicked(font, contentArea(win), mx, my, button);
+            case NOTES -> notes.mouseClicked(font, contentArea(win), mx, my, button);
+            case SETTINGS -> {
+                int cx = win.x + 6;
+                int fieldY = win.y + TITLE_H + 60;
+                if (mx >= cx && mx < cx + 140 && my >= fieldY && my < fieldY + 14) {
+                    editingPassword = true;
+                    return;
+                }
+                if (mx >= cx + 146 && mx < cx + 216 && my >= fieldY && my < fieldY + 14) {
+                    submitPassword();
+                    return;
+                }
+                editingPassword = false;
             }
-            if (mx >= cx + 146 && mx < cx + 216 && my >= fieldY && my < fieldY + 14) {
-                submitPassword();
-                return;
-            }
-            editingPassword = false;
+            default -> { }
         }
     }
 
@@ -230,28 +348,56 @@ public class StarkOsScreen extends Screen {
             dragging.y = Math.max(0, Math.min(height - TASKBAR_H - 6, (int) mouseY - dragDy));
             return true;
         }
+        // Slepen binnen een app (een bestand naar een map, tekst selecteren).
+        if (pressedIn != null && pressedIn.app == App.FILES) {
+            return files.mouseDragged((int) mouseX, (int) mouseY);
+        }
+        if (pressedIn != null && pressedIn.app == App.NOTES) {
+            return notes.mouseDragged((int) mouseX, (int) mouseY, button, dragX, dragY);
+        }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         dragging = null;
+        Win win = pressedIn;
+        pressedIn = null;
+        if (win != null && win.app == App.FILES) {
+            files.mouseReleased(contentArea(win), (int) mouseX, (int) mouseY);
+        } else if (win != null && win.app == App.NOTES) {
+            notes.mouseReleased((int) mouseX, (int) mouseY, button);
+        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        Win win = focused();
-        if (win != null) {
-            win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
+        // Het venster onder de muis scrolt (of anders het venster bovenop).
+        Win win = windowAt((int) mouseX, (int) mouseY);
+        if (win == null) {
+            win = focused();
+        }
+        if (win == null) {
+            return true;
+        }
+        switch (win.app) {
+            case FILES -> files.mouseScrolled(scrollY);
+            case NOTES -> notes.mouseScrolled((int) mouseX, (int) mouseY, scrollY);
+            default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
     }
 
-    // ================================================================ Toetsen (typen in het wachtwoordvak)
+    // ================================================================ Toetsen
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        Win top = focused();
+        if (top != null && top.app == App.FILES && files.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)) {
+            return true;
+        }
         if (editingPassword && passwordText.length() < 8
                 && (codePoint >= 'a' && codePoint <= 'z' || codePoint >= '0' && codePoint <= '9')) {
             passwordText += codePoint;
@@ -262,6 +408,12 @@ public class StarkOsScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Eerst de app in het venster bovenop (zo sluit Esc in een tekstvak alleen dat vak).
+        Win top = focused();
+        if (top != null && top.app == App.FILES && files.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
         if (editingPassword) {
             if (keyCode == 259 && !passwordText.isEmpty()) { // backspace
                 passwordText = passwordText.substring(0, passwordText.length() - 1);
@@ -281,15 +433,17 @@ public class StarkOsScreen extends Screen {
         }
         CompoundTag args = new CompoundTag();
         args.putString("pw", passwordText);
-        PacketDistributor.sendToServer(new OsActionPayload(core, "passwd", args));
+        send("passwd", args);
         passwordText = "";
         editingPassword = false;
     }
 
     @Override
     public void removed() {
-        // De sessie op de server netjes sluiten (hij sluit anders vanzelf als je wegloopt).
-        PacketDistributor.sendToServer(new OsActionPayload(core, "close", new CompoundTag()));
+        // Een notitie die nog niet bewaard is, eerst bewaren; dan de sessie op de server netjes
+        // sluiten (hij sluit anders vanzelf als je wegloopt).
+        notes.save();
+        send("close", new CompoundTag());
         super.removed();
     }
 
@@ -317,21 +471,31 @@ public class StarkOsScreen extends Screen {
             g.drawString(font, tag, (width - font.width(tag)) / 2, 3, HudStyle.argb(255, HudStyle.ORANGE), false);
         }
         // Icoontjes links.
-        int iy = 24;
         for (App app : App.values()) {
+            int[] pos = iconPos(app.ordinal());
+            int ix = pos[0];
+            int iy = pos[1];
             boolean open = windows.stream().anyMatch(win -> win.app == app);
-            g.fill(6, iy, 6 + ICON, iy + ICON, HudStyle.argb(open ? 255 : 180, open ? PANEL : 0x0E1822));
-            HudStyle.brackets(g, 6, iy, 6 + ICON, iy + ICON, 5, HudStyle.argb(200, open ? HudStyle.CYAN : 0x33505F));
-            g.drawString(font, app.label.substring(0, 1), 6 + ICON / 2 - 2, iy + ICON / 2 - 4,
+            g.fill(ix, iy, ix + ICON, iy + ICON, HudStyle.argb(open ? 255 : 180, open ? PANEL : 0x0E1822));
+            HudStyle.brackets(g, ix, iy, ix + ICON, iy + ICON, 5, HudStyle.argb(200, open ? HudStyle.CYAN : 0x33505F));
+            g.drawString(font, app.label.substring(0, 1), ix + ICON / 2 - 2, iy + ICON / 2 - 4,
                     HudStyle.argb(255, HudStyle.WHITE), false);
-            HudStyle.smallText(g, font, app.label, 6 + ICON / 2, iy + ICON + 1, HudStyle.argb(220, HudStyle.WHITE));
-            iy += ICON + 14;
+            HudStyle.smallText(g, font, app.label, ix + ICON / 2, iy + ICON + 1, HudStyle.argb(220, HudStyle.WHITE));
         }
-        // De vensters, onderste eerst.
-        for (Win win : windows) {
-            renderWindow(g, win, mouseX, mouseY);
+        // De vensters, onderste eerst, elk een laagje hoger. Alleen het venster onder de muis krijgt
+        // de muis (voor wat oplicht).
+        Win under = windowAt(mouseX, mouseY);
+        for (int i = 0; i < windows.size(); i++) {
+            Win win = windows.get(i);
+            boolean mouseHere = win == under;
+            g.pose().pushPose();
+            g.pose().translate(0, 0, (i + 1) * LAYER);
+            renderWindow(g, win, mouseHere ? mouseX : -1, mouseHere ? mouseY : -1, partialTick);
+            g.pose().popPose();
         }
-        // Taakbalk onderaan.
+        // Taakbalk onderaan, boven alle vensters.
+        g.pose().pushPose();
+        g.pose().translate(0, 0, (windows.size() + 1) * LAYER);
         g.fill(0, height - TASKBAR_H, width, height, HudStyle.argb(255, BAR));
         int tx = 4;
         Win top = focused();
@@ -342,11 +506,17 @@ public class StarkOsScreen extends Screen {
             g.drawString(font, win.app.label, tx + 4, height - TASKBAR_H + 5, HudStyle.argb(255, active ? HudStyle.CYAN : HudStyle.WHITE), false);
             tx += chip + 4;
         }
+        // Een melding van de server, rechts in de taakbalk.
+        if (!notice.isEmpty() && Util.getMillis() < noticeUntil) {
+            g.drawString(font, notice, width - font.width(notice) - 6, height - TASKBAR_H + 5,
+                    HudStyle.argb(255, noticeError ? HudStyle.RED : HudStyle.GREEN), false);
+        }
+        g.pose().popPose();
     }
 
-    private void renderWindow(GuiGraphics g, Win win, int mouseX, int mouseY) {
+    private void renderWindow(GuiGraphics g, Win win, int mouseX, int mouseY, float partialTick) {
         boolean active = win == focused();
-        g.fill(win.x, win.y, win.x + win.w, win.y + win.h, HudStyle.argb(245, PANEL));
+        g.fill(win.x, win.y, win.x + win.w, win.y + win.h, HudStyle.argb(255, PANEL));
         HudStyle.brackets(g, win.x, win.y, win.x + win.w, win.y + win.h, 7,
                 HudStyle.argb(active ? 235 : 150, active ? HudStyle.CYAN : 0x33505F));
         // Titelbalk.
@@ -355,15 +525,14 @@ public class StarkOsScreen extends Screen {
         // Kruisje.
         g.drawString(font, "x", win.x + win.w - 9, win.y + 3, HudStyle.argb(255, HudStyle.RED), false);
         // Inhoud, afgeknipt.
-        int cx = win.x + 6;
-        int cy = win.y + TITLE_H + 3;
-        int cw = win.w - 12;
-        int ch = win.h - TITLE_H - 6;
+        Area area = contentArea(win);
         g.enableScissor(win.x + 2, win.y + TITLE_H, win.x + win.w - 2, win.y + win.h - 2);
         switch (win.app) {
-            case STATUS -> renderStatus(g, cx, cy);
-            case LOGS -> renderLogs(g, cx, cy, ch, win.scroll);
-            case SETTINGS -> renderSettings(g, cx, cy);
+            case STATUS -> renderStatus(g, area.x(), area.y());
+            case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
+            case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
+            case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);
+            case SETTINGS -> renderSettings(g, area.x(), area.y());
         }
         g.disableScissor();
     }

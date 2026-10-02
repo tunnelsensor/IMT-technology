@@ -100,6 +100,16 @@ public final class VirtualFs {
     }
 
     private final Node root = new Node("", true);
+    /**
+     * Gaat één omhoog bij elke verandering. Niet bewaard: alleen zodat de desktop weet of hij de
+     * mappenlijst opnieuw moet sturen (zie StarkOs).
+     */
+    private int revision;
+
+    /** Het versienummer van de mappen (verandert bij elke wijziging). */
+    public int revision() {
+        return revision;
+    }
 
     // ================================================================ Paden
 
@@ -196,6 +206,23 @@ public final class VirtualFs {
         }
     }
 
+    /** Alle mappen én bestanden met hun volledige pad, van boven naar beneden (een map vóór wat erin zit). */
+    public Map<String, Node> walk() {
+        Map<String, Node> nodes = new LinkedHashMap<>();
+        walk(root, "", nodes);
+        return nodes;
+    }
+
+    private static void walk(Node dir, String prefix, Map<String, Node> nodes) {
+        for (Node child : dir.children.values()) {
+            String path = prefix + "/" + child.name;
+            nodes.put(path, child);
+            if (child.dir) {
+                walk(child, path, nodes);
+            }
+        }
+    }
+
     /** De paden van alle bestanden met deze naam (hoofdletters maken niet uit). */
     public List<String> findByName(String name) {
         List<String> found = new ArrayList<>();
@@ -230,6 +257,7 @@ public final class VirtualFs {
             return error;
         }
         get(parentOf(path)).children.put(nameOf(path), new Node(nameOf(path), true));
+        revision++;
         return null;
     }
 
@@ -250,6 +278,7 @@ public final class VirtualFs {
                 return nameOf(path) + " is a system file: it can't be changed";
             }
             existing.content = content;
+            revision++;
             return null;
         }
         String error = checkNew(path);
@@ -259,6 +288,7 @@ public final class VirtualFs {
         Node file = new Node(nameOf(path), false);
         file.content = content;
         get(parentOf(path)).children.put(file.name, file);
+        revision++;
         return null;
     }
 
@@ -297,6 +327,7 @@ public final class VirtualFs {
         get(parentOf(from)).children.remove(node.name);
         node.name = newName;
         newParent.children.put(newName, node);
+        revision++;
         return null;
     }
 
@@ -311,6 +342,7 @@ public final class VirtualFs {
                     : nameOf(path) + " is a system file: it can't be deleted (you can move or rename it)";
         }
         get(parentOf(path)).children.remove(node.name);
+        revision++;
         return null;
     }
 
@@ -324,6 +356,7 @@ public final class VirtualFs {
             return nameOf(path) + " is a system file: it can't be a trap";
         }
         node.trap = trap;
+        revision++;
         return null;
     }
 
@@ -334,6 +367,7 @@ public final class VirtualFs {
         file.system = true;
         file.content = content;
         get(parentOf(path)).children.put(file.name, file);
+        revision++;
     }
 
     /** Alle mappen op dit pad maken (bij het maken van een nieuw systeem). */
@@ -345,6 +379,7 @@ public final class VirtualFs {
             }
             node = node.children.computeIfAbsent(part, name -> new Node(name, true));
         }
+        revision++;
     }
 
     /** Kan hier iets nieuws komen? (De map bestaat, de naam mag, het is nog niet vol.) */

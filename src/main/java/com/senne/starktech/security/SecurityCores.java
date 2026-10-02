@@ -80,8 +80,10 @@ public final class SecurityCores {
                 return false;
             }
             // Van niemand: iedereen is een indringer. Van jou: andere spelers alleen als de
-            // eigenaar dat op de desktop heeft aangezet (en dan nog alleen met PvP aan).
-            return unclaimed || core.attackPlayers() && level.getServer().isPvpAllowed();
+            // eigenaar dat op de desktop heeft aangezet, of als ze net een valstrik openden (en
+            // dan nog alleen met PvP aan).
+            return unclaimed || (core.attackPlayers() || core.isHunted(player.getUUID()))
+                    && level.getServer().isPvpAllowed();
         }
         if (entity instanceof StarkDroneEntity drone) {
             ServerPlayer owner = drone.getOwnerId() == null ? null
