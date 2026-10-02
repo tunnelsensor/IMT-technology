@@ -808,17 +808,29 @@ bruteforce; alleen a-z en 0-9, hoogstens 8 tekens; mappen beheren, notities, sec
 verstoppen, valstrikken; bij een overname alarm, je bestanden blijven, nieuw wachtwoord.
 Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eich.md`.
 
-- [x] **1. Fundament**: elke kern is een klein systeem — `4d0e0a1`
+- [x] **1. Fundament**: elke kern is een klein systeem — `0f43f59`
       IP (10.x.y.z, uniek in de wereld; een nieuw bestand `starktech_network.dat` onthoudt welk
       IP bij welke kern hoort), SSH-poort, naam (`stark-sec-core` in de toren), het wachtwoord
       (alleen als hash, nooit leesbaar), mappen en bestanden met systeembestanden en
       valstrikken, en een logboek. Een kern uit een oude wereld krijgt het bij de eerste tick.
       Drie nieuwe tests.
-- [ ] **2. De hack op de server, de laptop in je hand, de stappen logisch na elkaar**
-- [ ] **3. Een wachtwoord kraken** (raden, woordenlijst, bruteforce)
-- [ ] **4. De Stark OS-desktop** (vensters, inloggen, Terminal, Logs, Settings)
+- [~] **2. De hack op de server, de laptop in je hand** — opzijgezet, niet herbouwd.
+      De overname met de laptop uit hoofdstuk 6 blijft gewoon werken en staat in git; die gebruik
+      je nog steeds. De herschreven server-terminal hiervoor (netscan/ssh/dump) werd telkens door
+      een geautomatiseerd veiligheidsfilter tegengehouden, dus die staat buiten de build in
+      `chapter7-wip/` (SystemShell.java, DumpPuzzle.java, TermLine.java).
+- [~] **3. Een wachtwoord kraken** (raden, woordenlijst, bruteforce) — om dezelfde reden niet
+      gebouwd. Een wachtwoord *zetten* en met het goede wachtwoord *inloggen* kan wél (stap 4 en 9).
+- [x] **4. De Stark OS-desktop** — `78916d6` (met de toegang/gegevens eronder: `20d2b34`)
+      Rechtsklik met lege hand op de kern opent voor de eigenaar een desktop met sleepbare vensters,
+      een taakbalk en icoontjes. Drie apps nu: **Status** (naam, IP, SSH-poort, stroom, wachtwoord
+      ja/nee), **Logs** (het logboek van de kern) en **Settings** (een a-z0-9-wachtwoord van 4-8
+      tekens zetten of wijzigen; dat gooit andere sessies eruit). Alles is een momentopname die de
+      server maakt en alleen naar wie ingelogd is stuurt, dus het wachtwoord en de mappen komen
+      nooit in het spel van een ander. De **Terminal**-app hoort bij de geparkeerde server-terminal
+      (stap 2) en zit er dus nog niet bij. Twee nieuwe tests.
 - [ ] **5. Bestanden, notities en valstrikken**
-- [ ] **6. Apparaten en toegang, en de kern zelf bouwen**
+- [ ] **6. Apparaten en toegang, en de kern zelf bouwen** (de gegevens eronder zijn er al: `20d2b34`)
 - [ ] **7. Security Camera en de bewakingsmuur** (in de buurt)
 - [ ] **8. Echte camera's in de toren**
 - [ ] **9. SSH van overal**
