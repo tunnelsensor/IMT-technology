@@ -606,7 +606,7 @@ public final class StarkTechGameTests {
      * opslaan en laden. Bij een overname (resetAccessForNewOwner) is de lijst weer leeg en het
      * wachtwoord gewist.
      */
-    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_os")
     public static void security_access_flags_and_trusted(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(2, 3, 2));
@@ -638,6 +638,46 @@ public final class StarkTechGameTests {
         copy.resetAccessForNewOwner();
         if (copy.hasPassword() || !copy.trustedNames().isEmpty() || !copy.attackMobs()) {
             throw new GameTestAssertException("resetAccessForNewOwner liet de oude toegang staan");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De Stark OS-desktop: de eigenaar opent hem door op de kern te klikken, een vreemde wordt
+     * geweigerd, en vanaf de desktop zet de eigenaar een wachtwoord (een fout wachtwoord telt niet).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_os")
+    public static void security_desktop_opens_for_the_owner(GameTestHelper helper) {
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 15));
+        BlockPos pos = new BlockPos(12, 3, 12);
+        var core = placeCore(helper, pos, owner);
+        BlockPos abs = helper.absolutePos(pos);
+        com.senne.starktech.security.os.StarkOs.open(owner, abs);
+        if (!com.senne.starktech.security.os.StarkOs.hasDesktop(owner)) {
+            throw new GameTestAssertException("De eigenaar kreeg geen desktop");
+        }
+        ServerPlayer guest = makeSurvivalOwner(helper, new BlockPos(12, 3, 14));
+        com.senne.starktech.security.os.StarkOs.open(guest, abs);
+        if (com.senne.starktech.security.os.StarkOs.hasDesktop(guest)) {
+            throw new GameTestAssertException("Een vreemde kwam toch op de desktop");
+        }
+        net.minecraft.nbt.CompoundTag ok = new net.minecraft.nbt.CompoundTag();
+        ok.putString("pw", "abcd12");
+        com.senne.starktech.security.os.StarkOs.handleAction(owner,
+                new com.senne.starktech.network.OsActionPayload(abs, "passwd", ok));
+        if (!core.checkPassword("abcd12")) {
+            throw new GameTestAssertException("Het wachtwoord werd niet gezet");
+        }
+        net.minecraft.nbt.CompoundTag bad = new net.minecraft.nbt.CompoundTag();
+        bad.putString("pw", "AB");
+        com.senne.starktech.security.os.StarkOs.handleAction(owner,
+                new com.senne.starktech.network.OsActionPayload(abs, "passwd", bad));
+        if (core.checkPassword("AB") || !core.checkPassword("abcd12")) {
+            throw new GameTestAssertException("Een ongeldig wachtwoord werd toch overgenomen");
+        }
+        com.senne.starktech.security.os.StarkOs.close(owner);
+        if (com.senne.starktech.security.os.StarkOs.hasDesktop(owner)) {
+            throw new GameTestAssertException("De desktop bleef open na close");
         }
         helper.succeed();
     }

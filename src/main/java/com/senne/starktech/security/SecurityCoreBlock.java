@@ -4,6 +4,9 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -19,6 +22,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -74,6 +78,20 @@ public class SecurityCoreBlock extends BaseEntityBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new SecurityCoreBlockEntity(pos, state);
+    }
+
+    /**
+     * Rechtsklik met een lege hand: de eigenaar opent de Stark OS-desktop (zie StarkOs). Wie de
+     * beveiliging niet bezit, krijgt "access denied"; die neemt hem over met een Stark Laptop
+     * (StarkLaptopItem vangt het rechtsklikken mét laptop af vóór dit).
+     */
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            com.senne.starktech.security.os.StarkOs.open(serverPlayer, pos);
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     /** Afgebroken (niet alleen een ander lampje): het IP van de kern is weer vrij. */

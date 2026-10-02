@@ -69,6 +69,26 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** De Stark OS-desktop openen (eigenaar of op afstand), of weer sluiten. */
+    public static void onOsOpen(com.senne.starktech.network.OsOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (!payload.open()) {
+            if (mc.screen instanceof com.senne.starktech.client.os.StarkOsScreen desk && desk.core().equals(payload.pos())) {
+                desk.onClose();
+            }
+            return;
+        }
+        mc.setScreen(new com.senne.starktech.client.os.StarkOsScreen(payload.pos(), payload.remote()));
+    }
+
+    /** Een nieuwe momentopname van de desktop: het scherm leest hieruit. */
+    public static void onOsSnapshot(com.senne.starktech.network.OsSnapshotPayload payload, IPayloadContext context) {
+        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen desk
+                && desk.core().equals(payload.pos())) {
+            desk.update(payload.data());
+        }
+    }
+
     public static void onCabinetOpen(com.senne.starktech.network.CabinetOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

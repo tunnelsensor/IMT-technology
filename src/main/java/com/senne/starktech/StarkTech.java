@@ -156,6 +156,10 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onServerStopped);
+        // De Stark OS-desktop op de beveiligingskern
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.starktech.security.SecurityCores.clear());
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

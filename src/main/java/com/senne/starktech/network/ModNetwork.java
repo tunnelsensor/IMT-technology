@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "11";
+    private static final String PROTOCOL_VERSION = "12";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -121,6 +121,12 @@ public final class ModNetwork {
                 com.senne.starktech.security.TowerHack.handleCommand(player, payload);
             }
         });
+        // De Stark OS-desktop: een opdracht van het scherm (wachtwoord zetten, apparaat aan/uit...).
+        registrar.playToServer(OsActionPayload.TYPE, OsActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.security.os.StarkOs.handleAction(player, payload);
+            }
+        });
         registrar.playToServer(HoloActionPayload.TYPE, HoloActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 HoloTables.handleAction(player, payload);
@@ -144,6 +150,11 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onPing(payload, context));
         registrar.playToClient(HackScreenPayload.TYPE, HackScreenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHackScreen(payload, context));
+        // De Stark OS-desktop: openen/sluiten, en de momentopname van zijn toestand.
+        registrar.playToClient(OsOpenPayload.TYPE, OsOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onOsOpen(payload, context));
+        registrar.playToClient(OsSnapshotPayload.TYPE, OsSnapshotPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onOsSnapshot(payload, context));
         registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
         registrar.playToClient(CabinetOpenPayload.TYPE, CabinetOpenPayload.STREAM_CODEC,
