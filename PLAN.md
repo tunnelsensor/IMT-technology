@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 118 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 120 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 77 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -842,8 +842,20 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       als "attack players" uit staat. Alleen de eigenaar ziet welk bestand een valstrik is. Fouten
       en meldingen staan nu rechts in de taakbalk (het actiebalk-bericht zag je niet achter de
       desktop). Screenshots: `-Ponly=os`. Eén nieuwe test.
-      De terminal-commando's (`mkdir`, `mv`, `rm`, `nano`) horen bij de geparkeerde terminal (stap 2).
-- [ ] **6. Apparaten en toegang, en de kern zelf bouwen** (de gegevens eronder zijn er al: `20d2b34`)
+      De terminal-commando's (`mkdir`, `mv`, `rm`, `nano`) horen bij de geparkeerde terminal (stap 2). Commit: `eb241c4`.
+- [x] **6. Apparaten en toegang, en de kern zelf bouwen** (de gegevens eronder: `20d2b34`)
+      Twee nieuwe apps. **Devices** toont wat bij de kern hoort: de beveiligingstorentjes in het
+      gebied en de Stark-torentjes van de eigenaar (aan/uit per torentje, stroom, raketten, doelwit),
+      de drones (levens, wat ze doen) en de laserpoorten; bovenaan "Drones" (uit = ze landen naast
+      de kern en er komen er geen nieuwe) en "Lasers" (uit = alle laserpoorten in het gebied gaan
+      open, ook al staat er redstone op). **Access**: "Attack monsters", "Attack other players" en
+      de vertrouwde spelers (toevoegen op naam, weghalen). Een Stark-torentje van de eigenaar in zijn
+      eigen gebied volgt nu ook die regels. **Zelf bouwen**: een recept voor de Security Core
+      (ijzerblokken, Stark-chip, observers, Hydra-circuit, redstoneblok); neerzetten maakt hem van
+      jou met een IP, en de desktop opent dan meteen Settings om een wachtwoord te zetten. Een kern
+      waarvan het gebied een ander netwerk overlapt (binnen 60 blokken) lukt niet: "too close to
+      another security network", en je houdt het item. Afbreken geeft de kern terug.
+      Screenshots: `-Ponly=os`. Twee nieuwe tests.
 - [ ] **7. Security Camera en de bewakingsmuur** (in de buurt)
 - [ ] **8. Echte camera's in de toren**
 - [ ] **9. SSH van overal**

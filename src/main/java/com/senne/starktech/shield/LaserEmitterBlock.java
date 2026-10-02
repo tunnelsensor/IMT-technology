@@ -122,6 +122,18 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         return members;
     }
 
+    /**
+     * Moet deze poort aan? Er moet redstone op staan, en de beveiligingskern van dit gebied (als
+     * die er is) moet de lasers aan hebben staan (de schakelaar "Lasers" op de desktop).
+     */
+    private static boolean wanted(Level level, BlockPos pos) {
+        if (!groupHasSignal(level, pos)) {
+            return false;
+        }
+        var core = com.senne.starktech.security.SecurityCores.coreAt(level, pos);
+        return core == null || core.lasersEnabled();
+    }
+
     /** Staat er redstone op een van de zenders van deze laserpoort? */
     private static boolean groupHasSignal(Level level, BlockPos pos) {
         for (BlockPos member : group(level, pos)) {
@@ -183,7 +195,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
      *              klikt de zender waar de redstone op zit één keer ("geen stroom").
      */
     private void update(ServerLevel level, BlockPos pos, BlockState state, boolean retry) {
-        boolean wanted = groupHasSignal(level, pos);
+        boolean wanted = wanted(level, pos);
         boolean on = state.getValue(POWERED);
         if (!wanted && on) {
             setActive(level, pos, state, false);
@@ -234,7 +246,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
         if (state.getValue(POWERED)) {
-            if (!groupHasSignal(level, pos)) {
+            if (!wanted(level, pos)) {
                 setActive(level, pos, state, false);
             } else if (pay(level, pos)) {
                 level.scheduleTick(pos, this, UPKEEP_INTERVAL);

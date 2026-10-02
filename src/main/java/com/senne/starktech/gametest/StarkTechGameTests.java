@@ -682,6 +682,135 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * De Devices- en Access-apps: een torentje dat je op de desktop uitzet schiet niet meer, met de
+     * drones uit vliegen er geen, met de lasers uit gaat een laserpoort niet aan (en weer aan als
+     * je ze aanzet), en een Stark-torentje van de eigenaar volgt "attack mobs" van zijn kern. Een
+     * onbekende naam vertrouwen lukt niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 240, batch = "security_devices")
+    public static void security_devices_switch_from_the_desktop(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        var core = placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        com.senne.starktech.security.os.StarkOs.open(owner, coreAbs);
+        if (!com.senne.starktech.security.os.StarkOs.hasDesktop(owner)) {
+            throw new GameTestAssertException("De eigenaar kreeg geen desktop");
+        }
+        // De drones en de lasers meteen uit.
+        osAction(owner, coreAbs, "flag", "name", "drones", "on", "false");
+        osAction(owner, coreAbs, "flag", "name", "lasers", "on", "false");
+        // Een beveiligingstorentje met een monster ervoor, en dat torentje uitzetten.
+        BlockPos turretPos = new BlockPos(12, 3, 12);
+        helper.setBlock(turretPos, ModBlocks.SECURITY_TURRET.get());
+        powerTurret(helper, turretPos.below());
+        Husk monster = spawnDummyEnemy(helper, new BlockPos(18, 3, 12));
+        BlockPos turretAbs = helper.absolutePos(turretPos);
+        if (!com.senne.starktech.security.SecurityDevices.scan(level, core).turrets().contains(turretAbs)
+                && !com.senne.starktech.security.SecurityDevices.belongs(core,
+                        (com.senne.starktech.turret.TurretBlockEntity) helper.getBlockEntity(turretPos))) {
+            throw new GameTestAssertException("Het beveiligingstorentje hoort niet bij de kern");
+        }
+        // dev_toggle wil getallen (osAction maakt alleen tekst en ja/nee): dus zelf.
+        net.minecraft.nbt.CompoundTag off = new net.minecraft.nbt.CompoundTag();
+        off.putInt("x", turretAbs.getX());
+        off.putInt("y", turretAbs.getY());
+        off.putInt("z", turretAbs.getZ());
+        off.putBoolean("on", false);
+        com.senne.starktech.security.os.StarkOs.handleAction(owner,
+                new com.senne.starktech.network.OsActionPayload(coreAbs, "dev_toggle", off));
+        helper.assertBlockProperty(turretPos, com.senne.starktech.turret.TurretBlock.ENABLED, false);
+        // Een laserpoort met redstone en stroom: met de lasers uit gaat hij niet aan.
+        BlockPos emitter = new BlockPos(6, 3, 2);
+        helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+        helper.setBlock(emitter.above(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(emitter.above())).fill(5_000);
+        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
+        // Een naam die nooit op de server was, kun je niet vertrouwen.
+        osAction(owner, coreAbs, "trust_add", "name", "nobody_like_this");
+        if (!core.trustedNames().isEmpty()) {
+            throw new GameTestAssertException("Een onbekende naam kwam toch op de vertrouwde lijst");
+        }
+        helper.runAfterDelay(80, () -> {
+            // Een Stark-torentje van de eigenaar in zijn eigen gebied volgt de kern. (Pas nu: een
+            // kern meldt zich een tick na het neerzetten aan.)
+            var starkKind = com.senne.starktech.turret.TurretKind.STARK;
+            String ownerName = owner.getGameProfile().getName();
+            if (!com.senne.starktech.turret.TurretTargeting.isTarget(level, starkKind, owner.getUUID(), ownerName, monster, turretAbs)) {
+                throw new GameTestAssertException("Het Stark-torentje van de eigenaar ziet het monster niet als doelwit");
+            }
+            osAction(owner, coreAbs, "flag", "name", "mobs", "on", "false");
+            if (core.attackMobs() || com.senne.starktech.turret.TurretTargeting.isTarget(level, starkKind, owner.getUUID(),
+                    ownerName, monster, turretAbs)) {
+                throw new GameTestAssertException("Met 'attack mobs' uit schiet het Stark-torentje van de eigenaar toch");
+            }
+            if (monster.getHealth() < monster.getMaxHealth()) {
+                throw new GameTestAssertException("Het uitgezette torentje (of een drone) raakte het monster toch");
+            }
+            int drones = level.getEntitiesOfClass(com.senne.starktech.security.SecurityDroneEntity.class,
+                    new AABB(coreAbs).inflate(40), drone -> coreAbs.equals(drone.home())).size();
+            if (drones != 0) {
+                throw new GameTestAssertException("Met de drones uit vlogen er toch " + drones + " drones");
+            }
+            if (helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
+                throw new GameTestAssertException("Met de lasers uit ging de laserpoort toch aan");
+            }
+            osAction(owner, coreAbs, "flag", "name", "lasers", "on", "true");
+            helper.runAfterDelay(30, () -> {
+                if (!helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
+                    throw new GameTestAssertException("Met de lasers weer aan ging de laserpoort niet aan");
+                }
+                helper.succeed();
+            });
+        });
+    }
+
+    /**
+     * Zelf een kern neerzetten: hij is meteen van jou, met een IP en een eigen naam. Een tweede kern
+     * vlakbij (de gebieden zouden overlappen) lukt niet, en je houdt het item.
+     *
+     * De kernen staan 210 blokken boven de testvloer, in de lucht: de testwereld wordt hergebruikt,
+     * en de kernen van andere tests (ook uit eerdere rondes, en een Stark Tower uit de gebouwtest)
+     * blijven staan. Die liggen soms dichterbij dan 60 blokken, en dan zou ook de eerste kern terecht
+     * geweigerd worden. Zo hoog valt buiten elk gebied (dat reikt 60 omlaag en 55 omhoog).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_place")
+    public static void security_core_placed_by_a_player(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        player.getAbilities().instabuild = false; // anders blijft het item (zoals in creative) in je hand
+        var item = (net.minecraft.world.item.BlockItem) ModItems.SECURITY_CORE.get();
+        ItemStack stack = new ItemStack(item, 2);
+        BlockPos first = new BlockPos(8, 210, 8);
+        var result = item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
+                net.minecraft.world.InteractionHand.MAIN_HAND, stack, new net.minecraft.world.phys.BlockHitResult(
+                        helper.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 210, 8.5)), Direction.UP,
+                        helper.absolutePos(first), false)));
+        helper.assertBlockPresent(ModBlocks.SECURITY_CORE.get(), first);
+        var core = (com.senne.starktech.security.SecurityCoreBlockEntity) helper.getBlockEntity(first);
+        if (!result.consumesAction() || !player.getUUID().equals(core.ownerId()) || !core.hasSystem()
+                || !core.hostname().endsWith("-sec") || stack.getCount() != 1) {
+            throw new GameTestAssertException("Een zelf neergezette kern is niet van jou, of heeft geen systeem");
+        }
+        helper.assertBlockProperty(first, com.senne.starktech.security.SecurityCoreBlock.CLAIMED, true);
+        BlockPos second = new BlockPos(8, 210, 16);
+        var refused = item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
+                net.minecraft.world.InteractionHand.MAIN_HAND, stack, new net.minecraft.world.phys.BlockHitResult(
+                        helper.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 210, 16.5)), Direction.UP,
+                        helper.absolutePos(second), false)));
+        helper.assertBlockNotPresent(ModBlocks.SECURITY_CORE.get(), second);
+        if (refused.consumesAction() || stack.getCount() != 1) {
+            throw new GameTestAssertException("Een tweede kern vlak naast een ander netwerk kwam er toch");
+        }
+        if (com.senne.starktech.security.SecurityCores.overlaps(level, helper.absolutePos(first).offset(500, 0, 0))) {
+            throw new GameTestAssertException("Een kern ver weg zou ook te dichtbij zijn");
+        }
+        helper.succeed();
+    }
+
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
     private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();

@@ -116,7 +116,14 @@ public class SecurityDroneEntity extends PathfinderMob {
         entityData.set(CLAIMED, core != null && core.ownerId() != null);
         // Geen stroom bij de kern: niets doen, langzaam naar de grond zakken.
         boolean offline = core != null && !core.isOnline();
-        entityData.set(OFFLINE, offline);
+        // De eigenaar zette de drones uit (op de desktop): naar de kern vliegen en daar landen.
+        parked = !offline && core != null && !core.dronesEnabled();
+        entityData.set(OFFLINE, offline || parked);
+        if (parked) {
+            setTarget(null);
+            land();
+            return;
+        }
         if (offline) {
             setTarget(null);
             getNavigation().stop();
@@ -136,6 +143,31 @@ public class SecurityDroneEntity extends PathfinderMob {
         } else {
             patrol();
         }
+    }
+
+    /** Staan de drones van zijn kern uit (dan landt hij naast de kern)? Alleen op de server. */
+    private boolean parked;
+
+    /** Naar een eigen plekje naast de kern vliegen, en daar zachtjes landen. */
+    private void land() {
+        double angle = Math.floorMod(getId(), 8) * Math.PI / 4;
+        double x = home.getX() + 0.5 + Math.cos(angle) * 2.5;
+        double z = home.getZ() + 0.5 + Math.sin(angle) * 2.5;
+        double dx = x - getX();
+        double dz = z - getZ();
+        if (dx * dx + dz * dz > 1.0) {
+            moveControl.setWantedPosition(x, home.getY() + 1.5, z, 0.5);
+        } else if (!onGround()) {
+            setDeltaMovement(getDeltaMovement().multiply(0.5, 0, 0.5).add(0, -0.06, 0));
+        }
+    }
+
+    /** Wat hij nu doet, in een paar woorden (Engels; voor de Devices-app op de desktop). */
+    public String statusText() {
+        if (isOffline()) {
+            return parked ? "landed (switched off)" : "no power";
+        }
+        return getTarget() != null ? "attacking" : "patrolling";
     }
 
     private boolean stillATarget(ServerLevel level, @Nullable SecurityCoreBlockEntity core, LivingEntity target) {

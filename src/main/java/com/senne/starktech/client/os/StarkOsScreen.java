@@ -28,20 +28,24 @@ import org.jetbrains.annotations.Nullable;
  * ({@link FilesApp}, {@link NotesApp}); de muis en het toetsenbord gaan naar het venster bovenop.
  */
 public class StarkOsScreen extends Screen {
-    /** De apps op de desktop. Later komen er meer bij (Devices, Access, Cameras). */
+    /** De apps op de desktop (later komt Cameras erbij). {@code glyph} is de letter op het icoontje. */
     public enum App {
-        STATUS("Status", 240, 120),
-        FILES("Files", 300, 190),
-        NOTES("Notes", 320, 196),
-        LOGS("Logs", 330, 200),
-        SETTINGS("Settings", 270, 160);
+        STATUS("Status", "i", 240, 120),
+        DEVICES("Devices", "D", 330, 196),
+        ACCESS("Access", "A", 280, 190),
+        FILES("Files", "F", 300, 190),
+        NOTES("Notes", "N", 320, 196),
+        LOGS("Logs", "L", 330, 200),
+        SETTINGS("Settings", "S", 270, 160);
 
         final String label;
+        final String glyph;
         final int w;
         final int h;
 
-        App(String label, int w, int h) {
+        App(String label, String glyph, int w, int h) {
             this.label = label;
+            this.glyph = glyph;
             this.w = w;
             this.h = h;
         }
@@ -103,6 +107,10 @@ public class StarkOsScreen extends Screen {
      */
     private final FilesApp files = new FilesApp(this);
     private final NotesApp notes = new NotesApp(this);
+    private final DevicesApp devices = new DevicesApp(this);
+    private final AccessApp access = new AccessApp(this);
+    /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
+    private boolean gotFirstSnapshot;
 
     /** Een melding van de server (rechts in de taakbalk) en tot wanneer hij blijft staan. */
     private String notice = "";
@@ -125,6 +133,14 @@ public class StarkOsScreen extends Screen {
      */
     public void update(CompoundTag snapshot) {
         this.data = snapshot;
+        // Jouw eigen kern, nog zonder wachtwoord: meteen Settings open, klaar om er een te typen.
+        if (!gotFirstSnapshot) {
+            gotFirstSnapshot = true;
+            if (snapshot.getBoolean("isOwner") && !snapshot.getBoolean("hasPassword")) {
+                openApp(App.SETTINGS);
+                editingPassword = true;
+            }
+        }
         if (snapshot.contains("fs")) {
             files.update(snapshot.getList("fs", Tag.TAG_COMPOUND));
         }
@@ -161,6 +177,11 @@ public class StarkOsScreen extends Screen {
         return files;
     }
 
+    /** De laatste momentopname van de server (de apps lezen hier hun gegevens uit). */
+    CompoundTag data() {
+        return data;
+    }
+
     /**
      * Alleen voor de screenshot-rondleiding (VisualCheck): het Files-venster openen in deze map, met
      * dit bestand gekozen, en eventueel het rechtsklik-menu erbij.
@@ -168,6 +189,11 @@ public class StarkOsScreen extends Screen {
     public void tourFiles(String folder, String select, boolean menu) {
         Win win = openApp(App.FILES);
         files.tourShow(contentArea(win), folder, select, menu);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
+    public void tourOpen(App app) {
+        openApp(app);
     }
 
     @Override
@@ -209,6 +235,9 @@ public class StarkOsScreen extends Screen {
         windows.add(win);
         if (win.app != App.NOTES) {
             notes.blur();
+        }
+        if (win.app != App.ACCESS) {
+            access.blur();
         }
     }
 
@@ -324,6 +353,8 @@ public class StarkOsScreen extends Screen {
         switch (win.app) {
             case FILES -> files.mouseClicked(font, contentArea(win), mx, my, button);
             case NOTES -> notes.mouseClicked(font, contentArea(win), mx, my, button);
+            case DEVICES -> devices.mouseClicked(font, contentArea(win), mx, my);
+            case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case SETTINGS -> {
                 int cx = win.x + 6;
                 int fieldY = win.y + TITLE_H + 60;
@@ -384,6 +415,8 @@ public class StarkOsScreen extends Screen {
         switch (win.app) {
             case FILES -> files.mouseScrolled(scrollY);
             case NOTES -> notes.mouseScrolled((int) mouseX, (int) mouseY, scrollY);
+            case DEVICES -> devices.mouseScrolled(scrollY);
+            case ACCESS -> access.mouseScrolled(scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
@@ -395,7 +428,8 @@ public class StarkOsScreen extends Screen {
     public boolean charTyped(char codePoint, int modifiers) {
         Win top = focused();
         if (top != null && top.app == App.FILES && files.charTyped(codePoint, modifiers)
-                || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)) {
+                || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (editingPassword && passwordText.length() < 8
@@ -411,7 +445,8 @@ public class StarkOsScreen extends Screen {
         // Eerst de app in het venster bovenop (zo sluit Esc in een tekstvak alleen dat vak).
         Win top = focused();
         if (top != null && top.app == App.FILES && files.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)) {
+                || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (editingPassword) {
@@ -478,7 +513,7 @@ public class StarkOsScreen extends Screen {
             boolean open = windows.stream().anyMatch(win -> win.app == app);
             g.fill(ix, iy, ix + ICON, iy + ICON, HudStyle.argb(open ? 255 : 180, open ? PANEL : 0x0E1822));
             HudStyle.brackets(g, ix, iy, ix + ICON, iy + ICON, 5, HudStyle.argb(200, open ? HudStyle.CYAN : 0x33505F));
-            g.drawString(font, app.label.substring(0, 1), ix + ICON / 2 - 2, iy + ICON / 2 - 4,
+            g.drawString(font, app.glyph, ix + (ICON - font.width(app.glyph)) / 2, iy + ICON / 2 - 4,
                     HudStyle.argb(255, HudStyle.WHITE), false);
             HudStyle.smallText(g, font, app.label, ix + ICON / 2, iy + ICON + 1, HudStyle.argb(220, HudStyle.WHITE));
         }
@@ -529,6 +564,8 @@ public class StarkOsScreen extends Screen {
         g.enableScissor(win.x + 2, win.y + TITLE_H, win.x + win.w - 2, win.y + win.h - 2);
         switch (win.app) {
             case STATUS -> renderStatus(g, area.x(), area.y());
+            case DEVICES -> devices.render(g, font, area, mouseX, mouseY);
+            case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);
@@ -571,7 +608,7 @@ public class StarkOsScreen extends Screen {
         line(g, cx, cy + 16, "IP:   " + data.getString("ip"), HudStyle.WHITE);
         line(g, cx, cy + 26, "Host: " + data.getString("host"), HudStyle.WHITE);
         line(g, cx, cy + 36, "SSH port: " + data.getInt("port"), HudStyle.WHITE);
-        line(g, cx, cy + 52, data.getBoolean("hasPassword") ? "Change password:" : "Set a password:", HudStyle.WHITE);
+        line(g, cx, cy + 47, data.getBoolean("hasPassword") ? "Change password:" : "Set a password:", HudStyle.WHITE);
         // Het invoervak.
         int fieldY = cy + 57;
         g.fill(cx, fieldY, cx + 140, fieldY + 14, HudStyle.argb(255, 0x0A141B));

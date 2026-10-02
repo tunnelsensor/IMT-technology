@@ -377,6 +377,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             return;
         }
         com.senne.starktech.energy.StarkGrid.draw(level, pos, SecurityBalance.CORE_UPKEEP);
+        if (!dronesEnabled) {
+            return; // de eigenaar zette de drones uit: ze landen, en er komen er geen nieuwe
+        }
         int drones = level.getEntitiesOfClass(SecurityDroneEntity.class, area(),
                 drone -> pos.equals(drone.home())).size();
         if (drones >= SecurityBalance.MAX_DRONES) {

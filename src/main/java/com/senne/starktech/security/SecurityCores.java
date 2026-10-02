@@ -25,8 +25,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * - Heeft de kern nog GEEN eigenaar (niemand heeft hem gehackt), dan is elke speler een
  *   indringer (behalve in creative), net als monsters.
- * - Heeft hij WEL een eigenaar, dan zijn de eigenaar en zijn team vrienden. Andere spelers zijn
- *   alleen een indringer als PvP aan staat; monsters blijven altijd een doelwit.
+ * - Heeft hij WEL een eigenaar, dan zijn de eigenaar, zijn team en de spelers die hij vertrouwt
+ *   (de Access-app op de desktop) vrienden. Andere spelers zijn alleen een indringer als de
+ *   eigenaar dat aanzette (en PvP aan staat), monsters alleen als "attack mobs" aan staat.
  */
 public final class SecurityCores {
     private SecurityCores() {}
@@ -104,6 +105,37 @@ public final class SecurityCores {
         }
         PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(core.ownerName());
         return ownerTeam != null && ownerTeam.isAlliedTo(player.getTeam());
+    }
+
+    /**
+     * Zou een kern op deze plek een gebied krijgen dat het gebied van een andere kern overlapt? Dan
+     * mag hij er niet staan ("too close to another security network"). We kijken in het netwerk van
+     * de wereld (StarkNetworkData), zodat ook kernen meetellen in stukken wereld die niet geladen
+     * zijn. Een kern die daar nog staat maar in de wereld weg is, ruimen we meteen op.
+     */
+    public static boolean overlaps(ServerLevel level, BlockPos pos) {
+        var network = com.senne.starktech.security.net.StarkNetworkData.get(level);
+        for (net.minecraft.core.GlobalPos other : network.all().values()) {
+            if (!other.dimension().equals(level.dimension()) || other.pos().equals(pos)
+                    || !areasOverlap(other.pos(), pos)) {
+                continue;
+            }
+            if (level.isLoaded(other.pos()) && !(level.getBlockEntity(other.pos()) instanceof SecurityCoreBlockEntity)) {
+                network.release(other);
+                continue;
+            }
+            return true;
+        }
+        // Ook een kern die net is neergezet en nog geen IP heeft.
+        Set<BlockPos> loaded = LOADED.get(level.dimension());
+        return loaded != null && loaded.stream().anyMatch(other -> !other.equals(pos) && areasOverlap(other, pos));
+    }
+
+    /** Overlappen de gebieden van kernen op deze twee plekken? */
+    public static boolean areasOverlap(BlockPos a, BlockPos b) {
+        return Math.abs(a.getX() - b.getX()) <= 2 * SecurityBalance.AREA_RADIUS
+                && Math.abs(a.getZ() - b.getZ()) <= 2 * SecurityBalance.AREA_RADIUS
+                && Math.abs(a.getY() - b.getY()) <= SecurityBalance.AREA_DOWN + SecurityBalance.AREA_UP;
     }
 
     /** Bij het afsluiten van de server: alles vergeten. */

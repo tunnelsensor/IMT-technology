@@ -1,12 +1,16 @@
 package com.senne.starktech.security;
 
 import com.mojang.serialization.MapCodec;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -32,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * wie een indringer is, en hij houdt de drones in de lucht. Zolang niemand hem gehackt heeft,
  * brandt zijn lampje rood en is iedereen een indringer; daarna groen, en werkt alles voor de
  * nieuwe eigenaar. Hij is heel sterk: slopen kan, maar duurt lang (en de drones schieten).
+ *
+ * Je kunt er ook zelf een bouwen voor je eigen basis: die is meteen van jou (zie setPlacedBy).
  */
 public class SecurityCoreBlock extends BaseEntityBlock {
     public static final MapCodec<SecurityCoreBlock> CODEC = simpleCodec(SecurityCoreBlock::new);
@@ -55,9 +61,41 @@ public class SecurityCoreBlock extends BaseEntityBlock {
         builder.add(FACING, CLAIMED);
     }
 
+    /**
+     * Neerzetten. Overlapt het gebied van deze kern dat van een ander beveiligingsnetwerk, dan lukt
+     * het niet: je krijgt een melding en houdt het item (dat controleert alleen de server, die alle
+     * kernen van de wereld kent).
+     */
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
+        if (context.getLevel() instanceof ServerLevel level && SecurityCores.overlaps(level, context.getClickedPos())) {
+            if (context.getPlayer() instanceof ServerPlayer player) {
+                player.displayClientMessage(Component.translatable("security.starktech.msg.too_close")
+                        .withStyle(ChatFormatting.RED), true);
+                // Je spel dacht al dat het item weg was: laat het weer zien.
+                player.inventoryMenu.sendAllDataToRemote();
+            }
+            return null;
+        }
         return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
+    /**
+     * Zelf neergezet (jouw wens, 28 september: je eigen beveiliging bouwen): de kern is van jou,
+     * krijgt meteen een systeem (IP, mappen) en vraagt je een wachtwoord te zetten.
+     */
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (placer instanceof ServerPlayer player && level instanceof ServerLevel serverLevel
+                && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
+            core.setOwner(player);
+            core.ensureSystem(serverLevel);
+            core.logEvent(com.senne.starktech.security.os.EventLog.Type.OWNER,
+                    player.getGameProfile().getName() + " installed this core");
+            player.sendSystemMessage(Component.translatable("security.starktech.msg.core_placed", core.ip())
+                    .withStyle(ChatFormatting.AQUA));
+        }
     }
 
     @Override

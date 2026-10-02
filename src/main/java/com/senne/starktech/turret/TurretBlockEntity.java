@@ -257,6 +257,11 @@ public class TurretBlockEntity extends BlockEntity {
     }
 
     /** Ander doelwit? Dan vertellen we het de spelers in de buurt (voor het draaien van de kop). */
+    /** Het wezen waar hij nu op richt, of null (voor de Devices-app op de desktop). */
+    public @Nullable Entity target(Level level) {
+        return targetId < 0 ? null : level.getEntity(targetId);
+    }
+
     private void setTarget(@Nullable LivingEntity target) {
         int id = target == null ? -1 : target.getId();
         if (id != targetId) {

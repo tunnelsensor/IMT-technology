@@ -22,6 +22,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * BEVEILIGINGSTORENTJE (in de Stark Tower): wat de beveiligingskern een indringer noemt.
  *
+ * Staat een Stark-torentje in het gebied van een beveiligingskern van ZIJN eigenaar, dan volgt
+ * het de regels van die kern (de Access-app op de desktop): vertrouwde spelers niet, monsters en
+ * andere spelers alleen als dat aan staat.
+ *
  * We kijken naar de eigenaar via zijn UUID en naam, niet naar de speler zelf: een torentje
  * moet ook werken als de eigenaar niet online is.
  */
@@ -41,15 +45,19 @@ public final class TurretTargeting {
         if (kind == TurretKind.HYDRA) {
             return entity instanceof StarkDroneEntity || entity instanceof Player player && canHurt(player);
         }
+        if (ownerId != null && entity instanceof OwnableEntity pet && ownerId.equals(pet.getOwnerUUID())) {
+            return false;
+        }
+        var core = com.senne.starktech.security.SecurityCores.coreAt(level, turretPos);
+        if (core != null && ownerId != null && ownerId.equals(core.ownerId())) {
+            return com.senne.starktech.security.SecurityCores.isIntruder(level, core, entity);
+        }
         if (entity instanceof StarkDroneEntity) {
             return false;
         }
         if (entity instanceof Player player) {
             return canHurt(player) && level.getServer().isPvpAllowed()
                     && !player.getUUID().equals(ownerId) && !sameTeam(level, ownerName, player);
-        }
-        if (ownerId != null && entity instanceof OwnableEntity pet && ownerId.equals(pet.getOwnerUUID())) {
-            return false;
         }
         return entity instanceof Enemy;
     }

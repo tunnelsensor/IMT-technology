@@ -371,7 +371,16 @@ public final class VisualCheck {
                     fs.move("/etc/security.conf", dir + "/secret/recipes.txt");
                     fs.write(dir + "/todo.txt", "- buy more turrets\n- ask Happy about the coffee machine\n"
                             + "- hide security.conf (done: it's a recipe now)\n- set a trap for whoever reads this");
+                    be.addTrusted(UUID.randomUUID(), "Pepper");
+                    be.addTrusted(UUID.randomUUID(), "Happy");
                 }
+                // Stroom voor de kern (dan stuurt hij drones), en twee torentjes in zijn gebied.
+                level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(core.below()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                level.setBlockAndUpdate(core.offset(4, 0, 0), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
+                level.setBlockAndUpdate(core.offset(-4, 0, 0), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
             });
             t.stand(10, -100.5, -60, 37.5, 0, 20);
             t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
@@ -396,6 +405,18 @@ public final class VisualCheck {
                         new com.senne.starktech.network.OsActionPayload(core, "fs_open", args));
             });
             t.shot(15, "o04_os_notes");
+            t.step(40, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.DEVICES);
+                }
+            });
+            t.shot(10, "o05_os_devices");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ACCESS);
+                }
+            });
+            t.shot(10, "o06_os_access");
             t.close(10);
         }
 

@@ -1038,6 +1038,8 @@
   "security.starktech.msg.hack_done": "Security override complete. You pack up your laptop.",
   "security.starktech.msg.tower_yours": "This Stark Tower is yours now: its turrets, drones and laser walls work for you.",
   "security.starktech.msg.already_yours": "This tower's security already works for you.",
+  "security.starktech.msg.too_close": "Too close to another security network: their areas would overlap.",
+  "security.starktech.msg.core_placed": "Security network online at %s. Right-click the core with an empty hand to open Stark OS, and set a password first.",
   "os.starktech.msg.no_owner": "This security core has no owner yet. Take it over with a Stark Laptop.",
   "os.starktech.msg.access_denied": "ACCESS DENIED. This security belongs to someone else.",
   "os.starktech.msg.locked_out": "ACCESS DENIED. You are locked out of this system for %s s.",

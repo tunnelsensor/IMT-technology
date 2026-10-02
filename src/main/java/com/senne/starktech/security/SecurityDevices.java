@@ -1,0 +1,241 @@
+package com.senne.starktech.security;
+
+import com.senne.starktech.registry.ModBlocks;
+import com.senne.starktech.shield.LaserEmitterBlock;
+import com.senne.starktech.turret.TurretBlock;
+import com.senne.starktech.turret.TurretBlockEntity;
+import com.senne.starktech.turret.TurretKind;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.phys.AABB;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * De apparaten van een beveiligingsnetwerk: wat er in het gebied van een kern staat en bij hem
+ * hoort (de Devices-app op de desktop, jouw wens van 28 september: status, aan/uit en wie ze
+ * aanvallen).
+ * <ul>
+ *   <li><b>Torentjes:</b> de beveiligingstorentjes in het gebied, en de Stark-torentjes van de
+ *       eigenaar van de kern. Elk torentje kun je los aan- en uitzetten (dezelfde schakelaar als
+ *       E.D.I.T.H. gebruikt).</li>
+ *   <li><b>Laserpoorten:</b> zenders die aan elkaar vastzitten. Ze gaan met redstone; de kern kan
+ *       ze allemaal tegelijk uitzetten (de schakelaar "Lasers").</li>
+ *   <li><b>Drones:</b> de beveiligingsdrones van deze kern. De schakelaar "Drones" laat ze landen.</li>
+ * </ul>
+ *
+ * Er is geen lijst die bijhoudt wat er gebouwd wordt: we kijken gewoon in het gebied, en
+ * onthouden dat een paar seconden. Zoeken naar laserzenders gaat snel, want elk stukje wereld
+ * (16x16x16) weet welke soorten blokken erin zitten: zit er geen zender in, dan slaan we het over.
+ */
+public final class SecurityDevices {
+    private SecurityDevices() {}
+
+    /** Zo lang (ticks) onthouden we wat er in het gebied staat, voor we opnieuw kijken. */
+    private static final int RESCAN = 40;
+
+    /** Wat er bij een kern hoort: torentjes, alle laserzenders, en van elke laserpoort één zender. */
+    public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, long time) {}
+
+    private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
+
+    // ================================================================ Zoeken
+
+    /** Wat er nu bij deze kern hoort (hooguit RESCAN ticks oud). */
+    public static Found scan(ServerLevel level, SecurityCoreBlockEntity core) {
+        GlobalPos key = GlobalPos.of(level.dimension(), core.getBlockPos());
+        Found cached = CACHE.get(key);
+        long now = level.getGameTime();
+        if (cached != null && now - cached.time() < RESCAN && now >= cached.time()) {
+            return cached;
+        }
+        List<BlockPos> turrets = new ArrayList<>();
+        List<BlockPos> emitters = new ArrayList<>();
+        AABB area = core.area();
+        BlockPos corePos = core.getBlockPos();
+        int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
+        int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
+        int minCz = SectionPos.blockToSectionCoord((int) Math.floor(area.minZ));
+        int maxCz = SectionPos.blockToSectionCoord((int) Math.floor(area.maxZ));
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) {
+                // Alleen stukken wereld die al geladen zijn: zoeken mag niets laden.
+                LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) {
+                    continue;
+                }
+                for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+                    if (blockEntity instanceof TurretBlockEntity turret && SecurityCores.inArea(corePos, turret.getBlockPos())
+                            && belongs(core, turret)) {
+                        turrets.add(turret.getBlockPos().immutable());
+                    }
+                }
+                LevelChunkSection[] sections = chunk.getSections();
+                for (int i = 0; i < sections.length; i++) {
+                    LevelChunkSection section = sections[i];
+                    if (section.hasOnlyAir() || !section.maybeHas(state -> state.is(ModBlocks.LASER_EMITTER.get()))) {
+                        continue;
+                    }
+                    int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
+                    for (int y = 0; y < 16; y++) {
+                        for (int z = 0; z < 16; z++) {
+                            for (int x = 0; x < 16; x++) {
+                                if (section.getBlockState(x, y, z).is(ModBlocks.LASER_EMITTER.get())) {
+                                    BlockPos pos = new BlockPos(SectionPos.sectionToBlockCoord(cx) + x, baseY + y,
+                                            SectionPos.sectionToBlockCoord(cz) + z);
+                                    if (SecurityCores.inArea(corePos, pos)) {
+                                        emitters.add(pos);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Zenders die aan elkaar vastzitten zijn samen één poort.
+        List<BlockPos> gates = new ArrayList<>();
+        Set<BlockPos> seen = new HashSet<>();
+        for (BlockPos emitter : emitters) {
+            if (seen.add(emitter)) {
+                seen.addAll(LaserEmitterBlock.group(level, emitter));
+                gates.add(emitter);
+            }
+        }
+        Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), now);
+        CACHE.put(key, found);
+        return found;
+    }
+
+    /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Stark-torentje als het van de eigenaar is. */
+    public static boolean belongs(SecurityCoreBlockEntity core, TurretBlockEntity turret) {
+        return turret.kind() == TurretKind.SECURITY
+                || turret.kind() == TurretKind.STARK && core.ownerId() != null && core.ownerId().equals(turret.ownerId());
+    }
+
+    /** De beveiligingsdrones van deze kern. */
+    public static List<SecurityDroneEntity> drones(ServerLevel level, SecurityCoreBlockEntity core) {
+        return level.getEntitiesOfClass(SecurityDroneEntity.class, core.area(),
+                drone -> core.getBlockPos().equals(drone.home()));
+    }
+
+    /** Vergeet wat we zagen (na een schakelaar: dan meteen opnieuw kijken). */
+    public static void forget(ServerLevel level, SecurityCoreBlockEntity core) {
+        CACHE.remove(GlobalPos.of(level.dimension(), core.getBlockPos()));
+    }
+
+    public static void clear() {
+        CACHE.clear();
+    }
+
+    // ================================================================ Schakelen
+
+    /**
+     * Eén torentje aan of uit (vanaf de desktop). Alleen als het echt bij deze kern hoort. Geeft
+     * een foutmelding terug, of null als het lukte.
+     */
+    public static @Nullable String switchTurret(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, boolean on) {
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof TurretBlock turretBlock)
+                || !(level.getBlockEntity(pos) instanceof TurretBlockEntity turret)
+                || !SecurityCores.inArea(core.getBlockPos(), pos) || !belongs(core, turret)) {
+            return "that turret is not part of this network";
+        }
+        turretBlock.setSwitched(level, pos, state, on);
+        return null;
+    }
+
+    /**
+     * De lasers van het hele gebied aan of uit. De zenders kijken zelf of de kern ze toestaat (zie
+     * LaserEmitterBlock); we geven ze alleen een duwtje, zodat ze dat meteen doen.
+     */
+    public static void setLasers(ServerLevel level, SecurityCoreBlockEntity core, boolean on) {
+        core.setLasersEnabled(on);
+        forget(level, core);
+        for (BlockPos emitter : scan(level, core).emitters()) {
+            level.scheduleTick(emitter, ModBlocks.LASER_EMITTER.get(), 1);
+        }
+    }
+
+    // ================================================================ Voor de desktop
+
+    /** Alle apparaten met hun status, voor de Devices-app. */
+    public static ListTag snapshot(ServerLevel level, SecurityCoreBlockEntity core) {
+        Found found = scan(level, core);
+        ListTag list = new ListTag();
+        for (BlockPos pos : found.turrets()) {
+            if (!(level.getBlockEntity(pos) instanceof TurretBlockEntity turret)) {
+                continue;
+            }
+            BlockState state = level.getBlockState(pos);
+            if (!(state.getBlock() instanceof TurretBlock)) {
+                continue;
+            }
+            CompoundTag device = position("turret", pos);
+            device.putString("name", turret.kind() == TurretKind.SECURITY ? "Security turret" : "Stark turret");
+            device.putBoolean("on", state.getValue(TurretBlock.ENABLED));
+            device.putString("st", !state.getValue(TurretBlock.ENABLED) ? "switched off"
+                    : state.getValue(TurretBlock.POWERED) ? "off (redstone)"
+                    : !state.getValue(TurretBlock.ONLINE) ? "no power" : "online");
+            if (turret.kind().usesAmmo()) {
+                device.putInt("ammo", turret.ammoCount());
+            }
+            Entity target = turret.target(level);
+            if (target != null) {
+                device.putString("tgt", target.getName().getString());
+            }
+            list.add(device);
+        }
+        int number = 1;
+        for (SecurityDroneEntity drone : drones(level, core)) {
+            CompoundTag device = position("drone", drone.blockPosition());
+            device.putString("name", "Drone " + number++);
+            device.putInt("hp", (int) Math.ceil(drone.getHealth()));
+            device.putInt("max", (int) Math.ceil(drone.getMaxHealth()));
+            device.putString("st", drone.statusText());
+            if (drone.getTarget() != null) {
+                device.putString("tgt", drone.getTarget().getName().getString());
+            }
+            list.add(device);
+        }
+        for (BlockPos gate : found.gates()) {
+            if (!level.getBlockState(gate).is(ModBlocks.LASER_EMITTER.get())) {
+                continue;
+            }
+            List<BlockPos> members = LaserEmitterBlock.group(level, gate);
+            boolean on = members.stream().anyMatch(member -> {
+                BlockState state = level.getBlockState(member);
+                return state.is(ModBlocks.LASER_EMITTER.get()) && state.getValue(LaserEmitterBlock.POWERED);
+            });
+            CompoundTag device = position("laser", gate);
+            device.putString("name", "Laser gate (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)"));
+            device.putBoolean("on", on);
+            device.putString("st", on ? "active" : core.lasersEnabled() ? "open" : "off (network)");
+            list.add(device);
+        }
+        return list;
+    }
+
+    private static CompoundTag position(String kind, BlockPos pos) {
+        CompoundTag device = new CompoundTag();
+        device.putString("k", kind);
+        device.putInt("x", pos.getX());
+        device.putInt("y", pos.getY());
+        device.putInt("z", pos.getZ());
+        return device;
+    }
+}

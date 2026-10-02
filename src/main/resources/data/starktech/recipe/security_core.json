@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "O": {
+      "item": "minecraft:observer"
+    },
+    "H": {
+      "item": "starktech:hydra_circuit"
+    },
+    "R": {
+      "tag": "c:storage_blocks/redstone"
+    }
+  },
+  "pattern": [
+    "ICI",
+    "OHO",
+    "IRI"
+  ],
+  "result": {
+    "id": "starktech:security_core"
+  }
+}

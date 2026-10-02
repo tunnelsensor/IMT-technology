@@ -191,8 +191,113 @@ public final class StarkOs {
             case "fs_move" -> fileResult(player, core, session, core.fs().move(path(args, "from"), path(args, "to")));
             case "fs_delete" -> fileResult(player, core, session, core.fs().delete(path(args, "path")));
             case "fs_trap" -> setTrap(player, core, session, path(args, "path"), args.getBoolean("on"));
-            default -> { } // onbekende opdracht: later uitgebreid (apparaten, camera's)
+            case "flag" -> setFlag(player, core, session, args.getString("name"), args.getBoolean("on"));
+            case "dev_toggle" -> toggleTurret(player, core, session,
+                    new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getBoolean("on"));
+            case "trust_add" -> trust(player, core, session, args.getString("name").strip());
+            case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
+            default -> { } // onbekende opdracht: later uitgebreid (camera's)
         }
+    }
+
+    // ================================================================ Apparaten en toegang
+
+    /** Zoveel spelers kan een eigenaar hooguit vertrouwen. */
+    public static final int MAX_TRUSTED = 32;
+
+    /**
+     * Een schakelaar van het hele netwerk (de apps Access en Devices): monsters aanvallen, andere
+     * spelers aanvallen, de drones, de laserwanden.
+     */
+    private static void setFlag(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name, boolean on) {
+        String text;
+        switch (name) {
+            case "mobs" -> {
+                core.setAttackMobs(on);
+                text = on ? "Security attacks monsters" : "Security ignores monsters";
+            }
+            case "players" -> {
+                core.setAttackPlayers(on);
+                text = on ? "Security attacks other players" : "Security ignores other players";
+            }
+            case "drones" -> {
+                core.setDronesEnabled(on);
+                text = on ? "Drones on" : "Drones landing";
+            }
+            case "lasers" -> {
+                com.senne.starktech.security.SecurityDevices.setLasers(player.serverLevel(), core, on);
+                text = on ? "Laser walls on" : "Laser walls off";
+            }
+            default -> {
+                return;
+            }
+        }
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + ": " + text.toLowerCase(java.util.Locale.ROOT));
+        notify(player, core, session, text, false);
+    }
+
+    /** Eén torentje aan of uit. */
+    private static void toggleTurret(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, boolean on) {
+        String error = com.senne.starktech.security.SecurityDevices.switchTurret(player.serverLevel(), core, pos, on);
+        if (error != null) {
+            notify(player, core, session, error, true);
+            return;
+        }
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " switched the turret at "
+                + pos.toShortString() + (on ? " on" : " off"));
+        notify(player, core, session, "Turret " + (on ? "on" : "off"), false);
+    }
+
+    /**
+     * Een speler vertrouwen (op naam): de beveiliging schiet niet meer op hem. Hij moet wel al eens
+     * op deze server geweest zijn, anders weten we niet wie het is.
+     */
+    private static void trust(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name) {
+        if (name.isEmpty()) {
+            return;
+        }
+        if (core.trustedNames().size() >= MAX_TRUSTED) {
+            notify(player, core, session, "The trusted list is full (max " + MAX_TRUSTED + ")", true);
+            return;
+        }
+        com.mojang.authlib.GameProfile profile = findProfile(player, name);
+        if (profile == null) {
+            notify(player, core, session, "No player called " + name + " has been on this server", true);
+            return;
+        }
+        if (profile.getId().equals(core.ownerId())) {
+            notify(player, core, session, profile.getName() + " owns this system", true);
+            return;
+        }
+        if (core.isTrusted(profile.getId())) {
+            notify(player, core, session, profile.getName() + " is already trusted", true);
+            return;
+        }
+        core.addTrusted(profile.getId(), profile.getName());
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " trusted " + profile.getName());
+        notify(player, core, session, profile.getName() + " is now trusted", false);
+    }
+
+    private static void untrust(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name) {
+        if (!core.removeTrusted(name)) {
+            notify(player, core, session, name + " was not trusted", true);
+            return;
+        }
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " no longer trusts " + name);
+        notify(player, core, session, name + " is no longer trusted", false);
+    }
+
+    /** Wie heet zo? Eerst wie nu online is, anders wie hier ooit was (Minecraft onthoudt dat). */
+    private static @Nullable com.mojang.authlib.GameProfile findProfile(ServerPlayer asker, String name) {
+        if (asker.getServer() == null) {
+            return null;
+        }
+        ServerPlayer online = asker.getServer().getPlayerList().getPlayerByName(name);
+        if (online != null) {
+            return online.getGameProfile();
+        }
+        var cache = asker.getServer().getProfileCache();
+        return cache == null ? null : cache.get(name).orElse(null);
     }
 
     /** Een nieuw, leeg bestand. Bestaat het al, dan blijft het zoals het is (en hoor je dat). */
@@ -377,6 +482,21 @@ public final class StarkOs {
             log.add(line);
         }
         data.put("log", log);
+        // Toegang en de schakelaars van het netwerk (de apps Access en Devices).
+        CompoundTag access = new CompoundTag();
+        access.putBoolean("mobs", core.attackMobs());
+        access.putBoolean("players", core.attackPlayers());
+        access.putBoolean("pvp", level.getServer().isPvpAllowed());
+        access.putBoolean("drones", core.dronesEnabled());
+        access.putBoolean("lasers", core.lasersEnabled());
+        ListTag trusted = new ListTag();
+        for (String name : core.trustedNames()) {
+            trusted.add(net.minecraft.nbt.StringTag.valueOf(name));
+        }
+        access.put("trusted", trusted);
+        data.put("access", access);
+        // De apparaten met hun status.
+        data.put("devices", com.senne.starktech.security.SecurityDevices.snapshot(level, core));
         // De mappen: alleen als het scherm een oudere versie heeft.
         VirtualFs fs = core.fs();
         if (session.sentFs != fs || session.sentRevision != fs.revision()) {
@@ -465,5 +585,6 @@ public final class StarkOs {
     public static void onServerStopped(ServerStoppedEvent event) {
         SESSIONS.clear();
         LOCKOUTS.clear();
+        com.senne.starktech.security.SecurityDevices.clear();
     }
 }
