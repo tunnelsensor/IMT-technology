@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 122 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 123 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 77 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -872,8 +872,16 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       5 s weggegooid; instelbaar in `config/starktech-client.toml`. Devices kreeg de schakelaar
       "Cameras". Nieuw: een access transformer (`META-INF/accesstransformer.cfg`). Met
       "Fabulous!"-graphics zie je geen water/glas in het beeld (dat tekent Minecraft dan apart).
-      Screenshots: `-Ponly=cameras`. Twee nieuwe tests.
-- [ ] **8. Echte camera's in de toren**
+      Screenshots: `-Ponly=cameras`. Twee nieuwe tests. Commit: `33883fe`.
+- [x] **8. Echte camera's in de toren**
+      De drie nep-camera's (observers) op de beveiligingsverdieping zijn echte camera's aan het
+      plafond (45 graden naar de kamer gedraaid), en er hangen er drie bij: "Lobby" (op de
+      logowand, met zicht op de receptie en de ingang), "Laser hall" (aan het plafond van de
+      lasergang) en "Vault" (boven het luik, met zicht op de sokkel). Elk hangt met een verborgen
+      kabel aan het net van de toren (de lobby aan de beveiliging, de rest aan de lasers: knip je
+      die door, dan geven ook de camera's NO SIGNAL). Tony's kern heeft nog steeds geen wachtwoord.
+      Het NBT-bestand is opnieuw gemaakt (gecontroleerd: verder niets veranderd). Screenshots:
+      `-Ponly=towercams`. Eén nieuwe test.
 - [ ] **9. SSH van overal**
 - [ ] **10. Camerabeeld van ver** (mixins, achter een schakelaar)
 

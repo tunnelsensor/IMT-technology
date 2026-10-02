@@ -198,6 +198,17 @@ def security_turret(x, y, z):
     put(x, y, z, "starktech:security_turret", {"enabled": "true", "powered": "false"})
 
 
+def security_camera(x, y, z, face, facing, name, pan=0, tilt=0):
+    """
+    Een bewakingscamera (zie CameraBlock in de mod): aan de muur ("wall"), aan het plafond
+    ("ceiling") of op de vloer ("floor"), kijkend naar {@code facing}, met een naam voor de
+    bewakingsmuur. pan draait hem naar rechts (+) of links (-), tilt omlaag (+) of omhoog (-), in
+    graden. Stroom krijgt hij van een kabel ernaast (zie wire_cameras).
+    """
+    put(x, y, z, "starktech:security_camera", {"face": face, "facing": facing, "online": "false"},
+        {"id": "starktech:security_camera", "Name": name, "Pan": Int(pan), "Tilt": Int(tilt)})
+
+
 def spawner(x, y, z, mob):
     """Een bewaker die pas wakker wordt als je dichtbij komt."""
     put(x, y, z, "minecraft:spawner", None,
@@ -559,6 +570,8 @@ def build_lobby():
     arc_reactor(MID, y + 3, MID - 7)
     for x in (MID - 6, MID + 6):
         put(x, y + 8, MID - 7, "minecraft:end_rod", {"facing": "up"})
+    # Een bewakingscamera hoog op de logowand, met zicht op de receptie en de ingang.
+    security_camera(MID + 5, y + 6, MID - 6, "wall", "south", "Lobby")
     # De receptiebalie ervoor, met twee stoelen erachter.
     for x in range(MID - 4, MID + 5):
         put(x, y, MID - 3, TRIM)
@@ -903,7 +916,7 @@ def build_living():
 def build_security():
     """
     De beveiligingsverdieping: donker, met een grote schermenwand, bureaus, serverkasten, een
-    holotafel met de kaart van de omgeving, en camera's (observers) in de hoeken. De holotafel
+    holotafel met de kaart van de omgeving, en bewakingscamera's in de hoeken. De holotafel
     krijgt stroom van een warmtegenerator onder de vloer, op een magmablok.
     """
     terrace(SECURITY_Y - 1, LIVING_IN, SECURITY_IN)
@@ -932,9 +945,11 @@ def build_security():
     rug(MID - 2, MID - 2, MID + 2, MID + 2, y, "cyan")
     put(MID, y, MID, "starktech:holo_table")
 
-    # Camera's in de hoeken, net onder het plafond.
-    for (x, z, facing) in ((x0 + 1, z0 + 1, "south"), (x1 - 1, z1 - 1, "north"), (x0 + 1, z1 - 1, "east")):
-        put(x, LASERS_Y - 2, z, "minecraft:observer", {"facing": facing, "powered": "false"})
+    # Bewakingscamera's in drie hoeken, aan het plafond. Elk kijkt langs een muur en is 45 graden
+    # naar links gedraaid: zo kijkt hij schuin de kamer in.
+    for (x, z, facing, name) in ((x0 + 1, z0 + 1, "south", "Security NW"), (x1 - 1, z1 - 1, "north", "Security SE"),
+                                 (x0 + 1, z1 - 1, "east", "Security SW")):
+        security_camera(x, LASERS_Y - 2, z, "ceiling", facing, name, pan=-45)
 
     chest(x0 + 2, y, z1 - 2, "north")
     chest(x1 - 2, y, z1 - 2, "north")
@@ -1045,6 +1060,9 @@ def build_laser_gauntlet():
             {"face": "wall", "facing": facing, "powered": "false"})
         put(x, LASERS_Y + 3, z, LIGHT)
 
+    # Een camera aan het plafond aan de zuidkant, die de hele gang in kijkt.
+    security_camera(MID, VAULT_Y - 2, z1 - 2, "ceiling", "north", "Laser hall")
+
     floor_slab(VAULT_Y - 1, LASERS_IN, DARK_FLOOR, light_step=9)
     # De schacht omhoog naar de kluis.
     for x in range(MID - 1, MID + 2):
@@ -1137,6 +1155,8 @@ def build_vault():
     # De ingang vanuit de lasergang.
     for x in range(MID - 1, MID + 2):
         put(x, VAULT_Y, z0 + 2, "minecraft:air")
+    # Een camera boven het luik, op de noordmuur, met zicht op de sokkel.
+    security_camera(MID, VAULT_Y + 5, z0 + 1, "wall", "south", "Vault")
     floor_slab(PENTHOUSE_Y - 1, VAULT_IN, DARK_FLOOR, light_step=9)
 
 
@@ -1611,6 +1631,32 @@ def wire_security():
     route((vx0 + 2, VAULT_Y, plate_z), (vx0 + 2, VAULT_Y, vz1 - 2))
 
 
+def wire_cameras():
+    """
+    Stroom voor de bewakingscamera's: elk krijgt een verborgen kabel naast zich, aangesloten op een
+    kabel die er al ligt.
+    - beveiligingsverdieping: in het plafond, vanaf de kabels onder de lasers;
+    - lasergang: in het plafond, vanaf de kabel naar de val in de kluis;
+    - kluis: in de vloer en de noordmuur, vanaf de kabel naar het torentje in de noordwesthoek;
+    - lobby: in de fundering en de logowand, vanaf de kabel naar de torentjes bij de lift.
+    Ze hangen dus aan hetzelfde net als de lasers (de lobby aan dat van de beveiliging): valt dat
+    uit, dan geven ook de camera's "NO SIGNAL".
+    """
+    ceiling = LASERS_Y - 1
+    x0, z0, x1, z1 = bounds(SECURITY_IN)
+    lx0, lz0, lx1, lz1 = bounds(LASERS_IN)
+    last_row = list(range(lz0 + 3, lz1 - 2, 2))[-1]
+    route((MID - 2, ceiling, POWER_Z), (x0 + 1, ceiling, POWER_Z), (x0 + 1, ceiling, z0 + 1))
+    route((MID + 2, ceiling, last_row), (MID + 2, ceiling, z1 - 1), (x1 - 1, ceiling, z1 - 1))
+    route((MID - 2, ceiling, last_row), (MID - 2, ceiling, z1 - 1), (x0 + 1, ceiling, z1 - 1))
+    plate_z = MID + 3
+    route((MID + 3, VAULT_Y - 1, plate_z), (MID + 3, VAULT_Y - 1, lz1 - 2), (MID, VAULT_Y - 1, lz1 - 2))
+    vx0, vz0, vx1, vz1 = bounds(VAULT_IN)
+    route((vx0 + 2, VAULT_Y, vz0 + 2), (vx0 + 2, VAULT_Y, vz0 + 1), (MID, VAULT_Y, vz0 + 1), (MID, VAULT_Y, vz0),
+          (MID, VAULT_Y + 5, vz0))
+    route((MID + 5, 0, MID + 6), (MID + 5, 0, MID - 7), (MID + 5, LOBBY_Y + 6, MID - 7))
+
+
 def build():
     build_plaza()
     build_lobby()
@@ -1628,6 +1674,7 @@ def build():
     furnish()
     build_routes()
     wire_security()
+    wire_cameras()
 
 
 # Blokken waar een Stark-kabel op aansluit (zie PowerConnectable in de mod).

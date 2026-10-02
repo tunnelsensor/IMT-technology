@@ -947,6 +947,43 @@ public final class VisualCheck {
             tower(t);
         }
 
+        // --- De zes bewakingscamera's van de Stark Tower op de bewakingsmuur (jij neemt de kern even
+        // over), en het grote beeld van de lobby en de kluis.
+        if (want("towercams")) {
+            int x = STARK_TOWER.getX();
+            int y = STARK_TOWER.getY();
+            int z = STARK_TOWER.getZ();
+            BlockPos core = new BlockPos(x + 10, y + 57, z + 20);
+            t.view(0, x + 20.5, y + 40, z - 40, 0, 0);
+            t.command(60, "place template starktech:stark_tower " + x + " " + y + " " + z);
+            t.view(20, x + 12.5, y + 57, z + 20.5, 270, 0);
+            t.onServer(100, player -> {
+                ServerLevel level = player.serverLevel();
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("jarvis1", level.random);
+                }
+                com.senne.starktech.security.os.StarkOs.open(player, core);
+            });
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourCameras(null);
+                }
+            });
+            t.shot(120, "tc01_tower_camera_wall");
+            for (String[] cam : new String[][] {{"Lobby", "tc02_tower_lobby"}, {"Laser hall", "tc03_tower_laser_hall"},
+                    {"Vault", "tc04_tower_vault"}}) {
+                t.step(0, () -> {
+                    if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                        os.tourCameras(towerCamera(cam[0]));
+                    }
+                });
+                t.shot(60, cam[1]);
+            }
+            t.close(10);
+        }
+
         // --- Het wrak van de neergestorte satelliet: van boven, van dichtbij en 's nachts.
         if (want("crash")) {
             crashSite(t);
@@ -1394,6 +1431,19 @@ public final class VisualCheck {
      * De Stark Tower: neerzetten, dan foto's van buiten en van elke verdieping van binnen. Binnen
      * staan we in de zuidoosthoek (met een wijde blik) en kijken we schuin naar het midden.
      */
+    /** Waar de camera met deze naam in de neergezette Stark Tower hangt (zie tools/generate_structure.py). */
+    private static @org.jetbrains.annotations.Nullable BlockPos towerCamera(String name) {
+        int x = STARK_TOWER.getX();
+        int y = STARK_TOWER.getY();
+        int z = STARK_TOWER.getZ();
+        return switch (name) {
+            case "Lobby" -> new BlockPos(x + 25, y + 7, z + 14);
+            case "Laser hall" -> new BlockPos(x + 20, y + 75, z + 29);
+            case "Vault" -> new BlockPos(x + 20, y + 82, z + 10);
+            default -> null;
+        };
+    }
+
     private static void tower(DevScript t) {
         int x = STARK_TOWER.getX();
         int y = STARK_TOWER.getY();

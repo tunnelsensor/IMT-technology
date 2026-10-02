@@ -1648,6 +1648,55 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * De bewakingscamera's van de Stark Tower: zes stuks (drie op de beveiligingsverdieping, de
+     * lobby, de lasergang en de kluis), elk met stroom en een naam, en de kern van de toren (met
+     * een IP, maar zonder wachtwoord: Tony's oude systeem) ziet ze alle zes.
+     */
+    @GameTest(template = "stark_tower", timeoutTicks = 100, batch = "tower_cameras")
+    public static void stark_tower_has_powered_cameras(GameTestHelper helper) {
+        helper.runAfterDelay(40, () -> {
+            var level = helper.getLevel();
+            List<BlockPos> cameras = new java.util.ArrayList<>();
+            BlockPos core = null;
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 55; z++) {
+                    for (int y = 0; y < 100; y++) {
+                        BlockState state = helper.getBlockState(pos.set(x, y, z));
+                        if (state.is(ModBlocks.SECURITY_CAMERA.get())) {
+                            cameras.add(pos.immutable());
+                        } else if (state.is(ModBlocks.SECURITY_CORE.get())) {
+                            core = pos.immutable();
+                        }
+                    }
+                }
+            }
+            if (cameras.size() != 6 || core == null) {
+                throw new GameTestAssertException("Er staan " + cameras.size() + " camera's (en " + (core == null ? "geen" : "een")
+                        + " kern) in de toren in plaats van 6");
+            }
+            List<BlockPos> dark = cameras.stream().filter(p -> com.senne.starktech.energy.StarkGrid.available(level,
+                    helper.absolutePos(p)) < com.senne.starktech.security.SecurityBalance.CAMERA_UPKEEP).toList();
+            if (!dark.isEmpty()) {
+                throw new GameTestAssertException("Deze camera's hebben geen stroom: " + dark);
+            }
+            var coreEntity = (com.senne.starktech.security.SecurityCoreBlockEntity) helper.getBlockEntity(core);
+            coreEntity.ensureSystem(level);
+            if (coreEntity.ip().isEmpty() || coreEntity.hasPassword() || !coreEntity.hostname().equals("stark-sec-core")) {
+                throw new GameTestAssertException("De kern van de toren heeft geen IP, of al een wachtwoord");
+            }
+            java.util.Set<String> names = new java.util.HashSet<>();
+            for (var tag : com.senne.starktech.security.SecurityDevices.cameras(level, coreEntity)) {
+                names.add(((net.minecraft.nbt.CompoundTag) tag).getString("name"));
+            }
+            if (!names.equals(java.util.Set.of("Lobby", "Laser hall", "Vault", "Security NW", "Security SE", "Security SW"))) {
+                throw new GameTestAssertException("De kern ziet deze camera's: " + names);
+            }
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = "stark_tower", timeoutTicks = 300, batch = "tower_power")
     public static void stark_tower_lasers_have_power(GameTestHelper helper) {
         // Een toren uit de wereldgeneratie krijgt geen "je bent geplaatst"-seintje: de zenders
