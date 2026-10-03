@@ -204,6 +204,12 @@ public class StarkOsScreen extends Screen {
         cameras.tourBig(camera);
     }
 
+    /** Alleen voor de screenshot-rondleiding: het grote beeld van deze camera, met {@code typed} in het naamvak. */
+    public void tourRenameCamera(BlockPos camera, String typed) {
+        tourCameras(camera);
+        cameras.tourRename(typed);
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -247,6 +253,9 @@ public class StarkOsScreen extends Screen {
         if (win.app != App.ACCESS) {
             access.blur();
         }
+        if (win.app != App.CAMERAS) {
+            cameras.blur();
+        }
     }
 
     private @Nullable Win focused() {
@@ -273,6 +282,9 @@ public class StarkOsScreen extends Screen {
         windows.remove(win);
         if (win.app == App.SETTINGS) {
             editingPassword = false;
+        }
+        if (win.app == App.CAMERAS) {
+            cameras.blur(); // een half getypte naam niet bewaren
         }
         if (win.app == App.NOTES) {
             notes.save(); // wat je typte, gaat niet verloren
@@ -441,7 +453,8 @@ public class StarkOsScreen extends Screen {
         Win top = focused();
         if (top != null && top.app == App.FILES && files.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)
-                || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)) {
+                || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (editingPassword && passwordText.length() < 8
@@ -459,7 +472,7 @@ public class StarkOsScreen extends Screen {
         if (top != null && top.app == App.FILES && files.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode)) {
+                || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (editingPassword) {
@@ -578,7 +591,7 @@ public class StarkOsScreen extends Screen {
         switch (win.app) {
             case STATUS -> renderStatus(g, area.x(), area.y());
             case DEVICES -> devices.render(g, font, area, mouseX, mouseY);
-            case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY);
+            case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);

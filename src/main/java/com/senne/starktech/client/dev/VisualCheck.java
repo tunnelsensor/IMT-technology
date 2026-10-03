@@ -512,6 +512,19 @@ public final class VisualCheck {
                         new com.senne.starktech.network.OsActionPayload(core, "cam_aim", aim));
             });
             t.shot(40, "c03_camera_upstairs_turned");
+            // Een andere naam geven: op Rename klikken, typen, en Enter.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourRenameCamera(roomCam, "Server room");
+                }
+            });
+            t.shot(20, "c03b_camera_rename");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.keyPressed(257, 0, 0); // Enter
+                }
+            });
+            t.shot(20, "c03c_camera_renamed");
             t.step(0, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
                     os.tourCameras(postCam);
@@ -940,6 +953,10 @@ public final class VisualCheck {
             t.shot(20, "95_power_cables");
             t.view(0, 22.5, -57.0, -12.5, 170, 40);
             t.shot(20, "96_power_cables_hidden");
+            // Kabel-xray uit (G > Information): de verborgen kabel moet nu weg zijn. Daarna weer aan.
+            t.step(0, com.senne.starktech.client.EdithClientEvents::toggleCableXray);
+            t.shot(20, "96_power_cables_xray_off");
+            t.step(0, com.senne.starktech.client.EdithClientEvents::toggleCableXray);
         }
 
         // --- De Stark Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.

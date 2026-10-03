@@ -203,6 +203,18 @@ public final class SecurityDevices {
         return null;
     }
 
+    /**
+     * Een camera een andere naam geven (de knop Rename bij het grote beeld). Een lege naam haalt
+     * zijn eigen naam weg (dan heet hij weer "Camera 3"). Foutmelding, of null.
+     */
+    public static @Nullable String renameCamera(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, String name) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.inArea(core.getBlockPos(), pos)) {
+            return "that camera is not part of this network";
+        }
+        camera.setName(name);
+        return null;
+    }
+
     /** De naam van een camera op de desktop: zijn eigen naam, of anders "Camera 3". */
     private static String cameraName(CameraBlockEntity camera, int number) {
         return camera.name().isEmpty() ? "Camera " + number : camera.name();

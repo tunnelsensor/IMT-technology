@@ -5,7 +5,10 @@ import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -21,7 +24,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * De "binnenkant" van een bewakingscamera: zijn naam, en hoever hij van zijn gewone richting is
  * gedraaid (pan: links/rechts) en gekanteld (tilt: omhoog/omlaag). Dat stel je in op de desktop,
- * hooguit {@link #MAX_TURN} graden elke kant op.
+ * hooguit {@link #MAX_TURN} graden elke kant op. De naam geef je in een aambeeld of op de desktop
+ * (de knop Rename bij het grote beeld); breek je hem af, dan houdt het item die naam.
  *
  * Op de server kijkt hij elke twee seconden of hij stroom heeft en of de camera's van zijn netwerk
  * aan staan, en betaalt hij een beetje stroom (SecurityBalance.CAMERA_UPKEEP). Dat zet hij in het
@@ -33,6 +37,8 @@ import org.jetbrains.annotations.Nullable;
 public class CameraBlockEntity extends BlockEntity {
     /** Zoveel graden mag je hem hooguit draaien of kantelen (elke kant op). */
     public static final float MAX_TURN = 60f;
+    /** Zo lang mag zijn naam hooguit zijn (tekens). */
+    public static final int MAX_NAME = 32;
 
     private String name = "";
     /** Graden naar rechts (+) of links (-) van waar hij gewoon heen kijkt. */
@@ -48,9 +54,25 @@ public class CameraBlockEntity extends BlockEntity {
         return name;
     }
 
+    /** Een nieuwe naam (netjes gemaakt, zie {@link #cleanName}). Leeg = weer "Camera 3" op de desktop. */
     public void setName(String name) {
-        this.name = name.length() > 32 ? name.substring(0, 32) : name;
+        this.name = cleanName(name);
         changed();
+    }
+
+    /**
+     * Een naam zoals we hem bewaren: zonder onzichtbare tekens en zonder het teken waarmee
+     * Minecraft tekst kleurt, zonder spaties voor en achter, en hooguit {@link #MAX_NAME} tekens.
+     */
+    public static String cleanName(String name) {
+        StringBuilder clean = new StringBuilder();
+        for (char c : name.toCharArray()) {
+            if (c >= ' ' && c != 127 && c != '§') {
+                clean.append(c);
+            }
+        }
+        String result = clean.toString().strip();
+        return result.length() > MAX_NAME ? result.substring(0, MAX_NAME).strip() : result;
     }
 
     public float pan() {
@@ -156,6 +178,25 @@ public class CameraBlockEntity extends BlockEntity {
         name = tag.getString("Name");
         pan = Mth.clamp(tag.getFloat("Pan"), -MAX_TURN, MAX_TURN);
         tilt = Mth.clamp(tag.getFloat("Tilt"), -MAX_TURN, MAX_TURN);
+    }
+
+    /**
+     * Breek je hem af, dan krijgt het item zijn naam mee (zie de loot table: copy_components). Zet
+     * je het item weer neer, dan geeft CameraBlock.setPlacedBy de naam terug.
+     */
+    @Override
+    protected void collectImplicitComponents(DataComponentMap.Builder components) {
+        super.collectImplicitComponents(components);
+        if (!name.isEmpty()) {
+            components.set(DataComponents.CUSTOM_NAME, Component.literal(name));
+        }
+    }
+
+    /** De naam zit al in het item (als CUSTOM_NAME), dus niet nog eens in zijn blokgegevens. */
+    @Override
+    public void removeComponentsFromTag(CompoundTag tag) {
+        super.removeComponentsFromTag(tag);
+        tag.remove("Name");
     }
 
     @Override

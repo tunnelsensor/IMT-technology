@@ -196,6 +196,8 @@ public final class StarkOs {
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getBoolean("on"));
             case "cam_aim" -> aimCamera(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getFloat("pan"), args.getFloat("tilt"));
+            case "cam_rename" -> renameCamera(player, core, session,
+                    new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
             case "trust_add" -> trust(player, core, session, args.getString("name").strip());
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
             default -> { } // onbekende opdracht: later uitgebreid (camera's)
@@ -251,6 +253,19 @@ public final class StarkOs {
             return;
         }
         sendSnapshot(player, core, session);
+    }
+
+    /** Een camera een andere naam geven (de knop Rename bij het grote camerabeeld). Leeg = weer "Camera 3". */
+    private static void renameCamera(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, String name) {
+        String clean = com.senne.starktech.security.CameraBlockEntity.cleanName(name);
+        String error = com.senne.starktech.security.SecurityDevices.renameCamera(player.serverLevel(), core, pos, clean);
+        if (error != null) {
+            notify(player, core, session, error, true);
+            return;
+        }
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed the camera at "
+                + pos.toShortString() + (clean.isEmpty() ? " back to its number" : " to \"" + clean + "\""));
+        notify(player, core, session, clean.isEmpty() ? "Camera name cleared" : "Camera renamed to " + clean, false);
     }
 
     /** Eén torentje aan of uit. */

@@ -192,6 +192,23 @@ public final class EdithClientEvents {
         while (EdithKeys.ROCKETS.consumeClick()) {
             sendAction(EdithAction.ROCKETS);
         }
+        while (EdithKeys.CABLE_XRAY.consumeClick()) {
+            toggleCableXray();
+        }
+    }
+
+    /**
+     * Kabel-xray aan of uit (via G > Information of de eigen toets). Alleen met jouw eigen bril op;
+     * E.D.I.T.H. meldt het net zoals bij de andere functies ("Cable X-ray enabled.").
+     */
+    public static void toggleCableXray() {
+        if (!EdithClientState.authorized) {
+            return;
+        }
+        boolean on = EdithClientConfig.toggleCableXray();
+        String key = on ? "edith.starktech.msg.feature_on" : "edith.starktech.msg.feature_off";
+        EdithClientState.addNotification(Component.translatable(key, Component.translatable("screen.starktech.menu.cable_xray")),
+                EdithMessagePayload.Level.INFO);
     }
 
     /** Opent een E.D.I.T.H.-scherm, maar alleen als je de bril draagt en de eigenaar bent. */

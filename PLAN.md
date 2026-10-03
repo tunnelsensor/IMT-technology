@@ -889,6 +889,13 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
 - [~] **10. Camerabeeld van ver** (mixins, achter een schakelaar) — opzijgezet: alleen nuttig
       met een sessie op afstand (stap 9). Bij de kern zelf hangen alle camera's binnen 30 blokken,
       dus daar is het beeld altijd "in de buurt" en werkt het al (stap 7).
+- [x] **Camera's een andere naam geven** (jouw vraag, 3 oktober)
+      In het grote camerabeeld staat onder de pijltjes de knop **Rename**: de naam bovenaan wordt
+      een invoervak (de oude naam geselecteerd, dus typen vervangt hem). Enter of Save bewaart, Esc
+      of ergens anders klikken laat het zoals het was, en een lege naam maakt hem weer "Camera 3".
+      De server maakt de naam netjes (geen kleurcodes, hooguit 32 tekens) en zet het in het
+      logboek. Breek je een camera met een naam af, dan houdt het item die naam (ook een naam uit
+      een aambeeld). Screenshots: `-Ponly=cameras` (`c03b`, `c03c`). Eén nieuwe test.
 - [x] **Showcase**: twee nieuwe functies na "Stark Tower: security and hack": "Stark OS desktop"
       (Files met security.conf, het rechtsklik-menu, Notes, Devices, Access, Logs) en "Security
       cameras" (de bewakingsmuur van de toren, het grote beeld, draaien, NO SIGNAL, een camera van

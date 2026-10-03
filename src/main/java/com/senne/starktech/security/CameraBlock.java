@@ -42,7 +42,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Hij kijkt van de muur af (of, aan het plafond, de kant op waar jij keek toen je hem
  *       ophing), een beetje omlaag. Precies waarheen stel je in op de desktop (zie
  *       CameraBlockEntity: pan en tilt).</li>
- *   <li>Geef je hem in een aambeeld een naam ("Lobby"), dan staat die naam bij zijn beeld.</li>
+ *   <li>Geef je hem in een aambeeld of op de desktop (Rename, bij het grote beeld) een naam
+ *       ("Lobby"), dan staat die naam bij zijn beeld. Breek je hem af, dan houdt het item die naam.</li>
  * </ul>
  */
 public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock, PowerConnectable {

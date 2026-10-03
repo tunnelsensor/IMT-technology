@@ -32,7 +32,8 @@ import org.joml.Matrix4f;
  *
  * Zit een kabel IN een blok (je bouwde er een muur overheen), dan zie je hem niet: het blok zit
  * ervoor. Draag je de bril, dan licht hij door de muur heen op als een zachte blauwe lijn (tot 24
- * blokken ver), zodat je weet waar de stroom loopt, en waar je moet knippen.
+ * blokken ver), zodat je weet waar de stroom loopt, en waar je moet knippen. Die "kabel-xray" zet
+ * je aan of uit in G > Information (zie EdithClientConfig.CABLE_XRAY).
  *
  * Hoe het kabeltje loopt: elke plek kiest een "ankerkant" (de vloer, een muur of het plafond waar
  * hij tegenaan ligt). Van het midden van die kant loopt hij naar elke buur, eerst langs de
@@ -86,7 +87,8 @@ public final class CableRenderer {
         Matrix4f m = pose.last().pose();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
         VertexConsumer solid = buffers.getBuffer(CABLE);
-        boolean xray = EdithClientState.operational;
+        // Verborgen kabels alleen met een werkende bril op, en alleen als de kabel-xray aan staat.
+        boolean xray = EdithClientState.operational && EdithClientConfig.cableXray();
         List<BlockPos> hidden = new ArrayList<>();
 
         ChunkPos centre = new ChunkPos(BlockPos.containing(cam));

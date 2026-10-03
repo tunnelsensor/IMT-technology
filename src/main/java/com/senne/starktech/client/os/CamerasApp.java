@@ -8,15 +8,19 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.client.os.camera.CameraFeeds;
+import com.senne.starktech.security.CameraBlockEntity;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -24,7 +28,8 @@ import org.joml.Matrix4f;
 /**
  * Het Cameras-venster van de Stark OS-desktop: de bewakingsmuur (jouw wens, 28 september). Een
  * raster met een live beeldje van elke camera in het gebied van de kern; klik er een aan voor het
- * grote beeld, waar je de camera draait en kantelt (pijltjes, of het beeld verslepen).
+ * grote beeld, waar je de camera draait en kantelt (pijltjes, of het beeld verslepen) en hem een
+ * andere naam geeft (de knop Rename: typ de naam, Enter bewaart, Esc laat het zoals het was).
  *
  * Elk beeldje heeft een CRT-randje (scanlijnen, hoekjes, de naam en een knipperend REC) zoals het
  * camerabeeld van de verkenningsdrone. Heeft een camera geen stroom of staat hij uit: "NO SIGNAL";
@@ -40,6 +45,8 @@ final class CamerasApp {
     private static final float STEP = 10f;
     /** Hoeveel graden één pixel slepen draait. */
     private static final float DRAG = 0.4f;
+    /** Waar de knop Rename staat, onder de pijltjes (ten opzichte van de bovenkant van het beeld). */
+    private static final int RENAME_DY = 106;
 
     private final StarkOsScreen screen;
     /** Het grote beeld: van welke camera (de plek), of null = de muur met alle beeldjes. */
@@ -49,6 +56,9 @@ final class CamerasApp {
     private boolean dragging;
     private int dragStartX;
     private int dragStartY;
+    /** Ben je de naam van de camera in het grote beeld aan het typen? */
+    private boolean renaming;
+    private @Nullable EditBox nameBox;
 
     CamerasApp(StarkOsScreen screen) {
         this.screen = screen;
@@ -75,6 +85,17 @@ final class CamerasApp {
         return null;
     }
 
+    private EditBox nameBox() {
+        if (nameBox == null) {
+            nameBox = new EditBox(Minecraft.getInstance().font, 0, 0, 100, 10, Component.literal("Camera name"));
+            nameBox.setBordered(false);
+            nameBox.setMaxLength(CameraBlockEntity.MAX_NAME);
+            nameBox.setFilter(value -> value.indexOf('\u00A7') < 0); // geen kleurcodes
+            nameBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
+        }
+        return nameBox;
+    }
+
     /** Het grote beeld: hoe breed (de rest van het venster is voor de knoppen). */
     private static int bigWidth(StarkOsScreen.Area a) {
         return Math.min(256, a.w() - 70);
@@ -82,14 +103,14 @@ final class CamerasApp {
 
     // ================================================================ Tekenen
 
-    void render(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my) {
+    void render(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my, float partialTick) {
         if (big != null) {
             CompoundTag camera = find(big);
             if (camera != null) {
-                renderBig(g, font, a, camera, mx, my);
+                renderBig(g, font, a, camera, mx, my, partialTick);
                 return;
             }
-            big = null; // de camera is weg
+            showWall(); // de camera is weg
         }
         List<CompoundTag> cameras = cameras();
         String head = cameras.isEmpty() ? "No cameras in this network's area yet."
@@ -112,17 +133,28 @@ final class CamerasApp {
         }
     }
 
-    private void renderBig(GuiGraphics g, Font font, StarkOsScreen.Area a, CompoundTag camera, int mx, int my) {
+    private void renderBig(GuiGraphics g, Font font, StarkOsScreen.Area a, CompoundTag camera, int mx, int my, float partialTick) {
         BlockPos pos = posOf(camera);
-        g.drawString(font, camera.getString("name") + "   " + pos.getX() + " " + pos.getY() + " " + pos.getZ(),
-                a.x(), a.y(), HudStyle.argb(255, HudStyle.CYAN), false);
         int fw = bigWidth(a);
         int fh = fw * 9 / 16;
         int fy = a.y() + 12;
+        if (renaming) {
+            // Bovenaan het vak waar je de nieuwe naam typt (in plaats van de naam).
+            EditBox box = nameBox();
+            OsDraw.field(g, a.x(), a.y() - 2, a.x() + fw, a.y() + 10, true);
+            box.setX(a.x() + 3);
+            box.setY(a.y());
+            box.setWidth(fw - 6);
+            box.render(g, mx, my, partialTick);
+        } else {
+            g.drawString(font, camera.getString("name") + "   " + pos.getX() + " " + pos.getY() + " " + pos.getZ(),
+                    a.x(), a.y(), HudStyle.argb(255, HudStyle.CYAN), false);
+        }
         renderFeed(g, font, camera, a.x(), fy, fw, fh, true, false);
-        g.drawString(font, "Drag the image or use the arrow keys to aim", a.x(), fy + fh + 4,
-                HudStyle.argb(255, OsDraw.GREY), false);
-        // Rechts: terug, en de pijltjes.
+        String hint = renaming ? "Enter = save   Esc = cancel   empty = number"
+                : "Drag the image or use the arrow keys to aim";
+        g.drawString(font, hint, a.x(), fy + fh + 4, HudStyle.argb(255, OsDraw.GREY), false);
+        // Rechts: terug, de pijltjes, en een andere naam geven.
         int px = a.x() + fw + 8;
         OsDraw.button(g, font, px, fy, "Back", true, HudStyle.CYAN);
         for (Arrow arrow : Arrow.values()) {
@@ -130,6 +162,12 @@ final class CamerasApp {
         }
         g.drawString(font, String.format("pan  %+.0f", camera.getFloat("pan")), px, fy + 80, HudStyle.argb(255, HudStyle.WHITE), false);
         g.drawString(font, String.format("tilt %+.0f", camera.getFloat("tilt")), px, fy + 91, HudStyle.argb(255, HudStyle.WHITE), false);
+        OsDraw.button(g, font, px, fy + RENAME_DY, renameLabel(), true, renaming ? HudStyle.GREEN : HudStyle.CYAN);
+    }
+
+    /** De knop onder de pijltjes: Rename, of Save terwijl je de naam typt. */
+    private String renameLabel() {
+        return renaming ? "Save" : "Rename";
     }
 
     /** De vier pijltjes bij het grote beeld: waar ze staan (ten opzichte van de knoppenkolom) en wat ze doen. */
@@ -240,8 +278,23 @@ final class CamerasApp {
             int fh = fw * 9 / 16;
             int fy = a.y() + 12;
             int px = a.x() + fw + 8;
+            boolean onRename = OsDraw.inside(mx, my, px, fy + RENAME_DY, OsDraw.buttonWidth(font, renameLabel()), OsDraw.BUTTON_H);
+            if (renaming) {
+                if (onRename) {
+                    submitName();
+                } else if (OsDraw.inside(mx, my, a.x(), a.y() - 2, fw, OsDraw.BUTTON_H)) {
+                    nameBox().mouseClicked(mx, my, 0); // de cursor verplaatsen
+                } else {
+                    renaming = false; // ergens anders geklikt: de naam blijft zoals hij was
+                }
+                return;
+            }
+            if (onRename) {
+                startRename();
+                return;
+            }
             if (OsDraw.inside(mx, my, px, fy, OsDraw.buttonWidth(font, "Back"), OsDraw.BUTTON_H)) {
-                big = null;
+                showWall();
                 return;
             }
             for (Arrow arrow : Arrow.values()) {
@@ -289,22 +342,81 @@ final class CamerasApp {
         scroll = Math.max(0, scroll - (int) Math.signum(scrollY));
     }
 
-    /** Pijltjestoetsen in het grote beeld; Esc of Backspace gaat terug naar de muur. */
-    boolean keyPressed(int keyCode) {
+    /**
+     * Pijltjestoetsen in het grote beeld; Esc of Backspace gaat terug naar de muur. Typ je een
+     * naam, dan gaan de toetsen naar het naamvak: Enter bewaart, Esc laat het zoals het was.
+     */
+    boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (big == null) {
             return false;
+        }
+        if (renaming) {
+            switch (keyCode) {
+                case 257, 335 -> submitName(); // enter
+                case 256 -> renaming = false; // esc
+                default -> nameBox().keyPressed(keyCode, scanCode, modifiers);
+            }
+            return true;
         }
         switch (keyCode) {
             case 263 -> aim(-STEP, 0); // links
             case 262 -> aim(STEP, 0); // rechts
             case 265 -> aim(0, -STEP); // omhoog
             case 264 -> aim(0, STEP); // omlaag
-            case 256, 259 -> big = null; // esc, backspace
+            case 256, 259 -> showWall(); // esc, backspace
             default -> {
                 return false;
             }
         }
         return true;
+    }
+
+    /** Een letter getypt: alleen als je een naam aan het typen bent. */
+    boolean charTyped(char codePoint, int modifiers) {
+        if (!renaming) {
+            return false;
+        }
+        nameBox().charTyped(codePoint, modifiers);
+        return true;
+    }
+
+    /** Een ander venster kwam bovenop: stop met typen (de naam blijft zoals hij was). */
+    void blur() {
+        renaming = false;
+    }
+
+    /** Terug naar de muur met alle beeldjes. */
+    private void showWall() {
+        big = null;
+        renaming = false;
+    }
+
+    /** De knop Rename: het naamvak met de huidige naam, helemaal geselecteerd (typen vervangt hem). */
+    private void startRename() {
+        CompoundTag camera = big == null ? null : find(big);
+        if (camera == null) {
+            return;
+        }
+        EditBox box = nameBox();
+        box.setValue(camera.getString("name"));
+        box.moveCursorToEnd(false);
+        box.setHighlightPos(0);
+        box.setFocused(true);
+        renaming = true;
+    }
+
+    /** De nieuwe naam naar de server (die maakt hem netjes; leeg = weer "Camera 3"). */
+    private void submitName() {
+        renaming = false;
+        if (big == null) {
+            return;
+        }
+        CompoundTag args = new CompoundTag();
+        args.putInt("x", big.getX());
+        args.putInt("y", big.getY());
+        args.putInt("z", big.getZ());
+        args.putString("name", nameBox().getValue());
+        screen.send("cam_rename", args);
     }
 
     private void aim(float pan, float tilt) {
@@ -323,5 +435,12 @@ final class CamerasApp {
     /** Alleen voor de screenshot-rondleiding: het grote beeld van deze camera (of null: de muur). */
     void tourBig(@Nullable BlockPos camera) {
         big = camera;
+        renaming = false;
+    }
+
+    /** Alleen voor de screenshot-rondleiding: op Rename geklikt en {@code typed} getypt. */
+    void tourRename(String typed) {
+        startRename();
+        nameBox().setValue(typed);
     }
 }

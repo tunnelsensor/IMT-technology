@@ -127,7 +127,14 @@ public class EdithMenuScreen extends Screen {
     private static final List<Option> INFORMATION = List.of(
             action(EdithAction.ORE_SCAN),
             action(EdithAction.TOGGLE_THREAT_SCAN),
-            action(EdithAction.TOGGLE_TARGET_ANALYSIS));
+            action(EdithAction.TOGGLE_TARGET_ANALYSIS),
+            // Verborgen kabels door muren heen zien. Dit is een instelling van jouw eigen spel
+            // (net als "Voice text"), dus er gaat niets naar de server.
+            new Option(Component.translatable("screen.starktech.menu.cable_xray"),
+                    glasses -> EdithClientConfig.cableXray()
+                            ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
+                            : new Status(Component.translatable("screen.starktech.off"), GREY),
+                    EdithClientEvents::toggleCableXray));
 
     private static final List<Option> NAVIGATION = List.of(
             open("screen.starktech.menu.navigation", HudStyle.CYAN, NavigationScreen::new),

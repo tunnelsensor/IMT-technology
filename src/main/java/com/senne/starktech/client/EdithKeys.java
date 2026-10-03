@@ -70,6 +70,11 @@ public final class EdithKeys {
     // Fase 4
     /** Ingedrukt houden = E.D.I.T.H. luistert naar een (Engels) spraakcommando; loslaten = uitvoeren. */
     public static final KeyMapping PUSH_TO_TALK = key("push_to_talk", InputConstants.KEY_Z);
+    /**
+     * Kabel-xray aan/uit (verborgen kabels door muren heen zien). Standaard zit hij op GEEN toets
+     * (bijna alle letters zijn al bezet); kies er zelf een in Opties > Besturing, of gebruik G > Information.
+     */
+    public static final KeyMapping CABLE_XRAY = key("cable_xray", InputConstants.UNKNOWN.getValue());
 
     private static KeyMapping key(String name, int defaultKey) {
         // KeyConflictContext.IN_GAME: de toets doet alleen iets als er geen scherm open is.
@@ -99,5 +104,6 @@ public final class EdithKeys {
         event.register(HACK);
         event.register(REPULSOR);
         event.register(ROCKETS);
+        event.register(CABLE_XRAY);
     }
 }

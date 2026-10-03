@@ -913,6 +913,80 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Een camera een andere naam geven op de desktop (de knop Rename): de naam wordt netjes gemaakt
+     * (spaties en kleurcodes eruit), een lege naam maakt hem weer "Camera 1", en breek je hem af,
+     * dan houdt het item zijn naam.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "security_cameras_rename")
+    public static void security_camera_rename_from_desktop(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        var core = placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos wall = new BlockPos(8, 4, 8);
+        helper.setBlock(wall, Blocks.STONE);
+        BlockPos cam = wall.south();
+        helper.setBlock(cam, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.starktech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.WALL)
+                .setValue(com.senne.starktech.security.CameraBlock.FACING, Direction.SOUTH));
+        var camera = (com.senne.starktech.security.CameraBlockEntity) helper.getBlockEntity(cam);
+        BlockPos camAbs = helper.absolutePos(cam);
+        helper.runAfterDelay(2, () -> {
+            com.senne.starktech.security.os.StarkOs.open(owner, coreAbs);
+            // Spaties en een kleurcode gaan eruit.
+            renameAction(owner, coreAbs, camAbs, "  §cLobby  ");
+            if (!"cLobby".equals(camera.name())) {
+                throw new GameTestAssertException("De naam werd niet netjes gemaakt: \"" + camera.name() + "\"");
+            }
+            renameAction(owner, coreAbs, camAbs, "Lobby");
+            var seen = cameraOnWall(level, core, camAbs);
+            if (!"Lobby".equals(seen.getString("name"))) {
+                throw new GameTestAssertException("De bewakingsmuur ziet de nieuwe naam niet: " + seen);
+            }
+            // Afbreken: het item houdt de naam.
+            var drops = net.minecraft.world.level.block.Block.getDrops(level.getBlockState(camAbs), level, camAbs, camera);
+            if (drops.size() != 1 || !"Lobby".equals(drops.get(0).getHoverName().getString())) {
+                throw new GameTestAssertException("Het item van een afgebroken camera heeft zijn naam niet: " + drops);
+            }
+            // Leeg: weer het nummer.
+            renameAction(owner, coreAbs, camAbs, "   ");
+            seen = cameraOnWall(level, core, camAbs);
+            if (!camera.name().isEmpty() || !seen.getString("name").startsWith("Camera ")) {
+                throw new GameTestAssertException("Een lege naam maakt hem niet weer \"Camera 1\": \""
+                        + camera.name() + "\", " + seen);
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Wat de bewakingsmuur over de camera op deze plek krijgt. Op plek, niet de eerste in de lijst:
+     * in de testwereld kan nog een camera van een eerdere test (de toren) in het gebied hangen.
+     */
+    private static net.minecraft.nbt.CompoundTag cameraOnWall(ServerLevel level,
+                                                              com.senne.starktech.security.SecurityCoreBlockEntity core, BlockPos pos) {
+        for (net.minecraft.nbt.Tag element : com.senne.starktech.security.SecurityDevices.cameras(level, core)) {
+            var camera = (net.minecraft.nbt.CompoundTag) element;
+            if (camera.getInt("x") == pos.getX() && camera.getInt("y") == pos.getY() && camera.getInt("z") == pos.getZ()) {
+                return camera;
+            }
+        }
+        throw new GameTestAssertException("De bewakingsmuur ziet de camera op " + pos.toShortString() + " niet");
+    }
+
+    /** De knop Rename bij het grote camerabeeld. */
+    private static void renameAction(ServerPlayer player, BlockPos core, BlockPos camera, String name) {
+        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+        args.putInt("x", camera.getX());
+        args.putInt("y", camera.getY());
+        args.putInt("z", camera.getZ());
+        args.putString("name", name);
+        com.senne.starktech.security.os.StarkOs.handleAction(player,
+                new com.senne.starktech.network.OsActionPayload(core, "cam_rename", args));
+    }
+
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
     private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();

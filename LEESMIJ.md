@@ -118,7 +118,8 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
 | **I** | Repulsor aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
 | **X** | Salvo mini-raketten (hele harnas + raketpakket) |
 
-Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
+Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.** Daar staat ook "Cable X-ray
+on/off" (verborgen kabels door muren heen zien), standaard zonder toets.
 
 ---
 
@@ -133,7 +134,7 @@ Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.**
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
-| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse |
+| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien) |
 | **Navigation** | Waypoints, ping, comms |
 | **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
 
@@ -254,7 +255,9 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   bovenop gezet) ook.
 - Omdat het geen blok is, kun je er gewoon **blokken overheen bouwen**: bouw een muur of vloer
   over een kabel en hij loopt erin door. Zo werk je kabels weg. Verborgen kabels zie je alleen
-  **met de bril op**: dan lichten ze blauw op door de muur heen (tot 24 blokken ver).
+  **met de bril op**: dan lichten ze blauw op door de muur heen (tot 24 blokken ver). Dat
+  zet je aan of uit met **G > Information > Cable X-ray** (of geef het een eigen toets in
+  Opties > Besturing > E.D.I.T.H.: "Cable X-ray on/off").
 - **Shift + rechtsklik** met kabel in je hand op een kabel: oprapen. Een **schaar** (rechtsklik)
   knipt een kabel door; er valt een stukje uit. Een kabel in een muur moet je eerst vrijhakken.
 - Oude kabelblokken (uit een oudere versie, en in de Stark Tower en de Hydra-bunker) worden

@@ -45,6 +45,14 @@ public final class EdithClientConfig {
             .define("voiceTextInHud", true);
 
     /**
+     * Zie je verborgen Stark-kabels (in een muur of vloer) blauw door de muur heen als je de bril
+     * draagt? Aan/uit via G > Information > Cable X-ray (of een eigen toets).
+     */
+    public static final ModConfigSpec.BooleanValue CABLE_XRAY = BUILDER
+            .comment("With the E.D.I.T.H. glasses on, see hidden Stark cables glow through walls (G > Information > Cable X-ray)")
+            .define("cableXray", true);
+
+    /**
      * Het Client ID van JOUW gratis Spotify-app (zie het muziekscherm). Leeg = niet ingesteld.
      * Dit is geen wachtwoord; je logt zelf in op de site van Spotify.
      */
@@ -108,5 +116,19 @@ public final class EdithClientConfig {
             VOICE_TEXT_IN_HUD.set(!VOICE_TEXT_IN_HUD.get());
             SPEC.save();
         }
+    }
+
+    /** Staat de kabel-xray aan? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean cableXray() {
+        return !SPEC.isLoaded() || CABLE_XRAY.get();
+    }
+
+    /** Zet de kabel-xray aan of uit, bewaart de keuze, en geeft terug of hij nu aan staat. */
+    public static boolean toggleCableXray() {
+        if (SPEC.isLoaded()) {
+            CABLE_XRAY.set(!CABLE_XRAY.get());
+            SPEC.save();
+        }
+        return cableXray();
     }
 }
