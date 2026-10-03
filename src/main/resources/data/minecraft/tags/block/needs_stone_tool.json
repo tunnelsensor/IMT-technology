@@ -2,7 +2,6 @@
   "values": [
     "starktech:charging_station",
     "starktech:relay",
-    "starktech:laser_emitter",
     "starktech:dome_generator",
     "starktech:stark_turret",
     "starktech:hydra_turret",

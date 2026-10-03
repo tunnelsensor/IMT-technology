@@ -100,7 +100,7 @@ public final class ModBlocks {
             LaserEmitterBlock::new,
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
-                    .strength(3.0f, 6.0f)
+                    .strength(50.0f, 1200.0f)   // zo sterk als obsidiaan
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(LaserEmitterBlock.POWERED) ? 10 : 3));
