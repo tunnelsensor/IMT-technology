@@ -684,7 +684,8 @@ public class StarkOsScreen extends Screen {
 
     private static int logColour(String type) {
         return switch (type) {
-            case "HACK", "TRAP", "LOGIN_FAIL" -> HudStyle.RED;
+            case "HACK", "TRAP", "LOGIN_FAIL", "ALARM" -> HudStyle.RED;
+            case "LOGIC" -> 0xB89CFF;
             case "OWNER", "LOGIN" -> HudStyle.GREEN;
             case "SHOT", "ENTRY" -> HudStyle.ORANGE;
             case "DEVICE" -> HudStyle.CYAN;

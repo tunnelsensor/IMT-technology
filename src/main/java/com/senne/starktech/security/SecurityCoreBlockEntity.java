@@ -375,6 +375,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             ensureSystem(level);
             registered = true;
         }
+        // De server: diagrammen die bezig zijn, timers, de rij (zie LogicRunner).
+        com.senne.starktech.logic.LogicRunner.tick(level, this);
         long now = level.getGameTime();
         if ((now + pos.hashCode()) % 40 != 0) {
             return;

@@ -92,6 +92,7 @@ public class StarkTech {
 
         // Automatische tests (draaien alleen met "gradlew runGameTestServer").
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(StarkTechGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.LogicGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 

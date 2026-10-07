@@ -69,6 +69,9 @@ public final class StarkOs {
         /** Welke mappen (en welke versie ervan) het scherm al kreeg. */
         private @Nullable VirtualFs sentFs;
         private int sentRevision = -1;
+        /** Welke diagrammen (en welke versie ervan) het scherm al kreeg. */
+        private @Nullable com.senne.starktech.logic.LogicStore sentLogic;
+        private int sentLogicRevision = -1;
 
         Session(BlockPos core, boolean remote) {
             this.core = core;
@@ -113,6 +116,8 @@ public final class StarkOs {
                     .withStyle(ChatFormatting.RED), true);
             return;
         }
+        // De namen van je apparaten (je redstone-lijst) meteen overnemen, voor de app Logic.
+        com.senne.starktech.logic.LogicDevices.refresh(level, core, player);
         if (openFor(player, core, false)) {
             level.playSound(null, corePos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.4f, 1.8f);
         }
@@ -202,6 +207,12 @@ public final class StarkOs {
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
             case "card_write" -> writeCard(player, core, session, args.getString("label"), args.getInt("level"));
             case "card_block" -> blockCard(player, core, session, args.getInt("n"), args.getBoolean("on"));
+            case "logic_save" -> saveProgram(player, core, session, args.getString("old"), args.getString("name"),
+                    args.getCompound("graph"));
+            case "logic_delete" -> deleteProgram(player, core, session, args.getString("name"));
+            case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
+            case "input_rename" -> renameInput(player, core, session,
+                    new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
             default -> { } // onbekende opdracht: later uitgebreid (camera's)
         }
     }
@@ -377,6 +388,120 @@ public final class StarkOs {
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + (blocked ? " blocked" : " unblocked")
                 + " keycard #" + number);
         notify(player, core, session, "Card #" + number + (blocked ? " blocked" : " is valid again"), false);
+    }
+
+    // ================================================================ De diagrammen (app Logic)
+
+    /**
+     * Een diagram bewaren (de knop Save in de app Logic). De server controleert alles opnieuw: kloppen
+     * de blokjes, draait de server, past het op de SSD's, is de naam vrij? Een apparaat dat (nog) niet
+     * bestaat is geen fout (misschien bouw je het straks), maar je hoort het wel.
+     */
+    private static void saveProgram(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String oldName,
+                                    String newName, CompoundTag graphTag) {
+        ServerLevel level = player.serverLevel();
+        com.senne.starktech.logic.LogicStore store = core.logic();
+        String name = com.senne.starktech.logic.InputDeviceBlockEntity.cleanName(newName);
+        if (name.isEmpty()) {
+            notify(player, core, session, "Not saved: the diagram needs a name", true);
+            return;
+        }
+        var graph = com.senne.starktech.logic.program.LogicGraph.load(graphTag);
+        var problems = graph.problems();
+        if (!problems.isEmpty()) {
+            notify(player, core, session, "Not saved: " + problems.getFirst().message(), true);
+            return;
+        }
+        var stats = com.senne.starktech.logic.LogicServer.stats(level, core);
+        if (!stats.online()) {
+            notify(player, core, session, "Not saved: " + stats.problem(), true);
+            return;
+        }
+        var old = oldName.isEmpty() ? null : store.program(oldName);
+        var clash = store.program(name);
+        if (clash != null && clash != old) {
+            notify(player, core, session, "Not saved: there already is a diagram called " + clash.name(), true);
+            return;
+        }
+        if (old == null && store.programs().size() >= com.senne.starktech.logic.LogicStore.MAX_PROGRAMS) {
+            notify(player, core, session, "Not saved: a server holds at most "
+                    + com.senne.starktech.logic.LogicStore.MAX_PROGRAMS + " diagrams", true);
+            return;
+        }
+        int used = store.blocks() - (old == null ? 0 : old.graph().size()) + graph.size();
+        if (used > stats.capacity()) {
+            notify(player, core, session, "Not enough storage: this needs " + used + " blocks, your SSDs hold "
+                    + stats.capacity() + ". Add an SSD to a server rack.", true);
+            return;
+        }
+        store.put(old == null ? null : old.name(),
+                new com.senne.starktech.logic.program.LogicProgram(name, old == null || old.enabled(), graph));
+        core.setChanged();
+        com.senne.starktech.logic.LogicDevices.refresh(level, core, player);
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " saved the diagram \"" + name + "\"");
+        String unknown = unknownDevice(level, core, graph);
+        notify(player, core, session, unknown == null ? "Saved " + name + " (" + graph.size() + " blocks)"
+                : "Saved " + name + ", but there is no device called \"" + unknown + "\" (yet)", unknown != null);
+    }
+
+    /** De eerste naam van een apparaat in dit diagram die de server (nog) niet kent, of null. */
+    private static @Nullable String unknownDevice(ServerLevel level, SecurityCoreBlockEntity core,
+                                                  com.senne.starktech.logic.program.LogicGraph graph) {
+        java.util.Set<String> inputs = new java.util.HashSet<>();
+        for (var input : com.senne.starktech.logic.LogicDevices.inputs(level, core)) {
+            inputs.add(input.name().toLowerCase(java.util.Locale.ROOT));
+        }
+        java.util.Set<Integer> reachable = graph.reachable();
+        for (var node : graph.nodes()) {
+            if (!reachable.contains(node.id) || node.op.textArg() != com.senne.starktech.logic.program.Op.Arg.DEVICE) {
+                continue;
+            }
+            boolean known = node.op.hasSourceDevice()
+                    ? inputs.contains(node.text.toLowerCase(java.util.Locale.ROOT))
+                    : !core.logic().devices(node.text).isEmpty();
+            if (!known) {
+                return node.text;
+            }
+        }
+        return null;
+    }
+
+    private static void deleteProgram(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name) {
+        if (!core.logic().remove(name)) {
+            notify(player, core, session, "There is no diagram called " + name, true);
+            return;
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " deleted the diagram \"" + name + "\"");
+        notify(player, core, session, "Deleted " + name, false);
+    }
+
+    /** Een diagram aan- of uitzetten (uit = het blijft bewaard, maar doet niets). */
+    private static void enableProgram(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name, boolean on) {
+        var program = core.logic().program(name);
+        if (program == null) {
+            notify(player, core, session, "There is no diagram called " + name, true);
+            return;
+        }
+        core.logic().put(program.name(), program.withEnabled(on));
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " switched the diagram \""
+                + program.name() + "\" " + (on ? "on" : "off"));
+        notify(player, core, session, program.name() + (on ? " is on" : " is off"), false);
+    }
+
+    /** Een keycardlezer of codepaneel een andere naam geven (in de app Logic). */
+    private static void renameInput(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, String name) {
+        String clean = com.senne.starktech.logic.InputDeviceBlockEntity.cleanName(name);
+        if (clean.isEmpty() || !SecurityCores.inArea(core.getBlockPos(), pos)
+                || !(player.serverLevel().getBlockEntity(pos) instanceof com.senne.starktech.logic.InputDeviceBlockEntity device)) {
+            notify(player, core, session, "That name cannot be used", true);
+            return;
+        }
+        String old = device.name();
+        device.setName(clean);
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed \"" + old + "\" to \"" + clean + "\"");
+        notify(player, core, session, "Renamed to " + clean, false);
     }
 
     /** Wie heet zo? Eerst wie nu online is, anders wie hier ooit was (Minecraft onthoudt dat). */
@@ -605,6 +730,44 @@ public final class StarkOs {
             cards.add(entry);
         }
         data.put("cards", cards);
+        // De app Logic: hoe vol de SSD's zijn, wat er bezig is, en welke apparaten een diagram kan noemen.
+        CompoundTag info = new CompoundTag();
+        info.putInt("used", core.logic().blocks());
+        int[] load = com.senne.starktech.logic.LogicRunner.load(level, core);
+        info.putInt("running", load[0]);
+        info.putInt("queued", load[1]);
+        ListTag outputs = new ListTag();
+        for (String name : core.logic().deviceNames()) {
+            outputs.add(net.minecraft.nbt.StringTag.valueOf(name));
+        }
+        info.put("outputs", outputs);
+        ListTag inputs = new ListTag();
+        for (var input : com.senne.starktech.logic.LogicDevices.inputs(level, core)) {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("n", input.name());
+            entry.putBoolean("p", input.panel());
+            entry.putInt("x", input.pos().getX());
+            entry.putInt("y", input.pos().getY());
+            entry.putInt("z", input.pos().getZ());
+            inputs.add(entry);
+        }
+        info.put("inputs", inputs);
+        data.put("logicInfo", info);
+        // De diagrammen zelf: alleen als het scherm een oudere versie heeft (anders zou wat je aan het
+        // bewerken bent steeds overschreven worden).
+        com.senne.starktech.logic.LogicStore store = core.logic();
+        if (session.sentLogic != store || session.sentLogicRevision != store.revision()) {
+            CompoundTag logic = new CompoundTag();
+            logic.putInt("rev", store.revision());
+            ListTag programs = new ListTag();
+            for (var program : store.programs()) {
+                programs.add(program.save());
+            }
+            logic.put("programs", programs);
+            data.put("logic", logic);
+            session.sentLogic = store;
+            session.sentLogicRevision = store.revision();
+        }
         // De mappen: alleen als het scherm een oudere versie heeft.
         VirtualFs fs = core.fs();
         if (session.sentFs != fs || session.sentRevision != fs.revision()) {
@@ -696,5 +859,6 @@ public final class StarkOs {
         com.senne.starktech.security.SecurityDevices.clear();
         com.senne.starktech.logic.LogicServer.clear();
         com.senne.starktech.logic.LogicEvents.clear();
+        com.senne.starktech.logic.LogicRunner.clear();
     }
 }

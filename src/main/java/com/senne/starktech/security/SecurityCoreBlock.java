@@ -138,6 +138,7 @@ public class SecurityCoreBlock extends BaseEntityBlock {
         if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel
                 && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
             core.releaseSystem(serverLevel);
+            com.senne.starktech.logic.LogicRunner.stop(serverLevel, pos);
         }
         super.onRemove(state, level, pos, newState, moved);
     }

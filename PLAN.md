@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 123 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 134 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 79 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -981,9 +981,26 @@ De stappen, één per commit:
       je diagram (`if code == "4321":`), niet in het paneel; de server neemt alleen cijfers aan (1-8),
       alleen van dichtbij (6 blokken), en zet NIET de code in het logboek (een hacker die je
       logboek leest, ziet hem dus niet). Screenshots: `-Ponly=keycards`. Eén nieuwe test.
-- [ ] **5. Het brein van de server**: diagrammen opslaan op de kern, uitvoeren als er iets gebeurt
-      (met de snelheid van je CPU's en zoveel tegelijk als je RAM toelaat), en alles in het
-      logboek. Werkt ook als jij offline bent.
+      Commit: `9b0f847`.
+- [x] **5. Het brein van de server** (nog zonder app: die komt in stap 6 en 7)
+      **De taal** (`logic/program/`): triggers `keycard("...")`, `codepanel("...")`,
+      `turned_on("...")`, `turned_off("...")`, `every(10)`; `if`/`elif`/`else` met `and`, `or`,
+      `not`, `==`, `!=`, `<`, `>`, `<=`, `>=`; gegevens `card.level`, `card.number`, `card.valid`,
+      `card.name`, `code`, `player.name`, `player.trusted`, `player.owner`, `is_night`, `is_day`,
+      `is_on("...")`; acties `on`, `off`, `toggle`, `pulse("...", 3)`, `wait(2)`, `accept()`,
+      `deny()`, `say("...")`, `alarm("...")`, `log("...")`. Fouten krijgen een regelnummer en uitleg
+      voor beginners ("Line 2: I don't know \"opn\". Did you mean on?", "code is text: put the code
+      between quotes"). **Code en blokjes** zijn hetzelfde diagram (`GraphConverter`): elke when,
+      if en actie is één blokje; een if heeft de uitgangen yes, no en after. Code naar blokjes zet
+      ze netjes op een rij; een when-blok dat je niet veranderde, houdt zijn plek. **Uitvoeren**
+      (`LogicRunner`): een run begint na de reactietijd van je CPU's, zoveel tegelijk als je RAM
+      toelaat (de rest wacht in een rij van hooguit 32, dan "Out of memory"), alleen diagrammen die
+      op je SSD's passen, hooguit 40 triggers per seconde (tegen eindeloze kettingen). De namen van
+      apparaten komen uit de redstone-lijst van de eigenaar (alleen in het gebied van de kern) en de
+      kern onthoudt ze, dus het werkt ook als jij offline bent. `alarm()` zet een rode regel in het
+      logboek, waarschuwt de eigenaar, luidt een bel en laat de beveiliging jagen op wie het deed.
+      Alles staat in de kern: wie hem overneemt, krijgt ook de diagrammen. Zes nieuwe tests (in een
+      eigen bestand, `gametest/LogicGameTests.java`).
 - [ ] **6. De Logic-app: code**: een nieuwe app op de desktop, met links je diagrammen en rechts
       de code. "Check" laat fouten zien op de regel waar ze zitten (in begrijpelijk Engels).
 - [ ] **7. De Logic-app: blokjes**: hetzelfde diagram als blokjes met draadjes (slepen, verbinden,

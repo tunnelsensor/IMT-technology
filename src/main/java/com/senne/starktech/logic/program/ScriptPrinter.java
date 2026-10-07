@@ -1,0 +1,69 @@
+package com.senne.starktech.logic.program;
+
+import java.util.List;
+
+/**
+ * Schrijft een {@link Script} als nette code (4 spaties per inspringing, een lege regel tussen de
+ * when-blokken). Een lege tak wordt {@code pass}; een else met alleen een if erin wordt {@code elif}.
+ * Zo zie je in de code precies wat de blokjes doen.
+ */
+public final class ScriptPrinter {
+    private ScriptPrinter() {}
+
+    private static final String INDENT = "    ";
+
+    public static String print(Script script) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < script.handlers().size(); i++) {
+            Script.Handler handler = script.handlers().get(i);
+            if (i > 0) {
+                out.append('\n');
+            }
+            out.append("when ").append(call(handler.trigger(), handler.text(), handler.number())).append(":\n");
+            block(out, handler.body(), 1);
+        }
+        return out.toString();
+    }
+
+    private static void block(StringBuilder out, List<Script.Stmt> statements, int depth) {
+        if (statements.isEmpty()) {
+            out.append(INDENT.repeat(depth)).append("pass\n");
+            return;
+        }
+        for (Script.Stmt statement : statements) {
+            if (statement instanceof Script.If branch) {
+                ifStatement(out, branch, depth, "if");
+            } else if (statement instanceof Script.Action action) {
+                out.append(INDENT.repeat(depth)).append(call(action.op(), action.text(), action.number())).append('\n');
+            }
+        }
+    }
+
+    private static void ifStatement(StringBuilder out, Script.If branch, int depth, String keyword) {
+        out.append(INDENT.repeat(depth)).append(keyword).append(' ').append(branch.condition()).append(":\n");
+        block(out, branch.yes(), depth + 1);
+        if (branch.no().size() == 1 && branch.no().getFirst() instanceof Script.If inner) {
+            ifStatement(out, inner, depth, "elif");
+        } else if (!branch.no().isEmpty()) {
+            out.append(INDENT.repeat(depth)).append("else:\n");
+            block(out, branch.no(), depth + 1);
+        }
+    }
+
+    /** Een aanroep: {@code keycard("Lab door")}, {@code wait(2)}, {@code pulse("Gate", 0.5)}, {@code accept()}. */
+    public static String call(Op op, String text, double number) {
+        StringBuilder call = new StringBuilder(op.code()).append('(');
+        if (op.textArg() != Op.Arg.NONE) {
+            call.append(Expr.quote(text));
+        }
+        boolean showNumber = op.numberArg() == Op.Arg.SECONDS
+                || op.numberArg() == Op.Arg.OPTIONAL_SECONDS && number != op.defaultSeconds();
+        if (showNumber) {
+            if (op.textArg() != Op.Arg.NONE) {
+                call.append(", ");
+            }
+            call.append(Expr.number(number));
+        }
+        return call.append(')').toString();
+    }
+}

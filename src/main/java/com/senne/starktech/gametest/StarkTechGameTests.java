@@ -301,7 +301,7 @@ public final class StarkTechGameTests {
     // ================================================================ De beveiliging van de Stark Tower
 
     /** Zet een beveiligingskern neer (zonder eigenaar, of met de gegeven eigenaar). */
-    private static com.senne.starktech.security.SecurityCoreBlockEntity placeCore(GameTestHelper helper, BlockPos pos,
+    static com.senne.starktech.security.SecurityCoreBlockEntity placeCore(GameTestHelper helper, BlockPos pos,
                                                                                    @Nullable ServerPlayer owner) {
         helper.setBlock(pos, ModBlocks.SECURITY_CORE.get());
         powerTurret(helper, pos.below()); // de kern heeft stroom nodig
@@ -1073,7 +1073,7 @@ public final class StarkTechGameTests {
     }
 
     /** Zet een server met racks neer (één rack met een CPU, RAM en SSD, en stroom) en laat hem meteen tellen. */
-    private static void placeServer(GameTestHelper helper, BlockPos rackPos,
+    static void placeServer(GameTestHelper helper, BlockPos rackPos,
                                     com.senne.starktech.security.SecurityCoreBlockEntity core) {
         helper.setBlock(rackPos, ModBlocks.SERVER_RACK.get());
         powerTurret(helper, rackPos.below());
@@ -1084,7 +1084,7 @@ public final class StarkTechGameTests {
     }
 
     /** Laat de racks van deze server meteen kijken of ze meedraaien (anders duurt dat tot twee seconden). */
-    private static void startServer(GameTestHelper helper, BlockPos rackPos,
+    static void startServer(GameTestHelper helper, BlockPos rackPos,
                                     com.senne.starktech.security.SecurityCoreBlockEntity core) {
         ServerLevel level = helper.getLevel();
         com.senne.starktech.security.SecurityDevices.forget(level, core);
@@ -4430,7 +4430,7 @@ public final class StarkTechGameTests {
      * maakt dat alles uit (in creative vlieg je toch al en krijg je geen schade), dus maken
      * we er hier zelf een die wel gewoon survival is.
      */
-    private static ServerPlayer makeSurvivalOwner(GameTestHelper helper, BlockPos relativePos) {
+    static ServerPlayer makeSurvivalOwner(GameTestHelper helper, BlockPos relativePos) {
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(
                 new GameProfile(UUID.randomUUID(), "test-survival-player"), false);
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),

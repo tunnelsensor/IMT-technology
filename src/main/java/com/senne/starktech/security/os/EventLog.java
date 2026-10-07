@@ -19,7 +19,7 @@ public final class EventLog {
     public static final int MAX_ENTRIES = 64;
 
     /** Soort regel: bepaalt het icoontje en de kleur in het Logs-venster. */
-    public enum Type { ENTRY, SHOT, HACK, LOGIN_FAIL, LOGIN, TRAP, OWNER, DEVICE, SYSTEM }
+    public enum Type { ENTRY, SHOT, HACK, LOGIN_FAIL, LOGIN, TRAP, OWNER, DEVICE, SYSTEM, LOGIC, ALARM }
 
     /** Eén regel: wanneer (speltijd in ticks), wat voor soort, en de tekst (Engels). */
     public record Entry(long time, Type type, String text) {}

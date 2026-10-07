@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.logic.program.Op;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
@@ -46,6 +47,9 @@ public final class LogicEvents {
         String what = card == null ? "a blank card"
                 : "card #" + card.number() + " (level " + card.level() + (valid ? "" : ", not valid here") + ")";
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " used " + what + " at " + device.name());
+        LogicRunner.fire(level, core, Op.KEYCARD, device.name(), new LogicRunner.Context(Op.KEYCARD, device.name(),
+                reader.immutable(), player.getUUID(), player.getGameProfile().getName(),
+                SecurityCores.isFriend(level, core, player), player.getUUID().equals(core.ownerId()), card, valid, ""));
     }
 
     /**
@@ -68,6 +72,9 @@ public final class LogicEvents {
         InputDeviceBlock.flash(level, panel, InputLight.BUSY);
         level.playSound(null, panel, ModSounds.EDITH_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " entered a code at " + device.name());
+        LogicRunner.fire(level, core, Op.CODEPANEL, device.name(), new LogicRunner.Context(Op.CODEPANEL, device.name(),
+                panel.immutable(), player.getUUID(), player.getGameProfile().getName(),
+                SecurityCores.isFriend(level, core, player), player.getUUID().equals(core.ownerId()), null, false, code));
     }
 
     /**

@@ -1115,5 +1115,6 @@
   "logic.starktech.reader.hint": "Hold a keycard and right-click the reader.",
   "block.starktech.code_panel": "Code Panel",
   "logic.starktech.input.no_network": "Not connected: there is no security core nearby.",
-  "logic.starktech.input.no_response": "No response: the server is offline."
+  "logic.starktech.input.no_response": "No response: the server is offline.",
+  "logic.starktech.alarm": "ALARM on %s: %s"
 }

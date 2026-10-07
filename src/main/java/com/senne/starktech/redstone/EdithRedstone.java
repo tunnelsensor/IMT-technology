@@ -267,61 +267,76 @@ public final class EdithRedstone {
         if (level == null) {
             return false;
         }
-        BlockPos pos = relay.pos();
+        return switchAt(level, relay.pos(), relay.channel(), op, EdithBalance.RELAY_PULSE_TICKS);
+    }
+
+    /**
+     * Zet het apparaat op deze plek om: een relais, een laserzender, koepel of torentje (EdithSwitchable),
+     * of één schakelaar van een stroomkast ({@code channel} = de kant). Bij PULSE gaat het na
+     * {@code pulseTicks} vanzelf weer uit. Gebruikt door je bril en door de diagrammen van de server
+     * (die kiezen zelf hoe lang een puls duurt). Geeft false als er niets (meer) staat.
+     *
+     * Ging het apparaat echt aan of uit, dan hoort de server dat (voor "when turned_on(...)").
+     */
+    public static boolean switchAt(ServerLevel level, BlockPos pos, int channel, Op op, int pulseTicks) {
         // Ver weg? Dan laadt E.D.I.T.H. dat stukje wereld even in.
         if (!level.hasChunkAt(pos)) {
             level.getChunk(pos);
         }
-        BlockState state = level.getBlockState(pos);
-        // Eén schakelaar van een stroomkast (één kant).
-        if (relay.channel() >= 0 && state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock) {
-            net.minecraft.core.Direction side = net.minecraft.core.Direction.from3DDataValue(relay.channel());
-            boolean now = com.senne.starktech.energy.PowerCabinetBlock.isOn(state, side);
-            boolean wanted = switch (op) {
-                case ON, PULSE -> true;
-                case OFF -> false;
-                case TOGGLE -> !now;
-            };
-            com.senne.starktech.energy.PowerCabinets.setSwitch(level, pos, side, wanted);
-            if (op == Op.PULSE) {
-                PULSES.add(new Pulse(relay.dimension(), pos, relay.channel(), EdithBalance.RELAY_PULSE_TICKS));
-            }
-            return true;
-        }
-        // E.D.I.T.H. kan een relais schakelen, maar ook een laserzender of schildkoepel
-        // (die doen er zelf nog iets bij; zie EdithSwitchable).
-        if (state.getBlock() instanceof EdithSwitchable switchable) {
-            boolean now = switchable.isSwitchedOn(state);
-            boolean wanted = switch (op) {
-                case ON, PULSE -> true;
-                case OFF -> false;
-                case TOGGLE -> !now;
-            };
-            if (now != wanted) {
-                switchable.setSwitched(level, pos, state, wanted);
-            }
-            if (op == Op.PULSE) {
-                PULSES.add(new Pulse(relay.dimension(), pos, relay.channel(), EdithBalance.RELAY_PULSE_TICKS));
-            }
-            return true;
-        }
-        if (!(state.getBlock() instanceof RelayBlock)) {
+        Boolean before = isOnAt(level, pos, channel);
+        if (before == null) {
             return false; // weggehaald of opgeblazen
         }
-        boolean now = state.getValue(RelayBlock.POWERED);
         boolean wanted = switch (op) {
             case ON, PULSE -> true;
             case OFF -> false;
-            case TOGGLE -> !now;
+            case TOGGLE -> !before;
         };
-        if (now != wanted) {
+        BlockState state = level.getBlockState(pos);
+        if (channel >= 0 && state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock) {
+            // Eén schakelaar van een stroomkast (één kant).
+            com.senne.starktech.energy.PowerCabinets.setSwitch(level, pos, net.minecraft.core.Direction.from3DDataValue(channel), wanted);
+        } else if (state.getBlock() instanceof EdithSwitchable switchable) {
+            // Een laserzender of schildkoepel doet er zelf nog iets bij (zie EdithSwitchable).
+            if (before != wanted) {
+                switchable.setSwitched(level, pos, state, wanted);
+            }
+        } else if (before != wanted) {
             level.setBlock(pos, state.setValue(RelayBlock.POWERED, wanted), Block.UPDATE_ALL);
             level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4f, wanted ? 0.7f : 0.55f);
         }
         if (op == Op.PULSE) {
-            PULSES.add(new Pulse(relay.dimension(), pos, relay.channel(), EdithBalance.RELAY_PULSE_TICKS));
+            PULSES.add(new Pulse(level.dimension(), pos.immutable(), channel, Math.max(1, pulseTicks)));
         }
+        changed(level, pos, channel, before);
         return true;
+    }
+
+    /**
+     * Staat het apparaat op deze plek aan? Null als er niets staat dat E.D.I.T.H. kan schakelen (of
+     * een stroomkast zonder dit kanaal).
+     */
+    public static @org.jetbrains.annotations.Nullable Boolean isOnAt(ServerLevel level, BlockPos pos, int channel) {
+        BlockState state = level.getBlockState(pos);
+        if (channel >= 0) {
+            return state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock
+                    ? com.senne.starktech.energy.PowerCabinetBlock.isOn(state, net.minecraft.core.Direction.from3DDataValue(channel)) : null;
+        }
+        if (state.getBlock() instanceof EdithSwitchable switchable) {
+            return switchable.isSwitchedOn(state);
+        }
+        if (state.getBlock() instanceof RelayBlock) {
+            return state.getValue(RelayBlock.POWERED);
+        }
+        return null;
+    }
+
+    /** Is het apparaat echt van stand veranderd? Dan krijgt de server van die plek het te horen. */
+    private static void changed(ServerLevel level, BlockPos pos, int channel, boolean before) {
+        Boolean after = isOnAt(level, pos, channel);
+        if (after != null && after != before) {
+            com.senne.starktech.logic.LogicRunner.switched(level, pos, channel, after);
+        }
     }
 
     // ================================================================ Pulsen aftellen
@@ -345,6 +360,7 @@ public final class EdithRedstone {
                 level.getChunk(pulse.pos);
             }
             BlockState state = level.getBlockState(pulse.pos);
+            Boolean before = isOnAt(level, pulse.pos, pulse.channel);
             if (pulse.channel >= 0 && state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock) {
                 com.senne.starktech.energy.PowerCabinets.setSwitch(level, pulse.pos,
                         net.minecraft.core.Direction.from3DDataValue(pulse.channel), false);
@@ -353,6 +369,9 @@ public final class EdithRedstone {
             } else if (state.getBlock() instanceof RelayBlock && state.getValue(RelayBlock.POWERED)) {
                 level.setBlock(pulse.pos, state.setValue(RelayBlock.POWERED, false), Block.UPDATE_ALL);
                 level.playSound(null, pulse.pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4f, 0.55f);
+            }
+            if (before != null) {
+                changed(level, pulse.pos, pulse.channel, before);
             }
         }
     }

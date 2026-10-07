@@ -1,17 +1,26 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.logic.program.LogicProgram;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wat de server van een beveiligingskern onthoudt: de keycards die hij schreef (en welke
- * geblokkeerd zijn), en (vanaf stap 5) je redstone-diagrammen.
- *
+ * Wat de server van een beveiligingskern onthoudt:
+ * <ul>
+ *   <li>de keycards die hij schreef (en welke geblokkeerd zijn);</li>
+ *   <li>je redstone-diagrammen (LogicProgram);</li>
+ *   <li>het "telefoonboek" van apparaten: welke naam bij welk relais, laserzender, koepel of
+ *       torentje in het gebied hoort. Die namen geef je met je bril (je redstone-lijst); de server
+ *       neemt ze over, zodat je diagrammen ook werken als jij offline bent (zie LogicDevices).</li>
+ * </ul>
  * Het staat in de kern zelf (SecurityCoreBlockEntity), niet in de racks: breek je een rack af, dan
  * ben je je diagrammen niet kwijt. Neemt iemand je kern over, dan krijgt hij dit allemaal mee (net
  * als je bestanden).
@@ -19,6 +28,8 @@ import org.jetbrains.annotations.Nullable;
 public final class LogicStore {
     /** Zoveel kaarten kan één netwerk hooguit schrijven. */
     public static final int MAX_CARDS = 200;
+    /** Zoveel diagrammen kan één server hooguit hebben. */
+    public static final int MAX_PROGRAMS = 16;
     /** Het eerste kaartnummer. */
     private static final int FIRST_CARD = 1001;
 
@@ -29,8 +40,16 @@ public final class LogicStore {
         }
     }
 
+    /** Een apparaat dat een diagram kan schakelen: een blok, en welke schakelaar ervan (-1 = het hele blok). */
+    public record Target(BlockPos pos, int channel) {}
+
     private final TreeMap<Integer, Card> cards = new TreeMap<>();
     private int nextCard = FIRST_CARD;
+    private final List<LogicProgram> programs = new ArrayList<>();
+    /** Telt elke verandering aan de diagrammen (zo weet de desktop wanneer hij ze opnieuw moet krijgen). */
+    private int revision;
+    /** Naam (hoofdletters maken niet uit) -> de apparaten met die naam. */
+    private final TreeMap<String, List<Target>> devices = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     // ================================================================ Keycards
 
@@ -80,6 +99,118 @@ public final class LogicStore {
         return card != null && !card.blocked() && card.level() == data.level();
     }
 
+    // ================================================================ Diagrammen
+
+    /** Alle diagrammen, in de volgorde van de lijst (de bovenste krijgen als eerste een plek op de SSD's). */
+    public List<LogicProgram> programs() {
+        return Collections.unmodifiableList(programs);
+    }
+
+    /** Het diagram met deze naam (hoofdletters maken niet uit), of null. */
+    public @Nullable LogicProgram program(String name) {
+        for (LogicProgram program : programs) {
+            if (program.name().equalsIgnoreCase(name)) {
+                return program;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Bewaart een diagram. Heette het eerst anders ({@code oldName}), dan komt het op dezelfde plek in
+     * de lijst; een nieuw diagram komt onderaan.
+     */
+    public void put(@Nullable String oldName, LogicProgram program) {
+        int at = -1;
+        for (int i = 0; i < programs.size(); i++) {
+            String name = programs.get(i).name();
+            if (oldName != null && name.equalsIgnoreCase(oldName) || name.equalsIgnoreCase(program.name())) {
+                at = i;
+                break;
+            }
+        }
+        if (at >= 0) {
+            programs.set(at, program);
+            // Een tweede diagram met de oude of nieuwe naam (kan bij hernoemen) gaat weg.
+            for (int i = programs.size() - 1; i > at; i--) {
+                String name = programs.get(i).name();
+                if (name.equalsIgnoreCase(program.name()) || oldName != null && name.equalsIgnoreCase(oldName)) {
+                    programs.remove(i);
+                }
+            }
+        } else {
+            programs.add(program);
+        }
+        revision++;
+    }
+
+    public boolean remove(String name) {
+        boolean removed = programs.removeIf(program -> program.name().equalsIgnoreCase(name));
+        if (removed) {
+            revision++;
+        }
+        return removed;
+    }
+
+    public int revision() {
+        return revision;
+    }
+
+    /** Hoeveel blokjes alle diagrammen samen gebruiken (zo vol zijn de SSD's). */
+    public int blocks() {
+        int total = 0;
+        for (LogicProgram program : programs) {
+            total += program.graph().size();
+        }
+        return total;
+    }
+
+    // ================================================================ Apparaten
+
+    /** De apparaten met deze naam (hoofdletters maken niet uit); leeg als er geen is. */
+    public List<Target> devices(String name) {
+        List<Target> found = devices.get(name);
+        return found == null ? List.of() : found;
+    }
+
+    /** Alle namen van apparaten, op alfabet. */
+    public List<String> deviceNames() {
+        List<String> names = new ArrayList<>();
+        for (Map.Entry<String, List<Target>> entry : devices.entrySet()) {
+            names.add(entry.getKey());
+        }
+        return names;
+    }
+
+    /** De namen van het apparaat op deze plek (meestal één). */
+    public List<String> namesAt(BlockPos pos, int channel) {
+        List<String> names = new ArrayList<>();
+        for (Map.Entry<String, List<Target>> entry : devices.entrySet()) {
+            for (Target target : entry.getValue()) {
+                if (target.pos().equals(pos) && target.channel() == channel) {
+                    names.add(entry.getKey());
+                    break;
+                }
+            }
+        }
+        return names;
+    }
+
+    /** Het nieuwe telefoonboek (van LogicDevices.refresh). */
+    public boolean setDevices(Map<String, List<Target>> fresh) {
+        TreeMap<String, List<Target>> sorted = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, List<Target>> entry : fresh.entrySet()) {
+            sorted.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        // Hetzelfde als wat we al hadden (ook dezelfde hoofdletters)? Dan verandert er niets.
+        if (new ArrayList<>(sorted.entrySet()).equals(new ArrayList<>(devices.entrySet()))) {
+            return false;
+        }
+        devices.clear();
+        devices.putAll(sorted);
+        return true;
+    }
+
     // ================================================================ Opslaan
 
     public CompoundTag save() {
@@ -96,6 +227,22 @@ public final class LogicStore {
             list.add(entry);
         }
         tag.put("Cards", list);
+        ListTag programList = new ListTag();
+        for (LogicProgram program : programs) {
+            programList.add(program.save());
+        }
+        tag.put("Programs", programList);
+        ListTag deviceList = new ListTag();
+        for (Map.Entry<String, List<Target>> entry : devices.entrySet()) {
+            for (Target target : entry.getValue()) {
+                CompoundTag device = new CompoundTag();
+                device.putString("N", entry.getKey());
+                device.putLong("P", target.pos().asLong());
+                device.putInt("C", target.channel());
+                deviceList.add(device);
+            }
+        }
+        tag.put("Devices", deviceList);
         return tag;
     }
 
@@ -108,6 +255,16 @@ public final class LogicStore {
                     entry.getString("W"));
             store.cards.put(card.number(), card);
             store.nextCard = Math.max(store.nextCard, card.number() + 1);
+        }
+        for (Tag element : tag.getList("Programs", Tag.TAG_COMPOUND)) {
+            if (store.programs.size() < MAX_PROGRAMS) {
+                store.programs.add(LogicProgram.load((CompoundTag) element));
+            }
+        }
+        for (Tag element : tag.getList("Devices", Tag.TAG_COMPOUND)) {
+            CompoundTag device = (CompoundTag) element;
+            store.devices.computeIfAbsent(device.getString("N"), key -> new ArrayList<>())
+                    .add(new Target(BlockPos.of(device.getLong("P")), device.getInt("C")));
         }
         return store;
     }
