@@ -961,10 +961,18 @@ De stappen, één per commit:
       de server niet. Lampjes op de voorkant knipperen als het rack meedraait. Rechtsklik: de vier
       vakjes, en wat de hele server kan (of waarom niet). De app Status op de desktop zegt het ook.
       Alle getallen staan in de config onder `[logic]`. Screenshots: `-Ponly=racks`. Twee nieuwe tests.
-- [ ] **3. Keycards en de keycardlezer**: een lege keycard craften; op de desktop (nieuwe app
-      **Keycards**) schrijf je hem: naam, niveau 1-5, en hij krijgt een eigen nummer. Een lijst van
-      alle kaarten, met "Block" voor een verloren of gestolen kaart. De lezer hangt aan de muur;
-      rechtsklik met een kaart = de server krijgt "kaart gelezen".
+      Commit: `926edbd`.
+- [x] **3. Keycards en de keycardlezer**
+      **Keycard** (recept: Stark-chip, 2 papier, ijzer = 4 lege kaarten). Nieuwe app **Keycards** op de
+      desktop: naam en niveau (1-5) invullen, "Write card" schrijft de eerste lege kaart in je
+      rugzak; hij krijgt het volgende nummer (#1001, #1002...) en de kleur van zijn niveau (wit,
+      groen, blauw, paars, goud). Daaronder alle kaarten van dit netwerk met **Block/Unblock**. Een
+      kaart is alleen geldig in het netwerk dat hem schreef, als hij niet geblokkeerd is. De kaarten
+      staan in de kern (dus wie je kern overneemt, krijgt de lijst ook). De **Keycard Reader**
+      (recept: ijzer, glas, redstone, Stark-chip = 2 stuks) hangt aan de muur, krijgt een naam
+      ("Reader 1", of uit een aambeeld) en heeft een lampje: oranje = gelezen, groen = goed, rood =
+      geweigerd of de server draait niet. Elke gelezen kaart komt in het logboek. Screenshots:
+      `-Ponly=keycards`. Eén nieuwe test.
 - [ ] **4. Het codepaneel**: een blok aan de muur met een toetsenbordje (0-9, wissen, OK). Welke
       code goed is, staat in je diagram (`if code == "4321":`), niet in het paneel.
 - [ ] **5. Het brein van de server**: diagrammen opslaan op de kern, uitvoeren als er iets gebeurt

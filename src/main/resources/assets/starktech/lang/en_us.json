@@ -1105,5 +1105,14 @@
   "item.starktech.server_ram.tooltip": "%s more diagrams can be busy at the same time",
   "item.starktech.server_ssd.tooltip": "Room for %s more blocks in your diagrams",
   "item.starktech.server_part.tooltip": "Put it in a Server Rack",
-  "screen.starktech.server_rack.bay_tooltip": "A CPU, RAM or SSD goes here"
+  "screen.starktech.server_rack.bay_tooltip": "A CPU, RAM or SSD goes here",
+  "item.starktech.keycard": "Keycard",
+  "item.starktech.keycard.named": "Keycard: %s",
+  "item.starktech.keycard.blank": "Blank: write it in the Keycards app on your Stark OS desktop",
+  "item.starktech.keycard.level": "Level %s  #%s",
+  "item.starktech.keycard.network": "Network: %s",
+  "block.starktech.keycard_reader": "Keycard Reader",
+  "logic.starktech.reader.hint": "Hold a keycard and right-click the reader.",
+  "logic.starktech.input.no_network": "Not connected: there is no security core nearby.",
+  "logic.starktech.input.no_response": "No response: the server is offline."
 }

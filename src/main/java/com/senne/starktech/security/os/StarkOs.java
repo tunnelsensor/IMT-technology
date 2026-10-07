@@ -200,6 +200,8 @@ public final class StarkOs {
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
             case "trust_add" -> trust(player, core, session, args.getString("name").strip());
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
+            case "card_write" -> writeCard(player, core, session, args.getString("label"), args.getInt("level"));
+            case "card_block" -> blockCard(player, core, session, args.getInt("n"), args.getBoolean("on"));
             default -> { } // onbekende opdracht: later uitgebreid (camera's)
         }
     }
@@ -317,6 +319,64 @@ public final class StarkOs {
         }
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " no longer trusts " + name);
         notify(player, core, session, name + " is no longer trusted", false);
+    }
+
+    // ================================================================ Keycards
+
+    /**
+     * Een keycard schrijven (de app Keycards): de eerste lege keycard in je rugzak krijgt een naam,
+     * een niveau en het volgende nummer van dit netwerk. Je krijgt hem terug als aparte kaart.
+     */
+    private static void writeCard(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String label, int level) {
+        net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+        int slot = -1;
+        if (com.senne.starktech.logic.KeycardItem.isBlank(inventory.getSelected())) {
+            slot = inventory.selected;
+        }
+        for (int i = 0; slot < 0 && i < inventory.getContainerSize(); i++) {
+            if (com.senne.starktech.logic.KeycardItem.isBlank(inventory.getItem(i))) {
+                slot = i;
+            }
+        }
+        if (slot < 0) {
+            notify(player, core, session, "No blank keycard in your inventory", true);
+            return;
+        }
+        String clean = com.senne.starktech.logic.InputDeviceBlockEntity.cleanName(label);
+        if (clean.isEmpty()) {
+            clean = "Keycard";
+        }
+        String writer = player.getGameProfile().getName();
+        com.senne.starktech.logic.LogicStore.Card card = core.logic().issue(clean, level, writer);
+        if (card == null) {
+            notify(player, core, session, "This network cannot write more than "
+                    + com.senne.starktech.logic.LogicStore.MAX_CARDS + " cards", true);
+            return;
+        }
+        net.minecraft.world.item.ItemStack written = inventory.getItem(slot).split(1);
+        com.senne.starktech.logic.KeycardItem.write(written, new com.senne.starktech.logic.KeycardData(
+                core.ip(), core.hostname(), card.number(), card.level(), card.label()));
+        if (!inventory.add(written)) {
+            player.drop(written, false);
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, writer + " wrote keycard #" + card.number() + " \"" + card.label()
+                + "\" (level " + card.level() + ")");
+        player.serverLevel().playSound(null, core.getBlockPos(), com.senne.starktech.registry.ModSounds.EDITH_CONFIRM.get(),
+                SoundSource.BLOCKS, 0.5f, 1.2f);
+        notify(player, core, session, "Card #" + card.number() + " written: " + card.label() + " (level " + card.level() + ")", false);
+    }
+
+    /** Een kaart blokkeren (verloren, gestolen) of weer toelaten. */
+    private static void blockCard(ServerPlayer player, SecurityCoreBlockEntity core, Session session, int number, boolean blocked) {
+        if (!core.logic().setBlocked(number, blocked)) {
+            notify(player, core, session, "There is no card #" + number, true);
+            return;
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + (blocked ? " blocked" : " unblocked")
+                + " keycard #" + number);
+        notify(player, core, session, "Card #" + number + (blocked ? " blocked" : " is valid again"), false);
     }
 
     /** Wie heet zo? Eerst wie nu online is, anders wie hier ooit was (Minecraft onthoudt dat). */
@@ -533,6 +593,18 @@ public final class StarkOs {
         data.put("cameras", com.senne.starktech.security.SecurityDevices.cameras(level, core));
         // De server (serverracks) waar de redstone-diagrammen op draaien.
         data.put("server", com.senne.starktech.logic.LogicServer.snapshot(level, core));
+        // De keycards die dit netwerk schreef.
+        ListTag cards = new ListTag();
+        for (com.senne.starktech.logic.LogicStore.Card card : core.logic().cards()) {
+            CompoundTag entry = new CompoundTag();
+            entry.putInt("n", card.number());
+            entry.putString("l", card.label());
+            entry.putInt("v", card.level());
+            entry.putBoolean("b", card.blocked());
+            entry.putString("w", card.writtenBy());
+            cards.add(entry);
+        }
+        data.put("cards", cards);
         // De mappen: alleen als het scherm een oudere versie heeft.
         VirtualFs fs = core.fs();
         if (session.sentFs != fs || session.sentRevision != fs.revision()) {
@@ -623,5 +695,6 @@ public final class StarkOs {
         LOCKOUTS.clear();
         com.senne.starktech.security.SecurityDevices.clear();
         com.senne.starktech.logic.LogicServer.clear();
+        com.senne.starktech.logic.LogicEvents.clear();
     }
 }

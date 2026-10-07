@@ -56,6 +56,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private @Nullable SystemPassword password;
     private VirtualFs fs = new VirtualFs();
     private EventLog log = new EventLog();
+    /** De server: keycards en (straks) de redstone-diagrammen (zie LogicStore). */
+    private com.senne.starktech.logic.LogicStore logic = new com.senne.starktech.logic.LogicStore();
     /** Tot wanneer (speltijd) hij wacht voor hij een nieuwe drone stuurt. */
     private long nextDrone;
     /** Had de kern bij de laatste telling stroom? */
@@ -205,6 +207,11 @@ public class SecurityCoreBlockEntity extends BlockEntity {
 
     public EventLog log() {
         return log;
+    }
+
+    /** Wat de server onthoudt: de keycards en de redstone-diagrammen. */
+    public com.senne.starktech.logic.LogicStore logic() {
+        return logic;
     }
 
     /** Heeft het systeem een wachtwoord? Zonder heeft het het oude geheugenlek. */
@@ -453,6 +460,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         tag.put("Files", fs.save());
         tag.put("Log", log.save());
+        tag.put("Logic", logic.save());
         // Toegang
         tag.putBoolean("AttackMobs", attackMobs);
         tag.putBoolean("AttackPlayers", attackPlayers);
@@ -486,6 +494,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         password = SystemPassword.load(tag.getCompound("Password"));
         fs = VirtualFs.load(tag.getCompound("Files"));
         log = EventLog.load(tag.getList("Log", Tag.TAG_COMPOUND));
+        logic = com.senne.starktech.logic.LogicStore.load(tag.getCompound("Logic"));
         // Toegang. Een oude kern (zonder deze sleutels) valt terug op de standaardwaarden: de
         // beveiliging op monsters aan, op spelers uit, alle apparaten aan.
         attackMobs = !tag.contains("AttackMobs") || tag.getBoolean("AttackMobs");

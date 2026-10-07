@@ -1320,6 +1320,95 @@ public final class VisualCheck {
             t.shot(10, "r04_os_status_server");
             t.close(10);
         }
+
+        // --- Keycards (7 oktober): een lezer aan een muur (met een server, dus hij reageert), de
+        // kaarten in vijf kleuren in je hotbar, en de app Keycards (een kaart schrijven, de lijst).
+        if (want("keycards")) {
+            BlockPos core = new BlockPos(100, -60, -80);
+            BlockPos wall = new BlockPos(102, -60, -78);
+            BlockPos reader = wall.south();
+            BlockPos rack = new BlockPos(96, -60, -78);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("jarvis1", level.random);
+                }
+                for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
+                    level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                }
+                level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
+                        .setValue(com.senne.starktech.logic.ServerRackBlock.FACING, Direction.SOUTH));
+                if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                }
+                for (int dy = 0; dy < 3; dy++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        level.setBlockAndUpdate(wall.offset(dx, dy, 0), Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(reader, ModBlocks.KEYCARD_READER.get().defaultBlockState()
+                        .setValue(com.senne.starktech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
+                if (level.getBlockEntity(reader) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
+                    be.setName("Lab door");
+                }
+                // Een lege kaart en vijf beschreven kaarten (één per niveau) in de hotbar.
+                player.getInventory().clearContent();
+                player.getInventory().setItem(0, new ItemStack(ModItems.KEYCARD.get(), 3));
+                for (int lvl = 1; lvl <= 5; lvl++) {
+                    ItemStack card = new ItemStack(ModItems.KEYCARD.get());
+                    com.senne.starktech.logic.KeycardItem.write(card, new com.senne.starktech.logic.KeycardData(
+                            "10.0.0.1", "dev-sec", 1000 + lvl, lvl, "Level " + lvl));
+                    player.getInventory().setItem(lvl, card);
+                }
+                player.getInventory().setItem(6, new ItemStack(ModItems.KEYCARD_READER.get()));
+                player.getInventory().selected = 3;
+            });
+            t.stand(10, 102.5, -60, -75.5, 180, 15);
+            t.shot(60, "y01_reader_wall");
+            // De kaart tegen de lezer: oranje (de server denkt na).
+            t.onServer(0, player -> com.senne.starktech.logic.LogicEvents.keycard(player.serverLevel(), reader, player,
+                    com.senne.starktech.logic.KeycardItem.data(player.getInventory().getItem(3))));
+            t.shot(4, "y02_reader_busy");
+            t.onServer(0, player -> com.senne.starktech.logic.InputDeviceBlock.flash(player.serverLevel(), reader,
+                    com.senne.starktech.logic.InputLight.OK));
+            t.shot(4, "y03_reader_ok");
+            t.onServer(0, player -> com.senne.starktech.logic.InputDeviceBlock.flash(player.serverLevel(), reader,
+                    com.senne.starktech.logic.InputLight.DENIED));
+            t.shot(4, "y04_reader_denied");
+            // De app Keycards: een kaart schrijven.
+            t.stand(30, 100.5, -60, -77.5, 180, 20);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourKeycards("Lab access", 3);
+                }
+            });
+            t.shot(10, "y05_keycards_app");
+            t.onServer(0, player -> {
+                for (String[] card : new String[][] {{"Lab access", "3"}, {"Guest", "1"}, {"Pepper", "5"}}) {
+                    net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                    args.putString("label", card[0]);
+                    args.putInt("level", Integer.parseInt(card[1]));
+                    com.senne.starktech.security.os.StarkOs.handleAction(player,
+                            new com.senne.starktech.network.OsActionPayload(core, "card_write", args));
+                }
+                net.minecraft.nbt.CompoundTag block = new net.minecraft.nbt.CompoundTag();
+                block.putInt("n", 1002);
+                block.putBoolean("on", true);
+                com.senne.starktech.security.os.StarkOs.handleAction(player,
+                        new com.senne.starktech.network.OsActionPayload(core, "card_block", block));
+            });
+            t.shot(15, "y06_keycards_list");
+            t.close(10);
+        }
 }
 
     // ================================================================ De wereld inrichten

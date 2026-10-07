@@ -194,6 +194,17 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(com.senne.starktech.logic.ServerRackBlock.ONLINE) ? 3 : 0));
 
+    /** De keycardlezer: een kaart ertegen houden start je diagram (7 oktober). */
+    public static final DeferredBlock<com.senne.starktech.logic.KeycardReaderBlock> KEYCARD_READER = BLOCKS.registerBlock(
+            "keycard_reader", com.senne.starktech.logic.KeycardReaderBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.starktech.logic.InputDeviceBlock.LIGHT)
+                            == com.senne.starktech.logic.InputLight.OFF ? 0 : 4));
+
     /** De beveiligingskern van de Stark Tower: heel sterk, zodat hacken de weg is. */
     public static final DeferredBlock<com.senne.starktech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
             "security_core", com.senne.starktech.security.SecurityCoreBlock::new,

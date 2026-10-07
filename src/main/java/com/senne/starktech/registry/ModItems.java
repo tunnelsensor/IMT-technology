@@ -158,6 +158,12 @@ public final class ModItems {
             properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.SSD, properties),
             new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
 
+    /** Een keycard: leeg gecraft, op de desktop geschreven (naam, niveau, nummer). */
+    public static final DeferredItem<com.senne.starktech.logic.KeycardItem> KEYCARD = ITEMS.registerItem("keycard",
+            com.senne.starktech.logic.KeycardItem::new, new Item.Properties().stacksTo(16));
+    public static final DeferredItem<BlockItem> KEYCARD_READER = ITEMS.registerSimpleBlockItem("keycard_reader",
+            ModBlocks.KEYCARD_READER, new Item.Properties());
+
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(
             "stark_laptop", com.senne.starktech.security.StarkLaptopItem::new,

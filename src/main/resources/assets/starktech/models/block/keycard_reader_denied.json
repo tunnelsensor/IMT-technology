@@ -1,0 +1,7 @@
+{
+  "parent": "starktech:block/keycard_reader_base",
+  "textures": {
+    "front": "starktech:block/keycard_reader_denied",
+    "side": "starktech:block/keycard_reader_side"
+  }
+}

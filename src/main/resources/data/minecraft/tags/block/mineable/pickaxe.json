@@ -17,6 +17,7 @@
     "starktech:landing_pad",
     "starktech:power_cabinet",
     "starktech:security_camera",
-    "starktech:server_rack"
+    "starktech:server_rack",
+    "starktech:keycard_reader"
   ]
 }

@@ -1072,6 +1072,103 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /** Zet een server met racks neer (één rack met een CPU, RAM en SSD, en stroom) en laat hem meteen tellen. */
+    private static void placeServer(GameTestHelper helper, BlockPos rackPos,
+                                    com.senne.starktech.security.SecurityCoreBlockEntity core) {
+        helper.setBlock(rackPos, ModBlocks.SERVER_RACK.get());
+        powerTurret(helper, rackPos.below());
+        var rack = (com.senne.starktech.logic.ServerRackBlockEntity) helper.getBlockEntity(rackPos);
+        rack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+        rack.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+        rack.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+    }
+
+    /** Laat de racks van deze server meteen kijken of ze meedraaien (anders duurt dat tot twee seconden). */
+    private static void startServer(GameTestHelper helper, BlockPos rackPos,
+                                    com.senne.starktech.security.SecurityCoreBlockEntity core) {
+        ServerLevel level = helper.getLevel();
+        com.senne.starktech.security.SecurityDevices.forget(level, core);
+        com.senne.starktech.logic.LogicServer.forgetAll();
+        BlockPos abs = helper.absolutePos(rackPos);
+        ((com.senne.starktech.logic.ServerRackBlockEntity) helper.getBlockEntity(rackPos)).update(level, abs, level.getBlockState(abs));
+        com.senne.starktech.logic.LogicServer.forgetAll();
+    }
+
+    /**
+     * Keycards: op de desktop schrijf je de lege kaart in je rugzak (naam, niveau, nummer 1001). Hij is
+     * geldig in dit netwerk, niet als hij geblokkeerd is of van een ander netwerk komt. De lezer zegt
+     * "kaart gelezen" in het logboek als de server draait, en wordt rood als hij niet draait.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "keycards")
+    public static void keycards_write_block_and_read(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        var core = placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos reader = new BlockPos(8, 3, 8);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        ((com.senne.starktech.logic.InputDeviceBlockEntity) helper.getBlockEntity(reader)).setName("Lab door");
+        BlockPos readerAbs = helper.absolutePos(reader);
+        owner.getInventory().clearContent();
+        owner.getInventory().add(new ItemStack(ModItems.KEYCARD.get(), 2));
+        helper.runAfterDelay(2, () -> {
+            com.senne.starktech.security.os.StarkOs.open(owner, coreAbs);
+            net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+            args.putString("label", "Lab access");
+            args.putInt("level", 3);
+            com.senne.starktech.security.os.StarkOs.handleAction(owner,
+                    new com.senne.starktech.network.OsActionPayload(coreAbs, "card_write", args));
+            ItemStack written = ItemStack.EMPTY;
+            int blanks = 0;
+            for (int i = 0; i < owner.getInventory().getContainerSize(); i++) {
+                ItemStack stack = owner.getInventory().getItem(i);
+                if (com.senne.starktech.logic.KeycardItem.data(stack) != null) {
+                    written = stack;
+                } else if (com.senne.starktech.logic.KeycardItem.isBlank(stack)) {
+                    blanks += stack.getCount();
+                }
+            }
+            var data = com.senne.starktech.logic.KeycardItem.data(written);
+            if (data == null || blanks != 1 || data.number() != 1001 || data.level() != 3
+                    || !"Lab access".equals(data.label()) || !core.ip().equals(data.ip())) {
+                throw new GameTestAssertException("De kaart werd niet goed geschreven: " + data + " (nog " + blanks + " leeg)");
+            }
+            if (!core.logic().isValid(core.ip(), data)) {
+                throw new GameTestAssertException("Een net geschreven kaart is niet geldig");
+            }
+            if (core.logic().isValid("10.0.0.1", data)
+                    || core.logic().isValid(core.ip(), new com.senne.starktech.logic.KeycardData(core.ip(), "x", 1001, 5, "x"))) {
+                throw new GameTestAssertException("Een kaart van een ander netwerk, of met een ander niveau, is geldig");
+            }
+            net.minecraft.nbt.CompoundTag block = new net.minecraft.nbt.CompoundTag();
+            block.putInt("n", 1001);
+            block.putBoolean("on", true);
+            com.senne.starktech.security.os.StarkOs.handleAction(owner,
+                    new com.senne.starktech.network.OsActionPayload(coreAbs, "card_block", block));
+            if (core.logic().isValid(core.ip(), data)) {
+                throw new GameTestAssertException("Een geblokkeerde kaart is nog geldig");
+            }
+            // Geen server: de lezer wordt rood.
+            com.senne.starktech.logic.LogicEvents.keycard(level, readerAbs, owner, data);
+            helper.assertBlockProperty(reader, com.senne.starktech.logic.InputDeviceBlock.LIGHT,
+                    com.senne.starktech.logic.InputLight.DENIED);
+            // Met een server: oranje (de server denkt na), en een regel in het logboek.
+            BlockPos rack = new BlockPos(12, 3, 12);
+            placeServer(helper, rack, core);
+            startServer(helper, rack, core);
+            com.senne.starktech.logic.LogicEvents.clear(); // anders is het "te snel na de vorige keer"
+            com.senne.starktech.logic.LogicEvents.keycard(level, readerAbs, owner, data);
+            helper.assertBlockProperty(reader, com.senne.starktech.logic.InputDeviceBlock.LIGHT,
+                    com.senne.starktech.logic.InputLight.BUSY);
+            String last = core.log().entries().getLast().text();
+            if (!last.contains("card #1001") || !last.contains("Lab door") || !last.contains("not valid")) {
+                throw new GameTestAssertException("Het logboek zegt niet wat er gelezen werd: " + last);
+            }
+            helper.succeed();
+        });
+    }
+
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
     private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();

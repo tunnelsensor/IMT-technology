@@ -68,6 +68,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SERVER_CPU.get());
                 output.accept(ModItems.SERVER_RAM.get());
                 output.accept(ModItems.SERVER_SSD.get());
+                output.accept(ModItems.KEYCARD.get());
+                output.accept(ModItems.KEYCARD_READER.get());
                 output.accept(ModItems.STARK_LAPTOP.get());
                 output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
             })

@@ -2395,6 +2395,68 @@ def server_part_items():
     save(ssd, "item/server_ssd.png")
 
 
+# De kleuren van een keycard per niveau (zelfde als KeycardsApp.levelColour in de mod).
+KEYCARD_LEVELS = {
+    1: (232, 238, 242, 255),
+    2: (91, 227, 125, 255),
+    3: (79, 168, 255, 255),
+    4: (194, 123, 255, 255),
+    5: (255, 201, 60, 255),
+}
+# Het lampje van een keycardlezer of codepaneel (zie InputLight in de mod).
+INPUT_LEDS = {
+    "off": (40, 46, 52, 255),
+    "busy": (255, 170, 40, 255),
+    "ok": (80, 240, 120, 255),
+    "denied": (255, 60, 50, 255),
+}
+
+
+def keycard_items():
+    """
+    De keycard: een liggend kaartje met een gouden chip en een magneetstrip. Leeg is hij grijs;
+    beschreven krijgt hij bovenaan een band in de kleur van zijn niveau (keycard_1 t/m keycard_5).
+    """
+    def card(band):
+        im = img(16, 16)
+        d = ImageDraw.Draw(im)
+        d.rectangle([1, 4, 14, 12], fill=(206, 210, 216, 255), outline=(120, 126, 136, 255))
+        px(im, [(1, 4), (14, 4), (1, 12), (14, 12)], CLEAR)  # ronde hoekjes
+        if band:
+            d.rectangle([2, 5, 13, 6], fill=band)
+        d.rectangle([3, 8, 5, 10], fill=GOLD, outline=GOLD_DARK)
+        d.line([7, 11, 13, 11], fill=(40, 42, 48, 255))   # magneetstrip
+        px(im, [(12, 8)], CYAN)                              # het Stark-lampje
+        return im
+
+    save(card(None), "item/keycard.png")
+    for level, colour in KEYCARD_LEVELS.items():
+        save(card(colour), f"item/keycard_{level}.png")
+
+
+def keycard_reader_textures():
+    """
+    De keycardlezer: een donker kastje van 6 bij 10 pixels (op de plek waar het in het blok zit:
+    x 5-10, y 3-12) met een schermpje, een lampje en een gleuf voor de kaart. Vier voorkanten, één
+    per kleur van het lampje.
+    """
+    body = (40, 43, 50, 255)
+    edge = (22, 23, 27, 255)
+    side = img(16, 16, body)
+    ImageDraw.Draw(side).rectangle([0, 0, 15, 15], outline=edge)
+    save(side, "block/keycard_reader_side.png")
+    for name, led in INPUT_LEDS.items():
+        im = img(16, 16, body)
+        d = ImageDraw.Draw(im)
+        d.rectangle([5, 3, 10, 12], fill=body, outline=edge)
+        d.rectangle([6, 4, 9, 5], fill=CYAN_DARK)
+        px(im, [(6, 4)], CYAN)
+        d.line([7, 7, 8, 7], fill=led)
+        d.line([6, 10, 9, 10], fill=(10, 10, 12, 255))       # de gleuf
+        d.line([6, 11, 9, 11], fill=(66, 70, 80, 255))
+        save(im, f"block/keycard_reader_{name}.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -2436,3 +2498,5 @@ if __name__ == "__main__":
     power_cabinet_textures()
     server_rack_textures()
     server_part_items()
+    keycard_items()
+    keycard_reader_textures()

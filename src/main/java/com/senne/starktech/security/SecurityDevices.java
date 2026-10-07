@@ -52,10 +52,10 @@ public final class SecurityDevices {
 
     /**
      * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
-     * camera's, en de serverracks (zie LogicServer).
+     * camera's, de serverracks (zie LogicServer) en de keycardlezers en codepanelen (inputs).
      */
     public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> cameras,
-                        List<BlockPos> racks, long time) {}
+                        List<BlockPos> racks, List<BlockPos> inputs, long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -73,6 +73,7 @@ public final class SecurityDevices {
         List<BlockPos> emitters = new ArrayList<>();
         List<BlockPos> cameras = new ArrayList<>();
         List<BlockPos> racks = new ArrayList<>();
+        List<BlockPos> inputs = new ArrayList<>();
         AABB area = core.area();
         BlockPos corePos = core.getBlockPos();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
@@ -95,6 +96,9 @@ public final class SecurityDevices {
                     } else if (blockEntity instanceof com.senne.starktech.logic.ServerRackBlockEntity rack
                             && SecurityCores.inArea(corePos, rack.getBlockPos())) {
                         racks.add(rack.getBlockPos().immutable());
+                    } else if (blockEntity instanceof com.senne.starktech.logic.InputDeviceBlockEntity input
+                            && SecurityCores.inArea(corePos, input.getBlockPos())) {
+                        inputs.add(input.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -134,7 +138,7 @@ public final class SecurityDevices {
         cameras.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
         Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
-                List.copyOf(racks), now);
+                List.copyOf(racks), List.copyOf(inputs), now);
         CACHE.put(key, found);
         return found;
     }

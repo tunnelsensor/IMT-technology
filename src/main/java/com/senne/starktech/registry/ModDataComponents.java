@@ -28,6 +28,12 @@ public final class ModDataComponents {
                     // Voorkomt dat het item in je hand "wiebelt" telkens als de energie verandert.
                     );
 
+    /** Wat er op een beschreven keycard staat (netwerk, nummer, niveau, naam). Een lege kaart heeft dit niet. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.logic.KeycardData>> KEYCARD =
+            COMPONENTS.registerComponentType("keycard", builder -> builder
+                    .persistent(com.senne.starktech.logic.KeycardData.CODEC)
+                    .networkSynchronized(com.senne.starktech.logic.KeycardData.STREAM_CODEC));
+
     /** Van wie de bril is. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithOwner>> OWNER =
             COMPONENTS.registerComponentType("owner", builder -> builder

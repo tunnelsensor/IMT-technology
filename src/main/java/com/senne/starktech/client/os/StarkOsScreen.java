@@ -34,6 +34,7 @@ public class StarkOsScreen extends Screen {
         CAMERAS("Cameras", "C", 336, 196),
         DEVICES("Devices", "D", 330, 196),
         ACCESS("Access", "A", 280, 190),
+        KEYCARDS("Keycards", "K", 300, 190),
         FILES("Files", "F", 300, 190),
         NOTES("Notes", "N", 320, 196),
         LOGS("Logs", "L", 330, 200),
@@ -111,6 +112,7 @@ public class StarkOsScreen extends Screen {
     private final DevicesApp devices = new DevicesApp(this);
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
+    private final KeycardsApp keycards = new KeycardsApp(this);
     /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
     private boolean gotFirstSnapshot;
 
@@ -193,6 +195,12 @@ public class StarkOsScreen extends Screen {
         files.tourShow(contentArea(win), folder, select, menu);
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Keycards, met een naam en niveau al ingevuld. */
+    public void tourKeycards(String label, int level) {
+        openApp(App.KEYCARDS);
+        keycards.tourFill(label, level);
+    }
+
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
     public void tourOpen(App app) {
         openApp(app);
@@ -255,6 +263,9 @@ public class StarkOsScreen extends Screen {
         }
         if (win.app != App.CAMERAS) {
             cameras.blur();
+        }
+        if (win.app != App.KEYCARDS) {
+            keycards.blur();
         }
     }
 
@@ -376,6 +387,7 @@ public class StarkOsScreen extends Screen {
             case DEVICES -> devices.mouseClicked(font, contentArea(win), mx, my);
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
+            case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
             case SETTINGS -> {
                 int cx = win.x + 6;
                 int fieldY = win.y + TITLE_H + 60;
@@ -441,6 +453,7 @@ public class StarkOsScreen extends Screen {
             case DEVICES -> devices.mouseScrolled(scrollY);
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
+            case KEYCARDS -> keycards.mouseScrolled(scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
@@ -454,7 +467,8 @@ public class StarkOsScreen extends Screen {
         if (top != null && top.app == App.FILES && files.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)
-                || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)) {
+                || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (editingPassword && passwordText.length() < 8
@@ -472,7 +486,8 @@ public class StarkOsScreen extends Screen {
         if (top != null && top.app == App.FILES && files.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)) {
+                || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (editingPassword) {
@@ -593,6 +608,7 @@ public class StarkOsScreen extends Screen {
             case DEVICES -> devices.render(g, font, area, mouseX, mouseY);
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
+            case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);
