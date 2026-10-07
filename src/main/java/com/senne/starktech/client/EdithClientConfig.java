@@ -104,15 +104,10 @@ public final class EdithClientConfig {
             .defineInRange("cameraFeedDistance", 48, 16, 96);
 
     // ---------------------------------------------------------------- Rayshields
-    /** Hoe hard het zoemen van een laserwand of koepel is (1 = zoals bedoeld, 0 = uit). */
+    /** Hoe hard het (stille) zoemen van een laserwand of koepel is (1 = zoals bedoeld, 0 = uit). */
     public static final ModConfigSpec.DoubleValue RAYSHIELD_HUM_VOLUME = BUILDER
-            .comment("How loud the hum of laser walls and domes is (1 = normal, 0 = off)")
-            .defineInRange("rayshieldHumVolume", 1.0, 0.0, 2.0);
-
-    /** Zoveel seconden (ongeveer) is een schild stil tussen twee keer zoemen. */
-    public static final ModConfigSpec.IntValue RAYSHIELD_HUM_PAUSE = BUILDER
-            .comment("Seconds of silence (roughly) between two hums of the same laser wall or dome")
-            .defineInRange("rayshieldHumPause", 10, 0, 120);
+            .comment("How loud the quiet hum of laser walls and domes is (1 = normal, 2 = twice as loud, 0 = off)")
+            .defineInRange("rayshieldHumVolume", 1.0, 0.0, 3.0);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -121,10 +116,6 @@ public final class EdithClientConfig {
         return SPEC.isLoaded() ? RAYSHIELD_HUM_VOLUME.get() : 1.0;
     }
 
-    /** Hoeveel seconden een rayshield stil is tussen twee keer zoemen. */
-    public static int rayshieldHumPause() {
-        return SPEC.isLoaded() ? RAYSHIELD_HUM_PAUSE.get() : 10;
-    }
 
     /** Mag de spraaktekst in de HUD? (Zolang de instellingen nog niet geladen zijn: ja.) */
     public static boolean voiceTextInHud() {
