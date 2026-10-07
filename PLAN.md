@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 134 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 79 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -1028,8 +1028,15 @@ De stappen, één per commit:
       (of de Delete-toets). Een blokje met een fout heeft een rode rand, een los blokje is grijs. In de
       statusregel staat het blokje onder de muis zoals in de code. Wisselen houdt alles: blokjes
       die je niet veranderde blijven waar ze stonden (ook losse), en code met een fout kan pas naar
-      de blokjes als de fout weg is. Screenshots: `-Ponly=logic` (`l05`-`l07`).
-- [ ] **8. Showcase en screenshots**: een nieuwe functie in de showcase, en screenshots van alles.
+      de blokjes als de fout weg is. Screenshots: `-Ponly=logic` (`l05`-`l07`). Commit: `d799e04`.
+- [x] **8. Showcase en screenshots**
+      Nieuwe functie **72, "Server racks and Logic"** (staat als NIEUW): een klein lab op (-50, -50)
+      met een eigen kern, drie racks, een muur met een ijzeren deur, een lezer, een paneel en een
+      lamp. Een kaart van niveau 3 opent de deur 3 seconden (groen), een geblokkeerde kaart geeft
+      rood en E.D.I.T.H. zegt "Someone tried the lab door", de code 4321 zet de lamp aan; daarna de
+      app Logic met de code en als blokjes. Screenshots: `-Ponly=racks`, `keycards`, `logic` en `lab`
+      (het lab stap voor stap). LEESMIJ.md heeft een nieuw stuk "De server: je redstone
+      programmeren".
 
 ---
 
@@ -1045,6 +1052,10 @@ raiddrones eruitzien.
 - [ ] Hoe het vliegen *aanvoelt* (de getallen kloppen, maar dat moet je zelf proberen)
 - [x] De blauwe straalvlammen onder de laarzen: gezien op 26 september (`47_flight_jets`), in orde
 - [ ] Raiddrones: hoe ze bewegen en aanvallen
+- [ ] De **rayshield-geluiden** (7 oktober): ik kan niet luisteren. Klinken het zoemen, "vwoem" en
+      de knetter goed, en is het zoemen niet te hard of te zacht?
+- [ ] **De blokjes-editor met de muis**: slepen, draadjes trekken en zoomen heb ik alleen
+      nagerekend en op screenshots gezien, niet zelf met een muis gedaan.
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 

@@ -1424,6 +1424,27 @@ public final class VisualCheck {
             t.close(10);
         }
 
+        // --- Het lab van de showcase (hoofdstuk 8): de deur met keycard, het paneel met de lamp.
+        if (want("lab")) {
+            BlockPos lab = ShowcaseFeatures.LOGIC_LAB;
+            t.onServer(0, ShowcaseFeatures::buildLogicLab);
+            t.stand(10, lab.getX() + 3.5, lab.getY(), lab.getZ() + 11.5, 180, 10);
+            t.shot(60, "lab1_lab");
+            t.onServer(0, player -> ShowcaseFeatures.readCard(player, true));
+            t.shot(4, "lab2_lab_card_busy");
+            t.shot(12, "lab3_lab_card_ok_door_open");
+            t.shot(70, "lab4_lab_door_closed_again");
+            t.onServer(0, player -> ShowcaseFeatures.readCard(player, false));
+            t.shot(16, "lab5_lab_blocked_card");
+            t.onServer(30, player -> {
+                com.senne.starktech.logic.LogicEvents.clear();
+                com.senne.starktech.logic.LogicEvents.codePanel(player.serverLevel(), lab.offset(5, 1, 7), player, "4321");
+            });
+            t.shot(16, "lab6_lab_lights_on");
+            t.stand(10, lab.getX() + 3.5, lab.getY(), lab.getZ() + 3.5, 180, 15);
+            t.shot(20, "lab7_lab_racks");
+        }
+
         // --- De app Logic (7 oktober): een kern met een server, twee relais met een naam (zoals je
         // ze met je bril noemt), een lezer en een paneel; dan de code, Help, een fout, en bewaren.
         if (want("logic")) {

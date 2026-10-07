@@ -400,6 +400,49 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
   cabinets**, zodat je ze op afstand of met je stem schakelt ("turn off cabinet 1 left").
 - In de Stark Tower en de Hydra-bunker staat er een op een goed bewaakte plek.
 
+### De server: je redstone programmeren
+Met een **server** programmeer je de redstone van je basis: "houdt iemand een kaart van niveau 3
+tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan je
+**beveiligingskern** (Stark OS).
+1. **Bouwen**: zet **Server Racks** binnen 30 blokken van je kern, naast of op elkaar: samen zijn
+   ze één server (een los rack draait niet mee). Geef ze stroom met een kabel; racks geven de
+   stroom aan elkaar door. Rechtsklik op een rack en stop er onderdelen in: een **CPU** (de server
+   reageert sneller: 1 CPU = 0,5 s, elke extra CPU sneller), **RAM** (hoeveel diagrammen tegelijk
+   bezig kunnen zijn) en een **SSD** (hoeveel blokjes je kwijt kunt). Van elk minstens één, dan
+   knipperen de lampjes.
+2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
+   naam ("Vault door"): met die naam noem je ze in je diagram. Een **Keycard Reader** en een
+   **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld).
+3. **Keycards**: craft lege kaarten en schrijf ze op de desktop in de app **Keycards** (naam en
+   niveau 1-5; ze krijgen een eigen nummer). Een verloren of gestolen kaart **blokkeer** je daar.
+4. **Programmeren**: de app **Logic** op de desktop. Links je diagrammen, rechts de code; de knop
+   **Blocks** toont hetzelfde als blokjes met draadjes (en **Code** weer terug). **Check** zoekt
+   fouten, **Save** zet het op de server, **Help** toont alles wat je kunt gebruiken (klik erop en
+   het komt in je code).
+
+De code lijkt op Python: wat ingesprongen staat (4 spaties), hoort bij de regel erboven.
+```
+when keycard("Lab door"):
+    if card.valid and card.level >= 3:
+        accept()
+        pulse("Vault door", 3)
+    else:
+        deny()
+        alarm("Wrong card at the lab")
+```
+- **Begin met** `when keycard("...")`, `when codepanel("...")`, `when turned_on("...")`,
+  `when turned_off("...")` of `when every(10)` (elke 10 seconden).
+- **Kies** met `if ...:`, `elif ...:` en `else:`, met `and`, `or`, `not` en `==`, `!=`, `<`, `>`,
+  `<=`, `>=`. Je kunt kijken naar `card.level`, `card.valid`, `card.number`, `card.name`, `code`
+  (tekst: `code == "4321"`), `player.trusted`, `player.owner`, `player.name`, `is_night`, `is_day`
+  en `is_on("...")`.
+- **Doe** `on(...)`, `off(...)`, `toggle(...)`, `pulse("...", 3)`, `wait(2)`, `accept()` en `deny()`
+  (groen of rood lampje op de lezer of het paneel), `say("...")` (E.D.I.T.H. zegt het je),
+  `log("...")` en `alarm("...")` (alarm, en de beveiliging jaagt op wie het deed).
+
+Neemt iemand je kern over, dan krijgt hij ook je diagrammen en kaarten. De code van een codepaneel
+staat alleen in je diagram, niet in het logboek.
+
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
@@ -698,7 +741,9 @@ showcase en staat hij bij NIEUW.
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
-  `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`; meerdere met komma's). Op een ander
+  `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
+  `racks`, `keycards`, `logic`, `lab`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
-  stuwraketten) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile`.
+  stuwraketten, rayshields) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile` (op deze
+  pc heeft `py -3.12` ze al: `py -3.12 tools/generate_sounds.py rayshield_hum`).

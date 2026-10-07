@@ -1076,6 +1076,54 @@ final class ShowcaseFeatures {
                     .pause(80);
         });
 
+        add("Server racks and Logic", "Hoofdstuk 8: je redstone programmeren. Een klein lab met een eigen "
+                + "beveiligingskern en drie serverracks (lampjes knipperen: ze draaien mee; samen 2 CPU's, 2 RAM, "
+                + "2 SSD's). In de muur een ijzeren deur, links een keycardlezer, rechts een codepaneel en een lamp. "
+                + "Eerst de kaart (niveau 3) tegen de lezer: oranje, dan groen, en de deur gaat 3 seconden open "
+                + "(het diagram doet pulse(\"Lab door lock\", 3)). Dan een kaart die geblokkeerd is: rood. Dan de "
+                + "code 4321 op het paneel: de lamp gaat aan. Daarna de app Logic op de desktop: de code van het "
+                + "diagram (met kleuren), en dezelfde code als blokjes met draadjes. Luister ook naar de nieuwe "
+                + "rayshield-geluiden bij de laserpoort en de koepel (eerder in de showcase).",
+                Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
+            s.onServer(0, ShowcaseFeatures::buildLogicLab)
+                    .lookAt(40, Vec3.atCenterOf(LOGIC_LAB.offset(3, 1, 6)))
+                    .pause(40)
+                    // De goede kaart: groen, de deur gaat open.
+                    .onServer(0, player -> readCard(player, true))
+                    .pause(90)
+                    // Een geblokkeerde kaart: rood.
+                    .onServer(0, player -> readCard(player, false))
+                    .pause(60)
+                    // Het codepaneel: de toetsen, dan de code, en de lamp gaat aan.
+                    .step(0, () -> {
+                        Minecraft.getInstance().setScreen(new com.senne.starktech.client.CodePanelScreen(
+                                LOGIC_LAB.offset(5, 1, 7), "Lights panel"));
+                        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.CodePanelScreen panel) {
+                            panel.tourType("4321");
+                        }
+                    })
+                    .pause(50)
+                    .close(0)
+                    .onServer(0, player -> {
+                        com.senne.starktech.logic.LogicEvents.clear();
+                        com.senne.starktech.logic.LogicEvents.codePanel(player.serverLevel(), LOGIC_LAB.offset(5, 1, 7),
+                                player, "4321");
+                    })
+                    .pause(60)
+                    // De racks van dichtbij, en dan de desktop bij de kern.
+                    .stand(0, LOGIC_LAB.getX() + 3.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 15)
+                    .pause(50)
+                    .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, LOGIC_LAB))
+                    .step(10, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.LOGIC)))
+                    .pause(120)
+                    .step(0, () -> desktop(os -> os.tourLogicBlocks(null)))
+                    .pause(120)
+                    .step(0, () -> desktop(os -> os.tourLogicBlocks(com.senne.starktech.logic.program.Op.IF)))
+                    .pause(80)
+                    .close(20);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -1269,6 +1317,143 @@ final class ShowcaseFeatures {
             be.ensureSystem(player.serverLevel());
             be.setPassword("jarvis1", player.serverLevel().random);
         }
+    }
+
+    // ---------------------------------------------------------------- Het lab van hoofdstuk 8
+
+    /** Waar het lab staat: zijn beveiligingskern (ver genoeg van de toren, die zijn eigen kern heeft). */
+    static final BlockPos LOGIC_LAB = new BlockPos(-50, -60, -50);
+
+    /** Het diagram van het lab, zoals je het in de app Logic ziet. */
+    private static final String LAB_CODE = """
+            # The lab door: a level 3 card opens it for 3 seconds
+            when keycard("Lab door"):
+                if card.valid and card.level >= 3:
+                    accept()
+                    pulse("Lab door lock", 3)
+                else:
+                    deny()
+                    say("Someone tried the lab door")
+
+            when codepanel("Lights panel"):
+                if code == "4321":
+                    accept()
+                    toggle("Lab lights")
+                else:
+                    deny()
+            """;
+
+    /**
+     * Bouwt het lab (elke keer opnieuw, zodat de showcase altijd hetzelfde laat zien): een kern met
+     * stroom, drie racks met onderdelen, een muur met een ijzeren deur, een lezer, een paneel, een
+     * lamp, twee relais met een naam (zoals je ze met je bril noemt), en het diagram.
+     */
+    static void buildLogicLab(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        BlockPos lab = LOGIC_LAB;
+        // Opruimen: een lege plek van 12 x 4 x 14.
+        for (BlockPos pos : BlockPos.betweenClosed(lab.offset(-3, 0, -2), lab.offset(8, 4, 11))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        level.setBlockAndUpdate(lab, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        claimTowerCore(player, lab);
+        BlockPos[] racks = {lab.offset(3, 0, 0), lab.offset(3, 1, 0), lab.offset(4, 0, 0)};
+        for (BlockPos generator : new BlockPos[] {lab.below(), racks[0].below()}) {
+            level.setBlockAndUpdate(generator, com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                charger.fill(30_000);
+            }
+        }
+        net.minecraft.world.level.block.state.BlockState rack = com.senne.starktech.registry.ModBlocks.SERVER_RACK.get()
+                .defaultBlockState().setValue(com.senne.starktech.logic.ServerRackBlock.FACING, net.minecraft.core.Direction.SOUTH);
+        net.minecraft.world.item.Item[][] parts = {
+                {com.senne.starktech.registry.ModItems.SERVER_CPU.get(), com.senne.starktech.registry.ModItems.SERVER_RAM.get()},
+                {com.senne.starktech.registry.ModItems.SERVER_CPU.get(), com.senne.starktech.registry.ModItems.SERVER_SSD.get()},
+                {com.senne.starktech.registry.ModItems.SERVER_RAM.get(), com.senne.starktech.registry.ModItems.SERVER_SSD.get()}};
+        for (int i = 0; i < racks.length; i++) {
+            level.setBlockAndUpdate(racks[i], rack);
+            if (level.getBlockEntity(racks[i]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                for (int slot = 0; slot < parts[i].length; slot++) {
+                    be.parts().setItem(slot, new net.minecraft.world.item.ItemStack(parts[i][slot]));
+                }
+            }
+        }
+        // De muur (z + 6), met een ijzeren deur, een lamp erin en de lezer en het paneel ervoor.
+        for (int dx = -2; dx <= 7; dx++) {
+            for (int dy = 0; dy < 3; dy++) {
+                level.setBlockAndUpdate(lab.offset(dx, dy, 6), Blocks.STONE_BRICKS.defaultBlockState());
+            }
+        }
+        BlockPos door = lab.offset(2, 0, 6);
+        net.minecraft.world.level.block.state.BlockState doorState = Blocks.IRON_DOOR.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.DoorBlock.FACING, net.minecraft.core.Direction.SOUTH);
+        level.setBlock(door, doorState.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 3);
+        level.setBlock(door.above(), doorState.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 3);
+        BlockPos lamp = lab.offset(5, 2, 6);
+        level.setBlockAndUpdate(lamp, Blocks.REDSTONE_LAMP.defaultBlockState());
+        BlockPos doorRelay = lab.offset(2, 0, 5);
+        BlockPos lightRelay = lab.offset(5, 2, 5);
+        level.setBlockAndUpdate(doorRelay, com.senne.starktech.registry.ModBlocks.RELAY.get().defaultBlockState());
+        level.setBlockAndUpdate(lightRelay, com.senne.starktech.registry.ModBlocks.RELAY.get().defaultBlockState());
+        // De twee relais in je redstone-lijst (erbij, niet in plaats van: de relais-demo heeft zijn lamp nodig).
+        var relays = player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
+        if (relays.indexAt(level.dimension(), doorRelay) < 0) {
+            relays = relays.with(new com.senne.starktech.redstone.Relay("Lab door lock", "lab", level.dimension(), doorRelay));
+        }
+        if (relays.indexAt(level.dimension(), lightRelay) < 0) {
+            relays = relays.with(new com.senne.starktech.redstone.Relay("Lab lights", "lab", level.dimension(), lightRelay));
+        }
+        player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, relays);
+        placeInput(level, lab.offset(1, 1, 7), com.senne.starktech.registry.ModBlocks.KEYCARD_READER.get().defaultBlockState(), "Lab door");
+        placeInput(level, lab.offset(5, 1, 7), com.senne.starktech.registry.ModBlocks.CODE_PANEL.get().defaultBlockState(), "Lights panel");
+        // Het diagram, en een kaart van niveau 3 in je hand.
+        if (level.getBlockEntity(lab) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            com.senne.starktech.logic.LogicDevices.refresh(level, core, player);
+            core.logic().remove("Lab");
+            var graph = com.senne.starktech.logic.program.GraphConverter.toGraph(
+                    com.senne.starktech.logic.program.ScriptParser.parse(LAB_CODE), null);
+            core.logic().put(null, new com.senne.starktech.logic.program.LogicProgram("Lab", true, graph, LAB_CODE));
+            core.setChanged();
+            com.senne.starktech.security.SecurityDevices.forget(level, core);
+            com.senne.starktech.logic.LogicServer.forgetAll();
+        }
+    }
+
+    private static void placeInput(net.minecraft.server.level.ServerLevel level, BlockPos pos,
+                                   net.minecraft.world.level.block.state.BlockState state, String name) {
+        level.setBlockAndUpdate(pos, state.setValue(com.senne.starktech.logic.InputDeviceBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        if (level.getBlockEntity(pos) instanceof com.senne.starktech.logic.InputDeviceBlockEntity device) {
+            device.setName(name);
+        }
+    }
+
+    /** Een kaart tegen de lezer van het lab: een goede van niveau 3, of een geblokkeerde. */
+    static void readCard(net.minecraft.server.level.ServerPlayer player, boolean good) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        if (!(level.getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core)) {
+            return;
+        }
+        // De racks laten meteen kijken of ze meedraaien (anders duurt dat tot twee seconden).
+        for (BlockPos rackPos : new BlockPos[] {LOGIC_LAB.offset(3, 0, 0), LOGIC_LAB.offset(3, 1, 0), LOGIC_LAB.offset(4, 0, 0)}) {
+            if (level.getBlockEntity(rackPos) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+                rack.update(level, rackPos, level.getBlockState(rackPos));
+            }
+        }
+        var card = core.logic().issue(good ? "Lab access" : "Lost card", 3, player.getGameProfile().getName());
+        if (card == null) {
+            return;
+        }
+        if (!good) {
+            core.logic().setBlocked(card.number(), true);
+        }
+        var data = new com.senne.starktech.logic.KeycardData(core.ip(), core.hostname(), card.number(), 3, card.label());
+        net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.KEYCARD.get());
+        com.senne.starktech.logic.KeycardItem.write(stack, data);
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack);
+        com.senne.starktech.logic.LogicEvents.clear();
+        com.senne.starktech.logic.LogicEvents.keycard(level, LOGIC_LAB.offset(1, 1, 7), player, data);
     }
 
     /** Iets doen met de Stark OS-desktop die nu openstaat (als hij openstaat). */
