@@ -901,6 +901,69 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       cameras" (de bewakingsmuur van de toren, het grote beeld, draaien, NO SIGNAL, een camera van
       dichtbij). Ze staan in de showcase als NIEUW.
 
+### 8. Redstone programmeren op een server (7 oktober)
+
+Jouw wensen: je redstone programmeren in een diagram (een relais gaat aan, dan gaat een ander
+relais aan; met if/else); een keycardlezer of codepaneel start iets, en een centraal systeem
+kijkt wat er moet gebeuren. Dat systeem draait op een **server**: een multiblok van
+**serverracks** die je naast of op elkaar zet. In de racks steek je **CPU, RAM en opslag**, zodat
+je meer kunt programmeren en je redstone sneller reageert. De server hangt aan je eigen
+beveiliging (Stark OS). En de rayshields krijgen **Star Wars-geluiden**.
+
+Jouw antwoorden: het diagram kan **allebei**: blokjes met draadjes, én regels code (sneller, maar
+moeilijker), en je wisselt heen en weer (blokjes worden code, code wordt blokjes); keycards met
+een **niveau (1-5) en een eigen nummer** (een gestolen kaart blokkeer je); losse **CPU, RAM en
+opslag** in de racks; het Star Wars-geluid op **alle drie** de rayshields (laserpoorten,
+persoonlijk schild, koepel).
+
+Mijn invulling (de tweede vragenronde klikte je weg; zeg het als je iets anders wil):
+
+- **De code lijkt op Python**: inspringen, `if`/`else`, dubbele punten.
+  ```
+  when keycard("Lab door"):
+      if card.valid and card.level >= 3:
+          accept()
+          pulse("Vault door", 3)
+      else:
+          deny()
+          alarm("Wrong card at the lab")
+  ```
+- **Wat een diagram start**: een relais dat aan of uit gaat, een keycardlezer, een codepaneel, en
+  een timer (`every(10)`: elke 10 seconden). Meer kan later (gewone redstone, een camera die
+  iemand ziet, een alarm).
+- **Bereik**: de server stuurt alles in het gebied van zijn beveiligingskern (relais,
+  laserzenders, koepels, torentjes, schakelaars van de stroomkast die je in je redstone-lijst hebt).
+- **Een hacker** die je kern overneemt, krijgt ook je diagrammen: hij kan ze zien en veranderen
+  (net als je bestanden, die blijven ook staan).
+- **Echte Star Wars-geluiden** mogen niet in de mod (auteursrecht). Ik maak ze zelf na met
+  `tools/generate_sounds.py`: een brommend zoemen, een "vwoem" bij aan/uit, een knetter bij een
+  treffer.
+
+De stappen, één per commit:
+
+- [ ] **1. Rayshield-geluiden**: zoemen (een lus zolang een laserwand of koepel aan staat, alleen
+      in de buurt), "vwoem" bij aan en uit, een knetter als iets het schild raakt (een laserwand
+      aanraken, een treffer op je persoonlijke schild of op de koepel). Vier nieuwe geluiden.
+- [ ] **2. Serverracks**: een nieuw blok met 4 vakjes voor onderdelen. Racks die elkaar raken (naast
+      of op elkaar) zijn samen één server, die hoort bij de kern in wiens gebied hij staat en
+      stroom nodig heeft. Drie nieuwe items: **CPU** (reageert sneller: 1 CPU = 0,5 s, 4 = meteen),
+      **RAM** (hoeveel diagrammen tegelijk bezig kunnen zijn) en **SSD** (hoeveel blokjes je in
+      totaal kwijt kunt). Lampjes op de voorkant. Alle getallen in de config.
+- [ ] **3. Keycards en de keycardlezer**: een lege keycard craften; op de desktop (nieuwe app
+      **Keycards**) schrijf je hem: naam, niveau 1-5, en hij krijgt een eigen nummer. Een lijst van
+      alle kaarten, met "Block" voor een verloren of gestolen kaart. De lezer hangt aan de muur;
+      rechtsklik met een kaart = de server krijgt "kaart gelezen".
+- [ ] **4. Het codepaneel**: een blok aan de muur met een toetsenbordje (0-9, wissen, OK). Welke
+      code goed is, staat in je diagram (`if code == "4321":`), niet in het paneel.
+- [ ] **5. Het brein van de server**: diagrammen opslaan op de kern, uitvoeren als er iets gebeurt
+      (met de snelheid van je CPU's en zoveel tegelijk als je RAM toelaat), en alles in het
+      logboek. Werkt ook als jij offline bent.
+- [ ] **6. De Logic-app: code**: een nieuwe app op de desktop, met links je diagrammen en rechts
+      de code. "Check" laat fouten zien op de regel waar ze zitten (in begrijpelijk Engels).
+- [ ] **7. De Logic-app: blokjes**: hetzelfde diagram als blokjes met draadjes (slepen, verbinden,
+      een IF met een "yes"- en een "no"-uitgang). Eén knop wisselt tussen blokjes en code.
+- [ ] **8. Showcase en screenshots**: een nieuwe functie in de showcase, en screenshots van alles.
+
 ---
 
 ## Nog nooit in het spel bekeken
