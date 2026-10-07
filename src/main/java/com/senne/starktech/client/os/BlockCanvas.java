@@ -36,8 +36,9 @@ import org.jetbrains.annotations.Nullable;
  *       zijn instellingen (welk apparaat, hoeveel seconden, de voorwaarde), met suggesties en meteen
  *       een melding als er iets niet klopt. Delete haalt het gekozen blokje weg.</li>
  * </ul>
- * Een blokje met een fout heeft een rode rand; een los blokje (niet aan een when) is grijs: het doet
- * niets.
+ * Een blokje met een fout heeft een rode rand; een los blokje (niet aan een when of def) is grijs:
+ * het doet niets. Je eigen blokken zijn paars: een DEF begint een rij (net als een when) en een
+ * "use def"-blokje voert die rij uit.
  */
 final class BlockCanvas {
     static final int NODE_W = 96;
@@ -49,19 +50,24 @@ final class BlockCanvas {
     private static final int TRIGGER = HudStyle.CYAN;
     private static final int IF = 0xFF79C6;
     private static final int ACTION = 0x9ED8FF;
+    /** Je eigen blokken (def en het gebruik ervan). */
+    private static final int FUNCTION = 0xC9A0FF;
     private static final int YES = 0x5BE37D;
     private static final int NO = 0xFF5A50;
     private static final int AFTER = 0xC8D2D8;
 
     /** De blokjes in het palet, per kopje. */
     private static final Op[][] PALETTE = {
-            {Op.KEYCARD, Op.CODEPANEL, Op.TURNED_ON, Op.TURNED_OFF, Op.EVERY},
-            {Op.IF},
-            {Op.ON, Op.OFF, Op.TOGGLE, Op.PULSE, Op.WAIT, Op.ACCEPT, Op.DENY, Op.SAY, Op.ALARM, Op.LOG}};
-    private static final String[] PALETTE_HEADERS = {"WHEN (start)", "CHECK", "DO"};
+            {Op.KEYCARD, Op.CODEPANEL, Op.TURNED_ON, Op.TURNED_OFF, Op.EVERY, Op.DEF},
+            {Op.IF, Op.CALL, Op.ON, Op.OFF, Op.TOGGLE, Op.PULSE, Op.WAIT, Op.ACCEPT, Op.DENY, Op.SAY, Op.ALARM, Op.LOG}};
+    private static final String[] PALETTE_HEADERS = {"START (when, def)", "CHECK AND DO"};
 
     private final Supplier<CompoundTag> info;
     private final Runnable changed;
+    /** Telt elke verandering; de fouten rekenen we alleen opnieuw uit als hij veranderde. */
+    private int version;
+    private int problemsVersion = -1;
+    private List<LogicGraph.Problem> problemsCache = List.of();
     private final Consumer<String> hint;
     private LogicGraph graph = new LogicGraph();
 
@@ -111,9 +117,25 @@ final class BlockCanvas {
         return graph;
     }
 
+    /** Er veranderde iets aan de blokjes (door jou). */
+    private void edited() {
+        version++;
+        changed.run();
+    }
+
+    /** Wat er mis is met de blokjes (onthouden tot de volgende verandering). */
+    private List<LogicGraph.Problem> problems() {
+        if (problemsVersion != version) {
+            problemsCache = graph.problems();
+            problemsVersion = version;
+        }
+        return problemsCache;
+    }
+
     /** Een ander diagram: het vlak schuift naar de blokjes. */
     void setGraph(LogicGraph graph) {
         this.graph = graph;
+        version++;
         selected = -1;
         drag = Drag.NONE;
         int minX = Integer.MAX_VALUE;
@@ -133,6 +155,7 @@ final class BlockCanvas {
     void replaceGraph(LogicGraph graph) {
         int keep = selected;
         this.graph = graph;
+        version++;
         drag = Drag.NONE;
         selectNode(graph.node(keep) != null ? keep : -1);
     }
@@ -205,7 +228,7 @@ final class BlockCanvas {
         g.pose().scale(zoom, zoom, 1);
         Set<Integer> reachable = graph.reachable();
         java.util.Map<Integer, String> problems = new java.util.HashMap<>();
-        for (LogicGraph.Problem problem : graph.problems()) {
+        for (LogicGraph.Problem problem : problems()) {
             problems.put(problem.node(), problem.message());
         }
         // Eerst de draadjes, dan de blokjes erover.
@@ -283,13 +306,12 @@ final class BlockCanvas {
         if (node.id == selected) {
             g.renderOutline(x - 1, y - 1, NODE_W + 2, NODE_H + 2, HudStyle.argb(120, HudStyle.WHITE));
         }
-        String title = node.op.isTrigger() ? "WHEN " + node.op.code() : node.op == Op.IF ? "IF" : node.op.code();
-        g.drawString(font, title, x + 3, y + 1, HudStyle.argb(alpha, HudStyle.WHITE), false);
+        g.drawString(font, title(node.op), x + 3, y + 1, HudStyle.argb(alpha, HudStyle.WHITE), false);
         String detail = detail(node);
         g.drawString(font, OsDraw.fitRight(font, detail, NODE_W - 6), x + 3, y + 13,
                 HudStyle.argb(alpha, detail.isEmpty() ? OsDraw.GREY : 0xD8E2E8), false);
         // De poorten.
-        if (!node.op.isTrigger()) {
+        if (!node.op.isRoot()) {
             int[] in = inputPos(node);
             port(g, in[0], in[1], 0x8A9BA0);
         }
@@ -332,7 +354,13 @@ final class BlockCanvas {
     }
 
     private static int colour(Op op) {
-        return op.isTrigger() ? TRIGGER : op == Op.IF ? IF : ACTION;
+        return op.isTrigger() ? TRIGGER : op == Op.IF ? IF : op == Op.DEF || op == Op.CALL ? FUNCTION : ACTION;
+    }
+
+    /** De titel bovenop een blokje: "WHEN keycard", "IF", "DEF", "use def", "pulse". */
+    private static String title(Op op) {
+        return op.isTrigger() ? "WHEN " + op.code() : op == Op.IF ? "IF" : op == Op.DEF ? "DEF"
+                : op == Op.CALL ? "use def" : op.code();
     }
 
     private static int darker(int rgb) {
@@ -358,6 +386,7 @@ final class BlockCanvas {
             case PULSE -> node.text + ", " + seconds(node.number) + " s";
             case ACCEPT -> "green light";
             case DENY -> "red light";
+            case DEF, CALL -> node.text + "()";
             default -> node.text;
         };
     }
@@ -375,7 +404,7 @@ final class BlockCanvas {
             return "if " + node.text + ":";
         }
         String call = com.senne.starktech.logic.program.ScriptPrinter.call(node.op, node.text, node.number);
-        return node.op.isTrigger() ? "when " + call + ":" : call;
+        return node.op.isTrigger() ? "when " + call + ":" : node.op == Op.DEF ? call + ":" : call;
     }
 
     // ---------------------------------------------------------------- Waar de poorten zitten
@@ -478,9 +507,24 @@ final class BlockCanvas {
             node.text = "true";
         } else if (op.textArg() == Op.Arg.TEXT) {
             node.text = op == Op.ALARM ? "Intruder!" : "Hello";
+        } else if (op == Op.DEF) {
+            node.text = freeDefName();
+        } else if (op == Op.CALL) {
+            List<String> names = suggestions(op);
+            node.text = names.isEmpty() ? "" : names.getFirst();
         }
-        changed.run();
+        edited();
         selectNode(node.id);
+    }
+
+    /** Een naam voor een nieuwe def die nog niet bestaat: my_block, my_block_2, ... */
+    private String freeDefName() {
+        java.util.Set<String> used = new java.util.HashSet<>(suggestions(Op.CALL));
+        String name = "my_block";
+        for (int number = 2; used.contains(name); number++) {
+            name = "my_block_" + number;
+        }
+        return name;
     }
 
     // ================================================================ De instellingen van een blokje
@@ -494,8 +538,16 @@ final class BlockCanvas {
             textBox.setResponder(value -> {
                 LogicGraph.Node node = graph.node(selected);
                 if (!filling && node != null) {
+                    if (node.op == Op.DEF) {
+                        // Een def een andere naam geven: de blokjes die hem gebruiken, gaan mee.
+                        for (LogicGraph.Node other : graph.nodes()) {
+                            if (other.op == Op.CALL && other.text.equals(node.text)) {
+                                other.text = value;
+                            }
+                        }
+                    }
                     node.text = value;
-                    changed.run();
+                    edited();
                 }
             });
         }
@@ -517,7 +569,7 @@ final class BlockCanvas {
                     } catch (NumberFormatException e) {
                         node.number = 0;
                     }
-                    changed.run();
+                    edited();
                 }
             });
         }
@@ -544,6 +596,7 @@ final class BlockCanvas {
         return switch (op.textArg()) {
             case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";
             case TEXT -> "Message";
+            case NAME -> op == Op.DEF ? "Name (letters, digits, _)" : "Def to use";
             default -> null;
         };
     }
@@ -562,6 +615,18 @@ final class BlockCanvas {
             for (Tag tag : info.get().getList("outputs", Tag.TAG_STRING)) {
                 names.add(tag.getAsString());
             }
+        } else if (op == Op.CALL) {
+            // Je eigen blokken (de DEF-blokjes), in de volgorde waarin je ze maakte.
+            List<LogicGraph.Node> defs = new ArrayList<>();
+            for (LogicGraph.Node node : graph.nodes()) {
+                if (node.op == Op.DEF && !node.text.isBlank()) {
+                    defs.add(node);
+                }
+            }
+            defs.sort(java.util.Comparator.comparingInt(node -> node.id));
+            for (LogicGraph.Node def : defs) {
+                names.add(def.text);
+            }
         } else if (op == Op.IF) {
             names.addAll(List.of("card.valid and card.level >= 3", "code == \"1234\"", "player.trusted", "is_night"));
             for (Tag tag : info.get().getList("outputs", Tag.TAG_STRING)) {
@@ -573,7 +638,7 @@ final class BlockCanvas {
 
     /** Wat er mis is met dit blokje (ook als het los ligt), of null. */
     private @Nullable String problemOf(LogicGraph.Node node) {
-        for (LogicGraph.Problem problem : graph.problems()) {
+        for (LogicGraph.Problem problem : problems()) {
             if (problem.node() == node.id) {
                 return problem.message();
             }
@@ -597,8 +662,7 @@ final class BlockCanvas {
         OsDraw.field(g, px, cy, px + PANEL_W, cy + ch, true);
         int x = px + 4;
         int y = cy + 4;
-        String title = node.op.isTrigger() ? "WHEN " + node.op.code() : node.op == Op.IF ? "IF" : node.op.code();
-        g.drawString(font, title, x, y, HudStyle.argb(255, colour(node.op)), false);
+        g.drawString(font, title(node.op), x, y, HudStyle.argb(255, colour(node.op)), false);
         y += 10;
         for (FormattedCharSequence line : font.split(Component.literal(node.op.help()), PANEL_W - 8)) {
             g.drawString(font, line, x, y, HudStyle.argb(255, OsDraw.GREY), false);
@@ -711,7 +775,7 @@ final class BlockCanvas {
     private void deleteSelected() {
         if (graph.node(selected) != null) {
             graph.remove(selected);
-            changed.run();
+            edited();
         }
         selectNode(-1);
     }
@@ -808,7 +872,7 @@ final class BlockCanvas {
                     if (nx != node.x || ny != node.y) {
                         node.x = nx;
                         node.y = ny;
-                        changed.run();
+                        edited();
                     }
                 }
             }
@@ -833,11 +897,11 @@ final class BlockCanvas {
                 if (problem != null) {
                     hint.accept(problem);
                 } else {
-                    changed.run();
+                    edited();
                 }
             } else if (from != null && moved && from.link(dragPort) >= 0) {
                 graph.disconnect(from.id, dragPort);
-                changed.run();
+                edited();
             }
         }
         drag = Drag.NONE;

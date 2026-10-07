@@ -4,8 +4,8 @@ import java.util.List;
 
 /**
  * Schrijft een {@link Script} als nette code (4 spaties per inspringing, een lege regel tussen de
- * when-blokken). Een lege tak wordt {@code pass}; een else met alleen een if erin wordt {@code elif}.
- * Zo zie je in de code precies wat de blokjes doen.
+ * when-blokken en defs). Een lege tak wordt {@code pass}; een else met alleen een if erin wordt
+ * {@code elif}. Zo zie je in de code precies wat de blokjes doen.
  */
 public final class ScriptPrinter {
     private ScriptPrinter() {}
@@ -14,13 +14,17 @@ public final class ScriptPrinter {
 
     public static String print(Script script) {
         StringBuilder out = new StringBuilder();
-        for (int i = 0; i < script.handlers().size(); i++) {
-            Script.Handler handler = script.handlers().get(i);
+        for (int i = 0; i < script.items().size(); i++) {
+            Script.Top item = script.items().get(i);
             if (i > 0) {
                 out.append('\n');
             }
-            out.append("when ").append(call(handler.trigger(), handler.text(), handler.number())).append(":\n");
-            block(out, handler.body(), 1);
+            if (item instanceof Script.Function function) {
+                out.append("def ").append(function.name()).append("():\n");
+            } else if (item instanceof Script.Handler handler) {
+                out.append("when ").append(call(handler.trigger(), handler.text(), handler.number())).append(":\n");
+            }
+            block(out, item.body(), 1);
         }
         return out.toString();
     }
@@ -50,8 +54,17 @@ public final class ScriptPrinter {
         }
     }
 
-    /** Een aanroep: {@code keycard("Lab door")}, {@code wait(2)}, {@code pulse("Gate", 0.5)}, {@code accept()}. */
+    /**
+     * Een aanroep: {@code keycard("Lab door")}, {@code wait(2)}, {@code pulse("Gate", 0.5)},
+     * {@code accept()}, en een eigen blok: {@code open_lab()}.
+     */
     public static String call(Op op, String text, double number) {
+        if (op == Op.CALL) {
+            return text + "()";
+        }
+        if (op == Op.DEF) {
+            return "def " + text + "()";
+        }
         StringBuilder call = new StringBuilder(op.code()).append('(');
         if (op.textArg() != Op.Arg.NONE) {
             call.append(Expr.quote(text));

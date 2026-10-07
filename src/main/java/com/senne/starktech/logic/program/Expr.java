@@ -301,6 +301,33 @@ public sealed interface Expr {
         }
     }
 
+    /** Alle gegevens (card.level, code, player.name...) die in deze voorwaarde voorkomen. */
+    static java.util.Set<String> variables(Expr expr) {
+        java.util.Set<String> names = new java.util.LinkedHashSet<>();
+        collectVariables(expr, names);
+        return names;
+    }
+
+    private static void collectVariables(Expr expr, java.util.Set<String> names) {
+        switch (expr) {
+            case Or o -> {
+                collectVariables(o.left(), names);
+                collectVariables(o.right(), names);
+            }
+            case And a -> {
+                collectVariables(a.left(), names);
+                collectVariables(a.right(), names);
+            }
+            case Not n -> collectVariables(n.inner(), names);
+            case Compare c -> {
+                collectVariables(c.left(), names);
+                collectVariables(c.right(), names);
+            }
+            case Var v -> names.add(v.name());
+            default -> { }
+        }
+    }
+
     /** De soort van deze (deel)voorwaarde. */
     static Type typeOf(Expr expr) {
         return switch (expr) {

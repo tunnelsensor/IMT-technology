@@ -13,8 +13,9 @@ import org.jetbrains.annotations.Nullable;
  * Zet een diagram om van blokjes naar code en terug (jouw wens: "je kunt van blokken naar code en
  * code naar blokken").
  * <ul>
- *   <li><b>Blokjes naar code</b> ({@link #toScript}): elke trigger wordt een "when", in de volgorde
- *       waarin je ze maakte. Losse blokjes (zonder draadje naar een trigger) doen niets en vallen weg.</li>
+ *   <li><b>Blokjes naar code</b> ({@link #toScript}): elke trigger wordt een "when" en elk DEF-blok een
+ *       "def", in de volgorde waarin je ze maakte. Losse blokjes (zonder draadje naar een trigger of
+ *       def) doen niets en vallen weg.</li>
  *   <li><b>Code naar blokjes</b> ({@link #toGraph}): de blokjes komen netjes op een rij: elke stap een
  *       kolom naar rechts, bij een if de "yes"-tak op dezelfde rij en de "no"-tak eronder, en wat na
  *       de if komt rechts van allebei. Een when-blok dat je in de code niet veranderde, houdt de plek
@@ -32,19 +33,25 @@ public final class GraphConverter {
     // ================================================================ Blokjes naar code
 
     public static Script toScript(LogicGraph graph) {
-        List<LogicGraph.Node> triggers = new ArrayList<>();
+        List<Script.Top> items = new ArrayList<>();
+        for (LogicGraph.Node root : roots(graph)) {
+            List<Script.Stmt> body = chain(graph, root.next, new HashSet<>());
+            items.add(root.op == Op.DEF ? new Script.Function(root.text, body, root.id)
+                    : new Script.Handler(root.op, root.text, root.number, body, root.id));
+        }
+        return new Script(items);
+    }
+
+    /** Alle triggers en defs (waar een rij blokjes begint), in de volgorde waarin je ze maakte. */
+    private static List<LogicGraph.Node> roots(LogicGraph graph) {
+        List<LogicGraph.Node> roots = new ArrayList<>();
         for (LogicGraph.Node node : graph.nodes()) {
-            if (node.op.isTrigger()) {
-                triggers.add(node);
+            if (node.op.isRoot()) {
+                roots.add(node);
             }
         }
-        triggers.sort(Comparator.comparingInt(node -> node.id));
-        List<Script.Handler> handlers = new ArrayList<>();
-        for (LogicGraph.Node trigger : triggers) {
-            handlers.add(new Script.Handler(trigger.op, trigger.text, trigger.number,
-                    chain(graph, trigger.next, new HashSet<>()), trigger.id));
-        }
-        return new Script(handlers);
+        roots.sort(Comparator.comparingInt(node -> node.id));
+        return roots;
     }
 
     /** De rij blokjes vanaf {@code id} (via NEXT), met de takken van elke if erin. */
@@ -52,7 +59,7 @@ public final class GraphConverter {
         List<Script.Stmt> statements = new ArrayList<>();
         while (id >= 0 && seen.add(id)) {
             LogicGraph.Node node = graph.node(id);
-            if (node == null || node.op.isTrigger()) {
+            if (node == null || node.op.isRoot()) {
                 break;
             }
             if (node.op == Op.IF) {
@@ -83,31 +90,24 @@ public final class GraphConverter {
      * when-blok dat precies hetzelfde gebleven is, houdt de plekken van zijn blokjes.
      */
     public static LogicGraph toGraph(Script script, @Nullable LogicGraph old) {
-        // Hoe de when-blokken er in de oude blokjes uitzagen: per blok elk pad -> soort en plek.
+        // Hoe de when-blokken en defs er in de oude blokjes uitzagen: per blok elk pad -> soort en plek.
         List<Map<String, LogicGraph.Node>> oldShapes = new ArrayList<>();
         if (old != null) {
-            List<LogicGraph.Node> triggers = new ArrayList<>();
-            for (LogicGraph.Node node : old.nodes()) {
-                if (node.op.isTrigger()) {
-                    triggers.add(node);
-                }
-            }
-            triggers.sort(Comparator.comparingInt(node -> node.id));
-            for (LogicGraph.Node trigger : triggers) {
+            for (LogicGraph.Node root : roots(old)) {
                 Map<String, LogicGraph.Node> shape = new HashMap<>();
-                shape.put("w", trigger);
-                paths(old, trigger.next, "w", shape, new HashSet<>());
+                shape.put("w", root);
+                paths(old, root.next, "w", shape, new HashSet<>());
                 oldShapes.add(shape);
             }
         }
         LogicGraph graph = new LogicGraph();
         List<Runnable> later = new ArrayList<>();
         int[] bottom = {MARGIN};
-        for (int h = 0; h < script.handlers().size(); h++) {
-            Script.Handler handler = script.handlers().get(h);
+        for (int h = 0; h < script.items().size(); h++) {
+            Script.Top item = script.items().get(h);
             Map<String, LogicGraph.Node> shape = h < oldShapes.size() ? oldShapes.get(h) : null;
             Builder builder = new Builder(graph);
-            builder.handler(handler);
+            builder.top(item);
             if (shape != null && builder.sameShape(shape)) {
                 builder.placeLike(shape);
                 bottom[0] = Math.max(bottom[0], builder.lowest() + ROW_H);
@@ -130,7 +130,7 @@ public final class GraphConverter {
         int index = 0;
         while (id >= 0 && seen.add(id)) {
             LogicGraph.Node node = graph.node(id);
-            if (node == null || node.op.isTrigger()) {
+            if (node == null || node.op.isRoot()) {
                 return;
             }
             String path = prefix + "." + index++;
@@ -144,9 +144,9 @@ public final class GraphConverter {
     }
 
     /**
-     * Maakt de blokjes van één when-blok. Elk blokje krijgt een pad (de trigger "w", de eerste regel
-     * eronder "w.0", in de yes-tak van een if "w.1.y.0"), en een kolom en rij voor de automatische
-     * indeling.
+     * Maakt de blokjes van één when-blok of def. Elk blokje krijgt een pad (de trigger of def "w", de
+     * eerste regel eronder "w.0", in de yes-tak van een if "w.1.y.0"), en een kolom en rij voor de
+     * automatische indeling.
      */
     private static final class Builder {
         private final LogicGraph graph;
@@ -157,14 +157,21 @@ public final class GraphConverter {
             this.graph = graph;
         }
 
-        void handler(Script.Handler handler) {
-            LogicGraph.Node trigger = graph.add(handler.trigger(), 0, 0);
-            trigger.text = handler.text();
-            trigger.number = handler.number();
-            byPath.put("w", trigger);
-            cells.put(trigger, new int[] {0, 0});
-            int[] body = statements(handler.body(), "w", 1, 0);
-            trigger.next = body[0];
+        void top(Script.Top item) {
+            LogicGraph.Node root;
+            if (item instanceof Script.Function function) {
+                root = graph.add(Op.DEF, 0, 0);
+                root.text = function.name();
+            } else {
+                Script.Handler handler = (Script.Handler) item;
+                root = graph.add(handler.trigger(), 0, 0);
+                root.text = handler.text();
+                root.number = handler.number();
+            }
+            byPath.put("w", root);
+            cells.put(root, new int[] {0, 0});
+            int[] body = statements(item.body(), "w", 1, 0);
+            root.next = body[0];
         }
 
         /** Maakt een rij blokjes vanaf kolom/rij; geeft {eerste blokje, kolommen, rijen} terug. */

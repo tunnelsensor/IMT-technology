@@ -16,8 +16,9 @@ import net.minecraft.client.gui.screens.Screen;
  * Een kleine code-editor voor de app Logic (jouw wens, 7 oktober: "regels gaat vlotter maar is
  * moeilijker te leren"). Om het makkelijker te maken:
  * <ul>
- *   <li><b>kleuren</b> per soort woord (zoals in VS Code): when/if/else roze, triggers cyaan, acties
- *       lichtblauw, gegevens (card.level) geel, tekst groen, getallen oranje, commentaar grijs;</li>
+ *   <li><b>kleuren</b> per soort woord (zoals in VS Code): when/if/else/def roze, triggers cyaan,
+ *       acties lichtblauw, je eigen blokken paars, gegevens (card.level) geel, tekst groen, getallen
+ *       oranje, commentaar grijs;</li>
  *   <li><b>regelnummers</b> links, en de regel met een fout in het rood;</li>
  *   <li><b>inspringen</b>: Enter houdt de inspringing van de regel, en springt na een {@code :}
  *       vanzelf 4 spaties verder; Tab = 4 spaties (met een selectie: alle regels verder),
@@ -38,7 +39,9 @@ final class CodeEditor {
     private static final int SELECTION = 0x24506A;
     private static final int ERROR_LINE = 0x4A1A1E;
 
-    private static final Set<String> KEYWORDS = Set.of("when", "if", "elif", "else", "pass", "and", "or", "not");
+    private static final Set<String> KEYWORDS = Set.of("when", "if", "elif", "else", "pass", "and", "or", "not", "def");
+    /** De kleur van je eigen blokken (de naam na def, en waar je ze gebruikt). */
+    static final int FUNCTION = 0xC9A0FF;
     private static final Set<String> CONSTANTS = Set.of("true", "false", "True", "False");
     private static final Set<String> VARIABLES = Set.of("card.level", "card.number", "card.valid", "card.name", "code",
             "player.name", "player.trusted", "player.owner", "is_night", "is_day", "is_on");
@@ -233,6 +236,7 @@ final class CodeEditor {
         int[] colours = new int[line.length()];
         java.util.Arrays.fill(colours, 0xE8EEF2);
         int i = 0;
+        String previousWord = "";
         while (i < line.length()) {
             char c = line.charAt(i);
             if (c == '#') {
@@ -262,12 +266,22 @@ final class CodeEditor {
                 }
                 String word = line.substring(i, end);
                 Op op = Op.byCode(word);
+                // Een eigen blok: de naam na "def", of een onbekende naam met haakjes erachter.
+                int after = end;
+                while (after < line.length() && line.charAt(after) == ' ') {
+                    after++;
+                }
+                boolean own = previousWord.equals("def")
+                        || op == null && after < line.length() && line.charAt(after) == '('
+                        && !KEYWORDS.contains(word) && !VARIABLES.contains(word);
                 int colour = KEYWORDS.contains(word) ? 0xFF79C6
                         : CONSTANTS.contains(word) ? 0xC09CFF
                         : VARIABLES.contains(word) ? 0xF1E87C
+                        : own ? FUNCTION
                         : op != null && op.isTrigger() ? HudStyle.CYAN
                         : op != null ? 0x9ED8FF : 0xE8EEF2;
                 java.util.Arrays.fill(colours, i, end, colour);
+                previousWord = word;
                 i = end;
             } else {
                 if ("=<>!".indexOf(c) >= 0) {

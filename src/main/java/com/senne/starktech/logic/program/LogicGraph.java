@@ -22,8 +22,10 @@ import org.jetbrains.annotations.Nullable;
  *   <li>een IF heeft er drie: YES (als de voorwaarde klopt), NO (anders), en NEXT ("after"): wat er
  *       daarna komt, bij yes én bij no.</li>
  * </ul>
- * Elk blokje heeft hooguit één draadje dat erin komt (een trigger nooit), en draadjes mogen niet in
- * een rondje lopen. Zo is elk diagram een boompje dat precies past op de code met inspringen.
+ * Elk blokje heeft hooguit één draadje dat erin komt (een trigger of DEF nooit), en draadjes mogen
+ * niet in een rondje lopen. Zo is elk diagram een boompje dat precies past op de code met
+ * inspringen. Een DEF-blok (je eigen blok) begint net als een trigger een rij; een CALL-blok voert
+ * die rij uit.
  */
 public final class LogicGraph {
     /** De uitgangen van een blokje. */
@@ -154,8 +156,8 @@ public final class LogicGraph {
         if (source == null || target == null || !source.ports().contains(port)) {
             return "That connection does not exist";
         }
-        if (target.op.isTrigger()) {
-            return "Nothing can go into a when: it starts a diagram";
+        if (target.op.isRoot()) {
+            return "Nothing can go into a when or a def: they start a row of blocks";
         }
         if (from == to || leadsTo(to, from)) {
             return "That would make a loop";
@@ -202,12 +204,12 @@ public final class LogicGraph {
         return false;
     }
 
-    /** De trigger bovenaan de tak waar dit blokje in zit, of null als het los ligt. */
-    public @Nullable Node triggerOf(int id) {
+    /** De trigger of def bovenaan de tak waar dit blokje in zit, of null als het los ligt. */
+    public @Nullable Node rootOf(int id) {
         Set<Integer> seen = new HashSet<>();
         Node node = nodes.get(id);
         while (node != null && seen.add(node.id)) {
-            if (node.op.isTrigger()) {
+            if (node.op.isRoot()) {
                 return node;
             }
             node = parentOf(node.id);
@@ -215,11 +217,11 @@ public final class LogicGraph {
         return null;
     }
 
-    /** Alle blokjes die (via draadjes) aan een trigger hangen. De rest ligt los en doet niets. */
+    /** Alle blokjes die (via draadjes) aan een trigger of def hangen. De rest ligt los en doet niets. */
     public Set<Integer> reachable() {
         Set<Integer> seen = new HashSet<>();
         for (Node node : nodes.values()) {
-            if (node.op.isTrigger()) {
+            if (node.op.isRoot()) {
                 List<Integer> todo = new ArrayList<>(List.of(node.id));
                 while (!todo.isEmpty()) {
                     Node current = nodes.get(todo.removeLast());
@@ -238,19 +240,22 @@ public final class LogicGraph {
     }
 
     /**
-     * Wat er mis is met de blokjes die aan een trigger hangen: een ontbrekende naam, een getal dat te
-     * groot is, een voorwaarde die niet klopt, accept() onder de verkeerde trigger. Losse blokjes
-     * worden niet gecontroleerd (ze doen toch niets).
+     * Wat er mis is met de blokjes die aan een trigger of def hangen: een ontbrekende naam, een getal
+     * dat te groot is, een voorwaarde die niet klopt, accept() onder de verkeerde trigger, en alles
+     * met je eigen blokken (zie ScriptChecker: een def die niet bestaat, of zichzelf gebruikt). Losse
+     * blokjes worden niet gecontroleerd (ze doen toch niets).
      */
     public List<Problem> problems() {
         List<Problem> problems = new ArrayList<>();
         Set<Integer> reachable = reachable();
+        Set<Integer> wrong = new HashSet<>();
         for (Node node : nodes.values()) {
             if (!reachable.contains(node.id)) {
                 continue;
             }
-            Node trigger = triggerOf(node.id);
-            Op triggerOp = trigger == null ? null : trigger.op;
+            // Onder een def weten we niet welke when hem gebruikt: dat controleert ScriptChecker.
+            Node root = rootOf(node.id);
+            Op triggerOp = root == null || root.op == Op.DEF ? null : root.op;
             String problem;
             if (node.op == Op.IF) {
                 try {
@@ -263,12 +268,19 @@ public final class LogicGraph {
                 String text = node.op.textArg() == Op.Arg.NONE ? null : node.text;
                 Double number = node.op.numberArg() == Op.Arg.NONE ? null : node.number;
                 problem = Checks.argsProblem(node.op, text, number);
-                if (problem == null && !node.op.isTrigger()) {
+                if (problem == null && !node.op.isRoot()) {
                     problem = Checks.contextProblem(node.op, triggerOp);
                 }
             }
             if (problem != null) {
                 problems.add(new Problem(node.id, problem));
+                wrong.add(node.id);
+            }
+        }
+        // Je eigen blokken: dezelfde controles als in de code (het "ref" is hier het blokje).
+        for (ScriptChecker.Problem problem : ScriptChecker.check(GraphConverter.toScript(this))) {
+            if (wrong.add(problem.ref())) {
+                problems.add(new Problem(problem.ref(), problem.message()));
             }
         }
         return problems;
@@ -357,7 +369,7 @@ public final class LogicGraph {
                     continue;
                 }
                 Node child = nodes.get(target);
-                boolean ok = node.ports().contains(port) && child != null && !child.op.isTrigger()
+                boolean ok = node.ports().contains(port) && child != null && !child.op.isRoot()
                         && target != node.id && hasParent.add(target);
                 if (!ok) {
                     node.setLink(port, -1);

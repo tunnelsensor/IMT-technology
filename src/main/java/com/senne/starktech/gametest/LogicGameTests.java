@@ -164,6 +164,164 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    // ================================================================ Je eigen blokken (def)
+
+    /** Een diagram met defs, zoals de printer het schrijft (een def mag ook onder de when staan). */
+    private static final String WITH_DEFS = """
+            when keycard("Lab door"):
+                if card.valid and card.level >= 3:
+                    open_lab()
+                else:
+                    deny()
+
+            def open_lab():
+                accept()
+                lights_on()
+                pulse("Vault door", 3)
+
+            when codepanel("Lab panel"):
+                if code == "4321":
+                    open_lab()
+
+            def lights_on():
+                on("Lab lights")
+            """;
+
+    /** Code met defs lezen, terugschrijven en omzetten naar blokjes en terug geeft dezelfde code. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_functions_round_trip(GameTestHelper helper) {
+        Script script = ScriptParser.parse(WITH_DEFS);
+        if (script.functions().size() != 2 || script.handlers().size() != 2 || script.blocks() != 13) {
+            throw new GameTestAssertException("De defs werden niet goed gelezen: " + script.functions().size() + " defs, "
+                    + script.handlers().size() + " whens, " + script.blocks() + " blokjes");
+        }
+        String printed = ScriptPrinter.print(script);
+        if (!printed.equals(WITH_DEFS)) {
+            throw new GameTestAssertException("Terugschrijven gaf andere code:\n" + printed);
+        }
+        LogicGraph graph = GraphConverter.toGraph(script, null);
+        if (!graph.problems().isEmpty()) {
+            throw new GameTestAssertException("De blokjes van een goed diagram hebben fouten: " + graph.problems());
+        }
+        String back = ScriptPrinter.print(GraphConverter.toScript(graph));
+        if (!back.equals(WITH_DEFS)) {
+            throw new GameTestAssertException("Blokjes terug naar code gaf andere code:\n" + back);
+        }
+        // In de blokjes: niets mag in een DEF, en een use-def naar een def die niet bestaat is een fout.
+        LogicGraph.Node def = graph.nodes().stream().filter(node -> node.op == com.senne.starktech.logic.program.Op.DEF)
+                .findFirst().orElseThrow();
+        LogicGraph.Node trigger = graph.nodes().iterator().next();
+        if (graph.connect(trigger.id, LogicGraph.Port.NEXT, def.id) == null) {
+            throw new GameTestAssertException("Een draadje naar een DEF werd toegelaten");
+        }
+        LogicGraph.Node call = graph.nodes().stream().filter(node -> node.op == com.senne.starktech.logic.program.Op.CALL)
+                .findFirst().orElseThrow();
+        call.text = "opn_lab";
+        boolean found = graph.problems().stream().anyMatch(problem -> problem.node() == call.id
+                && problem.message().contains("Did you mean open_lab?"));
+        if (!found) {
+            throw new GameTestAssertException("Een use-def naar een onbekende def gaf geen goede fout: " + graph.problems());
+        }
+        helper.succeed();
+    }
+
+    /** De fouten met defs: op de goede regel, en uitleg die een beginner snapt. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_function_errors(GameTestHelper helper) {
+        expectError("def a():\n    b()\ndef b():\n    a()\nwhen every(5):\n    a()", 1, "a() uses itself (a > b > a)");
+        expectError("def open_door():\n    pass\nwhen every(5):\n    opn_door()", 4, "Did you mean open_door?");
+        expectError("def greet():\n    accept()\nwhen every(5):\n    greet()", 4,
+                "greet() uses accept(), which only works inside when keycard(...) or when codepanel(...)");
+        expectError("def check():\n    if card.level >= 3:\n        pass\nwhen codepanel(\"P\"):\n    check()", 5,
+                "check() uses card.level, which only works inside when keycard(...)");
+        expectError("def outer():\n    inner()\ndef inner():\n    if code == \"1\":\n        pass\nwhen keycard(\"R\"):\n    outer()",
+                7, "outer() uses code");
+        expectError("def a():\n    pass\ndef a():\n    pass\nwhen every(5):\n    a()", 3, "There already is a def a");
+        expectError("def on():\n    pass", 1, "already a word of the language");
+        expectError("def open(door):\n    pass", 1, "take nothing between the brackets");
+        expectError("when every(5):\n    def x():\n        pass", 2, "A def must not be indented");
+        expectError("def a():\n    pass\nwhen every(5):\n    a(\"x\")", 4, "take nothing between the brackets");
+        expectError("def a():\n    pass\nwhen a():\n    pass", 3, "is your own block, not a trigger");
+        expectError("def a():\n    pass\nwhen every(5):\n    a", 4, "a needs brackets");
+        expectError("def 1abc():\n    pass", 1, "a name cannot start with a number");
+        helper.succeed();
+    }
+
+    /**
+     * Een def die twee triggers delen: een geldige kaart en de goede code doen allebei open_lab()
+     * (groen, de deur gaat open), en daarna gaat het diagram verder met wat na de if of na de
+     * aanroep komt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_functions")
+    public static void logic_functions_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos door = relay(helper, setup, new BlockPos(9, 3, 4), "Lab door lock");
+        BlockPos reader = new BlockPos(8, 3, 8);
+        BlockPos panel = new BlockPos(4, 3, 8);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        ((InputDeviceBlockEntity) helper.getBlockEntity(reader)).setName("Lab door");
+        ((InputDeviceBlockEntity) helper.getBlockEntity(panel)).setName("Lab panel");
+        BlockPos readerAbs = helper.absolutePos(reader);
+        BlockPos panelAbs = helper.absolutePos(panel);
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), setup.core());
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Lab", """
+                    def open_lab():
+                        accept()
+                        pulse("Lab door lock", 2)
+
+                    when keycard("Lab door"):
+                        if card.valid:
+                            open_lab()
+                        else:
+                            deny()
+                        log("keycard used")
+
+                    when codepanel("Lab panel"):
+                        if code == "4321":
+                            open_lab()
+                            log("code used")
+                    """);
+            if (setup.core().logic().program("Lab") == null) {
+                throw new GameTestAssertException("Het diagram met een def werd niet bewaard: " + lastLog(setup.core()));
+            }
+            var card = setup.core().logic().issue("Lab access", 1, "test");
+            LogicEvents.clear();
+            LogicEvents.keycard(level, readerAbs, setup.owner(),
+                    new KeycardData(setup.core().ip(), setup.core().hostname(), card.number(), 1, "Lab access"));
+        });
+        helper.runAfterDelay(20, () -> {
+            helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.OK);
+            if (!level.getBlockState(door).getValue(RelayBlock.POWERED) || !logged(setup.core(), "keycard used")) {
+                throw new GameTestAssertException("De kaart deed open_lab() niet (of ging daarna niet verder). Logboek: "
+                        + lastLog(setup.core()));
+            }
+        });
+        helper.runAfterDelay(70, () -> {
+            if (level.getBlockState(door).getValue(RelayBlock.POWERED)) {
+                throw new GameTestAssertException("De deur ging na de puls niet meer dicht");
+            }
+            LogicEvents.clear();
+            LogicEvents.codePanel(level, panelAbs, setup.owner(), "4321");
+        });
+        helper.runAfterDelay(85, () -> {
+            helper.assertBlockProperty(panel, InputDeviceBlock.LIGHT, InputLight.OK);
+            if (!level.getBlockState(door).getValue(RelayBlock.POWERED) || !logged(setup.core(), "code used")) {
+                throw new GameTestAssertException("De code deed open_lab() niet (of ging daarna niet verder). Logboek: "
+                        + lastLog(setup.core()));
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Staat deze tekst als regel van een diagram (LOGIC) in het logboek? */
+    private static boolean logged(SecurityCoreBlockEntity core, String text) {
+        return core.log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.LOGIC && entry.text().equals(text));
+    }
+
     // ================================================================ De server voert uit
 
     /** Een kern met eigenaar, een server (rack met CPU, RAM en SSD) en de tijd om op te starten. */

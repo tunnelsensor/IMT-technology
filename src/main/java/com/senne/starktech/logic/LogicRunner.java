@@ -44,7 +44,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Alleen diagrammen die op je <b>SSD's</b> passen draaien (de bovenste in de lijst eerst).</li>
  * </ul>
  * Een run loopt de blokjes af: een actie doen, bij een if kiezen tussen yes en no (en daarna verder
- * bij "after"), bij wait even pauzeren. Alles wat hij doet komt in het logboek.
+ * bij "after"), bij een eigen blok (CALL) eerst de stappen van die def en dan verder, bij wait even
+ * pauzeren. Alles wat hij doet komt in het logboek.
  *
  * Wat er bezig is, onthouden we niet als de wereld wordt opgeslagen: na het laden begint alles opnieuw.
  */
@@ -57,6 +58,8 @@ public final class LogicRunner {
     private static final int MAX_TRIGGERS_PER_SECOND = 40;
     /** Zoveel blokjes loopt een run hooguit af in één tick (een diagram heeft nooit lussen, dus dit is ruim). */
     private static final int STEPS_PER_TICK = 64;
+    /** Zo diep mogen ifs en defs in elkaar zitten (een def die zichzelf gebruikt, mag al niet). */
+    private static final int MAX_DEPTH = 64;
     /** Zo lang (ticks) jaagt de beveiliging op wie een alarm() veroorzaakte. */
     private static final int ALARM_HUNT = 600;
     /** Om de zoveel ticks neemt de kern de namen van de apparaten over van de eigenaar. */
@@ -282,8 +285,23 @@ public final class LogicRunner {
                 continue;
             }
             LogicGraph.Node node = graph.node(run.current);
-            if (node == null || node.op.isTrigger()) {
+            if (node == null || node.op.isRoot()) {
                 run.current = -1;
+                continue;
+            }
+            if (node.op == Op.CALL) {
+                // Een eigen blok: eerst zijn stappen, en daarna verder met wat na de CALL komt.
+                LogicGraph.Node def = findDef(graph, node.text);
+                if (def == null || run.after.size() >= MAX_DEPTH) {
+                    report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
+                            + (def == null ? "there is no def " + node.text : node.text + "() goes too deep"));
+                    run.current = node.next;
+                    continue;
+                }
+                if (node.next >= 0) {
+                    run.after.push(node.next);
+                }
+                run.current = def.next;
                 continue;
             }
             if (node.op == Op.IF) {
@@ -302,6 +320,16 @@ public final class LogicRunner {
             act(level, core, runtime, run, node);
         }
         return false;
+    }
+
+    /** Het DEF-blok met deze naam, of null. */
+    private static @Nullable LogicGraph.Node findDef(LogicGraph graph, String name) {
+        for (LogicGraph.Node node : graph.nodes()) {
+            if (node.op == Op.DEF && node.text.equals(name)) {
+                return node;
+            }
+        }
+        return null;
     }
 
     // ================================================================ Een if

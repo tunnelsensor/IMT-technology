@@ -1082,7 +1082,9 @@ final class ShowcaseFeatures {
                 + "Eerst de kaart (niveau 3) tegen de lezer: oranje, dan groen, en de deur gaat 3 seconden open "
                 + "(het diagram doet pulse(\"Lab door lock\", 3)). Dan een kaart die geblokkeerd is: rood. Dan de "
                 + "code 4321 op het paneel: de lamp gaat aan. Daarna de app Logic op de desktop: de code van het "
-                + "diagram (met kleuren), en dezelfde code als blokjes met draadjes. Luister ook naar de nieuwe "
+                + "diagram (met kleuren; de deur openen staat in een eigen blok, def open_door(), dat de kaart en "
+                + "de code 7777 allebei gebruiken), en dezelfde code als blokjes met draadjes (de DEF in paars). "
+                + "Luister ook naar de nieuwe "
                 + "rayshield-geluiden bij de laserpoort en de koepel (eerder in de showcase).",
                 Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
             s.onServer(0, ShowcaseFeatures::buildLogicLab)
@@ -1326,11 +1328,14 @@ final class ShowcaseFeatures {
 
     /** Het diagram van het lab, zoals je het in de app Logic ziet. */
     private static final String LAB_CODE = """
-            # The lab door: a level 3 card opens it for 3 seconds
+            # The lab door: a level 3 card (or the code 7777) opens it for 3 seconds
+            def open_door():
+                accept()
+                pulse("Lab door lock", 3)
+
             when keycard("Lab door"):
                 if card.valid and card.level >= 3:
-                    accept()
-                    pulse("Lab door lock", 3)
+                    open_door()
                 else:
                     deny()
                     say("Someone tried the lab door")
@@ -1339,6 +1344,8 @@ final class ShowcaseFeatures {
                 if code == "4321":
                     accept()
                     toggle("Lab lights")
+                elif code == "7777":
+                    open_door()
                 else:
                     deny()
             """;

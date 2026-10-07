@@ -439,6 +439,25 @@ when keycard("Lab door"):
 - **Doe** `on(...)`, `off(...)`, `toggle(...)`, `pulse("...", 3)`, `wait(2)`, `accept()` en `deny()`
   (groen of rood lampje op de lezer of het paneel), `say("...")` (E.D.I.T.H. zegt het je),
   `log("...")` en `alarm("...")` (alarm, en de beveiliging jaagt op wie het deed).
+- **Eigen blokken** (functies): schrijf stappen één keer met `def naam():` (aan de linkerkant, de
+  stappen eronder) en gebruik ze in zoveel whens als je wil met `naam()`. Zo laten een kaart en een
+  code dezelfde deur opengaan:
+  ```
+  def open_lab():
+      accept()
+      pulse("Lab door lock", 3)
+
+  when keycard("Lab door"):
+      if card.valid and card.level >= 3:
+          open_lab()
+
+  when codepanel("Lab panel"):
+      if code == "4321":
+          open_lab()
+  ```
+  Een def mag andere defs gebruiken, maar niet zichzelf. Gebruikt hij `card.level` of `accept()`,
+  dan werkt hij alleen in een when die daarbij past (Check zegt het je). In de blokjes is een def
+  een paars **DEF**-blok met de stappen erachter, en **use def** voert hem uit.
 
 Neemt iemand je kern over, dan krijgt hij ook je diagrammen en kaarten. De code van een codepaneel
 staat alleen in je diagram, niet in het logboek.

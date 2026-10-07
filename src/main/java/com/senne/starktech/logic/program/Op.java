@@ -5,9 +5,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Alle blokjes die je in een diagram kunt gebruiken, met hun naam in de code (Python-achtig, jouw
- * diagram-taal van 7 oktober). Er zijn drie soorten:
+ * diagram-taal van 7 oktober). Er zijn vier soorten:
  * <ul>
  *   <li><b>triggers</b> ("when ..."): waar een diagram mee begint;</li>
+ *   <li><b>def</b>: je eigen blok, een rijtje acties met een naam (jouw wens: "functions, zodat je
+ *       meerdere triggers hetzelfde kunt laten doen"); je gebruikt het met {@code naam()} (CALL);</li>
  *   <li><b>if</b>: een keuze met een "yes"- en een "no"-uitgang;</li>
  *   <li><b>acties</b>: wat de server doet (een relais aan, wachten, een alarm...).</li>
  * </ul>
@@ -21,6 +23,12 @@ public enum Op {
     TURNED_ON(Kind.TRIGGER, "turned_on", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched on"),
     TURNED_OFF(Kind.TRIGGER, "turned_off", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched off"),
     EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.SECONDS, "Every so many seconds"),
+
+    // ---------------------------------------------------------------- Je eigen blokjes (functies)
+    /** Een eigen blok: in de code {@code def open_lab():} met de acties eronder. De tekst is de naam. */
+    DEF(Kind.DEF, "def", Arg.NAME, Arg.NONE, "Your own block: steps with a name. Use them in any when with name()"),
+    /** Een eigen blok gebruiken: in de code {@code open_lab()}. De tekst is de naam van de def. */
+    CALL(Kind.ACTION, "call", Arg.NAME, Arg.NONE, "Do all the steps of one of your defs here"),
 
     // ---------------------------------------------------------------- Keuze
     IF(Kind.IF, "if", Arg.NONE, Arg.NONE, "Check something: go on at yes or no"),
@@ -38,10 +46,10 @@ public enum Op {
     LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log");
 
     /** Wat voor blokje. */
-    public enum Kind { TRIGGER, IF, ACTION }
+    public enum Kind { TRIGGER, DEF, IF, ACTION }
 
-    /** Wat voor gegevens. DEVICE en TEXT zijn tekst, SECONDS een getal. */
-    public enum Arg { NONE, DEVICE, TEXT, SECONDS, OPTIONAL_SECONDS }
+    /** Wat voor gegevens. DEVICE, TEXT en NAME (van een def) zijn tekst, SECONDS een getal. */
+    public enum Arg { NONE, DEVICE, TEXT, NAME, SECONDS, OPTIONAL_SECONDS }
 
     /** Zo lang mag een tekst (say, alarm, log) of een naam hooguit zijn. */
     public static final int MAX_TEXT = 80;
@@ -86,6 +94,14 @@ public enum Op {
 
     public boolean isTrigger() {
         return kind == Kind.TRIGGER;
+    }
+
+    /**
+     * Begint hier een rij blokjes (een trigger of een def)? Daar komt nooit een draadje in, en een
+     * rij die niet aan zo'n begin hangt, ligt los.
+     */
+    public boolean isRoot() {
+        return kind == Kind.TRIGGER || kind == Kind.DEF;
     }
 
     /** Het blokje met deze naam in de code, of null. */

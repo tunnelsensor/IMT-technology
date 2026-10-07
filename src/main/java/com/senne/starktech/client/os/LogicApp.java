@@ -278,10 +278,11 @@ final class LogicApp {
         int loose = blockGraph.size() - blockGraph.reachable().size();
         int handlers = (int) blockGraph.nodes().stream().filter(node -> node.op.isTrigger()).count();
         if (handlers == 0) {
-            show("Start with a WHEN block (on the right)", HudStyle.ORANGE);
+            show(blockGraph.size() == 0 ? "Start with a WHEN block (on the right)"
+                    : "Add a WHEN block: a DEF does nothing until a when uses it", HudStyle.ORANGE);
         } else if (loose > 0) {
-            show("No problems, but " + loose + (loose == 1 ? " block is" : " blocks are") + " loose (not connected to a when)",
-                    HudStyle.ORANGE);
+            show("No problems, but " + loose + (loose == 1 ? " block is" : " blocks are")
+                    + " loose (not connected to a when or def)", HudStyle.ORANGE);
         } else {
             show("No problems: " + blockGraph.size() + (blockGraph.size() == 1 ? " block" : " blocks"), HudStyle.GREEN);
         }
@@ -296,9 +297,13 @@ final class LogicApp {
             Script script = ScriptParser.parse(editor.text());
             editor.setErrorLine(0);
             int blocks = script.blocks();
-            show(script.handlers().isEmpty() ? "Empty: start with a line like when keycard(\"Reader 1\"):"
-                    : "No problems: " + blocks + (blocks == 1 ? " block" : " blocks"),
-                    script.handlers().isEmpty() ? HudStyle.ORANGE : HudStyle.GREEN);
+            if (script.items().isEmpty()) {
+                show("Empty: start with a line like when keycard(\"Reader 1\"):", HudStyle.ORANGE);
+            } else if (script.handlers().isEmpty()) {
+                show("No problems, but no when uses your defs yet (a def does nothing on its own)", HudStyle.ORANGE);
+            } else {
+                show("No problems: " + blocks + (blocks == 1 ? " block" : " blocks"), HudStyle.GREEN);
+            }
             return script;
         } catch (LogicException e) {
             editor.setErrorLine(e.line());
@@ -471,12 +476,13 @@ final class LogicApp {
         g.drawString(font, "Name", bx, a.y() + 2, HudStyle.argb(255, HudStyle.WHITE), false);
         bx += font.width("Name") + 4;
         EditBox box = nameBox();
-        OsDraw.field(g, bx, a.y(), bx + 84, a.y() + OsDraw.BUTTON_H, box.isFocused());
+        int nameW = nameWidth(font, a);
+        OsDraw.field(g, bx, a.y(), bx + nameW, a.y() + OsDraw.BUTTON_H, box.isFocused());
         box.setX(bx + 3);
         box.setY(a.y() + 2);
-        box.setWidth(78);
+        box.setWidth(nameW - 6);
         box.render(g, mx, my, partialTick);
-        bx += 88;
+        bx += nameW + 4;
         for (String label : toolbar()) {
             boolean enabled = !label.equals("Save") || dirty();
             int accent = label.equals("Delete") ? HudStyle.RED : label.equals("Off") ? HudStyle.ORANGE
@@ -505,6 +511,19 @@ final class LogicApp {
         String text = !hoverHint.isEmpty() ? hoverHint : (dirty() ? "* " : "") + status;
         int colour = !hoverHint.isEmpty() ? 0xB8C8D0 : statusColour;
         g.drawString(font, OsDraw.fitLeft(font, text, width), x0, a.y() + a.h() - 9, HudStyle.argb(255, colour), false);
+    }
+
+    /** Hoe breed het naamvak is: 84 pixels, of smaller als de knoppen (en Help) anders niet passen. */
+    private int nameWidth(Font font, StarkOsScreen.Area a) {
+        int x0 = a.x() + SIDE + 6;
+        int room = a.x() + a.w() - x0 - font.width("Name") - 8;
+        if (mode == Mode.CODE) {
+            room -= OsDraw.buttonWidth(font, "Help") + 4;
+        }
+        for (String label : toolbar()) {
+            room -= OsDraw.buttonWidth(font, label) + 3;
+        }
+        return Math.max(40, Math.min(84, room));
     }
 
     /**
@@ -604,6 +623,15 @@ final class LogicApp {
         lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
         lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", "also: is_day, player.owner, player.name, card.number, card.name", HudStyle.WHITE, null));
         lines.add(new HelpLine("else: / elif ...:", "else:\n    pass", "what happens when the if is not true", HudStyle.WHITE, null));
+        lines.add(header("YOUR OWN BLOCKS (def)"));
+        lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",
+                "Write steps once (at the left edge), then use them in many whens with open_door()", 0xC9A0FF, null));
+        java.util.regex.Matcher defs = java.util.regex.Pattern.compile("(?m)^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(")
+                .matcher(editor.text());
+        while (defs.find()) {
+            lines.add(new HelpLine(defs.group(1) + "()", defs.group(1) + "()", "one of your own blocks: does all its steps here",
+                    0xC9A0FF, null));
+        }
         lines.add(header("YOUR DEVICES"));
         if (outputs.isEmpty()) {
             lines.add(new HelpLine("(none: name relays with your glasses)", null,
@@ -705,14 +733,15 @@ final class LogicApp {
         int x0 = a.x() + SIDE + 6;
         int bx = x0 + font.width("Name") + 4;
         EditBox box = nameBox();
-        boolean inName = OsDraw.inside(mx, my, bx, a.y(), 84, OsDraw.BUTTON_H);
+        int nameW = nameWidth(font, a);
+        boolean inName = OsDraw.inside(mx, my, bx, a.y(), nameW, OsDraw.BUTTON_H);
         box.setFocused(inName);
         if (inName) {
             editor.setFocused(false);
             box.mouseClicked(mx, my, 0);
             return;
         }
-        bx += 88;
+        bx += nameW + 4;
         for (String label : toolbar()) {
             int w = OsDraw.buttonWidth(font, label);
             if (OsDraw.inside(mx, my, bx, a.y(), w, OsDraw.BUTTON_H)) {

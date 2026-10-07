@@ -26,6 +26,12 @@ public final class Checks {
                     return op.code() + " needs a message between quotes, like " + op.code() + "(\"Someone is at the door\")";
                 }
             }
+            case NAME -> {
+                String problem = nameProblem(text);
+                if (problem != null) {
+                    return problem;
+                }
+            }
             default -> {
                 if (text != null) {
                     return op.code() + " does not take a name";
@@ -57,6 +63,33 @@ public final class Checks {
         return null;
     }
 
+    /** Zo lang mag de naam van een def hooguit zijn. */
+    public static final int MAX_NAME = 24;
+
+    /** Woorden die de taal zelf al gebruikt (een def mag niet zo heten). */
+    private static final java.util.Set<String> RESERVED = java.util.Set.of("when", "if", "elif", "else", "pass", "and",
+            "or", "not", "def", "true", "false", "True", "False", "return", "is_on", "code", "is_night", "is_day", "call");
+
+    /**
+     * Mag een def zo heten? Net als in Python: letters, cijfers en _ (niet met een cijfer beginnen),
+     * en niet een woord dat de taal zelf al gebruikt. Geeft de fout, of null.
+     */
+    public static @Nullable String nameProblem(@Nullable String name) {
+        if (name == null || name.isBlank()) {
+            return "Your own block needs a name, like def open_door():";
+        }
+        if (name.length() > MAX_NAME) {
+            return "That name is too long (at most " + MAX_NAME + " letters)";
+        }
+        if (!name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            return "\"" + name + "\": a name may only have letters, digits and _ (and must not start with a digit), like open_door";
+        }
+        if (RESERVED.contains(name) || Op.byCode(name) != null) {
+            return "\"" + name + "\" is already a word of the language: pick another name, like my_" + name;
+        }
+        return null;
+    }
+
     /** Mag deze actie onder deze trigger? accept() en deny() alleen na een lezer of paneel. */
     public static @Nullable String contextProblem(Op action, @Nullable Op trigger) {
         if ((action == Op.ACCEPT || action == Op.DENY) && trigger != null && !trigger.hasSourceDevice()) {
@@ -65,15 +98,24 @@ public final class Checks {
         return null;
     }
 
-    /** Een naam in de code die op een bekend blokje lijkt (voor "Did you mean on?"), of null. */
-    public static @Nullable String suggest(String word) {
+    /**
+     * Een naam in de code die op een bekend blokje of een van je eigen defs lijkt (voor "Did you mean
+     * on?"), of null.
+     */
+    public static @Nullable String suggest(String word, java.util.Collection<String> ownNames) {
+        java.util.List<String> known = new java.util.ArrayList<>(ownNames);
+        for (Op op : Op.values()) {
+            if (op != Op.DEF && op != Op.CALL && op != Op.IF) {
+                known.add(op.code());
+            }
+        }
         String best = null;
         int bestDistance = 3;
-        for (Op op : Op.values()) {
-            int distance = distance(word.toLowerCase(java.util.Locale.ROOT), op.code());
+        for (String name : known) {
+            int distance = distance(word.toLowerCase(java.util.Locale.ROOT), name.toLowerCase(java.util.Locale.ROOT));
             if (distance < bestDistance) {
                 bestDistance = distance;
-                best = op.code();
+                best = name;
             }
         }
         return best;

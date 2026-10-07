@@ -1452,17 +1452,20 @@ public final class VisualCheck {
             BlockPos rack = new BlockPos(136, -60, -78);
             String code = """
                     # The lab: level 3 or higher opens the vault for 3 seconds
+                    def open_vault():
+                        accept()
+                        pulse("Vault door", 3)
+
                     when keycard("Lab door"):
                         if card.valid and card.level >= 3:
-                            accept()
-                            pulse("Vault door", 3)
+                            open_vault()
                         else:
                             deny()
                             alarm("Wrong card at the lab")
 
                     when codepanel("Front door"):
                         if code == "4321" and player.trusted:
-                            accept()
+                            open_vault()
                             on("Lab lights")
                         else:
                             deny()
@@ -1557,6 +1560,12 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "l07_logic_block_if");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(com.senne.starktech.logic.program.Op.CALL);
+                }
+            });
+            t.shot(10, "l08_logic_block_use_def");
             t.close(10);
         }
 }

@@ -21,6 +21,10 @@ import org.jetbrains.annotations.Nullable;
  * een regel met een dubbele punt, hoort bij die regel. Een tab telt als 4 spaties. Een lege regel en
  * commentaar (vanaf #) tellen niet mee.
  *
+ * Je eigen blokken (functies) maak je met {@code def naam():} aan de linkerkant, met de stappen
+ * eronder, en je gebruikt ze in een when (of een andere def) met {@code naam()}. Een def mag ook
+ * onder de when staan die hem gebruikt: we zoeken eerst alle namen op.
+ *
  * Bij de eerste fout stopt hij met een {@link LogicException}: het regelnummer en uitleg in
  * begrijpelijk Engels ("Line 3: on needs the name of a device between quotes...").
  */
@@ -34,6 +38,8 @@ public final class ScriptParser {
 
     private final List<Line> lines = new ArrayList<>();
     private int index;
+    /** De namen van alle defs in deze code (eerst opgezocht, zodat je ze overal kunt gebruiken). */
+    private final java.util.Set<String> functionNames = new java.util.LinkedHashSet<>();
 
     private ScriptParser(String source) {
         String[] raw = source.replace("\r", "").split("\n", -1);
@@ -51,37 +57,54 @@ public final class ScriptParser {
             }
             if (tokens.getFirst().type() != Lexer.Type.END) {
                 lines.add(new Line(i + 1, indent, tokens));
+                if (indent == 0 && tokens.getFirst().is("def") && tokens.get(1).type() == Lexer.Type.NAME) {
+                    functionNames.add(tokens.get(1).text());
+                }
             }
         }
     }
 
     /** Leest de code. Gooit een LogicException (met regelnummer) bij de eerste fout. */
     public static Script parse(String source) {
-        return new ScriptParser(source).script();
+        Script script = new ScriptParser(source).script();
+        // Dan wat over meerdere regels gaat (defs): zelfde controles als bij de blokjes.
+        List<ScriptChecker.Problem> problems = ScriptChecker.check(script);
+        if (!problems.isEmpty()) {
+            throw new LogicException(problems.getFirst().ref(), problems.getFirst().message());
+        }
+        return script;
     }
 
     // ================================================================ when ...:
 
     private Script script() {
-        List<Script.Handler> handlers = new ArrayList<>();
+        List<Script.Top> items = new ArrayList<>();
         while (index < lines.size()) {
             Line line = lines.get(index);
             if (line.indent() != 0) {
-                throw new LogicException(line.number(), "This line is indented, but there is no when above it");
+                throw new LogicException(line.number(), "This line is indented, but there is no when or def above it");
             }
             Lexer.Token first = line.first();
+            if (first.is("def")) {
+                items.add(function(line));
+                continue;
+            }
             if (!first.is("when")) {
                 Op op = first.type() == Lexer.Type.NAME ? Op.byCode(first.text()) : null;
-                if (op != null && !op.isTrigger() && op != Op.IF) {
+                boolean own = first.type() == Lexer.Type.NAME && functionNames.contains(first.text());
+                if (own || op != null && !op.isTrigger() && op != Op.IF) {
                     throw new LogicException(line.number(), first.text()
                             + "() must be inside a when: indent it with 4 spaces under a line like when keycard(\"Lab door\"):");
                 }
-                throw new LogicException(line.number(), "Every diagram starts with when, like: when keycard(\"Lab door\"):");
+                throw new LogicException(line.number(), "Every diagram starts with when (or def), like: when keycard(\"Lab door\"):");
             }
             Call call = call(line, 1);
             Op trigger = Op.byCode(call.name());
             if (trigger == null || !trigger.isTrigger()) {
-                String hint = trigger == null ? unknown(call.name())
+                String hint = functionNames.contains(call.name())
+                        ? call.name() + " is your own block, not a trigger. A when starts with one of: keycard, codepanel,"
+                        + " turned_on, turned_off, every"
+                        : trigger == null ? unknown(call.name())
                         : call.name() + " is not a trigger. A when starts with one of: keycard, codepanel, turned_on, turned_off, every";
                 throw new LogicException(line.number(), hint);
             }
@@ -89,10 +112,41 @@ public final class ScriptParser {
             check(line, trigger, call);
             index++;
             List<Script.Stmt> body = block(line, trigger);
-            handlers.add(new Script.Handler(trigger, call.text() == null ? "" : call.text(),
+            items.add(new Script.Handler(trigger, call.text() == null ? "" : call.text(),
                     call.number() == null ? 0 : call.number(), body, line.number()));
         }
-        return new Script(handlers);
+        return new Script(items);
+    }
+
+    // ================================================================ def naam():
+
+    /**
+     * Een eigen blok: {@code def naam():} met de stappen eronder. Zonder iets tussen de haakjes: je
+     * eigen blokken krijgen (nog) geen gegevens mee.
+     */
+    private Script.Function function(Line line) {
+        List<Lexer.Token> tokens = line.tokens();
+        Lexer.Token name = tokens.get(1);
+        if (name.type() != Lexer.Type.NAME) {
+            throw new LogicException(line.number(), "def needs a name, like: def open_door():");
+        }
+        String problem = Checks.nameProblem(name.text());
+        if (problem != null) {
+            throw new LogicException(line.number(), problem);
+        }
+        if (!tokens.get(2).is("(")) {
+            throw new LogicException(line.number(), "A def needs brackets after its name, like: def " + name.text() + "():");
+        }
+        if (!tokens.get(3).is(")")) {
+            throw new LogicException(line.number(), tokens.get(3).type() == Lexer.Type.END
+                    ? "def " + name.text() + "( is missing its closing )"
+                    : "Your own blocks take nothing between the brackets: def " + name.text() + "():");
+        }
+        expectColon(line, 4);
+        index++;
+        // In een def weten we nog niet welke when hem gebruikt (null): dat controleert ScriptChecker.
+        List<Script.Stmt> body = block(line, null);
+        return new Script.Function(name.text(), body, line.number());
     }
 
     // ================================================================ Een ingesprongen blok
@@ -101,7 +155,7 @@ public final class ScriptParser {
      * De regels onder {@code owner} (een regel met een dubbele punt): ze springen allemaal even ver
      * in, verder dan {@code owner}.
      */
-    private List<Script.Stmt> block(Line owner, Op trigger) {
+    private List<Script.Stmt> block(Line owner, @Nullable Op trigger) {
         if (index >= lines.size() || lines.get(index).indent() <= owner.indent()) {
             throw new LogicException(owner.number(), "After a line with : there must be lines that are indented"
                     + " (4 spaces more). Write pass if nothing should happen.");
@@ -123,8 +177,8 @@ public final class ScriptParser {
         return statements;
     }
 
-    /** Eén regel in een blok: een if (met zijn eigen blokken), pass, of een actie. */
-    private @Nullable Script.Stmt statement(Line line, Op trigger) {
+    /** Eén regel in een blok: een if (met zijn eigen blokken), pass, een actie, of een eigen blok. */
+    private @Nullable Script.Stmt statement(Line line, @Nullable Op trigger) {
         Lexer.Token first = line.first();
         if (first.is("if")) {
             return ifStatement(line, trigger);
@@ -137,6 +191,9 @@ public final class ScriptParser {
         }
         if (first.is("when")) {
             throw new LogicException(line.number(), "A when must not be indented: start it at the left edge");
+        }
+        if (first.is("def")) {
+            throw new LogicException(line.number(), "A def must not be indented: start it at the left edge, not inside a when");
         }
         if (first.is("pass")) {
             if (line.tokens().get(1).type() != Lexer.Type.END) {
@@ -151,7 +208,18 @@ public final class ScriptParser {
             throw new LogicException(line.number(), extra.is(":")
                     ? call.name() + "() is an action: it does not end with a :" : "I did not expect " + extra + " after " + call.name() + "()");
         }
+        if (functionNames.contains(call.name())) {
+            // Een van je eigen blokken.
+            if (call.args() > 0) {
+                throw new LogicException(line.number(), "Your own blocks take nothing between the brackets: " + call.name() + "()");
+            }
+            index++;
+            return new Script.Action(Op.CALL, call.name(), 0, line.number());
+        }
         Op op = Op.byCode(call.name());
+        if (op == Op.CALL || op == Op.DEF) {
+            throw new LogicException(line.number(), "Write the name of your def with brackets, like open_door()");
+        }
         if (op == null) {
             throw new LogicException(line.number(), unknown(call.name()));
         }
@@ -170,7 +238,7 @@ public final class ScriptParser {
     }
 
     /** if (of elif) voorwaarde: blok, en dan eventueel elif/else met hun blok. */
-    private Script.If ifStatement(Line line, Op trigger) {
+    private Script.If ifStatement(Line line, @Nullable Op trigger) {
         int[] end = new int[1];
         Expr condition;
         try {
@@ -207,6 +275,9 @@ public final class ScriptParser {
             throw new LogicException(line.number(), "I expected the name of an action here, not " + name);
         }
         if (!tokens.get(start + 1).is("(")) {
+            if (functionNames.contains(name.text())) {
+                throw new LogicException(line.number(), name.text() + " needs brackets: " + name.text() + "()");
+            }
             Op op = Op.byCode(name.text());
             throw new LogicException(line.number(), op != null
                     ? name.text() + " needs brackets, like " + name.text() + "(" + (op.textArg() != Op.Arg.NONE ? "\"...\"" : "") + ")"
@@ -266,8 +337,8 @@ public final class ScriptParser {
         }
     }
 
-    private static String unknown(String name) {
-        String guess = Checks.suggest(name);
+    private String unknown(String name) {
+        String guess = Checks.suggest(name, functionNames);
         return "I don't know \"" + name + "\"" + (guess != null ? ". Did you mean " + guess + "?" : "");
     }
 }
