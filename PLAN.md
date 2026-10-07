@@ -972,9 +972,15 @@ De stappen, één per commit:
       (recept: ijzer, glas, redstone, Stark-chip = 2 stuks) hangt aan de muur, krijgt een naam
       ("Reader 1", of uit een aambeeld) en heeft een lampje: oranje = gelezen, groen = goed, rood =
       geweigerd of de server draait niet. Elke gelezen kaart komt in het logboek. Screenshots:
-      `-Ponly=keycards`. Eén nieuwe test.
-- [ ] **4. Het codepaneel**: een blok aan de muur met een toetsenbordje (0-9, wissen, OK). Welke
-      code goed is, staat in je diagram (`if code == "4321":`), niet in het paneel.
+      `-Ponly=keycards`. Eén nieuwe test. Commit: `68de29b`.
+- [x] **4. Het codepaneel**
+      De **Code Panel** (recept: ijzer, stenen knoppen, redstone, Stark-chip = 2 stuks) hangt aan de
+      muur, met een naam ("Panel 1") en hetzelfde lampje als de lezer. Rechtsklik opent de toetsen:
+      0-9, C (wissen) en OK, met de muis of je toetsenbord (Backspace, Enter); op het schermpje zie je
+      sterretjes. OK stuurt de code naar de server en sluit het scherm. Welke code goed is, staat in
+      je diagram (`if code == "4321":`), niet in het paneel; de server neemt alleen cijfers aan (1-8),
+      alleen van dichtbij (6 blokken), en zet NIET de code in het logboek (een hacker die je
+      logboek leest, ziet hem dus niet). Screenshots: `-Ponly=keycards`. Eén nieuwe test.
 - [ ] **5. Het brein van de server**: diagrammen opslaan op de kern, uitvoeren als er iets gebeurt
       (met de snelheid van je CPU's en zoveel tegelijk als je RAM toelaat), en alles in het
       logboek. Werkt ook als jij offline bent.

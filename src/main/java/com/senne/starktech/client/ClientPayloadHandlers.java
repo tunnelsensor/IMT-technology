@@ -69,6 +69,14 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** De toetsen van een codepaneel openen (als er nog geen ander scherm openstaat). */
+    public static void onCodePanel(com.senne.starktech.network.CodePanelPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new CodePanelScreen(payload.pos(), payload.text()));
+        }
+    }
+
     /** De Stark OS-desktop openen (eigenaar of op afstand), of weer sluiten. */
     public static void onOsOpen(com.senne.starktech.network.OsOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

@@ -1169,6 +1169,53 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Het codepaneel: alleen cijfers (1 tot 8) tellen als code, en alleen van dichtbij. Een goede code
+     * geeft het oranje lampje en een regel in het logboek, maar de code zelf staat er niet in.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "code_panel")
+    public static void code_panel_sends_codes(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(7, 3, 7));
+        var core = placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos panel = new BlockPos(8, 3, 8);
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        ((com.senne.starktech.logic.InputDeviceBlockEntity) helper.getBlockEntity(panel)).setName("Front door");
+        BlockPos panelAbs = helper.absolutePos(panel);
+        BlockPos rack = new BlockPos(12, 3, 12);
+        placeServer(helper, rack, core);
+        helper.runAfterDelay(2, () -> {
+            startServer(helper, rack, core);
+            int before = core.log().entries().size();
+            for (String bad : new String[] {"", "12a4", "123456789", "-1"}) {
+                com.senne.starktech.logic.LogicEvents.clear();
+                com.senne.starktech.logic.LogicEvents.codePanel(level, panelAbs, owner, bad);
+            }
+            if (core.log().entries().size() != before) {
+                throw new GameTestAssertException("Een code met letters, te lang of leeg kwam toch door");
+            }
+            helper.assertBlockProperty(panel, com.senne.starktech.logic.InputDeviceBlock.LIGHT,
+                    com.senne.starktech.logic.InputLight.OFF);
+            com.senne.starktech.logic.LogicEvents.clear();
+            com.senne.starktech.logic.LogicEvents.codePanel(level, panelAbs, owner, "4321");
+            helper.assertBlockProperty(panel, com.senne.starktech.logic.InputDeviceBlock.LIGHT,
+                    com.senne.starktech.logic.InputLight.BUSY);
+            String last = core.log().entries().getLast().text();
+            if (!last.contains("entered a code at Front door") || last.contains("4321")) {
+                throw new GameTestAssertException("Het logboek klopt niet (of verraadt de code): " + last);
+            }
+            // Van ver weg: niets.
+            owner.teleportTo(panelAbs.getX() + 20, panelAbs.getY(), panelAbs.getZ());
+            com.senne.starktech.logic.LogicEvents.clear();
+            int count = core.log().entries().size();
+            com.senne.starktech.logic.LogicEvents.codePanel(level, panelAbs, owner, "1111");
+            if (core.log().entries().size() != count) {
+                throw new GameTestAssertException("Een code van 20 blokken ver kwam toch door");
+            }
+            helper.succeed();
+        });
+    }
+
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
     private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();

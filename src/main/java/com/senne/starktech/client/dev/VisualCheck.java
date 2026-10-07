@@ -1359,6 +1359,11 @@ public final class VisualCheck {
                 if (level.getBlockEntity(reader) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
                     be.setName("Lab door");
                 }
+                level.setBlockAndUpdate(reader.east(), ModBlocks.CODE_PANEL.get().defaultBlockState()
+                        .setValue(com.senne.starktech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
+                if (level.getBlockEntity(reader.east()) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
+                    be.setName("Front door");
+                }
                 // Een lege kaart en vijf beschreven kaarten (één per niveau) in de hotbar.
                 player.getInventory().clearContent();
                 player.getInventory().setItem(0, new ItemStack(ModItems.KEYCARD.get(), 3));
@@ -1371,7 +1376,7 @@ public final class VisualCheck {
                 player.getInventory().setItem(6, new ItemStack(ModItems.KEYCARD_READER.get()));
                 player.getInventory().selected = 3;
             });
-            t.stand(10, 102.5, -60, -75.5, 180, 15);
+            t.stand(10, 103.0, -60, -75.5, 180, 30);
             t.shot(60, "y01_reader_wall");
             // De kaart tegen de lezer: oranje (de server denkt na).
             t.onServer(0, player -> com.senne.starktech.logic.LogicEvents.keycard(player.serverLevel(), reader, player,
@@ -1383,6 +1388,15 @@ public final class VisualCheck {
             t.onServer(0, player -> com.senne.starktech.logic.InputDeviceBlock.flash(player.serverLevel(), reader,
                     com.senne.starktech.logic.InputLight.DENIED));
             t.shot(4, "y04_reader_denied");
+            // Het codepaneel: de toetsen, met vier cijfers ingetypt (je ziet sterretjes).
+            t.step(0, () -> {
+                Minecraft.getInstance().setScreen(new com.senne.starktech.client.CodePanelScreen(reader.east(), "Front door"));
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.CodePanelScreen panel) {
+                    panel.tourType("4321");
+                }
+            });
+            t.shot(10, "y045_code_panel");
+            t.close(0);
             // De app Keycards: een kaart schrijven.
             t.stand(30, 100.5, -60, -77.5, 180, 20);
             t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));

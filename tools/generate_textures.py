@@ -2457,6 +2457,35 @@ def keycard_reader_textures():
         save(im, f"block/keycard_reader_{name}.png")
 
 
+def code_panel_textures():
+    """
+    Het codepaneel: een donker kastje van 8 bij 12 pixels (x 4-11, y 2-13) met een schermpje, een
+    lampje en twaalf toetsjes (3 bij 4; rechtsonder de groene OK, linksonder de rode C).
+    """
+    body = (40, 43, 50, 255)
+    edge = (22, 23, 27, 255)
+    key = (150, 156, 166, 255)
+    side = img(16, 16, body)
+    ImageDraw.Draw(side).rectangle([0, 0, 15, 15], outline=edge)
+    save(side, "block/code_panel_side.png")
+    for name, led in INPUT_LEDS.items():
+        im = img(16, 16, body)
+        d = ImageDraw.Draw(im)
+        d.rectangle([4, 2, 11, 13], fill=body, outline=edge)
+        d.rectangle([5, 3, 8, 4], fill=CYAN_DARK)
+        px(im, [(5, 3), (6, 3)], (80, 240, 120, 255))
+        d.rectangle([10, 3, 10, 4], fill=led)
+        for row, y in enumerate((6, 8, 10, 12)):
+            for col, x in enumerate((5, 7, 9)):
+                colour = key
+                if row == 3 and col == 0:
+                    colour = (220, 70, 60, 255)
+                elif row == 3 and col == 2:
+                    colour = (80, 220, 110, 255)
+                px(im, [(x, y)], colour)
+        save(im, f"block/code_panel_{name}.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -2500,3 +2529,4 @@ if __name__ == "__main__":
     server_part_items()
     keycard_items()
     keycard_reader_textures()
+    code_panel_textures()

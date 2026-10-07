@@ -49,6 +49,28 @@ public final class LogicEvents {
     }
 
     /**
+     * Iemand typte een code op een codepaneel. We controleren dat het echt een code is (alleen
+     * cijfers), dat hij er dichtbij staat, en geven hem door. In het logboek komt NIET welke code:
+     * wie je logboek leest (een hacker) moet de code niet zomaar kunnen zien.
+     */
+    public static void codePanel(ServerLevel level, BlockPos panel, ServerPlayer player, String code) {
+        if (!(level.getBlockEntity(panel) instanceof InputDeviceBlockEntity device)
+                || !(level.getBlockState(panel).getBlock() instanceof CodePanelBlock)
+                || !CodePanelBlock.isValidCode(code)
+                || player.distanceToSqr(panel.getCenter()) > CodePanelBlock.REACH * CodePanelBlock.REACH
+                || tooSoon(level, player)) {
+            return;
+        }
+        SecurityCoreBlockEntity core = serverFor(level, panel, player);
+        if (core == null) {
+            return;
+        }
+        InputDeviceBlock.flash(level, panel, InputLight.BUSY);
+        level.playSound(null, panel, ModSounds.EDITH_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
+        core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " entered a code at " + device.name());
+    }
+
+    /**
      * De beveiligingskern waar deze lezer of dit paneel bij hoort, als zijn server draait. Zo niet,
      * dan wordt het lampje rood, hoort de speler waarom, en geven we null.
      */

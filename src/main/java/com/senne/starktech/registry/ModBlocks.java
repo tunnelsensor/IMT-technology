@@ -205,6 +205,17 @@ public final class ModBlocks {
                     .lightLevel(state -> state.getValue(com.senne.starktech.logic.InputDeviceBlock.LIGHT)
                             == com.senne.starktech.logic.InputLight.OFF ? 0 : 4));
 
+    /** Het codepaneel: een code intypen start je diagram (7 oktober). */
+    public static final DeferredBlock<com.senne.starktech.logic.CodePanelBlock> CODE_PANEL = BLOCKS.registerBlock(
+            "code_panel", com.senne.starktech.logic.CodePanelBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.starktech.logic.InputDeviceBlock.LIGHT)
+                            == com.senne.starktech.logic.InputLight.OFF ? 0 : 4));
+
     /** De beveiligingskern van de Stark Tower: heel sterk, zodat hacken de weg is. */
     public static final DeferredBlock<com.senne.starktech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
             "security_core", com.senne.starktech.security.SecurityCoreBlock::new,

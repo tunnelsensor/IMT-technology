@@ -163,6 +163,8 @@ public final class ModItems {
             com.senne.starktech.logic.KeycardItem::new, new Item.Properties().stacksTo(16));
     public static final DeferredItem<BlockItem> KEYCARD_READER = ITEMS.registerSimpleBlockItem("keycard_reader",
             ModBlocks.KEYCARD_READER, new Item.Properties());
+    public static final DeferredItem<BlockItem> CODE_PANEL = ITEMS.registerSimpleBlockItem("code_panel",
+            ModBlocks.CODE_PANEL, new Item.Properties());
 
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(

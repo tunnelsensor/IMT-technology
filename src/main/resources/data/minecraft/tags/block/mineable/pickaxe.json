@@ -18,6 +18,7 @@
     "starktech:power_cabinet",
     "starktech:security_camera",
     "starktech:server_rack",
-    "starktech:keycard_reader"
+    "starktech:keycard_reader",
+    "starktech:code_panel"
   ]
 }

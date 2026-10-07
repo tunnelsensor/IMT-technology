@@ -80,7 +80,7 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.logic.InputDeviceBlockEntity>> INPUT_DEVICE =
             BLOCK_ENTITIES.register("input_device",
                     () -> new BlockEntityType<>(com.senne.starktech.logic.InputDeviceBlockEntity::new,
-                            java.util.Set.of(ModBlocks.KEYCARD_READER.get()), null));
+                            java.util.Set.of(ModBlocks.KEYCARD_READER.get(), ModBlocks.CODE_PANEL.get()), null));
 
     /** De laptop op een kern: van wie hij is, en wat er al getypt is (de voortgang van de hack). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.StarkLaptopBlockEntity>> STARK_LAPTOP =

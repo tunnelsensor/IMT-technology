@@ -171,6 +171,16 @@ public final class ModNetwork {
                                 EdithSuit.setEngaged(player, payload.engaged());
                             }
                         }));
+        // Het codepaneel: de server opent de toetsen, jouw spel stuurt de ingetypte code terug.
+        registrar.playBidirectional(CodePanelPayload.TYPE, CodePanelPayload.STREAM_CODEC,
+                new DirectionalPayloadHandler<>(
+                        (payload, context) -> ClientPayloadHandlers.onCodePanel(payload, context),
+                        (payload, context) -> {
+                            if (context.player() instanceof ServerPlayer player) {
+                                com.senne.starktech.logic.LogicEvents.codePanel(player.serverLevel(), payload.pos(),
+                                        player, payload.text());
+                            }
+                        }));
         // Fase 6: spionagedrone
         registrar.playToClient(SpyStatusPayload.TYPE, SpyStatusPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSpyStatus(payload, context));
