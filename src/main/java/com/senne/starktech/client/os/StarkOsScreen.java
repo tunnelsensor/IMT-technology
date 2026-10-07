@@ -35,6 +35,8 @@ public class StarkOsScreen extends Screen {
         DEVICES("Devices", "D", 330, 196),
         ACCESS("Access", "A", 280, 190),
         KEYCARDS("Keycards", "K", 300, 190),
+        /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
+        LOGIC("Logic", "{}", 420, 240),
         FILES("Files", "F", 300, 190),
         NOTES("Notes", "N", 320, 196),
         LOGS("Logs", "L", 330, 200),
@@ -62,10 +64,10 @@ public class StarkOsScreen extends Screen {
         final int h;
         int scroll;
 
-        Win(App app, int x, int y) {
+        Win(App app, int x, int y, int w, int h) {
             this.app = app;
-            this.w = app.w;
-            this.h = app.h;
+            this.w = w;
+            this.h = h;
             this.x = x;
             this.y = y;
         }
@@ -113,6 +115,7 @@ public class StarkOsScreen extends Screen {
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
+    private final LogicApp logic = new LogicApp(this, net.minecraft.client.Minecraft.getInstance().font);
     /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
     private boolean gotFirstSnapshot;
 
@@ -147,6 +150,9 @@ public class StarkOsScreen extends Screen {
         }
         if (snapshot.contains("fs")) {
             files.update(snapshot.getList("fs", Tag.TAG_COMPOUND));
+        }
+        if (snapshot.contains("logic")) {
+            logic.update(snapshot.getCompound("logic"));
         }
         if (snapshot.contains("file")) {
             CompoundTag file = snapshot.getCompound("file");
@@ -201,6 +207,17 @@ public class StarkOsScreen extends Screen {
         keycards.tourFill(label, level);
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Logic met deze code (en eventueel Help open). */
+    public void tourLogic(String name, String code, boolean help) {
+        openApp(App.LOGIC);
+        logic.tourCode(name, code, help);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de knop Save van de app Logic. */
+    public void tourSaveLogic() {
+        logic.tourSave();
+    }
+
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
     public void tourOpen(App app) {
         openApp(app);
@@ -245,7 +262,16 @@ public class StarkOsScreen extends Screen {
         int left = iconsRight() + 8;
         int x = Math.max(0, Math.min(left + offset, width - app.w - 4));
         int y = Math.min(30 + offset, Math.max(24, height - app.h - TASKBAR_H - 4));
-        Win win = new Win(app, x, y);
+        int w = app.w;
+        int h = app.h;
+        if (app == App.LOGIC) {
+            // Schermvullend (code heeft ruimte nodig); via de taakbalk kom je bij de andere apps.
+            x = 4;
+            y = 17;
+            w = Math.max(260, width - 8);
+            h = Math.max(150, height - TASKBAR_H - 20);
+        }
+        Win win = new Win(app, x, y, w, h);
         windows.add(win);
         focus(win);
         return win;
@@ -266,6 +292,9 @@ public class StarkOsScreen extends Screen {
         }
         if (win.app != App.KEYCARDS) {
             keycards.blur();
+        }
+        if (win.app != App.LOGIC) {
+            logic.blur();
         }
     }
 
@@ -388,6 +417,7 @@ public class StarkOsScreen extends Screen {
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
+            case LOGIC -> logic.mouseClicked(font, contentArea(win), mx, my, button);
             case SETTINGS -> {
                 int cx = win.x + 6;
                 int fieldY = win.y + TITLE_H + 60;
@@ -419,6 +449,9 @@ public class StarkOsScreen extends Screen {
         if (pressedIn != null && pressedIn.app == App.NOTES) {
             return notes.mouseDragged((int) mouseX, (int) mouseY, button, dragX, dragY);
         }
+        if (pressedIn != null && pressedIn.app == App.LOGIC) {
+            return logic.mouseDragged((int) mouseX, (int) mouseY);
+        }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
@@ -433,6 +466,8 @@ public class StarkOsScreen extends Screen {
             notes.mouseReleased((int) mouseX, (int) mouseY, button);
         } else if (win != null && win.app == App.CAMERAS) {
             cameras.mouseReleased((int) mouseX, (int) mouseY);
+        } else if (win != null && win.app == App.LOGIC) {
+            logic.mouseReleased();
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -454,6 +489,7 @@ public class StarkOsScreen extends Screen {
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(scrollY);
+            case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
@@ -468,7 +504,8 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
-                || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)) {
+                || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (editingPassword && passwordText.length() < 8
@@ -487,7 +524,8 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)) {
+                || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (editingPassword) {
@@ -519,6 +557,7 @@ public class StarkOsScreen extends Screen {
         // Een notitie die nog niet bewaard is, eerst bewaren; dan de sessie op de server netjes
         // sluiten (hij sluit anders vanzelf als je wegloopt).
         notes.save();
+        logic.saveIfValid(); // een diagram dat klopt, bewaren we vanzelf (zoals een notitie)
         send("close", new CompoundTag());
         super.removed();
     }
@@ -609,6 +648,7 @@ public class StarkOsScreen extends Screen {
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);
+            case LOGIC -> logic.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);

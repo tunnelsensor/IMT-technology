@@ -1,0 +1,756 @@
+package com.senne.starktech.client.os;
+
+import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.logic.program.GraphConverter;
+import com.senne.starktech.logic.program.LogicException;
+import com.senne.starktech.logic.program.LogicGraph;
+import com.senne.starktech.logic.program.LogicProgram;
+import com.senne.starktech.logic.program.Op;
+import com.senne.starktech.logic.program.Script;
+import com.senne.starktech.logic.program.ScriptParser;
+import com.senne.starktech.logic.program.ScriptPrinter;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * De app Logic op de Stark OS-desktop (jouw wens, 7 oktober): hier programmeer je de redstone van
+ * je basis. Links je diagrammen (en hoe vol je SSD's zijn), rechts de code van het diagram dat open
+ * is.
+ * <pre>
+ *  DIAGRAMS  [+]   | Name [Lab______] [Check] [Save] [On] [Delete]      [Help]
+ *  * Lab           |  1 when keycard("Lab door"):
+ *    Lights        |  2     if card.valid and card.level &gt;= 3:
+ *                  |  3         accept()
+ *  SSD 14/48       |  ...
+ *  running 1       | No problems: 9 blocks
+ * </pre>
+ * "Check" laat zien of de code klopt (en springt naar de regel met de fout); "Save" stuurt hem naar
+ * de server, die alles nog eens controleert. "Help" toont alles wat je kunt gebruiken, met de namen
+ * van jouw apparaten: klik erop en het komt in je code.
+ *
+ * De server bewaart blokjes (zie LogicGraph); de code is een andere manier om ze te laten zien (zie
+ * GraphConverter). Je commentaar (#) blijft bewaard zolang de code bij de blokjes past.
+ */
+final class LogicApp {
+    private static final int SIDE = 92;
+    private static final int ROW = 12;
+    private static final int TOOLBAR = OsDraw.BUTTON_H + 4;
+    private static final int STATUS = 11;
+    private static final int HELP_W = 152;
+
+    /** Eén diagram zoals de server het stuurde. */
+    private record Entry(String name, boolean on, LogicGraph graph, String source) {}
+
+    private final StarkOsScreen screen;
+    private final CodeEditor editor;
+    private final List<Entry> entries = new ArrayList<>();
+    private int revision = -1;
+
+    /** Het diagram dat open is: zijn naam op de server (null = nieuw, nog niet bewaard). */
+    private @Nullable String current;
+    private boolean open;
+    private String loadedCode = "";
+    private String loadedName = "";
+    /** De blokjes zoals ze op de server staan (zodat ze bij opslaan hun plek houden). */
+    private @Nullable LogicGraph baseGraph;
+    /** Na Save: dit diagram openen zodra de server het terugstuurt. */
+    private @Nullable String pendingSelect;
+
+    private String status = "";
+    private int statusColour = OsDraw.GREY;
+    /** Een klik die nog bevestigd moet worden (Delete, of weg van een diagram met wijzigingen). */
+    private @Nullable String confirm;
+    private long confirmUntil;
+
+    private @Nullable EditBox nameBox;
+    private boolean helpOpen;
+    private int helpScroll;
+    private int sideScroll;
+    /** Bij Help: welke lezer of welk paneel je een andere naam geeft (of null). */
+    private @Nullable CompoundTag renaming;
+    private @Nullable EditBox renameBox;
+
+    LogicApp(StarkOsScreen screen, Font font) {
+        this.screen = screen;
+        this.editor = new CodeEditor(font);
+    }
+
+    private CompoundTag info() {
+        return screen.data().getCompound("logicInfo");
+    }
+
+    private CompoundTag server() {
+        return screen.data().getCompound("server");
+    }
+
+    private EditBox nameBox() {
+        if (nameBox == null) {
+            nameBox = new EditBox(Minecraft.getInstance().font, 0, 0, 80, 10, Component.literal("Name"));
+            nameBox.setBordered(false);
+            nameBox.setMaxLength(LogicProgram.MAX_NAME);
+            nameBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
+        }
+        return nameBox;
+    }
+
+    private EditBox renameBox() {
+        if (renameBox == null) {
+            renameBox = new EditBox(Minecraft.getInstance().font, 0, 0, 80, 10, Component.literal("Name"));
+            renameBox.setBordered(false);
+            renameBox.setMaxLength(24);
+            renameBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
+        }
+        return renameBox;
+    }
+
+    // ================================================================ Van de server
+
+    /** Nieuwe diagrammen van de server (alleen als er iets veranderde). */
+    void update(CompoundTag logic) {
+        revision = logic.getInt("rev");
+        entries.clear();
+        for (Tag element : logic.getList("programs", Tag.TAG_COMPOUND)) {
+            LogicProgram program = LogicProgram.load((CompoundTag) element);
+            entries.add(new Entry(program.name(), program.enabled(), program.graph(), program.source()));
+        }
+        if (pendingSelect != null && find(pendingSelect) != null) {
+            openEntry(find(pendingSelect), true);
+            pendingSelect = null;
+            return;
+        }
+        if (open && current != null) {
+            Entry entry = find(current);
+            if (entry == null) {
+                // Weg (verwijderd): open het eerste andere diagram, tenzij je hier nog aan werkt.
+                if (!dirty()) {
+                    open = false;
+                    current = null;
+                }
+            } else if (!dirty()) {
+                openEntry(entry, true);
+            }
+        }
+        if (!open && !entries.isEmpty()) {
+            openEntry(entries.getFirst(), false);
+        }
+    }
+
+    private @Nullable Entry find(String name) {
+        for (Entry entry : entries) {
+            if (entry.name().equalsIgnoreCase(name)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /** Opent dit diagram in de editor. {@code keepCursor}: is de code hetzelfde, laat de editor dan met rust. */
+    private void openEntry(Entry entry, boolean keepCursor) {
+        current = entry.name();
+        open = true;
+        baseGraph = entry.graph();
+        String code = codeFor(entry);
+        if (!keepCursor || !editor.text().equals(code)) {
+            editor.setText(code);
+        }
+        loadedCode = code;
+        loadedName = entry.name();
+        nameBox().setValue(entry.name());
+        confirm = null;
+        check(false);
+        int loose = entry.graph().size() - entry.graph().reachable().size();
+        if (loose > 0) {
+            show(loose + (loose == 1 ? " loose block is" : " loose blocks are") + " not in the code (Save removes them)", HudStyle.ORANGE);
+        }
+    }
+
+    /** De code van een diagram: zoals jij hem schreef als die nog bij de blokjes past, anders uit de blokjes. */
+    static String codeFor(LogicGraph graph, String source) {
+        String printed = ScriptPrinter.print(GraphConverter.toScript(graph));
+        if (!source.isEmpty()) {
+            try {
+                if (ScriptPrinter.print(ScriptParser.parse(source)).equals(printed)) {
+                    return source;
+                }
+            } catch (LogicException e) {
+                // De bewaarde code klopt niet meer: dan de code uit de blokjes.
+            }
+        }
+        return printed;
+    }
+
+    private static String codeFor(Entry entry) {
+        return codeFor(entry.graph(), entry.source());
+    }
+
+    /** Zijn er wijzigingen die nog niet bewaard zijn? */
+    boolean dirty() {
+        return open && (current == null || !editor.text().equals(loadedCode) || !nameBox().getValue().strip().equals(loadedName));
+    }
+
+    // ================================================================ Knoppen
+
+    /** Controleert de code. {@code jump}: spring naar de regel met de fout. Geeft het Script, of null bij een fout. */
+    private @Nullable Script check(boolean jump) {
+        try {
+            Script script = ScriptParser.parse(editor.text());
+            editor.setErrorLine(0);
+            int blocks = script.blocks();
+            show(script.handlers().isEmpty() ? "Empty: start with a line like when keycard(\"Reader 1\"):"
+                    : "No problems: " + blocks + (blocks == 1 ? " block" : " blocks"),
+                    script.handlers().isEmpty() ? HudStyle.ORANGE : HudStyle.GREEN);
+            return script;
+        } catch (LogicException e) {
+            editor.setErrorLine(e.line());
+            show(e.describe(), HudStyle.RED);
+            if (jump && e.line() > 0) {
+                editor.goToLine(e.line());
+            }
+            return null;
+        }
+    }
+
+    /** Bewaren: de code wordt blokjes, en die gaan naar de server. */
+    void save() {
+        if (!open) {
+            return;
+        }
+        Script script = check(true);
+        if (script == null) {
+            return;
+        }
+        String name = nameBox().getValue().strip();
+        if (name.isEmpty()) {
+            show("Give the diagram a name first", HudStyle.RED);
+            return;
+        }
+        LogicGraph graph = GraphConverter.toGraph(script, baseGraph);
+        CompoundTag args = new CompoundTag();
+        args.putString("old", current == null ? "" : current);
+        args.putString("name", name);
+        args.put("graph", graph.save());
+        args.putString("source", editor.text());
+        screen.send("logic_save", args);
+        pendingSelect = name;
+    }
+
+    /** Bewaren bij het sluiten van de desktop, maar alleen als de code klopt. */
+    void saveIfValid() {
+        if (dirty()) {
+            try {
+                ScriptParser.parse(editor.text());
+                save();
+            } catch (LogicException e) {
+                // Kapotte code bewaren we niet vanzelf.
+            }
+        }
+    }
+
+    private void newDiagram() {
+        if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
+            return;
+        }
+        int number = 1;
+        while (find("Diagram " + number) != null) {
+            number++;
+        }
+        current = null;
+        open = true;
+        baseGraph = null;
+        nameBox().setValue("Diagram " + number);
+        loadedName = "";
+        String reader = firstInput(false);
+        String code = reader != null
+                ? "when keycard(\"" + reader + "\"):\n    if card.valid and card.level >= 1:\n        accept()\n    else:\n        deny()\n"
+                : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
+        editor.setText(code);
+        loadedCode = "";
+        editor.setFocused(true);
+        check(false);
+    }
+
+    private void toggleOn() {
+        Entry entry = current == null ? null : find(current);
+        if (entry == null) {
+            show("Save the diagram first", HudStyle.ORANGE);
+            return;
+        }
+        CompoundTag args = new CompoundTag();
+        args.putString("name", entry.name());
+        args.putBoolean("on", !entry.on());
+        screen.send("logic_enable", args);
+    }
+
+    private void delete() {
+        if (current == null) {
+            open = false; // nooit bewaard: gewoon weg
+            if (!entries.isEmpty()) {
+                openEntry(entries.getFirst(), false);
+            }
+            return;
+        }
+        if (!confirmed("delete", "Click Delete again to delete " + current)) {
+            return;
+        }
+        CompoundTag args = new CompoundTag();
+        args.putString("name", current);
+        screen.send("logic_delete", args);
+        open = false;
+        current = null;
+    }
+
+    /** Bij iets dat je niet ongedaan kunt maken: de eerste klik vraagt het, de tweede doet het. */
+    private boolean confirmed(String what, String question) {
+        boolean needed = what.equals("delete") || dirty();
+        if (!needed || what.equals(confirm) && Util.getMillis() < confirmUntil) {
+            confirm = null;
+            return true;
+        }
+        confirm = what;
+        confirmUntil = Util.getMillis() + 4000;
+        show(question, HudStyle.ORANGE);
+        return false;
+    }
+
+    private void show(String text, int colour) {
+        status = text;
+        statusColour = colour;
+    }
+
+    private @Nullable String firstInput(boolean panel) {
+        for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
+            CompoundTag input = (CompoundTag) element;
+            if (input.getBoolean("p") == panel) {
+                return input.getString("n");
+            }
+        }
+        return null;
+    }
+
+    // ================================================================ Tekenen
+
+    void render(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my, float partialTick) {
+        renderSidebar(g, font, a, mx, my);
+        int x0 = a.x() + SIDE + 6;
+        int width = a.x() + a.w() - x0;
+        if (!open) {
+            g.drawString(font, "No diagram open.", x0, a.y() + 4, HudStyle.argb(255, HudStyle.WHITE), false);
+            g.drawString(font, "Press + to make one.", x0, a.y() + 16, HudStyle.argb(255, OsDraw.GREY), false);
+            return;
+        }
+        // De knoppenbalk.
+        int bx = x0;
+        g.drawString(font, "Name", bx, a.y() + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+        bx += font.width("Name") + 4;
+        EditBox box = nameBox();
+        OsDraw.field(g, bx, a.y(), bx + 84, a.y() + OsDraw.BUTTON_H, box.isFocused());
+        box.setX(bx + 3);
+        box.setY(a.y() + 2);
+        box.setWidth(78);
+        box.render(g, mx, my, partialTick);
+        bx += 88;
+        for (String label : toolbar()) {
+            boolean enabled = !label.equals("Save") || dirty();
+            int accent = label.equals("Delete") ? HudStyle.RED : label.equals("Off") ? HudStyle.ORANGE
+                    : label.equals("On") ? HudStyle.GREEN : HudStyle.CYAN;
+            bx += OsDraw.button(g, font, bx, a.y(), label, enabled, accent) + 3;
+        }
+        int helpX = a.x() + a.w() - OsDraw.buttonWidth(font, "Help");
+        if (helpOpen) {
+            g.fill(helpX, a.y(), helpX + OsDraw.buttonWidth(font, "Help"), a.y() + OsDraw.BUTTON_H, HudStyle.argb(255, 0x4A3416));
+        }
+        OsDraw.button(g, font, helpX, a.y(), "Help", true, HudStyle.ORANGE);
+        // De editor.
+        int top = a.y() + TOOLBAR;
+        int editorW = helpOpen ? width - HELP_W - 4 : width;
+        editor.setBounds(x0, top, editorW, a.h() - TOOLBAR - STATUS);
+        editor.render(g, mx, my);
+        if (helpOpen) {
+            renderHelp(g, font, x0 + editorW + 4, top, HELP_W, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
+        }
+        // De statusregel.
+        String text = (dirty() ? "* " : "") + status;
+        g.drawString(font, OsDraw.fitLeft(font, text, width), x0, a.y() + a.h() - 9, HudStyle.argb(255, statusColour), false);
+    }
+
+    /**
+     * De knoppen na het naamvak. "On" of "Off" zegt wat er gebeurt als je klikt (en staat er pas als
+     * het diagram bewaard is).
+     */
+    private List<String> toolbar() {
+        Entry entry = current == null ? null : find(current);
+        if (entry == null) {
+            return List.of("Check", "Save", "Delete");
+        }
+        return List.of("Check", "Save", entry.on() ? "Off" : "On", "Delete");
+    }
+
+    private void renderSidebar(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my) {
+        int x = a.x();
+        g.drawString(font, "DIAGRAMS", x, a.y() + 2, HudStyle.argb(255, HudStyle.CYAN), false);
+        OsDraw.button(g, font, x + SIDE - OsDraw.buttonWidth(font, "+"), a.y(), "+", true, HudStyle.GREEN);
+        int top = a.y() + TOOLBAR;
+        int bottom = a.y() + a.h() - 34;
+        OsDraw.field(g, x, top, x + SIDE, bottom, false);
+        int y = top + 3;
+        List<Entry> shown = new ArrayList<>(entries);
+        sideScroll = Math.max(0, Math.min(sideScroll, Math.max(0, shown.size() - 1)));
+        for (int i = sideScroll; i < shown.size() && y + ROW <= bottom; i++) {
+            Entry entry = shown.get(i);
+            boolean selected = open && current != null && current.equalsIgnoreCase(entry.name());
+            if (selected) {
+                g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
+            }
+            g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
+            String name = (selected && dirty() ? "*" : "") + entry.name();
+            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - 14), x + 10, y,
+                    HudStyle.argb(255, entry.on() ? HudStyle.WHITE : OsDraw.GREY), false);
+            y += ROW;
+        }
+        if (open && current == null && y + ROW <= bottom) {
+            g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
+            g.drawString(font, OsDraw.fitLeft(font, "*" + nameBox().getValue(), SIDE - 14), x + 10, y,
+                    HudStyle.argb(255, HudStyle.ORANGE), false);
+        }
+        if (entries.isEmpty() && !open) {
+            g.drawString(font, "(none yet)", x + 5, top + 3, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+        // Onderaan: hoe vol de SSD's zijn, en wat er bezig is.
+        CompoundTag info = info();
+        CompoundTag server = server();
+        int used = info.getInt("used");
+        int cap = server.getInt("cap");
+        int sy = bottom + 3;
+        g.drawString(font, "SSD " + used + "/" + cap, x, sy, HudStyle.argb(255, used > cap ? HudStyle.RED : HudStyle.WHITE), false);
+        int barW = SIDE;
+        g.fill(x, sy + 10, x + barW, sy + 12, HudStyle.argb(255, 0x1A2A33));
+        if (cap > 0) {
+            g.fill(x, sy + 10, x + Math.min(barW, barW * used / cap), sy + 12,
+                    HudStyle.argb(255, used > cap ? HudStyle.RED : HudStyle.CYAN));
+        }
+        String state = !server.getBoolean("online") ? "Server offline"
+                : "Running " + info.getInt("running") + (info.getInt("queued") > 0 ? ", waiting " + info.getInt("queued") : "");
+        g.drawString(font, OsDraw.fitLeft(font, state, SIDE), x, sy + 16,
+                HudStyle.argb(255, server.getBoolean("online") ? OsDraw.GREY : HudStyle.RED), false);
+    }
+
+    // ================================================================ Help
+
+    /** Eén regel in het Help-paneel: een kopje, of iets dat je kunt invoegen (met uitleg). */
+    private record HelpLine(String label, @Nullable String insert, String tip, int colour, @Nullable CompoundTag input) {}
+
+    private List<HelpLine> helpLines() {
+        List<HelpLine> lines = new ArrayList<>();
+        String reader = firstInput(false);
+        String panel = firstInput(true);
+        List<String> outputs = new ArrayList<>();
+        for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
+            outputs.add(tag.getAsString());
+        }
+        String device = outputs.isEmpty() ? "Lamp" : outputs.getFirst();
+        lines.add(header("START WITH (when)"));
+        lines.add(item("keycard(...)", "when keycard(\"" + (reader == null ? "Reader 1" : reader) + "\"):\n    if card.valid:\n        accept()\n    else:\n        deny()\n", Op.KEYCARD));
+        lines.add(item("codepanel(...)", "when codepanel(\"" + (panel == null ? "Panel 1" : panel) + "\"):\n    if code == \"1234\":\n        accept()\n    else:\n        deny()\n", Op.CODEPANEL));
+        lines.add(item("turned_on(...)", "when turned_on(\"" + device + "\"):\n    pass\n", Op.TURNED_ON));
+        lines.add(item("turned_off(...)", "when turned_off(\"" + device + "\"):\n    pass\n", Op.TURNED_OFF));
+        lines.add(item("every(10)", "when every(10):\n    pass\n", Op.EVERY));
+        lines.add(header("DO (actions)"));
+        lines.add(item("on / off / toggle", "on(\"" + device + "\")", Op.ON));
+        lines.add(item("pulse(..., 3)", "pulse(\"" + device + "\", 3)", Op.PULSE));
+        lines.add(item("wait(2)", "wait(2)", Op.WAIT));
+        lines.add(item("accept() / deny()", "accept()", Op.ACCEPT));
+        lines.add(item("say(...)", "say(\"Someone is at the door\")", Op.SAY));
+        lines.add(item("alarm(...)", "alarm(\"Intruder!\")", Op.ALARM));
+        lines.add(item("log(...)", "log(\"Door opened\")", Op.LOG));
+        lines.add(header("CHECK (if)"));
+        lines.add(new HelpLine("if card.level >= 3:", "if card.valid and card.level >= 3:\n    pass", "card.level: 1-5; card.valid: written by this network and not blocked", HudStyle.WHITE, null));
+        lines.add(new HelpLine("if code == \"1234\":", "if code == \"1234\":\n    pass", "the code typed on a code panel (between quotes)", HudStyle.WHITE, null));
+        lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "the owner, their team, and trusted players (Access)", HudStyle.WHITE, null));
+        lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
+        lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", "also: is_day, player.owner, player.name, card.number, card.name", HudStyle.WHITE, null));
+        lines.add(new HelpLine("else: / elif ...:", "else:\n    pass", "what happens when the if is not true", HudStyle.WHITE, null));
+        lines.add(header("YOUR DEVICES"));
+        if (outputs.isEmpty()) {
+            lines.add(new HelpLine("(none: name relays with your glasses)", null,
+                    "Place a relay, laser or turret here and give it a name with E.D.I.T.H.", OsDraw.GREY, null));
+        }
+        for (String name : outputs) {
+            lines.add(new HelpLine(name, quoted(name), "a relay, laser, dome, turret or cabinet switch", 0x9ED8FF, null));
+        }
+        lines.add(header("READERS AND PANELS"));
+        for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
+            CompoundTag input = (CompoundTag) element;
+            lines.add(new HelpLine((input.getBoolean("p") ? "[panel] " : "[reader] ") + input.getString("n"),
+                    quoted(input.getString("n")), "click R to rename it", HudStyle.CYAN, input));
+        }
+        if (info().getList("inputs", Tag.TAG_COMPOUND).isEmpty()) {
+            lines.add(new HelpLine("(none in this network yet)", null, "Place a Keycard Reader or Code Panel near the core", OsDraw.GREY, null));
+        }
+        return lines;
+    }
+
+    private static String quoted(String text) {
+        return "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    private static HelpLine header(String text) {
+        return new HelpLine(text, null, "", HudStyle.ORANGE, null);
+    }
+
+    private static HelpLine item(String label, String insert, Op op) {
+        return new HelpLine(label, insert, op.help(), op.isTrigger() ? HudStyle.CYAN : 0x9ED8FF, null);
+    }
+
+    private void renderHelp(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my, float partialTick) {
+        OsDraw.field(g, x, y, x + w, y + h, false);
+        List<HelpLine> lines = helpLines();
+        int tipH = 20;
+        int listBottom = y + h - tipH - (renaming != null ? 14 : 0);
+        helpScroll = Math.max(0, Math.min(helpScroll, Math.max(0, lines.size() - 3)));
+        String tip = "Click a line to put it in your code.";
+        int ly = y + 3;
+        g.enableScissor(x + 1, y + 1, x + w - 1, listBottom);
+        for (int i = helpScroll; i < lines.size() && ly < listBottom; i++) {
+            HelpLine line = lines.get(i);
+            boolean hover = line.insert() != null && mx >= x && mx < x + w && my >= ly - 1 && my < ly + 9;
+            if (hover) {
+                g.fill(x + 1, ly - 1, x + w - 1, ly + 9, HudStyle.argb(255, 0x16303F));
+                tip = line.tip();
+            }
+            g.drawString(font, OsDraw.fitLeft(font, line.label(), w - (line.input() != null ? 16 : 6)), x + 4, ly,
+                    HudStyle.argb(255, line.colour()), false);
+            if (line.input() != null) {
+                g.drawString(font, "R", x + w - 9, ly, HudStyle.argb(255, HudStyle.ORANGE), false);
+            }
+            ly += 10;
+        }
+        g.disableScissor();
+        // Onderaan: de uitleg van wat onder de muis is (over twee regels).
+        List<net.minecraft.util.FormattedCharSequence> tipLines = font.split(Component.literal(tip), w - 6);
+        for (int i = 0; i < Math.min(2, tipLines.size()); i++) {
+            g.drawString(font, tipLines.get(i), x + 3, y + h - tipH + 1 + i * 9, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+        if (renaming != null) {
+            int ry = y + h - tipH - 13;
+            EditBox box = renameBox();
+            OsDraw.field(g, x + 2, ry, x + w - 30, ry + OsDraw.BUTTON_H, true);
+            box.setX(x + 5);
+            box.setY(ry + 2);
+            box.setWidth(w - 38);
+            box.render(g, mx, my, partialTick);
+            OsDraw.button(g, font, x + w - 26, ry, "OK", true, HudStyle.GREEN);
+        }
+    }
+
+    // ================================================================ Muis
+
+    void mouseClicked(Font font, StarkOsScreen.Area a, int mx, int my, int button) {
+        // De zijbalk: + en de diagrammen.
+        if (OsDraw.inside(mx, my, a.x() + SIDE - OsDraw.buttonWidth(font, "+"), a.y(), OsDraw.buttonWidth(font, "+"), OsDraw.BUTTON_H)) {
+            newDiagram();
+            return;
+        }
+        int top = a.y() + TOOLBAR;
+        if (mx >= a.x() && mx < a.x() + SIDE && my >= top) {
+            int index = sideScroll + (my - top - 1) / ROW;
+            if (index >= 0 && index < entries.size()) {
+                Entry entry = entries.get(index);
+                if (current == null || !current.equalsIgnoreCase(entry.name())) {
+                    if (confirmed("switch:" + entry.name(), "Unsaved changes: click " + entry.name() + " again to throw them away")) {
+                        openEntry(entry, false);
+                    }
+                }
+            }
+            return;
+        }
+        if (!open) {
+            return;
+        }
+        // De knoppenbalk.
+        int x0 = a.x() + SIDE + 6;
+        int bx = x0 + font.width("Name") + 4;
+        EditBox box = nameBox();
+        boolean inName = OsDraw.inside(mx, my, bx, a.y(), 84, OsDraw.BUTTON_H);
+        box.setFocused(inName);
+        if (inName) {
+            editor.setFocused(false);
+            box.mouseClicked(mx, my, 0);
+            return;
+        }
+        bx += 88;
+        for (String label : toolbar()) {
+            int w = OsDraw.buttonWidth(font, label);
+            if (OsDraw.inside(mx, my, bx, a.y(), w, OsDraw.BUTTON_H)) {
+                switch (label) {
+                    case "Check" -> check(true);
+                    case "Save" -> save();
+                    case "On", "Off" -> toggleOn();
+                    case "Delete" -> delete();
+                    default -> { }
+                }
+                return;
+            }
+            bx += w + 3;
+        }
+        int helpW = OsDraw.buttonWidth(font, "Help");
+        if (OsDraw.inside(mx, my, a.x() + a.w() - helpW, a.y(), helpW, OsDraw.BUTTON_H)) {
+            helpOpen = !helpOpen;
+            renaming = null;
+            return;
+        }
+        // Het Help-paneel.
+        int width = a.x() + a.w() - x0;
+        if (helpOpen && mx >= x0 + width - HELP_W) {
+            clickHelp(font, x0 + width - HELP_W, a.y() + TOOLBAR, HELP_W, a.h() - TOOLBAR - STATUS, mx, my);
+            return;
+        }
+        editor.mouseClicked(mx, my, button);
+    }
+
+    private void clickHelp(Font font, int x, int y, int w, int h, int mx, int my) {
+        int tipH = 20;
+        if (renaming != null) {
+            int ry = y + h - tipH - 13;
+            EditBox box = renameBox();
+            if (OsDraw.inside(mx, my, x + w - 26, ry, 24, OsDraw.BUTTON_H)) {
+                submitRename();
+                return;
+            }
+            if (OsDraw.inside(mx, my, x + 2, ry, w - 32, OsDraw.BUTTON_H)) {
+                box.setFocused(true);
+                box.mouseClicked(mx, my, 0);
+                return;
+            }
+        }
+        List<HelpLine> lines = helpLines();
+        int index = helpScroll + (my - y - 2) / 10;
+        if (index < 0 || index >= lines.size()) {
+            return;
+        }
+        HelpLine line = lines.get(index);
+        if (line.input() != null && mx >= x + w - 12) {
+            renaming = line.input();
+            renameBox().setValue(line.input().getString("n"));
+            renameBox().setFocused(true);
+            editor.setFocused(false);
+            return;
+        }
+        if (line.insert() != null) {
+            editor.setFocused(true);
+            editor.insert(line.insert());
+        }
+    }
+
+    private void submitRename() {
+        if (renaming == null) {
+            return;
+        }
+        CompoundTag args = new CompoundTag();
+        args.putInt("x", renaming.getInt("x"));
+        args.putInt("y", renaming.getInt("y"));
+        args.putInt("z", renaming.getInt("z"));
+        args.putString("name", renameBox().getValue());
+        screen.send("input_rename", args);
+        renaming = null;
+    }
+
+    boolean mouseDragged(int mx, int my) {
+        return editor.mouseDragged(mx, my);
+    }
+
+    void mouseReleased() {
+        editor.mouseReleased();
+    }
+
+    void mouseScrolled(StarkOsScreen.Area a, int mx, double scrollY) {
+        if (mx < a.x() + SIDE) {
+            sideScroll = Math.max(0, sideScroll - (int) Math.signum(scrollY));
+        } else if (helpOpen && mx >= a.x() + a.w() - HELP_W) {
+            helpScroll = Math.max(0, helpScroll - (int) Math.signum(scrollY) * 2);
+        } else {
+            editor.mouseScrolled(scrollY);
+        }
+    }
+
+    // ================================================================ Toetsen
+
+    boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (Screen.hasControlDown() && keyCode == 83) { // Ctrl+S
+            save();
+            return true;
+        }
+        if (renaming != null && renameBox().isFocused()) {
+            if (keyCode == 257 || keyCode == 335) {
+                submitRename();
+            } else if (keyCode == 256) {
+                renaming = null;
+            } else {
+                renameBox().keyPressed(keyCode, scanCode, modifiers);
+            }
+            return true;
+        }
+        EditBox box = nameBox();
+        if (box.isFocused()) {
+            if (keyCode == 257 || keyCode == 335 || keyCode == 256) {
+                box.setFocused(false);
+            } else {
+                box.keyPressed(keyCode, scanCode, modifiers);
+            }
+            return true;
+        }
+        boolean handled = editor.keyPressed(keyCode, scanCode, modifiers);
+        if (handled && editor.focused()) {
+            editor.setErrorLine(0); // je bent aan het veranderen: de rode regel weg tot de volgende Check
+        }
+        return handled;
+    }
+
+    boolean charTyped(char codePoint, int modifiers) {
+        if (renaming != null && renameBox().isFocused()) {
+            renameBox().charTyped(codePoint, modifiers);
+            return true;
+        }
+        if (nameBox().isFocused()) {
+            nameBox().charTyped(codePoint, modifiers);
+            return true;
+        }
+        return editor.charTyped(codePoint, modifiers);
+    }
+
+    void blur() {
+        editor.setFocused(false);
+        nameBox().setFocused(false);
+        if (renameBox != null) {
+            renameBox.setFocused(false);
+        }
+    }
+
+    // ================================================================ Voor de screenshot-rondleiding
+
+    /** De knop Save, zoals jij hem indrukt. */
+    void tourSave() {
+        save();
+    }
+
+    /** Een nieuw diagram met deze code en naam, en meteen Check. */
+    void tourCode(String name, String code, boolean help) {
+        current = null;
+        open = true;
+        baseGraph = null;
+        nameBox().setValue(name);
+        editor.setText(code);
+        loadedCode = "";
+        helpOpen = help;
+        check(true);
+    }
+}

@@ -1000,9 +1000,21 @@ De stappen, één per commit:
       kern onthoudt ze, dus het werkt ook als jij offline bent. `alarm()` zet een rode regel in het
       logboek, waarschuwt de eigenaar, luidt een bel en laat de beveiliging jagen op wie het deed.
       Alles staat in de kern: wie hem overneemt, krijgt ook de diagrammen. Zes nieuwe tests (in een
-      eigen bestand, `gametest/LogicGameTests.java`).
-- [ ] **6. De Logic-app: code**: een nieuwe app op de desktop, met links je diagrammen en rechts
-      de code. "Check" laat fouten zien op de regel waar ze zitten (in begrijpelijk Engels).
+      eigen bestand, `gametest/LogicGameTests.java`). Commit: `c825b4c`.
+- [x] **6. De Logic-app: code**
+      Nieuwe app **Logic** (icoon `{}`) op de desktop; zijn venster vult het hele scherm. Links je
+      diagrammen (groen bolletje = aan, * = niet bewaard), **+** voor een nieuw diagram, en hoe vol
+      je SSD's zijn en hoeveel er bezig is. Rechts een eigen **code-editor** (`client/os/CodeEditor`):
+      regelnummers, kleuren zoals in VS Code (when/if/else roze, triggers cyaan, acties lichtblauw,
+      gegevens geel, tekst groen, getallen oranje, commentaar grijs), Enter springt na een `:`
+      vanzelf 4 spaties in, Tab/Shift+Tab, Backspace haalt een hele inspringing weg, selecteren,
+      Ctrl+A/C/X/V/Z/Y/S. Knoppen: **Check** (de foutregel wordt rood en de editor springt erheen),
+      **Save** (de server controleert alles nog eens: kloppen de blokjes, past het op de SSD's, is
+      de naam vrij), **On/Off**, **Delete** (twee keer klikken), **Help**: alles wat je kunt
+      gebruiken, met de namen van jouw apparaten, lezers en panelen; klik erop en het komt in je
+      code; met R geef je een lezer of paneel een andere naam. Je commentaar (#) blijft bewaard
+      zolang de code bij de blokjes past. Sluit je de desktop met code die klopt, dan bewaart hij
+      vanzelf. Screenshots: `-Ponly=logic`.
 - [ ] **7. De Logic-app: blokjes**: hetzelfde diagram als blokjes met draadjes (slepen, verbinden,
       een IF met een "yes"- en een "no"-uitgang). Eén knop wisselt tussen blokjes en code.
 - [ ] **8. Showcase en screenshots**: een nieuwe functie in de showcase, en screenshots van alles.

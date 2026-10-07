@@ -194,6 +194,7 @@ public final class LogicGameTests {
         args.putString("old", "");
         args.putString("name", name);
         args.put("graph", GraphConverter.toGraph(ScriptParser.parse(code), null).save());
+        args.putString("source", code);
         StarkOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "logic_save", args));
     }
 

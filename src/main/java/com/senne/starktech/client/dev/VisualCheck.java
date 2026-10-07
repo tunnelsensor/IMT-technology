@@ -1423,6 +1423,101 @@ public final class VisualCheck {
             t.shot(15, "y06_keycards_list");
             t.close(10);
         }
+
+        // --- De app Logic (7 oktober): een kern met een server, twee relais met een naam (zoals je
+        // ze met je bril noemt), een lezer en een paneel; dan de code, Help, een fout, en bewaren.
+        if (want("logic")) {
+            BlockPos core = new BlockPos(140, -60, -80);
+            BlockPos rack = new BlockPos(136, -60, -78);
+            String code = """
+                    # The lab: level 3 or higher opens the vault for 3 seconds
+                    when keycard("Lab door"):
+                        if card.valid and card.level >= 3:
+                            accept()
+                            pulse("Vault door", 3)
+                        else:
+                            deny()
+                            alarm("Wrong card at the lab")
+
+                    when codepanel("Front door"):
+                        if code == "4321" and player.trusted:
+                            accept()
+                            on("Lab lights")
+                        else:
+                            deny()
+
+                    when every(60):
+                        if is_night and not is_on("Lab lights"):
+                            on("Lab lights")
+                    """;
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("jarvis1", level.random);
+                }
+                for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
+                    level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                }
+                level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
+                if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.parts().setItem(3, new ItemStack(ModItems.SERVER_SSD.get()));
+                }
+                String[] names = {"Vault door", "Lab lights"};
+                for (int i = 0; i < names.length; i++) {
+                    BlockPos relay = core.offset(3 + i, 0, 3);
+                    level.setBlockAndUpdate(relay, ModBlocks.RELAY.get().defaultBlockState());
+                    var data = player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
+                    player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, data.with(new com.senne.starktech.redstone.Relay(
+                            names[i], com.senne.starktech.redstone.Relay.DEFAULT_GROUP, level.dimension(), relay)));
+                }
+                level.setBlockAndUpdate(core.offset(-3, 0, 3), ModBlocks.KEYCARD_READER.get().defaultBlockState());
+                if (level.getBlockEntity(core.offset(-3, 0, 3)) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
+                    be.setName("Lab door");
+                }
+                level.setBlockAndUpdate(core.offset(-4, 0, 3), ModBlocks.CODE_PANEL.get().defaultBlockState());
+                if (level.getBlockEntity(core.offset(-4, 0, 3)) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
+                    be.setName("Front door");
+                }
+            });
+            t.stand(60, 140.5, -60, -77.5, 180, 20);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogic("Lab", code, false);
+                }
+            });
+            t.shot(10, "l01_logic_code");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogic("Lab", code, true);
+                }
+            });
+            t.shot(10, "l02_logic_help");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogic("Lab", code.replace("pulse(\"Vault door\", 3)", "opn(\"Vault door\")"), false);
+                }
+            });
+            t.shot(10, "l03_logic_error");
+            // De fout verbeterd, en dan de knop Save: daarna staat hij links in de lijst (groen = aan).
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogic("Lab", code, false);
+                    os.tourSaveLogic();
+                }
+            });
+            t.shot(20, "l04_logic_saved");
+            t.close(10);
+        }
 }
 
     // ================================================================ De wereld inrichten
