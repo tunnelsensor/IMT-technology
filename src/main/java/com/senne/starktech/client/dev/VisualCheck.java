@@ -1516,6 +1516,26 @@ public final class VisualCheck {
                 }
             });
             t.shot(20, "l04_logic_saved");
+            // Hetzelfde diagram als blokjes met draadjes, met rechts het palet.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(null);
+                }
+            });
+            t.shot(10, "l05_logic_blocks");
+            // Een blokje gekozen: rechts zijn instellingen, met jouw apparaten als suggestie.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(com.senne.starktech.logic.program.Op.PULSE);
+                }
+            });
+            t.shot(10, "l06_logic_block_settings");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(com.senne.starktech.logic.program.Op.IF);
+                }
+            });
+            t.shot(10, "l07_logic_block_if");
             t.close(10);
         }
 }

@@ -51,8 +51,21 @@ final class LogicApp {
     /** Eén diagram zoals de server het stuurde. */
     private record Entry(String name, boolean on, LogicGraph graph, String source) {}
 
+    /** Code of blokjes: twee manieren om hetzelfde diagram te bewerken. */
+    private enum Mode { CODE, BLOCKS }
+
     private final StarkOsScreen screen;
     private final CodeEditor editor;
+    private final BlockCanvas canvas;
+    private Mode mode = Mode.CODE;
+    /** De blokjes zoals je ze nu bewerkt (de werkversie). */
+    private @Nullable LogicGraph blockGraph;
+    /** De code toen je naar de blokjes wisselde: is hij nog hetzelfde, dan houden de blokjes alles (ook losse). */
+    private String codeAtSwitch = "";
+    /** Veranderde je iets in de blokjes sinds het openen of bewaren? */
+    private boolean blocksEdited;
+    /** Wat de blokjes-editor zegt over het blokje onder de muis (alleen dit beeld). */
+    private String hoverHint = "";
     private final List<Entry> entries = new ArrayList<>();
     private int revision = -1;
 
@@ -83,6 +96,7 @@ final class LogicApp {
     LogicApp(StarkOsScreen screen, Font font) {
         this.screen = screen;
         this.editor = new CodeEditor(font);
+        this.canvas = new BlockCanvas(this::info, () -> blocksEdited = true, text -> hoverHint = text);
     }
 
     private CompoundTag info() {
@@ -159,11 +173,21 @@ final class LogicApp {
         current = entry.name();
         open = true;
         baseGraph = entry.graph();
+        blockGraph = entry.graph().copy();
+        blocksEdited = false;
+        if (mode == Mode.BLOCKS) {
+            if (keepCursor) {
+                canvas.replaceGraph(blockGraph);
+            } else {
+                canvas.setGraph(blockGraph);
+            }
+        }
         String code = codeFor(entry);
         if (!keepCursor || !editor.text().equals(code)) {
             editor.setText(code);
         }
         loadedCode = code;
+        codeAtSwitch = code;
         loadedName = entry.name();
         nameBox().setValue(entry.name());
         confirm = null;
@@ -195,7 +219,73 @@ final class LogicApp {
 
     /** Zijn er wijzigingen die nog niet bewaard zijn? */
     boolean dirty() {
-        return open && (current == null || !editor.text().equals(loadedCode) || !nameBox().getValue().strip().equals(loadedName));
+        return open && (current == null || blocksEdited || !editor.text().equals(loadedCode)
+                || !nameBox().getValue().strip().equals(loadedName));
+    }
+
+    // ================================================================ Code <-> blokjes
+
+    /** Wisselen tussen code en blokjes. Code met een fout kan nog niet naar blokjes. */
+    private void switchMode() {
+        if (mode == Mode.CODE) {
+            Script script = check(true);
+            if (script == null) {
+                show("Fix the error first: " + status, HudStyle.RED);
+                return;
+            }
+            // Is de code niet veranderd sinds de vorige keer blokjes, dan blijven die blokjes zoals ze waren.
+            if (blockGraph == null || !editor.text().equals(codeAtSwitch)) {
+                blockGraph = GraphConverter.toGraph(script, blockGraph != null ? blockGraph : baseGraph);
+                if (!editor.text().equals(codeAtSwitch)) {
+                    blocksEdited = true;
+                }
+            }
+            codeAtSwitch = editor.text();
+            canvas.setGraph(blockGraph);
+            mode = Mode.BLOCKS;
+            checkBlocks(false);
+        } else {
+            if (blocksEdited && blockGraph != null) {
+                String code = ScriptPrinter.print(GraphConverter.toScript(blockGraph));
+                if (!code.equals(editor.text())) {
+                    editor.setText(code);
+                }
+            }
+            codeAtSwitch = editor.text();
+            canvas.blur();
+            mode = Mode.CODE;
+            check(false);
+            int loose = blockGraph == null ? 0 : blockGraph.size() - blockGraph.reachable().size();
+            if (loose > 0) {
+                show(loose + (loose == 1 ? " loose block is" : " loose blocks are") + " not in the code", HudStyle.ORANGE);
+            }
+        }
+    }
+
+    /** Check in de blokjes: het eerste blokje met een fout wordt gekozen (rood). */
+    private boolean checkBlocks(boolean select) {
+        if (blockGraph == null) {
+            return false;
+        }
+        var problems = blockGraph.problems();
+        if (!problems.isEmpty()) {
+            if (select) {
+                canvas.select(problems.getFirst().node());
+            }
+            show(problems.getFirst().message(), HudStyle.RED);
+            return false;
+        }
+        int loose = blockGraph.size() - blockGraph.reachable().size();
+        int handlers = (int) blockGraph.nodes().stream().filter(node -> node.op.isTrigger()).count();
+        if (handlers == 0) {
+            show("Start with a WHEN block (on the right)", HudStyle.ORANGE);
+        } else if (loose > 0) {
+            show("No problems, but " + loose + (loose == 1 ? " block is" : " blocks are") + " loose (not connected to a when)",
+                    HudStyle.ORANGE);
+        } else {
+            show("No problems: " + blockGraph.size() + (blockGraph.size() == 1 ? " block" : " blocks"), HudStyle.GREEN);
+        }
+        return true;
     }
 
     // ================================================================ Knoppen
@@ -225,34 +315,54 @@ final class LogicApp {
         if (!open) {
             return;
         }
-        Script script = check(true);
-        if (script == null) {
-            return;
+        LogicGraph graph;
+        String source;
+        if (mode == Mode.BLOCKS) {
+            if (!checkBlocks(true) || blockGraph == null) {
+                return;
+            }
+            graph = blockGraph.copy();
+            source = ScriptPrinter.print(GraphConverter.toScript(graph));
+        } else {
+            Script script = check(true);
+            if (script == null) {
+                return;
+            }
+            // Code niet veranderd sinds de blokjes? Dan de blokjes zelf (met hun plek, ook losse).
+            graph = blockGraph != null && editor.text().equals(codeAtSwitch) && blocksEdited
+                    ? blockGraph.copy() : GraphConverter.toGraph(script, blockGraph != null ? blockGraph : baseGraph);
+            source = editor.text();
         }
         String name = nameBox().getValue().strip();
         if (name.isEmpty()) {
             show("Give the diagram a name first", HudStyle.RED);
             return;
         }
-        LogicGraph graph = GraphConverter.toGraph(script, baseGraph);
         CompoundTag args = new CompoundTag();
         args.putString("old", current == null ? "" : current);
         args.putString("name", name);
         args.put("graph", graph.save());
-        args.putString("source", editor.text());
+        args.putString("source", source);
         screen.send("logic_save", args);
         pendingSelect = name;
     }
 
     /** Bewaren bij het sluiten van de desktop, maar alleen als de code klopt. */
     void saveIfValid() {
-        if (dirty()) {
-            try {
-                ScriptParser.parse(editor.text());
+        if (!dirty()) {
+            return;
+        }
+        if (mode == Mode.BLOCKS) {
+            if (blockGraph != null && blockGraph.problems().isEmpty()) {
                 save();
-            } catch (LogicException e) {
-                // Kapotte code bewaren we niet vanzelf.
             }
+            return;
+        }
+        try {
+            ScriptParser.parse(editor.text());
+            save();
+        } catch (LogicException e) {
+            // Kapotte code bewaren we niet vanzelf.
         }
     }
 
@@ -275,8 +385,16 @@ final class LogicApp {
                 : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
         editor.setText(code);
         loadedCode = "";
-        editor.setFocused(true);
-        check(false);
+        codeAtSwitch = code;
+        blockGraph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        blocksEdited = false;
+        if (mode == Mode.BLOCKS) {
+            canvas.setGraph(blockGraph);
+            checkBlocks(false);
+        } else {
+            editor.setFocused(true);
+            check(false);
+        }
     }
 
     private void toggleOn() {
@@ -362,25 +480,31 @@ final class LogicApp {
         for (String label : toolbar()) {
             boolean enabled = !label.equals("Save") || dirty();
             int accent = label.equals("Delete") ? HudStyle.RED : label.equals("Off") ? HudStyle.ORANGE
-                    : label.equals("On") ? HudStyle.GREEN : HudStyle.CYAN;
+                    : label.equals("On") ? HudStyle.GREEN : label.equals("Blocks") || label.equals("Code") ? 0xC09CFF : HudStyle.CYAN;
             bx += OsDraw.button(g, font, bx, a.y(), label, enabled, accent) + 3;
         }
-        int helpX = a.x() + a.w() - OsDraw.buttonWidth(font, "Help");
-        if (helpOpen) {
-            g.fill(helpX, a.y(), helpX + OsDraw.buttonWidth(font, "Help"), a.y() + OsDraw.BUTTON_H, HudStyle.argb(255, 0x4A3416));
-        }
-        OsDraw.button(g, font, helpX, a.y(), "Help", true, HudStyle.ORANGE);
-        // De editor.
         int top = a.y() + TOOLBAR;
-        int editorW = helpOpen ? width - HELP_W - 4 : width;
-        editor.setBounds(x0, top, editorW, a.h() - TOOLBAR - STATUS);
-        editor.render(g, mx, my);
-        if (helpOpen) {
-            renderHelp(g, font, x0 + editorW + 4, top, HELP_W, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
+        hoverHint = "";
+        if (mode == Mode.BLOCKS) {
+            canvas.render(g, font, x0, top, width, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
+        } else {
+            int helpX = a.x() + a.w() - OsDraw.buttonWidth(font, "Help");
+            if (helpOpen) {
+                g.fill(helpX, a.y(), helpX + OsDraw.buttonWidth(font, "Help"), a.y() + OsDraw.BUTTON_H, HudStyle.argb(255, 0x4A3416));
+            }
+            OsDraw.button(g, font, helpX, a.y(), "Help", true, HudStyle.ORANGE);
+            // De editor.
+            int editorW = helpOpen ? width - HELP_W - 4 : width;
+            editor.setBounds(x0, top, editorW, a.h() - TOOLBAR - STATUS);
+            editor.render(g, mx, my);
+            if (helpOpen) {
+                renderHelp(g, font, x0 + editorW + 4, top, HELP_W, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
+            }
         }
-        // De statusregel.
-        String text = (dirty() ? "* " : "") + status;
-        g.drawString(font, OsDraw.fitLeft(font, text, width), x0, a.y() + a.h() - 9, HudStyle.argb(255, statusColour), false);
+        // De statusregel (in de blokjes: wat er onder de muis is, als er iets is).
+        String text = !hoverHint.isEmpty() ? hoverHint : (dirty() ? "* " : "") + status;
+        int colour = !hoverHint.isEmpty() ? 0xB8C8D0 : statusColour;
+        g.drawString(font, OsDraw.fitLeft(font, text, width), x0, a.y() + a.h() - 9, HudStyle.argb(255, colour), false);
     }
 
     /**
@@ -389,10 +513,11 @@ final class LogicApp {
      */
     private List<String> toolbar() {
         Entry entry = current == null ? null : find(current);
+        String view = mode == Mode.CODE ? "Blocks" : "Code";
         if (entry == null) {
-            return List.of("Check", "Save", "Delete");
+            return List.of(view, "Check", "Save", "Delete");
         }
-        return List.of("Check", "Save", entry.on() ? "Off" : "On", "Delete");
+        return List.of(view, "Check", "Save", entry.on() ? "Off" : "On", "Delete");
     }
 
     private void renderSidebar(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my) {
@@ -592,7 +717,14 @@ final class LogicApp {
             int w = OsDraw.buttonWidth(font, label);
             if (OsDraw.inside(mx, my, bx, a.y(), w, OsDraw.BUTTON_H)) {
                 switch (label) {
-                    case "Check" -> check(true);
+                    case "Blocks", "Code" -> switchMode();
+                    case "Check" -> {
+                        if (mode == Mode.BLOCKS) {
+                            checkBlocks(true);
+                        } else {
+                            check(true);
+                        }
+                    }
                     case "Save" -> save();
                     case "On", "Off" -> toggleOn();
                     case "Delete" -> delete();
@@ -601,6 +733,10 @@ final class LogicApp {
                 return;
             }
             bx += w + 3;
+        }
+        if (mode == Mode.BLOCKS) {
+            canvas.mouseClicked(font, mx, my, button);
+            return;
         }
         int helpW = OsDraw.buttonWidth(font, "Help");
         if (OsDraw.inside(mx, my, a.x() + a.w() - helpW, a.y(), helpW, OsDraw.BUTTON_H)) {
@@ -665,16 +801,22 @@ final class LogicApp {
     }
 
     boolean mouseDragged(int mx, int my) {
-        return editor.mouseDragged(mx, my);
+        return mode == Mode.BLOCKS ? canvas.mouseDragged(mx, my) : editor.mouseDragged(mx, my);
     }
 
-    void mouseReleased() {
-        editor.mouseReleased();
+    void mouseReleased(int mx, int my) {
+        if (mode == Mode.BLOCKS) {
+            canvas.mouseReleased(mx, my);
+        } else {
+            editor.mouseReleased();
+        }
     }
 
-    void mouseScrolled(StarkOsScreen.Area a, int mx, double scrollY) {
+    void mouseScrolled(StarkOsScreen.Area a, int mx, int my, double scrollY) {
         if (mx < a.x() + SIDE) {
             sideScroll = Math.max(0, sideScroll - (int) Math.signum(scrollY));
+        } else if (mode == Mode.BLOCKS) {
+            canvas.mouseScrolled(mx, my, scrollY, Screen.hasShiftDown(), Screen.hasControlDown());
         } else if (helpOpen && mx >= a.x() + a.w() - HELP_W) {
             helpScroll = Math.max(0, helpScroll - (int) Math.signum(scrollY) * 2);
         } else {
@@ -708,6 +850,9 @@ final class LogicApp {
             }
             return true;
         }
+        if (mode == Mode.BLOCKS) {
+            return canvas.keyPressed(keyCode, scanCode, modifiers);
+        }
         boolean handled = editor.keyPressed(keyCode, scanCode, modifiers);
         if (handled && editor.focused()) {
             editor.setErrorLine(0); // je bent aan het veranderen: de rode regel weg tot de volgende Check
@@ -724,11 +869,12 @@ final class LogicApp {
             nameBox().charTyped(codePoint, modifiers);
             return true;
         }
-        return editor.charTyped(codePoint, modifiers);
+        return mode == Mode.BLOCKS ? canvas.charTyped(codePoint, modifiers) : editor.charTyped(codePoint, modifiers);
     }
 
     void blur() {
         editor.setFocused(false);
+        canvas.blur();
         nameBox().setFocused(false);
         if (renameBox != null) {
             renameBox.setFocused(false);
@@ -736,6 +882,17 @@ final class LogicApp {
     }
 
     // ================================================================ Voor de screenshot-rondleiding
+
+    /** Naar de blokjes (of terug naar de code), en eventueel een blokje kiezen (de eerste van deze soort). */
+    void tourBlocks(@Nullable Op select) {
+        if (mode == Mode.CODE) {
+            switchMode();
+        }
+        if (select != null && blockGraph != null) {
+            blockGraph.nodes().stream().filter(node -> node.op == select).findFirst()
+                    .ifPresent(node -> canvas.select(node.id));
+        }
+    }
 
     /** De knop Save, zoals jij hem indrukt. */
     void tourSave() {

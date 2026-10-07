@@ -1014,9 +1014,21 @@ De stappen, één per commit:
       gebruiken, met de namen van jouw apparaten, lezers en panelen; klik erop en het komt in je
       code; met R geef je een lezer of paneel een andere naam. Je commentaar (#) blijft bewaard
       zolang de code bij de blokjes past. Sluit je de desktop met code die klopt, dan bewaart hij
-      vanzelf. Screenshots: `-Ponly=logic`.
-- [ ] **7. De Logic-app: blokjes**: hetzelfde diagram als blokjes met draadjes (slepen, verbinden,
-      een IF met een "yes"- en een "no"-uitgang). Eén knop wisselt tussen blokjes en code.
+      vanzelf. Screenshots: `-Ponly=logic`. Commit: `bcf9cf3`.
+- [x] **7. De Logic-app: blokjes**
+      De knop **Blocks** (en terug: **Code**) toont hetzelfde diagram als blokjes met draadjes
+      (`client/os/BlockCanvas`): triggers cyaan, IF roze, acties lichtblauw; een IF heeft drie
+      uitgangen (groen = yes, rood = no, onderaan = after). Blokjes slepen; het vlak verschuiven door
+      op een lege plek te slepen (of met rechts, of het scrollwiel; Shift = opzij); zoomen met − en +
+      of Ctrl+scrollwiel (50-100%, standaard 75%). Een draadje trek je van een uitgang naar een
+      blokje; loslaten op een lege plek haalt het weg; een rondje of een draadje naar een when mag
+      niet. Rechts het **palet** (klik = een nieuw blokje midden in beeld), of, als je een blokje kiest,
+      zijn **instellingen**: welk apparaat/welke lezer, hoeveel seconden, de voorwaarde, met jouw
+      apparaten (of ideeën voor een if) als suggestie en meteen "OK" of wat er mis is; Done, Delete
+      (of de Delete-toets). Een blokje met een fout heeft een rode rand, een los blokje is grijs. In de
+      statusregel staat het blokje onder de muis zoals in de code. Wisselen houdt alles: blokjes
+      die je niet veranderde blijven waar ze stonden (ook losse), en code met een fout kan pas naar
+      de blokjes als de fout weg is. Screenshots: `-Ponly=logic` (`l05`-`l07`).
 - [ ] **8. Showcase en screenshots**: een nieuwe functie in de showcase, en screenshots van alles.
 
 ---

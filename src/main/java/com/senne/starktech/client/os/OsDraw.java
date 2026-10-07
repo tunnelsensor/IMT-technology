@@ -51,6 +51,18 @@ final class OsDraw {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
+    /** Knipt tekst af (met ".." erachter) zodat hij in {@code width} pixels past; het begin blijft staan. */
+    static String fitRight(Font font, String text, int width) {
+        if (font.width(text) <= width) {
+            return text;
+        }
+        String cut = text;
+        while (!cut.isEmpty() && font.width(cut + "..") > width) {
+            cut = cut.substring(0, cut.length() - 1);
+        }
+        return cut + "..";
+    }
+
     /** Knipt tekst af (met ".." ervoor) zodat hij in {@code width} pixels past; handig voor lange paden. */
     static String fitLeft(Font font, String text, int width) {
         if (font.width(text) <= width) {

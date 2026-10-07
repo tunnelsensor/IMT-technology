@@ -213,6 +213,11 @@ public class StarkOsScreen extends Screen {
         logic.tourCode(name, code, help);
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Logic in de blokjes, met eventueel een blokje gekozen. */
+    public void tourLogicBlocks(@Nullable com.senne.starktech.logic.program.Op select) {
+        logic.tourBlocks(select);
+    }
+
     /** Alleen voor de screenshot-rondleiding: de knop Save van de app Logic. */
     public void tourSaveLogic() {
         logic.tourSave();
@@ -467,7 +472,7 @@ public class StarkOsScreen extends Screen {
         } else if (win != null && win.app == App.CAMERAS) {
             cameras.mouseReleased((int) mouseX, (int) mouseY);
         } else if (win != null && win.app == App.LOGIC) {
-            logic.mouseReleased();
+            logic.mouseReleased((int) mouseX, (int) mouseY);
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -489,7 +494,7 @@ public class StarkOsScreen extends Screen {
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(scrollY);
-            case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, scrollY);
+            case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, (int) mouseY, scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
