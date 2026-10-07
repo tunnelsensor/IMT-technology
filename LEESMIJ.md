@@ -642,7 +642,7 @@ Alle zinnen kun je zelf aanpassen in **G > Systems > Commands** (of in
 |---------|-----|
 | `config/starktech-balance.toml` | **Alle getallen** (ruim 140): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
 | `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
-| `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI |
+| `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 0 = uit; `rayshieldHumPause`: seconden stilte tussen twee keer zoemen) |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../edith/EdithBalance.java` (en `SuitBalance`, `TurretBalance`...) | De standaardwaarden van die getallen |

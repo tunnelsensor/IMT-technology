@@ -1,5 +1,6 @@
 package com.senne.starktech.client.shield;
 
+import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.shield.DomeGeneratorBlock;
@@ -22,9 +23,11 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /**
  * Het zoemen van de rayshields (jouw wens, 7 oktober: "geef de rayshields de Star Wars-geluiden").
  *
- * Zolang een laserzender of een koepelgenerator in de buurt aan staat, hoor je een brommende lus
- * (het geluid {@code rayshield_hum}, zie tools/generate_sounds.py). Gaat hij uit, dan sterft het
- * zoemen in een paar tikken weg.
+ * Zolang een laserzender of een koepelgenerator in de buurt aan staat, zoemt hij af en toe: een paar
+ * seconden een zachte brom (het geluid {@code rayshield_hum}, zie tools/generate_sounds.py), dan een
+ * tijdje stil (jouw wens, 7 oktober: "zachter en minder vaak"; eerst zoemde hij aan één stuk door).
+ * Hoe hard en hoe lang de stilte duurt, stel je in in config/starktech-client.toml
+ * (rayshieldHumVolume, rayshieldHumPause). Gaat het schild uit, dan sterft het zoemen meteen weg.
  *
  * Dit gebeurt alleen in jouw spel: de server weet niets van dit geluid. Elke seconde kijken we in de
  * stukjes wereld (16x16x16) rond je of er een zender of generator in zit. Dat gaat snel: elk stukje
@@ -38,10 +41,21 @@ public final class RayshieldHum {
     private static final int SCAN_INTERVAL = 20;
     /** Zover (blokken) zoeken we; verder weg hoor je het toch niet. */
     private static final int RANGE = 24;
-    /** Hooguit zoveel zoem-lussen tegelijk (een muur vol zenders hoeft niet twintig keer te zoemen). */
-    private static final int MAX_HUMS = 6;
-    /** Twee zenders dichter dan dit bij elkaar delen één zoem-lus (een stapel zenders). */
-    private static final int SHARE_DISTANCE = 3;
+    /** Hooguit zoveel schilden zoemen tegelijk (een muur vol zenders hoeft niet twintig keer te zoemen). */
+    private static final int MAX_HUMS = 4;
+    /**
+     * Zenders dichter dan dit bij elkaar (blokken, opgeteld over x, y en z) delen één zoem: een
+     * laserpoort met zenders aan twee kanten zoemt dus als één poort, niet twee keer zo vaak.
+     */
+    private static final int SHARE_DISTANCE = 8;
+
+    /** Zo lang (ticks) zoemt een schild per keer: 3 seconden, zacht aan en zacht uit. */
+    private static final int HUM_TICKS = 60;
+    private static final int FADE_IN = 15;
+    private static final int FADE_OUT = 25;
+    /** Hoe hard een laserwand zoemt, en een koepel (die is groter: dieper en verder te horen). */
+    private static final float WALL_VOLUME = 0.18f;
+    private static final float DOME_VOLUME = 0.35f;
 
     private static final List<Hum> HUMS = new ArrayList<>();
 
@@ -51,6 +65,10 @@ public final class RayshieldHum {
         ClientLevel level = mc.level;
         HUMS.removeIf(hum -> hum.isStopped() || !mc.getSoundManager().isActive(hum) && hum.started);
         if (player == null || level == null || level.getGameTime() % SCAN_INTERVAL != 0) {
+            return;
+        }
+        if (EdithClientConfig.rayshieldHumVolume() <= 0) {
+            clear(); // het zoemen staat uit in de instellingen
             return;
         }
         BlockPos center = player.blockPosition();
@@ -123,15 +141,34 @@ public final class RayshieldHum {
     }
 
     /**
-     * Eén zoem-lus op een vaste plek. Elke tick kijkt hij of het schild er nog staat en aan is;
-     * zo niet, dan wordt hij snel zachter en stopt hij.
+     * Hoe hard het zoemen is, {@code tick} ticks na het begin van een zoem: zacht omhoog, even vol,
+     * zacht weer weg, en daarna stil (0) tot de volgende zoem.
+     */
+    static float envelope(int tick) {
+        if (tick < 0 || tick >= HUM_TICKS) {
+            return 0f;
+        }
+        float in = Math.min(1f, tick / (float) FADE_IN);
+        float out = Math.min(1f, (HUM_TICKS - tick) / (float) FADE_OUT);
+        float s = Math.min(in, out);
+        return s * s * (3 - 2 * s); // "smoothstep": geen harde hoek bij het begin en einde
+    }
+
+    /**
+     * Het zoemen van één schild op een vaste plek. Het geluid zelf loopt als lus door, maar meestal
+     * op volume 0: alleen tijdens een zoem (HUM_TICKS lang) hoor je het, daarna is het een tijdje
+     * stil (rayshieldHumPause seconden, elke keer iets anders, zodat twee schilden niet tegelijk
+     * zoemen). Elke tick kijkt hij of het schild er nog staat en aan is; zo niet, dan sterft hij weg.
      */
     private static final class Hum extends AbstractTickableSoundInstance {
         private final ClientLevel level;
         private final BlockPos pos;
-        private final float fullVolume;
+        private final float baseVolume;
         /** Is hij al eens gaan spelen? (Daarvoor zegt de geluidsmanager nog "niet actief".) */
         private boolean started;
+        /** Ticks sinds het begin van de huidige zoem, en hoe lang de stilte erna duurt. */
+        private int phase;
+        private int pauseTicks;
 
         Hum(ClientLevel level, BlockPos pos, boolean dome) {
             super(ModSounds.RAYSHIELD_HUM.get(), SoundSource.BLOCKS, SoundInstance.createUnseededRandom());
@@ -139,13 +176,18 @@ public final class RayshieldHum {
             this.pos = pos.immutable();
             this.looping = true;
             this.delay = 0;
-            // Een koepel is groter: dieper en harder (verder te horen).
-            this.fullVolume = dome ? 1.0f : 0.45f;
+            this.baseVolume = dome ? DOME_VOLUME : WALL_VOLUME;
             this.pitch = dome ? 0.7f : 1.0f;
-            this.volume = 0.01f;
+            this.volume = 0f;
             this.x = pos.getX() + 0.5;
             this.y = pos.getY() + 0.5;
             this.z = pos.getZ() + 0.5;
+            this.pauseTicks = nextPause();
+        }
+
+        /** Hoe lang de volgende stilte duurt: rond de ingestelde pauze, tussen 70% en 130%. */
+        private int nextPause() {
+            return (int) (EdithClientConfig.rayshieldHumPause() * 20 * (0.7f + 0.6f * random.nextFloat()));
         }
 
         @Override
@@ -155,13 +197,18 @@ public final class RayshieldHum {
             boolean far = player == null || !player.blockPosition().closerThan(pos, RANGE + 8);
             if (Minecraft.getInstance().level != level || far || !isActiveShield(level.getBlockState(pos))) {
                 volume *= 0.6f;
-                if (volume < 0.01f) {
+                if (volume < 0.005f) {
                     stop();
                 }
                 return;
             }
-            // Zacht beginnen (de "vwoem" van het aangaan speelt al), dan op volle sterkte.
-            volume = Math.min(fullVolume, volume + fullVolume * 0.08f);
+            // Eerst een zoem (vlak na de "vwoem" van het aangaan), dan stilte, dan weer een zoem.
+            phase++;
+            if (phase >= HUM_TICKS + pauseTicks) {
+                phase = 0;
+                pauseTicks = nextPause();
+            }
+            volume = baseVolume * (float) EdithClientConfig.rayshieldHumVolume() * envelope(phase);
         }
 
         @Override

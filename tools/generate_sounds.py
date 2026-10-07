@@ -533,17 +533,21 @@ def crackle(duration, density, low=1800, high=7000):
 
 def rayshield_hum():
     """
-    Het zoemen zolang een laserwand of koepel aan staat. Speelt als lus, dus net als de
-    stuwraketten (suit_thruster) zonder naad: het stuk na het einde vloeit over het begin heen.
-    92 Hz en 93 Hz zweven één keer per seconde tegen elkaar: dat geeft het "wom-wom".
+    Het zoemen van een laserwand of koepel. Het spel speelt het af en toe een paar seconden (zie
+    RayshieldHum), als lus, dus net als de stuwraketten (suit_thruster) zonder naad: het stuk na het
+    einde vloeit over het begin heen.
+
+    Jouw wens (7 oktober): zachter. Daarom een rustige brom: 92 Hz en 92,5 Hz zweven maar één keer
+    per twee seconden tegen elkaar (een trage "wom"), bijna geen knetter, en de hoge tonen eraf.
     """
     length, overlap = 2.0, 0.4
     total = length + overlap
     t = seconds(total)
-    buzz = ray_buzz(2 * np.pi * 92 * t) + 0.8 * ray_buzz(2 * np.pi * 93 * t + 0.7)
+    buzz = ray_buzz(2 * np.pi * 92 * t) + 0.8 * ray_buzz(2 * np.pi * 92.5 * t + 0.7)
     sub = 0.6 * np.sin(2 * np.pi * 46 * t)
-    shimmer = 1.0 + 0.08 * np.sin(2 * np.pi * 6 * t)
-    sound = (buzz + sub) * shimmer + crackle(total, 0.08) * 2.5
+    shimmer = 1.0 + 0.04 * np.sin(2 * np.pi * 6 * t)
+    sound = (buzz + sub) * shimmer + crackle(total, 0.02) * 1.2
+    sound = lowpass(sound, 1000, order=2)
 
     n, m = int(RATE * length), int(RATE * overlap)
     loop = sound[:n].copy()

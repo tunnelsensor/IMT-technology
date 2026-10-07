@@ -948,6 +948,7 @@ De stappen, één per commit:
       hooguit 6 tegelijk, een stapel zenders deelt er één; de koepel dieper en harder). **"Vwoem"**
       bij aan en een wegzakkende toon bij uit: laserpoort, koepel en je persoonlijke schild (G-menu
       of stem). **Knetter**: tegen een laserwand lopen, een treffer op je schild of op de koepel.
+      (Later: het zoemen zachter en met tussenpozen, zie "Nog nooit in het spel bekeken".)
       Ik kan zelf niet luisteren: zeg het als ze te hard, te zacht of te raar klinken (opnieuw maken:
       `py -3.12 tools/generate_sounds.py rayshield_hum`). Commit: `e565efe`.
 - [x] **2. Serverracks**
@@ -1054,6 +1055,12 @@ raiddrones eruitzien.
 - [ ] Raiddrones: hoe ze bewegen en aanvallen
 - [ ] De **rayshield-geluiden** (7 oktober): ik kan niet luisteren. Klinken het zoemen, "vwoem" en
       de knetter goed, en is het zoemen niet te hard of te zacht?
+      Jouw reactie: het zoemen "mag zachter en minder vaak". Nu: geen doorlopende lus meer, maar
+      elke ~10 s (tussen 7 en 13) 3 seconden een zachte brom; ruim de helft zachter (laserwand 0,18
+      in plaats van 0,45, koepel 0,35 in plaats van 1,0); zenders tot 8 blokken uit elkaar zoemen
+      samen (een poort zoemt als één); en het geluid zelf rustiger (bijna geen knetter, een tragere
+      "wom", de hoge tonen eraf). Zelf bijstellen: `rayshieldHumVolume` en `rayshieldHumPause` in
+      `config/starktech-client.toml`.
 - [ ] **De blokjes-editor met de muis**: slepen, draadjes trekken en zoomen heb ik alleen
       nagerekend en op screenshots gezien, niet zelf met een muis gedaan.
 
