@@ -27,6 +27,9 @@ public final class ModMenus {
      */
     public static final DeferredHolder<MenuType<?>, MenuType<ChargerMenu>> CHARGER =
             MENUS.register("charger", () -> IMenuTypeExtension.create(ChargerMenu::new));
+    /** Het scherm van een serverrack: zijn vier vakjes en wat de server kan (zie ServerRackMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.logic.ServerRackMenu>> SERVER_RACK =
+            MENUS.register("server_rack", () -> IMenuTypeExtension.create(com.senne.starktech.logic.ServerRackMenu::new));
     /** Het scherm van een landingsplatform: zijn batterij (zie LandingPadMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.suit.LandingPadMenu>> LANDING_PAD =
             MENUS.register("landing_pad", () -> IMenuTypeExtension.create(com.senne.starktech.suit.LandingPadMenu::new));

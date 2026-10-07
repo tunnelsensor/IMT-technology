@@ -16,6 +16,7 @@
     "starktech:drone_dock",
     "starktech:landing_pad",
     "starktech:power_cabinet",
-    "starktech:security_camera"
+    "starktech:security_camera",
+    "starktech:server_rack"
   ]
 }

@@ -1096,5 +1096,14 @@
   "raid.starktech.msg.noticed": "Someone noticed you taking that tower apart.",
   "raid.starktech.msg.crash_site": "This wreck is still transmitting. Someone was listening.",
   "gamerule.starktechRaidGriefing": "Raid drones break blocks",
-  "gamerule.starktechRaidGriefing.description": "Whether raid drones may break their way through walls to reach you."
+  "gamerule.starktechRaidGriefing.description": "Whether raid drones may break their way through walls to reach you.",
+  "block.starktech.server_rack": "Server Rack",
+  "item.starktech.server_cpu": "Server CPU",
+  "item.starktech.server_ram": "Server RAM",
+  "item.starktech.server_ssd": "Server SSD",
+  "item.starktech.server_cpu.tooltip": "Your redstone reacts %s s faster per extra CPU",
+  "item.starktech.server_ram.tooltip": "%s more diagrams can be busy at the same time",
+  "item.starktech.server_ssd.tooltip": "Room for %s more blocks in your diagrams",
+  "item.starktech.server_part.tooltip": "Put it in a Server Rack",
+  "screen.starktech.server_rack.bay_tooltip": "A CPU, RAM or SSD goes here"
 }

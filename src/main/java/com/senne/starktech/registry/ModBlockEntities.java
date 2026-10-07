@@ -70,6 +70,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.starktech.security.CameraBlockEntity::new,
                             java.util.Set.of(ModBlocks.SECURITY_CAMERA.get()), null));
 
+    /** Het serverrack: zijn vier vakjes (CPU, RAM, SSD) en of hij meedraait. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.logic.ServerRackBlockEntity>> SERVER_RACK =
+            BLOCK_ENTITIES.register("server_rack",
+                    () -> new BlockEntityType<>(com.senne.starktech.logic.ServerRackBlockEntity::new,
+                            java.util.Set.of(ModBlocks.SERVER_RACK.get()), null));
+
     /** De laptop op een kern: van wie hij is, en wat er al getypt is (de voortgang van de hack). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.StarkLaptopBlockEntity>> STARK_LAPTOP =
             BLOCK_ENTITIES.register("stark_laptop",

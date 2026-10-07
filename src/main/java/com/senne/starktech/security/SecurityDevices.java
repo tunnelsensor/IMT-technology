@@ -50,9 +50,12 @@ public final class SecurityDevices {
     /** Zo lang (ticks) onthouden we wat er in het gebied staat, voor we opnieuw kijken. */
     private static final int RESCAN = 40;
 
-    /** Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, en de camera's. */
+    /**
+     * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
+     * camera's, en de serverracks (zie LogicServer).
+     */
     public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> cameras,
-                        long time) {}
+                        List<BlockPos> racks, long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -69,6 +72,7 @@ public final class SecurityDevices {
         List<BlockPos> turrets = new ArrayList<>();
         List<BlockPos> emitters = new ArrayList<>();
         List<BlockPos> cameras = new ArrayList<>();
+        List<BlockPos> racks = new ArrayList<>();
         AABB area = core.area();
         BlockPos corePos = core.getBlockPos();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
@@ -88,6 +92,9 @@ public final class SecurityDevices {
                         turrets.add(turret.getBlockPos().immutable());
                     } else if (blockEntity instanceof CameraBlockEntity camera && SecurityCores.inArea(corePos, camera.getBlockPos())) {
                         cameras.add(camera.getBlockPos().immutable());
+                    } else if (blockEntity instanceof com.senne.starktech.logic.ServerRackBlockEntity rack
+                            && SecurityCores.inArea(corePos, rack.getBlockPos())) {
+                        racks.add(rack.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -126,7 +133,8 @@ public final class SecurityDevices {
         // oost), zodat "Camera 1" niet steeds een andere is.
         cameras.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
-        Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras), now);
+        Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
+                List.copyOf(racks), now);
         CACHE.put(key, found);
         return found;
     }

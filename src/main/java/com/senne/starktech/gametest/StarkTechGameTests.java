@@ -987,6 +987,91 @@ public final class StarkTechGameTests {
                 new com.senne.starktech.network.OsActionPayload(core, "cam_rename", args));
     }
 
+    // ================================================================ De server (serverracks)
+
+    /**
+     * Racks die elkaar raken zijn samen de server; een los rack ernaast draait niet mee ("not
+     * connected"). De onderdelen van alle racks tellen samen, en de server reageert zo snel als zijn
+     * CPU's toelaten. De stroom gaat van het ene rack naar het andere (één generator onder de stapel).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "server_racks")
+    public static void server_racks_form_one_server(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        var core = placeCore(helper, new BlockPos(2, 3, 2), owner);
+        // Twee racks op elkaar, met een generator onder de onderste.
+        BlockPos bottom = new BlockPos(6, 3, 6);
+        BlockPos top = bottom.above();
+        BlockPos lone = new BlockPos(11, 3, 11);
+        helper.setBlock(bottom, ModBlocks.SERVER_RACK.get());
+        helper.setBlock(top, ModBlocks.SERVER_RACK.get());
+        helper.setBlock(lone, ModBlocks.SERVER_RACK.get());
+        powerTurret(helper, bottom.below());
+        powerTurret(helper, lone.below());
+        var bottomRack = (com.senne.starktech.logic.ServerRackBlockEntity) helper.getBlockEntity(bottom);
+        var topRack = (com.senne.starktech.logic.ServerRackBlockEntity) helper.getBlockEntity(top);
+        var loneRack = (com.senne.starktech.logic.ServerRackBlockEntity) helper.getBlockEntity(lone);
+        bottomRack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+        topRack.parts().setItem(0, new ItemStack(ModItems.SERVER_RAM.get()));
+        topRack.parts().setItem(1, new ItemStack(ModItems.SERVER_SSD.get()));
+        topRack.parts().setItem(2, new ItemStack(ModItems.SERVER_CPU.get()));
+        loneRack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+        helper.runAfterDelay(2, () -> {
+            com.senne.starktech.security.SecurityDevices.forget(level, core);
+            for (BlockPos pos : List.of(bottom, top, lone)) {
+                BlockPos abs = helper.absolutePos(pos);
+                ((com.senne.starktech.logic.ServerRackBlockEntity) helper.getBlockEntity(pos)).update(level, abs, level.getBlockState(abs));
+            }
+            if (topRack.status() != com.senne.starktech.logic.ServerRackBlockEntity.Status.ONLINE
+                    || bottomRack.status() != com.senne.starktech.logic.ServerRackBlockEntity.Status.ONLINE) {
+                throw new GameTestAssertException("De twee racks op elkaar draaien niet mee: " + bottomRack.status() + " / " + topRack.status());
+            }
+            if (loneRack.status() != com.senne.starktech.logic.ServerRackBlockEntity.Status.NOT_CONNECTED) {
+                throw new GameTestAssertException("Het losse rack zou NOT_CONNECTED moeten zijn, maar is " + loneRack.status());
+            }
+            helper.assertBlockProperty(top, com.senne.starktech.logic.ServerRackBlock.ONLINE, true);
+            helper.assertBlockProperty(lone, com.senne.starktech.logic.ServerRackBlock.ONLINE, false);
+            var stats = com.senne.starktech.logic.LogicServer.stats(level, core);
+            if (stats.racks() != 2 || stats.cpus() != 2 || stats.ram() != 1 || stats.ssd() != 1 || !stats.online()) {
+                throw new GameTestAssertException("De server telt verkeerd: " + stats);
+            }
+            int expected = Math.max(1, com.senne.starktech.logic.LogicBalance.REACTION_TICKS
+                    - com.senne.starktech.logic.LogicBalance.CPU_SPEEDUP_TICKS);
+            if (stats.reactionTicks() != expected || stats.maxRuns() != com.senne.starktech.logic.LogicBalance.RUNS_PER_RAM) {
+                throw new GameTestAssertException("Reageren of tegelijk klopt niet: " + stats.reactionTicks() + " ticks, " + stats.maxRuns() + " tegelijk");
+            }
+            // Zonder SSD draait hij niet, en zegt hij waarom.
+            topRack.parts().setItem(1, ItemStack.EMPTY);
+            var without = com.senne.starktech.logic.LogicServer.stats(level, core);
+            if (without.online() || !"The server needs an SSD".equals(without.problem())) {
+                throw new GameTestAssertException("Zonder SSD zou de server niet moeten draaien: " + without.problem());
+            }
+            helper.succeed();
+        });
+    }
+
+    /** De grootste groep racks is de server; bij twee even grote groepen wint die met het laagste rack. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "server_racks")
+    public static void server_rack_main_cluster(GameTestHelper helper) {
+        BlockPos a = new BlockPos(0, 0, 0);
+        BlockPos b = new BlockPos(0, 1, 0);
+        BlockPos c = new BlockPos(5, 0, 0);
+        BlockPos d = new BlockPos(5, 0, 1);
+        BlockPos e = new BlockPos(6, 0, 1);
+        var biggest = com.senne.starktech.logic.LogicServer.mainCluster(List.of(a, c, b, d, e));
+        if (!biggest.equals(java.util.Set.of(c, d, e))) {
+            throw new GameTestAssertException("De grootste groep is niet gekozen: " + biggest);
+        }
+        var tie = com.senne.starktech.logic.LogicServer.mainCluster(List.of(c, d, a, b));
+        if (!tie.equals(java.util.Set.of(a, b))) {
+            throw new GameTestAssertException("Bij gelijke groepen moet de groep met het laagste rack winnen: " + tie);
+        }
+        if (!com.senne.starktech.logic.LogicServer.mainCluster(List.of()).isEmpty()) {
+            throw new GameTestAssertException("Zonder racks is er geen server");
+        }
+        helper.succeed();
+    }
+
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
     private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();

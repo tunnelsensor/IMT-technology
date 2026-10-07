@@ -142,6 +142,22 @@ public final class ModItems {
             ModBlocks.SECURITY_CAMERA, new Item.Properties().rarity(Rarity.UNCOMMON));
     public static final DeferredItem<BlockItem> SECURITY_CORE = ITEMS.registerSimpleBlockItem("security_core",
             ModBlocks.SECURITY_CORE, new Item.Properties().rarity(Rarity.EPIC));
+    // ---------------------------------------------------------------- De server (7 oktober)
+    public static final DeferredItem<BlockItem> SERVER_RACK = ITEMS.registerSimpleBlockItem("server_rack",
+            ModBlocks.SERVER_RACK, new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** Een CPU voor een serverrack: de server reageert sneller. */
+    public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_CPU = ITEMS.registerItem("server_cpu",
+            properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.CPU, properties),
+            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
+    /** Een RAM-latje: meer diagrammen tegelijk bezig. */
+    public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_RAM = ITEMS.registerItem("server_ram",
+            properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.RAM, properties),
+            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
+    /** Een SSD: meer blokjes in je diagrammen. */
+    public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_SSD = ITEMS.registerItem("server_ssd",
+            properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.SSD, properties),
+            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
+
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(
             "stark_laptop", com.senne.starktech.security.StarkLaptopItem::new,

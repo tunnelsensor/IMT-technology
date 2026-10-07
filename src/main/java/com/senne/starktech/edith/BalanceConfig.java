@@ -40,6 +40,7 @@ public final class BalanceConfig {
             com.senne.starktech.arsenal.ArsenalBalance.class,
             com.senne.starktech.shield.DomeSettings.class,
             com.senne.starktech.security.SecurityBalance.class,
+            com.senne.starktech.logic.LogicBalance.class,
             com.senne.starktech.workbench.WorkbenchBalance.class);
 
     /** Eén instelbaar getal: waar het staat, de regel in het bestand, en de standaardwaarde. */

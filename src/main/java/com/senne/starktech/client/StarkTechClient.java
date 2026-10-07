@@ -105,6 +105,7 @@ public class StarkTechClient {
         event.register(ModMenus.CHARGING_STATION.get(), ChargingStationScreen::new);
         event.register(ModMenus.CHARGER.get(), ChargerScreen::new);
         event.register(ModMenus.LANDING_PAD.get(), com.senne.starktech.client.LandingPadScreen::new);
+        event.register(ModMenus.SERVER_RACK.get(), com.senne.starktech.client.ServerRackScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {

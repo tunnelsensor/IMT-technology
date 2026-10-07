@@ -181,6 +181,19 @@ public final class ModBlocks {
                     .noOcclusion()
                     .lightLevel(state -> state.getValue(com.senne.starktech.security.CameraBlock.ONLINE) ? 2 : 0));
 
+    /**
+     * Het serverrack: racks die elkaar raken zijn samen de server van je beveiligingskern, waar je
+     * redstone-diagrammen op draaien (7 oktober).
+     */
+    public static final DeferredBlock<com.senne.starktech.logic.ServerRackBlock> SERVER_RACK = BLOCKS.registerBlock(
+            "server_rack", com.senne.starktech.logic.ServerRackBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(4.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.starktech.logic.ServerRackBlock.ONLINE) ? 3 : 0));
+
     /** De beveiligingskern van de Stark Tower: heel sterk, zodat hacken de weg is. */
     public static final DeferredBlock<com.senne.starktech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
             "security_core", com.senne.starktech.security.SecurityCoreBlock::new,

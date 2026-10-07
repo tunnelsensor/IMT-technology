@@ -949,12 +949,18 @@ De stappen, één per commit:
       bij aan en een wegzakkende toon bij uit: laserpoort, koepel en je persoonlijke schild (G-menu
       of stem). **Knetter**: tegen een laserwand lopen, een treffer op je schild of op de koepel.
       Ik kan zelf niet luisteren: zeg het als ze te hard, te zacht of te raar klinken (opnieuw maken:
-      `py -3.12 tools/generate_sounds.py rayshield_hum`).
-- [ ] **2. Serverracks**: een nieuw blok met 4 vakjes voor onderdelen. Racks die elkaar raken (naast
-      of op elkaar) zijn samen één server, die hoort bij de kern in wiens gebied hij staat en
-      stroom nodig heeft. Drie nieuwe items: **CPU** (reageert sneller: 1 CPU = 0,5 s, 4 = meteen),
-      **RAM** (hoeveel diagrammen tegelijk bezig kunnen zijn) en **SSD** (hoeveel blokjes je in
-      totaal kwijt kunt). Lampjes op de voorkant. Alle getallen in de config.
+      `py -3.12 tools/generate_sounds.py rayshield_hum`). Commit: `e565efe`.
+- [x] **2. Serverracks**
+      Een nieuw blok, de **Server Rack** (recept: ijzer, ijzeren tralies, Stark-chip, redstone), met
+      4 vakjes. Racks die elkaar raken (naast of op elkaar) zijn samen de server van de kern in wiens
+      gebied ze staan; staan er losse groepjes, dan telt de grootste ("NOT CONNECTED" voor de rest).
+      Elk rack heeft stroom nodig (`RACK_UPKEEP`) en geeft die door aan het rack ernaast, dus een
+      kast vol racks heeft genoeg aan één kabel. Drie nieuwe onderdelen: **CPU** (1 CPU reageert in
+      0,5 s, elke extra 0,15 s sneller, nooit sneller dan 1 tick), **RAM** (2 diagrammen tegelijk per
+      latje; je krijgt er 2 per recept) en **SSD** (24 blokjes per stuk). Zonder één van elk draait
+      de server niet. Lampjes op de voorkant knipperen als het rack meedraait. Rechtsklik: de vier
+      vakjes, en wat de hele server kan (of waarom niet). De app Status op de desktop zegt het ook.
+      Alle getallen staan in de config onder `[logic]`. Screenshots: `-Ponly=racks`. Twee nieuwe tests.
 - [ ] **3. Keycards en de keycardlezer**: een lege keycard craften; op de desktop (nieuwe app
       **Keycards**) schrijf je hem: naam, niveau 1-5, en hij krijgt een eigen nummer. Een lijst van
       alle kaarten, met "Block" voor een verloren of gestolen kaart. De lezer hangt aan de muur;

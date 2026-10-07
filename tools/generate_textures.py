@@ -2298,6 +2298,103 @@ def suit_hologram():
         save(out, f"entity/suit_hologram_{n}.png")
 
 
+def server_rack_textures():
+    """
+    Het serverrack (7 oktober): een zwarte kast met vier "bays" (de vakjes voor CPU, RAM en SSD).
+    - voorkant uit: de bays met donkere lampjes;
+    - voorkant aan: hetzelfde, maar de lampjes knipperen (vier plaatjes onder elkaar, met een
+      .mcmeta-bestand erbij: zo maakt Minecraft er een filmpje van);
+    - zijkant: geperforeerd staal (gaatjes voor de lucht);
+    - boven/onder: een ventilatierooster.
+    """
+    import random
+    shell = (30, 32, 38, 255)
+    shell_dark = (18, 19, 23, 255)
+    shell_light = (70, 74, 84, 255)
+    bay = (40, 44, 52, 255)
+    green = (80, 235, 120, 255)
+    amber = (250, 180, 50, 255)
+    off = (52, 60, 66, 255)
+
+    def front(lights):
+        im = img(16, 16, shell)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=shell_dark)
+        px(im, [(1, y) for y in range(1, 15)] + [(14, y) for y in range(1, 15)], shell_light)
+        for i, y in enumerate((2, 5, 8, 11)):
+            d.rectangle([2, y, 13, y + 2], fill=bay)
+            d.line([3, y + 1, 8, y + 1], fill=shell_dark)  # de greep van de bay
+            for j, x in enumerate((10, 12)):
+                px(im, [(x, y + 1)], lights[i][j])
+        # Onderaan een cyaan statusstreepje (het Stark-randje).
+        d.line([3, 14, 12, 14], fill=CYAN_DIM if lights[0][0] != off else CYAN_DARK)
+        return im
+
+    save(front([(off, off)] * 4), "block/server_rack_front.png")
+    # Aan: vier plaatjes met telkens andere lampjes (vast patroon, elke keer hetzelfde).
+    pattern = random.Random(7)
+    frames = img(16, 64)
+    for frame in range(4):
+        lights = [(green if pattern.random() < 0.7 else off, amber if pattern.random() < 0.35 else green)
+                  for _ in range(4)]
+        frames.paste(front(lights), (0, frame * 16))
+    save(frames, "block/server_rack_front_on.png")
+    (ROOT / "block/server_rack_front_on.png.mcmeta").write_text('{\n  "animation": {\n    "frametime": 4\n  }\n}\n')
+
+    side = img(16, 16, shell)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=shell_dark)
+    for y in range(2, 14, 2):
+        for x in range(2 + (y // 2) % 2, 14, 2):
+            px(side, [(x, y)], shell_dark)
+    save(side, "block/server_rack_side.png")
+
+    top = img(16, 16, shell)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=shell_dark)
+    for y in range(3, 13, 2):
+        d.line([3, y, 12, y], fill=shell_dark)
+    px(top, [(1, 1), (14, 1), (1, 14), (14, 14)], shell_light)
+    save(top, "block/server_rack_top.png")
+
+
+def server_part_items():
+    """De drie onderdelen voor een serverrack: een CPU, een RAM-latje en een SSD."""
+    # CPU: een vierkante chip met gouden pootjes rondom en een zilveren deksel.
+    cpu = img(16, 16)
+    d = ImageDraw.Draw(cpu)
+    for i in range(3, 13, 2):
+        px(cpu, [(i, 1), (i, 14), (1, i), (14, i)], GOLD)
+    d.rectangle([2, 2, 13, 13], fill=(30, 90, 50, 255))
+    d.rectangle([4, 4, 11, 11], fill=(170, 176, 186, 255), outline=(120, 126, 136, 255))
+    px(cpu, [(5, 5), (6, 5), (5, 6)], (225, 230, 236, 255))
+    d.rectangle([7, 7, 8, 8], fill=CYAN)
+    save(cpu, "item/server_cpu.png")
+
+    # RAM: een groen latje met zwarte geheugenchips en een gouden rij contacten.
+    ram = img(16, 16)
+    d = ImageDraw.Draw(ram)
+    d.rectangle([1, 4, 14, 11], fill=(30, 110, 60, 255), outline=(20, 70, 40, 255))
+    for x in (2, 6, 10):
+        d.rectangle([x, 5, x + 2, 8], fill=(24, 24, 28, 255))
+    for x in range(2, 14, 2):
+        px(ram, [(x, 10)], GOLD)
+    px(ram, [(7, 11)], CLEAR)  # het inkepinkje
+    px(ram, [(13, 5)], CYAN)
+    save(ram, "item/server_ram.png")
+
+    # SSD: een plat, donker doosje met een etiket en een blauw lampje.
+    ssd = img(16, 16)
+    d = ImageDraw.Draw(ssd)
+    d.rectangle([2, 3, 13, 12], fill=METAL_DARK, outline=(14, 16, 20, 255))
+    d.rectangle([4, 5, 11, 8], fill=(200, 205, 212, 255))
+    d.line([5, 6, 9, 6], fill=(90, 96, 104, 255))
+    d.line([5, 7, 7, 7], fill=(90, 96, 104, 255))
+    px(ssd, [(12, 11)], CYAN)
+    d.line([3, 12, 12, 12], fill=GOLD_DARK)
+    save(ssd, "item/server_ssd.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -2337,3 +2434,5 @@ if __name__ == "__main__":
     drone_dock_textures()
     landing_pad_textures()
     power_cabinet_textures()
+    server_rack_textures()
+    server_part_items()

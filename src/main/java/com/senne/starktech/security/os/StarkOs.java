@@ -531,6 +531,8 @@ public final class StarkOs {
         // De apparaten met hun status.
         data.put("devices", com.senne.starktech.security.SecurityDevices.snapshot(level, core));
         data.put("cameras", com.senne.starktech.security.SecurityDevices.cameras(level, core));
+        // De server (serverracks) waar de redstone-diagrammen op draaien.
+        data.put("server", com.senne.starktech.logic.LogicServer.snapshot(level, core));
         // De mappen: alleen als het scherm een oudere versie heeft.
         VirtualFs fs = core.fs();
         if (session.sentFs != fs || session.sentRevision != fs.revision()) {
@@ -620,5 +622,6 @@ public final class StarkOs {
         SESSIONS.clear();
         LOCKOUTS.clear();
         com.senne.starktech.security.SecurityDevices.clear();
+        com.senne.starktech.logic.LogicServer.clear();
     }
 }

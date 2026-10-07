@@ -610,6 +610,14 @@ public class StarkOsScreen extends Screen {
         line(g, cx, cy + LINE * 4, "Password: " + (pw ? "set" : "NOT SET"), pw ? HudStyle.GREEN : HudStyle.ORANGE);
         boolean online = data.getBoolean("online");
         line(g, cx, cy + LINE * 5, "Power: " + (online ? "online" : "offline"), online ? HudStyle.GREEN : HudStyle.RED);
+        // De server: draait hij, en zo niet, waarom niet.
+        CompoundTag server = data.getCompound("server");
+        if (server.getBoolean("online")) {
+            int racks = server.getInt("racks");
+            line(g, cx, cy + LINE * 6, "Server: online, " + racks + (racks == 1 ? " rack" : " racks"), HudStyle.GREEN);
+        } else {
+            line(g, cx, cy + LINE * 6, "Server: " + server.getString("problem"), HudStyle.ORANGE);
+        }
     }
 
     private void renderLogs(GuiGraphics g, int cx, int cy, int ch, int scroll) {

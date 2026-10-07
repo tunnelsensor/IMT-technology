@@ -1251,6 +1251,75 @@ public final class VisualCheck {
             t.shot(62, "94_bombardment");
             t.shot(25, "95_bombardment_more");
         }
+
+        // --- De server (7 oktober): drie racks tegen elkaar (één generator eronder), een los rack
+        // ernaast dat niet meedraait, het scherm van een rack, en de server in de app Status.
+        if (want("racks")) {
+            BlockPos core = new BlockPos(60, -60, -80);
+            BlockPos[] server = {new BlockPos(63, -60, -78), new BlockPos(63, -59, -78), new BlockPos(64, -60, -78)};
+            BlockPos lone = new BlockPos(67, -60, -78);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                }
+                for (BlockPos generator : new BlockPos[] {core.below(), server[0].below(), lone.below()}) {
+                    level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                }
+                BlockState rack = ModBlocks.SERVER_RACK.get().defaultBlockState()
+                        .setValue(com.senne.starktech.logic.ServerRackBlock.FACING, Direction.SOUTH);
+                for (BlockPos pos : server) {
+                    level.setBlockAndUpdate(pos, rack);
+                }
+                level.setBlockAndUpdate(lone, rack);
+                ItemStack[][] parts = {
+                        {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get()), new ItemStack(ModItems.SERVER_SSD.get())},
+                        {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get())},
+                        {new ItemStack(ModItems.SERVER_SSD.get())}};
+                for (int i = 0; i < server.length; i++) {
+                    if (level.getBlockEntity(server[i]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                        for (int slot = 0; slot < parts[i].length; slot++) {
+                            be.parts().setItem(slot, parts[i][slot]);
+                        }
+                    }
+                }
+                if (level.getBlockEntity(lone) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, 65.0, -60, -74.5, 180, 12);
+            t.shot(90, "r01_racks");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(server[0]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    player.openMenu(be, server[0]);
+                }
+            });
+            t.shot(20, "r02_rack_screen");
+            t.close(0);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(lone) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    player.openMenu(be, lone);
+                }
+            });
+            t.shot(20, "r03_rack_not_connected");
+            t.close(0);
+            t.stand(0, 60.5, -60, -77.5, 180, 20);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.STATUS);
+                }
+            });
+            t.shot(10, "r04_os_status_server");
+            t.close(10);
+        }
 }
 
     // ================================================================ De wereld inrichten
