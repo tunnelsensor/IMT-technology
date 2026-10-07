@@ -941,9 +941,15 @@ Mijn invulling (de tweede vragenronde klikte je weg; zeg het als je iets anders 
 
 De stappen, één per commit:
 
-- [ ] **1. Rayshield-geluiden**: zoemen (een lus zolang een laserwand of koepel aan staat, alleen
-      in de buurt), "vwoem" bij aan en uit, een knetter als iets het schild raakt (een laserwand
-      aanraken, een treffer op je persoonlijke schild of op de koepel). Vier nieuwe geluiden.
+- [x] **1. Rayshield-geluiden**
+      Vier nieuwe geluiden (`rayshield_hum`, `_on`, `_off`, `_hit`): twee zaagtanden van 92 en 93 Hz
+      die tegen elkaar zweven ("wom-wom"), met af en toe een knetter. **Zoemen**: een lus zolang een
+      laserzender of koepelgenerator binnen 24 blokken aan staat (`client/shield/RayshieldHum`,
+      hooguit 6 tegelijk, een stapel zenders deelt er één; de koepel dieper en harder). **"Vwoem"**
+      bij aan en een wegzakkende toon bij uit: laserpoort, koepel en je persoonlijke schild (G-menu
+      of stem). **Knetter**: tegen een laserwand lopen, een treffer op je schild of op de koepel.
+      Ik kan zelf niet luisteren: zeg het als ze te hard, te zacht of te raar klinken (opnieuw maken:
+      `py -3.12 tools/generate_sounds.py rayshield_hum`).
 - [ ] **2. Serverracks**: een nieuw blok met 4 vakjes voor onderdelen. Racks die elkaar raken (naast
       of op elkaar) zijn samen één server, die hoort bij de kern in wiens gebied hij staat en
       stroom nodig heeft. Drie nieuwe items: **CPU** (reageert sneller: 1 CPU = 0,5 s, 4 = meteen),

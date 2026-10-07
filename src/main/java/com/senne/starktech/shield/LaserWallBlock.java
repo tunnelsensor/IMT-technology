@@ -88,7 +88,12 @@ public class LaserWallBlock extends Block {
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level instanceof ServerLevel serverLevel && entity instanceof LivingEntity living && living.hurtTime <= 0
                 && !friendOfTheTower(serverLevel, pos, living)) {
-            living.hurt(ModDamageTypes.laserWall(serverLevel), EdithBalance.LASER_WALL_DAMAGE);
+            if (living.hurt(ModDamageTypes.laserWall(serverLevel), EdithBalance.LASER_WALL_DAMAGE)) {
+                // Een knetter, zoals tegen een Star Wars-laserpoort aanlopen.
+                serverLevel.playSound(null, living.getX(), living.getY() + living.getBbHeight() / 2, living.getZ(),
+                        com.senne.starktech.registry.ModSounds.RAYSHIELD_HIT.get(),
+                        net.minecraft.sounds.SoundSource.BLOCKS, 0.7f, 1.0f + serverLevel.random.nextFloat() * 0.2f);
+            }
         }
         // Items en pijlen die erin belanden verbranden.
         if (entity instanceof ItemEntity || entity instanceof net.minecraft.world.entity.projectile.Projectile) {

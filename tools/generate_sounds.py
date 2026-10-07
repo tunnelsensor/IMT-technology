@@ -507,6 +507,94 @@ def comms_ping():
     return finish(total, peak=0.5)
 
 
+# ---------------------------------------------------------------- rayshield (Star Wars-achtig)
+#
+# Jouw wens (7 oktober): de rayshields moeten klinken zoals de laserpoorten in Star Wars. Echte
+# Star Wars-geluiden mogen niet in de mod (auteursrecht), dus maken we het na: een brommende,
+# elektrische zoemtoon (twee zaagtanden die net iets anders gestemd zijn, zodat ze tegen elkaar
+# "zweven"), met af en toe een knetter erdoor.
+
+def ray_buzz(phase):
+    """
+    De zoemtoon van een rayshield bij een gegeven fase (zie sweep): een zaagtand met een sinus
+    eronder, en een tweede laag een fractie hoger. Afgezwakt boven 1600 Hz, anders snerpt het.
+    """
+    tone = signal.sawtooth(phase) * 0.55 + np.sin(phase)
+    tone += signal.sawtooth(phase * 1.011 + 1.3) * 0.45
+    return lowpass(tone, 1600, order=2)
+
+
+def crackle(duration, density, low=1800, high=7000):
+    """Knetteren: korte tikjes ruis op willekeurige momenten ({density} = hoe vaak, 0 tot 1)."""
+    gate = rng.uniform(0, 1, int(RATE * duration)) < density / 400
+    clicks = np.convolve(gate.astype(float), np.exp(-np.arange(int(RATE * 0.006)) / (RATE * 0.0015)))
+    return bandpass(noise(duration), low, high) * clicks[: int(RATE * duration)]
+
+
+def rayshield_hum():
+    """
+    Het zoemen zolang een laserwand of koepel aan staat. Speelt als lus, dus net als de
+    stuwraketten (suit_thruster) zonder naad: het stuk na het einde vloeit over het begin heen.
+    92 Hz en 93 Hz zweven één keer per seconde tegen elkaar: dat geeft het "wom-wom".
+    """
+    length, overlap = 2.0, 0.4
+    total = length + overlap
+    t = seconds(total)
+    buzz = ray_buzz(2 * np.pi * 92 * t) + 0.8 * ray_buzz(2 * np.pi * 93 * t + 0.7)
+    sub = 0.6 * np.sin(2 * np.pi * 46 * t)
+    shimmer = 1.0 + 0.08 * np.sin(2 * np.pi * 6 * t)
+    sound = (buzz + sub) * shimmer + crackle(total, 0.08) * 2.5
+
+    n, m = int(RATE * length), int(RATE * overlap)
+    loop = sound[:n].copy()
+    ramp = np.linspace(0.0, 1.0, m)
+    loop[:m] = sound[n:n + m] * (1.0 - ramp) + loop[:m] * ramp
+    loop = np.tanh(loop * 0.9)
+    return (loop / np.max(np.abs(loop)) * 0.4).astype(np.float32)
+
+
+def rayshield_on():
+    """
+    Het schild gaat aan: "vwoem". Een knetter, dan schiet de zoemtoon van heel laag omhoog naar
+    zijn gewone toon, met een zucht van ruis erbij.
+    """
+    duration = 0.9
+    total = np.zeros(int(RATE * duration))
+    phase = sweep(35, 92, duration, curve=0.3)
+    swell = np.minimum(1.0, seconds(duration) / 0.1) * (1.0 - 0.45 * seconds(duration) / duration)
+    place(total, ray_buzz(phase) * swell, 0.0)
+    whoosh = bandpass(noise(0.5), 250, 2500) * np.sin(np.linspace(0, np.pi, int(RATE * 0.5))) ** 2
+    place(total, whoosh * 1.4, 0.0)
+    place(total, crackle(0.15, 6) * 4, 0.0)
+    return finish(total, peak=0.45)
+
+
+def rayshield_off():
+    """Het schild gaat uit: de zoemtoon zakt weg naar beneden en sterft uit, met een laatste knetter."""
+    duration = 0.7
+    total = np.zeros(int(RATE * duration))
+    phase = sweep(92, 28, duration, curve=0.7)
+    place(total, ray_buzz(phase) * decay(duration, 4.5), 0.0)
+    place(total, crackle(0.12, 4) * 3, 0.0)
+    return finish(total, peak=0.45)
+
+
+def rayshield_hit():
+    """
+    Iets raakt het schild (of jij loopt tegen een laserwand): een elektrische knal, een korte
+    brom en een regen van vonkjes die wegsterft.
+    """
+    duration = 0.5
+    total = np.zeros(int(RATE * duration))
+    zap = bandpass(noise(0.05), 1200, 8000) * decay(0.05, 60)
+    place(total, zap * 1.6, 0.0)
+    thump = ray_buzz(sweep(150, 60, 0.25, curve=0.6)) * decay(0.25, 14)
+    place(total, thump * 1.2, 0.0)
+    sparks = crackle(duration, 10) * decay(duration, 7) * 4
+    place(total, sparks, 0.01)
+    return finish(total, peak=0.5)
+
+
 SOUNDS = {
     "edith_boot": edith_boot,
     "edith_blip": edith_blip,
@@ -534,6 +622,10 @@ SOUNDS = {
     "repulsor_disarm": repulsor_disarm,
     "repulsor_fire": repulsor_fire,
     "suit_thruster": suit_thruster,
+    "rayshield_hum": rayshield_hum,
+    "rayshield_on": rayshield_on,
+    "rayshield_off": rayshield_off,
+    "rayshield_hit": rayshield_hit,
 }
 
 

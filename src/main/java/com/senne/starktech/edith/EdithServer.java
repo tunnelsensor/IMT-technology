@@ -353,6 +353,13 @@ public final class EdithServer {
             if (feature == EdithFeature.NIGHT_VISION && !on) {
                 removeOurNightVision(player);
             }
+            if (feature == EdithFeature.SHIELD) {
+                // Je persoonlijke rayshield: "vwoem" aan, wegzakkend zoemen uit (7 oktober).
+                player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
+                        on ? com.senne.starktech.registry.ModSounds.RAYSHIELD_ON.get()
+                                : com.senne.starktech.registry.ModSounds.RAYSHIELD_OFF.get(),
+                        net.minecraft.sounds.SoundSource.PLAYERS, 0.6f, 1.2f);
+            }
             return;
         }
 

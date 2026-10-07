@@ -325,8 +325,9 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         } else {
             clearWall(level, pos, facing);
         }
-        level.playSound(null, pos, on ? SoundEvents.BEACON_ACTIVATE : SoundEvents.BEACON_DEACTIVATE,
-                SoundSource.BLOCKS, 0.5f, on ? 1.6f : 1.2f);
+        // Star Wars-achtig (jouw wens, 7 oktober): "vwoem" bij aan, wegzakkend zoemen bij uit.
+        level.playSound(null, pos, on ? com.senne.starktech.registry.ModSounds.RAYSHIELD_ON.get()
+                : com.senne.starktech.registry.ModSounds.RAYSHIELD_OFF.get(), SoundSource.BLOCKS, 0.8f, 1.0f);
     }
 
     /**

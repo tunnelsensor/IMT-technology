@@ -344,6 +344,7 @@ public final class EdithClientEvents {
         com.senne.starktech.client.suit.SuitEffects.clear();
         com.senne.starktech.client.suit.RepulsorHand.reset();
         com.senne.starktech.client.illusion.IllusionRenderer.clear();
+        com.senne.starktech.client.shield.RayshieldHum.clear();
         EdithClientState.reset();
     }
 }

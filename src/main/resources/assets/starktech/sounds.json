@@ -206,5 +206,37 @@
         "name": "starktech:edith_confirm"
       }
     ]
+  },
+  "shield.rayshield_hum": {
+    "subtitle": "subtitles.starktech.shield.rayshield_hum",
+    "sounds": [
+      {
+        "name": "starktech:rayshield_hum"
+      }
+    ]
+  },
+  "shield.rayshield_on": {
+    "subtitle": "subtitles.starktech.shield.rayshield_on",
+    "sounds": [
+      {
+        "name": "starktech:rayshield_on"
+      }
+    ]
+  },
+  "shield.rayshield_off": {
+    "subtitle": "subtitles.starktech.shield.rayshield_off",
+    "sounds": [
+      {
+        "name": "starktech:rayshield_off"
+      }
+    ]
+  },
+  "shield.rayshield_hit": {
+    "subtitle": "subtitles.starktech.shield.rayshield_hit",
+    "sounds": [
+      {
+        "name": "starktech:rayshield_hit"
+      }
+    ]
   }
 }

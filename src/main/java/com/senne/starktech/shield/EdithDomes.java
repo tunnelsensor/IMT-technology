@@ -138,7 +138,8 @@ public final class EdithDomes {
         level.sendParticles(ParticleTypes.FLASH, hit.x, hit.y, hit.z, 1, 0, 0, 0, 0);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, hit.x, hit.y, hit.z, 16, 0.4, 0.4, 0.4, 0.25);
         level.sendParticles(ParticleTypes.END_ROD, hit.x, hit.y, hit.z, 8, 0.3, 0.3, 0.3, 0.08);
-        level.playSound(null, hit.x, hit.y, hit.z, SoundEvents.SHIELD_BLOCK, SoundSource.BLOCKS, 1.2f, 0.6f);
+        level.playSound(null, hit.x, hit.y, hit.z, com.senne.starktech.registry.ModSounds.RAYSHIELD_HIT.get(),
+                SoundSource.BLOCKS, 1.5f, 0.75f);
         return hit;
     }
 

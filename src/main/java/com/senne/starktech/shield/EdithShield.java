@@ -11,7 +11,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.tags.DamageTypeTags;
@@ -66,7 +65,7 @@ public final class EdithShield {
         event.setCanceled(true);
         flash(player.serverLevel(), player.position().add(0, player.getBbHeight() / 2, 0));
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.7f, 1.6f);
+                com.senne.starktech.registry.ModSounds.RAYSHIELD_HIT.get(), SoundSource.PLAYERS, 0.8f, 1.15f);
     }
 
     /** Een flitsje van blauwe deeltjes rond de speler: het schild vangt de klap op. */

@@ -12,7 +12,6 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -211,9 +210,10 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
             if (shield <= 0) {
                 shield = Math.round(maxShield() * DomeSettings.COMEBACK_SHIELD);
             }
-            level.playSound(null, pos, ModSounds.SATELLITE_CHARGE.get(), SoundSource.BLOCKS, 1.0f, 1.4f);
+            // Een koepel is groot: hetzelfde "vwoem" als een laserwand, maar dieper en verder te horen.
+            level.playSound(null, pos, ModSounds.RAYSHIELD_ON.get(), SoundSource.BLOCKS, 2.0f, 0.7f);
         } else {
-            level.playSound(null, pos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.2f, 0.7f);
+            level.playSound(null, pos, ModSounds.RAYSHIELD_OFF.get(), SoundSource.BLOCKS, 2.0f, 0.7f);
         }
         EdithDomes.setActive(level, pos, nowUp);
         BlockState state = getBlockState();
