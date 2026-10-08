@@ -28,6 +28,8 @@ public final class LogicBalance {
     public static int BRAIN_DELAY_TICKS = 160;
     @Tunable(section = "logic", comment = "A brain delay this short or shorter (ticks) falls away completely: the datacenter is strong enough")
     public static int BRAIN_DELAY_GONE_TICKS = 10;
+    @Tunable(section = "logic", comment = "How many blocks per second one Logic power (one CPU) can work through before the CPU use is 100% (more work = more heat)")
+    public static int LOGIC_STEPS_PER_SECOND = 100;
     @Tunable(section = "logic", comment = "How many diagrams can be busy at the same time per RAM stick")
     public static int RUNS_PER_RAM = 2;
     @Tunable(section = "logic", comment = "How many blocks (triggers, ifs, actions) one SSD can hold")

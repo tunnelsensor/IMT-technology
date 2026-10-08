@@ -284,4 +284,47 @@ public final class DatacenterGameTests {
             helper.succeed();
         });
     }
+
+    /**
+     * Gebruik meten (de app Monitor): een timer die elke seconde iets doet en dan 5 seconden wacht,
+     * laat de CPU werken en vult het RAM (1 latje = 2 tegelijk). De kern meet dat elke seconde en
+     * onthoudt de laatste minuut; de momentopname voor de desktop heeft alles erin, ook de racks.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 160, batch = "datacenter")
+    public static void datacenter_usage_history(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        String code = """
+                when every(1):
+                    log("busy")
+                    wait(5)
+                    log("done")
+                """;
+        core.logic().put(null, new LogicProgram("Busy", true, GraphConverter.toGraph(ScriptParser.parse(code), null), code));
+        helper.runAfterDelay(2, () -> StarkTechGameTests.startServer(helper, setup.rack(), core));
+        helper.runAfterDelay(140, () -> {
+            java.util.List<int[]> history = core.datacenter().history();
+            if (history.size() < 5) {
+                throw new GameTestAssertException("De kern zou elke seconde moeten meten, maar heeft " + history.size() + " metingen");
+            }
+            boolean cpu = history.stream().anyMatch(sample -> sample[0] > 0);
+            boolean ram = history.stream().anyMatch(sample -> sample[2] >= 50);
+            if (!cpu || !ram) {
+                throw new GameTestAssertException("De metingen zouden CPU- en RAM-gebruik moeten tonen: cpu " + cpu + ", ram " + ram);
+            }
+            var snapshot = LogicServer.snapshot(level, core);
+            if (snapshot.getInt("used") != core.logic().blocks() || snapshot.getIntArray("hCpu").length != history.size()
+                    || snapshot.getList("racksInfo", 10).size() != 1
+                    || snapshot.getList("racksInfo", 10).getCompound(0).getList("parts", 10).size() != 3) {
+                throw new GameTestAssertException("De momentopname voor de Monitor klopt niet: " + snapshot);
+            }
+            // Hard werken maakt warmer.
+            LogicServer.Stats stats = LogicServer.stats(level, core);
+            if (Datacenter.heat(stats, 1.0) <= Datacenter.heat(stats, 0.0)) {
+                throw new GameTestAssertException("Een CPU die hard werkt zou meer warmte moeten maken");
+            }
+            helper.succeed();
+        });
+    }
 }

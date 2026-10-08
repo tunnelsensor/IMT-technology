@@ -1264,6 +1264,16 @@ public final class VisualCheck {
                 if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
+                    // Een druk diagram, zodat de app Monitor iets te meten heeft (8 oktober).
+                    String code = """
+                            when every(1):
+                                log("busy")
+                                wait(3)
+                                log("done")
+                            """;
+                    be.logic().put(null, new com.senne.starktech.logic.program.LogicProgram("Busy", true,
+                            com.senne.starktech.logic.program.GraphConverter.toGraph(
+                                    com.senne.starktech.logic.program.ScriptParser.parse(code), null), code));
                 }
                 for (BlockPos generator : new BlockPos[] {core.below(), server[0].below(), lone.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -1355,6 +1365,14 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "r04_os_status_server");
+            // De app Monitor (8 oktober): tegels met de laatste minuut, de racks (een staat in brand)
+            // en wat er bezig is.
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.MONITOR);
+                }
+            });
+            t.shot(15, "r08_os_monitor");
             t.close(10);
         }
 

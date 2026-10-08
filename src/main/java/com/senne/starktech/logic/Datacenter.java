@@ -45,6 +45,10 @@ import org.jetbrains.annotations.Nullable;
 public final class Datacenter {
     /** Om de zoveel ticks rekenen we opnieuw (net zo vaak als de racks kijken of ze stroom hebben). */
     public static final int UPDATE_TICKS = 40;
+    /** Om de zoveel ticks meten we hoe hard alles werkt (voor de app Monitor). */
+    public static final int SAMPLE_TICKS = 20;
+    /** Zoveel metingen onthouden we: de laatste minuut. */
+    public static final int HISTORY = 60;
 
     /** Hoe ver E.D.I.T.H. al waarschuwde: 0 = koel, 1 = warm, 2 = heet. */
     private static final int COOL = 0, WARM = 1, HOT = 2;
@@ -57,6 +61,15 @@ public final class Datacenter {
     private double heat;
     private double fullHeat;
     private double cooling;
+    /**
+     * Hoe hard alles werkt (0..1), de laatste meting: de CPU's voor Logic, het brein van E.D.I.T.H.
+     * en het RAM (diagrammen tegelijk). Niet bewaard.
+     */
+    private double cpuLoad;
+    private double brainLoad;
+    private double ramLoad;
+    /** De laatste minuut, één meting per seconde (de oudste eerst): {cpu %, brein %, ram %, temperatuur}. */
+    private final java.util.ArrayDeque<int[]> history = new java.util.ArrayDeque<>();
 
     public double temperature() {
         return temperature;
@@ -82,6 +95,34 @@ public final class Datacenter {
         return target(heat, cooling);
     }
 
+    /** Hoe hard de CPU's werken voor Logic (0..1), de laatste meting. */
+    public double cpuLoad() {
+        return cpuLoad;
+    }
+
+    /** Hoe hard het brein van E.D.I.T.H. hier werkt (0..1), de laatste meting. */
+    public double brainLoad() {
+        return brainLoad;
+    }
+
+    /** Hoe vol het RAM is (0..1): diagrammen die bezig zijn of wachten, tegen wat er tegelijk kan. */
+    public double ramLoad() {
+        return ramLoad;
+    }
+
+    /**
+     * Hoe hard de CPU's en GPU's werken (0..1) voor de warmte: het drukste van Logic en het brein
+     * (ze doen het allebei op dezelfde chips).
+     */
+    public double load() {
+        return Math.min(1.0, Math.max(cpuLoad, brainLoad));
+    }
+
+    /** De laatste minuut: per meting {cpu %, brein %, ram %, temperatuur}, de oudste eerst. */
+    public java.util.List<int[]> history() {
+        return java.util.List.copyOf(history);
+    }
+
     /** Voor de tests: meteen deze temperatuur. */
     public void setTemperature(double temperature) {
         this.temperature = temperature;
@@ -89,11 +130,43 @@ public final class Datacenter {
 
     // ================================================================ Rekenen
 
-    /** Elke tick, vanuit de kern. Om de UPDATE_TICKS ticks rekenen we. */
+    /** Elke tick, vanuit de kern. Om de SAMPLE_TICKS ticks meten we, om de UPDATE_TICKS ticks rekenen we. */
     public void tick(ServerLevel level, SecurityCoreBlockEntity core) {
-        if ((level.getGameTime() + core.getBlockPos().hashCode()) % UPDATE_TICKS == 0) {
+        long phase = level.getGameTime() + core.getBlockPos().hashCode();
+        if (phase % SAMPLE_TICKS == 0) {
+            sample(level, core);
+        }
+        if (phase % UPDATE_TICKS == 0) {
             update(level, core);
         }
+    }
+
+    /**
+     * Eén meting (elke seconde): hoeveel werk de CPU's deden tegen wat ze aankunnen, hoe vol het RAM
+     * is, en de temperatuur. Gaat in de geschiedenis voor de app Monitor.
+     */
+    public void sample(ServerLevel level, SecurityCoreBlockEntity core) {
+        LogicServer.Stats stats = LogicServer.stats(level, core);
+        int steps = LogicRunner.takeSteps(level, core);
+        double perSecond = steps * 20.0 / SAMPLE_TICKS;
+        double capacity = stats.online() ? logicCapacity(stats) : 0;
+        cpuLoad = capacity > 0 ? Math.min(1.0, perSecond / capacity) : 0;
+        int[] load = LogicRunner.load(level, core);
+        ramLoad = stats.online() && stats.maxRuns() > 0 ? Math.min(1.0, (load[0] + load[1]) / (double) stats.maxRuns()) : 0;
+        brainLoad = 0.0; // het brein van E.D.I.T.H. komt in stap 6
+        history.addLast(new int[] {percent(cpuLoad), percent(brainLoad), percent(ramLoad), (int) Math.round(temperature)});
+        while (history.size() > HISTORY) {
+            history.removeFirst();
+        }
+    }
+
+    /** Hoeveel blokjes per seconde de CPU's en GPU's van deze server aankunnen (warm: minder). */
+    public static double logicCapacity(LogicServer.Stats stats) {
+        return stats.logicPower() / stats.slowdown() * LogicBalance.LOGIC_STEPS_PER_SECOND;
+    }
+
+    private static int percent(double fraction) {
+        return (int) Math.round(Math.max(0, Math.min(1, fraction)) * 100);
     }
 
     /** Eén stap: warmte en koeling meten, de temperatuur een stukje opschuiven, en zo nodig waarschuwen. */
@@ -109,9 +182,9 @@ public final class Datacenter {
             fireTicks = 0;
             return;
         }
-        double load = 0.0; // hoe hard de CPU's en GPU's werken (0..1); komt in stap 4
-        // Draait de server niet (de kern zonder stroom, of iets mist), dan rekent er niets.
-        heat = stats.online() ? heat(stats, load) : 0;
+        // Draait de server niet (de kern zonder stroom, of iets mist), dan rekent er niets. Werken de
+        // CPU's en GPU's hard (Logic of het brein), dan worden ze warmer.
+        heat = stats.online() ? heat(stats, load()) : 0;
         fullHeat = heat(stats, 1.0);
         cooling = cooling(stats);
         double before = temperature;

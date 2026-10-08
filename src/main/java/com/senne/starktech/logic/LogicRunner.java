@@ -108,6 +108,8 @@ public final class LogicRunner {
         final Set<String> reported = new HashSet<>();
         long reportedReset;
         boolean wasOnline = true;
+        /** Hoeveel werk (blokjes en triggers) de server deed sinds de laatste meting (zie Datacenter). */
+        int steps;
     }
 
     private static final Map<GlobalPos, Runtime> RUNTIMES = new HashMap<>();
@@ -170,6 +172,7 @@ public final class LogicRunner {
     }
 
     private static void enqueue(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run) {
+        runtime.steps++; // een trigger aannemen is ook werk
         runtime.queue.addLast(run);
         if (runtime.queue.size() > MAX_QUEUE) {
             Run dropped = runtime.queue.removeFirst();
@@ -277,6 +280,7 @@ public final class LogicRunner {
     private static boolean step(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, long now) {
         LogicGraph graph = run.program.graph();
         for (int steps = 0; steps < STEPS_PER_TICK; steps++) {
+            runtime.steps++;
             if (run.current < 0) {
                 if (run.after.isEmpty()) {
                     return true;
@@ -442,6 +446,32 @@ public final class LogicRunner {
     public static int[] load(ServerLevel level, SecurityCoreBlockEntity core) {
         Runtime runtime = RUNTIMES.get(GlobalPos.of(level.dimension(), core.getBlockPos()));
         return runtime == null ? new int[] {0, 0} : new int[] {runtime.running.size(), runtime.queue.size()};
+    }
+
+    /**
+     * Hoeveel werk (blokjes en triggers) deze server deed sinds de vorige keer dat je het vroeg, en
+     * begint weer bij 0. Zo meet het datacenter hoe hard de CPU's werken.
+     */
+    public static int takeSteps(ServerLevel level, SecurityCoreBlockEntity core) {
+        Runtime runtime = RUNTIMES.get(GlobalPos.of(level.dimension(), core.getBlockPos()));
+        if (runtime == null) {
+            return 0;
+        }
+        int steps = runtime.steps;
+        runtime.steps = 0;
+        return steps;
+    }
+
+    /** De namen van de diagrammen die nu bezig zijn (een diagram dat twee keer bezig is, staat er twee keer in). */
+    public static List<String> runningNames(ServerLevel level, SecurityCoreBlockEntity core) {
+        Runtime runtime = RUNTIMES.get(GlobalPos.of(level.dimension(), core.getBlockPos()));
+        List<String> names = new ArrayList<>();
+        if (runtime != null) {
+            for (Run run : runtime.running) {
+                names.add(run.program.name());
+            }
+        }
+        return names;
     }
 
     /** Stopt alles wat op deze server bezig is (bij een overname, of als de kern weg is). */

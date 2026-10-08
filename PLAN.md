@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 144 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 145 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1178,11 +1178,21 @@ De stappen, één per commit:
       halen kan altijd (dan ben je niets kwijt). Een warm datacenter vat geen vlam als je op tijd
       fans bijsteekt. In de config: `maxWear`, `fireTemperature`, `fireDelayTicks`, `burnTicks`.
       Screenshots: `-Ponly=racks` (`r06_rack_fire`, `r07_rack_fire_screen`). Twee nieuwe tests.
-- [ ] **4. Gebruik meten en de app Monitor**
-      Hoe hard de CPU's werken (Logic: zoveel stapjes per seconde per kracht), het brein, het RAM
-      (diagrammen tegelijk) en de SSD's (blokjes). Een app **Monitor** op de desktop: tegels met
-      grafiekjes van de laatste minuut, de temperatuur, elk rack met zijn onderdelen, en wat er
-      bezig is (diagrammen, E.D.I.T.H., backups).
+      Commit: `5d6104a`.
+- [x] **4. Gebruik meten en de app Monitor**
+      De kern meet elke seconde hoe hard alles werkt en onthoudt de laatste minuut: **CPU** (hoeveel
+      blokjes en triggers je diagrammen afliepen, tegen wat je CPU's en GPU's aankunnen: 100 per
+      seconde per Logic-kracht, `logicStepsPerSecond`), **brein** (komt in stap 6), **RAM**
+      (diagrammen die bezig zijn of wachten, tegen wat er tegelijk kan) en **SSD** (blokjes in je
+      diagrammen tegen wat erop past). Werken de CPU's en GPU's hard, dan maken ze meer warmte (tot
+      de "busy"-warmte uit stap 2). Nieuwe app **Monitor** (icoon M) op de desktop, zoals Taakbeheer:
+      vijf tegels (CPU, BRAIN, RAM, SSD, TEMP) met een groot getal, een grafiekje van de laatste
+      minuut en een regel eronder (kracht, vertraging van het brein, hoeveel bezig, blokjes, waar
+      de temperatuur heen gaat); links elk rack (een groen, oranje of rood bolletje, waar het staat,
+      en zijn onderdelen als gekleurde blokjes met een rood streepje als ze slijten, of "ON FIRE
+      15 s"); rechts de warmte en koeling met wat je moet doen ("Add 3 fans for full load", "Too hot:
+      half speed"), en welke diagrammen er nu bezig zijn ("Busy x3", "2 waiting for RAM"). Het werkt
+      ook via SSH. Screenshots: `-Ponly=racks` (`r08_os_monitor`). Eén nieuwe test.
 - [ ] **5. Backups**
       Een app **Backup**: kies een ander datacenter van jezelf, **Backup now**, of automatisch
       (uit, elke 5, 15 of 60 minuten). Een backup neemt plek op de SSD's van dat andere datacenter;

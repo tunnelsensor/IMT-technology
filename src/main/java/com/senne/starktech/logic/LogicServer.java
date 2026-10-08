@@ -11,6 +11,7 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -224,6 +225,62 @@ public final class LogicServer {
         tag.putDouble("heat", datacenter.heat());
         tag.putDouble("fullHeat", datacenter.fullHeat());
         tag.putDouble("cooling", datacenter.cooling());
+        // Het gebruik (8 oktober, de app Monitor): nu, en de laatste minuut.
+        tag.putInt("cpuUse", (int) Math.round(datacenter.cpuLoad() * 100));
+        tag.putInt("brainUse", (int) Math.round(datacenter.brainLoad() * 100));
+        tag.putInt("ramUse", (int) Math.round(datacenter.ramLoad() * 100));
+        tag.putInt("used", core.logic().blocks());
+        int[] load = LogicRunner.load(level, core);
+        tag.putInt("running", load[0]);
+        tag.putInt("waiting", load[1]);
+        tag.putDouble("logicPower", stats.logicPower());
+        tag.putDouble("brainPower", stats.brainPower());
+        tag.putBoolean("warm", stats.warm());
+        java.util.List<int[]> history = datacenter.history();
+        int[][] columns = new int[4][history.size()];
+        for (int i = 0; i < history.size(); i++) {
+            for (int c = 0; c < 4; c++) {
+                columns[c][i] = history.get(i)[c];
+            }
+        }
+        tag.putIntArray("hCpu", columns[0]);
+        tag.putIntArray("hBrain", columns[1]);
+        tag.putIntArray("hRam", columns[2]);
+        tag.putIntArray("hTemp", columns[3]);
+        // Wat er bezig is: de diagrammen (de app Monitor laat ze zien zoals Taakbeheer).
+        net.minecraft.nbt.ListTag procs = new net.minecraft.nbt.ListTag();
+        for (String name : LogicRunner.runningNames(level, core)) {
+            procs.add(net.minecraft.nbt.StringTag.valueOf(name));
+        }
+        tag.put("procs", procs);
+        // Elk rack van de server: waar, of het meedraait, wat erin zit (en hoe versleten), en brand.
+        net.minecraft.nbt.ListTag racks = new net.minecraft.nbt.ListTag();
+        java.util.List<BlockPos> sorted = new java.util.ArrayList<>(stats.cluster());
+        sorted.sort(null);
+        for (BlockPos pos : sorted) {
+            if (!(level.getBlockEntity(pos) instanceof ServerRackBlockEntity rack)) {
+                continue;
+            }
+            CompoundTag entry = new CompoundTag();
+            entry.putInt("x", pos.getX());
+            entry.putInt("y", pos.getY());
+            entry.putInt("z", pos.getZ());
+            entry.putString("status", rack.status().name());
+            entry.putInt("burn", rack.burnSecondsLeft(level.getGameTime()));
+            net.minecraft.nbt.ListTag parts = new net.minecraft.nbt.ListTag();
+            for (int slot = 0; slot < rack.parts().getContainerSize(); slot++) {
+                net.minecraft.world.item.ItemStack stack = rack.parts().getItem(slot);
+                if (stack.getItem() instanceof ServerPartItem part) {
+                    CompoundTag p = new CompoundTag();
+                    p.putString("k", part.kind().name());
+                    p.putInt("w", Math.min(100, ServerPartItem.wear(stack) * 100 / Math.max(1, LogicBalance.MAX_WEAR)));
+                    parts.add(p);
+                }
+            }
+            entry.put("parts", parts);
+            racks.add(entry);
+        }
+        tag.put("racksInfo", racks);
         tag.putInt("runs", stats.maxRuns());
         tag.putInt("cap", stats.capacity());
         return tag;

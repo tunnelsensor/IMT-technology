@@ -37,6 +37,8 @@ public class StarkOsScreen extends Screen {
         KEYCARDS("Keycards", "K", 300, 190),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
         LOGIC("Logic", "{}", 420, 240),
+        /** Hoe hard het datacenter werkt (CPU, brein, RAM, SSD, temperatuur), zoals Taakbeheer (8 oktober). */
+        MONITOR("Monitor", "M", 360, 196),
         FILES("Files", "F", 300, 190),
         NOTES("Notes", "N", 320, 196),
         LOGS("Logs", "L", 330, 200),
@@ -116,6 +118,7 @@ public class StarkOsScreen extends Screen {
     private final AccessApp access = new AccessApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
     private final LogicApp logic = new LogicApp(this, net.minecraft.client.Minecraft.getInstance().font);
+    private final MonitorApp monitor = new MonitorApp(this);
     /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
     private boolean gotFirstSnapshot;
 
@@ -523,6 +526,7 @@ public class StarkOsScreen extends Screen {
             case ACCESS -> access.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(scrollY);
             case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, (int) mouseY, scrollY);
+            case MONITOR -> monitor.mouseScrolled(scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
@@ -684,6 +688,7 @@ public class StarkOsScreen extends Screen {
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGIC -> logic.render(g, font, area, mouseX, mouseY, partialTick);
+            case MONITOR -> monitor.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);
