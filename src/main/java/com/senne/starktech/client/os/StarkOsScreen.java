@@ -774,7 +774,7 @@ public class StarkOsScreen extends Screen {
             case "LOGIC" -> 0xB89CFF;
             case "OWNER", "LOGIN" -> HudStyle.GREEN;
             case "SHOT", "ENTRY", "HEAT" -> HudStyle.ORANGE;
-            case "DEVICE" -> HudStyle.CYAN;
+            case "DEVICE", "ZONE" -> HudStyle.CYAN;
             default -> HudStyle.WHITE;
         };
     }

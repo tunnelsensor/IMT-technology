@@ -94,6 +94,7 @@ public class StarkTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(StarkTechGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.LogicGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.DatacenterGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.ZoneGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 
@@ -164,6 +165,14 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.starktech.security.SecurityCores.clear());
+        // Hoofdstuk 10: zones. Met HIGH, zodat een geweigerd blok niet eerst nog door de spionagedrone
+        // of de raids geteld wordt (die krijgen een geannuleerd event niet meer te zien).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onLeftClick);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onBreak);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onPlace);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onUseItem);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.starktech.arsenal.DroneDocks.clear());
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan

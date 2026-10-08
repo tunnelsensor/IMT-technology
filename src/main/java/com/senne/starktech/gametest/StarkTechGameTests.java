@@ -4438,8 +4438,16 @@ public final class StarkTechGameTests {
      * we er hier zelf een die wel gewoon survival is.
      */
     static ServerPlayer makeSurvivalOwner(GameTestHelper helper, BlockPos relativePos) {
+        return makeSurvivalOwner(helper, relativePos, "test-survival-player");
+    }
+
+    /**
+     * Hetzelfde, met een eigen naam. Nodig als het om teams gaat: een team in Minecraft onthoudt
+     * spelers op hun naam, dus twee testspelers met dezelfde naam zitten altijd in hetzelfde team.
+     */
+    static ServerPlayer makeSurvivalOwner(GameTestHelper helper, BlockPos relativePos, String name) {
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(
-                new GameProfile(UUID.randomUUID(), "test-survival-player"), false);
+                new GameProfile(UUID.randomUUID(), name), false);
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
                 cookie.gameProfile(), cookie.clientInformation()) {
             @Override

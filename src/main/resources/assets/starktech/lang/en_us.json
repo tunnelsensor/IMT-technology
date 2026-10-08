@@ -1136,5 +1136,8 @@
   "block.starktech.code_panel": "Code Panel",
   "logic.starktech.input.no_network": "Not connected: there is no security core nearby.",
   "logic.starktech.input.no_response": "No response: the server is offline.",
-  "logic.starktech.alarm": "ALARM on %s: %s"
+  "logic.starktech.alarm": "ALARM on %s: %s",
+  "zone.starktech.msg.protected": "Protected zone: you can't build or break here. Only C4 gets through.",
+  "zone.starktech.msg.offline": "Your zone at %s has no power: anyone can build and break there now.",
+  "zone.starktech.msg.online": "Your zone at %s is protected again."
 }

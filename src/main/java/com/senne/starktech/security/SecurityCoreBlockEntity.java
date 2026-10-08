@@ -7,6 +7,9 @@ import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.os.SystemDefaults;
 import com.senne.starktech.security.os.SystemPassword;
 import com.senne.starktech.security.os.VirtualFs;
+import com.senne.starktech.security.zone.ZoneBox;
+import com.senne.starktech.security.zone.ZoneData;
+import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -38,6 +41,11 @@ import org.jetbrains.annotations.Nullable;
  * een SSH-poort, een naam (hostname), een wachtwoord, mappen en bestanden (VirtualFs) en een
  * logboek (EventLog). Dat wordt allemaal gemaakt bij de eerste tick ({@link #ensureSystem}), dus
  * ook een kern uit een oude wereld krijgt het vanzelf.
+ *
+ * Sinds 8 oktober (hoofdstuk 10) kan de kern ook een ZONE hebben: kubussen waarin alleen de eigenaar
+ * en zijn vrienden mogen bouwen en breken (zie security/zone). De kubussen staan in het overzicht van
+ * de wereld (ZoneData), zodat de zone ook werkt als deze chunk niet geladen is; de kern vertelt daar
+ * van wie hij is, wie hij vertrouwt, en of er stroom genoeg is.
  */
 public class SecurityCoreBlockEntity extends BlockEntity {
     private @Nullable UUID ownerId;
@@ -107,6 +115,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if (level != null) {
             level.setBlock(worldPosition, getBlockState().setValue(SecurityCoreBlock.CLAIMED, true), Block.UPDATE_ALL);
         }
+        syncZone();
     }
 
     /** Weer van niemand (voor de showcase, die de hack elke keer opnieuw wil laten zien). */
@@ -117,6 +126,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if (level != null) {
             level.setBlock(worldPosition, getBlockState().setValue(SecurityCoreBlock.CLAIMED, false), Block.UPDATE_ALL);
         }
+        syncZone();
     }
 
     // ================================================================ Aanmelden
@@ -333,6 +343,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     public void addTrusted(UUID id, String name) {
         trusted.put(id, name);
         setChanged();
+        syncZone();
     }
 
     /** Haalt een vertrouwde speler weg op zijn naam (hoofdletters maken niet uit). */
@@ -340,6 +351,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         boolean removed = trusted.values().removeIf(trustedName -> trustedName.equalsIgnoreCase(name));
         if (removed) {
             setChanged();
+            syncZone();
         }
         return removed;
     }
@@ -358,6 +370,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         lasersEnabled = true;
         camerasEnabled = true;
         setChanged();
+        syncZone();
     }
 
     /** Een regel in het logboek (met de speltijd van nu). */
@@ -371,6 +384,119 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         StarkNetworkData.get(level).release(GlobalPos.of(level.dimension(), worldPosition));
         // Het datacenter is weg, en de backups die erop stonden ook.
         com.senne.starktech.logic.Datacenters.get(level).forget(GlobalPos.of(level.dimension(), worldPosition));
+        // En de zone: zonder kern beschermt niets hem meer.
+        ZoneData.get(level).forget(GlobalPos.of(level.dimension(), worldPosition));
+    }
+
+    // ================================================================ De zone (hoofdstuk 10)
+
+    /** De zone van deze kern (uit het overzicht van de wereld, zie ZoneData), of null zonder zone. */
+    public @Nullable ZoneData.Zone zone() {
+        return level instanceof ServerLevel server
+                ? ZoneData.get(server).zone(GlobalPos.of(server.dimension(), worldPosition)) : null;
+    }
+
+    /** De kubussen van de zone (leeg zonder zone). */
+    public List<ZoneBox> zoneBoxes() {
+        ZoneData.Zone zone = zone();
+        return zone == null ? List.of() : zone.boxes();
+    }
+
+    /** De kleinste hoek van het gebied van deze kern: de zone moet daarbinnen blijven. */
+    public BlockPos areaLow() {
+        int bottom = level == null ? Integer.MIN_VALUE : level.getMinBuildHeight();
+        return new BlockPos(worldPosition.getX() - SecurityBalance.AREA_RADIUS,
+                Math.max(bottom, worldPosition.getY() - SecurityBalance.AREA_DOWN), worldPosition.getZ() - SecurityBalance.AREA_RADIUS);
+    }
+
+    /** De grootste hoek van het gebied van deze kern. */
+    public BlockPos areaHigh() {
+        int top = level == null ? Integer.MAX_VALUE : level.getMaxBuildHeight() - 1;
+        return new BlockPos(worldPosition.getX() + SecurityBalance.AREA_RADIUS,
+                Math.min(top, worldPosition.getY() + SecurityBalance.AREA_UP), worldPosition.getZ() + SecurityBalance.AREA_RADIUS);
+    }
+
+    /**
+     * Nieuwe kubussen voor de zone. Wat buiten het gebied van de kern steekt, valt eraf, en meer dan
+     * ZONE_MAX_BOXES kubussen kan niet. Geeft terug wat er echt in staat.
+     */
+    public List<ZoneBox> setZoneBoxes(List<ZoneBox> wanted) {
+        if (!(level instanceof ServerLevel server)) {
+            return List.of();
+        }
+        List<ZoneBox> fitted = new java.util.ArrayList<>();
+        for (ZoneBox box : wanted) {
+            if (fitted.size() >= SecurityBalance.ZONE_MAX_BOXES) {
+                break;
+            }
+            ZoneBox clamped = box.clamp(areaLow(), areaHigh());
+            if (clamped != null) {
+                fitted.add(clamped);
+            }
+        }
+        syncZone();
+        ZoneData.get(server).setBoxes(GlobalPos.of(server.dimension(), worldPosition), fitted);
+        return fitted;
+    }
+
+    /** Zoveel stroom kost de zone om de twee seconden, bovenop de kern zelf (0 zonder kubussen). */
+    public int zoneUpkeep() {
+        ZoneData.Zone zone = zone();
+        if (zone == null || !zone.hasBoxes()) {
+            return 0;
+        }
+        return (int) Math.ceil(zone.volume() / (double) Math.max(1, SecurityBalance.ZONE_BLOCKS_PER_POWER));
+    }
+
+    /** Vertelt het overzicht van de wereld (ZoneData) van wie de kern is en wie er mag bouwen. */
+    public void syncZone() {
+        if (level instanceof ServerLevel server) {
+            ZoneData.get(server).report(GlobalPos.of(server.dimension(), worldPosition), ownerId, ownerName, trusted.keySet());
+        }
+    }
+
+    /**
+     * Heeft de zone stroom? Verandert dat, dan staat het in het logboek en zegt E.D.I.T.H. het tegen
+     * de eigenaar (één keer: bij uitvallen, en weer als het terug is).
+     */
+    private void updateZonePower(ServerLevel level, boolean powered, int cost) {
+        syncZone();
+        ZoneData data = ZoneData.get(level);
+        GlobalPos here = GlobalPos.of(level.dimension(), worldPosition);
+        ZoneData.Zone zone = data.zone(here);
+        if (zone == null || zone.powered() == powered) {
+            return;
+        }
+        data.setPowered(here, powered);
+        if (!zone.hasBoxes() || ownerId == null) {
+            return; // nog niets getekend: niemand hoeft het te weten
+        }
+        logEvent(EventLog.Type.ZONE, powered ? "Zone online: protected again"
+                : "Zone offline: not enough power (needs " + (SecurityBalance.CORE_UPKEEP + cost) + " every 2 s)");
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        if (owner != null) {
+            com.senne.starktech.edith.EdithServer.send(owner, net.minecraft.network.chat.Component.translatable(
+                            powered ? "zone.starktech.msg.online" : "zone.starktech.msg.offline", hostname),
+                    powered ? com.senne.starktech.network.EdithMessagePayload.Level.INFO
+                            : com.senne.starktech.network.EdithMessagePayload.Level.WARNING);
+        }
+    }
+
+    /**
+     * Om de twee seconden: heeft de kern stroom, en de zone? De kern kost CORE_UPKEEP, de zone
+     * daarbovenop {@link #zoneUpkeep()}. Is er genoeg voor de kern maar niet voor de zone, dan werkt
+     * alleen de zone niet. (De tests roepen dit ook zelf aan.)
+     */
+    public void powerTick(ServerLevel level) {
+        int available = com.senne.starktech.energy.StarkGrid.available(level, worldPosition);
+        online = available >= SecurityBalance.CORE_UPKEEP;
+        int zoneCost = zoneUpkeep();
+        boolean zonePowered = online && available >= SecurityBalance.CORE_UPKEEP + zoneCost;
+        updateZonePower(level, zonePowered, zoneCost);
+        if (online) {
+            com.senne.starktech.energy.StarkGrid.draw(level, worldPosition,
+                    SecurityBalance.CORE_UPKEEP + (zonePowered ? zoneCost : 0));
+        }
     }
 
     // ================================================================ Drones
@@ -381,6 +507,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     public void serverTick(ServerLevel level, BlockPos pos) {
         if (!registered) {
             ensureSystem(level);
+            syncZone();
             registered = true;
         }
         // De server: diagrammen die bezig zijn, timers, de rij (zie LogicRunner).
@@ -391,11 +518,11 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
         }
-        online = com.senne.starktech.energy.StarkGrid.available(level, pos) >= SecurityBalance.CORE_UPKEEP;
+        // Stroom voor de kern en zijn zone (zie powerTick).
+        powerTick(level);
         if (!online) {
             return;
         }
-        com.senne.starktech.energy.StarkGrid.draw(level, pos, SecurityBalance.CORE_UPKEEP);
         if (!dronesEnabled) {
             return; // de eigenaar zette de drones uit: ze landen, en er komen er geen nieuwe
         }

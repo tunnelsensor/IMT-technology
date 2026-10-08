@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 147 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 153 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1360,11 +1360,25 @@ Mijn invulling (zeg het als je iets anders wil):
 
 De stappen, één per commit:
 
-- [ ] **1. De zone op de server**
-      Een zone van kubussen in de kern (ook na opslaan), en een overzicht in de wereld zodat de
-      bescherming ook werkt als de chunk van de kern niet geladen is. Wie geen toestemming heeft,
-      kan in een actieve zone niets plaatsen of breken (ook geen emmers, vuur en kabels); vrije
-      blokken en C4 wel. Zonder stroom geen zone. Tests.
+- [x] **1. De zone op de server**
+      Een zone is een lijst kubussen bij een kern. Ze staan in een overzicht van de hele wereld
+      (`security/zone/ZoneData`, bewaard in de wereld), samen met van wie de kern is, wie hij vertrouwt
+      en of er stroom is; zo werkt de zone ook als de chunk van de kern niet geladen is. De kern
+      vertelt dat meteen als er iets verandert (eigenaar, Access, overname) en om de twee seconden.
+      Wie geen toestemming heeft, kan in een actieve zone niets breken (hakken begint niet eens) en
+      niets plaatsen, ook geen deur of bed die half in de zone zou komen; ook vuur, een bijl of
+      schoffel op een blok, beendermeel, een emmer leeggieten of vullen, en Stark-kabels leggen,
+      oprapen of knippen niet. Onderaan staat dan "Protected zone: you can't build or break here. Only
+      C4 gets through." met een kort piepje. Ladders, scaffolding, klimplanten, fakkels en lantaarns
+      mag iedereen plaatsen en weghalen (de tag `starktech:zone_free`, ook zelf aan te vullen). De kern
+      zelf hoort altijd bij zijn zone. Stroom: de zone kost bovenop de kern 1 per 2000 blokken (om de
+      twee seconden, `zoneBlocksPerPower` in de config onder `[security]`); is er te weinig, dan staat alleen de zone uit,
+      met een regel in het logboek (nieuwe blauwe soort, ZONE) en een waarschuwing van E.D.I.T.H. aan
+      de eigenaar, en weer een bericht als hij terug is. Kubussen die buiten het gebied van de kern
+      steken worden afgeknipt; hooguit 16; kubussen die over elkaar liggen tellen één keer. Zes nieuwe
+      tests (in een eigen bestand, `gametest/ZoneGameTests.java`): wie mag bouwen (eigenaar,
+      vertrouwd, team, na een overname de nieuwe eigenaar), vrije blokken, stroom, de kubussen
+      passend maken en bewaren, emmers, en kabels.
 - [ ] **2. De grens zien**
       De server stuurt de zones naar de eigenaar en zijn vrienden; blauwe wanden met een raster;
       aan/uit in het G-menu en met een toets. Screenshots.

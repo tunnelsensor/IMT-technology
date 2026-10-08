@@ -49,4 +49,14 @@ public final class SecurityBalance {
     /** Zo lang (ticks) mag wie een valstrik-bestand opende niet meer op dat systeem (30 s). */
     @Tunable(section = "security", comment = "How long a trap file locks its reader out of that system (ticks)")
     public static int TRAP_LOCKOUT = 600;
+
+    // ---------------------------------------------------------------- De zone (hoofdstuk 10)
+    /** Zoveel kubussen kan één zone hebben (jouw keuze: "meerdere kubussen"; 16 is mijn invulling). */
+    public static final int ZONE_MAX_BOXES = 16;
+    /**
+     * Een zone kost stroom: om de twee seconden 1 extra (bovenop CORE_UPKEEP) per zoveel blokken.
+     * Een basis van 30 x 20 x 30 = 18000 blokken kost zo 9 extra; het hele gebied van de kern 216.
+     */
+    @Tunable(section = "security", comment = "A protected zone costs 1 extra grid power every two seconds per this many blocks")
+    public static int ZONE_BLOCKS_PER_POWER = 2000;
 }
