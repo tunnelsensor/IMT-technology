@@ -47,27 +47,27 @@ public final class LogicBalance {
     public static double GPU_BUSY_HEAT = 4.0;
     @Tunable(section = "logic", comment = "Heat (watts) one RAM stick or SSD makes")
     public static double MEMORY_HEAT = 0.5;
-    @Tunable(section = "logic", comment = "Heat (watts) one fan takes away")
+    @Tunable(section = "logic", comment = "Heat (watts) one fan takes away (only in its own server rack)")
     public static double FAN_COOLING = 6.0;
-    @Tunable(section = "logic", comment = "Heat (watts) every server rack takes away by itself (air)")
-    public static double RACK_COOLING = 2.0;
-    @Tunable(section = "logic", comment = "Temperature (degrees) of a datacenter that makes no more heat than it cools away")
+    @Tunable(section = "logic", comment = "Degrees a server rack WITHOUT a fan gets warmer every two seconds, for every watt its parts make: the heat cannot get out, so every rack with parts in it needs a fan")
+    public static double NO_FAN_HEATING = 0.25;
+    @Tunable(section = "logic", comment = "Temperature (degrees) of a server rack that makes no more heat than its fans cool away")
     public static double AMBIENT_TEMPERATURE = 25.0;
-    @Tunable(section = "logic", comment = "Degrees warmer for every watt of heat that is not cooled away")
+    @Tunable(section = "logic", comment = "Degrees warmer for every watt of heat that the fans of a rack do not cool away")
     public static double DEGREES_PER_WATT = 8.0;
-    @Tunable(section = "logic", comment = "How fast the temperature follows the heat, every two seconds (0.08 = about a minute to get there)")
+    @Tunable(section = "logic", comment = "How fast the temperature of a rack with fans follows the heat, every two seconds (0.08 = about a minute to get there)")
     public static double HEAT_RATE = 0.08;
-    @Tunable(section = "logic", comment = "From this temperature the datacenter is warm: it works at half speed and E.D.I.T.H. warns you")
+    @Tunable(section = "logic", comment = "From this temperature a rack is warm: the whole server works at half speed and E.D.I.T.H. warns you")
     public static double WARM_TEMPERATURE = 70.0;
-    @Tunable(section = "logic", comment = "From this temperature the datacenter is hot: its parts wear out and break")
+    @Tunable(section = "logic", comment = "From this temperature a rack is hot: its parts wear out and break")
     public static double HOT_TEMPERATURE = 90.0;
-    @Tunable(section = "logic", comment = "How much slower a warm datacenter works (2 = half speed)")
+    @Tunable(section = "logic", comment = "How much slower the server works while one of its racks is warm (2 = half speed)")
     public static double WARM_SLOWDOWN = 2.0;
     @Tunable(section = "logic", comment = "How much wear a part can take before it breaks; above the hot temperature every part gets 1 or more every two seconds (half of the time)")
     public static int MAX_WEAR = 20;
     @Tunable(section = "logic", comment = "From this temperature a server rack can catch fire")
     public static double FIRE_TEMPERATURE = 110.0;
-    @Tunable(section = "logic", comment = "How long (ticks) the datacenter must stay at the fire temperature before its hottest rack catches fire")
+    @Tunable(section = "logic", comment = "How long (ticks) a server rack must stay at the fire temperature before it catches fire")
     public static int FIRE_DELAY_TICKS = 200;
     @Tunable(section = "logic", comment = "How long (ticks) a burning server rack burns before it is gone, with everything in it (time to take your parts out)")
     public static int BURN_TICKS = 200;

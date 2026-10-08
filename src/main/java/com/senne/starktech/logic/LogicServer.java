@@ -46,7 +46,7 @@ public final class LogicServer {
      * @param fans       fans in racks die meedraaien
      * @param coreOnline  heeft de kern zelf stroom?
      * @param cluster     waar de racks van de server staan
-     * @param temperature hoe warm het datacenter is (graden, zie Datacenter)
+     * @param temperature hoe warm het heetste rack is (graden, zie Datacenter)
      */
     public record Stats(int racks, int cpus, int gpus, int ram, int ssd, int fans, boolean coreOnline,
                         Set<BlockPos> cluster, long time, double temperature) {
@@ -88,7 +88,10 @@ public final class LogicServer {
             return cpus * LogicBalance.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicBalance.brainPower(ServerPartItem.Kind.GPU);
         }
 
-        /** Is het datacenter warm (vanaf WARM_TEMPERATURE)? Dan werkt alles op halve snelheid. */
+        /**
+         * Is een rack warm (vanaf WARM_TEMPERATURE)? Dan werkt de hele server op halve snelheid: alles
+         * werkt samen, dus één warm rack remt de rest af.
+         */
         public boolean warm() {
             return temperature >= LogicBalance.WARM_TEMPERATURE;
         }
@@ -229,7 +232,10 @@ public final class LogicServer {
         // Het datacenter: hoe warm, en waarom (zie Datacenter).
         Datacenter datacenter = core.datacenter();
         tag.putDouble("temp", datacenter.temperature());
-        tag.putDouble("target", datacenter.target());
+        // Een rack zonder fan wordt steeds warmer: dan is er geen "waar hij naartoe gaat".
+        boolean rising = Double.isInfinite(datacenter.target());
+        tag.putBoolean("rising", rising);
+        tag.putDouble("target", rising ? datacenter.temperature() : datacenter.target());
         tag.putDouble("heat", datacenter.heat());
         tag.putDouble("fullHeat", datacenter.fullHeat());
         tag.putDouble("cooling", datacenter.cooling());
@@ -266,7 +272,7 @@ public final class LogicServer {
             brains.add(net.minecraft.nbt.StringTag.valueOf(name));
         }
         tag.put("brainProcs", brains);
-        // Elk rack van de server: waar, of het meedraait, wat erin zit (en hoe versleten), en brand.
+        // Elk rack van de server: waar, of het meedraait, wat erin zit (en hoe versleten), hoe warm, en brand.
         net.minecraft.nbt.ListTag racks = new net.minecraft.nbt.ListTag();
         java.util.List<BlockPos> sorted = new java.util.ArrayList<>(stats.cluster());
         sorted.sort(null);
@@ -280,6 +286,11 @@ public final class LogicServer {
             entry.putInt("z", pos.getZ());
             entry.putString("status", rack.status().name());
             entry.putInt("burn", rack.burnSecondsLeft(level.getGameTime()));
+            // Elk rack zijn eigen temperatuur, warmte en koeling (zijn fans).
+            entry.putDouble("t", rack.temperature());
+            entry.putDouble("heat", rack.heat());
+            entry.putDouble("full", rack.fullHeat());
+            entry.putDouble("cool", rack.cooling());
             net.minecraft.nbt.ListTag parts = new net.minecraft.nbt.ListTag();
             for (int slot = 0; slot < rack.parts().getContainerSize(); slot++) {
                 net.minecraft.world.item.ItemStack stack = rack.parts().getItem(slot);

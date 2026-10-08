@@ -41,9 +41,13 @@ import net.minecraft.world.level.block.state.BlockState;
  * Is alles in orde, dan gaan zijn lampjes knipperen (ServerRackBlock.ONLINE) en tellen zijn
  * onderdelen mee.
  *
- * Wordt het datacenter veel te heet (zie Datacenter), dan kan een rack in brand vliegen: vuur erop,
- * rook, en na BURN_TICKS is het weg, met alles wat er dan nog in zit. Tot die tijd kun je het
- * openen en je onderdelen eruit halen.
+ * Elk rack heeft zijn eigen temperatuur (jouw wens, 8 oktober: "elke server rack maakt zijn eigen
+ * temperatuur"): de onderdelen erin maken warmte, en alleen de fans in DIT rack koelen die weg. Zonder
+ * fan raakt de warmte er niet uit, dus elk rack met iets erin heeft minstens één fan nodig. Het
+ * rekenen doet Datacenter (om de twee seconden); het rack onthoudt alleen hoe warm het is.
+ *
+ * Wordt een rack veel te heet, dan kan het in brand vliegen: vuur erop, rook, en na BURN_TICKS is het
+ * weg, met alles wat er dan nog in zit. Tot die tijd kun je het openen en je onderdelen eruit halen.
  */
 public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     /** Waarom hij niet meedraait (voor het scherm). */
@@ -71,6 +75,16 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     private Status status = Status.NO_NETWORK;
     /** Tot wanneer (speltijd) dit rack in brand staat; 0 = het brandt niet. */
     private long burnUntil;
+    /** Hoe warm dit rack is (graden), en hoe lang (ticks) het al aan één stuk boven FIRE_TEMPERATURE is. */
+    private double temperature = LogicBalance.AMBIENT_TEMPERATURE;
+    private int fireTicks;
+    /**
+     * De laatste meting (niet bewaard, na het laden meteen opnieuw): warmte nu, warmte als alle CPU's
+     * en GPU's zo hard werken als ze kunnen, en koeling (de fans in dit rack). Alles in watt.
+     */
+    private double heat;
+    private double fullHeat;
+    private double cooling;
 
     /** Wat het scherm te zien krijgt; zie ServerRackMenu. */
     private final ContainerData data = new ContainerData() {
@@ -85,6 +99,9 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             if (index == ServerRackMenu.DATA_BURN) {
                 return burnSecondsLeft(serverLevel.getGameTime());
             }
+            if (index == ServerRackMenu.DATA_TEMP) {
+                return tenths(temperature); // ook zonder netwerk: dan koelt het af
+            }
             SecurityCoreBlockEntity core = SecurityCores.coreAt(serverLevel, worldPosition);
             if (core == null) {
                 return 0;
@@ -98,10 +115,12 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
                 case ServerRackMenu.DATA_RAM -> stats.ram();
                 case ServerRackMenu.DATA_SSD -> stats.ssd();
                 case ServerRackMenu.DATA_CORE_ONLINE -> stats.coreOnline() ? 1 : 0;
-                case ServerRackMenu.DATA_TEMP -> tenths(core.datacenter().temperature());
-                case ServerRackMenu.DATA_HEAT -> tenths(core.datacenter().heat());
-                case ServerRackMenu.DATA_FULL_HEAT -> tenths(core.datacenter().fullHeat());
-                case ServerRackMenu.DATA_COOLING -> tenths(core.datacenter().cooling());
+                // De warmte en koeling van DIT rack, en de temperatuur van het heetste rack van de server
+                // (dat bepaalt hoe snel de hele server werkt).
+                case ServerRackMenu.DATA_HEAT -> tenths(heat);
+                case ServerRackMenu.DATA_FULL_HEAT -> tenths(fullHeat);
+                case ServerRackMenu.DATA_COOLING -> tenths(cooling);
+                case ServerRackMenu.DATA_SERVER_TEMP -> tenths(core.datacenter().temperature());
                 default -> 0;
             };
         }
@@ -183,9 +202,74 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             setChanged();
             LogicServer.forgetAll();
         }
+        if (now == Status.NO_NETWORK || now == Status.NOT_CONNECTED) {
+            // Hoort het bij geen server, dan rekent geen enkele kern voor dit rack: niets draait, het koelt af.
+            heatStep(0, 0, 0);
+        }
         boolean online = now == Status.ONLINE;
         if (online != state.getValue(ServerRackBlock.ONLINE)) {
             level.setBlock(pos, state.setValue(ServerRackBlock.ONLINE, online), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    // ================================================================ Temperatuur (8 oktober)
+
+    public double temperature() {
+        return temperature;
+    }
+
+    /** Voor de tests en de showcase: meteen deze temperatuur. */
+    public void setTemperature(double temperature) {
+        this.temperature = temperature;
+        setChanged();
+    }
+
+    /** Warmte (watt) die dit rack nu maakt. */
+    public double heat() {
+        return heat;
+    }
+
+    /** Warmte (watt) als alle CPU's en GPU's in dit rack zo hard werken als ze kunnen. */
+    public double fullHeat() {
+        return fullHeat;
+    }
+
+    /** Koeling (watt): de fans in dit rack. */
+    public double cooling() {
+        return cooling;
+    }
+
+    /** Waar de temperatuur van dit rack naartoe gaat (oneindig: zonder fan wordt het steeds warmer). */
+    public double target() {
+        return Datacenter.target(heat, cooling);
+    }
+
+    /** Hoeveel fans er nog in dit rack moeten (zie Datacenter.fansNeeded). */
+    public int fansNeeded() {
+        return Datacenter.fansNeeded(fullHeat, cooling);
+    }
+
+    /** Eén stap van twee seconden met deze warmte en koeling (zie Datacenter.step). */
+    void heatStep(double heat, double fullHeat, double cooling) {
+        this.heat = heat;
+        this.fullHeat = fullHeat;
+        this.cooling = cooling;
+        double before = temperature;
+        temperature = Datacenter.step(temperature, heat, cooling);
+        if (Math.abs(temperature - before) > 0.05) {
+            setChanged();
+        }
+    }
+
+    /** Hoe lang (ticks) het al aan één stuk boven FIRE_TEMPERATURE is (zie Datacenter). */
+    int fireTicks() {
+        return fireTicks;
+    }
+
+    void setFireTicks(int ticks) {
+        if (ticks != fireTicks) {
+            fireTicks = ticks;
+            setChanged();
         }
     }
 
@@ -281,6 +365,10 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         if (burnUntil > 0) {
             tag.putLong("BurnUntil", burnUntil);
         }
+        tag.putDouble("Temp", temperature);
+        if (fireTicks > 0) {
+            tag.putInt("FireTicks", fireTicks);
+        }
     }
 
     @Override
@@ -297,5 +385,8 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             status = Status.NO_NETWORK;
         }
         burnUntil = tag.getLong("BurnUntil");
+        // Oude racks (van voor 8 oktober) hebben nog geen eigen temperatuur: die beginnen koel.
+        temperature = tag.contains("Temp") ? tag.getDouble("Temp") : LogicBalance.AMBIENT_TEMPERATURE;
+        fireTicks = Math.max(0, tag.getInt("FireTicks"));
     }
 }

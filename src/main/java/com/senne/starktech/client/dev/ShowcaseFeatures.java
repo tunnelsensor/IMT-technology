@@ -1126,14 +1126,16 @@ final class ShowcaseFeatures {
                     .close(20);
         });
 
-        add("The datacenter", "Hoofdstuk 9: het datacenter (in survival). Het lab van hiervoor, maar het rack "
-                + "rechts heeft nu RAM, een SSD en vier GPU's, en er is geen enkele fan. Eerst zijn scherm: zes vakjes "
-                + "in twee kolommen, en onderaan TEMP (nu, en waar hij naartoe gaat), HEAT/COOL en hoeveel fans "
-                + "erbij moeten. Dan is het te heet (96 graden): alles op halve snelheid, E.D.I.T.H. waarschuwt, en "
-                + "de GPU's slijten (een balkje onder het icoon). Daarna vat het rack vlam: vuur, rook, het scherm "
-                + "knippert ON FIRE, en na 8 seconden is het weg, met alles erin. Er zat een SSD in: E.D.I.T.H. zegt "
-                + "dat alle diagrammen en keycards weg zijn. Dan de desktop: de app Monitor (tegels met de laatste "
-                + "minuut, de racks, wat er bezig is) en de app Backup: er staat een backup op een tweede "
+        add("The datacenter", "Hoofdstuk 9: het datacenter (in survival). Het lab van hiervoor: elk rack heeft "
+                + "zijn eigen temperatuur en dus zijn eigen fan, maar het rack rechts heeft nu RAM, een SSD en vier "
+                + "GPU's en geen fan meer. Eerst zijn scherm: zes vakjes in twee kolommen, en onderaan RACK TEMP "
+                + "('rising': zonder fan raakt de warmte er niet uit), HEAT/COOL en hoeveel fans erin moeten. Dan is "
+                + "dat rack te heet (96 graden): de hele server op halve snelheid, E.D.I.T.H. waarschuwt (met waar "
+                + "het rack staat), en de GPU's slijten (een balkje onder het icoon). Daarna vat het rack vlam: vuur, "
+                + "rook, het scherm knippert ON FIRE, en na 8 seconden is het weg, met alles erin; de andere twee "
+                + "racks blijven koel. Er zat een SSD in: E.D.I.T.H. zegt dat alle diagrammen en keycards weg zijn. "
+                + "Dan de desktop: de app Monitor (tegels met de laatste minuut, elk rack met zijn eigen temperatuur, "
+                + "wat er bezig is) en de app Backup: er staat een backup op een tweede "
                 + "datacenter ver weg (dev-vault), en Restore zet alles terug. Tot slot het scherm AI Brain "
                 + "(rechtsboven: op welk datacenter het brein draait, en hoeveel vertraging) en 'night vision on': "
                 + "eerst THINKING..., dan doet ze het.",
@@ -1143,7 +1145,7 @@ final class ShowcaseFeatures {
                     // Een nieuwe kern meldt zich pas een tick later: daarna pas verbinden en de backup.
                     .onServer(30, ShowcaseFeatures::connectDatacenters)
                     .pause(20)
-                    // Het scherm van het rack zonder fan: het wordt heet (de pijl bij TEMP), "Add 3 fans".
+                    // Het scherm van het rack zonder fan: RACK TEMP "rising", "No fan: ... Add 4 fans!".
                     .onServer(0, player -> openRack(player, hot))
                     .pause(90)
                     .close(0)
@@ -1153,7 +1155,7 @@ final class ShowcaseFeatures {
                     .onServer(0, player -> openRack(player, hot))
                     .pause(90)
                     .close(0)
-                    // Brand: het heetste rack vat vlam en is na 8 seconden weg.
+                    // Brand: het te hete rack vat vlam en is na 8 seconden weg (de andere twee niet).
                     .onServer(0, player -> {
                         if (player.serverLevel().getBlockEntity(hot) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
                             rack.ignite(player.serverLevel(), player.serverLevel().getGameTime() + 160);
@@ -1442,6 +1444,8 @@ final class ShowcaseFeatures {
                 for (int slot = 0; slot < parts[i].length; slot++) {
                     be.parts().setItem(slot, new net.minecraft.world.item.ItemStack(parts[i][slot]));
                 }
+                // Elk rack heeft zijn eigen fan nodig (8 oktober), anders wordt het steeds warmer.
+                be.parts().setItem(5, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_FAN.get()));
             }
         }
         // De muur (z + 6), met een ijzeren deur, een lamp erin en de lezer en het paneel ervoor.
@@ -1493,7 +1497,8 @@ final class ShowcaseFeatures {
     static final BlockPos DATACENTER_VAULT = new BlockPos(-50, -60, -130);
 
     /**
-     * Het lab van hoofdstuk 8, met in het rack rechts vier GPU's erbij (en geen fan: het wordt heet),
+     * Het lab van hoofdstuk 8, met in het rack rechts vier GPU's erbij, ook op de plek van zijn fan (en
+     * dus geen fan meer: dat rack wordt steeds warmer; de andere twee racks hebben hun fan en blijven koel),
      * en een tweede datacenter "dev-vault" ver weg met daarop al een backup van het lab.
      */
     static void buildDatacenter(net.minecraft.server.level.ServerPlayer player) {
@@ -1554,8 +1559,10 @@ final class ShowcaseFeatures {
         if (level.getBlockEntity(vault) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
             core.datacenter().update(level, core);
         }
+        if (level.getBlockEntity(LOGIC_LAB.offset(4, 0, 0)) instanceof com.senne.starktech.logic.ServerRackBlockEntity hot) {
+            hot.setTemperature(30);
+        }
         if (level.getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity lab) {
-            lab.datacenter().setTemperature(30);
             lab.datacenter().update(level, lab);
             net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
             args.putString("key", com.senne.starktech.logic.Datacenters.key(net.minecraft.core.GlobalPos.of(level.dimension(), vault)));
@@ -1582,17 +1589,16 @@ final class ShowcaseFeatures {
         }
     }
 
-    /** Maakt het lab te heet (en de GPU's al wat versleten), zodat je de waarschuwingen ziet. */
+    /** Maakt één rack van het lab te heet (en zijn GPU's al wat versleten), zodat je de waarschuwingen ziet. */
     private static void heatUp(net.minecraft.server.level.ServerPlayer player, BlockPos rackPos, double temperature) {
         net.minecraft.server.level.ServerLevel level = player.serverLevel();
         if (level.getBlockEntity(rackPos) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
             for (int slot = 2; slot < 6; slot++) {
                 com.senne.starktech.logic.ServerPartItem.setWear(rack.parts().getItem(slot), 6 + slot * 2);
             }
-            rack.setChanged();
+            rack.setTemperature(temperature);
         }
         if (level.getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity lab) {
-            lab.datacenter().setTemperature(temperature);
             com.senne.starktech.logic.LogicServer.forgetAll();
             lab.datacenter().update(level, lab);
         }

@@ -1121,11 +1121,11 @@ Mijn invulling (zeg het als je iets anders wil):
   +8 s, 1 GPU +4 s, 4 GPU's +1 s); bij een halve seconde of minder valt het weg (vanaf 16
   kracht, dus 8 GPU's).
   Een server heeft nu een CPU **of** een GPU nodig (en nog steeds RAM en een SSD).
-- **Eén temperatuur voor het hele datacenter.** Elk onderdeel maakt warmte: CPU 2 W (4 W als hij
-  hard werkt), GPU 3 W (7 W als hij hard werkt), RAM en SSD ½ W. Een fan koelt 6 W weg, en elk
-  rack zelf 2 W (lucht). Elke watt die niet weggekoeld wordt = 8° warmer dan 25°. De temperatuur
-  gaat er langzaam naartoe (ongeveer een minuut), dus je hebt tijd om fans bij te steken. Een
-  klein rack (CPU, RAM, SSD) blijft zonder fan koel; met meer CPU's of GPU's heb je fans nodig.
+- ~~Eén temperatuur voor het hele datacenter~~ (zo was het tot stap 8): elk onderdeel maakt warmte:
+  CPU 2 W (4 W als hij hard werkt), GPU 3 W (7 W als hij hard werkt), RAM en SSD ½ W. Een fan
+  koelt 6 W weg. Elke watt die niet weggekoeld wordt = 8° warmer dan 25°. De temperatuur gaat er
+  langzaam naartoe (ongeveer een minuut), dus je hebt tijd om fans bij te steken. Sinds stap 8 heeft
+  **elk rack zijn eigen temperatuur** en heeft elk rack met iets erin een fan nodig.
 - **Wat er verbrandt**: je diagrammen en je keycards staan verspreid over al je SSD's (zoals RAID
   0). Gaat er één SSD kapot door hitte of brand, dan is alles weg (alle keycards werken niet
   meer). Een SSD er gewoon uithalen mag wel (dan draaien alleen de diagrammen die niet meer passen
@@ -1239,6 +1239,27 @@ De stappen, één per commit:
       geen SSD draait (in plaats van 999%). LEESMIJ.md heeft een nieuw stuk "Het datacenter: warmte,
       backups en het brein", en de stukken over de server en de stem zeggen dat je GPU's, fans en een
       datacenter nodig hebt.
+- [x] **8. Elk rack zijn eigen temperatuur** (jouw wens, 8 oktober 's avonds)
+      "Elke server rack maakt zijn eigen temperatuur en heeft dus minstens 1 fan nodig; de CPU, GPU,
+      RAM en SSD zijn wel gemeenschappelijk." Zo werkt het nu: de onderdelen werken nog steeds samen
+      als één server, maar elk onderdeel maakt warmte in **zijn eigen rack**, en een fan koelt alleen
+      **zijn eigen rack** (6 W). De 2 W "lucht" per rack is weg: **zonder fan raakt de warmte er niet
+      uit** en wordt het rack steeds warmer, ¼ graad per watt om de twee seconden (een rack met één
+      RAM-latje: na ongeveer 6 minuten 70°; een rack met CPU, RAM en SSD: na 2 minuten). Met fans
+      werkt het zoals eerst (25° + 8° per watt te veel), maar per rack. Elk rack onthoudt zijn eigen
+      temperatuur (ook na opslaan) en vat zelf vlam als **het** te heet is; slijten gebeurt alleen in
+      dat rack. **Mijn keuze**: is één rack warm (70°), dan werkt de **hele** server op halve
+      snelheid (alles werkt samen, dus het warme rack remt de rest af); zeg het als je liever wil dat
+      alleen de CPU's en GPU's in dat rack trager worden. E.D.I.T.H. en het logboek zeggen nu ook
+      **waar** het warme rack staat. Het rackscherm toont **RACK TEMP** van dat rack ("rising" zonder
+      fan), HEAT/COOL van dat rack, en "No fan: it keeps getting warmer. Add 1 fan!" of "Another rack
+      is too hot: half speed." De Monitor toont bij elk rack zijn temperatuur en "+1 fan", rechts
+      "Fans: #2 +1, #3 +3", en TEMP is het heetste rack. In de config (`[logic]`): `noFanHeating`
+      nieuw, `rackCooling` weg. In de showcase heeft elk rack van het lab nu een fan (behalve het
+      GPU-rack van functie 73, dat expres geen fan heeft). De warmtetest is vervangen door een test
+      met jouw voorbeeld: een rack met alleen RAM en zonder fan wordt warm, het rack ernaast met een
+      fan blijft koel; een fan erin en het koelt weer af. Screenshots: `-Ponly=racks` (`r05_rack_hot`,
+      nieuw `r05b_rack_other_hot`, `r08_os_monitor`).
 
 ---
 

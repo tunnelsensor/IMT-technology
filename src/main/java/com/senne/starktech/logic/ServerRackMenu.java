@@ -34,14 +34,19 @@ public class ServerRackMenu extends AbstractContainerMenu {
     public static final int DATA_CORE_ONLINE = 5;
     public static final int DATA_GPU = 6;
     public static final int DATA_FAN = 7;
-    /** Temperatuur, warmte, warmte als alles hard werkt, en koeling: allemaal in tienden (72.4 graden = 724). */
+    /**
+     * Van DIT rack (elk rack heeft zijn eigen temperatuur): temperatuur, warmte, warmte als alles hard
+     * werkt, en koeling (zijn fans). Allemaal in tienden (72.4 graden = 724).
+     */
     public static final int DATA_TEMP = 8;
     public static final int DATA_HEAT = 9;
     public static final int DATA_FULL_HEAT = 10;
     public static final int DATA_COOLING = 11;
     /** Hoeveel seconden dit rack nog brandt (0 = het brandt niet). */
     public static final int DATA_BURN = 12;
-    public static final int DATA_COUNT = 13;
+    /** De temperatuur van het heetste rack van de server, in tienden: is dat warm, dan werkt alles trager. */
+    public static final int DATA_SERVER_TEMP = 13;
+    public static final int DATA_COUNT = 14;
 
     private final Container parts;
     private final ContainerData data;
@@ -137,6 +142,11 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     public double cooling() {
         return data.get(DATA_COOLING) / 10.0;
+    }
+
+    /** De temperatuur van het heetste rack van de server. */
+    public double serverTemperature() {
+        return data.get(DATA_SERVER_TEMP) / 10.0;
     }
 
     /** Seconden tot dit rack afgebrand is (0 = het brandt niet). */

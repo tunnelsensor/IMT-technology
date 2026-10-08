@@ -23,11 +23,14 @@ import net.minecraft.nbt.Tag;
  *  | 2.5 power     | +2.0 s        | 2/4 busy      | 37/48 blocks  | > 61°          |
  *  +---------------+---------------+---------------+---------------+----------------+
  *  RACKS (3)                                 COOLING
- *  #1  (12, 64, -30)  [C][R][S][G][F]        Heat 15 W, cooling 12 W
- *  #2  (12, 65, -30)  [C][R]                 Add 3 fans
- *  ...                                       RUNNING
+ *  #1 12 64 -30 [C][R][S][G][F]        31°   Heat 15 W, cooling 12 W
+ *  #2 12 65 -30 [C][R]          +1 fan 48°   A rack has no fan: it heats up!
+ *  ...                                       Fans: #2 +1
+ *                                            RUNNING
  *                                            Lab door  x2
  * </pre>
+ * Elk rack heeft zijn eigen temperatuur (alleen zijn eigen fans koelen het); de tegel TEMP toont het
+ * heetste rack.
  *
  * Alles komt uit de momentopname van de server (het stuk "server", zie LogicServer.snapshot), die
  * twee keer per seconde ververst. De grafiekjes tonen de laatste minuut (één streepje per seconde).
@@ -97,13 +100,14 @@ final class MonitorApp {
         small(g, font, cap > 0 ? used + "/" + cap + " blocks" : used + " blocks, no SSD", x + 4, y + TILE_H - 9,
                 HudStyle.argb(255, OsDraw.GREY));
         x += tileW + GAP;
-        // Temperatuur
+        // Temperatuur: van het heetste rack.
         double temp = server.getDouble("temp");
         double target = server.getDouble("target");
         int tempColour = colour(temp);
         tile(g, font, x, y, tileW, "TEMP", Datacenter.degrees(temp), tempColour, server.getIntArray("hTemp"),
                 Math.max((int) LogicBalance.FIRE_TEMPERATURE, max(server.getIntArray("hTemp"))),
-                Math.abs(target - temp) >= 1.0 ? "> " + Datacenter.degrees(target) : "steady");
+                server.getBoolean("rising") ? "rising (no fan)"
+                        : Math.abs(target - temp) >= 1.0 ? "> " + Datacenter.degrees(target) : "steady");
 
         // Onder de tegels: links de racks, rechts koeling en wat er bezig is.
         int top = a.y() + TILE_H + 6;
@@ -166,6 +170,16 @@ final class MonitorApp {
             int dot = burning ? HudStyle.RED : "ONLINE".equals(status) ? HudStyle.GREEN : HudStyle.ORANGE;
             g.fill(x, ry + 3, x + 3, ry + 6, HudStyle.argb(255, dot));
             small(g, font, where(i, rack), x + 6, ry + 2, HudStyle.argb(255, HudStyle.WHITE));
+            // Rechts: de temperatuur van dit rack, en ervoor hoeveel fans er nog in moeten.
+            String degrees = Datacenter.degrees(rack.getDouble("t"));
+            int right = x + w - (int) Math.ceil(font.width(degrees) * 0.75f);
+            small(g, font, degrees, right, ry + 2, HudStyle.argb(255, colour(rack.getDouble("t"))));
+            int need = fansNeeded(rack);
+            if (need > 0) {
+                String fans = "+" + fanText(need);
+                right -= (int) Math.ceil(font.width(fans) * 0.75f) + 4;
+                small(g, font, fans, right, ry + 2, HudStyle.argb(255, HudStyle.ORANGE));
+            }
             int px = partsX;
             if (burning) {
                 small(g, font, "ON FIRE " + rack.getInt("burn") + " s", px, ry + 2, HudStyle.argb(255, HudStyle.RED));
@@ -177,7 +191,7 @@ final class MonitorApp {
             }
             for (Tag element : rack.getList("parts", Tag.TAG_COMPOUND)) {
                 CompoundTag part = (CompoundTag) element;
-                if (px + 9 > x + w) {
+                if (px + 9 > right - 3) {
                     break;
                 }
                 chip(g, font, px, ry, part.getString("k"), part.getInt("w"));
@@ -188,6 +202,20 @@ final class MonitorApp {
             small(g, font, (scroll + 1) + "-" + Math.min(racks.size(), scroll + rows) + " of " + racks.size() + " (scroll)",
                     x + w - 60, y + 1, HudStyle.argb(255, OsDraw.GREY));
         }
+    }
+
+    /** Hoeveel fans er nog in dit rack moeten (uit de momentopname, zie Datacenter.fansNeeded). */
+    private static int fansNeeded(CompoundTag rack) {
+        return Datacenter.fansNeeded(rack.getDouble("full"), rack.getDouble("cool"));
+    }
+
+    /** Maakt dit rack warmte zonder fan? Dan wordt het steeds warmer. */
+    private static boolean noFan(CompoundTag rack) {
+        return Double.isInfinite(Datacenter.target(rack.getDouble("heat"), rack.getDouble("cool")));
+    }
+
+    private static String fanText(int fans) {
+        return fans == 1 ? "1 fan" : fans + " fans";
     }
 
     /** "#2 64 -60 -78": het nummer van het rack en waar het staat. */
@@ -214,13 +242,27 @@ final class MonitorApp {
         }
     }
 
-    /** Rechts: warmte en koeling (met hoeveel fans erbij moeten), en wat er bezig is. */
+    /**
+     * Rechts: warmte en koeling van alle racks samen, wat je moet doen (en in welk rack de fans moeten:
+     * elk rack heeft zijn eigen fans nodig), en wat er bezig is.
+     */
     private static void renderSide(GuiGraphics g, Font font, int x, int y, int w, CompoundTag server, boolean online) {
         g.drawString(font, "COOLING", x, y, HudStyle.argb(255, HudStyle.CYAN), false);
         double heat = server.getDouble("heat");
         double cooling = server.getDouble("cooling");
         small(g, font, "Heat " + watts(heat) + ", cooling " + watts(cooling), x, y + 12, HudStyle.argb(255, HudStyle.WHITE));
-        int fans = Datacenter.fansNeeded(server.getDouble("fullHeat"), cooling);
+        // Welke racks nog fans nodig hebben ("#2 +1"), en of er een zonder fan warmte maakt.
+        List<Tag> racks = server.getList("racksInfo", Tag.TAG_COMPOUND);
+        StringBuilder where = new StringBuilder();
+        boolean noFan = false;
+        for (int i = 0; i < racks.size(); i++) {
+            CompoundTag rack = (CompoundTag) racks.get(i);
+            int need = fansNeeded(rack);
+            if (need > 0) {
+                where.append(where.isEmpty() ? "Fans: " : ", ").append("#").append(i + 1).append(" +").append(need);
+            }
+            noFan |= noFan(rack);
+        }
         double temp = server.getDouble("temp");
         String advice;
         int adviceColour;
@@ -230,16 +272,20 @@ final class MonitorApp {
         } else if (temp >= LogicBalance.WARM_TEMPERATURE) {
             advice = "Too hot: half speed";
             adviceColour = HudStyle.RED;
-        } else if (fans > 0) {
-            advice = "Add " + (fans == 1 ? "1 fan" : fans + " fans") + " for full load";
+        } else if (noFan) {
+            advice = "A rack has no fan: it heats up!";
+            adviceColour = HudStyle.ORANGE;
+        } else if (!where.isEmpty()) {
+            advice = "Add fans for full load";
             adviceColour = HudStyle.ORANGE;
         } else {
             advice = "Cool enough, also at full load";
             adviceColour = HudStyle.GREEN;
         }
         small(g, font, advice, x, y + 21, HudStyle.argb(255, adviceColour));
-        if (fans > 0 && temp >= LogicBalance.WARM_TEMPERATURE) {
-            small(g, font, "Add " + (fans == 1 ? "1 fan" : fans + " fans"), x, y + 30, HudStyle.argb(255, HudStyle.ORANGE));
+        if (!where.isEmpty()) {
+            small(g, font, OsDraw.fitRight(font, where.toString(), (int) (w / 0.75f)), x, y + 30,
+                    HudStyle.argb(255, HudStyle.ORANGE));
         }
         // Wat er bezig is (zoals de lijst met processen in Taakbeheer).
         int py = y + 42;

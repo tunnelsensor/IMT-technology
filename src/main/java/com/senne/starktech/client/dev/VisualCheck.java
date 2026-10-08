@@ -1321,23 +1321,32 @@ public final class VisualCheck {
             });
             t.shot(20, "r03_rack_not_connected");
             t.close(0);
-            // Een warm datacenter (8 oktober): twee GPU's erbij en 78 graden. Het rack zegt dat
-            // alles op halve snelheid gaat en hoeveel fans erbij moeten.
+            // Een warm rack (8 oktober: elk rack zijn eigen temperatuur): het tweede rack (zonder fan)
+            // krijgt twee GPU's erbij en is 78 graden. Zijn scherm zegt dat de hele server op halve
+            // snelheid gaat en hoeveel fans erin moeten; het eerste rack (met fan) blijft koel en zegt
+            // dat een ander rack te heet is.
             t.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
                     be.parts().setItem(2, new ItemStack(ModItems.SERVER_GPU.get()));
                     be.parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
+                    be.setTemperature(78);
                 }
                 com.senne.starktech.logic.LogicServer.forgetAll();
                 if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
                     be.datacenter().update(player.serverLevel(), be);
-                    be.datacenter().setTemperature(78);
                 }
+                if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    player.openMenu(be, server[1]);
+                }
+            });
+            t.shot(20, "r05_rack_hot");
+            t.close(0);
+            t.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(server[0]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
                     player.openMenu(be, server[0]);
                 }
             });
-            t.shot(20, "r05_rack_hot");
+            t.shot(20, "r05b_rack_other_hot");
             t.close(0);
             // Brand (8 oktober): het rack met de GPU's vat vlam (vuur erop, rook), en zijn scherm
             // zegt dat je je onderdelen eruit moet halen. Na 20 seconden is het weg.
@@ -1393,6 +1402,7 @@ public final class VisualCheck {
                     rack.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
                     rack.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
                     rack.parts().setItem(3, new ItemStack(ModItems.SERVER_SSD.get()));
+                    rack.parts().setItem(4, new ItemStack(ModItems.SERVER_FAN.get()));
                 }
                 if (level.getBlockEntity(vault) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);

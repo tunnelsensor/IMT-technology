@@ -411,8 +411,8 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    1 CPU = 0,5 s, 2 CPU's = 0,25 s; een GPU is half zo snel voor je redstone maar dubbel zo goed
    voor het brein van E.D.I.T.H.), **RAM** (hoeveel diagrammen tegelijk bezig kunnen zijn) en een
    **SSD** (hoeveel blokjes je kwijt kunt). Rekenkracht, RAM en een SSD: dan knipperen de lampjes.
-   Met meer CPU's of GPU's heb je ook **fans** nodig, anders wordt het te heet (zie hieronder, "Het
-   datacenter").
+   Elk rack met iets erin heeft ook minstens één **fan** nodig, anders wordt het te heet (zie
+   hieronder, "Het datacenter").
 2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
    naam ("Vault door"): met die naam noem je ze in je diagram. Een **Keycard Reader** en een
    **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld). Een andere
@@ -479,21 +479,29 @@ staat alleen in je diagram, niet in het logboek.
 Je racks samen zijn je **datacenter**. Het wordt warm, je kunt aflezen hoe hard het werkt, je maakt
 er backups van, en het brein van E.D.I.T.H. draait erop.
 
-- **Warmte**: elk onderdeel maakt warmte (een CPU 2 W, een GPU 3 W, meer als ze hard werken; RAM en
-  SSD's een halve watt). Een **Server Fan** (recept: ijzer, ijzeren tralies, redstone = 2 fans) in
-  een vakje koelt 6 W weg, en elk rack zelf 2 W. Wat er te veel is, maakt het warmer; de
-  temperatuur gaat er in ongeveer een minuut naartoe. Het scherm van een rack toont **TEMP** (nu,
-  en waar hij heen gaat), **HEAT/COOL**, en hoeveel fans er nog bij moeten ("Add 3 fans").
-- **Te warm** gaat stap voor stap. Vanaf **70°** werkt alles op halve snelheid en waarschuwt
-  E.D.I.T.H. je. Vanaf **90°** slijten de onderdelen (een balkje onder het icoon) en gaan ze één voor
-  één kapot. Blijft het **10 seconden boven 110°**, dan vat het heetste rack vlam: je hebt 10
-  seconden om je onderdelen eruit te halen, dan is het weg met alles erin.
+- **Warmte, per rack**: je CPU's, GPU's, RAM en SSD's werken samen als één server, maar **elk rack
+  heeft zijn eigen temperatuur**. Elk onderdeel maakt warmte in zijn eigen rack (een CPU 2 W, een
+  GPU 3 W, meer als ze hard werken; RAM en SSD's een halve watt). Een **Server Fan** (recept: ijzer,
+  ijzeren tralies, redstone = 2 fans) koelt 6 W weg, maar **alleen in zijn eigen rack**: een fan in
+  het rack ernaast helpt niet. **Zonder fan raakt de warmte er niet uit**: dan wordt het rack steeds
+  warmer, ook als er alleen RAM of een SSD in zit (dan wel langzaam). Dus: elk rack met iets erin
+  heeft minstens één fan nodig. Met fans gaat de temperatuur in ongeveer een minuut naar 25° plus
+  8° voor elke watt die de fans niet wegkoelen. Het scherm van een rack toont de temperatuur van
+  dát rack (**RACK TEMP**, nu en waar hij heen gaat, of "rising" zonder fan), **HEAT/COOL**, en
+  hoeveel fans er nog in moeten ("Add 2 fans here").
+- **Te warm** gaat stap voor stap, per rack. Is één rack warmer dan **70°**, dan werkt de hele
+  server op halve snelheid (alles werkt samen, dus het warme rack remt de rest af) en waarschuwt
+  E.D.I.T.H. je, met waar dat rack staat. Vanaf **90°** slijten de onderdelen in dat rack (een
+  balkje onder het icoon) en gaan ze één voor één kapot. Blijft een rack **10 seconden boven
+  110°**, dan vat het vlam: je hebt 10 seconden om je onderdelen eruit te halen, dan is het weg met
+  alles erin.
 - **Een SSD kapot of verbrand = alle diagrammen en keycards weg** (ze staan verspreid over al je
   SSD's). Een SSD er gewoon uithalen of een rack afbreken mag wel. Je bestanden, notities en je
   wachtwoord staan in de kern zelf en blijven.
-- **Aflezen**: de app **Monitor** op de desktop, zoals Taakbeheer: CPU, BRAIN, RAM, SSD en TEMP met
-  een grafiekje van de laatste minuut, elk rack met zijn onderdelen (rood streepje = versleten), wat
-  je moet doen tegen de warmte, en welke diagrammen er nu bezig zijn.
+- **Aflezen**: de app **Monitor** op de desktop, zoals Taakbeheer: CPU, BRAIN, RAM, SSD en TEMP (het
+  heetste rack) met een grafiekje van de laatste minuut, elk rack met zijn onderdelen (rood streepje
+  = versleten), zijn eigen temperatuur en hoeveel fans er nog in moeten ("+1 fan"), wat je moet doen
+  tegen de warmte ("Fans: #2 +1"), en welke diagrammen er nu bezig zijn.
 - **Backups**: bouw een tweede datacenter (een andere kern met racks, ver genoeg weg). In de app
   **Backup** kies je met **<** en **>** waar de backups heen gaan, dan **Backup now**, of
   **Automatic** elke 5, 15 of 60 minuten. Een backup neemt plek op de SSD's van dat andere

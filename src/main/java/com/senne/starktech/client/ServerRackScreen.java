@@ -26,13 +26,14 @@ import net.minecraft.world.entity.player.Inventory;
  *               E.D.I.T.H.    +2.7 s
  *               AT ONCE       6 diagrams
  *               STORAGE       24 blocks
- *               TEMP          48°  > 61°
- *               HEAT/COOL     9.5 / 8 W
- *               Add 1 fan: it gets too hot when busy.
+ *               RACK TEMP     48°  rising
+ *               HEAT/COOL     2.5 / 0 W
+ *               No fan: this rack keeps getting warmer. Add a fan!
  * </pre>
  * Links het rack zelf: zes vakjes in twee kolommen van drie (zoals de bays van een echt rack), met
  * een lampje naast elk vakje. Rechts wat de HELE server kan (alle racks die elkaar raken samen), en
- * zo niet, waarom niet. Zelfde achtergrond als het zonnepaneel (alleen je rugzak staat erop), maar
+ * zo niet, waarom niet. Onderaan de temperatuur van DIT rack (elk rack heeft zijn eigen, en alleen
+ * zijn eigen fans koelen het). Zelfde achtergrond als het zonnepaneel (alleen je rugzak staat erop), maar
  * EXTRA_HEIGHT hoger, zodat alle getallen erboven passen.
  */
 public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
@@ -111,8 +112,9 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         small(g, "RACKS " + menu.racks() + "   CPU " + menu.cpus() + "   GPU " + menu.gpus(), STATS_X, y, value);
         small(g, "RAM " + menu.ram() + "   SSD " + menu.ssd() + "   FAN " + menu.fans(), STATS_X, y + 7, value);
         y += 16;
-        // Warm? Dan werkt alles op halve snelheid (zie Datacenter): de kracht telt dan maar half.
-        boolean warm = menu.temperature() >= LogicBalance.WARM_TEMPERATURE;
+        // Is een rack van de server warm (dit of een ander)? Dan werkt alles op halve snelheid (zie
+        // Datacenter): de kracht telt dan maar half.
+        boolean warm = menu.serverTemperature() >= LogicBalance.WARM_TEMPERATURE;
         double slowdown = warm ? Math.max(1.0, LogicBalance.WARM_SLOWDOWN) : 1.0;
         double logic = (menu.cpus() * LogicBalance.logicPower(ServerPartItem.Kind.CPU)
                 + menu.gpus() * LogicBalance.logicPower(ServerPartItem.Kind.GPU)) / slowdown;
@@ -125,12 +127,17 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
                 : String.format(Locale.ROOT, "+%.1f s", delay / 20.0), y + 7);
         stat(g, "AT ONCE", menu.ram() * LogicBalance.RUNS_PER_RAM + " diagrams", y + 14);
         stat(g, "STORAGE", menu.ssd() * LogicBalance.BLOCKS_PER_SSD + " blocks", y + 21);
-        // De temperatuur: nu, en waar hij naartoe gaat (als dat meer dan een graad scheelt).
+        // De temperatuur van DIT rack: nu, en waar hij naartoe gaat (als dat meer dan een graad scheelt).
+        // Zonder fan raakt de warmte er niet uit: dan wordt het steeds warmer ("rising").
         double temp = menu.temperature();
         double target = Datacenter.target(menu.heat(), menu.cooling());
-        String tempText = Datacenter.degrees(temp) + (Math.abs(target - temp) >= 1.0 ? "  > " + Datacenter.degrees(target) : "");
-        small(g, "TEMP", STATS_X, y + 28, label);
-        small(g, tempText, STATS_X + 46, y + 28, HudStyle.argb(255, temperatureColour(Math.max(temp, target))));
+        boolean rising = Double.isInfinite(target);
+        String tempText = Datacenter.degrees(temp) + (rising ? "  rising"
+                : Math.abs(target - temp) >= 1.0 ? "  > " + Datacenter.degrees(target) : "");
+        int tempColour = rising ? temperatureColour(Math.max(temp, LogicBalance.WARM_TEMPERATURE))
+                : temperatureColour(Math.max(temp, target));
+        small(g, "RACK TEMP", STATS_X, y + 28, label);
+        small(g, tempText, STATS_X + 46, y + 28, HudStyle.argb(255, tempColour));
         stat(g, "HEAT/COOL", number(menu.heat()) + " / " + watts(menu.cooling()), y + 35);
         y += 21;
         // Waarom hij niet draait (of anders: waar je hem programmeert).
@@ -149,14 +156,23 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
                     HudStyle.argb(255, blink ? HudStyle.RED : HudStyle.ORANGE));
         } else if (!problem.isEmpty()) {
             wrapped(g, problem, y + 23, HudStyle.argb(230, HudStyle.RED));
-        } else if (warm) {
-            wrapped(g, "Too hot: everything works at half speed." + (fans > 0 ? " Add " + fanText(fans) + "!" : ""), y + 23,
+        } else if (temp >= LogicBalance.HOT_TEMPERATURE) {
+            // Hooguit twee regels: een derde regel komt tegen je rugzak aan.
+            wrapped(g, "Overheating: parts wear out!" + (fans > 0 ? " Add " + fanText(fans) + "!" : ""), y + 23,
                     HudStyle.argb(230, HudStyle.RED));
+        } else if (temp >= LogicBalance.WARM_TEMPERATURE) {
+            wrapped(g, "Too hot: whole server at half speed." + (fans > 0 ? " Add " + fanText(fans) + "!" : ""),
+                    y + 23, HudStyle.argb(230, HudStyle.RED));
+        } else if (rising) {
+            wrapped(g, "No fan: it keeps getting warmer. Add " + fanText(fans) + "!", y + 23,
+                    HudStyle.argb(230, HudStyle.ORANGE));
+        } else if (warm) {
+            wrapped(g, "Another rack is too hot: half speed.", y + 23, HudStyle.argb(230, HudStyle.ORANGE));
         } else if (fans > 0) {
-            wrapped(g, "Add " + fanText(fans) + ": it gets too hot when it works hard.", y + 23,
+            wrapped(g, "Add " + fanText(fans) + " here: it gets too hot when busy.", y + 23,
                     HudStyle.argb(230, HudStyle.ORANGE));
         } else {
-            wrapped(g, "Program it in the Logic app on your Stark OS desktop.", y + 23, HudStyle.argb(140, HudStyle.WHITE));
+            wrapped(g, "Program it in the Logic app on Stark OS.", y + 23, HudStyle.argb(140, HudStyle.WHITE));
         }
     }
 
