@@ -75,6 +75,11 @@ public final class EdithKeys {
      * (bijna alle letters zijn al bezet); kies er zelf een in Opties > Besturing, of gebruik G > Information.
      */
     public static final KeyMapping CABLE_XRAY = key("cable_xray", InputConstants.UNKNOWN.getValue());
+    /**
+     * De rand van je zones aan/uit (hoofdstuk 10). Ook standaard op geen toets; kies er zelf een, of
+     * gebruik G > Information. Werkt ook zonder bril.
+     */
+    public static final KeyMapping ZONE_BORDER = key("zone_border", InputConstants.UNKNOWN.getValue());
 
     private static KeyMapping key(String name, int defaultKey) {
         // KeyConflictContext.IN_GAME: de toets doet alleen iets als er geen scherm open is.
@@ -105,5 +110,6 @@ public final class EdithKeys {
         event.register(REPULSOR);
         event.register(ROCKETS);
         event.register(CABLE_XRAY);
+        event.register(ZONE_BORDER);
     }
 }

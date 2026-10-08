@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "13";
+    private static final String PROTOCOL_VERSION = "14";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -200,6 +200,9 @@ public final class ModNetwork {
         // Harnas: straalvlammen onder de laarzen van wie vliegt
         registrar.playToClient(ThrusterPayload.TYPE, ThrusterPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onThruster(payload, context));
+        // Hoofdstuk 10: de zones die jij mag zien (jouw eigen zones en die van je vrienden)
+        registrar.playToClient(ZoneSyncPayload.TYPE, ZoneSyncPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onZoneSync(payload, context));
     }
 
     /**

@@ -1,8 +1,10 @@
 package com.senne.starktech.security.zone;
 
+import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.IntArrayTag;
+import net.minecraft.network.codec.StreamCodec;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -14,6 +16,12 @@ import org.jetbrains.annotations.Nullable;
  * {@code min} en de grootste in {@code max}.
  */
 public record ZoneBox(BlockPos min, BlockPos max) {
+    /** Zo gaat een kubus over het netwerk (naar de client, die de rand tekent). */
+    public static final StreamCodec<ByteBuf, ZoneBox> STREAM_CODEC = StreamCodec.composite(
+            BlockPos.STREAM_CODEC, ZoneBox::min,
+            BlockPos.STREAM_CODEC, ZoneBox::max,
+            ZoneBox::new);
+
     public ZoneBox {
         BlockPos low = new BlockPos(Math.min(min.getX(), max.getX()), Math.min(min.getY(), max.getY()),
                 Math.min(min.getZ(), max.getZ()));

@@ -56,6 +56,10 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.os.camera.CameraFeeds::onRenderFrame);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.os.camera.CameraFeeds::onLoggingOut);
         NeoForge.EVENT_BUS.addListener(CableRenderer::onRenderLevel);
+        // Hoofdstuk 10: de rand van je zones (en die van wie jou vertrouwt).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.zone.ZoneBorderRenderer::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
+                com.senne.starktech.client.zone.ZoneClientState.clear());
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTickPre);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onComputeFov);
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onPlayerTurn);

@@ -53,6 +53,14 @@ public final class EdithClientConfig {
             .define("cableXray", true);
 
     /**
+     * Zie je de rand van je zones (en die van wie jou vertrouwt)? Aan/uit via G > Information > Zone
+     * border, of een eigen toets. Werkt ook zonder bril (hoofdstuk 10).
+     */
+    public static final ModConfigSpec.BooleanValue ZONE_BORDER = BUILDER
+            .comment("See the border of your protected zones and your friends' zones (G > Information > Zone border, or its own key)")
+            .define("zoneBorder", true);
+
+    /**
      * Het Client ID van JOUW gratis Spotify-app (zie het muziekscherm). Leeg = niet ingesteld.
      * Dit is geen wachtwoord; je logt zelf in op de site van Spotify.
      */
@@ -142,5 +150,19 @@ public final class EdithClientConfig {
             SPEC.save();
         }
         return cableXray();
+    }
+
+    /** Zie je de rand van zones? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean zoneBorder() {
+        return !SPEC.isLoaded() || ZONE_BORDER.get();
+    }
+
+    /** Zet de rand van zones aan of uit, bewaart de keuze, en geeft terug of hij nu aan staat. */
+    public static boolean toggleZoneBorder() {
+        if (SPEC.isLoaded()) {
+            ZONE_BORDER.set(!ZONE_BORDER.get());
+            SPEC.save();
+        }
+        return zoneBorder();
     }
 }

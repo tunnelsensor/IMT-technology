@@ -134,7 +134,13 @@ public class EdithMenuScreen extends Screen {
                     glasses -> EdithClientConfig.cableXray()
                             ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.starktech.off"), GREY),
-                    EdithClientEvents::toggleCableXray));
+                    EdithClientEvents::toggleCableXray),
+            // De rand van je zones (en die van wie jou vertrouwt). Ook een instelling van je eigen spel.
+            new Option(Component.translatable("screen.starktech.menu.zone_border"),
+                    glasses -> EdithClientConfig.zoneBorder()
+                            ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
+                            : new Status(Component.translatable("screen.starktech.off"), GREY),
+                    EdithClientEvents::toggleZoneBorder));
 
     private static final List<Option> NAVIGATION = List.of(
             open("screen.starktech.menu.navigation", HudStyle.CYAN, NavigationScreen::new),

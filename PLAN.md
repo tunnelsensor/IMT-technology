@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 153 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 155 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1379,9 +1379,20 @@ De stappen, één per commit:
       tests (in een eigen bestand, `gametest/ZoneGameTests.java`): wie mag bouwen (eigenaar,
       vertrouwd, team, na een overname de nieuwe eigenaar), vrije blokken, stroom, de kubussen
       passend maken en bewaren, emmers, en kabels.
-- [ ] **2. De grens zien**
-      De server stuurt de zones naar de eigenaar en zijn vrienden; blauwe wanden met een raster;
-      aan/uit in het G-menu en met een toets. Screenshots.
+- [x] **2. De grens zien**
+      Twee keer per seconde stuurt de server elke speler de zones in de buurt (256 blokken) waar hij
+      mag bouwen: zijn eigen zones en die van wie hem vertrouwt of in zijn team zit. Een vreemde krijgt
+      niets (`security/zone/ZoneSync`, alleen als er iets veranderde). Je spel tekent de buitenkant:
+      doorzichtige blauwe wanden met een raster op elke blokrand en een zachte glans die er langzaam
+      overheen schuift (zoals de rand van de wereld), net buiten je muren, van binnen en van buiten te
+      zien tot 48 blokken ver; dichtbij is hij het felst. Waar twee kubussen tegen of over elkaar
+      liggen, komt geen wand (`security/zone/ZoneShape` rekent de echte buitenkant uit). Zonder stroom
+      is hij rood en klopt hij langzaam. Aan/uit voor jezelf: **G > Information > Zone border**, of een
+      eigen toets (Opties > Besturing, standaard geen). Dat werkt ook zonder bril; je vrienden zien je
+      zone dus ook zonder. De plaatjes van het raster en de glans maakt `tools/generate_textures.py`
+      (`zone_textures`). Screenshots: `-Ponly=zones` (`z01` tot `z05`: een L-vormige basis met een
+      torentje, van buiten en binnen, zonder stroom, en met de rand uit). Twee nieuwe tests: de
+      buitenkant van een L en van kubussen over elkaar, en wie de zone krijgt.
 - [ ] **3. De Zone Marker en de app Zone**
       Hoeken aanklikken in de wereld, kubussen toevoegen en weghalen, en de app op de desktop (ook
       via SSH). Tests en screenshots.

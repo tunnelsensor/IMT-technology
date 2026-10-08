@@ -1139,5 +1139,7 @@
   "logic.starktech.alarm": "ALARM on %s: %s",
   "zone.starktech.msg.protected": "Protected zone: you can't build or break here. Only C4 gets through.",
   "zone.starktech.msg.offline": "Your zone at %s has no power: anyone can build and break there now.",
-  "zone.starktech.msg.online": "Your zone at %s is protected again."
+  "zone.starktech.msg.online": "Your zone at %s is protected again.",
+  "screen.starktech.menu.zone_border": "Zone border",
+  "key.starktech.zone_border": "Zone border on/off"
 }

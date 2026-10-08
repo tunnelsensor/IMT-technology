@@ -10,6 +10,8 @@ import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.zone.ZoneBox;
 import com.senne.starktech.security.zone.ZoneData;
+import com.senne.starktech.security.zone.ZoneShape;
+import com.senne.starktech.security.zone.ZoneSync;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.ArrayList;
 import java.util.List;
@@ -402,5 +404,60 @@ public final class ZoneGameTests {
             throw new GameTestAssertException("Een vreemde kon een kabel in de zone doorknippen");
         }
         finish(helper, core);
+    }
+
+    /**
+     * De rand: alleen de echte buitenkant van de zone. Een L van twee kubussen die elkaar raken
+     * (4x2x2 en 2x2x3): 40 + 32 vlakjes, min twee keer de 4 waar ze tegen elkaar liggen = 64. Twee
+     * kubussen die half over elkaar liggen zijn samen één doos van 6x4x4: 128 vlakjes, niets dubbel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "zones")
+    public static void zone_border_is_only_the_outside(GameTestHelper helper) {
+        List<ZoneBox> l = List.of(ZoneBox.of(new BlockPos(0, 0, 0), new BlockPos(3, 1, 1)),
+                ZoneBox.of(new BlockPos(0, 0, 2), new BlockPos(1, 1, 4)));
+        long lArea = ZoneShape.boundary(l).stream().mapToLong(ZoneShape.Rect::area).sum();
+        if (lArea != 64) {
+            throw new GameTestAssertException("De L zou 64 vlakjes buitenkant moeten hebben, niet " + lArea);
+        }
+        List<ZoneBox> overlap = List.of(ZoneBox.of(new BlockPos(0, 0, 0), new BlockPos(3, 3, 3)),
+                ZoneBox.of(new BlockPos(2, 0, 0), new BlockPos(5, 3, 3)));
+        long overlapArea = ZoneShape.boundary(overlap).stream().mapToLong(ZoneShape.Rect::area).sum();
+        if (overlapArea != 128) {
+            throw new GameTestAssertException("Twee kubussen over elkaar zouden 128 vlakjes moeten hebben, niet " + overlapArea);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Jouw keuze: de rand zien alleen de eigenaar en zijn vrienden. De server stuurt de zone dus naar
+     * de eigenaar en een vertrouwde speler, niet naar een vreemde. Zonder stroom krijgt de eigenaar
+     * hem nog wel (zijn spel tekent hem dan rood).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_border_only_for_friends(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
+        ServerPlayer outsider = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 14), "zone-outsider");
+        ServerPlayer friend = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(16, 3, 14), "zone-friend");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        core.addTrusted(friend.getUUID(), friend.getGameProfile().getName());
+        BlockPos coreAbs = helper.absolutePos(CORE);
+        if (!seesZone(owner, coreAbs, true) || !seesZone(friend, coreAbs, true)) {
+            throw new GameTestAssertException("De eigenaar en zijn vriend zouden de zone moeten krijgen");
+        }
+        if (seesZone(outsider, coreAbs, true) || seesZone(outsider, coreAbs, false)) {
+            throw new GameTestAssertException("Een vreemde zou de zone niet mogen krijgen");
+        }
+        power(helper, false);
+        core.powerTick(level);
+        if (!seesZone(owner, coreAbs, false)) {
+            throw new GameTestAssertException("Zonder stroom zou de eigenaar de zone nog krijgen, als 'uit'");
+        }
+        finish(helper, core);
+    }
+
+    /** Krijgt deze speler van de server de zone van de kern op {@code core} (actief of niet)? */
+    private static boolean seesZone(ServerPlayer player, BlockPos core, boolean active) {
+        return ZoneSync.visibleTo(player).stream().anyMatch(view -> view.core().equals(core) && view.active() == active);
     }
 }

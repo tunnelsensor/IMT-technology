@@ -140,6 +140,11 @@ public final class ClientPayloadHandlers {
         DroneCamera.onServerMessage(payload.droneId(), payload.control());
     }
 
+    /** De zones die jij mag zien (hoofdstuk 10): de rand tekent ZoneBorderRenderer. */
+    public static void onZoneSync(com.senne.starktech.network.ZoneSyncPayload payload, IPayloadContext context) {
+        com.senne.starktech.client.zone.ZoneClientState.set(payload.zones());
+    }
+
     public static void onMessage(EdithMessagePayload payload, IPayloadContext context) {
         // De welkomstzin bij het opzetten: die zegt de opstart-animatie zelf, op het moment dat
         // je identiteit bevestigd is. Is die animatie al voorbij, dan gewoon meteen.

@@ -737,6 +737,45 @@ def dome_field():
     save(im, "misc/dome_field.png")
 
 
+# --------------------------------------------------------------------- Zones (hoofdstuk 10)
+
+def zone_textures():
+    """
+    De rand van een zone: een fijn raster (zone_grid) en een zachte schuine glans die er langzaam
+    overheen schuift (zone_sheen), zoals de rand van de wereld in Minecraft. Wit op zwart, net als de
+    koepel: de mod telt het licht op bij wat erachter zit (zwart = onzichtbaar) en geeft de kleur
+    (blauw, of rood als de zone geen stroom heeft). Allebei herhalen ze naadloos.
+
+    Het raster is één blok groot: de lijn ligt op de rand van het plaatje, dus naast elkaar vormen
+    ze een lijn op elke blokrand.
+    """
+    import math
+    size = 32
+    grid = img(size, size, (0, 0, 0, 255))
+    for y in range(size):
+        for x in range(size):
+            dx = min(x, size - x)  # afstand tot de lijn op x = 0 (en die van het volgende plaatje)
+            dy = min(y, size - y)
+            d = min(dx, dy)
+            line = max(0.0, 1 - d / 1.2)          # de dunne felle lijn
+            glow = max(0.0, 1 - d / 5.0) * 0.22   # een zachte gloed ernaast
+            fill = 0.05                           # het vlak zelf, heel zwak
+            v = min(1.0, line + glow + fill)
+            c = int(255 * v)
+            grid.putpixel((x, y), (c, c, c, 255))
+    save(grid, "misc/zone_grid.png")
+
+    size = 64
+    sheen = img(size, size, (0, 0, 0, 255))
+    for y in range(size):
+        for x in range(size):
+            t = (x + y) / size                    # schuin: x + y herhaalt elke 64 pixels
+            band = max(0.0, math.cos(2 * math.pi * t)) ** 6
+            c = int(255 * 0.7 * band)
+            sheen.putpixel((x, y), (c, c, c, 255))
+    save(sheen, "misc/zone_sheen.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -2533,6 +2572,7 @@ if __name__ == "__main__":
     satellite_textures()
     cable_textures()
     dome_field()
+    zone_textures()
     relay_textures()
     shield_textures()
     rayshield_walls()

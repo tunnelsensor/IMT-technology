@@ -173,6 +173,10 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onUseItem);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onServerStopped);
+        // De rand van je zone: de server stuurt je zones naar jou en je vrienden.
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.starktech.arsenal.DroneDocks.clear());
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan

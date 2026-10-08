@@ -1792,7 +1792,80 @@ public final class VisualCheck {
             t.shot(10, "l11_ctrl_space_devices");
             t.close(10);
         }
+
+        // --- Zones (hoofdstuk 10, 8 oktober): een L-vormige basis met een torentje en de blauwe rand
+        // eromheen (waar het torentje tegen de basis staat, hoort geen wand). Zonder stroom wordt de
+        // rand rood; met "Zone border" uit zie je hem niet.
+        if (want("zones")) {
+            t.onServer(0, VisualCheck::buildZoneBase);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, 153.5, -60, 54.5, -40, 8);
+            t.shot(60, "z01_zone_outside");
+            t.stand(10, 163.5, -60, 66.5, -120, 20);
+            t.shot(30, "z02_zone_inside");
+            t.stand(10, 178.5, -56, 78.5, 140, 18);
+            t.shot(30, "z03_zone_tower_corner");
+            // Geen stroom: de generator onder de kern weg. Binnen twee seconden staat de zone uit.
+            t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(ZONE_CORE.below(), Blocks.STONE.defaultBlockState()));
+            t.stand(10, 153.5, -60, 54.5, -40, 8);
+            t.shot(80, "z04_zone_no_power");
+            // De rand uit (G > Information > Zone border), en daarna weer aan.
+            t.step(0, () -> {
+                if (com.senne.starktech.client.EdithClientConfig.zoneBorder()) {
+                    com.senne.starktech.client.EdithClientConfig.toggleZoneBorder();
+                }
+            });
+            t.shot(20, "z05_zone_border_off");
+            t.step(0, () -> {
+                if (!com.senne.starktech.client.EdithClientConfig.zoneBorder()) {
+                    com.senne.starktech.client.EdithClientConfig.toggleZoneBorder();
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
 }
+
+    /** De kern van de basis met een zone in de rondleiding (zie buildZoneBase). */
+    private static final BlockPos ZONE_CORE = new BlockPos(164, -60, 65);
+
+    /**
+     * Een L-vormige basis van stenen bakstenen (10 x 8, vier hoog, zonder dak, met een deuropening)
+     * met een torentje van twaalf hoog in de zuidoosthoek. De zone: twee kubussen er precies omheen,
+     * van de vloer tot drie boven de muren. De kern staat binnen, op een volle generator.
+     */
+    private static void buildZoneBase(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockState bricks = Blocks.STONE_BRICKS.defaultBlockState();
+        for (int x = 162; x <= 171; x++) {
+            for (int z = 62; z <= 69; z++) {
+                boolean wall = x == 162 || x == 171 || z == 62 || z == 69;
+                for (int y = -60; y <= -57; y++) {
+                    boolean door = z == 62 && (x == 165 || x == 166) && y <= -59;
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), wall && !door ? bricks : Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        for (int x = 168; x <= 171; x++) {
+            for (int z = 70; z <= 73; z++) {
+                boolean wall = x == 168 || x == 171 || z == 70 || z == 73;
+                for (int y = -60; y <= -49; y++) {
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), wall ? bricks : Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        level.setBlockAndUpdate(ZONE_CORE.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(ZONE_CORE.below()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(20_000);
+        }
+        level.setBlockAndUpdate(ZONE_CORE, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        if (level.getBlockEntity(ZONE_CORE) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.setOwner(player);
+            core.ensureSystem(level);
+            core.setZoneBoxes(java.util.List.of(
+                    com.senne.starktech.security.zone.ZoneBox.of(new BlockPos(162, -61, 62), new BlockPos(171, -54, 69)),
+                    com.senne.starktech.security.zone.ZoneBox.of(new BlockPos(168, -61, 70), new BlockPos(171, -46, 73))));
+        }
+    }
 
     // ================================================================ De wereld inrichten
 
