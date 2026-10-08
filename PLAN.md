@@ -1261,6 +1261,129 @@ De stappen, één per commit:
       fan blijft koel; een fan erin en het koelt weer af. Screenshots: `-Ponly=racks` (`r05_rack_hot`,
       nieuw `r05b_rack_other_hot`, `r08_os_monitor`).
 
+### 10. Je basis beveiligen: zones en C4 (8 oktober)
+
+Jouw wensen: in Minecraft kan iedereen zomaar elk blok weghakken; je basis moet veiliger. Je stelt
+een **zone** in, tot op het blok precies (hoeken, rechte lijnen, x, y en z), je kunt zien waar hij
+wel en niet is, en je kunt die rand aan- en uitzetten. In de zone kunnen alleen spelers **met
+toestemming** plaatsen en breken. Om het in balans te houden (inbreken moet moeilijker worden, niet
+onmogelijk) komt er **C4** dat alles kan opblazen, in of buiten een zone: één met een **timer** die
+je instelt, en één met een **afstandsbediening**. En om het realistisch te maken mag iedereen
+**ladders, scaffolding** en zo wel plaatsen in een zone, want dat kan in het echt ook.
+
+Jouw antwoorden:
+
+- De zone hangt aan je **beveiligingskern** en heeft **stroom** nodig: een nieuwe app **Zone** op de
+  desktop. Bouwen mogen jij, je team en je vertrouwde spelers (Access). De zone ligt binnen het
+  gebied van je kern (61 × 61, 60 onder en 55 boven de kern) en werkt alleen als de kern stroom
+  heeft. Wie je kern hackt, krijgt ook je zone.
+- De vorm: **meerdere kubussen**. Per kubus twee hoeken: aanklikken met een **Zone Marker** in de
+  wereld, of in de app per blok bijstellen (x, y, z). Zo maak je een L-vorm, of een toren die hoger
+  is dan de rest.
+- **Sterke muren kosten meer C4**: hout, glas en aarde vliegen er meteen uit, steen en baksteen
+  breken met 1 C4, obsidiaan en andere sterke blokken krijgen barsten en breken pas na 3 C4.
+- **Ontmantelen kan**: iedereen knipt met een **schaar** de draad door. Plakt iemand C4 op of in je
+  zone, dan zegt **E.D.I.T.H.** waar (aan jou en je vertrouwde spelers). De timer piept steeds
+  sneller.
+- **Alleen plaatsen en breken** is beveiligd: "zo realistisch mogelijk: in het echt kun je moeilijk
+  inbreken, maar als je binnen bent kun je alles opendoen en stelen." Kisten, deuren, knoppen, item
+  frames en dieren blijven dus voor iedereen bruikbaar. (Tip: een houten deur is geen slot; een
+  ijzeren deur met een keycard-lezer of codepaneel aan de buitenkant wel.)
+- **Iedereen mag plaatsen en weer weghalen**: ladders, scaffolding, klimplanten (vines, twisting en
+  weeping vines) en fakkels en lantaarns. C4 kan altijd.
+- **De rand zien alleen de eigenaar en zijn vrienden** (team en vertrouwde spelers). Anderen zien
+  niets; ze merken het pas als een blok niet breekt.
+- **C4 werkt altijd**, ook als de eigenaar offline is. Logt hij weer in, dan vertelt E.D.I.T.H. wat
+  er gebeurd is.
+
+Mijn invulling (zeg het als je iets anders wil):
+
+- **Vrienden** zijn dezelfde als bij de torentjes: de eigenaar, zijn team en zijn vertrouwde
+  spelers. Wie in **creative** speelt, mag altijd (anders kan ik de showcase niet bouwen). Alleen de
+  eigenaar verandert de zone (op de desktop, of via SSH met het wachtwoord).
+- **Hoe groot**: hooguit 16 kubussen; wat buiten het gebied van je kern steekt, valt eraf. Hoe groter
+  de zone, hoe meer stroom: bovenop de 20 van de kern 1 per 2000 blokken (om de twee seconden). Een
+  basis van 30 × 20 × 30 kost zo 9 extra, het hele gebied 216 (ongeveer één zonnepaneel in de volle
+  zon). Valt de stroom uit, dan staat de zone uit en waarschuwt E.D.I.T.H. je één keer. Zet je
+  generatoren en kabels dus **in** je zone!
+- **De kern zelf** hoort altijd bij zijn zone (anders hak je de kern weg en is de zone weg).
+- **Wat ook als plaatsen of breken telt** voor wie geen toestemming heeft: een emmer leeggieten
+  (water, lava, poedersneeuw), iets aansteken, met een bijl, schep of schoffel een blok veranderen,
+  beendermeel, en Stark-kabels leggen of doorknippen (anders knip je de stroom van de zone eruit).
+- **Alleen C4 komt erdoor**: andere explosies (TNT, creepers, vuurballen, de satelliet) breken geen
+  blokken in een zone (ze doen wel pijn), behalve als iemand met toestemming ze aanstak; vuur brandt
+  geen blokken van een zone weg en lava steekt ze niet aan; een zuiger buiten de zone duwt of trekt
+  geen blokken in of uit de zone; endermen, withers, ravagers en zombies (deuren) breken geen
+  blokken in een zone. Anders kon je met een aansteker of TNT om de zone heen.
+- **De Stark Tower en de Hydra-bunker** hebben geen zone (je moet er nog steeds in kunnen hakken);
+  na het overnemen van de toren kun je er zelf een tekenen.
+- **De rand**: doorzichtige blauwe wanden met een fijn raster aan de buitenkant van de zone, van
+  binnen en van buiten te zien tot ongeveer 48 blokken ver. Aan/uit voor jezelf: **G > Information >
+  Zone border**, of een eigen toets (standaard geen, zoals de kabel-xray). Met de Zone Marker in je
+  hand zie je je zone altijd, met nummers op de kubussen. Wie geen toestemming heeft en iets
+  probeert, ziet onderaan "Protected zone" en hoort een kort piepje.
+- **Zone Marker**: linksklik op een blok = hoek 1, rechtsklik = hoek 2 (je ziet een oranje doos en
+  "12 × 6 × 20"); sluipen + rechtsklik = deze kubus aan je zone toevoegen; sluipen + linksklik in een
+  kubus = die kubus weghalen (twee keer klikken). Recept: een redstonefakkel, een Stark-chip en een
+  stok onder elkaar.
+- **App Zone** (icoon Z): links een kaart van bovenaf van het gebied van je kern met je kubussen;
+  rechts de gekozen kubus met zijn hoeken (x, y, z, ook te typen) en per kant een − en + (west/oost,
+  onder/boven, noord/zuid) om die kant één blok te verschuiven; **New box** en **Delete**. Bovenaan:
+  ACTIVE of NO POWER, hoeveel blokken en hoeveel stroom.
+- **C4 (Timer)**: rechtsklik in de lucht = een klein scherm om de tijd te kiezen (5 s tot 2 min,
+  standaard 10 s; het item onthoudt het). Je plakt hem op een vloer, muur of plafond en hij loopt
+  meteen: een rood schermpje telt af ("0:07"), een lampje knippert en hij piept steeds sneller.
+  Recept: TNT, twee klei, een slijmbal, redstone en een klok.
+- **C4 (Remote)** en de **Detonator**: plak je een remote C4 terwijl je een detonator bij je hebt,
+  dan hoort hij bij die detonator (of rechtsklik met de detonator op een C4). Rechtsklik met de
+  detonator = al zijn C4 binnen 128 blokken gaan af, kort na elkaar; sluipen + rechtsklik = hoeveel
+  er gekoppeld en in bereik zijn. Met de detonator in je hand zie je je C4 als rode markering.
+  Recepten: remote C4 = TNT, twee klei, een slijmbal, redstone en een bliksemafleider (de antenne);
+  detonator = een bliksemafleider, een Stark-chip, ijzer en een knop.
+- **Hoe hard**: één C4 doet 10 "breekpunten" vlak bij de lading, aflopend tot 0 op 3,5 blokken. Een
+  zwak blok (hout, glas, aarde, wol, zand...) kan er 2 hebben, een gewoon blok (steen, baksteen,
+  deepslate, ijzer...) 6, een sterk blok (obsidiaan, netheriet, de laserzender...) 20, en de
+  **beveiligingskern 48** (ongeveer 6 C4: hacken is de andere weg). Bedrock en zo nooit. Zo maakt
+  één C4 een gat in een stenen muur van één dik waar je door kunt, en heb je voor obsidiaan er drie
+  nodig. Wat niet breekt, krijgt **barsten** die je ziet; de volgende C4 telt erbij op. Barsten
+  genezen na 10 minuten (en als de server opnieuw start). Opgeblazen blokken vallen eruit zoals bij
+  TNT (kisten ook, met hun inhoud). De klap doet pijn zoals TNT. Ander C4 in de klap gaat ook af, en
+  TNT wordt aangestoken.
+- **Ontmantelen** kan alleen met een schaar (met je hand gaat hij er niet af, ook niet voor wie hem
+  plakte); de C4 valt eruit als item, dus de verdediger krijgt hem. Wie hem plakte, hoort het van
+  E.D.I.T.H.
+- **Het alarm** gaat af als er C4 in een zone geplakt wordt of binnen 3 blokken ervan: E.D.I.T.H.
+  zegt waar (zonder naam: in het echt weet je ook niet wie het was), en je ziet een rode markering
+  tot hij weg is. Ontploft hij, dan staat in het logboek hoeveel blokken er weg zijn. Was je
+  offline, dan hoor je bij het inloggen: "While you were away: 3 C4 blasts at your zone (12
+  blocks)".
+
+De stappen, één per commit:
+
+- [ ] **1. De zone op de server**
+      Een zone van kubussen in de kern (ook na opslaan), en een overzicht in de wereld zodat de
+      bescherming ook werkt als de chunk van de kern niet geladen is. Wie geen toestemming heeft,
+      kan in een actieve zone niets plaatsen of breken (ook geen emmers, vuur en kabels); vrije
+      blokken en C4 wel. Zonder stroom geen zone. Tests.
+- [ ] **2. De grens zien**
+      De server stuurt de zones naar de eigenaar en zijn vrienden; blauwe wanden met een raster;
+      aan/uit in het G-menu en met een toets. Screenshots.
+- [ ] **3. De Zone Marker en de app Zone**
+      Hoeken aanklikken in de wereld, kubussen toevoegen en weghalen, en de app op de desktop (ook
+      via SSH). Tests en screenshots.
+- [ ] **4. Alleen C4 komt erdoor**
+      Explosies, vuur, lava, zuigers en monsters breken geen blokken in een zone (voor het vuur een
+      kleine "mixin": een stukje code dat in Minecraft zelf ingrijpt). Tests.
+- [ ] **5. C4 met timer**
+      Het item, het blok op elke kant, het timerscherm, het schermpje dat aftelt, de piepjes, en de
+      klap met breekpunten en barsten. Tests en screenshots.
+- [ ] **6. C4 met afstandsbediening**
+      Remote C4 en de detonator: koppelen, bereik, rode markeringen. Tests.
+- [ ] **7. Ontmantelen en alarm**
+      De schaar, het alarm van E.D.I.T.H. met markering, het logboek, en het verslag als je weer
+      inlogt. Tests.
+- [ ] **8. Showcase, screenshots en LEESMIJ**
+
 ---
 
 ## Nog nooit in het spel bekeken
