@@ -412,7 +412,10 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    knipperen de lampjes.
 2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
    naam ("Vault door"): met die naam noem je ze in je diagram. Een **Keycard Reader** en een
-   **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld).
+   **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld). Een andere
+   naam geef je op de desktop in de app **Devices**: klik **Rename** bij de lezer of het paneel,
+   typ de naam en druk Enter (Esc = laat maar). Daar zie je ook in hoeveel diagrammen hij staat:
+   staat er "in no diagram" na een nieuwe naam, dan gebruikt je diagram nog de oude naam.
 3. **Keycards**: craft lege kaarten en schrijf ze op de desktop in de app **Keycards** (naam en
    niveau 1-5; ze krijgen een eigen nummer). Een verloren of gestolen kaart **blokkeer** je daar.
    Geblokkeerde kaarten staan onderaan de lijst; met **Delete** (of **Delete blocked** voor allemaal

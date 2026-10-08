@@ -1434,6 +1434,69 @@ public final class VisualCheck {
             t.close(10);
         }
 
+        // --- De app Devices (8 oktober): de keycardlezers en codepanelen staan erin, en met Rename
+        // geef je ze daar een andere naam (typen, dan Save).
+        if (want("devrename")) {
+            BlockPos core = new BlockPos(130, -60, -80);
+            BlockPos rack = new BlockPos(126, -60, -78);
+            BlockPos wall = new BlockPos(132, -60, -78);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("jarvis1", level.random);
+                }
+                for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
+                    level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                }
+                level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
+                        .setValue(com.senne.starktech.logic.ServerRackBlock.FACING, Direction.SOUTH));
+                if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                }
+                for (int dx = -1; dx <= 1; dx++) {
+                    level.setBlockAndUpdate(wall.offset(dx, 0, 0), Blocks.SMOOTH_STONE.defaultBlockState());
+                }
+                String[] names = {"Reader 1", "Panel 1", "Panel 2"};
+                for (int i = 0; i < names.length; i++) {
+                    BlockPos pos = wall.offset(i - 1, 0, 1);
+                    level.setBlockAndUpdate(pos, (i == 0 ? ModBlocks.KEYCARD_READER.get() : ModBlocks.CODE_PANEL.get())
+                            .defaultBlockState().setValue(com.senne.starktech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
+                    if (level.getBlockEntity(pos) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
+                        be.setName(names[i]);
+                    }
+                }
+            });
+            t.stand(30, 130.5, -60, -76.5, 180, 20);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.DEVICES);
+                }
+            });
+            t.shot(10, "dr1_devices_readers");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourRenameInput("Lab door");
+                }
+            });
+            t.shot(5, "dr2_devices_renaming");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourSaveRename();
+                }
+            });
+            t.shot(25, "dr3_devices_renamed");
+            t.close(10);
+        }
+
         // --- Het lab van de showcase (hoofdstuk 8): de deur met keycard, het paneel met de lamp.
         if (want("lab")) {
             BlockPos lab = ShowcaseFeatures.LOGIC_LAB;

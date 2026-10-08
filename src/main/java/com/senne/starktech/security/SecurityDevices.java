@@ -38,6 +38,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Drones:</b> de beveiligingsdrones van deze kern. De schakelaar "Drones" laat ze landen.</li>
  *   <li><b>Camera's:</b> de bewakingscamera's in het gebied. De schakelaar "Cameras" zet ze uit
  *       (dan geven ze "NO SIGNAL").</li>
+ *   <li><b>Keycardlezers en codepanelen:</b> met hun naam (die kun je daar ook veranderen), of de
+ *       server ze hoort, en in hoeveel diagrammen ze staan.</li>
  * </ul>
  *
  * Er is geen lijst die bijhoudt wat er gebouwd wordt: we kijken gewoon in het gebied, en
@@ -136,6 +138,9 @@ public final class SecurityDevices {
         // De camera's in een vaste volgorde (van boven naar beneden, dan noord naar zuid, west naar
         // oost), zodat "Camera 1" niet steeds een andere is.
         cameras.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
+                .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
+        // De lezers en panelen ook: zo springt er niets heen en weer als je er een andere naam geeft.
+        inputs.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
         Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
                 List.copyOf(racks), List.copyOf(inputs), now);
@@ -328,7 +333,34 @@ public final class SecurityDevices {
             device.putString("st", on ? "online" : core.camerasEnabled() ? "no power" : "off (network)");
             list.add(device);
         }
+        boolean server = com.senne.starktech.logic.LogicServer.stats(level, core).online();
+        for (BlockPos pos : found.inputs()) {
+            if (!(level.getBlockEntity(pos) instanceof com.senne.starktech.logic.InputDeviceBlockEntity input)) {
+                continue;
+            }
+            boolean panel = level.getBlockState(pos).getBlock() instanceof com.senne.starktech.logic.CodePanelBlock;
+            CompoundTag device = position(panel ? "panel" : "reader", pos);
+            device.putString("name", input.name());
+            device.putString("st", server ? "ready" : "no server");
+            device.putInt("uses", uses(core, panel ? com.senne.starktech.logic.program.Op.CODEPANEL
+                    : com.senne.starktech.logic.program.Op.KEYCARD, input.name()));
+            list.add(device);
+        }
         return list;
+    }
+
+    /**
+     * In hoeveel diagrammen staat "when keycard(naam)" (of "when codepanel(naam)")? Zo zie je na een
+     * andere naam meteen of een diagram nog de oude naam gebruikt (dan reageert het niet meer).
+     */
+    private static int uses(SecurityCoreBlockEntity core, com.senne.starktech.logic.program.Op trigger, String name) {
+        int count = 0;
+        for (var program : core.logic().programs()) {
+            if (program.graph().nodes().stream().anyMatch(node -> node.op == trigger && node.text.equalsIgnoreCase(name))) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private static CompoundTag position(String kind, BlockPos pos) {

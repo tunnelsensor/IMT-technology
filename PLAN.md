@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 139 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 140 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1077,6 +1077,16 @@ De stappen, één per commit:
       zien: bij twee even grote groepjes racks is de server nu het groepje het dichtst bij de kern, en
       liggen er ooit twee gebieden over een plek, dan hoort die bij de dichtstbijzijnde kern (niet bij
       een willekeurige). Screenshots: `-Ponly=keycards` (`y06`-`y08`). Eén nieuwe test.
+- [x] **12. Lezers en panelen een andere naam geven in Devices** (jouw wens: "zorg dat je bij de
+      desktop in devices alle keycard en code panel readers kunt renamen")
+      De app Devices heeft nu de kopjes **KEYCARD READERS** en **CODE PANELS**: per lezer of paneel
+      zijn naam, waar hij hangt, of de server hem hoort (**ready** of **no server**) en in hoeveel
+      diagrammen hij staat. De knop **Rename** maakt van de naam een typvak: Enter (of **Save**)
+      bewaart, Esc of ergens anders klikken laat het zoals het was; een lege naam mag niet. Een
+      diagram verandert niet mee: staat er na een nieuwe naam "in no diagram", dan gebruikt je
+      diagram nog de oude naam. De lezers en panelen staan in een vaste volgorde (van boven naar
+      beneden), zodat er niets verspringt als je een naam verandert. Screenshots: `-Ponly=devrename`
+      (`dr1`-`dr3`). Eén nieuwe test.
 
 ---
 

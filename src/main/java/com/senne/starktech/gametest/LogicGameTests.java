@@ -378,6 +378,76 @@ public final class LogicGameTests {
         });
     }
 
+    /**
+     * De app Devices toont de keycardlezers en codepanelen (met in hoeveel diagrammen ze staan), en
+     * met Rename daar krijgen ze een andere naam. Een lege naam mag niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "devices_rename")
+    public static void devices_rename_inputs(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos reader = new BlockPos(8, 3, 8);
+        BlockPos panel = new BlockPos(4, 3, 8);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        ((InputDeviceBlockEntity) helper.getBlockEntity(reader)).setName("Reader 1");
+        ((InputDeviceBlockEntity) helper.getBlockEntity(panel)).setName("Panel 1");
+        BlockPos readerAbs = helper.absolutePos(reader);
+        BlockPos panelAbs = helper.absolutePos(panel);
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), setup.core());
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Lab", """
+                    when keycard("Lab door"):
+                        accept()
+                    """);
+            com.senne.starktech.security.SecurityDevices.forget(level, setup.core());
+            // Allebei in de lijst, met de goede soort; nog geen diagram gebruikt "Reader 1".
+            CompoundTag before = device(level, setup, readerAbs);
+            CompoundTag panelRow = device(level, setup, panelAbs);
+            if (before == null || !before.getString("k").equals("reader") || !before.getString("name").equals("Reader 1")
+                    || before.getInt("uses") != 0) {
+                throw new GameTestAssertException("De lezer staat niet (goed) in Devices: " + before);
+            }
+            if (panelRow == null || !panelRow.getString("k").equals("panel") || !panelRow.getString("name").equals("Panel 1")) {
+                throw new GameTestAssertException("Het codepaneel staat niet (goed) in Devices: " + panelRow);
+            }
+            // Rename: nu heet hij zoals in het diagram, dus dat diagram gebruikt hem.
+            rename(setup, readerAbs, "Lab door");
+            CompoundTag after = device(level, setup, readerAbs);
+            if (after == null || !after.getString("name").equals("Lab door") || after.getInt("uses") != 1) {
+                throw new GameTestAssertException("Rename in Devices werkte niet: " + after);
+            }
+            // Een lege naam mag niet: hij blijft "Lab door".
+            rename(setup, readerAbs, "   ");
+            if (!((InputDeviceBlockEntity) helper.getBlockEntity(reader)).name().equals("Lab door")) {
+                throw new GameTestAssertException("Een lege naam werd toch bewaard");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** De regel van Devices voor het apparaat op deze plek, of null. */
+    private static @org.jetbrains.annotations.Nullable CompoundTag device(ServerLevel level, Setup setup, BlockPos pos) {
+        for (var element : com.senne.starktech.security.SecurityDevices.snapshot(level, setup.core())) {
+            CompoundTag device = (CompoundTag) element;
+            if (device.getInt("x") == pos.getX() && device.getInt("y") == pos.getY() && device.getInt("z") == pos.getZ()) {
+                return device;
+            }
+        }
+        return null;
+    }
+
+    /** De knop Rename (Save) van Devices, zoals de desktop hem stuurt. */
+    private static void rename(Setup setup, BlockPos pos, String name) {
+        CompoundTag args = new CompoundTag();
+        args.putInt("x", pos.getX());
+        args.putInt("y", pos.getY());
+        args.putInt("z", pos.getZ());
+        args.putString("name", name);
+        StarkOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "input_rename", args));
+    }
+
     /** Staat deze tekst als regel van een diagram (LOGIC) in het logboek? */
     private static boolean logged(SecurityCoreBlockEntity core, String text) {
         return core.log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.LOGIC && entry.text().equals(text));

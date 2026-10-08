@@ -234,6 +234,17 @@ public class StarkOsScreen extends Screen {
         keycards.tourAskDeleteBlocked();
     }
 
+    /** Alleen voor de screenshot-rondleiding: in de app Devices de eerste lezer een andere naam aan het geven. */
+    public void tourRenameInput(String name) {
+        openApp(App.DEVICES);
+        devices.tourRename(name);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: die nieuwe naam bewaren (Save). */
+    public void tourSaveRename() {
+        devices.tourSave();
+    }
+
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
     public void tourOpen(App app) {
         openApp(app);
@@ -312,6 +323,9 @@ public class StarkOsScreen extends Screen {
         if (win.app != App.LOGIC) {
             logic.blur();
         }
+        if (win.app != App.DEVICES) {
+            devices.blur();
+        }
     }
 
     private @Nullable Win focused() {
@@ -341,6 +355,9 @@ public class StarkOsScreen extends Screen {
         }
         if (win.app == App.CAMERAS) {
             cameras.blur(); // een half getypte naam niet bewaren
+        }
+        if (win.app == App.DEVICES) {
+            devices.blur(); // hier ook niet
         }
         if (win.app == App.NOTES) {
             notes.save(); // wat je typte, gaat niet verloren
@@ -520,6 +537,7 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.DEVICES && devices.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)) {
             return true;
@@ -540,6 +558,7 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.DEVICES && devices.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
@@ -660,7 +679,7 @@ public class StarkOsScreen extends Screen {
         g.enableScissor(win.x + 2, win.y + TITLE_H, win.x + win.w - 2, win.y + win.h - 2);
         switch (win.app) {
             case STATUS -> renderStatus(g, area.x(), area.y());
-            case DEVICES -> devices.render(g, font, area, mouseX, mouseY);
+            case DEVICES -> devices.render(g, font, area, mouseX, mouseY, partialTick);
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);
