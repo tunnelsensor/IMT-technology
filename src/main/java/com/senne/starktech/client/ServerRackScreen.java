@@ -12,28 +12,32 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 
 /**
  * Het scherm van een serverrack.
  *
  * <pre>
- *  [=====]  Server Rack
- *  [ CPU ]  SERVER        ONLINE
- *  [ RAM ]  RACKS 3   CPU 2   RAM 3   SSD 1
- *  [ RAM ]  REACTS IN     0.35 s
- *  [     ]  AT ONCE       6 diagrams
- *           STORAGE       24 blocks
+ *  [=========]  Server Rack
+ *  [CPU] [GPU]  SERVER        ONLINE
+ *  [RAM] [FAN]  RACKS 3   CPU 2   GPU 1
+ *  [SSD] [   ]  RAM 3   SSD 1   FAN 2
+ *               REACTS IN     0.20 s
+ *               E.D.I.T.H.    +2.7 s
+ *               AT ONCE       6 diagrams
+ *               STORAGE       24 blocks
  * </pre>
- * Links het rack zelf: vier vakjes onder elkaar (zoals de bays van een echt rack), met naast elk
- * vakje wat erin zit. Rechts wat de HELE server kan (alle racks die elkaar raken samen), en zo
- * niet, waarom niet. Zelfde achtergrond als het zonnepaneel (alleen je rugzak staat erop).
+ * Links het rack zelf: zes vakjes in twee kolommen van drie (zoals de bays van een echt rack), met
+ * een lampje naast elk vakje. Rechts wat de HELE server kan (alle racks die elkaar raken samen), en
+ * zo niet, waarom niet. Zelfde achtergrond als het zonnepaneel (alleen je rugzak staat erop), maar
+ * EXTRA_HEIGHT hoger, zodat alle getallen erboven passen.
  */
 public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "textures/gui/charger.png");
 
     private static final int STATS_X = 66;
+    /** Hier begint in charger.png de streep boven je rugzak. */
+    private static final int TEXTURE_SPLIT = 79;
     private static final int FRAME = HudStyle.argb(255, 0x465460);
     private static final int RACK = HudStyle.argb(255, 0x15171C);
     private static final int SLOT = HudStyle.argb(255, 0x1E2128);
@@ -41,7 +45,7 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
     public ServerRackScreen(ServerRackMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         imageWidth = 176;
-        imageHeight = 166;
+        imageHeight = 166 + ServerRackMenu.EXTRA_HEIGHT;
         titleLabelX = STATS_X;
         inventoryLabelY = -1000; // daar staat de uitleg
     }
@@ -50,18 +54,23 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
     protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
         int x = leftPos;
         int y = topPos;
-        g.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
-        // Het rack: een zwarte kast met vier bays.
+        // De achtergrond in drie stukken: het lege bovenstuk, nog een stuk leeg paneel (zo wordt het
+        // scherm hoger), en je rugzak.
+        int extra = ServerRackMenu.EXTRA_HEIGHT;
+        g.blit(TEXTURE, x, y, 0, 0, imageWidth, TEXTURE_SPLIT, 256, 256);
+        g.blit(TEXTURE, x, y + TEXTURE_SPLIT, 0, 40, imageWidth, extra, 256, 256);
+        g.blit(TEXTURE, x, y + TEXTURE_SPLIT + extra, 0, TEXTURE_SPLIT, imageWidth, 166 - TEXTURE_SPLIT, 256, 256);
+        // Het rack: een zwarte kast met twee kolommen van drie bays.
         int rackX = x + ServerRackMenu.BAY_X - 5;
-        int rackY = y + ServerRackMenu.BAY_Y - 4;
-        int rackW = 26;
-        int rackH = LogicBalance.RACK_SLOTS * ServerRackMenu.BAY_STEP + 6;
+        int rackY = y + ServerRackMenu.BAY_Y - 5;
+        int rackW = ServerRackMenu.COLUMN_STEP + 16 + 13;
+        int rackH = LogicBalance.RACK_ROWS * ServerRackMenu.BAY_STEP + 8;
         g.fill(rackX, rackY, rackX + rackW, rackY + rackH, RACK);
         g.renderOutline(rackX, rackY, rackW, rackH, FRAME);
         boolean online = menu.status() == ServerRackBlockEntity.Status.ONLINE;
         for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
-            int sx = x + ServerRackMenu.BAY_X;
-            int sy = y + ServerRackMenu.BAY_Y + i * ServerRackMenu.BAY_STEP;
+            int sx = x + ServerRackMenu.bayX(i);
+            int sy = y + ServerRackMenu.bayY(i);
             g.fill(sx - 1, sy - 1, sx + 17, sy + 17, SLOT);
             g.renderOutline(sx - 1, sy - 1, 18, 18, FRAME);
             // Een lampje naast elke bay: groen als het rack meedraait en er iets in zit.
@@ -76,14 +85,6 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         g.drawString(font, title, titleLabelX, titleLabelY, HudStyle.argb(255, HudStyle.CYAN), false);
         int label = HudStyle.argb(150, HudStyle.ORANGE);
         int value = HudStyle.argb(230, HudStyle.WHITE);
-
-        // Naast elke bay: wat erin zit.
-        for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
-            ItemStack stack = menu.getSlot(i).getItem();
-            String text = stack.getItem() instanceof ServerPartItem part ? part.kind().name() : "";
-            small(g, text, ServerRackMenu.BAY_X + 23, ServerRackMenu.BAY_Y + i * ServerRackMenu.BAY_STEP + 6,
-                    HudStyle.argb(200, HudStyle.WHITE));
-        }
 
         // Rechts: de server.
         ServerRackBlockEntity.Status status = menu.status();
@@ -103,19 +104,28 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
             return;
         }
         y += 10;
-        small(g, "RACKS " + menu.racks() + "   CPU " + menu.cpus(), STATS_X, y, value);
-        small(g, "RAM " + menu.ram() + "   SSD " + menu.ssd(), STATS_X, y + 7, value);
+        small(g, "RACKS " + menu.racks() + "   CPU " + menu.cpus() + "   GPU " + menu.gpus(), STATS_X, y, value);
+        small(g, "RAM " + menu.ram() + "   SSD " + menu.ssd() + "   FAN " + menu.fans(), STATS_X, y + 7, value);
         y += 16;
-        stat(g, "REACTS IN", menu.cpus() > 0
-                ? String.format(Locale.ROOT, "%.2f s", LogicBalance.reactionTicks(menu.cpus()) / 20.0) : "-", y);
-        stat(g, "AT ONCE", menu.ram() * LogicBalance.RUNS_PER_RAM + " diagrams", y + 7);
-        stat(g, "STORAGE", menu.ssd() * LogicBalance.BLOCKS_PER_SSD + " blocks", y + 14);
+        double logic = menu.cpus() * LogicBalance.logicPower(ServerPartItem.Kind.CPU)
+                + menu.gpus() * LogicBalance.logicPower(ServerPartItem.Kind.GPU);
+        double brain = menu.cpus() * LogicBalance.brainPower(ServerPartItem.Kind.CPU)
+                + menu.gpus() * LogicBalance.brainPower(ServerPartItem.Kind.GPU);
+        stat(g, "REACTS IN", logic > 0
+                ? String.format(Locale.ROOT, "%.2f s", LogicBalance.reactionTicks(logic) / 20.0) : "-", y);
+        int delay = LogicBalance.brainDelayTicks(brain);
+        stat(g, "E.D.I.T.H.", delay < 0 ? "can't think" : delay == 0 ? "no delay"
+                : String.format(Locale.ROOT, "+%.1f s", delay / 20.0), y + 7);
+        stat(g, "AT ONCE", menu.ram() * LogicBalance.RUNS_PER_RAM + " diagrams", y + 14);
+        stat(g, "STORAGE", menu.ssd() * LogicBalance.BLOCKS_PER_SSD + " blocks", y + 21);
+        y += 7;
         // Waarom hij niet draait (of anders: waar je hem programmeert).
         String problem = switch (status) {
             case NOT_CONNECTED -> "Not touching the main server racks.";
             case NO_POWER -> "This rack needs power (a cable).";
             default -> !menu.coreOnline() ? "The security core has no power."
-                    : menu.cpus() == 0 ? "Add a CPU." : menu.ram() == 0 ? "Add RAM." : menu.ssd() == 0 ? "Add an SSD." : "";
+                    : menu.cpus() == 0 && menu.gpus() == 0 ? "Add a CPU or GPU." : menu.ram() == 0 ? "Add RAM."
+                    : menu.ssd() == 0 ? "Add an SSD." : "";
         };
         if (!problem.isEmpty()) {
             wrapped(g, problem, y + 23, HudStyle.argb(230, HudStyle.RED));
@@ -124,9 +134,9 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         }
     }
 
-    /** Draait de hele server (er is van elk onderdeel minstens één, en de kern heeft stroom)? */
+    /** Draait de hele server (rekenkracht, RAM en een SSD, en de kern heeft stroom)? */
     private boolean online() {
-        return menu.coreOnline() && menu.cpus() > 0 && menu.ram() > 0 && menu.ssd() > 0;
+        return menu.coreOnline() && menu.cpus() + menu.gpus() > 0 && menu.ram() > 0 && menu.ssd() > 0;
     }
 
     private void stat(GuiGraphics g, String name, String value, int y) {
@@ -153,8 +163,8 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         renderTooltip(g, mouseX, mouseY);
         // Boven een leeg vakje: wat erin mag.
         for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
-            int sx = leftPos + ServerRackMenu.BAY_X;
-            int sy = topPos + ServerRackMenu.BAY_Y + i * ServerRackMenu.BAY_STEP;
+            int sx = leftPos + ServerRackMenu.bayX(i);
+            int sy = topPos + ServerRackMenu.bayY(i);
             if (menu.getSlot(i).getItem().isEmpty() && mouseX >= sx && mouseX < sx + 16 && mouseY >= sy && mouseY < sy + 16) {
                 g.renderTooltip(font, Component.translatable("screen.starktech.server_rack.bay_tooltip"), mouseX, mouseY);
             }

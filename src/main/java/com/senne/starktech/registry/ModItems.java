@@ -149,6 +149,14 @@ public final class ModItems {
     public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_CPU = ITEMS.registerItem("server_cpu",
             properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.CPU, properties),
             new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
+    /** Een GPU (8 oktober): half zo goed voor Logic, dubbel zo goed voor het brein van E.D.I.T.H. */
+    public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_GPU = ITEMS.registerItem("server_gpu",
+            properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.GPU, properties),
+            new Item.Properties().stacksTo(16).rarity(Rarity.RARE));
+    /** Een fan (8 oktober): koelt het datacenter. */
+    public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_FAN = ITEMS.registerItem("server_fan",
+            properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.FAN, properties),
+            new Item.Properties().stacksTo(16));
     /** Een RAM-latje: meer diagrammen tegelijk bezig. */
     public static final DeferredItem<com.senne.starktech.logic.ServerPartItem> SERVER_RAM = ITEMS.registerItem("server_ram",
             properties -> new com.senne.starktech.logic.ServerPartItem(com.senne.starktech.logic.ServerPartItem.Kind.RAM, properties),

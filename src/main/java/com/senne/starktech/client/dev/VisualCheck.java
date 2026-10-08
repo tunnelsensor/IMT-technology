@@ -1278,7 +1278,8 @@ public final class VisualCheck {
                 }
                 level.setBlockAndUpdate(lone, rack);
                 ItemStack[][] parts = {
-                        {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get()), new ItemStack(ModItems.SERVER_SSD.get())},
+                        {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get()), new ItemStack(ModItems.SERVER_SSD.get()),
+                                new ItemStack(ModItems.SERVER_GPU.get()), new ItemStack(ModItems.SERVER_FAN.get())},
                         {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get())},
                         {new ItemStack(ModItems.SERVER_SSD.get())}};
                 for (int i = 0; i < server.length; i++) {

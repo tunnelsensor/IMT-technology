@@ -66,8 +66,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SECURITY_CAMERA.get());
                 output.accept(ModItems.SERVER_RACK.get());
                 output.accept(ModItems.SERVER_CPU.get());
+                output.accept(ModItems.SERVER_GPU.get());
                 output.accept(ModItems.SERVER_RAM.get());
                 output.accept(ModItems.SERVER_SSD.get());
+                output.accept(ModItems.SERVER_FAN.get());
                 output.accept(ModItems.KEYCARD.get());
                 output.accept(ModItems.KEYCARD_READER.get());
                 output.accept(ModItems.CODE_PANEL.get());

@@ -2300,7 +2300,8 @@ def suit_hologram():
 
 def server_rack_textures():
     """
-    Het serverrack (7 oktober): een zwarte kast met vier "bays" (de vakjes voor CPU, RAM en SSD).
+    Het serverrack (7 oktober): een zwarte kast met zes "bays" in twee kolommen van drie (de vakjes
+    voor CPU, GPU, RAM, SSD en fans; tot 8 oktober waren het er vier onder elkaar).
     - voorkant uit: de bays met donkere lampjes;
     - voorkant aan: hetzelfde, maar de lampjes knipperen (vier plaatjes onder elkaar, met een
       .mcmeta-bestand erbij: zo maakt Minecraft er een filmpje van);
@@ -2321,22 +2322,26 @@ def server_rack_textures():
         d = ImageDraw.Draw(im)
         d.rectangle([0, 0, 15, 15], outline=shell_dark)
         px(im, [(1, y) for y in range(1, 15)] + [(14, y) for y in range(1, 15)], shell_light)
-        for i, y in enumerate((2, 5, 8, 11)):
-            d.rectangle([2, y, 13, y + 2], fill=bay)
-            d.line([3, y + 1, 8, y + 1], fill=shell_dark)  # de greep van de bay
-            for j, x in enumerate((10, 12)):
-                px(im, [(x, y + 1)], lights[i][j])
+        # Twee kolommen van drie bays (zelfde volgorde als de vakjes in het spel: eerst de linker
+        # kolom van boven naar beneden, dan de rechter).
+        for i in range(6):
+            x = 2 if i < 3 else 8
+            y = 2 + (i % 3) * 4
+            d.rectangle([x, y, x + 5, y + 2], fill=bay)
+            d.line([x + 1, y + 1, x + 2, y + 1], fill=shell_dark)  # de greep van de bay
+            for j, lx in enumerate((x + 3, x + 4)):
+                px(im, [(lx, y + 1)], lights[i][j])
         # Onderaan een cyaan statusstreepje (het Stark-randje).
         d.line([3, 14, 12, 14], fill=CYAN_DIM if lights[0][0] != off else CYAN_DARK)
         return im
 
-    save(front([(off, off)] * 4), "block/server_rack_front.png")
+    save(front([(off, off)] * 6), "block/server_rack_front.png")
     # Aan: vier plaatjes met telkens andere lampjes (vast patroon, elke keer hetzelfde).
     pattern = random.Random(7)
     frames = img(16, 64)
     for frame in range(4):
         lights = [(green if pattern.random() < 0.7 else off, amber if pattern.random() < 0.35 else green)
-                  for _ in range(4)]
+                  for _ in range(6)]
         frames.paste(front(lights), (0, frame * 16))
     save(frames, "block/server_rack_front_on.png")
     (ROOT / "block/server_rack_front_on.png.mcmeta").write_text('{\n  "animation": {\n    "frametime": 4\n  }\n}\n')
@@ -2359,7 +2364,7 @@ def server_rack_textures():
 
 
 def server_part_items():
-    """De drie onderdelen voor een serverrack: een CPU, een RAM-latje en een SSD."""
+    """De onderdelen voor een serverrack: CPU, GPU, RAM-latje, SSD en fan."""
     # CPU: een vierkante chip met gouden pootjes rondom en een zilveren deksel.
     cpu = img(16, 16)
     d = ImageDraw.Draw(cpu)
@@ -2393,6 +2398,33 @@ def server_part_items():
     px(ssd, [(12, 11)], CYAN)
     d.line([3, 12, 12, 12], fill=GOLD_DARK)
     save(ssd, "item/server_ssd.png")
+
+    # GPU (8 oktober): een lange zwarte videokaart met twee ronde fans en gouden contacten.
+    gpu = img(16, 16)
+    d = ImageDraw.Draw(gpu)
+    d.rectangle([0, 4, 15, 11], fill=(26, 28, 34, 255), outline=(12, 13, 16, 255))
+    for cx in (4, 11):
+        d.ellipse([cx - 3, 5, cx + 3, 10], fill=(46, 50, 58, 255), outline=(80, 86, 96, 255))
+        px(gpu, [(cx, 7), (cx, 8), (cx - 1, 7), (cx + 1, 8)], (120, 126, 136, 255))
+    d.line([0, 4, 15, 4], fill=(70, 230, 120, 255))  # een groen randje (het merk)
+    for x in range(2, 14, 2):
+        px(gpu, [(x, 12)], GOLD)
+    px(gpu, [(14, 6)], CYAN)
+    save(gpu, "item/server_gpu.png")
+
+    # Fan (8 oktober): een vierkant frame met een ronde fan en vier schuine bladen.
+    fan = img(16, 16)
+    d = ImageDraw.Draw(fan)
+    d.rectangle([1, 1, 14, 14], fill=(36, 40, 46, 255), outline=(16, 18, 22, 255))
+    d.ellipse([2, 2, 13, 13], fill=(20, 22, 26, 255), outline=(90, 96, 106, 255))
+    blade = (150, 156, 166, 255)
+    px(fan, [(7, 3), (8, 3), (8, 4), (8, 5), (9, 5)], blade)       # boven
+    px(fan, [(12, 7), (12, 8), (11, 8), (10, 8), (10, 9)], blade)  # rechts
+    px(fan, [(8, 12), (7, 12), (7, 11), (7, 10), (6, 10)], blade)  # onder
+    px(fan, [(3, 8), (3, 7), (4, 7), (5, 7), (5, 6)], blade)       # links
+    d.rectangle([7, 7, 8, 8], fill=CYAN)
+    px(fan, [(2, 2), (13, 2), (2, 13), (13, 13)], (110, 116, 126, 255))  # de schroefjes
+    save(fan, "item/server_fan.png")
 
 
 # De kleuren van een keycard per niveau (zelfde als KeycardsApp.levelColour in de mod).

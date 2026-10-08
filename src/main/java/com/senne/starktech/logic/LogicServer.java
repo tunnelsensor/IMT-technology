@@ -25,8 +25,8 @@ import org.jetbrains.annotations.Nullable;
  * tellen: die met knipperende lampjes.
  *
  * Wat de server kan, hangt af van de onderdelen in die racks (alleen racks met stroom tellen):
- * CPU's (sneller reageren), RAM (meer tegelijk) en SSD's (meer blokjes). Zonder één van elk
- * draait hij niet.
+ * CPU's en GPU's (rekenkracht: sneller reageren, en het brein van E.D.I.T.H.), RAM (meer
+ * tegelijk), SSD's (meer blokjes) en fans (koeling). Zonder rekenkracht, RAM of SSD draait hij niet.
  */
 public final class LogicServer {
     private LogicServer() {}
@@ -39,12 +39,15 @@ public final class LogicServer {
      *
      * @param racks      hoeveel racks in de server (de grootste groep), met of zonder stroom
      * @param cpus       CPU's in racks die meedraaien
+     * @param gpus       GPU's in racks die meedraaien
      * @param ram        RAM-latjes in racks die meedraaien
      * @param ssd        SSD's in racks die meedraaien
+     * @param fans       fans in racks die meedraaien
      * @param coreOnline heeft de kern zelf stroom?
      * @param cluster    waar de racks van de server staan
      */
-    public record Stats(int racks, int cpus, int ram, int ssd, boolean coreOnline, Set<BlockPos> cluster, long time) {
+    public record Stats(int racks, int cpus, int gpus, int ram, int ssd, int fans, boolean coreOnline,
+                        Set<BlockPos> cluster, long time) {
         /** Draait de server? (De kern heeft stroom, en er is minstens één CPU, RAM en SSD.) */
         public boolean online() {
             return problem() == null;
@@ -58,11 +61,11 @@ public final class LogicServer {
             if (!coreOnline) {
                 return "The security core has no power";
             }
-            if (cpus == 0 && ram == 0 && ssd == 0) {
+            if (cpus == 0 && gpus == 0 && ram == 0 && ssd == 0 && fans == 0) {
                 return "The server racks are empty or have no power";
             }
-            if (cpus == 0) {
-                return "The server needs a CPU";
+            if (cpus == 0 && gpus == 0) {
+                return "The server needs a CPU or GPU";
             }
             if (ram == 0) {
                 return "The server needs RAM";
@@ -73,9 +76,24 @@ public final class LogicServer {
             return null;
         }
 
+        /** Rekenkracht voor Logic (je diagrammen): een CPU telt 1, een GPU ½. */
+        public double logicPower() {
+            return cpus * LogicBalance.logicPower(ServerPartItem.Kind.CPU) + gpus * LogicBalance.logicPower(ServerPartItem.Kind.GPU);
+        }
+
+        /** Rekenkracht voor het brein van E.D.I.T.H.: een CPU telt 1, een GPU 2. */
+        public double brainPower() {
+            return cpus * LogicBalance.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicBalance.brainPower(ServerPartItem.Kind.GPU);
+        }
+
         /** Ticks tussen "er gebeurt iets" en "het diagram begint". */
         public int reactionTicks() {
-            return LogicBalance.reactionTicks(cpus);
+            return LogicBalance.reactionTicks(logicPower());
+        }
+
+        /** Hoeveel ticks E.D.I.T.H. extra nadenkt op dit datacenter (0 = sterk genoeg, -1 = draait niet). */
+        public int brainDelayTicks() {
+            return online() ? LogicBalance.brainDelayTicks(brainPower()) : -1;
         }
 
         /** Zoveel diagrammen kunnen tegelijk bezig zijn. */
@@ -100,20 +118,20 @@ public final class LogicServer {
             return cached;
         }
         Set<BlockPos> cluster = mainCluster(core.getBlockPos(), SecurityDevices.scan(level, core).racks());
-        int cpus = 0;
-        int ram = 0;
-        int ssd = 0;
+        int[] counts = new int[ServerPartItem.Kind.values().length];
         for (BlockPos pos : cluster) {
             BlockState state = level.getBlockState(pos);
             if (!(level.getBlockEntity(pos) instanceof ServerRackBlockEntity rack)
                     || !state.hasProperty(ServerRackBlock.ONLINE) || !state.getValue(ServerRackBlock.ONLINE)) {
                 continue;
             }
-            cpus += rack.count(ServerPartItem.Kind.CPU);
-            ram += rack.count(ServerPartItem.Kind.RAM);
-            ssd += rack.count(ServerPartItem.Kind.SSD);
+            for (ServerPartItem.Kind kind : ServerPartItem.Kind.values()) {
+                counts[kind.ordinal()] += rack.count(kind);
+            }
         }
-        Stats stats = new Stats(cluster.size(), cpus, ram, ssd, core.isOnline(), Set.copyOf(cluster), now);
+        Stats stats = new Stats(cluster.size(), counts[ServerPartItem.Kind.CPU.ordinal()], counts[ServerPartItem.Kind.GPU.ordinal()],
+                counts[ServerPartItem.Kind.RAM.ordinal()], counts[ServerPartItem.Kind.SSD.ordinal()],
+                counts[ServerPartItem.Kind.FAN.ordinal()], core.isOnline(), Set.copyOf(cluster), now);
         CACHE.put(key, stats);
         return stats;
     }
@@ -176,14 +194,17 @@ public final class LogicServer {
         net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
         tag.putInt("racks", stats.racks());
         tag.putInt("cpu", stats.cpus());
+        tag.putInt("gpu", stats.gpus());
         tag.putInt("ram", stats.ram());
         tag.putInt("ssd", stats.ssd());
+        tag.putInt("fan", stats.fans());
         tag.putBoolean("online", stats.online());
         String problem = stats.problem();
         if (problem != null) {
             tag.putString("problem", problem);
         }
         tag.putInt("react", stats.online() ? stats.reactionTicks() : 0);
+        tag.putInt("brainDelay", stats.brainDelayTicks());
         tag.putInt("runs", stats.maxRuns());
         tag.putInt("cap", stats.capacity());
         return tag;

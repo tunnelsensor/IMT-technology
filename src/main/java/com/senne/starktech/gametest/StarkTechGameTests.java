@@ -1035,8 +1035,7 @@ public final class StarkTechGameTests {
             if (stats.racks() != 2 || stats.cpus() != 2 || stats.ram() != 1 || stats.ssd() != 1 || !stats.online()) {
                 throw new GameTestAssertException("De server telt verkeerd: " + stats);
             }
-            int expected = Math.max(1, com.senne.starktech.logic.LogicBalance.REACTION_TICKS
-                    - com.senne.starktech.logic.LogicBalance.CPU_SPEEDUP_TICKS);
+            int expected = com.senne.starktech.logic.LogicBalance.reactionTicks(2.0); // twee CPU's: kracht 2
             if (stats.reactionTicks() != expected || stats.maxRuns() != com.senne.starktech.logic.LogicBalance.RUNS_PER_RAM) {
                 throw new GameTestAssertException("Reageren of tegelijk klopt niet: " + stats.reactionTicks() + " ticks, " + stats.maxRuns() + " tegelijk");
             }

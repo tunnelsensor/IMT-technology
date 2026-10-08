@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 140 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 141 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1087,6 +1087,96 @@ De stappen, één per commit:
       diagram nog de oude naam. De lezers en panelen staan in een vaste volgorde (van boven naar
       beneden), zodat er niets verspringt als je een naam verandert. Screenshots: `-Ponly=devrename`
       (`dr1`-`dr3`). Eén nieuwe test.
+
+### 9. Het datacenter (8 oktober)
+
+Jouw wensen: het datacenter (je serverracks) moet meer gebruikt worden. Je moet kunnen **aflezen
+hoeveel CPU, RAM en SSD** er gebruikt wordt. Er komt een **fan**: heb je er te weinig, dan
+**brandt je datacenter af of gaat je hardware kapot**. Daarom kun je **backups** maken naar een
+ander datacenter, anders ben je bij een brand je hele config kwijt. En het **brein van E.D.I.T.H.**
+draait op de server: een **GPU** in plaats van een CPU is dubbel zo snel voor het brein, maar half
+zo snel voor je redstone (Logic). Zo moet je goed nadenken over wat je in je racks steekt, of een
+heel groot datacenter bouwen. Het brein zelf werkt zoals nu; het datacenter zet er alleen een
+vertraging bij zolang het nog niet sterk is.
+
+Jouw antwoorden:
+
+- **Fans** gaan in de gewone vakjes, maar een rack krijgt er **6 in plaats van 4**: twee kolommen
+  van drie.
+- **Te warm** gaat stap voor stap: vanaf **70°** trager en E.D.I.T.H. waarschuwt; vanaf **90°**
+  slijten onderdelen en gaan ze één voor één kapot; vanaf **110°** vat een rack vlam en brandt
+  het af met alles erin.
+- **Backups**: automatisch (om de zoveel minuten) én met de hand, naar een ander datacenter van
+  jezelf.
+- **Zonder datacenter werkt er géén enkel brein**, ook het woordenboek niet: dan is het gewoon een
+  mooie bril. Met een datacenter kies je zelf: woordenboek, lokaal of Claude. Hoe lang ze erover
+  doet = de tijd van het model + de vertraging van je datacenter. **In creative** heb je geen
+  datacenter nodig (makkelijker om te proberen en om de mod te bekijken).
+
+Mijn invulling (zeg het als je iets anders wil):
+
+- **Rekenkracht**: een CPU telt 1 voor Logic en 1 voor het brein; een GPU ½ voor Logic en 2 voor
+  het brein. Reageren duurt 0,5 s gedeeld door je Logic-kracht (1 CPU 0,5 s, 2 CPU's 0,25 s, 5
+  CPU's 0,1 s; alleen één GPU: 1 s). Het brein krijgt 8 s gedeeld door zijn kracht erbij (1 CPU
+  +8 s, 1 GPU +4 s, 4 GPU's +1 s); bij een halve seconde of minder valt het weg (vanaf 16
+  kracht, dus 8 GPU's).
+  Een server heeft nu een CPU **of** een GPU nodig (en nog steeds RAM en een SSD).
+- **Eén temperatuur voor het hele datacenter.** Elk onderdeel maakt warmte: CPU 2 W (4 W als hij
+  hard werkt), GPU 3 W (7 W als hij hard werkt), RAM en SSD ½ W. Een fan koelt 6 W weg, en elk
+  rack zelf 2 W (lucht). Elke watt die niet weggekoeld wordt = 8° warmer dan 25°. De temperatuur
+  gaat er langzaam naartoe (ongeveer een minuut), dus je hebt tijd om fans bij te steken. Een
+  klein rack (CPU, RAM, SSD) blijft zonder fan koel; met meer CPU's of GPU's heb je fans nodig.
+- **Wat er verbrandt**: je diagrammen en je keycards staan verspreid over al je SSD's (zoals RAID
+  0). Gaat er één SSD kapot door hitte of brand, dan is alles weg (alle keycards werken niet
+  meer). Een SSD er gewoon uithalen mag wel (dan draaien alleen de diagrammen die niet meer passen
+  niet). Je bestanden, notities, wachtwoord en vrienden staan in de kern zelf en blijven.
+  Fans slijten niet.
+- **Het brein draait op het sterkste datacenter van jezelf**, waar het ook staat (ook in een
+  andere dimensie), als de server draait.
+- **Aflezen**: een nieuwe app **Monitor** op de desktop (zoals Taakbeheer in Windows) en kort op
+  het scherm van een rack.
+
+De stappen, één per commit:
+
+- [x] **1. Zes vakjes, de GPU en de fan**
+      Een rack heeft nu 6 vakjes: twee kolommen van drie, op het scherm en op de voorkant van het
+      blok (je oude racks houden wat erin zat). Twee nieuwe onderdelen: de **Server GPU** (recept:
+      goud, redstone, 2 Stark-chips en een diamant) en de **Server Fan** (ijzer, ijzeren tralies en
+      redstone = 2 fans; koelen doet hij vanaf stap 2). De tooltip zegt hoeveel een CPU of GPU telt
+      voor Logic en voor het brein. Een server draait nu met een CPU **of** een GPU. Het rackscherm
+      is wat hoger en toont ook GPU's, fans en "E.D.I.T.H. +2.0 s" (hoe lang het brein op dit
+      datacenter extra zou nadenken; dat gebruiken we pas in stap 6). Let op: reageren gaat nu
+      anders dan eerst (eerst 0,15 s sneller per extra CPU, nu 0,5 s gedeeld door de kracht), dus
+      4 CPU's reageren in 0,15 s in plaats van meteen. In de config (`[logic]`): `gpuLogicPower`,
+      `gpuBrainPower`, `brainDelayTicks`, `brainDelayGoneTicks`; `cpuSpeedupTicks` is weg.
+      Screenshots: `-Ponly=racks`. Eén nieuwe test (in een eigen bestand,
+      `gametest/DatacenterGameTests.java`).
+- [ ] **2. Warmte**
+      De temperatuur van het datacenter (warmte tegen koeling, langzaam stijgend en dalend). Vanaf
+      70° reageert alles twee keer zo traag en waarschuwt E.D.I.T.H. de eigenaar. Het rackscherm
+      toont de temperatuur, de warmte en de koeling, en hoeveel fans er nog bij moeten.
+- [ ] **3. Slijten en brand**
+      Vanaf 90° slijten de onderdelen (een balkje zoals bij gereedschap) en gaan ze één voor één
+      kapot (rook, een knak). Blijft het 10 seconden boven 110°, dan vat het heetste rack vlam: vuur
+      eromheen, 10 seconden om onderdelen te redden, dan brandt het af met alles erin. Brandt of
+      breekt er een SSD, dan zijn je diagrammen en keycards weg.
+- [ ] **4. Gebruik meten en de app Monitor**
+      Hoe hard de CPU's werken (Logic: zoveel stapjes per seconde per kracht), het brein, het RAM
+      (diagrammen tegelijk) en de SSD's (blokjes). Een app **Monitor** op de desktop: tegels met
+      grafiekjes van de laatste minuut, de temperatuur, elk rack met zijn onderdelen, en wat er
+      bezig is (diagrammen, E.D.I.T.H., backups).
+- [ ] **5. Backups**
+      Een app **Backup**: kies een ander datacenter van jezelf, **Backup now**, of automatisch
+      (uit, elke 5, 15 of 60 minuten). Een backup neemt plek op de SSD's van dat andere datacenter;
+      daar blijven de laatste 3 per netwerk. Alle backups van jou staan in de lijst, met **Restore**
+      (eerst "Sure?") en **Delete**. Brandt het andere datacenter af, dan zijn de backups daar ook
+      weg.
+- [ ] **6. Het brein op het datacenter**
+      Zonder datacenter (en niet in creative) zegt E.D.I.T.H. dat ze niet kan denken, en zegt ze
+      ook uit zichzelf niets. Met een datacenter: de tijd van het model + de vertraging van je
+      datacenter (bij het woordenboek ook). Terwijl ze denkt, werkt je datacenter hard (Monitor,
+      en het wordt warmer). Het scherm AI Brain toont welk datacenter en hoeveel vertraging.
+- [ ] **7. Showcase, screenshots en LEESMIJ**
 
 ---
 

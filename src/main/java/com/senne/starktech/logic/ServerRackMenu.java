@@ -14,12 +14,17 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Het menu van een serverrack: de vier vakjes (onder elkaar, zoals de bays van een echt rack), je
- * eigen rugzak, en wat de hele server kan (als "data slots", zie ServerRackBlockEntity).
+ * Het menu van een serverrack: de zes vakjes (twee kolommen van drie, zoals de bays van een echt
+ * rack; eerst de linker kolom van boven naar beneden, dan de rechter), je eigen rugzak, en wat de
+ * hele server kan (als "data slots", zie ServerRackBlockEntity).
  */
 public class ServerRackMenu extends AbstractContainerMenu {
-    /** Waar het bovenste vakje staat; de andere staan eronder. */
-    public static final int BAY_X = 26, BAY_Y = 8, BAY_STEP = 18;
+    /** Waar het vakje linksboven staat; de andere staan eronder (BAY_STEP) en ernaast (COLUMN_STEP). */
+    public static final int BAY_X = 14, BAY_Y = 14, BAY_STEP = 18, COLUMN_STEP = 22;
+    /** Hoe hoog het scherm extra is (voor de getallen van het datacenter), en dus hoeveel lager je rugzak staat. */
+    public static final int EXTRA_HEIGHT = 24;
+    /** Waar je rugzak begint (bij de andere schermen van de mod op 84). */
+    public static final int INVENTORY_Y = 84 + EXTRA_HEIGHT;
 
     public static final int DATA_STATUS = 0;
     public static final int DATA_RACKS = 1;
@@ -27,7 +32,9 @@ public class ServerRackMenu extends AbstractContainerMenu {
     public static final int DATA_RAM = 3;
     public static final int DATA_SSD = 4;
     public static final int DATA_CORE_ONLINE = 5;
-    public static final int DATA_COUNT = 6;
+    public static final int DATA_GPU = 6;
+    public static final int DATA_FAN = 7;
+    public static final int DATA_COUNT = 8;
 
     private final Container parts;
     private final ContainerData data;
@@ -52,7 +59,7 @@ public class ServerRackMenu extends AbstractContainerMenu {
         this.pos = pos;
         parts.startOpen(inventory.player);
         for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
-            addSlot(new Slot(parts, i, BAY_X, BAY_Y + i * BAY_STEP) {
+            addSlot(new Slot(parts, i, bayX(i), bayY(i)) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
                     return stack.getItem() instanceof ServerPartItem;
@@ -66,13 +73,23 @@ public class ServerRackMenu extends AbstractContainerMenu {
         }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
-                addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, 84 + row * 18));
+                addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, INVENTORY_Y + row * 18));
             }
         }
         for (int column = 0; column < 9; column++) {
-            addSlot(new Slot(inventory, column, 8 + column * 18, 142));
+            addSlot(new Slot(inventory, column, 8 + column * 18, INVENTORY_Y + 58));
         }
         addDataSlots(data);
+    }
+
+    /** Waar vakje {@code i} staat (links). */
+    public static int bayX(int i) {
+        return BAY_X + (i / LogicBalance.RACK_ROWS) * COLUMN_STEP;
+    }
+
+    /** Waar vakje {@code i} staat (boven). */
+    public static int bayY(int i) {
+        return BAY_Y + (i % LogicBalance.RACK_ROWS) * BAY_STEP;
     }
 
     // ---------------------------------------------------------------- Gegevens voor het scherm
@@ -89,6 +106,14 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     public int cpus() {
         return data.get(DATA_CPU);
+    }
+
+    public int gpus() {
+        return data.get(DATA_GPU);
+    }
+
+    public int fans() {
+        return data.get(DATA_FAN);
     }
 
     public int ram() {

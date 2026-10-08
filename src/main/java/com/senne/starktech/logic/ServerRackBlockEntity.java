@@ -24,7 +24,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * De "binnenkant" van een serverrack: zijn vier vakjes (CPU, RAM, SSD), en of hij meedraait.
+ * De "binnenkant" van een serverrack: zijn zes vakjes (CPU, GPU, RAM, SSD, fan), en of hij meedraait.
  *
  * Elke twee seconden kijkt hij:
  * <ul>
@@ -79,6 +79,8 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             return switch (index) {
                 case ServerRackMenu.DATA_RACKS -> stats.racks();
                 case ServerRackMenu.DATA_CPU -> stats.cpus();
+                case ServerRackMenu.DATA_GPU -> stats.gpus();
+                case ServerRackMenu.DATA_FAN -> stats.fans();
                 case ServerRackMenu.DATA_RAM -> stats.ram();
                 case ServerRackMenu.DATA_SSD -> stats.ssd();
                 case ServerRackMenu.DATA_CORE_ONLINE -> stats.coreOnline() ? 1 : 0;
