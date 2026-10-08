@@ -11,6 +11,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Een kleine code-editor voor de app Logic (jouw wens, 7 oktober: "regels gaat vlotter maar is
@@ -24,7 +27,10 @@ import net.minecraft.client.gui.screens.Screen;
  *       vanzelf 4 spaties verder; Tab = 4 spaties (met een selectie: alle regels verder),
  *       Shift+Tab terug; Backspace aan het begin van een inspringing haalt 4 spaties weg;</li>
  *   <li>selecteren met de muis of Shift+pijltjes, Ctrl+A/C/X/V, Ctrl+Z (ongedaan maken) en
- *       Ctrl+Y (opnieuw).</li>
+ *       Ctrl+Y (opnieuw);</li>
+ *   <li><b>Ctrl+Spatie</b>: een lijstje met wat je hier kunt typen (zie CodeCompletion). Pijltjes
+ *       kiezen, Enter of Tab vult in, Esc sluit, verder typen maakt de lijst korter. Na {@code card.}
+ *       of {@code on("} gaat het lijstje vanzelf open.</li>
  * </ul>
  * Regels worden niet afgebroken: is een regel te lang, dan schuift het beeld opzij mee.
  */
@@ -72,6 +78,18 @@ final class CodeEditor {
     private final ArrayDeque<Snapshot> redo = new ArrayDeque<>();
     private long lastEdit;
 
+    // ---------------------------------------------------------------- Ctrl+Spatie
+    /** Zoveel suggesties zie je tegelijk (de rest door te scrollen). */
+    private static final int POPUP_ROWS = 8;
+    /** Waar de namen van je apparaten, lezers en panelen vandaan komen (de app Logic geeft ze). */
+    private java.util.function.@Nullable Supplier<CodeCompletion.Data> completionData;
+    /** Het lijstje dat open is (of null), welke regel gekozen is, en hoever het gescrold is. */
+    private CodeCompletion.@Nullable Result popup;
+    private int popupIndex;
+    private int popupScroll;
+    /** Waar het lijstje de laatste keer getekend werd: {x, y, breedte, rijen} (voor de muis). */
+    private int[] popupBounds = new int[4];
+
     CodeEditor(Font font) {
         this.font = font;
     }
@@ -82,8 +100,14 @@ final class CodeEditor {
         return String.join("\n", lines);
     }
 
+    /** Waar Ctrl+Spatie de namen van je apparaten, lezers en panelen vandaan haalt. */
+    void setCompletionData(java.util.function.Supplier<CodeCompletion.Data> data) {
+        this.completionData = data;
+    }
+
     /** Nieuwe tekst (een ander diagram): de cursor naar het begin, en niets om ongedaan te maken. */
     void setText(String text) {
+        popup = null;
         lines = new ArrayList<>(List.of(text.replace("\r", "").replace("\t", "    ").split("\n", -1)));
         cursorLine = 0;
         cursorCol = 0;
@@ -105,6 +129,9 @@ final class CodeEditor {
 
     void setFocused(boolean focused) {
         this.focused = focused;
+        if (!focused) {
+            popup = null;
+        }
     }
 
     boolean focused() {
@@ -190,6 +217,161 @@ final class CodeEditor {
             int thumb = Math.max(8, track * visibleLines() / lines.size());
             int top = y + 2 + (track - thumb) * scrollLine / Math.max(1, lines.size() - visibleLines());
             g.fill(x + w - 3, top, x + w - 1, top + thumb, HudStyle.argb(160, HudStyle.CYAN));
+        }
+        renderPopup(g, textX);
+    }
+
+    /**
+     * Het lijstje van Ctrl+Spatie: onder de cursor (of erboven als daar geen plek is), met de gekozen
+     * suggestie oplichtend en daaronder wat hij doet.
+     */
+    private void renderPopup(GuiGraphics g, int textX) {
+        if (popup == null || cursorLine < scrollLine || cursorLine >= scrollLine + visibleLines()) {
+            return;
+        }
+        List<CodeCompletion.Item> items = popup.items();
+        int widest = 0;
+        for (CodeCompletion.Item item : items) {
+            widest = Math.max(widest, font.width(item.label()));
+        }
+        int pw = Math.max(40, Math.min(w - gutterWidth() - 6, Math.max(150, widest + 14)));
+        List<FormattedCharSequence> detail = font.split(Component.literal(items.get(popupIndex).detail()), pw - 8);
+        detail = detail.subList(0, Math.min(3, detail.size()));
+        int rows = Math.max(1, Math.min(Math.min(POPUP_ROWS, items.size()), (h - 10 - detail.size() * 9 - 8) / LINE_H));
+        popupScroll = Math.max(0, Math.min(popupScroll, items.size() - rows));
+        if (popupIndex < popupScroll) {
+            popupScroll = popupIndex;
+        } else if (popupIndex >= popupScroll + rows) {
+            popupScroll = popupIndex - rows + 1;
+        }
+        int ph = rows * LINE_H + 4 + (detail.isEmpty() ? 0 : detail.size() * 9 + 4);
+        String line = lines.get(cursorLine);
+        int px = textX + font.width(line.substring(0, Math.min(popup.replaceFrom(), line.length())));
+        px = Math.max(x + gutterWidth(), Math.min(px, x + w - pw - 2));
+        int lineY = y + 2 + (cursorLine - scrollLine) * LINE_H;
+        int py = lineY + LINE_H;
+        if (py + ph > y + h - 1) {
+            py = Math.max(y + 1, lineY - ph - 1); // geen plek eronder: erboven
+        }
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 50);
+        g.fill(px, py, px + pw, py + ph, HudStyle.argb(250, 0x0E1C26));
+        g.renderOutline(px, py, pw, ph, HudStyle.argb(255, HudStyle.CYAN));
+        for (int i = 0; i < rows; i++) {
+            int index = popupScroll + i;
+            CodeCompletion.Item item = items.get(index);
+            int ry = py + 2 + i * LINE_H;
+            if (index == popupIndex) {
+                g.fill(px + 1, ry - 1, px + pw - 1, ry + LINE_H - 1, HudStyle.argb(255, SELECTION));
+            }
+            g.drawString(font, OsDraw.fitRight(font, item.label(), pw - 10), px + 4, ry, HudStyle.argb(255, item.colour()), false);
+        }
+        if (items.size() > rows) {
+            int track = rows * LINE_H;
+            int thumb = Math.max(4, track * rows / items.size());
+            int top = py + 2 + (track - thumb) * popupScroll / Math.max(1, items.size() - rows);
+            g.fill(px + pw - 3, top, px + pw - 1, top + thumb, HudStyle.argb(160, HudStyle.CYAN));
+        }
+        if (!detail.isEmpty()) {
+            int dy = py + 3 + rows * LINE_H;
+            g.fill(px + 2, dy - 1, px + pw - 2, dy, HudStyle.argb(90, HudStyle.CYAN));
+            for (int i = 0; i < detail.size(); i++) {
+                g.drawString(font, detail.get(i), px + 4, dy + 2 + i * 9, HudStyle.argb(255, OsDraw.GREY), false);
+            }
+        }
+        g.pose().popPose();
+        popupBounds = new int[] {px, py, pw, rows};
+    }
+
+    // ================================================================ Ctrl+Spatie
+
+    /**
+     * Alleen voor de screenshot-rondleiding: de cursor op de eerste regel die {@code lineText} bevat,
+     * vlak na {@code after} (of aan het einde van die regel).
+     */
+    void tourCursor(String lineText, String after) {
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.contains(lineText)) {
+                int at = line.indexOf(after);
+                cursorLine = i;
+                cursorCol = at >= 0 ? at + after.length() : line.length();
+                anchorLine = -1;
+                keepCursorVisible();
+                return;
+            }
+        }
+    }
+
+    /** Is het lijstje van Ctrl+Spatie open? */
+    boolean popupOpen() {
+        return popup != null;
+    }
+
+    /** Opent het lijstje met wat je hier kunt typen. Geeft false als er niets te kiezen is. */
+    boolean openCompletion() {
+        if (completionData == null || readOnly) {
+            return false;
+        }
+        anchorLine = -1;
+        CodeCompletion.Result result = CodeCompletion.complete(lines, cursorLine, cursorCol, completionData.get());
+        popup = result.items().isEmpty() ? null : result;
+        popupIndex = 0;
+        popupScroll = 0;
+        return popup != null;
+    }
+
+    /** Na typen of wissen: het lijstje opnieuw, met wat er nu voor de cursor staat. */
+    private void refreshCompletion() {
+        if (popup == null) {
+            return;
+        }
+        if (cursorCol < popup.replaceFrom()) {
+            popup = null; // je wiste tot voor het begin van het woord
+            return;
+        }
+        openCompletion();
+    }
+
+    /** Vult de gekozen suggestie in (in plaats van wat je van het woord al typte). */
+    private void acceptCompletion() {
+        if (popup == null || popup.items().isEmpty()) {
+            return;
+        }
+        CodeCompletion.Item item = popup.items().get(Math.min(popupIndex, popup.items().size() - 1));
+        boolean inString = popup.inString();
+        int from = Math.min(popup.replaceFrom(), cursorCol);
+        popup = null;
+        remember(true);
+        anchorLine = -1;
+        String line = lines.get(cursorLine);
+        lines.set(cursorLine, line.substring(0, from) + line.substring(cursorCol));
+        cursorCol = from;
+        int startLine = cursorLine;
+        // Meerdere regels krijgen de inspringing van deze regel.
+        String indent = " ".repeat(indentOf(lines.get(cursorLine)));
+        insertRaw(item.insert().replace("\n", "\n" + indent));
+        if (item.caret() >= 0) {
+            cursorLine = startLine;
+            cursorCol = Math.min(lines.get(cursorLine).length(), from + item.caret());
+            if (item.select() > 0) {
+                anchorLine = cursorLine;
+                anchorCol = cursorCol;
+                cursorCol = Math.min(lines.get(cursorLine).length(), cursorCol + item.select());
+            }
+        }
+        if (inString) {
+            // Na een naam: over de sluitende " heen (of zet hem erbij als hij er nog niet is).
+            String now = lines.get(cursorLine);
+            if (cursorCol < now.length() && now.charAt(cursorCol) == '"') {
+                cursorCol++;
+            } else if (now.indexOf('"', cursorCol) < 0) {
+                insertRaw("\"");
+            }
+        }
+        keepCursorVisible();
+        if (item.opensString()) {
+            openCompletion(); // de cursor staat tussen aanhalingstekens: meteen de namen
         }
     }
 
@@ -296,6 +478,15 @@ final class CodeEditor {
     // ================================================================ Muis
 
     boolean mouseClicked(int mx, int my, int button) {
+        if (popup != null) {
+            int[] b = popupBounds;
+            if (mx >= b[0] && mx < b[0] + b[2] && my >= b[1] + 2 && my < b[1] + 2 + b[3] * LINE_H) {
+                popupIndex = Math.min(popup.items().size() - 1, popupScroll + (my - b[1] - 2) / LINE_H);
+                acceptCompletion();
+                return true;
+            }
+            popup = null;
+        }
         boolean inside = mx >= x && mx < x + w && my >= y && my < y + h;
         focused = inside;
         if (!inside || button != 0) {
@@ -336,6 +527,11 @@ final class CodeEditor {
     }
 
     void mouseScrolled(double scrollY) {
+        if (popup != null) {
+            // Met het lijstje open: door de suggesties scrollen.
+            popupIndex = Math.max(0, Math.min(popup.items().size() - 1, popupIndex - (int) Math.signum(scrollY)));
+            return;
+        }
         scrollLine = Math.max(0, Math.min(Math.max(0, lines.size() - visibleLines()), scrollLine - (int) Math.signum(scrollY) * 3));
     }
 
@@ -363,6 +559,46 @@ final class CodeEditor {
         }
         boolean shift = Screen.hasShiftDown();
         boolean control = Screen.hasControlDown();
+        if (control && key == 32) { // Ctrl+Spatie
+            openCompletion();
+            return true;
+        }
+        if (popup != null) {
+            int size = popup.items().size();
+            switch (key) {
+                case 265 -> { // omhoog
+                    popupIndex = (popupIndex - 1 + size) % size;
+                    return true;
+                }
+                case 264 -> { // omlaag
+                    popupIndex = (popupIndex + 1) % size;
+                    return true;
+                }
+                case 266 -> { // page up
+                    popupIndex = Math.max(0, popupIndex - POPUP_ROWS);
+                    return true;
+                }
+                case 267 -> { // page down
+                    popupIndex = Math.min(size - 1, popupIndex + POPUP_ROWS);
+                    return true;
+                }
+                case 257, 335, 258 -> { // Enter, Tab: invullen
+                    acceptCompletion();
+                    return true;
+                }
+                case 256 -> { // Esc: alleen het lijstje dicht
+                    popup = null;
+                    return true;
+                }
+                case 259 -> { // Backspace: wissen, en het lijstje past zich aan
+                    backspace();
+                    keepCursorVisible();
+                    refreshCompletion();
+                    return true;
+                }
+                default -> popup = null; // iets anders (pijltje opzij, Home...): lijstje dicht
+            }
+        }
         if (Screen.isSelectAll(key)) {
             anchorLine = 0;
             anchorCol = 0;
@@ -430,15 +666,38 @@ final class CodeEditor {
         if (!focused || readOnly || c < ' ' || c == 127) {
             return focused;
         }
+        if (c == ' ' && Screen.hasControlDown()) {
+            return true; // de spatie van Ctrl+Spatie (dat opent het lijstje al)
+        }
         if (text().length() >= MAX_LENGTH) {
             return true;
+        }
+        boolean word = Character.isLetterOrDigit(c) || c == '_' || c == '.';
+        if (popup != null && !word && !(popup.inString() && c != '"')) {
+            popup = null; // een ander teken: het woord is af
         }
         boolean typing = Util.getMillis() - lastEdit < 800 && anchorLine < 0;
         remember(!typing);
         deleteSelection();
         insertRaw(String.valueOf(c));
         keepCursorVisible();
+        if (popup != null) {
+            refreshCompletion();
+        } else if (c == '.' && endsWithWord("card.", "player.") || c == '"' && endsWithWord("(\"")) {
+            openCompletion(); // na card. of on(" meteen de mogelijkheden
+        }
         return true;
+    }
+
+    /** Eindigt de tekst voor de cursor op een van deze stukjes? */
+    private boolean endsWithWord(String... endings) {
+        String before = lines.get(cursorLine).substring(0, cursorCol);
+        for (String ending : endings) {
+            if (before.endsWith(ending)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void move(int key, boolean shift, boolean control) {

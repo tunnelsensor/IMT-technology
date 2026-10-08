@@ -418,7 +418,11 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
 4. **Programmeren**: de app **Logic** op de desktop. Links je diagrammen, rechts de code; de knop
    **Blocks** toont hetzelfde als blokjes met draadjes (en **Code** weer terug). **Check** zoekt
    fouten, **Save** zet het op de server, **Help** toont alles wat je kunt gebruiken (klik erop en
-   het komt in je code).
+   het komt in je code). **Ctrl+Spatie** in de code toont wat je op die plek kunt typen: aan de
+   linkerkant de whens en `def`, in een blok de acties en je eigen defs, na `if` de gegevens die bij
+   de trigger passen, en tussen aanhalingstekens de namen van je apparaten, lezers en panelen.
+   Pijltjes kiezen, Enter of Tab vult in, Esc sluit; verder typen maakt de lijst korter. Na `card.`
+   of `on("` gaat het lijstje vanzelf open.
 
 De code lijkt op Python: wat ingesprongen staat (4 spaties), hoort bij de regel erboven.
 ```

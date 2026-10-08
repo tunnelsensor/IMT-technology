@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 137 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 138 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1052,7 +1052,20 @@ De stappen, één per commit:
       codepanel(...)"); verder namen zoals in Python (letters, cijfers, _), geen woorden van de taal,
       niets tussen de haakjes. Een def hoort bij één diagram (zoals een functie bij één bestand). Help
       heeft een stuk "YOUR OWN BLOCKS". Het lab in de showcase en de screenshots (`-Ponly=logic`,
-      `l08`) gebruiken een def. Drie nieuwe tests.
+      `l08`) gebruiken een def. Drie nieuwe tests. Commit: `fe01c29`.
+- [x] **10. Ctrl+Spatie in de code** (jouw wens: "zorg dat Ctrl + spatie alle opties toont die je
+      kunt typen")
+      Een lijstje bij de cursor met wat daar past (`client/os/CodeCompletion`): aan de linkerkant de
+      whens (met je eerste lezer, paneel of apparaat al ingevuld) en `def`; na `when ` de triggers; in
+      een blok de acties, if/elif/else/pass en je eigen defs; na `if`, `and`, `or`, `not` of een
+      vergelijking alleen de gegevens die bij de trigger van dat blok passen (`card.level` alleen
+      onder `when keycard`); tussen aanhalingstekens de namen van je lezers, panelen of apparaten,
+      afhankelijk van wat ervoor staat. Wat je al typte maakt de lijst korter (wat ermee begint
+      bovenaan); onderaan staat wat de gekozen regel doet. Pijltjes, Enter/Tab, Esc, scrollen en
+      klikken werken. Kies je iets met aanhalingstekens (`pulse("...", 3)`), dan staat de cursor
+      ertussen en gaat meteen de lijst met namen open; `def name():` selecteert de naam zodat je hem
+      meteen overtypt. Na `card.`, `player.` of `on("` gaat het lijstje vanzelf open. Screenshots:
+      `-Ponly=logic` (`l09`-`l11`). Eén nieuwe test.
 
 ---
 

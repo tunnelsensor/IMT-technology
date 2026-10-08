@@ -1566,6 +1566,25 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "l08_logic_block_use_def");
+            // Ctrl+Spatie: terug naar de code, dan het lijstje op drie plekken.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicComplete("open_vault()", "        ");
+                }
+            });
+            t.shot(10, "l09_ctrl_space_actions");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicComplete("if card.valid", "if ");
+                }
+            });
+            t.shot(10, "l10_ctrl_space_checks");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicComplete("pulse(\"Vault door\"", "pulse(\"");
+                }
+            });
+            t.shot(10, "l11_ctrl_space_devices");
             t.close(10);
         }
 }

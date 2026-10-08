@@ -36,7 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * "Check" laat zien of de code klopt (en springt naar de regel met de fout); "Save" stuurt hem naar
  * de server, die alles nog eens controleert. "Help" toont alles wat je kunt gebruiken, met de namen
- * van jouw apparaten: klik erop en het komt in je code.
+ * van jouw apparaten: klik erop en het komt in je code. Ctrl+Spatie in de code toont wat je op die
+ * plek kunt typen (zie CodeCompletion).
  *
  * De server bewaart blokjes (zie LogicGraph); de code is een andere manier om ze te laten zien (zie
  * GraphConverter). Je commentaar (#) blijft bewaard zolang de code bij de blokjes past.
@@ -96,6 +97,8 @@ final class LogicApp {
     LogicApp(StarkOsScreen screen, Font font) {
         this.screen = screen;
         this.editor = new CodeEditor(font);
+        // Ctrl+Spatie: de namen van je apparaten, lezers en panelen komen van de server.
+        this.editor.setCompletionData(this::completionData);
         this.canvas = new BlockCanvas(this::info, () -> blocksEdited = true, text -> hoverHint = text);
     }
 
@@ -450,6 +453,21 @@ final class LogicApp {
         statusColour = colour;
     }
 
+    /** Wat Ctrl+Spatie aan namen kan voorstellen: je apparaten, je lezers en je panelen. */
+    private CodeCompletion.Data completionData() {
+        List<String> outputs = new ArrayList<>();
+        for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
+            outputs.add(tag.getAsString());
+        }
+        List<String> readers = new ArrayList<>();
+        List<String> panels = new ArrayList<>();
+        for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
+            CompoundTag input = (CompoundTag) element;
+            (input.getBoolean("p") ? panels : readers).add(input.getString("n"));
+        }
+        return new CodeCompletion.Data(outputs, readers, panels);
+    }
+
     private @Nullable String firstInput(boolean panel) {
         for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
             CompoundTag input = (CompoundTag) element;
@@ -670,7 +688,7 @@ final class LogicApp {
         int tipH = 20;
         int listBottom = y + h - tipH - (renaming != null ? 14 : 0);
         helpScroll = Math.max(0, Math.min(helpScroll, Math.max(0, lines.size() - 3)));
-        String tip = "Click a line to put it in your code.";
+        String tip = "Click a line to put it in your code. Or press Ctrl+Space in the code.";
         int ly = y + 3;
         g.enableScissor(x + 1, y + 1, x + w - 1, listBottom);
         for (int i = helpScroll; i < lines.size() && ly < listBottom; i++) {
@@ -921,6 +939,19 @@ final class LogicApp {
             blockGraph.nodes().stream().filter(node -> node.op == select).findFirst()
                     .ifPresent(node -> canvas.select(node.id));
         }
+    }
+
+    /**
+     * Ctrl+Spatie op de regel met deze tekst, met de cursor vlak na {@code after} (of aan het einde van
+     * de regel als hij {@code after} niet vindt).
+     */
+    void tourComplete(String lineText, String after) {
+        if (mode == Mode.BLOCKS) {
+            switchMode(); // Ctrl+Spatie hoort bij de code
+        }
+        editor.setFocused(true);
+        editor.tourCursor(lineText, after);
+        editor.openCompletion();
     }
 
     /** De knop Save, zoals jij hem indrukt. */

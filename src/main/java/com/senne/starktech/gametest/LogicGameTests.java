@@ -21,6 +21,7 @@ import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.os.StarkOs;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -320,6 +321,69 @@ public final class LogicGameTests {
     /** Staat deze tekst als regel van een diagram (LOGIC) in het logboek? */
     private static boolean logged(SecurityCoreBlockEntity core, String text) {
         return core.log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.LOGIC && entry.text().equals(text));
+    }
+
+    // ================================================================ Ctrl+Spatie
+
+    /** Wat Ctrl+Spatie op deze plek voorstelt (de cursor staat op {@code |}). */
+    private static List<String> suggest(String code) {
+        String[] lines = code.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            int at = lines[i].indexOf('|');
+            if (at >= 0) {
+                List<String> clean = new java.util.ArrayList<>(List.of(code.replace("|", "").split("\n", -1)));
+                var data = new com.senne.starktech.client.os.CodeCompletion.Data(List.of("Vault door", "Lab lights"),
+                        List.of("Lab door"), List.of("Front door"));
+                return com.senne.starktech.client.os.CodeCompletion.complete(clean, i, at, data).items().stream()
+                        .map(com.senne.starktech.client.os.CodeCompletion.Item::label).toList();
+            }
+        }
+        throw new GameTestAssertException("Geen | in de test-code");
+    }
+
+    private static void expectSuggestions(String code, List<String> wanted, List<String> notWanted) {
+        List<String> got = suggest(code);
+        for (String label : wanted) {
+            if (!got.contains(label)) {
+                throw new GameTestAssertException("Voor:\n" + code + "\nmiste ik \"" + label + "\" in " + got);
+            }
+        }
+        for (String label : notWanted) {
+            if (got.contains(label)) {
+                throw new GameTestAssertException("Voor:\n" + code + "\nhoort \"" + label + "\" er niet bij: " + got);
+            }
+        }
+    }
+
+    /**
+     * Ctrl+Spatie stelt voor wat op die plek past: whens en def aan de linkerkant, triggers na when,
+     * acties en eigen defs in een blok, gegevens die bij de trigger passen na if, en namen tussen
+     * aanhalingstekens. Wat je al typte, maakt de lijst korter.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_ctrl_space(GameTestHelper helper) {
+        expectSuggestions("|", List.of("when keycard(...):", "when every(10):", "def name():"), List.of("accept()"));
+        expectSuggestions("when |", List.of("keycard(\"...\"):", "every(10):"), List.of("accept()"));
+        expectSuggestions("def open_lab():\n    pass\nwhen every(5):\n    |",
+                List.of("on(\"...\")", "pulse(\"...\", 3)", "if ...:", "open_lab()"), List.of("when keycard(...):"));
+        expectSuggestions("when keycard(\"Lab door\"):\n    if |", List.of("card.level", "card.valid", "player.trusted"),
+                List.of("code"));
+        expectSuggestions("when codepanel(\"Front door\"):\n    if |", List.of("code", "player.trusted"), List.of("card.level"));
+        expectSuggestions("when every(5):\n    if |", List.of("is_night", "is_on(\"...\")"), List.of("card.level", "player.trusted"));
+        expectSuggestions("when keycard(\"|", List.of("Lab door"), List.of("Front door", "Vault door"));
+        expectSuggestions("when every(5):\n    on(\"|\")", List.of("Vault door", "Lab lights"), List.of("Lab door"));
+        // Wat je al typte, maakt de lijst korter (en wat ermee begint, staat bovenaan).
+        List<String> pu = suggest("when every(5):\n    pu|");
+        if (pu.isEmpty() || !pu.getFirst().equals("pulse(\"...\", 3)")) {
+            throw new GameTestAssertException("Na \"pu\" zou pulse bovenaan moeten staan: " + pu);
+        }
+        List<String> va = suggest("when every(5):\n    on(\"La|");
+        if (!va.equals(List.of("Lab lights"))) {
+            throw new GameTestAssertException("Na on(\"La zou alleen Lab lights moeten passen: " + va);
+        }
+        // In een def weten we niet welke when hem gebruikt: dan mag alles.
+        expectSuggestions("def check():\n    if |", List.of("card.level", "code", "is_night"), List.of());
+        helper.succeed();
     }
 
     // ================================================================ De server voert uit

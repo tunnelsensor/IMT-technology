@@ -76,8 +76,8 @@ public sealed interface Expr {
             return help;
         }
 
-        /** Mag dit gegeven na deze trigger? (player.* alleen na een lezer of paneel.) */
-        boolean allowedAfter(@Nullable Op trigger) {
+        /** Mag dit gegeven na deze trigger? (player.* alleen na een lezer of paneel; null = in een def: alles.) */
+        public boolean allowedAfter(@Nullable Op trigger) {
             if (name.startsWith("player.")) {
                 return trigger == null || trigger.hasSourceDevice();
             }

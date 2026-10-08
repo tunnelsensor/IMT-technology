@@ -218,6 +218,11 @@ public class StarkOsScreen extends Screen {
         logic.tourBlocks(select);
     }
 
+    /** Alleen voor de screenshot-rondleiding: Ctrl+Spatie in de code van de app Logic. */
+    public void tourLogicComplete(String lineText, String after) {
+        logic.tourComplete(lineText, after);
+    }
+
     /** Alleen voor de screenshot-rondleiding: de knop Save van de app Logic. */
     public void tourSaveLogic() {
         logic.tourSave();
