@@ -34,7 +34,12 @@ public class ServerRackMenu extends AbstractContainerMenu {
     public static final int DATA_CORE_ONLINE = 5;
     public static final int DATA_GPU = 6;
     public static final int DATA_FAN = 7;
-    public static final int DATA_COUNT = 8;
+    /** Temperatuur, warmte, warmte als alles hard werkt, en koeling: allemaal in tienden (72.4 graden = 724). */
+    public static final int DATA_TEMP = 8;
+    public static final int DATA_HEAT = 9;
+    public static final int DATA_FULL_HEAT = 10;
+    public static final int DATA_COOLING = 11;
+    public static final int DATA_COUNT = 12;
 
     private final Container parts;
     private final ContainerData data;
@@ -114,6 +119,22 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     public int fans() {
         return data.get(DATA_FAN);
+    }
+
+    public double temperature() {
+        return data.get(DATA_TEMP) / 10.0;
+    }
+
+    public double heat() {
+        return data.get(DATA_HEAT) / 10.0;
+    }
+
+    public double fullHeat() {
+        return data.get(DATA_FULL_HEAT) / 10.0;
+    }
+
+    public double cooling() {
+        return data.get(DATA_COOLING) / 10.0;
     }
 
     public int ram() {

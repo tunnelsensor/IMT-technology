@@ -54,6 +54,16 @@ public class ServerPartItem extends Item {
             case FAN -> Component.translatable(key);
         };
         tooltip.add(text.copy().withStyle(ChatFormatting.GRAY));
+        // De warmte (8 oktober): wat dit onderdeel aan warmte maakt, of hoeveel een fan wegkoelt.
+        Component heat = switch (kind) {
+            case CPU -> Component.translatable("item.starktech.server_part.heat_busy", number(LogicBalance.CPU_HEAT),
+                    number(LogicBalance.CPU_HEAT + LogicBalance.CPU_BUSY_HEAT));
+            case GPU -> Component.translatable("item.starktech.server_part.heat_busy", number(LogicBalance.GPU_HEAT),
+                    number(LogicBalance.GPU_HEAT + LogicBalance.GPU_BUSY_HEAT));
+            case RAM, SSD -> Component.translatable("item.starktech.server_part.heat", number(LogicBalance.MEMORY_HEAT));
+            case FAN -> Component.translatable("item.starktech.server_part.cooling", number(LogicBalance.FAN_COOLING));
+        };
+        tooltip.add(heat.copy().withStyle(kind == ServerPartItem.Kind.FAN ? ChatFormatting.AQUA : ChatFormatting.GOLD));
         tooltip.add(Component.translatable("item.starktech.server_part.tooltip").withStyle(ChatFormatting.DARK_GRAY));
     }
 

@@ -2,6 +2,7 @@ package com.senne.starktech.client;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.logic.Datacenter;
 import com.senne.starktech.logic.LogicBalance;
 import com.senne.starktech.logic.ServerPartItem;
 import com.senne.starktech.logic.ServerRackBlockEntity;
@@ -25,6 +26,9 @@ import net.minecraft.world.entity.player.Inventory;
  *               E.D.I.T.H.    +2.7 s
  *               AT ONCE       6 diagrams
  *               STORAGE       24 blocks
+ *               TEMP          48°  > 61°
+ *               HEAT/COOL     9.5 / 8 W
+ *               Add 1 fan: it gets too hot when busy.
  * </pre>
  * Links het rack zelf: zes vakjes in twee kolommen van drie (zoals de bays van een echt rack), met
  * een lampje naast elk vakje. Rechts wat de HELE server kan (alle racks die elkaar raken samen), en
@@ -107,10 +111,13 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         small(g, "RACKS " + menu.racks() + "   CPU " + menu.cpus() + "   GPU " + menu.gpus(), STATS_X, y, value);
         small(g, "RAM " + menu.ram() + "   SSD " + menu.ssd() + "   FAN " + menu.fans(), STATS_X, y + 7, value);
         y += 16;
-        double logic = menu.cpus() * LogicBalance.logicPower(ServerPartItem.Kind.CPU)
-                + menu.gpus() * LogicBalance.logicPower(ServerPartItem.Kind.GPU);
-        double brain = menu.cpus() * LogicBalance.brainPower(ServerPartItem.Kind.CPU)
-                + menu.gpus() * LogicBalance.brainPower(ServerPartItem.Kind.GPU);
+        // Warm? Dan werkt alles op halve snelheid (zie Datacenter): de kracht telt dan maar half.
+        boolean warm = menu.temperature() >= LogicBalance.WARM_TEMPERATURE;
+        double slowdown = warm ? Math.max(1.0, LogicBalance.WARM_SLOWDOWN) : 1.0;
+        double logic = (menu.cpus() * LogicBalance.logicPower(ServerPartItem.Kind.CPU)
+                + menu.gpus() * LogicBalance.logicPower(ServerPartItem.Kind.GPU)) / slowdown;
+        double brain = (menu.cpus() * LogicBalance.brainPower(ServerPartItem.Kind.CPU)
+                + menu.gpus() * LogicBalance.brainPower(ServerPartItem.Kind.GPU)) / slowdown;
         stat(g, "REACTS IN", logic > 0
                 ? String.format(Locale.ROOT, "%.2f s", LogicBalance.reactionTicks(logic) / 20.0) : "-", y);
         int delay = LogicBalance.brainDelayTicks(brain);
@@ -118,7 +125,14 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
                 : String.format(Locale.ROOT, "+%.1f s", delay / 20.0), y + 7);
         stat(g, "AT ONCE", menu.ram() * LogicBalance.RUNS_PER_RAM + " diagrams", y + 14);
         stat(g, "STORAGE", menu.ssd() * LogicBalance.BLOCKS_PER_SSD + " blocks", y + 21);
-        y += 7;
+        // De temperatuur: nu, en waar hij naartoe gaat (als dat meer dan een graad scheelt).
+        double temp = menu.temperature();
+        double target = Datacenter.target(menu.heat(), menu.cooling());
+        String tempText = Datacenter.degrees(temp) + (Math.abs(target - temp) >= 1.0 ? "  > " + Datacenter.degrees(target) : "");
+        small(g, "TEMP", STATS_X, y + 28, label);
+        small(g, tempText, STATS_X + 46, y + 28, HudStyle.argb(255, temperatureColour(Math.max(temp, target))));
+        stat(g, "HEAT/COOL", number(menu.heat()) + " / " + watts(menu.cooling()), y + 35);
+        y += 21;
         // Waarom hij niet draait (of anders: waar je hem programmeert).
         String problem = switch (status) {
             case NOT_CONNECTED -> "Not touching the main server racks.";
@@ -127,11 +141,44 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
                     : menu.cpus() == 0 && menu.gpus() == 0 ? "Add a CPU or GPU." : menu.ram() == 0 ? "Add RAM."
                     : menu.ssd() == 0 ? "Add an SSD." : "";
         };
+        int fans = Datacenter.fansNeeded(menu.fullHeat(), menu.cooling());
         if (!problem.isEmpty()) {
             wrapped(g, problem, y + 23, HudStyle.argb(230, HudStyle.RED));
+        } else if (warm) {
+            wrapped(g, "Too hot: everything works at half speed." + (fans > 0 ? " Add " + fanText(fans) + "!" : ""), y + 23,
+                    HudStyle.argb(230, HudStyle.RED));
+        } else if (fans > 0) {
+            wrapped(g, "Add " + fanText(fans) + ": it gets too hot when it works hard.", y + 23,
+                    HudStyle.argb(230, HudStyle.ORANGE));
         } else {
             wrapped(g, "Program it in the Logic app on your Stark OS desktop.", y + 23, HudStyle.argb(140, HudStyle.WHITE));
         }
+    }
+
+    /** Groen als het koel is, oranje als het warm wordt, rood als het heet is. */
+    static int temperatureColour(double temperature) {
+        if (temperature >= LogicBalance.HOT_TEMPERATURE) {
+            return HudStyle.RED;
+        }
+        if (temperature >= LogicBalance.WARM_TEMPERATURE) {
+            return HudStyle.ORANGE;
+        }
+        return temperature >= LogicBalance.coolAgainTemperature() ? 0xE8D060 : HudStyle.GREEN;
+    }
+
+    /** 9.5 wordt "9.5 W", 8.0 wordt "8 W". */
+    static String watts(double value) {
+        return number(value) + " W";
+    }
+
+    /** 9.54 wordt "9.5", 8.0 wordt "8". */
+    static String number(double value) {
+        double rounded = Math.round(value * 10) / 10.0;
+        return rounded == Math.rint(rounded) ? String.valueOf((long) rounded) : String.valueOf(rounded);
+    }
+
+    private static String fanText(int fans) {
+        return fans == 1 ? "1 fan" : fans + " fans";
     }
 
     /** Draait de hele server (rekenkracht, RAM en een SSD, en de kern heeft stroom)? */

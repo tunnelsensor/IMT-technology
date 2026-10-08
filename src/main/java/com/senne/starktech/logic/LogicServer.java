@@ -43,11 +43,12 @@ public final class LogicServer {
      * @param ram        RAM-latjes in racks die meedraaien
      * @param ssd        SSD's in racks die meedraaien
      * @param fans       fans in racks die meedraaien
-     * @param coreOnline heeft de kern zelf stroom?
-     * @param cluster    waar de racks van de server staan
+     * @param coreOnline  heeft de kern zelf stroom?
+     * @param cluster     waar de racks van de server staan
+     * @param temperature hoe warm het datacenter is (graden, zie Datacenter)
      */
     public record Stats(int racks, int cpus, int gpus, int ram, int ssd, int fans, boolean coreOnline,
-                        Set<BlockPos> cluster, long time) {
+                        Set<BlockPos> cluster, long time, double temperature) {
         /** Draait de server? (De kern heeft stroom, en er is minstens één CPU, RAM en SSD.) */
         public boolean online() {
             return problem() == null;
@@ -86,14 +87,24 @@ public final class LogicServer {
             return cpus * LogicBalance.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicBalance.brainPower(ServerPartItem.Kind.GPU);
         }
 
-        /** Ticks tussen "er gebeurt iets" en "het diagram begint". */
+        /** Is het datacenter warm (vanaf WARM_TEMPERATURE)? Dan werkt alles op halve snelheid. */
+        public boolean warm() {
+            return temperature >= LogicBalance.WARM_TEMPERATURE;
+        }
+
+        /** Hoeveel trager alles gaat: 1 als het koel is, WARM_SLOWDOWN als het warm is. */
+        public double slowdown() {
+            return warm() ? Math.max(1.0, LogicBalance.WARM_SLOWDOWN) : 1.0;
+        }
+
+        /** Ticks tussen "er gebeurt iets" en "het diagram begint" (warm: trager). */
         public int reactionTicks() {
-            return LogicBalance.reactionTicks(logicPower());
+            return LogicBalance.reactionTicks(logicPower() / slowdown());
         }
 
         /** Hoeveel ticks E.D.I.T.H. extra nadenkt op dit datacenter (0 = sterk genoeg, -1 = draait niet). */
         public int brainDelayTicks() {
-            return online() ? LogicBalance.brainDelayTicks(brainPower()) : -1;
+            return online() ? LogicBalance.brainDelayTicks(brainPower() / slowdown()) : -1;
         }
 
         /** Zoveel diagrammen kunnen tegelijk bezig zijn. */
@@ -131,7 +142,8 @@ public final class LogicServer {
         }
         Stats stats = new Stats(cluster.size(), counts[ServerPartItem.Kind.CPU.ordinal()], counts[ServerPartItem.Kind.GPU.ordinal()],
                 counts[ServerPartItem.Kind.RAM.ordinal()], counts[ServerPartItem.Kind.SSD.ordinal()],
-                counts[ServerPartItem.Kind.FAN.ordinal()], core.isOnline(), Set.copyOf(cluster), now);
+                counts[ServerPartItem.Kind.FAN.ordinal()], core.isOnline(), Set.copyOf(cluster), now,
+                core.datacenter().temperature());
         CACHE.put(key, stats);
         return stats;
     }
@@ -205,6 +217,13 @@ public final class LogicServer {
         }
         tag.putInt("react", stats.online() ? stats.reactionTicks() : 0);
         tag.putInt("brainDelay", stats.brainDelayTicks());
+        // Het datacenter: hoe warm, en waarom (zie Datacenter).
+        Datacenter datacenter = core.datacenter();
+        tag.putDouble("temp", datacenter.temperature());
+        tag.putDouble("target", datacenter.target());
+        tag.putDouble("heat", datacenter.heat());
+        tag.putDouble("fullHeat", datacenter.fullHeat());
+        tag.putDouble("cooling", datacenter.cooling());
         tag.putInt("runs", stats.maxRuns());
         tag.putInt("cap", stats.capacity());
         return tag;

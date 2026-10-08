@@ -1311,6 +1311,24 @@ public final class VisualCheck {
             });
             t.shot(20, "r03_rack_not_connected");
             t.close(0);
+            // Een warm datacenter (8 oktober): twee GPU's erbij en 78 graden. Het rack zegt dat
+            // alles op halve snelheid gaat en hoeveel fans erbij moeten.
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_GPU.get()));
+                    be.parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
+                }
+                com.senne.starktech.logic.LogicServer.forgetAll();
+                if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.datacenter().update(player.serverLevel(), be);
+                    be.datacenter().setTemperature(78);
+                }
+                if (player.serverLevel().getBlockEntity(server[0]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    player.openMenu(be, server[0]);
+                }
+            });
+            t.shot(20, "r05_rack_hot");
+            t.close(0);
             t.stand(0, 60.5, -60, -77.5, 180, 20);
             t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
             t.step(10, () -> {

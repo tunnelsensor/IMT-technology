@@ -84,6 +84,10 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
                 case ServerRackMenu.DATA_RAM -> stats.ram();
                 case ServerRackMenu.DATA_SSD -> stats.ssd();
                 case ServerRackMenu.DATA_CORE_ONLINE -> stats.coreOnline() ? 1 : 0;
+                case ServerRackMenu.DATA_TEMP -> tenths(core.datacenter().temperature());
+                case ServerRackMenu.DATA_HEAT -> tenths(core.datacenter().heat());
+                case ServerRackMenu.DATA_FULL_HEAT -> tenths(core.datacenter().fullHeat());
+                case ServerRackMenu.DATA_COOLING -> tenths(core.datacenter().cooling());
                 default -> 0;
             };
         }
@@ -98,6 +102,11 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             return ServerRackMenu.DATA_COUNT;
         }
     };
+
+    /** 72.44 wordt 724 (het scherm krijgt alleen hele getallen, en niet groter dan 32767). */
+    private static int tenths(double value) {
+        return (int) Math.max(-32000, Math.min(32000, Math.round(value * 10)));
+    }
 
     public ServerRackBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERVER_RACK.get(), pos, state);

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 141 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 142 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1150,11 +1150,20 @@ De stappen, één per commit:
       4 CPU's reageren in 0,15 s in plaats van meteen. In de config (`[logic]`): `gpuLogicPower`,
       `gpuBrainPower`, `brainDelayTicks`, `brainDelayGoneTicks`; `cpuSpeedupTicks` is weg.
       Screenshots: `-Ponly=racks`. Eén nieuwe test (in een eigen bestand,
-      `gametest/DatacenterGameTests.java`).
-- [ ] **2. Warmte**
-      De temperatuur van het datacenter (warmte tegen koeling, langzaam stijgend en dalend). Vanaf
-      70° reageert alles twee keer zo traag en waarschuwt E.D.I.T.H. de eigenaar. Het rackscherm
-      toont de temperatuur, de warmte en de koeling, en hoeveel fans er nog bij moeten.
+      `gametest/DatacenterGameTests.java`). Commit: `0e4bf5a`.
+- [x] **2. Warmte**
+      Het datacenter heeft nu één temperatuur (`logic/Datacenter`, de kern onthoudt hem ook na
+      opslaan). Om de twee seconden telt hij de warmte van de onderdelen in racks die meedraaien,
+      trekt de koeling eraf (fans 6 W, elk rack zelf 2 W) en schuift de temperatuur 8% op naar waar
+      hij heen gaat (25° + 8° per watt te veel). Vanaf **70°** werkt alles op halve snelheid: je
+      diagrammen reageren twee keer zo traag (en straks denkt het brein twee keer zo lang).
+      E.D.I.T.H. waarschuwt de eigenaar één keer (bij 70°, bij 90°, en als het weer koel is,
+      onder 65°), en het staat in het logboek (een nieuwe oranje soort regel, HEAT). Het rackscherm
+      toont **TEMP** (nu, en waar hij naartoe gaat), **HEAT/COOL**, en zegt hoeveel fans er nog bij
+      moeten zodat het ook koel blijft als alles zo hard mogelijk werkt ("Add 3 fans"). De tooltip
+      van elk onderdeel zegt hoeveel warmte het maakt (een fan: hoeveel hij wegkoelt). Alle
+      getallen staan in de config onder `[logic]`. Screenshots: `-Ponly=racks` (`r05_rack_hot`). Eén
+      nieuwe test.
 - [ ] **3. Slijten en brand**
       Vanaf 90° slijten de onderdelen (een balkje zoals bij gereedschap) en gaan ze één voor één
       kapot (rook, een knak). Blijft het 10 seconden boven 110°, dan vat het heetste rack vlam: vuur

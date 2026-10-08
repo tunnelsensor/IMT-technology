@@ -33,6 +33,40 @@ public final class LogicBalance {
     @Tunable(section = "logic", comment = "How many blocks (triggers, ifs, actions) one SSD can hold")
     public static int BLOCKS_PER_SSD = 24;
 
+    // ---------------------------------------------------------------- Warmte (8 oktober)
+
+    @Tunable(section = "logic", comment = "Heat (watts) one CPU makes when it does nothing")
+    public static double CPU_HEAT = 2.0;
+    @Tunable(section = "logic", comment = "Extra heat (watts) one CPU makes when it works as hard as it can")
+    public static double CPU_BUSY_HEAT = 2.0;
+    @Tunable(section = "logic", comment = "Heat (watts) one GPU makes when it does nothing")
+    public static double GPU_HEAT = 3.0;
+    @Tunable(section = "logic", comment = "Extra heat (watts) one GPU makes when it works as hard as it can")
+    public static double GPU_BUSY_HEAT = 4.0;
+    @Tunable(section = "logic", comment = "Heat (watts) one RAM stick or SSD makes")
+    public static double MEMORY_HEAT = 0.5;
+    @Tunable(section = "logic", comment = "Heat (watts) one fan takes away")
+    public static double FAN_COOLING = 6.0;
+    @Tunable(section = "logic", comment = "Heat (watts) every server rack takes away by itself (air)")
+    public static double RACK_COOLING = 2.0;
+    @Tunable(section = "logic", comment = "Temperature (degrees) of a datacenter that makes no more heat than it cools away")
+    public static double AMBIENT_TEMPERATURE = 25.0;
+    @Tunable(section = "logic", comment = "Degrees warmer for every watt of heat that is not cooled away")
+    public static double DEGREES_PER_WATT = 8.0;
+    @Tunable(section = "logic", comment = "How fast the temperature follows the heat, every two seconds (0.08 = about a minute to get there)")
+    public static double HEAT_RATE = 0.08;
+    @Tunable(section = "logic", comment = "From this temperature the datacenter is warm: it works at half speed and E.D.I.T.H. warns you")
+    public static double WARM_TEMPERATURE = 70.0;
+    @Tunable(section = "logic", comment = "From this temperature the datacenter is hot: its parts wear out and break")
+    public static double HOT_TEMPERATURE = 90.0;
+    @Tunable(section = "logic", comment = "How much slower a warm datacenter works (2 = half speed)")
+    public static double WARM_SLOWDOWN = 2.0;
+
+    /** Onder deze temperatuur is een datacenter weer "koel" (zo waarschuwt E.D.I.T.H. niet steeds opnieuw). */
+    public static double coolAgainTemperature() {
+        return WARM_TEMPERATURE - 5.0;
+    }
+
     /** Hoeveel één onderdeel telt voor Logic (je redstone-diagrammen): een CPU 1, een GPU minder. */
     public static double logicPower(ServerPartItem.Kind kind) {
         return switch (kind) {

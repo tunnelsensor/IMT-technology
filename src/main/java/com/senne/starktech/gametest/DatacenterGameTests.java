@@ -1,11 +1,13 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.logic.Datacenter;
 import com.senne.starktech.logic.LogicBalance;
 import com.senne.starktech.logic.LogicServer;
 import com.senne.starktech.logic.ServerRackBlockEntity;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.os.EventLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -93,6 +95,75 @@ public final class DatacenterGameTests {
             LogicServer.Stats none = LogicServer.stats(level, setup.core());
             if (none.online() || !"The server needs a CPU or GPU".equals(none.problem())) {
                 throw new GameTestAssertException("Zonder CPU of GPU zou de server dat moeten zeggen, niet: " + none.problem());
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Laat de temperatuur zoveel stappen (van twee seconden) opschuiven, telkens met verse stats. */
+    static void settle(ServerLevel level, SecurityCoreBlockEntity core, int steps) {
+        for (int i = 0; i < steps; i++) {
+            LogicServer.forgetAll();
+            core.datacenter().update(level, core);
+        }
+        LogicServer.forgetAll();
+    }
+
+    /** Staat er een regel van deze soort met deze tekst in het logboek van de kern? */
+    static boolean logged(SecurityCoreBlockEntity core, EventLog.Type type, String text) {
+        return core.log().entries().stream().anyMatch(entry -> entry.type() == type && entry.text().contains(text));
+    }
+
+    /**
+     * Warmte: vier CPU's in één rack zonder fan maken 9 W warmte, en het rack koelt er maar 2 W weg.
+     * Het wordt 81°: alles werkt op halve snelheid, het staat in het logboek, en het rack zegt dat er
+     * fans bij moeten. Twee CPU's eruit en twee fans erin: het koelt weer af. De kern onthoudt de
+     * temperatuur (opslaan en laden).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_heat_and_fans(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        ServerRackBlockEntity rack = setup.rackEntity(helper);
+        for (int slot = 3; slot < 6; slot++) {
+            rack.parts().setItem(slot, new ItemStack(ModItems.SERVER_CPU.get()));
+        }
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), core);
+            Datacenter datacenter = core.datacenter();
+            settle(level, core, 120);
+            double heat = 4 * LogicBalance.CPU_HEAT + 2 * LogicBalance.MEMORY_HEAT;
+            double expected = Datacenter.target(heat, LogicBalance.RACK_COOLING);
+            if (expected < LogicBalance.WARM_TEMPERATURE || Math.abs(datacenter.temperature() - expected) > 1.0) {
+                throw new GameTestAssertException("Vier CPU's zonder fan zouden " + Datacenter.degrees(expected)
+                        + " moeten worden, niet " + Datacenter.degrees(datacenter.temperature()));
+            }
+            LogicServer.Stats hot = LogicServer.stats(level, core);
+            if (!hot.warm() || hot.reactionTicks() != LogicBalance.reactionTicks(4.0 / LogicBalance.WARM_SLOWDOWN)) {
+                throw new GameTestAssertException("Warm zou half zo snel moeten zijn: " + hot.reactionTicks() + " ticks");
+            }
+            if (!logged(core, EventLog.Type.HEAT, "running hot")) {
+                throw new GameTestAssertException("Het logboek zegt niet dat het datacenter warm is: " + core.log().entries());
+            }
+            if (Datacenter.fansNeeded(datacenter.fullHeat(), datacenter.cooling()) < 1) {
+                throw new GameTestAssertException("Het rack zou moeten zeggen dat er fans bij moeten");
+            }
+            // De kern onthoudt hoe warm het is.
+            Datacenter loaded = Datacenter.load(datacenter.save());
+            if (Math.abs(loaded.temperature() - datacenter.temperature()) > 0.01) {
+                throw new GameTestAssertException("Na opslaan en laden is de temperatuur anders: " + loaded.temperature());
+            }
+            // Twee CPU's eruit, twee fans erin: 5 W warmte, 14 W koeling.
+            rack.parts().setItem(4, new ItemStack(ModItems.SERVER_FAN.get()));
+            rack.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+            settle(level, core, 120);
+            if (datacenter.temperature() >= LogicBalance.coolAgainTemperature() || LogicServer.stats(level, core).warm()) {
+                throw new GameTestAssertException("Met twee fans zou het weer koel moeten worden, niet "
+                        + Datacenter.degrees(datacenter.temperature()));
+            }
+            if (!logged(core, EventLog.Type.HEAT, "cool again")) {
+                throw new GameTestAssertException("Het logboek zegt niet dat het datacenter weer koel is");
             }
             helper.succeed();
         });

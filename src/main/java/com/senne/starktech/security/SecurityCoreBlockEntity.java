@@ -58,6 +58,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private EventLog log = new EventLog();
     /** De server: keycards en (straks) de redstone-diagrammen (zie LogicStore). */
     private com.senne.starktech.logic.LogicStore logic = new com.senne.starktech.logic.LogicStore();
+    /** Het datacenter: de temperatuur van de racks (zie Datacenter). */
+    private com.senne.starktech.logic.Datacenter datacenter = new com.senne.starktech.logic.Datacenter();
     /** Tot wanneer (speltijd) hij wacht voor hij een nieuwe drone stuurt. */
     private long nextDrone;
     /** Had de kern bij de laatste telling stroom? */
@@ -210,6 +212,10 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     }
 
     /** Wat de server onthoudt: de keycards en de redstone-diagrammen. */
+    public com.senne.starktech.logic.Datacenter datacenter() {
+        return datacenter;
+    }
+
     public com.senne.starktech.logic.LogicStore logic() {
         return logic;
     }
@@ -377,6 +383,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         // De server: diagrammen die bezig zijn, timers, de rij (zie LogicRunner).
         com.senne.starktech.logic.LogicRunner.tick(level, this);
+        // Het datacenter: hoe warm de racks zijn (om de twee seconden).
+        datacenter.tick(level, this);
         long now = level.getGameTime();
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
@@ -463,6 +471,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         tag.put("Files", fs.save());
         tag.put("Log", log.save());
         tag.put("Logic", logic.save());
+        tag.put("Datacenter", datacenter.save());
         // Toegang
         tag.putBoolean("AttackMobs", attackMobs);
         tag.putBoolean("AttackPlayers", attackPlayers);
@@ -497,6 +506,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         fs = VirtualFs.load(tag.getCompound("Files"));
         log = EventLog.load(tag.getList("Log", Tag.TAG_COMPOUND));
         logic = com.senne.starktech.logic.LogicStore.load(tag.getCompound("Logic"));
+        datacenter = com.senne.starktech.logic.Datacenter.load(tag.getCompound("Datacenter"));
         // Toegang. Een oude kern (zonder deze sleutels) valt terug op de standaardwaarden: de
         // beveiliging op monsters aan, op spelers uit, alle apparaten aan.
         attackMobs = !tag.contains("AttackMobs") || tag.getBoolean("AttackMobs");
