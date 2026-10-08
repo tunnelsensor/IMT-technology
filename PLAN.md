@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 147 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -1226,8 +1226,19 @@ De stappen, één per commit:
       datacenter needed" of "No datacenter: no brain". Let op: in de screenshot-rondleiding zegt ze
       bij `b08b_brain_speaks_up` (survival, geen datacenter) nu terecht niets meer. Screenshots:
       `-Ponly=racks` (`r10_brain_datacenter`, `r11_brain_thinking`, `r12_brain_answered`). Eén nieuwe
-      test.
-- [ ] **7. Showcase, screenshots en LEESMIJ**
+      test. Commit: `bb19ce6`.
+- [x] **7. Showcase, screenshots en LEESMIJ**
+      Nieuwe functie **73, "The datacenter"** (staat als NIEUW; de functies erna schuiven een
+      nummer op, nu 81 in totaal), in survival: het lab van functie 72, met in het rack rechts RAM,
+      een SSD en vier GPU's en geen fan. Je ziet het scherm van dat rack ("Add 5 fans"), dan te heet
+      (96°, halve snelheid, slijten), dan vlam en afbranden; omdat er een SSD in zat zijn de
+      diagrammen en keycards weg. Daarna de Monitor, de app Backup met een backup op een tweede
+      datacenter ver weg (dev-vault, op -50 -60 -130), en Restore zet alles terug. Tot slot AI Brain
+      ("Datacenter: dev-sec (+4.0 s)") en "night vision on" met eerst THINKING... Ik heb hem
+      afgespeeld met `--test` en elke stap gefotografeerd. De Monitor zegt nu "off" bij de SSD als er
+      geen SSD draait (in plaats van 999%). LEESMIJ.md heeft een nieuw stuk "Het datacenter: warmte,
+      backups en het brein", en de stukken over de server en de stem zeggen dat je GPU's, fans en een
+      datacenter nodig hebt.
 
 ---
 
@@ -1253,6 +1264,11 @@ raiddrones eruitzien.
       `config/starktech-client.toml` (1 = zo, 2 = dubbel, 0 = uit).
 - [ ] **De blokjes-editor met de muis**: slepen, draadjes trekken en zoomen heb ik alleen
       nagerekend en op screenshots gezien, niet zelf met een muis gedaan.
+- [ ] **Het datacenter (8 oktober)**: de knoppen van de apps Backup en Monitor heb ik alleen via de
+      server getest en op screenshots gezien, niet met de muis aangeklikt. En speel zelf of de
+      getallen goed voelen: hoeveel fans je nodig hebt, hoe snel het warm wordt (ongeveer een
+      minuut), hoe lang E.D.I.T.H. erbij nadenkt (1 CPU +8 s), en of vuur van een brandend rack niet
+      te makkelijk een houten basis afbrandt. Alles staat in de config onder `[logic]`.
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 

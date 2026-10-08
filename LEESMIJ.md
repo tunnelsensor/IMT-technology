@@ -405,11 +405,14 @@ Met een **server** programmeer je de redstone van je basis: "houdt iemand een ka
 tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan je
 **beveiligingskern** (Stark OS).
 1. **Bouwen**: zet **Server Racks** binnen 30 blokken van je kern, naast of op elkaar: samen zijn
-   ze één server (een los rack draait niet mee). Geef ze stroom met een kabel; racks geven de
-   stroom aan elkaar door. Rechtsklik op een rack en stop er onderdelen in: een **CPU** (de server
-   reageert sneller: 1 CPU = 0,5 s, elke extra CPU sneller), **RAM** (hoeveel diagrammen tegelijk
-   bezig kunnen zijn) en een **SSD** (hoeveel blokjes je kwijt kunt). Van elk minstens één, dan
-   knipperen de lampjes.
+   ze één server, je **datacenter** (een los rack draait niet mee). Geef ze stroom met een kabel;
+   racks geven de stroom aan elkaar door. Rechtsklik op een rack: zes vakjes, twee kolommen van
+   drie. Stop er onderdelen in: een **CPU** of **GPU** (rekenkracht: de server reageert sneller,
+   1 CPU = 0,5 s, 2 CPU's = 0,25 s; een GPU is half zo snel voor je redstone maar dubbel zo goed
+   voor het brein van E.D.I.T.H.), **RAM** (hoeveel diagrammen tegelijk bezig kunnen zijn) en een
+   **SSD** (hoeveel blokjes je kwijt kunt). Rekenkracht, RAM en een SSD: dan knipperen de lampjes.
+   Met meer CPU's of GPU's heb je ook **fans** nodig, anders wordt het te heet (zie hieronder, "Het
+   datacenter").
 2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
    naam ("Vault door"): met die naam noem je ze in je diagram. Een **Keycard Reader** en een
    **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld). Een andere
@@ -471,6 +474,40 @@ when keycard("Lab door"):
 
 Neemt iemand je kern over, dan krijgt hij ook je diagrammen en kaarten. De code van een codepaneel
 staat alleen in je diagram, niet in het logboek.
+
+### Het datacenter: warmte, backups en het brein
+Je racks samen zijn je **datacenter**. Het wordt warm, je kunt aflezen hoe hard het werkt, je maakt
+er backups van, en het brein van E.D.I.T.H. draait erop.
+
+- **Warmte**: elk onderdeel maakt warmte (een CPU 2 W, een GPU 3 W, meer als ze hard werken; RAM en
+  SSD's een halve watt). Een **Server Fan** (recept: ijzer, ijzeren tralies, redstone = 2 fans) in
+  een vakje koelt 6 W weg, en elk rack zelf 2 W. Wat er te veel is, maakt het warmer; de
+  temperatuur gaat er in ongeveer een minuut naartoe. Het scherm van een rack toont **TEMP** (nu,
+  en waar hij heen gaat), **HEAT/COOL**, en hoeveel fans er nog bij moeten ("Add 3 fans").
+- **Te warm** gaat stap voor stap. Vanaf **70°** werkt alles op halve snelheid en waarschuwt
+  E.D.I.T.H. je. Vanaf **90°** slijten de onderdelen (een balkje onder het icoon) en gaan ze één voor
+  één kapot. Blijft het **10 seconden boven 110°**, dan vat het heetste rack vlam: je hebt 10
+  seconden om je onderdelen eruit te halen, dan is het weg met alles erin.
+- **Een SSD kapot of verbrand = alle diagrammen en keycards weg** (ze staan verspreid over al je
+  SSD's). Een SSD er gewoon uithalen of een rack afbreken mag wel. Je bestanden, notities en je
+  wachtwoord staan in de kern zelf en blijven.
+- **Aflezen**: de app **Monitor** op de desktop, zoals Taakbeheer: CPU, BRAIN, RAM, SSD en TEMP met
+  een grafiekje van de laatste minuut, elk rack met zijn onderdelen (rood streepje = versleten), wat
+  je moet doen tegen de warmte, en welke diagrammen er nu bezig zijn.
+- **Backups**: bouw een tweede datacenter (een andere kern met racks, ver genoeg weg). In de app
+  **Backup** kies je met **<** en **>** waar de backups heen gaan, dan **Backup now**, of
+  **Automatic** elke 5, 15 of 60 minuten. Een backup neemt plek op de SSD's van dat andere
+  datacenter (daar blijven de laatste 3). Na een brand zet **Restore** je diagrammen en keycards
+  terug (twee keer klikken). Brandt het andere datacenter af, dan zijn de backups daar ook weg.
+- **Het brein van E.D.I.T.H.** draait op je sterkste datacenter, waar het ook staat. **Zonder
+  datacenter werkt er geen enkel brein**, ook het woordenboek niet: dan is het gewoon een mooie
+  bril (in creative hoeft het niet). Met een datacenter duurt een antwoord de tijd van het model
+  plus een vertraging zolang je datacenter nog niet sterk is: 1 CPU +8 s, 1 GPU +4 s, 4 GPU's +1 s,
+  vanaf 8 GPU's niets meer (warm: twee keer zo lang). Rechtsboven in **G > Systems > AI Brain** zie
+  je op welk datacenter het draait en hoeveel het erbij zet. Terwijl ze nadenkt, werkt je
+  datacenter hard (en wordt het warmer).
+
+Alle getallen staan in `config/starktech-balance.toml` onder `[logic]`.
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
@@ -662,6 +699,8 @@ Praat E.D.I.T.H. terwijl jij begint te praten, dan zwijgt ze meteen. In **G > Sy
 Voice text** zet je aan of uit of je in de HUD ziet wat je zei en wat zij antwoordt.
 Alle zinnen kun je zelf aanpassen in **G > Systems > Commands** (of in
 `config/starktech-voice.json`).
+Let op: E.D.I.T.H. kan alleen nadenken met een **datacenter** (server racks bij je
+beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative hoeft het niet.
 
 ---
 

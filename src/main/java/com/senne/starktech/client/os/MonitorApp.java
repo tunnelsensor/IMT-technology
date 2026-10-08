@@ -86,14 +86,16 @@ final class MonitorApp {
         // SSD: geen grafiek maar een balk (hoe vol).
         int cap = server.getInt("cap");
         int used = server.getInt("used");
-        int ssdPercent = cap > 0 ? Math.min(999, used * 100 / cap) : (used > 0 ? 999 : 0);
-        tileFrame(g, font, x, y, tileW, "SSD", ssdPercent + "%", ssdPercent > 100 ? HudStyle.RED : SSD);
+        int ssdPercent = cap > 0 ? Math.min(999, used * 100 / cap) : 0;
+        // Geen SSD die draait (of de server draait niet): dan is er geen "vol", alleen "offline".
+        tileFrame(g, font, x, y, tileW, "SSD", cap > 0 ? ssdPercent + "%" : "off", cap == 0 || ssdPercent > 100 ? HudStyle.RED : SSD);
         int barY = y + 14;
         int barW = tileW - 8;
         g.fill(x + 4, barY + 6, x + 4 + barW, barY + 16, HudStyle.argb(255, 0x0A141B));
         g.fill(x + 4, barY + 6, x + 4 + barW * Math.min(100, ssdPercent) / 100, barY + 16,
                 HudStyle.argb(200, ssdPercent > 100 ? HudStyle.RED : SSD));
-        small(g, font, used + "/" + cap + " blocks", x + 4, y + TILE_H - 9, HudStyle.argb(255, OsDraw.GREY));
+        small(g, font, cap > 0 ? used + "/" + cap + " blocks" : used + " blocks, no SSD", x + 4, y + TILE_H - 9,
+                HudStyle.argb(255, OsDraw.GREY));
         x += tileW + GAP;
         // Temperatuur
         double temp = server.getDouble("temp");

@@ -1126,6 +1126,65 @@ final class ShowcaseFeatures {
                     .close(20);
         });
 
+        add("The datacenter", "Hoofdstuk 9: het datacenter (in survival). Het lab van hiervoor, maar het rack "
+                + "rechts heeft nu RAM, een SSD en vier GPU's, en er is geen enkele fan. Eerst zijn scherm: zes vakjes "
+                + "in twee kolommen, en onderaan TEMP (nu, en waar hij naartoe gaat), HEAT/COOL en hoeveel fans "
+                + "erbij moeten. Dan is het te heet (96 graden): alles op halve snelheid, E.D.I.T.H. waarschuwt, en "
+                + "de GPU's slijten (een balkje onder het icoon). Daarna vat het rack vlam: vuur, rook, het scherm "
+                + "knippert ON FIRE, en na 8 seconden is het weg, met alles erin. Er zat een SSD in: E.D.I.T.H. zegt "
+                + "dat alle diagrammen en keycards weg zijn. Dan de desktop: de app Monitor (tegels met de laatste "
+                + "minuut, de racks, wat er bezig is) en de app Backup: er staat een backup op een tweede "
+                + "datacenter ver weg (dev-vault), en Restore zet alles terug. Tot slot het scherm AI Brain "
+                + "(rechtsboven: op welk datacenter het brein draait, en hoeveel vertraging) en 'night vision on': "
+                + "eerst THINKING..., dan doet ze het.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 4)), 180, 20, s -> {
+            BlockPos hot = LOGIC_LAB.offset(4, 0, 0);
+            s.onServer(0, ShowcaseFeatures::buildDatacenter)
+                    // Een nieuwe kern meldt zich pas een tick later: daarna pas verbinden en de backup.
+                    .onServer(30, ShowcaseFeatures::connectDatacenters)
+                    .pause(20)
+                    // Het scherm van het rack zonder fan: het wordt heet (de pijl bij TEMP), "Add 3 fans".
+                    .onServer(0, player -> openRack(player, hot))
+                    .pause(90)
+                    .close(0)
+                    // Te heet: halve snelheid, waarschuwing, slijten.
+                    .onServer(0, player -> heatUp(player, hot, 96))
+                    .pause(20)
+                    .onServer(0, player -> openRack(player, hot))
+                    .pause(90)
+                    .close(0)
+                    // Brand: het heetste rack vat vlam en is na 8 seconden weg.
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(hot) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+                            rack.ignite(player.serverLevel(), player.serverLevel().getGameTime() + 160);
+                        }
+                    })
+                    .pause(40)
+                    .onServer(0, player -> openRack(player, hot))
+                    .pause(50)
+                    .close(0)
+                    .pause(90)
+                    // De desktop: Monitor en Backup.
+                    .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, LOGIC_LAB))
+                    .step(10, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.MONITOR)))
+                    .pause(140)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.BACKUP)))
+                    .pause(60)
+                    // Restore: de backup van dev-vault zet de diagrammen en keycards terug.
+                    .onServer(0, ShowcaseFeatures::restoreLab)
+                    .pause(140)
+                    .close(10)
+                    // Het brein draait op een datacenter: het scherm AI Brain, en dan even nadenken.
+                    .open(10, com.senne.starktech.client.BrainScreen::new)
+                    .pause(90)
+                    .close(0)
+                    .step(10, () -> com.senne.starktech.client.voice.VoiceControl.hear("night vision on"))
+                    .pause(2)
+                    .waitUntil(600, () -> !com.senne.starktech.client.voice.EdithBrain.isThinking())
+                    .pause(70);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -1425,6 +1484,117 @@ final class ShowcaseFeatures {
             core.setChanged();
             com.senne.starktech.security.SecurityDevices.forget(level, core);
             com.senne.starktech.logic.LogicServer.forgetAll();
+        }
+    }
+
+    // ---------------------------------------------------------------- Het datacenter van hoofdstuk 9
+
+    /** Het tweede datacenter, ver weg (zodat zijn gebied niet over het lab ligt): hier gaan de backups heen. */
+    static final BlockPos DATACENTER_VAULT = new BlockPos(-50, -60, -130);
+
+    /**
+     * Het lab van hoofdstuk 8, met in het rack rechts vier GPU's erbij (en geen fan: het wordt heet),
+     * en een tweede datacenter "dev-vault" ver weg met daarop al een backup van het lab.
+     */
+    static void buildDatacenter(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        buildLogicLab(player);
+        if (level.getBlockEntity(LOGIC_LAB.offset(4, 0, 0)) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+            for (int slot = 2; slot < 6; slot++) {
+                rack.parts().setItem(slot, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_GPU.get()));
+            }
+        }
+        // Het tweede datacenter: een kern, een generator en een rack met CPU, RAM en twee SSD's.
+        BlockPos vault = DATACENTER_VAULT;
+        BlockPos vaultRack = vault.offset(3, 0, 0);
+        for (BlockPos pos : BlockPos.betweenClosed(vault.offset(-2, 0, -2), vault.offset(5, 3, 3))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        level.setBlockAndUpdate(vault, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        claimTowerCore(player, vault);
+        for (BlockPos generator : new BlockPos[] {vault.below(), vaultRack.below()}) {
+            level.setBlockAndUpdate(generator, com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                charger.fill(30_000);
+            }
+        }
+        level.setBlockAndUpdate(vaultRack, com.senne.starktech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState());
+        if (level.getBlockEntity(vaultRack) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+            rack.parts().setItem(0, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_CPU.get()));
+            rack.parts().setItem(1, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_RAM.get()));
+            rack.parts().setItem(2, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_SSD.get()));
+            rack.parts().setItem(3, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_SSD.get()));
+            rack.parts().setItem(4, new net.minecraft.world.item.ItemStack(com.senne.starktech.registry.ModItems.SERVER_FAN.get()));
+        }
+        if (level.getBlockEntity(vault) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.setHostname("dev-vault");
+        }
+    }
+
+    /**
+     * Na buildDatacenter (een tick later, als de kernen zich gemeld hebben): de racks kijken of ze
+     * meedraaien, beide datacenters melden zich (zodat je er een backup naartoe kunt sturen), en het lab
+     * maakt een backup naar dev-vault.
+     */
+    static void connectDatacenters(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        BlockPos vault = DATACENTER_VAULT;
+        for (BlockPos pos : new BlockPos[] {vault.offset(3, 0, 0), LOGIC_LAB.offset(3, 0, 0), LOGIC_LAB.offset(3, 1, 0),
+                LOGIC_LAB.offset(4, 0, 0)}) {
+            if (level.getBlockEntity(pos) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+                com.senne.starktech.security.SecurityCoreBlockEntity core = com.senne.starktech.security.SecurityCores.coreAt(level, pos);
+                if (core != null) {
+                    com.senne.starktech.security.SecurityDevices.forget(level, core);
+                }
+                com.senne.starktech.logic.LogicServer.forgetAll();
+                rack.update(level, pos, level.getBlockState(pos));
+            }
+        }
+        com.senne.starktech.logic.LogicServer.forgetAll();
+        if (level.getBlockEntity(vault) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.datacenter().update(level, core);
+        }
+        if (level.getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity lab) {
+            lab.datacenter().setTemperature(30);
+            lab.datacenter().update(level, lab);
+            net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+            args.putString("key", com.senne.starktech.logic.Datacenters.key(net.minecraft.core.GlobalPos.of(level.dimension(), vault)));
+            com.senne.starktech.logic.Backups.handle(player, lab, "backup_target", args);
+            com.senne.starktech.logic.Backups.handle(player, lab, "backup_now", new net.minecraft.nbt.CompoundTag());
+        }
+    }
+
+    /** De nieuwste backup van het lab terugzetten (zoals de knop Restore in de app Backup). */
+    private static void restoreLab(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        com.senne.starktech.logic.Datacenters.Backup backup = com.senne.starktech.logic.Backups.newest(level, player.getUUID());
+        if (backup != null && level.getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity lab) {
+            net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+            args.putInt("id", backup.id());
+            com.senne.starktech.logic.Backups.handle(player, lab, "backup_restore", args);
+        }
+    }
+
+    /** Opent het scherm van een rack. */
+    private static void openRack(net.minecraft.server.level.ServerPlayer player, BlockPos pos) {
+        if (player.serverLevel().getBlockEntity(pos) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+            player.openMenu(rack, pos);
+        }
+    }
+
+    /** Maakt het lab te heet (en de GPU's al wat versleten), zodat je de waarschuwingen ziet. */
+    private static void heatUp(net.minecraft.server.level.ServerPlayer player, BlockPos rackPos, double temperature) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        if (level.getBlockEntity(rackPos) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+            for (int slot = 2; slot < 6; slot++) {
+                com.senne.starktech.logic.ServerPartItem.setWear(rack.parts().getItem(slot), 6 + slot * 2);
+            }
+            rack.setChanged();
+        }
+        if (level.getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity lab) {
+            lab.datacenter().setTemperature(temperature);
+            com.senne.starktech.logic.LogicServer.forgetAll();
+            lab.datacenter().update(level, lab);
         }
     }
 
