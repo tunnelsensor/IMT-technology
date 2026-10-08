@@ -39,7 +39,9 @@ public class ServerRackMenu extends AbstractContainerMenu {
     public static final int DATA_HEAT = 9;
     public static final int DATA_FULL_HEAT = 10;
     public static final int DATA_COOLING = 11;
-    public static final int DATA_COUNT = 12;
+    /** Hoeveel seconden dit rack nog brandt (0 = het brandt niet). */
+    public static final int DATA_BURN = 12;
+    public static final int DATA_COUNT = 13;
 
     private final Container parts;
     private final ContainerData data;
@@ -135,6 +137,11 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     public double cooling() {
         return data.get(DATA_COOLING) / 10.0;
+    }
+
+    /** Seconden tot dit rack afgebrand is (0 = het brandt niet). */
+    public int burnSeconds() {
+        return data.get(DATA_BURN);
     }
 
     public int ram() {

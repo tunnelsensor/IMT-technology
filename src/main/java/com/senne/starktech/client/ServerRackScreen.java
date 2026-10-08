@@ -142,7 +142,12 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
                     : menu.ssd() == 0 ? "Add an SSD." : "";
         };
         int fans = Datacenter.fansNeeded(menu.fullHeat(), menu.cooling());
-        if (!problem.isEmpty()) {
+        if (menu.burnSeconds() > 0) {
+            // Brand! Knipperend rood: haal je onderdelen eruit.
+            boolean blink = (System.currentTimeMillis() / 400) % 2 == 0;
+            wrapped(g, "ON FIRE! Take your parts out: gone in " + menu.burnSeconds() + " s.", y + 23,
+                    HudStyle.argb(255, blink ? HudStyle.RED : HudStyle.ORANGE));
+        } else if (!problem.isEmpty()) {
             wrapped(g, problem, y + 23, HudStyle.argb(230, HudStyle.RED));
         } else if (warm) {
             wrapped(g, "Too hot: everything works at half speed." + (fans > 0 ? " Add " + fanText(fans) + "!" : ""), y + 23,

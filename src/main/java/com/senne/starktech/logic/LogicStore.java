@@ -166,6 +166,17 @@ public final class LogicStore {
         return revision;
     }
 
+    /**
+     * Alles op de SSD's is weg (8 oktober: een SSD verbrandde of ging kapot door de hitte): alle
+     * diagrammen en alle keycards. Het telefoonboek van apparaten blijft (dat komt toch weer uit
+     * je redstone-lijst), en kaartnummers komen nooit terug, ook nu niet.
+     */
+    public void wipe() {
+        programs.clear();
+        cards.clear();
+        revision++;
+    }
+
     /** Hoeveel blokjes alle diagrammen samen gebruiken (zo vol zijn de SSD's). */
     public int blocks() {
         int total = 0;

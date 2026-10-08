@@ -5,11 +5,15 @@ import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.MenuProvider;
@@ -19,6 +23,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -35,6 +40,10 @@ import net.minecraft.world.level.block.state.BlockState;
  * </ul>
  * Is alles in orde, dan gaan zijn lampjes knipperen (ServerRackBlock.ONLINE) en tellen zijn
  * onderdelen mee.
+ *
+ * Wordt het datacenter veel te heet (zie Datacenter), dan kan een rack in brand vliegen: vuur erop,
+ * rook, en na BURN_TICKS is het weg, met alles wat er dan nog in zit. Tot die tijd kun je het
+ * openen en je onderdelen eruit halen.
  */
 public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     /** Waarom hij niet meedraait (voor het scherm). */
@@ -60,6 +69,8 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     };
 
     private Status status = Status.NO_NETWORK;
+    /** Tot wanneer (speltijd) dit rack in brand staat; 0 = het brandt niet. */
+    private long burnUntil;
 
     /** Wat het scherm te zien krijgt; zie ServerRackMenu. */
     private final ContainerData data = new ContainerData() {
@@ -70,6 +81,9 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             }
             if (!(level instanceof ServerLevel serverLevel)) {
                 return 0;
+            }
+            if (index == ServerRackMenu.DATA_BURN) {
+                return burnSecondsLeft(serverLevel.getGameTime());
             }
             SecurityCoreBlockEntity core = SecurityCores.coreAt(serverLevel, worldPosition);
             if (core == null) {
@@ -138,6 +152,13 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     // ================================================================ Elke twee seconden
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
+        if (burnUntil > 0) {
+            if (level.getGameTime() >= burnUntil) {
+                burnDown(level);
+                return;
+            }
+            burning(level, pos);
+        }
         if ((level.getGameTime() + pos.hashCode()) % 40 == 0) {
             update(level, pos, state);
         }
@@ -168,6 +189,72 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
+    // ================================================================ Brand (8 oktober)
+
+    public boolean isBurning() {
+        return burnUntil > 0;
+    }
+
+    /** Hoeveel seconden het nog brandt voor het weg is (0 = het brandt niet). */
+    public int burnSecondsLeft(long now) {
+        return burnUntil <= 0 ? 0 : (int) Math.max(1, (burnUntil - now + 19) / 20);
+    }
+
+    /** Het rack vat vlam (dat beslist Datacenter): vuur erop, en om {@code until} is het weg. */
+    public void ignite(ServerLevel level, long until) {
+        burnUntil = until;
+        setChanged();
+        lightFires(level, worldPosition);
+        level.playSound(null, worldPosition, SoundEvents.FIRECHARGE_USE, SoundSource.BLOCKS, 1.2f, 0.7f);
+    }
+
+    /** Terwijl het brandt: vlammen en rook, en het vuur erop blijft branden. */
+    private void burning(ServerLevel level, BlockPos pos) {
+        long now = level.getGameTime();
+        if (now % 4 == 0) {
+            level.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5, 4, 0.35, 0.4, 0.35, 0.01);
+            level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 2, 0.3, 0.2, 0.3, 0.02);
+        }
+        if (now % 20 == 0) {
+            level.playSound(null, pos, SoundEvents.FIRE_AMBIENT, SoundSource.BLOCKS, 1.0f, 0.8f + level.random.nextFloat() * 0.3f);
+        }
+        if (now % 40 == 0) {
+            lightFires(level, pos);
+        }
+    }
+
+    /** Vuur boven op het rack en ernaast (alleen waar lucht is en vuur kan blijven staan). */
+    private static void lightFires(ServerLevel level, BlockPos pos) {
+        for (Direction direction : new Direction[] {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+            BlockPos spot = pos.relative(direction);
+            if (level.getBlockState(spot).isAir() && BaseFireBlock.canBePlacedAt(level, spot, direction)) {
+                level.setBlockAndUpdate(spot, BaseFireBlock.getState(level, spot));
+            }
+        }
+    }
+
+    /**
+     * Afgebrand: alles wat er nog in zit is weg (zat er een SSD in, dan zijn alle gegevens van de
+     * server weg, zie Datacenter), en het rack zelf ook; op zijn plek brandt nog wat vuur.
+     */
+    public void burnDown(ServerLevel level) {
+        BlockPos pos = worldPosition;
+        boolean ssd = count(ServerPartItem.Kind.SSD) > 0;
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        parts.clearContent(); // verbrand: er valt niets uit
+        burnUntil = 0;
+        level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 30, 0.4, 0.5, 0.4, 0.05);
+        level.sendParticles(ParticleTypes.LAVA, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.1);
+        level.playSound(null, pos, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 0.8f, 1.3f);
+        level.removeBlock(pos, false);
+        if (level.getBlockState(pos).isAir() && BaseFireBlock.canBePlacedAt(level, pos, Direction.UP)) {
+            level.setBlockAndUpdate(pos, BaseFireBlock.getState(level, pos));
+        }
+        if (core != null) {
+            core.datacenter().rackBurned(level, core, ssd);
+        }
+    }
+
     // ================================================================ Het scherm
 
     @Override
@@ -191,6 +278,9 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         }
         ContainerHelper.saveAllItems(tag, items, registries);
         tag.putString("Status", status.name());
+        if (burnUntil > 0) {
+            tag.putLong("BurnUntil", burnUntil);
+        }
     }
 
     @Override
@@ -206,5 +296,6 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         } catch (IllegalArgumentException e) {
             status = Status.NO_NETWORK;
         }
+        burnUntil = tag.getLong("BurnUntil");
     }
 }

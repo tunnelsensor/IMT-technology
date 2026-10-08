@@ -1329,6 +1329,24 @@ public final class VisualCheck {
             });
             t.shot(20, "r05_rack_hot");
             t.close(0);
+            // Brand (8 oktober): het rack met de GPU's vat vlam (vuur erop, rook), en zijn scherm
+            // zegt dat je je onderdelen eruit moet halen. Na 20 seconden is het weg.
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.ignite(player.serverLevel(), player.serverLevel().getGameTime() + 400);
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(0, 65.0, -60, -74.5, 180, 12);
+            t.shot(30, "r06_rack_fire");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    player.openMenu(be, server[1]);
+                }
+            });
+            t.shot(20, "r07_rack_fire_screen");
+            t.close(0);
             t.stand(0, 60.5, -60, -77.5, 180, 20);
             t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
             t.step(10, () -> {

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 142 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 144 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1163,12 +1163,21 @@ De stappen, één per commit:
       moeten zodat het ook koel blijft als alles zo hard mogelijk werkt ("Add 3 fans"). De tooltip
       van elk onderdeel zegt hoeveel warmte het maakt (een fan: hoeveel hij wegkoelt). Alle
       getallen staan in de config onder `[logic]`. Screenshots: `-Ponly=racks` (`r05_rack_hot`). Eén
-      nieuwe test.
-- [ ] **3. Slijten en brand**
-      Vanaf 90° slijten de onderdelen (een balkje zoals bij gereedschap) en gaan ze één voor één
-      kapot (rook, een knak). Blijft het 10 seconden boven 110°, dan vat het heetste rack vlam: vuur
-      eromheen, 10 seconden om onderdelen te redden, dan brandt het af met alles erin. Brandt of
-      breekt er een SSD, dan zijn je diagrammen en keycards weg.
+      nieuwe test. Commit: `1be6c89`.
+- [x] **3. Slijten en brand**
+      Vanaf **90°** slijten de onderdelen (niet de fans): om de twee seconden krijgt de helft ervan
+      wat slijtage (1, vanaf 100° 2, vanaf 110° 3...). Je ziet een balkje onder het icoon, zoals bij
+      gereedschap, en de tooltip zegt "Worn out: 45%". Bij 20 is een onderdeel kapot: rook, een knak,
+      weg, en E.D.I.T.H. zegt welk. Blijft het **10 seconden boven 110°**, dan vat het heetste rack
+      vlam (het rack dat de meeste warmte maakt): vuur erop en ernaast, vlammen en rook, en het scherm
+      van het rack knippert "ON FIRE! Take your parts out: gone in 18 s." Na **10 seconden** is het
+      weg, met alles wat er nog in zit (er valt niets uit; op zijn plek brandt nog wat vuur). Is het
+      daarna nog steeds te heet, dan is het volgende rack aan de beurt. Gaat er een **SSD** kapot of
+      verbrandt hij, dan zijn alle diagrammen en keycards van de server weg (alarm in het logboek en
+      van E.D.I.T.H.); kaartnummers komen ook dan nooit terug. Een rack afbreken of een SSD eruit
+      halen kan altijd (dan ben je niets kwijt). Een warm datacenter vat geen vlam als je op tijd
+      fans bijsteekt. In de config: `maxWear`, `fireTemperature`, `fireDelayTicks`, `burnTicks`.
+      Screenshots: `-Ponly=racks` (`r06_rack_fire`, `r07_rack_fire_screen`). Twee nieuwe tests.
 - [ ] **4. Gebruik meten en de app Monitor**
       Hoe hard de CPU's werken (Logic: zoveel stapjes per seconde per kracht), het brein, het RAM
       (diagrammen tegelijk) en de SSD's (blokjes). Een app **Monitor** op de desktop: tegels met

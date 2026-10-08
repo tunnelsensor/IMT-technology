@@ -28,6 +28,12 @@ public final class ModDataComponents {
                     // Voorkomt dat het item in je hand "wiebelt" telkens als de energie verandert.
                     );
 
+    /** Hoe versleten een onderdeel van een serverrack is (8 oktober: te heet = slijten); 0 of niet = nieuw. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> WEAR =
+            COMPONENTS.registerComponentType("wear", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
     /** Wat er op een beschreven keycard staat (netwerk, nummer, niveau, naam). Een lege kaart heeft dit niet. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.logic.KeycardData>> KEYCARD =
             COMPONENTS.registerComponentType("keycard", builder -> builder

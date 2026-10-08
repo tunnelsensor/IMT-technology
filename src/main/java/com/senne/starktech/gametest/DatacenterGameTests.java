@@ -4,7 +4,12 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.logic.Datacenter;
 import com.senne.starktech.logic.LogicBalance;
 import com.senne.starktech.logic.LogicServer;
+import com.senne.starktech.logic.ServerPartItem;
 import com.senne.starktech.logic.ServerRackBlockEntity;
+import com.senne.starktech.logic.program.GraphConverter;
+import com.senne.starktech.logic.program.LogicProgram;
+import com.senne.starktech.logic.program.ScriptParser;
+import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
@@ -164,6 +169,117 @@ public final class DatacenterGameTests {
             }
             if (!logged(core, EventLog.Type.HEAT, "cool again")) {
                 throw new GameTestAssertException("Het logboek zegt niet dat het datacenter weer koel is");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Zet een diagram en een keycard op de server (om te zien of ze bij een brand weg zijn). */
+    static void putData(SecurityCoreBlockEntity core) {
+        String code = """
+                when every(10):
+                    log("tick")
+                """;
+        core.logic().put(null, new LogicProgram("Clock", true, GraphConverter.toGraph(ScriptParser.parse(code), null), code));
+        core.logic().issue("Guest", 1, "test");
+    }
+
+    /**
+     * Slijten: boven 90 graden slijten de onderdelen (een balkje op het item) en gaan ze een voor een
+     * kapot. Gaat er een SSD kapot, dan zijn alle diagrammen en keycards van de server weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_wear_and_ssd_data_loss(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        ServerRackBlockEntity rack = setup.rackEntity(helper);
+        putData(core);
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), core);
+            boolean sawWear = false;
+            for (int i = 0; i < 120 && rack.count(ServerPartItem.Kind.SSD) > 0; i++) {
+                core.datacenter().setTemperature(100);
+                LogicServer.forgetAll();
+                core.datacenter().update(level, core);
+                for (int slot = 0; slot < rack.parts().getContainerSize(); slot++) {
+                    ItemStack stack = rack.parts().getItem(slot);
+                    if (ServerPartItem.wear(stack) > 0 && stack.isBarVisible()) {
+                        sawWear = true;
+                    }
+                }
+            }
+            if (!sawWear) {
+                throw new GameTestAssertException("Boven 90 graden zou een onderdeel moeten slijten (met een balkje)");
+            }
+            if (rack.count(ServerPartItem.Kind.SSD) > 0) {
+                throw new GameTestAssertException("Na 120 keer boven 90 graden zou de SSD kapot moeten zijn");
+            }
+            if (!core.logic().programs().isEmpty() || !core.logic().cards().isEmpty()) {
+                throw new GameTestAssertException("Met een kapotte SSD zouden de diagrammen en keycards weg moeten zijn: "
+                        + core.logic().programs().size() + " diagrammen, " + core.logic().cards().size() + " kaarten");
+            }
+            if (!logged(core, EventLog.Type.ALARM, "SSD burned") || !logged(core, EventLog.Type.HEAT, "burned out")) {
+                throw new GameTestAssertException("Het logboek zegt niet dat er iets kapot ging: " + core.log().entries());
+            }
+            // Een nieuwe kaart krijgt nooit het nummer van een verloren kaart.
+            var card = core.logic().issue("New", 1, "test");
+            if (card == null || card.number() == 1001) {
+                throw new GameTestAssertException("Kaartnummers mogen niet terugkomen na een brand: " + card);
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Brand: blijft het lang boven 110 graden, dan vat het heetste rack vlam (hier het rack met drie
+     * GPU's, niet het rack met de CPU), met vuur erop. Daarna brandt het af: het rack en wat erin zat
+     * zijn weg, en het logboek zegt het.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_fire_burns_hottest_rack(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        BlockPos gpuRack = setup.rack().east();
+        helper.setBlock(gpuRack, ModBlocks.SERVER_RACK.get());
+        ServerRackBlockEntity hot = (ServerRackBlockEntity) helper.getBlockEntity(gpuRack);
+        for (int slot = 0; slot < 3; slot++) {
+            hot.parts().setItem(slot, new ItemStack(ModItems.SERVER_GPU.get()));
+        }
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), core);
+            if (LogicServer.stats(level, core).racks() != 2) {
+                throw new GameTestAssertException("De twee racks zouden samen de server moeten zijn");
+            }
+            int updates = 0;
+            while (!hot.isBurning() && updates < 10) {
+                core.datacenter().setTemperature(120);
+                LogicServer.forgetAll();
+                core.datacenter().update(level, core);
+                updates++;
+            }
+            if (!hot.isBurning() || setup.rackEntity(helper).isBurning()) {
+                throw new GameTestAssertException("Het rack met de GPU's zou in brand moeten staan (na " + updates + " keer), niet het andere");
+            }
+            if (updates * 40 < LogicBalance.FIRE_DELAY_TICKS) {
+                throw new GameTestAssertException("Het rack vatte te snel vlam: na " + updates * 40 + " ticks");
+            }
+            helper.assertBlockPresent(net.minecraft.world.level.block.Blocks.FIRE, gpuRack.above());
+            if (!logged(core, EventLog.Type.ALARM, "on fire")) {
+                throw new GameTestAssertException("Het logboek zegt niet dat er brand is");
+            }
+            hot.burnDown(level);
+            if (helper.getBlockState(gpuRack).is(ModBlocks.SERVER_RACK.get())) {
+                throw new GameTestAssertException("Het rack zou afgebrand moeten zijn");
+            }
+            if (!logged(core, EventLog.Type.ALARM, "burned down")) {
+                throw new GameTestAssertException("Het logboek zegt niet dat het rack afbrandde");
+            }
+            // Er valt niets uit een afgebrand rack.
+            if (!level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    new net.minecraft.world.phys.AABB(helper.absolutePos(gpuRack)).inflate(2)).isEmpty()) {
+                throw new GameTestAssertException("Uit een afgebrand rack zou niets mogen vallen");
             }
             helper.succeed();
         });
