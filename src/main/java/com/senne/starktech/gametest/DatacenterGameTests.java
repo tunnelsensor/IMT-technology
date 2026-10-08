@@ -1,7 +1,9 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.logic.Backups;
 import com.senne.starktech.logic.Datacenter;
+import com.senne.starktech.logic.Datacenters;
 import com.senne.starktech.logic.LogicBalance;
 import com.senne.starktech.logic.LogicServer;
 import com.senne.starktech.logic.ServerPartItem;
@@ -14,9 +16,11 @@ import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -323,6 +327,97 @@ public final class DatacenterGameTests {
             LogicServer.Stats stats = LogicServer.stats(level, core);
             if (Datacenter.heat(stats, 1.0) <= Datacenter.heat(stats, 0.0)) {
                 throw new GameTestAssertException("Een CPU die hard werkt zou meer warmte moeten maken");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Een opdracht van de app Backup, zoals de desktop hem stuurt. */
+    static Backups.Result backupAction(ServerPlayer player, SecurityCoreBlockEntity core, String op, String key, int value) {
+        CompoundTag args = new CompoundTag();
+        args.putString("key", key);
+        args.putInt("id", value);
+        args.putInt("minutes", value);
+        return Backups.handle(player, core, op, args);
+    }
+
+    /**
+     * Backups: twee datacenters van dezelfde speler. Een backup van A gaat naar B en neemt daar plek;
+     * na een brand op A (alles weg) zet Restore de diagrammen en keycards terug. Er blijven er hooguit 3
+     * per netwerk staan. B maakt automatisch een backup naar A. Brandt een SSD op B, dan zijn de backups
+     * die op B stonden ook weg, en kan A er niet meer naartoe (B draait niet meer).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "datacenter")
+    public static void datacenter_backup_and_restore(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        ServerPlayer owner = setup.owner();
+        SecurityCoreBlockEntity a = setup.core();
+        SecurityCoreBlockEntity b = StarkTechGameTests.placeCore(helper, new BlockPos(14, 3, 14), owner);
+        BlockPos rackB = new BlockPos(12, 3, 12);
+        StarkTechGameTests.placeServer(helper, rackB, b);
+        putData(a);
+        helper.runAfterDelay(3, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), a);
+            StarkTechGameTests.startServer(helper, rackB, b);
+            a.datacenter().update(level, a);
+            b.datacenter().update(level, b);
+            GlobalPos atA = GlobalPos.of(level.dimension(), a.getBlockPos());
+            GlobalPos atB = GlobalPos.of(level.dimension(), b.getBlockPos());
+            Datacenters datacenters = Datacenters.get(level);
+            if (datacenters.summary(atB) == null || !datacenters.summary(atB).online()) {
+                throw new GameTestAssertException("Datacenter B zou zich gemeld moeten hebben en draaien: " + datacenters.summary(atB));
+            }
+            // Zonder doel: een backup kan niet.
+            if (!backupAction(owner, a, "backup_now", "", 0).error()) {
+                throw new GameTestAssertException("Zonder gekozen datacenter zou Backup now moeten mislukken");
+            }
+            Backups.Result chosen = backupAction(owner, a, "backup_target", Datacenters.key(atB), 0);
+            Backups.Result made = backupAction(owner, a, "backup_now", "", 0);
+            if (chosen.error() || made.error()) {
+                throw new GameTestAssertException("Backup naar B mislukte: " + chosen.text() + " / " + made.text());
+            }
+            int size = Backups.size(a.logic());
+            if (datacenters.free(atB, null, Backups.KEEP) != LogicBalance.BLOCKS_PER_SSD - size) {
+                throw new GameTestAssertException("De backup zou " + size + " blokjes op B moeten innemen, er is nog "
+                        + datacenters.free(atB, null, Backups.KEEP) + " vrij");
+            }
+            // Brand op A: alles weg. Restore zet het terug.
+            a.logic().wipe();
+            Datacenters.Backup backup = Backups.newest(level, owner.getUUID());
+            Backups.Result restored = backupAction(owner, a, "backup_restore", "", backup == null ? -1 : backup.id());
+            if (restored.error() || a.logic().programs().size() != 1 || a.logic().cards().size() != 1) {
+                throw new GameTestAssertException("Restore zette niet alles terug: " + restored.text() + ", "
+                        + a.logic().programs().size() + " diagrammen, " + a.logic().cards().size() + " kaarten");
+            }
+            // Hooguit 3 per netwerk op een datacenter.
+            for (int i = 0; i < 4; i++) {
+                backupAction(owner, a, "backup_now", "", 0);
+            }
+            long ofA = datacenters.backupsOf(owner.getUUID()).stream().filter(item -> item.source().equals(atA)).count();
+            if (ofA != Backups.KEEP) {
+                throw new GameTestAssertException("Er zouden " + Backups.KEEP + " backups van A moeten staan, niet " + ofA);
+            }
+            // B maakt automatisch een backup naar A (de eerste meteen).
+            backupAction(owner, b, "backup_target", Datacenters.key(atA), 0);
+            backupAction(owner, b, "backup_auto", "", 5);
+            LogicServer.forgetAll();
+            b.datacenter().update(level, b);
+            boolean auto = datacenters.backupsOf(owner.getUUID()).stream()
+                    .anyMatch(item -> item.source().equals(atB) && item.target().equals(atA) && item.auto());
+            if (!auto) {
+                throw new GameTestAssertException("B zou automatisch een backup naar A moeten maken");
+            }
+            // Een SSD op B verbrandt: de backups op B zijn weg, en B draait niet meer.
+            ServerRackBlockEntity burning = (ServerRackBlockEntity) helper.getBlockEntity(rackB);
+            burning.burnDown(level);
+            LogicServer.forgetAll();
+            b.datacenter().update(level, b);
+            if (datacenters.storedAt(atB) != 0) {
+                throw new GameTestAssertException("Na de brand op B zouden de backups op B weg moeten zijn");
+            }
+            if (!backupAction(owner, a, "backup_now", "", 0).error()) {
+                throw new GameTestAssertException("Een backup naar een datacenter dat niet draait zou moeten mislukken");
             }
             helper.succeed();
         });

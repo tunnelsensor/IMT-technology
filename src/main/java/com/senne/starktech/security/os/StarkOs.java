@@ -215,6 +215,11 @@ public final class StarkOs {
             case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "input_rename" -> renameInput(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
+            case "backup_target", "backup_auto", "backup_now", "backup_restore", "backup_delete" -> {
+                // De app Backup (8 oktober), zie Backups.
+                com.senne.starktech.logic.Backups.Result result = com.senne.starktech.logic.Backups.handle(player, core, payload.op(), args);
+                notify(player, core, session, result.text(), result.error());
+            }
             default -> { } // onbekende opdracht: later uitgebreid (camera's)
         }
     }
@@ -754,6 +759,8 @@ public final class StarkOs {
         data.put("cameras", com.senne.starktech.security.SecurityDevices.cameras(level, core));
         // De server (serverracks) waar de redstone-diagrammen op draaien.
         data.put("server", com.senne.starktech.logic.LogicServer.snapshot(level, core));
+        // De backups van deze server en van de eigenaar (de app Backup).
+        data.put("backup", com.senne.starktech.logic.Backups.snapshot(level, core));
         // De keycards die dit netwerk schreef.
         ListTag cards = new ListTag();
         for (com.senne.starktech.logic.LogicStore.Card card : core.logic().cards()) {

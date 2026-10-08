@@ -369,6 +369,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     /** De kern is afgebroken: zijn IP is weer vrij. */
     public void releaseSystem(ServerLevel level) {
         StarkNetworkData.get(level).release(GlobalPos.of(level.dimension(), worldPosition));
+        // Het datacenter is weg, en de backups die erop stonden ook.
+        com.senne.starktech.logic.Datacenters.get(level).forget(GlobalPos.of(level.dimension(), worldPosition));
     }
 
     // ================================================================ Drones

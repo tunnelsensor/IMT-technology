@@ -6,6 +6,7 @@ import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -70,6 +71,14 @@ public final class Datacenter {
     private double ramLoad;
     /** De laatste minuut, één meting per seconde (de oudste eerst): {cpu %, brein %, ram %, temperatuur}. */
     private final java.util.ArrayDeque<int[]> history = new java.util.ArrayDeque<>();
+    /** Backups (zie Backups): naar welk datacenter, om de hoeveel minuten (0 = niet vanzelf), en wanneer de laatste. */
+    private @Nullable GlobalPos backupTarget;
+    private int backupMinutes;
+    private long lastBackup;
+    /** Waarom de laatste automatische backup niet lukte ("" = hij lukte); zo zeggen we het maar één keer. */
+    private String autoError = "";
+    /** Lukte een automatische backup niet, dan proberen we het pas om deze tijd weer (niet bewaard). */
+    private long retryAt;
 
     public double temperature() {
         return temperature;
@@ -123,6 +132,51 @@ public final class Datacenter {
         return java.util.List.copyOf(history);
     }
 
+    public @Nullable GlobalPos backupTarget() {
+        return backupTarget;
+    }
+
+    public void setBackupTarget(@Nullable GlobalPos target) {
+        backupTarget = target;
+        autoError = "";
+        retryAt = 0;
+    }
+
+    public int backupMinutes() {
+        return backupMinutes;
+    }
+
+    public void setBackupMinutes(int minutes) {
+        backupMinutes = Math.max(0, minutes);
+        autoError = "";
+        retryAt = 0;
+    }
+
+    /** Wanneer (speltijd) de laatste backup was; 0 = nog nooit. */
+    public long lastBackup() {
+        return lastBackup;
+    }
+
+    void backedUp(long time) {
+        lastBackup = time;
+    }
+
+    String autoError() {
+        return autoError;
+    }
+
+    void setAutoError(String error) {
+        autoError = error;
+    }
+
+    long retryAt() {
+        return retryAt;
+    }
+
+    void setRetryAt(long time) {
+        retryAt = time;
+    }
+
     /** Voor de tests: meteen deze temperatuur. */
     public void setTemperature(double temperature) {
         this.temperature = temperature;
@@ -172,6 +226,8 @@ public final class Datacenter {
     /** Eén stap: warmte en koeling meten, de temperatuur een stukje opschuiven, en zo nodig waarschuwen. */
     public void update(ServerLevel level, SecurityCoreBlockEntity core) {
         LogicServer.Stats stats = LogicServer.stats(level, core);
+        report(level, core, stats);
+        Backups.tick(level, core);
         if (stats.racks() == 0) {
             // Geen racks: niets dat warm wordt.
             heat = 0;
@@ -227,6 +283,22 @@ public final class Datacenter {
             return 0;
         }
         return (int) Math.ceil(missing / LogicBalance.FAN_COOLING - 1e-9);
+    }
+
+    /**
+     * Vertelt de wereld (Datacenters) hoe dit datacenter ervoor staat: zo kun je er een backup
+     * naartoe sturen en weet het brein van E.D.I.T.H. hoe sterk het is, ook als zijn chunk straks niet
+     * geladen is. Een kern zonder eigenaar is niemands datacenter.
+     */
+    private static void report(ServerLevel level, SecurityCoreBlockEntity core, LogicServer.Stats stats) {
+        Datacenters datacenters = Datacenters.get(level);
+        GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
+        if (core.ownerId() == null) {
+            datacenters.unreport(here);
+            return;
+        }
+        datacenters.report(here, new Datacenters.Summary(core.ownerId(), core.hostname(), core.ip(), stats.online(),
+                stats.capacity(), core.logic().blocks(), stats.brainDelayTicks()));
     }
 
     // ================================================================ Slijten en brand
@@ -319,12 +391,19 @@ public final class Datacenter {
         }
     }
 
-    /** Een SSD is kapot of verbrand: alle diagrammen en keycards van deze server zijn weg. */
+    /**
+     * Een SSD is kapot of verbrand: alle diagrammen en keycards van deze server zijn weg, en ook de
+     * backups van andere netwerken die hier stonden.
+     */
     private static void dataLost(ServerLevel level, SecurityCoreBlockEntity core) {
         core.logic().wipe();
         LogicRunner.stop(level, core.getBlockPos());
         core.setChanged();
         core.logEvent(EventLog.Type.ALARM, "An SSD burned: all diagrams and keycards on this server are gone");
+        int backups = Datacenters.get(level).wipeStoredAt(GlobalPos.of(level.dimension(), core.getBlockPos()));
+        if (backups > 0) {
+            core.logEvent(EventLog.Type.ALARM, backups + " backup" + (backups == 1 ? "" : "s") + " stored here burned too");
+        }
         tellOwner(level, core, Component.translatable("logic.starktech.heat.data_lost", core.hostname()), EdithMessagePayload.Level.ALERT);
     }
 
@@ -379,6 +458,11 @@ public final class Datacenter {
         tag.putDouble("T", temperature);
         tag.putInt("W", warned);
         tag.putInt("F", fireTicks);
+        if (backupTarget != null) {
+            tag.putString("BackupTo", Datacenters.key(backupTarget));
+        }
+        tag.putInt("BackupMin", backupMinutes);
+        tag.putLong("BackupLast", lastBackup);
         return tag;
     }
 
@@ -389,6 +473,9 @@ public final class Datacenter {
         }
         datacenter.warned = Math.max(COOL, Math.min(HOT, tag.getInt("W")));
         datacenter.fireTicks = Math.max(0, tag.getInt("F"));
+        datacenter.backupTarget = Datacenters.fromKey(tag.getString("BackupTo"));
+        datacenter.backupMinutes = Math.max(0, tag.getInt("BackupMin"));
+        datacenter.lastBackup = tag.getLong("BackupLast");
         return datacenter;
     }
 }

@@ -177,6 +177,26 @@ public final class LogicStore {
         revision++;
     }
 
+    /**
+     * Zet een backup terug: de diagrammen van {@code saved} vervangen de huidige. De keycards alleen
+     * als {@code withCards} (de backup is van dit netwerk). Kaartnummers gaan nooit terug: het
+     * volgende nummer is het hoogste van de twee.
+     */
+    public void restoreFrom(LogicStore saved, boolean withCards) {
+        programs.clear();
+        for (LogicProgram program : saved.programs) {
+            if (programs.size() < MAX_PROGRAMS) {
+                programs.add(program);
+            }
+        }
+        if (withCards) {
+            cards.clear();
+            cards.putAll(saved.cards);
+        }
+        nextCard = Math.max(nextCard, saved.nextCard);
+        revision++;
+    }
+
     /** Hoeveel blokjes alle diagrammen samen gebruiken (zo vol zijn de SSD's). */
     public int blocks() {
         int total = 0;

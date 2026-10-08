@@ -1374,6 +1374,61 @@ public final class VisualCheck {
             });
             t.shot(15, "r08_os_monitor");
             t.close(10);
+            // De app Backup (8 oktober): een tweede datacenter ver weg ("dev-vault"), een backup met de
+            // hand en automatisch elke 15 minuten.
+            BlockPos vault = new BlockPos(60, -60, -170);
+            BlockPos vaultRack = vault.offset(3, 0, 2);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(vault, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                for (BlockPos generator : new BlockPos[] {vault.below(), vaultRack.below()}) {
+                    level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                }
+                level.setBlockAndUpdate(vaultRack, ModBlocks.SERVER_RACK.get().defaultBlockState());
+                if (level.getBlockEntity(vaultRack) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+                    rack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                    rack.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                    rack.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                    rack.parts().setItem(3, new ItemStack(ModItems.SERVER_SSD.get()));
+                }
+                if (level.getBlockEntity(vault) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setHostname("dev-vault");
+                }
+            });
+            t.onServer(45, player -> {
+                ServerLevel level = player.serverLevel();
+                if (level.getBlockEntity(vaultRack) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+                    rack.update(level, vaultRack, level.getBlockState(vaultRack));
+                }
+                com.senne.starktech.logic.LogicServer.forgetAll();
+                if (level.getBlockEntity(vault) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.datacenter().update(level, be);
+                }
+                if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.datacenter().update(level, be);
+                    net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                    args.putString("key", com.senne.starktech.logic.Datacenters.key(net.minecraft.core.GlobalPos.of(level.dimension(), vault)));
+                    com.senne.starktech.logic.Backups.handle(player, be, "backup_target", args);
+                    com.senne.starktech.logic.Backups.handle(player, be, "backup_now", new net.minecraft.nbt.CompoundTag());
+                    net.minecraft.nbt.CompoundTag auto = new net.minecraft.nbt.CompoundTag();
+                    auto.putInt("minutes", 15);
+                    com.senne.starktech.logic.Backups.handle(player, be, "backup_auto", auto);
+                }
+            });
+            t.stand(0, 60.5, -60, -77.5, 180, 20);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.BACKUP);
+                }
+            });
+            t.shot(15, "r09_os_backup");
+            t.close(10);
         }
 
         // --- Keycards (7 oktober): een lezer aan een muur (met een server, dus hij reageert), de

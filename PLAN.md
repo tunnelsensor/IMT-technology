@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 145 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 146 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1192,13 +1192,24 @@ De stappen, één per commit:
       en zijn onderdelen als gekleurde blokjes met een rood streepje als ze slijten, of "ON FIRE
       15 s"); rechts de warmte en koeling met wat je moet doen ("Add 3 fans for full load", "Too hot:
       half speed"), en welke diagrammen er nu bezig zijn ("Busy x3", "2 waiting for RAM"). Het werkt
-      ook via SSH. Screenshots: `-Ponly=racks` (`r08_os_monitor`). Eén nieuwe test.
-- [ ] **5. Backups**
-      Een app **Backup**: kies een ander datacenter van jezelf, **Backup now**, of automatisch
-      (uit, elke 5, 15 of 60 minuten). Een backup neemt plek op de SSD's van dat andere datacenter;
-      daar blijven de laatste 3 per netwerk. Alle backups van jou staan in de lijst, met **Restore**
-      (eerst "Sure?") en **Delete**. Brandt het andere datacenter af, dan zijn de backups daar ook
-      weg.
+      ook via SSH. Screenshots: `-Ponly=racks` (`r08_os_monitor`). Eén nieuwe test. Commit: `436ca99`.
+- [x] **5. Backups**
+      Nieuwe app **Backup** (icoon B) op de desktop. Bovenaan kies je met **<** en **>** naar welk
+      ander datacenter van jezelf de backups gaan (met zijn IP en hoeveel plek er nog vrij is), dan
+      **Backup now**, en **Automatic: Off / 5 min / 15 min / 60 min** (speltijd; de eerste meteen).
+      Een backup is een kopie van je diagrammen en keycards; hij neemt op het andere datacenter
+      zoveel blokjes in als je diagrammen, plus één per 10 kaarten, en daar blijven van elk netwerk
+      de laatste 3 staan. Past hij niet, draait het andere datacenter niet, of draait je eigen server
+      niet, dan zegt hij waarom (automatisch: één keer, ook door E.D.I.T.H., en over een minuut
+      opnieuw proberen). Onderaan **YOUR BACKUPS**: alle backups van de eigenaar, met **Restore**
+      en **Delete** (allebei eerst "Sure?"). Restore vervangt je diagrammen; de keycards alleen als
+      de backup van dit netwerk is (een kaart hoort bij het IP dat hem schreef), en kaartnummers
+      gaan nooit terug. Het andere datacenter mag ver weg staan (ook in een andere dimensie, ook als
+      zijn chunk niet geladen is): elke kern meldt om de twee seconden hoe hij ervoor staat
+      (`logic/Datacenters`, bewaard in de wereld). Brandt er een SSD op het andere datacenter, dan
+      zijn de backups daar ook weg; breek je een kern af, dan ook. Daarbij een verbetering die de test
+      liet zien: een rack telt nu alleen mee voor de kern die het dichtst bij staat (ook als twee
+      gebieden over elkaar liggen). Screenshots: `-Ponly=racks` (`r09_os_backup`). Eén nieuwe test.
 - [ ] **6. Het brein op het datacenter**
       Zonder datacenter (en niet in creative) zegt E.D.I.T.H. dat ze niet kan denken, en zegt ze
       ook uit zichzelf niets. Met een datacenter: de tijd van het model + de vertraging van je
