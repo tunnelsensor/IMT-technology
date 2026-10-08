@@ -70,6 +70,60 @@ public final class EdithBrain {
         return thinking;
     }
 
+    // ================================================================ Het datacenter (8 oktober)
+
+    /**
+     * Heeft het brein een datacenter om op te draaien? Zonder werkt er geen enkel brein, ook het
+     * woordenboek niet (in creative hoeft het niet: dan stuurt de server vertraging 0).
+     */
+    public static boolean hasDatacenter() {
+        return EdithClientState.brainDelayTicks >= 0;
+    }
+
+    /** Hoe lang (ms) het datacenter erbij zet zolang het nog niet sterk is (0 = sterk genoeg). */
+    public static long datacenterDelayMillis() {
+        return Math.max(0, EdithClientState.brainDelayTicks) * 50L;
+    }
+
+    /** Zeg tegen de server dat ze nadenkt (dan werkt je datacenter hard), of dat ze klaar is. */
+    private static void tellServer(boolean busy) {
+        EdithClientEvents.sendAction(busy ? com.senne.starktech.edith.EdithAction.BRAIN_THINKING
+                : com.senne.starktech.edith.EdithAction.BRAIN_DONE);
+    }
+
+    /**
+     * Het woordenboek, maar pas na de vertraging van je datacenter (hoofd-thread). Geeft false als
+     * er geen vertraging is (dan doet de beller het meteen) of ze nog met iets anders bezig is.
+     */
+    static boolean dictionaryLater(String heard) {
+        long delay = datacenterDelayMillis();
+        if (delay <= 0 || thinking) {
+            return false;
+        }
+        thinking = true;
+        tellServer(true);
+        WORKER.execute(() -> {
+            sleep(delay);
+            post(() -> {
+                thinking = false;
+                tellServer(false);
+                if (EdithClientState.authorized) {
+                    VoiceControl.runDictionary(heard);
+                }
+            });
+        });
+        return true;
+    }
+
+    /** Even wachten op deze thread (de achtergrond-thread van het brein, nooit de hoofd-thread). */
+    private static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     // ================================================================ Kiezen (het scherm AI Brain)
 
     /**
@@ -187,14 +241,18 @@ public final class EdithBrain {
         List<EdithMemory.Turn> history = EdithMemory.recentTurns();
         // Was haar vorige beurt een vraag ("bedoelde je ...?")? Dan is dit het antwoord daarop.
         boolean confirming = !history.isEmpty() && wasQuestion(history.getLast());
+        // De vertraging van je datacenter komt bovenop de tijd van het model (8 oktober).
+        long extra = datacenterDelayMillis();
         thinking = true;
+        tellServer(true);
         WORKER.execute(() -> {
             try {
                 long start = System.currentTimeMillis();
                 String json = ask(mode, history, message);
                 BrainDecision decision = BrainDecision.parse(json);
-                StarkTech.LOGGER.info("E.D.I.T.H. brain ({}, {} ms): \"{}\" -> {}", mode,
-                        System.currentTimeMillis() - start, heard, json.replaceAll("\\s+", " "));
+                StarkTech.LOGGER.info("E.D.I.T.H. brain ({}, {} ms + {} ms datacenter): \"{}\" -> {}", mode,
+                        System.currentTimeMillis() - start, extra, heard, json.replaceAll("\\s+", " "));
+                sleep(extra);
                 post(() -> apply(heard, decision, confirming));
             } catch (ClaudeBrain.Failure failure) {
                 StarkTech.LOGGER.warn("E.D.I.T.H.: Claude could not answer ({})", failure.reason, failure.getCause());
@@ -205,6 +263,7 @@ public final class EdithBrain {
                         : "edith.starktech.brain.fail.local"));
             } finally {
                 thinking = false;
+                post(() -> tellServer(false));
             }
         });
         return true;
@@ -271,7 +330,7 @@ public final class EdithBrain {
      */
     static void remark(String event) {
         BrainMode mode = mode();
-        if (!ready(mode) || thinking || EdithAssistant.isBusy()) {
+        if (!ready(mode) || thinking || EdithAssistant.isBusy() || !hasDatacenter()) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();

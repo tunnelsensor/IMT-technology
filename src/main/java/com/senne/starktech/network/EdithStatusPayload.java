@@ -23,10 +23,12 @@ import net.minecraft.world.phys.Vec3;
  * @param strikeTicks  ticks tot de inslag
  * @param hackedCount  hoeveel spelers je nu hackt (fase 10)
  * @param threats      nummers van wat jou op dit moment aanvalt (zie EdithThreats)
+ * @param brainDelay   hoeveel ticks het brein extra nadenkt op je datacenter (-1 = geen datacenter: geen brein)
+ * @param brainSource  op welk datacenter het brein draait ("creative" of "" = nergens)
  */
 public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,
                                  Optional<Vec3> strikeTarget, int strikeTicks, int hackedCount,
-                                 List<Integer> threats)
+                                 List<Integer> threats, int brainDelay, String brainSource)
         implements CustomPacketPayload {
     public static final Type<EdithStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "edith_status"));
 
@@ -46,6 +48,8 @@ public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer>
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.strikeTicks());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.hackedCount());
                     ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).encode(buffer, payload.threats());
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.brainDelay() + 1); // +1: -1 wordt 0 (klein over het netwerk)
+                    ByteBufCodecs.stringUtf8(64).encode(buffer, payload.brainSource());
                 }
 
                 @Override
@@ -58,8 +62,10 @@ public record EdithStatusPayload(int swarmDrones, int guardDrones, List<Integer>
                     int strikeTicks = ByteBufCodecs.VAR_INT.decode(buffer);
                     int hacked = ByteBufCodecs.VAR_INT.decode(buffer);
                     List<Integer> threats = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).decode(buffer);
+                    int brainDelay = ByteBufCodecs.VAR_INT.decode(buffer) - 1;
+                    String brainSource = ByteBufCodecs.stringUtf8(64).decode(buffer);
                     return new EdithStatusPayload(swarm, guards, cooldowns, marked, strikeTarget, strikeTicks,
-                            hacked, threats);
+                            hacked, threats, brainDelay, brainSource);
                 }
             };
 

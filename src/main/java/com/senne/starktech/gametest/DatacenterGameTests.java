@@ -3,6 +3,7 @@ package com.senne.starktech.gametest;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.logic.Backups;
 import com.senne.starktech.logic.Datacenter;
+import com.senne.starktech.logic.DatacenterBrain;
 import com.senne.starktech.logic.Datacenters;
 import com.senne.starktech.logic.LogicBalance;
 import com.senne.starktech.logic.LogicServer;
@@ -418,6 +419,68 @@ public final class DatacenterGameTests {
             }
             if (!backupAction(owner, a, "backup_now", "", 0).error()) {
                 throw new GameTestAssertException("Een backup naar een datacenter dat niet draait zou moeten mislukken");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Het brein op het datacenter: zonder datacenter geen brein (-1), in creative geen datacenter nodig
+     * (0), en met een datacenter zijn vertraging (1 CPU: 8 seconden). Een GPU erbij maakt het sneller,
+     * warm maakt het trager. Terwijl ze nadenkt, werkt het datacenter hard (brein 100% in de Monitor,
+     * met de naam van wie het is).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_runs_the_brain(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        ServerPlayer owner = setup.owner();
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(9, 3, 9));
+        @SuppressWarnings("removal")
+        ServerPlayer creative = helper.makeMockServerPlayerInLevel();
+        helper.runAfterDelay(3, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), core);
+            settle(level, core, 1);
+            if (DatacenterBrain.delayFor(owner) != LogicBalance.brainDelayTicks(1.0)) {
+                throw new GameTestAssertException("Met 1 CPU zou het brein " + LogicBalance.brainDelayTicks(1.0)
+                        + " ticks moeten wachten, niet " + DatacenterBrain.delayFor(owner));
+            }
+            if (!DatacenterBrain.sourceFor(owner).equals(core.hostname())) {
+                throw new GameTestAssertException("Het brein zou op " + core.hostname() + " moeten draaien, niet " + DatacenterBrain.sourceFor(owner));
+            }
+            if (DatacenterBrain.delayFor(stranger) != -1 || DatacenterBrain.delayFor(creative) != 0) {
+                throw new GameTestAssertException("Zonder datacenter -1 en in creative 0, niet " + DatacenterBrain.delayFor(stranger)
+                        + " / " + DatacenterBrain.delayFor(creative));
+            }
+            // Een GPU erbij: kracht 1 + 2 = 3.
+            setup.rackEntity(helper).parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
+            settle(level, core, 1);
+            if (DatacenterBrain.delayFor(owner) != LogicBalance.brainDelayTicks(3.0)) {
+                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicBalance.brainDelayTicks(3.0)
+                        + " ticks moeten zijn, niet " + DatacenterBrain.delayFor(owner));
+            }
+            // Warm: half zo snel.
+            core.datacenter().setTemperature(LogicBalance.WARM_TEMPERATURE + 5);
+            LogicServer.forgetAll();
+            core.datacenter().update(level, core);
+            core.datacenter().setTemperature(LogicBalance.WARM_TEMPERATURE + 5);
+            LogicServer.forgetAll();
+            core.datacenter().update(level, core);
+            if (DatacenterBrain.delayFor(owner) != LogicBalance.brainDelayTicks(3.0 / LogicBalance.WARM_SLOWDOWN)) {
+                throw new GameTestAssertException("Warm zou het brein half zo snel moeten zijn: " + DatacenterBrain.delayFor(owner));
+            }
+            // Nadenken: het datacenter werkt hard, en de Monitor zegt voor wie.
+            DatacenterBrain.start(owner);
+            core.datacenter().sample(level, core);
+            var snapshot = LogicServer.snapshot(level, core);
+            if (core.datacenter().brainLoad() < 1.0 || snapshot.getList("brainProcs", 8).size() != 1) {
+                throw new GameTestAssertException("Terwijl ze nadenkt zou het brein 100% moeten zijn: " + core.datacenter().brainLoad());
+            }
+            DatacenterBrain.stop(owner);
+            core.datacenter().sample(level, core);
+            if (core.datacenter().brainLoad() > 0) {
+                throw new GameTestAssertException("Klaar met nadenken: het brein zou weer 0% moeten zijn");
             }
             helper.succeed();
         });

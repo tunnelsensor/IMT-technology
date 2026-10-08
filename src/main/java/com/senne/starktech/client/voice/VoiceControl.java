@@ -79,6 +79,11 @@ public final class VoiceControl {
             EdithClientEvents.playUi(ModSounds.EDITH_DENIED.get(), 1.0f);
             return;
         }
+        // Zonder datacenter is er geen brein: dan hoeft ze ook niet te luisteren (8 oktober).
+        if (!EdithBrain.hasDatacenter()) {
+            noDatacenter();
+            return;
+        }
         switch (VoiceInstaller.state(VoiceFeature.COMMANDS)) {
             case UNSUPPORTED -> tell("edith.starktech.voice.unsupported", EdithMessagePayload.Level.WARNING);
             case NOT_INSTALLED, FAILED -> tell("edith.starktech.voice.not_installed", EdithMessagePayload.Level.WARNING);
@@ -131,11 +136,26 @@ public final class VoiceControl {
         // dan laat addNotification het zelf weg.
         EdithClientState.addNotification(Component.translatable("edith.starktech.voice.heard", heard),
                 EdithMessagePayload.Level.COMMS, false);
-        // Een brein gekozen (lokaal model of Claude)? Dan denkt dat na; anders het woordenboek.
+        // Zonder datacenter werkt er geen enkel brein, ook het woordenboek niet (8 oktober).
+        if (!EdithBrain.hasDatacenter()) {
+            noDatacenter();
+            return;
+        }
+        // Een brein gekozen (lokaal model of Claude)? Dan denkt dat na; anders het woordenboek. Is
+        // je datacenter nog niet sterk, dan duurt het woordenboek ook even (dictionaryLater).
         if (EdithBrain.handle(heard)) {
             return;
         }
+        if (EdithBrain.dictionaryLater(heard)) {
+            return;
+        }
         runDictionary(heard);
+    }
+
+    /** Ze kan niet denken: er is (nog) geen datacenter. */
+    private static void noDatacenter() {
+        tell("edith.starktech.brain.no_datacenter", EdithMessagePayload.Level.WARNING);
+        EdithClientEvents.playUi(ModSounds.EDITH_DENIED.get(), 1.0f);
     }
 
     /** Zoekt wat je zei op in het woordenboek en voert het uit (ook de reserve van het brein). */

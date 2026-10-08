@@ -252,6 +252,12 @@ final class MonitorApp {
             counts.merge(element.getAsString(), 1, Integer::sum);
         }
         List<String> lines = new ArrayList<>();
+        // Het brein van E.D.I.T.H. dat hier nadenkt (voor wie).
+        for (Tag element : server.getList("brainProcs", Tag.TAG_STRING)) {
+            small(g, font, OsDraw.fitRight(font, "E.D.I.T.H. thinking (" + element.getAsString() + ")", (int) (w / 0.75f)), x, py,
+                    HudStyle.argb(255, BRAIN));
+            py += 9;
+        }
         for (Map.Entry<String, Integer> entry : counts.entrySet()) {
             lines.add(entry.getKey() + (entry.getValue() > 1 ? "  x" + entry.getValue() : ""));
         }
@@ -259,7 +265,7 @@ final class MonitorApp {
         if (waiting > 0) {
             lines.add(waiting + " waiting for RAM");
         }
-        if (lines.isEmpty()) {
+        if (lines.isEmpty() && server.getList("brainProcs", Tag.TAG_STRING).isEmpty()) {
             small(g, font, "Nothing right now", x, py, HudStyle.argb(255, OsDraw.GREY));
         }
         for (String line : lines) {

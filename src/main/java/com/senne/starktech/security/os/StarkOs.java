@@ -894,6 +894,7 @@ public final class StarkOs {
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         SESSIONS.remove(event.getEntity().getUUID());
+        com.senne.starktech.logic.DatacenterBrain.forget(event.getEntity().getUUID());
     }
 
     public static void onServerStopped(ServerStoppedEvent event) {
@@ -903,5 +904,6 @@ public final class StarkOs {
         com.senne.starktech.logic.LogicServer.clear();
         com.senne.starktech.logic.LogicEvents.clear();
         com.senne.starktech.logic.LogicRunner.clear();
+        com.senne.starktech.logic.DatacenterBrain.clear();
     }
 }

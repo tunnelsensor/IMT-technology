@@ -73,7 +73,11 @@ public enum EdithAction {
     // bv. "nuke it" met je stem) is de precisieraket.
     STRIKE_PRECISION("strike_precision", null),
     STRIKE_BOMBARDMENT("strike_bombardment", null),
-    STRIKE_SWEEP("strike_sweep", null);
+    STRIKE_SWEEP("strike_sweep", null),
+    // Het brein op het datacenter (8 oktober): je spel zegt wanneer ze nadenkt, zodat je datacenter
+    // dan hard werkt (zie DatacenterBrain).
+    BRAIN_THINKING("brain_thinking", null),
+    BRAIN_DONE("brain_done", null);
 
     private final String id;
     private final @Nullable EdithFeature toggles;

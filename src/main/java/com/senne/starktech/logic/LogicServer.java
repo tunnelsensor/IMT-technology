@@ -261,6 +261,11 @@ public final class LogicServer {
             procs.add(net.minecraft.nbt.StringTag.valueOf(name));
         }
         tag.put("procs", procs);
+        net.minecraft.nbt.ListTag brains = new net.minecraft.nbt.ListTag();
+        for (String name : DatacenterBrain.thinkingOn(level, GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+            brains.add(net.minecraft.nbt.StringTag.valueOf(name));
+        }
+        tag.put("brainProcs", brains);
         // Elk rack van de server: waar, of het meedraait, wat erin zit (en hoe versleten), en brand.
         net.minecraft.nbt.ListTag racks = new net.minecraft.nbt.ListTag();
         java.util.List<BlockPos> sorted = new java.util.ArrayList<>(stats.cluster());

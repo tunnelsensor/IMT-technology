@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 146 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 147 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1210,11 +1210,23 @@ De stappen, één per commit:
       zijn de backups daar ook weg; breek je een kern af, dan ook. Daarbij een verbetering die de test
       liet zien: een rack telt nu alleen mee voor de kern die het dichtst bij staat (ook als twee
       gebieden over elkaar liggen). Screenshots: `-Ponly=racks` (`r09_os_backup`). Eén nieuwe test.
-- [ ] **6. Het brein op het datacenter**
-      Zonder datacenter (en niet in creative) zegt E.D.I.T.H. dat ze niet kan denken, en zegt ze
-      ook uit zichzelf niets. Met een datacenter: de tijd van het model + de vertraging van je
-      datacenter (bij het woordenboek ook). Terwijl ze denkt, werkt je datacenter hard (Monitor,
-      en het wordt warmer). Het scherm AI Brain toont welk datacenter en hoeveel vertraging.
+      Commit: `f44a964`.
+- [x] **6. Het brein op het datacenter**
+      Het brein draait op het sterkste datacenter van jezelf dat draait (de kortste vertraging),
+      waar het ook staat (`logic/DatacenterBrain`). De server stuurt twee keer per seconde mee met
+      de status van je bril hoeveel vertraging dat is, en waar. **Zonder datacenter** (en niet in
+      creative) werkt er geen enkel brein: druk je op de spraaktoets, dan zegt E.D.I.T.H. "I can't
+      think without a datacenter..." en luistert ze niet; ze zegt ook uit zichzelf niets meer. Met
+      een datacenter: de tijd van het model + de vertraging van je datacenter (1 CPU +8 s, 1 GPU
+      +4 s, warm twee keer zo lang; vanaf 8 GPU's niets), ook bij het woordenboek; in de HUD staat
+      zolang "THINKING...". **In creative** heb je geen datacenter nodig en is er geen vertraging.
+      Terwijl ze nadenkt, zegt je spel dat tegen de server: dan werken de CPU's en GPU's van dat
+      datacenter op vol (BRAIN 100% in de Monitor, met "E.D.I.T.H. thinking (naam)", en het wordt
+      warmer). Het scherm **AI Brain** zegt rechtsboven "Datacenter: dev-lab (+2.0 s)", "Creative: no
+      datacenter needed" of "No datacenter: no brain". Let op: in de screenshot-rondleiding zegt ze
+      bij `b08b_brain_speaks_up` (survival, geen datacenter) nu terecht niets meer. Screenshots:
+      `-Ponly=racks` (`r10_brain_datacenter`, `r11_brain_thinking`, `r12_brain_answered`). Eén nieuwe
+      test.
 - [ ] **7. Showcase, screenshots en LEESMIJ**
 
 ---

@@ -90,7 +90,7 @@ final class EdithInitiative {
         List<EdithMemory.Turn> turns = EdithMemory.recentTurns();
         boolean justTalked = !turns.isEmpty() && now - turns.getLast().millis() < 20_000;
         if (event != null && enabled() && !justTalked && now - lastRemark > PAUSE_MILLIS
-                && EdithBrain.ready(EdithBrain.mode()) && !EdithListener.isListening()) {
+                && EdithBrain.ready(EdithBrain.mode()) && EdithBrain.hasDatacenter() && !EdithListener.isListening()) {
             lastRemark = now;
             EdithBrain.remark(event);
         }

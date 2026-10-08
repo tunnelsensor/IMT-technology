@@ -377,6 +377,9 @@ public final class EdithServer {
             case SPY_VIEW -> toggleSpyView(player);
             case SPY_REPORT -> EdithSpy.sendReport(player);
             case STAND_DOWN -> standDown(player, glasses);
+            // Het brein op het datacenter (8 oktober)
+            case BRAIN_THINKING -> com.senne.starktech.logic.DatacenterBrain.start(player);
+            case BRAIN_DONE -> com.senne.starktech.logic.DatacenterBrain.stop(player);
             // Fase 7
             case TRANSPORT_RIDE -> transport(player, glasses, false);
             case TRANSPORT_AUTOPILOT -> transport(player, glasses, true);
@@ -1095,7 +1098,9 @@ public final class EdithServer {
                 strike == null ? Optional.empty() : Optional.of(strike.target()),
                 strike == null ? 0 : strike.ticksLeft(),
                 EdithHack.targetsOf(player).size(),
-                threatIds));
+                threatIds,
+                com.senne.starktech.logic.DatacenterBrain.delayFor(player),
+                com.senne.starktech.logic.DatacenterBrain.sourceFor(player)));
     }
 
     public static void send(ServerPlayer player, Component message, EdithMessagePayload.Level level) {

@@ -1429,6 +1429,18 @@ public final class VisualCheck {
             });
             t.shot(15, "r09_os_backup");
             t.close(10);
+            // Het brein op het datacenter (8 oktober): in survival draait het op dev-sec, en zolang dat
+            // nog niet sterk is, denkt ze even na (ook met het woordenboek).
+            t.command(0, "gamemode survival @a");
+            t.pause(20);
+            t.open(10, com.senne.starktech.client.BrainScreen::new);
+            t.shot(10, "r10_brain_datacenter");
+            t.close(0);
+            t.step(5, () -> com.senne.starktech.client.voice.VoiceControl.hear("night vision on"));
+            t.shot(8, "r11_brain_thinking");
+            t.waitUntil(1200, () -> !com.senne.starktech.client.voice.EdithBrain.isThinking());
+            t.shot(10, "r12_brain_answered");
+            t.command(0, "gamemode creative @a");
         }
 
         // --- Keycards (7 oktober): een lezer aan een muur (met een server, dus hij reageert), de

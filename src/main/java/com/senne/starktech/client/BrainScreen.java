@@ -109,6 +109,20 @@ public class BrainScreen extends Screen {
         proactiveButton.setMessage(proactiveLabel());
     }
 
+    /** "Datacenter: dev-lab (+2.0 s)", "Creative: no datacenter needed", of "No datacenter: no brain". */
+    private static Component datacenterLine() {
+        String source = EdithClientState.brainSource;
+        int delay = EdithClientState.brainDelayTicks;
+        if (delay < 0) {
+            return Component.translatable("screen.starktech.brain.datacenter.none");
+        }
+        if ("creative".equals(source)) {
+            return Component.translatable("screen.starktech.brain.datacenter.creative");
+        }
+        String extra = delay == 0 ? "no delay" : String.format(java.util.Locale.ROOT, "+%.1f s", delay / 20.0);
+        return Component.translatable("screen.starktech.brain.datacenter", source, extra);
+    }
+
     /** Wat er achter een keuze staat: wat het is, en voor het lokale model de download. */
     private static Component describe(BrainMode mode) {
         if (mode == BrainMode.LOCAL) {
@@ -138,6 +152,10 @@ public class BrainScreen extends Screen {
         int white = HudStyle.argb(210, HudStyle.WHITE);
         int dim = HudStyle.argb(150, HudStyle.WHITE);
         g.drawString(font, title, left + 10, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
+        // Op welk datacenter het brein draait, en hoeveel het erbij zet (8 oktober).
+        Component datacenter = datacenterLine();
+        int dcColour = !EdithBrain.hasDatacenter() ? HudStyle.ORANGE : HudStyle.GREEN;
+        g.drawString(font, datacenter, left + PANEL_W - 10 - font.width(datacenter), top + 8, HudStyle.argb(230, dcColour), false);
 
         // De drie keuzes: een streepje voor de actieve, en uitleg ernaast.
         BrainMode active = EdithBrain.mode();

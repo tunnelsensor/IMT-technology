@@ -207,7 +207,8 @@ public final class Datacenter {
         cpuLoad = capacity > 0 ? Math.min(1.0, perSecond / capacity) : 0;
         int[] load = LogicRunner.load(level, core);
         ramLoad = stats.online() && stats.maxRuns() > 0 ? Math.min(1.0, (load[0] + load[1]) / (double) stats.maxRuns()) : 0;
-        brainLoad = 0.0; // het brein van E.D.I.T.H. komt in stap 6
+        // Denkt het brein van E.D.I.T.H. hier nu na (voor iemand)? Dan werken de chips op vol.
+        brainLoad = DatacenterBrain.thinkingOn(level, GlobalPos.of(level.dimension(), core.getBlockPos())).isEmpty() ? 0.0 : 1.0;
         history.addLast(new int[] {percent(cpuLoad), percent(brainLoad), percent(ramLoad), (int) Math.round(temperature)});
         while (history.size() > HISTORY) {
             history.removeFirst();

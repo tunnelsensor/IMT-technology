@@ -225,6 +225,13 @@ public final class EdithClientState {
 
     /** Hang je op dit moment onder een transportdrone? */
     public static boolean flying;
+
+    /**
+     * Het brein op het datacenter (8 oktober): hoeveel ticks het extra nadenkt (-1 = geen datacenter,
+     * dan werkt er geen brein), en op welk datacenter ("creative" of "" = nergens). Komt met de status.
+     */
+    public static int brainDelayTicks = -1;
+    public static String brainSource = "";
     /** Nummers van wat jou op dit moment aanvalt; de server stuurt ze (zie EdithThreats). */
     public static java.util.List<Integer> threatIds = java.util.List.of();
 
@@ -262,5 +269,7 @@ public final class EdithClientState {
         threatIds = java.util.List.of();
         hackBubbles.clear();
         hackedCount = 0;
+        brainDelayTicks = -1;
+        brainSource = "";
     }
 }
