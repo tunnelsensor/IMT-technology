@@ -1421,6 +1421,16 @@ public final class VisualCheck {
                         new com.senne.starktech.network.OsActionPayload(core, "card_block", block));
             });
             t.shot(15, "y06_keycards_list");
+            // Opruimen: de vraag "Sure?", en daarna alle geblokkeerde kaarten weg.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourAskDeleteBlocked();
+                }
+            });
+            t.shot(5, "y07_keycards_delete_sure");
+            t.onServer(0, player -> com.senne.starktech.security.os.StarkOs.handleAction(player,
+                    new com.senne.starktech.network.OsActionPayload(core, "card_delete_blocked", new net.minecraft.nbt.CompoundTag())));
+            t.shot(15, "y08_keycards_deleted");
             t.close(10);
         }
 

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 138 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 139 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 80 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1065,7 +1065,18 @@ De stappen, één per commit:
       klikken werken. Kies je iets met aanhalingstekens (`pulse("...", 3)`), dan staat de cursor
       ertussen en gaat meteen de lijst met namen open; `def name():` selecteert de naam zodat je hem
       meteen overtypt. Na `card.`, `player.` of `on("` gaat het lijstje vanzelf open. Screenshots:
-      `-Ponly=logic` (`l09`-`l11`). Eén nieuwe test.
+      `-Ponly=logic` (`l09`-`l11`). Eén nieuwe test. Commit: `b5519ce`.
+- [x] **11. Geblokkeerde keycards echt weggooien** (jouw wens: "zodat je keycard tab niet overvol en
+      rommelig wordt")
+      In de app Keycards staan de geblokkeerde kaarten nu onderaan, met per kaart **Delete**, en
+      rechtsboven **Delete blocked (n)** voor allemaal tegelijk; allebei vragen eerst "Sure?" (nog een
+      keer klikken binnen 4 seconden). Alleen geblokkeerde kaarten kun je weggooien (een actieve eerst
+      blokkeren). Het nummer van een weggegooide kaart komt nooit meer terug, ook niet na opslaan en
+      laden, dus een oude kaart die nog ergens rondzwerft, wordt nooit meer geldig. Bovenaan staat
+      hoeveel kaarten actief en geblokkeerd zijn. Daarbij twee kleine verbeteringen die een test liet
+      zien: bij twee even grote groepjes racks is de server nu het groepje het dichtst bij de kern, en
+      liggen er ooit twee gebieden over een plek, dan hoort die bij de dichtstbijzijnde kern (niet bij
+      een willekeurige). Screenshots: `-Ponly=keycards` (`y06`-`y08`). Eén nieuwe test.
 
 ---
 

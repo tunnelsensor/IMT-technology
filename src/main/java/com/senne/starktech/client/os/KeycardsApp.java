@@ -21,13 +21,20 @@ import org.jetbrains.annotations.Nullable;
  *  Write a new card
  *  Name  [Lab access______]   Level [-] 3 [+]   [Write card]
  *  1 blank keycard in your inventory
- *  CARDS (3)
- *  #1001  Lab access      L3  Senne      [Block]
- *  #1002  Guest           L1  Senne      [Unblock]  BLOCKED
+ *  CARDS (2 active, 1 blocked)                       [Delete blocked (1)]
+ *  #1001  Lab access      L3  by Senne                        [Block]
+ *  #1003  Pepper          L5  by Senne                        [Block]
+ *  #1002  Guest           L1  BLOCKED               [Delete] [Unblock]
  * </pre>
  * "Write card" schrijft de eerste lege keycard in je rugzak: hij krijgt de naam, het niveau en het
  * volgende nummer. Een kaart blokkeren maakt hem overal in dit netwerk ongeldig ({@code card.valid}
  * wordt false), zonder dat je de kaart terug hoeft te hebben.
+ *
+ * Geblokkeerde kaarten staan onderaan, en die kun je ook echt weggooien (jouw wens: "zodat je
+ * keycard tab niet overvol en rommelig wordt"): per kaart met Delete, of allemaal tegelijk met
+ * "Delete blocked". Dat vraagt eerst "Sure?" (nog een keer klikken). Een actieve kaart moet je eerst
+ * blokkeren. Het nummer van een weggegooide kaart komt nooit meer terug, dus een oude kaart die nog
+ * ergens rondzwerft, wordt nooit meer geldig.
  */
 final class KeycardsApp {
     private static final int ROW = 13;
@@ -36,13 +43,40 @@ final class KeycardsApp {
     private @Nullable EditBox labelBox;
     private int level = 1;
     private int scroll;
+    /** Weggooien vraagt eerst "Sure?": welke kaart (of ALL_BLOCKED), en tot wanneer de vraag geldt. */
+    private int pendingDelete = NONE;
+    private long pendingUntil;
+    private static final int NONE = -1;
+    private static final int ALL_BLOCKED = 0;
 
     KeycardsApp(StarkOsScreen screen) {
         this.screen = screen;
     }
 
-    private List<Tag> cards() {
-        return screen.data().getList("cards", Tag.TAG_COMPOUND);
+    /** Alle kaarten: eerst de actieve, dan de geblokkeerde (elk op nummer). */
+    private List<CompoundTag> cards() {
+        List<CompoundTag> active = new java.util.ArrayList<>();
+        List<CompoundTag> blocked = new java.util.ArrayList<>();
+        for (Tag element : screen.data().getList("cards", Tag.TAG_COMPOUND)) {
+            CompoundTag card = (CompoundTag) element;
+            (card.getBoolean("b") ? blocked : active).add(card);
+        }
+        active.addAll(blocked);
+        return active;
+    }
+
+    private static long blockedCount(List<CompoundTag> cards) {
+        return cards.stream().filter(card -> card.getBoolean("b")).count();
+    }
+
+    /** Staat er een "Sure?" open voor deze kaart (of voor alle geblokkeerde)? */
+    private boolean asking(int what) {
+        return pendingDelete == what && net.minecraft.Util.getMillis() < pendingUntil;
+    }
+
+    /** De tekst op de knop rechtsboven de lijst. */
+    private String deleteBlockedLabel(long blocked) {
+        return asking(ALL_BLOCKED) ? "Sure? Delete " + blocked : "Delete blocked (" + blocked + ")";
     }
 
     private EditBox labelBox() {
@@ -129,9 +163,16 @@ final class KeycardsApp {
                 : blanks == 1 ? "1 blank keycard in your inventory" : blanks + " blank keycards in your inventory";
         g.drawString(font, hint, a.x(), rowY + 17, HudStyle.argb(255, blanks == 0 ? HudStyle.ORANGE : OsDraw.GREY), false);
 
-        // De lijst met kaarten.
-        List<Tag> cards = cards();
-        g.drawString(font, "CARDS (" + cards.size() + ")", a.x(), listTop(a) - 11, HudStyle.argb(255, HudStyle.CYAN), false);
+        // De lijst met kaarten, met rechtsboven alle geblokkeerde in één keer weggooien.
+        List<CompoundTag> cards = cards();
+        long blocked = blockedCount(cards);
+        String header = blocked == 0 ? "CARDS (" + cards.size() + ")"
+                : "CARDS (" + (cards.size() - blocked) + " active, " + blocked + " blocked)";
+        g.drawString(font, header, a.x(), listTop(a) - 11, HudStyle.argb(255, HudStyle.CYAN), false);
+        if (blocked > 0) {
+            String label = deleteBlockedLabel(blocked);
+            OsDraw.button(g, font, a.x() + a.w() - OsDraw.buttonWidth(font, label), listTop(a) - 14, label, true, HudStyle.RED);
+        }
         int top = listTop(a);
         int bottom = a.y() + a.h();
         OsDraw.field(g, a.x(), top - 1, a.x() + a.w(), bottom, false);
@@ -142,9 +183,14 @@ final class KeycardsApp {
         scroll = Math.max(0, Math.min(scroll, cards.size() - 1));
         int y = top + 2;
         for (int i = scroll; i < cards.size() && y + 11 <= bottom; i++) {
-            renderCard(g, font, a, y, (CompoundTag) cards.get(i));
+            renderCard(g, font, a, y, cards.get(i));
             y += ROW;
         }
+    }
+
+    /** De knop Delete van een geblokkeerde kaart ("Sure?" als je al één keer klikte). */
+    private String deleteLabel(CompoundTag card) {
+        return asking(card.getInt("n")) ? "Sure?" : "Delete";
     }
 
     private void renderCard(GuiGraphics g, Font font, StarkOsScreen.Area a, int y, CompoundTag card) {
@@ -157,6 +203,12 @@ final class KeycardsApp {
         String label = blocked ? "Unblock" : "Block";
         int bw = OsDraw.buttonWidth(font, label);
         OsDraw.button(g, font, a.x() + a.w() - bw - 3, y - 1, label, true, blocked ? HudStyle.GREEN : HudStyle.RED);
+        if (blocked) {
+            // Een geblokkeerde kaart kun je echt weggooien.
+            String delete = deleteLabel(card);
+            int dw = OsDraw.buttonWidth(font, delete);
+            OsDraw.button(g, font, a.x() + a.w() - bw - 6 - dw, y - 1, delete, true, HudStyle.RED);
+        }
         // Wie hem schreef (of, als hij geblokkeerd is, dat in het rood).
         int room = a.w() - bw - 10 - 150;
         if (blocked) {
@@ -203,12 +255,24 @@ final class KeycardsApp {
             write();
             return;
         }
-        // Block of Unblock bij een kaart.
-        List<Tag> cards = cards();
+        // Alle geblokkeerde kaarten weggooien (de knop rechtsboven de lijst).
+        List<CompoundTag> cards = cards();
+        long blocked = blockedCount(cards);
+        if (blocked > 0) {
+            String label = deleteBlockedLabel(blocked);
+            int w = OsDraw.buttonWidth(font, label);
+            if (OsDraw.inside(mx, my, a.x() + a.w() - w, listTop(a) - 14, w, OsDraw.BUTTON_H)) {
+                if (confirm(ALL_BLOCKED)) {
+                    screen.send("card_delete_blocked", new CompoundTag());
+                }
+                return;
+            }
+        }
+        // Block, Unblock of Delete bij een kaart.
         int y = listTop(a) + 2;
         int bottom = a.y() + a.h();
         for (int i = scroll; i < cards.size() && y + 11 <= bottom; i++) {
-            CompoundTag card = (CompoundTag) cards.get(i);
+            CompoundTag card = cards.get(i);
             String label = card.getBoolean("b") ? "Unblock" : "Block";
             int bw = OsDraw.buttonWidth(font, label);
             if (OsDraw.inside(mx, my, a.x() + a.w() - bw - 3, y - 1, bw, OsDraw.BUTTON_H)) {
@@ -216,10 +280,34 @@ final class KeycardsApp {
                 args.putInt("n", card.getInt("n"));
                 args.putBoolean("on", !card.getBoolean("b"));
                 screen.send("card_block", args);
+                pendingDelete = NONE;
                 return;
+            }
+            if (card.getBoolean("b")) {
+                int dw = OsDraw.buttonWidth(font, deleteLabel(card));
+                if (OsDraw.inside(mx, my, a.x() + a.w() - bw - 6 - dw, y - 1, dw, OsDraw.BUTTON_H)) {
+                    if (confirm(card.getInt("n"))) {
+                        CompoundTag args = new CompoundTag();
+                        args.putInt("n", card.getInt("n"));
+                        screen.send("card_delete", args);
+                    }
+                    return;
+                }
             }
             y += ROW;
         }
+        pendingDelete = NONE; // ergens anders geklikt: de vraag vervalt
+    }
+
+    /** De eerste klik vraagt "Sure?" (4 seconden lang), de tweede doet het echt. */
+    private boolean confirm(int what) {
+        if (asking(what)) {
+            pendingDelete = NONE;
+            return true;
+        }
+        pendingDelete = what;
+        pendingUntil = net.minecraft.Util.getMillis() + 4000;
+        return false;
     }
 
     void mouseScrolled(double scrollY) {
@@ -263,6 +351,11 @@ final class KeycardsApp {
         screen.send("card_write", args);
         labelBox().setValue("");
         labelBox().setFocused(false);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de vraag "Sure?" bij de knop Delete blocked. */
+    void tourAskDeleteBlocked() {
+        confirm(ALL_BLOCKED);
     }
 
     /** Alleen voor de screenshot-rondleiding: een naam en niveau alvast ingevuld. */

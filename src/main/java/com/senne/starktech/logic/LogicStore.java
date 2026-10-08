@@ -82,9 +82,19 @@ public final class LogicStore {
         return true;
     }
 
-    /** Een kaart uit de lijst halen (dan is hij nergens meer geldig). */
+    /**
+     * Een kaart uit de lijst halen (dan is hij nergens meer geldig). Zijn nummer komt nooit meer terug
+     * ({@code nextCard} gaat alleen omhoog), dus een oude kaart met dit nummer wordt nooit meer geldig.
+     */
     public boolean forget(int number) {
         return cards.remove(number) != null;
+    }
+
+    /** Alle geblokkeerde kaarten uit de lijst halen. Geeft terug hoeveel het er waren. */
+    public int forgetBlocked() {
+        int before = cards.size();
+        cards.values().removeIf(Card::blocked);
+        return before - cards.size();
     }
 
     /**

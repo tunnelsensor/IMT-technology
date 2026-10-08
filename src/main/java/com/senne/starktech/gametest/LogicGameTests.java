@@ -318,6 +318,66 @@ public final class LogicGameTests {
         });
     }
 
+    /** Een opdracht van de app Keycards, met eventueel een kaartnummer. */
+    private static void cardAction(Setup setup, String op, int number, boolean on) {
+        CompoundTag args = new CompoundTag();
+        args.putInt("n", number);
+        args.putBoolean("on", on);
+        StarkOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), op, args));
+    }
+
+    /**
+     * Keycards opruimen: een actieve kaart kun je niet weggooien (eerst blokkeren), een geblokkeerde
+     * wel, "Delete blocked" gooit ze allemaal tegelijk weg, en het nummer van een weggegooide kaart
+     * komt nooit meer terug (een oude kaart wordt dus nooit meer geldig).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "keycards_delete")
+    public static void keycards_delete_blocked(GameTestHelper helper) {
+        Setup setup = setup(helper);
+        helper.runAfterDelay(2, () -> {
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            var store = setup.core().logic();
+            var lab = store.issue("Lab access", 3, "test");
+            var guest = store.issue("Guest", 1, "test");
+            var lost = store.issue("Lost card", 2, "test");
+            KeycardData labData = new KeycardData(setup.core().ip(), "x", lab.number(), 3, "Lab access");
+            // Een actieve kaart: eerst blokkeren.
+            cardAction(setup, "card_delete", lab.number(), false);
+            if (store.card(lab.number()) == null) {
+                throw new GameTestAssertException("Een actieve kaart werd zomaar weggegooid");
+            }
+            // Blokkeren en weggooien: weg uit de lijst, en niet meer geldig.
+            cardAction(setup, "card_block", lab.number(), true);
+            cardAction(setup, "card_delete", lab.number(), false);
+            if (store.card(lab.number()) != null || store.isValid(setup.core().ip(), labData)) {
+                throw new GameTestAssertException("Een geblokkeerde kaart werd niet weggegooid (of is nog geldig)");
+            }
+            // De andere twee blokkeren en allemaal tegelijk weggooien.
+            cardAction(setup, "card_block", guest.number(), true);
+            cardAction(setup, "card_block", lost.number(), true);
+            cardAction(setup, "card_delete_blocked", 0, false);
+            if (!store.cards().isEmpty()) {
+                throw new GameTestAssertException("Delete blocked liet kaarten staan: " + store.cards());
+            }
+            // Een nieuwe kaart krijgt een nieuw nummer, niet een van de weggegooide.
+            var fresh = store.issue("New", 1, "test");
+            if (fresh.number() <= lost.number()) {
+                throw new GameTestAssertException("Een weggegooid nummer kwam terug: #" + fresh.number());
+            }
+            // Ook na opslaan en weer laden.
+            var loaded = com.senne.starktech.logic.LogicStore.load(store.save());
+            var after = loaded.issue("After load", 1, "test");
+            if (after.number() <= fresh.number()) {
+                throw new GameTestAssertException("Na laden kwam een oud nummer terug: #" + after.number());
+            }
+            boolean logged = setup.core().log().entries().stream().anyMatch(entry -> entry.text().contains("deleted 2 blocked keycards"));
+            if (!logged) {
+                throw new GameTestAssertException("Het logboek zegt niet dat er kaarten weggegooid zijn: " + lastLog(setup.core()));
+            }
+            helper.succeed();
+        });
+    }
+
     /** Staat deze tekst als regel van een diagram (LOGIC) in het logboek? */
     private static boolean logged(SecurityCoreBlockEntity core, String text) {
         return core.log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.LOGIC && entry.text().equals(text));

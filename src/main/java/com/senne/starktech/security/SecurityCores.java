@@ -51,12 +51,20 @@ public final class SecurityCores {
         if (set == null) {
             return null;
         }
+        // Liggen er (bij uitzondering) twee gebieden over deze plek, dan telt de dichtstbijzijnde kern;
+        // zo is het elke keer dezelfde (niet wie toevallig eerst in de lijst staat).
+        SecurityCoreBlockEntity best = null;
+        double bestDistance = Double.MAX_VALUE;
         for (BlockPos corePos : List.copyOf(set)) {
             if (inArea(corePos, pos) && level.getBlockEntity(corePos) instanceof SecurityCoreBlockEntity core) {
-                return core;
+                double distance = corePos.distSqr(pos);
+                if (distance < bestDistance) {
+                    best = core;
+                    bestDistance = distance;
+                }
             }
         }
-        return null;
+        return best;
     }
 
     /** Ligt deze plek in het gebied van de kern op {@code corePos}? */

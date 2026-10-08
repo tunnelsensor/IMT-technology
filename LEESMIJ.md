@@ -415,6 +415,9 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld).
 3. **Keycards**: craft lege kaarten en schrijf ze op de desktop in de app **Keycards** (naam en
    niveau 1-5; ze krijgen een eigen nummer). Een verloren of gestolen kaart **blokkeer** je daar.
+   Geblokkeerde kaarten staan onderaan de lijst; met **Delete** (of **Delete blocked** voor allemaal
+   tegelijk, twee keer klikken) gooi je ze echt weg, zodat de lijst niet vol en rommelig wordt. Het
+   nummer van een weggegooide kaart komt nooit meer terug.
 4. **Programmeren**: de app **Logic** op de desktop. Links je diagrammen, rechts de code; de knop
    **Blocks** toont hetzelfde als blokjes met draadjes (en **Code** weer terug). **Check** zoekt
    fouten, **Save** zet het op de server, **Help** toont alles wat je kunt gebruiken (klik erop en

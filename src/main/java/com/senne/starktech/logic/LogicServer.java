@@ -20,8 +20,9 @@ import org.jetbrains.annotations.Nullable;
  * wens, 7 oktober: "een multiblock die je op elkaar of naast elkaar kunt stacken").
  *
  * Racks die tegen elkaar staan (boven, onder, opzij) zijn samen één server. Staan er in het gebied
- * meerdere losse groepjes, dan is de grootste groep de server; de rest draait niet mee ("not
- * connected"). Zo weet je altijd welke racks tellen: die met knipperende lampjes.
+ * meerdere losse groepjes, dan is de grootste groep de server (bij gelijke grootte die het dichtst
+ * bij de kern staat); de rest draait niet mee ("not connected"). Zo weet je altijd welke racks
+ * tellen: die met knipperende lampjes.
  *
  * Wat de server kan, hangt af van de onderdelen in die racks (alleen racks met stroom tellen):
  * CPU's (sneller reageren), RAM (meer tegelijk) en SSD's (meer blokjes). Zonder één van elk
@@ -98,7 +99,7 @@ public final class LogicServer {
         if (cached != null && now - cached.time() < RECOUNT && now >= cached.time()) {
             return cached;
         }
-        Set<BlockPos> cluster = mainCluster(SecurityDevices.scan(level, core).racks());
+        Set<BlockPos> cluster = mainCluster(core.getBlockPos(), SecurityDevices.scan(level, core).racks());
         int cpus = 0;
         int ram = 0;
         int ssd = 0;
@@ -123,13 +124,15 @@ public final class LogicServer {
     }
 
     /**
-     * De grootste groep racks die elkaar raken. Zijn twee groepen even groot, dan wint de groep met
-     * het laagste rack (zodat het niet heen en weer springt).
+     * De grootste groep racks die elkaar raken. Zijn twee groepen even groot, dan wint de groep die het
+     * dichtst bij de kern staat, en zijn ze ook even dichtbij, die met het laagste rack (zodat het nooit
+     * heen en weer springt).
      */
-    public static Set<BlockPos> mainCluster(List<BlockPos> racks) {
+    public static Set<BlockPos> mainCluster(BlockPos core, List<BlockPos> racks) {
         Set<BlockPos> left = new HashSet<>(racks);
         Set<BlockPos> best = Set.of();
         BlockPos bestFirst = null;
+        double bestDistance = Double.MAX_VALUE;
         for (BlockPos start : racks) {
             if (!left.contains(start)) {
                 continue;
@@ -140,12 +143,14 @@ public final class LogicServer {
             todo.add(start);
             left.remove(start);
             BlockPos first = start;
+            double distance = Double.MAX_VALUE;
             while (!todo.isEmpty()) {
                 BlockPos pos = todo.poll();
                 group.add(pos);
                 if (pos.compareTo(first) < 0) {
                     first = pos;
                 }
+                distance = Math.min(distance, pos.distSqr(core));
                 for (Direction direction : Direction.values()) {
                     BlockPos next = pos.relative(direction);
                     if (left.remove(next)) {
@@ -153,9 +158,13 @@ public final class LogicServer {
                     }
                 }
             }
-            if (group.size() > best.size() || group.size() == best.size() && bestFirst != null && first.compareTo(bestFirst) < 0) {
+            boolean better = group.size() > best.size()
+                    || group.size() == best.size() && (distance < bestDistance
+                    || distance == bestDistance && bestFirst != null && first.compareTo(bestFirst) < 0);
+            if (better) {
                 best = group;
                 bestFirst = first;
+                bestDistance = distance;
             }
         }
         return best;

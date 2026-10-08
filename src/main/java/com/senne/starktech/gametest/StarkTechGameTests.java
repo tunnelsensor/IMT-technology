@@ -1050,7 +1050,7 @@ public final class StarkTechGameTests {
         });
     }
 
-    /** De grootste groep racks is de server; bij twee even grote groepen wint die met het laagste rack. */
+    /** De grootste groep racks is de server; bij twee even grote groepen wint die het dichtst bij de kern. */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "server_racks")
     public static void server_rack_main_cluster(GameTestHelper helper) {
         BlockPos a = new BlockPos(0, 0, 0);
@@ -1058,15 +1058,23 @@ public final class StarkTechGameTests {
         BlockPos c = new BlockPos(5, 0, 0);
         BlockPos d = new BlockPos(5, 0, 1);
         BlockPos e = new BlockPos(6, 0, 1);
-        var biggest = com.senne.starktech.logic.LogicServer.mainCluster(List.of(a, c, b, d, e));
+        BlockPos core = new BlockPos(3, 0, 0);
+        var biggest = com.senne.starktech.logic.LogicServer.mainCluster(core, List.of(a, c, b, d, e));
         if (!biggest.equals(java.util.Set.of(c, d, e))) {
             throw new GameTestAssertException("De grootste groep is niet gekozen: " + biggest);
         }
-        var tie = com.senne.starktech.logic.LogicServer.mainCluster(List.of(c, d, a, b));
-        if (!tie.equals(java.util.Set.of(a, b))) {
-            throw new GameTestAssertException("Bij gelijke groepen moet de groep met het laagste rack winnen: " + tie);
+        // Even groot: de groep het dichtst bij de kern wint (de kern dicht bij c en d, dan dicht bij a en b).
+        var nearC = com.senne.starktech.logic.LogicServer.mainCluster(new BlockPos(6, 0, 0), List.of(c, d, a, b));
+        var nearA = com.senne.starktech.logic.LogicServer.mainCluster(new BlockPos(-1, 0, 0), List.of(c, d, a, b));
+        if (!nearC.equals(java.util.Set.of(c, d)) || !nearA.equals(java.util.Set.of(a, b))) {
+            throw new GameTestAssertException("Bij gelijke groepen moet de groep het dichtst bij de kern winnen: " + nearC + " / " + nearA);
         }
-        if (!com.senne.starktech.logic.LogicServer.mainCluster(List.of()).isEmpty()) {
+        // Ook even ver: de groep met het laagste rack.
+        var tie = com.senne.starktech.logic.LogicServer.mainCluster(new BlockPos(0, 50, 0), List.of(new BlockPos(5, 0, 0), new BlockPos(-5, 0, 0)));
+        if (!tie.equals(java.util.Set.of(new BlockPos(-5, 0, 0)))) {
+            throw new GameTestAssertException("Bij gelijke groepen even ver weg moet het laagste rack winnen: " + tie);
+        }
+        if (!com.senne.starktech.logic.LogicServer.mainCluster(core, List.of()).isEmpty()) {
             throw new GameTestAssertException("Zonder racks is er geen server");
         }
         helper.succeed();

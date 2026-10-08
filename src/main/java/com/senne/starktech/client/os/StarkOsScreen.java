@@ -228,6 +228,12 @@ public class StarkOsScreen extends Screen {
         logic.tourSave();
     }
 
+    /** Alleen voor de screenshot-rondleiding: de vraag "Sure?" bij Delete blocked in de app Keycards. */
+    public void tourAskDeleteBlocked() {
+        openApp(App.KEYCARDS);
+        keycards.tourAskDeleteBlocked();
+    }
+
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
     public void tourOpen(App app) {
         openApp(app);

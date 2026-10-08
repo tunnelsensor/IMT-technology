@@ -207,6 +207,8 @@ public final class StarkOs {
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
             case "card_write" -> writeCard(player, core, session, args.getString("label"), args.getInt("level"));
             case "card_block" -> blockCard(player, core, session, args.getInt("n"), args.getBoolean("on"));
+            case "card_delete" -> deleteCard(player, core, session, args.getInt("n"));
+            case "card_delete_blocked" -> deleteBlockedCards(player, core, session);
             case "logic_save" -> saveProgram(player, core, session, args.getString("old"), args.getString("name"),
                     args.getCompound("graph"), args.getString("source"));
             case "logic_delete" -> deleteProgram(player, core, session, args.getString("name"));
@@ -503,6 +505,39 @@ public final class StarkOs {
         device.setName(clean);
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed \"" + old + "\" to \"" + clean + "\"");
         notify(player, core, session, "Renamed to " + clean, false);
+    }
+
+    /**
+     * Een geblokkeerde kaart echt weggooien (zodat de lijst niet vol en rommelig wordt). Een actieve
+     * kaart moet je eerst blokkeren: zo gooi je er niet per ongeluk een weg die nog gebruikt wordt.
+     */
+    private static void deleteCard(ServerPlayer player, SecurityCoreBlockEntity core, Session session, int number) {
+        var card = core.logic().card(number);
+        if (card == null) {
+            notify(player, core, session, "There is no card #" + number, true);
+            return;
+        }
+        if (!card.blocked()) {
+            notify(player, core, session, "Block card #" + number + " first: only blocked cards can be deleted", true);
+            return;
+        }
+        core.logic().forget(number);
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " deleted keycard #" + number);
+        notify(player, core, session, "Card #" + number + " deleted", false);
+    }
+
+    /** Alle geblokkeerde kaarten in één keer weggooien. */
+    private static void deleteBlockedCards(ServerPlayer player, SecurityCoreBlockEntity core, Session session) {
+        int removed = core.logic().forgetBlocked();
+        if (removed == 0) {
+            notify(player, core, session, "There are no blocked cards", true);
+            return;
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " deleted " + removed + " blocked keycard"
+                + (removed == 1 ? "" : "s"));
+        notify(player, core, session, "Deleted " + removed + " blocked card" + (removed == 1 ? "" : "s"), false);
     }
 
     /** Wie heet zo? Eerst wie nu online is, anders wie hier ooit was (Minecraft onthoudt dat). */
