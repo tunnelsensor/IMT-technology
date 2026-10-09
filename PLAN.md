@@ -1623,6 +1623,99 @@ De stappen, één per commit:
       `r04` hun schermen, `r03` gebarsten obsidiaan in je hand en de hotbar met gebarsten blokken en
       poeder in vier kleuren). LEESMIJ.md heeft een eigen stuk "Barsten herstellen".
 
+### 12. Inbreken: lezers en panelen hacken, en zakkenrollen (9 oktober)
+
+Jouw wens: keycardlezers en codepanelen **hacken met een leuke minigame**, en een **keycard pikken**
+uit de zakken van een andere speler.
+
+Jouw antwoorden:
+
+- **Een keycardlezer: een stroomcircuit.** Je schroeft de lezer open en ziet een raster met stukjes
+  draad. Klik om ze te draaien en leid het signaal van CARD naar ACCEPT, zonder ALARM te raken. Tegen
+  de klok.
+- **Jij kiest het niveau** van de kaart die je namaakt (1 tot 5), voordat je begint: hoe hoger, hoe
+  moeilijker (meer stukjes, minder tijd). Lukt het, dan leest de lezer een geldige kaart van dat
+  niveau, en je diagram beslist zoals altijd wat er gebeurt.
+- **Een codepaneel: vingerafdrukken en de volgorde.** Eerst bestuif je de toetsen: vegen laten zien
+  welke cijfers de code gebruikt. Daarna raad je de volgorde; je hoort alleen hoeveel cijfers op de
+  goede plek staan.
+- **Zakkenrollen: een zak-minigame.** Achter iemand opent rechtsklik een klein scherm van zijn zak:
+  de kaarten liggen omgekeerd tussen rommel, en je pakt er één terwijl een "hij merkt het"-meter
+  volloopt bij elke beweging.
+
+Mijn invulling (zeg het als je iets anders wil):
+
+- **Het gereedschap: de Bypass Kit** (een inbraakset; recept zonder vaste vorm: Stark-chip, schaar,
+  glowstonestof als poeder voor vingerafdrukken, redstone en ijzer). Rechtsklik ermee op een lezer of
+  paneel en de minigame begint. Hij gaat 16 keer mee: elke hack die je begint kost er één, ook als je
+  stopt. Zakkenrollen doe je met je blote hand.
+- **Alleen echt aangesloten apparaten**: hangt de lezer of het paneel niet aan een kern met een
+  draaiende server, dan valt er niets te bedotten ("not connected to a running server") en kost het
+  niets. Je eigen lezers hacken mag ook, om je beveiliging te testen.
+- **Tijdens de hack loopt het spel door** (torentjes schieten gewoon op je). Esc, weglopen (verder dan
+  6 blokken) of doodgaan stopt de hack zonder alarm. Op elk scherm staat in één zin waarom het werkt.
+- **Mislukt** (de tijd is om, ALARM langer dan 1 seconde geraakt, of geen pogingen meer): rood lampje,
+  een alarm in het logboek ("Someone is tampering with Lab door", met je naam erachter zoals bij elk
+  alarm), E.D.I.T.H. waarschuwt de eigenaar, de beveiliging jaagt op je, en dat apparaat laat jou 60
+  seconden niet meer proberen.
+- **Het stroomcircuit**: linksklik draait een stukje rechtsom, rechtsklik linksom. Stukjes die aan CARD
+  vastzitten lichten blauw op. Raakt het signaal ALARM, dan knippert die rood en piept hij: draai het
+  stukje binnen 1 seconde weg, anders gaat het alarm af. Niveau 1: 5 bij 4 stukjes en 60 seconden;
+  niveau 2: 6×4 en 55 s; niveau 3: 6×5 en 50 s; niveau 4: 7×5 en 45 s; niveau 5: 8×6 en 40 s; met 1,
+  1, 2, 2 en 3 ALARM-punten. Elk raster heeft een oplossing (zijn er meer, dan telt elke goede).
+- **De nagemaakte kaart** krijgt een verzonnen nummer (#2000 tot #9999, nooit een nummer van jouw lijst)
+  en geen naam. In het logboek staat hij als een gewone kaart ("Bob used card #4071 (level 3) at Lab
+  door"), maar dat nummer staat niet in je app Keycards: zo zie je dat er gehackt is. Wie heel
+  voorzichtig is, laat zijn diagram ook op `card.number` letten.
+- **De code van een paneel** staat in je diagram (`if code == "4321":` onder `when codepanel("...")`,
+  ook in een def die daar gebruikt wordt). Staan er meer codes voor één paneel, dan kraakt de kit de
+  eerste; staat er geen, dan zegt hij "No diagram checks a code on this panel."
+- **Vingerafdrukken**: houd de muisknop ingedrukt en veeg over alle cijfertoetsen; de cijfers van de
+  code krijgen afdrukken, een cijfer dat twee keer in de code zit krijgt er meer. Bovenaan staat hoe
+  lang de code is. **De volgorde**: je typt alleen cijfers met afdrukken; elke poging zegt hoeveel
+  cijfers op de goede plek staan, en hoeveel volgordes er nog kunnen (zoals de terminal van de laptop
+  woorden doorstreept). Je krijgt de lengte van de code + 2 pogingen (4 cijfers: 6 pogingen). Ik heb
+  het nagerekend: wie logisch blijft raden, heeft bij 4 cijfers gemiddeld 3,6 pogingen nodig en
+  bijna nooit meer dan 5. Een lange code met 7 of 8 verschillende cijfers is echt moeilijk, en dus
+  veiliger. Je pogingen gaan niet langs je diagram (geen "wrong code" in het logboek); alleen de goede
+  code typt de kit echt in ("Bob entered a code at Panel 1"), en dan beslist je diagram. De code
+  blijft op je scherm staan: voortaan typ je hem gewoon in.
+- **Zakkenrollen**: sluip met een lege hand achter iemand (meer dan ongeveer 100 graden naast waar hij
+  heen kijkt, binnen 2,5 blokken) en rechtsklik op hem. In zijn zak liggen zijn keycards (alles in zijn
+  inventaris behalve wat hij in zijn handen houdt; hooguit 6) omgekeerd tussen 5 tot 8 stukjes rommel
+  (een touwtje, een bonnetje, een muntje, een vuursteen: alleen plaatjes). Sleep met de muis: elke
+  beweging vult de meter (snel slepen meer dan rustig), stilhouden laat hem langzaam zakken. Sleep een
+  kaart boven uit de zak en hij is van jou: hij draait om en je ziet welke het is (uit een stapel krijg
+  je er één). **Betrapt** ben je als de meter vol is, of als hij zich omdraait en je ziet; loopt hij weg
+  (verder dan 3,5 blokken), dan houdt het gewoon op. Betrapt: hij krijgt "... tried to pick your
+  pocket!" en jij licht 10 seconden op, zodat hij je terugvindt. Lukt het, dan merkt hij niets (tot hij
+  in zijn rugzak kijkt). Bij dezelfde speler kun je het pas na 30 seconden weer proberen, wat er ook
+  gebeurde. Een server kan het uitzetten met `pickpocket.allowed` in `starktech-server.toml`, net als
+  "hack player".
+- Alle getallen staan in de config onder `[bypass]`: de tijden, hoe lang ALARM mag, de wachttijd na
+  een mislukte hack, de extra pogingen, en het bereik en de wachttijd van zakkenrollen.
+
+De stappen, één per commit:
+
+- [ ] **1. De Bypass Kit en een keycardlezer hacken**
+      De kit (recept, plaatje), het scherm met de niveaus en het stroomcircuit, de server die het
+      raster zelf ook maakt en nakijkt of het echt klopt, de nagemaakte kaart, en het alarm als het
+      mislukt. Tests: elk raster (honderden, alle niveaus) heeft een oplossing en begint niet opgelost;
+      een gehackte lezer opent de deur alleen als het niveau hoog genoeg is; een raster dat niet klopt
+      telt niet; mislukken geeft alarm en de wachttijd.
+- [ ] **2. Een codepaneel hacken**
+      De code uit je diagram halen (ook uit een def), vingerafdrukken, en de volgorde raden met de
+      server als scheidsrechter: de code komt pas op je scherm als je hem hebt. Tests: de code vinden,
+      afdrukken en "op de goede plek" kloppen, de goede volgorde opent de deur, te veel pogingen geeft
+      alarm.
+- [ ] **3. Zakkenrollen**
+      Het zak-scherm met kaarten en rommel, slepen en de meter, betrapt worden (de meter vol, of hij
+      draait zich om), en de kaart echt verplaatsen. Tests: van voren mag niet; een kaart pikken (de
+      ander is hem kwijt, jij hebt hem); betrapt geeft een melding en oplichten; de wachttijd.
+- [ ] **4. Showcase, screenshots en LEESMIJ**
+      Een nieuwe functie in de showcase (na "Repairing cracks"), screenshots met `-Ponly=bypass`, en
+      een eigen stuk in LEESMIJ.md.
+
 ---
 
 ## Nog nooit in het spel bekeken
