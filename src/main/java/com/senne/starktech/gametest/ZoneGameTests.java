@@ -7,13 +7,16 @@ import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.SecurityBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.zone.ZoneBox;
 import com.senne.starktech.security.zone.ZoneApp;
 import com.senne.starktech.security.zone.ZoneData;
 import com.senne.starktech.security.zone.ZoneMarkerItem;
+import com.senne.starktech.security.zone.ZoneSelection;
 import com.senne.starktech.security.zone.ZoneShape;
 import com.senne.starktech.security.zone.ZoneSync;
+import com.senne.starktech.security.zone.Zones;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.ArrayList;
 import java.util.List;
@@ -286,7 +289,7 @@ public final class ZoneGameTests {
     }
 
     /**
-     * De kubussen: wat buiten het gebied van de kern steekt valt eraf, een kubus helemaal erbuiten
+     * De kubussen: wat verder dan ZONE_REACH van de kern steekt valt eraf, een kubus helemaal erbuiten
      * verdwijnt, meer dan ZONE_MAX_BOXES kan niet, kubussen die over elkaar liggen tellen één keer, en
      * na opslaan en laden is alles er nog.
      */
@@ -296,11 +299,11 @@ public final class ZoneGameTests {
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
         SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
         BlockPos coreAbs = helper.absolutePos(CORE);
-        int r = SecurityBalance.AREA_RADIUS;
+        int r = SecurityBalance.ZONE_REACH;
         List<ZoneBox> wanted = new ArrayList<>();
-        // Steekt 10 blokken uit naar het oosten: wordt afgeknipt op de rand van het gebied.
+        // Steekt 10 blokken uit naar het oosten: wordt afgeknipt op ZONE_REACH.
         wanted.add(ZoneBox.of(coreAbs.offset(r - 5, 0, 0), coreAbs.offset(r + 10, 3, 4)));
-        // Helemaal buiten het gebied: valt weg.
+        // Helemaal te ver: valt weg.
         wanted.add(ZoneBox.of(coreAbs.offset(r + 5, 0, 0), coreAbs.offset(r + 8, 2, 2)));
         // Twee kubussen die voor de helft over elkaar liggen: 4x4x4 + 4x4x4 - 2x4x4 = 96 blokken.
         wanted.add(ZoneBox.of(coreAbs.offset(-10, 0, -10), coreAbs.offset(-7, 3, -7)));
@@ -533,7 +536,7 @@ public final class ZoneGameTests {
     /**
      * De app Zone: New box zet een kubus van 7 x 5 x 7 waar je staat; een + schuift een kant een blok
      * naar buiten, een - naar binnen (maar nooit kleiner dan één blok); getypte getallen worden de
-     * hoeken (buiten het gebied van de kern: nee); Delete haalt hem weg; meer dan 16 kan niet.
+     * hoeken (verder dan ZONE_REACH van de kern: nee); Delete haalt hem weg; meer dan 16 kan niet.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
     public static void zone_app_edits_boxes(GameTestHelper helper) {
@@ -575,11 +578,11 @@ public final class ZoneGameTests {
         if (!core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
             throw new GameTestAssertException("De getypte hoeken zouden de kubus moeten worden: " + core.zoneBoxes());
         }
-        BlockPos far = helper.absolutePos(CORE).offset(200, 0, 0);
+        BlockPos far = helper.absolutePos(CORE).offset(SecurityBalance.ZONE_REACH + 5, 0, 0);
         set.putIntArray("box", new int[] {far.getX(), far.getY(), far.getZ(), far.getX() + 3, far.getY() + 3, far.getZ() + 3});
         ZoneApp.Result outside = ZoneApp.handle(owner, core, "zone_set", set, false);
         if (!outside.error() || !core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
-            throw new GameTestAssertException("Een kubus helemaal buiten het gebied zou niet mogen (en de oude zou moeten blijven)");
+            throw new GameTestAssertException("Een kubus helemaal te ver van de kern zou niet mogen (en de oude zou moeten blijven)");
         }
         // Weg ermee.
         CompoundTag delete = new CompoundTag();
@@ -597,6 +600,113 @@ public final class ZoneGameTests {
             throw new GameTestAssertException("Meer dan " + SecurityBalance.ZONE_MAX_BOXES + " kubussen zou niet mogen");
         }
         finish(helper, core);
+    }
+
+    /**
+     * Jouw wens (9 oktober): een zone tot ZONE_REACH (200) blokken van de kern. Een kubus 150 blokken
+     * ver mag (getypt in de app, en met de Zone Marker 120 blokken ver) en beschermt; groter maken
+     * stopt op 200 blokken. Maar een kubus mag niet in het gebied of over de zone van een andere kern,
+     * en een nieuwe kern mag niet zo staan dat zijn gebied over een zone valt.
+     *
+     * Een eigen batch, en alles naar het zuiden: de testserver ruimt oude arena's niet op en zet ze in
+     * rijen naar het zuiden (8 naast elkaar, naar het oosten). Ten noorden en westen staan dus de kernen
+     * van eerdere tests; ten zuiden staat nog niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones_reach")
+    public static void zone_reaches_far_but_not_into_other_bases(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 8), "zone-owner");
+        ServerPlayer neighbour = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 8), "zone-neighbour");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
+        BlockPos coreAbs = helper.absolutePos(CORE);
+        // Een tweede kern 100 blokken naar het zuiden en 12 naar het oosten: zijn gebied reikt van 18
+        // blokken ten westen tot 42 ten oosten van de eerste kern (en van 70 tot 130 naar het zuiden).
+        BlockPos otherPos = coreAbs.offset(12, 0, 100);
+        level.setBlockAndUpdate(otherPos, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        SecurityCoreBlockEntity other = (SecurityCoreBlockEntity) level.getBlockEntity(otherPos);
+        other.setOwner(neighbour);
+        int reach = SecurityBalance.ZONE_REACH;
+        // Een kern meldt zich pas een tick na het neerzetten aan.
+        helper.runAfterDelay(2, () -> {
+            // 150 blokken naar het zuiden, getypt in de app: mag, en beschermt.
+            ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
+            BlockPos far = coreAbs.offset(0, 0, 150);
+            ZoneBox farBox = ZoneBox.of(far.offset(-3, 0, -3), far.offset(3, 4, 3));
+            CompoundTag set = new CompoundTag();
+            set.putInt("i", 0);
+            set.putIntArray("box", farBox.save().getAsIntArray());
+            ZoneApp.Result typed = ZoneApp.handle(owner, core, "zone_set", set, false);
+            if (typed.error() || !core.zoneBoxes().equals(List.of(farBox))) {
+                throw new GameTestAssertException("Een kubus 150 blokken ver zou moeten mogen: " + typed.text() + " " + core.zoneBoxes());
+            }
+            if (Zones.activeAt(level, far) == null) {
+                throw new GameTestAssertException("De zone 150 blokken van de kern beschermt niet");
+            }
+            // De zuidkant 60 blokken verder: hij stopt op 200 blokken van de kern, en verder kan niet.
+            CompoundTag grow = new CompoundTag();
+            grow.putInt("i", 0);
+            grow.putInt("side", 3);
+            grow.putInt("by", 60);
+            ZoneApp.handle(owner, core, "zone_grow", grow, false);
+            if (core.zoneBoxes().getFirst().max().getZ() != coreAbs.getZ() + reach) {
+                throw new GameTestAssertException("De kubus zou op " + reach + " blokken van de kern moeten stoppen: " + core.zoneBoxes());
+            }
+            if (!ZoneApp.handle(owner, core, "zone_grow", grow, false).error()) {
+                throw new GameTestAssertException("Verder dan " + reach + " blokken zou de app moeten weigeren");
+            }
+
+            // Met de Zone Marker: een kubus 120 blokken naar het zuiden en 60 naar het westen (geen kern
+            // in de buurt, wel de jouwe binnen 200 blokken).
+            BlockPos west = coreAbs.offset(-60, 0, 120);
+            ZoneBox westBox = ZoneBox.of(west, west.offset(4, 3, 4));
+            ItemStack marker = new ItemStack(ModItems.ZONE_MARKER.get());
+            marker.set(com.senne.starktech.registry.ModDataComponents.ZONE_SELECTION.get(),
+                    ZoneSelection.EMPTY.withFirst(westBox.min()).withSecond(westBox.max()));
+            owner.setItemInHand(InteractionHand.MAIN_HAND, marker);
+            owner.setShiftKeyDown(true);
+            marker.getItem().use(level, owner, InteractionHand.MAIN_HAND);
+            owner.setShiftKeyDown(false);
+            if (core.zoneBoxes().size() != 2 || !core.zoneBoxes().getLast().equals(westBox)) {
+                throw new GameTestAssertException("De Zone Marker zou een kubus 120 blokken ver moeten toevoegen: " + core.zoneBoxes());
+            }
+
+            // In het gebied van de andere kern (35 blokken naar het oosten): nee. Net erbuiten (45): ja.
+            BlockPos south = coreAbs.offset(0, 0, 100);
+            set.putInt("i", 1);
+            set.putIntArray("box", ZoneBox.of(south.offset(35, 0, 0), south.offset(38, 3, 3)).save().getAsIntArray());
+            if (!ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(westBox)) {
+                throw new GameTestAssertException("Een kubus in het gebied van een andere kern zou niet mogen");
+            }
+            ZoneBox east = ZoneBox.of(south.offset(45, 0, 0), south.offset(48, 3, 3));
+            set.putIntArray("box", east.save().getAsIntArray());
+            if (ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(east)) {
+                throw new GameTestAssertException("Een kubus net buiten het gebied van de andere kern zou wel moeten mogen: " + core.zoneBoxes());
+            }
+            // Over de zone van de andere kern: nee (en ook niet erin groeien).
+            ZoneBox theirs = ZoneBox.of(south.offset(55, 0, 0), south.offset(60, 3, 3));
+            other.setZoneBoxes(List.of(theirs));
+            set.putIntArray("box", ZoneBox.of(south.offset(50, 0, 0), south.offset(56, 3, 3)).save().getAsIntArray());
+            if (!ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(east)) {
+                throw new GameTestAssertException("Een kubus over de zone van een ander zou niet mogen");
+            }
+            grow.putInt("i", 1);
+            grow.putInt("side", 5);
+            grow.putInt("by", 7);
+            if (!ZoneApp.handle(owner, core, "zone_grow", grow, false).error() || !core.zoneBoxes().getLast().equals(east)) {
+                throw new GameTestAssertException("Groeien tot in de zone van een ander zou niet mogen");
+            }
+
+            // Een nieuwe kern met zijn gebied over je zone (de zuidkant ligt op 200 blokken): nee. 10 verder: ja.
+            if (!SecurityCores.overlaps(level, coreAbs.offset(0, 0, 230))) {
+                throw new GameTestAssertException("Een kern vlak naast je zone zou niet mogen");
+            }
+            if (SecurityCores.overlaps(level, coreAbs.offset(0, 0, 240))) {
+                throw new GameTestAssertException("Een kern 10 blokken van je zone af zou wel moeten mogen");
+            }
+            // Opruimen: de tweede kern staat buiten de arena (dan is zijn zone ook weg).
+            level.setBlockAndUpdate(otherPos, Blocks.AIR.defaultBlockState());
+            finish(helper, core);
+        });
     }
 
     // ================================================================ Stap 4: alleen C4 komt erdoor

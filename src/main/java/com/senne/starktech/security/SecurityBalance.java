@@ -54,8 +54,16 @@ public final class SecurityBalance {
     /** Zoveel kubussen kan één zone hebben (jouw keuze: "meerdere kubussen"; 16 is mijn invulling). */
     public static final int ZONE_MAX_BOXES = 16;
     /**
+     * Zover (blokken) mag een zone van zijn kern af liggen, in elke richting: opzij, omhoog en omlaag
+     * (jouw wens, 9 oktober: "een zone tot 200 blokken van de security core"). Dat is groter dan het
+     * gebied van de kern (AREA_...): de zone gaat over bouwen en breken, het gebied over torentjes en
+     * drones, en dat blijft 61 x 61.
+     */
+    @Tunable(section = "security", comment = "How far (blocks, in every direction) a protected zone may reach from its security core")
+    public static int ZONE_REACH = 200;
+    /**
      * Een zone kost stroom: om de twee seconden 1 extra (bovenop CORE_UPKEEP) per zoveel blokken.
-     * Een basis van 30 x 20 x 30 = 18000 blokken kost zo 9 extra; het hele gebied van de kern 216.
+     * Een basis van 30 x 20 x 30 = 18000 blokken kost zo 9 extra; 100 x 40 x 100 kost 200.
      */
     @Tunable(section = "security", comment = "A protected zone costs 1 extra grid power every two seconds per this many blocks")
     public static int ZONE_BLOCKS_PER_POWER = 2000;

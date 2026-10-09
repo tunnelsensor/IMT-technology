@@ -523,8 +523,10 @@ In Minecraft kan iedereen elk blok weghakken. Met een **zone** kunnen in je basi
 vrienden nog bouwen en breken. Om toch te kunnen inbreken (moeilijker, niet onmogelijk) is er **C4**.
 
 **Een zone tekenen.** Een zone hoort bij je **beveiligingskern** en bestaat uit één of meer
-**kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze moeten
-binnen het gebied van je kern liggen (30 blokken opzij, 60 onder en 55 boven de kern); hooguit 16.
+**kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze mogen
+tot **200 blokken** van je kern liggen (opzij, omhoog en omlaag; `zoneReach` in de config); hooguit
+16. Niet over de zone van een ander, en niet in het gebied van een andere kern (30 blokken om die kern
+heen). Omgekeerd kan niemand een kern neerzetten met zijn gebied over jouw zone.
 - Met de **Zone Marker** (recept: een redstonefakkel, een Stark-chip en een stok onder elkaar):
   **linksklik** op een blok = hoek 1, **rechtsklik** = hoek 2 (je ziet een oranje doos en hoe groot hij
   is), **sluipen + rechtsklik** = die doos wordt een kubus van je zone. **Sluipen + linksklik** in een

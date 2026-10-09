@@ -28,7 +28,10 @@ public final class ZoneSync {
 
     /** Om de zoveel ticks kijken we opnieuw. */
     private static final int EVERY = 10;
-    /** Zones waarvan de kern verder weg staat dan dit (blokken), sturen we niet. */
+    /**
+     * Zones waarvan de kern verder weg staat dan dit (blokken) plus ZONE_REACH, sturen we niet. (Een
+     * zone kan tot ZONE_REACH van zijn kern liggen: dan sta je soms aan zijn rand, ver van de kern.)
+     */
     private static final double RANGE = 256.0;
 
     /** Wat elke speler het laatst kreeg (als één getal, de "hash"), zodat we niet steeds hetzelfde sturen. */
@@ -59,12 +62,13 @@ public final class ZoneSync {
     public static List<ZoneSyncPayload.View> visibleTo(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         List<ZoneSyncPayload.View> views = new ArrayList<>();
+        double range = RANGE + com.senne.starktech.security.SecurityBalance.ZONE_REACH;
         for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
             if (views.size() >= ZoneSyncPayload.MAX_ZONES) {
                 break;
             }
             if (zone.owner() == null || !zone.isBuilder(level, player)
-                    || zone.core().pos().distToCenterSqr(player.position()) > RANGE * RANGE) {
+                    || zone.core().pos().distToCenterSqr(player.position()) > range * range) {
                 continue;
             }
             views.add(new ZoneSyncPayload.View(zone.core().pos(), zone.active(), zone.boxes()));

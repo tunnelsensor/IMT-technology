@@ -22,19 +22,21 @@ import org.jetbrains.annotations.Nullable;
  *  PROTECTED                         1 840 blocks · power 20 + 1 / 2 s
  *  +--------------------+  Box 2 of 3  [<] [>]            [New box]
  *  |   kaart van boven  |  From  x [ 162] y [ -61] z [  62]
- *  |   (het gebied van  |  To    x [ 171] y [ -54] z [  69]
- *  |    je kern, 61x61) |  Size  10 x 8 x 8 (640 blocks)
+ *  |   (je kern en je   |  To    x [ 171] y [ -54] z [  69]
+ *  |    kubussen)       |  Size  10 x 8 x 8 (640 blocks)
  *  |   met je kubussen  |  West  [-][+]     East  [-][+]
  *  |                    |  Down  [-][+]     Up    [-][+]
  *  |                    |  North [-][+]     South [-][+]
  *  +--------------------+  [Delete box]
  * </pre>
  *
- * De kaart is het gebied van je kern van bovenaf (noord boven): je kubussen in blauw, de gekozen
- * kubus wit, de kern als wit blokje en jij als geel stipje (niet via SSH). Klik op een kubus om hem
- * te kiezen. Een + schuift die kant een blok naar buiten (groter), een − naar binnen (kleiner). De
- * getallen kun je ook typen: Enter bewaart ze, Esc niet. Alles gaat naar de server, die het passend
- * maakt in het gebied van je kern (zie security/zone/ZoneApp).
+ * De kaart toont je kern van bovenaf (noord boven): je kubussen in blauw, de gekozen kubus wit, de
+ * kern als wit blokje en jij als geel stipje (niet via SSH). Hij zoomt zelf: minstens 30 blokken om
+ * de kern, en groot genoeg voor al je kubussen (een zone mag tot 200 blokken van de kern; die grens
+ * is een rode lijn als hij op de kaart staat). Klik op een kubus om hem te kiezen. Een + schuift die
+ * kant een blok naar buiten (groter), een − naar binnen (kleiner). De getallen kun je ook typen:
+ * Enter bewaart ze, Esc niet. Alles gaat naar de server, die het passend maakt (zie
+ * security/zone/ZoneApp).
  */
 final class ZoneApp {
     private static final int ROW = 15;
@@ -44,6 +46,10 @@ final class ZoneApp {
     /** Welke kanten naast elkaar staan: west en oost, onder en boven, noord en zuid. */
     private static final int[][] SIDE_ROWS = {{4, 5}, {0, 1}, {2, 3}};
     private static final String[] AXES = {"x", "y", "z"};
+    /** De kaart toont minstens zoveel blokken om de kern heen (zoals het gebied van de kern). */
+    private static final int MIN_VIEW = 30;
+    /** Zoveel blokken rand om je kubussen (en jou) op de kaart. */
+    private static final int MARGIN = 5;
 
     /** Een knop op het scherm (bij het tekenen onthouden, zodat een klik weet wat hij raakte). */
     private record Hit(int x, int y, int w, int h, Runnable action) {}
@@ -142,6 +148,7 @@ final class ZoneApp {
             hint(g, font, "Press New box, or click two corners", px, y + ROW + 2);
             hint(g, font, "with a Zone Marker in the world", px, y + 2 * ROW + 2);
             hint(g, font, "(sneak + right-click adds the box).", px, y + 3 * ROW + 2);
+            hint(g, font, "Reach: " + zone.getInt("reach") + " blocks from the core.", px, y + 5 * ROW + 2);
             return;
         }
         String which = "Box " + (selected + 1) + " of " + boxes.size();
@@ -191,25 +198,36 @@ final class ZoneApp {
         });
     }
 
-    /** De kaart van bovenaf: het gebied van de kern, de kubussen, de kern en jij. */
+    /** De kaart van bovenaf: de kern, de kubussen en jij (zie {@link #fitView} voor hoe ver hij kijkt). */
     private void renderMap(GuiGraphics g, Font font, CompoundTag zone, List<int[]> boxes) {
         int[] low = zone.getIntArray("low");
         int[] high = zone.getIntArray("high");
+        int[] core = zone.getIntArray("core");
         OsDraw.field(g, mapX, mapY, mapX + mapSize, mapY + mapSize, false);
-        if (low.length != 3 || high.length != 3) {
+        if (low.length != 3 || high.length != 3 || core.length != 3) {
             return;
         }
-        lowX = low[0];
-        lowZ = low[2];
-        int span = Math.max(high[0] - low[0], high[2] - low[2]) + 1;
+        int span = fitView(low, high, core, boxes, zone.getIntArray("player"));
         scale = (mapSize - 4) / (float) span;
-        // Een fijn raster om de 10 blokken.
-        for (int i = 10; i < span; i += 10) {
+        g.enableScissor(mapX + 1, mapY + 1, mapX + mapSize - 1, mapY + mapSize - 1);
+        // Een fijn raster: om de 10 blokken, of om de 50 als de kaart ver uitgezoomd is.
+        int step = span <= 150 ? 10 : 50;
+        for (int i = step; i < span; i += step) {
             int p = mapX + 2 + Math.round(i * scale);
             g.fill(p, mapY + 2, p + 1, mapY + mapSize - 2, HudStyle.argb(40, HudStyle.CYAN));
             int q = mapY + 2 + Math.round(i * scale);
             g.fill(mapX + 2, q, mapX + mapSize - 2, q + 1, HudStyle.argb(40, HudStyle.CYAN));
         }
+        // De grens: verder dan dit mag de zone niet (een dunne rode lijn, alleen als hij op de kaart staat).
+        int limit = HudStyle.argb(120, HudStyle.RED);
+        int rx0 = mapPx(low[0]);
+        int rx1 = mapPx(high[0] + 1);
+        int rz0 = mapPz(low[2]);
+        int rz1 = mapPz(high[2] + 1);
+        g.fill(rx0, rz0, rx1, rz0 + 1, limit);
+        g.fill(rx0, rz1 - 1, rx1, rz1, limit);
+        g.fill(rx0, rz0, rx0 + 1, rz1, limit);
+        g.fill(rx1 - 1, rz0, rx1, rz1, limit);
         for (int i = 0; i < boxes.size(); i++) {
             int[] box = boxes.get(i);
             boolean chosen = i == selected;
@@ -227,18 +245,49 @@ final class ZoneApp {
                 HudStyle.smallText(g, font, String.valueOf(i + 1), x0 + 4, z0 + 2, edge);
             }
         }
-        int[] core = zone.getIntArray("core");
-        if (core.length == 3) {
-            int cx = mapPx(core[0]);
-            int cz = mapPz(core[2]);
-            g.fill(cx - 1, cz - 1, cx + 2, cz + 2, HudStyle.argb(255, HudStyle.WHITE));
-        }
+        int cx = mapPx(core[0]);
+        int cz = mapPz(core[2]);
+        g.fill(cx - 1, cz - 1, cx + 2, cz + 2, HudStyle.argb(255, HudStyle.WHITE));
         int[] player = zone.getIntArray("player");
         if (player.length == 3) {
             int px = mapPx(player[0]);
             int pz = mapPz(player[2]);
             g.fill(px - 1, pz - 1, px + 2, pz + 2, HudStyle.argb(255, 0xFFE14A));
         }
+        g.disableScissor();
+    }
+
+    /**
+     * Welk stuk wereld de kaart toont: minstens MIN_VIEW blokken om de kern, en al je kubussen en jij
+     * met MARGIN blokken rand, maar nooit verder dan de zone mag komen ({@code low} tot {@code high}).
+     * Zet {@link #lowX} en {@link #lowZ} (de hoek linksboven) en geeft terug hoeveel blokken breed hij is.
+     */
+    private int fitView(int[] low, int[] high, int[] core, List<int[]> boxes, int[] player) {
+        int x0 = core[0] - MIN_VIEW;
+        int x1 = core[0] + MIN_VIEW;
+        int z0 = core[2] - MIN_VIEW;
+        int z1 = core[2] + MIN_VIEW;
+        for (int[] box : boxes) {
+            x0 = Math.min(x0, box[0] - MARGIN);
+            x1 = Math.max(x1, box[3] + MARGIN);
+            z0 = Math.min(z0, box[2] - MARGIN);
+            z1 = Math.max(z1, box[5] + MARGIN);
+        }
+        if (player.length == 3) {
+            x0 = Math.min(x0, player[0] - MARGIN);
+            x1 = Math.max(x1, player[0] + MARGIN);
+            z0 = Math.min(z0, player[2] - MARGIN);
+            z1 = Math.max(z1, player[2] + MARGIN);
+        }
+        x0 = Math.max(x0, low[0]);
+        x1 = Math.min(x1, high[0]);
+        z0 = Math.max(z0, low[2]);
+        z1 = Math.min(z1, high[2]);
+        int span = Math.max(x1 - x0, z1 - z0) + 1;
+        // Vierkant: de smalle kant komt in het midden.
+        lowX = x0 - (span - (x1 - x0 + 1)) / 2;
+        lowZ = z0 - (span - (z1 - z0 + 1)) / 2;
+        return span;
     }
 
     private int mapPx(int worldX) {

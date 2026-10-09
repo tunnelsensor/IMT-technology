@@ -1,6 +1,8 @@
 package com.senne.starktech.security;
 
 import com.senne.starktech.drone.StarkDroneEntity;
+import com.senne.starktech.security.zone.ZoneBox;
+import com.senne.starktech.security.zone.ZoneData;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +77,66 @@ public final class SecurityCores {
                 && pos.getY() <= corePos.getY() + SecurityBalance.AREA_UP;
     }
 
+    /** Het gebied van de kern op {@code corePos} als één kubus (dezelfde blokken als {@link #inArea}). */
+    public static ZoneBox areaOf(BlockPos corePos) {
+        return ZoneBox.of(corePos.offset(-SecurityBalance.AREA_RADIUS, -SecurityBalance.AREA_DOWN, -SecurityBalance.AREA_RADIUS),
+                corePos.offset(SecurityBalance.AREA_RADIUS, SecurityBalance.AREA_UP, SecurityBalance.AREA_RADIUS));
+    }
+
+    /** Mag de zone van de kern op {@code corePos} tot hier komen (ZONE_REACH blokken, in elke richting)? */
+    public static boolean inZoneReach(BlockPos corePos, BlockPos pos) {
+        int reach = SecurityBalance.ZONE_REACH;
+        return Math.abs(pos.getX() - corePos.getX()) <= reach
+                && Math.abs(pos.getY() - corePos.getY()) <= reach
+                && Math.abs(pos.getZ() - corePos.getZ()) <= reach;
+    }
+
+    /**
+     * Zit deze kubus voor de zone van de kern op {@code corePos} een ander in de weg? Een zone mag tot
+     * ZONE_REACH blokken ver, maar niet over de zone van een andere kern (zones liggen nooit over
+     * elkaar) en niet in het gebied van een andere kern (anders trok je je zone over de basis van een
+     * ander, en schoten zijn torentjes in jouw zone).
+     *
+     * In het eigen gebied van de kern mag het altijd: daar ligt normaal nooit het gebied van een ander
+     * (zie {@link #overlaps}). Alleen in de tests staan kernen dichter bij elkaar.
+     */
+    public static boolean zoneBlocked(ServerLevel level, BlockPos corePos, ZoneBox box) {
+        for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
+            if (!zone.core().pos().equals(corePos) && zone.touches(box)) {
+                return true;
+            }
+        }
+        ZoneBox own = areaOf(corePos);
+        for (BlockPos other : otherCores(level, corePos)) {
+            ZoneBox shared = box.overlap(areaOf(other));
+            if (shared != null && !own.contains(shared)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Alle andere kernen in deze dimensie: uit het netwerk van de wereld (ook in stukken wereld die
+     * niet geladen zijn) en wat er geladen is (ook een kern die net is neergezet en nog geen IP heeft).
+     */
+    private static Set<BlockPos> otherCores(ServerLevel level, BlockPos corePos) {
+        Set<BlockPos> cores = new HashSet<>();
+        for (net.minecraft.core.GlobalPos other : com.senne.starktech.security.net.StarkNetworkData.get(level).all().values()) {
+            if (other.dimension().equals(level.dimension())) {
+                cores.add(other.pos());
+            }
+        }
+        Set<BlockPos> loaded = LOADED.get(level.dimension());
+        if (loaded != null) {
+            cores.addAll(loaded);
+        }
+        cores.remove(corePos);
+        // Een kern die nog in het netwerk staat maar in de wereld weg is, telt niet.
+        cores.removeIf(pos -> level.isLoaded(pos) && !(level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity));
+        return cores;
+    }
+
     /**
      * Moet de beveiliging hierop schieten? {@code core} mag null zijn (een torentje zonder kern
      * gedraagt zich als een kern zonder eigenaar).
@@ -120,8 +182,25 @@ public final class SecurityCores {
      * mag hij er niet staan ("too close to another security network"). We kijken in het netwerk van
      * de wereld (StarkNetworkData), zodat ook kernen meetellen in stukken wereld die niet geladen
      * zijn. Een kern die daar nog staat maar in de wereld weg is, ruimen we meteen op.
+     *
+     * Ook over de zone van een andere kern mag zijn gebied niet liggen (een zone reikt tot ZONE_REACH
+     * blokken ver): anders zette je vlak naast iemands zone een kern, en schoten jouw torentjes en
+     * drones in zijn zone.
      */
     public static boolean overlaps(ServerLevel level, BlockPos pos) {
+        ZoneBox area = areaOf(pos);
+        ZoneData zones = ZoneData.get(level);
+        for (ZoneData.Zone zone : List.copyOf(zones.in(level.dimension()))) {
+            BlockPos core = zone.core().pos();
+            if (core.equals(pos) || !zone.touches(area)) {
+                continue;
+            }
+            if (level.isLoaded(core) && !(level.getBlockEntity(core) instanceof SecurityCoreBlockEntity)) {
+                zones.forget(zone.core()); // de kern is weg (bijvoorbeeld met /setblock): zijn zone ook
+                continue;
+            }
+            return true;
+        }
         var network = com.senne.starktech.security.net.StarkNetworkData.get(level);
         for (net.minecraft.core.GlobalPos other : network.all().values()) {
             if (!other.dimension().equals(level.dimension()) || other.pos().equals(pos)

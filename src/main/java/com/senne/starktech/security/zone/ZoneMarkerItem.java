@@ -38,7 +38,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Linksklik</b> op een blok: hoek 1. <b>Rechtsklik</b> op een blok: hoek 2. Je ziet een
  *       oranje doos tussen de twee, en onderaan hoe groot hij is ("12 x 6 x 20").</li>
  *   <li><b>Sluipen + rechtsklik</b> (op een blok of in de lucht): die doos wordt een kubus van je
- *       zone. Hij hoort bij de beveiligingskern in wiens gebied hij ligt; die moet van jou zijn.</li>
+ *       zone. Hij hoort bij jouw beveiligingskern in wiens gebied hij ligt, anders bij je
+ *       dichtstbijzijnde kern tot ZONE_REACH (200) blokken ver.</li>
  *   <li><b>Sluipen + linksklik</b> op een blok in een kubus van je zone: die kubus weghalen (twee
  *       keer klikken, zodat je het niet per ongeluk doet).</li>
  * </ul>
@@ -141,8 +142,9 @@ public class ZoneMarkerItem extends Item {
     }
 
     /**
-     * De gekozen doos wordt een kubus van je zone. Hij hoort bij de kern in wiens gebied zijn midden
-     * ligt; die moet van jou zijn. Steekt hij buiten het gebied, dan valt dat stuk eraf.
+     * De gekozen doos wordt een kubus van je zone (zie {@link #ownCoreFor} voor welke kern). Steekt
+     * hij verder dan ZONE_REACH van de kern, dan valt dat stuk eraf. Raakt hij de zone of het gebied
+     * van een andere kern, dan mag het niet.
      */
     static void addSelection(ServerLevel level, ServerPlayer player, ItemStack stack) {
         ZoneBox box = selection(stack).box();
@@ -152,7 +154,7 @@ public class ZoneMarkerItem extends Item {
         }
         BlockPos middle = new BlockPos((box.min().getX() + box.max().getX()) >> 1, (box.min().getY() + box.max().getY()) >> 1,
                 (box.min().getZ() + box.max().getZ()) >> 1);
-        SecurityCoreBlockEntity core = ownCoreAt(level, player, middle);
+        SecurityCoreBlockEntity core = ownCoreFor(level, player, middle);
         if (core == null) {
             return;
         }
@@ -161,16 +163,23 @@ public class ZoneMarkerItem extends Item {
             tell(player, Component.translatable("zone.starktech.marker.full", SecurityBalance.ZONE_MAX_BOXES), true);
             return;
         }
-        boxes.add(box);
-        List<ZoneBox> fitted = core.setZoneBoxes(boxes);
-        if (fitted.size() < boxes.size()) {
-            tell(player, Component.translatable("zone.starktech.marker.no_core"), true);
+        ZoneBox fittedBox = box.clamp(core.zoneLow(), core.zoneHigh());
+        if (fittedBox == null) {
+            tell(player, Component.translatable("zone.starktech.marker.no_core", SecurityBalance.ZONE_REACH), true);
             return;
         }
+        if (core.zoneBoxBlocked(fittedBox)) {
+            tell(player, Component.translatable("zone.starktech.marker.blocked"), true);
+            return;
+        }
+        boxes.add(fittedBox);
+        List<ZoneBox> fitted = core.setZoneBoxes(boxes);
         ZoneBox added = fitted.getLast();
         core.logEvent(EventLog.Type.ZONE, "Zone: box " + fitted.size() + " added (" + added.size() + ")");
-        tell(player, Component.translatable(added.equals(box) ? "zone.starktech.marker.added" : "zone.starktech.marker.added_cut",
-                fitted.size(), added.size(), added.volume()), false);
+        tell(player, added.equals(box)
+                ? Component.translatable("zone.starktech.marker.added", fitted.size(), added.size(), added.volume())
+                : Component.translatable("zone.starktech.marker.added_cut", fitted.size(), SecurityBalance.ZONE_REACH,
+                        added.size(), added.volume()), false);
         stack.set(ModDataComponents.ZONE_SELECTION.get(), ZoneSelection.EMPTY);
         player.playNotifySound(ModSounds.EDITH_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
     }
@@ -180,8 +189,18 @@ public class ZoneMarkerItem extends Item {
      * klik binnen drie seconden haalt hem weg. Liggen er twee kubussen over dit blok, dan de laatste.
      */
     static void removeBoxAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
-        SecurityCoreBlockEntity core = ownCoreAt(level, player, pos);
-        if (core == null) {
+        // De zone waar dit blok in ligt (die kan tot ZONE_REACH van zijn kern liggen).
+        ZoneData.Zone zone = ZoneData.get(level).at(level.dimension(), pos);
+        if (zone == null) {
+            tell(player, Component.translatable("zone.starktech.marker.not_in_box"), true);
+            return;
+        }
+        if (!player.getUUID().equals(zone.owner())) {
+            tell(player, Component.translatable("zone.starktech.marker.not_yours", zone.ownerName()), true);
+            return;
+        }
+        if (!(level.getBlockEntity(zone.core().pos()) instanceof SecurityCoreBlockEntity core)) {
+            tell(player, Component.translatable("zone.starktech.marker.not_in_box"), true);
             return;
         }
         List<ZoneBox> boxes = new ArrayList<>(core.zoneBoxes());
@@ -213,20 +232,35 @@ public class ZoneMarkerItem extends Item {
     }
 
     /**
-     * De beveiligingskern in wiens gebied deze plek ligt, als die van deze speler is. Zo niet, dan
-     * zegt hij waarom (en geeft hij null).
+     * De beveiligingskern van deze speler die een kubus op deze plek krijgt. Ligt de plek in het gebied
+     * van een kern, dan die (is hij van een ander: nee). Anders je dichtstbijzijnde kern tot ZONE_REACH
+     * blokken ver; die zoeken we in ZoneData, zodat hij ook gevonden wordt als zijn stuk wereld niet
+     * geladen is. Lukt het niet, dan zegt hij waarom (en geeft hij null).
      */
-    private static @Nullable SecurityCoreBlockEntity ownCoreAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
-        if (core == null || core.ownerId() == null) {
-            tell(player, Component.translatable("zone.starktech.marker.no_core"), true);
-            return null;
+    private static @Nullable SecurityCoreBlockEntity ownCoreFor(ServerLevel level, ServerPlayer player, BlockPos pos) {
+        SecurityCoreBlockEntity here = SecurityCores.coreAt(level, pos);
+        if (here != null && here.ownerId() != null) {
+            if (!player.getUUID().equals(here.ownerId())) {
+                tell(player, Component.translatable("zone.starktech.marker.not_yours", here.ownerName()), true);
+                return null;
+            }
+            return here;
         }
-        if (!player.getUUID().equals(core.ownerId())) {
-            tell(player, Component.translatable("zone.starktech.marker.not_yours", core.ownerName()), true);
-            return null;
+        BlockPos nearest = null;
+        for (ZoneData.Zone zone : ZoneData.get(level).owned(level.dimension())) {
+            BlockPos core = zone.core().pos();
+            if (player.getUUID().equals(zone.owner()) && SecurityCores.inZoneReach(core, pos)
+                    && (nearest == null || core.distSqr(pos) < nearest.distSqr(pos))) {
+                nearest = core;
+            }
         }
-        return core;
+        // getBlockEntity laadt zijn stuk wereld als dat nodig is.
+        if (nearest != null && level.getBlockEntity(nearest) instanceof SecurityCoreBlockEntity core
+                && player.getUUID().equals(core.ownerId())) {
+            return core;
+        }
+        tell(player, Component.translatable("zone.starktech.marker.no_core", SecurityBalance.ZONE_REACH), true);
+        return null;
     }
 
     private static void tell(ServerPlayer player, Component message, boolean error) {

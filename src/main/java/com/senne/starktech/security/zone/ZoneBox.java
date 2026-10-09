@@ -79,6 +79,16 @@ public record ZoneBox(BlockPos min, BlockPos max) {
         return new ZoneBox(new BlockPos(x1, y1, z1), new BlockPos(x2, y2, z2));
     }
 
+    /** Het stuk dat deze kubus en {@code other} samen hebben, of null als ze elkaar niet raken. */
+    public @Nullable ZoneBox overlap(ZoneBox other) {
+        return clamp(other.min, other.max);
+    }
+
+    /** Ligt {@code other} helemaal in deze kubus? */
+    public boolean contains(ZoneBox other) {
+        return contains(other.min) && contains(other.max);
+    }
+
     /**
      * Schuift één kant van de kubus {@code blocks} blokken naar buiten (negatief = naar binnen). De
      * kant {@link Direction#EAST} is de kant met de grootste x, {@link Direction#WEST} de kleinste,

@@ -21,8 +21,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * In de app stel je je kubussen per blok bij: per kant een − en een + (die kant één blok naar
  * binnen of naar buiten), of je typt de getallen van de twee hoeken. "New box" zet een nieuwe kubus
- * van 7 x 5 x 7 waar je staat (of bij de kern, als je via SSH van ver werkt). Alles wat buiten het
- * gebied van de kern steekt, valt eraf (zie SecurityCoreBlockEntity.setZoneBoxes).
+ * van 7 x 5 x 7 waar je staat (of bij de kern, als je via SSH van ver werkt). Alles wat verder dan
+ * ZONE_REACH (200 blokken) van de kern steekt, valt eraf (zie SecurityCoreBlockEntity.setZoneBoxes).
+ * Een kubus die de zone of het gebied van een andere kern raakt, mag niet erbij (of niet groter).
  */
 public final class ZoneApp {
     private ZoneApp() {}
@@ -37,8 +38,8 @@ public final class ZoneApp {
     // ================================================================ Wat de app ziet
 
     /**
-     * Alles voor de app: of de zone beschermt, de kubussen, hoe groot en hoeveel stroom, het gebied van
-     * de kern (voor de kaart), en waar jij staat (alleen als je bij de kern bent, niet via SSH).
+     * Alles voor de app: of de zone beschermt, de kubussen, hoe groot en hoeveel stroom, hoe ver de zone
+     * mag komen (voor de kaart), en waar jij staat (alleen als je bij de kern bent, niet via SSH).
      */
     public static CompoundTag snapshot(ServerLevel level, SecurityCoreBlockEntity core, @Nullable ServerPlayer viewer, boolean remote) {
         CompoundTag data = new CompoundTag();
@@ -46,8 +47,8 @@ public final class ZoneApp {
         data.putBoolean("active", zone != null && zone.active());
         data.putBoolean("powered", zone == null || zone.powered());
         data.put("core", xyz(core.getBlockPos()));
-        data.put("low", xyz(core.areaLow()));
-        data.put("high", xyz(core.areaHigh()));
+        data.put("low", xyz(core.zoneLow()));
+        data.put("high", xyz(core.zoneHigh()));
         ListTag boxes = new ListTag();
         for (ZoneBox box : core.zoneBoxes()) {
             boxes.add(box.save());
@@ -57,6 +58,7 @@ public final class ZoneApp {
         data.putInt("upkeep", core.zoneUpkeep());
         data.putInt("coreUpkeep", SecurityBalance.CORE_UPKEEP);
         data.putInt("max", SecurityBalance.ZONE_MAX_BOXES);
+        data.putInt("reach", SecurityBalance.ZONE_REACH);
         if (viewer != null && !remote) {
             data.put("player", xyz(viewer.blockPosition()));
         }
@@ -87,10 +89,14 @@ public final class ZoneApp {
             return new Result("Your zone already has " + SecurityBalance.ZONE_MAX_BOXES + " boxes", true);
         }
         BlockPos centre = core.getBlockPos();
-        if (!remote && ZoneBox.of(core.areaLow(), core.areaHigh()).contains(player.blockPosition())) {
+        if (!remote && ZoneBox.of(core.zoneLow(), core.zoneHigh()).contains(player.blockPosition())) {
             centre = player.blockPosition();
         }
-        boxes.add(ZoneBox.of(centre.offset(-3, -1, -3), centre.offset(3, 3, 3)));
+        ZoneBox box = ZoneBox.of(centre.offset(-3, -1, -3), centre.offset(3, 3, 3)).clamp(core.zoneLow(), core.zoneHigh());
+        if (box == null || core.zoneBoxBlocked(box)) {
+            return new Result(BLOCKED, true);
+        }
+        boxes.add(box);
         List<ZoneBox> fitted = core.setZoneBoxes(boxes);
         ZoneBox added = fitted.getLast();
         core.logEvent(EventLog.Type.ZONE, "Zone: box " + fitted.size() + " added (" + added.size() + ")");
@@ -117,27 +123,42 @@ public final class ZoneApp {
         if (grown == null) {
             return new Result("A box is at least 1 block", true);
         }
-        boxes.set(index, grown);
-        ZoneBox fitted = core.setZoneBoxes(boxes).get(index);
-        if (fitted.equals(old)) {
-            return new Result("That is the edge of your security area", true);
+        ZoneBox fitted = grown.clamp(core.zoneLow(), core.zoneHigh());
+        if (fitted == null || fitted.equals(old)) {
+            return new Result("Your zone can't reach further (" + SecurityBalance.ZONE_REACH + " blocks from the core)", true);
         }
+        // Kleiner maken mag altijd; groter alleen als hij dan niemand in de weg zit.
+        if (by > 0 && core.zoneBoxBlocked(fitted)) {
+            return new Result(BLOCKED, true);
+        }
+        boxes.set(index, fitted);
+        core.setZoneBoxes(boxes);
         return new Result("Box " + (index + 1) + ": " + fitted.size(), false);
     }
 
-    /** De getallen van de twee hoeken, zoals je ze typte. Wat buiten het gebied van de kern valt, valt eraf. */
+    /**
+     * De getallen van de twee hoeken, zoals je ze typte. Wat verder dan ZONE_REACH van de kern ligt,
+     * valt eraf; raakt hij de zone of het gebied van een andere kern, dan blijft de oude kubus.
+     */
     private static Result setBox(SecurityCoreBlockEntity core, List<ZoneBox> boxes, int index, int[] numbers) {
         ZoneBox wanted = ZoneBox.load(numbers);
         if (index < 0 || index >= boxes.size() || wanted == null) {
             return new Result("", false);
         }
-        ZoneBox fitted = wanted.clamp(core.areaLow(), core.areaHigh());
+        ZoneBox fitted = wanted.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null) {
-            return new Result("That is outside your security area (30 blocks around the core)", true);
+            return new Result("That is too far: a zone reaches " + SecurityBalance.ZONE_REACH + " blocks from the core", true);
+        }
+        if (!boxes.get(index).contains(fitted) && core.zoneBoxBlocked(fitted)) {
+            return new Result(BLOCKED, true);
         }
         boxes.set(index, fitted);
         core.setZoneBoxes(boxes);
         boolean cut = !fitted.equals(wanted);
-        return new Result("Box " + (index + 1) + ": " + fitted.size() + (cut ? " (cut to fit your security area)" : ""), cut);
+        return new Result("Box " + (index + 1) + ": " + fitted.size()
+                + (cut ? " (cut: a zone reaches " + SecurityBalance.ZONE_REACH + " blocks from the core)" : ""), cut);
     }
+
+    /** Wat de app zegt als een kubus een ander in de weg zou zitten. */
+    private static final String BLOCKED = "Too close to another security network or its zone";
 }

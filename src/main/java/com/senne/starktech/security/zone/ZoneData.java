@@ -140,6 +140,19 @@ public final class ZoneData extends SavedData {
             return false;
         }
 
+        /** Ligt een van de kubussen (deels) in {@code box}? */
+        public boolean touches(ZoneBox box) {
+            if (bounds == null || bounds.overlap(box) == null) {
+                return false;
+            }
+            for (ZoneBox own : boxes) {
+                if (own.overlap(box) != null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /**
          * Mag deze speler hier bouwen? Dezelfde vrienden als bij de torentjes (zie
          * SecurityCores.isFriend): de eigenaar, zijn team en wie hij vertrouwt (de app Access).
@@ -228,6 +241,20 @@ public final class ZoneData extends SavedData {
             }
         }
         return byLevel.getOrDefault(dimension, List.of());
+    }
+
+    /**
+     * Alle kernen met een eigenaar in deze dimensie, ook zonder kubussen (zo vindt de Zone Marker je
+     * kern, ook als zijn stuk wereld niet geladen is).
+     */
+    public List<Zone> owned(ResourceKey<Level> dimension) {
+        List<Zone> owned = new ArrayList<>();
+        for (Zone zone : zones.values()) {
+            if (zone.owner != null && zone.core.dimension().equals(dimension)) {
+                owned.add(zone);
+            }
+        }
+        return owned;
     }
 
     /** Telt elke verandering aan een zone (zie {@link #changes}). */

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 192 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 193 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1275,8 +1275,8 @@ Jouw antwoorden:
 
 - De zone hangt aan je **beveiligingskern** en heeft **stroom** nodig: een nieuwe app **Zone** op de
   desktop. Bouwen mogen jij, je team en je vertrouwde spelers (Access). De zone ligt binnen het
-  gebied van je kern (61 × 61, 60 onder en 55 boven de kern) en werkt alleen als de kern stroom
-  heeft. Wie je kern hackt, krijgt ook je zone.
+  gebied van je kern (61 × 61, 60 onder en 55 boven de kern; sinds 9 oktober tot 200 blokken van de
+  kern, zie stap 13) en werkt alleen als de kern stroom heeft. Wie je kern hackt, krijgt ook je zone.
 - De vorm: **meerdere kubussen**. Per kubus twee hoeken: aanklikken met een **Zone Marker** in de
   wereld, of in de app per blok bijstellen (x, y, z). Zo maak je een L-vorm, of een toren die hoger
   is dan de rest.
@@ -1550,6 +1550,23 @@ De stappen, één per commit:
       beveiliging even opjaagt na een valstrik. Vier nieuwe tests (`gametest/CoreConfigGameTests.java`):
       weghakken en terugzetten (alles is er weer, en zolang hij als item rondgaat zijn zone, IP en
       backup uit de wereld), een dief, opblazen en een kern van niemand, en creative.
+- [x] **13. Een zone tot 200 blokken van de kern** (jouw wens, 9 oktober: "maak dat je een zone tot 200
+      block van de security core kunt doen")
+      Een zone mag nu tot **200 blokken** van zijn kern liggen, in elke richting (opzij, omhoog en
+      omlaag, maar niet buiten de wereld): `zoneReach` in de config onder `[security]`. Het **gebied**
+      van de kern (61 × 61, waar torentjes en drones verdedigen) blijft even groot; alleen de zone mag
+      verder. De Zone Marker vindt je kern nu ook als je 200 blokken verderop staat (ook als dat stuk
+      wereld niet geladen is), de app Zone knipt af op 200 blokken ("Your zone can't reach further"),
+      en de kaart in de app zoomt zelf uit tot al je kubussen erop passen (met een rode lijn op 200
+      blokken). Je ziet de rand van een verre zone ook als je ver van de kern staat. **Mijn keuzes**
+      (zeg het als je iets anders wil): (1) een zone mag **niet over de zone van een ander** liggen en
+      **niet in het gebied van een andere kern** ("Too close to another security network or its zone"),
+      anders trok je je zone over iemands basis heen; (2) omgekeerd mag een **nieuwe kern niet zo
+      staan dat zijn gebied over een zone valt**, anders zette iemand naast je zone een kern en schoten
+      zijn torentjes in jouw zone; (3) kleiner maken mag altijd. Stroom blijft 1 per 2000 blokken: een
+      zone van 100 × 40 × 100 kost 200 extra om de twee seconden, dus een heel grote zone vraagt een
+      flink stroomnet. Eén nieuwe test (150 blokken ver met de app, 120 met de marker, stoppen op 200,
+      niet in het gebied of de zone van een ander, en een kern niet naast je zone).
 
 ### 11. Barsten herstellen (9 oktober)
 

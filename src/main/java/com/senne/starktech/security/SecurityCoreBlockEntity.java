@@ -451,8 +451,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
      *   <li>De eigenaar blijft de eigenaar, ook als iemand anders hem neerzet: met de kern gaan ook
      *       zijn wachtwoord en bestanden mee, dus een gestolen kern moet je nog steeds hacken.</li>
      *   <li>Het IP krijgt hij terug als het nog vrij is (keycards horen bij het IP).</li>
-     *   <li>De zone krijgt hij terug voor zover die in het gebied van de nieuwe plek past (staat hij
-     *       weer op dezelfde plek, dan is het dezelfde zone).</li>
+     *   <li>De zone krijgt hij terug voor zover die binnen ZONE_REACH van de nieuwe plek past (staat
+     *       hij weer op dezelfde plek, dan is het dezelfde zone). Een kubus die nu de zone of het
+     *       gebied van een andere kern raakt, valt weg.</li>
      *   <li>De backups die op dit datacenter stonden, staan er weer op.</li>
      * </ul>
      */
@@ -468,8 +469,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             List<ZoneBox> boxes = new java.util.ArrayList<>();
             for (Tag element : world.getList("Zone", Tag.TAG_INT_ARRAY)) {
                 ZoneBox box = ZoneBox.load(((net.minecraft.nbt.IntArrayTag) element).getAsIntArray());
-                if (box != null) {
-                    boxes.add(box);
+                ZoneBox fitted = box == null ? null : box.clamp(zoneLow(), zoneHigh());
+                if (fitted != null && !zoneBoxBlocked(fitted)) {
+                    boxes.add(fitted);
                 }
             }
             if (!boxes.isEmpty()) {
@@ -496,23 +498,35 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         return zone == null ? List.of() : zone.boxes();
     }
 
-    /** De kleinste hoek van het gebied van deze kern: de zone moet daarbinnen blijven. */
-    public BlockPos areaLow() {
+    /**
+     * De kleinste hoek waar de zone van deze kern mag komen: ZONE_REACH blokken naar het westen, naar
+     * beneden en naar het noorden (maar niet onder de wereld).
+     */
+    public BlockPos zoneLow() {
         int bottom = level == null ? Integer.MIN_VALUE : level.getMinBuildHeight();
-        return new BlockPos(worldPosition.getX() - SecurityBalance.AREA_RADIUS,
-                Math.max(bottom, worldPosition.getY() - SecurityBalance.AREA_DOWN), worldPosition.getZ() - SecurityBalance.AREA_RADIUS);
+        int reach = SecurityBalance.ZONE_REACH;
+        return new BlockPos(worldPosition.getX() - reach, Math.max(bottom, worldPosition.getY() - reach), worldPosition.getZ() - reach);
     }
 
-    /** De grootste hoek van het gebied van deze kern. */
-    public BlockPos areaHigh() {
+    /** De grootste hoek waar de zone mag komen (maar niet boven de wereld). */
+    public BlockPos zoneHigh() {
         int top = level == null ? Integer.MAX_VALUE : level.getMaxBuildHeight() - 1;
-        return new BlockPos(worldPosition.getX() + SecurityBalance.AREA_RADIUS,
-                Math.min(top, worldPosition.getY() + SecurityBalance.AREA_UP), worldPosition.getZ() + SecurityBalance.AREA_RADIUS);
+        int reach = SecurityBalance.ZONE_REACH;
+        return new BlockPos(worldPosition.getX() + reach, Math.min(top, worldPosition.getY() + reach), worldPosition.getZ() + reach);
     }
 
     /**
-     * Nieuwe kubussen voor de zone. Wat buiten het gebied van de kern steekt, valt eraf, en meer dan
-     * ZONE_MAX_BOXES kubussen kan niet. Geeft terug wat er echt in staat.
+     * Zit deze kubus een ander in de weg (de zone of het gebied van een andere kern, zie
+     * SecurityCores.zoneBlocked)? Dan mag hij niet in de zone.
+     */
+    public boolean zoneBoxBlocked(ZoneBox box) {
+        return level instanceof ServerLevel server && SecurityCores.zoneBlocked(server, worldPosition, box);
+    }
+
+    /**
+     * Nieuwe kubussen voor de zone. Wat verder dan ZONE_REACH van de kern steekt, valt eraf, en meer
+     * dan ZONE_MAX_BOXES kubussen kan niet. Geeft terug wat er echt in staat. (Of een kubus een ander
+     * in de weg zit, kijkt wie hem toevoegt of groter maakt: zie {@link #zoneBoxBlocked}.)
      */
     public List<ZoneBox> setZoneBoxes(List<ZoneBox> wanted) {
         if (!(level instanceof ServerLevel server)) {
@@ -523,7 +537,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             if (fitted.size() >= SecurityBalance.ZONE_MAX_BOXES) {
                 break;
             }
-            ZoneBox clamped = box.clamp(areaLow(), areaHigh());
+            ZoneBox clamped = box.clamp(zoneLow(), zoneHigh());
             if (clamped != null) {
                 fitted.add(clamped);
             }
