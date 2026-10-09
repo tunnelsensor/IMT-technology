@@ -84,6 +84,10 @@ public class C4Item extends BlockItem {
                 }
                 player.displayClientMessage(message, true);
             }
+            // Op de zone van een ander? Dan gaat het alarm af (zie C4Alarm).
+            if (level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                C4Alarm.planted(serverLevel, pos, c4);
+            }
         }
         return changed;
     }

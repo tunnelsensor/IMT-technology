@@ -290,6 +290,21 @@ public final class Zones {
         }
     }
 
+    /** De actieve zone die dit blok raakt of tot {@code reach} blokken ervan ligt, of null. */
+    public static @Nullable ZoneData.Zone activeNear(ServerLevel level, BlockPos pos, double reach) {
+        ZoneData.Zone inside = activeAt(level, pos);
+        if (inside != null) {
+            return inside;
+        }
+        net.minecraft.world.phys.AABB area = new net.minecraft.world.phys.AABB(pos).inflate(reach);
+        for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
+            if (zone.active() && zone.intersects(area)) {
+                return zone;
+            }
+        }
+        return null;
+    }
+
     /** Ligt er een actieve zone (deels) in dit stuk ruimte? */
     public static boolean touchesActiveZone(ServerLevel level, net.minecraft.world.phys.AABB area) {
         for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {

@@ -298,4 +298,86 @@ public final class C4GameTests {
         helper.setBlock(loose, Blocks.AIR);
         helper.succeed();
     }
+
+    // ================================================================ Stap 7: ontmantelen en alarm
+
+    /** Plakt een C4 (Timer, 60 seconden) zoals een speler dat doet, tegen de oostkant van {@code support}. */
+    private static BlockPos plant(GameTestHelper helper, ServerPlayer player, BlockPos support) {
+        ItemStack c4 = new ItemStack(ModItems.TIMED_C4.get());
+        c4.set(ModDataComponents.C4_TIMER.get(), 60);
+        player.setItemInHand(InteractionHand.MAIN_HAND, c4);
+        BlockPos abs = helper.absolutePos(support);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.EAST, 0.5), Direction.EAST, abs, false);
+        player.getMainHandItem().useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit));
+        return support.east();
+    }
+
+    /**
+     * Een vreemde plakt C4 op een zone: het alarm gaat af (in het logboek, zonder naam). De eigenaar
+     * knipt de draad door met een schaar: de C4 is weg, ligt als item op de grond (de verdediger krijgt
+     * hem), en dat staat ook in het logboek. Je eigen C4 in je eigen zone geeft geen alarm.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "c4")
+    public static void c4_alarm_and_defuse(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(12, 3, 8), "zone-owner");
+        ServerPlayer outsider = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(13, 3, 9), "zone-outsider");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        core.setZoneBoxes(java.util.List.of(ZoneGameTests.box(helper, new BlockPos(5, 2, 5), new BlockPos(12, 8, 12))));
+        wall(helper, 8, Blocks.STONE);
+        // Je eigen C4: geen alarm.
+        BlockPos own = plant(helper, owner, new BlockPos(8, 3, 5));
+        if (((C4BlockEntity) helper.getBlockEntity(own)).alerted()) {
+            throw new GameTestAssertException("Je eigen C4 in je eigen zone zou geen alarm moeten geven");
+        }
+        helper.setBlock(own, Blocks.AIR);
+        // Een vreemde: alarm.
+        BlockPos stuck = plant(helper, outsider, new BlockPos(8, 4, 8));
+        if (!((C4BlockEntity) helper.getBlockEntity(stuck)).alerted()
+                || !DatacenterGameTests.logged(core, com.senne.starktech.security.os.EventLog.Type.ALARM, "C4 planted at")) {
+            throw new GameTestAssertException("C4 van een vreemde op de zone zou het alarm moeten laten afgaan");
+        }
+        // Met de hand krijg je hem er niet af (hij is onbreekbaar); met een schaar wel.
+        if (helper.getBlockState(stuck).getDestroySpeed(level, helper.absolutePos(stuck)) >= 0) {
+            throw new GameTestAssertException("C4 zou met de hand niet los te krijgen moeten zijn");
+        }
+        ItemStack shears = new ItemStack(net.minecraft.world.item.Items.SHEARS);
+        owner.setItemInHand(InteractionHand.MAIN_HAND, shears);
+        BlockPos abs = helper.absolutePos(stuck);
+        level.getBlockState(abs).useItemOn(shears, level, owner, InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(abs), Direction.EAST, abs, false));
+        helper.assertBlockNotPresent(ModBlocks.TIMED_C4.get(), stuck);
+        boolean dropped = !level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                new net.minecraft.world.phys.AABB(abs).inflate(1.5), item -> item.getItem().is(ModItems.TIMED_C4.get())).isEmpty();
+        if (!dropped || !DatacenterGameTests.logged(core, com.senne.starktech.security.os.EventLog.Type.ALARM, "defused")) {
+            throw new GameTestAssertException("Na de schaar zou de C4 als item moeten liggen en in het logboek staan");
+        }
+        ZoneGameTests.finish(helper, core);
+    }
+
+    /**
+     * Een klap op de zone van een eigenaar die offline is: het logboek zegt hoeveel blokken er weg zijn,
+     * en de eigenaar krijgt het verslag als hij weer inlogt (hier: het verslag in de wereld).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "c4")
+    public static void c4_blast_report_while_away(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 20), "zone-owner");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        core.setZoneBoxes(java.util.List.of(ZoneGameTests.box(helper, new BlockPos(5, 2, 5), new BlockPos(12, 8, 12))));
+        wall(helper, 8, Blocks.STONE);
+        java.util.UUID ownerId = owner.getUUID();
+        level.getServer().getPlayerList().remove(owner); // de eigenaar logt uit
+        BlockPos c4 = stick(helper, ModBlocks.TIMED_C4.get(), new BlockPos(8, 4, 8), Direction.EAST);
+        int broken = boom(helper, c4);
+        if (!DatacenterGameTests.logged(core, com.senne.starktech.security.os.EventLog.Type.ALARM, "C4 blast at")) {
+            throw new GameTestAssertException("Het logboek zegt niets over de klap");
+        }
+        int[] report = ZoneData.get(level).takeAwayReport(ownerId);
+        if (report == null || report[0] != 1 || report[1] != broken) {
+            throw new GameTestAssertException("De eigenaar zou bij het inloggen 1 klap en " + broken + " blokken moeten horen, niet "
+                    + (report == null ? "niets" : report[0] + " / " + report[1]));
+        }
+        ZoneGameTests.finish(helper, core);
+    }
 }

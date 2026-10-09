@@ -184,6 +184,11 @@ public class StarkTech {
         // C4: de barsten van een klap genezen weer (en blijven zichtbaar zolang ze er zijn).
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Blast::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Blast::onServerStopped);
+        // Het alarm van C4: het verslag als je weer inlogt, en de hint "alleen met een schaar".
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Alarm::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Alarm::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Alarm::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Block::onLeftClick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

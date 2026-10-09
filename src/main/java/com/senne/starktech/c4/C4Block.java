@@ -101,6 +101,21 @@ public class C4Block extends FaceAttachedHorizontalDirectionalBlock implements E
                                                                   Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
                                                                   net.minecraft.world.InteractionHand hand,
                                                                   net.minecraft.world.phys.BlockHitResult hit) {
+        // Een schaar: de draad doorknippen. De C4 valt eruit (wie hem onschadelijk maakt, krijgt hem).
+        if (stack.is(net.minecraft.world.item.Items.SHEARS)) {
+            if (level instanceof ServerLevel serverLevel && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                    && level.getBlockEntity(pos) instanceof C4BlockEntity c4) {
+                C4Alarm.defused(serverLevel, pos, c4, serverPlayer);
+                level.removeBlock(pos, false);
+                Block.popResource(level, pos, new net.minecraft.world.item.ItemStack(asItem()));
+                level.playSound(null, pos, com.senne.starktech.registry.ModSounds.C4_DEFUSE.get(),
+                        net.minecraft.sounds.SoundSource.BLOCKS, 1.0f, 1.0f);
+                stack.hurtAndBreak(1, serverPlayer, net.minecraft.world.entity.LivingEntity.getSlotForHand(hand));
+                serverPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable("c4.starktech.msg.defused")
+                        .withStyle(net.minecraft.ChatFormatting.GREEN), true);
+            }
+            return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (stack.getItem() instanceof DetonatorItem && kind == Kind.REMOTE) {
             if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof C4BlockEntity c4) {
                 DetonatorData data = DetonatorItem.ensure(stack);
@@ -120,6 +135,16 @@ public class C4Block extends FaceAttachedHorizontalDirectionalBlock implements E
             return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
+    }
+
+    /** Linksklik op C4: met je hand krijg je hem er niet af. Dat zeggen we dan ook. */
+    public static void onLeftClick(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getAction() == net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action.START
+                && !event.getLevel().isClientSide && !event.getEntity().isCreative()
+                && event.getLevel().getBlockState(event.getPos()).getBlock() instanceof C4Block) {
+            event.getEntity().displayClientMessage(net.minecraft.network.chat.Component.translatable("c4.starktech.msg.use_shears")
+                    .withStyle(net.minecraft.ChatFormatting.YELLOW), true);
+        }
     }
 
     // ================================================================ Binnenkant

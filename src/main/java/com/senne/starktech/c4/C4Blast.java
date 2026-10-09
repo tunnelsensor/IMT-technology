@@ -49,6 +49,11 @@ public final class C4Blast {
     public static int detonate(ServerLevel level, BlockPos pos, BlockState state) {
         Direction3 out = Direction3.of(state);
         Vec3 centre = pos.getCenter().subtract(out.x * ON_FACE, out.y * ON_FACE, out.z * ON_FACE);
+        // Welke zone raakt deze klap (voor het alarm en het logboek)?
+        com.senne.starktech.security.zone.ZoneData.Zone zone =
+                com.senne.starktech.security.zone.Zones.activeNear(level, pos, C4Balance.RADIUS);
+        boolean alerted = level.getBlockEntity(pos) instanceof C4BlockEntity self && self.alerted();
+        int inZone = 0;
         level.removeBlock(pos, false);
         // Eerst de klap voor wezens (met het geluid en de rook van een explosie), zonder blokken: die
         // doen we hieronder zelf. Zo vernielt de klap ook niet de spullen die straks uit de blokken vallen.
@@ -86,6 +91,9 @@ public final class C4Blast {
             if (total >= hp) {
                 cracks.remove(here);
                 level.destroyBlockProgress(crackId(here), here, -1);
+                if (zone != null && zone.contains(here)) {
+                    inZone++;
+                }
                 breakBlock(level, here, target);
                 broken++;
             } else {
@@ -93,6 +101,7 @@ public final class C4Blast {
                 showCrack(level, here, total / hp);
             }
         }
+        C4Alarm.blasted(level, pos, zone, inZone, alerted);
         return broken;
     }
 

@@ -145,15 +145,19 @@ public final class ZoneData extends SavedData {
          * SecurityCores.isFriend): de eigenaar, zijn team en wie hij vertrouwt (de app Access).
          */
         public boolean isBuilder(ServerLevel level, Player player) {
-            if (owner == null) {
+            return isBuilder(level, player.getUUID(), player.getScoreboardName());
+        }
+
+        /** Hetzelfde, op nummer en naam (ook voor wie nu offline is, zoals wie een C4 plakte). */
+        public boolean isBuilder(ServerLevel level, @Nullable UUID id, String name) {
+            if (owner == null || id == null) {
                 return false;
             }
-            UUID id = player.getUUID();
             if (owner.equals(id) || trusted.contains(id)) {
                 return true;
             }
             PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(ownerName);
-            return ownerTeam != null && ownerTeam.isAlliedTo(player.getTeam());
+            return ownerTeam != null && !name.isEmpty() && ownerTeam.isAlliedTo(level.getScoreboard().getPlayersTeam(name));
         }
 
         /** Alleen de kubussen veranderen (en wat we daaruit uitrekenen). */
@@ -177,6 +181,11 @@ public final class ZoneData extends SavedData {
     }
 
     private final Map<GlobalPos, Zone> zones = new LinkedHashMap<>();
+    /**
+     * Wat er met de zones van een eigenaar gebeurde terwijl hij offline was (hoofdstuk 10, stap 7):
+     * hoeveel C4-klappen en hoeveel blokken. Bij het inloggen vertelt E.D.I.T.H. het, dan is het weg.
+     */
+    private final Map<UUID, int[]> awayReports = new HashMap<>();
     /** Per dimensie de zones met kubussen (opnieuw opgebouwd na elke verandering). Niet bewaard. */
     private @Nullable Map<ResourceKey<Level>, List<Zone>> byLevel;
     /** Telt elke verandering; de client krijgt de zones opnieuw als dit getal veranderde. Niet bewaard. */
@@ -282,6 +291,25 @@ public final class ZoneData extends SavedData {
         }
     }
 
+    // ================================================================ Terwijl je weg was
+
+    /** Een C4-klap op een zone van deze eigenaar, terwijl hij offline is. */
+    public void addAwayReport(UUID owner, int blocks) {
+        int[] report = awayReports.computeIfAbsent(owner, key -> new int[2]);
+        report[0]++;
+        report[1] += blocks;
+        setDirty();
+    }
+
+    /** Het verslag van deze eigenaar ({klappen, blokken}), en meteen weg; null als er niets was. */
+    public int @Nullable [] takeAwayReport(UUID owner) {
+        int[] report = awayReports.remove(owner);
+        if (report != null) {
+            setDirty();
+        }
+        return report;
+    }
+
     // ================================================================ Rekenen
 
     /**
@@ -353,6 +381,15 @@ public final class ZoneData extends SavedData {
             list.add(item);
         }
         tag.put("Zones", list);
+        ListTag reports = new ListTag();
+        for (Map.Entry<UUID, int[]> entry : awayReports.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("Owner", entry.getKey());
+            item.putInt("Blasts", entry.getValue()[0]);
+            item.putInt("Blocks", entry.getValue()[1]);
+            reports.add(item);
+        }
+        tag.put("AwayReports", reports);
         return tag;
     }
 
@@ -379,6 +416,12 @@ public final class ZoneData extends SavedData {
                 }
             }
             zone.setBoxes(boxes);
+        }
+        for (Tag element : tag.getList("AwayReports", Tag.TAG_COMPOUND)) {
+            CompoundTag item = (CompoundTag) element;
+            if (item.hasUUID("Owner")) {
+                data.awayReports.put(item.getUUID("Owner"), new int[] {item.getInt("Blasts"), item.getInt("Blocks")});
+            }
         }
         return data;
     }

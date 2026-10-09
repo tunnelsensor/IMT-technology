@@ -1833,6 +1833,38 @@ public final class VisualCheck {
             t.onServer(0, player -> {
                 player.serverLevel().removeBlock(w.offset(2, 1, 6), false);
                 player.serverLevel().removeBlock(w.offset(2, 3, 7), false);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+            });
+            // Het alarm: de muur wordt jouw zone (een kern met stroom ernaast), en "iemand" plakt er C4 op.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos corePos = w.offset(5, 0, -3);
+                level.setBlockAndUpdate(corePos.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(corePos.below()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+                level.setBlockAndUpdate(corePos, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(corePos) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+                    core.setOwner(player);
+                    core.ensureSystem(level);
+                    core.setZoneBoxes(java.util.List.of(com.senne.starktech.security.zone.ZoneBox.of(w.offset(0, -1, 0), w.offset(1, 5, 8))));
+                }
+                stickC4(level, w.offset(1, 0, 1), Direction.EAST, 0);
+                BlockPos planted = w.offset(2, 0, 1);
+                if (level.getBlockEntity(planted) instanceof com.senne.starktech.c4.C4BlockEntity c4) {
+                    c4.detonateIn(40 * 20);
+                    com.senne.starktech.c4.C4Alarm.planted(level, planted, c4);
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.stand(10, w.getX() + 9.5, w.getY(), w.getZ() + 4.5, 100, 8);
+            t.shot(30, "x07_c4_alarm");
+            t.onServer(0, player -> {
+                BlockPos planted = w.offset(2, 0, 1);
+                if (player.serverLevel().getBlockEntity(planted) instanceof com.senne.starktech.c4.C4BlockEntity c4) {
+                    com.senne.starktech.c4.C4Alarm.defused(player.serverLevel(), planted, c4, player);
+                }
+                player.serverLevel().removeBlock(planted, false);
             });
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();

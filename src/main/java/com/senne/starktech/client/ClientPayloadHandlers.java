@@ -140,6 +140,11 @@ public final class ClientPayloadHandlers {
         DroneCamera.onServerMessage(payload.droneId(), payload.control());
     }
 
+    /** C4 op je zone (hoofdstuk 10): de rode markering aan of uit. */
+    public static void onC4Alert(com.senne.starktech.network.C4AlertPayload payload, IPayloadContext context) {
+        com.senne.starktech.client.c4.C4Alerts.onPayload(payload);
+    }
+
     /** De zones die jij mag zien (hoofdstuk 10): de rand tekent ZoneBorderRenderer. */
     public static void onZoneSync(com.senne.starktech.network.ZoneSyncPayload payload, IPayloadContext context) {
         com.senne.starktech.client.zone.ZoneClientState.set(payload.zones());

@@ -61,6 +61,10 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.zone.ZoneMarkerControl::onClientTick);
         // De detonator in je hand: rode bordjes boven je ladingen.
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.c4.DetonatorMarkers::onRenderLevel);
+        // C4 op je zone: rode markeringen "C4!" (zie C4Alarm).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.c4.C4Alerts::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
+                com.senne.starktech.client.c4.C4Alerts.clear());
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.zone.ZoneMarkerControl::onInteraction);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
                 com.senne.starktech.client.zone.ZoneClientState.clear());

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 169 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 171 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1461,9 +1461,21 @@ De stappen, één per commit:
       (ook door muren; grijs als hij te ver is). Een remote C4 heeft een antenne en knippert rustig
       "RF". Het bereik staat in de config (`detonatorRange` onder `[c4]`). Screenshot: `-Ponly=c4`
       (`x06_remote_c4_detonator`). Twee nieuwe tests: koppelen en afgaan, en bereik en overnemen.
-- [ ] **7. Ontmantelen en alarm**
-      De schaar, het alarm van E.D.I.T.H. met markering, het logboek, en het verslag als je weer
-      inlogt. Tests.
+- [x] **7. Ontmantelen en alarm**
+      **Ontmantelen**: rechtsklik met een **schaar** op C4 (iedereen, ook wie hem plakte): een knip en
+      een dalend toontje, "You cut the wire: the C4 is harmless now", en de C4 valt eruit als item (de
+      verdediger krijgt hem). De schaar slijt een beetje. Met je hand gaat het niet: dan zegt hij "cut
+      the wire with shears". Wie hem plakte, hoort van E.D.I.T.H. "Your C4 at ... was defused".
+      **Alarm** (`c4/C4Alarm`): plakt iemand die er niet mag bouwen C4 in een zone of tot 3 blokken
+      ervan, dan zegt E.D.I.T.H. tegen de eigenaar en zijn vrienden die online zijn "C4 planted at your
+      zone: x y z (timer 0:40)" of "(remote)", zonder naam, en ze zien boven de lading een knipperend
+      rood bordje "C4!  8 m" (door muren heen) tot hij ontploft of onschadelijk is. Je eigen C4 in je
+      eigen zone geeft geen alarm. Ontploft er C4 op een zone, dan zegt ze hoeveel blokken er weg zijn;
+      is de eigenaar offline, dan onthoudt de wereld het en hoort hij een paar seconden na het inloggen
+      "While you were away: 3 C4 blasts at your zone (12 blocks)". Alles staat ook in het logboek van de
+      kern (rode regels: geplakt, klap met het aantal blokken, onschadelijk gemaakt). Screenshot:
+      `-Ponly=c4` (`x07_c4_alarm`). Twee nieuwe tests: alarm en schaar (en geen alarm voor je eigen
+      C4), en het verslag voor een eigenaar die offline was.
 - [ ] **8. Showcase, screenshots en LEESMIJ**
 
 ---

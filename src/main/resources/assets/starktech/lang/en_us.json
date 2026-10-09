@@ -1181,5 +1181,11 @@
   "tooltip.starktech.detonator.linked": "Linked charges: %s",
   "tooltip.starktech.detonator.fire": "Right-click: fire all linked charges within %s blocks.",
   "tooltip.starktech.detonator.status": "Sneak + right-click: how many are linked and in range.",
-  "tooltip.starktech.detonator.link": "Place remote C4 with this in your inventory, or right-click one with it, to link."
+  "tooltip.starktech.detonator.link": "Place remote C4 with this in your inventory, or right-click one with it, to link.",
+  "zone.starktech.c4.planted": "C4 planted at your zone: %s %s %s (%s).",
+  "zone.starktech.c4.blast": "C4 blast at your zone: %s blocks destroyed.",
+  "zone.starktech.c4.your_defused": "Your C4 at %s %s %s was defused.",
+  "zone.starktech.c4.report": "While you were away: %s C4 blasts at your zone (%s blocks).",
+  "c4.starktech.msg.use_shears": "You can't pull C4 off by hand: cut the wire with shears.",
+  "c4.starktech.msg.defused": "You cut the wire: the C4 is harmless now."
 }
