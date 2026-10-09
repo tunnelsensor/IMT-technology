@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 184 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 83 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -1612,7 +1612,16 @@ De stappen, één per commit:
       wat beide machines wel en niet aannemen), en **de hele weg rond**: obsidiaan met barsten, twee
       keer geplamuurd (nog 14 van de 20), weghakken, Crusher, Compactor, terugzetten: weer 20.
       Screenshots: `-Ponly=repair` (beide machines in `r01`, en `r04_compactor_screen`).
-- [ ] **4. Showcase, screenshots en LEESMIJ**
+- [x] **4. Showcase, screenshots en LEESMIJ**
+      Showcase-functie 76 **Repairing cracks** (in survival, in de basis van de zones): vijf stenen
+      bakstenen in de zuidmuur hebben barsten; je plamuurt er een ("Cracks filled. This block now has 85%
+      of its strength."), hakt er een weg (het gebarsten blok komt in je hotbar), en daarachter staan de
+      Crusher en de Compactor op een generator: hun schermen lopen vol, en het nieuwe blok zet je terug in
+      het gat. De showcase heeft nu 84 functies (de toren, het wrak en de rest schuiven één op). Ik heb
+      hem in testmodus afgespeeld en op zes momenten bekeken. Screenshots van de rondleiding:
+      `-Ponly=repair` (`r01` beide machines aan het werk met een gebarsten blok op de grond, `r02` en
+      `r04` hun schermen, `r03` gebarsten obsidiaan in je hand en de hotbar met gebarsten blokken en
+      poeder in vier kleuren). LEESMIJ.md heeft een eigen stuk "Barsten herstellen".
 
 ---
 
@@ -1649,6 +1658,11 @@ raiddrones eruitzien.
       klinken, en of de getallen goed voelen: hoeveel C4 een muur kost (steen 1, obsidiaan 3, de kern
       6), hoe groot het gat is, en hoeveel stroom een grote zone kost. Op obsidiaan zie je de barsten
       bijna niet (zo tekent Minecraft barsten). Alles staat in de config onder `[c4]` en `[security]`.
+- [ ] **Barsten herstellen (9 oktober)**: gezien op screenshots en in de showcase, niet zelf gespeeld.
+      Luister of de Crusher (een heel zachte slijpsteen) en de Compactor (een heel zachte zuiger) goed
+      klinken, en of de getallen goed voelen: 15% zwakker per keer plamuren, 5 seconden per blok in een
+      machine. Een gebarsten blok van obsidiaan ziet er in je hand bijna uit als gewoon obsidiaan (net
+      als de barsten in de wereld). Alles staat in de config onder `[c4]` en `[repair]`.
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 

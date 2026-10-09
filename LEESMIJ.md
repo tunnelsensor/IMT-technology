@@ -575,16 +575,7 @@ anders kan een inbreker ze van buitenaf kapotmaken. Wie je kern hackt, krijgt oo
   van drie hoog in een stenen muur, obsidiaan breekt pas na drie C4 op dezelfde plek, de
   beveiligingskern na zes. Wat niet breekt krijgt **barsten** (de volgende klap telt erbij op). Op
   obsidiaan zie je die barsten bijna niet. Andere C4 in de klap gaat ook af.
-- **Barsten herstellen**: barsten genezen niet vanzelf, ook niet na een herstart. Vul ze op met
-  **Repair Paste** (twee klei, zand en grind = 4 pasta): rechtsklik op het blok, en de barsten zijn
-  weg. Maar het blok is daarna wel 15% zwakker, elke keer opnieuw (nooit minder dan 40%). In de zone
-  van een ander kan dat niet. Een nieuw blok op die plek is weer helemaal sterk.
-- **Gebarsten blokken**: hak je een blok met barsten (of een geplamuurd blok) weg, dan houd je een
-  **gebarsten blok** over ("Cracked Stone Bricks"). De **Crusher** (ijzer, een slijpsteen, een
-  Stark-chip en een zuiger) maakt daar op Stark-stroom **poeder** van: 5 seconden per blok. De
-  **Compactor** (ijzer, een aambeeld, twee zuigers en een Stark-chip) perst dat poeder tot een
-  volledig nieuw blok van hetzelfde soort, weer helemaal sterk. Bij allebei doen trechters er van boven
-  of opzij iets in en halen ze het er van onder uit.
+- **Barsten** blijven tot je ze herstelt: zie hieronder.
 - **Ontmantelen**: alleen met een **schaar** (rechtsklik): de C4 valt eruit, en jij hebt hem. Met je
   hand krijg je hem er niet af.
 - **Alarm**: plakt iemand C4 op jouw zone, dan zegt E.D.I.T.H. waar (niet wie), en jij en je vrienden
@@ -592,6 +583,32 @@ anders kan een inbreker ze van buitenaf kapotmaken. Wie je kern hackt, krijgt oo
   van je kern. Was je offline, dan vertelt E.D.I.T.H. het als je weer inlogt.
 
 Alle getallen staan in `config/starktech-balance.toml` onder `[c4]` en `[security]`.
+
+### Barsten herstellen
+Wat een klap niet kapotmaakt, krijgt **barsten**: van C4, en in een zone ook van TNT en de satelliet.
+Die barsten genezen niet vanzelf, ook niet na een herstart, en de volgende klap telt erbij op. Je
+herstelt een muur op twee manieren:
+
+- **Opvullen** met **Repair Paste** (twee klei, zand en grind = 4 pasta, zonder vaste vorm):
+  rechtsklik op het blok met barsten. De barsten zijn weg, maar het blok is daarna wel 15% zwakker,
+  elke keer opnieuw: 85%, 70%, ... nooit minder dan 40%. Onderaan zie je hoe sterk het nog is. In de
+  zone van een ander kan dat niet (anders kon een inbreker een muur met wat TNT en pasta steeds
+  zwakker maken).
+- **Vervangen**: hak het blok weg en zet er een nieuw in, dat is weer helemaal sterk. Wat je weghakt,
+  wordt een **gebarsten blok** ("Cracked Stone Bricks": het blok met barsten erover). Steen geeft zo
+  gebarsten steen, geen keien. Wat C4 of TNT kapotmaakt, valt eruit zoals altijd.
+
+Van een gebarsten blok maak je weer een nieuw blok, met twee machines op Stark-stroom (via kabels of
+direct tegen een generator). Elk heeft een vakje erin, een vakje eruit en een pijl die vol loopt:
+
+- De **Crusher** (ijzer, een slijpsteen, een Stark-chip en een zuiger) maakt van een gebarsten blok
+  **poeder** in de kleur van het blok.
+- De **Compactor** (ijzer, een aambeeld, twee zuigers en een Stark-chip) perst dat poeder tot een
+  **volledig nieuw blok** van hetzelfde soort, zonder barsten en weer helemaal sterk.
+
+Allebei doen ze 5 seconden over één blok en gebruiken ze dan 4 stroom per tick. Trechters doen er van
+boven of opzij iets in en halen het er van onder uit, zoals bij een oven. Alle getallen staan in
+`config/starktech-balance.toml`: plamuren onder `[c4]`, de machines onder `[repair]`.
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je

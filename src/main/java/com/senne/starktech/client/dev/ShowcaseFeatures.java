@@ -1316,6 +1316,64 @@ final class ShowcaseFeatures {
                     .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
         });
 
+        add("Repairing cracks", "Hoofdstuk 11: barsten herstellen (in survival). Je basis kreeg klappen: een paar "
+                + "stenen bakstenen in de zuidmuur hebben barsten (die genezen niet vanzelf). Je smeert Repair Paste "
+                + "op het linker blok: de barsten zijn weg, maar onderaan staat dat het blok nog 85% sterk is. Het "
+                + "blok in het midden hak je weg: je krijgt een 'Cracked Stone Bricks' (het blok met barsten erover). "
+                + "Dat gaat in de Crusher achter je: in zijn scherm loopt de blauwe pijl vol ('Crushing...') en komt "
+                + "er poeder uit, in de kleur van het blok. Dat poeder gaat in de Compactor ('Pressing...'): een "
+                + "nieuw blok stenen bakstenen. Dat zet je terug in het gat: weer helemaal sterk.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(4, 0, 12)), 180, 8, s -> {
+            BlockPos patched = ZONE_BASE.offset(3, 1, 9);
+            BlockPos replaced = ZONE_BASE.offset(5, 1, 9);
+            BlockPos crusher = ZONE_BASE.offset(4, 0, 15);
+            BlockPos compactor = ZONE_BASE.offset(6, 0, 15);
+            s.onServer(0, ShowcaseFeatures::buildZoneBase)
+                    .onServer(0, player -> buildRepairMachines(player, crusher, compactor))
+                    .onServer(0, player -> {
+                        for (BlockPos pos : new BlockPos[] {patched, replaced, ZONE_BASE.offset(4, 2, 9),
+                                ZONE_BASE.offset(6, 1, 9), ZONE_BASE.offset(3, 2, 9)}) {
+                            dent(player.serverLevel(), pos);
+                        }
+                        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.REPAIR_PASTE.get(), 8));
+                    })
+                    .pause(70)
+                    // Plamuren: de barsten van het linker blok zijn weg.
+                    .stand(0, ZONE_BASE.getX() + 3.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 11.3, 180, 5)
+                    .lookAt(10, Vec3.atCenterOf(patched).add(0, 0, 0.5))
+                    .pause(20)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(60)
+                    // Weghakken: een gebarsten blok in je inventaris.
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE)))
+                    .stand(0, ZONE_BASE.getX() + 5.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 11.3, 180, 5)
+                    .lookAt(10, Vec3.atCenterOf(replaced).add(0, 0, 0.5))
+                    .key(10, () -> Minecraft.getInstance().options.keyAttack, true)
+                    .key(15, () -> Minecraft.getInstance().options.keyAttack, false)
+                    // Een stapje naar voren: zo raap je het gebarsten blok op.
+                    .stand(10, ZONE_BASE.getX() + 5.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 10.6, 180, 5)
+                    .pause(30)
+                    // De Crusher en de Compactor achter je.
+                    .stand(0, ZONE_BASE.getX() + 5.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 0, 25)
+                    .pause(20)
+                    .onServer(0, player -> putInMachine(player, crusher))
+                    .onServer(10, player -> openMachine(player, crusher))
+                    .pause(115)
+                    .onServer(0, player -> moveBetweenMachines(player, crusher, compactor))
+                    .onServer(0, player -> openMachine(player, compactor))
+                    .pause(115)
+                    .onServer(0, player -> takeFromMachine(player, compactor))
+                    .pause(20)
+                    .close(10)
+                    // Terugzetten: in het gat in de muur.
+                    .stand(0, ZONE_BASE.getX() + 5.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 11.5, 180, 25)
+                    .lookAt(10, new Vec3(replaced.getX() + 0.5, replaced.getY() + 0.02, replaced.getZ() + 0.5))
+                    .pause(20)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(80)
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -1715,6 +1773,74 @@ final class ShowcaseFeatures {
         if (level.getBlockEntity(pos) instanceof com.senne.starktech.c4.C4BlockEntity c4
                 && player.getMainHandItem().getItem() instanceof com.senne.starktech.c4.DetonatorItem) {
             com.senne.starktech.c4.DetonatorItem.link(level, pos, c4, player.getMainHandItem());
+        }
+    }
+
+    // ---------------------------------------------------------------- Barsten herstellen (hoofdstuk 11)
+
+    /** Een klapje van 4,5 breekpunten op alleen dit blok (van de zuidkant): barsten, maar het breekt niet. */
+    static void dent(ServerLevel level, BlockPos pos) {
+        com.senne.starktech.c4.C4Blast.breach(level, Vec3.atCenterOf(pos).add(0, 0, 0.95), 4.5f, 3.0f, here -> here.equals(pos), null);
+    }
+
+    /** Een Crusher en een Compactor met hun voorkant naar het noorden, elk tegen een volle generator. */
+    static void buildRepairMachines(ServerPlayer player, BlockPos crusher, BlockPos compactor) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(crusher, ModBlocks.CRUSHER.get().defaultBlockState()
+                .setValue(com.senne.starktech.repair.CrackMachineBlock.FACING, Direction.NORTH));
+        level.setBlockAndUpdate(compactor, ModBlocks.COMPACTOR.get().defaultBlockState()
+                .setValue(com.senne.starktech.repair.CrackMachineBlock.FACING, Direction.NORTH));
+        for (BlockPos generator : new BlockPos[] {crusher.west(), compactor.east()}) {
+            level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+    }
+
+    /** Het gebarsten blok uit je inventaris (of nog op de grond naast je) gaat de machine in. */
+    static void putInMachine(ServerPlayer player, BlockPos pos) {
+        if (!(player.serverLevel().getBlockEntity(pos) instanceof com.senne.starktech.repair.CrackMachineBlockEntity machine)) {
+            return;
+        }
+        net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            if (inventory.getItem(slot).is(ModItems.CRACKED_BLOCK.get())) {
+                machine.setItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_IN, inventory.removeItemNoUpdate(slot));
+                return;
+            }
+        }
+        for (net.minecraft.world.entity.item.ItemEntity item : player.serverLevel().getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(4))) {
+            if (item.getItem().is(ModItems.CRACKED_BLOCK.get())) {
+                machine.setItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_IN, item.getItem().copy());
+                item.discard();
+                return;
+            }
+        }
+    }
+
+    /** Opent het scherm van de machine op deze plek. */
+    static void openMachine(ServerPlayer player, BlockPos pos) {
+        if (player.serverLevel().getBlockEntity(pos) instanceof com.senne.starktech.repair.CrackMachineBlockEntity machine) {
+            player.openMenu(machine, buf -> buf.writeVarInt(machine.kind().ordinal()));
+        }
+    }
+
+    /** Wat uit de Crusher kwam, gaat de Compactor in. */
+    static void moveBetweenMachines(ServerPlayer player, BlockPos from, BlockPos to) {
+        if (player.serverLevel().getBlockEntity(from) instanceof com.senne.starktech.repair.CrackMachineBlockEntity first
+                && player.serverLevel().getBlockEntity(to) instanceof com.senne.starktech.repair.CrackMachineBlockEntity second) {
+            second.setItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_IN,
+                    first.removeItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_OUT, 64));
+        }
+    }
+
+    /** Wat uit de machine kwam, neem je in je hand. */
+    static void takeFromMachine(ServerPlayer player, BlockPos pos) {
+        if (player.serverLevel().getBlockEntity(pos) instanceof com.senne.starktech.repair.CrackMachineBlockEntity machine) {
+            player.setItemInHand(InteractionHand.MAIN_HAND,
+                    machine.removeItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_OUT, 64));
         }
     }
 
