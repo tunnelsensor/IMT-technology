@@ -863,6 +863,41 @@ def c4_textures():
     save(item, "item/timed_c4.png")
 
 
+def remote_c4_items():
+    """
+    De remote C4 (hetzelfde pakketje, met een antenne en een groen lampje in plaats van cijfers) en
+    de detonator: een zwart kastje met een rode knop onder een klepje en een antenne.
+    """
+    clay = (196, 190, 170, 255)
+    clay_dark = (172, 166, 146, 255)
+    tape = (38, 38, 42, 255)
+    metal = (34, 36, 40, 255)
+    metal_edge = (58, 60, 66, 255)
+    red = (220, 40, 34, 255)
+
+    item = img(16, 16)
+    d = ImageDraw.Draw(item)
+    d.rectangle([1, 7, 14, 14], fill=clay, outline=clay_dark)
+    for x in range(1, 15):
+        px(item, [(x, 9), (x, 12)], tape)
+    d.rectangle([3, 4, 9, 8], fill=metal, outline=metal_edge)
+    px(item, [(5, 6), (7, 6)], (230, 40, 30, 255))
+    d.line([10, 6, 13, 1], fill=(150, 152, 158, 255))
+    px(item, [(13, 1)], red)
+    save(item, "item/remote_c4.png")
+
+    det = img(16, 16)
+    d = ImageDraw.Draw(det)
+    d.rectangle([4, 5, 11, 15], fill=metal, outline=metal_edge)
+    d.rectangle([5, 7, 10, 11], fill=(60, 20, 18, 255), outline=(90, 92, 98, 255))
+    d.ellipse([6, 8, 9, 10], fill=red)
+    px(det, [(7, 8)], (255, 120, 100, 255))
+    d.line([10, 5, 13, 0], fill=(150, 152, 158, 255))
+    px(det, [(6, 13), (9, 13)], (110, 112, 118, 255))
+    px(det, [(5, 13)], (90, 220, 120, 255))
+    save(det, "item/detonator.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -2662,6 +2697,7 @@ if __name__ == "__main__":
     zone_textures()
     zone_marker_item()
     c4_textures()
+    remote_c4_items()
     relay_textures()
     shield_textures()
     rayshield_walls()

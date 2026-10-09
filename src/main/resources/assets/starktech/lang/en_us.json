@@ -1166,5 +1166,20 @@
   "subtitles.starktech.c4.beep": "C4 beeps",
   "subtitles.starktech.c4.arm": "C4 armed",
   "subtitles.starktech.c4.defuse": "C4 defused",
-  "subtitles.starktech.c4.detonator": "Detonator clicks"
+  "subtitles.starktech.c4.detonator": "Detonator clicks",
+  "block.starktech.remote_c4": "C4 (Remote)",
+  "item.starktech.detonator": "Detonator",
+  "tooltip.starktech.c4.remote": "Goes off when its detonator is pressed.",
+  "item.starktech.remote_c4.linked": "Remote C4 linked to your detonator (%s charges).",
+  "item.starktech.remote_c4.no_detonator": "No detonator with you: right-click this charge with a detonator to link it.",
+  "item.starktech.remote_c4.full": "Your detonator already has %s charges.",
+  "item.starktech.remote_c4.taken": "This charge belongs to another detonator.",
+  "item.starktech.detonator.none": "Click. No charges linked to this detonator.",
+  "item.starktech.detonator.fired": "%s charges fired.",
+  "item.starktech.detonator.fired_some": "%s charges fired. %s out of range (%s blocks).",
+  "item.starktech.detonator.status": "Detonator: %s charges linked, %s within range (%s blocks).",
+  "tooltip.starktech.detonator.linked": "Linked charges: %s",
+  "tooltip.starktech.detonator.fire": "Right-click: fire all linked charges within %s blocks.",
+  "tooltip.starktech.detonator.status": "Sneak + right-click: how many are linked and in range.",
+  "tooltip.starktech.detonator.link": "Place remote C4 with this in your inventory, or right-click one with it, to link."
 }

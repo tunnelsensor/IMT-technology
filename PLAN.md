@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 167 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 169 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1447,8 +1447,20 @@ De stappen, één per commit:
       (`x01` tot `x05`). Zes nieuwe tests (in een eigen bestand, `gametest/C4GameTests.java`): een
       stenen muur, obsidiaan, de kern, de timer in een zone, een kettingreactie, en de grenzen van de
       timer.
-- [ ] **6. C4 met afstandsbediening**
-      Remote C4 en de detonator: koppelen, bereik, rode markeringen. Tests.
+- [x] **6. C4 met afstandsbediening**
+      Nieuw: **C4 (Remote)** (TNT, twee klei, een slijmbal, redstone en een bliksemafleider als antenne)
+      en de **Detonator** (een bliksemafleider boven, ijzer, een Stark-chip, ijzer, en een knop eronder).
+      Plak je een remote C4 terwijl je een detonator bij je hebt (in je hand of rugzak), dan hoort hij
+      meteen bij die detonator ("Remote C4 linked to your detonator (3 charges)"); een losse remote C4
+      koppel je met een rechtsklik met de detonator, maar een lading van een andere detonator neem je
+      niet over. Een detonator onthoudt hooguit 32 ladingen (`c4/DetonatorData`, op het item zelf).
+      **Rechtsklik** = een klik en een radiotoontje, en al zijn ladingen binnen 128 blokken gaan af, de
+      dichtstbijzijnde eerst en dan om de drie ticks de volgende ("3 charges fired. 1 out of range");
+      ladingen die er niet meer zijn, vergeet hij. **Sluipen + rechtsklik** zegt hoeveel er gekoppeld en
+      in bereik zijn. Met de detonator in je hand zie je boven elke lading een rood bordje "C4  12 m"
+      (ook door muren; grijs als hij te ver is). Een remote C4 heeft een antenne en knippert rustig
+      "RF". Het bereik staat in de config (`detonatorRange` onder `[c4]`). Screenshot: `-Ponly=c4`
+      (`x06_remote_c4_detonator`). Twee nieuwe tests: koppelen en afgaan, en bereik en overnemen.
 - [ ] **7. Ontmantelen en alarm**
       De schaar, het alarm van E.D.I.T.H. met markering, het logboek, en het verslag als je weer
       inlogt. Tests.

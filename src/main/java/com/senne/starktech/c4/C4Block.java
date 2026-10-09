@@ -93,6 +93,35 @@ public class C4Block extends FaceAttachedHorizontalDirectionalBlock implements E
         return state;
     }
 
+    // ================================================================ Rechtsklik met iets in je hand
+
+    /** Een detonator op een remote C4: koppelen (als hij nog nergens bij hoort, of al bij deze). */
+    @Override
+    protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state,
+                                                                  Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
+                                                                  net.minecraft.world.InteractionHand hand,
+                                                                  net.minecraft.world.phys.BlockHitResult hit) {
+        if (stack.getItem() instanceof DetonatorItem && kind == Kind.REMOTE) {
+            if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof C4BlockEntity c4) {
+                DetonatorData data = DetonatorItem.ensure(stack);
+                net.minecraft.network.chat.Component message;
+                if (c4.detonator() != null && !c4.detonator().equals(data.id())) {
+                    message = net.minecraft.network.chat.Component.translatable("item.starktech.remote_c4.taken")
+                            .withStyle(net.minecraft.ChatFormatting.YELLOW);
+                } else if (DetonatorItem.link(serverLevel, pos, c4, stack)) {
+                    message = net.minecraft.network.chat.Component.translatable("item.starktech.remote_c4.linked",
+                            DetonatorItem.ensure(stack).charges().size()).withStyle(net.minecraft.ChatFormatting.RED);
+                } else {
+                    message = net.minecraft.network.chat.Component.translatable("item.starktech.remote_c4.full", DetonatorData.MAX_CHARGES)
+                            .withStyle(net.minecraft.ChatFormatting.YELLOW);
+                }
+                player.displayClientMessage(message, true);
+            }
+            return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+        return super.useItemOn(stack, state, level, pos, player, hand, hit);
+    }
+
     // ================================================================ Binnenkant
 
     @Override

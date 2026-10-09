@@ -59,6 +59,8 @@ public class StarkTechClient {
         // Hoofdstuk 10: de rand van je zones (en die van wie jou vertrouwt).
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.zone.ZoneBorderRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.zone.ZoneMarkerControl::onClientTick);
+        // De detonator in je hand: rode bordjes boven je ladingen.
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.c4.DetonatorMarkers::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.zone.ZoneMarkerControl::onInteraction);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
                 com.senne.starktech.client.zone.ZoneClientState.clear());

@@ -8,6 +8,7 @@
     "minecraft:soul_wall_torch",
     "minecraft:lantern",
     "minecraft:soul_lantern",
-    "starktech:timed_c4"
+    "starktech:timed_c4",
+    "starktech:remote_c4"
   ]
 }

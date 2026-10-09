@@ -1,0 +1,102 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "starktech:block/c4_putty",
+    "putty": "starktech:block/c4_putty",
+    "device": "starktech:block/c4_device",
+    "screen": "starktech:block/c4_screen"
+  },
+  "elements": [
+    {
+      "from": [
+        3,
+        0,
+        3
+      ],
+      "to": [
+        13,
+        3,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#putty"
+        },
+        "south": {
+          "texture": "#putty"
+        },
+        "east": {
+          "texture": "#putty"
+        },
+        "west": {
+          "texture": "#putty"
+        },
+        "up": {
+          "texture": "#putty"
+        },
+        "down": {
+          "texture": "#putty",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        3,
+        5
+      ],
+      "to": [
+        11,
+        4.5,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#device"
+        },
+        "south": {
+          "texture": "#device"
+        },
+        "east": {
+          "texture": "#device"
+        },
+        "west": {
+          "texture": "#device"
+        },
+        "up": {
+          "texture": "#screen"
+        }
+      }
+    },
+    {
+      "from": [
+        11.5,
+        3,
+        10.5
+      ],
+      "to": [
+        12.5,
+        9,
+        11.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#device"
+        },
+        "south": {
+          "texture": "#device"
+        },
+        "east": {
+          "texture": "#device"
+        },
+        "west": {
+          "texture": "#device"
+        },
+        "up": {
+          "texture": "#device"
+        }
+      }
+    }
+  ]
+}

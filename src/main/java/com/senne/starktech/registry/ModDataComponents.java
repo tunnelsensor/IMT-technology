@@ -52,6 +52,12 @@ public final class ModDataComponents {
                     .persistent(Codec.INT)
                     .networkSynchronized(ByteBufCodecs.VAR_INT));
 
+    /** Wat een detonator onthoudt: zijn nummer en waar zijn ladingen zitten (hoofdstuk 10). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.c4.DetonatorData>> DETONATOR =
+            COMPONENTS.registerComponentType("detonator", builder -> builder
+                    .persistent(com.senne.starktech.c4.DetonatorData.CODEC)
+                    .networkSynchronized(com.senne.starktech.c4.DetonatorData.STREAM_CODEC));
+
     /** Van wie de bril is. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithOwner>> OWNER =
             COMPONENTS.registerComponentType("owner", builder -> builder

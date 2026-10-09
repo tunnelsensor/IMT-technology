@@ -186,6 +186,17 @@ public final class ModBlocks {
                     .noOcclusion()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
 
+    /** C4 met een antenne (hoofdstuk 10): wacht tot iemand op zijn detonator drukt. */
+    public static final DeferredBlock<com.senne.starktech.c4.C4Block> REMOTE_C4 = BLOCKS.registerBlock(
+            "remote_c4", properties -> new com.senne.starktech.c4.C4Block(com.senne.starktech.c4.C4Block.Kind.REMOTE, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.CLAY)
+                    .strength(-1.0f, 3_600_000.0f)
+                    .sound(SoundType.WOOL)
+                    .noCollission()
+                    .noOcclusion()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
+
     /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Stark OS-desktop. */
     public static final DeferredBlock<com.senne.starktech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
             "security_camera", com.senne.starktech.security.CameraBlock::new,

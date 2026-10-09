@@ -1812,6 +1812,28 @@ public final class VisualCheck {
             t.step(5, () -> com.senne.starktech.client.c4.C4TimerScreen.open(net.minecraft.world.InteractionHand.MAIN_HAND));
             t.shot(10, "x03_c4_timer_screen");
             t.close(5);
+            // De remote C4 (met antenne) en de detonator in je hand: rode bordjes boven je ladingen.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                net.minecraft.world.item.ItemStack detonator = new net.minecraft.world.item.ItemStack(ModItems.DETONATOR.get());
+                for (BlockPos support : new BlockPos[] {w.offset(1, 1, 6), w.offset(1, 3, 7)}) {
+                    BlockPos pos = support.east();
+                    level.setBlockAndUpdate(pos, ModBlocks.REMOTE_C4.get().defaultBlockState()
+                            .setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, Direction.EAST));
+                    if (level.getBlockEntity(pos) instanceof com.senne.starktech.c4.C4BlockEntity c4) {
+                        com.senne.starktech.c4.DetonatorItem.link(level, pos, c4, detonator);
+                    }
+                }
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, detonator);
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, w.getX() + 8.5, w.getY(), w.getZ() + 5.5, 90, 10);
+            t.shot(30, "x06_remote_c4_detonator");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                player.serverLevel().removeBlock(w.offset(2, 1, 6), false);
+                player.serverLevel().removeBlock(w.offset(2, 3, 7), false);
+            });
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
                 player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);

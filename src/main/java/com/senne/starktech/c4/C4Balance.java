@@ -42,6 +42,10 @@ public final class C4Balance {
     /** Andere C4 in de klap gaat zoveel ticks later ook af (een kettingreactie). */
     public static final int CHAIN_DELAY = 3;
 
+    // ---------------------------------------------------------------- De detonator
+    @Tunable(section = "c4", comment = "How far a detonator's signal reaches (blocks)")
+    public static int DETONATOR_RANGE = 128;
+
     // ---------------------------------------------------------------- De timer
     /** De kortste en langste tijd die je op een C4 (Timer) kunt zetten (seconden). */
     public static final int TIMER_MIN = 5;

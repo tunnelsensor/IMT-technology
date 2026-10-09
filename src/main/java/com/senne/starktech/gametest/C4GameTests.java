@@ -219,4 +219,83 @@ public final class C4GameTests {
         }
         helper.succeed();
     }
+
+    // ================================================================ Stap 6: de remote C4 en de detonator
+
+    /**
+     * Een speler met een detonator in zijn rugzak plakt een remote C4: die hoort meteen bij de
+     * detonator (en wacht). Op de knop drukken: hij gaat af, en de muur heeft een gat.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "c4")
+    public static void remote_c4_links_and_fires(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 8), "zone-outsider");
+        wall(helper, 8, Blocks.STONE);
+        ItemStack detonator = new ItemStack(ModItems.DETONATOR.get());
+        player.getInventory().setItem(5, detonator);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.REMOTE_C4.get()));
+        BlockPos support = new BlockPos(8, 4, 8);
+        BlockPos abs = helper.absolutePos(support);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.EAST, 0.5), Direction.EAST, abs, false);
+        player.getMainHandItem().useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit));
+        BlockPos stuck = support.east();
+        com.senne.starktech.c4.DetonatorData data = com.senne.starktech.c4.DetonatorItem.data(player.getInventory().getItem(5));
+        if (!(helper.getBlockEntity(stuck) instanceof C4BlockEntity c4) || data == null || !data.id().equals(c4.detonator())
+                || data.charges().size() != 1 || c4.explodeAt() >= 0) {
+            throw new GameTestAssertException("De remote C4 zou bij de detonator in de rugzak moeten horen (en wachten)");
+        }
+        player.setItemInHand(InteractionHand.MAIN_HAND, player.getInventory().getItem(5));
+        com.senne.starktech.c4.DetonatorItem.Fired fired = com.senne.starktech.c4.DetonatorItem.fire(level, player, player.getMainHandItem());
+        if (fired.fired() != 1) {
+            throw new GameTestAssertException("De detonator zou één lading moeten laten afgaan, niet " + fired);
+        }
+        helper.runAfterDelay(6, () -> {
+            helper.assertBlockNotPresent(ModBlocks.REMOTE_C4.get(), stuck);
+            helper.assertBlockNotPresent(Blocks.STONE, support);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Te ver weg gaat een lading niet af (en blijft hij bij de detonator); een lading van een andere
+     * detonator koppel je niet over; een losse lading koppel je met een rechtsklik met de detonator.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "c4")
+    public static void remote_c4_range_and_linking(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(16, 3, 8), "zone-outsider");
+        wall(helper, 8, Blocks.STONE);
+        BlockPos loose = stick(helper, ModBlocks.REMOTE_C4.get(), new BlockPos(8, 4, 8), Direction.EAST);
+        ItemStack mine = new ItemStack(ModItems.DETONATOR.get());
+        ItemStack other = new ItemStack(ModItems.DETONATOR.get());
+        BlockPos abs = helper.absolutePos(loose);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs), Direction.EAST, abs, false);
+        player.setItemInHand(InteractionHand.MAIN_HAND, mine);
+        level.getBlockState(abs).useItemOn(mine, level, player, InteractionHand.MAIN_HAND, hit);
+        C4BlockEntity c4 = (C4BlockEntity) helper.getBlockEntity(loose);
+        if (c4.detonator() == null || !c4.detonator().equals(com.senne.starktech.c4.DetonatorItem.data(mine).id())) {
+            throw new GameTestAssertException("Een rechtsklik met de detonator zou de losse lading moeten koppelen");
+        }
+        // Een andere detonator neemt hem niet over.
+        player.setItemInHand(InteractionHand.MAIN_HAND, other);
+        level.getBlockState(abs).useItemOn(other, level, player, InteractionHand.MAIN_HAND, hit);
+        if (!c4.detonator().equals(com.senne.starktech.c4.DetonatorItem.data(mine).id())) {
+            throw new GameTestAssertException("Een andere detonator zou de lading niet mogen overnemen");
+        }
+        // Te ver weg: niets.
+        int oldRange = com.senne.starktech.c4.C4Balance.DETONATOR_RANGE;
+        try {
+            com.senne.starktech.c4.C4Balance.DETONATOR_RANGE = 3;
+            player.setItemInHand(InteractionHand.MAIN_HAND, mine);
+            com.senne.starktech.c4.DetonatorItem.Fired fired = com.senne.starktech.c4.DetonatorItem.fire(level, player, mine);
+            if (fired.fired() != 0 || fired.outOfRange() != 1 || c4.explodeAt() >= 0
+                    || com.senne.starktech.c4.DetonatorItem.data(mine).charges().size() != 1) {
+                throw new GameTestAssertException("Een lading te ver weg zou niet mogen afgaan (en moet blijven): " + fired);
+            }
+        } finally {
+            com.senne.starktech.c4.C4Balance.DETONATOR_RANGE = oldRange;
+        }
+        helper.setBlock(loose, Blocks.AIR);
+        helper.succeed();
+    }
 }

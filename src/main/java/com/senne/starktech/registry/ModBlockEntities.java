@@ -68,7 +68,7 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.c4.C4BlockEntity>> C4 =
             BLOCK_ENTITIES.register("c4",
                     () -> new BlockEntityType<>(com.senne.starktech.c4.C4BlockEntity::new,
-                            java.util.Set.of(ModBlocks.TIMED_C4.get()), null));
+                            java.util.Set.of(ModBlocks.TIMED_C4.get(), ModBlocks.REMOTE_C4.get()), null));
 
     /** De bewakingscamera: zijn naam en hoe hij gedraaid en gekanteld is. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.CameraBlockEntity>> SECURITY_CAMERA =

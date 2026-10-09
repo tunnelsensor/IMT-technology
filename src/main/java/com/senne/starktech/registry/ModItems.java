@@ -186,6 +186,14 @@ public final class ModItems {
             properties -> new com.senne.starktech.c4.C4Item(ModBlocks.TIMED_C4.get(), properties),
             new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
 
+    /** C4 met een antenne (hoofdstuk 10): plak hem met een detonator in je rugzak, en hij hoort erbij. */
+    public static final DeferredItem<com.senne.starktech.c4.C4Item> REMOTE_C4 = ITEMS.registerItem("remote_c4",
+            properties -> new com.senne.starktech.c4.C4Item(ModBlocks.REMOTE_C4.get(), properties),
+            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
+    /** De detonator (hoofdstuk 10): rechtsklik = al zijn remote C4 binnen bereik gaan af. */
+    public static final DeferredItem<com.senne.starktech.c4.DetonatorItem> DETONATOR = ITEMS.registerItem("detonator",
+            com.senne.starktech.c4.DetonatorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(
             "stark_laptop", com.senne.starktech.security.StarkLaptopItem::new,

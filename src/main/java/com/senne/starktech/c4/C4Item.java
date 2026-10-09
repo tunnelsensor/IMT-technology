@@ -68,6 +68,21 @@ public class C4Item extends BlockItem {
             if (kind() == C4Block.Kind.TIMED) {
                 c4.detonateIn(timerSeconds(stack) * 20);
                 level.playSound(null, pos, ModSounds.C4_ARM.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
+            } else if (player != null && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                // Een remote C4 hoort meteen bij de detonator die je bij je hebt.
+                ItemStack detonator = DetonatorItem.find(player);
+                Component message;
+                if (detonator == null) {
+                    message = Component.translatable("item.starktech.remote_c4.no_detonator").withStyle(ChatFormatting.YELLOW);
+                } else if (DetonatorItem.link(serverLevel, pos, c4, detonator)) {
+                    level.playSound(null, pos, ModSounds.C4_ARM.get(), SoundSource.BLOCKS, 0.8f, 0.7f);
+                    message = Component.translatable("item.starktech.remote_c4.linked",
+                            DetonatorItem.ensure(detonator).charges().size()).withStyle(ChatFormatting.RED);
+                } else {
+                    message = Component.translatable("item.starktech.remote_c4.full", DetonatorData.MAX_CHARGES)
+                            .withStyle(ChatFormatting.YELLOW);
+                }
+                player.displayClientMessage(message, true);
             }
         }
         return changed;
@@ -78,6 +93,8 @@ public class C4Item extends BlockItem {
         if (kind() == C4Block.Kind.TIMED) {
             tooltip.add(Component.translatable("tooltip.starktech.c4.timer", clock(timerSeconds(stack))).withStyle(ChatFormatting.RED));
             tooltip.add(Component.translatable("tooltip.starktech.c4.set_timer").withStyle(ChatFormatting.GRAY));
+        } else {
+            tooltip.add(Component.translatable("tooltip.starktech.c4.remote").withStyle(ChatFormatting.RED));
         }
         tooltip.add(Component.translatable("tooltip.starktech.c4.place").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.c4.defuse").withStyle(ChatFormatting.DARK_GRAY));
