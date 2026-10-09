@@ -58,6 +58,15 @@ public final class ModDataComponents {
                     .persistent(com.senne.starktech.c4.DetonatorData.CODEC)
                     .networkSynchronized(com.senne.starktech.c4.DetonatorData.STREAM_CODEC));
 
+    /**
+     * Het etiket op een weggehakte beveiligingskern: onder welk nummer de server zijn instellingen
+     * bewaart, en van wie hij is (zie PackedCore). Een nieuwe kern heeft dit niet.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.security.PackedCore>> PACKED_CORE =
+            COMPONENTS.registerComponentType("packed_core", builder -> builder
+                    .persistent(com.senne.starktech.security.PackedCore.CODEC)
+                    .networkSynchronized(com.senne.starktech.security.PackedCore.STREAM_CODEC));
+
     /** Van welk blok een gebarsten blok of poeder komt (hoofdstuk 11, zie FromBlockItem). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.world.level.block.Block>> FROM_BLOCK =
             COMPONENTS.registerComponentType("from_block", builder -> builder

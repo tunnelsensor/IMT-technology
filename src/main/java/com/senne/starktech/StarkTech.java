@@ -103,6 +103,7 @@ public class StarkTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.ZoneGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.C4GameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.CrackGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.CoreConfigGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 

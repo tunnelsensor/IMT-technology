@@ -140,8 +140,10 @@ public final class ModItems {
             ModBlocks.SECURITY_TURRET, new Item.Properties().rarity(Rarity.RARE));
     public static final DeferredItem<BlockItem> SECURITY_CAMERA = ITEMS.registerSimpleBlockItem("security_camera",
             ModBlocks.SECURITY_CAMERA, new Item.Properties().rarity(Rarity.UNCOMMON));
-    public static final DeferredItem<BlockItem> SECURITY_CORE = ITEMS.registerSimpleBlockItem("security_core",
-            ModBlocks.SECURITY_CORE, new Item.Properties().rarity(Rarity.EPIC));
+    /** De beveiligingskern: weggehakt houdt hij al zijn instellingen (zie SecurityCoreItem). */
+    public static final DeferredItem<com.senne.starktech.security.SecurityCoreItem> SECURITY_CORE = ITEMS.registerItem("security_core",
+            properties -> new com.senne.starktech.security.SecurityCoreItem(ModBlocks.SECURITY_CORE.get(), properties),
+            new Item.Properties().rarity(Rarity.EPIC));
     // ---------------------------------------------------------------- De server (7 oktober)
     public static final DeferredItem<BlockItem> SERVER_RACK = ITEMS.registerSimpleBlockItem("server_rack",
             ModBlocks.SERVER_RACK, new Item.Properties().rarity(Rarity.UNCOMMON));

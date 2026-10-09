@@ -1,14 +1,18 @@
 package com.senne.starktech.security;
 
 import com.mojang.serialization.MapCodec;
+import com.senne.starktech.registry.ModDataComponents;
+import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -26,6 +30,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,12 +89,34 @@ public class SecurityCoreBlock extends BaseEntityBlock {
     /**
      * Zelf neergezet (jouw wens, 28 september: je eigen beveiliging bouwen): de kern is van jou,
      * krijgt meteen een systeem (IP, mappen) en vraagt je een wachtwoord te zetten.
+     *
+     * Was het een weggehakte kern (met een etiket, zie PackedCore), dan krijgt hij al zijn
+     * instellingen terug, en blijft hij van wie hij was (zie SecurityCoreBlockEntity.unpack).
      */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (placer instanceof ServerPlayer player && level instanceof ServerLevel serverLevel
-                && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
+        if (!(level instanceof ServerLevel serverLevel) || !(level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core)) {
+            return;
+        }
+        PackedCore packed = stack.get(ModDataComponents.PACKED_CORE.get());
+        if (packed != null) {
+            // Het etiket gaat eraf: de instellingen staan nu in de kern (in creative houd je dus een gewone kern over).
+            stack.remove(ModDataComponents.PACKED_CORE.get());
+            CompoundTag config = PackedCores.get(serverLevel).take(packed.id());
+            if (config != null) {
+                String placedBy = placer instanceof Player who ? who.getGameProfile().getName() : "?";
+                core.unpack(serverLevel, config, placedBy);
+                if (placer instanceof ServerPlayer player) {
+                    boolean yours = player.getUUID().equals(core.ownerId());
+                    player.sendSystemMessage(Component.translatable(yours ? "security.starktech.msg.core_restored"
+                                    : "security.starktech.msg.core_not_yours", yours ? core.hostname() : core.ownerName(), core.ip())
+                            .withStyle(yours ? ChatFormatting.AQUA : ChatFormatting.GOLD));
+                }
+                return;
+            }
+        }
+        if (placer instanceof ServerPlayer player) {
             core.setOwner(player);
             core.ensureSystem(serverLevel);
             core.logEvent(com.senne.starktech.security.os.EventLog.Type.OWNER,
@@ -130,6 +158,48 @@ public class SecurityCoreBlock extends BaseEntityBlock {
             com.senne.starktech.security.os.StarkOs.open(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    /**
+     * Wat er uitvalt als de kern kapotgaat (weggehakt of opgeblazen): de kern, met alles erin (jouw
+     * wens, 9 oktober: "zorg dat al de config bewaard wordt in de security block, zodat als je die
+     * hakt niet alles weg is"). De loot table geeft de kern; hier krijgt hij zijn etiket (zie pack).
+     */
+    @Override
+    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
+        List<ItemStack> drops = super.getDrops(state, params);
+        if (params.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof SecurityCoreBlockEntity core) {
+            for (ItemStack drop : drops) {
+                if (drop.is(asItem())) {
+                    PackedCore packed = core.pack(params.getLevel());
+                    if (packed != null) {
+                        drop.set(ModDataComponents.PACKED_CORE.get(), packed);
+                    }
+                    break;
+                }
+            }
+        }
+        return drops;
+    }
+
+    /**
+     * In creative valt er normaal niets uit als je een blok breekt. Heeft de kern instellingen, dan
+     * toch (net als een volle shulkerdoos): anders was alles met één klik weg.
+     */
+    @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (level instanceof ServerLevel serverLevel && player.isCreative()
+                && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
+            PackedCore packed = core.pack(serverLevel);
+            if (packed != null) {
+                ItemStack stack = new ItemStack(this);
+                stack.set(ModDataComponents.PACKED_CORE.get(), packed);
+                ItemEntity drop = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                drop.setDefaultPickUpDelay();
+                level.addFreshEntity(drop);
+            }
+        }
+        return super.playerWillDestroy(level, pos, state, player);
     }
 
     /** Afgebroken (niet alleen een ander lampje): het IP van de kern is weer vrij. */

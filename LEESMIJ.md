@@ -562,6 +562,15 @@ border** (of een eigen toets). De oranje doos van de Zone Marker zie je ook zond
 stroom staat de zone uit (E.D.I.T.H. waarschuwt je). Zet je generatoren en kabels dus **in** je zone,
 anders kan een inbreker ze van buitenaf kapotmaken. Wie je kern hackt, krijgt ook je zone.
 
+**Je kern weghakken.** Hak je je beveiligingskern weg (met een diamanten houweel), dan neemt hij
+**alles** mee: wachtwoord, bestanden en notities, logboek, keycards, diagrammen, vertrouwde spelers,
+de knoppen van de desktop, zijn zone en de backups die op dit datacenter stonden. In de tooltip zie
+je welke kern het is. Zet hem terug en alles is er weer, met hetzelfde IP (dus je keycards werken nog)
+als dat nog vrij is. Op een andere plek blijft van de zone over wat in het nieuwe gebied past. Ook in
+creative valt hij eruit. Een kern die een ander weghaalt of opblaast, blijft van jou en houdt jouw
+wachtwoord: de dief moet hem nog steeds hacken. De Stark Tower die nog van niemand is, valt als een
+nieuwe kern.
+
 **C4.** Je plakt C4 op een vloer, muur of plafond, ook in de zone van een ander.
 - **C4 (Timer)** (TNT, twee klei, een slijmbal, redstone en een klok): rechtsklik in de lucht om de
   tijd te kiezen (5 seconden tot 2 minuten). Na het plakken telt hij af op zijn schermpje en piept hij

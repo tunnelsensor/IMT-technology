@@ -808,6 +808,8 @@ public final class StarkTechGameTests {
         if (com.senne.starktech.security.SecurityCores.overlaps(level, helper.absolutePos(first).offset(500, 0, 0))) {
             throw new GameTestAssertException("Een kern ver weg zou ook te dichtbij zijn");
         }
+        // Opruimen: de tests van CoreConfigGameTests zetten later ook kernen op deze hoogte neer.
+        helper.setBlock(first, net.minecraft.world.level.block.Blocks.AIR);
         helper.succeed();
     }
 

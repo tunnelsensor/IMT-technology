@@ -386,11 +386,100 @@ public class SecurityCoreBlockEntity extends BlockEntity {
 
     /** De kern is afgebroken: zijn IP is weer vrij. */
     public void releaseSystem(ServerLevel level) {
+        // Eerst onthouden wat er in de wereld bij deze kern hoorde: valt hij hierna nog als item, dan
+        // gaat dat mee (zie pack). Bij hakken komt de kern namelijk eerst weg, en valt het item pas daarna.
+        worldSnapshot = worldData(level);
         StarkNetworkData.get(level).release(GlobalPos.of(level.dimension(), worldPosition));
         // Het datacenter is weg, en de backups die erop stonden ook.
         com.senne.starktech.logic.Datacenters.get(level).forget(GlobalPos.of(level.dimension(), worldPosition));
         // En de zone: zonder kern beschermt niets hem meer.
         ZoneData.get(level).forget(GlobalPos.of(level.dimension(), worldPosition));
+    }
+
+    // ================================================================ Weghakken en weer neerzetten (9 oktober)
+
+    /**
+     * Wat er buiten de kern in de wereld bij hem hoorde (de zone en de backups op dit datacenter),
+     * vlak voordat de wereld het vergat (zie releaseSystem). Niet bewaard.
+     */
+    private @Nullable CompoundTag worldSnapshot;
+
+    /**
+     * Valt er iets in te pakken? Een kern van niemand (de Stark Tower van Tony, nog niet gehackt) niet:
+     * die valt als een nieuwe kern, zoals altijd.
+     */
+    public boolean canPack() {
+        return ownerId != null && hasSystem();
+    }
+
+    /**
+     * Pakt alles van deze kern in, voor het item dat uitvalt (jouw wens, 9 oktober: "zorg dat al de
+     * config bewaard wordt in de security block, zodat als je die hakt niet alles weg is"). De
+     * instellingen bewaart de server (PackedCores); het item krijgt het etiket dat we teruggeven.
+     * Null als er niets in te pakken is.
+     */
+    public @Nullable PackedCore pack(ServerLevel level) {
+        if (!canPack()) {
+            return null;
+        }
+        CompoundTag own = new CompoundTag();
+        saveConfig(own);
+        CompoundTag config = new CompoundTag();
+        config.put("Core", own);
+        config.put("World", worldSnapshot != null ? worldSnapshot : worldData(level));
+        return new PackedCore(PackedCores.get(level).store(config), ownerName, hostname, ip);
+    }
+
+    /** De zone en de backups op dit datacenter: die staan niet in de kern zelf, maar in de wereld (ZoneData, Datacenters). */
+    private CompoundTag worldData(ServerLevel level) {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("Dim", level.dimension().location().toString());
+        net.minecraft.nbt.ListTag boxes = new net.minecraft.nbt.ListTag();
+        for (ZoneBox box : zoneBoxes()) {
+            boxes.add(box.save());
+        }
+        tag.put("Zone", boxes);
+        tag.put("Backups", com.senne.starktech.logic.Datacenters.get(level)
+                .saveStoredAt(GlobalPos.of(level.dimension(), worldPosition)));
+        return tag;
+    }
+
+    /**
+     * Een ingepakte kern staat weer: alles komt terug zoals het was (zie {@link #pack}).
+     *
+     * <ul>
+     *   <li>De eigenaar blijft de eigenaar, ook als iemand anders hem neerzet: met de kern gaan ook
+     *       zijn wachtwoord en bestanden mee, dus een gestolen kern moet je nog steeds hacken.</li>
+     *   <li>Het IP krijgt hij terug als het nog vrij is (keycards horen bij het IP).</li>
+     *   <li>De zone krijgt hij terug voor zover die in het gebied van de nieuwe plek past (staat hij
+     *       weer op dezelfde plek, dan is het dezelfde zone).</li>
+     *   <li>De backups die op dit datacenter stonden, staan er weer op.</li>
+     * </ul>
+     */
+    public void unpack(ServerLevel level, CompoundTag config, String placedBy) {
+        loadConfig(config.getCompound("Core"));
+        filled = false; // zijn drones zijn weg: de eerste komen weer snel
+        nextDrone = 0;
+        level.setBlock(worldPosition, getBlockState().setValue(SecurityCoreBlock.CLAIMED, ownerId != null), Block.UPDATE_ALL);
+        ensureSystem(level);
+        syncZone();
+        CompoundTag world = config.getCompound("World");
+        if (world.getString("Dim").equals(level.dimension().location().toString())) {
+            List<ZoneBox> boxes = new java.util.ArrayList<>();
+            for (Tag element : world.getList("Zone", Tag.TAG_INT_ARRAY)) {
+                ZoneBox box = ZoneBox.load(((net.minecraft.nbt.IntArrayTag) element).getAsIntArray());
+                if (box != null) {
+                    boxes.add(box);
+                }
+            }
+            if (!boxes.isEmpty()) {
+                setZoneBoxes(boxes);
+            }
+        }
+        com.senne.starktech.logic.Datacenters.get(level).adopt(GlobalPos.of(level.dimension(), worldPosition),
+                world.getList("Backups", Tag.TAG_COMPOUND));
+        logEvent(EventLog.Type.OWNER, "Core re-installed by " + placedBy + " at "
+                + worldPosition.getX() + " " + worldPosition.getY() + " " + worldPosition.getZ() + ", all settings kept");
     }
 
     // ================================================================ De zone (hoofdstuk 10)
@@ -587,12 +676,17 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        saveConfig(tag);
+        tag.putBoolean("Filled", filled);
+        tag.putLong("NextDrone", nextDrone);
+    }
+
+    /** Alles wat de kern onthoudt behalve zijn drones: dit gaat ook mee als je hem weghakt (zie pack). */
+    private void saveConfig(CompoundTag tag) {
         if (ownerId != null) {
             tag.putUUID("Owner", ownerId);
         }
         tag.putString("OwnerName", ownerName);
-        tag.putBoolean("Filled", filled);
-        tag.putLong("NextDrone", nextDrone);
         // Het systeem
         tag.putString("Ip", ip);
         tag.putInt("SshPort", sshPort);
@@ -625,10 +719,15 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
-        ownerName = tag.getString("OwnerName");
+        loadConfig(tag);
         filled = tag.getBoolean("Filled");
         nextDrone = tag.getLong("NextDrone");
+    }
+
+    /** Terug uit {@link #saveConfig}. */
+    private void loadConfig(CompoundTag tag) {
+        ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        ownerName = tag.getString("OwnerName");
         // Een kern uit een oude wereld heeft dit allemaal nog niet: dan blijft het leeg, en maakt
         // ensureSystem het bij de eerste tick.
         ip = tag.getString("Ip");

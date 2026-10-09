@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 184 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 188 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1523,6 +1523,33 @@ De stappen, één per commit:
       basis liggen kan een inbreker nu doorknippen: verstop ze in een muur of vloer. De tests van de
       emmers en de kabels zijn vervangen door "emmer alleen op de grond" en "vuur, bijl, schoffel en
       kabels mogen".
+- [x] **12. De kern houdt alles als je hem weghakt** (jouw wens, 9 oktober: "kun je zorgen dat al de
+      config bewaard wordt in de security block zodat als je die hakt niet alles weg is")
+      Hak je een beveiligingskern weg (of blaast C4 hem op), dan valt hij eruit met **alles** erin: de
+      eigenaar, het IP, de SSH-poort, de naam, het wachtwoord, de bestanden en notities, het logboek, de
+      keycards en diagrammen, de instellingen van het datacenter (zoals waar de backups heen gaan), de
+      vertrouwde spelers en de knoppen van Access. En ook wat niet in de kern zelf stond maar in de
+      wereld: de kubussen van zijn **zone** en de **backups** die op dit datacenter stonden. Zet je hem
+      weer neer, dan is alles terug (`SecurityCoreBlockEntity.pack` en `unpack`): het IP ook, als het nog
+      vrij is (keycards horen bij het IP), en de zone voor zover die in het gebied van de nieuwe plek
+      past (op dezelfde plek: dezelfde zone). Hij zegt "Security core vault is back online at 10.x.y.z,
+      with everything it had...". In de tooltip zie je welke kern het is ("vault (10.x.y.z)", "Owner:
+      ..."). **Waarom niet alles op het item zelf?** Wat op een item staat, gaat ook naar het spel van
+      wie het vasthoudt, en het wachtwoord mag nooit naar iemands spel (zie `SystemPassword`). Het item
+      krijgt dus alleen een etiket met een nummer (`security/PackedCore`, de data component
+      `starktech:packed_core`); de server bewaart de rest (`security/PackedCores`, in
+      `data/starktech_packed_cores.dat`). Eén kern, één keer neerzetten: daarna is het etiket eraf.
+      **Mijn keuzes** (zeg het als je iets anders wil): (1) **de eigenaar blijft de eigenaar**, ook als een
+      ander de kern wegneemt en neerzet. Met de kern gaan zijn wachtwoord en bestanden mee, dus een
+      gestolen kern moet je nog steeds hacken; anders was weghakken en neerzetten een makkelijke manier
+      om het hacken over te slaan. Wie hem neerzet krijgt "This security core still belongs to ...", en
+      in het logboek staat wie hem waar neerzette (de eigenaar kan dat via SSH lezen). (2) In
+      **creative** valt een kern met instellingen er toch uit (zoals een volle shulkerdoos), anders was
+      alles met één klik weg. (3) Een kern **van niemand** (de Stark Tower, nog niet gehackt) valt als
+      een nieuwe kern, zoals altijd. (4) Niet mee: de drones (die komen vanzelf terug) en wie de
+      beveiliging even opjaagt na een valstrik. Vier nieuwe tests (`gametest/CoreConfigGameTests.java`):
+      weghakken en terugzetten (alles is er weer, en zolang hij als item rondgaat zijn zone, IP en
+      backup uit de wereld), een dief, opblazen en een kern van niemand, en creative.
 
 ### 11. Barsten herstellen (9 oktober)
 

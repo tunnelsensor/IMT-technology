@@ -205,6 +205,37 @@ public final class Datacenters extends SavedData {
         return removed;
     }
 
+    /**
+     * De backups op dit datacenter, om mee te nemen als de kern weggehakt wordt (zie
+     * SecurityCoreBlockEntity.pack). Ze blijven hier staan tot {@link #forget}.
+     */
+    public ListTag saveStoredAt(GlobalPos target) {
+        ListTag list = new ListTag();
+        for (Backup backup : backups) {
+            if (backup.target().equals(target)) {
+                list.add(saveBackup(backup));
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Een weggehakte kern staat weer ergens (misschien op een andere plek): de backups die hij
+     * meenam (zie {@link #saveStoredAt}) staan er weer op, met nieuwe nummers.
+     */
+    public void adopt(GlobalPos target, ListTag saved) {
+        for (Tag element : saved) {
+            Backup backup = loadBackup((CompoundTag) element);
+            if (backup != null) {
+                backups.add(new Backup(nextId++, target, backup.source(), backup.sourceIp(), backup.sourceHost(),
+                        backup.owner(), backup.time(), backup.size(), backup.auto(), backup.data()));
+            }
+        }
+        if (!saved.isEmpty()) {
+            setDirty();
+        }
+    }
+
     /** Alle backups die op dit datacenter stonden zijn weg (een SSD verbrandde). Geeft terug hoeveel. */
     public int wipeStoredAt(GlobalPos target) {
         int before = backups.size();
@@ -261,23 +292,39 @@ public final class Datacenters extends SavedData {
         tag.put("Datacenters", list);
         ListTag backupList = new ListTag();
         for (Backup backup : backups) {
-            CompoundTag item = new CompoundTag();
-            item.putInt("Id", backup.id());
-            item.putString("Target", key(backup.target()));
-            item.putString("Source", key(backup.source()));
-            item.putString("Ip", backup.sourceIp());
-            item.putString("Host", backup.sourceHost());
-            if (backup.owner() != null) {
-                item.putUUID("Owner", backup.owner());
-            }
-            item.putLong("Time", backup.time());
-            item.putInt("Size", backup.size());
-            item.putBoolean("Auto", backup.auto());
-            item.put("Data", backup.data());
-            backupList.add(item);
+            backupList.add(saveBackup(backup));
         }
         tag.put("Backups", backupList);
         return tag;
+    }
+
+    private static CompoundTag saveBackup(Backup backup) {
+        CompoundTag item = new CompoundTag();
+        item.putInt("Id", backup.id());
+        item.putString("Target", key(backup.target()));
+        item.putString("Source", key(backup.source()));
+        item.putString("Ip", backup.sourceIp());
+        item.putString("Host", backup.sourceHost());
+        if (backup.owner() != null) {
+            item.putUUID("Owner", backup.owner());
+        }
+        item.putLong("Time", backup.time());
+        item.putInt("Size", backup.size());
+        item.putBoolean("Auto", backup.auto());
+        item.put("Data", backup.data());
+        return item;
+    }
+
+    /** Een backup terug uit {@link #saveBackup} (null als de plekken niet kloppen). */
+    private static @Nullable Backup loadBackup(CompoundTag item) {
+        GlobalPos target = fromKey(item.getString("Target"));
+        GlobalPos source = fromKey(item.getString("Source"));
+        if (target == null || source == null) {
+            return null;
+        }
+        return new Backup(item.getInt("Id"), target, source, item.getString("Ip"), item.getString("Host"),
+                item.hasUUID("Owner") ? item.getUUID("Owner") : null, item.getLong("Time"), item.getInt("Size"),
+                item.getBoolean("Auto"), item.getCompound("Data"));
     }
 
     public static Datacenters load(CompoundTag tag, HolderLookup.Provider registries) {
@@ -292,16 +339,11 @@ public final class Datacenters extends SavedData {
             }
         }
         for (Tag element : tag.getList("Backups", Tag.TAG_COMPOUND)) {
-            CompoundTag item = (CompoundTag) element;
-            GlobalPos target = fromKey(item.getString("Target"));
-            GlobalPos source = fromKey(item.getString("Source"));
-            if (target == null || source == null) {
-                continue;
+            Backup backup = loadBackup((CompoundTag) element);
+            if (backup != null) {
+                data.backups.add(backup);
+                data.nextId = Math.max(data.nextId, backup.id() + 1);
             }
-            data.backups.add(new Backup(item.getInt("Id"), target, source, item.getString("Ip"), item.getString("Host"),
-                    item.hasUUID("Owner") ? item.getUUID("Owner") : null, item.getLong("Time"), item.getInt("Size"),
-                    item.getBoolean("Auto"), item.getCompound("Data")));
-            data.nextId = Math.max(data.nextId, item.getInt("Id") + 1);
         }
         return data;
     }
