@@ -930,6 +930,90 @@ def repair_paste_item():
     save(im, "item/repair_paste.png")
 
 
+def crusher_textures():
+    """
+    De Crusher (hoofdstuk 11): een metalen kast met twee maalwielen achter een venster in de
+    voorkant, een trechter bovenop en ventilatiesleuven opzij (de zij- en bovenkant deelt hij straks
+    met de Compactor). Werkt hij, dan staan de tanden van de wielen anders (ze draaien), ligt er stof
+    onderin het venster en brandt het lampje blauw.
+    """
+    side = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    px(side, [(2, 2), (13, 2), (2, 13), (13, 13)], METAL_3)
+    for y in (5, 8, 11):
+        d.line([4, y, 11, y], fill=METAL_DARK)
+        d.line([4, y + 1, 11, y + 1], fill=METAL_3)
+    d.line([1, 14, 14, 14], fill=CYAN_DIM)
+    save(side, "block/crack_machine_side.png")
+
+    top = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    px(top, [(1, 1), (14, 1), (1, 14), (14, 14)], METAL_3)
+    d.rectangle([3, 3, 12, 12], fill=METAL_3)
+    d.rectangle([4, 4, 11, 11], fill=METAL_DARK)
+    d.rectangle([6, 6, 9, 9], fill=(16, 18, 22, 255))
+    save(top, "block/crack_machine_top.png")
+
+    rim = (136, 140, 148, 255)
+    face = (98, 102, 110, 255)
+    hub = (58, 62, 68, 255)
+    window = (24, 26, 30, 255)
+    dust = (196, 192, 182, 255)
+    for name, on in (("crusher_front", False), ("crusher_front_on", True)):
+        im = img(16, 16, METAL_2)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        d.rectangle([2, 2, 13, 10], fill=window, outline=METAL_3)
+        # Twee wielen van 5 bij 5 die in elkaar grijpen (x 3-7 en 8-12, y 4-8).
+        for x0 in (3, 8):
+            d.rectangle([x0 + 1, 4, x0 + 3, 8], fill=rim)
+            d.rectangle([x0, 5, x0 + 4, 7], fill=rim)
+            d.rectangle([x0 + 1, 5, x0 + 3, 7], fill=face)
+            px(im, [(x0 + 2, 6)], hub)
+            # De tanden: stil recht boven en onder, draaiend schuin.
+            teeth = [(x0 + 1, 3), (x0 + 3, 9)] if on else [(x0 + 2, 3), (x0 + 2, 9)]
+            px(im, teeth, rim)
+        if on:
+            px(im, [(4, 9), (6, 9), (9, 9), (11, 9), (7, 3)], dust)
+        # Onderaan een waarschuwingsstreep en het lampje.
+        for x in range(1, 15):
+            px(im, [(x, 13), (x, 14)], (220, 170, 40, 255) if (x // 2) % 2 == 0 else METAL_DARK)
+        d.rectangle([11, 11, 13, 11], fill=CYAN if on else (90, 30, 26, 255))
+        save(im, "block/%s.png" % name)
+
+
+def block_powder_item():
+    """
+    Poeder (hoofdstuk 11): een hoopje fijn poeder met wat losse korrels. Lichtgrijs, want het spel
+    kleurt het in met de kleur van het blok waar het van komt (zie FromBlockItem.color).
+    """
+    import random
+    r = random.Random(11)
+    light = (240, 240, 240, 255)
+    mid = (204, 204, 204, 255)
+    dark = (160, 160, 160, 255)
+    edge = (112, 112, 112, 255)
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.ellipse([1, 6, 14, 22], fill=mid, outline=edge)
+    d.rectangle([0, 15, 15, 15], fill=CLEAR)
+    d.line([2, 14, 13, 14], fill=edge)
+    # Licht van links boven, schaduw rechts.
+    for (x, y) in [(5, 8), (6, 8), (4, 9), (5, 9), (3, 11), (4, 10)]:
+        px(im, [(x, y)], light)
+    for (x, y) in [(11, 9), (12, 10), (12, 11), (11, 12), (12, 12), (10, 13), (11, 13)]:
+        px(im, [(x, y)], dark)
+    for _ in range(10):
+        x, y = r.randrange(3, 13), r.randrange(9, 14)
+        if im.getpixel((x, y))[3]:
+            px(im, [(x, y)], dark if r.random() < 0.5 else light)
+    # Losse korrels ernaast.
+    px(im, [(1, 13), (14, 12), (13, 13), (2, 12)], dark)
+    save(im, "item/block_powder.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -2731,6 +2815,8 @@ if __name__ == "__main__":
     c4_textures()
     remote_c4_items()
     repair_paste_item()
+    crusher_textures()
+    block_powder_item()
     relay_textures()
     shield_textures()
     rayshield_walls()

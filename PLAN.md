@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 177 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 182 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 83 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1573,7 +1573,33 @@ De stappen, één per commit:
       plamuren haalt er telkens 15% af), tot één C4 genoeg is. Vijf nieuwe tests
       (`gametest/CrackGameTests.java`): barsten blijven en worden bewaard, plamuren en hoeveel zwakker,
       zonder barsten gebeurt er niets, een nieuw blok is weer sterk, en plamuren in een zone.
-- [ ] **2. Gebarsten blokken en de Crusher**
+- [x] **2. Gebarsten blokken en de Crusher**
+      Hak je een blok met barsten (of een geplamuurd blok) weg, dan valt er een **Cracked ...** uit
+      (`repair/CrackDrops`): valt het blok normaal zelf, dan evenveel gebarsten blokken (een dubbele
+      plaat geeft er twee); valt er iets anders (steen geeft keien), dan één gebarsten blok van het blok
+      zelf; valt er niets (verkeerd gereedschap, glas zonder zijdezacht), dan ook niets. Wat C4 of TNT
+      kapotmaakt valt eruit zoals altijd, en blokken met iets erin (kisten, shulkerdozen...) en de vrije
+      blokken van een zone (ladders, fakkels...) ook. Het gebarsten blok en het poeder onthouden van welk
+      blok ze komen (de data component `starktech:from_block`) en heten daarnaar ("Cracked Stone Bricks",
+      "Obsidian Powder"). Een gebarsten blok ziet eruit als het blok zelf met de barsten erover die je
+      ook ziet als je aan een blok hakt (`client/repair/CrackedBlockRenderer`), in je hand, op de grond
+      en in je inventaris; het poeder is een hoopje in de kleur van het blok (zoals op een kaart; heel
+      donker wordt wat lichter, anders zie je het niet). **De Crusher** (ijzer, een slijpsteen, een
+      Stark-chip en een zuiger): een metalen kast met twee maalwielen achter een venster, die op stroom
+      (via kabels of direct tegen een generator) van een gebarsten blok poeder maakt: 5 seconden per
+      blok, 4 stroom per tick (`machineTicks` en `machinePower` in de config onder `[repair]`). Rechtsklik
+      opent zijn scherm: het vakje erin (leeg: een vaag voorbeeld van wat erin hoort), een blauwe pijl die
+      vol loopt, het vakje eruit, en onderaan wat hij doet ("Crushing...", "No power: connect it with Stark
+      cables.", "Output full: take it out.", "Put a cracked block in."). Valt de stroom weg of zit het
+      vakje eruit vol, dan wacht hij (hij vergeet niet hoe ver hij was). **Mijn keuzes**: trechters doen
+      er van boven en opzij iets in en halen het er van onder uit (zoals bij een oven, ook voor buizen van
+      andere mods); er gaat alleen in wat hij kan verwerken. Terwijl hij werkt draaien zijn wielen, brandt
+      zijn lampje blauw, komt er wat stof van het blok bovenuit en hoor je heel zacht een slijpsteen (elke
+      seconde), en een korte knars als er een poeder klaar is. Een comparator leest hoe vol hij zit. Vijf
+      nieuwe tests: wat er uit een gebarsten, gewoon en geplamuurd blok valt, wat er uit een opgeblazen
+      blok valt, poeder maken (en de stroom die het kost), niets zonder stroom, en trechters. Screenshots:
+      `-Ponly=repair` (`r01_crusher_working`, `r02_crusher_screen`, `r03_cracked_in_hand`). Op obsidiaan
+      zie je de barsten ook op het voorwerp bijna niet (net als in de wereld).
 - [ ] **3. De Compactor**
 - [ ] **4. Showcase, screenshots en LEESMIJ**
 

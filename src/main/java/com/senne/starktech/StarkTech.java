@@ -86,6 +86,12 @@ public class StarkTech {
         modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
                 event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                         ModBlockEntities.TURRET.get(), (turret, side) -> turret.kind().usesAmmo() ? turret.ammo() : null));
+        // Trechters en buizen bij de Crusher: van boven en opzij erin, van onder eruit (hoofdstuk 11).
+        modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
+                event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
+                        ModBlockEntities.CRACK_MACHINE.get(), (machine, side) -> side == null
+                                ? new net.neoforged.neoforge.items.wrapper.InvWrapper(machine)
+                                : new net.neoforged.neoforge.items.wrapper.SidedInvWrapper(machine, side)));
 
         // Netwerkberichten tussen speler en server.
         modEventBus.addListener(ModNetwork::register);
@@ -185,6 +191,11 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerTick);
         // De barsten van een klap blijven zichtbaar zolang ze er zijn (tot je ze herstelt).
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.Cracks::onServerTick);
+        // Een blok met barsten weghakken geeft een gebarsten blok. Als laatste: pas als niemand het
+        // breken tegenhield (een zone bijvoorbeeld).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.senne.starktech.repair.CrackDrops::onBreak);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.repair.CrackDrops::onDrops);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.repair.CrackDrops::onServerTick);
         // Het alarm van C4: het verslag als je weer inlogt, en de hint "alleen met een schaar".
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Alarm::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Alarm::onServerTick);

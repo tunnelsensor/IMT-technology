@@ -58,6 +58,12 @@ public final class ModDataComponents {
                     .persistent(com.senne.starktech.c4.DetonatorData.CODEC)
                     .networkSynchronized(com.senne.starktech.c4.DetonatorData.STREAM_CODEC));
 
+    /** Van welk blok een gebarsten blok of poeder komt (hoofdstuk 11, zie FromBlockItem). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.world.level.block.Block>> FROM_BLOCK =
+            COMPONENTS.registerComponentType("from_block", builder -> builder
+                    .persistent(net.minecraft.core.registries.BuiltInRegistries.BLOCK.byNameCodec())
+                    .networkSynchronized(ByteBufCodecs.registry(Registries.BLOCK)));
+
     /** Van wie de bril is. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithOwner>> OWNER =
             COMPONENTS.registerComponentType("owner", builder -> builder

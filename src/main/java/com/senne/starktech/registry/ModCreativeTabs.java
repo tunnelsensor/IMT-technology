@@ -68,6 +68,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.REMOTE_C4.get());
                 output.accept(ModItems.DETONATOR.get());
                 output.accept(ModItems.REPAIR_PASTE.get());
+                output.accept(ModItems.CRUSHER.get());
                 output.accept(ModItems.SECURITY_CAMERA.get());
                 output.accept(ModItems.SERVER_RACK.get());
                 output.accept(ModItems.SERVER_CPU.get());

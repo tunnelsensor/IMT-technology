@@ -70,6 +70,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.starktech.c4.C4BlockEntity::new,
                             java.util.Set.of(ModBlocks.TIMED_C4.get(), ModBlocks.REMOTE_C4.get()), null));
 
+    /** De binnenkant van een Crusher (hoofdstuk 11): zijn twee vakjes en hoe ver hij is. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.repair.CrackMachineBlockEntity>> CRACK_MACHINE =
+            BLOCK_ENTITIES.register("crack_machine",
+                    () -> new BlockEntityType<>(com.senne.starktech.repair.CrackMachineBlockEntity::new,
+                            java.util.Set.of(ModBlocks.CRUSHER.get()), null));
+
     /** De bewakingscamera: zijn naam en hoe hij gedraaid en gekanteld is. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.CameraBlockEntity>> SECURITY_CAMERA =
             BLOCK_ENTITIES.register("security_camera",

@@ -19,6 +19,7 @@
     "starktech:security_camera",
     "starktech:server_rack",
     "starktech:keycard_reader",
-    "starktech:code_panel"
+    "starktech:code_panel",
+    "starktech:crusher"
   ]
 }

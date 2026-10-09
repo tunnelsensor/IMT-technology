@@ -49,6 +49,9 @@ public class StarkTechClient {
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(RepulsorHand::addLayers);
         modEventBus.addListener(StarkSuitModel::registerExtensions);
+        // Een gebarsten blok ziet eruit als zijn blok met barsten; poeder krijgt de kleur van zijn blok.
+        modEventBus.addListener(com.senne.starktech.client.repair.CrackedBlockRenderer::registerExtensions);
+        modEventBus.addListener(com.senne.starktech.client.repair.CrackedBlockRenderer::registerItemColors);
 
         // Gebeurtenissen tijdens het spelen
         NeoForge.EVENT_BUS.addListener(EdithClientEvents::onClientTick);
@@ -118,6 +121,7 @@ public class StarkTechClient {
         event.register(ModMenus.CHARGER.get(), ChargerScreen::new);
         event.register(ModMenus.LANDING_PAD.get(), com.senne.starktech.client.LandingPadScreen::new);
         event.register(ModMenus.SERVER_RACK.get(), com.senne.starktech.client.ServerRackScreen::new);
+        event.register(ModMenus.CRACK_MACHINE.get(), com.senne.starktech.client.repair.CrackMachineScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {

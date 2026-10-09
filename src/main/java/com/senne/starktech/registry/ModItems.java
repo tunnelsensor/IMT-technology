@@ -196,6 +196,16 @@ public final class ModItems {
     /** Repair Paste (hoofdstuk 11): rechtsklik op een blok met barsten, en ze zijn opgevuld. */
     public static final DeferredItem<com.senne.starktech.c4.RepairPasteItem> REPAIR_PASTE = ITEMS.registerItem(
             "repair_paste", com.senne.starktech.c4.RepairPasteItem::new, new Item.Properties());
+    /** Een gebarsten blok (hoofdstuk 11): wat je overhoudt als je een blok met barsten weghakt. */
+    public static final DeferredItem<com.senne.starktech.repair.FromBlockItem> CRACKED_BLOCK = ITEMS.registerItem(
+            "cracked_block", properties -> new com.senne.starktech.repair.FromBlockItem(properties,
+                    "item.starktech.cracked_block.of", "tooltip.starktech.cracked_block"), new Item.Properties());
+    /** Poeder van een blok (hoofdstuk 11): wat de Crusher van een gebarsten blok maakt. */
+    public static final DeferredItem<com.senne.starktech.repair.FromBlockItem> BLOCK_POWDER = ITEMS.registerItem(
+            "block_powder", properties -> new com.senne.starktech.repair.FromBlockItem(properties,
+                    "item.starktech.block_powder.of", "tooltip.starktech.block_powder"), new Item.Properties());
+    public static final DeferredItem<BlockItem> CRUSHER = ITEMS.registerSimpleBlockItem("crusher",
+            ModBlocks.CRUSHER, new Item.Properties());
 
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(

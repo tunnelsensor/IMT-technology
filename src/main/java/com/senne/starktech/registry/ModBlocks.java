@@ -197,6 +197,16 @@ public final class ModBlocks {
                     .noOcclusion()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
 
+    /** De Crusher (hoofdstuk 11): maakt van een gebarsten blok poeder, op Stark-stroom. */
+    public static final DeferredBlock<com.senne.starktech.repair.CrackMachineBlock> CRUSHER = BLOCKS.registerBlock(
+            "crusher", properties -> new com.senne.starktech.repair.CrackMachineBlock(
+                    com.senne.starktech.repair.CrackMachineBlock.Kind.CRUSHER, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Stark OS-desktop. */
     public static final DeferredBlock<com.senne.starktech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
             "security_camera", com.senne.starktech.security.CameraBlock::new,

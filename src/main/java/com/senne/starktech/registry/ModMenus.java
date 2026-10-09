@@ -30,6 +30,9 @@ public final class ModMenus {
     /** Het scherm van een serverrack: zijn vier vakjes en wat de server kan (zie ServerRackMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.logic.ServerRackMenu>> SERVER_RACK =
             MENUS.register("server_rack", () -> IMenuTypeExtension.create(com.senne.starktech.logic.ServerRackMenu::new));
+    /** Het scherm van een Crusher (hoofdstuk 11): met welke machine het is erbij (zie CrackMachineMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.repair.CrackMachineMenu>> CRACK_MACHINE =
+            MENUS.register("crack_machine", () -> IMenuTypeExtension.create(com.senne.starktech.repair.CrackMachineMenu::new));
     /** Het scherm van een landingsplatform: zijn batterij (zie LandingPadMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.suit.LandingPadMenu>> LANDING_PAD =
             MENUS.register("landing_pad", () -> IMenuTypeExtension.create(com.senne.starktech.suit.LandingPadMenu::new));

@@ -6,7 +6,14 @@ import com.senne.starktech.c4.CrackData;
 import com.senne.starktech.c4.Cracks;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.repair.CrackMachineBlock;
+import com.senne.starktech.repair.CrackMachineBlockEntity;
+import com.senne.starktech.repair.FromBlockItem;
+import com.senne.starktech.repair.RepairBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.station.ChargerBlockEntity;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -15,9 +22,15 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.HopperBlockEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -184,5 +197,156 @@ public final class CrackGameTests {
         check(Cracks.damage(level, helper.absolutePos(BLOCK)) == 0 && Cracks.patches(level, helper.absolutePos(BLOCK)) == 1,
                 "Na het plamuren door de eigenaar zouden de barsten weg moeten zijn");
         ZoneGameTests.finish(helper, core);
+    }
+
+    // ================================================================ Stap 2: gebarsten blokken en de Crusher
+
+    /** Een klein klapje van 3 breekpunten op alleen dit blok: barsten, maar het breekt niet (steen kan 6 hebben). */
+    private static void dent(GameTestHelper helper, BlockPos pos) {
+        BlockPos abs = helper.absolutePos(pos);
+        C4Blast.breach(helper.getLevel(), Vec3.atCenterOf(abs).add(0.95, 0, 0), 3.0f, 3.0f, here -> here.equals(abs), null);
+    }
+
+    /**
+     * Een testspeler die echt in survival speelt (anders valt er niets uit wat hij breekt), met een
+     * diamanten pikhouweel in zijn hand.
+     */
+    private static ServerPlayer miner(GameTestHelper helper) {
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 20), "crack-miner");
+        player.setGameMode(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        return player;
+    }
+
+    /** Wat er rond dit blok op de grond ligt (en ruimt het meteen op voor de volgende keer). */
+    private static List<ItemStack> pickUp(GameTestHelper helper, BlockPos pos) {
+        List<ItemStack> found = new ArrayList<>();
+        for (ItemEntity item : helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(helper.absolutePos(pos)).inflate(2))) {
+            found.add(item.getItem().copy());
+            item.discard();
+        }
+        return found;
+    }
+
+    private static boolean crackedOf(ItemStack stack, Block block) {
+        return stack.is(ModItems.CRACKED_BLOCK.get()) && FromBlockItem.block(stack) == block;
+    }
+
+    /**
+     * Jouw wens: "als je de blok vervangt hou je dus de gebarsten blok". Weghakken: stenen bakstenen met
+     * barsten geven gebarsten stenen bakstenen, steen met barsten gebarsten steen (geen keien), en
+     * geplamuurd obsidiaan (geen barsten meer, wel zwakker) gebarsten obsidiaan. Steen zonder barsten
+     * geeft gewoon keien.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
+    public static void cracked_blocks_drop_cracked(GameTestHelper helper) {
+        ServerPlayer player = miner(helper);
+        for (Block block : new Block[] {Blocks.STONE_BRICKS, Blocks.STONE}) {
+            helper.setBlock(BLOCK, block);
+            dent(helper, BLOCK);
+            check(Cracks.damage(helper.getLevel(), helper.absolutePos(BLOCK)) > 0, "Het klapje gaf " + block + " geen barsten");
+            check(ZoneGameTests.breakBlock(helper, player, BLOCK), "Hakken lukte niet");
+            List<ItemStack> drops = pickUp(helper, BLOCK);
+            check(drops.size() == 1 && crackedOf(drops.get(0), block) && drops.get(0).getCount() == 1,
+                    "Gebarsten " + block + " zou één gebarsten blok moeten geven, niet " + drops);
+        }
+
+        helper.setBlock(BLOCK, Blocks.OBSIDIAN);
+        dent(helper, BLOCK);
+        check(paste(helper, player, BLOCK), "Plamuren lukte niet");
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        check(ZoneGameTests.breakBlock(helper, player, BLOCK), "Hakken lukte niet");
+        List<ItemStack> drops = pickUp(helper, BLOCK);
+        check(drops.size() == 1 && crackedOf(drops.get(0), Blocks.OBSIDIAN), "Geplamuurd obsidiaan gaf " + drops);
+
+        helper.setBlock(BLOCK, Blocks.STONE);
+        check(ZoneGameTests.breakBlock(helper, player, BLOCK), "Hakken lukte niet");
+        drops = pickUp(helper, BLOCK);
+        check(drops.size() == 1 && drops.get(0).is(Items.COBBLESTONE), "Steen zonder barsten gaf " + drops);
+        helper.succeed();
+    }
+
+    /** Wat C4 kapotmaakt, valt eruit zoals altijd, ook als het blok al barsten had (mijn invulling). */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
+    public static void blasted_blocks_drop_normally(GameTestHelper helper) {
+        helper.setBlock(BLOCK, Blocks.STONE_BRICKS);
+        dent(helper, BLOCK);
+        blast(helper, BLOCK);
+        helper.assertBlockNotPresent(Blocks.STONE_BRICKS, BLOCK);
+        List<ItemStack> drops = pickUp(helper, BLOCK);
+        check(drops.stream().anyMatch(stack -> stack.is(Items.STONE_BRICKS)),
+                "De opgeblazen stenen bakstenen vielen er niet uit: " + drops);
+        check(drops.stream().noneMatch(stack -> stack.is(ModItems.CRACKED_BLOCK.get())),
+                "Een opgeblazen blok gaf een gebarsten blok: " + drops);
+        helper.succeed();
+    }
+
+    /** Een Crusher op deze plek, met (als {@code power}) een warmtegenerator vol stroom ernaast. */
+    private static CrackMachineBlockEntity crusher(GameTestHelper helper, BlockPos pos, boolean power) {
+        helper.setBlock(pos, ModBlocks.CRUSHER.get());
+        if (power) {
+            helper.setBlock(pos.west(), ModBlocks.HEAT_GENERATOR.get());
+            ((ChargerBlockEntity) helper.getBlockEntity(pos.west())).fill(5_000);
+        }
+        return (CrackMachineBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    /**
+     * Jouw wens: "deze kun je in een crushing block steken die er powder van maakt". Twee gebarsten
+     * stenen bakstenen erin: na vijf seconden ligt er één poeder van stenen bakstenen in het vakje eruit
+     * (en het tweede is bezig), hij draait, en er ging stroom op (4 per tick).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void crusher_makes_powder(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(6, 2, 6);
+        CrackMachineBlockEntity crusher = crusher(helper, pos, true);
+        ChargerBlockEntity generator = (ChargerBlockEntity) helper.getBlockEntity(pos.west());
+        int before = generator.energy();
+        crusher.setItem(CrackMachineBlockEntity.SLOT_IN, FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.STONE_BRICKS, 2));
+        helper.runAfterDelay(RepairBalance.MACHINE_TICKS + 5, () -> {
+            ItemStack out = crusher.getItem(CrackMachineBlockEntity.SLOT_OUT);
+            check(out.is(ModItems.BLOCK_POWDER.get()) && FromBlockItem.block(out) == Blocks.STONE_BRICKS && out.getCount() == 1,
+                    "Na vijf seconden zou er één poeder van stenen bakstenen uit moeten komen, niet " + out);
+            check(crusher.getItem(CrackMachineBlockEntity.SLOT_IN).getCount() == 1, "Er zou nog één gebarsten blok in moeten zitten");
+            int used = before - generator.energy();
+            check(used >= RepairBalance.MACHINE_TICKS * RepairBalance.MACHINE_POWER, "De Crusher gebruikte te weinig stroom: " + used);
+            helper.assertBlockProperty(pos, CrackMachineBlock.WORKING, true);
+            helper.succeed();
+        });
+    }
+
+    /** Zonder stroom doet hij niets, en zegt hij waarom ("No power"). */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void crusher_needs_power(GameTestHelper helper) {
+        CrackMachineBlockEntity crusher = crusher(helper, new BlockPos(6, 2, 6), false);
+        crusher.setItem(CrackMachineBlockEntity.SLOT_IN, FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.OBSIDIAN, 1));
+        helper.runAfterDelay(RepairBalance.MACHINE_TICKS + 10, () -> {
+            check(crusher.getItem(CrackMachineBlockEntity.SLOT_OUT).isEmpty(), "Zonder stroom maakte de Crusher toch poeder");
+            check(crusher.progress() == 0 && crusher.status() == CrackMachineBlockEntity.Status.NO_POWER,
+                    "Zonder stroom zou hij moeten wachten met 'No power', niet " + crusher.status());
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Trechters (mijn invulling): een trechter erboven doet er gebarsten blokken in (gewone steen niet,
+     * daar kan hij niets mee), een trechter eronder haalt het poeder eruit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "cracks")
+    public static void crusher_works_with_hoppers(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(6, 3, 6);
+        crusher(helper, pos, true);
+        helper.setBlock(pos.above(), Blocks.HOPPER);
+        helper.setBlock(pos.below(), Blocks.HOPPER);
+        HopperBlockEntity top = (HopperBlockEntity) helper.getBlockEntity(pos.above());
+        HopperBlockEntity bottom = (HopperBlockEntity) helper.getBlockEntity(pos.below());
+        top.setItem(0, new ItemStack(Blocks.STONE));
+        top.setItem(1, FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.DEEPSLATE_BRICKS, 1));
+        helper.succeedWhen(() -> {
+            ItemStack powder = bottom.getItem(0);
+            check(powder.is(ModItems.BLOCK_POWDER.get()) && FromBlockItem.block(powder) == Blocks.DEEPSLATE_BRICKS,
+                    "Het poeder kwam (nog) niet in de onderste trechter: " + powder);
+            check(top.getItem(0).is(Blocks.STONE.asItem()), "Gewone steen ging toch de Crusher in");
+        });
     }
 }
