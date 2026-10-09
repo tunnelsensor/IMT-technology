@@ -43,7 +43,7 @@ public final class LogicDevices {
         Map<String, List<LogicStore.Target>> fresh = new LinkedHashMap<>();
         EdithRelays relays = owner.getData(ModAttachments.RELAYS);
         for (Relay relay : relays.relays()) {
-            if (relay.dimension() == level.dimension() && SecurityCores.inArea(core.getBlockPos(), relay.pos())) {
+            if (relay.dimension() == level.dimension() && SecurityCores.ownedBy(level, core, relay.pos())) {
                 fresh.computeIfAbsent(relay.name(), key -> new ArrayList<>())
                         .add(new LogicStore.Target(relay.pos().immutable(), relay.channel()));
             }

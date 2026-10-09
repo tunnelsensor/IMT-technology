@@ -19,7 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 public record ZoneSyncPayload(List<View> zones) implements CustomPacketPayload {
     public static final Type<ZoneSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "zone_sync"));
 
-    /** Hooguit zoveel zones in één bericht (ruim: er past maar één kern per 61 x 61 blokken). */
+    /** Hooguit zoveel zones in één bericht (ruim: twee kernen staan minstens 2 x ZONE_REACH uit elkaar). */
     public static final int MAX_ZONES = 64;
 
     /**

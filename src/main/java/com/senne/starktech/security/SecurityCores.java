@@ -22,8 +22,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Welke beveiligingskernen er geladen zijn, en wie ze als vriend zien.
  *
- * Een kern beschermt de toren om zich heen (zie SecurityBalance.AREA_...). Torentjes,
- * beveiligingsdrones en laserwanden in dat gebied vragen hier: "is dit een indringer?"
+ * Een kern beschermt alles om zich heen tot SecurityBalance.ZONE_REACH blokken ver: zijn gebied.
+ * Torentjes, beveiligingsdrones en laserwanden in dat gebied vragen hier: "is dit een indringer?"
+ * En camera's, keycard-lezers, codepanelen en serverkasten vragen hier bij welke kern ze horen.
  *
  * - Heeft de kern nog GEEN eigenaar (niemand heeft hem gehackt), dan is elke speler een
  *   indringer (behalve in creative), net als monsters.
@@ -69,36 +70,58 @@ public final class SecurityCores {
         return best;
     }
 
-    /** Ligt deze plek in het gebied van de kern op {@code corePos}? */
+    /**
+     * Ligt deze plek in het gebied van de kern op {@code corePos}: tot ZONE_REACH blokken ver, in elke
+     * richting? Dat getal staat in de config; verandert het, dan geldt het meteen.
+     */
     public static boolean inArea(BlockPos corePos, BlockPos pos) {
-        return Math.abs(pos.getX() - corePos.getX()) <= SecurityBalance.AREA_RADIUS
-                && Math.abs(pos.getZ() - corePos.getZ()) <= SecurityBalance.AREA_RADIUS
-                && pos.getY() >= corePos.getY() - SecurityBalance.AREA_DOWN
-                && pos.getY() <= corePos.getY() + SecurityBalance.AREA_UP;
-    }
-
-    /** Het gebied van de kern op {@code corePos} als één kubus (dezelfde blokken als {@link #inArea}). */
-    public static ZoneBox areaOf(BlockPos corePos) {
-        return ZoneBox.of(corePos.offset(-SecurityBalance.AREA_RADIUS, -SecurityBalance.AREA_DOWN, -SecurityBalance.AREA_RADIUS),
-                corePos.offset(SecurityBalance.AREA_RADIUS, SecurityBalance.AREA_UP, SecurityBalance.AREA_RADIUS));
-    }
-
-    /** Mag de zone van de kern op {@code corePos} tot hier komen (ZONE_REACH blokken, in elke richting)? */
-    public static boolean inZoneReach(BlockPos corePos, BlockPos pos) {
         int reach = SecurityBalance.ZONE_REACH;
         return Math.abs(pos.getX() - corePos.getX()) <= reach
                 && Math.abs(pos.getY() - corePos.getY()) <= reach
                 && Math.abs(pos.getZ() - corePos.getZ()) <= reach;
     }
 
+    /** Het gebied van de kern op {@code corePos} als één kubus (dezelfde blokken als {@link #inArea}). */
+    public static ZoneBox areaOf(BlockPos corePos) {
+        int reach = SecurityBalance.ZONE_REACH;
+        return ZoneBox.of(corePos.offset(-reach, -reach, -reach), corePos.offset(reach, reach, reach));
+    }
+
+    /**
+     * Hoort het apparaat op {@code pos} (een camera, lezer, serverkast...) bij deze kern? Het ligt in
+     * zijn gebied, en geen andere kern staat dichterbij (net als bij {@link #coreAt}). Normaal liggen
+     * twee gebieden nooit over elkaar, dan is het hetzelfde als {@link #inArea}; alleen in de tests
+     * staan kernen dichter bij elkaar. (Niet gewoon {@code coreAt(...) == core}: een kern die net is
+     * neergezet, meldt zich pas een tick later aan.)
+     */
+    public static boolean ownedBy(Level level, SecurityCoreBlockEntity core, BlockPos pos) {
+        BlockPos own = core.getBlockPos();
+        if (!inArea(own, pos)) {
+            return false;
+        }
+        Set<BlockPos> set = LOADED.get(level.dimension());
+        if (set == null) {
+            return true;
+        }
+        double distance = own.distSqr(pos);
+        for (BlockPos other : List.copyOf(set)) {
+            if (!other.equals(own) && other.distSqr(pos) < distance && inArea(other, pos)
+                    && level.getBlockEntity(other) instanceof SecurityCoreBlockEntity) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Zit deze kubus voor de zone van de kern op {@code corePos} een ander in de weg? Een zone mag tot
-     * ZONE_REACH blokken ver, maar niet over de zone van een andere kern (zones liggen nooit over
-     * elkaar) en niet in het gebied van een andere kern (anders trok je je zone over de basis van een
-     * ander, en schoten zijn torentjes in jouw zone).
+     * ZONE_REACH blokken ver (het hele gebied van de kern), maar niet over de zone van een andere kern
+     * (zones liggen nooit over elkaar) en niet in het gebied van een andere kern (anders trok je je
+     * zone over de basis van een ander, en schoten zijn torentjes in jouw zone).
      *
-     * In het eigen gebied van de kern mag het altijd: daar ligt normaal nooit het gebied van een ander
-     * (zie {@link #overlaps}). Alleen in de tests staan kernen dichter bij elkaar.
+     * Normaal kan dat geen van beide: twee gebieden liggen nooit over elkaar (zie {@link #overlaps}),
+     * en een zone blijft in zijn eigen gebied. Alleen kernen die te dicht bij elkaar kwamen (met
+     * commando's, of in de tests) hebben dit nodig; in het eigen gebied mag het dan altijd.
      */
     public static boolean zoneBlocked(ServerLevel level, BlockPos corePos, ZoneBox box) {
         for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
@@ -218,11 +241,12 @@ public final class SecurityCores {
         return loaded != null && loaded.stream().anyMatch(other -> !other.equals(pos) && areasOverlap(other, pos));
     }
 
-    /** Overlappen de gebieden van kernen op deze twee plekken? */
+    /** Overlappen de gebieden van kernen op deze twee plekken (minder dan 2 x ZONE_REACH + 1 uit elkaar)? */
     public static boolean areasOverlap(BlockPos a, BlockPos b) {
-        return Math.abs(a.getX() - b.getX()) <= 2 * SecurityBalance.AREA_RADIUS
-                && Math.abs(a.getZ() - b.getZ()) <= 2 * SecurityBalance.AREA_RADIUS
-                && Math.abs(a.getY() - b.getY()) <= SecurityBalance.AREA_DOWN + SecurityBalance.AREA_UP;
+        int both = 2 * SecurityBalance.ZONE_REACH;
+        return Math.abs(a.getX() - b.getX()) <= both
+                && Math.abs(a.getZ() - b.getZ()) <= both
+                && Math.abs(a.getY() - b.getY()) <= both;
     }
 
     /** Bij het afsluiten van de server: alles vergeten. */

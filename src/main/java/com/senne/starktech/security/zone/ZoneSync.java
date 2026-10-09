@@ -71,7 +71,8 @@ public final class ZoneSync {
                     || zone.core().pos().distToCenterSqr(player.position()) > range * range) {
                 continue;
             }
-            views.add(new ZoneSyncPayload.View(zone.core().pos(), zone.active(), zone.boxes()));
+            // Zoals hij nu beschermt (is het bereik in de config kleiner gemaakt, dan is de rand dat ook).
+            views.add(new ZoneSyncPayload.View(zone.core().pos(), zone.active(), zone.boxesInReach()));
         }
         return views;
     }

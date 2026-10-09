@@ -104,7 +104,8 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         small(g, state, STATS_X + 40, y, HudStyle.argb(255, status == ServerRackBlockEntity.Status.ONLINE && online()
                 ? HudStyle.GREEN : HudStyle.RED));
         if (status == ServerRackBlockEntity.Status.NO_NETWORK) {
-            wrapped(g, "Place it within 30 blocks of a Security Core: the server runs on your Stark OS.", y + 10,
+            wrapped(g, "Place it within " + com.senne.starktech.security.SecurityBalance.ZONE_REACH
+                    + " blocks of a Security Core: the server runs on your Stark OS.", y + 10,
                     HudStyle.argb(140, HudStyle.WHITE));
             return;
         }

@@ -38,8 +38,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Linksklik</b> op een blok: hoek 1. <b>Rechtsklik</b> op een blok: hoek 2. Je ziet een
  *       oranje doos tussen de twee, en onderaan hoe groot hij is ("12 x 6 x 20").</li>
  *   <li><b>Sluipen + rechtsklik</b> (op een blok of in de lucht): die doos wordt een kubus van je
- *       zone. Hij hoort bij jouw beveiligingskern in wiens gebied hij ligt, anders bij je
- *       dichtstbijzijnde kern tot ZONE_REACH (200) blokken ver.</li>
+ *       zone. Hij hoort bij je dichtstbijzijnde beveiligingskern tot ZONE_REACH (200) blokken ver
+ *       (het gebied van die kern).</li>
  *   <li><b>Sluipen + linksklik</b> op een blok in een kubus van je zone: die kubus weghalen (twee
  *       keer klikken, zodat je het niet per ongeluk doet).</li>
  * </ul>
@@ -232,34 +232,31 @@ public class ZoneMarkerItem extends Item {
     }
 
     /**
-     * De beveiligingskern van deze speler die een kubus op deze plek krijgt. Ligt de plek in het gebied
-     * van een kern, dan die (is hij van een ander: nee). Anders je dichtstbijzijnde kern tot ZONE_REACH
-     * blokken ver; die zoeken we in ZoneData, zodat hij ook gevonden wordt als zijn stuk wereld niet
-     * geladen is. Lukt het niet, dan zegt hij waarom (en geeft hij null).
+     * De beveiligingskern van deze speler die een kubus op deze plek krijgt: je dichtstbijzijnde kern
+     * tot ZONE_REACH blokken ver. Die zoeken we in ZoneData, zodat hij ook gevonden wordt als zijn stuk
+     * wereld niet geladen is. Geen eigen kern zo dichtbij: ligt de plek in het gebied van de kern van
+     * een ander, dan zegt hij dat; anders dat er geen kern van jou in de buurt is (en geeft hij null).
      */
     private static @Nullable SecurityCoreBlockEntity ownCoreFor(ServerLevel level, ServerPlayer player, BlockPos pos) {
+        List<BlockPos> mine = new ArrayList<>();
+        for (ZoneData.Zone zone : ZoneData.get(level).owned(level.dimension())) {
+            if (player.getUUID().equals(zone.owner()) && SecurityCores.inArea(zone.core().pos(), pos)) {
+                mine.add(zone.core().pos());
+            }
+        }
+        mine.sort(java.util.Comparator.comparingDouble(core -> core.distSqr(pos)));
+        for (BlockPos corePos : mine) {
+            // getBlockEntity laadt zijn stuk wereld als dat nodig is.
+            if (level.getBlockEntity(corePos) instanceof SecurityCoreBlockEntity core && player.getUUID().equals(core.ownerId())) {
+                return core;
+            }
+        }
         SecurityCoreBlockEntity here = SecurityCores.coreAt(level, pos);
         if (here != null && here.ownerId() != null) {
-            if (!player.getUUID().equals(here.ownerId())) {
-                tell(player, Component.translatable("zone.starktech.marker.not_yours", here.ownerName()), true);
-                return null;
-            }
-            return here;
+            tell(player, Component.translatable("zone.starktech.marker.not_yours", here.ownerName()), true);
+        } else {
+            tell(player, Component.translatable("zone.starktech.marker.no_core", SecurityBalance.ZONE_REACH), true);
         }
-        BlockPos nearest = null;
-        for (ZoneData.Zone zone : ZoneData.get(level).owned(level.dimension())) {
-            BlockPos core = zone.core().pos();
-            if (player.getUUID().equals(zone.owner()) && SecurityCores.inZoneReach(core, pos)
-                    && (nearest == null || core.distSqr(pos) < nearest.distSqr(pos))) {
-                nearest = core;
-            }
-        }
-        // getBlockEntity laadt zijn stuk wereld als dat nodig is.
-        if (nearest != null && level.getBlockEntity(nearest) instanceof SecurityCoreBlockEntity core
-                && player.getUUID().equals(core.ownerId())) {
-            return core;
-        }
-        tell(player, Component.translatable("zone.starktech.marker.no_core", SecurityBalance.ZONE_REACH), true);
         return null;
     }
 

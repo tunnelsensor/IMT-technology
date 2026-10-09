@@ -1567,6 +1567,24 @@ De stappen, één per commit:
       zone van 100 × 40 × 100 kost 200 extra om de twee seconden, dus een heel grote zone vraagt een
       flink stroomnet. Eén nieuwe test (150 blokken ver met de app, 120 met de marker, stoppen op 200,
       niet in het gebied of de zone van een ander, en een kern niet naast je zone).
+- [x] **14. Alle apparaten even ver als de zone** (jouw wens, 9 oktober: "zorg dat al de security items
+      zoals keycard readers enzo even grote range van de core hebben als dat de zone groot kan, en laat
+      dit aanpassen aan de config")
+      Het **gebied** van een kern is niet meer 61 × 61 (60 onder, 55 boven), maar even groot als zijn
+      zone: `zoneReach` (200) in elke richting. Eén getal voor alles: de zone, en alle apparaten die bij
+      de kern horen (beveiligingstorentjes, camera's, keycard-lezers, codepanelen, serverkasten,
+      laserwanden, relais van de bril, het landingsplatform van de toren), en zijn drones jagen ook zo
+      ver. Het getal wordt overal gelezen op het moment zelf, dus verander je het in de config (ook
+      terwijl het spel draait), dan past alles zich meteen aan; de servertekst bij een losse
+      serverkast noemt het ook. Een apparaat hoort bij de kern als het in zijn gebied ligt en geen
+      andere kern dichterbij staat (`SecurityCores.ownedBy`). **Gevolg** (zeg het als je dit anders
+      wil): twee kernen mogen nog steeds niet in elkaars gebied staan, dus met 200 moet een nieuwe kern
+      meer dan 400 blokken van een andere kern staan (ook van een Stark Tower); met een kleiner getal
+      mogen ze weer dichter bij elkaar. **Mijn keuze**: maak je het getal kleiner, dan beschermt een
+      zone meteen alleen nog tot daar, maar de getekende kubussen blijven bewaard (weer groter: alles
+      terug). De zone-test is vervangen door "zone en apparaten volgen de config", en de tests die een
+      kern neerzetten zoals een speler doen dat met het bereik even op 30 (`withReach`): in de
+      testwereld staan overal oude kernen.
 
 ### 11. Barsten herstellen (9 oktober)
 

@@ -603,25 +603,27 @@ public final class ZoneGameTests {
     }
 
     /**
-     * Jouw wens (9 oktober): een zone tot ZONE_REACH (200) blokken van de kern. Een kubus 150 blokken
-     * ver mag (getypt in de app, en met de Zone Marker 120 blokken ver) en beschermt; groter maken
-     * stopt op 200 blokken. Maar een kubus mag niet in het gebied of over de zone van een andere kern,
-     * en een nieuwe kern mag niet zo staan dat zijn gebied over een zone valt.
+     * Jouw wensen (9 oktober): een zone tot ZONE_REACH (200) blokken van de kern, en alle apparaten
+     * even ver ("even grote range van de core als dat de zone groot kan"), met één getal in de config.
+     * Een kubus 150 blokken ver mag (getypt in de app, en met de Zone Marker 120 blokken ver) en
+     * beschermt; groter maken stopt op 200 blokken. Niet over de zone van een andere kern. Een plek 150
+     * blokken ver ligt in het gebied van de kern (een camera of lezer daar hoort bij hem), en een nieuwe
+     * kern moet meer dan 2 x 200 blokken verder staan. Zet je het bereik op 100, dan past dat meteen.
      *
      * Een eigen batch, en alles naar het zuiden: de testserver ruimt oude arena's niet op en zet ze in
      * rijen naar het zuiden (8 naast elkaar, naar het oosten). Ten noorden en westen staan dus de kernen
      * van eerdere tests; ten zuiden staat nog niets.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones_reach")
-    public static void zone_reaches_far_but_not_into_other_bases(GameTestHelper helper) {
+    public static void zone_and_devices_reach_follow_the_config(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 8), "zone-owner");
         ServerPlayer neighbour = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 8), "zone-neighbour");
         SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
         BlockPos coreAbs = helper.absolutePos(CORE);
-        // Een tweede kern 100 blokken naar het zuiden en 12 naar het oosten: zijn gebied reikt van 18
-        // blokken ten westen tot 42 ten oosten van de eerste kern (en van 70 tot 130 naar het zuiden).
-        BlockPos otherPos = coreAbs.offset(12, 0, 100);
+        // Een tweede kern 150 blokken naar het zuiden en 150 naar het oosten (zo dichtbij kan alleen in
+        // een test: hun gebieden liggen over elkaar).
+        BlockPos otherPos = coreAbs.offset(150, 0, 150);
         level.setBlockAndUpdate(otherPos, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
         SecurityCoreBlockEntity other = (SecurityCoreBlockEntity) level.getBlockEntity(otherPos);
         other.setOwner(neighbour);
@@ -655,56 +657,68 @@ public final class ZoneGameTests {
                 throw new GameTestAssertException("Verder dan " + reach + " blokken zou de app moeten weigeren");
             }
 
-            // Met de Zone Marker: een kubus 120 blokken naar het zuiden en 60 naar het westen (geen kern
-            // in de buurt, wel de jouwe binnen 200 blokken).
-            BlockPos west = coreAbs.offset(-60, 0, 120);
-            ZoneBox westBox = ZoneBox.of(west, west.offset(4, 3, 4));
+            // Met de Zone Marker: een kubus 120 blokken naar het zuiden (je kern is ver weg, maar binnen 200).
+            BlockPos south = coreAbs.offset(0, 0, 120);
+            ZoneBox southBox = ZoneBox.of(south, south.offset(4, 3, 4));
             ItemStack marker = new ItemStack(ModItems.ZONE_MARKER.get());
             marker.set(com.senne.starktech.registry.ModDataComponents.ZONE_SELECTION.get(),
-                    ZoneSelection.EMPTY.withFirst(westBox.min()).withSecond(westBox.max()));
+                    ZoneSelection.EMPTY.withFirst(southBox.min()).withSecond(southBox.max()));
             owner.setItemInHand(InteractionHand.MAIN_HAND, marker);
             owner.setShiftKeyDown(true);
             marker.getItem().use(level, owner, InteractionHand.MAIN_HAND);
             owner.setShiftKeyDown(false);
-            if (core.zoneBoxes().size() != 2 || !core.zoneBoxes().getLast().equals(westBox)) {
+            if (core.zoneBoxes().size() != 2 || !core.zoneBoxes().getLast().equals(southBox)) {
                 throw new GameTestAssertException("De Zone Marker zou een kubus 120 blokken ver moeten toevoegen: " + core.zoneBoxes());
             }
 
-            // In het gebied van de andere kern (35 blokken naar het oosten): nee. Net erbuiten (45): ja.
-            BlockPos south = coreAbs.offset(0, 0, 100);
+            // Over de zone van de andere kern: nee (en ook niet erin groeien). Ernaast: ja.
+            other.setZoneBoxes(List.of(ZoneBox.of(coreAbs.offset(100, 0, 100), coreAbs.offset(105, 3, 103))));
             set.putInt("i", 1);
-            set.putIntArray("box", ZoneBox.of(south.offset(35, 0, 0), south.offset(38, 3, 3)).save().getAsIntArray());
-            if (!ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(westBox)) {
-                throw new GameTestAssertException("Een kubus in het gebied van een andere kern zou niet mogen");
-            }
-            ZoneBox east = ZoneBox.of(south.offset(45, 0, 0), south.offset(48, 3, 3));
-            set.putIntArray("box", east.save().getAsIntArray());
-            if (ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(east)) {
-                throw new GameTestAssertException("Een kubus net buiten het gebied van de andere kern zou wel moeten mogen: " + core.zoneBoxes());
-            }
-            // Over de zone van de andere kern: nee (en ook niet erin groeien).
-            ZoneBox theirs = ZoneBox.of(south.offset(55, 0, 0), south.offset(60, 3, 3));
-            other.setZoneBoxes(List.of(theirs));
-            set.putIntArray("box", ZoneBox.of(south.offset(50, 0, 0), south.offset(56, 3, 3)).save().getAsIntArray());
-            if (!ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(east)) {
+            set.putIntArray("box", ZoneBox.of(coreAbs.offset(95, 0, 100), coreAbs.offset(101, 3, 103)).save().getAsIntArray());
+            if (!ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(southBox)) {
                 throw new GameTestAssertException("Een kubus over de zone van een ander zou niet mogen");
+            }
+            ZoneBox beside = ZoneBox.of(coreAbs.offset(90, 0, 100), coreAbs.offset(94, 3, 103));
+            set.putIntArray("box", beside.save().getAsIntArray());
+            if (ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(beside)) {
+                throw new GameTestAssertException("Een kubus naast de zone van een ander zou wel moeten mogen: " + core.zoneBoxes());
             }
             grow.putInt("i", 1);
             grow.putInt("side", 5);
             grow.putInt("by", 7);
-            if (!ZoneApp.handle(owner, core, "zone_grow", grow, false).error() || !core.zoneBoxes().getLast().equals(east)) {
+            if (!ZoneApp.handle(owner, core, "zone_grow", grow, false).error() || !core.zoneBoxes().getLast().equals(beside)) {
                 throw new GameTestAssertException("Groeien tot in de zone van een ander zou niet mogen");
             }
-
-            // Een nieuwe kern met zijn gebied over je zone (de zuidkant ligt op 200 blokken): nee. 10 verder: ja.
-            if (!SecurityCores.overlaps(level, coreAbs.offset(0, 0, 230))) {
-                throw new GameTestAssertException("Een kern vlak naast je zone zou niet mogen");
-            }
-            if (SecurityCores.overlaps(level, coreAbs.offset(0, 0, 240))) {
-                throw new GameTestAssertException("Een kern 10 blokken van je zone af zou wel moeten mogen");
-            }
-            // Opruimen: de tweede kern staat buiten de arena (dan is zijn zone ook weg).
+            // De tweede kern weg (dan is zijn zone ook weg).
             level.setBlockAndUpdate(otherPos, Blocks.AIR.defaultBlockState());
+
+            // Even ver horen de apparaten bij de kern: een plek 150 blokken ver ligt in zijn gebied (ook
+            // voor zijn drones), en een nieuwe kern 350 blokken verder zou te dichtbij staan.
+            BlockPos device = coreAbs.offset(0, 0, 150);
+            if (!SecurityCores.inArea(coreAbs, device) || !core.area().contains(Vec3.atCenterOf(device))) {
+                throw new GameTestAssertException("Een apparaat 150 blokken ver zou in het gebied van de kern moeten liggen");
+            }
+            if (!SecurityCores.overlaps(level, coreAbs.offset(0, 0, 350))) {
+                throw new GameTestAssertException("Een kern 350 blokken verder zou te dichtbij moeten zijn");
+            }
+            // Het bereik op 100 in de config: meteen ligt die plek erbuiten, beschermt de zone daar niet
+            // meer, en mag een kern 350 blokken verder.
+            StarkTechGameTests.withReach(100, () -> {
+                if (SecurityCores.inArea(coreAbs, device) || core.area().contains(Vec3.atCenterOf(device))) {
+                    throw new GameTestAssertException("Met een bereik van 100 zou 150 blokken ver buiten het gebied moeten liggen");
+                }
+                if (Zones.activeAt(level, far) != null) {
+                    throw new GameTestAssertException("Met een bereik van 100 zou de zone 150 blokken ver niet meer moeten beschermen");
+                }
+                if (SecurityCores.overlaps(level, coreAbs.offset(0, 0, 350))) {
+                    throw new GameTestAssertException("Met een bereik van 100 zou een kern 350 blokken verder moeten mogen");
+                }
+                return null;
+            });
+            // Weer 200: de getekende kubus is er nog, dus de zone daar beschermt weer.
+            if (Zones.activeAt(level, far) == null) {
+                throw new GameTestAssertException("Met het bereik weer op 200 zou de zone 150 blokken ver weer moeten beschermen");
+            }
             finish(helper, core);
         });
     }

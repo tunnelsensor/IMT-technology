@@ -102,6 +102,27 @@ public final class ZoneData extends SavedData {
         }
 
         /**
+         * Het stuk van deze kubus binnen het bereik van de kern nu (null als er niets overblijft). Maak
+         * je ZONE_REACH in de config kleiner, dan beschermt de zone meteen alleen nog tot daar; de
+         * getekende kubussen blijven bewaard, dus maak je hem weer groter, dan is alles terug.
+         */
+        private @Nullable ZoneBox inReach(ZoneBox box) {
+            return box.overlap(com.senne.starktech.security.SecurityCores.areaOf(core.pos()));
+        }
+
+        /** De kubussen zoals ze nu beschermen: afgeknipt op het bereik van de kern (zie {@link #inReach}). */
+        public List<ZoneBox> boxesInReach() {
+            List<ZoneBox> fitted = new ArrayList<>();
+            for (ZoneBox box : boxes) {
+                ZoneBox part = inReach(box);
+                if (part != null) {
+                    fitted.add(part);
+                }
+            }
+            return fitted;
+        }
+
+        /**
          * Hoort dit blok bij de zone? De kern zelf hoort er altijd bij (zodra er een kubus is): anders
          * hakte je gewoon de kern weg, en was de zone weg.
          */
@@ -112,7 +133,7 @@ public final class ZoneData extends SavedData {
             if (pos.equals(core.pos())) {
                 return true;
             }
-            if (!bounds.contains(pos)) {
+            if (!bounds.contains(pos) || !com.senne.starktech.security.SecurityCores.inArea(core.pos(), pos)) {
                 return false;
             }
             for (ZoneBox box : boxes) {
@@ -131,7 +152,7 @@ public final class ZoneData extends SavedData {
             if (area.contains(core.pos().getCenter())) {
                 return true;
             }
-            for (ZoneBox box : boxes) {
+            for (ZoneBox box : boxesInReach()) {
                 if (area.intersects(box.min().getX(), box.min().getY(), box.min().getZ(),
                         box.max().getX() + 1, box.max().getY() + 1, box.max().getZ() + 1)) {
                     return true;
@@ -145,7 +166,7 @@ public final class ZoneData extends SavedData {
             if (bounds == null || bounds.overlap(box) == null) {
                 return false;
             }
-            for (ZoneBox own : boxes) {
+            for (ZoneBox own : boxesInReach()) {
                 if (own.overlap(box) != null) {
                     return true;
                 }

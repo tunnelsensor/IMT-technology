@@ -312,6 +312,23 @@ public final class StarkTechGameTests {
         return core;
     }
 
+    /**
+     * Doet {@code action} met een kleiner bereik van de kernen (ZONE_REACH even op {@code reach}) en
+     * zet het daarna terug, ook als het misgaat. Voor tests die een kern neerzetten zoals een speler:
+     * dan mag er binnen 2 x het bereik geen andere kern staan, en in de testwereld staan overal kernen
+     * van andere tests (ook uit vorige rondes). Met 200 blokken (ook omhoog en omlaag) is er altijd wel
+     * een te dichtbij. Alleen in een test die alleen in zijn batch staat (anders merken de andere het).
+     */
+    static <T> T withReach(int reach, java.util.function.Supplier<T> action) {
+        int old = com.senne.starktech.security.SecurityBalance.ZONE_REACH;
+        com.senne.starktech.security.SecurityBalance.ZONE_REACH = reach;
+        try {
+            return action.get();
+        } finally {
+            com.senne.starktech.security.SecurityBalance.ZONE_REACH = old;
+        }
+    }
+
     /** Een toren van niemand: het beveiligingstorentje schiet op wie er binnenkomt. */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "security")
     public static void security_turret_shoots_intruders(GameTestHelper helper) {
@@ -772,10 +789,11 @@ public final class StarkTechGameTests {
      * Zelf een kern neerzetten: hij is meteen van jou, met een IP en een eigen naam. Een tweede kern
      * vlakbij (de gebieden zouden overlappen) lukt niet, en je houdt het item.
      *
-     * De kernen staan 210 blokken boven de testvloer, in de lucht: de testwereld wordt hergebruikt,
-     * en de kernen van andere tests (ook uit eerdere rondes, en een Stark Tower uit de gebouwtest)
-     * blijven staan. Die liggen soms dichterbij dan 60 blokken, en dan zou ook de eerste kern terecht
-     * geweigerd worden. Zo hoog valt buiten elk gebied (dat reikt 60 omlaag en 55 omhoog).
+     * De kernen staan 210 blokken boven de testvloer, in de lucht, met het bereik even op 30 (zie
+     * {@link #withReach}): de testwereld wordt hergebruikt, en de kernen van andere tests (ook uit
+     * eerdere rondes, en een Stark Tower uit de gebouwtest) blijven staan. Met het echte bereik (200,
+     * ook omhoog en omlaag) zou ook de eerste kern terecht geweigerd worden; met 30 valt 210 blokken
+     * hoog buiten elk ander gebied.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_place")
     public static void security_core_placed_by_a_player(GameTestHelper helper) {
@@ -785,10 +803,10 @@ public final class StarkTechGameTests {
         var item = (net.minecraft.world.item.BlockItem) ModItems.SECURITY_CORE.get();
         ItemStack stack = new ItemStack(item, 2);
         BlockPos first = new BlockPos(8, 210, 8);
-        var result = item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
+        var result = withReach(30, () -> item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
                 net.minecraft.world.InteractionHand.MAIN_HAND, stack, new net.minecraft.world.phys.BlockHitResult(
                         helper.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 210, 8.5)), Direction.UP,
-                        helper.absolutePos(first), false)));
+                        helper.absolutePos(first), false))));
         helper.assertBlockPresent(ModBlocks.SECURITY_CORE.get(), first);
         var core = (com.senne.starktech.security.SecurityCoreBlockEntity) helper.getBlockEntity(first);
         if (!result.consumesAction() || !player.getUUID().equals(core.ownerId()) || !core.hasSystem()
@@ -797,15 +815,15 @@ public final class StarkTechGameTests {
         }
         helper.assertBlockProperty(first, com.senne.starktech.security.SecurityCoreBlock.CLAIMED, true);
         BlockPos second = new BlockPos(8, 210, 16);
-        var refused = item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
+        var refused = withReach(30, () -> item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
                 net.minecraft.world.InteractionHand.MAIN_HAND, stack, new net.minecraft.world.phys.BlockHitResult(
                         helper.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 210, 16.5)), Direction.UP,
-                        helper.absolutePos(second), false)));
+                        helper.absolutePos(second), false))));
         helper.assertBlockNotPresent(ModBlocks.SECURITY_CORE.get(), second);
         if (refused.consumesAction() || stack.getCount() != 1) {
             throw new GameTestAssertException("Een tweede kern vlak naast een ander netwerk kwam er toch");
         }
-        if (com.senne.starktech.security.SecurityCores.overlaps(level, helper.absolutePos(first).offset(500, 0, 0))) {
+        if (withReach(30, () -> com.senne.starktech.security.SecurityCores.overlaps(level, helper.absolutePos(first).offset(500, 0, 0)))) {
             throw new GameTestAssertException("Een kern ver weg zou ook te dichtbij zijn");
         }
         // Opruimen: de tests van CoreConfigGameTests zetten later ook kernen op deze hoogte neer.

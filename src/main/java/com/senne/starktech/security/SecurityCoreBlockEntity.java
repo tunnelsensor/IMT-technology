@@ -499,8 +499,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     }
 
     /**
-     * De kleinste hoek waar de zone van deze kern mag komen: ZONE_REACH blokken naar het westen, naar
-     * beneden en naar het noorden (maar niet onder de wereld).
+     * De kleinste hoek waar de zone van deze kern mag komen: de rand van zijn gebied, ZONE_REACH blokken
+     * naar het westen, naar beneden en naar het noorden (maar niet onder de wereld).
      */
     public BlockPos zoneLow() {
         int bottom = level == null ? Integer.MIN_VALUE : level.getMinBuildHeight();
@@ -678,11 +678,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
     }
 
-    /** Het gebied dat deze kern beschermt. */
+    /** Het gebied dat deze kern beschermt: ZONE_REACH blokken in elke richting (zie SecurityCores.inArea). */
     public AABB area() {
-        return new AABB(worldPosition.getX() - SecurityBalance.AREA_RADIUS, worldPosition.getY() - SecurityBalance.AREA_DOWN,
-                worldPosition.getZ() - SecurityBalance.AREA_RADIUS, worldPosition.getX() + SecurityBalance.AREA_RADIUS + 1,
-                worldPosition.getY() + SecurityBalance.AREA_UP + 1, worldPosition.getZ() + SecurityBalance.AREA_RADIUS + 1);
+        return new AABB(worldPosition).inflate(SecurityBalance.ZONE_REACH);
     }
 
     // ================================================================ Opslaan

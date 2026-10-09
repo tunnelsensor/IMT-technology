@@ -46,9 +46,10 @@ import org.jetbrains.annotations.Nullable;
  * Tests voor een beveiligingskern die je weghakt (jouw wens, 9 oktober: "zorg dat al de config
  * bewaard wordt in de security block, zodat als je die hakt niet alles weg is").
  *
- * De kernen staan 210 blokken boven de testvloer, net als in security_core_placed_by_a_player: een
- * kern neerzetten mag niet te dicht bij een ander netwerk, en de kernen van andere tests staan
- * onderaan. Elke test staat in zijn eigen batch (dan lopen ze niet tegelijk) en ruimt zijn kern op.
+ * De kernen staan 210 blokken boven de testvloer, net als in security_core_placed_by_a_player, en
+ * worden neergezet met het bereik even op 30: een kern neerzetten mag niet te dicht bij een ander
+ * netwerk, en de kernen van andere tests staan onderaan. Elke test staat in zijn eigen batch (dan
+ * lopen ze niet tegelijk, en merkt niemand het kleinere bereik) en ruimt zijn kern op.
  */
 @GameTestHolder(StarkTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -103,13 +104,17 @@ public final class CoreConfigGameTests {
         return stack;
     }
 
-    /** Zet de kern neer zoals een rechtsklik dat doet. Geeft terug of het lukte. */
+    /**
+     * Zet de kern neer zoals een rechtsklik dat doet, met het bereik even op 30 (zie
+     * StarkTechGameTests.withReach: anders staat er altijd wel een kern van een andere test te dichtbij).
+     * Geeft terug of het lukte.
+     */
     private static boolean place(GameTestHelper helper, ServerPlayer player, ItemStack stack, BlockPos pos) {
         player.setItemInHand(InteractionHand.MAIN_HAND, stack);
         BlockItem item = (BlockItem) ModItems.SECURITY_CORE.get();
-        return item.place(new BlockPlaceContext(helper.getLevel(), player, InteractionHand.MAIN_HAND, stack,
-                new BlockHitResult(helper.absoluteVec(Vec3.atBottomCenterOf(pos)), Direction.UP,
-                        helper.absolutePos(pos), false))).consumesAction();
+        return StarkTechGameTests.withReach(30, () -> item.place(new BlockPlaceContext(helper.getLevel(), player,
+                InteractionHand.MAIN_HAND, stack, new BlockHitResult(helper.absoluteVec(Vec3.atBottomCenterOf(pos)),
+                        Direction.UP, helper.absolutePos(pos), false))).consumesAction());
     }
 
     /** Klaar: de kern weg (dan is zijn IP, zone en zo ook weer vrij), en geslaagd. */

@@ -519,7 +519,7 @@ public final class StarkOs {
     /** Een keycardlezer of codepaneel een andere naam geven (in de app Devices of Logic). */
     private static void renameInput(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, String name) {
         String clean = com.senne.starktech.logic.InputDeviceBlockEntity.cleanName(name);
-        if (clean.isEmpty() || !SecurityCores.inArea(core.getBlockPos(), pos)
+        if (clean.isEmpty() || !SecurityCores.ownedBy(player.serverLevel(), core, pos)
                 || !(player.serverLevel().getBlockEntity(pos) instanceof com.senne.starktech.logic.InputDeviceBlockEntity device)) {
             notify(player, core, session, "That name cannot be used", true);
             return;

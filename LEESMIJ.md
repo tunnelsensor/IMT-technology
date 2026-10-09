@@ -41,7 +41,8 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   En kijk uit voor de drukplaat voor de kluiskist: stap je erop, dan schieten er vier
   laserzuilen uit de vloer omhoog en sta je in een kooi.
 - De toren wordt **bewaakt**. Op de beveiligingsverdieping staat de **Stark Security Core**
-  (een serverkast met een rood lampje, in de rij serverkasten). Die beschermt de hele toren:
+  (een serverkast met een rood lampje, in de rij serverkasten). Die beschermt alles tot 200
+  blokken om zich heen, dus de hele toren (zie "Het bereik van een kern" hieronder):
   - **beveiligingstorentjes** (wit met rood) bij de lift in de lobby, op de
     beveiligingsverdieping en in de kluis schieten op iedereen die binnenkomt (niet in creative);
   - vier **beveiligingsdrones** met rode lampjes patrouilleren rond de kern en vallen je aan.
@@ -405,7 +406,7 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 Met een **server** programmeer je de redstone van je basis: "houdt iemand een kaart van niveau 3
 tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan je
 **beveiligingskern** (Stark OS).
-1. **Bouwen**: zet **Server Racks** binnen 30 blokken van je kern, naast of op elkaar: samen zijn
+1. **Bouwen**: zet **Server Racks** binnen 200 blokken van je kern, naast of op elkaar: samen zijn
    ze één server, je **datacenter** (een los rack draait niet mee). Geef ze stroom met een kabel;
    racks geven de stroom aan elkaar door. Rechtsklik op een rack: zes vakjes, twee kolommen van
    drie. Stop er onderdelen in: een **CPU** of **GPU** (rekenkracht: de server reageert sneller,
@@ -524,9 +525,16 @@ vrienden nog bouwen en breken. Om toch te kunnen inbreken (moeilijker, niet onmo
 
 **Een zone tekenen.** Een zone hoort bij je **beveiligingskern** en bestaat uit één of meer
 **kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze mogen
-tot **200 blokken** van je kern liggen (opzij, omhoog en omlaag; `zoneReach` in de config); hooguit
-16. Niet over de zone van een ander, en niet in het gebied van een andere kern (30 blokken om die kern
-heen). Omgekeerd kan niemand een kern neerzetten met zijn gebied over jouw zone.
+tot **200 blokken** van je kern liggen (opzij, omhoog en omlaag; het bereik van je kern, zie
+hieronder); hooguit 16. Niet over de zone van een ander.
+
+**Het bereik van een kern.** Alles van je beveiliging werkt tot **200 blokken** van je kern, in elke
+richting: je zone, en al je apparaten (torentjes, camera's, keycard-lezers, codepanelen,
+serverkasten, laserwanden); zijn drones jagen ook zo ver. Dat is één getal in
+`config/starktech-balance.toml`: `zoneReach` onder `[security]`. Maak je het groter of kleiner, dan
+past alles zich meteen aan, ook terwijl het spel draait. Twee kernen mogen niet in elkaars bereik
+staan: met 200 moet een nieuwe kern dus meer dan 400 blokken van een andere kern staan ("Too close to
+another security network").
 - Met de **Zone Marker** (recept: een redstonefakkel, een Stark-chip en een stok onder elkaar):
   **linksklik** op een blok = hoek 1, **rechtsklik** = hoek 2 (je ziet een oranje doos en hoe groot hij
   is), **sluipen + rechtsklik** = die doos wordt een kubus van je zone. **Sluipen + linksklik** in een

@@ -77,7 +77,6 @@ public final class SecurityDevices {
         List<BlockPos> racks = new ArrayList<>();
         List<BlockPos> inputs = new ArrayList<>();
         AABB area = core.area();
-        BlockPos corePos = core.getBlockPos();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
         int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
         int minCz = SectionPos.blockToSectionCoord((int) Math.floor(area.minZ));
@@ -90,16 +89,16 @@ public final class SecurityDevices {
                     continue;
                 }
                 for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                    if (blockEntity instanceof TurretBlockEntity turret && SecurityCores.inArea(corePos, turret.getBlockPos())
+                    if (blockEntity instanceof TurretBlockEntity turret && SecurityCores.ownedBy(level, core, turret.getBlockPos())
                             && belongs(core, turret)) {
                         turrets.add(turret.getBlockPos().immutable());
-                    } else if (blockEntity instanceof CameraBlockEntity camera && SecurityCores.inArea(corePos, camera.getBlockPos())) {
+                    } else if (blockEntity instanceof CameraBlockEntity camera && SecurityCores.ownedBy(level, core, camera.getBlockPos())) {
                         cameras.add(camera.getBlockPos().immutable());
                     } else if (blockEntity instanceof com.senne.starktech.logic.ServerRackBlockEntity rack
-                            && SecurityCores.inArea(corePos, rack.getBlockPos())) {
+                            && SecurityCores.ownedBy(level, core, rack.getBlockPos())) {
                         racks.add(rack.getBlockPos().immutable());
                     } else if (blockEntity instanceof com.senne.starktech.logic.InputDeviceBlockEntity input
-                            && SecurityCores.inArea(corePos, input.getBlockPos())) {
+                            && SecurityCores.ownedBy(level, core, input.getBlockPos())) {
                         inputs.add(input.getBlockPos().immutable());
                     }
                 }
@@ -116,7 +115,7 @@ public final class SecurityDevices {
                                 if (section.getBlockState(x, y, z).is(ModBlocks.LASER_EMITTER.get())) {
                                     BlockPos pos = new BlockPos(SectionPos.sectionToBlockCoord(cx) + x, baseY + y,
                                             SectionPos.sectionToBlockCoord(cz) + z);
-                                    if (SecurityCores.inArea(corePos, pos)) {
+                                    if (SecurityCores.ownedBy(level, core, pos)) {
                                         emitters.add(pos);
                                     }
                                 }
@@ -179,7 +178,7 @@ public final class SecurityDevices {
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof TurretBlock turretBlock)
                 || !(level.getBlockEntity(pos) instanceof TurretBlockEntity turret)
-                || !SecurityCores.inArea(core.getBlockPos(), pos) || !belongs(core, turret)) {
+                || !SecurityCores.ownedBy(level, core, pos) || !belongs(core, turret)) {
             return "that turret is not part of this network";
         }
         turretBlock.setSwitched(level, pos, state, on);
@@ -213,7 +212,7 @@ public final class SecurityDevices {
 
     /** Een camera een stukje draaien en/of kantelen (de pijltjes op de desktop). Foutmelding, of null. */
     public static @Nullable String aimCamera(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, float dPan, float dTilt) {
-        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.inArea(core.getBlockPos(), pos)) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.ownedBy(level, core, pos)) {
             return "that camera is not part of this network";
         }
         camera.aim(Math.max(-20f, Math.min(20f, dPan)), Math.max(-20f, Math.min(20f, dTilt)));
@@ -225,7 +224,7 @@ public final class SecurityDevices {
      * zijn eigen naam weg (dan heet hij weer "Camera 3"). Foutmelding, of null.
      */
     public static @Nullable String renameCamera(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, String name) {
-        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.inArea(core.getBlockPos(), pos)) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.ownedBy(level, core, pos)) {
             return "that camera is not part of this network";
         }
         camera.setName(name);

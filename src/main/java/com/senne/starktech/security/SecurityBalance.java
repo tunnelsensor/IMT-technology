@@ -11,13 +11,18 @@ public final class SecurityBalance {
 
     // ---------------------------------------------------------------- Het gebied van een kern
     /**
-     * Zover opzij (x en z) beschermt een beveiligingskern de toren. De toren is 41 breed en de
-     * kern staat niet in het midden (in de rij serverkasten), dus ruim genomen.
+     * Zover (blokken) reikt een beveiligingskern, in elke richting: opzij, omhoog en omlaag. Dat is
+     * zijn gebied: zo ver mag zijn zone liggen (jouw wens, 9 oktober: "een zone tot 200 blokken van de
+     * security core"), en zo ver horen zijn apparaten bij hem: torentjes, camera's, keycard-lezers,
+     * codepanelen, serverkasten, laserwanden, het landingsplatform, en zijn drones jagen er
+     * (ook jouw wens, 9 oktober: "even grote range van de core als dat de zone groot kan").
+     *
+     * Eén getal voor alles, in de config: maak je het groter of kleiner, dan past alles zich meteen
+     * aan. Twee kernen mogen niet in elkaars gebied staan, dus ze staan minstens 2 x dit + 1 uit
+     * elkaar (met 200: 401 blokken).
      */
-    public static final int AREA_RADIUS = 30;
-    /** Zover onder de kern (tot het plein) en erboven (tot de antennes). */
-    public static final int AREA_DOWN = 60;
-    public static final int AREA_UP = 55;
+    @Tunable(section = "security", comment = "How far (blocks, in every direction) a security core reaches: its protected zone and all its devices (turrets, cameras, keycard readers, code panels, server racks, laser walls). Two cores must stand at least twice this far apart.")
+    public static int ZONE_REACH = 200;
 
     // ---------------------------------------------------------------- De drones
     /** Levens van een beveiligingsdrone (8 = 4 hartjes). Vast bij het opstarten, dus niet in de config. */
@@ -53,14 +58,6 @@ public final class SecurityBalance {
     // ---------------------------------------------------------------- De zone (hoofdstuk 10)
     /** Zoveel kubussen kan één zone hebben (jouw keuze: "meerdere kubussen"; 16 is mijn invulling). */
     public static final int ZONE_MAX_BOXES = 16;
-    /**
-     * Zover (blokken) mag een zone van zijn kern af liggen, in elke richting: opzij, omhoog en omlaag
-     * (jouw wens, 9 oktober: "een zone tot 200 blokken van de security core"). Dat is groter dan het
-     * gebied van de kern (AREA_...): de zone gaat over bouwen en breken, het gebied over torentjes en
-     * drones, en dat blijft 61 x 61.
-     */
-    @Tunable(section = "security", comment = "How far (blocks, in every direction) a protected zone may reach from its security core")
-    public static int ZONE_REACH = 200;
     /**
      * Een zone kost stroom: om de twee seconden 1 extra (bovenop CORE_UPKEEP) per zoveel blokken.
      * Een basis van 30 x 20 x 30 = 18000 blokken kost zo 9 extra; 100 x 40 x 100 kost 200.
