@@ -52,8 +52,10 @@ E.D.I.T.H. - Even Dead I'm The Hero. Tony Stark's AR glasses: HUD, scanners, dro
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
-#[[mixins]]
-#config="${mod_id}.mixins.json"
+# Stark Tech: kleine ingrepen in Minecraft zelf, waar NeoForge geen event voor heeft (zie het
+# pakket com.senne.starktech.mixin). Eerst alleen het vuur: dat brandt geen blokken van een zone weg.
+[[mixins]]
+config="${mod_id}.mixins.json"
 
 # The [[accessTransformers]] block allows you to declare where your AT file is.
 # If this block is omitted, a fallback attempt will be made to load an AT from META-INF/accesstransformer.cfg

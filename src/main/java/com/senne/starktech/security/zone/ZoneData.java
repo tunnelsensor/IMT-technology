@@ -123,6 +123,23 @@ public final class ZoneData extends SavedData {
             return false;
         }
 
+        /** Raakt een van de kubussen (of de kern) dit stuk ruimte? */
+        public boolean intersects(net.minecraft.world.phys.AABB area) {
+            if (bounds == null) {
+                return false;
+            }
+            if (area.contains(core.pos().getCenter())) {
+                return true;
+            }
+            for (ZoneBox box : boxes) {
+                if (area.intersects(box.min().getX(), box.min().getY(), box.min().getZ(),
+                        box.max().getX() + 1, box.max().getY() + 1, box.max().getZ() + 1)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /**
          * Mag deze speler hier bouwen? Dezelfde vrienden als bij de torentjes (zie
          * SecurityCores.isFriend): de eigenaar, zijn team en wie hij vertrouwt (de app Access).

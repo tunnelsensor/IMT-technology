@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.senne.starktech.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "FireBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

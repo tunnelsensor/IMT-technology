@@ -596,4 +596,130 @@ public final class ZoneGameTests {
         }
         finish(helper, core);
     }
+
+    // ================================================================ Stap 4: alleen C4 komt erdoor
+
+    /**
+     * Een explosie (zoals TNT) naast de zone: de aarde erbuiten vliegt weg, de aarde in de zone blijft.
+     * Stak de eigenaar hem zelf aan, dan gaat zijn eigen zone wel kapot (je eigen TNT in je eigen basis).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_stops_explosions(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 18), "zone-owner");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        for (int x = 10; x <= 15; x++) {
+            helper.setBlock(new BlockPos(x, 3, 8), Blocks.DIRT);
+        }
+        Vec3 blast = helper.absoluteVec(new Vec3(13.5, 3.5, 8.5));
+        level.explode(null, blast.x, blast.y, blast.z, 3.0f, net.minecraft.world.level.Level.ExplosionInteraction.TNT);
+        helper.assertBlockNotPresent(Blocks.DIRT, new BlockPos(14, 3, 8));
+        helper.assertBlockPresent(Blocks.DIRT, new BlockPos(12, 3, 8));
+        helper.assertBlockPresent(Blocks.DIRT, new BlockPos(11, 3, 8));
+        // Nu door de eigenaar zelf.
+        level.explode(owner, blast.x, blast.y, blast.z, 3.0f, net.minecraft.world.level.Level.ExplosionInteraction.TNT);
+        helper.assertBlockNotPresent(Blocks.DIRT, new BlockPos(12, 3, 8));
+        finish(helper, core);
+    }
+
+    /**
+     * Vuur brandt geen blokken van een zone weg (FireBlockMixin): een vuur op een plank in de zone en
+     * een op een plank erbuiten branden 300 keer; de plank erbuiten is weg, die in de zone niet. Lava
+     * steekt in de zone ook niets aan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_stops_fire_and_lava(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 18), "zone-owner");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        BlockPos inside = new BlockPos(8, 3, 8);
+        BlockPos outside = new BlockPos(18, 3, 18);
+        helper.setBlock(inside, Blocks.OAK_PLANKS);
+        helper.setBlock(outside, Blocks.OAK_PLANKS);
+        // De testwereld zet vuur standaard stil (doFireTick uit); alleen voor deze lus even aan.
+        var fireTick = level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DOFIRETICK);
+        boolean wasOn = fireTick.get();
+        fireTick.set(true, level.getServer());
+        try {
+            for (int i = 0; i < 300; i++) {
+                for (BlockPos planks : new BlockPos[] {inside, outside}) {
+                    BlockPos fire = helper.absolutePos(planks.above());
+                    if (!level.getBlockState(helper.absolutePos(planks)).is(Blocks.OAK_PLANKS)) {
+                        continue;
+                    }
+                    if (!level.getBlockState(fire).is(Blocks.FIRE)) {
+                        level.setBlock(fire, Blocks.FIRE.defaultBlockState(), 2);
+                    }
+                    level.getBlockState(fire).tick(level, fire, level.random);
+                }
+            }
+        } finally {
+            fireTick.set(wasOn, level.getServer());
+        }
+        helper.setBlock(inside.above(), Blocks.AIR);
+        helper.setBlock(outside.above(), Blocks.AIR);
+        helper.assertBlockNotPresent(Blocks.OAK_PLANKS, outside);
+        helper.assertBlockPresent(Blocks.OAK_PLANKS, inside);
+        // Lava die vuur zou maken: in de zone niet, erbuiten wel.
+        BlockPos lavaInside = helper.absolutePos(new BlockPos(9, 4, 8));
+        BlockPos lavaOutside = helper.absolutePos(new BlockPos(19, 4, 18));
+        if (net.neoforged.neoforge.event.EventHooks.fireFluidPlaceBlockEvent(level, lavaInside.west(), lavaInside,
+                Blocks.FIRE.defaultBlockState()).is(Blocks.FIRE)) {
+            throw new GameTestAssertException("Lava stak in de zone iets aan");
+        }
+        if (!net.neoforged.neoforge.event.EventHooks.fireFluidPlaceBlockEvent(level, lavaOutside.west(), lavaOutside,
+                Blocks.FIRE.defaultBlockState()).is(Blocks.FIRE)) {
+            throw new GameTestAssertException("Lava buiten de zone zou wel iets moeten aansteken");
+        }
+        finish(helper, core);
+    }
+
+    /**
+     * Een zuiger buiten de zone duwt geen blok de zone in (of erdoor); een zuiger erbuiten, zonder
+     * zone, duwt gewoon.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "zones")
+    public static void zone_stops_pistons(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 18), "zone-owner");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        net.minecraft.world.level.block.state.BlockState piston = Blocks.PISTON.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.piston.PistonBaseBlock.FACING, Direction.WEST);
+        helper.setBlock(new BlockPos(12, 3, 8), Blocks.STONE);
+        helper.setBlock(new BlockPos(13, 3, 8), piston);
+        helper.setBlock(new BlockPos(17, 3, 16), Blocks.STONE);
+        helper.setBlock(new BlockPos(18, 3, 16), piston);
+        helper.setBlock(new BlockPos(13, 4, 8), Blocks.REDSTONE_BLOCK);
+        helper.setBlock(new BlockPos(18, 4, 16), Blocks.REDSTONE_BLOCK);
+        helper.runAfterDelay(8, () -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(16, 3, 16)); // buiten de zone: geduwd
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(12, 3, 8));  // de zone: niet
+            helper.assertBlockNotPresent(Blocks.STONE, new BlockPos(11, 3, 8));
+            finish(helper, core);
+        });
+    }
+
+    /**
+     * Monsters (hier een enderman) mogen in en vlak bij een zone geen blokken pakken of breken; ver
+     * ervandaan wel (zoals altijd in Minecraft).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_stops_mob_griefing(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 18), "zone-owner");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        var near = helper.spawn(net.minecraft.world.entity.EntityType.ENDERMAN, new BlockPos(13, 3, 8));
+        var far = helper.spawn(net.minecraft.world.entity.EntityType.ENDERMAN, new BlockPos(21, 3, 21));
+        near.setNoAi(true);
+        far.setNoAi(true);
+        boolean griefing = level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
+        if (net.neoforged.neoforge.event.EventHooks.canEntityGrief(level, near)) {
+            throw new GameTestAssertException("Een enderman vlak bij de zone zou geen blokken mogen pakken");
+        }
+        if (griefing && !net.neoforged.neoforge.event.EventHooks.canEntityGrief(level, far)) {
+            throw new GameTestAssertException("Een enderman ver van de zone zou wel blokken mogen pakken");
+        }
+        near.discard();
+        far.discard();
+        finish(helper, core);
+    }
 }

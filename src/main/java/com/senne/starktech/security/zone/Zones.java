@@ -213,6 +213,98 @@ public final class Zones {
         tellProtected(player);
     }
 
+    // ================================================================ Alleen C4 komt erdoor (stap 4)
+    //
+    // Anders kon je met TNT, een aansteker of een zuiger om de zone heen. C4 breekt zelf zijn blokken
+    // (zie item/C4), dus die gaat hier niet langs.
+
+    /**
+     * Een explosie (TNT, een creeper, een vuurbal, de satelliet...): de blokken van een actieve zone
+     * blijven heel, behalve als iemand die er mag bouwen hem veroorzaakte (je eigen TNT in je eigen
+     * basis). Wezens krijgen de klap gewoon.
+     */
+    public static void onExplosion(net.neoforged.neoforge.event.level.ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || event.getAffectedBlocks().isEmpty()) {
+            return;
+        }
+        Entity cause = event.getExplosion().getIndirectSourceEntity();
+        event.getAffectedBlocks().removeIf(pos -> {
+            ZoneData.Zone zone = activeAt(level, pos);
+            return zone != null && !mayBuild(level, zone, cause);
+        });
+    }
+
+    /**
+     * Een zuiger duwt of trekt geen blokken in, uit of door een zone, tenzij hij zelf in diezelfde
+     * zone staat (de machines van de eigenaar werken gewoon).
+     */
+    public static void onPiston(net.neoforged.neoforge.event.level.PistonEvent.Pre event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        net.minecraft.world.level.block.piston.PistonStructureResolver resolver = event.getStructureHelper();
+        if (resolver == null || !resolver.resolve()) {
+            return; // hij kan toch niet bewegen
+        }
+        ZoneData.Zone own = activeAt(level, event.getPos());
+        net.minecraft.core.Direction move = event.getPistonMoveType().isExtend
+                ? event.getDirection() : event.getDirection().getOpposite();
+        java.util.List<BlockPos> touched = new java.util.ArrayList<>();
+        for (BlockPos pos : resolver.getToPush()) {
+            touched.add(pos);
+            touched.add(pos.relative(move));
+        }
+        touched.addAll(resolver.getToDestroy());
+        for (BlockPos pos : touched) {
+            ZoneData.Zone zone = activeAt(level, pos);
+            if (zone != null && zone != own) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Monsters (endermen, withers, ravagers, zombies bij een deur, zilvervisjes) breken geen blokken
+     * in of vlak bij een actieve zone. Dieren en dorpelingen wel gewoon (een dorpeling oogst je akker).
+     */
+    public static void onMobGriefing(net.neoforged.neoforge.event.entity.EntityMobGriefingEvent event) {
+        Entity entity = event.getEntity();
+        if (!(entity instanceof net.minecraft.world.entity.monster.Enemy) || !(entity.level() instanceof ServerLevel level)) {
+            return;
+        }
+        if (touchesActiveZone(level, entity.getBoundingBox().inflate(3.0))) {
+            event.setCanGrief(false);
+        }
+    }
+
+    /**
+     * Lava steekt in een zone niets aan (het vuur zelf brandt daar ook niets weg, zie FireBlockMixin).
+     * Annuleren helpt bij dit event niet (Minecraft kijkt alleen naar het nieuwe blok), dus zetten we
+     * het oude blok terug.
+     */
+    public static void onFluidPlace(BlockEvent.FluidPlaceBlockEvent event) {
+        if (event.getLevel() instanceof ServerLevel level && event.getNewState().getBlock() instanceof net.minecraft.world.level.block.BaseFireBlock
+                && activeAt(level, event.getPos()) != null) {
+            event.setNewState(event.getOriginalState());
+        }
+    }
+
+    /** Ligt er een actieve zone (deels) in dit stuk ruimte? */
+    public static boolean touchesActiveZone(ServerLevel level, net.minecraft.world.phys.AABB area) {
+        for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
+            if (zone.active() && zone.intersects(area)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Mag vuur dit blok wegbranden? Niet in een actieve zone (zie FireBlockMixin). */
+    public static boolean fireMayBurn(net.minecraft.world.level.Level level, BlockPos pos) {
+        return !(level instanceof ServerLevel server) || activeAt(server, pos) == null;
+    }
+
     // ================================================================ Opruimen
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {

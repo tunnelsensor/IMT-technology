@@ -171,6 +171,11 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onBreak);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onPlace);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onUseItem);
+        // Alleen C4 komt door een zone: geen explosies, zuigers, monsters of lava (vuur: zie FireBlockMixin).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onExplosion);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onPiston);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onMobGriefing);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onFluidPlace);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onServerStopped);
         // De rand van je zone: de server stuurt je zones naar jou en je vrienden.

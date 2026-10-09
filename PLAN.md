@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 157 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 161 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1412,9 +1412,18 @@ De stappen, één per commit:
       en **Delete box** (eerst "Sure?"). Toevoegen en weghalen staat in het logboek. Werkt ook via SSH.
       Screenshots: `-Ponly=zones` (`z03b_zone_marker`, `z03c_zone_app`). Twee nieuwe tests: de marker
       (hoeken, toevoegen, een vreemde kan het niet, weghalen in twee klikken) en de knoppen van de app.
-- [ ] **4. Alleen C4 komt erdoor**
-      Explosies, vuur, lava, zuigers en monsters breken geen blokken in een zone (voor het vuur een
-      kleine "mixin": een stukje code dat in Minecraft zelf ingrijpt). Tests.
+- [x] **4. Alleen C4 komt erdoor**
+      **Explosies** (TNT, creepers, vuurballen, de satelliet, end crystals...) breken geen blokken van
+      een actieve zone meer; wezens krijgen de klap wel. Stak iemand die er mag bouwen hem zelf aan
+      (je eigen TNT in je eigen basis), dan wel. **Vuur** brandt geen blokken van een zone weg: daar
+      heeft NeoForge geen event voor, dus is dit de eerste **mixin** van de mod (`mixin/FireBlockMixin`,
+      aangemeld in `neoforge.mods.toml` en `starktech.mixins.json`): vlak voordat vuur een buurblok
+      wegbrandt, kijkt hij of dat in een zone ligt. **Lava** steekt in een zone niets aan. Een
+      **zuiger** duwt of trekt geen blokken in, uit of door een zone, behalve een zuiger die zelf in
+      diezelfde zone staat (je eigen machines). **Monsters** (endermen, withers, ravagers, zombies bij
+      deuren, zilvervisjes) breken in en tot 3 blokken rond een zone niets; dieren en dorpelingen wel
+      gewoon. En de **raiddrones** schieten geen blokken van een zone meer weg. Vier nieuwe tests
+      (explosies, vuur en lava, zuigers, monsters), telkens met een controle buiten de zone.
 - [ ] **5. C4 met timer**
       Het item, het blok op elke kant, het timerscherm, het schermpje dat aftelt, de piepjes, en de
       klap met breekpunten en barsten. Tests en screenshots.

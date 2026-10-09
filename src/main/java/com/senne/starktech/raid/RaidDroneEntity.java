@@ -181,6 +181,9 @@ public class RaidDroneEntity extends Monster {
             if (state.getDestroySpeed(level, pos) < 0) {
                 return; // onverwoestbaar (bedrock): hier houdt het op
             }
+            if (com.senne.starktech.security.zone.Zones.activeAt(level, pos) != null) {
+                return; // een blok van een zone: daar komt alleen C4 door (hoofdstuk 10)
+            }
             level.destroyBlock(pos, true, this);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                     8, 0.3, 0.3, 0.3, 0.1);
