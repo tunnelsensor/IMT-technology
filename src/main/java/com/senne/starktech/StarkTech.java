@@ -173,6 +173,11 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.bypass.Bypass::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.bypass.Bypass::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.bypass.Bypass::onServerStopped);
+        // Hoofdstuk 12: zakkenrollen (sluipend rechtsklikken op een speler, en de zak bijhouden).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.pickpocket.Pickpocket::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.pickpocket.Pickpocket::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.pickpocket.Pickpocket::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.pickpocket.Pickpocket::onServerStopped);
         // De Stark OS-desktop op de beveiligingskern
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onPlayerLoggedOut);

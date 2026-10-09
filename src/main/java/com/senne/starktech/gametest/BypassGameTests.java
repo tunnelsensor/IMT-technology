@@ -8,6 +8,8 @@ import com.senne.starktech.bypass.PanelOrders;
 import com.senne.starktech.logic.InputDeviceBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
 import com.senne.starktech.logic.InputLight;
+import com.senne.starktech.logic.KeycardData;
+import com.senne.starktech.logic.KeycardItem;
 import com.senne.starktech.logic.LogicEvents;
 import com.senne.starktech.logic.PanelCodes;
 import com.senne.starktech.logic.program.GraphConverter;
@@ -15,6 +17,8 @@ import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.network.BypassPayload;
 import com.senne.starktech.network.OsActionPayload;
+import com.senne.starktech.network.PocketPayload;
+import com.senne.starktech.pickpocket.Pickpocket;
 import com.senne.starktech.redstone.Relay;
 import com.senne.starktech.redstone.RelayBlock;
 import com.senne.starktech.registry.ModAttachments;
@@ -35,13 +39,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Tests voor inbreken (hoofdstuk 12 van het plan): de Bypass Kit, het stroomcircuit van een
- * keycardlezer, en de vingerafdrukken en de volgorde van een codepaneel.
+ * keycardlezer, de vingerafdrukken en de volgorde van een codepaneel, en zakkenrollen.
  */
 @GameTestHolder(StarkTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -446,6 +452,144 @@ public final class BypassGameTests {
                     && entry.text().contains("Someone is tampering with Front door"));
             check(alarm, "Geen alarm na te veel pogingen: " + lastEntry(setup.core()));
             check(Bypass.lockedFor(setup.hacker(), setup.panelAbs()) > 0, "Het paneel laat de hacker meteen weer proberen");
+            helper.succeed();
+        });
+    }
+
+
+    // ================================================================ Zakkenrollen
+
+    /** Een slachtoffer met keycards in zijn zakken (en één in zijn hand), en een dief. */
+    private record Pockets(ServerPlayer victim, ServerPlayer thief) {}
+
+    /**
+     * Het slachtoffer staat op (5, 3, 5) en kijkt naar het noorden; in zijn hand een keycard, in zijn
+     * rugzak twee beschreven kaarten en een stapel van drie lege. De dief staat achter hem (zuidelijk).
+     */
+    private static Pockets pockets(GameTestHelper helper, String thiefName) {
+        ServerPlayer victim = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 3, 5), "pocket-victim");
+        victim.getAbilities().instabuild = false;
+        victim.getInventory().clearContent();
+        victim.getInventory().selected = 0;
+        victim.getInventory().setItem(0, card(1001, 2, "Hand card"));
+        victim.getInventory().setItem(10, card(1002, 3, "Lab access"));
+        victim.getInventory().setItem(11, card(1003, 5, "Vault"));
+        victim.getInventory().setItem(12, new ItemStack(ModItems.KEYCARD.get(), 3));
+        look(victim, 180); // naar het noorden
+        ServerPlayer thief = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 3, 5), thiefName);
+        thief.getAbilities().instabuild = false;
+        thief.getInventory().clearContent();
+        Vec3 behind = helper.absoluteVec(new Vec3(5.5, 3, 7.0));
+        thief.teleportTo(behind.x, behind.y, behind.z);
+        look(thief, 180);
+        Pickpocket.clear();
+        return new Pockets(victim, thief);
+    }
+
+    private static ItemStack card(int number, int level, String label) {
+        ItemStack stack = new ItemStack(ModItems.KEYCARD.get());
+        KeycardItem.write(stack, new KeycardData("10.0.0.9", "pocket-net", number, level, label));
+        return stack;
+    }
+
+    /** Laat een speler deze kant op kijken (0 = zuid, 180 = noord), ook met zijn hoofd. */
+    private static void look(ServerPlayer player, float yaw) {
+        player.setYRot(yaw);
+        player.setYHeadRot(yaw);
+        player.yHeadRotO = yaw;
+        player.yRotO = yaw;
+        player.setXRot(0);
+    }
+
+    /** Hoeveel keycards iemand bij zich heeft. */
+    private static int keycards(ServerPlayer player) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.getItem() instanceof KeycardItem) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Van voren lukt het niet ("hij zou je zien"). Van achteren opent de zak: drie kaarten (de kaart in
+     * zijn hand zit niet in een zak). Trek je er één uit, dan heb jij hem en is hij hem kwijt (uit een
+     * stapel één). Daarna moet je even wachten voor je het bij hem weer mag proberen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "pickpocket")
+    public static void pickpocket_from_behind(GameTestHelper helper) {
+        Pockets p = pockets(helper, "pocket-thief");
+        helper.runAfterDelay(2, () -> {
+            Vec3 front = helper.absoluteVec(new Vec3(5.5, 3, 4.0));
+            p.thief().teleportTo(front.x, front.y, front.z);
+            check(!Pickpocket.tryStart(p.thief(), p.victim()), "Van voren kon de dief toch in de zak");
+            Vec3 behind = helper.absoluteVec(new Vec3(5.5, 3, 7.0));
+            p.thief().teleportTo(behind.x, behind.y, behind.z);
+            check(Pickpocket.tryStart(p.thief(), p.victim()), "Van achteren ging de zak niet open");
+            check(Pickpocket.cardsInPocket(p.thief()) == 3, "Kaarten in de zak: " + Pickpocket.cardsInPocket(p.thief()));
+            int before = keycards(p.victim());
+            CompoundTag args = new CompoundTag();
+            args.putInt("index", 0);
+            Pickpocket.handle(p.thief(), new PocketPayload(p.victim().getId(), "take", args));
+            check(keycards(p.thief()) == 1, "De dief heeft geen kaart: " + keycards(p.thief()));
+            check(keycards(p.victim()) == before - 1, "Het slachtoffer is niets kwijt");
+            check(p.victim().getInventory().getItem(0).getItem() instanceof KeycardItem, "De kaart uit zijn hand is weg");
+            check(!Pickpocket.isStealing(p.thief()), "Na het pikken stond de zak nog open");
+            check(!Pickpocket.tryStart(p.thief(), p.victim()) && Pickpocket.waitFor(p.thief(), p.victim()) > 0,
+                    "Meteen nog een keer mocht");
+            check(!p.thief().hasEffect(MobEffects.GLOWING), "Een gelukte poging liet de dief oplichten");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Draait het slachtoffer zich om en ziet hij de dief, dan is die betrapt: de zak gaat dicht en de
+     * dief licht op. Dat gebeurt ook als de meter op het scherm vol is ("caught").
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "pickpocket_caught")
+    public static void pickpocket_caught_when_seen(GameTestHelper helper) {
+        Pockets p = pockets(helper, "pocket-thief");
+        ServerPlayer second = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 3, 5), "pocket-thief-2");
+        Vec3 behind = helper.absoluteVec(new Vec3(6.2, 3, 6.6));
+        second.teleportTo(behind.x, behind.y, behind.z);
+        helper.runAfterDelay(2, () -> {
+            check(Pickpocket.tryStart(p.thief(), p.victim()), "De zak ging niet open");
+            look(p.victim(), 0); // hij draait zich om, naar het zuiden
+        });
+        helper.runAfterDelay(5, () -> {
+            check(!Pickpocket.isStealing(p.thief()), "Hij draaide zich om, maar de zak stond nog open");
+            check(p.thief().hasEffect(MobEffects.GLOWING), "De betrapte dief licht niet op");
+            look(p.victim(), 180);
+            check(Pickpocket.tryStart(second, p.victim()), "De tweede dief kon niet in de zak");
+            Pickpocket.handle(second, PocketPayload.of(p.victim().getId(), "caught"));
+            check(!Pickpocket.isStealing(second) && second.hasEffect(MobEffects.GLOWING),
+                    "Een volle meter betrapte de tweede dief niet");
+            check(keycards(second) == 0, "De betrapte dief kreeg toch een kaart");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Loopt het slachtoffer weg, dan houdt het op (zonder betrapt te zijn). Spelers in creative hebben
+     * niets in hun zakken te pikken.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "pickpocket_away")
+    public static void pickpocket_victim_walks_away(GameTestHelper helper) {
+        Pockets p = pockets(helper, "pocket-thief");
+        helper.runAfterDelay(2, () -> {
+            check(Pickpocket.tryStart(p.thief(), p.victim()), "De zak ging niet open");
+            Vec3 far = helper.absoluteVec(new Vec3(5.5, 3, 1.0));
+            p.victim().teleportTo(far.x, far.y, far.z);
+        });
+        helper.runAfterDelay(5, () -> {
+            check(!Pickpocket.isStealing(p.thief()), "Hij liep weg, maar de zak stond nog open");
+            check(!p.thief().hasEffect(MobEffects.GLOWING), "Weglopen telde als betrapt");
+            ServerPlayer creative = helper.makeMockServerPlayerInLevel();
+            Vec3 at = helper.absoluteVec(new Vec3(5.5, 3, 5.5));
+            creative.teleportTo(at.x, at.y, at.z);
+            look(creative, 180);
+            check(!creative.isCreative() || !Pickpocket.tryStart(p.thief(), creative), "Een speler in creative werd gezakkenrold");
             helper.succeed();
         });
     }

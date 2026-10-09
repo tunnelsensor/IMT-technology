@@ -43,6 +43,19 @@ public final class BypassBalance {
     @Tunable(section = "bypass", comment = "After a failed hack, that reader or panel ignores the hacker for this long (seconds)")
     public static int LOCKOUT_SECONDS = 60;
 
+    // ---------------------------------------------------------------- Zakkenrollen
+
+    @Tunable(section = "bypass", comment = "How close you must be to pick someone's pocket (blocks)")
+    public static double PICKPOCKET_REACH = 2.5;
+    @Tunable(section = "bypass", comment = "How long before you may try the same player's pockets again (seconds), whatever happened")
+    public static int PICKPOCKET_COOLDOWN_SECONDS = 30;
+    @Tunable(section = "bypass", comment = "How long a caught pickpocket glows, so the victim can find them (seconds)")
+    public static int PICKPOCKET_GLOW_SECONDS = 10;
+    /** Zoveel keycards liggen er hooguit in een zak (heeft iemand er meer, dan zie je er zoveel). */
+    public static final int POCKET_MAX_CARDS = 6;
+    /** Loopt het slachtoffer verder weg dan dit (blokken), dan houdt het op (zonder betrapt te zijn). */
+    public static final double POCKET_LEAVE = 3.5;
+
     /** Hoeveel seconden je hebt voor een kaart van dit niveau (1-5). */
     public static int circuitSeconds(int level) {
         return Math.max(10, CIRCUIT_SECONDS - CIRCUIT_SECONDS_LESS_PER_LEVEL * (clampLevel(level) - 1));

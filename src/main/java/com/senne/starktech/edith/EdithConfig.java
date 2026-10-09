@@ -84,6 +84,11 @@ public final class EdithConfig {
                     "Set this to false on a server where players do not want that.")
             .define("hack.allowed", true);
 
+    public static final ModConfigSpec.BooleanValue PICKPOCKET_ALLOWED = BUILDER
+            .comment("May players pick keycards out of other players' pockets (sneak behind them, empty hand, right-click)?",
+                    "Set this to false on a server where players do not want that.")
+            .define("pickpocket.allowed", true);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     // ---------------------------------------------------------------- Hulpmethodes
@@ -145,5 +150,10 @@ public final class EdithConfig {
     /** Mag de hack-functie gebruikt worden? */
     public static boolean hackAllowed() {
         return !SPEC.isLoaded() || HACK_ALLOWED.get();
+    }
+
+    /** Mag je keycards uit de zakken van andere spelers pikken (hoofdstuk 12)? */
+    public static boolean pickpocketAllowed() {
+        return !SPEC.isLoaded() || PICKPOCKET_ALLOWED.get();
     }
 }

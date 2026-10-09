@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 196 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 199 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1804,10 +1804,31 @@ De stappen, één per commit:
       paneel of een diagram dat uit staat) en het rekenwerk, kraken met pogingen die niet tellen en die
       wel tellen en dan de kluis open, en te veel pogingen geeft alarm (en een paneel zonder code valt
       niet te kraken).
-- [ ] **3. Zakkenrollen**
-      Het zak-scherm met kaarten en rommel, slepen en de meter, betrapt worden (de meter vol, of hij
-      draait zich om), en de kaart echt verplaatsen. Tests: van voren mag niet; een kaart pikken (de
-      ander is hem kwijt, jij hebt hem); betrapt geeft een melding en oplichten; de wachttijd.
+- [x] **3. Zakkenrollen**
+      Sluip met een lege hand achter iemand (meer dan ongeveer 100 graden naast waar hij heen kijkt,
+      binnen 2,5 blokken) en rechtsklik op hem. Sta je ervoor, dan zegt hij "Get behind ... first: they
+      would see you." Het scherm (`client/pickpocket/PocketScreen`): bovenaan een vak "pull a card up
+      here", daaronder zijn zak (bruine stof met een stiksel) met zijn keycards omgekeerd (een blauwe
+      achterkant, voor iedereen hetzelfde) tussen 7 tot 10 stukjes rommel (touwtje, papiertje, muntje,
+      vuursteen, stokje, veer, ijzerklompje, klei: alleen plaatjes), voor een groot deel bovenop de
+      kaarten. Rechts de meter **NOTICED**: elke pixel slepen telt (rustig 0,25% per pixel, sneller dan 8
+      pixels per tick 0,6%), iets oppakken 2%; hou je even stil, dan zakt hij (6% per seconde). Vanaf
+      60% hoor je een hartslag, vanaf 80% knippert hij rood. Sleep een kaart boven uit de zak: de server
+      zegt welke het is, hij draait om en ligt groot in je hand ("Keycard: Lab access", LEVEL 3), en hij
+      zit in je rugzak (uit een stapel één). **Welke kaart achter welke achterkant zit, weet alleen de
+      server** (`pickpocket/Pickpocket`): je spel kent alleen het aantal. In de zak zit alles uit zijn
+      inventaris behalve wat hij in zijn hand houdt (hooguit 6 kaarten). Heeft hij hem net verplaatst,
+      dan "That card isn't there any more." **Betrapt**: de meter vol, of hij draait zich om en ziet je
+      (binnen ongeveer 60 graden van waar hij kijkt, geen muur ertussen): hij krijgt in de chat "... tried
+      to pick your pocket!" met een piep, en jij licht 10 seconden op. Loopt hij weg (verder dan 3,5
+      blokken), dan houdt het op, zonder betrapt. Bij dezelfde speler mag je het pas na 30 seconden weer
+      proberen, wat er ook gebeurde. Spelers in creative of spectator kun je niet zakkenrollen. Een
+      server zet het uit met `pickpocket.allowed = false` in `starktech-server.toml`; het bereik, de
+      wachttijd en hoe lang je oplicht staan onder `[bypass]`. Screenshots: `-Ponly=bypass`
+      (`bp16`-`bp20`, alleen het scherm: in de testwereld is er geen tweede speler). Drie nieuwe tests:
+      van voren mag niet en van achteren pik je een kaart (hij is hem kwijt, jij hebt hem, de kaart in zijn
+      hand blijft, en daarna moet je wachten), betrapt als hij zich omdraait of als de meter vol is (en
+      dan licht je op), en weglopen (en iemand in creative).
 - [ ] **4. Showcase, screenshots en LEESMIJ**
       Een nieuwe functie in de showcase (na "Repairing cracks"), screenshots met `-Ponly=bypass`, en
       een eigen stuk in LEESMIJ.md.

@@ -1979,6 +1979,33 @@ public final class VisualCheck {
             t.shot(15, "bp14_panel_cracked");
             t.close(0);
             t.shot(4, "bp15_panel_green");
+            // Zakkenrollen: alleen het scherm (in deze wereld is er geen tweede speler). De zak van
+            // "Pepper": dicht, de rommel opzij, de meter bijna vol, een kaart eruit, en een keer betrapt.
+            t.open(5, () -> new com.senne.starktech.client.pickpocket.PocketScreen(-1, "Pepper", 3, 7L));
+            t.shot(10, "bp16_pocket");
+            t.step(0, () -> pocket(com.senne.starktech.client.pickpocket.PocketScreen::tourUncover));
+            t.shot(5, "bp17_pocket_uncovered");
+            t.step(0, () -> pocket(screen -> screen.tourNotice(0.86f)));
+            t.shot(3, "bp18_pocket_noticing");
+            t.step(0, () -> pocket(screen -> {
+                screen.tourNotice(0.3f);
+                screen.tourPull();
+                net.minecraft.nbt.CompoundTag taken = new net.minecraft.nbt.CompoundTag();
+                taken.putString("result", "taken");
+                taken.putString("name", "Keycard: Lab access");
+                taken.putInt("level", 3);
+                screen.onResult(taken);
+            }));
+            t.shot(5, "bp19_pocket_taken");
+            t.close(0);
+            t.open(5, () -> new com.senne.starktech.client.pickpocket.PocketScreen(-1, "Pepper", 2, 11L));
+            t.step(5, () -> pocket(screen -> {
+                net.minecraft.nbt.CompoundTag caught = new net.minecraft.nbt.CompoundTag();
+                caught.putString("result", "caught");
+                screen.onResult(caught);
+            }));
+            t.shot(5, "bp20_pocket_caught");
+            t.close(0);
         }
 
         // --- Zones (hoofdstuk 10, 8 oktober): een L-vormige basis met een torentje en de blauwe rand
@@ -2100,6 +2127,13 @@ public final class VisualCheck {
 
     /** Waar het lab van hoofdstuk 12 staat (zie buildBypassLab). */
     private static final BlockPos BYPASS_LAB = new BlockPos(170, -60, 128);
+
+    /** Doet iets met de zak die nu open is (als hij open is). */
+    private static void pocket(java.util.function.Consumer<com.senne.starktech.client.pickpocket.PocketScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.pickpocket.PocketScreen screen) {
+            action.accept(screen);
+        }
+    }
 
     /** Doet iets met het vingerafdrukken-scherm dat nu open is (als het open is). */
     private static void fingerprints(java.util.function.Consumer<com.senne.starktech.client.bypass.FingerprintScreen> action) {

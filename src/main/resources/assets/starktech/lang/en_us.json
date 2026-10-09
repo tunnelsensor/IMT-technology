@@ -1219,5 +1219,10 @@
   "bypass.starktech.msg.no_server": "Not connected to a running server: there is nothing to fool here.",
   "bypass.starktech.msg.locked": "%s is on guard after your last try: wait %s s.",
   "tooltip.starktech.bypass_kit.panel": "Right-click a code panel: dust it for fingerprints and crack the code.",
-  "bypass.starktech.msg.no_code": "No diagram checks a code on this panel: there is no code to crack."
+  "bypass.starktech.msg.no_code": "No diagram checks a code on this panel: there is no code to crack.",
+  "pickpocket.starktech.msg.disabled": "Pickpocketing is turned off on this server.",
+  "pickpocket.starktech.msg.not_behind": "Get behind %s first: they would see you.",
+  "pickpocket.starktech.msg.wait": "%s is still wary: wait %s s before you try again.",
+  "pickpocket.starktech.msg.victim": "%s tried to pick your pocket!",
+  "pickpocket.starktech.msg.caught": "Caught! %s noticed you."
 }

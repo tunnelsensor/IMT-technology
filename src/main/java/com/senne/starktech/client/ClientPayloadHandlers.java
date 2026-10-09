@@ -111,6 +111,20 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Zakkenrollen (hoofdstuk 12): de zak van een speler openen, of laten zien hoe het afliep. */
+    public static void onPocket(com.senne.starktech.network.PocketPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        var args = payload.args();
+        if (payload.op().equals("open")) {
+            mc.setScreen(new com.senne.starktech.client.pickpocket.PocketScreen(payload.victim(), args.getString("name"),
+                    args.getInt("cards"), args.getLong("seed")));
+        } else if (payload.op().equals("result")
+                && mc.screen instanceof com.senne.starktech.client.pickpocket.PocketScreen pocket
+                && pocket.victim() == payload.victim()) {
+            pocket.onResult(args);
+        }
+    }
+
     /** De Stark OS-desktop openen (eigenaar of op afstand), of weer sluiten. */
     public static void onOsOpen(com.senne.starktech.network.OsOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
