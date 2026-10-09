@@ -118,8 +118,9 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
 | **I** | Repulsor aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
 | **X** | Salvo mini-raketten (hele harnas + raketpakket) |
 
-Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.** Daar staat ook "Cable X-ray
-on/off" (verborgen kabels door muren heen zien), standaard zonder toets.
+Alle toetsen kun je aanpassen: **Opties > Besturing > E.D.I.T.H.** Daar staan ook "Cable X-ray
+on/off" (verborgen kabels door muren heen zien) en "Zone border on/off" (de rand van je zones),
+allebei standaard zonder toets.
 
 ---
 
@@ -134,7 +135,7 @@ on/off" (verborgen kabels door muren heen zien), standaard zonder toets.
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
-| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien) |
+| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien), zonerand |
 | **Navigation** | Waypoints, ping, comms |
 | **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
 
@@ -517,6 +518,64 @@ er backups van, en het brein van E.D.I.T.H. draait erop.
 
 Alle getallen staan in `config/starktech-balance.toml` onder `[logic]`.
 
+### Je basis beveiligen: zones en C4
+In Minecraft kan iedereen elk blok weghakken. Met een **zone** kunnen in je basis alleen jij en je
+vrienden nog bouwen en breken. Om toch te kunnen inbreken (moeilijker, niet onmogelijk) is er **C4**.
+
+**Een zone tekenen.** Een zone hoort bij je **beveiligingskern** en bestaat uit één of meer
+**kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze moeten
+binnen het gebied van je kern liggen (30 blokken opzij, 60 onder en 55 boven de kern); hooguit 16.
+- Met de **Zone Marker** (recept: een redstonefakkel, een Stark-chip en een stok onder elkaar):
+  **linksklik** op een blok = hoek 1, **rechtsklik** = hoek 2 (je ziet een oranje doos en hoe groot hij
+  is), **sluipen + rechtsklik** = die doos wordt een kubus van je zone. **Sluipen + linksklik** in een
+  kubus (twee keer) haalt hem weg. Met de marker in je hand zie je je zone altijd, met een nummer
+  boven elke kubus.
+- In de app **Zone** op de desktop van je kern (ook via SSH): een kaart van bovenaf, en per kubus de
+  getallen van de twee hoeken (typen + Enter) en per kant een **−** en **+** om die kant één blok te
+  verschuiven. **New box** zet een kubus van 7 × 5 × 7 waar je staat.
+
+**Wie mag wat.** In een zone mogen alleen **jij, je team en je vertrouwde spelers** (de app Access)
+blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten
+(ook geen emmer leeggieten, vuur aansteken of Stark-kabels leggen of knippen); hij ziet dan
+"Protected zone". Wel mag iedereen **ladders, scaffolding, klimplanten, fakkels en lantaarns**
+plaatsen en weer weghalen (klimmen kan in het echt ook), en natuurlijk C4. Al de rest is gewoon
+bruikbaar, net als in het echt: wie binnen is, kan kisten openen, deuren gebruiken en stelen. Een
+houten deur is dus geen slot; een ijzeren deur met een keycard-lezer of codepaneel buiten wel.
+
+**Alleen C4 komt erdoor.** TNT, creepers, vuurballen en de satelliet breken geen blokken van een zone
+(behalve je eigen TNT in je eigen zone); vuur brandt ze niet weg en lava steekt ze niet aan; een
+zuiger van buiten duwt of trekt er niets in of uit; monsters (endermen, withers, ravagers, zombies
+bij deuren) en raiddrones breken er niets.
+
+**De rand.** Jij en je vrienden zien de rand van de zone: doorzichtige blauwe wanden met een raster,
+tot zo'n 48 blokken ver (rood als de zone geen stroom heeft). Een vreemde ziet niets. Aan/uit voor
+jezelf: **G > Information > Zone border** (of een eigen toets).
+
+**Stroom.** Een zone kost stroom bovenop de kern: 1 per 2000 blokken, om de twee seconden. Zonder
+stroom staat de zone uit (E.D.I.T.H. waarschuwt je). Zet je generatoren en kabels dus **in** je zone,
+anders kan een inbreker ze van buitenaf kapotmaken. Wie je kern hackt, krijgt ook je zone.
+
+**C4.** Je plakt C4 op een vloer, muur of plafond, ook in de zone van een ander.
+- **C4 (Timer)** (TNT, twee klei, een slijmbal, redstone en een klok): rechtsklik in de lucht om de
+  tijd te kiezen (5 seconden tot 2 minuten). Na het plakken telt hij af op zijn schermpje en piept hij
+  steeds sneller.
+- **C4 (Remote)** (TNT, twee klei, een slijmbal, redstone en een bliksemafleider) met de
+  **Detonator** (een bliksemafleider, ijzer, een Stark-chip, ijzer en een knop): heb je de detonator
+  bij je als je plakt, dan hoort de lading erbij. **Rechtsklik** met de detonator = al zijn ladingen
+  binnen 128 blokken gaan af; **sluipen + rechtsklik** = hoeveel er gekoppeld zijn. Met de detonator in
+  je hand zie je je ladingen als rode bordjes.
+- **Sterke muren kosten meer C4**: hout, glas en aarde vliegen er meteen uit, één C4 maakt een gat
+  van drie hoog in een stenen muur, obsidiaan breekt pas na drie C4 op dezelfde plek, de
+  beveiligingskern na zes. Wat niet breekt krijgt **barsten** (de volgende klap telt erbij op; ze
+  genezen na 10 minuten). Op obsidiaan zie je die barsten bijna niet. Andere C4 in de klap gaat ook af.
+- **Ontmantelen**: alleen met een **schaar** (rechtsklik): de C4 valt eruit, en jij hebt hem. Met je
+  hand krijg je hem er niet af.
+- **Alarm**: plakt iemand C4 op jouw zone, dan zegt E.D.I.T.H. waar (niet wie), en jij en je vrienden
+  zien een knipperend rood bordje "C4!" tot hij weg is. Hoeveel er ontploft is, staat in het logboek
+  van je kern. Was je offline, dan vertelt E.D.I.T.H. het als je weer inlogt.
+
+Alle getallen staan in `config/starktech-balance.toml` onder `[c4]` en `[security]`.
+
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
@@ -718,7 +777,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 |---------|-----|
 | `config/starktech-balance.toml` | **Alle getallen** (ruim 140): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
 | `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
-| `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit) |
+| `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), de rand van zones (`zoneBorder`) |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../edith/EdithBalance.java` (en `SuitBalance`, `TurretBalance`...) | De standaardwaarden van die getallen |

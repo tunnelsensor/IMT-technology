@@ -109,8 +109,13 @@ public class SecurityCoreBlockEntity extends BlockEntity {
 
     /** De toren is van deze speler (na het hacken met de laptop). */
     public void setOwner(ServerPlayer player) {
-        ownerId = player.getUUID();
-        ownerName = player.getGameProfile().getName();
+        setOwner(player.getUUID(), player.getGameProfile().getName());
+    }
+
+    /** Van deze speler, ook als hij nu niet online is (de showcase geeft zo een basis aan "Pepper"). */
+    public void setOwner(UUID id, String name) {
+        ownerId = id;
+        ownerName = name;
         setChanged();
         if (level != null) {
             level.setBlock(worldPosition, getBlockState().setValue(SecurityCoreBlock.CLAIMED, true), Block.UPDATE_ALL);

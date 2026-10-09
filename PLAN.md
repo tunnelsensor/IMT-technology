@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 171 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 83 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -1476,7 +1476,20 @@ De stappen, één per commit:
       kern (rode regels: geplakt, klap met het aantal blokken, onschadelijk gemaakt). Screenshot:
       `-Ponly=c4` (`x07_c4_alarm`). Twee nieuwe tests: alarm en schaar (en geen alarm voor je eigen
       C4), en het verslag voor een eigenaar die offline was.
-- [ ] **8. Showcase, screenshots en LEESMIJ**
+- [x] **8. Showcase, screenshots en LEESMIJ**
+      Twee nieuwe functies na "The datacenter" (staan als NIEUW; de functies erna schuiven op, nu 83
+      in totaal), allebei in survival, bij een L-vormige basis met een torentje en een stuk obsidiaan
+      (op -130 -60 60). **74, "Protected zones"**: de blauwe rand, de Zone Marker (oranje doos, nummers,
+      een derde kubus erbij), de app Zone, zonder stroom rood; dan is de basis van "Pepper" en ben jij
+      een vreemde: slaan geeft "Protected zone", een steen neerzetten lukt niet, een ladder wel. **75,
+      "C4"**: eerst het alarm ("C4 planted at your zone" en het rode bordje) en ontmantelen met een
+      schaar; dan ben jij de inbreker: de timer op 0:05, plakken, piepen en een gat in de stenen muur;
+      daarna drie keer een remote C4 met de detonator tegen het obsidiaan, en na de derde een gat. Ik
+      heb ze afgespeeld met `--test` (en de stappen apart gefotografeerd). Onderweg gevonden: een
+      nep-speler die voor de tweede keer inlogt laat NeoForge struikelen; de showcase geeft de basis
+      daarom gewoon op naam aan Pepper (`setOwner(id, naam)` op de kern). LEESMIJ.md heeft een nieuw
+      stuk "Je basis beveiligen: zones en C4", en de toetsen, het G-menu en de instellingen noemen de
+      zonerand.
 
 ---
 
@@ -1507,6 +1520,12 @@ raiddrones eruitzien.
       getallen goed voelen: hoeveel fans je nodig hebt, hoe snel het warm wordt (ongeveer een
       minuut), hoe lang E.D.I.T.H. erbij nadenkt (1 CPU +8 s), en of vuur van een brandend rack niet
       te makkelijk een houten basis afbrandt. Alles staat in de config onder `[logic]`.
+- [ ] **Zones en C4 (8-9 oktober)**: gezien op screenshots, niet zelf gespeeld. Kijk zelf of de rand
+      niet te fel of te zwak is (vooral dichtbij, tegen je eigen muur), of de muisklikken in de app
+      Zone goed werken (typen in de vakjes, de kaart), of de piepjes van C4 en het doorknippen goed
+      klinken, en of de getallen goed voelen: hoeveel C4 een muur kost (steen 1, obsidiaan 3, de kern
+      6), hoe groot het gat is, en hoeveel stroom een grote zone kost. Op obsidiaan zie je de barsten
+      bijna niet (zo tekent Minecraft barsten). Alles staat in de config onder `[c4]` en `[security]`.
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 

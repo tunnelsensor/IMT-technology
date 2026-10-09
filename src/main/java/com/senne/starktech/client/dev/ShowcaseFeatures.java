@@ -58,6 +58,7 @@ import com.senne.starktech.raid.EdithRaids;
 import com.senne.starktech.raid.RaidDroneEntity;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModCreativeTabs;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModSounds;
@@ -1187,6 +1188,134 @@ final class ShowcaseFeatures {
                     .pause(70);
         });
 
+        add("Protected zones", "Hoofdstuk 10: zones (in survival). Een L-vormige basis met een torentje; de kern binnen "
+                + "is van jou. Je ziet de blauwe rand: twee kubussen (waar ze tegen elkaar liggen, geen wand), met een "
+                + "raster op elke blokrand. Dan de Zone Marker in je hand: een oranje doos (een schuurtje aan de "
+                + "oostkant) en boven elke kubus zijn nummer; die doos wordt kubus 3. Daarna de app Zone op de desktop "
+                + "(de kaart van bovenaf, de getallen, per kant - en +). De stroom valt uit: de rand wordt rood "
+                + "(niemand beschermt nu), en weer blauw. Dan is de basis van iemand anders (Pepper): jij ziet de rand "
+                + "niet meer. Je slaat op de muur: onderaan 'Protected zone' en een piepje, het blok breekt niet. Een "
+                + "steen neerzetten: lukt niet. Een ladder: lukt wel (klimmen mag altijd, net als in het echt).",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(-6, 0, -5)), -40, 8, s -> {
+            s.onServer(0, ShowcaseFeatures::buildZoneBase)
+                    .pause(90)
+                    // De Zone Marker: een oranje doos, die kubus 3 wordt.
+                    .onServer(0, player -> {
+                        ItemStack marker = new ItemStack(ModItems.ZONE_MARKER.get());
+                        marker.set(com.senne.starktech.registry.ModDataComponents.ZONE_SELECTION.get(),
+                                com.senne.starktech.security.zone.ZoneSelection.EMPTY
+                                        .withFirst(ZONE_BASE.offset(12, -1, 2)).withSecond(ZONE_BASE.offset(16, 4, 7)));
+                        player.setItemInHand(InteractionHand.MAIN_HAND, marker);
+                    })
+                    .stand(0, ZONE_BASE.getX() + 22.5, ZONE_BASE.getY(), ZONE_BASE.getZ() - 4.5, 50, 10)
+                    .pause(80)
+                    .onServer(0, player -> {
+                        com.senne.starktech.security.SecurityCoreBlockEntity core = zoneCore(player);
+                        if (core != null) {
+                            java.util.List<com.senne.starktech.security.zone.ZoneBox> boxes = new java.util.ArrayList<>(core.zoneBoxes());
+                            boxes.add(com.senne.starktech.security.zone.ZoneBox.of(ZONE_BASE.offset(12, -1, 2), ZONE_BASE.offset(16, 4, 7)));
+                            core.setZoneBoxes(boxes);
+                        }
+                        player.getMainHandItem().set(com.senne.starktech.registry.ModDataComponents.ZONE_SELECTION.get(),
+                                com.senne.starktech.security.zone.ZoneSelection.EMPTY);
+                    })
+                    .pause(60)
+                    // De app Zone op de desktop van de kern.
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY))
+                    .stand(0, ZONE_BASE.getX() + 6.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 6.5, 90, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, ZONE_BASE.offset(4, 0, 5)))
+                    .step(10, () -> desktop(os -> os.tourZone(2)))
+                    .pause(110)
+                    .close(10)
+                    // Geen stroom: rood. Dan weer stroom: blauw.
+                    .stand(0, ZONE_BASE.getX() - 5.5, ZONE_BASE.getY(), ZONE_BASE.getZ() - 4.5, -40, 8)
+                    .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ZONE_BASE.offset(4, -1, 5), Blocks.STONE.defaultBlockState()))
+                    .pause(90)
+                    .onServer(0, ShowcaseFeatures::powerZoneBase)
+                    .pause(70)
+                    // De basis is van Pepper: jij bent hier een vreemde.
+                    .onServer(0, ShowcaseFeatures::giveZoneBaseToPepper)
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 180, 0)
+                    .pause(50)
+                    .tap(0, () -> Minecraft.getInstance().options.keyAttack)
+                    .pause(60)
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.COBBLESTONE, 16)))
+                    .pause(20)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(60)
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.LADDER, 16)))
+                    .pause(20)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(60)
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+        });
+
+        add("C4", "Hoofdstuk 10: C4 (in survival). Eerst ben jij de eigenaar van de basis: iemand plakt C4 op je muur. "
+                + "E.D.I.T.H. zegt waar ('C4 planted at your zone', zonder naam) en je ziet een knipperend rood bordje "
+                + "'C4!'. Met een schaar knip je de draad door: hij valt eruit, jij hebt hem nu. Dan ben je de inbreker "
+                + "(de basis is van Pepper). Je zet de timer op 0:05 (rechtsklik in de lucht), plakt hem op de muur: hij "
+                + "piept steeds sneller, telt af op zijn schermpje, en blaast een gat van drie hoog in de stenen muur, "
+                + "met barsten eromheen. Daarna de obsidiaan muur aan de westkant: met remote C4 en de detonator (rode "
+                + "bordjes boven je ladingen). Na de eerste en tweede klap staat het obsidiaan er nog (barsten zie je "
+                + "bijna niet op obsidiaan), na de derde is er een gat.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(4, 0, 15)), 180, 5, s -> {
+            BlockPos wall = ZONE_BASE.offset(3, 1, 9);
+            BlockPos obsidian = ZONE_BASE.offset(2, 1, 5);
+            s.onServer(0, ShowcaseFeatures::buildZoneBase)
+                    .pause(40)
+                    // Iemand plakt C4 op jouw muur: het alarm.
+                    .onServer(0, player -> {
+                        ServerLevel level = player.serverLevel();
+                        BlockPos planted = wall.east().south();
+                        level.setBlockAndUpdate(planted, ModBlocks.TIMED_C4.get().defaultBlockState()
+                                .setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, Direction.SOUTH));
+                        if (level.getBlockEntity(planted) instanceof com.senne.starktech.c4.C4BlockEntity c4) {
+                            c4.detonateIn(60 * 20);
+                            com.senne.starktech.c4.C4Alarm.planted(level, planted, c4);
+                        }
+                    })
+                    .pause(80)
+                    // Jij knipt hem door.
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.SHEARS)))
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 180, 3)
+                    .pause(30)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(60)
+                    // Nu ben jij de inbreker: de basis is van Pepper.
+                    .onServer(0, ShowcaseFeatures::giveZoneBaseToPepper)
+                    .onServer(0, player -> {
+                        ItemStack c4 = new ItemStack(ModItems.TIMED_C4.get());
+                        c4.set(com.senne.starktech.registry.ModDataComponents.C4_TIMER.get(), 5);
+                        player.setItemInHand(InteractionHand.MAIN_HAND, c4);
+                    })
+                    .step(10, () -> com.senne.starktech.client.c4.C4TimerScreen.open(InteractionHand.MAIN_HAND))
+                    .pause(50)
+                    .close(0)
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 180, 0)
+                    .pause(20)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(30)
+                    // Achteruit, buiten de klap.
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 21.5, 180, 3)
+                    .pause(120)
+                    // De obsidiaan muur: drie keer een remote C4 en de detonator.
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.DETONATOR.get())))
+                    .stand(0, ZONE_BASE.getX() - 9.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 5.5, -90, 5)
+                    .onServer(0, player -> stickRemote(player, obsidian))
+                    .pause(50)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(50)
+                    .onServer(0, player -> stickRemote(player, obsidian))
+                    .pause(30)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(50)
+                    .onServer(0, player -> stickRemote(player, obsidian))
+                    .pause(30)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(90)
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -1488,6 +1617,104 @@ final class ShowcaseFeatures {
             core.setChanged();
             com.senne.starktech.security.SecurityDevices.forget(level, core);
             com.senne.starktech.logic.LogicServer.forgetAll();
+        }
+    }
+
+    // ---------------------------------------------------------------- De basis met een zone van hoofdstuk 10
+
+    /** Waar de basis met een zone staat (ver van de rest: een kern beschermt 30 blokken om zich heen). */
+    static final BlockPos ZONE_BASE = new BlockPos(-130, -60, 60);
+
+    /**
+     * Een L-vormige basis van stenen bakstenen (10 x 8, vier hoog, zonder dak, met een deuropening aan
+     * de noordkant) met een torentje van twaalf hoog in de zuidoosthoek, en in de westmuur een stuk
+     * obsidiaan (voor C4). Binnen de kern van jou, op een volle generator, met de zone: twee kubussen.
+     * Wat er van een vorige keer stond (gaten, een derde kubus), wordt eerst weggehaald.
+     */
+    static void buildZoneBase(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos b = ZONE_BASE;
+        net.minecraft.world.level.block.state.BlockState air = Blocks.AIR.defaultBlockState();
+        for (BlockPos pos : BlockPos.betweenClosed(b.offset(-12, 0, -8), b.offset(20, 13, 24))) {
+            level.setBlock(pos, air, 2);
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(b.offset(-12, -1, -8), b.offset(20, -1, 24))) {
+            level.setBlock(pos, Blocks.GRASS_BLOCK.defaultBlockState(), 2);
+        }
+        net.minecraft.world.level.block.state.BlockState bricks = Blocks.STONE_BRICKS.defaultBlockState();
+        for (int x = 2; x <= 11; x++) {
+            for (int z = 2; z <= 9; z++) {
+                if (x != 2 && x != 11 && z != 2 && z != 9) {
+                    continue;
+                }
+                for (int y = 0; y <= 3; y++) {
+                    boolean door = z == 2 && (x == 5 || x == 6) && y <= 1;
+                    boolean vault = x == 2 && z >= 4 && z <= 7;
+                    level.setBlockAndUpdate(b.offset(x, y, z), door ? air : vault ? Blocks.OBSIDIAN.defaultBlockState() : bricks);
+                }
+            }
+        }
+        for (int x = 8; x <= 11; x++) {
+            for (int z = 10; z <= 13; z++) {
+                if (x == 8 || x == 11 || z == 10 || z == 13) {
+                    for (int y = 0; y <= 11; y++) {
+                        level.setBlockAndUpdate(b.offset(x, y, z), bricks);
+                    }
+                }
+            }
+        }
+        BlockPos core = b.offset(4, 0, 5);
+        powerZoneBase(player);
+        level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+            be.setOwner(player);
+            be.resetAccessForNewOwner();
+            be.ensureSystem(level);
+            // Eén blok ruimer dan de muren: zo zet ook niemand iets tegen de buitenkant van je muur.
+            be.setZoneBoxes(java.util.List.of(
+                    com.senne.starktech.security.zone.ZoneBox.of(b.offset(1, -1, 1), b.offset(12, 6, 10)),
+                    com.senne.starktech.security.zone.ZoneBox.of(b.offset(7, -1, 11), b.offset(12, 14, 14))));
+        }
+    }
+
+    /** Een volle generator onder de kern van de basis (de zone heeft stroom nodig). */
+    static void powerZoneBase(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos generator = ZONE_BASE.offset(4, -1, 5);
+        level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+            charger.fill(20_000);
+        }
+    }
+
+    /** De kern van de basis met een zone (of null als hij er niet staat). */
+    static com.senne.starktech.security.SecurityCoreBlockEntity zoneCore(ServerPlayer player) {
+        return player.serverLevel().getBlockEntity(ZONE_BASE.offset(4, 0, 5))
+                instanceof com.senne.starktech.security.SecurityCoreBlockEntity core ? core : null;
+    }
+
+    /**
+     * De basis is nu van Pepper (een speler die niet online is): jij bent er een vreemde. De zone blijft
+     * werken, ook als de eigenaar offline is. (Geen nep-speler die inlogt: een tweede keer inloggen met
+     * dezelfde naam laat NeoForge struikelen.)
+     */
+    static void giveZoneBaseToPepper(ServerPlayer player) {
+        com.senne.starktech.security.SecurityCoreBlockEntity core = zoneCore(player);
+        if (core != null) {
+            core.setOwner(java.util.UUID.nameUUIDFromBytes("dev-Pepper".getBytes()), "Pepper");
+            core.resetAccessForNewOwner();
+        }
+    }
+
+    /** Een remote C4 tegen de westkant van het obsidiaan, gekoppeld aan de detonator in je hand. */
+    static void stickRemote(ServerPlayer player, BlockPos support) {
+        ServerLevel level = player.serverLevel();
+        BlockPos pos = support.west();
+        level.setBlockAndUpdate(pos, ModBlocks.REMOTE_C4.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, Direction.WEST));
+        if (level.getBlockEntity(pos) instanceof com.senne.starktech.c4.C4BlockEntity c4
+                && player.getMainHandItem().getItem() instanceof com.senne.starktech.c4.DetonatorItem) {
+            com.senne.starktech.c4.DetonatorItem.link(level, pos, c4, player.getMainHandItem());
         }
     }
 
