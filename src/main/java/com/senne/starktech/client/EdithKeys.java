@@ -77,7 +77,7 @@ public final class EdithKeys {
     public static final KeyMapping CABLE_XRAY = key("cable_xray", InputConstants.UNKNOWN.getValue());
     /**
      * De rand van je zones aan/uit (hoofdstuk 10). Ook standaard op geen toets; kies er zelf een, of
-     * gebruik G > Information. Werkt ook zonder bril.
+     * gebruik G > Information. Alleen met je eigen bril op.
      */
     public static final KeyMapping ZONE_BORDER = key("zone_border", InputConstants.UNKNOWN.getValue());
 

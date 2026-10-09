@@ -201,19 +201,17 @@ public final class EdithClientEvents {
     }
 
     /**
-     * De rand van zones aan of uit (G > Information of de eigen toets). Dat kan ook zonder bril: je
-     * vrienden zien je zone ook als ze geen bril hebben. Met de bril meldt E.D.I.T.H. het, anders
-     * staat het even onderaan in beeld.
+     * De rand van zones aan of uit (G > Information of de eigen toets). Je ziet de rand alleen door je
+     * bril, dus zoals de kabel-xray alleen met jouw eigen bril op; E.D.I.T.H. meldt het.
      */
     public static void toggleZoneBorder() {
+        if (!EdithClientState.authorized) {
+            return;
+        }
         boolean on = EdithClientConfig.toggleZoneBorder();
         String key = on ? "edith.starktech.msg.feature_on" : "edith.starktech.msg.feature_off";
-        Component message = Component.translatable(key, Component.translatable("screen.starktech.menu.zone_border"));
-        if (EdithClientState.authorized) {
-            EdithClientState.addNotification(message, EdithMessagePayload.Level.INFO);
-        } else if (Minecraft.getInstance().player != null) {
-            Minecraft.getInstance().player.displayClientMessage(message, true);
-        }
+        EdithClientState.addNotification(Component.translatable(key, Component.translatable("screen.starktech.menu.zone_border")),
+                EdithMessagePayload.Level.INFO);
     }
 
     /**

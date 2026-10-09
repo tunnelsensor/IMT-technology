@@ -547,9 +547,10 @@ houten deur is dus geen slot; een ijzeren deur met een keycard-lezer of codepane
 zuiger van buiten duwt of trekt er niets in of uit; monsters (endermen, withers, ravagers, zombies
 bij deuren) en raiddrones breken er niets.
 
-**De rand.** Jij en je vrienden zien de rand van de zone: doorzichtige blauwe wanden met een raster,
-tot zo'n 48 blokken ver (rood als de zone geen stroom heeft). Een vreemde ziet niets. Aan/uit voor
-jezelf: **G > Information > Zone border** (of een eigen toets).
+**De rand.** Jij en je vrienden zien de rand van de zone **door de E.D.I.T.H.-bril**: doorzichtige
+blauwe wanden met een raster, tot zo'n 48 blokken ver (rood als de zone geen stroom heeft). Zonder
+bril zie je hem niet, en een vreemde ziet hem nooit. Aan/uit voor jezelf: **G > Information > Zone
+border** (of een eigen toets). De oranje doos van de Zone Marker zie je ook zonder bril.
 
 **Stroom.** Een zone kost stroom bovenop de kern: 1 per 2000 blokken, om de twee seconden. Zonder
 stroom staat de zone uit (E.D.I.T.H. waarschuwt je). Zet je generatoren en kabels dus **in** je zone,

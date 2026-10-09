@@ -1942,6 +1942,18 @@ public final class VisualCheck {
                     com.senne.starktech.client.EdithClientConfig.toggleZoneBorder();
                 }
             });
+            // De rand zie je alleen door de bril (jouw wens, 9 oktober): weer stroom, dan de bril af.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(ZONE_CORE.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(ZONE_CORE.below()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.fill(20_000);
+                }
+            });
+            t.shot(70, "z05b_zone_with_glasses");
+            t.onServer(0, player -> player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, ItemStack.EMPTY));
+            t.shot(20, "z06_zone_no_glasses");
+            t.onServer(0, DevWorld::wearGlasses);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 }

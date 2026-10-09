@@ -1388,8 +1388,8 @@ De stappen, één per commit:
       zien tot 48 blokken ver; dichtbij is hij het felst. Waar twee kubussen tegen of over elkaar
       liggen, komt geen wand (`security/zone/ZoneShape` rekent de echte buitenkant uit). Zonder stroom
       is hij rood en klopt hij langzaam. Aan/uit voor jezelf: **G > Information > Zone border**, of een
-      eigen toets (Opties > Besturing, standaard geen). Dat werkt ook zonder bril; je vrienden zien je
-      zone dus ook zonder. De plaatjes van het raster en de glans maakt `tools/generate_textures.py`
+      eigen toets (Opties > Besturing, standaard geen). ~~Dat werkt ook zonder bril~~ (sinds stap 9 alleen
+      met je bril). De plaatjes van het raster en de glans maakt `tools/generate_textures.py`
       (`zone_textures`). Screenshots: `-Ponly=zones` (`z01` tot `z05`: een L-vormige basis met een
       torentje, van buiten en binnen, zonder stroom, en met de rand uit). Twee nieuwe tests: de
       buitenkant van een L en van kubussen over elkaar, en wie de zone krijgt.
@@ -1490,6 +1490,14 @@ De stappen, één per commit:
       daarom gewoon op naam aan Pepper (`setOwner(id, naam)` op de kern). LEESMIJ.md heeft een nieuw
       stuk "Je basis beveiligen: zones en C4", en de toetsen, het G-menu en de instellingen noemen de
       zonerand.
+- [x] **9. De rand alleen met de bril** (jouw wens, 9 oktober: "zorg dat je de border enkel met bril
+      kunt zien")
+      De blauwe rand en de bordjes "Box 1" boven je kubussen zie je nu alleen met je eigen
+      E.D.I.T.H.-bril op (met energie), net als de kabel-xray. Ook het aan/uit-knopje (G > Information >
+      Zone border, of de eigen toets) werkt alleen met de bril. **Mijn keuze**: de oranje doos van de
+      Zone Marker (wat je aanklikt) zie je ook zonder bril, anders kon je zonder bril geen zone tekenen;
+      zeg het als die ook alleen met de bril moet. Screenshots: `-Ponly=zones` (`z05b_zone_with_glasses`,
+      `z06_zone_no_glasses`).
 
 ---
 

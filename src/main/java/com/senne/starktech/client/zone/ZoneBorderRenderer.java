@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.EdithClientConfig;
+import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.network.ZoneSyncPayload;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.zone.ZoneBox;
@@ -39,8 +40,9 @@ import org.joml.Matrix4f;
  * dichtbij is hij het felst. Heeft de zone geen stroom (hij beschermt dan niet), dan is hij rood en
  * klopt hij langzaam.
  *
- * Je ziet alleen zones waar je zelf mag bouwen (de server stuurt geen andere, zie ZoneSync), en alleen
- * als "Zone border" aan staat (G > Information, of een eigen toets).
+ * Je ziet alleen zones waar je zelf mag bouwen (de server stuurt geen andere, zie ZoneSync), alleen met
+ * je eigen E.D.I.T.H.-bril op (jouw wens, 9 oktober: "de border enkel met bril"), en alleen als "Zone
+ * border" aan staat (G > Information, of een eigen toets).
  *
  * Een zone bestaat uit kubussen die tegen of over elkaar mogen liggen. Waar twee kubussen elkaar
  * raken, hoort geen wand: we tekenen alleen de echte buitenkant (zie ZoneShape.boundary).
@@ -120,13 +122,17 @@ public final class ZoneBorderRenderer {
         if (mc.level == null || mc.player == null) {
             return;
         }
+        // De rand (en de nummers van de kubussen) zie je alleen door je eigen bril, net als verborgen
+        // kabels. Wat je met de Zone Marker aanklikt (de oranje doos) zie je ook zonder bril: anders
+        // kon je zonder bril niet tekenen.
+        boolean glasses = EdithClientState.operational;
         // Met de Zone Marker in je hand zie je je zone altijd (ook met "Zone border" uit), plus wat
         // je aanklikt en het nummer van elke kubus.
         ItemStack marker = heldMarker(mc);
         if (marker != null) {
-            drawMarker(event, mc, marker);
+            drawMarker(event, mc, marker, glasses);
         }
-        if (marker == null && !EdithClientConfig.zoneBorder() || ZoneClientState.zones().isEmpty()) {
+        if (!glasses || marker == null && !EdithClientConfig.zoneBorder() || ZoneClientState.zones().isEmpty()) {
             return;
         }
         if (cachedVersion != ZoneClientState.version()) {
@@ -283,7 +289,7 @@ public final class ZoneBorderRenderer {
      * Met de marker in je hand: een oranje doos tussen de twee hoeken die je aanklikte (of alleen het
      * blok van de eerste hoek), en boven elke kubus van je zones zijn nummer (zoals in de app Zone).
      */
-    private static void drawMarker(RenderLevelStageEvent event, Minecraft mc, ItemStack marker) {
+    private static void drawMarker(RenderLevelStageEvent event, Minecraft mc, ItemStack marker, boolean glasses) {
         Vec3 cam = event.getCamera().getPosition();
         PoseStack pose = event.getPoseStack();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
@@ -304,8 +310,8 @@ public final class ZoneBorderRenderer {
                 pos.getX() + 1.04, pos.getY() + 1.04, pos.getZ() + 1.04, 0xFFE0A0, 1.0f));
         buffers.endBatch(LINES);
 
-        // De nummers van de kubussen, boven het midden van elke kubus.
-        for (ZoneSyncPayload.View zone : ZoneClientState.zones()) {
+        // De nummers van de kubussen, boven het midden van elke kubus (alleen met de bril, zoals de rand).
+        for (ZoneSyncPayload.View zone : glasses ? ZoneClientState.zones() : List.<ZoneSyncPayload.View>of()) {
             for (int i = 0; i < zone.boxes().size(); i++) {
                 ZoneBox zoneBox = zone.boxes().get(i);
                 Vec3 at = new Vec3((zoneBox.min().getX() + zoneBox.max().getX() + 1) / 2.0, zoneBox.max().getY() + 1.6,

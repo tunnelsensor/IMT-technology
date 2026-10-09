@@ -54,7 +54,7 @@ public final class EdithClientConfig {
 
     /**
      * Zie je de rand van je zones (en die van wie jou vertrouwt)? Aan/uit via G > Information > Zone
-     * border, of een eigen toets. Werkt ook zonder bril (hoofdstuk 10).
+     * border, of een eigen toets. Alleen met je eigen bril op (hoofdstuk 10; jouw wens van 9 oktober).
      */
     public static final ModConfigSpec.BooleanValue ZONE_BORDER = BUILDER
             .comment("See the border of your protected zones and your friends' zones (G > Information > Zone border, or its own key)")
