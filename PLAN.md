@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 155 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 157 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1393,9 +1393,25 @@ De stappen, één per commit:
       (`zone_textures`). Screenshots: `-Ponly=zones` (`z01` tot `z05`: een L-vormige basis met een
       torentje, van buiten en binnen, zonder stroom, en met de rand uit). Twee nieuwe tests: de
       buitenkant van een L en van kubussen over elkaar, en wie de zone krijgt.
-- [ ] **3. De Zone Marker en de app Zone**
-      Hoeken aanklikken in de wereld, kubussen toevoegen en weghalen, en de app op de desktop (ook
-      via SSH). Tests en screenshots.
+- [x] **3. De Zone Marker en de app Zone**
+      Nieuw item **Zone Marker** (recept: een redstonefakkel, een Stark-chip en een stok onder
+      elkaar). Linksklik op een blok = hoek 1, rechtsklik = hoek 2 (ook op een kist: de marker gaat
+      voor); onderaan staat hoe groot de doos is ("12 × 6 × 20 (1440 blocks)"). **Sluipen + rechtsklik**
+      voegt hem toe aan de zone van de kern in wiens gebied hij ligt (die moet van jou zijn; wat buiten
+      het gebied steekt valt eraf, en dat zegt hij), daarna is de keuze weer leeg. **Sluipen +
+      linksklik** in een kubus vraagt "remove it?", een tweede klik binnen drie seconden haalt hem weg.
+      Met de marker breek of sla je niets: je spel vangt de linksklik af en stuurt alleen "klik op dit
+      blok" naar de server; houd je de knop ingedrukt, dan telt dat als één klik. Met de marker in je
+      hand zie je je zone altijd (ook met Zone border uit), de gekozen doos in oranje met de twee
+      hoekblokken, en boven elke kubus een bordje "Box 1  10 × 8 × 8". Nieuwe app **Zone** (icoon Z):
+      bovenaan PROTECTED / NO POWER / NO ZONE YET, hoeveel blokken en hoeveel stroom; links een kaart
+      van bovenaf van het gebied van je kern (je kubussen, de kern wit, jij geel; klik op een kubus om
+      hem te kiezen); rechts de gekozen kubus met **<** en **>**, de getallen van beide hoeken (typen +
+      Enter, Esc = niet), de grootte, per kant een **−** en **+** (die kant een blok naar binnen of
+      buiten, nooit kleiner dan één blok), **New box** (7 × 5 × 7 waar je staat, via SSH bij de kern)
+      en **Delete box** (eerst "Sure?"). Toevoegen en weghalen staat in het logboek. Werkt ook via SSH.
+      Screenshots: `-Ponly=zones` (`z03b_zone_marker`, `z03c_zone_app`). Twee nieuwe tests: de marker
+      (hoeken, toevoegen, een vreemde kan het niet, weghalen in twee klikken) en de knoppen van de app.
 - [ ] **4. Alleen C4 komt erdoor**
       Explosies, vuur, lava, zuigers en monsters breken geen blokken in een zone (voor het vuur een
       kleine "mixin": een stukje code dat in Minecraft zelf ingrijpt). Tests.

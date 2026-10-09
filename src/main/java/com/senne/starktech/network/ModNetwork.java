@@ -104,6 +104,12 @@ public final class ModNetwork {
             }
         });
         // De harnas-werkbank: een klik op een stuk van het hologram.
+        // Hoofdstuk 10: linksklik met de Zone Marker (hoek 1, of met sluipen een kubus weghalen).
+        registrar.playToServer(ZoneMarkerClickPayload.TYPE, ZoneMarkerClickPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.security.zone.ZoneMarkerItem.leftClick(player, payload.pos());
+            }
+        });
         registrar.playToServer(WorkbenchClickPayload.TYPE, WorkbenchClickPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 WorkbenchClickPayload.handle(player, payload);

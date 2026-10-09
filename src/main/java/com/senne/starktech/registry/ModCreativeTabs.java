@@ -63,6 +63,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.HYDRA_TURRET.get());
                 output.accept(ModItems.SECURITY_TURRET.get());
                 output.accept(ModItems.SECURITY_CORE.get());
+                output.accept(ModItems.ZONE_MARKER.get());
                 output.accept(ModItems.SECURITY_CAMERA.get());
                 output.accept(ModItems.SERVER_RACK.get());
                 output.accept(ModItems.SERVER_CPU.get());

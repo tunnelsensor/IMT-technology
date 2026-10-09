@@ -9,7 +9,9 @@ import com.senne.starktech.security.SecurityBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.zone.ZoneBox;
+import com.senne.starktech.security.zone.ZoneApp;
 import com.senne.starktech.security.zone.ZoneData;
+import com.senne.starktech.security.zone.ZoneMarkerItem;
 import com.senne.starktech.security.zone.ZoneShape;
 import com.senne.starktech.security.zone.ZoneSync;
 import com.senne.starktech.station.ChargerBlockEntity;
@@ -21,6 +23,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -459,5 +462,138 @@ public final class ZoneGameTests {
     /** Krijgt deze speler van de server de zone van de kern op {@code core} (actief of niet)? */
     private static boolean seesZone(ServerPlayer player, BlockPos core, boolean active) {
         return ZoneSync.visibleTo(player).stream().anyMatch(view -> view.core().equals(core) && view.active() == active);
+    }
+
+    /** Rechtsklik met de Zone Marker op dit blok (via onItemUseFirst, zoals in het echt). */
+    private static void markerRightClick(GameTestHelper helper, ServerPlayer player, BlockPos pos) {
+        ItemStack marker = player.getMainHandItem();
+        BlockPos abs = helper.absolutePos(pos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);
+        ((ZoneMarkerItem) marker.getItem()).onItemUseFirst(marker, new UseOnContext(player, InteractionHand.MAIN_HAND, hit));
+    }
+
+    /**
+     * De Zone Marker: linksklik = hoek 1, rechtsklik = hoek 2, sluipen + rechtsklik = de kubus erbij
+     * (de keuze is daarna weer leeg). Sluipen + linksklik in die kubus vraagt het eerst, de tweede klik
+     * haalt hem weg. Een vreemde kan met een marker niets aan jouw zone doen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_marker_adds_and_removes_boxes(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 4), "zone-owner");
+        ServerPlayer outsider = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(9, 3, 4), "zone-outsider");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
+        // Een kern meldt zich pas een tick na het neerzetten aan (dan pas vindt de marker hem).
+        helper.runAfterDelay(2, () -> {
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ZONE_MARKER.get()));
+            ZoneMarkerItem.leftClick(owner, helper.absolutePos(new BlockPos(5, 2, 5)));
+            markerRightClick(helper, owner, new BlockPos(10, 6, 9));
+            ZoneBox chosen = ZoneMarkerItem.selection(owner.getMainHandItem()).box();
+            ZoneBox expected = box(helper, new BlockPos(5, 2, 5), new BlockPos(10, 6, 9));
+            if (!expected.equals(chosen)) {
+                throw new GameTestAssertException("De marker zou de kubus " + expected + " moeten kiezen, niet " + chosen);
+            }
+            // Een vreemde met dezelfde keuze kan hem niet aan de zone van de eigenaar toevoegen.
+            ItemStack outsiderMarker = new ItemStack(ModItems.ZONE_MARKER.get());
+            outsiderMarker.set(com.senne.starktech.registry.ModDataComponents.ZONE_SELECTION.get(),
+                    ZoneMarkerItem.selection(owner.getMainHandItem()));
+            outsider.setItemInHand(InteractionHand.MAIN_HAND, outsiderMarker);
+            outsider.setShiftKeyDown(true);
+            outsiderMarker.getItem().use(helper.getLevel(), outsider, InteractionHand.MAIN_HAND);
+            if (!core.zoneBoxes().isEmpty()) {
+                throw new GameTestAssertException("Een vreemde kon een kubus aan de zone van een ander toevoegen");
+            }
+            // De eigenaar: sluipen + rechtsklik voegt hem toe.
+            owner.setShiftKeyDown(true);
+            owner.getMainHandItem().getItem().use(helper.getLevel(), owner, InteractionHand.MAIN_HAND);
+            if (!core.zoneBoxes().equals(List.of(expected))) {
+                throw new GameTestAssertException("Na sluipen + rechtsklik zou de zone die kubus moeten hebben: " + core.zoneBoxes());
+            }
+            if (ZoneMarkerItem.selection(owner.getMainHandItem()).box() != null) {
+                throw new GameTestAssertException("Na het toevoegen zou de keuze van de marker leeg moeten zijn");
+            }
+            if (!DatacenterGameTests.logged(core, EventLog.Type.ZONE, "box 1 added")) {
+                throw new GameTestAssertException("Het logboek zegt niet dat er een kubus bij kwam");
+            }
+            // Sluipen + linksklik in de kubus: eerst de vraag, dan weg.
+            BlockPos inside = helper.absolutePos(new BlockPos(7, 3, 7));
+            ZoneMarkerItem.leftClick(owner, inside);
+            if (core.zoneBoxes().isEmpty()) {
+                throw new GameTestAssertException("De eerste klik zou het alleen moeten vragen");
+            }
+            ZoneMarkerItem.leftClick(owner, inside);
+            if (!core.zoneBoxes().isEmpty()) {
+                throw new GameTestAssertException("De tweede klik zou de kubus moeten weghalen: " + core.zoneBoxes());
+            }
+            finish(helper, core);
+        });
+    }
+
+    /**
+     * De app Zone: New box zet een kubus van 7 x 5 x 7 waar je staat; een + schuift een kant een blok
+     * naar buiten, een - naar binnen (maar nooit kleiner dan één blok); getypte getallen worden de
+     * hoeken (buiten het gebied van de kern: nee); Delete haalt hem weg; meer dan 16 kan niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_app_edits_boxes(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 8), "zone-owner");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
+        BlockPos feet = owner.blockPosition();
+        ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
+        ZoneBox first = ZoneBox.of(feet.offset(-3, -1, -3), feet.offset(3, 3, 3));
+        if (!core.zoneBoxes().equals(List.of(first))) {
+            throw new GameTestAssertException("New box zou " + first + " moeten maken, niet " + core.zoneBoxes());
+        }
+        // De oostkant een blok naar buiten, dan de westkant een naar binnen.
+        CompoundTag grow = new CompoundTag();
+        grow.putInt("i", 0);
+        grow.putInt("side", 5);
+        grow.putInt("by", 1);
+        ZoneApp.handle(owner, core, "zone_grow", grow, false);
+        grow.putInt("side", 4);
+        grow.putInt("by", -1);
+        ZoneApp.handle(owner, core, "zone_grow", grow, false);
+        ZoneBox moved = core.zoneBoxes().getFirst();
+        if (moved.max().getX() != first.max().getX() + 1 || moved.min().getX() != first.min().getX() + 1 || moved.sizeX() != 7) {
+            throw new GameTestAssertException("Na + oost en - west zou de kubus een blok naar het oosten moeten liggen: " + moved);
+        }
+        // Kleiner dan één blok kan niet.
+        grow.putInt("side", 1);
+        grow.putInt("by", -10);
+        ZoneApp.Result tooSmall = ZoneApp.handle(owner, core, "zone_grow", grow, false);
+        if (!tooSmall.error() || !core.zoneBoxes().getFirst().equals(moved)) {
+            throw new GameTestAssertException("Een kubus kleiner dan één blok zou niet mogen");
+        }
+        // Getypte getallen.
+        BlockPos a = helper.absolutePos(new BlockPos(4, 2, 4));
+        BlockPos b = helper.absolutePos(new BlockPos(12, 9, 11));
+        CompoundTag set = new CompoundTag();
+        set.putInt("i", 0);
+        set.putIntArray("box", new int[] {a.getX(), a.getY(), a.getZ(), b.getX(), b.getY(), b.getZ()});
+        ZoneApp.handle(owner, core, "zone_set", set, false);
+        if (!core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
+            throw new GameTestAssertException("De getypte hoeken zouden de kubus moeten worden: " + core.zoneBoxes());
+        }
+        BlockPos far = helper.absolutePos(CORE).offset(200, 0, 0);
+        set.putIntArray("box", new int[] {far.getX(), far.getY(), far.getZ(), far.getX() + 3, far.getY() + 3, far.getZ() + 3});
+        ZoneApp.Result outside = ZoneApp.handle(owner, core, "zone_set", set, false);
+        if (!outside.error() || !core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
+            throw new GameTestAssertException("Een kubus helemaal buiten het gebied zou niet mogen (en de oude zou moeten blijven)");
+        }
+        // Weg ermee.
+        CompoundTag delete = new CompoundTag();
+        delete.putInt("i", 0);
+        ZoneApp.handle(owner, core, "zone_delete", delete, false);
+        if (!core.zoneBoxes().isEmpty()) {
+            throw new GameTestAssertException("Delete zou de kubus moeten weghalen");
+        }
+        // Meer dan het maximum kan niet.
+        for (int i = 0; i < SecurityBalance.ZONE_MAX_BOXES; i++) {
+            ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
+        }
+        ZoneApp.Result full = ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
+        if (!full.error() || core.zoneBoxes().size() != SecurityBalance.ZONE_MAX_BOXES) {
+            throw new GameTestAssertException("Meer dan " + SecurityBalance.ZONE_MAX_BOXES + " kubussen zou niet mogen");
+        }
+        finish(helper, core);
     }
 }

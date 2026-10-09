@@ -1141,5 +1141,21 @@
   "zone.starktech.msg.offline": "Your zone at %s has no power: anyone can build and break there now.",
   "zone.starktech.msg.online": "Your zone at %s is protected again.",
   "screen.starktech.menu.zone_border": "Zone border",
-  "key.starktech.zone_border": "Zone border on/off"
+  "key.starktech.zone_border": "Zone border on/off",
+  "item.starktech.zone_marker": "Zone Marker",
+  "tooltip.starktech.zone_marker.corners": "Left-click a block: corner 1. Right-click a block: corner 2.",
+  "tooltip.starktech.zone_marker.add": "Sneak + right-click: add the box to your zone.",
+  "tooltip.starktech.zone_marker.remove": "Sneak + left-click a box of your zone: remove it.",
+  "tooltip.starktech.zone_marker.selection": "Selected: %s (%s blocks)",
+  "zone.starktech.marker.corner": "Corner %s: %s %s %s. Now click the other corner.",
+  "zone.starktech.marker.size": "Corner %s set: %s (%s blocks). Sneak + right-click to add it to your zone.",
+  "zone.starktech.marker.no_selection": "Click two corners first: left-click one block, right-click the other.",
+  "zone.starktech.marker.no_core": "No security core of yours here: a zone must lie within 30 blocks of your core.",
+  "zone.starktech.marker.not_yours": "This area belongs to the security core of %s.",
+  "zone.starktech.marker.full": "Your zone already has %s boxes. Remove one first (sneak + left-click it).",
+  "zone.starktech.marker.added": "Box %s added to your zone: %s (%s blocks).",
+  "zone.starktech.marker.added_cut": "Box %s added to your zone, cut to fit your security area: %s (%s blocks).",
+  "zone.starktech.marker.remove_ask": "Box %s (%s): sneak + left-click again to remove it.",
+  "zone.starktech.marker.removed": "Box %s removed from your zone.",
+  "zone.starktech.marker.not_in_box": "That block is not in a box of your zone."
 }

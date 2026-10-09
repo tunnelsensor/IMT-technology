@@ -73,9 +73,17 @@ public final class StarkOs {
         private @Nullable com.senne.starktech.logic.LogicStore sentLogic;
         private int sentLogicRevision = -1;
 
-        Session(BlockPos core, boolean remote) {
+        /** Wie deze desktop open heeft (de app Zone toont waar hij staat). */
+        private final UUID viewer;
+
+        Session(BlockPos core, boolean remote, UUID viewer) {
             this.core = core;
             this.remote = remote;
+            this.viewer = viewer;
+        }
+
+        public UUID viewer() {
+            return viewer;
         }
 
         public BlockPos core() {
@@ -134,7 +142,7 @@ public final class StarkOs {
                     .withStyle(ChatFormatting.RED), true);
             return false;
         }
-        Session session = new Session(core.getBlockPos().immutable(), remote);
+        Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID());
         SESSIONS.put(player.getUUID(), session);
         ModNetwork.sendTo(player, new OsOpenPayload(core.getBlockPos(), true, remote));
         sendSnapshot(player, core, session);
@@ -215,6 +223,16 @@ public final class StarkOs {
             case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "input_rename" -> renameInput(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
+            case "zone_new", "zone_delete", "zone_grow", "zone_set" -> {
+                // De app Zone (hoofdstuk 10), zie ZoneApp.
+                com.senne.starktech.security.zone.ZoneApp.Result result = com.senne.starktech.security.zone.ZoneApp.handle(
+                        player, core, payload.op(), args, session.remote());
+                if (!result.text().isEmpty()) {
+                    notify(player, core, session, result.text(), result.error());
+                } else {
+                    sendSnapshot(player, core, session);
+                }
+            }
             case "backup_target", "backup_auto", "backup_now", "backup_restore", "backup_delete" -> {
                 // De app Backup (8 oktober), zie Backups.
                 com.senne.starktech.logic.Backups.Result result = com.senne.starktech.logic.Backups.handle(player, core, payload.op(), args);
@@ -761,6 +779,9 @@ public final class StarkOs {
         data.put("server", com.senne.starktech.logic.LogicServer.snapshot(level, core));
         // De backups van deze server en van de eigenaar (de app Backup).
         data.put("backup", com.senne.starktech.logic.Backups.snapshot(level, core));
+        // De zone: de kubussen waarin alleen jij en je vrienden bouwen (de app Zone, hoofdstuk 10).
+        data.put("zone", com.senne.starktech.security.zone.ZoneApp.snapshot(level, core,
+                level.getServer().getPlayerList().getPlayer(session.viewer()), session.remote()));
         // De keycards die dit netwerk schreef.
         ListTag cards = new ListTag();
         for (com.senne.starktech.logic.LogicStore.Card card : core.logic().cards()) {

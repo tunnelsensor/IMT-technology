@@ -776,6 +776,35 @@ def zone_textures():
     save(sheen, "misc/zone_sheen.png")
 
 
+def zone_marker_item():
+    """
+    De Zone Marker: een metalen staafje met een greep, schuin in de hand, en bovenaan een blauw
+    lampje waarmee je de hoeken van je zone "aanwijst". Twee kleine oranje haakjes ernaast zijn de
+    hoeken van de doos die je ermee tekent.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    # De staaf: van linksonder naar rechtsboven, twee pixels dik.
+    for i in range(9):
+        x, y = 3 + i, 13 - i
+        px(im, [(x, y)], METAL_3)
+        px(im, [(x + 1, y)], METAL_1)
+    # De greep onderaan (donker, met een gouden ringetje).
+    for i in range(3):
+        x, y = 2 + i, 14 - i
+        px(im, [(x, y), (x + 1, y)], FRAME)
+    px(im, [(5, 11), (6, 11)], GOLD)
+    # Het lampje bovenaan.
+    d.rectangle([11, 2, 13, 4], fill=CYAN)
+    px(im, [(12, 1), (14, 3), (12, 5), (10, 3)], CYAN_DIM)
+    px(im, [(12, 3)], (220, 250, 255, 255))
+    # De oranje hoekjes van de doos.
+    orange = (255, 169, 63, 255)
+    px(im, [(1, 2), (2, 2), (1, 3)], orange)
+    px(im, [(8, 9), (9, 9), (9, 8)], orange)
+    save(im, "item/zone_marker.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -2573,6 +2602,7 @@ if __name__ == "__main__":
     cable_textures()
     dome_field()
     zone_textures()
+    zone_marker_item()
     relay_textures()
     shield_textures()
     rayshield_walls()

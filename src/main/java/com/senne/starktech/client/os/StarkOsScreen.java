@@ -41,6 +41,8 @@ public class StarkOsScreen extends Screen {
         MONITOR("Monitor", "M", 360, 196),
         /** Backups naar een ander datacenter van jezelf (8 oktober). */
         BACKUP("Backup", "B", 340, 196),
+        /** De zone: kubussen waarin alleen jij en je vrienden bouwen en breken (hoofdstuk 10). */
+        ZONE("Zone", "Z", 380, 206),
         FILES("Files", "F", 300, 190),
         NOTES("Notes", "N", 320, 196),
         LOGS("Logs", "L", 330, 200),
@@ -122,6 +124,7 @@ public class StarkOsScreen extends Screen {
     private final LogicApp logic = new LogicApp(this, net.minecraft.client.Minecraft.getInstance().font);
     private final MonitorApp monitor = new MonitorApp(this);
     private final BackupApp backup = new BackupApp(this);
+    private final ZoneApp zone = new ZoneApp(this);
     /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
     private boolean gotFirstSnapshot;
 
@@ -251,6 +254,12 @@ public class StarkOsScreen extends Screen {
         devices.tourSave();
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Zone, met deze kubus gekozen. */
+    public void tourZone(int box) {
+        openApp(App.ZONE);
+        zone.tourSelect(box);
+    }
+
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
     public void tourOpen(App app) {
         openApp(app);
@@ -332,6 +341,9 @@ public class StarkOsScreen extends Screen {
         if (win.app != App.DEVICES) {
             devices.blur();
         }
+        if (win.app != App.ZONE) {
+            zone.blur();
+        }
     }
 
     private @Nullable Win focused() {
@@ -364,6 +376,9 @@ public class StarkOsScreen extends Screen {
         }
         if (win.app == App.DEVICES) {
             devices.blur(); // hier ook niet
+        }
+        if (win.app == App.ZONE) {
+            zone.blur(); // half getypte getallen niet bewaren
         }
         if (win.app == App.NOTES) {
             notes.save(); // wat je typte, gaat niet verloren
@@ -458,6 +473,7 @@ public class StarkOsScreen extends Screen {
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
             case LOGIC -> logic.mouseClicked(font, contentArea(win), mx, my, button);
             case BACKUP -> backup.mouseClicked(font, contentArea(win), mx, my);
+            case ZONE -> zone.mouseClicked(font, contentArea(win), mx, my);
             case SETTINGS -> {
                 int cx = win.x + 6;
                 int fieldY = win.y + TITLE_H + 60;
@@ -548,7 +564,8 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.DEVICES && devices.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)
-                || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)) {
+                || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.ZONE && zone.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (editingPassword && passwordText.length() < 8
@@ -569,7 +586,8 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.DEVICES && devices.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)) {
+                || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.ZONE && zone.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (editingPassword) {
@@ -695,6 +713,7 @@ public class StarkOsScreen extends Screen {
             case LOGIC -> logic.render(g, font, area, mouseX, mouseY, partialTick);
             case MONITOR -> monitor.render(g, font, area, mouseX, mouseY, partialTick);
             case BACKUP -> backup.render(g, font, area, mouseX, mouseY, partialTick);
+            case ZONE -> zone.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);

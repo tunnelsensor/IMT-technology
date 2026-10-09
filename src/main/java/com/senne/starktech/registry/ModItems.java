@@ -174,6 +174,13 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> CODE_PANEL = ITEMS.registerSimpleBlockItem("code_panel",
             ModBlocks.CODE_PANEL, new Item.Properties());
 
+    /**
+     * De Zone Marker (hoofdstuk 10): linksklik en rechtsklik zetten de twee hoeken van een kubus,
+     * sluipen + rechtsklik voegt hem toe aan je zone.
+     */
+    public static final DeferredItem<com.senne.starktech.security.zone.ZoneMarkerItem> ZONE_MARKER = ITEMS.registerItem(
+            "zone_marker", com.senne.starktech.security.zone.ZoneMarkerItem::new, new Item.Properties().stacksTo(1));
+
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(
             "stark_laptop", com.senne.starktech.security.StarkLaptopItem::new,

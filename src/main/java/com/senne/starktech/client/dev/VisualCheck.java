@@ -1805,6 +1805,31 @@ public final class VisualCheck {
             t.shot(30, "z02_zone_inside");
             t.stand(10, 178.5, -56, 78.5, 140, 18);
             t.shot(30, "z03_zone_tower_corner");
+            // De Zone Marker in je hand: een oranje doos tussen twee aangeklikte hoeken (een aanbouw
+            // aan de oostkant), en boven elke kubus zijn nummer.
+            t.onServer(0, player -> {
+                net.minecraft.world.item.ItemStack marker = new net.minecraft.world.item.ItemStack(ModItems.ZONE_MARKER.get());
+                marker.set(com.senne.starktech.registry.ModDataComponents.ZONE_SELECTION.get(),
+                        com.senne.starktech.security.zone.ZoneSelection.EMPTY
+                                .withFirst(new BlockPos(172, -61, 62)).withSecond(new BlockPos(177, -57, 67)));
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, marker);
+            });
+            t.stand(10, 186.5, -57, 56.5, 60, 15);
+            t.shot(30, "z03b_zone_marker");
+            // De app Zone op de desktop van de kern: de kaart met de twee kubussen, de tweede gekozen.
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.stand(10, 166.5, -60, 67.5, 0, 0);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, ZONE_CORE));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourZone(1);
+                }
+            });
+            t.shot(15, "z03c_zone_app");
+            t.close(5);
+            t.onServer(0, player -> player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                    net.minecraft.world.item.ItemStack.EMPTY));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             // Geen stroom: de generator onder de kern weg. Binnen twee seconden staat de zone uit.
             t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(ZONE_CORE.below(), Blocks.STONE.defaultBlockState()));
             t.stand(10, 153.5, -60, 54.5, -40, 8);

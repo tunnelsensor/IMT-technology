@@ -217,9 +217,11 @@ public final class Zones {
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         LAST_TOLD.remove(event.getEntity().getUUID());
+        ZoneMarkerItem.forget(event.getEntity().getUUID());
     }
 
     public static void onServerStopped(ServerStoppedEvent event) {
         LAST_TOLD.clear();
+        ZoneMarkerItem.forget(null);
     }
 }

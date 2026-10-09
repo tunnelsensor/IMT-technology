@@ -40,6 +40,12 @@ public final class ModDataComponents {
                     .persistent(com.senne.starktech.logic.KeycardData.CODEC)
                     .networkSynchronized(com.senne.starktech.logic.KeycardData.STREAM_CODEC));
 
+    /** De twee hoeken die je met de Zone Marker aanklikte (hoofdstuk 10, zie ZoneSelection). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.security.zone.ZoneSelection>> ZONE_SELECTION =
+            COMPONENTS.registerComponentType("zone_selection", builder -> builder
+                    .persistent(com.senne.starktech.security.zone.ZoneSelection.CODEC)
+                    .networkSynchronized(com.senne.starktech.security.zone.ZoneSelection.STREAM_CODEC));
+
     /** Van wie de bril is. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithOwner>> OWNER =
             COMPONENTS.registerComponentType("owner", builder -> builder
