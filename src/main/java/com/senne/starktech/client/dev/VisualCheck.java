@@ -1920,6 +1920,41 @@ public final class VisualCheck {
             t.shot(20, "r03_cracked_in_hand");
         }
 
+        // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
+        // stroomcircuit: een niveau kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
+        // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
+        if (want("bypass")) {
+            BlockPos lab = BYPASS_LAB;
+            BlockPos reader = lab.offset(4, 1, 3);
+            t.onServer(0, VisualCheck::buildBypassLab);
+            t.stand(10, lab.getX() + 4.5, lab.getY(), lab.getZ() + 6.5, 180, 12);
+            t.shot(60, "bp01_reader_and_kit");
+            t.onServer(0, player -> com.senne.starktech.bypass.Bypass.start(player, reader,
+                    net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.shot(10, "bp02_choose_level");
+            t.step(0, () -> circuit(screen -> screen.tourChoose(3)));
+            t.shot(10, "bp03_circuit_start");
+            t.step(0, () -> circuit(screen -> screen.tourSolve(-1)));
+            t.shot(10, "bp04_circuit_half");
+            t.step(0, () -> circuit(com.senne.starktech.client.bypass.CircuitScreen::tourTouchAlarm));
+            t.shot(4, "bp05_circuit_alarm");
+            t.close(0);
+            t.onServer(5, player -> com.senne.starktech.bypass.Bypass.start(player, reader,
+                    net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.step(10, () -> circuit(screen -> screen.tourChoose(5)));
+            t.shot(10, "bp06_circuit_level5");
+            t.step(0, () -> circuit(screen -> screen.tourSolve(1000)));
+            t.shot(14, "bp07_circuit_access");
+            t.close(2);
+            t.shot(2, "bp08_reader_green");
+            t.onServer(20, player -> com.senne.starktech.bypass.Bypass.start(player, reader,
+                    net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.step(10, () -> circuit(screen -> screen.tourChoose(1)));
+            t.step(5, () -> circuit(com.senne.starktech.client.bypass.CircuitScreen::tourTouchAlarm));
+            t.shot(30, "bp09_circuit_caught");
+            t.close(30);
+        }
+
         // --- Zones (hoofdstuk 10, 8 oktober): een L-vormige basis met een torentje en de blauwe rand
         // eromheen (waar het torentje tegen de basis staat, hoort geen wand). Zonder stroom wordt de
         // rand rood; met "Zone border" uit zie je hem niet.
@@ -2035,6 +2070,72 @@ public final class VisualCheck {
         stickC4(level, w.offset(1, 2, 3), Direction.EAST, 59);
         stickC4(level, w.offset(3, -1, 2), Direction.UP, 44);
         stickC4(level, w.offset(4, 3, 6), Direction.DOWN, 89);
+    }
+
+    /** Waar het lab van hoofdstuk 12 staat (zie buildBypassLab). */
+    private static final BlockPos BYPASS_LAB = new BlockPos(170, -60, 128);
+
+    /** Doet iets met het stroomcircuit dat nu open is (als het open is). */
+    private static void circuit(java.util.function.Consumer<com.senne.starktech.client.bypass.CircuitScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.bypass.CircuitScreen screen) {
+            action.accept(screen);
+        }
+    }
+
+    /**
+     * Een kern met een server (een rack met CPU, RAM en SSD; allebei op een volle generator), een muurtje
+     * met een keycardlezer "Lab door" en een codepaneel "Front door", en een diagram: een kaart van
+     * niveau 3 of hoger geeft groen, anders rood. In je hand de Bypass Kit.
+     */
+    private static void buildBypassLab(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos lab = BYPASS_LAB;
+        BlockPos rack = lab.offset(-2, 0, 0);
+        level.setBlockAndUpdate(lab, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        for (BlockPos generator : new BlockPos[] {lab.below(), rack.below()}) {
+            level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+        level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
+                .setValue(com.senne.starktech.logic.ServerRackBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+        }
+        for (int dx = 3; dx <= 6; dx++) {
+            for (int dy = 0; dy <= 2; dy++) {
+                level.setBlockAndUpdate(lab.offset(dx, dy, 2), Blocks.SMOOTH_STONE.defaultBlockState());
+            }
+        }
+        String[][] inputs = {{"4", "Lab door"}, {"5", "Front door"}};
+        for (String[] input : inputs) {
+            BlockPos pos = lab.offset(Integer.parseInt(input[0]), 1, 3);
+            BlockState state = (input[1].equals("Lab door") ? ModBlocks.KEYCARD_READER.get() : ModBlocks.CODE_PANEL.get())
+                    .defaultBlockState().setValue(com.senne.starktech.logic.InputDeviceBlock.FACING, Direction.SOUTH);
+            level.setBlockAndUpdate(pos, state);
+            if (level.getBlockEntity(pos) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
+                be.setName(input[1]);
+            }
+        }
+        if (level.getBlockEntity(lab) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.setOwner(player);
+            core.ensureSystem(level);
+            String code = """
+                    when keycard("Lab door"):
+                        if card.valid and card.level >= 3:
+                            accept()
+                        else:
+                            deny()
+                    """;
+            core.logic().put(null, new com.senne.starktech.logic.program.LogicProgram("Lab", true,
+                    com.senne.starktech.logic.program.GraphConverter.toGraph(
+                            com.senne.starktech.logic.program.ScriptParser.parse(code), null), code));
+            core.setChanged();
+        }
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
     }
 
     /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */

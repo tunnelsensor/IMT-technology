@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 188 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 192 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1724,12 +1724,29 @@ Mijn invulling (zeg het als je iets anders wil):
 
 De stappen, één per commit:
 
-- [ ] **1. De Bypass Kit en een keycardlezer hacken**
-      De kit (recept, plaatje), het scherm met de niveaus en het stroomcircuit, de server die het
-      raster zelf ook maakt en nakijkt of het echt klopt, de nagemaakte kaart, en het alarm als het
-      mislukt. Tests: elk raster (honderden, alle niveaus) heeft een oplossing en begint niet opgelost;
-      een gehackte lezer opent de deur alleen als het niveau hoog genoeg is; een raster dat niet klopt
-      telt niet; mislukken geeft alarm en de wachttijd.
+- [x] **1. De Bypass Kit en een keycardlezer hacken**
+      De **Bypass Kit** (zonder vaste vorm: Stark-chip, schaar, glowstonestof, redstone en ijzer; gaat 16
+      keer mee). Rechtsklik ermee op een keycardlezer: eerst kies je welke kaart je namaakt (niveau 1 tot
+      5, met per niveau de grootte, de tijd en het aantal ALARM-punten), dan het **stroomcircuit**:
+      linksklik draait een stukje rechtsom, rechtsklik linksom, en wat aan CARD vastzit licht blauw op.
+      Komt het signaal bij ACCEPT, dan wordt het pad groen en leest de lezer een geldige kaart van dat
+      niveau met een verzonnen nummer (#2000 tot #9999, nooit een nummer van je lijst); je diagram beslist
+      zoals altijd. Raakt het signaal ALARM, dan knippert het rood, piept het en loopt een balkje leeg: 1
+      seconde om dat stukje weg te draaien. Mislukt (ALARM of de tijd is om): rood lampje, een alarm
+      "Someone is tampering with Lab door" (met je naam erachter), de beveiliging jaagt op je, en die lezer
+      laat je 60 seconden niet meer proberen. Esc, weglopen (verder dan 6 blokken) of doodgaan stopt
+      zonder alarm. **Hoe de server het controleert** (`bypass/Bypass`): hij stuurt alleen een getal; je
+      spel en de server maken daaruit precies hetzelfde raster (`bypass/CircuitPuzzle`), en als je klaar
+      bent rekent de server zelf na of het signaal echt bij ACCEPT komt en of je op tijd was. **Het
+      raster**: eerst een pad van CARD naar ACCEPT (kolom voor kolom, soms een stukje op of neer), de rest
+      willekeurige stukjes (recht, bocht, T, kruis), en de ALARM-punten het liefst naast een bocht van het
+      pad die je met één verkeerde draai naar buiten draait: zo is ALARM echt gevaarlijk. Zonder draaiende
+      server of van te ver gebeurt er niets (en kost het niets). De tijden staan in de config onder
+      `[bypass]`. Screenshots: `-Ponly=bypass` (`bp01`-`bp09`). Vier nieuwe tests: honderden rasters per
+      niveau (altijd op te lossen, nooit al klaar, hetzelfde getal geeft hetzelfde raster, en meestal raak
+      je ALARM met één verkeerde draai), een nagemaakte kaart van niveau 3 opent de kluis en een van
+      niveau 2 niet (en een raster dat niet klopt telt niet), mislukken geeft alarm en de wachttijd, en
+      zonder server gebeurt er niets.
 - [ ] **2. Een codepaneel hacken**
       De code uit je diagram halen (ook uit een def), vingerafdrukken, en de volgorde raden met de
       server als scheidsrechter: de code komt pas op je scherm als je hem hebt. Tests: de code vinden,

@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "15";
+    private static final String PROTOCOL_VERSION = "16";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -191,6 +191,16 @@ public final class ModNetwork {
                             if (context.player() instanceof ServerPlayer player) {
                                 com.senne.starktech.logic.LogicEvents.codePanel(player.serverLevel(), payload.pos(),
                                         player, payload.text());
+                            }
+                        }));
+        // Hoofdstuk 12: een hack met de Bypass Kit. De server opent het scherm en zegt hoe het afliep;
+        // jouw spel stuurt het gekozen niveau, de stand van de stukjes, of dat het mislukte.
+        registrar.playBidirectional(BypassPayload.TYPE, BypassPayload.STREAM_CODEC,
+                new DirectionalPayloadHandler<>(
+                        (payload, context) -> ClientPayloadHandlers.onBypass(payload, context),
+                        (payload, context) -> {
+                            if (context.player() instanceof ServerPlayer player) {
+                                com.senne.starktech.bypass.Bypass.handle(player, payload);
                             }
                         }));
         // Fase 6: spionagedrone

@@ -77,6 +77,31 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /**
+     * Een hack met de Bypass Kit (hoofdstuk 12): het stroomcircuit van een lezer openen, de uitslag
+     * laten zien, of het scherm sluiten (je liep weg).
+     */
+    public static void onBypass(com.senne.starktech.network.BypassPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        switch (payload.op()) {
+            case "reader" -> mc.setScreen(new com.senne.starktech.client.bypass.CircuitScreen(payload.pos(),
+                    payload.args().getString("name"), payload.args().getLong("seed")));
+            case "result" -> {
+                if (mc.screen instanceof com.senne.starktech.client.bypass.CircuitScreen circuit
+                        && circuit.reader().equals(payload.pos())) {
+                    circuit.onResult(payload.args().getString("result"));
+                }
+            }
+            case "close" -> {
+                if (mc.screen instanceof com.senne.starktech.client.bypass.CircuitScreen circuit
+                        && circuit.reader().equals(payload.pos())) {
+                    circuit.closeFromServer();
+                }
+            }
+            default -> { }
+        }
+    }
+
     /** De Stark OS-desktop openen (eigenaar of op afstand), of weer sluiten. */
     public static void onOsOpen(com.senne.starktech.network.OsOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

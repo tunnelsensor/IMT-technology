@@ -2835,6 +2835,39 @@ def code_panel_textures():
         save(im, f"block/code_panel_{name}.png")
 
 
+def bypass_kit_item():
+    """
+    De Bypass Kit (hoofdstuk 12): een open zwart etui met een schroevendraaier met een gele steel, een
+    potje oplichtend poeder voor vingerafdrukken, een rood en een blauw draadje, en een Stark-chip.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    case = (34, 36, 42, 255)
+    case_edge = (18, 19, 23, 255)
+    case_light = (58, 61, 70, 255)
+    # Het etui: de onderkant met een lichte rand, en de open klep erachter.
+    d.rectangle([1, 4, 14, 6], fill=case_light, outline=case_edge)
+    d.rectangle([1, 6, 14, 14], fill=case, outline=case_edge)
+    d.line([2, 13, 13, 13], fill=case_edge)
+    px(im, [(2, 7), (2, 8)], case_light)
+    # De schroevendraaier: gele steel linksonder, zilveren schacht schuin omhoog.
+    d.line([3, 12, 5, 10], fill=(232, 182, 40, 255))
+    d.line([4, 12, 6, 10], fill=(184, 130, 24, 255))
+    d.line([6, 9, 9, 6], fill=(196, 202, 212, 255))
+    px(im, [(10, 5)], (236, 240, 246, 255))
+    # Het potje poeder: een glazen buisje met oplichtend poeder (glowstonestof).
+    d.rectangle([11, 7, 13, 12], fill=(120, 140, 150, 255), outline=(70, 80, 90, 255))
+    d.rectangle([12, 9, 12, 11], fill=(255, 232, 120, 255))
+    px(im, [(12, 8)], (255, 248, 200, 255))
+    px(im, [(11, 6), (12, 6), (13, 6)], (140, 96, 60, 255))
+    # Twee draadjes die eruit hangen, en de Stark-chip (blauw lampje).
+    d.line([5, 13, 7, 12, 9, 13], fill=(220, 50, 40, 255))
+    d.line([7, 14, 9, 13, 11, 14], fill=(60, 140, 255, 255))
+    px(im, [(8, 9), (9, 9), (8, 10), (9, 10)], (40, 44, 52, 255))
+    px(im, [(9, 9)], CYAN)
+    save(im, "item/bypass_kit.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -2887,3 +2920,4 @@ if __name__ == "__main__":
     keycard_items()
     keycard_reader_textures()
     code_panel_textures()
+    bypass_kit_item()

@@ -175,6 +175,10 @@ public final class ModItems {
             ModBlocks.KEYCARD_READER, new Item.Properties());
     public static final DeferredItem<BlockItem> CODE_PANEL = ITEMS.registerSimpleBlockItem("code_panel",
             ModBlocks.CODE_PANEL, new Item.Properties());
+    /** De Bypass Kit (hoofdstuk 12): een keycardlezer of codepaneel hacken met een minigame. */
+    public static final DeferredItem<com.senne.starktech.bypass.BypassKitItem> BYPASS_KIT = ITEMS.registerItem("bypass_kit",
+            com.senne.starktech.bypass.BypassKitItem::new,
+            new Item.Properties().durability(com.senne.starktech.bypass.BypassBalance.KIT_USES).rarity(Rarity.UNCOMMON));
 
     /**
      * De Zone Marker (hoofdstuk 10): linksklik en rechtsklik zetten de twee hoeken van een kubus,

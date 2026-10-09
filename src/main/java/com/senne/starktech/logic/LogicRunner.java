@@ -415,7 +415,7 @@ public final class LogicRunner {
      * bel bij de kern, en de beveiliging jaagt een tijdje op de speler die het veroorzaakte (als dat
      * geen vriend is), ook als "attack players" uit staat.
      */
-    private static void alarm(ServerLevel level, SecurityCoreBlockEntity core, Context context, String text) {
+    static void alarm(ServerLevel level, SecurityCoreBlockEntity core, Context context, String text) {
         String who = context.player() != null ? " (" + context.playerName() + ")" : "";
         core.logEvent(EventLog.Type.ALARM, text + who);
         level.playSound(null, core.getBlockPos(), SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2.0f, 0.6f);

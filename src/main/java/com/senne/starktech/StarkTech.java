@@ -103,6 +103,7 @@ public class StarkTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.ZoneGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.C4GameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.CrackGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.BypassGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.CoreConfigGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
@@ -168,6 +169,10 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.TowerHack::onServerStopped);
+        // Hoofdstuk 12: lezers en panelen hacken met de Bypass Kit (wie wat hackt, weglopen, de klok).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.bypass.Bypass::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.bypass.Bypass::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.bypass.Bypass::onServerStopped);
         // De Stark OS-desktop op de beveiligingskern
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.os.StarkOs::onPlayerLoggedOut);

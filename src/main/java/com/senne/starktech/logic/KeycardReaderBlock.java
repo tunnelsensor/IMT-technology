@@ -51,7 +51,7 @@ public class KeycardReaderBlock extends InputDeviceBlock {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                               InteractionHand hand, BlockHitResult hit) {
         if (!(stack.getItem() instanceof KeycardItem)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return super.useItemOn(stack, state, level, pos, player, hand, hit); // bijvoorbeeld de Bypass Kit
         }
         if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
             LogicEvents.keycard(serverLevel, pos, serverPlayer, KeycardItem.data(stack));

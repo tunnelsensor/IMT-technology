@@ -41,7 +41,30 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
-        boolean valid = core.logic().isValid(core.ip(), card);
+        read(level, reader, device, core, player, card, core.logic().isValid(core.ip(), card));
+    }
+
+    /**
+     * Een gehackte keycardlezer (hoofdstuk 12): de Bypass Kit laat hem een nagemaakte kaart lezen. Die is
+     * geldig, van het niveau dat de hacker koos, met een verzonnen nummer dat niet op jouw lijst staat en
+     * zonder naam. Verder gaat alles zoals bij een echte kaart: het logboek, het lampje en je diagram.
+     * (In het logboek zie je zo een nummer dat je in de app Keycards niet terugvindt.)
+     */
+    public static void forgedKeycard(ServerLevel level, BlockPos reader, ServerPlayer player, int cardLevel) {
+        if (!(level.getBlockEntity(reader) instanceof InputDeviceBlockEntity device)) {
+            return;
+        }
+        SecurityCoreBlockEntity core = serverFor(level, reader, player);
+        if (core == null) {
+            return;
+        }
+        KeycardData card = new KeycardData(core.ip(), core.hostname(), fakeNumber(level, core), cardLevel, "");
+        read(level, reader, device, core, player, card, true);
+    }
+
+    /** De lezer heeft een kaart gelezen: oranje lampje, een regel in het logboek, en de server aan het werk. */
+    private static void read(ServerLevel level, BlockPos reader, InputDeviceBlockEntity device, SecurityCoreBlockEntity core,
+                             ServerPlayer player, @Nullable KeycardData card, boolean valid) {
         InputDeviceBlock.flash(level, reader, InputLight.BUSY);
         level.playSound(null, reader, ModSounds.EDITH_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         String what = card == null ? "a blank card"
@@ -50,6 +73,36 @@ public final class LogicEvents {
         LogicRunner.fire(level, core, Op.KEYCARD, device.name(), new LogicRunner.Context(Op.KEYCARD, device.name(),
                 reader.immutable(), player.getUUID(), player.getGameProfile().getName(),
                 SecurityCores.isFriend(level, core, player), player.getUUID().equals(core.ownerId()), card, valid, ""));
+    }
+
+    /** Een kaartnummer dat niet op de lijst van dit netwerk staat (#2000 tot #9999). */
+    private static int fakeNumber(ServerLevel level, SecurityCoreBlockEntity core) {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            int number = 2000 + level.random.nextInt(8000);
+            if (core.logic().cards().stream().noneMatch(card -> card.number() == number)) {
+                return number;
+            }
+        }
+        return 9999;
+    }
+
+    /**
+     * Een mislukte hack (hoofdstuk 12): het lampje wordt rood en het alarm gaat af, net alsof je diagram
+     * {@code alarm("Someone is tampering with Lab door")} zei: een rode regel in het logboek (met de
+     * naam van de hacker erachter), E.D.I.T.H. waarschuwt de eigenaar, en de beveiliging jaagt op hem.
+     */
+    public static void tampered(ServerLevel level, BlockPos device, ServerPlayer player) {
+        String name = level.getBlockEntity(device) instanceof InputDeviceBlockEntity input ? input.name() : "a reader";
+        InputDeviceBlock.flash(level, device, InputLight.DENIED);
+        level.playSound(null, device, ModSounds.EDITH_DENIED.get(), SoundSource.BLOCKS, 0.8f, 0.8f);
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, device);
+        if (core == null) {
+            return;
+        }
+        Op trigger = level.getBlockState(device).getBlock() instanceof CodePanelBlock ? Op.CODEPANEL : Op.KEYCARD;
+        LogicRunner.alarm(level, core, new LogicRunner.Context(trigger, name, device.immutable(), player.getUUID(),
+                player.getGameProfile().getName(), SecurityCores.isFriend(level, core, player),
+                player.getUUID().equals(core.ownerId()), null, false, ""), "Someone is tampering with " + name);
     }
 
     /**

@@ -80,6 +80,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.KEYCARD.get());
                 output.accept(ModItems.KEYCARD_READER.get());
                 output.accept(ModItems.CODE_PANEL.get());
+                output.accept(ModItems.BYPASS_KIT.get());
                 output.accept(ModItems.STARK_LAPTOP.get());
                 output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
             })
