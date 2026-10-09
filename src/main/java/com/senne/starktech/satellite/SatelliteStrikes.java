@@ -266,8 +266,10 @@ public final class SatelliteStrikes {
             Level.ExplosionInteraction interaction = EdithBalance.SATELLITE_BREAKS_BLOCKS
                     ? Level.ExplosionInteraction.MOB   // volgt de spelregel mobGriefing
                     : Level.ExplosionInteraction.NONE;
-            level.explode(owner, at.x, at.y, at.z,
-                    SatelliteStats.explosionPower(upgrades.bombardment(), upgrades.power()), false, interaction);
+            // In een zone werkt de klap met breekpunten (zie Zones.onExplosion): daarom zeggen we dat dit
+            // een raket van de satelliet is.
+            com.senne.starktech.security.zone.Zones.satelliteExplosion(() -> level.explode(owner, at.x, at.y, at.z,
+                    SatelliteStats.explosionPower(upgrades.bombardment(), upgrades.power()), false, interaction));
             shockwave(level, at, owner);
         });
     }

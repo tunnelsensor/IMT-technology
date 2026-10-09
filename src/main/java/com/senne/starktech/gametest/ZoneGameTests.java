@@ -335,76 +335,78 @@ public final class ZoneGameTests {
     }
 
     /**
-     * Een emmer leeggieten telt als plaatsen: een vreemde giet in de zone geen water (buiten de zone
-     * wel; dat bewijst dat de test goed mikt).
+     * Jouw wens (9 oktober): een vreemde mag in een zone een emmer leeggieten, maar alleen op de grond.
+     * Tegen een muur niet (anders klom hij met water omhoog).
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
-    public static void zone_blocks_buckets(GameTestHelper helper) {
+    public static void zone_buckets_only_on_the_ground(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
         ServerPlayer outsider = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 14), "zone-outsider");
         SecurityCoreBlockEntity core = zoneCore(helper, owner);
-        BlockPos outsideFloor = new BlockPos(18, 2, 18);
-        BlockPos insideFloor = new BlockPos(8, 2, 8);
-        helper.setBlock(outsideFloor, Blocks.STONE);
-        helper.setBlock(insideFloor, Blocks.STONE);
-
-        lookDownAt(helper, outsider, outsideFloor);
+        BlockPos floor = new BlockPos(6, 2, 10);
+        helper.setBlock(floor, Blocks.STONE);
+        // Op de grond: mag.
+        lookDownAt(helper, outsider, floor);
         outsider.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
         outsider.gameMode.useItem(outsider, level, outsider.getMainHandItem(), InteractionHand.MAIN_HAND);
-        helper.assertBlockPresent(Blocks.WATER, outsideFloor.above());
-
-        lookDownAt(helper, outsider, insideFloor);
+        helper.assertBlockPresent(Blocks.WATER, floor.above());
+        // Tegen een muur: niet.
+        BlockPos wall = new BlockPos(8, 5, 8);
+        helper.setBlock(wall, Blocks.STONE);
+        Vec3 eye = helper.absoluteVec(new Vec3(10.5, 5.5 - 1.62, 8.5));
+        outsider.moveTo(eye.x, eye.y, eye.z, 90.0f, 0.0f);
         outsider.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
         outsider.gameMode.useItem(outsider, level, outsider.getMainHandItem(), InteractionHand.MAIN_HAND);
-        helper.assertBlockNotPresent(Blocks.WATER, insideFloor.above());
+        helper.assertBlockNotPresent(Blocks.WATER, wall.east());
         if (!outsider.getMainHandItem().is(Items.WATER_BUCKET)) {
-            throw new GameTestAssertException("De emmer van de vreemde is leeg, maar er kwam geen water");
+            throw new GameTestAssertException("Tegen een muur zou de emmer vol moeten blijven");
         }
         finish(helper, core);
     }
 
     /**
-     * Stark-kabels leggen of doorknippen telt als bouwen en breken: anders knipte een inbreker zo de
-     * stroom van de zone eruit. De eigenaar kan het wel.
+     * Wat een vreemde in een zone ook mag (jouw wens, 9 oktober): vuur aansteken, een bijl op een stam,
+     * een schoffel op aarde, en Stark-kabels leggen en knippen. Een gewoon blok neerzetten nog steeds niet.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
-    public static void zone_protects_cables(GameTestHelper helper) {
+    public static void zone_allows_fire_tools_and_cables(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
         ServerPlayer outsider = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 14), "zone-outsider");
         SecurityCoreBlockEntity core = zoneCore(helper, owner);
-        BlockPos floor = new BlockPos(8, 2, 8);
+        helper.setBlock(new BlockPos(6, 2, 6), Blocks.STONE);
+        helper.setBlock(new BlockPos(8, 3, 8), Blocks.OAK_LOG);
+        helper.setBlock(new BlockPos(10, 2, 10), Blocks.DIRT);
+        if (!place(helper, outsider, Items.FLINT_AND_STEEL, new BlockPos(6, 2, 6), Direction.UP)) {
+            throw new GameTestAssertException("Een vreemde zou in een zone vuur moeten kunnen aansteken");
+        }
+        helper.assertBlockPresent(Blocks.FIRE, new BlockPos(6, 3, 6));
+        helper.setBlock(new BlockPos(6, 3, 6), Blocks.AIR);
+        place(helper, outsider, Items.IRON_AXE, new BlockPos(8, 3, 8), Direction.UP);
+        helper.assertBlockPresent(Blocks.STRIPPED_OAK_LOG, new BlockPos(8, 3, 8));
+        place(helper, outsider, Items.IRON_HOE, new BlockPos(10, 2, 10), Direction.UP);
+        helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(10, 2, 10));
+        if (place(helper, outsider, Items.COBBLESTONE, new BlockPos(6, 2, 6), Direction.UP)) {
+            throw new GameTestAssertException("Een gewoon blok neerzetten zou nog steeds niet mogen");
+        }
+        // Kabels: leggen en knippen.
+        BlockPos floor = new BlockPos(8, 2, 10);
         helper.setBlock(floor, Blocks.STONE);
         BlockPos cell = helper.absolutePos(floor.above());
         CableSpoolItem spool = (CableSpoolItem) ModItems.CABLE.get();
-
-        // Een vreemde legt geen kabel in de zone.
         lookDownAt(helper, outsider, floor);
-        ItemStack outsiderSpool = new ItemStack(ModItems.CABLE.get(), 16);
-        outsider.setItemInHand(InteractionHand.MAIN_HAND, outsiderSpool);
-        spool.onUseTick(level, outsider, outsiderSpool, 0);
-        if (StarkCables.has(level, cell)) {
-            throw new GameTestAssertException("Een vreemde kon een kabel in de zone leggen");
-        }
-        spool.releaseUsing(outsiderSpool, level, outsider, 0);
-
-        // De eigenaar wel.
-        lookDownAt(helper, owner, floor);
-        ItemStack ownerSpool = new ItemStack(ModItems.CABLE.get(), 16);
-        owner.setItemInHand(InteractionHand.MAIN_HAND, ownerSpool);
-        spool.onUseTick(level, owner, ownerSpool, 0);
-        spool.releaseUsing(ownerSpool, level, owner, 0);
+        ItemStack cables = new ItemStack(ModItems.CABLE.get(), 16);
+        outsider.setItemInHand(InteractionHand.MAIN_HAND, cables);
+        spool.onUseTick(level, outsider, cables, 0);
+        spool.releaseUsing(cables, level, outsider, 0);
         if (!StarkCables.has(level, cell)) {
-            throw new GameTestAssertException("De eigenaar kon geen kabel in zijn zone leggen");
+            throw new GameTestAssertException("Een vreemde zou in een zone een kabel moeten kunnen leggen");
         }
-
-        // Een vreemde knipt hem niet door met een schaar.
         outsider.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.SHEARS));
-        PlayerInteractEvent.RightClickItem cut = new PlayerInteractEvent.RightClickItem(outsider, InteractionHand.MAIN_HAND);
-        CableSpoolItem.onRightClickItem(cut);
-        if (!StarkCables.has(level, cell)) {
-            throw new GameTestAssertException("Een vreemde kon een kabel in de zone doorknippen");
+        CableSpoolItem.onRightClickItem(new PlayerInteractEvent.RightClickItem(outsider, InteractionHand.MAIN_HAND));
+        if (StarkCables.has(level, cell)) {
+            throw new GameTestAssertException("Een vreemde zou in een zone een kabel moeten kunnen doorknippen");
         }
         finish(helper, core);
     }
@@ -600,7 +602,8 @@ public final class ZoneGameTests {
     // ================================================================ Stap 4: alleen C4 komt erdoor
 
     /**
-     * Een explosie (zoals TNT) naast de zone: de aarde erbuiten vliegt weg, de aarde in de zone blijft.
+     * Een explosie zonder TNT of satelliet (zoals een creeper) naast de zone: de aarde erbuiten vliegt
+     * weg, de aarde in de zone blijft.
      * Stak de eigenaar hem zelf aan, dan gaat zijn eigen zone wel kapot (je eigen TNT in je eigen basis).
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
@@ -720,6 +723,50 @@ public final class ZoneGameTests {
         }
         near.discard();
         far.discard();
+        finish(helper, core);
+    }
+
+    /**
+     * Jouw wens (9 oktober): TNT en de satelliet komen ook door een zone, maar TNT doet heel weinig. TNT
+     * van een vreemde breekt in de zone alleen een plank vlakbij; de stenen muur krijgt barsten en
+     * breekt pas na drie TNT op dezelfde plek. Een raket van de satelliet doet meer: na twee is de steen weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_tnt_and_satellite_do_a_little(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 20), "zone-owner");
+        ServerPlayer outsider = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(18, 3, 20), "zone-outsider");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        C4GameTests.wall(helper, 8, Blocks.STONE);
+        BlockPos stone = new BlockPos(8, 3, 8);
+        BlockPos planks = new BlockPos(9, 4, 8);
+        helper.setBlock(planks, Blocks.OAK_PLANKS);
+        Vec3 at = helper.absoluteVec(new Vec3(9.5, 3.5, 8.5));
+        for (int i = 1; i <= 3; i++) {
+            net.minecraft.world.entity.item.PrimedTnt tnt = new net.minecraft.world.entity.item.PrimedTnt(level, at.x, at.y, at.z, outsider);
+            level.explode(tnt, at.x, at.y, at.z, 4.0f, net.minecraft.world.level.Level.ExplosionInteraction.TNT);
+            if (i == 1) {
+                helper.assertBlockNotPresent(Blocks.OAK_PLANKS, planks);
+                helper.assertBlockPresent(Blocks.STONE, stone);
+                if (com.senne.starktech.c4.C4Blast.cracks(level, helper.absolutePos(stone)) <= 0) {
+                    throw new GameTestAssertException("Na één TNT zou de steen barsten moeten hebben");
+                }
+            } else if (i == 2) {
+                helper.assertBlockPresent(Blocks.STONE, stone);
+            }
+        }
+        helper.assertBlockNotPresent(Blocks.STONE, stone);
+        if (!DatacenterGameTests.logged(core, EventLog.Type.ALARM, "TNT blast at")) {
+            throw new GameTestAssertException("Het logboek zegt niets over de TNT");
+        }
+        // De satelliet: twee raketten tegen een ander stuk muur (ver genoeg van de TNT, zonder barsten).
+        BlockPos high = new BlockPos(8, 5, 6);
+        Vec3 sky = helper.absoluteVec(new Vec3(9.5, 5.5, 6.5));
+        Runnable rocket = () -> level.explode(outsider, sky.x, sky.y, sky.z, 5.0f, net.minecraft.world.level.Level.ExplosionInteraction.TNT);
+        com.senne.starktech.security.zone.Zones.satelliteExplosion(rocket);
+        helper.assertBlockPresent(Blocks.STONE, high);
+        com.senne.starktech.security.zone.Zones.satelliteExplosion(rocket);
+        helper.assertBlockNotPresent(Blocks.STONE, high);
         finish(helper, core);
     }
 }

@@ -43,8 +43,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Een <b>schaar</b> (rechtsklik) knipt een kabel door (zie onRightClick hieronder).</li>
  * </ul>
  *
- * In een zone van iemand anders kan geen van de drie (zie security/zone/Zones): kabels leggen en
- * knippen telt daar als bouwen en breken.
+ * Ook in de zone van iemand anders mag dat allemaal (jouw wens, 9 oktober): zet je kabels dus goed
+ * weg, in een muur of vloer, anders knipt een inbreker de stroom van je zone eruit.
  *
  * Een kabel is geen blok: je kunt er gewoon een muur of een vloer overheen bouwen, dan loopt hij
  * erin door (zie StarkCables). Een verborgen kabel zie je alleen met de bril op.
@@ -109,11 +109,6 @@ public class CableSpoolItem extends Item {
                 continue;
             }
             if (!player.getAbilities().instabuild && stack.isEmpty()) {
-                break;
-            }
-            // In andermans zone leg je geen kabels (dat telt als bouwen, zie Zones).
-            if (com.senne.starktech.security.zone.Zones.denies(serverLevel, pos, player)) {
-                com.senne.starktech.security.zone.Zones.tellProtected(player);
                 break;
             }
             if (StarkCables.add(serverLevel, pos)) {
@@ -183,10 +178,6 @@ public class CableSpoolItem extends Item {
 
     /** Opraapt (shift + rechtsklik met de rol): de kabel weg, jij krijgt hem terug. */
     private static void take(ServerLevel level, ServerPlayer player, BlockPos cable) {
-        if (com.senne.starktech.security.zone.Zones.denies(level, cable, player)) {
-            com.senne.starktech.security.zone.Zones.tellProtected(player);
-            return;
-        }
         if (StarkCables.remove(level, cable)) {
             if (!player.getAbilities().instabuild) {
                 ItemStack back = new ItemStack(ModItems.CABLE.get());
@@ -226,11 +217,6 @@ public class CableSpoolItem extends Item {
         BlockPos cable = lookedAtCable(level, player);
         if (cable == null) {
             return false;
-        }
-        // In andermans zone knip je niets door: anders knipte je zo de stroom van de zone eruit.
-        if (com.senne.starktech.security.zone.Zones.denies(level, cable, player)) {
-            com.senne.starktech.security.zone.Zones.tellProtected(player);
-            return true;
         }
         if (!StarkCables.remove(level, cable)) {
             return false;

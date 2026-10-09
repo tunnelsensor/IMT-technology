@@ -535,15 +535,21 @@ binnen het gebied van je kern liggen (30 blokken opzij, 60 onder en 55 boven de 
   verschuiven. **New box** zet een kubus van 7 × 5 × 7 waar je staat.
 
 **Wie mag wat.** In een zone mogen alleen **jij, je team en je vertrouwde spelers** (de app Access)
-blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten
-(ook geen emmer leeggieten, vuur aansteken of Stark-kabels leggen of knippen); hij ziet dan
-"Protected zone". Wel mag iedereen **ladders, scaffolding, klimplanten, fakkels en lantaarns**
-plaatsen en weer weghalen (klimmen kan in het echt ook), en natuurlijk C4. Al de rest is gewoon
+blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten;
+hij ziet dan "Protected zone". Wel mag iedereen **ladders, scaffolding, klimplanten, fakkels en
+lantaarns** plaatsen en weer weghalen (klimmen kan in het echt ook), en natuurlijk C4. Ook mag iedereen
+een **emmer leeggieten of vullen, maar alleen op de grond** (niet tegen een muur: zo klim je niet met
+water omhoog), **vuur aansteken**, een **bijl of schoffel** op een blok gebruiken, en **Stark-kabels
+leggen of knippen** (verstop je kabels dus in een muur of vloer). Een pad maken met een schep en
+beendermeel mogen niet. Al de rest is gewoon
 bruikbaar, net als in het echt: wie binnen is, kan kisten openen, deuren gebruiken en stelen. Een
 houten deur is dus geen slot; een ijzeren deur met een keycard-lezer of codepaneel buiten wel.
 
-**Alleen C4 komt erdoor.** TNT, creepers, vuurballen en de satelliet breken geen blokken van een zone
-(behalve je eigen TNT in je eigen zone); vuur brandt ze niet weg en lava steekt ze niet aan; een
+**Wat er nog meer doorkomt.** **TNT** en de raketten van het **satellietbombardement** wel, maar zwak:
+ze werken in een zone met breekpunten zoals C4 (TNT 3, een satellietraket 6, C4 10). TNT naast een
+houten muur breekt er een plank uit; een stenen muur krijgt barsten en breekt pas na drie TNT op
+dezelfde plek. Creepers, vuurballen en andere explosies breken geen blokken van een zone (je eigen
+TNT in je eigen zone wel gewoon). Vuur brandt ze niet weg en lava steekt ze niet aan; een
 zuiger van buiten duwt of trekt er niets in of uit; monsters (endermen, withers, ravagers, zombies
 bij deuren) en raiddrones breken er niets.
 

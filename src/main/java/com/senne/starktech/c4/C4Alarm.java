@@ -30,7 +30,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Geplakt</b> in een zone of tot 3 blokken ervan (door iemand die er niet mag bouwen):
  *       E.D.I.T.H. zegt waar, aan de eigenaar en zijn vrienden die online zijn, en ze zien een rode
  *       markering "C4!" tot hij weg is. Niet wie het was: in het echt weet je dat ook niet.</li>
- *   <li><b>Ontploft</b>: hoeveel blokken van de zone er weg zijn. Is de eigenaar offline, dan hoort
+ *   <li><b>Ontploft</b> (C4, of TNT of de satelliet die in de zone iets kapotmaken): hoeveel blokken van
+ *       de zone er weg zijn. Is de eigenaar offline, dan hoort
  *       hij het als hij weer inlogt ("While you were away: ...").</li>
  *   <li><b>Onschadelijk gemaakt</b> (met een schaar): de markering gaat weg, en wie hem plakte hoort het.</li>
  * </ul>
@@ -70,18 +71,18 @@ public final class C4Alarm {
      * Ontploft. {@code zone} is de zone die de klap raakte (of null), {@code blocks} hoeveel blokken
      * van die zone er weg zijn.
      */
-    public static void blasted(ServerLevel level, BlockPos pos, @Nullable ZoneData.Zone zone, int blocks, boolean alerted) {
+    public static void blasted(ServerLevel level, BlockPos pos, @Nullable ZoneData.Zone zone, int blocks, boolean alerted, String what) {
         if (zone == null) {
             return;
         }
         if (alerted) {
             marker(level, zone, pos, false);
         }
-        log(level, zone, "C4 blast at " + xyz(pos) + ": " + blocks + (blocks == 1 ? " block" : " blocks") + " destroyed");
+        log(level, zone, what + " blast at " + xyz(pos) + ": " + blocks + (blocks == 1 ? " block" : " blocks") + " destroyed");
         if (blocks <= 0) {
             return;
         }
-        tellBuilders(level, zone, Component.translatable("zone.starktech.c4.blast", blocks), EdithMessagePayload.Level.ALERT);
+        tellBuilders(level, zone, Component.translatable("zone.starktech.c4.blast", what, blocks), EdithMessagePayload.Level.ALERT);
         UUID owner = zone.owner();
         if (owner != null && level.getServer().getPlayerList().getPlayer(owner) == null) {
             ZoneData.get(level).addAwayReport(owner, blocks);

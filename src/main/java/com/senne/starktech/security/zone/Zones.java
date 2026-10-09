@@ -44,9 +44,10 @@ import org.jetbrains.annotations.Nullable;
  * stelen". Kisten, deuren, knoppen en dieren blijven dus voor iedereen bruikbaar; alleen plaatsen
  * en breken is op slot.
  *
- * Als plaatsen of breken telt ook: een emmer leeggieten of vullen, iets aansteken, met een bijl of
- * schoffel een blok veranderen, beendermeel, en Stark-kabels leggen of knippen (zie
- * CableSpoolItem). Die laatste gaan allemaal via het plaats-event van NeoForge, behalve de emmer.
+ * Wel mag iedereen (jouw wens, 9 oktober): een emmer leeggieten of vullen, maar alleen op de grond
+ * (op de bovenkant van een blok), niet tegen een muur, zodat je niet met water omhoog klimt; vuur
+ * aansteken; met een bijl of schoffel een blok veranderen; en Stark-kabels leggen of knippen. Nog
+ * steeds niet: met een schep een pad maken en beendermeel (die veranderen ook een blok).
  *
  * Wat iedereen wel mag (ook weer weghalen): de "vrije" blokken uit de tag
  * {@code starktech:zone_free}: ladders, scaffolding, klimplanten, fakkels en lantaarns (en straks
@@ -163,7 +164,7 @@ public final class Zones {
      * allemaal als plaatsen. Bij een deur of bed kijken we naar alle blokken die erbij komen.
      */
     public static void onPlace(BlockEvent.EntityPlaceEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || isFree(event.getPlacedBlock())) {
+        if (!(event.getLevel() instanceof ServerLevel level) || isFree(event.getPlacedBlock()) || allowedChange(event)) {
             return;
         }
         List<BlockSnapshot> placed = event instanceof BlockEvent.EntityMultiPlaceEvent multi
@@ -181,10 +182,57 @@ public final class Zones {
         }
     }
 
+    /** Een bijl of schoffel die net een blok verandert (zie onToolModification): wie, waar en wanneer. */
+    private record ToolChange(UUID player, BlockPos pos, long time) {}
+
+    private static @Nullable ToolChange lastToolChange;
+
     /**
-     * Een emmer leeggieten of vullen. Dat gaat buiten het plaats-event om, dus kijken we zelf waar
-     * de emmer heen wijst (zoals de emmer zelf doet): het blok waar je naar kijkt, en (bij een volle
-     * emmer) de plek ervoor.
+     * Een bijl schilt een stam (of schraapt koper), een schoffel maakt akkerland: dat mag iedereen in een
+     * zone. NeoForge meldt het eerst hier; vlak daarna komt het als "plaatsen" langs onPlace, en daar
+     * laten we precies dit blok dan door.
+     */
+    public static void onToolModification(BlockEvent.BlockToolModificationEvent event) {
+        if (event.isSimulated() || event.getPlayer() == null || !(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        net.neoforged.neoforge.common.ItemAbility ability = event.getItemAbility();
+        if (ability == net.neoforged.neoforge.common.ItemAbilities.AXE_STRIP || ability == net.neoforged.neoforge.common.ItemAbilities.AXE_SCRAPE
+                || ability == net.neoforged.neoforge.common.ItemAbilities.AXE_WAX_OFF || ability == net.neoforged.neoforge.common.ItemAbilities.HOE_TILL) {
+            lastToolChange = new ToolChange(event.getPlayer().getUUID(), event.getPos().immutable(), level.getGameTime());
+        }
+    }
+
+    /**
+     * Wat iedereen in een zone mag, ook al komt het als "plaatsen" langs: vuur aansteken (het vuur
+     * zelf, of een kampvuur of kaars die aangaat) en een bijl of schoffel op een blok. We kijken naar
+     * wat er echt verandert (niet naar wat je vasthoudt): zo zet niemand stiekem een blok neer met een
+     * aansteker in zijn andere hand.
+     */
+    private static boolean allowedChange(BlockEvent.EntityPlaceEvent event) {
+        if (event instanceof BlockEvent.EntityMultiPlaceEvent || !(event.getEntity() instanceof Player player)) {
+            return false;
+        }
+        BlockState placed = event.getPlacedBlock();
+        BlockState before = event.getBlockSnapshot().getState();
+        if (placed.getBlock() instanceof net.minecraft.world.level.block.BaseFireBlock) {
+            return true;
+        }
+        if (placed.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
+                && placed.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)
+                && before.is(placed.getBlock())) {
+            return true;
+        }
+        ToolChange change = lastToolChange;
+        return change != null && change.player().equals(player.getUUID()) && change.pos().equals(event.getPos())
+                && change.time() == event.getLevel().getLevelData().getGameTime();
+    }
+
+    /**
+     * Een emmer leeggieten of vullen. Dat mag iedereen in een zone, maar alleen op de grond: op de
+     * bovenkant van een blok (jouw wens, 9 oktober: "niet tegen muren, zo kun je niet met water
+     * klimmen"). Dat gaat buiten het plaats-event om, dus kijken we zelf waar de emmer heen wijst
+     * (zoals de emmer zelf doet): het blok waar je naar kijkt, en (bij een volle emmer) de plek ervoor.
      */
     public static void onUseItem(PlayerInteractEvent.RightClickItem event) {
         if (!(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)
@@ -192,8 +240,9 @@ public final class Zones {
             return;
         }
         boolean empty = bucket.content == Fluids.EMPTY;
+        // Precies zoals de emmer zelf mikt (met de richting van je lichaam, niet van je hoofd).
         Vec3 eye = player.getEyePosition();
-        Vec3 end = eye.add(player.getViewVector(1.0f).scale(player.blockInteractionRange()));
+        Vec3 end = eye.add(Vec3.directionFromRotation(player.getXRot(), player.getYRot()).scale(player.blockInteractionRange()));
         BlockHitResult hit = level.clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE,
                 empty ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, player));
         if (hit.getType() != HitResult.Type.BLOCK) {
@@ -201,8 +250,9 @@ public final class Zones {
         }
         BlockPos at = hit.getBlockPos();
         BlockPos before = at.relative(hit.getDirection());
-        if (!denies(level, at, player) && (empty || !denies(level, before, player))) {
-            return;
+        if (hit.getDirection() == net.minecraft.core.Direction.UP
+                || !denies(level, at, player) && (empty || !denies(level, before, player))) {
+            return; // op de grond (of buiten een zone): mag
         }
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.FAIL);
@@ -219,19 +269,61 @@ public final class Zones {
     // (zie item/C4), dus die gaat hier niet langs.
 
     /**
-     * Een explosie (TNT, een creeper, een vuurbal, de satelliet...): de blokken van een actieve zone
-     * blijven heel, behalve als iemand die er mag bouwen hem veroorzaakte (je eigen TNT in je eigen
-     * basis). Wezens krijgen de klap gewoon.
+     * Staat er nu een raket van het satellietbombardement te ontploffen? (Zie SatelliteStrikes: die
+     * zet dit aan vlak voor zijn explosie, en daarna weer uit.)
+     */
+    private static boolean satelliteBlast;
+
+    /** Laat {@code explosion} ontploffen als een raket van de satelliet (voor de breekpunten in een zone). */
+    public static void satelliteExplosion(Runnable explosion) {
+        satelliteBlast = true;
+        try {
+            explosion.run();
+        } finally {
+            satelliteBlast = false;
+        }
+    }
+
+    /**
+     * Een explosie: de blokken van een actieve zone gaan niet zomaar mee, behalve als iemand die er mag
+     * bouwen hem veroorzaakte (je eigen TNT in je eigen basis). Wezens krijgen de klap gewoon.
+     *
+     * TNT en raketten van de satelliet komen er wel door (jouw wens, 9 oktober), maar met breekpunten
+     * zoals C4 en veel zwakker: TNT {@link com.senne.starktech.c4.C4Balance#TNT_BREACH} (C4 doet 10),
+     * een satellietraket {@link com.senne.starktech.c4.C4Balance#SATELLITE_BREACH}. Zo maakt TNT maar
+     * een klein beetje kapot aan een muur, en tellen de barsten op. Creepers, vuurballen en de rest
+     * maken in een zone niets kapot.
      */
     public static void onExplosion(net.neoforged.neoforge.event.level.ExplosionEvent.Detonate event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || event.getAffectedBlocks().isEmpty()) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
-        Entity cause = event.getExplosion().getIndirectSourceEntity();
+        net.minecraft.world.level.Explosion explosion = event.getExplosion();
+        Entity cause = explosion.getIndirectSourceEntity();
         event.getAffectedBlocks().removeIf(pos -> {
             ZoneData.Zone zone = activeAt(level, pos);
             return zone != null && !mayBuild(level, zone, cause);
         });
+        Entity direct = explosion.getDirectSourceEntity();
+        boolean tnt = direct instanceof net.minecraft.world.entity.item.PrimedTnt
+                || direct instanceof net.minecraft.world.entity.vehicle.MinecartTNT;
+        if (!tnt && !satelliteBlast || explosion.getBlockInteraction() == net.minecraft.world.level.Explosion.BlockInteraction.KEEP) {
+            return;
+        }
+        net.minecraft.world.phys.Vec3 centre = explosion.center();
+        float radius = com.senne.starktech.c4.C4Balance.EXPLOSION_BREACH_RADIUS;
+        ZoneData.Zone zone = activeNear(level, BlockPos.containing(centre), radius);
+        if (zone == null) {
+            return;
+        }
+        com.senne.starktech.c4.C4Blast.Breach result = com.senne.starktech.c4.C4Blast.breach(level, centre,
+                tnt ? com.senne.starktech.c4.C4Balance.TNT_BREACH : com.senne.starktech.c4.C4Balance.SATELLITE_BREACH,
+                radius, pos -> {
+                    ZoneData.Zone here = activeAt(level, pos);
+                    return here != null && !mayBuild(level, here, cause);
+                }, zone);
+        com.senne.starktech.c4.C4Alarm.blasted(level, BlockPos.containing(centre), zone, result.inZone(), false,
+                tnt ? "TNT" : "Satellite strike");
     }
 
     /**
@@ -325,6 +417,7 @@ public final class Zones {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         LAST_TOLD.remove(event.getEntity().getUUID());
         ZoneMarkerItem.forget(event.getEntity().getUUID());
+        lastToolChange = null;
     }
 
     public static void onServerStopped(ServerStoppedEvent event) {

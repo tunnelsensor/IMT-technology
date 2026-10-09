@@ -53,20 +53,36 @@ public final class C4Blast {
         com.senne.starktech.security.zone.ZoneData.Zone zone =
                 com.senne.starktech.security.zone.Zones.activeNear(level, pos, C4Balance.RADIUS);
         boolean alerted = level.getBlockEntity(pos) instanceof C4BlockEntity self && self.alerted();
-        int inZone = 0;
         level.removeBlock(pos, false);
         // Eerst de klap voor wezens (met het geluid en de rook van een explosie), zonder blokken: die
         // doen we hieronder zelf. Zo vernielt de klap ook niet de spullen die straks uit de blokken vallen.
         level.explode(null, centre.x, centre.y, centre.z, C4Balance.ENTITY_POWER, false, Level.ExplosionInteraction.NONE);
+        Breach result = breach(level, centre, C4Balance.POWER, C4Balance.RADIUS, here -> true, zone);
+        C4Alarm.blasted(level, pos, zone, result.inZone(), alerted, "C4");
+        return result.broken();
+    }
 
+    /** Wat een klap deed: zoveel blokken kapot, waarvan zoveel in de zone. */
+    public record Breach(int broken, int inZone) {}
+
+    /**
+     * Breekpunten uitdelen rond {@code centre}: {@code power} vlakbij, aflopend tot 0 op {@code radius}
+     * blokken, alleen aan blokken waar {@code affects} ja op zegt. Wat genoeg heeft, breekt (zoals bij
+     * TNT); de rest krijgt barsten. Ander C4 in de klap gaat ook af. C4 gebruikt dit voor alles in zijn
+     * klap; TNT en satellietraketten alleen voor de blokken van een zone (zie Zones.onExplosion).
+     */
+    public static Breach breach(ServerLevel level, Vec3 centre, float power, float radius,
+                                java.util.function.Predicate<BlockPos> affects,
+                                com.senne.starktech.security.zone.ZoneData.@org.jetbrains.annotations.Nullable Zone zone) {
         Map<BlockPos, Crack> cracks = CRACKS.computeIfAbsent(level.dimension(), key -> new HashMap<>());
         long now = level.getGameTime();
-        int reach = Mth.ceil(C4Balance.RADIUS);
+        int reach = Mth.ceil(radius);
         int broken = 0;
+        int inZone = 0;
         BlockPos middle = BlockPos.containing(centre);
         for (BlockPos at : BlockPos.betweenClosed(middle.offset(-reach, -reach, -reach), middle.offset(reach, reach, reach))) {
             double distance = centre.distanceTo(at.getCenter());
-            if (distance > C4Balance.RADIUS) {
+            if (distance > radius) {
                 continue;
             }
             BlockState target = level.getBlockState(at);
@@ -74,6 +90,9 @@ public final class C4Blast {
                 continue;
             }
             BlockPos here = at.immutable();
+            if (!affects.test(here)) {
+                continue;
+            }
             // Ander C4: gaat zelf ook af (een beetje later, dat klinkt als een kettingreactie).
             if (target.getBlock() instanceof C4Block) {
                 if (level.getBlockEntity(here) instanceof C4BlockEntity other) {
@@ -85,7 +104,7 @@ public final class C4Blast {
             if (hp < 0) {
                 continue; // onbreekbaar (bedrock, barrières)
             }
-            float damage = (float) (C4Balance.POWER * (1.0 - distance / C4Balance.RADIUS));
+            float damage = (float) (power * (1.0 - distance / radius));
             Crack old = cracks.get(here);
             float total = damage + (old != null && old.block() == target.getBlock() ? old.damage() : 0);
             if (total >= hp) {
@@ -101,8 +120,7 @@ public final class C4Blast {
                 showCrack(level, here, total / hp);
             }
         }
-        C4Alarm.blasted(level, pos, zone, inZone, alerted);
-        return broken;
+        return new Breach(broken, inZone);
     }
 
     /** Een blok breken zoals TNT dat doet (alles valt eruit); TNT zelf wordt aangestoken. */

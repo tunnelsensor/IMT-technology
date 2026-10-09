@@ -42,6 +42,16 @@ public final class C4Balance {
     /** Andere C4 in de klap gaat zoveel ticks later ook af (een kettingreactie). */
     public static final int CHAIN_DELAY = 3;
 
+    // ---------------------------------------------------------------- TNT en de satelliet in een zone
+    // Jouw wens (9 oktober): "zorg dat de satelliet en TNT er ook door kunnen, TNT doet gewoon heel
+    // weinig damage aan de muur". In een zone werken ze dus met breekpunten, net als C4, maar zwakker.
+    @Tunable(section = "c4", comment = "Breach points of one TNT on the blocks of a protected zone (C4 is 10)")
+    public static float TNT_BREACH = 3.0f;
+    @Tunable(section = "c4", comment = "Breach points of one satellite bombardment rocket on the blocks of a protected zone (C4 is 10)")
+    public static float SATELLITE_BREACH = 6.0f;
+    /** Zo ver reikt de klap van TNT of een satellietraket in een zone (blokken). */
+    public static final float EXPLOSION_BREACH_RADIUS = 3.0f;
+
     // ---------------------------------------------------------------- De detonator
     @Tunable(section = "c4", comment = "How far a detonator's signal reaches (blocks)")
     public static int DETONATOR_RANGE = 128;

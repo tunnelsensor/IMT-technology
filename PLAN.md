@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 171 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 172 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 83 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1498,6 +1498,31 @@ De stappen, één per commit:
       Zone Marker (wat je aanklikt) zie je ook zonder bril, anders kon je zonder bril geen zone tekenen;
       zeg het als die ook alleen met de bril moet. Screenshots: `-Ponly=zones` (`z05b_zone_with_glasses`,
       `z06_zone_no_glasses`).
+- [x] **10. TNT en de satelliet komen er ook door, maar zwak** (jouw wens, 9 oktober: "zorg dat de
+      satelliet en TNT er ook door kan, TNT doet gewoon heel weinig damage aan de muur")
+      In een zone gaan TNT en de raketten van het satellietbombardement niet meer langs de gewone
+      explosie, maar werken ze met **breekpunten**, net als C4, alleen zwakker: TNT 3 en een
+      satellietraket 6 (C4 doet 10), aflopend tot 0 op 3 blokken. Zo breekt TNT naast een houten muur
+      alleen een plank vlakbij, en heeft een stenen muur pas na drie TNT op dezelfde plek een gat (de
+      barsten tellen op, ook met die van C4). Na twee satellietraketten is een stenen blok weg. Wat het
+      doet, staat in het logboek ("TNT blast at ...", "Satellite strike blast at ...") en E.D.I.T.H. zegt
+      het als er iets kapot is. Creepers, vuurballen en andere explosies blijven niets breken in een
+      zone, en je eigen TNT in je eigen zone werkt gewoon. De satelliet zegt zelf dat hij het is
+      (`Zones.satelliteExplosion`). In de config onder `[c4]`: `tntBreach`, `satelliteBreach`. Eén
+      nieuwe test.
+- [x] **11. Wat iedereen in een zone wel mag** (jouw wens, 9 oktober: "dit moet allemaal kunnen binnen
+      een zone: emmers leeggieten en vullen maar enkel op de grond niet tegen muren, zo kun je niet met
+      water klimmen, vuur aansteken, een bijl of schoffel op een blok, en kabels leggen of knippen")
+      Een vreemde mag in een zone nu: een **emmer leeggieten of vullen** als hij naar de bovenkant van
+      een blok kijkt (op de grond), niet tegen de zijkant of onderkant (geen waterlift tegen je muur op);
+      **vuur aansteken** (vuur, of een kampvuur of kaars die aangaat); een **bijl** (schillen, koper
+      schrapen) of **schoffel** op een blok; en **Stark-kabels leggen, oprapen en knippen**. We kijken
+      naar wat er echt verandert, niet naar wat je vasthoudt: met een aansteker in je andere hand zet je
+      dus nog steeds geen steen neer. **Mijn keuze**: een pad met een schep en beendermeel noemde je niet,
+      die mogen nog steeds niet; zeg het als die er ook bij moeten. Kabels die gewoon op de vloer van je
+      basis liggen kan een inbreker nu doorknippen: verstop ze in een muur of vloer. De tests van de
+      emmers en de kabels zijn vervangen door "emmer alleen op de grond" en "vuur, bijl, schoffel en
+      kabels mogen".
 
 ---
 

@@ -172,6 +172,7 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onBreak);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onPlace);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.starktech.security.zone.Zones::onUseItem);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.senne.starktech.security.zone.Zones::onToolModification);
         // Alleen C4 komt door een zone: geen explosies, zuigers, monsters of lava (vuur: zie FireBlockMixin).
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onExplosion);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onPiston);
