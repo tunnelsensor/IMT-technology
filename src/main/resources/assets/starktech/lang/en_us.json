@@ -1157,5 +1157,14 @@
   "zone.starktech.marker.added_cut": "Box %s added to your zone, cut to fit your security area: %s (%s blocks).",
   "zone.starktech.marker.remove_ask": "Box %s (%s): sneak + left-click again to remove it.",
   "zone.starktech.marker.removed": "Box %s removed from your zone.",
-  "zone.starktech.marker.not_in_box": "That block is not in a box of your zone."
+  "zone.starktech.marker.not_in_box": "That block is not in a box of your zone.",
+  "block.starktech.timed_c4": "C4 (Timer)",
+  "tooltip.starktech.c4.timer": "Timer: %s",
+  "tooltip.starktech.c4.set_timer": "Right-click in the air to set the timer.",
+  "tooltip.starktech.c4.place": "Stick it on a floor, wall or ceiling, also in someone's zone.",
+  "tooltip.starktech.c4.defuse": "Only shears get it off again (cut the wire).",
+  "subtitles.starktech.c4.beep": "C4 beeps",
+  "subtitles.starktech.c4.arm": "C4 armed",
+  "subtitles.starktech.c4.defuse": "C4 defused",
+  "subtitles.starktech.c4.detonator": "Detonator clicks"
 }

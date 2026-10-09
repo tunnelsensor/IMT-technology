@@ -41,7 +41,8 @@ public final class BalanceConfig {
             com.senne.starktech.shield.DomeSettings.class,
             com.senne.starktech.security.SecurityBalance.class,
             com.senne.starktech.logic.LogicBalance.class,
-            com.senne.starktech.workbench.WorkbenchBalance.class);
+            com.senne.starktech.workbench.WorkbenchBalance.class,
+            com.senne.starktech.c4.C4Balance.class);
 
     /** Eén instelbaar getal: waar het staat, de regel in het bestand, en de standaardwaarde. */
     private record Entry(Field field, ModConfigSpec.ConfigValue<?> value, Object fallback) {}

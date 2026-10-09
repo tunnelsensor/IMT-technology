@@ -46,6 +46,12 @@ public final class ModDataComponents {
                     .persistent(com.senne.starktech.security.zone.ZoneSelection.CODEC)
                     .networkSynchronized(com.senne.starktech.security.zone.ZoneSelection.STREAM_CODEC));
 
+    /** De tijd op een C4 (Timer), in seconden (hoofdstuk 10). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> C4_TIMER =
+            COMPONENTS.registerComponentType("c4_timer", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
     /** Van wie de bril is. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EdithOwner>> OWNER =
             COMPONENTS.registerComponentType("owner", builder -> builder

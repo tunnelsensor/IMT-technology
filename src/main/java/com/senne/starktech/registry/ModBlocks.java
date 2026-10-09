@@ -171,6 +171,21 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion());
 
+    /**
+     * C4 met een timer (hoofdstuk 10): plakt op een vloer, muur of plafond en gaat af als de tijd om
+     * is. Met de hand krijg je hem er niet af (alleen met een schaar), en een explosie maakt hem niet
+     * kapot (dan gaat hij zelf af).
+     */
+    public static final DeferredBlock<com.senne.starktech.c4.C4Block> TIMED_C4 = BLOCKS.registerBlock(
+            "timed_c4", properties -> new com.senne.starktech.c4.C4Block(com.senne.starktech.c4.C4Block.Kind.TIMED, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.CLAY)
+                    .strength(-1.0f, 3_600_000.0f)
+                    .sound(SoundType.WOOL)
+                    .noCollission()
+                    .noOcclusion()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
+
     /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Stark OS-desktop. */
     public static final DeferredBlock<com.senne.starktech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
             "security_camera", com.senne.starktech.security.CameraBlock::new,

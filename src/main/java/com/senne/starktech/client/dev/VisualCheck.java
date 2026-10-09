@@ -1793,6 +1793,48 @@ public final class VisualCheck {
             t.close(10);
         }
 
+        // --- C4 (hoofdstuk 10, stap 5): drie ladingen die aftellen (muur, vloer, plafond), van dichtbij,
+        // het timerscherm, dan de klap: een gat in de muur met barsten eromheen, en barsten in obsidiaan.
+        if (want("c4")) {
+            BlockPos w = C4_WALL;
+            t.onServer(0, VisualCheck::buildC4Wall);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, w.getX() + 8.5, w.getY(), w.getZ() + 3.5, 90, 12);
+            t.shot(40, "x01_c4_counting");
+            t.view(10, w.getX() + 4.2, w.getY() + 0.6, w.getZ() + 3.5, 90, 8);
+            t.shot(20, "x02_c4_close");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                net.minecraft.world.item.ItemStack c4 = new net.minecraft.world.item.ItemStack(ModItems.TIMED_C4.get());
+                c4.set(com.senne.starktech.registry.ModDataComponents.C4_TIMER.get(), 30);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, c4);
+            });
+            t.step(5, () -> com.senne.starktech.client.c4.C4TimerScreen.open(net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.shot(10, "x03_c4_timer_screen");
+            t.close(5);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+                // De lading op de muur gaat nu af; de andere twee halen we weg (anders ontploffen ze later).
+                BlockPos onWall = w.offset(2, 2, 3);
+                com.senne.starktech.c4.C4Blast.detonate(level, onWall, level.getBlockState(onWall));
+                level.removeBlock(w.offset(3, 0, 2), false);
+                level.removeBlock(w.offset(4, 2, 6), false);
+                // En twee ladingen tegen het obsidiaan: veel barsten, nog geen gat (dat is pas na de derde).
+                BlockPos onObsidian = w.offset(2, 1, 11);
+                for (int i = 0; i < 2; i++) {
+                    stickC4(level, w.offset(1, 1, 11), Direction.EAST, 0);
+                    com.senne.starktech.c4.C4Blast.detonate(level, onObsidian, level.getBlockState(onObsidian));
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(30, w.getX() + 7.5, w.getY(), w.getZ() + 6.5, 115, 8);
+            t.shot(20, "x04_c4_hole_and_cracks");
+            t.stand(10, w.getX() + 4.5, w.getY() + 1, w.getZ() + 11.5, 90, 10);
+            t.shot(15, "x05_c4_obsidian_cracked");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- Zones (hoofdstuk 10, 8 oktober): een L-vormige basis met een torentje en de blauwe rand
         // eromheen (waar het torentje tegen de basis staat, hoort geen wand). Zonder stroom wordt de
         // rand rood; met "Zone border" uit zie je hem niet.
@@ -1849,6 +1891,54 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 }
+
+    /** Waar de C4-muur van de rondleiding staat (zie buildC4Wall). */
+    private static final BlockPos C4_WALL = new BlockPos(120, -60, 128);
+
+    /** Een C4 (Timer) tegen de kant {@code outward} van {@code support}, die over {@code seconds} afgaat. */
+    private static void stickC4(ServerLevel level, BlockPos support, Direction outward, int seconds) {
+        BlockPos pos = support.relative(outward);
+        BlockState state = ModBlocks.TIMED_C4.get().defaultBlockState();
+        net.minecraft.world.level.block.state.properties.AttachFace face = outward == Direction.UP
+                ? net.minecraft.world.level.block.state.properties.AttachFace.FLOOR
+                : outward == Direction.DOWN ? net.minecraft.world.level.block.state.properties.AttachFace.CEILING
+                : net.minecraft.world.level.block.state.properties.AttachFace.WALL;
+        state = state.setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACE, face);
+        if (face == net.minecraft.world.level.block.state.properties.AttachFace.WALL) {
+            state = state.setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, outward);
+        }
+        level.setBlockAndUpdate(pos, state);
+        if (seconds > 0 && level.getBlockEntity(pos) instanceof com.senne.starktech.c4.C4BlockEntity c4) {
+            c4.detonateIn(seconds * 20);
+        }
+    }
+
+    /**
+     * Een muur van stenen bakstenen (twee dik, 9 lang, 5 hoog) met een overstekje, en drie C4 die
+     * aftellen: tegen de muur, op de vloer en onder het overstekje. Ernaast een muurtje obsidiaan.
+     */
+    private static void buildC4Wall(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos w = C4_WALL;
+        for (int x = 0; x <= 1; x++) {
+            for (int y = 0; y <= 4; y++) {
+                for (int z = 0; z <= 8; z++) {
+                    level.setBlockAndUpdate(w.offset(x, y, z), Blocks.STONE_BRICKS.defaultBlockState());
+                }
+            }
+        }
+        for (int x = 2; x <= 5; x++) {
+            level.setBlockAndUpdate(w.offset(x, 3, 6), Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        for (int y = 0; y <= 3; y++) {
+            for (int z = 10; z <= 13; z++) {
+                level.setBlockAndUpdate(w.offset(1, y, z), Blocks.OBSIDIAN.defaultBlockState());
+            }
+        }
+        stickC4(level, w.offset(1, 2, 3), Direction.EAST, 59);
+        stickC4(level, w.offset(3, -1, 2), Direction.UP, 44);
+        stickC4(level, w.offset(4, 3, 6), Direction.DOWN, 89);
+    }
 
     /** De kern van de basis met een zone in de rondleiding (zie buildZoneBase). */
     private static final BlockPos ZONE_CORE = new BlockPos(164, -60, 65);

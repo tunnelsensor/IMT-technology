@@ -805,6 +805,64 @@ def zone_marker_item():
     save(im, "item/zone_marker.png")
 
 
+def c4_textures():
+    """
+    C4 (hoofdstuk 10): een pakketje kneedbare springstof, licht grijsbeige zoals klei, met twee banden
+    zwarte tape; erop een klein zwart kastje met een rood schermpje, en een rood en een blauw draadje.
+    Ook de plaatjes van het item (C4 met timer) staan hier.
+    """
+    import random
+    r = random.Random(4)
+    clay = (196, 190, 170, 255)
+    clay_dark = (172, 166, 146, 255)
+    clay_light = (212, 207, 190, 255)
+    tape = (38, 38, 42, 255)
+    tape_hi = (60, 60, 66, 255)
+    wire_red = (200, 40, 36, 255)
+    wire_blue = (50, 90, 210, 255)
+
+    putty = img(16, 16, clay)
+    for _ in range(40):
+        px(putty, [(r.randrange(16), r.randrange(16))], clay_dark if r.random() < 0.6 else clay_light)
+    for y in (4, 5, 11, 12):
+        for x in range(16):
+            px(putty, [(x, y)], tape_hi if y in (4, 11) else tape)
+    for x in range(1, 15):
+        px(putty, [(x, 8)], wire_red)
+    for x in range(3, 13):
+        px(putty, [(x, 9)], wire_blue)
+    save(putty, "block/c4_putty.png")
+
+    device = img(16, 16, (34, 36, 40, 255))
+    d = ImageDraw.Draw(device)
+    d.rectangle([0, 0, 15, 15], outline=(58, 60, 66, 255))
+    px(device, [(2, 2), (13, 2), (2, 13), (13, 13)], (110, 112, 118, 255))
+    save(device, "block/c4_device.png")
+
+    screen = img(16, 16, (34, 36, 40, 255))
+    d = ImageDraw.Draw(screen)
+    d.rectangle([2, 3, 13, 10], fill=(24, 8, 8, 255), outline=(58, 60, 66, 255))
+    # Gedoofde cijfers ("88:88"), het echte aftellen tekent de mod er zelf voor.
+    for x0 in (3, 6, 9, 12):
+        d.line([x0, 5, x0 + 1, 5], fill=(70, 18, 16, 255))
+        d.line([x0, 8, x0 + 1, 8], fill=(70, 18, 16, 255))
+    px(screen, [(12, 12)], (230, 40, 30, 255))  # het lampje
+    px(screen, [(3, 12), (4, 12), (6, 12)], (110, 112, 118, 255))  # knopjes
+    save(screen, "block/c4_screen.png")
+
+    item = img(16, 16)
+    d = ImageDraw.Draw(item)
+    d.rectangle([1, 6, 14, 14], fill=clay, outline=clay_dark)
+    for x in range(1, 15):
+        px(item, [(x, 8), (x, 12)], tape)
+    d.rectangle([4, 3, 11, 8], fill=(34, 36, 40, 255), outline=(58, 60, 66, 255))
+    d.rectangle([5, 4, 10, 6], fill=(30, 8, 8, 255))
+    px(item, [(6, 5), (7, 5), (9, 5)], (255, 60, 40, 255))
+    d.line([11, 5, 13, 3], fill=wire_red)
+    d.line([4, 7, 2, 4], fill=wire_blue)
+    save(item, "item/timed_c4.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -2603,6 +2661,7 @@ if __name__ == "__main__":
     dome_field()
     zone_textures()
     zone_marker_item()
+    c4_textures()
     relay_textures()
     shield_textures()
     rayshield_walls()

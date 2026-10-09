@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 161 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 167 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 81 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1424,9 +1424,29 @@ De stappen, één per commit:
       deuren, zilvervisjes) breken in en tot 3 blokken rond een zone niets; dieren en dorpelingen wel
       gewoon. En de **raiddrones** schieten geen blokken van een zone meer weg. Vier nieuwe tests
       (explosies, vuur en lava, zuigers, monsters), telkens met een controle buiten de zone.
-- [ ] **5. C4 met timer**
-      Het item, het blok op elke kant, het timerscherm, het schermpje dat aftelt, de piepjes, en de
-      klap met breekpunten en barsten. Tests en screenshots.
+- [x] **5. C4 met timer**
+      Nieuw: **C4 (Timer)** (recept: TNT, twee klei, een slijmbal, redstone en een klok, zonder vaste
+      vorm). Rechtsklik in de lucht opent **C4 TIMER**: de tijd groot in rood, −5 s / +5 s, snelknoppen
+      0:05, 0:10, 0:30, 1:00, 2:00 (ook scrollen of de pijltjes), Done; het item onthoudt het (de
+      tooltip zegt "Timer: 0:30"). Je plakt hem op een vloer, muur of plafond (ook in de zone van een
+      ander) en hij loopt meteen: een klikje en twee piepjes, een rood schermpje dat aftelt en altijd
+      naar je toe kijkt, een lampje dat knippert en piepjes die steeds sneller gaan (elke seconde, de
+      laatste vijf twee keer zo vaak, de laatste twee snel). Hij blijft zitten, ook als het blok achter
+      hem weg is; met je hand krijg je hem er niet af (alleen met een schaar, stap 7). **De klap**
+      (`c4/C4Blast`): het midden ligt op het blok waar hij tegenaan plakt; elk blok binnen 3,5 krijgt
+      breekpunten (10 vlakbij, aflopend). Zwak (explosieweerstand onder 4: hout, glas, aarde...) 2,
+      gewoon (steen, baksteen...) 6, sterk (100 of meer: obsidiaan, netheriet, de laserzender...) 20, de
+      beveiligingskern 48. Eén C4 tegen een stenen muur maakt een gat van drie hoog (het blok erachter en
+      de vier ernaast); obsidiaan pas na de derde; de kern na de zesde (en dan is zijn zone weg). Wat
+      niet breekt, krijgt **barsten** (zichtbaar, ze tellen op bij de volgende klap, en genezen na 10
+      minuten). Op obsidiaan zie je de barsten bijna niet: Minecraft tekent ze donker, net als bij
+      hakken. Wat breekt valt eruit zoals bij TNT (kisten met inhoud); TNT in de buurt gaat ook af; ander
+      C4 gaat drie ticks later af (een kettingreactie). Wezens krijgen een klap zoals van TNT. Een zone
+      houdt C4 niet tegen. Nieuwe geluiden (piepje, aanzetten, en alvast doorknippen en de detonator) uit
+      `tools/generate_sounds.py`. Alle getallen in de config onder `[c4]`. Screenshots: `-Ponly=c4`
+      (`x01` tot `x05`). Zes nieuwe tests (in een eigen bestand, `gametest/C4GameTests.java`): een
+      stenen muur, obsidiaan, de kern, de timer in een zone, een kettingreactie, en de grenzen van de
+      timer.
 - [ ] **6. C4 met afstandsbediening**
       Remote C4 en de detonator: koppelen, bereik, rode markeringen. Tests.
 - [ ] **7. Ontmantelen en alarm**

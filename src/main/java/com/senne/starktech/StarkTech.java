@@ -95,6 +95,7 @@ public class StarkTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.LogicGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.DatacenterGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.ZoneGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.C4GameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 
@@ -180,6 +181,9 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.Zones::onServerStopped);
         // De rand van je zone: de server stuurt je zones naar jou en je vrienden.
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerTick);
+        // C4: de barsten van een klap genezen weer (en blijven zichtbaar zolang ze er zijn).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Blast::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Blast::onServerStopped);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerStopped);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

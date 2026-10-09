@@ -238,5 +238,37 @@
         "name": "starktech:rayshield_hit"
       }
     ]
+  },
+  "c4.beep": {
+    "subtitle": "subtitles.starktech.c4.beep",
+    "sounds": [
+      {
+        "name": "starktech:c4_beep"
+      }
+    ]
+  },
+  "c4.arm": {
+    "subtitle": "subtitles.starktech.c4.arm",
+    "sounds": [
+      {
+        "name": "starktech:c4_arm"
+      }
+    ]
+  },
+  "c4.defuse": {
+    "subtitle": "subtitles.starktech.c4.defuse",
+    "sounds": [
+      {
+        "name": "starktech:c4_defuse"
+      }
+    ]
+  },
+  "c4.detonator": {
+    "subtitle": "subtitles.starktech.c4.detonator",
+    "sounds": [
+      {
+        "name": "starktech:detonator_click"
+      }
+    ]
   }
 }

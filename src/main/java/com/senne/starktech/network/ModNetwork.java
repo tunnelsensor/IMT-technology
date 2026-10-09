@@ -104,6 +104,12 @@ public final class ModNetwork {
             }
         });
         // De harnas-werkbank: een klik op een stuk van het hologram.
+        // Hoofdstuk 10: de tijd op een C4 (Timer) instellen.
+        registrar.playToServer(C4TimerPayload.TYPE, C4TimerPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                C4TimerPayload.handle(player, payload);
+            }
+        });
         // Hoofdstuk 10: linksklik met de Zone Marker (hoek 1, of met sluipen een kubus weghalen).
         registrar.playToServer(ZoneMarkerClickPayload.TYPE, ZoneMarkerClickPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {

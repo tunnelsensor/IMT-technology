@@ -181,6 +181,11 @@ public final class ModItems {
     public static final DeferredItem<com.senne.starktech.security.zone.ZoneMarkerItem> ZONE_MARKER = ITEMS.registerItem(
             "zone_marker", com.senne.starktech.security.zone.ZoneMarkerItem::new, new Item.Properties().stacksTo(1));
 
+    /** C4 met een timer (hoofdstuk 10): rechtsklik in de lucht = de tijd kiezen, plakken = hij loopt. */
+    public static final DeferredItem<com.senne.starktech.c4.C4Item> TIMED_C4 = ITEMS.registerItem("timed_c4",
+            properties -> new com.senne.starktech.c4.C4Item(ModBlocks.TIMED_C4.get(), properties),
+            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
+
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(
             "stark_laptop", com.senne.starktech.security.StarkLaptopItem::new,

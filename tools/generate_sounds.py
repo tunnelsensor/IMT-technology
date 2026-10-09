@@ -599,6 +599,54 @@ def rayshield_hit():
     return finish(total, peak=0.5)
 
 
+# ---------------------------------------------------------------- C4 (hoofdstuk 10)
+
+def short_beep(freq, duration):
+    """Een kort, hoog, een beetje schel piepje (een sinus met wat blokgolf erin)."""
+    t = seconds(duration)
+    tone = np.sin(2 * np.pi * freq * t) + 0.35 * np.sign(np.sin(2 * np.pi * freq * t))
+    envelope = np.minimum(1, t / 0.003) * np.minimum(1, (duration - t) / 0.012)
+    return lowpass(tone, 7000) * envelope
+
+
+def c4_beep():
+    """Het piepje van C4 die aftelt (zoals in films): kort en hoog."""
+    return finish(short_beep(2600, 0.09), peak=0.55)
+
+
+def c4_arm():
+    """C4 plakken en aanzetten: een klik (het kapje gaat dicht), dan twee oplopende piepjes."""
+    total = np.zeros(int(RATE * 0.42))
+    click = bandpass(noise(0.02), 1500, 6000) * decay(0.02, 300)
+    place(total, click * 1.6, 0.0)
+    place(total, short_beep(2200, 0.07) * 0.8, 0.12)
+    place(total, short_beep(2900, 0.07) * 0.8, 0.25)
+    return finish(total, peak=0.6)
+
+
+def c4_defuse():
+    """Een draad doorknippen: een metalen knip, en een dalend toontje (het schermpje gaat uit)."""
+    total = np.zeros(int(RATE * 0.6))
+    snip = bandpass(noise(0.03), 2500, 9000) * decay(0.03, 200)
+    place(total, snip * 2.0, 0.0)
+    place(total, snip * 1.2, 0.05)
+    tone = np.sin(sweep(1800, 450, 0.35)) * decay(0.35, 4)
+    place(total, tone * 0.6, 0.13)
+    return finish(total, peak=0.6)
+
+
+def detonator_click():
+    """De knop van de detonator: een stevige klik, dan een kort radiotoontje met wat ruis (het signaal)."""
+    total = np.zeros(int(RATE * 0.35))
+    click = bandpass(noise(0.025), 800, 5000) * decay(0.025, 250)
+    place(total, click * 2.0, 0.0)
+    chirp = np.sin(sweep(1200, 2600, 0.12)) * fade(np.ones(int(RATE * 0.12)), 0.01, 0.03)
+    place(total, chirp * 0.5, 0.05)
+    hiss = bandpass(noise(0.18), 2000, 6000) * decay(0.18, 12) * 0.25
+    place(total, hiss, 0.05)
+    return finish(total, peak=0.6)
+
+
 SOUNDS = {
     "edith_boot": edith_boot,
     "edith_blip": edith_blip,
@@ -630,6 +678,10 @@ SOUNDS = {
     "rayshield_on": rayshield_on,
     "rayshield_off": rayshield_off,
     "rayshield_hit": rayshield_hit,
+    "c4_beep": c4_beep,
+    "c4_arm": c4_arm,
+    "c4_defuse": c4_defuse,
+    "detonator_click": detonator_click,
 }
 
 

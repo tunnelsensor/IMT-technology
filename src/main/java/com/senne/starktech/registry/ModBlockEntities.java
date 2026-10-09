@@ -64,6 +64,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.starktech.security.SecurityCoreBlockEntity::new,
                             java.util.Set.of(ModBlocks.SECURITY_CORE.get()), null));
 
+    /** Een lading C4: wanneer hij afgaat, wie hem plakte, bij welke detonator hij hoort (hoofdstuk 10). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.c4.C4BlockEntity>> C4 =
+            BLOCK_ENTITIES.register("c4",
+                    () -> new BlockEntityType<>(com.senne.starktech.c4.C4BlockEntity::new,
+                            java.util.Set.of(ModBlocks.TIMED_C4.get()), null));
+
     /** De bewakingscamera: zijn naam en hoe hij gedraaid en gekanteld is. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.security.CameraBlockEntity>> SECURITY_CAMERA =
             BLOCK_ENTITIES.register("security_camera",

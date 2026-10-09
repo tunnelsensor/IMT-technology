@@ -123,6 +123,8 @@ public class StarkTechClient {
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.starktech.client.drone.SecurityDroneRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
+        // C4 (hoofdstuk 10): het schermpje dat aftelt en het knipperende lampje.
+        event.registerBlockEntityRenderer(ModBlockEntities.C4.get(), com.senne.starktech.client.c4.C4Renderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TURRET.get(), com.senne.starktech.client.turret.TurretRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DRONE_DOCK.get(), com.senne.starktech.client.drone.DroneDockRenderer::new);

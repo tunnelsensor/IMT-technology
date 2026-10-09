@@ -61,6 +61,16 @@ public final class ModSounds {
     /** Iets raakt een rayshield (of loopt tegen een laserwand): een elektrische knetter. */
     public static final DeferredHolder<SoundEvent, SoundEvent> RAYSHIELD_HIT = register("shield.rayshield_hit");
 
+    // Hoofdstuk 10: C4
+    /** Het piepje van een C4 (Timer) die aftelt. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> C4_BEEP = register("c4.beep");
+    /** Een C4 wordt geplakt en gaat lopen (klik, dubbel piepje). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> C4_ARM = register("c4.arm");
+    /** Iemand knipt de draad van een C4 door. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> C4_DEFUSE = register("c4.defuse");
+    /** De knop van de detonator (een klik en een radiotoontje). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> DETONATOR = register("c4.detonator");
+
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, name)));
     }
