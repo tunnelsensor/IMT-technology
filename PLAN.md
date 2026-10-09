@@ -1524,6 +1524,43 @@ De stappen, één per commit:
       emmers en de kabels zijn vervangen door "emmer alleen op de grond" en "vuur, bijl, schoffel en
       kabels mogen".
 
+### 11. Barsten herstellen (9 oktober)
+
+Jouw wens: een blok met barsten kun je **vervangen** door een nieuw blok, of **opvullen met pasta**
+("een beetje plamuren"); dan is het blok wel altijd net iets minder sterk. Vervang je het blok, dan
+houd je het **gebarsten blok** over. Dat steek je in een **crushing block** die er **poeder** van
+maakt, en dat poeder kun je **compacten** tot een volledig nieuw, sterk blok.
+
+Jouw antwoorden:
+
+- Barsten **genezen niet meer vanzelf**: ze blijven (ook na een herstart, ze staan in de wereld) tot
+  je ze herstelt.
+- **Plamuren** maakt het blok elke keer **15% zwakker** (85%, 70%, ...), nooit minder dan 40%.
+- **Twee machines op stroom**: een **Crusher** (gebarsten blok naar poeder) en een **Compactor**
+  (poeder naar een nieuw blok), elk met een vakje erin en eruit en een balkje hoe ver ze zijn.
+- Het gebarsten blok en het poeder **onthouden welk blok het was**: stenen bakstenen blijven stenen
+  bakstenen, obsidiaan blijft obsidiaan.
+
+Mijn invulling (zeg het als je iets anders wil):
+
+- **Repair Paste** (twee klei, zand en grind = 4 pasta): rechtsklik op een blok met barsten. De
+  barsten zijn weg, het blok is 15% zwakker (dat zie je niet, maar het staat in de wereld). Mag
+  iedereen (helpen is geen inbreken). Geen barsten: dan gebeurt er niets.
+- **Een gebarsten (of geplamuurd) blok weghakken** geeft een **Cracked ...** (bijvoorbeeld "Cracked
+  Stone Bricks"), niet het gewone blok, ook bij blokken die normaal iets anders geven (steen geeft dan
+  gebarsten steen, geen keien). Wat C4 of TNT kapotmaakt, valt eruit zoals altijd.
+- **1 gebarsten blok = 1 poeder = 1 nieuw blok**. Elke machine doet er 5 seconden over en gebruikt
+  dan 4 stroom per tick (via kabels, zoals de lader). Trechters kunnen erin doen en eruit halen.
+- Recepten: **Crusher** = ijzer, een slijpsteen, een Stark-chip en een zuiger; **Compactor** = ijzer,
+  twee zuigers, een Stark-chip en een aambeeld.
+
+De stappen, één per commit:
+
+- [ ] **1. Barsten blijven, en plamuren**
+- [ ] **2. Gebarsten blokken en de Crusher**
+- [ ] **3. De Compactor**
+- [ ] **4. Showcase, screenshots en LEESMIJ**
+
 ---
 
 ## Nog nooit in het spel bekeken
