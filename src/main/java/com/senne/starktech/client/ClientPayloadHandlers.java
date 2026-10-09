@@ -78,24 +78,33 @@ public final class ClientPayloadHandlers {
     }
 
     /**
-     * Een hack met de Bypass Kit (hoofdstuk 12): het stroomcircuit van een lezer openen, de uitslag
-     * laten zien, of het scherm sluiten (je liep weg).
+     * Een hack met de Bypass Kit (hoofdstuk 12): het stroomcircuit van een lezer of de vingerafdrukken van
+     * een paneel openen, een poging beantwoorden, de uitslag laten zien, of het scherm sluiten (je liep weg).
      */
     public static void onBypass(com.senne.starktech.network.BypassPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
+        var args = payload.args();
         switch (payload.op()) {
             case "reader" -> mc.setScreen(new com.senne.starktech.client.bypass.CircuitScreen(payload.pos(),
-                    payload.args().getString("name"), payload.args().getLong("seed")));
+                    args.getString("name"), args.getLong("seed")));
+            case "panel" -> mc.setScreen(new com.senne.starktech.client.bypass.FingerprintScreen(payload.pos(),
+                    args.getString("name"), args.getInt("length"), args.getIntArray("prints"), args.getInt("tries")));
+            case "guess" -> {
+                if (mc.screen instanceof com.senne.starktech.client.bypass.FingerprintScreen panel
+                        && panel.device().equals(payload.pos())) {
+                    panel.onGuess(args.getString("code"), args.getInt("right"), args.getInt("tries"));
+                }
+            }
             case "result" -> {
-                if (mc.screen instanceof com.senne.starktech.client.bypass.CircuitScreen circuit
-                        && circuit.reader().equals(payload.pos())) {
-                    circuit.onResult(payload.args().getString("result"));
+                if (mc.screen instanceof com.senne.starktech.client.bypass.BypassScreen screen
+                        && screen.device().equals(payload.pos())) {
+                    screen.onResult(args);
                 }
             }
             case "close" -> {
-                if (mc.screen instanceof com.senne.starktech.client.bypass.CircuitScreen circuit
-                        && circuit.reader().equals(payload.pos())) {
-                    circuit.closeFromServer();
+                if (mc.screen instanceof com.senne.starktech.client.bypass.BypassScreen screen
+                        && screen.device().equals(payload.pos())) {
+                    screen.closeFromServer();
                 }
             }
             default -> { }

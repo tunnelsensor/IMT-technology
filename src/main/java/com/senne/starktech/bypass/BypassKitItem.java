@@ -14,7 +14,7 @@ import net.minecraft.world.item.context.UseOnContext;
 /**
  * De Bypass Kit (hoofdstuk 12): een inbraakset met een schroevendraaier, draadjes, een Stark-chip en
  * een potje poeder voor vingerafdrukken. Rechtsklik ermee op een keycardlezer of codepaneel en je
- * begint een hack (zie Bypass): bij een lezer het stroomcircuit.
+ * begint een hack (zie Bypass): bij een lezer het stroomcircuit, bij een paneel de vingerafdrukken.
  *
  * Hij gaat {@link BypassBalance#KIT_USES} keer mee: elke hack die je begint kost er één.
  *
@@ -40,6 +40,7 @@ public class BypassKitItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.starktech.bypass_kit.reader").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.starktech.bypass_kit.panel").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.bypass_kit.uses", stack.getMaxDamage() - stack.getDamageValue(),
                 stack.getMaxDamage()).withStyle(ChatFormatting.DARK_AQUA));
     }

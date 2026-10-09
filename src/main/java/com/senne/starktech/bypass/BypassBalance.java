@@ -33,6 +33,11 @@ public final class BypassBalance {
     @Tunable(section = "bypass", comment = "How long the signal may touch ALARM before the alarm goes off (ticks; 20 = 1 second)")
     public static int ALARM_GRACE_TICKS = 20;
 
+    // ---------------------------------------------------------------- Vingerafdrukken (codepaneel)
+
+    @Tunable(section = "bypass", comment = "Tries to find the order of a code panel's digits: the code length plus this many")
+    public static int ORDER_EXTRA_TRIES = 2;
+
     // ---------------------------------------------------------------- Na een mislukte hack
 
     @Tunable(section = "bypass", comment = "After a failed hack, that reader or panel ignores the hacker for this long (seconds)")

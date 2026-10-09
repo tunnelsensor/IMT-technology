@@ -34,7 +34,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  *
  * Het spel loopt door terwijl dit scherm open is. Esc stopt de hack (zonder alarm).
  */
-public class CircuitScreen extends Screen {
+public class CircuitScreen extends Screen implements BypassScreen {
     private enum Phase { CHOOSE, PLAY, WAIT, DONE }
 
     /** Zo lang (ms) duurt het draaien van een stukje op het scherm. */
@@ -83,7 +83,8 @@ public class CircuitScreen extends Screen {
         this.seed = seed;
     }
 
-    public BlockPos reader() {
+    @Override
+    public BlockPos device() {
         return reader;
     }
 
@@ -517,7 +518,9 @@ public class CircuitScreen extends Screen {
     }
 
     /** Het antwoord van de server: gelukt, mislukt, of "nog niet klaar". */
-    public void onResult(String how) {
+    @Override
+    public void onResult(CompoundTag args) {
+        String how = args.getString("result");
         if (phase == Phase.DONE) {
             return;
         }
@@ -530,6 +533,7 @@ public class CircuitScreen extends Screen {
     }
 
     /** De server sloot de hack (je liep weg, of het apparaat is weg). */
+    @Override
     public void closeFromServer() {
         finished = true;
         onClose();

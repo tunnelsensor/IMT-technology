@@ -122,6 +122,30 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
+        enter(level, panel, device, core, player, code);
+    }
+
+    /**
+     * Een gekraakte code (hoofdstuk 12): de Bypass Kit typt hem in op het paneel. Verder precies alsof
+     * de speler hem zelf intypte: dezelfde regel in het logboek ("... entered a code at ..."), en je
+     * diagram beslist.
+     */
+    public static void crackedCode(ServerLevel level, BlockPos panel, ServerPlayer player, String code) {
+        if (!(level.getBlockEntity(panel) instanceof InputDeviceBlockEntity device)
+                || !(level.getBlockState(panel).getBlock() instanceof CodePanelBlock)
+                || !CodePanelBlock.isValidCode(code)) {
+            return;
+        }
+        SecurityCoreBlockEntity core = serverFor(level, panel, player);
+        if (core == null) {
+            return;
+        }
+        enter(level, panel, device, core, player, code);
+    }
+
+    /** Er is een code ingetypt: oranje lampje, een regel in het logboek (zonder de code), en de server aan het werk. */
+    private static void enter(ServerLevel level, BlockPos panel, InputDeviceBlockEntity device, SecurityCoreBlockEntity core,
+                              ServerPlayer player, String code) {
         InputDeviceBlock.flash(level, panel, InputLight.BUSY);
         level.playSound(null, panel, ModSounds.EDITH_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " entered a code at " + device.name());

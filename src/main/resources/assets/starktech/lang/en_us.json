@@ -1217,5 +1217,7 @@
   "tooltip.starktech.bypass_kit.reader": "Right-click a keycard reader: rewire it so it reads a fake card.",
   "tooltip.starktech.bypass_kit.uses": "Uses left: %s of %s",
   "bypass.starktech.msg.no_server": "Not connected to a running server: there is nothing to fool here.",
-  "bypass.starktech.msg.locked": "%s is on guard after your last try: wait %s s."
+  "bypass.starktech.msg.locked": "%s is on guard after your last try: wait %s s.",
+  "tooltip.starktech.bypass_kit.panel": "Right-click a code panel: dust it for fingerprints and crack the code.",
+  "bypass.starktech.msg.no_code": "No diagram checks a code on this panel: there is no code to crack."
 }

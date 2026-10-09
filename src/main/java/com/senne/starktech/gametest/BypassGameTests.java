@@ -4,11 +4,14 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.bypass.Bypass;
 import com.senne.starktech.bypass.BypassBalance;
 import com.senne.starktech.bypass.CircuitPuzzle;
+import com.senne.starktech.bypass.PanelOrders;
 import com.senne.starktech.logic.InputDeviceBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
 import com.senne.starktech.logic.InputLight;
 import com.senne.starktech.logic.LogicEvents;
+import com.senne.starktech.logic.PanelCodes;
 import com.senne.starktech.logic.program.GraphConverter;
+import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.network.BypassPayload;
 import com.senne.starktech.network.OsActionPayload;
@@ -21,6 +24,7 @@ import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.os.StarkOs;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.core.BlockPos;
@@ -36,8 +40,8 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tests voor inbreken (hoofdstuk 12 van het plan): de Bypass Kit en het stroomcircuit van een
- * keycardlezer.
+ * Tests voor inbreken (hoofdstuk 12 van het plan): de Bypass Kit, het stroomcircuit van een
+ * keycardlezer, en de vingerafdrukken en de volgorde van een codepaneel.
  */
 @GameTestHolder(StarkTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -118,9 +122,13 @@ public final class BypassGameTests {
 
     // ================================================================ Een lezer hacken
 
-    /** Een kern met eigenaar en server, een kluisdeur, een lezer "Lab door", en een hacker met een kit. */
+    /**
+     * Een kern met eigenaar en server, een kluisdeur, een lezer "Lab door", een codepaneel "Front door" (en
+     * een paneel "Side door" dat in geen diagram staat), en een hacker met een kit.
+     */
     private record Setup(ServerPlayer owner, ServerPlayer hacker, SecurityCoreBlockEntity core, BlockPos coreAbs,
-                         BlockPos reader, BlockPos readerAbs, BlockPos vault) {}
+                         BlockPos reader, BlockPos readerAbs, BlockPos vault, BlockPos panel, BlockPos panelAbs,
+                         BlockPos sidePanelAbs) {}
 
     private static Setup setup(GameTestHelper helper, boolean server) {
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 3, 6), "bypass-owner");
@@ -138,21 +146,38 @@ public final class BypassGameTests {
         BlockPos reader = new BlockPos(8, 3, 8);
         helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
         ((InputDeviceBlockEntity) helper.getBlockEntity(reader)).setName("Lab door");
+        BlockPos panel = new BlockPos(7, 3, 8);
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        ((InputDeviceBlockEntity) helper.getBlockEntity(panel)).setName("Front door");
+        BlockPos sidePanel = new BlockPos(6, 3, 8);
+        helper.setBlock(sidePanel, ModBlocks.CODE_PANEL.get());
+        ((InputDeviceBlockEntity) helper.getBlockEntity(sidePanel)).setName("Side door");
         ServerPlayer hacker = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 6), "bypass-hacker");
         hacker.getAbilities().instabuild = false; // anders slijt de kit niet (zoals in creative)
         hacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
         Bypass.clear();
         LogicEvents.clear();
-        return new Setup(owner, hacker, core, helper.absolutePos(corePos), reader, helper.absolutePos(reader), vaultAbs);
+        return new Setup(owner, hacker, core, helper.absolutePos(corePos), reader, helper.absolutePos(reader), vaultAbs,
+                panel, helper.absolutePos(panel), helper.absolutePos(sidePanel));
     }
 
-    /** Start de server en zet het diagram van de lab-deur erop: niveau 3 of hoger = de kluis even open. */
+    /**
+     * Start de server en zet het diagram van het lab erop: een kaart van niveau 3 of hoger, of de code
+     * 4711 op het voorpaneel, zet de kluis even open.
+     */
     private static void startLab(GameTestHelper helper, Setup setup) {
         StarkTechGameTests.startServer(helper, new BlockPos(12, 3, 12), setup.core());
         StarkOs.open(setup.owner(), setup.coreAbs());
         String code = """
                 when keycard("Lab door"):
                     if card.valid and card.level >= 3:
+                        accept()
+                        pulse("Vault door", 2)
+                    else:
+                        deny()
+
+                when codepanel("Front door"):
+                    if code == "4711":
                         accept()
                         pulse("Vault door", 2)
                     else:
@@ -170,6 +195,13 @@ public final class BypassGameTests {
     /** Het scherm van de hacker stuurt iets naar de server. */
     private static void send(Setup setup, String op, CompoundTag args) {
         Bypass.handle(setup.hacker(), new BypassPayload(setup.readerAbs(), op, args));
+    }
+
+    /** Het scherm van de hacker probeert een volgorde op het voorpaneel. */
+    private static void guess(Setup setup, String code) {
+        CompoundTag args = new CompoundTag();
+        args.putString("code", code);
+        Bypass.handle(setup.hacker(), new BypassPayload(setup.panelAbs(), "guess", args));
     }
 
     private static void chooseLevel(Setup setup, int level) {
@@ -293,6 +325,127 @@ public final class BypassGameTests {
             setup.hacker().teleportTo(setup.readerAbs().getX() + 0.5, setup.readerAbs().getY(), setup.readerAbs().getZ() - 7.5);
             Bypass.start(setup.hacker(), setup.readerAbs(), InteractionHand.MAIN_HAND);
             check(!Bypass.isHacking(setup.hacker()), "Een hack begon van te ver weg");
+            helper.succeed();
+        });
+    }
+
+
+    // ================================================================ Een codepaneel kraken
+
+    /**
+     * De code van een paneel staat in je diagram. De kit vindt elke code == "..." onder when codepanel(...)
+     * van dat paneel (ook andersom geschreven, en in een def die daar gebruikt wordt), niet die van een
+     * ander paneel en niet die van een diagram dat uit staat. Het rekenwerk: de afdrukken van "4711",
+     * hoeveel er op de goede plek staan, en hoeveel volgordes er nog kunnen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "bypass_codes")
+    public static void bypass_panel_codes_from_diagram(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 3, 6), "bypass-codes");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        String code = """
+                def open_back():
+                    if code == "4711":
+                        accept()
+
+                when codepanel("Front door"):
+                    if code == "1234":
+                        accept()
+                    elif player.trusted and "9999" == code:
+                        accept()
+
+                when codepanel("Back door"):
+                    open_back()
+
+                when keycard("Lab door"):
+                    if card.valid:
+                        accept()
+                """;
+        core.logic().put(null, new LogicProgram("Doors", true, GraphConverter.toGraph(ScriptParser.parse(code), null), code));
+        String off = """
+                when codepanel("Front door"):
+                    if code == "5555":
+                        accept()
+                """;
+        core.logic().put(null, new LogicProgram("Old", false, GraphConverter.toGraph(ScriptParser.parse(off), null), off));
+        check(PanelCodes.forPanel(core, "Front door").equals(List.of("1234", "9999")),
+                "Codes van het voorpaneel: " + PanelCodes.forPanel(core, "Front door"));
+        check(PanelCodes.forPanel(core, "back door").equals(List.of("4711")),
+                "Code uit de def van het achterpaneel: " + PanelCodes.forPanel(core, "back door"));
+        check(PanelCodes.forPanel(core, "Lab door").isEmpty(), "Een lezer heeft geen code");
+        // Het rekenwerk achter de afdrukken en de volgorde.
+        check(Arrays.equals(PanelOrders.prints("4711"), new int[] {0, 2, 0, 0, 1, 0, 0, 1, 0, 0}),
+                "De afdrukken van 4711: " + Arrays.toString(PanelOrders.prints("4711")));
+        check(PanelOrders.rightPlaces("1147", "4711") == 0 && PanelOrders.rightPlaces("4117", "4711") == 2,
+                "Op de goede plek klopt niet");
+        int[] prints = PanelOrders.prints("4711");
+        check(PanelOrders.count(prints, 4, List.of()) == 12, "4711 heeft 12 volgordes (4! / 2!)");
+        List<PanelOrders.Try> tries = List.of(new PanelOrders.Try("4117", 2), new PanelOrders.Try("1147", 0));
+        long left = PanelOrders.count(prints, 4, tries);
+        String first = PanelOrders.firstPossible(prints, 4, tries);
+        check(left >= 1 && left < 12 && first != null && PanelOrders.rightPlaces("4117", first) == 2
+                && PanelOrders.rightPlaces("1147", first) == 0, "Na twee pogingen: " + left + " over, eerste " + first);
+        helper.succeed();
+    }
+
+    /**
+     * Een paneel kraken: je krijgt de lengte + 2 pogingen. Een volgorde met een cijfer zonder afdrukken
+     * telt niet. Elke andere poging kost er één, en zet niets in het logboek. De goede volgorde: de kit
+     * typt de code in, het diagram zegt accept() en de kluis gaat open.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "bypass_panel")
+    public static void bypass_panel_fingerprints_and_order(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper, true);
+        helper.runAfterDelay(2, () -> {
+            startLab(helper, setup);
+            Bypass.start(setup.hacker(), setup.panelAbs(), InteractionHand.MAIN_HAND);
+            check(Bypass.isHacking(setup.hacker()), "De hack van het paneel begon niet");
+            check(Bypass.triesLeftOf(setup.hacker()) == 4 + BypassBalance.ORDER_EXTRA_TRIES,
+                    "Pogingen aan het begin: " + Bypass.triesLeftOf(setup.hacker()));
+            int start = Bypass.triesLeftOf(setup.hacker());
+            guess(setup, "4712");
+            guess(setup, "471");
+            check(Bypass.triesLeftOf(setup.hacker()) == start, "Een volgorde die niet kan, kostte een poging");
+            guess(setup, "1147");
+            guess(setup, "4117");
+            check(Bypass.triesLeftOf(setup.hacker()) == start - 2, "Twee pogingen kostten niet twee pogingen");
+            check(!lastEntry(setup.core()).contains("entered a code"), "Een poging kwam in het logboek");
+            guess(setup, "4711");
+            check(!Bypass.isHacking(setup.hacker()), "Na de goede code liep de hack nog");
+        });
+        helper.runAfterDelay(22, () -> {
+            helper.assertBlockProperty(setup.panel(), InputDeviceBlock.LIGHT, InputLight.OK);
+            check(level.getBlockState(setup.vault()).getValue(RelayBlock.POWERED), "De kluis ging niet open: "
+                    + lastEntry(setup.core()));
+            check(setup.core().log().entries().stream().anyMatch(entry -> entry.text().equals("bypass-hacker entered a code at Front door")),
+                    "De gekraakte code staat niet als ingetypte code in het logboek");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Te veel pogingen: het paneel slaat alarm en laat je een minuut niet meer proberen. Een paneel waarvan
+     * geen diagram de code controleert, valt niet te kraken (en kost niets).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "bypass_panel_alarm")
+    public static void bypass_panel_out_of_tries(GameTestHelper helper) {
+        Setup setup = setup(helper, true);
+        helper.runAfterDelay(2, () -> {
+            startLab(helper, setup);
+            Bypass.start(setup.hacker(), setup.sidePanelAbs(), InteractionHand.MAIN_HAND);
+            check(!Bypass.isHacking(setup.hacker()), "Een paneel zonder code liet zich kraken");
+            check(setup.hacker().getMainHandItem().getDamageValue() == 0, "Een paneel zonder code kostte een gebruik");
+            Bypass.start(setup.hacker(), setup.panelAbs(), InteractionHand.MAIN_HAND);
+            int tries = Bypass.triesLeftOf(setup.hacker());
+            for (int i = 0; i < tries; i++) {
+                guess(setup, "1147");
+            }
+            check(!Bypass.isHacking(setup.hacker()), "Na alle pogingen liep de hack nog");
+            helper.assertBlockProperty(setup.panel(), InputDeviceBlock.LIGHT, InputLight.DENIED);
+            boolean alarm = setup.core().log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.ALARM
+                    && entry.text().contains("Someone is tampering with Front door"));
+            check(alarm, "Geen alarm na te veel pogingen: " + lastEntry(setup.core()));
+            check(Bypass.lockedFor(setup.hacker(), setup.panelAbs()) > 0, "Het paneel laat de hacker meteen weer proberen");
             helper.succeed();
         });
     }

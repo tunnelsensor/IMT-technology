@@ -1953,6 +1953,32 @@ public final class VisualCheck {
             t.step(5, () -> circuit(com.senne.starktech.client.bypass.CircuitScreen::tourTouchAlarm));
             t.shot(30, "bp09_circuit_caught");
             t.close(30);
+            // Het codepaneel ernaast: stoffen, de afdrukken, twee pogingen, en dan gekraakt.
+            BlockPos panel = lab.offset(5, 1, 3);
+            t.onServer(5, player -> com.senne.starktech.bypass.Bypass.start(player, panel,
+                    net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.shot(10, "bp10_panel_dust");
+            t.step(0, () -> fingerprints(screen -> screen.tourDust(5)));
+            t.shot(3, "bp11_panel_half_dusted");
+            t.step(0, () -> fingerprints(screen -> screen.tourDust(12)));
+            t.shot(5, "bp12_panel_prints");
+            t.step(30, () -> fingerprints(screen -> {
+                screen.tourType("1147");
+                screen.tourTry();
+            }));
+            t.step(10, () -> fingerprints(screen -> {
+                screen.tourType("4117");
+                screen.tourTry();
+            }));
+            t.step(10, () -> fingerprints(screen -> screen.tourType("41")));
+            t.shot(5, "bp13_panel_order");
+            t.step(0, () -> fingerprints(screen -> {
+                screen.tourType("4711");
+                screen.tourTry();
+            }));
+            t.shot(15, "bp14_panel_cracked");
+            t.close(0);
+            t.shot(4, "bp15_panel_green");
         }
 
         // --- Zones (hoofdstuk 10, 8 oktober): een L-vormige basis met een torentje en de blauwe rand
@@ -2075,6 +2101,13 @@ public final class VisualCheck {
     /** Waar het lab van hoofdstuk 12 staat (zie buildBypassLab). */
     private static final BlockPos BYPASS_LAB = new BlockPos(170, -60, 128);
 
+    /** Doet iets met het vingerafdrukken-scherm dat nu open is (als het open is). */
+    private static void fingerprints(java.util.function.Consumer<com.senne.starktech.client.bypass.FingerprintScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.bypass.FingerprintScreen screen) {
+            action.accept(screen);
+        }
+    }
+
     /** Doet iets met het stroomcircuit dat nu open is (als het open is). */
     private static void circuit(java.util.function.Consumer<com.senne.starktech.client.bypass.CircuitScreen> action) {
         if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.bypass.CircuitScreen screen) {
@@ -2085,7 +2118,7 @@ public final class VisualCheck {
     /**
      * Een kern met een server (een rack met CPU, RAM en SSD; allebei op een volle generator), een muurtje
      * met een keycardlezer "Lab door" en een codepaneel "Front door", en een diagram: een kaart van
-     * niveau 3 of hoger geeft groen, anders rood. In je hand de Bypass Kit.
+     * niveau 3 of hoger geeft groen, anders rood, en de code 4711 op het paneel ook. In je hand de Bypass Kit.
      */
     private static void buildBypassLab(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -2126,6 +2159,12 @@ public final class VisualCheck {
             String code = """
                     when keycard("Lab door"):
                         if card.valid and card.level >= 3:
+                            accept()
+                        else:
+                            deny()
+
+                    when codepanel("Front door"):
+                        if code == "4711":
                             accept()
                         else:
                             deny()

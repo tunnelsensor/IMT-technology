@@ -1,14 +1,17 @@
 package com.senne.starktech.bypass;
 
+import com.senne.starktech.logic.CodePanelBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
 import com.senne.starktech.logic.KeycardReaderBlock;
 import com.senne.starktech.logic.LogicEvents;
 import com.senne.starktech.logic.LogicServer;
+import com.senne.starktech.logic.PanelCodes;
 import com.senne.starktech.network.BypassPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
@@ -40,20 +43,26 @@ import org.jetbrains.annotations.Nullable;
  *       kiest een niveau (dan begint de klok, ook op de server), en als het signaal bij ACCEPT komt,
  *       stuurt je spel hoe alle stukjes staan. De server rekent zelf na of dat klopt en of je op tijd
  *       was; pas dan leest de lezer een nagemaakte kaart van dat niveau.</li>
+ *   <li><b>Een codepaneel</b>: de server zoekt de code in je diagrammen (PanelCodes) en stuurt alleen
+ *       de vingerafdrukken: welke cijfers erin zitten en hoe vaak, en hoe lang de code is. Elke volgorde
+ *       die je probeert, gaat naar de server; die zegt hoeveel cijfers op de goede plek staan. De code
+ *       zelf krijg je pas als je hem geraden hebt; dan typt de kit hem ook echt in.</li>
  * </ul>
- * Mislukt het (ALARM, of de tijd is om), dan gaat het alarm af en laat dat apparaat jou een minuut
+ * Mislukt het (ALARM, de tijd is om, of geen pogingen meer), dan gaat het alarm af en laat dat apparaat jou een minuut
  * niet meer proberen. Esc of weglopen stopt de hack zonder alarm.
  */
 public final class Bypass {
     private Bypass() {}
 
     /** Wat er gehackt wordt. */
-    public enum Kind { READER }
+    public enum Kind { READER, PANEL }
 
     /** Zoveel ticks speling op de klok (een bericht onderweg doet er even over). */
     private static final int CLOCK_SLACK = 40;
     /** Zo lang mag je over het kiezen van een niveau doen, dan gaat het scherm dicht (zonder alarm). */
     private static final int CHOOSE_TIMEOUT = 2400;
+    /** Zo lang mag een codepaneel-hack hooguit duren (5 minuten), dan gaat het scherm dicht (zonder alarm). */
+    private static final int PANEL_TIMEOUT = 6000;
 
     /** Eén hack die bezig is. */
     static final class Session {
@@ -66,6 +75,9 @@ public final class Bypass {
         int level;
         /** Wanneer de klok begon te lopen (game-tijd), of -1. */
         long startedAt = -1;
+        /** De code die de kit moet kraken (paneel), en hoeveel pogingen je nog hebt. */
+        String code = "";
+        int triesLeft;
 
         Session(Kind kind, ResourceKey<Level> dimension, BlockPos pos, long seed, long openedAt) {
             this.kind = kind;
@@ -93,8 +105,10 @@ public final class Bypass {
         if (!(level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device)) {
             return;
         }
-        if (!(level.getBlockState(pos).getBlock() instanceof KeycardReaderBlock)) {
-            return; // het codepaneel komt in stap 2
+        Kind kind = level.getBlockState(pos).getBlock() instanceof KeycardReaderBlock ? Kind.READER
+                : level.getBlockState(pos).getBlock() instanceof CodePanelBlock ? Kind.PANEL : null;
+        if (kind == null) {
+            return;
         }
         if (player.distanceToSqr(pos.getCenter()) > BypassBalance.REACH * BypassBalance.REACH) {
             return;
@@ -111,19 +125,37 @@ public final class Bypass {
                     .withStyle(ChatFormatting.GRAY), true);
             return;
         }
+        // Een paneel: welke code opent het? Staat er geen in je diagrammen, dan valt er niets te kraken.
+        List<String> codes = kind == Kind.PANEL ? PanelCodes.forPanel(core, device.name()) : List.of();
+        if (kind == Kind.PANEL && codes.isEmpty()) {
+            player.displayClientMessage(Component.translatable("bypass.starktech.msg.no_code")
+                    .withStyle(ChatFormatting.GRAY), true);
+            return;
+        }
         // Eén gebruik van de kit, ook als je straks stopt (in creative niet: dat regelt hurtAndBreak zelf).
         ItemStack kit = player.getItemInHand(hand);
         kit.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
         stop(player, false);
-        Session session = new Session(Kind.READER, level.dimension(), pos.immutable(), level.random.nextLong(),
+        Session session = new Session(kind, level.dimension(), pos.immutable(), level.random.nextLong(),
                 level.getGameTime());
         SESSIONS.put(player.getUUID(), session);
-        // Het geluid van een lezer die je openschroeft.
-        level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.4f, 1.6f);
         CompoundTag args = new CompoundTag();
         args.putString("name", device.name());
-        args.putLong("seed", session.seed);
-        ModNetwork.sendTo(player, new BypassPayload(pos, "reader", args));
+        if (kind == Kind.READER) {
+            // Het geluid van een lezer die je openschroeft.
+            level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.4f, 1.6f);
+            args.putLong("seed", session.seed);
+            ModNetwork.sendTo(player, new BypassPayload(pos, "reader", args));
+        } else {
+            // De eerste code uit je diagrammen. Naar jouw spel gaan alleen de afdrukken en de lengte.
+            session.code = codes.getFirst();
+            session.triesLeft = session.code.length() + BypassBalance.ORDER_EXTRA_TRIES;
+            level.playSound(null, pos, SoundEvents.BRUSH_GENERIC, SoundSource.BLOCKS, 0.4f, 1.2f);
+            args.putInt("length", session.code.length());
+            args.putIntArray("prints", PanelOrders.prints(session.code));
+            args.putInt("tries", session.triesLeft);
+            ModNetwork.sendTo(player, new BypassPayload(pos, "panel", args));
+        }
     }
 
     // ================================================================ Wat het scherm stuurt
@@ -162,8 +194,13 @@ public final class Bypass {
                 reply(player, session, "ok");
                 LogicEvents.forgedKeycard(level, session.pos, player, session.level);
             }
+            case "guess" -> {
+                if (session.kind == Kind.PANEL) {
+                    guess(player, session, payload.args().getString("code"));
+                }
+            }
             case "fail" -> {
-                if (session.startedAt >= 0) {
+                if (session.kind == Kind.READER && session.startedAt >= 0) {
                     String why = payload.args().getString("why");
                     fail(player, session, why.equals("alarm") ? "alarm" : "time");
                 }
@@ -171,6 +208,40 @@ public final class Bypass {
             case "cancel" -> SESSIONS.remove(player.getUUID());
             default -> { }
         }
+    }
+
+    /**
+     * Een volgorde voor een codepaneel. Klopt hij niet (verkeerde lengte, of een cijfer zonder
+     * afdrukken), dan telt hij niet. Anders: hoeveel cijfers staan goed? Alles goed = gekraakt: de kit
+     * typt de code in en je ziet hem. Geen pogingen meer = het paneel slaat alarm.
+     */
+    private static void guess(ServerPlayer player, Session session, String guess) {
+        int[] prints = PanelOrders.prints(session.code);
+        boolean valid = guess.length() == session.code.length() && CodePanelBlock.isValidCode(guess)
+                && guess.chars().allMatch(c -> prints[c - '0'] > 0);
+        if (!valid) {
+            return;
+        }
+        int right = PanelOrders.rightPlaces(guess, session.code);
+        if (right == session.code.length()) {
+            SESSIONS.remove(player.getUUID());
+            CompoundTag args = new CompoundTag();
+            args.putString("result", "cracked");
+            args.putString("code", session.code);
+            ModNetwork.sendTo(player, new BypassPayload(session.pos, "result", args));
+            LogicEvents.crackedCode(player.serverLevel(), session.pos, player, session.code);
+            return;
+        }
+        session.triesLeft--;
+        if (session.triesLeft <= 0) {
+            fail(player, session, "tries");
+            return;
+        }
+        CompoundTag args = new CompoundTag();
+        args.putString("code", guess);
+        args.putInt("right", right);
+        args.putInt("tries", session.triesLeft);
+        ModNetwork.sendTo(player, new BypassPayload(session.pos, "guess", args));
     }
 
     /** Mislukt: alarm (zoals {@code alarm()} in een diagram), rood lampje, en een minuut niet meer proberen. */
@@ -205,7 +276,9 @@ public final class Bypass {
         boolean gone = !player.isAlive() || session.dimension != level.dimension()
                 || player.distanceToSqr(session.pos.getCenter()) > BypassBalance.REACH * BypassBalance.REACH
                 || !(level.getBlockEntity(session.pos) instanceof InputDeviceBlockEntity);
-        if (gone || (session.startedAt < 0 && now - session.openedAt > CHOOSE_TIMEOUT)) {
+        boolean tooLong = session.kind == Kind.PANEL ? now - session.openedAt > PANEL_TIMEOUT
+                : session.startedAt < 0 && now - session.openedAt > CHOOSE_TIMEOUT;
+        if (gone || tooLong) {
             stop(player, true);
         } else if (session.startedAt >= 0 && session.kind == Kind.READER
                 && now - session.startedAt > BypassBalance.circuitSeconds(session.level) * 20L + CLOCK_SLACK * 2) {
@@ -238,6 +311,12 @@ public final class Bypass {
     public static @Nullable Long seedOf(ServerPlayer player) {
         Session session = SESSIONS.get(player.getUUID());
         return session == null ? null : session.seed;
+    }
+
+    /** Hoeveel pogingen deze speler nog heeft bij het paneel dat hij kraakt (voor de tests), of -1. */
+    public static int triesLeftOf(ServerPlayer player) {
+        Session session = SESSIONS.get(player.getUUID());
+        return session == null || session.kind != Kind.PANEL ? -1 : session.triesLeft;
     }
 
     /** Is deze speler aan het hacken? */

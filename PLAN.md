@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 193 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 196 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1764,11 +1764,28 @@ De stappen, één per commit:
       je ALARM met één verkeerde draai), een nagemaakte kaart van niveau 3 opent de kluis en een van
       niveau 2 niet (en een raster dat niet klopt telt niet), mislukken geeft alarm en de wachttijd, en
       zonder server gebeurt er niets.
-- [ ] **2. Een codepaneel hacken**
-      De code uit je diagram halen (ook uit een def), vingerafdrukken, en de volgorde raden met de
-      server als scheidsrechter: de code komt pas op je scherm als je hem hebt. Tests: de code vinden,
-      afdrukken en "op de goede plek" kloppen, de goede volgorde opent de deur, te veel pogingen geeft
-      alarm.
+- [x] **2. Een codepaneel hacken**
+      Rechtsklik met de Bypass Kit op een codepaneel. De kit zoekt de code in je diagram
+      (`logic/PanelCodes`): elke `code == "..."` (ook `"..." == code` en `!=`) onder
+      `when codepanel("...")` van dat paneel, ook in een def die daar gebruikt wordt, alleen in diagrammen
+      die aan staan; bij meer codes de eerste. Staat er geen, dan "No diagram checks a code on this panel"
+      (en kost het niets). Het scherm: eerst **stoffen**: houd de muisknop ingedrukt en veeg over de
+      toetsen (stofjes vallen van je kwast, je hoort een kwast). Op de cijfers van de code verschijnen
+      lichtgele afdrukken (glowstonestof), dikker bij een cijfer dat vaker in de code zit; C en OK hebben
+      altijd afdrukken. Bovenaan staat hoe lang de code is, en als alle cijfers gestoft zijn staat er
+      "Prints on 1, 4 and 7. Extra dirty: 1 is in the code more than once." Dan **de volgorde**: je typt
+      (of klikt) alleen cijfers met afdrukken, Enter probeert. Je hoort één klik per cijfer op de goede
+      plek, en rechts staan je pogingen ("4 1 1 7 ■■□□ 2 right"), hoeveel volgordes er nog kunnen
+      (`bypass/PanelOrders`) en hoeveel pogingen je nog hebt (de lengte + 2, `orderExtraTries` onder
+      `[bypass]`). Elke poging gaat naar de server, die de code kent en alleen "zoveel goed" terugzegt:
+      de code zelf komt pas op je scherm als je hem hebt. Je pogingen komen niet in het logboek en gaan
+      niet langs je diagram. Goed: "CODE CRACKED: 4711. The kit typed it in." en de kit typt hem echt in
+      ("... entered a code at Front door"), je diagram beslist. Geen pogingen meer: het paneel slaat
+      alarm, net als bij de lezer, en laat je een minuut niet meer proberen. Screenshots: `-Ponly=bypass`
+      (`bp10`-`bp15`). Drie nieuwe tests: de codes uit een diagram (ook uit een def, niet van een ander
+      paneel of een diagram dat uit staat) en het rekenwerk, kraken met pogingen die niet tellen en die
+      wel tellen en dan de kluis open, en te veel pogingen geeft alarm (en een paneel zonder code valt
+      niet te kraken).
 - [ ] **3. Zakkenrollen**
       Het zak-scherm met kaarten en rommel, slepen en de meter, betrapt worden (de meter vol, of hij
       draait zich om), en de kaart echt verplaatsen. Tests: van voren mag niet; een kaart pikken (de
