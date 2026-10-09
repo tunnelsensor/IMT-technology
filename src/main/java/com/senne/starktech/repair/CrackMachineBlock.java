@@ -34,7 +34,10 @@ import org.jetbrains.annotations.Nullable;
  * een vakje erin, een vakje eruit en een balkje hoe ver hij is (zie {@link CrackMachineBlockEntity}):
  * <ul>
  *   <li>de <b>Crusher</b> maakt van een gebarsten blok poeder;</li>
+ *   <li>de <b>Compactor</b> perst dat poeder tot een volledig nieuw, sterk blok (jouw wens: "die kun
+ *       je compacten tot een volledig nieuwe sterke blok").</li>
  * </ul>
+ * Telkens één op één: 1 gebarsten blok = 1 poeder = 1 nieuw blok (mijn invulling).
  * Ze werken op Stark-stroom (via kabels, of direct tegen een generator aan) en trechters kunnen erin
  * doen (van boven of opzij) en eruit halen (van onder), zoals bij een oven. De voorkant kijkt naar wie
  * hem neerzet, en verandert als hij werkt.
@@ -50,7 +53,9 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
     /** Welke machine het is, en wat hij van wat maakt. */
     public enum Kind implements StringRepresentable {
         /** Gebarsten blok -> poeder van hetzelfde blok. */
-        CRUSHER("crusher");
+        CRUSHER("crusher"),
+        /** Poeder -> een nieuw blok (zonder barsten, nooit geplamuurd). */
+        COMPACTOR("compactor");
 
         private final String name;
 
@@ -72,20 +77,27 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
             return switch (this) {
                 case CRUSHER -> input.is(ModItems.CRACKED_BLOCK.get())
                         ? FromBlockItem.of(ModItems.BLOCK_POWDER.get(), block, 1) : ItemStack.EMPTY;
+                case COMPACTOR -> input.is(ModItems.BLOCK_POWDER.get()) ? new ItemStack(block) : ItemStack.EMPTY;
             };
         }
 
-        /** Het stille geluidje terwijl hij werkt (elke seconde). */
+        /** Het stille geluidje terwijl hij werkt (elke seconde): een slijpsteen, of een zuiger. */
         public SoundEvent workSound() {
             return switch (this) {
                 case CRUSHER -> SoundEvents.GRINDSTONE_USE;
+                case COMPACTOR -> SoundEvents.PISTON_EXTEND;
             };
         }
 
-        /** Het geluid als er een voorwerp klaar is. */
-        public SoundEvent doneSound() {
+        /**
+         * Het geluid als er een voorwerp van {@code block} klaar is: het blok dat breekt (Crusher) of dat
+         * neergezet wordt (Compactor). Zo klinkt glas anders dan steen.
+         */
+        public SoundEvent doneSound(Block block) {
+            net.minecraft.world.level.block.SoundType sound = block.defaultBlockState().getSoundType();
             return switch (this) {
-                case CRUSHER -> SoundEvents.GRAVEL_BREAK;
+                case CRUSHER -> sound.getBreakSound();
+                case COMPACTOR -> sound.getPlaceSound();
             };
         }
 
@@ -93,6 +105,7 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
         public ItemStack example() {
             return switch (this) {
                 case CRUSHER -> FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.STONE_BRICKS, 1);
+                case COMPACTOR -> FromBlockItem.of(ModItems.BLOCK_POWDER.get(), Blocks.STONE_BRICKS, 1);
             };
         }
     }

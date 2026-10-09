@@ -12,7 +12,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Het scherm van de Crusher (hoofdstuk 11).
+ * Het scherm van de Crusher en de Compactor (hoofdstuk 11).
  *
  * <pre>
  *  Crusher

@@ -24,7 +24,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De binnenkant van een Crusher (hoofdstuk 11): een vakje erin, een vakje eruit, en hoe ver hij is.
+ * De binnenkant van een Crusher of Compactor (hoofdstuk 11): een vakje erin, een vakje eruit, en hoe
+ * ver hij is.
  *
  * Zolang er iets in zit waar hij iets mee kan, er plaats is in het vakje eruit en er stroom is, werkt
  * hij: {@link RepairBalance#MACHINE_POWER} stroom per tick, {@link RepairBalance#MACHINE_TICKS} ticks
@@ -126,6 +127,7 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
             effects(level, pos, input);
             if (progress >= RepairBalance.MACHINE_TICKS) {
                 progress = 0;
+                Block block = FromBlockItem.block(input);
                 input.shrink(1);
                 ItemStack out = items.get(SLOT_OUT);
                 if (out.isEmpty()) {
@@ -133,7 +135,9 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
                 } else {
                     out.grow(result.getCount());
                 }
-                level.playSound(null, pos, kind().doneSound(), SoundSource.BLOCKS, 0.3f, 0.9f + level.random.nextFloat() * 0.2f);
+                if (block != null) {
+                    level.playSound(null, pos, kind().doneSound(block), SoundSource.BLOCKS, 0.3f, 0.9f + level.random.nextFloat() * 0.2f);
+                }
             }
             setChanged();
         }

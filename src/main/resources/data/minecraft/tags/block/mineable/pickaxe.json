@@ -20,6 +20,7 @@
     "starktech:server_rack",
     "starktech:keycard_reader",
     "starktech:code_panel",
-    "starktech:crusher"
+    "starktech:crusher",
+    "starktech:compactor"
   ]
 }

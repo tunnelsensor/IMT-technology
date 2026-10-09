@@ -984,6 +984,46 @@ def crusher_textures():
         save(im, "block/%s.png" % name)
 
 
+def compactor_textures():
+    """
+    De Compactor (hoofdstuk 11): dezelfde kast als de Crusher (zij- en bovenkant), met in het venster
+    een hydraulische pers: een zuigerstang met een zware kop, en daaronder een mal met poeder. Werkt
+    hij, dan staat de kop lager (hij perst), is het poeder een blok geworden en brandt het lampje blauw.
+    """
+    rod = (176, 182, 192, 255)
+    head = (136, 140, 148, 255)
+    head_dark = (92, 96, 104, 255)
+    window = (24, 26, 30, 255)
+    mould = (70, 74, 82, 255)
+    powder = (196, 192, 182, 255)
+    pressed = (150, 146, 138, 255)
+    for name, on in (("compactor_front", False), ("compactor_front_on", True)):
+        im = img(16, 16, METAL_2)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        d.rectangle([2, 2, 13, 10], fill=window, outline=METAL_3)
+        # De mal onderin het venster.
+        d.line([4, 9, 11, 9], fill=mould)
+        px(im, [(4, 8), (11, 8)], mould)
+        low = 6 if on else 4
+        # De stang en de kop van de pers.
+        d.line([7, 3, 7, low - 1], fill=rod)
+        d.line([8, 3, 8, low - 1], fill=head_dark)
+        d.rectangle([4, low, 11, low + 1], fill=head)
+        d.line([4, low + 1, 11, low + 1], fill=head_dark)
+        if on:
+            # Geperst: een plat, stevig blokje onder de kop.
+            d.line([5, 8, 10, 8], fill=pressed)
+        else:
+            # Los poeder: een hoopje.
+            d.line([5, 8, 10, 8], fill=powder)
+            px(im, [(6, 7), (7, 7), (8, 7), (9, 7)], powder)
+        for x in range(1, 15):
+            px(im, [(x, 13), (x, 14)], (220, 170, 40, 255) if (x // 2) % 2 == 0 else METAL_DARK)
+        d.rectangle([11, 11, 13, 11], fill=CYAN if on else (90, 30, 26, 255))
+        save(im, "block/%s.png" % name)
+
+
 def block_powder_item():
     """
     Poeder (hoofdstuk 11): een hoopje fijn poeder met wat losse korrels. Lichtgrijs, want het spel
@@ -2817,6 +2857,7 @@ if __name__ == "__main__":
     repair_paste_item()
     crusher_textures()
     block_powder_item()
+    compactor_textures()
     relay_textures()
     shield_textures()
     rayshield_walls()

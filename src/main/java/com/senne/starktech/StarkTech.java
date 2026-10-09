@@ -86,7 +86,7 @@ public class StarkTech {
         modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
                 event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                         ModBlockEntities.TURRET.get(), (turret, side) -> turret.kind().usesAmmo() ? turret.ammo() : null));
-        // Trechters en buizen bij de Crusher: van boven en opzij erin, van onder eruit (hoofdstuk 11).
+        // Trechters en buizen bij de Crusher en de Compactor: van boven en opzij erin, van onder eruit (hoofdstuk 11).
         modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
                 event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                         ModBlockEntities.CRACK_MACHINE.get(), (machine, side) -> side == null

@@ -13,7 +13,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Het menu van een Crusher (hoofdstuk 11): het vakje erin (links), het vakje eruit (rechts) en je
+ * Het menu van een Crusher of Compactor (hoofdstuk 11): het vakje erin (links), het vakje eruit (rechts) en je
  * eigen inventaris. Hoe ver hij is en wat hij doet, komt mee als "gegevens" (zie CrackMachineBlockEntity).
  * Welke machine het is, stuurt de server mee als het scherm opengaat (voor het voorbeeld in het lege vakje).
  */

@@ -206,6 +206,8 @@ public final class ModItems {
                     "item.starktech.block_powder.of", "tooltip.starktech.block_powder"), new Item.Properties());
     public static final DeferredItem<BlockItem> CRUSHER = ITEMS.registerSimpleBlockItem("crusher",
             ModBlocks.CRUSHER, new Item.Properties());
+    public static final DeferredItem<BlockItem> COMPACTOR = ITEMS.registerSimpleBlockItem("compactor",
+            ModBlocks.COMPACTOR, new Item.Properties());
 
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(

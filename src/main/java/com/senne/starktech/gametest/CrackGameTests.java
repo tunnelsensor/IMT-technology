@@ -281,14 +281,18 @@ public final class CrackGameTests {
         helper.succeed();
     }
 
-    /** Een Crusher op deze plek, met (als {@code power}) een warmtegenerator vol stroom ernaast. */
-    private static CrackMachineBlockEntity crusher(GameTestHelper helper, BlockPos pos, boolean power) {
-        helper.setBlock(pos, ModBlocks.CRUSHER.get());
+    /** Een Crusher of Compactor op deze plek, met (als {@code power}) een warmtegenerator vol stroom ernaast. */
+    private static CrackMachineBlockEntity machine(GameTestHelper helper, Block block, BlockPos pos, boolean power) {
+        helper.setBlock(pos, block);
         if (power) {
             helper.setBlock(pos.west(), ModBlocks.HEAT_GENERATOR.get());
             ((ChargerBlockEntity) helper.getBlockEntity(pos.west())).fill(5_000);
         }
         return (CrackMachineBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    private static CrackMachineBlockEntity crusher(GameTestHelper helper, BlockPos pos, boolean power) {
+        return machine(helper, ModBlocks.CRUSHER.get(), pos, power);
     }
 
     /**
@@ -348,5 +352,74 @@ public final class CrackGameTests {
                     "Het poeder kwam (nog) niet in de onderste trechter: " + powder);
             check(top.getItem(0).is(Blocks.STONE.asItem()), "Gewone steen ging toch de Crusher in");
         });
+    }
+
+    // ================================================================ Stap 3: de Compactor
+
+    /**
+     * Jouw wens: "die kun je compacten tot een volledig nieuwe sterke blok". Obsidiaanpoeder in de
+     * Compactor: na vijf seconden een gewoon blok obsidiaan (er is niets bijzonders meer aan). Een
+     * gebarsten blok neemt hij niet aan (dat moet eerst door de Crusher), en de Crusher geen poeder.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void compactor_presses_a_new_block(GameTestHelper helper) {
+        CrackMachineBlockEntity compactor = machine(helper, ModBlocks.COMPACTOR.get(), new BlockPos(6, 2, 6), true);
+        CrackMachineBlockEntity crusher = crusher(helper, new BlockPos(10, 2, 6), false);
+        ItemStack powder = FromBlockItem.of(ModItems.BLOCK_POWDER.get(), Blocks.OBSIDIAN, 1);
+        ItemStack cracked = FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.OBSIDIAN, 1);
+        check(!compactor.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, cracked)
+                && compactor.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, powder), "De Compactor zou alleen poeder moeten aannemen");
+        check(!crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, powder)
+                && crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, cracked), "De Crusher zou alleen gebarsten blokken moeten aannemen");
+        compactor.setItem(CrackMachineBlockEntity.SLOT_IN, powder);
+        helper.runAfterDelay(RepairBalance.MACHINE_TICKS + 5, () -> {
+            ItemStack out = compactor.getItem(CrackMachineBlockEntity.SLOT_OUT);
+            check(ItemStack.isSameItemSameComponents(out, new ItemStack(Blocks.OBSIDIAN)) && out.getCount() == 1,
+                    "Na vijf seconden zou er een gewoon blok obsidiaan uit moeten komen, niet " + out);
+            check(compactor.getItem(CrackMachineBlockEntity.SLOT_IN).isEmpty(), "Het poeder zou op moeten zijn");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * De hele weg rond: obsidiaan met barsten, twee keer geplamuurd (nog 70% sterk), weghakken, door de
+     * Crusher, door de Compactor, en het nieuwe blok terugzetten: weer helemaal sterk (20), zonder barsten.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "cracks")
+    public static void repair_loop_gives_a_strong_block(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = miner(helper);
+        CrackMachineBlockEntity crusher = crusher(helper, new BlockPos(3, 2, 3), true);
+        CrackMachineBlockEntity compactor = machine(helper, ModBlocks.COMPACTOR.get(), new BlockPos(3, 2, 12), true);
+        helper.setBlock(BLOCK.below(), Blocks.STONE);
+        helper.setBlock(BLOCK, Blocks.OBSIDIAN);
+        for (int i = 0; i < 2; i++) {
+            dent(helper, BLOCK);
+            check(paste(helper, player, BLOCK), "Plamuren lukte niet");
+        }
+        check(Math.abs(strength(helper, BLOCK) - 14) < 0.01f, "Twee keer geplamuurd obsidiaan zou 14 moeten kunnen hebben");
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_PICKAXE));
+        check(ZoneGameTests.breakBlock(helper, player, BLOCK), "Hakken lukte niet");
+        List<ItemStack> drops = pickUp(helper, BLOCK);
+        check(drops.size() == 1 && crackedOf(drops.get(0), Blocks.OBSIDIAN), "Weghakken gaf geen gebarsten obsidiaan: " + drops);
+        crusher.setItem(CrackMachineBlockEntity.SLOT_IN, drops.get(0));
+        helper.startSequence()
+                .thenWaitUntil(() -> check(!crusher.getItem(CrackMachineBlockEntity.SLOT_OUT).isEmpty(), "De Crusher is nog bezig"))
+                .thenExecute(() -> compactor.setItem(CrackMachineBlockEntity.SLOT_IN,
+                        crusher.removeItem(CrackMachineBlockEntity.SLOT_OUT, 64)))
+                .thenWaitUntil(() -> check(!compactor.getItem(CrackMachineBlockEntity.SLOT_OUT).isEmpty(), "De Compactor is nog bezig"))
+                .thenExecute(() -> {
+                    ItemStack block = compactor.removeItem(CrackMachineBlockEntity.SLOT_OUT, 64);
+                    check(block.is(Items.OBSIDIAN) && block.getCount() == 1, "Uit de Compactor kwam " + block);
+                    player.setItemInHand(InteractionHand.MAIN_HAND, block);
+                    BlockPos below = helper.absolutePos(BLOCK.below());
+                    BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(below).relative(Direction.UP, 0.5), Direction.UP, below, false);
+                    check(player.getMainHandItem().useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit)).consumesAction(),
+                            "Het nieuwe obsidiaan neerzetten lukte niet");
+                    helper.assertBlockPresent(Blocks.OBSIDIAN, BLOCK);
+                    check(strength(helper, BLOCK) == 20 && Cracks.damage(level, helper.absolutePos(BLOCK)) == 0,
+                            "Het nieuwe obsidiaan zou weer helemaal sterk moeten zijn, niet " + strength(helper, BLOCK));
+                })
+                .thenSucceed();
     }
 }

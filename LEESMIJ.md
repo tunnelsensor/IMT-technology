@@ -581,8 +581,10 @@ anders kan een inbreker ze van buitenaf kapotmaken. Wie je kern hackt, krijgt oo
   van een ander kan dat niet. Een nieuw blok op die plek is weer helemaal sterk.
 - **Gebarsten blokken**: hak je een blok met barsten (of een geplamuurd blok) weg, dan houd je een
   **gebarsten blok** over ("Cracked Stone Bricks"). De **Crusher** (ijzer, een slijpsteen, een
-  Stark-chip en een zuiger) maakt daar op Stark-stroom **poeder** van: 5 seconden per blok. Trechters
-  doen er van boven of opzij iets in en halen het poeder er van onder uit.
+  Stark-chip en een zuiger) maakt daar op Stark-stroom **poeder** van: 5 seconden per blok. De
+  **Compactor** (ijzer, een aambeeld, twee zuigers en een Stark-chip) perst dat poeder tot een
+  volledig nieuw blok van hetzelfde soort, weer helemaal sterk. Bij allebei doen trechters er van boven
+  of opzij iets in en halen ze het er van onder uit.
 - **Ontmantelen**: alleen met een **schaar** (rechtsklik): de C4 valt eruit, en jij hebt hem. Met je
   hand krijg je hem er niet af.
 - **Alarm**: plakt iemand C4 op jouw zone, dan zegt E.D.I.T.H. waar (niet wie), en jij en je vrienden

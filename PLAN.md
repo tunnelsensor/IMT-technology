@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 182 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 184 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 83 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1600,7 +1600,18 @@ De stappen, één per commit:
       blok valt, poeder maken (en de stroom die het kost), niets zonder stroom, en trechters. Screenshots:
       `-Ponly=repair` (`r01_crusher_working`, `r02_crusher_screen`, `r03_cracked_in_hand`). Op obsidiaan
       zie je de barsten ook op het voorwerp bijna niet (net als in de wereld).
-- [ ] **3. De Compactor**
+- [x] **3. De Compactor**
+      **De Compactor** (ijzer, een aambeeld, twee zuigers en een Stark-chip): dezelfde kast als de Crusher,
+      met in zijn venster een hydraulische pers. Hij perst poeder tot een **volledig nieuw blok** van
+      hetzelfde soort: een gewoon blok, zonder barsten en nooit geplamuurd, dus weer helemaal sterk.
+      Ook 5 seconden en 4 stroom per tick, met hetzelfde soort scherm ("Pressing...", "Put powder in."),
+      dezelfde trechters en een comparator. Hij neemt alleen poeder aan, de Crusher alleen gebarsten
+      blokken. Terwijl hij werkt staat zijn perskop omlaag en hoor je heel zacht een zuiger; is een blok
+      klaar, dan hoor je het geluid van dat blok als je het neerzet (glas klinkt anders dan steen; de
+      Crusher laat nu ook het breekgeluid van het blok horen). Twee nieuwe tests: de Compactor zelf (en
+      wat beide machines wel en niet aannemen), en **de hele weg rond**: obsidiaan met barsten, twee
+      keer geplamuurd (nog 14 van de 20), weghakken, Crusher, Compactor, terugzetten: weer 20.
+      Screenshots: `-Ponly=repair` (beide machines in `r01`, en `r04_compactor_screen`).
 - [ ] **4. Showcase, screenshots en LEESMIJ**
 
 ---

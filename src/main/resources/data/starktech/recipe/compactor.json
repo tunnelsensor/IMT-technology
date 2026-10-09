@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
+  },
+  "pattern": [
+    "IAI",
+    "PCP",
+    "III"
+  ],
+  "result": {
+    "id": "starktech:compactor",
+    "count": 1
+  }
+}

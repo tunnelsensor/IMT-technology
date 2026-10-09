@@ -1889,15 +1889,15 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
-        // --- Barsten herstellen (hoofdstuk 11): de Crusher aan het werk naast een generator, zijn scherm
-        // met gebarsten stenen bakstenen erin en poeder eruit, en gebarsten blokken en poeder in je
-        // hotbar, in je hand en op de grond.
+        // --- Barsten herstellen (hoofdstuk 11): de Crusher en de Compactor aan het werk, elk naast een
+        // generator, hun schermen (gebarsten stenen bakstenen erin en poeder eruit; obsidiaanpoeder erin
+        // en obsidiaan eruit), en gebarsten blokken en poeder in je hotbar, in je hand en op de grond.
         if (want("repair")) {
             BlockPos r = REPAIR;
             t.onServer(0, VisualCheck::buildRepairCorner);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
-            t.stand(10, r.getX() + 2.5, r.getY(), r.getZ() + 3.5, 146, 17);
-            t.lookAt(5, new Vec3(r.getX() + 0.5, r.getY() + 0.4, r.getZ() + 0.6));
+            t.stand(10, r.getX() + 1.5, r.getY(), r.getZ() + 4.5, 180, 15);
+            t.lookAt(5, new Vec3(r.getX() + 1.5, r.getY() + 0.4, r.getZ() + 0.8));
             t.shot(40, "r01_crusher_working");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.onServer(0, player -> {
@@ -1907,9 +1907,16 @@ public final class VisualCheck {
             });
             t.shot(20, "r02_crusher_screen");
             t.close(5);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(r.east(2)) instanceof com.senne.starktech.repair.CrackMachineBlockEntity machine) {
+                    player.openMenu(machine, buf -> buf.writeVarInt(machine.kind().ordinal()));
+                }
+            });
+            t.shot(20, "r04_compactor_screen");
+            t.close(5);
             // Gebarsten obsidiaan in je hand, en op de grond een gebarsten stenen baksteen.
             t.step(0, () -> Minecraft.getInstance().player.getInventory().selected = 1);
-            t.lookAt(5, new Vec3(r.getX() + 2.5, r.getY() + 0.2, r.getZ() + 1.5));
+            t.lookAt(5, new Vec3(r.getX() + 1.5, r.getY() + 0.2, r.getZ() + 2.0));
             t.shot(20, "r03_cracked_in_hand");
         }
 
@@ -2030,13 +2037,14 @@ public final class VisualCheck {
         stickC4(level, w.offset(4, 3, 6), Direction.DOWN, 89);
     }
 
-    /** Waar de Crusher van hoofdstuk 11 staat (zie "repair"). */
+    /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */
     private static final BlockPos REPAIR = new BlockPos(140, -60, 128);
 
     /**
-     * Een Crusher (voorkant naar het zuiden) op een volle generator, met twaalf gebarsten stenen
-     * bakstenen erin en al drie poeders eruit; een gebarsten stenen baksteen op de grond; en in je
-     * hotbar gebarsten blokken en poeder van verschillende blokken, en Repair Paste.
+     * Een Crusher en een Compactor (voorkant naar het zuiden), elk tegen een volle generator: de Crusher
+     * met twaalf gebarsten stenen bakstenen erin en al drie poeders eruit, de Compactor met vijf
+     * obsidiaanpoeders erin en al twee blokken obsidiaan eruit. Een gebarsten stenen baksteen op de
+     * grond, en in je hotbar gebarsten blokken en poeder van verschillende blokken, en Repair Paste.
      */
     private static void buildRepairCorner(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -2055,8 +2063,20 @@ public final class VisualCheck {
             machine.setItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_OUT,
                     com.senne.starktech.repair.FromBlockItem.of(powder, Blocks.STONE_BRICKS, 3));
         }
+        BlockPos press = r.east(2);
+        level.setBlockAndUpdate(press, ModBlocks.COMPACTOR.get().defaultBlockState()
+                .setValue(com.senne.starktech.repair.CrackMachineBlock.FACING, Direction.SOUTH));
+        level.setBlockAndUpdate(press.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(press.east()) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(20_000);
+        }
+        if (level.getBlockEntity(press) instanceof com.senne.starktech.repair.CrackMachineBlockEntity machine) {
+            machine.setItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_IN,
+                    com.senne.starktech.repair.FromBlockItem.of(powder, Blocks.OBSIDIAN, 5));
+            machine.setItem(com.senne.starktech.repair.CrackMachineBlockEntity.SLOT_OUT, new net.minecraft.world.item.ItemStack(Blocks.OBSIDIAN, 2));
+        }
         net.minecraft.world.entity.item.ItemEntity drop = new net.minecraft.world.entity.item.ItemEntity(level,
-                r.getX() + 2.5, r.getY() + 0.1, r.getZ() + 1.5,
+                r.getX() + 1.5, r.getY() + 0.1, r.getZ() + 2.0,
                 com.senne.starktech.repair.FromBlockItem.of(cracked, Blocks.STONE_BRICKS, 1));
         drop.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
         drop.setPickUpDelay(32767);

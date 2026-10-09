@@ -207,6 +207,16 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
 
+    /** De Compactor (hoofdstuk 11): perst poeder tot een nieuw, sterk blok, op Stark-stroom. */
+    public static final DeferredBlock<com.senne.starktech.repair.CrackMachineBlock> COMPACTOR = BLOCKS.registerBlock(
+            "compactor", properties -> new com.senne.starktech.repair.CrackMachineBlock(
+                    com.senne.starktech.repair.CrackMachineBlock.Kind.COMPACTOR, properties),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Stark OS-desktop. */
     public static final DeferredBlock<com.senne.starktech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
             "security_camera", com.senne.starktech.security.CameraBlock::new,
