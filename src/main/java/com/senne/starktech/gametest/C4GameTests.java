@@ -5,6 +5,7 @@ import com.senne.starktech.c4.C4Blast;
 import com.senne.starktech.c4.C4Block;
 import com.senne.starktech.c4.C4BlockEntity;
 import com.senne.starktech.c4.C4Item;
+import com.senne.starktech.c4.Cracks;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModItems;
@@ -90,8 +91,8 @@ public final class C4GameTests {
         }
         helper.assertBlockPresent(Blocks.STONE, support.above().north());
         helper.assertBlockPresent(Blocks.STONE, support.west());
-        if (C4Blast.cracks(level, helper.absolutePos(support.west())) <= 0
-                || C4Blast.cracks(level, helper.absolutePos(support.above().north())) <= 0) {
+        if (Cracks.damage(level, helper.absolutePos(support.west())) <= 0
+                || Cracks.damage(level, helper.absolutePos(support.above().north())) <= 0) {
             throw new GameTestAssertException("De blokken die net niet braken, zouden barsten moeten hebben");
         }
         helper.succeed();
@@ -110,7 +111,7 @@ public final class C4GameTests {
         for (int i = 1; i <= 2; i++) {
             boom(helper, stick(helper, ModBlocks.TIMED_C4.get(), support, Direction.EAST));
             helper.assertBlockPresent(Blocks.OBSIDIAN, support);
-            float now = C4Blast.cracks(level, helper.absolutePos(support));
+            float now = Cracks.damage(level, helper.absolutePos(support));
             if (now <= before) {
                 throw new GameTestAssertException("Na C4 nummer " + i + " zouden de barsten moeten groeien: " + now);
             }

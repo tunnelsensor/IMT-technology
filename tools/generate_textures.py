@@ -898,6 +898,38 @@ def remote_c4_items():
     save(det, "item/detonator.png")
 
 
+def repair_paste_item():
+    """
+    Repair Paste (hoofdstuk 11): een open blikje met een bergje grijsbeige plamuurpasta, en een
+    plamuurmes met een houten steel dat erin steekt.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    tin = (150, 156, 166, 255)
+    tin_dark = (92, 98, 108, 255)
+    tin_light = (200, 206, 214, 255)
+    paste = (204, 198, 184, 255)
+    paste_dark = (170, 164, 150, 255)
+    paste_light = (232, 228, 216, 255)
+    # Het blikje, met een licht randje links en een etiket met een blauwe streep (de Stark-kleur).
+    d.rectangle([2, 9, 12, 15], fill=tin, outline=tin_dark)
+    d.line([3, 10, 3, 14], fill=tin_light)
+    d.rectangle([5, 11, 10, 13], fill=(228, 230, 236, 255))
+    d.line([5, 12, 10, 12], fill=CYAN_DIM)
+    # De pasta: een bergje dat boven de rand uitkomt.
+    d.ellipse([1, 5, 13, 11], fill=paste, outline=paste_dark)
+    d.ellipse([4, 3, 10, 8], fill=paste, outline=paste_dark)
+    d.line([5, 7, 9, 7], fill=paste)
+    d.line([2, 9, 12, 9], fill=paste_dark)
+    px(im, [(5, 4), (6, 4), (4, 5), (3, 7), (4, 7)], paste_light)
+    # Het plamuurmes: het blad in de pasta, de steel schuin naar rechtsboven.
+    d.polygon([(7, 8), (10, 5), (11, 6), (8, 9)], fill=(178, 184, 194, 255), outline=(120, 126, 136, 255))
+    d.line([11, 5, 14, 2], fill=(140, 86, 48, 255))
+    d.line([12, 5, 15, 2], fill=(98, 58, 32, 255))
+    px(im, [(14, 1)], (140, 86, 48, 255))
+    save(im, "item/repair_paste.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -2698,6 +2730,7 @@ if __name__ == "__main__":
     zone_marker_item()
     c4_textures()
     remote_c4_items()
+    repair_paste_item()
     relay_textures()
     shield_textures()
     rayshield_walls()

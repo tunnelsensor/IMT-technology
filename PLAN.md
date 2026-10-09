@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 172 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 177 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 83 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1544,8 +1544,8 @@ Jouw antwoorden:
 Mijn invulling (zeg het als je iets anders wil):
 
 - **Repair Paste** (twee klei, zand en grind = 4 pasta): rechtsklik op een blok met barsten. De
-  barsten zijn weg, het blok is 15% zwakker (dat zie je niet, maar het staat in de wereld). Mag
-  iedereen (helpen is geen inbreken). Geen barsten: dan gebeurt er niets.
+  barsten zijn weg, het blok is 15% zwakker (dat zie je niet, maar het staat in de wereld). In een
+  beveiligde zone alleen wie er mag bouwen (zie stap 1). Geen barsten: dan gebeurt er niets.
 - **Een gebarsten (of geplamuurd) blok weghakken** geeft een **Cracked ...** (bijvoorbeeld "Cracked
   Stone Bricks"), niet het gewone blok, ook bij blokken die normaal iets anders geven (steen geeft dan
   gebarsten steen, geen keien). Wat C4 of TNT kapotmaakt, valt eruit zoals altijd.
@@ -1556,7 +1556,23 @@ Mijn invulling (zeg het als je iets anders wil):
 
 De stappen, één per commit:
 
-- [ ] **1. Barsten blijven, en plamuren**
+- [x] **1. Barsten blijven, en plamuren**
+      Barsten genezen niet meer vanzelf: ze staan in de wereld (`c4/CrackData`: per blok de
+      breekpunten, welk blok het was en hoe vaak het geplamuurd is) en blijven ook na een herstart. Je
+      ziet ze zoals altijd (zoals bij hakken), om de tien seconden opnieuw gestuurd, zodat je ze ook
+      ziet als je later aankomt. Komt er op die plek een ander blok (gehakt, opgeblazen, weggeduwd,
+      `/setblock`), dan vergeet de wereld het meteen: daarvoor is er een tweede mixin
+      (`mixin/LevelChunkMixin`), want NeoForge heeft geen event dat bij elke blokverandering komt. Het
+      rekenwerk staat nu in `c4/Cracks`. **Repair Paste** (twee klei, zand en grind = 4): rechtsklik op
+      een blok met barsten. De barsten zijn weg (een smeergeluid, wat pasta die eraf spat, en onderaan
+      "Cracks filled. This block now has 85% of its strength."), maar het blok is 15% zwakker: obsidiaan
+      20, 17, 14... nooit minder dan 40% (`patchWeaker` en `patchWeakest` in de config onder `[c4]`).
+      Zonder barsten zegt hij "No cracks to fill here." en gaat er niets op. **Mijn keuze, anders dan
+      hierboven eerst gepland**: in een beveiligde zone mag alleen wie er mag bouwen plamuren. Anders
+      kon een inbreker een muur met wat TNT en pasta steeds zwakker maken (TNT geeft kleine barsten,
+      plamuren haalt er telkens 15% af), tot één C4 genoeg is. Vijf nieuwe tests
+      (`gametest/CrackGameTests.java`): barsten blijven en worden bewaard, plamuren en hoeveel zwakker,
+      zonder barsten gebeurt er niets, een nieuw blok is weer sterk, en plamuren in een zone.
 - [ ] **2. Gebarsten blokken en de Crusher**
 - [ ] **3. De Compactor**
 - [ ] **4. Showcase, screenshots en LEESMIJ**

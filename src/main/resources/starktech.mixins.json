@@ -4,7 +4,8 @@
   "package": "com.senne.starktech.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "FireBlockMixin"
+    "FireBlockMixin",
+    "LevelChunkMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -748,7 +748,7 @@ public final class ZoneGameTests {
             if (i == 1) {
                 helper.assertBlockNotPresent(Blocks.OAK_PLANKS, planks);
                 helper.assertBlockPresent(Blocks.STONE, stone);
-                if (com.senne.starktech.c4.C4Blast.cracks(level, helper.absolutePos(stone)) <= 0) {
+                if (com.senne.starktech.c4.Cracks.damage(level, helper.absolutePos(stone)) <= 0) {
                     throw new GameTestAssertException("Na één TNT zou de steen barsten moeten hebben");
                 }
             } else if (i == 2) {

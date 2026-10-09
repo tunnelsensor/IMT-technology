@@ -193,6 +193,9 @@ public final class ModItems {
     /** De detonator (hoofdstuk 10): rechtsklik = al zijn remote C4 binnen bereik gaan af. */
     public static final DeferredItem<com.senne.starktech.c4.DetonatorItem> DETONATOR = ITEMS.registerItem("detonator",
             com.senne.starktech.c4.DetonatorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+    /** Repair Paste (hoofdstuk 11): rechtsklik op een blok met barsten, en ze zijn opgevuld. */
+    public static final DeferredItem<com.senne.starktech.c4.RepairPasteItem> REPAIR_PASTE = ITEMS.registerItem(
+            "repair_paste", com.senne.starktech.c4.RepairPasteItem::new, new Item.Properties());
 
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(

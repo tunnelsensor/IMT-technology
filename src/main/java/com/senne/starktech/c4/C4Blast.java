@@ -1,22 +1,15 @@
 package com.senne.starktech.c4;
 
 import com.senne.starktech.registry.ModBlocks;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * De klap van C4 (hoofdstuk 10, jouw keuze: "sterke muren kosten meer C4").
@@ -25,19 +18,13 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * {@link C4Balance#RADIUS} krijgt breekpunten: {@link C4Balance#POWER} vlak bij de lading, aflopend tot
  * 0 aan de rand. Heeft een blok genoeg (zie {@link #strength}), dan breekt het en valt het eruit zoals
  * bij TNT (een kist ook, met zijn inhoud). Zo niet, dan krijgt het barsten die je ziet, en de volgende
- * C4 telt erbij op. Barsten genezen na {@link C4Balance#CRACK_HEAL_TICKS} (en als de server opnieuw
- * start: ze staan niet in de wereld).
+ * C4 telt erbij op. Die barsten blijven tot je ze herstelt (zie {@link Cracks}, hoofdstuk 11).
  *
  * Een zone houdt C4 niet tegen: dat is juist de bedoeling (zie security/zone/Zones). Ander C4 in de
  * klap gaat ook af (een kettingreactie), TNT wordt aangestoken. Wezens krijgen een klap zoals van TNT.
  */
 public final class C4Blast {
     private C4Blast() {}
-
-    /** De barsten in één blok: hoeveel breekpunten het al kreeg, wanneer, en welk blok het toen was. */
-    private record Crack(float damage, long time, Block block) {}
-
-    private static final Map<ResourceKey<Level>, Map<BlockPos, Crack>> CRACKS = new HashMap<>();
 
     /** Zo ver van het midden van het blok ligt het midden van de klap: op de kant waar de lading plakt. */
     private static final double ON_FACE = 0.45;
@@ -74,8 +61,6 @@ public final class C4Blast {
     public static Breach breach(ServerLevel level, Vec3 centre, float power, float radius,
                                 java.util.function.Predicate<BlockPos> affects,
                                 com.senne.starktech.security.zone.ZoneData.@org.jetbrains.annotations.Nullable Zone zone) {
-        Map<BlockPos, Crack> cracks = CRACKS.computeIfAbsent(level.dimension(), key -> new HashMap<>());
-        long now = level.getGameTime();
         int reach = Mth.ceil(radius);
         int broken = 0;
         int inZone = 0;
@@ -104,20 +89,16 @@ public final class C4Blast {
             if (hp < 0) {
                 continue; // onbreekbaar (bedrock, barrières)
             }
-            float damage = (float) (power * (1.0 - distance / radius));
-            Crack old = cracks.get(here);
-            float total = damage + (old != null && old.block() == target.getBlock() ? old.damage() : 0);
+            float total = (float) (power * (1.0 - distance / radius)) + Cracks.damage(level, here);
             if (total >= hp) {
-                cracks.remove(here);
-                level.destroyBlockProgress(crackId(here), here, -1);
                 if (zone != null && zone.contains(here)) {
                     inZone++;
                 }
+                // Zijn barsten vergeten we vanzelf (zie Cracks.blockChanged): er staat straks iets anders.
                 breakBlock(level, here, target);
                 broken++;
             } else {
-                cracks.put(here, new Crack(total, now, target.getBlock()));
-                showCrack(level, here, total / hp);
+                Cracks.crack(level, here, target.getBlock(), total, hp);
             }
         }
         return new Breach(broken, inZone);
@@ -138,9 +119,16 @@ public final class C4Blast {
     /**
      * Hoeveel breekpunten dit blok kan hebben voor het breekt (-1 = nooit). Dat hangt af van hoe goed
      * het in Minecraft tegen explosies kan: steen en baksteen zijn "gewoon", obsidiaan "sterk". De
-     * beveiligingskern is het sterkst (hacken is de andere weg naar binnen).
+     * beveiligingskern is het sterkst (hacken is de andere weg naar binnen). Is het blok geplamuurd,
+     * dan is het zwakker (hoofdstuk 11: elke keer 15%, zie {@link Cracks#factor}).
      */
     public static float strength(ServerLevel level, BlockPos pos, BlockState state) {
+        float strength = baseStrength(level, pos, state);
+        return strength < 0 ? strength : strength * Cracks.factor(Cracks.patches(level, pos));
+    }
+
+    /** Zoals {@link #strength}, maar voor een nieuw blok (nooit geplamuurd). */
+    public static float baseStrength(ServerLevel level, BlockPos pos, BlockState state) {
         if (state.is(ModBlocks.SECURITY_CORE.get())) {
             return C4Balance.CORE;
         }
@@ -152,63 +140,6 @@ public final class C4Blast {
             return C4Balance.STRONG;
         }
         return resistance >= C4Balance.NORMAL_RESISTANCE ? C4Balance.NORMAL : C4Balance.WEAK;
-    }
-
-    /** Hoeveel breekpunten dit blok nu al heeft (0 = geen barsten). */
-    public static float cracks(ServerLevel level, BlockPos pos) {
-        Map<BlockPos, Crack> cracks = CRACKS.get(level.dimension());
-        Crack crack = cracks == null ? null : cracks.get(pos);
-        return crack == null || crack.block() != level.getBlockState(pos).getBlock() ? 0 : crack.damage();
-    }
-
-    // ================================================================ De barsten
-
-    /**
-     * Een eigen nummer per blok voor de barsten (Minecraft onthoudt per nummer maar één blok). Negatief,
-     * zodat het nooit het nummer van een speler of wezen is.
-     */
-    private static int crackId(BlockPos pos) {
-        return -1 - (Long.hashCode(pos.asLong()) & 0x3FFFFFFF);
-    }
-
-    /** Barsten laten zien, van 0 (net een beetje) tot 9 (bijna kapot). */
-    private static void showCrack(ServerLevel level, BlockPos pos, float fraction) {
-        level.destroyBlockProgress(crackId(pos), pos, Mth.clamp((int) (fraction * 10), 0, 9));
-    }
-
-    /**
-     * Om de seconde: barsten die genezen zijn (of in een blok dat er niet meer is) weghalen, en om de
-     * tien seconden de rest opnieuw sturen (anders laat je spel ze na twintig seconden vallen).
-     */
-    public static void onServerTick(ServerTickEvent.Post event) {
-        int tick = event.getServer().getTickCount();
-        if (tick % 20 != 0 || CRACKS.isEmpty()) {
-            return;
-        }
-        for (Map.Entry<ResourceKey<Level>, Map<BlockPos, Crack>> perLevel : CRACKS.entrySet()) {
-            ServerLevel level = event.getServer().getLevel(perLevel.getKey());
-            if (level == null) {
-                continue;
-            }
-            long now = level.getGameTime();
-            for (Iterator<Map.Entry<BlockPos, Crack>> it = perLevel.getValue().entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<BlockPos, Crack> entry = it.next();
-                BlockPos pos = entry.getKey();
-                Crack crack = entry.getValue();
-                boolean loaded = level.isLoaded(pos);
-                if (now - crack.time() > C4Balance.CRACK_HEAL_TICKS
-                        || loaded && level.getBlockState(pos).getBlock() != crack.block()) {
-                    it.remove();
-                    level.destroyBlockProgress(crackId(pos), pos, -1);
-                } else if (loaded && tick % 200 == 0) {
-                    showCrack(level, pos, crack.damage() / strength(level, pos, level.getBlockState(pos)));
-                }
-            }
-        }
-    }
-
-    public static void onServerStopped(ServerStoppedEvent event) {
-        CRACKS.clear();
     }
 
     /** De kant waar een lading van af wijst, als drie getallen (zie C4Block.outward). */

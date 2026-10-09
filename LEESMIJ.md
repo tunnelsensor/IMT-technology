@@ -573,8 +573,12 @@ anders kan een inbreker ze van buitenaf kapotmaken. Wie je kern hackt, krijgt oo
   je hand zie je je ladingen als rode bordjes.
 - **Sterke muren kosten meer C4**: hout, glas en aarde vliegen er meteen uit, één C4 maakt een gat
   van drie hoog in een stenen muur, obsidiaan breekt pas na drie C4 op dezelfde plek, de
-  beveiligingskern na zes. Wat niet breekt krijgt **barsten** (de volgende klap telt erbij op; ze
-  genezen na 10 minuten). Op obsidiaan zie je die barsten bijna niet. Andere C4 in de klap gaat ook af.
+  beveiligingskern na zes. Wat niet breekt krijgt **barsten** (de volgende klap telt erbij op). Op
+  obsidiaan zie je die barsten bijna niet. Andere C4 in de klap gaat ook af.
+- **Barsten herstellen**: barsten genezen niet vanzelf, ook niet na een herstart. Vul ze op met
+  **Repair Paste** (twee klei, zand en grind = 4 pasta): rechtsklik op het blok, en de barsten zijn
+  weg. Maar het blok is daarna wel 15% zwakker, elke keer opnieuw (nooit minder dan 40%). In de zone
+  van een ander kan dat niet. Een nieuw blok op die plek is weer helemaal sterk.
 - **Ontmantelen**: alleen met een **schaar** (rechtsklik): de C4 valt eruit, en jij hebt hem. Met je
   hand krijg je hem er niet af.
 - **Alarm**: plakt iemand C4 op jouw zone, dan zegt E.D.I.T.H. waar (niet wie), en jij en je vrienden

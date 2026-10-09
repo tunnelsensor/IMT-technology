@@ -10,7 +10,7 @@ import com.senne.starktech.edith.Tunable;
  * 0 op {@link #RADIUS} blokken. Elk blok kan een aantal breekpunten hebben voor het breekt: een zwak
  * blok (hout, glas, aarde...) {@link #WEAK}, een gewoon blok (steen, baksteen...) {@link #NORMAL}, een
  * sterk blok (obsidiaan...) {@link #STRONG}, en de beveiligingskern {@link #CORE}. Wat niet breekt,
- * krijgt barsten: de volgende C4 telt erbij op.
+ * krijgt barsten: de volgende C4 telt erbij op. Die barsten blijven tot je ze herstelt (hoofdstuk 11).
  *
  * Zo maakt één C4 tegen een stenen muur van één dik een gat waar je door kunt (het blok erachter en
  * de vier ernaast), en heb je voor obsidiaan er drie nodig.
@@ -37,10 +37,16 @@ public final class C4Balance {
     public static final float STRONG_RESISTANCE = 100.0f;
     @Tunable(section = "c4", comment = "How hard a C4 blast hits players and mobs (TNT is 4)")
     public static float ENTITY_POWER = 4.0f;
-    @Tunable(section = "c4", comment = "How long the cracks of a C4 blast stay in a block (ticks; 12000 = 10 minutes)")
-    public static int CRACK_HEAL_TICKS = 12_000;
     /** Andere C4 in de klap gaat zoveel ticks later ook af (een kettingreactie). */
     public static final int CHAIN_DELAY = 3;
+
+    // ---------------------------------------------------------------- Barsten herstellen (hoofdstuk 11)
+    // Barsten genezen niet vanzelf (jouw keuze, 9 oktober): ze blijven tot je ze opvult met Repair Paste
+    // of het blok vervangt. Opvullen maakt het blok elke keer wat zwakker.
+    @Tunable(section = "c4", comment = "How much weaker a block gets each time its cracks are filled with Repair Paste (0.15 = 15%)")
+    public static float PATCH_WEAKER = 0.15f;
+    @Tunable(section = "c4", comment = "Filling cracks never makes a block weaker than this (0.4 = 40% of its normal strength)")
+    public static float PATCH_WEAKEST = 0.40f;
 
     // ---------------------------------------------------------------- TNT en de satelliet in een zone
     // Jouw wens (9 oktober): "zorg dat de satelliet en TNT er ook door kunnen, TNT doet gewoon heel

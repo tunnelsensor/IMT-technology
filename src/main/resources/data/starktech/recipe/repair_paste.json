@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:clay_ball"
+    },
+    {
+      "item": "minecraft:clay_ball"
+    },
+    {
+      "tag": "c:sands"
+    },
+    {
+      "tag": "c:gravels"
+    }
+  ],
+  "result": {
+    "id": "starktech:repair_paste",
+    "count": 4
+  }
+}
