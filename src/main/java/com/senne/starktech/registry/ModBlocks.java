@@ -317,8 +317,9 @@ public final class ModBlocks {
                     .lightLevel(state -> 10));
 
     /**
-     * De Arc Lamp (9 oktober): op Stark-stroom, lichtniveau 100. Het blok zelf geeft 15 als hij brandt; de
-     * rest van zijn licht (tot 100 blokken ver) regelt light/ArcLampLight.
+     * De Arc Lamp (9 oktober): op Stark-stroom, lichtniveau tot 100. Het blok zelf geeft als hij brandt zijn
+     * lichtniveau (hooguit 15, zie ArcLampBlock.LIGHT); de rest van zijn licht (tot 100 blokken ver) regelt
+     * light/ArcLampLight.
      */
     public static final DeferredBlock<com.senne.starktech.light.ArcLampBlock> ARC_LAMP = BLOCKS.registerBlock(
             "arc_lamp", com.senne.starktech.light.ArcLampBlock::new,
@@ -327,7 +328,8 @@ public final class ModBlocks {
                     .strength(2.5f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
-                    .lightLevel(state -> state.getValue(com.senne.starktech.light.ArcLampBlock.LIT) ? 15 : 0));
+                    .lightLevel(state -> state.getValue(com.senne.starktech.light.ArcLampBlock.LIT)
+                            ? state.getValue(com.senne.starktech.light.ArcLampBlock.LIGHT) : 0));
 
     /** De lichtschakelaar (9 oktober): zet hem op een kabel; aan = de stroom gaat erdoor, uit = niet. */
     public static final DeferredBlock<com.senne.starktech.light.LightSwitchBlock> LIGHT_SWITCH = BLOCKS.registerBlock(

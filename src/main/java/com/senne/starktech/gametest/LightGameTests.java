@@ -4,8 +4,11 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.energy.StarkCables;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.light.ArcLampBlock;
+import com.senne.starktech.light.ArcLampBlockEntity;
 import com.senne.starktech.light.ArcLampLight;
+import com.senne.starktech.light.ArcLamps;
 import com.senne.starktech.light.LightSwitchBlock;
+import com.senne.starktech.network.LampActionPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.station.ChargerBlockEntity;
 import net.minecraft.core.BlockPos;
@@ -13,6 +16,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
@@ -178,6 +182,83 @@ public final class LightGameTests {
                     for (BlockPos centre : new BlockPos[] {inGlass, inStone, laterInStone}) {
                         clearBox(helper, centre);
                     }
+                    for (int x = first.x; x <= last.x; x++) {
+                        level.setChunkForced(x, first.z, false);
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * De helderheid instellen (10 oktober: "zorg dat je de brightness kunt instellen"). Op lichtniveau 40 is
+     * het tot 25 blokken vol licht (40 min 15), op 30 blokken 10, op 40 donker. Op niveau 10 is het een
+     * gewone, zwakke lamp: het blok geeft zelf 10, op 5 blokken is het 5, en er zijn geen onzichtbare
+     * lichtbronnen meer. Het scherm (via de server) werkt alleen als je dichtbij staat; de gloed blijft
+     * tussen 0 en 100%, en een lamp op 50 gebruikt de helft van de stroom.
+     *
+     * Een eigen batch: dit licht reikt over de andere tests heen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 900, batch = "arc_lamp_dim")
+    @SuppressWarnings("removal")
+    public static void arc_lamp_brightness_can_be_set(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos lamp = new BlockPos(6, 2, 12);
+        BlockPos generator = lamp.west();
+        ChunkPos first = new ChunkPos(helper.absolutePos(lamp));
+        ChunkPos last = new ChunkPos(helper.absolutePos(lamp.east(60)));
+        for (int x = first.x; x <= last.x; x++) {
+            level.setChunkForced(x, first.z, true);
+        }
+        for (int dx = 1; dx <= 55; dx++) {
+            level.setBlockAndUpdate(helper.absolutePos(lamp.east(dx)), Blocks.AIR.defaultBlockState());
+        }
+        helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(20_000);
+        helper.setBlock(lamp, ModBlocks.ARC_LAMP.get());
+        ArcLampBlockEntity entity = (ArcLampBlockEntity) helper.getBlockEntity(lamp);
+        check(entity.brightness() == 100, "Een nieuwe lamp zou op lichtniveau 100 moeten staan, niet " + entity.brightness());
+
+        // Via het scherm: alleen wie dichtbij staat.
+        ServerPlayer far = helper.makeMockServerPlayerInLevel();
+        far.moveTo(helper.absolutePos(lamp).getX() + 30.5, helper.absolutePos(lamp).getY(), helper.absolutePos(lamp).getZ() + 0.5);
+        ArcLamps.handleAction(far, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.BRIGHTNESS, 70));
+        check(entity.brightness() == 100, "Iemand op 30 blokken afstand zette de lamp op " + entity.brightness());
+        ServerPlayer near = helper.makeMockServerPlayerInLevel();
+        near.moveTo(helper.absolutePos(lamp).getX() + 2.5, helper.absolutePos(lamp).getY(), helper.absolutePos(lamp).getZ() + 0.5);
+        ArcLamps.handleAction(near, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.BRIGHTNESS, 40));
+        check(entity.brightness() == 40, "Het scherm zette de lamp niet op 40, maar op " + entity.brightness());
+        ArcLamps.handleAction(near, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.GLOW, 150));
+        check(entity.glow() == 100, "De gloed kan niet boven 100%: " + entity.glow());
+        ArcLamps.handleAction(near, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.GLOW, -5));
+        check(entity.glow() == 0, "De gloed kan niet onder 0%: " + entity.glow());
+        check(Math.abs(ArcLampBlockEntity.powerPerTick(50) - ArcLampBlockEntity.powerPerTick(100) / 2) < 1.0E-9,
+                "Een lamp op 50 zou de helft moeten gebruiken van een lamp op 100");
+
+        helper.startSequence()
+                .thenWaitUntil(slowly(() -> {
+                    check(lit(helper, lamp), "De lamp brandt niet, terwijl hij tegen een volle generator staat");
+                    check(light(helper, lamp.east(20)) == 15, "Op niveau 40 zou het op 20 blokken vol licht moeten zijn, niet "
+                            + light(helper, lamp.east(20)));
+                    check(light(helper, lamp.east(30)) == 10, "Op niveau 40 zou het op 30 blokken 10 moeten zijn, niet "
+                            + light(helper, lamp.east(30)));
+                    check(light(helper, lamp.east(40)) == 0, "Op niveau 40 zou het op 40 blokken donker moeten zijn, niet "
+                            + light(helper, lamp.east(40)));
+                    check(ArcLampLight.settled(level), "De lamp is nog bezig");
+                }))
+                .thenExecute(() -> entity.setBrightness(10))
+                .thenWaitUntil(slowly(() -> {
+                    check(helper.getBlockState(lamp).getValue(ArcLampBlock.LIGHT) == 10,
+                            "Op niveau 10 zou het blok zelf 10 licht moeten geven");
+                    check(light(helper, lamp.east(5)) == 5, "Op niveau 10 zou het op 5 blokken 5 moeten zijn, niet "
+                            + light(helper, lamp.east(5)));
+                    check(light(helper, lamp.east(20)) == 0, "Op niveau 10 zou het op 20 blokken donker moeten zijn, niet "
+                            + light(helper, lamp.east(20)));
+                    check(!ArcLampLight.isLit(level, helper.absolutePos(lamp.east(5))),
+                            "Een lamp tot 15 heeft geen onzichtbare lichtbronnen nodig");
+                    check(ArcLampLight.settled(level), "De lamp is nog bezig");
+                }))
+                .thenExecute(() -> {
+                    helper.setBlock(lamp, Blocks.AIR);
                     for (int x = first.x; x <= last.x; x++) {
                         level.setChunkForced(x, first.z, false);
                     }

@@ -3,31 +3,56 @@ package com.senne.starktech.light;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * De binnenkant van een Arc Lamp: elke tick stroom halen, en aan of uit.
+ * De binnenkant van een Arc Lamp: zijn instellingen, en elke tick stroom halen en aan of uit.
  *
- * Stroom = aan, geen stroom = uit (jouw wens). Twee kleine regels zodat hij niet knippert:
+ * <h2>Instellingen (10 oktober: "zorg dat je de brightness kunt instellen")</h2>
  * <ul>
- *   <li>Brandt hij, dan blijft hij aan zolang het net elke tick {@link LightBalance#ARC_LAMP_POWER} heeft.</li>
+ *   <li><b>Helderheid</b>: zijn lichtniveau, van 1 tot het maximum uit de config (100). Tot 15 is het een
+ *       gewone lamp; daarboven reikt zijn licht verder (zie ArcLampLight). Een nieuwe lamp staat op het
+ *       maximum.</li>
+ *   <li><b>Gloed</b>: hoe fel de stralenkrans om de lamp is, van 0% (geen) tot 100%. Alleen voor het oog.</li>
+ * </ul>
+ * Je stelt ze in met het scherm van de lamp (zie ArcLamps en ArcLampScreen). De lamp onthoudt ze, en je
+ * eigen spel krijgt ze mee (voor het scherm en de gloed).
+ *
+ * <h2>Stroom</h2>
+ * Stroom = aan, geen stroom = uit (jouw wens). Een lamp op niveau 100 gebruikt
+ * {@link LightBalance#ARC_LAMP_POWER} per tick; zachter gebruikt naar verhouding minder (op 50 de helft).
+ * Omdat dat geen hele getallen hoeven te zijn, houden we bij wat hij nog "schuldig" is en betalen we
+ * telkens de hele stukjes. Twee kleine regels zodat hij niet knippert:
+ * <ul>
+ *   <li>Brandt hij, dan blijft hij aan zolang het net elke tick genoeg heeft.</li>
  *   <li>Is hij uit, dan gaat hij pas aan als het net stroom heeft voor even branden
  *       ({@link LightBalance#ARC_LAMP_START_TICKS} ticks). Anders zou hij aan een zwakke generator elke
  *       tick aan en uit gaan.</li>
  * </ul>
  * Zet je een lichtschakelaar uit, dan ziet hij de volgende tick geen generator meer, en gaat hij meteen uit.
- *
- * Er wordt niets bewaard: aan of uit staat in het blok zelf ({@link ArcLampBlock#LIT}).
  */
 public class ArcLampBlockEntity extends BlockEntity {
-    /** Heeft deze lamp zich na het laden al gemeld bij ArcLampLight? */
-    private boolean announced;
+    /** De gloed, in procenten. */
+    public static final int MAX_GLOW = 100;
+
+    /** Zijn lichtniveau (1 tot het maximum uit de config). */
+    private int brightness = LightBalance.maxLevel();
+    /** Hoe fel de gloed om hem heen is (0 tot 100%). */
+    private int glow = MAX_GLOW;
+    /** Stroom die hij nog moet betalen (minder dan 1; zie {@link #powerPerTick}). */
+    private double owed;
     /** In je eigen spel: wat we ArcLampLight het laatst vertelden. */
     private boolean clientLit;
 
@@ -35,26 +60,77 @@ public class ArcLampBlockEntity extends BlockEntity {
         super(ModBlockEntities.ARC_LAMP.get(), pos, state);
     }
 
+    // ================================================================ Instellingen
+
+    /** Zijn lichtniveau (nooit meer dan de config nu toestaat). */
+    public int brightness() {
+        return Mth.clamp(brightness, 1, LightBalance.maxLevel());
+    }
+
+    public int glow() {
+        return glow;
+    }
+
+    /** Een ander lichtniveau (uit het scherm): 1 tot het maximum. */
+    public void setBrightness(int value) {
+        int clamped = Mth.clamp(value, 1, LightBalance.maxLevel());
+        if (clamped != brightness) {
+            brightness = clamped;
+            changed();
+        }
+    }
+
+    /** Een andere gloed (uit het scherm): 0 tot 100%. */
+    public void setGlow(int value) {
+        int clamped = Mth.clamp(value, 0, MAX_GLOW);
+        if (clamped != glow) {
+            glow = clamped;
+            changed();
+        }
+    }
+
+    /** Hoeveel stroom per tick een lamp op dit lichtniveau gebruikt (2 op niveau 100, 1 op 50). */
+    public static double powerPerTick(int brightness) {
+        return LightBalance.ARC_LAMP_POWER * brightness / 100.0;
+    }
+
+    /** Opslaan, en je eigen spel (en dat van iedereen die de lamp ziet) het nieuwe laten weten. */
+    private void changed() {
+        setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+    }
+
     // ================================================================ Server
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
         boolean lit = state.getValue(ArcLampBlock.LIT);
-        int cost = LightBalance.ARC_LAMP_POWER;
-        int needed = Math.max(1, lit ? cost : cost * LightBalance.ARC_LAMP_START_TICKS);
-        boolean on = StarkGrid.available(level, pos) >= needed;
-        if (on && cost > 0) {
-            StarkGrid.draw(level, pos, cost);
+        int lightLevel = brightness();
+        double perTick = powerPerTick(lightLevel);
+        int keepOn = Math.max(1, (int) Math.ceil(perTick));
+        int start = Math.max(1, (int) Math.ceil(perTick * LightBalance.ARC_LAMP_START_TICKS));
+        boolean on = StarkGrid.available(level, pos) >= (lit ? keepOn : start);
+        if (on) {
+            owed += perTick;
+            int pay = (int) owed;
+            if (pay > 0) {
+                StarkGrid.draw(level, pos, pay);
+                owed -= pay;
+            }
         }
-        if (on != lit) {
-            level.setBlock(pos, state.setValue(ArcLampBlock.LIT, on), Block.UPDATE_ALL);
-            // Het klikje van een koperen lamp, iets lager: deze is groter.
-            level.playSound(null, pos, on ? SoundEvents.COPPER_BULB_TURN_ON : SoundEvents.COPPER_BULB_TURN_OFF,
-                    SoundSource.BLOCKS, 0.8f, 0.7f);
+        // Het blok zelf: aan of uit, en zijn eigen licht (zijn lichtniveau, hooguit 15).
+        BlockState next = state.setValue(ArcLampBlock.LIT, on).setValue(ArcLampBlock.LIGHT, Math.min(15, lightLevel));
+        if (next != state) {
+            level.setBlock(pos, next, Block.UPDATE_ALL);
+            if (on != lit) {
+                // Het klikje van een koperen lamp, iets lager: deze is groter.
+                level.playSound(null, pos, on ? SoundEvents.COPPER_BULB_TURN_ON : SoundEvents.COPPER_BULB_TURN_OFF,
+                        SoundSource.BLOCKS, 0.8f, 0.7f);
+            }
         }
-        if (on != lit || !announced) {
-            announced = true;
-            ArcLampLight.setOn(level, pos, on);
-        }
+        // Zijn licht verder weg (boven de 15): ArcLampLight. Doet alleen iets als er iets veranderde.
+        ArcLampLight.update(level, pos, on, ArcLampLight.reachOf(lightLevel));
     }
 
     // ================================================================ Je eigen spel
@@ -89,5 +165,37 @@ public class ArcLampBlockEntity extends BlockEntity {
             clientLit = false;
             ArcLampLight.clientLamp(level, worldPosition, false);
         }
+    }
+
+    // ================================================================ Bewaren en doorsturen
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.putInt("Brightness", brightness);
+        tag.putInt("Glow", glow);
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        // Een lamp van vóór 10 oktober heeft dit nog niet: die blijft op het maximum, met volle gloed.
+        if (tag.contains("Brightness")) {
+            brightness = tag.getInt("Brightness");
+        }
+        if (tag.contains("Glow")) {
+            glow = Mth.clamp(tag.getInt("Glow"), 0, MAX_GLOW);
+        }
+    }
+
+    /** Wat je eigen spel van de lamp krijgt: zijn helderheid en gloed (voor het scherm en de gloed). */
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 }

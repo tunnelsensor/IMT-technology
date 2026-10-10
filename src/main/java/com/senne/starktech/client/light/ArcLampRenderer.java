@@ -49,9 +49,13 @@ public class ArcLampRenderer implements BlockEntityRenderer<ArcLampBlockEntity> 
     @Override
     public void render(ArcLampBlockEntity lamp, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int light, int overlay) {
-        if (!lamp.getBlockState().getValue(ArcLampBlock.LIT) || lamp.getLevel() == null) {
+        if (!lamp.getBlockState().getValue(ArcLampBlock.LIT) || lamp.getLevel() == null || lamp.glow() <= 0) {
             return;
         }
+        // De instellingen van de lamp (10 oktober): "Glow" maakt de gloed feller of zachter (0% = geen), en
+        // een lamp die je zachter zet, krijgt ook een kleinere gloed (op 100 de volle maat, op 15 de helft).
+        float strength = lamp.glow() / (float) ArcLampBlockEntity.MAX_GLOW;
+        float bright = Mth.clamp(lamp.brightness() / 100.0f, 0.0f, 1.28f);
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);
         // Draai mee met de camera, en schuif een stukje naar je toe: dan zit de gloed vóór het blok.
@@ -59,19 +63,19 @@ public class ArcLampRenderer implements BlockEntityRenderer<ArcLampBlockEntity> 
         pose.translate(0.0, 0.0, 0.75);
         // Heel zacht "ademen", zoals een echte booglamp een beetje leeft.
         float time = lamp.getLevel().getGameTime() + partialTick;
-        float size = 1.0f + 0.04f * Mth.sin(time * 0.21f) + 0.02f * Mth.sin(time * 0.53f);
+        float size = (0.45f + 0.55f * bright) * (1.0f + 0.04f * Mth.sin(time * 0.21f) + 0.02f * Mth.sin(time * 0.53f));
         Matrix4f m = pose.last().pose();
         VertexConsumer vc = buffers.getBuffer(GLOW);
-        ring(m, vc, 0.0f, 0.6f * size, 0.55f, 0.32f);
-        ring(m, vc, 0.6f * size, 1.5f * size, 0.32f, 0.09f);
-        ring(m, vc, 1.5f * size, 3.2f * size, 0.09f, 0.0f);
+        ring(m, vc, 0.0f, 0.6f * size, 0.55f * strength, 0.32f * strength);
+        ring(m, vc, 0.6f * size, 1.5f * size, 0.32f * strength, 0.09f * strength);
+        ring(m, vc, 1.5f * size, 3.2f * size, 0.09f * strength, 0.0f);
         pose.popPose();
     }
 
     /** Een ring van straal {@code inner} tot {@code outer}, van doorzichtigheid {@code from} naar {@code to}. */
     private static void ring(Matrix4f m, VertexConsumer vc, float inner, float outer, float from, float to) {
-        int a = Math.round(from * 255);
-        int b = Math.round(to * 255);
+        int a = Math.round(Mth.clamp(from, 0.0f, 1.0f) * 255);
+        int b = Math.round(Mth.clamp(to, 0.0f, 1.0f) * 255);
         for (int i = 0; i < SEGMENTS; i++) {
             float angle0 = (float) (i * Math.PI * 2 / SEGMENTS);
             float angle1 = (float) ((i + 1) * Math.PI * 2 / SEGMENTS);

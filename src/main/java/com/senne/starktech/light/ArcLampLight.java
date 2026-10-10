@@ -135,7 +135,7 @@ public final class ArcLampLight {
             if (lamps.isEmpty()) {
                 return false;
             }
-            int reach = reach();
+            int reach = maxReach();
             for (BlockPos lamp : lamps) {
                 if (lamp.distManhattan(pos) <= reach) {
                     return level.getBrightness(LightLayer.BLOCK, pos) >= LightEngine.MAX_LEVEL;
@@ -150,6 +150,10 @@ public final class ArcLampLight {
         final BlockPos pos;
         /** Wil hij licht geven (heeft hij stroom)? */
         boolean on;
+        /** Hoe ver zijn licht vol is: zijn lichtniveau min 15 (0 = een gewone lamp, zonder meting). */
+        int reach;
+        /** Zijn bereik is veranderd: de vorige meting telt niet meer, ook niet in chunks die niet geladen zijn. */
+        boolean fresh;
         /** De plekken van zijn laatste meting (bits per sectie), of null als hij nog nooit gemeten is. */
         @Nullable Long2ObjectMap<long[]> region;
         /** Staan zijn plekken nu in {@link LevelLight#lit}? */
@@ -171,9 +175,14 @@ public final class ArcLampLight {
     /** Een meting die klaar is: wat hij vond, of wat er misging. */
     private record Survey(BlockPos pos, int generation, @Nullable Long2ObjectMap<long[]> region, @Nullable Throwable error) {}
 
-    /** Hoe ver het licht vol is: het lichtniveau min 15 (85 bij 100). */
-    public static int reach() {
-        return Mth.clamp(LightBalance.ARC_LAMP_LEVEL, LightEngine.MAX_LEVEL, 128) - LightEngine.MAX_LEVEL;
+    /** Hoe ver het licht van een lamp op dit lichtniveau vol is: het lichtniveau min 15 (85 bij 100, 0 tot 15). */
+    public static int reachOf(int lightLevel) {
+        return Math.max(0, Mth.clamp(lightLevel, 1, LightBalance.maxLevel()) - LightEngine.MAX_LEVEL);
+    }
+
+    /** Het bereik van een lamp op het hoogste lichtniveau dat de config toestaat. */
+    public static int maxReach() {
+        return reachOf(LightBalance.maxLevel());
     }
 
     // ================================================================ Voor het licht-rekenwerk (mixins)
@@ -215,24 +224,41 @@ public final class ArcLampLight {
 
     // ================================================================ De lamp meldt zich (server)
 
-    /** Een lamp gaat aan of uit (of meldt zich voor het eerst, na het laden). */
-    public static void setOn(ServerLevel level, BlockPos pos, boolean on) {
+    /**
+     * Hoe staat de lamp ervoor (elke tick, zie ArcLampBlockEntity): brandt hij, en hoe ver reikt zijn licht
+     * (zie {@link #reachOf}). Er gebeurt alleen iets als er iets veranderde, of als hij zich voor het eerst
+     * meldt (na het neerzetten of het laden).
+     */
+    public static void update(ServerLevel level, BlockPos pos, boolean on, int reach) {
         LevelLight light = light(level);
         Lamp lamp = light.lamps.get(pos);
+        long now = level.getGameTime();
         if (lamp == null) {
             lamp = new Lamp(pos.immutable());
-            lamp.changedAt = lamp.dirtyAt = level.getGameTime();
+            lamp.changedAt = lamp.dirtyAt = now;
+            lamp.reach = reach;
+            lamp.on = !on; // zodat hieronder "aan" of "uit" gebeurt
             light.lamps.put(lamp.pos, lamp);
-        } else if (lamp.on == on) {
-            return;
         }
-        lamp.on = on;
-        if (on) {
-            // Het vorige licht meteen (de schakelaar weer aan); is er intussen iets veranderd, dan meten
-            // we zo meteen opnieuw (zie onServerTick).
-            show(light, lamp);
-        } else {
-            hide(level, light, lamp);
+        if (lamp.reach != reach) {
+            // Je zette hem feller of zachter: opnieuw meten (zodra je even stopt met schuiven). Brandt hij,
+            // dan blijft tot dan zijn oude licht staan; brandt hij niet, dan is zijn oude meting niets meer waard.
+            lamp.reach = reach;
+            lamp.fresh = true;
+            if (!lamp.shown) {
+                lamp.region = null;
+            }
+            dirty(lamp, now);
+        }
+        if (lamp.on != on) {
+            lamp.on = on;
+            if (on) {
+                // Het vorige licht meteen (de schakelaar weer aan); is er intussen iets veranderd, dan meten
+                // we zo meteen opnieuw (zie onServerTick).
+                show(light, lamp);
+            } else {
+                hide(level, light, lamp);
+            }
         }
     }
 
@@ -289,10 +315,9 @@ public final class ArcLampLight {
         if (light == null || light.lamps.isEmpty() || !blocksDifferently(level, pos, before, after)) {
             return;
         }
-        int reach = reach() + 1;
         long now = level.getGameTime();
         for (Lamp lamp : light.lamps.values()) {
-            if (!lamp.pos.equals(pos) && lamp.pos.distManhattan(pos) <= reach) {
+            if (lamp.reach > 0 && !lamp.pos.equals(pos) && lamp.pos.distManhattan(pos) <= lamp.reach + 1) {
                 dirty(lamp, now);
             }
         }
@@ -319,12 +344,11 @@ public final class ArcLampLight {
             return;
         }
         ChunkPos chunk = event.getChunk().getPos();
-        int reach = reach() + 16;
         long now = level.getGameTime();
         for (Lamp lamp : light.lamps.values()) {
             int dx = Math.abs(chunk.getMiddleBlockX() - lamp.pos.getX());
             int dz = Math.abs(chunk.getMiddleBlockZ() - lamp.pos.getZ());
-            if (dx + dz <= reach) {
+            if (lamp.reach > 0 && dx + dz <= lamp.reach + 16) {
                 dirty(lamp, now);
             }
         }
@@ -372,7 +396,15 @@ public final class ArcLampLight {
         lamp.measuring = true;
         int generation = ++lamp.generation;
         BlockPos pos = lamp.pos;
-        LampSurvey survey = LampSurvey.prepare(level, pos, reach(), lamp.region);
+        Long2ObjectMap<long[]> previous = lamp.fresh ? null : lamp.region;
+        lamp.fresh = false;
+        if (lamp.reach <= 0) {
+            // Tot lichtniveau 15 is het een gewone lamp: het blok geeft zelf licht, en er hoeven geen
+            // onzichtbare lichtbronnen bij. Deze "meting" is dus meteen klaar: niets.
+            light.done.add(new Survey(pos, generation, new Long2ObjectOpenHashMap<>(), null));
+            return;
+        }
+        LampSurvey survey = LampSurvey.prepare(level, pos, lamp.reach, previous);
         CompletableFuture.supplyAsync(survey::run, Util.backgroundExecutor())
                 .whenComplete((region, error) -> light.done.add(new Survey(pos, generation, region, error)));
     }
@@ -451,9 +483,15 @@ public final class ArcLampLight {
                 after.put(section, now);
             }
             int count = changed.size();
-            collectChanges(stored, section, before.get(section), now, changed);
+            long[] was = before.get(section);
+            DataLayer layer = stored.getDataLayerData(SectionPos.of(section));
+            collectChanges(layer, section, was, now, changed);
             if (changed.size() > count) {
                 changedSections.add(section);
+            }
+            if (layer == null && was != null && light.level instanceof ServerLevel level && lostSome(was, now)) {
+                // Hier gaan plekken uit, maar de chunk is niet geladen: daar ruimen we op als hij laadt.
+                LightDebt.get(level).add(ChunkPos.asLong(SectionPos.x(section), SectionPos.z(section)));
             }
         }
         light.lit = after; // vanaf nu ziet de licht-thread het nieuwe licht
@@ -523,9 +561,8 @@ public final class ArcLampLight {
      * nog geen 15 heeft, of een plek die eraf gaat en nu 15 heeft. (Na het laden van de wereld staat het
      * licht er bijvoorbeeld al: dan hoeft het spel niets na te rekenen.)
      */
-    private static void collectChanges(LayerLightEventListener stored, long section, @Nullable long[] was,
+    private static void collectChanges(@Nullable DataLayer layer, long section, @Nullable long[] was,
                                        @Nullable long[] now, LongArrayList out) {
-        DataLayer layer = stored.getDataLayerData(SectionPos.of(section));
         if (layer == null || was == now) {
             return; // hier bewaart het spel geen licht (of de chunk is niet geladen), of er veranderde niets
         }
@@ -550,6 +587,16 @@ public final class ArcLampLight {
                 }
             }
         }
+    }
+
+    /** Staat er in {@code was} een plek die niet in {@code now} staat? */
+    private static boolean lostSome(long[] was, @Nullable long[] now) {
+        for (int i = 0; i < 64; i++) {
+            if ((was[i] & ~(now == null ? 0L : now[i])) != 0L) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Twee rijen bits samen (zonder er een aan te passen: die zijn misschien gedeeld). */

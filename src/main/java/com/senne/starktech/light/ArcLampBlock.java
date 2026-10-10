@@ -7,6 +7,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -23,18 +24,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * De Arc Lamp (jouw wens, 9 oktober): een lamp op Stark-stroom met lichtniveau 100 in plaats van 15.
  * <ul>
- *   <li>Hij werkt alleen op stroom: stroom = aan, geen stroom = uit. Een eigen knop heeft hij niet; je
- *       schakelt hem met een lichtschakelaar in de kabel (zie LightSwitchBlock), of door de stroom weg te
- *       halen.</li>
- *   <li>Zijn licht: tot 85 blokken ver vol licht, daarna dooft het uit tot 100 blokken (zie ArcLampLight).
- *       Het gaat niet door muren, en monsters spawnen er niet.</li>
- *   <li>Rechtsklik: hoe staat hij ervoor (aan, aan het opwarmen, of geen stroom).</li>
+ *   <li>Hij werkt alleen op stroom: stroom = aan, geen stroom = uit. Een eigen aan/uit-knop heeft hij niet;
+ *       je schakelt hem met een lichtschakelaar in de kabel (zie LightSwitchBlock), of door de stroom weg
+ *       te halen.</li>
+ *   <li>Zijn licht: op niveau 100 tot 85 blokken ver vol licht, daarna dooft het uit tot 100 blokken (zie
+ *       ArcLampLight). Het gaat niet door muren, en monsters spawnen er niet.</li>
+ *   <li>Rechtsklik opent zijn instelscherm (10 oktober: "zorg dat je de brightness kunt instellen"): hoe
+ *       fel hij is (lichtniveau 1 tot 100) en hoe sterk de gloed om hem heen is (zie ArcLampScreen).</li>
  * </ul>
  * Een booglamp ("arc lamp") is een echte, extreem felle lamp: zo werkten de eerste straatlantaarns en
  * de zoeklichten van stadions. En "arc" past bij Stark (de arc-reactor).
@@ -42,12 +45,17 @@ import org.jetbrains.annotations.Nullable;
 public class ArcLampBlock extends BaseEntityBlock implements PowerConnectable {
     public static final MapCodec<ArcLampBlock> CODEC = simpleCodec(ArcLampBlock::new);
 
-    /** Brandt hij? Dan geeft het blok zelf ook licht (15), en gloeit zijn glas. */
+    /** Brandt hij? Dan geeft het blok zelf licht (zie LIGHT), en gloeit zijn glas. */
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    /**
+     * Hoeveel licht het blok zelf geeft als hij brandt: zijn lichtniveau, maar nooit meer dan 15 (meer kan
+     * een blok niet). Wat er boven de 15 bij komt, doet ArcLampLight. De lamp zet dit zelf goed.
+     */
+    public static final IntegerProperty LIGHT = IntegerProperty.create("light", 1, 15);
 
     public ArcLampBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(LIT, false));
+        registerDefaultState(stateDefinition.any().setValue(LIT, false).setValue(LIGHT, 15));
     }
 
     @Override
@@ -57,7 +65,7 @@ public class ArcLampBlock extends BaseEntityBlock implements PowerConnectable {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(LIT);
+        builder.add(LIT, LIGHT);
     }
 
     @Override
@@ -96,28 +104,18 @@ public class ArcLampBlock extends BaseEntityBlock implements PowerConnectable {
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
-    /** Rechtsklik: een regel onderin je beeld met hoe hij ervoor staat. */
+    /** Rechtsklik: het instelscherm (de server kijkt of je dichtbij genoeg staat, zie ArcLamps). */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (!level.isClientSide) {
-            Component status;
-            if (!state.getValue(LIT)) {
-                status = Component.translatable("light.starktech.lamp.off").withStyle(ChatFormatting.RED);
-            } else if (ArcLampLight.measuring(level, pos)) {
-                status = Component.translatable("light.starktech.lamp.warming", LightBalance.ARC_LAMP_LEVEL)
-                        .withStyle(ChatFormatting.YELLOW);
-            } else {
-                status = Component.translatable("light.starktech.lamp.on", LightBalance.ARC_LAMP_LEVEL, ArcLampLight.reach())
-                        .withStyle(ChatFormatting.AQUA);
-            }
-            player.displayClientMessage(status, true);
+        if (player instanceof ServerPlayer serverPlayer) {
+            ArcLamps.open(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.starktech.arc_lamp", LightBalance.ARC_LAMP_LEVEL, ArcLampLight.reach())
+        tooltip.add(Component.translatable("tooltip.starktech.arc_lamp", LightBalance.maxLevel(), ArcLampLight.maxReach())
                 .withStyle(ChatFormatting.GRAY));
     }
 }

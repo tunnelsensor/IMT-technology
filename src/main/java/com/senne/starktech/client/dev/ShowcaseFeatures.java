@@ -871,7 +871,10 @@ final class ShowcaseFeatures {
                 + "rood lampje), en aan het eind een Arc Lamp op een paal: donker. Je klikt op de schakelaar (het "
                 + "lampje wordt blauw, de wip klapt om): de lamp gaat aan met een gloed eromheen, en het hele veld "
                 + "wordt licht. Van bovenaf zie je hoe ver: een ruit van 85 blokken vol licht, met een zachte rand "
-                + "tot 100 blokken. Dan klik je de schakelaar weer uit: alles meteen donker.",
+                + "tot 100 blokken. 10 oktober: dan het instelscherm van de lamp (rechtsklik). Het schuifje "
+                + "'Brightness' zakt van lichtniveau 100 naar 40 (onder het schuifje: 'Full light up to 25 blocks, dark "
+                + "after 40', en hij gebruikt minder stroom); van bovenaf is de ruit nu veel kleiner. Dan klik je de "
+                + "schakelaar weer uit: alles meteen donker.",
                 at(LAMP_YARD.offset(3, 0, 3)), 180, 50, s -> s
                 .onServer(0, ShowcaseFeatures::buildLampYard)
                 .command(0, "time set midnight")
@@ -882,6 +885,25 @@ final class ShowcaseFeatures {
                 .pause(80)
                 .view(0, LAMP_YARD.getX() + 7.5, LAMP_YARD.getY() + 60, LAMP_YARD.getZ() + 40.5, 180, 55)
                 .pause(120)
+                // Het instelscherm: de lamp zachter zetten, stapje voor stapje (alsof je het schuifje sleept).
+                .stand(0, LAMP_YARD.getX() + 5.5, LAMP_YARD.getY(), LAMP_YARD.getZ() + 1.5, 160, -40)
+                .onServer(5, player -> com.senne.starktech.light.ArcLamps.open(player, LAMP_YARD.east(7).above(4)))
+                .pause(30)
+                .step(0, () -> lampScreen(90))
+                .step(6, () -> lampScreen(75))
+                .step(6, () -> lampScreen(60))
+                .step(6, () -> lampScreen(50))
+                .step(6, () -> lampScreen(40))
+                .pause(50)
+                .close(0)
+                .view(0, LAMP_YARD.getX() + 7.5, LAMP_YARD.getY() + 60, LAMP_YARD.getZ() + 40.5, 180, 55)
+                .pause(100)
+                .onServer(0, player -> {
+                    if (player.serverLevel().getBlockEntity(LAMP_YARD.east(7).above(4))
+                            instanceof com.senne.starktech.light.ArcLampBlockEntity lamp) {
+                        lamp.setBrightness(100);
+                    }
+                })
                 .stand(0, LAMP_YARD.getX() + 3.5, LAMP_YARD.getY(), LAMP_YARD.getZ() + 3.5, 180, 50)
                 .lookAt(10, Vec3.atCenterOf(LAMP_YARD.east(3)).add(0, -0.45, 0))
                 .pause(20)
@@ -1651,6 +1673,13 @@ final class ShowcaseFeatures {
                 .setValue(com.senne.starktech.light.LightSwitchBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
                 .setValue(com.senne.starktech.light.LightSwitchBlock.FACING, net.minecraft.core.Direction.NORTH)
                 .setValue(com.senne.starktech.light.LightSwitchBlock.ON, false));
+    }
+
+    /** Het schuifje "Brightness" in het open instelscherm van de lamp naar dit lichtniveau. */
+    private static void lampScreen(int lightLevel) {
+        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.light.ArcLampScreen screen) {
+            screen.tourBrightness(lightLevel);
+        }
     }
 
     private static Vec3 at(BlockPos pos) {

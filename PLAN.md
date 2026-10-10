@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 202 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 203 automatische tests, allemaal groen (`gradlew runGameTestServer`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 86 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1862,7 +1862,7 @@ Mijn invulling (zeg het als je iets anders wil):
   kanten glas. **2 stroom per tick** zolang hij brandt (een volle warmtegenerator: ruim acht minuten).
   Een lamp die uit is, gaat pas aan als het net stroom heeft voor 5 seconden, zodat hij aan een te
   zwakke generator niet elke tick knippert. Alle drie de getallen staan onder `[lights]` in de config
-  (`arcLampLevel` tussen 15 en 128).
+  (`arcLampMaxLevel`, het hoogste lichtniveau, tussen 15 en 128).
 - **Lichtschakelaar** (een hendel, een ijzeren klompje en een Stark-kabel = 2): een plaatje met een
   wipschakelaar, aan de muur, op de vloer of aan het plafond. Rechtsklik zet hem om. Aan: blauw lampje,
   de stroom gaat erdoor alsof het kabel is. Uit: rood lampje, daar houdt de stroom op (ook als er een
@@ -1899,11 +1899,28 @@ De stappen:
       eronder, en tussen twee kabeleinden); de lamp brandt alleen met stroom; en het licht zelf: 15 op 60
       blokken, 5 op 95, donker op 105, licht in een glazen doos, donker in een stenen doos, donker in een
       doos die je later in het licht dichtbouwt, en alles weer donker zonder stroom. Screenshots:
-      `-Ponly=light` (`lt01`-`lt06`: 's nachts uit, aan van dichtbij, het veld van ver weg en van bovenaf
-      een ruit van 85 blokken licht, de schakelaar op de kabel, en weer uit). Showcase-functie 61 **Arc
+      `-Ponly=light` (`lt01`-`lt08`: 's nachts uit, aan van dichtbij, het veld van ver weg en van bovenaf
+      een ruit van 85 blokken licht, sinds stap 4 het instelscherm en de lamp op 40, de schakelaar op de
+      kabel, en weer uit). Showcase-functie 61 **Arc
       Lamp and light switch** (na "Power grid"), met een echte rechtsklik op de schakelaar; in testmodus
       afgespeeld en op drie momenten bekeken. De showcase heeft nu 86 functies. LEESMIJ.md heeft een
       eigen stuk "Licht: de Arc Lamp en de lichtschakelaar" (na "De stroomkast").
+- [x] **4. De helderheid instellen** (10 oktober: "zorg dat je de brightness kunt instellen")
+      Rechtsklik op de lamp opent nu zijn instelscherm (`client/light/ArcLampScreen`, de serverkant in
+      `light/ArcLamps`, twee nieuwe netwerkberichten). **Brightness**: het lichtniveau van deze lamp, van
+      1 tot 100 (het maximum is de config, nu `arcLampMaxLevel`). Onder het schuifje staat wat het
+      betekent ("Full light up to 25 blocks, dark after 40", of tot 15 "Like a normal lamp") en hoeveel
+      stroom hij dan gebruikt. **Mijn invulling**: zachter is zuiniger (op 50 de helft van op 100); tot 15
+      is het een gewone lamp (het blok geeft zelf dat licht, zonder meting); de lamp meet opnieuw zodra je
+      even stopt met schuiven, en tot dan blijft zijn oude licht staan. Omdat het niet zeker was of je met
+      "brightness" het licht of de gloed bedoelde, kan allebei: **Glow** zet de stralenkrans van 0% (geen)
+      tot 100%, en een zachtere lamp krijgt vanzelf een kleinere gloed. Elk schuifje heeft een **-** en een
+      **+** voor één stapje. Iedereen die bij de lamp staat, kan hem instellen (zoals een hendel); de lamp
+      onthoudt het, en wie de lamp ziet, krijgt het mee. Een nieuwe test: een lamp begint op 100; het scherm
+      werkt alleen van dichtbij; op niveau 40 is het 15 op 20 blokken, 10 op 30 en donker op 40; op niveau
+      10 geeft het blok zelf 10 en zijn er geen onzichtbare lichtbronnen; de gloed blijft tussen 0 en 100%;
+      en op 50 gebruikt hij de helft. Screenshots: `-Ponly=light` (`lt05_lamp_screen`, `lt06_dimmed_from_above`:
+      een veel kleinere ruit). De showcase-functie zet de lamp met het schuifje van 100 naar 40.
 
 ---
 

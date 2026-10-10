@@ -1891,8 +1891,9 @@ public final class VisualCheck {
 
         // --- Licht (9 oktober): 's nachts een Arc Lamp op een paal, met een kabel van een generator en
         // een lichtschakelaar op de kabel. Eerst uit (donker), dan de schakelaar om: de lamp met zijn gloed
-        // van dichtbij, het veld van ver weg en van bovenaf (tot 85 blokken vol licht), de schakelaar van
-        // dichtbij, en weer uit.
+        // van dichtbij, het veld van ver weg en van bovenaf (tot 85 blokken vol licht), zijn instelscherm
+        // met de lamp op lichtniveau 40 (en dan het veld van bovenaf: een veel kleinere ruit), de
+        // schakelaar van dichtbij, en weer uit.
         if (want("light")) {
             BlockPos y = LAMP_YARD;
             Vec3 lamp = Vec3.atCenterOf(y.east(7).above(4));
@@ -1910,14 +1911,33 @@ public final class VisualCheck {
             t.view(0, y.getX() + 7.5, y.getY() + 60, y.getZ() + 40.5, 180, 55);
             t.shot(60, "lt04_field_from_above");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // Het instelscherm (10 oktober): de lamp op lichtniveau 40 zetten, en van bovenaf kijken.
+            t.stand(0, y.getX() + 5.5, y.getY(), y.getZ() + 1.5, 160, -40);
+            t.onServer(5, player -> com.senne.starktech.light.ArcLamps.open(player, y.east(7).above(4)));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.light.ArcLampScreen screen) {
+                    screen.tourBrightness(40);
+                }
+            });
+            t.shot(10, "lt05_lamp_screen");
+            t.close(0);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(0, y.getX() + 7.5, y.getY() + 60, y.getZ() + 40.5, 180, 55);
+            t.shot(80, "lt06_dimmed_from_above");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(y.east(7).above(4)) instanceof com.senne.starktech.light.ArcLampBlockEntity entity) {
+                    entity.setBrightness(100);
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.stand(0, y.getX() + 3.5, y.getY(), y.getZ() + 2.5, 180, 60);
             t.step(0, () -> Minecraft.getInstance().player.getInventory().selected = 0);
-            t.shot(30, "lt05_switch_on_cable");
+            t.shot(30, "lt07_switch_on_cable");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.onServer(0, player -> com.senne.starktech.light.LightSwitchBlock.set(player.serverLevel(), y.east(3), false));
             t.stand(0, y.getX() - 1.5, y.getY(), y.getZ() + 7.5, 0, 0);
             t.lookAt(5, lamp.add(0, -2, 0));
-            t.shot(60, "lt06_lamp_off_again");
+            t.shot(60, "lt08_lamp_off_again");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.command(0, "time set noon");
         }
