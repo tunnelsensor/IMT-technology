@@ -1889,6 +1889,39 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- Licht (9 oktober): 's nachts een Arc Lamp op een paal, met een kabel van een generator en
+        // een lichtschakelaar op de kabel. Eerst uit (donker), dan de schakelaar om: de lamp met zijn gloed
+        // van dichtbij, het veld van ver weg en van bovenaf (tot 85 blokken vol licht), de schakelaar van
+        // dichtbij, en weer uit.
+        if (want("light")) {
+            BlockPos y = LAMP_YARD;
+            Vec3 lamp = Vec3.atCenterOf(y.east(7).above(4));
+            t.onServer(0, VisualCheck::buildLampYard);
+            t.command(0, "time set midnight");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, y.getX() - 1.5, y.getY(), y.getZ() + 7.5, 0, 0);
+            t.lookAt(5, lamp.add(0, -2, 0));
+            t.shot(60, "lt01_lamp_off_night");
+            t.onServer(0, player -> com.senne.starktech.light.LightSwitchBlock.set(player.serverLevel(), y.east(3), true));
+            t.shot(80, "lt02_lamp_on_close");
+            t.stand(0, y.getX() + 70.5, y.getY(), y.getZ() + 0.5, 90, 0);
+            t.lookAt(5, lamp.add(0, -4, 0));
+            t.shot(60, "lt03_field_from_far");
+            t.view(0, y.getX() + 7.5, y.getY() + 60, y.getZ() + 40.5, 180, 55);
+            t.shot(60, "lt04_field_from_above");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.stand(0, y.getX() + 3.5, y.getY(), y.getZ() + 2.5, 180, 60);
+            t.step(0, () -> Minecraft.getInstance().player.getInventory().selected = 0);
+            t.shot(30, "lt05_switch_on_cable");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.onServer(0, player -> com.senne.starktech.light.LightSwitchBlock.set(player.serverLevel(), y.east(3), false));
+            t.stand(0, y.getX() - 1.5, y.getY(), y.getZ() + 7.5, 0, 0);
+            t.lookAt(5, lamp.add(0, -2, 0));
+            t.shot(60, "lt06_lamp_off_again");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.command(0, "time set noon");
+        }
+
         // --- Barsten herstellen (hoofdstuk 11): de Crusher en de Compactor aan het werk, elk naast een
         // generator, hun schermen (gebarsten stenen bakstenen erin en poeder eruit; obsidiaanpoeder erin
         // en obsidiaan eruit), en gebarsten blokken en poeder in je hotbar, in je hand en op de grond.
@@ -2209,6 +2242,37 @@ public final class VisualCheck {
             core.setChanged();
         }
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
+    }
+
+    /** Waar de generator voor de Arc Lamp staat (zie "light"): ver van de rest, want zijn licht reikt 100 blokken. */
+    private static final BlockPos LAMP_YARD = new BlockPos(-260, -60, -260);
+
+    /**
+     * Een volle generator, daarnaast een kabel over het gras met halverwege een lichtschakelaar (uit), en
+     * aan het eind een paal van vier blokken (met de kabel erin) met de Arc Lamp erop. In je hotbar de lamp
+     * en de schakelaar.
+     */
+    private static void buildLampYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos y = LAMP_YARD;
+        level.setBlockAndUpdate(y, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(y) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(20_000);
+        }
+        for (int x = 1; x <= 7; x++) {
+            com.senne.starktech.energy.StarkCables.add(level, y.east(x));
+        }
+        for (int up = 0; up < 4; up++) {
+            level.setBlockAndUpdate(y.east(7).above(up), Blocks.POLISHED_ANDESITE.defaultBlockState());
+            com.senne.starktech.energy.StarkCables.add(level, y.east(7).above(up));
+        }
+        level.setBlockAndUpdate(y.east(7).above(4), ModBlocks.ARC_LAMP.get().defaultBlockState());
+        level.setBlockAndUpdate(y.east(3), ModBlocks.LIGHT_SWITCH.get().defaultBlockState()
+                .setValue(com.senne.starktech.light.LightSwitchBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.starktech.light.LightSwitchBlock.FACING, Direction.NORTH)
+                .setValue(com.senne.starktech.light.LightSwitchBlock.ON, false));
+        player.getInventory().setItem(0, new ItemStack(ModItems.LIGHT_SWITCH.get(), 8));
+        player.getInventory().setItem(1, new ItemStack(ModItems.ARC_LAMP.get(), 4));
     }
 
     /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */

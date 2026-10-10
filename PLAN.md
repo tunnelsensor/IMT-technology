@@ -14,8 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 199 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 85 functies één voor één zien (of een
+**Stand van zaken:** 202 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+Alles zelf bekijken: `python tools/showcase.py` laat alle 86 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -1843,6 +1843,68 @@ De stappen, één per commit:
       "Inbreken: lezers en panelen hacken, en zakkenrollen" (na "Barsten herstellen"), en de lijsten van de
       config en de screenshots noemen zakkenrollen en `bypass`.
 
+### 13. Licht: de Arc Lamp en de lichtschakelaar (9 oktober)
+
+Jouw wens: een **lamp op stroom** die **veel helderder** kan dan lichtniveau 15, "ik wil er een van
+**100**". Hij werkt **alleen op stroom**: stroom = aan, geen stroom = uit. En een **lichtschakelaar** die
+je **tussen een kabel** zet, om zo de lichten te besturen.
+
+Hoe lichtniveau 100 kan: Minecraft bewaart licht in 4 bits per blok, dus meer dan 15 bestaat niet. De
+lamp meet daarom zelf hoe ver licht van 100 zou komen (stap voor stap, net als het spel: door lucht,
+glas en water, niet door muren), en laat het spel op al die plekken (tot 85 stappen ver) doen alsof er
+een onzichtbare lichtbron van 15 staat. Daarna dooft het licht zoals gewoon licht uit tot 0 op 100
+blokken. Een helderder blok dan 15 kan het scherm niet tekenen: "100" betekent hier dus vooral **veel
+verder** (vol licht tot 85 blokken in plaats van een paar), plus een gloed om de lamp heen.
+
+Mijn invulling (zeg het als je iets anders wil):
+
+- **Arc Lamp** (ijzer, vier glazen ruiten, gloeisteen en een Stark-chip): een stalen blok met aan vier
+  kanten glas. **2 stroom per tick** zolang hij brandt (een volle warmtegenerator: ruim acht minuten).
+  Een lamp die uit is, gaat pas aan als het net stroom heeft voor 5 seconden, zodat hij aan een te
+  zwakke generator niet elke tick knippert. Alle drie de getallen staan onder `[lights]` in de config
+  (`arcLampLevel` tussen 15 en 128).
+- **Lichtschakelaar** (een hendel, een ijzeren klompje en een Stark-kabel = 2): een plaatje met een
+  wipschakelaar, aan de muur, op de vloer of aan het plafond. Rechtsklik zet hem om. Aan: blauw lampje,
+  de stroom gaat erdoor alsof het kabel is. Uit: rood lampje, daar houdt de stroom op (ook als er een
+  getekende kabel door de schakelaar loopt). Hij geldt voor álles achter hem, niet alleen lampen.
+- **Ook via E.D.I.T.H.**: wie een schakelaar neerzet, krijgt hem in de redstone-lijst ("Light switch 1"),
+  net als een torentje of de koepel.
+
+De stappen:
+
+- [x] **1. De Arc Lamp, lichtniveau 100**
+      `light/ArcLampBlock` en `ArcLampBlockEntity`: stroom halen en aan/uit, het blok zelf geeft 15 als
+      hij brandt, rechtsklik zegt hoe hij ervoor staat. Het licht zelf: `light/LampSurvey` meet op een
+      achtergrond-thread (de server loopt gewoon door) welke plekken binnen 85 stappen liggen;
+      `light/ArcLampLight` houdt dat bij en geeft het aan het licht-rekenwerk van het spel. Daarvoor zijn
+      er twee nieuwe mixins: `BlockLightEngineMixin` (het spel vraagt een blok "hoeveel licht geef jij?",
+      wij zeggen 15 op die plekken) en `LightEngineMixin` (de honderdduizenden plekken die opnieuw moeten,
+      in één keer in plaats van één klusje per plek). Gaat hij aan of uit, dan rekent het spel ruim
+      300.000 plekken na: in de test duurde dat minder dan een seconde. De eerste keer meet hij (een
+      halve seconde "opwarmen"); daarna onthoudt hij zijn licht, dus met de schakelaar is het meteen aan
+      en uit. Bouw je in zijn licht (de `LevelChunkMixin` ziet elk blok dat verandert), dan meet hij
+      opnieuw zodra het even stil is: een dichte ruimte wordt donker. Gaat hij uit terwijl een deel van
+      zijn licht in een niet-geladen chunk ligt, dan ruimt `light/LightDebt` dat op zodra die chunk weer
+      laadt (ook als het spel stopt voordat het licht klaar was). **Gevonden onderweg**: sinds Minecraft
+      1.20 stuurt de server lichtveranderingen niet meer naar je spel (je spel rekent bij een
+      blokverandering zelf); ons licht verandert zonder blokverandering, dus in je spel bleef het eerst
+      donker terwijl de server het licht wel had. Nu stuurt de lamp het licht zelf naar iedereen die het
+      gebied ziet, zodra het klaar is. Een stralenkrans om de brandende lamp (`client/light/ArcLampRenderer`)
+      laat zien dat hij feller is dan een gewone lamp; je ziet hem tot 256 blokken ver.
+- [x] **2. De lichtschakelaar**
+      `light/LightSwitchBlock`, met een uitzondering in `energy/StarkGrid`: een schakelaar die aan staat
+      geleidt zoals een kabel, een die uit staat houdt alles tegen.
+- [x] **3. Tests, screenshots, showcase en LEESMIJ**
+      Drie nieuwe tests (`gametest/LightGameTests.java`): de schakelaar knipt de stroom (ook met een kabel
+      eronder, en tussen twee kabeleinden); de lamp brandt alleen met stroom; en het licht zelf: 15 op 60
+      blokken, 5 op 95, donker op 105, licht in een glazen doos, donker in een stenen doos, donker in een
+      doos die je later in het licht dichtbouwt, en alles weer donker zonder stroom. Screenshots:
+      `-Ponly=light` (`lt01`-`lt06`: 's nachts uit, aan van dichtbij, het veld van ver weg en van bovenaf
+      een ruit van 85 blokken licht, de schakelaar op de kabel, en weer uit). Showcase-functie 61 **Arc
+      Lamp and light switch** (na "Power grid"), met een echte rechtsklik op de schakelaar; in testmodus
+      afgespeeld en op drie momenten bekeken. De showcase heeft nu 86 functies. LEESMIJ.md heeft een
+      eigen stuk "Licht: de Arc Lamp en de lichtschakelaar" (na "De stroomkast").
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -1901,6 +1963,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       niet meer. Twee nieuwe tests.
 - [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
+- [ ] **De Arc Lamp (9 oktober)**: gezien op screenshots en in de showcase, op een vlak veld. Kijk zelf
+      in je eigen wereld (heuvels, grotten, een huis) of het licht er goed uitziet, of het opnieuw meten
+      na bouwen snel genoeg gaat, en of je spel niet hapert als je de lamp aan- of uitzet. En of je de
+      gloed om de lamp mooi vindt, of liever zachter of zonder.
 
 ---
 

@@ -866,6 +866,30 @@ final class ShowcaseFeatures {
                         com.senne.starktech.registry.ModBlocks.CABLE.get().defaultBlockState()))
                 .pause(80));
 
+        add("Arc Lamp and light switch", "9 oktober: een lamp met lichtniveau 100 (een gewone lamp stopt bij 15). "
+                + "Het is nacht. Een generator, een kabel over het gras met halverwege een lichtschakelaar (uit, "
+                + "rood lampje), en aan het eind een Arc Lamp op een paal: donker. Je klikt op de schakelaar (het "
+                + "lampje wordt blauw, de wip klapt om): de lamp gaat aan met een gloed eromheen, en het hele veld "
+                + "wordt licht. Van bovenaf zie je hoe ver: een ruit van 85 blokken vol licht, met een zachte rand "
+                + "tot 100 blokken. Dan klik je de schakelaar weer uit: alles meteen donker.",
+                at(LAMP_YARD.offset(3, 0, 3)), 180, 50, s -> s
+                .onServer(0, ShowcaseFeatures::buildLampYard)
+                .command(0, "time set midnight")
+                .lookAt(20, Vec3.atCenterOf(LAMP_YARD.east(3)).add(0, -0.45, 0))
+                .pause(40)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .lookAt(30, Vec3.atCenterOf(LAMP_YARD.east(7).above(4)))
+                .pause(80)
+                .view(0, LAMP_YARD.getX() + 7.5, LAMP_YARD.getY() + 60, LAMP_YARD.getZ() + 40.5, 180, 55)
+                .pause(120)
+                .stand(0, LAMP_YARD.getX() + 3.5, LAMP_YARD.getY(), LAMP_YARD.getZ() + 3.5, 180, 50)
+                .lookAt(10, Vec3.atCenterOf(LAMP_YARD.east(3)).add(0, -0.45, 0))
+                .pause(20)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .lookAt(20, Vec3.atCenterOf(LAMP_YARD.east(7).above(4)))
+                .pause(80)
+                .command(0, "time set noon"));
+
         // ---------------------------------------------------------------- Vijanden en wereld
         add("Raid drones", "Vijandige drones (donker, oranje lampjes) duiken uit de lucht, cirkelen "
                 + "om je heen en schieten. Ze komen vanzelf als je de bril draagt.", GameType.SURVIVAL,
@@ -1600,6 +1624,34 @@ final class ShowcaseFeatures {
     }
 
     // ================================================================ Hulpjes
+
+    /** Waar de generator voor de Arc Lamp staat: ver van de rest, want zijn licht reikt 100 blokken. */
+    static final BlockPos LAMP_YARD = new BlockPos(220, -60, -220);
+
+    /**
+     * Een volle generator, een kabel over het gras met halverwege een lichtschakelaar (uit), en aan het eind
+     * een paal van vier blokken (de kabel loopt erin omhoog) met de Arc Lamp erop.
+     */
+    static void buildLampYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos y = LAMP_YARD;
+        level.setBlockAndUpdate(y, com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(y) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+            generator.fill(20_000);
+        }
+        for (int x = 1; x <= 7; x++) {
+            com.senne.starktech.energy.StarkCables.add(level, y.east(x));
+        }
+        for (int up = 0; up < 4; up++) {
+            level.setBlockAndUpdate(y.east(7).above(up), Blocks.POLISHED_ANDESITE.defaultBlockState());
+            com.senne.starktech.energy.StarkCables.add(level, y.east(7).above(up));
+        }
+        level.setBlockAndUpdate(y.east(7).above(4), com.senne.starktech.registry.ModBlocks.ARC_LAMP.get().defaultBlockState());
+        level.setBlockAndUpdate(y.east(3), com.senne.starktech.registry.ModBlocks.LIGHT_SWITCH.get().defaultBlockState()
+                .setValue(com.senne.starktech.light.LightSwitchBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.starktech.light.LightSwitchBlock.FACING, net.minecraft.core.Direction.NORTH)
+                .setValue(com.senne.starktech.light.LightSwitchBlock.ON, false));
+    }
 
     private static Vec3 at(BlockPos pos) {
         return new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);

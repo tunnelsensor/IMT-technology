@@ -402,6 +402,31 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
   cabinets**, zodat je ze op afstand of met je stem schakelt ("turn off cabinet 1 left").
 - In de Stark Tower en de Hydra-bunker staat er een op een goed bewaakte plek.
 
+### Licht: de Arc Lamp en de lichtschakelaar
+De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een Stark-chip) is een lamp met **lichtniveau
+100**. Een gewone lamp in Minecraft houdt op bij 15: dat licht reikt zo'n 15 blokken. Deze lamp geeft
+tot **85 blokken** ver vol licht, en daarna dooft het licht zacht uit tot 100 blokken. Net als gewoon
+licht gaat het niet door muren (wel door glas en water), en monsters spawnen er niet.
+- Hij werkt **alleen op Stark-stroom**: stroom = aan, geen stroom = uit. Een knop heeft hij niet. Hang
+  hem met een Stark-kabel aan een generator, of zet hem er direct tegenaan. Hij gebruikt 2 stroom per
+  tick zolang hij brandt (een volle warmtegenerator houdt hem ruim acht minuten aan).
+- De eerste keer duurt het een halve seconde voor het veld licht is: de lamp meet hoe ver zijn licht
+  komt. Daarna gaat hij met de schakelaar meteen aan en uit. Bouw je in zijn licht, dan meet hij na
+  een ogenblik opnieuw: in een dichte ruimte wordt het dan donker.
+- **Rechtsklik** op de lamp: onderin zie je of hij brandt, aan het opwarmen is of geen stroom heeft.
+
+De **lichtschakelaar** (een hendel, een ijzeren klompje en een Stark-kabel = 2 schakelaars) zet je
+**óp een kabel**: aan de muur, op de vloer of aan het plafond, op een plek waar de kabel loopt (of
+tussen twee kabeleinden in). **Rechtsklik** zet hem om:
+- **aan** (blauw lampje): de stroom gaat erdoorheen alsof er gewoon kabel ligt;
+- **uit** (rood lampje): daar houdt de stroom op. Alles wat erachter hangt, je lampen maar ook al het
+  andere, krijgt geen stroom meer uit wat ervoor hangt.
+
+Let op: de schakelaar moet *in* de kabel zitten. Staat hij naast de kabel, dan loopt de stroom er
+gewoon langs. Wie hem neerzet, vindt hem ook in de redstone-lijst van E.D.I.T.H. (toets **'**, als
+"Light switch 1"), zodat je je lichten op afstand aan en uit zet. De getallen staan in
+`config/starktech-balance.toml` onder `[lights]` (`arcLampLevel` is het lichtniveau, tussen 15 en 128).
+
 ### De server: je redstone programmeren
 Met een **server** programmeer je de redstone van je basis: "houdt iemand een kaart van niveau 3
 tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan je
@@ -973,7 +998,7 @@ showcase en staat hij bij NIEUW.
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
-  `racks`, `keycards`, `logic`, `lab`, `bypass`; meerdere met komma's). Op een ander
+  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten, rayshields) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile` (op deze
