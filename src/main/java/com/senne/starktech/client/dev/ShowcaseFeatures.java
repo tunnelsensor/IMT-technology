@@ -1374,6 +1374,68 @@ final class ShowcaseFeatures {
                     .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
         });
 
+        add("Hacking and pickpocketing", "Hoofdstuk 12: inbreken (in survival). In het lab van hiervoor, met de "
+                + "Bypass Kit in je hand. Eerst de keycardlezer: je kiest een kaart van niveau 3, en draait de stukjes "
+                + "draad tot het blauwe signaal van CARD naar ACCEPT loopt (raakt het even een ALARM, dan knippert "
+                + "alles rood). Het pad wordt groen, de lezer leest een nagemaakte kaart, en de deur gaat 3 seconden "
+                + "open. Dan het codepaneel: je veegt poeder over de toetsen (lichtgele afdrukken op 1, 2, 3 en 4) en "
+                + "raadt de volgorde; rechts zie je hoeveel er goed stonden en hoeveel volgordes er nog kunnen. Bij "
+                + "de vierde poging: CODE CRACKED 4321, en de lamp gaat aan. Dan zakkenrollen bij Happy: je sluipt "
+                + "achter hem, en in zijn zak liggen drie kaarten tussen rommel. Je schuift de rommel opzij en trekt "
+                + "een kaart naar boven (de meter NOTICED loopt wat op): hij draait om en je ziet welke het is, en hij "
+                + "zit in je hotbar. De tweede keer draait Happy zich om terwijl jij in zijn zak zit: CAUGHT!, en jij "
+                + "licht op.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
+            BlockPos reader = LOGIC_LAB.offset(1, 1, 7);
+            BlockPos panel = LOGIC_LAB.offset(5, 1, 7);
+            s.onServer(0, ShowcaseFeatures::buildLogicLab)
+                    .onServer(5, player -> {
+                        wakeLabServer(player);
+                        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
+                    })
+                    // De keycardlezer: het stroomcircuit speelt zichzelf (niveau 3), de deur gaat open.
+                    .stand(0, LOGIC_LAB.getX() + 1.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 9.5, 180, 15)
+                    .lookAt(10, Vec3.atCenterOf(reader))
+                    .pause(30)
+                    .step(0, () -> com.senne.starktech.client.bypass.CircuitScreen.autoPlay = true)
+                    .onServer(0, player -> com.senne.starktech.bypass.Bypass.start(player, reader, InteractionHand.MAIN_HAND))
+                    .pause(250)
+                    .step(0, () -> com.senne.starktech.client.bypass.CircuitScreen.autoPlay = false)
+                    .close(0)
+                    .pause(30)
+                    // Het codepaneel: stoffen, de volgorde raden, en de lamp gaat aan.
+                    .stand(0, LOGIC_LAB.getX() + 5.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 9.5, 180, 15)
+                    .lookAt(10, Vec3.atCenterOf(panel))
+                    .pause(20)
+                    .step(0, () -> com.senne.starktech.client.bypass.FingerprintScreen.autoPlay = true)
+                    .onServer(0, player -> com.senne.starktech.bypass.Bypass.start(player, panel, InteractionHand.MAIN_HAND))
+                    .pause(310)
+                    .step(0, () -> com.senne.starktech.client.bypass.FingerprintScreen.autoPlay = false)
+                    .close(0)
+                    .pause(40)
+                    // Zakkenrollen bij Happy: sluipend achter hem, rommel opzij, een kaart eruit.
+                    .onServer(0, ShowcaseFeatures::fillHappysPockets)
+                    .stand(0, FRIEND_SPOT.getX() + 0.5, FRIEND_SPOT.getY(), FRIEND_SPOT.getZ() + 1.9, 180, 25)
+                    .key(10, () -> Minecraft.getInstance().options.keyShift, true)
+                    .pause(20)
+                    .step(0, () -> com.senne.starktech.client.pickpocket.PocketScreen.autoPlay = true)
+                    .onServer(0, ShowcaseFeatures::pickHappysPocket)
+                    .pause(200)
+                    .step(0, () -> com.senne.starktech.client.pickpocket.PocketScreen.autoPlay = false)
+                    .close(0)
+                    // Nog een keer, maar nu draait Happy zich om: betrapt.
+                    .onServer(30, player -> {
+                        com.senne.starktech.pickpocket.Pickpocket.clear();
+                        pickHappysPocket(player);
+                    })
+                    .pause(50)
+                    .onServer(0, player -> turnHappy(player, 0))
+                    .pause(90)
+                    .close(0)
+                    .key(0, () -> Minecraft.getInstance().options.keyShift, false)
+                    .onServer(40, player -> turnHappy(player, 180));
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -1675,6 +1737,63 @@ final class ShowcaseFeatures {
             core.setChanged();
             com.senne.starktech.security.SecurityDevices.forget(level, core);
             com.senne.starktech.logic.LogicServer.forgetAll();
+        }
+    }
+
+    // ---------------------------------------------------------------- Inbreken (hoofdstuk 12)
+
+    /** Laat de racks van het lab meteen kijken of ze meedraaien (anders duurt dat tot twee seconden). */
+    static void wakeLabServer(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        for (BlockPos rackPos : new BlockPos[] {LOGIC_LAB.offset(3, 0, 0), LOGIC_LAB.offset(3, 1, 0), LOGIC_LAB.offset(4, 0, 0)}) {
+            if (level.getBlockEntity(rackPos) instanceof com.senne.starktech.logic.ServerRackBlockEntity rack) {
+                rack.update(level, rackPos, level.getBlockState(rackPos));
+            }
+        }
+        com.senne.starktech.bypass.Bypass.clear();
+    }
+
+    /**
+     * Happy kijkt naar het noorden en heeft keycards in zijn zakken: twee beschreven kaarten en twee lege, en
+     * in zijn hand een koekje (dat zit niet in een zak). Jij hebt een lege hand.
+     */
+    static void fillHappysPockets(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerPlayer happy = ShowcaseScene.friend(player);
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        if (happy == null) {
+            return;
+        }
+        var inventory = happy.getInventory();
+        inventory.selected = 0;
+        inventory.setItem(0, new ItemStack(Items.COOKIE));
+        String[][] cards = {{"9", "Stark Tower", "5"}, {"10", "Garage", "2"}};
+        for (String[] card : cards) {
+            ItemStack stack = new ItemStack(ModItems.KEYCARD.get());
+            com.senne.starktech.logic.KeycardItem.write(stack, new com.senne.starktech.logic.KeycardData(
+                    "10.0.0.7", "happy-net", 1000 + Integer.parseInt(card[0]), Integer.parseInt(card[2]), card[1]));
+            inventory.setItem(Integer.parseInt(card[0]), stack);
+        }
+        inventory.setItem(11, new ItemStack(ModItems.KEYCARD.get(), 2));
+        turnHappy(player, 180);
+    }
+
+    /** Opent de zak van Happy (jij staat achter hem). */
+    static void pickHappysPocket(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerPlayer happy = ShowcaseScene.friend(player);
+        if (happy != null) {
+            com.senne.starktech.pickpocket.Pickpocket.tryStart(player, happy);
+        }
+    }
+
+    /** Laat Happy deze kant op kijken (0 = zuid, naar jou toe; 180 = noord), ook met zijn hoofd. */
+    static void turnHappy(net.minecraft.server.level.ServerPlayer player, float yaw) {
+        net.minecraft.server.level.ServerPlayer happy = ShowcaseScene.friend(player);
+        if (happy != null) {
+            happy.setYRot(yaw);
+            happy.setYHeadRot(yaw);
+            happy.yHeadRotO = yaw;
+            happy.yRotO = yaw;
+            happy.setXRot(0);
         }
     }
 

@@ -15,7 +15,7 @@ Afspraken die overal gelden:
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
 **Stand van zaken:** 199 automatische tests, allemaal groen (`gradlew runGameTestServer`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 84 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 85 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -1829,9 +1829,19 @@ De stappen, één per commit:
       van voren mag niet en van achteren pik je een kaart (hij is hem kwijt, jij hebt hem, de kaart in zijn
       hand blijft, en daarna moet je wachten), betrapt als hij zich omdraait of als de meter vol is (en
       dan licht je op), en weglopen (en iemand in creative).
-- [ ] **4. Showcase, screenshots en LEESMIJ**
-      Een nieuwe functie in de showcase (na "Repairing cracks"), screenshots met `-Ponly=bypass`, en
-      een eigen stuk in LEESMIJ.md.
+- [x] **4. Showcase, screenshots en LEESMIJ**
+      Showcase-functie **Hacking and pickpocketing** (na "Repairing cracks", in survival), in het lab
+      van "Server racks and Logic", met de Bypass Kit in je hand. De keycardlezer: het stroomcircuit speelt
+      zichzelf (een kaart van niveau 3, stukje voor stukje vanaf CARD; soms raakt het even een ALARM en
+      knippert alles rood), het pad wordt groen, en de deur gaat 3 seconden open. Het codepaneel: stoffen
+      (afdrukken op 1, 2, 3 en 4), raden ("1 2 3 4: 0 right", "2 1 4 3: 0 right", "3 4 1 2: 0 right") en bij
+      de vierde poging CODE CRACKED 4321: de lamp gaat aan. Dan zakkenrollen bij Happy (die in de
+      showcase-wereld echt een speler is): je sluipt achter hem, schuift de rommel opzij en trekt een
+      kaart uit zijn zak, en die zit daarna echt in je hotbar. De tweede keer draait Happy zich om:
+      CAUGHT!, en jij licht op. Ik heb hem in testmodus afgespeeld en op zes momenten bekeken. De showcase
+      heeft nu 85 functies. Screenshots: `-Ponly=bypass` (`bp01`-`bp20`). LEESMIJ.md heeft een eigen stuk
+      "Inbreken: lezers en panelen hacken, en zakkenrollen" (na "Barsten herstellen"), en de lijsten van de
+      config en de screenshots noemen zakkenrollen en `bypass`.
 
 ---
 
@@ -1873,6 +1883,12 @@ raiddrones eruitzien.
       klinken, en of de getallen goed voelen: 15% zwakker per keer plamuren, 5 seconden per blok in een
       machine. Een gebarsten blok van obsidiaan ziet er in je hand bijna uit als gewoon obsidiaan (net
       als de barsten in de wereld). Alles staat in de config onder `[c4]` en `[repair]`.
+- [ ] **Inbreken (9 oktober)**: gezien op screenshots en in de showcase, maar niet zelf met een muis
+      gespeeld. Probeer of het draaien met links- en rechtsklik, het vegen met de muisknop ingedrukt en
+      het slepen in de zak goed aanvoelen, en of de getallen kloppen: de tijden van het stroomcircuit
+      (60 tot 40 seconden), 1 seconde voor ALARM, de lengte + 2 pogingen bij een paneel, en hoe snel de
+      meter NOTICED vol loopt (te makkelijk of te moeilijk?). Alles staat in de config onder `[bypass]`,
+      behalve de meter (die staat in `client/pickpocket/PocketScreen`).
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 

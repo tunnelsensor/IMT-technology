@@ -629,6 +629,49 @@ Allebei doen ze 5 seconden over één blok en gebruiken ze dan 4 stroom per tick
 boven of opzij iets in en halen het er van onder uit, zoals bij een oven. Alle getallen staan in
 `config/starktech-balance.toml`: plamuren onder `[c4]`, de machines onder `[repair]`.
 
+### Inbreken: lezers en panelen hacken, en zakkenrollen
+Geen kaart en geen code? Dan kun je een **keycardlezer** of een **codepaneel** van iemand anders
+hacken met de **Bypass Kit** (zonder vaste vorm: een Stark-chip, een schaar, glowstonestof, redstone
+en ijzer). Rechtsklik ermee op de lezer of het paneel; de kit gaat 16 keer mee. Het spel loopt door
+terwijl je hackt (torentjes schieten gewoon op je); Esc of weglopen stopt zonder alarm. Hangt het
+apparaat niet aan een draaiende server, dan valt er niets te bedotten (en kost het niets).
+
+**Een keycardlezer: het stroomcircuit.** Eerst kies je welke kaart je namaakt, niveau 1 tot 5: hoe
+hoger, hoe groter het raster en hoe minder tijd (niveau 1: 5 bij 4 en 60 seconden, niveau 5: 8 bij 6
+en 40 seconden). Dan schroef je de lezer open: een raster met stukjes draad. **Linksklik** draait een
+stukje rechtsom, **rechtsklik** linksom. Wat aan **CARD** vastzit licht blauw op; leid het signaal
+naar **ACCEPT**. Raakt het een rood **ALARM**-punt, dan knippert alles rood en heb je 1 seconde om dat
+stukje weg te draaien. Komt het signaal bij ACCEPT, dan wordt het pad groen en leest de lezer een
+**geldige kaart van het niveau dat je koos**. Wat er dan gebeurt, beslist het diagram van de eigenaar,
+zoals bij een echte kaart. Die kaart heeft wel een verzonnen nummer: de eigenaar ziet in zijn
+logboek een nummer dat niet in zijn app Keycards staat, en wie heel voorzichtig is, laat zijn diagram
+ook op `card.number` letten.
+
+**Een codepaneel: vingerafdrukken.** Houd de muisknop ingedrukt en veeg poeder over de toetsen. Op
+de cijfers van de code verschijnen lichtgele afdrukken; een cijfer dat vaker in de code zit, heeft er
+meer ("Extra dirty"). Bovenaan staat hoe lang de code is. Dan raad je **de volgorde**: typ (of klik)
+een volgorde met alleen die cijfers en druk Enter. Je hoort één klik per cijfer op de goede plek, en
+rechts zie je je pogingen ("2 right") en hoeveel volgordes er nog kunnen. Je hebt de lengte van de code
++ 2 pogingen. Goed geraden: de kit typt de code echt in ("CODE CRACKED: 4321"), en je weet hem voortaan.
+De kit kraakt de code die in het diagram van het paneel staat (`if code == "..."`); staat er geen,
+dan valt er niets te kraken.
+
+**Mislukt** (ALARM, de tijd is om, of geen pogingen meer): het lampje wordt rood, het alarm gaat af
+("Someone is tampering with Lab door", met je naam), E.D.I.T.H. waarschuwt de eigenaar, de beveiliging
+jaagt op je, en dat apparaat laat jou een minuut niet meer proberen.
+
+**Zakkenrollen.** Sluip (Shift) met een **lege hand** achter iemand en rechtsklik op hem: zijn zak
+gaat open. Zijn keycards liggen omgekeerd tussen rommel (een touwtje, een papiertje, een muntje...).
+Sleep de rommel opzij en trek een kaart naar boven, uit de zak: hij draait om, je ziet welke het is,
+en hij is van jou (de kaart in zijn hand zit niet in een zak). Maar pas op voor de meter **NOTICED**:
+elke beweging laat hem oplopen, snel slepen veel meer dan rustig; hou je even stil, dan zakt hij weer.
+Is hij vol, of draait de ander zich om en ziet hij je, dan ben je **betrapt**: hij krijgt een melding
+met je naam, en jij licht 10 seconden op. Loopt hij weg, dan houdt het gewoon op. Lukt het, dan merkt
+hij niets, tot hij in zijn rugzak kijkt. Bij dezelfde speler moet je daarna 30 seconden wachten. Een
+gestolen kaart blokkeert de eigenaar in de app Keycards. Op een server kan zakkenrollen uit:
+`pickpocket.allowed = false` in `starktech-server.toml`. De tijden en het bereik staan in
+`config/starktech-balance.toml` onder `[bypass]`.
+
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
@@ -829,7 +872,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 | Bestand | Wat |
 |---------|-----|
 | `config/starktech-balance.toml` | **Alle getallen** (ruim 140): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
-| `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit |
+| `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit, zakkenrollen aan/uit |
 | `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), de rand van zones (`zoneBorder`) |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |
@@ -930,7 +973,7 @@ showcase en staat hij bij NIEUW.
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
-  `racks`, `keycards`, `logic`, `lab`; meerdere met komma's). Op een ander
+  `racks`, `keycards`, `logic`, `lab`, `bypass`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
   stuwraketten, rayshields) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile` (op deze
