@@ -315,4 +315,27 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .lightLevel(state -> 10));
+
+    /**
+     * De Arc Lamp (9 oktober): op Stark-stroom, lichtniveau 100. Het blok zelf geeft 15 als hij brandt; de
+     * rest van zijn licht (tot 100 blokken ver) regelt light/ArcLampLight.
+     */
+    public static final DeferredBlock<com.senne.starktech.light.ArcLampBlock> ARC_LAMP = BLOCKS.registerBlock(
+            "arc_lamp", com.senne.starktech.light.ArcLampBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.starktech.light.ArcLampBlock.LIT) ? 15 : 0));
+
+    /** De lichtschakelaar (9 oktober): zet hem op een kabel; aan = de stroom gaat erdoor, uit = niet. */
+    public static final DeferredBlock<com.senne.starktech.light.LightSwitchBlock> LIGHT_SWITCH = BLOCKS.registerBlock(
+            "light_switch", com.senne.starktech.light.LightSwitchBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(0.5f)
+                    .sound(SoundType.METAL)
+                    .noCollission()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
 }

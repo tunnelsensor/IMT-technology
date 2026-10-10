@@ -1024,6 +1024,82 @@ def compactor_textures():
         save(im, "block/%s.png" % name)
 
 
+def arc_lamp_textures():
+    """
+    De Arc Lamp (9 oktober): een stalen kast met aan vier kanten een groot glas met een reflectorrooster.
+    Uit is het glas donker; aan is het wit in het midden en lichtblauw naar de randen (zoals een echte
+    booglamp: blauwig wit). Boven- en onderkant: een koelplaat met ribben en gouden hoekjes.
+    """
+    for name, on in (("arc_lamp_side", False), ("arc_lamp_side_on", True)):
+        im = img(16, 16, METAL_2)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        px(im, [(1, 1), (14, 1), (1, 14), (14, 14)], METAL_3)  # boutjes
+        d.rectangle([2, 2, 13, 13], fill=(40, 46, 56, 255), outline=(120, 200, 240, 255) if on else METAL_3)
+        for y in range(3, 13):
+            for x in range(3, 13):
+                grid = (x % 3 == 0) or (y % 3 == 0)
+                if on:
+                    dist = ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5
+                    if dist <= 1.6:
+                        color = (255, 255, 255, 255)
+                    elif dist <= 3.0:
+                        color = (236, 248, 255, 255)
+                    elif dist <= 4.4:
+                        color = (205, 238, 255, 255)
+                    else:
+                        color = (170, 222, 255, 255)
+                    if grid and dist > 1.6:
+                        color = (222, 244, 255, 255)
+                else:
+                    color = (40, 52, 68, 255) if grid else (26, 33, 44, 255)
+                im.putpixel((x, y), color)
+        if not on:
+            # De lamp zelf achter het glas: een grijs buisje met een glinstering.
+            d.rectangle([6, 6, 9, 9], fill=(62, 68, 80, 255))
+            px(im, [(6, 6), (7, 6)], (110, 120, 136, 255))
+        save(im, "block/%s.png" % name)
+
+    top = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    for x in range(3, 13):
+        d.line([x, 3, x, 12], fill=METAL_DARK if x % 2 else METAL_3)
+    d.rectangle([6, 6, 9, 9], fill=METAL_2, outline=METAL_DARK)
+    for x, y in ((1, 1), (14, 1), (1, 14), (14, 14)):
+        px(top, [(x, y)], GOLD)
+    save(top, "block/arc_lamp_top.png")
+
+
+def light_switch_textures():
+    """
+    De lichtschakelaar (9 oktober): een licht stalen plaatje met een wipschakelaar erop, en een lampje
+    erboven. Aan: de wip is licht met een blauw streepje ("I") en het lampje brandt blauw. Uit: de wip is
+    donker met een rood stipje ("O") en het lampje is donkerrood.
+    De plaat zit in het model op x 5-10, y 3-12 van het plaatje en de wip op x 6-9, y 5-10; de rest van
+    het plaatje zie je alleen op de smalle randjes.
+    """
+    plate = img(16, 16, (96, 102, 112, 255))
+    d = ImageDraw.Draw(plate)
+    d.rectangle([5, 3, 10, 12], fill=(178, 184, 194, 255), outline=(122, 128, 138, 255))
+    px(plate, [(5, 3), (10, 3), (5, 12), (10, 12)], GOLD)
+    save(plate, "block/light_switch_plate.png")
+
+    for name, on in (("light_switch_rocker_on", True), ("light_switch_rocker_off", False)):
+        base = (198, 204, 212, 255) if on else (118, 124, 134, 255)
+        im = img(16, 16, base)
+        d = ImageDraw.Draw(im)
+        d.rectangle([6, 5, 9, 10], fill=base, outline=(150, 156, 166, 255) if on else (84, 90, 100, 255))
+        if on:
+            d.line([7, 6, 8, 6], fill=(40, 190, 240, 255))  # "I"
+        else:
+            px(im, [(7, 9), (8, 9)], (200, 40, 40, 255))  # "O"
+        save(im, "block/%s.png" % name)
+
+    save(img(16, 16, (90, 230, 255, 255)), "block/light_switch_led_on.png")
+    save(img(16, 16, (110, 24, 24, 255)), "block/light_switch_led_off.png")
+
+
 def block_powder_item():
     """
     Poeder (hoofdstuk 11): een hoopje fijn poeder met wat losse korrels. Lichtgrijs, want het spel
@@ -2891,6 +2967,8 @@ if __name__ == "__main__":
     crusher_textures()
     block_powder_item()
     compactor_textures()
+    arc_lamp_textures()
+    light_switch_textures()
     relay_textures()
     shield_textures()
     rayshield_walls()

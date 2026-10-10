@@ -21,6 +21,8 @@
     "starktech:keycard_reader",
     "starktech:code_panel",
     "starktech:crusher",
-    "starktech:compactor"
+    "starktech:compactor",
+    "starktech:arc_lamp",
+    "starktech:light_switch"
   ]
 }

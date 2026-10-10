@@ -114,4 +114,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("landing_pad",
                     () -> new BlockEntityType<>(com.senne.starktech.suit.LandingPadBlockEntity::new,
                             java.util.Set.of(ModBlocks.LANDING_PAD.get()), null));
+
+    /** De Arc Lamp: haalt elke tick stroom en zet hem aan of uit (9 oktober). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.light.ArcLampBlockEntity>> ARC_LAMP =
+            BLOCK_ENTITIES.register("arc_lamp",
+                    () -> new BlockEntityType<>(com.senne.starktech.light.ArcLampBlockEntity::new,
+                            java.util.Set.of(ModBlocks.ARC_LAMP.get()), null));
 }

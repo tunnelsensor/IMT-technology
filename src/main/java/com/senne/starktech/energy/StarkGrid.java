@@ -110,7 +110,8 @@ public final class StarkGrid {
     /**
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
      * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels, drone-docks,
-     * laserzenders en serverracks geleiden. Staat een apparaat op een kabel, dan loopt de kabel eronder door.)
+     * laserzenders, serverracks en lichtschakelaars die aan staan geleiden. Staat een apparaat op een
+     * kabel, dan loopt de kabel eronder door.)
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
@@ -145,6 +146,15 @@ public final class StarkGrid {
                 continue;
             }
             BlockState state = level.getBlockState(next);
+            // Een lichtschakelaar is een stukje kabel dat aan of uit kan: aan = de stroom gaat erdoor,
+            // uit = hier houdt het op (ook als er een getekende kabel door de schakelaar loopt).
+            if (state.getBlock() instanceof com.senne.starktech.light.LightSwitchBlock) {
+                seen.add(next);
+                if (com.senne.starktech.light.LightSwitchBlock.isOn(state)) {
+                    cables.add(next);
+                }
+                continue;
+            }
             // In een stroomkast kom je alleen via een kant die aan staat.
             if (state.getBlock() instanceof PowerCabinetBlock) {
                 if (PowerCabinetBlock.isOn(state, direction.getOpposite())) {

@@ -105,6 +105,7 @@ public class StarkTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.CrackGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.BypassGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.CoreConfigGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.LightGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 
@@ -230,6 +231,11 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(SatelliteWorkshop::onServerTick);
         NeoForge.EVENT_BUS.addListener(SatelliteWorkshop::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(SatelliteWorkshop::onServerStopped);
+        // De Arc Lamp (lichtniveau 100): metingen afmaken, opnieuw meten na het laden van chunks, oud licht opruimen.
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.light.ArcLampLight::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.light.ArcLampLight::onChunkLoad);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.light.ArcLampLight::onLevelUnload);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.light.ArcLampLight::onServerStopped);
 
         LOGGER.info("Stark Tech loaded. E.D.I.T.H. is standing by.");
     }

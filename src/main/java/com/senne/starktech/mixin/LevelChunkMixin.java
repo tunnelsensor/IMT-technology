@@ -1,6 +1,7 @@
 package com.senne.starktech.mixin;
 
 import com.senne.starktech.c4.Cracks;
+import com.senne.starktech.light.ArcLampLight;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -29,6 +30,20 @@ public abstract class LevelChunkMixin {
         if (old != null && !old.is(state.getBlock())
                 && ((LevelChunk) (Object) this).getLevel() instanceof ServerLevel level) {
             Cracks.blockChanged(level, pos);
+        }
+    }
+
+    /**
+     * Hetzelfde moment, voor de Arc Lamp (9 oktober): houdt het nieuwe blok licht anders tegen dan het oude
+     * (je bouwt een muur in het licht, of breekt er een gat in), dan meten de lampen in de buurt hun licht
+     * opnieuw, zodat er achter de muur schaduw komt (zie light/ArcLampLight.blockChanged).
+     */
+    @Inject(method = "setBlockState", at = @At("RETURN"))
+    private void starktech$arcLampShadows(BlockPos pos, BlockState state, boolean isMoving,
+                                          CallbackInfoReturnable<BlockState> info) {
+        BlockState old = info.getReturnValue();
+        if (old != null) {
+            ArcLampLight.blockChanged(((LevelChunk) (Object) this).getLevel(), pos, old, state);
         }
     }
 }

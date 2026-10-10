@@ -296,6 +296,64 @@ def c4_blocks():
         blockstate(name, variants)
 
 
+def arc_lamp():
+    """
+    De Arc Lamp (9 oktober): een gewoon blok, met het glas aan vier kanten en de koelplaat boven en
+    onder. Brandt hij ("_on"), dan gloeit het hele blok (vol licht, geen schaduw).
+    """
+    for lit in (False, True):
+        name = "arc_lamp_on" if lit else "arc_lamp"
+        textures = {"particle": "starktech:block/arc_lamp_side",
+                    "side": "starktech:block/arc_lamp_side" + ("_on" if lit else ""),
+                    "top": "starktech:block/arc_lamp_top"}
+        save(name, textures, [box([0, 0, 0], [16, 16, 16], {"up": "#top", "down": "#top", "rest": "#side"}, glow=lit)])
+    blockstate("arc_lamp", {"lit=false": {"model": "starktech:block/arc_lamp"},
+                            "lit=true": {"model": "starktech:block/arc_lamp_on"}})
+
+
+def light_switch():
+    """
+    De lichtschakelaar (9 oktober), in drie soorten zoals de camera: aan de muur, op de vloer en aan het
+    plafond. Elk model kijkt naar het noorden (aan de muur zit hij dan tegen de zuidkant); de blockstate
+    draait het. Een plaatje, een wip die 22,5 graden kantelt (aan: bovenkant naar voren, uit: onderkant)
+    en een lampje erboven dat blauw gloeit als hij aan staat.
+    """
+    shapes = {
+        # soort: (plaat, wip, draaipunt van de wip, lampje)
+        "wall": (([5, 3, 15], [11, 13, 16]), ([6, 5, 14], [10, 11, 15]), [8, 8, 15],
+                 ([7.5, 11.5, 14.75], [8.5, 12.5, 15])),
+        "floor": (([5, 0, 3], [11, 1, 13]), ([6, 1, 5], [10, 2, 11]), [8, 1, 8],
+                  ([7.5, 1, 11.5], [8.5, 1.25, 12.5])),
+        "ceiling": (([5, 15, 3], [11, 16, 13]), ([6, 14, 5], [10, 15, 11]), [8, 15, 8],
+                    ([7.5, 14.75, 11.5], [8.5, 15, 12.5])),
+    }
+    for kind, (plate, rocker, pivot, led) in shapes.items():
+        for on in (False, True):
+            textures = {"particle": "starktech:block/light_switch_plate",
+                        "plate": "starktech:block/light_switch_plate",
+                        "rocker": "starktech:block/light_switch_rocker_" + ("on" if on else "off"),
+                        "led": "starktech:block/light_switch_led_" + ("on" if on else "off")}
+            tilt = -22.5 if on else 22.5
+            if kind == "ceiling":
+                tilt = -tilt
+            elements = [
+                box(plate[0], plate[1], "#plate"),
+                box(rocker[0], rocker[1], "#rocker", rotation=("x", tilt, pivot)),
+                box(led[0], led[1], "#led", glow=on),
+            ]
+            save("light_switch_" + kind + ("_on" if on else ""), textures, elements)
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    variants = {}
+    for kind in shapes:
+        for facing, y in turn.items():
+            for on in (False, True):
+                option = {"model": "starktech:block/light_switch_" + kind + ("_on" if on else "")}
+                if y:
+                    option["y"] = y
+                variants["face=%s,facing=%s,on=%s" % (kind, facing, "true" if on else "false")] = option
+    blockstate("light_switch", variants)
+
+
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
@@ -307,3 +365,5 @@ if __name__ == "__main__":
     heat_generator(True)
     heat_generator_states()
     laser_wall_models()
+    arc_lamp()
+    light_switch()

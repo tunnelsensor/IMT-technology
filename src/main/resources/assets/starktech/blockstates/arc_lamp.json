@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "starktech:block/arc_lamp"
+    },
+    "lit=true": {
+      "model": "starktech:block/arc_lamp_on"
+    }
+  }
+}

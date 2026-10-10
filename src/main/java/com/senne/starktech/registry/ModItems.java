@@ -214,6 +214,12 @@ public final class ModItems {
             ModBlocks.CRUSHER, new Item.Properties());
     public static final DeferredItem<BlockItem> COMPACTOR = ITEMS.registerSimpleBlockItem("compactor",
             ModBlocks.COMPACTOR, new Item.Properties());
+    /** De Arc Lamp (9 oktober): lichtniveau 100 op Stark-stroom. */
+    public static final DeferredItem<BlockItem> ARC_LAMP = ITEMS.registerSimpleBlockItem("arc_lamp",
+            ModBlocks.ARC_LAMP, new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** De lichtschakelaar (9 oktober): op een kabel; aan = stroom erdoor. */
+    public static final DeferredItem<BlockItem> LIGHT_SWITCH = ITEMS.registerSimpleBlockItem("light_switch",
+            ModBlocks.LIGHT_SWITCH, new Item.Properties());
 
     /** De laptop waarmee je de beveiliging van een Stark Tower hackt. */
     public static final DeferredItem<com.senne.starktech.security.StarkLaptopItem> STARK_LAPTOP = ITEMS.registerItem(

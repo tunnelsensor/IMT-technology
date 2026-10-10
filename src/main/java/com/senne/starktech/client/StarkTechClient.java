@@ -140,6 +140,8 @@ public class StarkTechClient {
         event.registerBlockEntityRenderer(ModBlockEntities.DRONE_DOCK.get(), com.senne.starktech.client.drone.DroneDockRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SUIT_WORKBENCH.get(),
                 com.senne.starktech.client.workbench.SuitHologramRenderer::new);
+        // De Arc Lamp: de gloed om hem heen als hij brandt.
+        event.registerBlockEntityRenderer(ModBlockEntities.ARC_LAMP.get(), com.senne.starktech.client.light.ArcLampRenderer::new);
     }
 
     private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
