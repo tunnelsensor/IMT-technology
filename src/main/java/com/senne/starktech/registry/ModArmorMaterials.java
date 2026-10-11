@@ -1,7 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.suit.SuitBalance;
+import com.senne.starktech.config.StarkConfig;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -59,17 +59,17 @@ public final class ModArmorMaterials {
      */
     public static final DeferredHolder<ArmorMaterial, ArmorMaterial> STARK = MATERIALS.register("stark", () -> {
         Map<ArmorItem.Type, Integer> defense = new EnumMap<>(ArmorItem.Type.class);
-        defense.put(ArmorItem.Type.CHESTPLATE, SuitBalance.ARMOR_CHEST);
-        defense.put(ArmorItem.Type.LEGGINGS, SuitBalance.ARMOR_LEGS);
-        defense.put(ArmorItem.Type.BOOTS, SuitBalance.ARMOR_BOOTS);
+        defense.put(ArmorItem.Type.CHESTPLATE, StarkConfig.Suit.ARMOR_CHEST);
+        defense.put(ArmorItem.Type.LEGGINGS, StarkConfig.Suit.ARMOR_LEGS);
+        defense.put(ArmorItem.Type.BOOTS, StarkConfig.Suit.ARMOR_BOOTS);
         return new ArmorMaterial(
                 defense,
                 12,                                                  // betovering-waarde
                 SoundEvents.ARMOR_EQUIP_NETHERITE,
                 () -> Ingredient.of(ModItems.STARK_CHIP.get()),      // repareren met een Stark-chip
                 List.of(new ArmorMaterial.Layer(STARK_ASSET)),
-                SuitBalance.TOUGHNESS,
-                SuitBalance.KNOCKBACK_RESISTANCE);
+                StarkConfig.Suit.TOUGHNESS,
+                StarkConfig.Suit.KNOCKBACK_RESISTANCE);
     });
 
     /** Handig voor de items: het materiaal als Holder. */

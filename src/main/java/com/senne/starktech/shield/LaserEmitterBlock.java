@@ -1,7 +1,7 @@
 package com.senne.starktech.shield;
 
 import com.mojang.serialization.MapCodec;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlocks;
@@ -181,11 +181,6 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     /** Zo vaak (ticks) betaalt hij zijn stroom, en kijkt hij of die er (weer) is. */
     private static final int UPKEEP_INTERVAL = 20;
-    /**
-     * Zoveel seconden stroom moet het net hebben voordat de wand aangaat. Anders ging hij bij een
-     * klein beetje stroom (een zonnepaneel) steeds even aan en weer uit, met veel lawaai.
-     */
-    private static final int START_SECONDS = 5;
 
     /**
      * Moet de wand aan of uit? Aan als er redstone op staat én er genoeg stroom is. Zonder stroom
@@ -215,12 +210,12 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     /** Heeft het net genoeg stroom om de wand een paar seconden aan te houden? */
     private static boolean canStart(ServerLevel level, BlockPos pos) {
-        return StarkGrid.available(level, pos) >= EdithBalance.LASER_UPKEEP * UPKEEP_INTERVAL * START_SECONDS;
+        return StarkGrid.available(level, pos) >= StarkConfig.Power.LASER_WALL_UPKEEP * UPKEEP_INTERVAL * StarkConfig.Power.LASER_WALL_START_SECONDS;
     }
 
     /** Eén seconde stroom betalen. Lukt het niet, dan halen we niets weg. */
     private static boolean pay(ServerLevel level, BlockPos pos) {
-        int cost = EdithBalance.LASER_UPKEEP * UPKEEP_INTERVAL;
+        int cost = StarkConfig.Power.LASER_WALL_UPKEEP * UPKEEP_INTERVAL;
         if (StarkGrid.available(level, pos) < cost) {
             return false;
         }
@@ -381,7 +376,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
      */
     private static List<BlockPos> wallPositions(ServerLevel level, BlockPos pos, Direction facing) {
         List<BlockPos> positions = new ArrayList<>();
-        for (int i = 1; i <= EdithBalance.LASER_MAX_LENGTH; i++) {
+        for (int i = 1; i <= StarkConfig.Shields.LASER_MAX_LENGTH; i++) {
             BlockPos target = pos.relative(facing, i);
             BlockState state = level.getBlockState(target);
             if (state.isAir() || state.is(ModBlocks.LASER_WALL.get())) {

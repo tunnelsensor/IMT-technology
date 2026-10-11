@@ -1,6 +1,6 @@
 package com.senne.starktech.station;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.UpgradeItem;
 import com.senne.starktech.registry.ModMenus;
@@ -84,11 +84,11 @@ public class ChargingStationMenu extends AbstractContainerMenu {
     }
 
     public float getStationEnergyFraction() {
-        return (float) getStationEnergy() / EdithBalance.STATION_CAPACITY;
+        return (float) getStationEnergy() / StarkConfig.Power.STATION_CAPACITY;
     }
 
     public float getUpgradeProgress() {
-        return (float) data.get(ChargingStationBlockEntity.DATA_UPGRADE_PROGRESS) / EdithBalance.UPGRADE_INSTALL_TIME;
+        return (float) data.get(ChargingStationBlockEntity.DATA_UPGRADE_PROGRESS) / StarkConfig.Glasses.UPGRADE_INSTALL_TIME;
     }
 
     public ItemStack getGlasses() {

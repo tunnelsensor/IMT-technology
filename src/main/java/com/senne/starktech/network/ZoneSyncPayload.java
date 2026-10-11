@@ -1,7 +1,7 @@
 package com.senne.starktech.network;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.security.SecurityBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.security.zone.ZoneBox;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
@@ -30,7 +30,7 @@ public record ZoneSyncPayload(List<View> zones) implements CustomPacketPayload {
         public static final StreamCodec<ByteBuf, View> STREAM_CODEC = StreamCodec.composite(
                 BlockPos.STREAM_CODEC, View::core,
                 ByteBufCodecs.BOOL, View::active,
-                ZoneBox.STREAM_CODEC.apply(ByteBufCodecs.list(SecurityBalance.ZONE_MAX_BOXES)), View::boxes,
+                ZoneBox.STREAM_CODEC.apply(ByteBufCodecs.list(StarkConfig.Security.ZONE_MAX_BOXES)), View::boxes,
                 View::new);
     }
 

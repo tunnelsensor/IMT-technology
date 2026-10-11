@@ -1,9 +1,9 @@
 package com.senne.starktech.comms;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
-import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.hack.EdithHack;
@@ -53,10 +53,10 @@ public final class EdithComms {
     // ---------------------------------------------------------------- Berichten
 
     public static void handleMessage(ServerPlayer sender, CommsPayload payload) {
-        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_MESSAGE_TICK, EdithBalance.MESSAGE_COOLDOWN)) {
+        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_MESSAGE_TICK, StarkConfig.Comms.MESSAGE_COOLDOWN)) {
             return;
         }
-        String text = clean(payload.message(), EdithBalance.MAX_MESSAGE_LENGTH);
+        String text = clean(payload.message(), StarkConfig.Comms.MAX_MESSAGE_LENGTH);
         if (text.isEmpty()) {
             return;
         }
@@ -95,12 +95,12 @@ public final class EdithComms {
     // ---------------------------------------------------------------- Pings
 
     public static void handlePing(ServerPlayer sender, PingPayload payload) {
-        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_PING_TICK, EdithBalance.PING_COOLDOWN)) {
+        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_PING_TICK, StarkConfig.Comms.PING_COOLDOWN)) {
             return;
         }
         Vec3 pos = payload.pos();
         // De ping moet in de buurt liggen van de speler, of van zijn verkenningsdrone.
-        double max = EdithBalance.PING_PLACE_RANGE + 8;
+        double max = StarkConfig.Comms.PING_PLACE_RANGE + 8;
         boolean nearPlayer = pos.distanceToSqr(sender.getEyePosition()) <= max * max;
         StarkDroneEntity scout = EdithDrones.findScout(sender);
         boolean nearScout = scout != null && pos.distanceToSqr(scout.position()) <= max * max;
@@ -109,7 +109,7 @@ public final class EdithComms {
         }
         LAST_PING.put(sender.getUUID(), pos);
         PingMarkerPayload marker = new PingMarkerPayload(sender.getGameProfile().getName(), pos);
-        double range = EdithBalance.PING_RANGE;
+        double range = StarkConfig.Comms.PING_RANGE;
         for (ServerPlayer player : edithUsers(sender)) {
             if (player.level() == sender.level() && player.distanceToSqr(pos) <= range * range && sameSide(sender, player)) {
                 ModNetwork.sendTo(player, marker);

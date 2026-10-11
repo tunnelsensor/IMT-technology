@@ -1,8 +1,8 @@
 package com.senne.starktech.satellite;
 
-import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.ArsenalServer;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -41,8 +41,6 @@ import org.jetbrains.annotations.Nullable;
 public final class SatelliteWorkshop {
     private SatelliteWorkshop() {}
 
-    /** Zo lang doen de drones erover om boven te komen (in ticks). */
-    public static final int DELIVERY_TICKS = 70;
 
     /** Een levering die onderweg is. */
     private record Delivery(SatelliteUpgrade upgrade, int level, int ticksLeft) {
@@ -100,7 +98,7 @@ public final class SatelliteWorkshop {
         }
         List<ArsenalDrone> carriers = ArsenalServer.checkOut(player, SatelliteUpgrade.dronesFor(next));
         launchCarriers(player, carriers);
-        DELIVERIES.put(player.getUUID(), new Delivery(upgrade, next, DELIVERY_TICKS));
+        DELIVERIES.put(player.getUUID(), new Delivery(upgrade, next, StarkConfig.Satellite.DELIVERY_TICKS));
         EdithServer.send(player, Component.translatable("satellite.starktech.msg.sent", carriers.size(),
                 upgrade.label(), next), EdithMessagePayload.Level.INFO);
     }
@@ -139,7 +137,7 @@ public final class SatelliteWorkshop {
                 ArsenalServer.returnToOrbit(player, carrier.id(), carrier.health());
                 continue;
             }
-            drone.setup(player, StarkDroneEntity.Mode.LAUNCH, 0, ArsenalBalance.LAUNCH_TICKS);
+            drone.setup(player, StarkDroneEntity.Mode.LAUNCH, 0, StarkConfig.Drones.LAUNCH_TICKS);
             drone.setArsenalId(carrier.id());
             drone.setHealth(carrier.health());
             // In een kring om je heen, zodat je ze allemaal ziet opstijgen.

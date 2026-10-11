@@ -7,7 +7,7 @@ import static com.senne.starktech.client.hud.HudStyle.brackets;
 
 import com.senne.starktech.client.DroneCamera;
 import com.senne.starktech.client.EdithClientState;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ClipContext;
@@ -49,7 +49,7 @@ public final class ZoomWidget implements HudWidget {
         HitResult hit = c.player.level().clip(
                 new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, c.player));
         String range = hit.getType() == HitResult.Type.MISS ? "---" : String.format("%.1fm", hit.getLocation().distanceTo(eye));
-        g.drawString(c.font, Component.translatable("hud.starktech.zoom", String.format("%.0f", EdithBalance.ZOOM_FACTOR)),
+        g.drawString(c.font, Component.translatable("hud.starktech.zoom", String.format("%.0f", StarkConfig.Glasses.ZOOM_FACTOR)),
                 cx + 26, cy + 8, argb(230, CYAN), true);
         g.drawString(c.font, Component.translatable("hud.starktech.range", range), cx + 26, cy + 18, argb(230, WHITE), true);
     }

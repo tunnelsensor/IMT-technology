@@ -1,11 +1,11 @@
 package com.senne.starktech.raid;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -47,16 +47,16 @@ public class RaidDroneEntity extends Monster {
         super(type, level);
         this.moveControl = new RaidMoveControl(this);
         this.setNoGravity(true);
-        this.xpReward = RaidBalance.XP_REWARD;
+        this.xpReward = StarkConfig.Raids.XP_REWARD;
     }
 
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, RaidBalance.HEALTH)
+                .add(Attributes.MAX_HEALTH, StarkConfig.Raids.HEALTH)
                 .add(Attributes.MOVEMENT_SPEED, 0.6)
                 .add(Attributes.FLYING_SPEED, 0.6)
                 .add(Attributes.FOLLOW_RANGE, 64.0)
-                .add(Attributes.ATTACK_DAMAGE, RaidBalance.LASER_DAMAGE);
+                .add(Attributes.ATTACK_DAMAGE, StarkConfig.Raids.LASER_DAMAGE);
     }
 
     /** Laat hem uit de lucht in een boog naar {@code landing} duiken (zie SkyDive). */
@@ -95,8 +95,8 @@ public class RaidDroneEntity extends Monster {
         }
 
         LivingEntity target = getTarget();
-        if (target == null || !target.isAlive() || distanceToSqr(target) > RaidBalance.GIVE_UP_RANGE * RaidBalance.GIVE_UP_RANGE) {
-            target = level.getNearestPlayer(this, RaidBalance.FIND_RANGE);
+        if (target == null || !target.isAlive() || distanceToSqr(target) > StarkConfig.Raids.GIVE_UP_RANGE * StarkConfig.Raids.GIVE_UP_RANGE) {
+            target = level.getNearestPlayer(this, StarkConfig.Raids.FIND_RANGE);
             setTarget(target instanceof Player player && !player.isCreative() && !player.isSpectator() ? target : null);
         }
         if (target == null) {
@@ -117,30 +117,30 @@ public class RaidDroneEntity extends Monster {
     private void chase(ServerLevel level, LivingEntity target) {
         Vec3 eye = target.getEyePosition();
         // Iets boven en naast zijn doelwit blijven hangen, niet er bovenop.
-        Vec3 spot = eye.add(0, RaidBalance.HOVER_ABOVE, 0);
+        Vec3 spot = eye.add(0, StarkConfig.Raids.HOVER_ABOVE, 0);
         double distance = Math.sqrt(distanceToSqr(target));
         boolean canSee = getSensing().hasLineOfSight(target);
         if (!canSee) {
             moveControl.setWantedPosition(eye.x, eye.y + 1.0, eye.z, 1.0);
-        } else if (distance > RaidBalance.ATTACK_RANGE) {
+        } else if (distance > StarkConfig.Raids.ATTACK_RANGE) {
             moveControl.setWantedPosition(spot.x, spot.y, spot.z, 1.0);
         } else {
             // Binnen bereik: langzaam om hem heen cirkelen, zodat hij lastig te raken is.
             double angle = tickCount * 0.04;
             moveControl.setWantedPosition(
-                    eye.x + Math.cos(angle) * RaidBalance.CIRCLE_RADIUS,
+                    eye.x + Math.cos(angle) * StarkConfig.Raids.CIRCLE_RADIUS,
                     spot.y,
-                    eye.z + Math.sin(angle) * RaidBalance.CIRCLE_RADIUS, 0.8);
+                    eye.z + Math.sin(angle) * StarkConfig.Raids.CIRCLE_RADIUS, 0.8);
         }
         lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, eye);
 
-        if (canSee && distance <= RaidBalance.ATTACK_RANGE && fireCooldown <= 0) {
+        if (canSee && distance <= StarkConfig.Raids.ATTACK_RANGE && fireCooldown <= 0) {
             fireLaser(level, target);
-            fireCooldown = RaidBalance.FIRE_INTERVAL;
+            fireCooldown = StarkConfig.Raids.FIRE_INTERVAL;
         } else if (!canSee && breakCooldown <= 0) {
             // Verstopt achter een muur? Dan gaat de muur eraan.
             breakTowards(level, target);
-            breakCooldown = RaidBalance.BREAK_INTERVAL;
+            breakCooldown = StarkConfig.Raids.BREAK_INTERVAL;
         }
     }
 
@@ -148,14 +148,14 @@ public class RaidDroneEntity extends Monster {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         // Staat zijn doelwit onder een schildkoepel? Dan stuit het schot daarop.
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, DomeSettings.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, StarkConfig.Dome.COST_LASER);
         if (shield != null) {
             playSound(ModSounds.DRONE_LASER.get(), 0.8f, 1.1f);
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
             return;
         }
         DamageSource source = ModDamageTypes.droneLaser(level, this, this);
-        target.hurt(source, RaidBalance.LASER_DAMAGE);
+        target.hurt(source, StarkConfig.Raids.LASER_DAMAGE);
         playSound(ModSounds.DRONE_LASER.get(), 0.8f, 1.1f + random.nextFloat() * 0.2f);
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
     }
@@ -172,7 +172,7 @@ public class RaidDroneEntity extends Monster {
         }
         Vec3 from = position();
         Vec3 direction = target.getEyePosition().subtract(from).normalize();
-        for (double step = 1.0; step <= RaidBalance.BREAK_REACH; step += 0.5) {
+        for (double step = 1.0; step <= StarkConfig.Raids.BREAK_REACH; step += 0.5) {
             BlockPos pos = BlockPos.containing(from.add(direction.scale(step)));
             BlockState state = level.getBlockState(pos);
             if (state.isAir() || state.liquid()) {
@@ -290,7 +290,7 @@ public class RaidDroneEntity extends Monster {
                 return;
             }
             // Alleen de snelheid bijsturen; het verplaatsen doet de drone zelf al.
-            double speed = speedModifier * RaidBalance.ACCELERATION * Math.min(1.0, length / 2.0);
+            double speed = speedModifier * StarkConfig.Raids.ACCELERATION * Math.min(1.0, length / 2.0);
             drone.setDeltaMovement(drone.getDeltaMovement().add(delta.scale(speed / length)));
         }
     }

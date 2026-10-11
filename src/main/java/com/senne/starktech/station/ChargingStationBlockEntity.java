@@ -1,6 +1,6 @@
 package com.senne.starktech.station;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.UpgradeItem;
 import com.senne.starktech.energy.EnergySource;
@@ -93,7 +93,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     private boolean burnFuel() {
         ItemStack fuel = items.get(SLOT_FUEL);
         int value = getFuelValue(fuel);
-        if (value > 0 && energy + value <= EdithBalance.STATION_CAPACITY) {
+        if (value > 0 && energy + value <= StarkConfig.Power.STATION_CAPACITY) {
             fuel.shrink(1);
             energy += value;
             return true;
@@ -113,8 +113,8 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
             return false;
         }
         int missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses) - energy;
-        int room = EdithBalance.STATION_CAPACITY - energy;
-        int wanted = Math.min(Math.min(missing, room), EdithBalance.STATION_GRID_RATE);
+        int room = StarkConfig.Power.STATION_CAPACITY - energy;
+        int wanted = Math.min(Math.min(missing, room), StarkConfig.Power.STATION_GRID_RATE);
         if (wanted <= 0) {
             return false;
         }
@@ -130,7 +130,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
      * altijd voorgaan; alleen wat daarboven zit, gaat langzaam het station in.
      */
     private boolean storeSpareFromGrid(ServerLevel level, BlockPos pos) {
-        int room = EdithBalance.STATION_CAPACITY - energy;
+        int room = StarkConfig.Power.STATION_CAPACITY - energy;
         if (room <= 0) {
             return false;
         }
@@ -140,8 +140,8 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
             stored += source.energy();
             capacity += source.capacity();
         }
-        long spare = stored - (long) (capacity * EdithBalance.STATION_GRID_RESERVE);
-        int wanted = (int) Math.min(Math.min(spare, room), EdithBalance.STATION_STORE_RATE);
+        long spare = stored - (long) (capacity * StarkConfig.Power.STATION_GRID_RESERVE);
+        int wanted = (int) Math.min(Math.min(spare, room), StarkConfig.Power.STATION_STORE_RATE);
         if (wanted <= 0) {
             return false;
         }
@@ -161,7 +161,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         if (energy <= 0 || !EdithData.isGlasses(glasses)) {
             return false;
         }
-        int added = EdithData.addEnergy(glasses, Math.min(EdithBalance.STATION_CHARGE_RATE, energy));
+        int added = EdithData.addEnergy(glasses, Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy));
         energy -= added;
         return added > 0;
     }
@@ -183,7 +183,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         }
 
         upgradeProgress++;
-        if (upgradeProgress >= EdithBalance.UPGRADE_INSTALL_TIME) {
+        if (upgradeProgress >= StarkConfig.Glasses.UPGRADE_INSTALL_TIME) {
             ((UpgradeItem) upgrade.getItem()).applyTo(glasses);
             upgrade.shrink(1);
             upgradeProgress = 0;
@@ -194,10 +194,10 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
 
     public static int getFuelValue(ItemStack stack) {
         if (stack.is(Items.REDSTONE)) {
-            return EdithBalance.ENERGY_PER_REDSTONE;
+            return StarkConfig.Power.ENERGY_PER_REDSTONE;
         }
         if (stack.is(Items.REDSTONE_BLOCK)) {
-            return EdithBalance.ENERGY_PER_REDSTONE_BLOCK;
+            return StarkConfig.Power.ENERGY_PER_REDSTONE_BLOCK;
         }
         return 0;
     }

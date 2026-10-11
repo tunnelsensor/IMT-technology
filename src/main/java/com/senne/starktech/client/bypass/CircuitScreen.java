@@ -1,9 +1,9 @@
 package com.senne.starktech.client.bypass;
 
 import com.mojang.math.Axis;
-import com.senne.starktech.bypass.BypassBalance;
 import com.senne.starktech.bypass.CircuitPuzzle;
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.BypassPayload;
 import com.senne.starktech.registry.ModSounds;
 import java.util.Locale;
@@ -29,7 +29,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * Eerst kies je welk niveau kaart je namaakt (1-5; hoger = groter raster en minder tijd). Dan draai je
  * de stukjes: linksklik = rechtsom, rechtsklik = linksom. Wat aan CARD vastzit licht blauw op. Komt het
  * signaal bij ACCEPT zonder ALARM te raken, dan stuurt dit scherm de stand naar de server, die het zelf
- * narekent (zie Bypass). Raakt het signaal ALARM, dan heb je {@link BypassBalance#ALARM_GRACE_TICKS}
+ * narekent (zie Bypass). Raakt het signaal ALARM, dan heb je {@link StarkConfig.Bypass#ALARM_GRACE_TICKS}
  * ticks om dat stukje weg te draaien.
  *
  * Het spel loopt door terwijl dit scherm open is. Esc stopt de hack (zonder alarm).
@@ -118,13 +118,13 @@ public class CircuitScreen extends Screen implements BypassScreen {
 
     /** Dit niveau gekozen: het raster maken, de klok starten, en de server laten weten dat hij loopt. */
     private void choose(int chosen) {
-        level = BypassBalance.clampLevel(chosen);
+        level = CircuitPuzzle.clampLevel(chosen);
         puzzle = CircuitPuzzle.generate(seed, level);
         rotations = puzzle.start();
         signal = puzzle.signal(rotations);
         turnFrom = new float[puzzle.cells()];
         turnStart = new long[puzzle.cells()];
-        ticksLeft = BypassBalance.circuitSeconds(level) * 20;
+        ticksLeft = CircuitPuzzle.circuitSeconds(level) * 20;
         phase = Phase.PLAY;
         CompoundTag args = new CompoundTag();
         args.putInt("level", level);
@@ -149,10 +149,10 @@ public class CircuitScreen extends Screen implements BypassScreen {
             int colour = levelColour(lvl);
             g.fill(x + 8, ry, x + 11, ry + ROW_H - 2, HudStyle.argb(255, colour));
             g.drawString(font, "LEVEL " + lvl, x + 16, ry + 5, HudStyle.argb(255, colour), false);
-            String size = BypassBalance.CIRCUIT_COLUMNS[i] + " x " + BypassBalance.CIRCUIT_ROWS[i];
+            String size = StarkConfig.Bypass.CIRCUIT_COLUMNS[i] + " x " + StarkConfig.Bypass.CIRCUIT_ROWS[i];
             g.drawString(font, size, x + 80, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
-            g.drawString(font, BypassBalance.circuitSeconds(lvl) + " s", x + 128, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
-            int alarms = BypassBalance.CIRCUIT_ALARMS[i];
+            g.drawString(font, CircuitPuzzle.circuitSeconds(lvl) + " s", x + 128, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
+            int alarms = StarkConfig.Bypass.CIRCUIT_ALARMS[i];
             g.drawString(font, alarms + (alarms == 1 ? " ALARM" : " ALARMS"), x + 168, ry + 5, HudStyle.argb(255, HudStyle.RED), false);
             for (int pip = 0; pip < 5; pip++) {
                 g.fill(x + 254 + pip * 6, ry + 6, x + 258 + pip * 6, ry + 10,
@@ -309,7 +309,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
             String text = "Sending the card to the server...";
             g.drawString(font, text, cx - font.width(text) / 2, ty, HudStyle.argb(255, HudStyle.CYAN), false);
         } else if (alarm) {
-            float left = 1 - alarmTicks / (float) Math.max(1, BypassBalance.ALARM_GRACE_TICKS);
+            float left = 1 - alarmTicks / (float) Math.max(1, StarkConfig.Bypass.ALARM_GRACE_TICKS);
             String text = "ALARM! Turn that wire away!";
             g.drawString(font, text, cx - font.width(text) / 2, ty, HudStyle.argb(255, HudStyle.RED), false);
             HudStyle.bar(g, cx - 60, ty + 12, 120, 4, left, HudStyle.RED);
@@ -472,7 +472,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
                     if (alarmTicks % 5 == 0) {
                         play(ModSounds.EDITH_ALERT.get(), 1.6f, 0.5f);
                     }
-                    if (++alarmTicks >= BypassBalance.ALARM_GRACE_TICKS) {
+                    if (++alarmTicks >= StarkConfig.Bypass.ALARM_GRACE_TICKS) {
                         lose("alarm");
                         return;
                     }

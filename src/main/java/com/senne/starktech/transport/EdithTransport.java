@@ -1,8 +1,8 @@
 package com.senne.starktech.transport;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
-import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.edith.EdithTargeting;
@@ -125,7 +125,7 @@ public final class EdithTransport {
         Container container = lookedAtContainer(owner);
         List<ItemStack> cargo = new ArrayList<>();
         if (container != null) {
-            for (int slot = 0; slot < container.getContainerSize() && cargo.size() < EdithBalance.CARGO_SLOTS; slot++) {
+            for (int slot = 0; slot < container.getContainerSize() && cargo.size() < StarkConfig.Transport.CARGO_SLOTS; slot++) {
                 ItemStack stack = container.getItem(slot);
                 if (!stack.isEmpty()) {
                     cargo.add(stack.copy());
@@ -468,7 +468,7 @@ public final class EdithTransport {
         if (carrier == null) {
             return;
         }
-        if (!EdithData.tryUseEnergy(glasses, EdithBalance.DRAIN_TRANSPORT)) {
+        if (!EdithData.tryUseEnergy(glasses, StarkConfig.Transport.DRAIN)) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.transport_no_energy"),
                     EdithMessagePayload.Level.ALERT);
             land(owner, carrier, true);

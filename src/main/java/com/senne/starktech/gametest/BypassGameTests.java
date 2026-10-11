@@ -2,9 +2,9 @@ package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bypass.Bypass;
-import com.senne.starktech.bypass.BypassBalance;
 import com.senne.starktech.bypass.CircuitPuzzle;
 import com.senne.starktech.bypass.PanelOrders;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.InputDeviceBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
 import com.senne.starktech.logic.InputLight;
@@ -77,10 +77,10 @@ public final class BypassGameTests {
             for (long seed = 0; seed < 300; seed++) {
                 CircuitPuzzle puzzle = CircuitPuzzle.generate(seed * 7919L - 12345L, level);
                 String which = "Niveau " + level + ", getal " + seed + ": ";
-                check(puzzle.columns() == BypassBalance.CIRCUIT_COLUMNS[index] && puzzle.rows() == BypassBalance.CIRCUIT_ROWS[index],
+                check(puzzle.columns() == StarkConfig.Bypass.CIRCUIT_COLUMNS[index] && puzzle.rows() == StarkConfig.Bypass.CIRCUIT_ROWS[index],
                         which + "het raster is " + puzzle.columns() + " x " + puzzle.rows());
-                check(puzzle.alarms().size() == BypassBalance.CIRCUIT_ALARMS[index],
-                        which + puzzle.alarms().size() + " ALARM-punten in plaats van " + BypassBalance.CIRCUIT_ALARMS[index]);
+                check(puzzle.alarms().size() == StarkConfig.Bypass.CIRCUIT_ALARMS[index],
+                        which + puzzle.alarms().size() + " ALARM-punten in plaats van " + StarkConfig.Bypass.CIRCUIT_ALARMS[index]);
                 CircuitPuzzle.Signal begin = puzzle.signal(puzzle.start());
                 check(!begin.accepted() && begin.alarms().isEmpty(), which + "het begint al opgelost of op ALARM");
                 CircuitPuzzle.Signal solved = puzzle.signal(puzzle.solution());
@@ -308,7 +308,7 @@ public final class BypassGameTests {
                     && entry.text().contains("Someone is tampering with Lab door") && entry.text().contains("bypass-hacker"));
             check(alarm, "Geen alarm in het logboek: " + lastEntry(setup.core()));
             check(setup.core().isHunted(setup.hacker().getUUID()), "De beveiliging jaagt niet op de hacker");
-            check(Bypass.lockedFor(setup.hacker(), setup.readerAbs()) > 20 * (BypassBalance.LOCKOUT_SECONDS - 2),
+            check(Bypass.lockedFor(setup.hacker(), setup.readerAbs()) > 20 * (StarkConfig.Bypass.LOCKOUT_SECONDS - 2),
                     "De lezer laat de hacker meteen weer proberen");
             Bypass.start(setup.hacker(), setup.readerAbs(), InteractionHand.MAIN_HAND);
             check(!Bypass.isHacking(setup.hacker()), "Tijdens de wachttijd begon er toch een hack");
@@ -406,7 +406,7 @@ public final class BypassGameTests {
             startLab(helper, setup);
             Bypass.start(setup.hacker(), setup.panelAbs(), InteractionHand.MAIN_HAND);
             check(Bypass.isHacking(setup.hacker()), "De hack van het paneel begon niet");
-            check(Bypass.triesLeftOf(setup.hacker()) == 4 + BypassBalance.ORDER_EXTRA_TRIES,
+            check(Bypass.triesLeftOf(setup.hacker()) == 4 + StarkConfig.Bypass.ORDER_EXTRA_TRIES,
                     "Pogingen aan het begin: " + Bypass.triesLeftOf(setup.hacker()));
             int start = Bypass.triesLeftOf(setup.hacker());
             guess(setup, "4712");

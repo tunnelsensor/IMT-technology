@@ -1,6 +1,6 @@
 package com.senne.starktech.nav;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.WaypointActionPayload;
@@ -28,8 +28,8 @@ public final class EdithNavigation {
         EdithWaypoints data = player.getData(ModAttachments.WAYPOINTS);
         switch (payload.op()) {
             case ADD -> {
-                if (data.waypoints().size() >= EdithBalance.MAX_WAYPOINTS) {
-                    EdithServer.send(player, Component.translatable("edith.starktech.msg.waypoints_full", EdithBalance.MAX_WAYPOINTS),
+                if (data.waypoints().size() >= StarkConfig.Navigation.MAX_WAYPOINTS) {
+                    EdithServer.send(player, Component.translatable("edith.starktech.msg.waypoints_full", StarkConfig.Navigation.MAX_WAYPOINTS),
                             EdithMessagePayload.Level.WARNING);
                     return;
                 }
@@ -84,7 +84,7 @@ public final class EdithNavigation {
             return;
         }
         GlobalPos pos = target.get();
-        double max = EdithBalance.ARRIVAL_DISTANCE;
+        double max = StarkConfig.Navigation.ARRIVAL_DISTANCE;
         if (pos.dimension() == player.level().dimension() && Vec3.atCenterOf(pos.pos()).distanceToSqr(player.position()) < max * max) {
             Component name = targetName(data, data.active());
             player.setData(ModAttachments.WAYPOINTS, data.withActive(EdithWaypoints.NONE));
@@ -130,8 +130,8 @@ public final class EdithNavigation {
     private static String cleanName(String name, int number) {
         // "§c" enz. zijn opmaakcodes (kleuren); die halen we er in hun geheel uit.
         String clean = name.replaceAll("§.?", "").replaceAll("\\p{Cntrl}", "").trim();
-        if (clean.length() > EdithBalance.MAX_WAYPOINT_NAME) {
-            clean = clean.substring(0, EdithBalance.MAX_WAYPOINT_NAME).trim();
+        if (clean.length() > StarkConfig.Navigation.MAX_WAYPOINT_NAME) {
+            clean = clean.substring(0, StarkConfig.Navigation.MAX_WAYPOINT_NAME).trim();
         }
         return clean.isEmpty() ? "Waypoint " + number : clean;
     }

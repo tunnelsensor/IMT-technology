@@ -180,7 +180,7 @@ plafond boven je (een grot, een kelder), dan komen ze zo hoog als er ruimte is. 
 in de lucht — ze lossen niet ter plekke op. Pas als ze boven zijn, staan ze weer klaar in je
 arsenaal.
 
-Hoe hoog precies staat in de config (`drones.orbitHeight`). Hoeveel drones er maximaal in een
+Hoe hoog precies staat in `config/starktech.toml` (`drones.orbitHeight`). Hoeveel drones er maximaal in een
 zwerm passen staat daar ook (standaard zwerm 16 en escorte 8) — maar je arsenaal bepaalt
 hoeveel het er echt worden.
 
@@ -241,7 +241,7 @@ Kijk een speler aan en hack hem. Daarna zie je zijn **privéberichten** (/msg, /
 /teammsg en E.D.I.T.H.-comms) — ook de antwoorden van anderen — in een ballonnetje boven zijn
 hoofd. Je ziet het alleen als je hem echt kunt zien (binnen 64 blokken, geen muur ertussen, en
 hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit uitzetten met
-`hack.allowed = false` in de serverconfig.
+`rules.hackAllowed = false` in `config/starktech.toml`.
 
 ### Stroom en kabels
 Zonnepanelen en warmtegeneratoren maken stroom. Met **Stark-kabel** (koper, redstone, koper
@@ -343,8 +343,8 @@ satelliet-upgrades nodig hebt (netherite, diamanten, goud, Stark-chips, soms een
 een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaakt (zie Raiddrones).
 - **Blokken slopen uitzetten**: `/gamerule starktechRaidGriefing false`. Dan kunnen ze nog wel
   schieten, maar laten ze je muren heel.
-- **Instellen** in `config/starktech-server.toml`: `raids.enabled`, `raids.minMinutes`,
-  `raids.maxMinutes` en `raids.size` (hoeveel drones per golf, standaard 4). Zie ook hoofdstuk 6.
+- **Instellen** in `config/starktech.toml`: aan/uit met `rules.raidsEnabled`, en onder `[raids]`
+  `minMinutes`, `maxMinutes` en `size` (hoeveel drones per golf, standaard 4). Zie ook hoofdstuk 6.
 
 ### Hydra-soldaten
 Hydra wil Stark-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
@@ -433,8 +433,8 @@ tussen twee kabeleinden in). **Rechtsklik** zet hem om:
 Let op: de schakelaar moet *in* de kabel zitten. Staat hij naast de kabel, dan loopt de stroom er
 gewoon langs. Wie hem neerzet, vindt hem ook in de redstone-lijst van E.D.I.T.H. (toets **'**, als
 "Light switch 1"), zodat je je lichten op afstand aan en uit zet. De getallen staan in
-`config/starktech-balance.toml` onder `[lights]` (`arcLampMaxLevel` is het hoogste lichtniveau dat je
-kunt kiezen, tussen 15 en 128).
+`config/starktech.toml` onder `[lights]` (`arcLampMaxLevel` is het hoogste lichtniveau dat je
+kunt kiezen, tussen 15 en 128); wat een lamp aan stroom gebruikt staat onder `[power]`.
 
 ### De server: je redstone programmeren
 Met een **server** programmeer je de redstone van je basis: "houdt iemand een kaart van niveau 3
@@ -551,7 +551,7 @@ er backups van, en het brein van E.D.I.T.H. draait erop.
   je op welk datacenter het draait en hoeveel het erbij zet. Terwijl ze nadenkt, werkt je
   datacenter hard (en wordt het warmer).
 
-Alle getallen staan in `config/starktech-balance.toml` onder `[logic]`.
+Alle getallen staan in `config/starktech.toml` onder `[logic]` (de stroom van een kast onder `[power]`).
 
 ### Je basis beveiligen: zones en C4
 In Minecraft kan iedereen elk blok weghakken. Met een **zone** kunnen in je basis alleen jij en je
@@ -565,7 +565,7 @@ hieronder); hooguit 16. Niet over de zone van een ander.
 **Het bereik van een kern.** Alles van je beveiliging werkt tot **200 blokken** van je kern, in elke
 richting: je zone, en al je apparaten (torentjes, camera's, keycard-lezers, codepanelen,
 serverkasten, laserwanden); zijn drones jagen ook zo ver. Dat is één getal in
-`config/starktech-balance.toml`: `zoneReach` onder `[security]`. Maak je het groter of kleiner, dan
+`config/starktech.toml`: `zoneReach` onder `[security]`. Maak je het groter of kleiner, dan
 past alles zich meteen aan, ook terwijl het spel draait. Twee kernen mogen niet in elkaars bereik
 staan: met 200 moet een nieuwe kern dus meer dan 400 blokken van een andere kern staan ("Too close to
 another security network").
@@ -635,7 +635,7 @@ nieuwe kern.
   zien een knipperend rood bordje "C4!" tot hij weg is. Hoeveel er ontploft is, staat in het logboek
   van je kern. Was je offline, dan vertelt E.D.I.T.H. het als je weer inlogt.
 
-Alle getallen staan in `config/starktech-balance.toml` onder `[c4]` en `[security]`.
+Alle getallen staan in `config/starktech.toml` onder `[c4]` en `[security]` (wat een zone aan stroom kost onder `[power]`).
 
 ### Barsten herstellen
 Wat een klap niet kapotmaakt, krijgt **barsten**: van C4, en in een zone ook van TNT en de satelliet.
@@ -661,7 +661,7 @@ direct tegen een generator). Elk heeft een vakje erin, een vakje eruit en een pi
 
 Allebei doen ze 5 seconden over één blok en gebruiken ze dan 4 stroom per tick. Trechters doen er van
 boven of opzij iets in en halen het er van onder uit, zoals bij een oven. Alle getallen staan in
-`config/starktech-balance.toml`: plamuren onder `[c4]`, de machines onder `[repair]`.
+`config/starktech.toml` onder `[repair]` (de stroom van de machines onder `[power]`).
 
 ### Inbreken: lezers en panelen hacken, en zakkenrollen
 Geen kaart en geen code? Dan kun je een **keycardlezer** of een **codepaneel** van iemand anders
@@ -703,8 +703,8 @@ Is hij vol, of draait de ander zich om en ziet hij je, dan ben je **betrapt**: h
 met je naam, en jij licht 10 seconden op. Loopt hij weg, dan houdt het gewoon op. Lukt het, dan merkt
 hij niets, tot hij in zijn rugzak kijkt. Bij dezelfde speler moet je daarna 30 seconden wachten. Een
 gestolen kaart blokkeert de eigenaar in de app Keycards. Op een server kan zakkenrollen uit:
-`pickpocket.allowed = false` in `starktech-server.toml`. De tijden en het bereik staan in
-`config/starktech-balance.toml` onder `[bypass]`.
+`rules.pickpocketAllowed = false` in `config/starktech.toml`. De tijden en het bereik staan in
+hetzelfde bestand onder `[bypass]`.
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
@@ -905,21 +905,29 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/starktech-balance.toml` | **Alle getallen** (ruim 140): kosten, schade, bereik, wachttijden, verbruik, per onderdeel (bril, drones, satelliet, harnas, torentjes, Hydra...) |
-| `config/starktech-server.toml` | Max drones, `drones.orbitHeight` (hoe hoog ze in- en uitvliegen), raids, hacken aan/uit, zakkenrollen aan/uit |
+| `config/starktech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, Hydra, raids... |
 | `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), de rand van zones (`zoneBorder`) |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |
-| `src/main/java/.../edith/EdithBalance.java` (en `SuitBalance`, `TurretBalance`...) | De standaardwaarden van die getallen |
+| `src/main/java/.../config/StarkConfig.java` | De standaardwaarden van al die getallen, met uitleg in het Nederlands, plus een paar vaste getallen die niet in het `.toml`-bestand kunnen |
 
-De twee `starktech-...toml`-bestanden gelden voor **al je werelden** (op een server: de map
-`config` van de server; spelers krijgen de getallen van de server vanzelf mee). Moet **één
+`starktech.toml` geldt voor **al je werelden** (op een server: de map `config` van de server;
+spelers krijgen de getallen van de server vanzelf mee). Moet **één
 wereld** anders zijn, bijvoorbeeld "in deze wereld is de satelliet te sterk"? Kopieer het bestand
 naar `<wereld>/serverconfig/` en pas het daar aan: die kopie gaat voor. Het spel leest het bestand
 opnieuw als je het opslaat terwijl je speelt; je hoeft niets te herstarten.
 
-Een nieuw getal instelbaar maken (voor jezelf als modder): zet `@Tunable(section = "...",
-comment = "...")` erboven in het balance-bestand en haal `final` weg.
+Sommige getallen zijn een **rijtje per niveau**. Zo staat de herlaadtijd van de satelliet voor
+upgrade Recharge niveau 0 tot en met 10 onder `[satellite]` als
+`cooldown = [1800, 1692, 1584, ...]` (in ticks: 20 = 1 seconde). Verander de getallen, maar laat
+het aantal hetzelfde; anders gebruikt de mod het standaardrijtje.
+
+De oude bestanden `starktech-balance.toml` en `starktech-server.toml` doen niets meer; je mag ze
+weggooien.
+
+Een nieuw getal instelbaar maken (voor jezelf als modder): zet het in `StarkConfig.java` in het
+juiste hoofdstuk, zonder `final`, met `@Tunable("Engelse uitleg")` erboven. Het staat dan vanzelf in
+`starktech.toml`.
 
 ---
 
@@ -981,7 +989,8 @@ showcase en staat hij bij NIEUW.
 
 ## 8. Zelf verder bouwen
 
-- **Getallen aanpassen** (sterker/zwakker): `EdithBalance.java`, dan `gradlew build`.
+- **Getallen aanpassen** (sterker/zwakker): gewoon in `config/starktech.toml` (geen build nodig), of
+  de standaardwaarden in `config/StarkConfig.java`, dan `gradlew build`.
 - **Textures**: `python tools/generate_textures.py` maakt ze allemaal opnieuw. Teken je liever
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **Blokmodellen**: `python tools/generate_block_models.py` maakt de 3D-modellen van het

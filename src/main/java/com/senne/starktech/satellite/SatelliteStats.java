@@ -1,68 +1,96 @@
 package com.senne.starktech.satellite;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 
 /**
- * Wat de upgrades van de satelliet echt doen: de getallen per niveau, op één plek.
+ * Wat de upgrades van de satelliet echt doen: zoekt voor elk niveau het juiste getal op in de rijtjes
+ * van {@link StarkConfig.Satellite}. Aanpassen doe je dus daar (of in config/starktech.toml), niet hier.
  *
- * Alles begint bij de getallen uit EdithBalance (dat is niveau "zoals vroeger") en schuift
- * per niveau een stukje op. Aanpassen? Verander de getallen hier en bouw opnieuw.
+ * Recharge, Power en Targeting gaan van niveau 0 tot 10: hun rijtjes hebben 11 getallen. De drie
+ * schietstanden (Precision, Bombardment, Sweep) zitten op niveau 0 op slot: hun rijtjes beginnen bij
+ * niveau 1 en hebben er 10.
  */
 public final class SatelliteStats {
     private SatelliteStats() {}
 
-    /** Kracht: +8% schade per niveau, voor alle standen (niveau 10: +80%). */
+    /** Power: schade maal dit, voor alle standen. */
     public static float powerFactor(int power) {
-        return 1.0f + 0.08f * power;
+        return StarkConfig.Satellite.DAMAGE_MULTIPLIER[upgrade(power, StarkConfig.Satellite.DAMAGE_MULTIPLIER.length)];
     }
 
-    /** Precisie: +12% schade per niveau boven 1 (niveau 1 = 30 schade, zoals vroeger). */
+    /** Precision: schade van de precisie-straal, met Power erbij. */
     public static float precisionDamage(int precision, int power) {
-        return EdithBalance.PRECISION_DAMAGE * (1.0f + 0.12f * Math.max(0, precision - 1)) * powerFactor(power);
+        float[] damage = StarkConfig.Satellite.PRECISION_DAMAGE;
+        return damage[mode(precision, damage.length)] * powerFactor(power);
     }
 
-    /** Precisie: de straal wordt per niveau 0,2 blok breder. */
+    /** Precision: binnen deze straal raakt de straal alles. */
     public static double precisionRadius(int precision) {
-        return EdithBalance.PRECISION_RADIUS + 0.2 * Math.max(0, precision - 1);
+        double[] radius = StarkConfig.Satellite.PRECISION_RADIUS;
+        return radius[mode(precision, radius.length)];
     }
 
-    /** Bombardement: 4 inslagen op niveau 1, één meer per niveau (13 op niveau 10). */
+    /** Bombardment: hoeveel inslagen. */
     public static int bombardmentShots(int bombardment) {
-        return 3 + Math.max(1, bombardment);
+        int[] shots = StarkConfig.Satellite.BOMBARDMENT_SHOTS;
+        return shots[mode(bombardment, shots.length)];
     }
 
-    /** Bombardement: de inslagen liggen iets verder uit elkaar naarmate het er meer zijn. */
+    /** Bombardment: hoe ver de inslagen uit elkaar liggen. */
     public static double bombardmentSpread(int bombardment) {
-        return EdithBalance.BOMBARDMENT_SPREAD + 0.3 * Math.max(0, bombardment - 1);
+        double[] spread = StarkConfig.Satellite.BOMBARDMENT_SPREAD;
+        return spread[mode(bombardment, spread.length)];
     }
 
-    /** Bombardement: grotere explosies met niveau en kracht (TNT = 4). */
+    /** Bombardment: kracht van één explosie, met een beetje extra per Power-niveau (TNT = 4). */
     public static float explosionPower(int bombardment, int power) {
-        return EdithBalance.SATELLITE_EXPLOSION_POWER * (0.9f + 0.04f * bombardment) + 0.1f * power;
+        float[] explosion = StarkConfig.Satellite.BOMBARDMENT_EXPLOSION;
+        return explosion[mode(bombardment, explosion.length)] + StarkConfig.Satellite.EXPLOSION_PER_POWER_LEVEL * power;
     }
 
-    /** Schuivende laser: 2,8 seconde op niveau 1, per niveau 0,3 seconde langer. */
+    /** Sweep: hoe lang de laser schuift (ticks). */
     public static int sweepTicks(int sweep) {
-        return 50 + 6 * Math.max(1, sweep);
+        int[] ticks = StarkConfig.Satellite.SWEEP_TICKS;
+        return ticks[mode(sweep, ticks.length)];
     }
 
-    /** Schuivende laser: schade per treffer. */
+    /** Sweep: schade per treffer, met Power erbij. */
     public static float sweepDamage(int sweep, int power) {
-        return EdithBalance.SWEEP_DAMAGE * (0.8f + 0.07f * Math.max(1, sweep)) * powerFactor(power);
+        float[] damage = StarkConfig.Satellite.SWEEP_DAMAGE;
+        return damage[mode(sweep, damage.length)] * powerFactor(power);
     }
 
-    /** Opladen: 6% kortere wachttijd per niveau (niveau 10: 36 in plaats van 90 seconden). */
+    /** Recharge: de wachttijd tussen twee aanvallen (ticks). */
     public static int cooldownTicks(int recharge) {
-        return Math.round(EdithBalance.SATELLITE_COOLDOWN * (1.0f - 0.06f * recharge));
+        int[] cooldown = StarkConfig.Satellite.COOLDOWN;
+        return cooldown[upgrade(recharge, cooldown.length)];
     }
 
-    /** Richten: 5% korter laden voor de inslag per niveau (niveau 10: 1,5 in plaats van 3 seconden). */
+    /** Targeting: hoe lang de satelliet richt voor de inslag (ticks). */
     public static int chargeTicks(int targeting) {
-        return Math.round(EdithBalance.SATELLITE_CHARGE_TIME * (1.0f - 0.05f * targeting));
+        int[] charge = StarkConfig.Satellite.CHARGE_TIME;
+        return charge[upgrade(targeting, charge.length)];
     }
 
-    /** Richten: per niveau 50 blokken verder (niveau 10: 1000 blokken). */
+    /** Targeting: hoe ver weg je kunt richten (blokken). */
     public static double range(int targeting) {
-        return EdithBalance.SATELLITE_RANGE + 50.0 * targeting;
+        double[] range = StarkConfig.Satellite.RANGE;
+        return range[upgrade(targeting, range.length)];
+    }
+
+    /** Hoeveel drones een upgrade naar niveau {@code nextLevel} naar boven brengen. */
+    public static int deliveryDrones(int nextLevel) {
+        int[] drones = StarkConfig.Satellite.DELIVERY_DRONES;
+        return drones[mode(nextLevel, drones.length)];
+    }
+
+    /** Plek in een rijtje van niveau 0 t/m 10. */
+    private static int upgrade(int level, int length) {
+        return Math.max(0, Math.min(length - 1, level));
+    }
+
+    /** Plek in een rijtje van niveau 1 t/m 10 (niveau 0 telt als 1). */
+    private static int mode(int level, int length) {
+        return Math.max(0, Math.min(length - 1, level - 1));
     }
 }

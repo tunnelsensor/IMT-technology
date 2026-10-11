@@ -1,6 +1,6 @@
 package com.senne.starktech.security.zone;
 
-import com.senne.starktech.security.SecurityBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import java.util.ArrayList;
@@ -56,9 +56,9 @@ public final class ZoneApp {
         data.put("boxes", boxes);
         data.putLong("volume", zone == null ? 0 : zone.volume());
         data.putInt("upkeep", core.zoneUpkeep());
-        data.putInt("coreUpkeep", SecurityBalance.CORE_UPKEEP);
-        data.putInt("max", SecurityBalance.ZONE_MAX_BOXES);
-        data.putInt("reach", SecurityBalance.ZONE_REACH);
+        data.putInt("coreUpkeep", StarkConfig.Power.SECURITY_CORE_UPKEEP);
+        data.putInt("max", StarkConfig.Security.ZONE_MAX_BOXES);
+        data.putInt("reach", StarkConfig.Security.ZONE_REACH);
         if (viewer != null && !remote) {
             data.put("player", xyz(viewer.blockPosition()));
         }
@@ -85,8 +85,8 @@ public final class ZoneApp {
 
     /** Een nieuwe kubus van 7 x 5 x 7: waar je staat (de vloer onder je hoort erbij), of bij de kern. */
     private static Result addBox(ServerPlayer player, SecurityCoreBlockEntity core, List<ZoneBox> boxes, boolean remote) {
-        if (boxes.size() >= SecurityBalance.ZONE_MAX_BOXES) {
-            return new Result("Your zone already has " + SecurityBalance.ZONE_MAX_BOXES + " boxes", true);
+        if (boxes.size() >= StarkConfig.Security.ZONE_MAX_BOXES) {
+            return new Result("Your zone already has " + StarkConfig.Security.ZONE_MAX_BOXES + " boxes", true);
         }
         BlockPos centre = core.getBlockPos();
         if (!remote && ZoneBox.of(core.zoneLow(), core.zoneHigh()).contains(player.blockPosition())) {
@@ -125,7 +125,7 @@ public final class ZoneApp {
         }
         ZoneBox fitted = grown.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null || fitted.equals(old)) {
-            return new Result("Your zone can't reach further (" + SecurityBalance.ZONE_REACH + " blocks from the core)", true);
+            return new Result("Your zone can't reach further (" + StarkConfig.Security.ZONE_REACH + " blocks from the core)", true);
         }
         // Kleiner maken mag altijd; groter alleen als hij dan niemand in de weg zit.
         if (by > 0 && core.zoneBoxBlocked(fitted)) {
@@ -147,7 +147,7 @@ public final class ZoneApp {
         }
         ZoneBox fitted = wanted.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null) {
-            return new Result("That is too far: a zone reaches " + SecurityBalance.ZONE_REACH + " blocks from the core", true);
+            return new Result("That is too far: a zone reaches " + StarkConfig.Security.ZONE_REACH + " blocks from the core", true);
         }
         if (!boxes.get(index).contains(fitted) && core.zoneBoxBlocked(fitted)) {
             return new Result(BLOCKED, true);
@@ -156,7 +156,7 @@ public final class ZoneApp {
         core.setZoneBoxes(boxes);
         boolean cut = !fitted.equals(wanted);
         return new Result("Box " + (index + 1) + ": " + fitted.size()
-                + (cut ? " (cut: a zone reaches " + SecurityBalance.ZONE_REACH + " blocks from the core)" : ""), cut);
+                + (cut ? " (cut: a zone reaches " + StarkConfig.Security.ZONE_REACH + " blocks from the core)" : ""), cut);
     }
 
     /** Wat de app zegt als een kubus een ander in de weg zou zitten. */

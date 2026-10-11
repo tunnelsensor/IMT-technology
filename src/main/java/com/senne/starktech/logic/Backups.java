@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Een backup is een kopie van je diagrammen en keycards (alles wat bij een brand verloren
  *       gaat, zie Datacenter). Hij staat op het andere datacenter en neemt daar plek op de SSD's:
  *       zoveel blokjes als je diagrammen, plus één per 10 keycards.</li>
- *   <li>Op één datacenter blijven van elk netwerk de laatste {@link #KEEP} staan; een nieuwe duwt
+ *   <li>Op één datacenter blijven van elk netwerk de laatste {@code StarkConfig.Logic.BACKUPS_KEPT} staan; een nieuwe duwt
  *       de oudste eruit.</li>
  *   <li>Automatisch: om de 5, 15 of 60 minuten (speltijd), naar het datacenter dat je koos.</li>
  *   <li>Terugzetten (Restore) vervangt je diagrammen door die van de backup. De keycards alleen als
@@ -34,8 +35,6 @@ import org.jetbrains.annotations.Nullable;
 public final class Backups {
     private Backups() {}
 
-    /** Zoveel backups van één netwerk blijven op één datacenter staan. */
-    public static final int KEEP = 3;
     /** De keuzes voor automatisch (minuten); 0 = uit. */
     public static final int[] INTERVALS = {0, 5, 15, 60};
 
@@ -117,13 +116,13 @@ public final class Backups {
         }
         int size = size(core.logic());
         GlobalPos here = here(level, core);
-        int free = datacenters.free(target, here, KEEP);
+        int free = datacenters.free(target, here, StarkConfig.Logic.BACKUPS_KEPT);
         if (size > free) {
             return Result.fail("Not enough room on " + summary.host() + ": needs " + size + " blocks, " + Math.max(0, free) + " free");
         }
         CompoundTag data = new CompoundTag();
         data.put("Logic", core.logic().save());
-        datacenters.add(target, here, core.ip(), core.hostname(), core.ownerId(), level.getGameTime(), size, auto, data, KEEP);
+        datacenters.add(target, here, core.ip(), core.hostname(), core.ownerId(), level.getGameTime(), size, auto, data, StarkConfig.Logic.BACKUPS_KEPT);
         core.datacenter().backedUp(level.getGameTime());
         core.setChanged();
         core.logEvent(EventLog.Type.SYSTEM, (auto ? "Automatic backup" : "Backup by " + who) + " to " + summary.host()
@@ -235,7 +234,7 @@ public final class Backups {
             item.putString("host", summary.host());
             item.putString("ip", summary.ip());
             item.putBoolean("online", summary.online());
-            item.putInt("free", Math.max(0, datacenters.free(entry.getKey(), here, KEEP)));
+            item.putInt("free", Math.max(0, datacenters.free(entry.getKey(), here, StarkConfig.Logic.BACKUPS_KEPT)));
             item.putInt("cap", summary.capacity());
             targets.add(item);
         }

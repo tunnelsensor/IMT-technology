@@ -1,6 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.DomeActionPayload;
 import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.shield.DomeSettings;
@@ -104,10 +105,10 @@ public class DomeScreen extends Screen {
         }
 
         // Bereik en sterkte: min, de waarde (getekend in render), plus.
-        stepper(ROW_RADIUS, dome.radiusIndex() > 0, dome.radiusIndex() < DomeSettings.RADII.length - 1,
+        stepper(ROW_RADIUS, dome.radiusIndex() > 0, dome.radiusIndex() < StarkConfig.Dome.RADII.length - 1,
                 () -> send(DomeActionPayload.Op.RADIUS, dome.radiusIndex() - 1),
                 () -> send(DomeActionPayload.Op.RADIUS, dome.radiusIndex() + 1));
-        stepper(ROW_STRENGTH, dome.strength() > DomeSettings.MIN_STRENGTH, dome.strength() < DomeSettings.MAX_STRENGTH,
+        stepper(ROW_STRENGTH, dome.strength() > StarkConfig.Dome.MIN_STRENGTH, dome.strength() < StarkConfig.Dome.MAX_STRENGTH,
                 () -> send(DomeActionPayload.Op.STRENGTH, dome.strength() - 1),
                 () -> send(DomeActionPayload.Op.STRENGTH, dome.strength() + 1));
 
@@ -193,7 +194,7 @@ public class DomeScreen extends Screen {
         // Bereik en sterkte tussen de min- en plusknop.
         g.drawCenteredString(font, DomeSettings.radiusLabel(dome.radiusIndex()), valueX + 65, rowY(ROW_RADIUS) + 6,
                 HudStyle.argb(255, HudStyle.WHITE));
-        for (int i = 0; i < DomeSettings.MAX_STRENGTH; i++) {
+        for (int i = 0; i < StarkConfig.Dome.MAX_STRENGTH; i++) {
             int px = valueX + 28 + i * 16;
             boolean filled = i < dome.strength();
             g.fill(px, rowY(ROW_STRENGTH) + 5, px + 12, rowY(ROW_STRENGTH) + 15,

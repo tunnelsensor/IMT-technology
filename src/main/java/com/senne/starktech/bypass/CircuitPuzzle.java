@@ -1,5 +1,6 @@
 package com.senne.starktech.bypass;
 
+import com.senne.starktech.config.StarkConfig;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,10 +102,20 @@ public final class CircuitPuzzle {
      * het pad aan de rand: draai je daar een stukje de verkeerde kant op, dan raak je ALARM. Tot slot
      * draaien we alle stukjes willekeurig, zodat het niet al klaar is.
      */
+    /** Een kaartniveau tussen 1 en 5. */
+    public static int clampLevel(int level) {
+        return Math.max(1, Math.min(StarkConfig.Bypass.CIRCUIT_COLUMNS.length, level));
+    }
+
+    /** Hoeveel seconden je hebt voor een kaart van dit niveau (1-5): StarkConfig.Bypass.CIRCUIT_SECONDS. */
+    public static int circuitSeconds(int level) {
+        return StarkConfig.Bypass.CIRCUIT_SECONDS[clampLevel(level) - 1];
+    }
+
     public static CircuitPuzzle generate(long seed, int level) {
-        int index = BypassBalance.clampLevel(level) - 1;
-        int columns = BypassBalance.CIRCUIT_COLUMNS[index];
-        int rows = BypassBalance.CIRCUIT_ROWS[index];
+        int index = CircuitPuzzle.clampLevel(level) - 1;
+        int columns = StarkConfig.Bypass.CIRCUIT_COLUMNS[index];
+        int rows = StarkConfig.Bypass.CIRCUIT_ROWS[index];
         Random random = new Random(seed * 31L + level);
         int cardRow = random.nextInt(rows);
         int acceptRow = random.nextInt(rows);
@@ -181,7 +192,7 @@ public final class CircuitPuzzle {
             boolean wrongTurn = shapes[cell] == CORNER && terminal.side() != out[cell] && terminal.side() != opposite(in[cell]);
             return wrongTurn ? 0 : 1;
         }));
-        int alarmCount = Math.min(candidates.size(), BypassBalance.CIRCUIT_ALARMS[index]);
+        int alarmCount = Math.min(candidates.size(), StarkConfig.Bypass.CIRCUIT_ALARMS[index]);
         List<Terminal> alarms = new ArrayList<>(candidates.subList(0, alarmCount));
 
         // Alles door elkaar draaien, tot het niet al klaar is en ALARM niet al geraakt wordt.

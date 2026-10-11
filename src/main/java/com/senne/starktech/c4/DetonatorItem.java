@@ -1,5 +1,6 @@
 package com.senne.starktech.c4;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModSounds;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Plak je een <b>remote C4</b> terwijl je een detonator bij je hebt, dan hoort hij bij die
  *       detonator. Een remote C4 die nog nergens bij hoort, koppel je met een rechtsklik met de
  *       detonator erop.</li>
- *   <li><b>Rechtsklik</b>: al zijn ladingen binnen {@link C4Balance#DETONATOR_RANGE} blokken (in dezelfde wereld) gaan af,
+ *   <li><b>Rechtsklik</b>: al zijn ladingen binnen {@link StarkConfig.C4#DETONATOR_RANGE} blokken (in dezelfde wereld) gaan af,
  *       kort na elkaar.</li>
  *   <li><b>Sluipen + rechtsklik</b>: hoeveel ladingen er bij hem horen en hoeveel er in bereik zijn
  *       (zonder iets op te blazen).</li>
@@ -120,7 +121,7 @@ public class DetonatorItem extends Item {
         int gone = 0;
         for (GlobalPos charge : data.charges()) {
             if (!charge.dimension().equals(level.dimension())
-                    || charge.pos().distToCenterSqr(player.position()) > (double) C4Balance.DETONATOR_RANGE * C4Balance.DETONATOR_RANGE
+                    || charge.pos().distToCenterSqr(player.position()) > (double) StarkConfig.C4.DETONATOR_RANGE * StarkConfig.C4.DETONATOR_RANGE
                     || !level.isLoaded(charge.pos())) {
                 outOfRange++;
                 kept.add(charge);
@@ -139,7 +140,7 @@ public class DetonatorItem extends Item {
         }
         stack.set(ModDataComponents.DETONATOR.get(), data.withCharges(kept));
         Component message = outOfRange > 0
-                ? Component.translatable("item.starktech.detonator.fired_some", ready.size(), outOfRange, C4Balance.DETONATOR_RANGE)
+                ? Component.translatable("item.starktech.detonator.fired_some", ready.size(), outOfRange, StarkConfig.C4.DETONATOR_RANGE)
                 : Component.translatable("item.starktech.detonator.fired", ready.size());
         player.displayClientMessage(message.copy().withStyle(ready.isEmpty() ? ChatFormatting.GRAY : ChatFormatting.RED), true);
         return new Fired(ready.size(), outOfRange, gone);
@@ -153,12 +154,12 @@ public class DetonatorItem extends Item {
         if (data != null) {
             for (GlobalPos charge : data.charges()) {
                 if (charge.dimension().equals(level.dimension())
-                        && charge.pos().distToCenterSqr(player.position()) <= (double) C4Balance.DETONATOR_RANGE * C4Balance.DETONATOR_RANGE) {
+                        && charge.pos().distToCenterSqr(player.position()) <= (double) StarkConfig.C4.DETONATOR_RANGE * StarkConfig.C4.DETONATOR_RANGE) {
                     inRange++;
                 }
             }
         }
-        player.displayClientMessage(Component.translatable("item.starktech.detonator.status", linked, inRange, C4Balance.DETONATOR_RANGE)
+        player.displayClientMessage(Component.translatable("item.starktech.detonator.status", linked, inRange, StarkConfig.C4.DETONATOR_RANGE)
                 .withStyle(ChatFormatting.AQUA), true);
     }
 
@@ -167,7 +168,7 @@ public class DetonatorItem extends Item {
         DetonatorData data = data(stack);
         tooltip.add(Component.translatable("tooltip.starktech.detonator.linked", data == null ? 0 : data.charges().size())
                 .withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.starktech.detonator.fire", C4Balance.DETONATOR_RANGE).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.starktech.detonator.fire", StarkConfig.C4.DETONATOR_RANGE).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.detonator.status").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.detonator.link").withStyle(ChatFormatting.GRAY));
     }

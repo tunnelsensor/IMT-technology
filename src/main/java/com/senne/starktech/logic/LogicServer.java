@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityDevices;
 import java.util.ArrayDeque;
@@ -80,12 +81,12 @@ public final class LogicServer {
 
         /** Rekenkracht voor Logic (je diagrammen): een CPU telt 1, een GPU ½. */
         public double logicPower() {
-            return cpus * LogicBalance.logicPower(ServerPartItem.Kind.CPU) + gpus * LogicBalance.logicPower(ServerPartItem.Kind.GPU);
+            return cpus * LogicStats.logicPower(ServerPartItem.Kind.CPU) + gpus * LogicStats.logicPower(ServerPartItem.Kind.GPU);
         }
 
         /** Rekenkracht voor het brein van E.D.I.T.H.: een CPU telt 1, een GPU 2. */
         public double brainPower() {
-            return cpus * LogicBalance.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicBalance.brainPower(ServerPartItem.Kind.GPU);
+            return cpus * LogicStats.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicStats.brainPower(ServerPartItem.Kind.GPU);
         }
 
         /**
@@ -93,32 +94,32 @@ public final class LogicServer {
          * werkt samen, dus één warm rack remt de rest af.
          */
         public boolean warm() {
-            return temperature >= LogicBalance.WARM_TEMPERATURE;
+            return temperature >= StarkConfig.Logic.WARM_TEMPERATURE;
         }
 
         /** Hoeveel trager alles gaat: 1 als het koel is, WARM_SLOWDOWN als het warm is. */
         public double slowdown() {
-            return warm() ? Math.max(1.0, LogicBalance.WARM_SLOWDOWN) : 1.0;
+            return warm() ? Math.max(1.0, StarkConfig.Logic.WARM_SLOWDOWN) : 1.0;
         }
 
         /** Ticks tussen "er gebeurt iets" en "het diagram begint" (warm: trager). */
         public int reactionTicks() {
-            return LogicBalance.reactionTicks(logicPower() / slowdown());
+            return LogicStats.reactionTicks(logicPower() / slowdown());
         }
 
         /** Hoeveel ticks E.D.I.T.H. extra nadenkt op dit datacenter (0 = sterk genoeg, -1 = draait niet). */
         public int brainDelayTicks() {
-            return online() ? LogicBalance.brainDelayTicks(brainPower() / slowdown()) : -1;
+            return online() ? LogicStats.brainDelayTicks(brainPower() / slowdown()) : -1;
         }
 
         /** Zoveel diagrammen kunnen tegelijk bezig zijn. */
         public int maxRuns() {
-            return ram * LogicBalance.RUNS_PER_RAM;
+            return ram * StarkConfig.Logic.RUNS_PER_RAM;
         }
 
         /** Zoveel blokjes passen er in totaal in de diagrammen. */
         public int capacity() {
-            return ssd * LogicBalance.BLOCKS_PER_SSD;
+            return ssd * StarkConfig.Logic.BLOCKS_PER_SSD;
         }
     }
 
@@ -297,7 +298,7 @@ public final class LogicServer {
                 if (stack.getItem() instanceof ServerPartItem part) {
                     CompoundTag p = new CompoundTag();
                     p.putString("k", part.kind().name());
-                    p.putInt("w", Math.min(100, ServerPartItem.wear(stack) * 100 / Math.max(1, LogicBalance.MAX_WEAR)));
+                    p.putInt("w", Math.min(100, ServerPartItem.wear(stack) * 100 / Math.max(1, StarkConfig.Logic.MAX_WEAR)));
                     parts.add(p);
                 }
             }

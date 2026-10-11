@@ -88,7 +88,7 @@ public enum SatelliteUpgrade {
 
     /** Hoeveel drones het vervoer naar niveau {@code nextLevel} nodig heeft. */
     public static int dronesFor(int nextLevel) {
-        return 1 + (nextLevel + 1) / 2; // niveau 1: 2 drones ... niveau 10: 6 drones
+        return SatelliteStats.deliveryDrones(nextLevel); // StarkConfig.Satellite.DELIVERY_DRONES
     }
 
     /**

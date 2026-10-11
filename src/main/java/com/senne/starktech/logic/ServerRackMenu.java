@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModMenus;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -54,7 +55,7 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     /** In jouw spel: de echte inhoud komt van de server; de plek van het rack stuurt hij mee. */
     public ServerRackMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
-        this(containerId, inventory, new SimpleContainer(LogicBalance.RACK_SLOTS), new SimpleContainerData(DATA_COUNT),
+        this(containerId, inventory, new SimpleContainer(StarkConfig.Logic.RACK_SLOTS), new SimpleContainerData(DATA_COUNT),
                 extra.readBlockPos());
     }
 
@@ -64,13 +65,13 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     private ServerRackMenu(int containerId, Inventory inventory, Container parts, ContainerData data, BlockPos pos) {
         super(ModMenus.SERVER_RACK.get(), containerId);
-        checkContainerSize(parts, LogicBalance.RACK_SLOTS);
+        checkContainerSize(parts, StarkConfig.Logic.RACK_SLOTS);
         checkContainerDataCount(data, DATA_COUNT);
         this.parts = parts;
         this.data = data;
         this.pos = pos;
         parts.startOpen(inventory.player);
-        for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
+        for (int i = 0; i < StarkConfig.Logic.RACK_SLOTS; i++) {
             addSlot(new Slot(parts, i, bayX(i), bayY(i)) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
@@ -96,12 +97,12 @@ public class ServerRackMenu extends AbstractContainerMenu {
 
     /** Waar vakje {@code i} staat (links). */
     public static int bayX(int i) {
-        return BAY_X + (i / LogicBalance.RACK_ROWS) * COLUMN_STEP;
+        return BAY_X + (i / StarkConfig.Logic.RACK_ROWS) * COLUMN_STEP;
     }
 
     /** Waar vakje {@code i} staat (boven). */
     public static int bayY(int i) {
-        return BAY_Y + (i % LogicBalance.RACK_ROWS) * BAY_STEP;
+        return BAY_Y + (i % StarkConfig.Logic.RACK_ROWS) * BAY_STEP;
     }
 
     // ---------------------------------------------------------------- Gegevens voor het scherm
@@ -178,7 +179,7 @@ public class ServerRackMenu extends AbstractContainerMenu {
         }
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
-        int bays = LogicBalance.RACK_SLOTS;
+        int bays = StarkConfig.Logic.RACK_SLOTS;
         if (index < bays) {
             // Uit het rack naar je rugzak.
             if (!moveItemStackTo(stack, bays, slots.size(), true)) {

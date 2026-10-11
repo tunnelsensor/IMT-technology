@@ -1,6 +1,7 @@
 package com.senne.starktech.registry;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithGlassesItem;
 import com.senne.starktech.edith.UpgradeItem;
 import com.senne.starktech.arsenal.StarkDroneItem;
@@ -178,7 +179,7 @@ public final class ModItems {
     /** De Bypass Kit (hoofdstuk 12): een keycardlezer of codepaneel hacken met een minigame. */
     public static final DeferredItem<com.senne.starktech.bypass.BypassKitItem> BYPASS_KIT = ITEMS.registerItem("bypass_kit",
             com.senne.starktech.bypass.BypassKitItem::new,
-            new Item.Properties().durability(com.senne.starktech.bypass.BypassBalance.KIT_USES).rarity(Rarity.UNCOMMON));
+            new Item.Properties().durability(StarkConfig.Bypass.KIT_USES).rarity(Rarity.UNCOMMON));
 
     /**
      * De Zone Marker (hoofdstuk 10): linksklik en rechtsklik zetten de twee hoeken van een kubus,

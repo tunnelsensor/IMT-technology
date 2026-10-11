@@ -1,10 +1,10 @@
 package com.senne.starktech.client;
 
-import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalDrone;
 import com.senne.starktech.arsenal.EdithArsenal;
 import com.senne.starktech.client.arsenal.OrbitView;
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.ArsenalActionPayload;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.satellite.SatelliteUpgrades;
@@ -323,7 +323,7 @@ public class ArsenalScreen extends Screen {
         HudStyle.brackets(g, x0, y0, x1, y1, 5, HudStyle.argb(220, HudStyle.CYAN));
         view.renderCloseUp(g, x0 + 2, y0 + 2, x1 - 2, y1 - 14, drone, seconds);
         float fraction = drone.healthFraction();
-        String health = Math.round(drone.health()) + "/" + (int) ArsenalBalance.DRONE_MAX_HEALTH;
+        String health = Math.round(drone.health()) + "/" + (int) StarkConfig.Drones.HEALTH;
         HudStyle.smallText(g, font, health, (x0 + x1) / 2, y1 - 10, HudStyle.argb(230, healthColour(fraction)));
     }
 

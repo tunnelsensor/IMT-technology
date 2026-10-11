@@ -6,6 +6,7 @@ import com.senne.starktech.c4.C4Block;
 import com.senne.starktech.c4.C4BlockEntity;
 import com.senne.starktech.c4.C4Item;
 import com.senne.starktech.c4.Cracks;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModItems;
@@ -284,9 +285,9 @@ public final class C4GameTests {
             throw new GameTestAssertException("Een andere detonator zou de lading niet mogen overnemen");
         }
         // Te ver weg: niets.
-        int oldRange = com.senne.starktech.c4.C4Balance.DETONATOR_RANGE;
+        int oldRange = StarkConfig.C4.DETONATOR_RANGE;
         try {
-            com.senne.starktech.c4.C4Balance.DETONATOR_RANGE = 3;
+            StarkConfig.C4.DETONATOR_RANGE = 3;
             player.setItemInHand(InteractionHand.MAIN_HAND, mine);
             com.senne.starktech.c4.DetonatorItem.Fired fired = com.senne.starktech.c4.DetonatorItem.fire(level, player, mine);
             if (fired.fired() != 0 || fired.outOfRange() != 1 || c4.explodeAt() >= 0
@@ -294,7 +295,7 @@ public final class C4GameTests {
                 throw new GameTestAssertException("Een lading te ver weg zou niet mogen afgaan (en moet blijven): " + fired);
             }
         } finally {
-            com.senne.starktech.c4.C4Balance.DETONATOR_RANGE = oldRange;
+            StarkConfig.C4.DETONATOR_RANGE = oldRange;
         }
         helper.setBlock(loose, Blocks.AIR);
         helper.succeed();

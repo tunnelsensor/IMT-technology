@@ -1,6 +1,6 @@
 package com.senne.starktech.station;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModMenus;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.Container;
@@ -105,7 +105,7 @@ public class ChargerMenu extends AbstractContainerMenu {
 
     /** Hoeveel dit apparaat kan opslaan. */
     public int getCapacity() {
-        return usesFuel ? EdithBalance.HEAT_CAPACITY : EdithBalance.SOLAR_CAPACITY;
+        return usesFuel ? StarkConfig.Power.HEAT_CAPACITY : StarkConfig.Power.SOLAR_CAPACITY;
     }
 
     public ItemStack getGlasses() {

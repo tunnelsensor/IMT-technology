@@ -1,5 +1,6 @@
 package com.senne.starktech.c4;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -15,7 +16,7 @@ import net.minecraft.world.phys.Vec3;
  * De klap van C4 (hoofdstuk 10, jouw keuze: "sterke muren kosten meer C4").
  *
  * Het midden van de klap ligt op het blok waar de lading tegenaan plakt. Elk blok binnen
- * {@link C4Balance#RADIUS} krijgt breekpunten: {@link C4Balance#POWER} vlak bij de lading, aflopend tot
+ * {@link StarkConfig.C4#RADIUS} krijgt breekpunten: {@link StarkConfig.C4#POWER} vlak bij de lading, aflopend tot
  * 0 aan de rand. Heeft een blok genoeg (zie {@link #strength}), dan breekt het en valt het eruit zoals
  * bij TNT (een kist ook, met zijn inhoud). Zo niet, dan krijgt het barsten die je ziet, en de volgende
  * C4 telt erbij op. Die barsten blijven tot je ze herstelt (zie {@link Cracks}, hoofdstuk 11).
@@ -38,13 +39,13 @@ public final class C4Blast {
         Vec3 centre = pos.getCenter().subtract(out.x * ON_FACE, out.y * ON_FACE, out.z * ON_FACE);
         // Welke zone raakt deze klap (voor het alarm en het logboek)?
         com.senne.starktech.security.zone.ZoneData.Zone zone =
-                com.senne.starktech.security.zone.Zones.activeNear(level, pos, C4Balance.RADIUS);
+                com.senne.starktech.security.zone.Zones.activeNear(level, pos, StarkConfig.C4.RADIUS);
         boolean alerted = level.getBlockEntity(pos) instanceof C4BlockEntity self && self.alerted();
         level.removeBlock(pos, false);
         // Eerst de klap voor wezens (met het geluid en de rook van een explosie), zonder blokken: die
         // doen we hieronder zelf. Zo vernielt de klap ook niet de spullen die straks uit de blokken vallen.
-        level.explode(null, centre.x, centre.y, centre.z, C4Balance.ENTITY_POWER, false, Level.ExplosionInteraction.NONE);
-        Breach result = breach(level, centre, C4Balance.POWER, C4Balance.RADIUS, here -> true, zone);
+        level.explode(null, centre.x, centre.y, centre.z, StarkConfig.C4.ENTITY_POWER, false, Level.ExplosionInteraction.NONE);
+        Breach result = breach(level, centre, StarkConfig.C4.POWER, StarkConfig.C4.RADIUS, here -> true, zone);
         C4Alarm.blasted(level, pos, zone, result.inZone(), alerted, "C4");
         return result.broken();
     }
@@ -81,7 +82,7 @@ public final class C4Blast {
             // Ander C4: gaat zelf ook af (een beetje later, dat klinkt als een kettingreactie).
             if (target.getBlock() instanceof C4Block) {
                 if (level.getBlockEntity(here) instanceof C4BlockEntity other) {
-                    other.detonateIn(C4Balance.CHAIN_DELAY);
+                    other.detonateIn(StarkConfig.C4.CHAIN_DELAY);
                 }
                 continue;
             }
@@ -130,16 +131,16 @@ public final class C4Blast {
     /** Zoals {@link #strength}, maar voor een nieuw blok (nooit geplamuurd). */
     public static float baseStrength(ServerLevel level, BlockPos pos, BlockState state) {
         if (state.is(ModBlocks.SECURITY_CORE.get())) {
-            return C4Balance.CORE;
+            return StarkConfig.C4.CORE;
         }
         if (state.getDestroySpeed(level, pos) < 0) {
             return -1;
         }
         float resistance = state.getBlock().getExplosionResistance();
-        if (resistance >= C4Balance.STRONG_RESISTANCE) {
-            return C4Balance.STRONG;
+        if (resistance >= StarkConfig.C4.STRONG_RESISTANCE) {
+            return StarkConfig.C4.STRONG;
         }
-        return resistance >= C4Balance.NORMAL_RESISTANCE ? C4Balance.NORMAL : C4Balance.WEAK;
+        return resistance >= StarkConfig.C4.NORMAL_RESISTANCE ? StarkConfig.C4.NORMAL : StarkConfig.C4.WEAK;
     }
 
     /** De kant waar een lading van af wijst, als drie getallen (zie C4Block.outward). */

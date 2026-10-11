@@ -1,7 +1,7 @@
 package com.senne.starktech.shield;
 
 import com.mojang.serialization.MapCodec;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModDamageTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -88,7 +88,7 @@ public class LaserWallBlock extends Block {
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level instanceof ServerLevel serverLevel && entity instanceof LivingEntity living && living.hurtTime <= 0
                 && !friendOfTheTower(serverLevel, pos, living)) {
-            if (living.hurt(ModDamageTypes.laserWall(serverLevel), EdithBalance.LASER_WALL_DAMAGE)) {
+            if (living.hurt(ModDamageTypes.laserWall(serverLevel), StarkConfig.Shields.LASER_WALL_DAMAGE)) {
                 // Een knetter, zoals tegen een Star Wars-laserpoort aanlopen.
                 serverLevel.playSound(null, living.getX(), living.getY() + living.getBbHeight() / 2, living.getZ(),
                         com.senne.starktech.registry.ModSounds.RAYSHIELD_HIT.get(),

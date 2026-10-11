@@ -1,8 +1,7 @@
 package com.senne.starktech.hack;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.edith.EdithBalance;
-import com.senne.starktech.edith.EdithConfig;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -37,7 +36,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
  * De tekst komt in een ballonnetje boven zijn hoofd, alleen bij jou in beeld.
  *
  * De hack blijft actief tot je hem stopt (of tot de speler uitlogt) en kost energie per seconde.
- * Op een server kan de eigenaar dit uitzetten in de config (starktech-server.toml).
+ * Op een server kan de eigenaar dit uitzetten in de config (starktech.toml, [rules] hackAllowed).
  */
 public final class EdithHack {
     private EdithHack() {}
@@ -63,7 +62,7 @@ public final class EdithHack {
      * Geeft terug of er nu gehackt wordt.
      */
     public static boolean toggle(ServerPlayer hacker, ServerPlayer target) {
-        if (!EdithConfig.hackAllowed()) {
+        if (!StarkConfig.Rules.HACK_ALLOWED) {
             EdithServer.send(hacker, Component.translatable("edith.starktech.msg.hack_disabled"),
                     EdithMessagePayload.Level.WARNING);
             return false;
@@ -77,8 +76,8 @@ public final class EdithHack {
                     EdithMessagePayload.Level.INFO);
             return false;
         }
-        if (targets.size() >= EdithBalance.MAX_HACKS) {
-            EdithServer.send(hacker, Component.translatable("edith.starktech.msg.hack_too_many", EdithBalance.MAX_HACKS),
+        if (targets.size() >= StarkConfig.Hack.MAX_TARGETS) {
+            EdithServer.send(hacker, Component.translatable("edith.starktech.msg.hack_too_many", StarkConfig.Hack.MAX_TARGETS),
                     EdithMessagePayload.Level.WARNING);
             return false;
         }
@@ -116,7 +115,7 @@ public final class EdithHack {
         if (targets == null || targets.isEmpty()) {
             return;
         }
-        int cost = EdithBalance.DRAIN_HACK * targets.size();
+        int cost = StarkConfig.Hack.DRAIN * targets.size();
         if (!EdithData.tryUseEnergy(glasses, cost)) {
             stopAll(hacker, true);
         }
@@ -182,8 +181,8 @@ public final class EdithHack {
         if (server == null) {
             return;
         }
-        String clean = text.length() > EdithBalance.MAX_MESSAGE_LENGTH
-                ? text.substring(0, EdithBalance.MAX_MESSAGE_LENGTH)
+        String clean = text.length() > StarkConfig.Comms.MAX_MESSAGE_LENGTH
+                ? text.substring(0, StarkConfig.Comms.MAX_MESSAGE_LENGTH)
                 : text;
 
         for (Map.Entry<UUID, Set<UUID>> entry : HACKS.entrySet()) {
@@ -235,7 +234,7 @@ public final class EdithHack {
         if (hacker.level() != target.level()) {
             return false;
         }
-        double range = EdithBalance.HACK_RANGE;
+        double range = StarkConfig.Hack.RANGE;
         if (hacker.distanceToSqr(target) > range * range) {
             return false;
         }
@@ -245,6 +244,6 @@ public final class EdithHack {
         // Staat hij ongeveer voor je? (1 = precies in het midden van je beeld, 0 = naast je)
         Vec3 look = hacker.getViewVector(1.0f).normalize();
         Vec3 toTarget = target.getEyePosition().subtract(hacker.getEyePosition()).normalize();
-        return look.dot(toTarget) > EdithBalance.HACK_VIEW_DOT;
+        return look.dot(toTarget) > StarkConfig.Hack.VIEW_DOT;
     }
 }

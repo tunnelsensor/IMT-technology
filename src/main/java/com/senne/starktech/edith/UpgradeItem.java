@@ -1,5 +1,6 @@
 package com.senne.starktech.edith;
 
+import com.senne.starktech.config.StarkConfig;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -30,9 +31,9 @@ public class UpgradeItem extends Item {
     public boolean canApplyTo(ItemStack glasses) {
         EdithUpgrades upgrades = EdithData.getUpgrades(glasses);
         return switch (type) {
-            case BATTERY -> upgrades.battery() < EdithBalance.MAX_BATTERY_UPGRADES;
-            case SCANNER -> upgrades.scanner() < EdithBalance.MAX_SCANNER_UPGRADES;
-            case DRONE -> upgrades.drones() < EdithConfig.maxDroneUpgrades();
+            case BATTERY -> upgrades.battery() < StarkConfig.Glasses.MAX_BATTERY_UPGRADES;
+            case SCANNER -> upgrades.scanner() < StarkConfig.Scanner.MAX_SCANNER_UPGRADES;
+            case DRONE -> upgrades.drones() < StarkConfig.Drones.MAX_UPGRADES;
         };
     }
 

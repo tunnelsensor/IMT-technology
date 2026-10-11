@@ -2,10 +2,10 @@ package com.senne.starktech.client;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.suit.LandingPadBlockEntity;
 import com.senne.starktech.suit.LandingPadMenu;
-import com.senne.starktech.suit.SuitBalance;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -153,7 +153,7 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
         int cy = topPos + LandingPadMenu.CELLS_Y;
         if (menu.cellsItem().isEmpty() && mouseX >= cx && mouseX < cx + 16 && mouseY >= cy && mouseY < cy + 16) {
             g.renderTooltip(font, Component.translatable("screen.starktech.landing_pad.cells_tooltip",
-                    SuitBalance.PAD_BATTERY_PER_CELL, LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
+                    StarkConfig.Power.PAD_BATTERY_PER_CELL, LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.senne.starktech.workbench;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModDataComponents;
@@ -117,7 +118,7 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
     }
 
     public int total() {
-        return job == JOB_INSTALL ? WorkbenchBalance.INSTALL_TICKS : job == JOB_BUILD ? WorkbenchBalance.BUILD_TICKS : 0;
+        return job == JOB_INSTALL ? StarkConfig.Workbench.INSTALL_TICKS : job == JOB_BUILD ? StarkConfig.Workbench.BUILD_TICKS : 0;
     }
 
     public boolean powered() {
@@ -309,7 +310,7 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
             setPowered(StarkGrid.available(level, pos) > 0);
             return;
         }
-        int cost = job == JOB_INSTALL ? WorkbenchBalance.INSTALL_ENERGY : WorkbenchBalance.BUILD_ENERGY;
+        int cost = job == JOB_INSTALL ? StarkConfig.Power.WORKBENCH_INSTALL : StarkConfig.Power.WORKBENCH_BUILD;
         setPowered(StarkGrid.available(level, pos) >= cost);
         if (!powered) {
             return; // wachten op stroom

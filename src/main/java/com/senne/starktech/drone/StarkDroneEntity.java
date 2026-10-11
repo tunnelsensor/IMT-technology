@@ -1,9 +1,8 @@
 package com.senne.starktech.drone;
 
-import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalCosts;
 import com.senne.starktech.arsenal.ArsenalServer;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.edith.EdithServer;
@@ -16,7 +15,6 @@ import com.senne.starktech.network.DroneControlPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.spy.EdithSpy;
 import com.senne.starktech.transport.EdithTransport;
@@ -116,7 +114,7 @@ public class StarkDroneEntity extends PathfinderMob {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
-                .add(Attributes.MAX_HEALTH, EdithBalance.DRONE_HEALTH)
+                .add(Attributes.MAX_HEALTH, StarkConfig.Drones.HEALTH)
                 .add(Attributes.ARMOR, 4.0)
                 .add(Attributes.FLYING_SPEED, 0.6)
                 .add(Attributes.MOVEMENT_SPEED, 0.6)
@@ -391,7 +389,7 @@ public class StarkDroneEntity extends PathfinderMob {
             // Wordt er nog mee gericht? Dan vliegt hij zoals de speler hem bestuurt.
             DroneControlPayload aim = EdithIllusions.aimControl(this);
             if (aim != null) {
-                flyByControl(owner, aim, EdithBalance.ILLUSION_AIM_RANGE);
+                flyByControl(owner, aim, StarkConfig.Illusions.AIM_RANGE);
                 return;
             }
             // Een cloakingdrone blijft stil hangen waar je hem liet: hij is de "projector".
@@ -409,7 +407,7 @@ public class StarkDroneEntity extends PathfinderMob {
         }
 
         // Te ver weg (bv. eigenaar teleporteerde)? Dan springt de drone terug.
-        double leash = lockedTargetId != null ? EdithBalance.STRIKE_DRONE_RANGE + 32 : 48;
+        double leash = lockedTargetId != null ? StarkConfig.Drones.STRIKE_RANGE + 32 : 48;
         if (distanceToSqr(owner) > leash * leash) {
             moveTo(owner.getX(), owner.getY() + owner.getBbHeight() + 1, owner.getZ());
             setDeltaMovement(Vec3.ZERO);
@@ -451,7 +449,7 @@ public class StarkDroneEntity extends PathfinderMob {
      * waar de speler kijkt. Hij mag niet te ver van het lichaam van de speler weg.
      */
     private void flyAsScout(ServerPlayer owner) {
-        flyByControl(owner, EdithServer.getScoutControl(owner), EdithBalance.SCOUT_RANGE);
+        flyByControl(owner, EdithServer.getScoutControl(owner), StarkConfig.Recon.SCOUT_RANGE);
     }
 
     /**
@@ -472,7 +470,7 @@ public class StarkDroneEntity extends PathfinderMob {
         if (wanted.lengthSqr() > 1) {
             wanted = wanted.normalize();
         }
-        wanted = wanted.scale(control.boost() ? EdithBalance.SCOUT_BOOST_SPEED : EdithBalance.SCOUT_SPEED);
+        wanted = wanted.scale(control.boost() ? StarkConfig.Recon.SCOUT_BOOST_SPEED : StarkConfig.Recon.SCOUT_SPEED);
 
         // Aan een elastiekje: te ver weg? Dan trekt de verbinding hem terug.
         Vec3 toOwner = owner.getEyePosition().subtract(position());
@@ -496,9 +494,9 @@ public class StarkDroneEntity extends PathfinderMob {
             moveControl.setWantedPosition(getX(), getY(), getZ(), 0.2);
             return;
         }
-        Vec3 back = Vec3.directionFromRotation(0.0f, target.getYRot()).scale(-EdithBalance.SPY_FOLLOW_DISTANCE);
+        Vec3 back = Vec3.directionFromRotation(0.0f, target.getYRot()).scale(-StarkConfig.Recon.SPY_FOLLOW_DISTANCE);
         double wantedX = target.getX() + back.x;
-        double wantedY = target.getY() + EdithBalance.SPY_FOLLOW_HEIGHT;
+        double wantedY = target.getY() + StarkConfig.Recon.SPY_FOLLOW_HEIGHT;
         double wantedZ = target.getZ() + back.z;
         // Hij mag stevig doorvliegen, anders raakt hij een rennende speler kwijt.
         moveControl.setWantedPosition(wantedX, wantedY, wantedZ, 1.8);
@@ -570,7 +568,7 @@ public class StarkDroneEntity extends PathfinderMob {
         if (wanted.lengthSqr() > 1) {
             wanted = wanted.normalize();
         }
-        double speed = input.boost() ? EdithBalance.TRANSPORT_BOOST_SPEED : EdithBalance.TRANSPORT_SPEED;
+        double speed = input.boost() ? StarkConfig.Transport.BOOST_SPEED : StarkConfig.Transport.SPEED;
         // Zonder invoer blijft hij stil hangen (hij zakt niet: hij heeft geen zwaartekracht).
         setDeltaMovement(getDeltaMovement().lerp(wanted.scale(speed), 0.25));
         setYRot(rider.getYRot());
@@ -595,7 +593,7 @@ public class StarkDroneEntity extends PathfinderMob {
         lastDrop = drop;
 
         if (drop > 0.5 && drop < EdithTransport.NO_GROUND && stuckTicks < 10) {
-            double speed = Math.min(EdithBalance.TRANSPORT_LAND_SPEED, 0.1 + drop * 0.2);
+            double speed = Math.min(StarkConfig.Transport.LAND_SPEED, 0.1 + drop * 0.2);
             setDeltaMovement(0, -speed, 0);
             return;
         }
@@ -618,7 +616,7 @@ public class StarkDroneEntity extends PathfinderMob {
         double horizontal = Math.sqrt(dx * dx + dz * dz);
         int groundHere = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(getX()), (int) Math.floor(getZ()));
         int groundThere = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
-        double cruiseY = Math.max(groundHere, groundThere) + EdithBalance.TRANSPORT_CRUISE_HEIGHT;
+        double cruiseY = Math.max(groundHere, groundThere) + StarkConfig.Transport.CRUISE_HEIGHT;
 
         if (horizontal > 2.5) {
             if (getY() < cruiseY - 3) {
@@ -653,7 +651,7 @@ public class StarkDroneEntity extends PathfinderMob {
     // ---------------------------------------------------------------- Doelwit kiezen
 
     private boolean isValidTarget(ServerPlayer owner, LivingEntity target) {
-        double range = lockedTargetId != null ? EdithBalance.STRIKE_DRONE_RANGE + 32 : 48;
+        double range = lockedTargetId != null ? StarkConfig.Drones.STRIKE_RANGE + 32 : 48;
         return !target.isRemoved() && target.level() == level() && EdithTargeting.canTarget(owner, target)
                 && target.distanceToSqr(owner) < range * range;
     }
@@ -671,7 +669,7 @@ public class StarkDroneEntity extends PathfinderMob {
             }
         }
         // Anders (en voor beschermende drones): vijanden rond de eigenaar.
-        double range = isGuard() ? EdithBalance.GUARD_RANGE : EdithBalance.DRONE_ATTACK_RANGE;
+        double range = isGuard() ? StarkConfig.Drones.GUARD_RANGE : StarkConfig.Drones.ATTACK_RANGE;
         List<LivingEntity> threats = level.getEntitiesOfClass(LivingEntity.class, owner.getBoundingBox().inflate(range),
                 e -> EdithTargeting.isThreatTo(owner, e));
         if (threats.isEmpty()) {
@@ -706,10 +704,10 @@ public class StarkDroneEntity extends PathfinderMob {
         }
         getLookControl().setLookAt(target, 30.0f, 30.0f);
 
-        double range = EdithBalance.DRONE_ATTACK_RANGE;
+        double range = StarkConfig.Drones.ATTACK_RANGE;
         if (fireCooldown <= 0 && distanceToSqr(target) <= range * range && hasLineOfSight(target)) {
             fireLaser(level, owner, target);
-            fireCooldown = EdithBalance.DRONE_FIRE_INTERVAL + random.nextInt(5);
+            fireCooldown = StarkConfig.Drones.FIRE_INTERVAL + random.nextInt(5);
         }
     }
 
@@ -745,14 +743,14 @@ public class StarkDroneEntity extends PathfinderMob {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         // Staat het doelwit onder de schildkoepel van iemand anders? Dan stuit het schot daarop.
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, owner.getUUID(), DomeSettings.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, owner.getUUID(), StarkConfig.Dome.COST_LASER);
         if (shield != null) {
             playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f);
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
             return;
         }
         DamageSource source = ModDamageTypes.droneLaser(level, this, owner);
-        target.hurt(source, EdithBalance.DRONE_LASER_DAMAGE);
+        target.hurt(source, StarkConfig.Drones.LASER_DAMAGE);
         playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f + random.nextFloat() * 0.3f);
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
     }
@@ -771,14 +769,14 @@ public class StarkDroneEntity extends PathfinderMob {
     /** Vliegt recht omhoog tot hij hoog genoeg is; daarna hangt hij in zijn baan. */
     private void climbToOrbit(ServerLevel level) {
         launchTicks++;
-        setDeltaMovement(0, ArsenalBalance.LAUNCH_SPEED, 0);
+        setDeltaMovement(0, StarkConfig.Drones.LAUNCH_SPEED, 0);
         hasImpulse = true;
         if (launchTicks % 2 == 0) {
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() - 0.2, getZ(), 2, 0.08, 0.05, 0.08, 0.02);
         }
-        boolean highEnough = getY() >= launchFrom + ArsenalBalance.ORBIT_HEIGHT;
+        boolean highEnough = getY() >= launchFrom + StarkConfig.Drones.ORBIT_HEIGHT;
         boolean stuck = horizontalCollision || verticalCollision;
-        if (highEnough || stuck || launchTicks >= ArsenalBalance.LAUNCH_TICKS
+        if (highEnough || stuck || launchTicks >= StarkConfig.Drones.LAUNCH_TICKS
                 || getY() > level.getMaxBuildHeight() + 16) {
             level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 8, 0.2, 0.2, 0.2, 0.02);
             returnToArsenal(level);
@@ -849,14 +847,14 @@ public class StarkDroneEntity extends PathfinderMob {
                     EdithMessagePayload.Level.INFO);
             return InteractionResult.SUCCESS;
         }
-        int wanted = (int) Math.ceil((getMaxHealth() - getHealth()) / ArsenalBalance.REPAIR_PER_INGOT);
+        int wanted = (int) Math.ceil((getMaxHealth() - getHealth()) / StarkConfig.Drones.REPAIR_PER_INGOT);
         int used = ArsenalCosts.takeRepairParts(player, wanted);
         if (used <= 0) {
             EdithServer.send(serverPlayer, Component.translatable("arsenal.starktech.msg.no_parts",
                     ArsenalCosts.repairPartName(), wanted), EdithMessagePayload.Level.WARNING);
             return InteractionResult.CONSUME;
         }
-        setHealth((float) Math.min(getMaxHealth(), getHealth() + used * ArsenalBalance.REPAIR_PER_INGOT));
+        setHealth((float) Math.min(getMaxHealth(), getHealth() + used * StarkConfig.Drones.REPAIR_PER_INGOT));
         if (arsenalId != null) {
             ArsenalServer.setHealth(serverPlayer, arsenalId, getHealth());
         }

@@ -1,6 +1,6 @@
 package com.senne.starktech.station;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -22,7 +22,7 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
 
     @Override
     public int capacity() {
-        return EdithBalance.SOLAR_CAPACITY;
+        return StarkConfig.Power.SOLAR_CAPACITY;
     }
 
     @Override
@@ -41,8 +41,9 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
         // Hoe hoger de zon staat, hoe meer hij oplevert (middags het meest).
         float angle = level.getSunAngle(1.0f);
         float height = Math.max(0.0f, net.minecraft.util.Mth.cos(angle));
-        float weather = level.isThundering() ? 0.2f : level.isRaining() ? 0.4f : 1.0f;
-        return Math.round(EdithBalance.SOLAR_RATE * height * weather);
+        float weather = level.isThundering() ? StarkConfig.Power.SOLAR_THUNDER
+                : level.isRaining() ? StarkConfig.Power.SOLAR_RAIN : 1.0f;
+        return Math.round(StarkConfig.Power.SOLAR_RATE * height * weather);
     }
 
     @Override

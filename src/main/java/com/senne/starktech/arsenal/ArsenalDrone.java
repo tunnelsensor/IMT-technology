@@ -2,6 +2,7 @@ package com.senne.starktech.arsenal;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.senne.starktech.config.StarkConfig;
 import io.netty.buffer.ByteBuf;
 import java.util.UUID;
 import net.minecraft.core.UUIDUtil;
@@ -45,7 +46,7 @@ public record ArsenalDrone(UUID id, float health, State state, boolean docked) {
 
     public static final Codec<ArsenalDrone> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             UUIDUtil.CODEC.fieldOf("id").forGetter(ArsenalDrone::id),
-            Codec.FLOAT.optionalFieldOf("health", (float) ArsenalBalance.DRONE_MAX_HEALTH).forGetter(ArsenalDrone::health),
+            Codec.FLOAT.optionalFieldOf("health", (float) StarkConfig.Drones.HEALTH).forGetter(ArsenalDrone::health),
             Codec.INT.optionalFieldOf("state", State.ORBIT.ordinal()).xmap(State::byId, Enum::ordinal).forGetter(ArsenalDrone::state),
             Codec.BOOL.optionalFieldOf("docked", false).forGetter(ArsenalDrone::docked)
     ).apply(instance, ArsenalDrone::new));
@@ -64,20 +65,20 @@ public record ArsenalDrone(UUID id, float health, State state, boolean docked) {
 
     /** Een gloednieuwe drone, helemaal heel. */
     public static ArsenalDrone fresh(UUID id) {
-        return new ArsenalDrone(id, (float) ArsenalBalance.DRONE_MAX_HEALTH, State.ORBIT);
+        return new ArsenalDrone(id, (float) StarkConfig.Drones.HEALTH, State.ORBIT);
     }
 
     public ArsenalDrone {
-        health = Mth.clamp(health, 0.0f, (float) ArsenalBalance.DRONE_MAX_HEALTH);
+        health = Mth.clamp(health, 0.0f, (float) StarkConfig.Drones.HEALTH);
     }
 
     /** Hoe heel hij is, van 0.0 (schroot) tot 1.0 (nieuw). */
     public float healthFraction() {
-        return health / (float) ArsenalBalance.DRONE_MAX_HEALTH;
+        return health / (float) StarkConfig.Drones.HEALTH;
     }
 
     public boolean isFullyRepaired() {
-        return health >= (float) ArsenalBalance.DRONE_MAX_HEALTH;
+        return health >= (float) StarkConfig.Drones.HEALTH;
     }
 
     /** Klaar om op pad te gaan: hij hangt in een baan en is niet tot schroot geschoten. */

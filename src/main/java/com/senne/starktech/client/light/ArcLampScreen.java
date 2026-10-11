@@ -1,9 +1,9 @@
 package com.senne.starktech.client.light;
 
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.light.ArcLampBlock;
 import com.senne.starktech.light.ArcLampBlockEntity;
-import com.senne.starktech.light.LightBalance;
 import com.senne.starktech.network.LampActionPayload;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
@@ -100,7 +100,7 @@ public class ArcLampScreen extends Screen {
         int valueX = left + VALUE_X;
         int sliderW = PANEL_W - VALUE_X - MARGIN - 2 * (STEP_W + 4);
 
-        brightness = new ValueSlider(valueX + STEP_W + 4, brightnessY(), sliderW, 1, LightBalance.maxLevel(),
+        brightness = new ValueSlider(valueX + STEP_W + 4, brightnessY(), sliderW, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL,
                 lamp.brightness(), value -> Component.translatable("screen.starktech.lamp.level_value", value),
                 value -> send(LampActionPayload.Op.BRIGHTNESS, value));
         glow = new ValueSlider(valueX + STEP_W + 4, glowY(), sliderW, 0, ArcLampBlockEntity.MAX_GLOW,

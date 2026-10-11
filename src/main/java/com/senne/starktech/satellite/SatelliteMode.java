@@ -1,6 +1,7 @@
 package com.senne.starktech.satellite;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
+
 
 /**
  * De drie aanvallen van de satelliet. Elk heeft een eigen toets die meteen vuurt (K, P en C),
@@ -15,9 +16,9 @@ import com.senne.starktech.edith.EdithBalance;
  */
 public enum SatelliteMode {
     // De kosten staan er als "() -> getal", zodat een ander getal uit het configbestand meteen telt.
-    PRECISION("precision", () -> EdithBalance.SATELLITE_COST_PRECISION),
-    BOMBARDMENT("bombardment", () -> EdithBalance.SATELLITE_COST_BOMBARDMENT),
-    SWEEP("sweep", () -> EdithBalance.SATELLITE_COST_SWEEP);
+    PRECISION("precision", () -> StarkConfig.Satellite.COST_PRECISION),
+    BOMBARDMENT("bombardment", () -> StarkConfig.Satellite.COST_BOMBARDMENT),
+    SWEEP("sweep", () -> StarkConfig.Satellite.COST_SWEEP);
 
     private final String id;
     private final java.util.function.IntSupplier cost;

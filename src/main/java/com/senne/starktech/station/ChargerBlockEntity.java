@@ -1,6 +1,6 @@
 package com.senne.starktech.station;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.energy.EnergySource;
 import net.minecraft.core.BlockPos;
@@ -147,7 +147,7 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         if (energy <= 0 || !EdithData.isGlasses(glasses)) {
             return false;
         }
-        int added = EdithData.addEnergy(glasses, Math.min(EdithBalance.STATION_CHARGE_RATE, energy));
+        int added = EdithData.addEnergy(glasses, Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy));
         energy -= added;
         return added > 0;
     }

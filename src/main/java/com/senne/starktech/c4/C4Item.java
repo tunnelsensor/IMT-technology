@@ -1,5 +1,6 @@
 package com.senne.starktech.c4;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModSounds;
 import java.util.List;
@@ -37,8 +38,8 @@ public class C4Item extends BlockItem {
 
     /** De tijd op deze C4 (Timer), in seconden. */
     public static int timerSeconds(ItemStack stack) {
-        return Mth.clamp(stack.getOrDefault(ModDataComponents.C4_TIMER.get(), C4Balance.TIMER_DEFAULT),
-                C4Balance.TIMER_MIN, C4Balance.TIMER_MAX);
+        return Mth.clamp(stack.getOrDefault(ModDataComponents.C4_TIMER.get(), StarkConfig.C4.TIMER_DEFAULT),
+                StarkConfig.C4.TIMER_MIN, StarkConfig.C4.TIMER_MAX);
     }
 
     /** "0:10", "1:30". */

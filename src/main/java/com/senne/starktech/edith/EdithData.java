@@ -1,5 +1,6 @@
 package com.senne.starktech.edith;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.satellite.SatelliteMode;
 import com.senne.starktech.registry.ModItems;
@@ -35,7 +36,7 @@ public final class EdithData {
     }
 
     public static int getMaxEnergy(ItemStack stack) {
-        return EdithBalance.BASE_CAPACITY + getUpgrades(stack).battery() * EdithBalance.CAPACITY_PER_BATTERY_UPGRADE;
+        return StarkConfig.Glasses.BASE_CAPACITY + getUpgrades(stack).battery() * StarkConfig.Glasses.CAPACITY_PER_BATTERY_UPGRADE;
     }
 
     public static void setEnergy(ItemStack stack, int energy) {
@@ -111,26 +112,26 @@ public final class EdithData {
     }
 
     public static int getOreScanRadius(ItemStack stack) {
-        return EdithBalance.ORE_SCAN_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, EdithBalance.ORE_SCAN_RADIUS.length - 1)];
+        return StarkConfig.Scanner.ORE_SCAN_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, StarkConfig.Scanner.ORE_SCAN_RADIUS.length - 1)];
     }
 
     public static int getThreatRadius(ItemStack stack) {
-        return EdithBalance.THREAT_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, EdithBalance.THREAT_RADIUS.length - 1)];
+        return StarkConfig.Scanner.THREAT_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, StarkConfig.Scanner.THREAT_RADIUS.length - 1)];
     }
 
     /**
-     * Hoeveel drones er in een zwerm zitten (met upgrades). De getallen komen uit EdithConfig,
+     * Hoeveel drones er in een zwerm zitten (met upgrades). De getallen komen uit StarkConfig.Drones,
      * zodat de eigenaar van de wereld het maximum zelf kan instellen.
      */
     public static int getSwarmSize(ItemStack stack) {
-        int size = EdithConfig.swarmBase() + getUpgrades(stack).drones() * EdithConfig.swarmPerUpgrade();
-        return Math.min(size, EdithConfig.swarmMax());
+        int size = StarkConfig.Drones.SWARM_BASE + getUpgrades(stack).drones() * StarkConfig.Drones.SWARM_PER_UPGRADE;
+        return Math.min(size, StarkConfig.Drones.SWARM_MAX);
     }
 
     /** Hoeveel beschermende drones er rond de speler vliegen (met upgrades). */
     public static int getGuardCount(ItemStack stack) {
-        int count = EdithConfig.guardBase() + getUpgrades(stack).drones() * EdithConfig.guardsPerUpgrade();
-        return Math.min(count, EdithConfig.guardMax());
+        int count = StarkConfig.Drones.GUARD_BASE + getUpgrades(stack).drones() * StarkConfig.Drones.GUARDS_PER_UPGRADE;
+        return Math.min(count, StarkConfig.Drones.GUARD_MAX);
     }
 
     // ---------------------------------------------------------------- Satelliet-stand

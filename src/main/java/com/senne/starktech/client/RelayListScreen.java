@@ -1,7 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.hud.HudStyle;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.redstone.EdithRelays;
@@ -187,7 +187,7 @@ public class RelayListScreen extends Screen {
         super.render(g, mouseX, mouseY, a);
 
         g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
-        String count = shown.relays().size() + "/" + EdithBalance.MAX_RELAYS;
+        String count = shown.relays().size() + "/" + StarkConfig.Relays.MAX_RELAYS;
         g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(180, HudStyle.WHITE), true);
 
         LocalPlayer player = player();

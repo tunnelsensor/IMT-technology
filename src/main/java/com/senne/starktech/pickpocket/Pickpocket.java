@@ -1,7 +1,6 @@
 package com.senne.starktech.pickpocket;
 
-import com.senne.starktech.bypass.BypassBalance;
-import com.senne.starktech.edith.EdithConfig;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.KeycardData;
 import com.senne.starktech.logic.KeycardItem;
 import com.senne.starktech.network.ModNetwork;
@@ -86,7 +85,7 @@ public final class Pickpocket {
      * spectator (daar valt niets te pikken).
      */
     public static boolean tryStart(ServerPlayer thief, ServerPlayer victim) {
-        if (!EdithConfig.pickpocketAllowed()) {
+        if (!StarkConfig.Rules.PICKPOCKET_ALLOWED) {
             thief.displayClientMessage(Component.translatable("pickpocket.starktech.msg.disabled")
                     .withStyle(ChatFormatting.GRAY), true);
             return false;
@@ -95,7 +94,7 @@ public final class Pickpocket {
                 || thief.level() != victim.level()) {
             return false;
         }
-        if (thief.distanceTo(victim) > BypassBalance.PICKPOCKET_REACH) {
+        if (thief.distanceTo(victim) > StarkConfig.Bypass.PICKPOCKET_REACH) {
             return false;
         }
         if (!isBehind(victim, thief)) {
@@ -118,8 +117,8 @@ public final class Pickpocket {
             }
         }
         Collections.shuffle(slots, new java.util.Random(thief.getRandom().nextLong()));
-        if (slots.size() > BypassBalance.POCKET_MAX_CARDS) {
-            slots = new ArrayList<>(slots.subList(0, BypassBalance.POCKET_MAX_CARDS));
+        if (slots.size() > StarkConfig.Bypass.POCKET_MAX_CARDS) {
+            slots = new ArrayList<>(slots.subList(0, StarkConfig.Bypass.POCKET_MAX_CARDS));
         }
         THEFTS.put(thief.getUUID(), new Theft(victim.getUUID(), victim.getId(), slots, thief.serverLevel().getGameTime()));
         CompoundTag args = new CompoundTag();
@@ -205,7 +204,7 @@ public final class Pickpocket {
         victim.sendSystemMessage(Component.translatable("pickpocket.starktech.msg.victim", thief.getDisplayName())
                 .withStyle(ChatFormatting.RED));
         victim.playNotifySound(ModSounds.EDITH_ALERT.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-        thief.addEffect(new MobEffectInstance(MobEffects.GLOWING, BypassBalance.PICKPOCKET_GLOW_SECONDS * 20, 0, false, false));
+        thief.addEffect(new MobEffectInstance(MobEffects.GLOWING, StarkConfig.Bypass.PICKPOCKET_GLOW_SECONDS * 20, 0, false, false));
         thief.displayClientMessage(Component.translatable("pickpocket.starktech.msg.caught", victim.getDisplayName())
                 .withStyle(ChatFormatting.RED), true);
         CompoundTag args = new CompoundTag();
@@ -217,7 +216,7 @@ public final class Pickpocket {
     private static void end(ServerPlayer thief, Theft theft) {
         THEFTS.remove(thief.getUUID());
         COOLDOWNS.computeIfAbsent(thief.getUUID(), id -> new HashMap<>()).put(theft.victim(),
-                thief.serverLevel().getGameTime() + BypassBalance.PICKPOCKET_COOLDOWN_SECONDS * 20L);
+                thief.serverLevel().getGameTime() + StarkConfig.Bypass.PICKPOCKET_COOLDOWN_SECONDS * 20L);
     }
 
     private static @Nullable ServerPlayer victimOf(@Nullable MinecraftServer server, Theft theft) {
@@ -249,7 +248,7 @@ public final class Pickpocket {
                     || thief.serverLevel().getGameTime() - theft.startedAt() > MAX_TICKS;
             if (!gone && sees(victim, thief)) {
                 caught(thief, victim, theft);
-            } else if (gone || thief.distanceTo(victim) > BypassBalance.POCKET_LEAVE) {
+            } else if (gone || thief.distanceTo(victim) > StarkConfig.Bypass.POCKET_LEAVE) {
                 end(thief, theft);
                 CompoundTag args = new CompoundTag();
                 args.putString("result", "away");

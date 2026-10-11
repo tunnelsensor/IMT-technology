@@ -1,5 +1,6 @@
 package com.senne.starktech.suit;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithCooldown;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
@@ -164,10 +165,10 @@ public final class EdithSuit {
             return;
         }
         LandingPads.forgetMissing(player);
-        int drain = speed > SuitBalance.BOOST_SPEED ? SuitBalance.DRAIN_BOOST
-                : speed > SuitBalance.CRUISE_SPEED ? SuitBalance.DRAIN_FLY : SuitBalance.DRAIN_HOVER;
+        int drain = speed > StarkConfig.Suit.BOOST_SPEED ? StarkConfig.Suit.DRAIN_BOOST
+                : speed > StarkConfig.Suit.CRUISE_SPEED ? StarkConfig.Suit.DRAIN_FLY : StarkConfig.Suit.DRAIN_HOVER;
         // Stuwraket-upgrades in de laarzen: zuiniger vliegen.
-        int cost = (int) Math.ceil(drain * Math.max(0.1, 1 - com.senne.starktech.workbench.WorkbenchBalance.THRUSTER_SAVING
+        int cost = (int) Math.ceil(drain * Math.max(0.1, 1 - StarkConfig.Workbench.THRUSTER_SAVING
                 * com.senne.starktech.workbench.SuitUpgrades.thrustersOf(player)));
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
@@ -182,7 +183,7 @@ public final class EdithSuit {
      * dus je ziet geen spoor. Komt er even geen bericht, dan gaan de vlammen vanzelf uit.
      */
     private static void jets(ServerLevel level, ServerPlayer player, double speed) {
-        float power = (float) Math.min(1.0, speed / SuitBalance.BOOST_SPEED);
+        float power = (float) Math.min(1.0, speed / StarkConfig.Suit.BOOST_SPEED);
         ModNetwork.sendNear(level, player.position(), 96, new ThrusterPayload(player.getId(), power));
     }
 
@@ -206,11 +207,11 @@ public final class EdithSuit {
             return;
         }
         // Elke gedragen stuk houdt een deel tegen, en de bepantsering (werkbank) er nog wat bij.
-        double share = Math.min(0.9, SuitBalance.POWERED_REDUCTION_PER_PIECE * pieces
-                + com.senne.starktech.workbench.WorkbenchBalance.PLATING_REDUCTION
+        double share = Math.min(0.9, StarkConfig.Suit.POWERED_REDUCTION_PER_PIECE * pieces
+                + StarkConfig.Workbench.PLATING_REDUCTION
                 * com.senne.starktech.workbench.SuitUpgrades.platingOf(player));
         float absorbed = (float) (event.getAmount() * share);
-        int cost = (int) Math.ceil(absorbed * SuitBalance.REDUCTION_COST_PER_DAMAGE);
+        int cost = (int) Math.ceil(absorbed * StarkConfig.Suit.REDUCTION_COST_PER_DAMAGE);
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
             return; // geen energie: de klap komt gewoon aan
@@ -228,11 +229,11 @@ public final class EdithSuit {
         if (!hasBoots(player) || !StarkSuitItem.isPowered(player)) {
             return;
         }
-        if (event.getDistance() > SuitBalance.SAFE_FALL) {
+        if (event.getDistance() > StarkConfig.Suit.SAFE_FALL) {
             return; // van zo hoog helpt zelfs een repulsor niet meer
         }
         ItemStack glasses = EdithData.getWornGlasses(player);
-        if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, SuitBalance.LANDING_COST)) {
+        if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, StarkConfig.Suit.LANDING_COST)) {
             return;
         }
         event.setCanceled(true);
@@ -272,40 +273,40 @@ public final class EdithSuit {
         if (!EdithServer.isReady(player, EdithCooldown.REPULSOR)) {
             return;
         }
-        if (!EdithData.tryUseEnergy(glasses, SuitBalance.REPULSOR_COST)) {
+        if (!EdithData.tryUseEnergy(glasses, StarkConfig.Suit.REPULSOR_COST)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    SuitBalance.REPULSOR_COST), EdithMessagePayload.Level.WARNING);
+                    StarkConfig.Suit.REPULSOR_COST), EdithMessagePayload.Level.WARNING);
             return;
         }
 
         ServerLevel level = player.serverLevel();
         Vec3 from = player.getEyePosition().subtract(0, 0.2, 0);
-        Vec3 to = from.add(player.getViewVector(1.0f).scale(SuitBalance.REPULSOR_RANGE));
+        Vec3 to = from.add(player.getViewVector(1.0f).scale(StarkConfig.Suit.REPULSOR_RANGE));
 
         int hits = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(from, to).inflate(SuitBalance.REPULSOR_WIDTH),
+                new AABB(from, to).inflate(StarkConfig.Suit.REPULSOR_WIDTH),
                 entity -> entity != player && entity.isAlive() && EdithTargeting.canTarget(player, entity))) {
             // Alleen wat echt dicht bij de straal staat, niet alles in het blok eromheen.
-            if (target.getBoundingBox().inflate(SuitBalance.REPULSOR_WIDTH).clip(from, to).isEmpty()) {
+            if (target.getBoundingBox().inflate(StarkConfig.Suit.REPULSOR_WIDTH).clip(from, to).isEmpty()) {
                 continue;
             }
             target.hurt(ModDamageTypes.droneLaser(level, player, player), repulsorDamage(player));
             Vec3 push = target.position().subtract(player.position()).normalize()
-                    .scale(SuitBalance.REPULSOR_KNOCKBACK);
+                    .scale(StarkConfig.Suit.REPULSOR_KNOCKBACK);
             target.push(push.x, 0.15, push.z);
             target.hurtMarked = true;
             hits++;
         }
 
-        EdithServer.startCooldown(player, EdithCooldown.REPULSOR, SuitBalance.REPULSOR_COOLDOWN);
+        EdithServer.startCooldown(player, EdithCooldown.REPULSOR, StarkConfig.Suit.REPULSOR_COOLDOWN);
         ModNetwork.sendNear(level, player.position(), 64,
                 new BeamEffectPayload(from, to, BeamEffectPayload.Kind.REPULSOR));
         // Iedereen in de buurt hoort het schot, een beetje anders van toon elke keer.
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.REPULSOR_FIRE.get(),
                 SoundSource.PLAYERS, 1.0f, 0.95f + level.random.nextFloat() * 0.1f);
         // Een klein zetje naar achteren: een repulsor duwt jou ook een beetje.
-        Vec3 back = player.getViewVector(1.0f).scale(-SuitBalance.REPULSOR_RECOIL);
+        Vec3 back = player.getViewVector(1.0f).scale(-StarkConfig.Suit.REPULSOR_RECOIL);
         player.push(back.x, 0.0, back.z);
         player.hurtMarked = true;
         // Geen melding of stem bij een treffer: het schot zelf (geluid en straal) zegt genoeg.
@@ -316,7 +317,7 @@ public final class EdithSuit {
 
     /** De schade van een repulsorstoot: meer met condensatoren in de borstplaat (werkbank). */
     public static float repulsorDamage(ServerPlayer player) {
-        return (float) (SuitBalance.REPULSOR_DAMAGE * (1 + com.senne.starktech.workbench.WorkbenchBalance.CAPACITOR_DAMAGE
+        return (float) (StarkConfig.Suit.REPULSOR_DAMAGE * (1 + StarkConfig.Workbench.CAPACITOR_DAMAGE
                 * com.senne.starktech.workbench.SuitUpgrades.capacitorsOf(player)));
     }
 

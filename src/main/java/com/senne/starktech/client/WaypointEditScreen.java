@@ -1,7 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.hud.HudStyle;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
 import com.senne.starktech.network.WaypointActionPayload;
@@ -64,7 +64,7 @@ public class WaypointEditScreen extends Screen {
 
         nameBox = new EditBox(font, left + 10, top + 34, PANEL_W - 44, 18,
                 Component.translatable("screen.starktech.waypoint_edit.name"));
-        nameBox.setMaxLength(EdithBalance.MAX_WAYPOINT_NAME);
+        nameBox.setMaxLength(StarkConfig.Navigation.MAX_WAYPOINT_NAME);
         nameBox.setValue(waypoint.name());
         addRenderableWidget(nameBox);
 

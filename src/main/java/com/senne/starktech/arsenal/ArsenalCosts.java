@@ -1,5 +1,6 @@
 package com.senne.starktech.arsenal;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModItems;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +49,7 @@ public final class ArsenalCosts {
     public static List<ItemStack> wreckage(RandomSource random) {
         List<ItemStack> scrap = new ArrayList<>();
         for (Part part : BUILD_COST) {
-            double exact = part.count() * ArsenalBalance.WRECK_RECOVERY;
+            double exact = part.count() * StarkConfig.Drones.WRECK_RECOVERY;
             int whole = (int) Math.floor(exact);
             if (random.nextDouble() < exact - whole) {
                 whole++;

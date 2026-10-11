@@ -1,5 +1,6 @@
 package com.senne.starktech.repair;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * ver hij is.
  *
  * Zolang er iets in zit waar hij iets mee kan, er plaats is in het vakje eruit en er stroom is, werkt
- * hij: {@link RepairBalance#MACHINE_POWER} stroom per tick, {@link RepairBalance#MACHINE_TICKS} ticks
+ * hij: {@link StarkConfig.Power#CRUSHER_COMPACTOR} stroom per tick, {@link StarkConfig.Repair#MACHINE_TICKS} ticks
  * per voorwerp (mijn invulling: 4 en 5 seconden). Valt de stroom weg of zit het vakje eruit vol, dan
  * wacht hij (hij vergeet niet hoe ver hij was). Wat hij van wat maakt, staat in
  * {@link CrackMachineBlock.Kind}.
@@ -73,7 +74,7 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
         public int get(int index) {
             return switch (index) {
                 case DATA_PROGRESS -> progress;
-                case DATA_TOTAL -> RepairBalance.MACHINE_TICKS;
+                case DATA_TOTAL -> StarkConfig.Repair.MACHINE_TICKS;
                 case DATA_STATUS -> status.ordinal();
                 default -> 0;
             };
@@ -118,14 +119,14 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
             progress = 0;
         } else if (!fits(result)) {
             now = Status.FULL;
-        } else if (StarkGrid.available(level, pos) < RepairBalance.MACHINE_POWER) {
+        } else if (StarkGrid.available(level, pos) < StarkConfig.Power.CRUSHER_COMPACTOR) {
             now = Status.NO_POWER;
         } else {
-            StarkGrid.draw(level, pos, RepairBalance.MACHINE_POWER);
+            StarkGrid.draw(level, pos, StarkConfig.Power.CRUSHER_COMPACTOR);
             now = Status.WORKING;
             progress++;
             effects(level, pos, input);
-            if (progress >= RepairBalance.MACHINE_TICKS) {
+            if (progress >= StarkConfig.Repair.MACHINE_TICKS) {
                 progress = 0;
                 Block block = FromBlockItem.block(input);
                 input.shrink(1);

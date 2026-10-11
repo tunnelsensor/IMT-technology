@@ -1,5 +1,6 @@
 package com.senne.starktech.c4;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.security.zone.Zones;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -20,8 +21,8 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Repair Paste (hoofdstuk 11, jouw wens: "met een pasta opvullen, een beetje plamuren"). Rechtsklik op
- * een blok met barsten, en de barsten zijn weg. Het blok is daarna wel {@link C4Balance#PATCH_WEAKER}
- * zwakker, elke keer opnieuw (nooit zwakker dan {@link C4Balance#PATCH_WEAKEST}). Wil je een blok dat
+ * een blok met barsten, en de barsten zijn weg. Het blok is daarna wel {@link StarkConfig.Repair#PATCH_WEAKER}
+ * zwakker, elke keer opnieuw (nooit zwakker dan {@link StarkConfig.Repair#PATCH_WEAKEST}). Wil je een blok dat
  * weer helemaal sterk is, vervang het dan.
  *
  * In een beveiligde zone mag alleen wie er mag bouwen plamuren (mijn invulling): anders kan een
@@ -71,7 +72,7 @@ public class RepairPasteItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.starktech.repair_paste.use").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.repair_paste.weaker",
-                Math.round(C4Balance.PATCH_WEAKER * 100), Math.round(C4Balance.PATCH_WEAKEST * 100))
+                Math.round(StarkConfig.Repair.PATCH_WEAKER * 100), Math.round(StarkConfig.Repair.PATCH_WEAKEST * 100))
                 .withStyle(ChatFormatting.GRAY));
     }
 }

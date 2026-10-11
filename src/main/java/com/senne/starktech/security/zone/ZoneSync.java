@@ -1,5 +1,6 @@
 package com.senne.starktech.security.zone;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.ZoneSyncPayload;
 import java.util.ArrayList;
@@ -62,7 +63,7 @@ public final class ZoneSync {
     public static List<ZoneSyncPayload.View> visibleTo(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         List<ZoneSyncPayload.View> views = new ArrayList<>();
-        double range = RANGE + com.senne.starktech.security.SecurityBalance.ZONE_REACH;
+        double range = RANGE + StarkConfig.Security.ZONE_REACH;
         for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
             if (views.size() >= ZoneSyncPayload.MAX_ZONES) {
                 break;

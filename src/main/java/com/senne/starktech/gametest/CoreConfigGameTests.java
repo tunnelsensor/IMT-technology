@@ -1,7 +1,7 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.logic.Backups;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.Datacenters;
 import com.senne.starktech.logic.LogicStore;
 import com.senne.starktech.registry.ModBlocks;
@@ -151,7 +151,7 @@ public final class CoreConfigGameTests {
         CompoundTag backupData = new CompoundTag();
         backupData.put("Logic", new LogicStore().save());
         datacenters.add(here, elsewhere, "10.99.99.99", "other-dc", owner.getUUID(), level.getGameTime(), 1, false,
-                backupData, Backups.KEEP);
+                backupData, StarkConfig.Logic.BACKUPS_KEPT);
         String ip = core.ip();
 
         ItemStack stack = mine(helper, owner, CORE);

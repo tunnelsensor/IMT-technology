@@ -1,5 +1,6 @@
 package com.senne.starktech.security;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * (de knop Rename bij het grote beeld); breek je hem af, dan houdt het item die naam.
  *
  * Op de server kijkt hij elke twee seconden of hij stroom heeft en of de camera's van zijn netwerk
- * aan staan, en betaalt hij een beetje stroom (SecurityBalance.CAMERA_UPKEEP). Dat zet hij in het
+ * aan staan, en betaalt hij een beetje stroom (StarkConfig.Power.CAMERA_UPKEEP). Dat zet hij in het
  * blok (CameraBlock.ONLINE), zodat jouw spel weet of er beeld is.
  *
  * Naam, pan en tilt gaan ook naar je spel: daar tekent de bewakingsmuur het beeld vanaf de lens
@@ -153,9 +154,9 @@ public class CameraBlockEntity extends BlockEntity {
     public void updateOnline(ServerLevel level, BlockPos pos, BlockState state) {
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
         boolean allowed = core == null || core.camerasEnabled();
-        boolean online = allowed && StarkGrid.available(level, pos) >= SecurityBalance.CAMERA_UPKEEP;
+        boolean online = allowed && StarkGrid.available(level, pos) >= StarkConfig.Power.CAMERA_UPKEEP;
         if (online) {
-            StarkGrid.draw(level, pos, SecurityBalance.CAMERA_UPKEEP);
+            StarkGrid.draw(level, pos, StarkConfig.Power.CAMERA_UPKEEP);
         }
         if (online != state.getValue(CameraBlock.ONLINE)) {
             level.setBlock(pos, state.setValue(CameraBlock.ONLINE, online), Block.UPDATE_CLIENTS);

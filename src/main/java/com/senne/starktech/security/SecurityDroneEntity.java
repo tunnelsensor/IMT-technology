@@ -1,10 +1,10 @@
 package com.senne.starktech.security;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import java.util.Comparator;
 import net.minecraft.core.BlockPos;
@@ -64,7 +64,7 @@ public class SecurityDroneEntity extends PathfinderMob {
 
     public static AttributeSupplier.Builder createAttributes() {
         return PathfinderMob.createMobAttributes()
-                .add(Attributes.MAX_HEALTH, SecurityBalance.DRONE_HEALTH)
+                .add(Attributes.MAX_HEALTH, StarkConfig.Security.DRONE_HEALTH)
                 .add(Attributes.MOVEMENT_SPEED, 0.5)
                 .add(Attributes.FLYING_SPEED, 0.5)
                 .add(Attributes.FOLLOW_RANGE, 32.0);
@@ -171,14 +171,14 @@ public class SecurityDroneEntity extends PathfinderMob {
     }
 
     private boolean stillATarget(ServerLevel level, @Nullable SecurityCoreBlockEntity core, LivingEntity target) {
-        double range = SecurityBalance.DRONE_RANGE * 1.5;
+        double range = StarkConfig.Security.DRONE_RANGE * 1.5;
         return target.distanceToSqr(this) <= range * range && SecurityCores.isIntruder(level, core, target)
                 && (home == null || SecurityCores.inArea(home, target.blockPosition()));
     }
 
     /** De dichtstbijzijnde indringer die hij kan zien. */
     private @Nullable LivingEntity findTarget(ServerLevel level, @Nullable SecurityCoreBlockEntity core) {
-        return level.getEntitiesOfClass(LivingEntity.class, new AABB(blockPosition()).inflate(SecurityBalance.DRONE_RANGE),
+        return level.getEntitiesOfClass(LivingEntity.class, new AABB(blockPosition()).inflate(StarkConfig.Security.DRONE_RANGE),
                         entity -> entity != this && SecurityCores.isIntruder(level, core, entity)
                                 && (home == null || SecurityCores.inArea(home, entity.blockPosition()))
                                 && getSensing().hasLineOfSight(entity))
@@ -194,22 +194,22 @@ public class SecurityDroneEntity extends PathfinderMob {
         moveControl.setWantedPosition(eye.x + Math.cos(angle) * 4, eye.y + 1.5, eye.z + Math.sin(angle) * 4, 0.9);
         lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, eye);
         if (fireCooldown <= 0 && getSensing().hasLineOfSight(target)
-                && distanceToSqr(target) <= SecurityBalance.DRONE_RANGE * SecurityBalance.DRONE_RANGE) {
+                && distanceToSqr(target) <= StarkConfig.Security.DRONE_RANGE * StarkConfig.Security.DRONE_RANGE) {
             fireLaser(level, target);
-            fireCooldown = SecurityBalance.DRONE_FIRE_INTERVAL;
+            fireCooldown = StarkConfig.Security.DRONE_FIRE_INTERVAL;
         }
     }
 
     private void fireLaser(ServerLevel level, LivingEntity target) {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, DomeSettings.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, StarkConfig.Dome.COST_LASER);
         playSound(ModSounds.DRONE_LASER.get(), 0.7f, 1.3f + random.nextFloat() * 0.1f);
         if (shield != null) {
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
             return;
         }
-        target.hurt(ModDamageTypes.droneLaser(level, this, this), SecurityBalance.DRONE_LASER_DAMAGE);
+        target.hurt(ModDamageTypes.droneLaser(level, this, this), StarkConfig.Security.DRONE_LASER_DAMAGE);
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
     }
 
@@ -221,7 +221,7 @@ public class SecurityDroneEntity extends PathfinderMob {
         }
         if (--patrolCooldown <= 0 || patrolPoint == null) {
             patrolCooldown = 60 + random.nextInt(60);
-            double r = SecurityBalance.PATROL_RADIUS;
+            double r = StarkConfig.Security.PATROL_RADIUS;
             patrolPoint = new Vec3(home.getX() + 0.5 + (random.nextDouble() * 2 - 1) * r,
                     home.getY() + 1.5 + random.nextDouble() * 2,
                     home.getZ() + 0.5 + (random.nextDouble() * 2 - 1) * r);
@@ -297,7 +297,7 @@ public class SecurityDroneEntity extends PathfinderMob {
                 drone.setDeltaMovement(drone.getDeltaMovement().scale(0.5));
                 return;
             }
-            double speed = speedModifier * SecurityBalance.ACCELERATION * Math.min(1.0, length / 2.0);
+            double speed = speedModifier * StarkConfig.Security.ACCELERATION * Math.min(1.0, length / 2.0);
             drone.setDeltaMovement(drone.getDeltaMovement().scale(0.9).add(delta.scale(speed / length)));
         }
     }

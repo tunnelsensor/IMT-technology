@@ -1,5 +1,6 @@
 package com.senne.starktech.holo;
 
+import com.senne.starktech.config.StarkConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -13,8 +14,6 @@ import net.minecraft.util.Mth;
 public final class HoloSettings {
     private HoloSettings() {}
 
-    /** Hoe ver de kaart reikt vanaf de tafel (in blokken). */
-    public static final int[] RANGES = {24, 48, 96, 160};
     /** Hoe groot het hologram boven de tafel is (1.0 = normaal). */
     public static final float[] SCALES = {0.7f, 1.0f, 1.5f};
 
@@ -22,7 +21,7 @@ public final class HoloSettings {
     public static final int DEFAULT_SCALE = 1;
 
     public static int clampRange(int index) {
-        return Mth.clamp(index, 0, RANGES.length - 1);
+        return Mth.clamp(index, 0, StarkConfig.Holo.RANGES.length - 1);
     }
 
     public static int clampScale(int index) {
@@ -30,7 +29,7 @@ public final class HoloSettings {
     }
 
     public static int rangeBlocks(int index) {
-        return RANGES[clampRange(index)];
+        return StarkConfig.Holo.RANGES[clampRange(index)];
     }
 
     public static float scale(int index) {

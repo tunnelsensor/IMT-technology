@@ -1,6 +1,6 @@
 package com.senne.starktech.client;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -52,7 +52,7 @@ public final class OreScanner {
         long now = Util.getMillis();
         EdithClientState.oreMarkers = found;
         EdithClientState.oreScanStartMillis = now;
-        EdithClientState.oreScanEndMillis = now + EdithBalance.ORE_SCAN_DURATION * 50L;
+        EdithClientState.oreScanEndMillis = now + StarkConfig.Scanner.ORE_SCAN_DURATION * 50L;
         return found.size();
     }
 }

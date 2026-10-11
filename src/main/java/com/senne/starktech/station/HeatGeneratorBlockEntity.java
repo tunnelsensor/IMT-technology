@@ -1,6 +1,6 @@
 package com.senne.starktech.station;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -35,7 +35,7 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
 
     @Override
     public int capacity() {
-        return EdithBalance.HEAT_CAPACITY;
+        return StarkConfig.Power.HEAT_CAPACITY;
     }
 
     @Override
@@ -53,18 +53,18 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
         // 1. Brandstof.
         if (burnTicks > 0) {
             burnTicks--;
-            made += EdithBalance.HEAT_RATE_FUEL;
+            made += StarkConfig.Power.HEAT_RATE_FUEL;
         } else {
             ItemStack fuel = getItem(SLOT_FUEL);
             int burnTime = fuel.getBurnTime(null);
             if (burnTime > 0 && energy() < capacity()) {
                 fuel.shrink(1);
                 burnTicks = burnTime;
-                made += EdithBalance.HEAT_RATE_FUEL;
+                made += StarkConfig.Power.HEAT_RATE_FUEL;
             }
         }
         // 2. Hitte uit de buurt (dit kost een blik op de 26 blokken om hem heen).
-        made += EdithBalance.HEAT_RATE_AMBIENT * hotNeighbours(level, pos);
+        made += StarkConfig.Power.HEAT_RATE_AMBIENT * hotNeighbours(level, pos);
         heat = made;
         return made;
     }
@@ -102,7 +102,7 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
                 }
             }
         }
-        return Math.min(hot, EdithBalance.HEAT_MAX_NEIGHBOURS);
+        return Math.min(hot, StarkConfig.Power.HEAT_MAX_NEIGHBOURS);
     }
 
     private static boolean isHot(BlockState state) {

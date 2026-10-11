@@ -1,6 +1,7 @@
 package com.senne.starktech.network;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -24,7 +25,7 @@ public record DomeActionPayload(BlockPos pos, Op op, int value) implements Custo
         ENABLE,
         /** De kleur (nummer uit ShieldColor). */
         COLOUR,
-        /** Het bereik (nummer uit DomeSettings.RADII). */
+        /** Het bereik (nummer uit StarkConfig.Dome.RADII). */
         RADIUS,
         /** De sterkte (1 tot 5). */
         STRENGTH

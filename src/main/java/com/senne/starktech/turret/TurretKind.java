@@ -1,6 +1,7 @@
 package com.senne.starktech.turret;
 
 import com.mojang.serialization.Codec;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.BeamEffectPayload;
 import java.util.Locale;
 import net.minecraft.util.StringRepresentable;
@@ -38,25 +39,25 @@ public enum TurretKind implements StringRepresentable {
 
     public double range() {
         return switch (this) {
-            case STARK -> TurretBalance.RANGE;
-            case HYDRA -> TurretBalance.HYDRA_RANGE;
-            case SECURITY -> TurretBalance.SECURITY_RANGE;
+            case STARK -> StarkConfig.Turrets.RANGE;
+            case HYDRA -> StarkConfig.Turrets.HYDRA_RANGE;
+            case SECURITY -> StarkConfig.Turrets.SECURITY_RANGE;
         };
     }
 
     public float laserDamage() {
         return switch (this) {
-            case STARK -> TurretBalance.LASER_DAMAGE;
-            case HYDRA -> TurretBalance.HYDRA_LASER_DAMAGE;
-            case SECURITY -> TurretBalance.SECURITY_LASER_DAMAGE;
+            case STARK -> StarkConfig.Turrets.LASER_DAMAGE;
+            case HYDRA -> StarkConfig.Turrets.HYDRA_LASER_DAMAGE;
+            case SECURITY -> StarkConfig.Turrets.SECURITY_LASER_DAMAGE;
         };
     }
 
     public int laserInterval() {
         return switch (this) {
-            case STARK -> TurretBalance.LASER_INTERVAL;
-            case HYDRA -> TurretBalance.HYDRA_LASER_INTERVAL;
-            case SECURITY -> TurretBalance.SECURITY_LASER_INTERVAL;
+            case STARK -> StarkConfig.Turrets.LASER_INTERVAL;
+            case HYDRA -> StarkConfig.Turrets.HYDRA_LASER_INTERVAL;
+            case SECURITY -> StarkConfig.Turrets.SECURITY_LASER_INTERVAL;
         };
     }
 

@@ -9,7 +9,6 @@ import com.senne.starktech.logic.program.Op;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.security.SecurityBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.security.os.EventLog;

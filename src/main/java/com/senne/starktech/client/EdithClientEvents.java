@@ -1,9 +1,9 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.voice.VoiceControl;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.edith.EdithAction;
-import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.network.EdithActionPayload;
@@ -250,7 +250,7 @@ public final class EdithClientEvents {
         Entity viewer = viewer(mc);
         Vec3 eye = viewer.getEyePosition();
         Vec3 look = mc.player.getViewVector(1.0f);
-        double range = EdithBalance.PING_PLACE_RANGE;
+        double range = StarkConfig.Comms.PING_PLACE_RANGE;
         Vec3 end = eye.add(look.scale(range));
         HitResult blockHit = viewer.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.ANY, viewer));
 
@@ -306,7 +306,7 @@ public final class EdithClientEvents {
      */
     private static LivingEntity findTarget(LocalPlayer player) {
         Entity viewer = viewer(Minecraft.getInstance());
-        double range = EdithBalance.TARGET_RANGE;
+        double range = StarkConfig.Glasses.TARGET_RANGE;
         Vec3 eye = viewer.getEyePosition();
         Vec3 look = player.getViewVector(1.0f);
         Vec3 end = eye.add(look.scale(range));
@@ -335,7 +335,7 @@ public final class EdithClientEvents {
         if (EdithClientState.zooming) {
             // Terwijl de satelliet oplaadt zoom je twee keer zo ver in: zo kun je van heel
             // ver precies zien waar hij inslaat.
-            float factor = EdithClientState.strikeTarget != null ? EdithBalance.ZOOM_FACTOR * 2 : EdithBalance.ZOOM_FACTOR;
+            float factor = EdithClientState.strikeTarget != null ? StarkConfig.Glasses.ZOOM_FACTOR * 2 : StarkConfig.Glasses.ZOOM_FACTOR;
             event.setFOV(event.getFOV() / factor);
             EdithClientState.fieldOfView = event.getFOV();
         }

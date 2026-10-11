@@ -1,6 +1,7 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.InputDeviceBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
 import com.senne.starktech.logic.InputLight;
@@ -710,7 +711,7 @@ public final class LogicGameTests {
         });
         helper.runAfterDelay(30, () -> {
             int[] load = LogicRunner.load(level, setup.core());
-            if (load[0] != com.senne.starktech.logic.LogicBalance.RUNS_PER_RAM || load[1] != 1) {
+            if (load[0] != StarkConfig.Logic.RUNS_PER_RAM || load[1] != 1) {
                 throw new GameTestAssertException("Met één RAM-latje zouden er 2 bezig moeten zijn en 1 wachten, niet "
                         + load[0] + " en " + load[1]);
             }

@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * temperatuur, dus elke server rack heeft minstens 1 fan nodig"). De CPU's, GPU's, RAM en SSD's
  * werken wel samen als één server (zie LogicServer), maar warm worden ze in hun eigen rack.
  *
- * Hoe het werkt (alle getallen staan in LogicBalance):
+ * Hoe het werkt (alle getallen staan in StarkConfig.Logic):
  * <ul>
  *   <li><b>Warmte</b>: elk onderdeel in een rack dat meedraait maakt warmte (watt) in DAT rack. Een
  *       CPU of GPU meer als hij hard werkt. Ook RAM en SSD's maken een beetje warmte.</li>
@@ -64,7 +65,7 @@ public final class Datacenter {
     private static final int COOL = 0, WARM = 1, HOT = 2;
 
     /** De temperatuur van het heetste rack: is dat warm, dan werkt de hele server trager. */
-    private double temperature = LogicBalance.AMBIENT_TEMPERATURE;
+    private double temperature = StarkConfig.Logic.AMBIENT_TEMPERATURE;
     private int warned = COOL;
     /**
      * De laatste meting (niet bewaard, na het laden meteen opnieuw), van alle racks samen: warmte nu,
@@ -73,7 +74,7 @@ public final class Datacenter {
     private double heat;
     private double fullHeat;
     private double cooling;
-    private double target = LogicBalance.AMBIENT_TEMPERATURE;
+    private double target = StarkConfig.Logic.AMBIENT_TEMPERATURE;
     /**
      * Hoe hard alles werkt (0..1), de laatste meting: de CPU's voor Logic, het brein van E.D.I.T.H.
      * en het RAM (diagrammen tegelijk). Niet bewaard.
@@ -228,7 +229,7 @@ public final class Datacenter {
 
     /** Hoeveel blokjes per seconde de CPU's en GPU's van deze server aankunnen (warm: minder). */
     public static double logicCapacity(LogicServer.Stats stats) {
-        return stats.logicPower() / stats.slowdown() * LogicBalance.LOGIC_STEPS_PER_SECOND;
+        return stats.logicPower() / stats.slowdown() * StarkConfig.Logic.LOGIC_STEPS_PER_SECOND;
     }
 
     private static int percent(double fraction) {
@@ -246,14 +247,14 @@ public final class Datacenter {
         heat = 0;
         fullHeat = 0;
         cooling = 0;
-        target = LogicBalance.AMBIENT_TEMPERATURE;
+        target = StarkConfig.Logic.AMBIENT_TEMPERATURE;
         if (stats.racks() == 0) {
             // Geen racks: niets dat warm wordt.
-            temperature = LogicBalance.AMBIENT_TEMPERATURE;
+            temperature = StarkConfig.Logic.AMBIENT_TEMPERATURE;
             warned = COOL;
             return;
         }
-        double hottest = LogicBalance.AMBIENT_TEMPERATURE;
+        double hottest = StarkConfig.Logic.AMBIENT_TEMPERATURE;
         BlockPos hottestPos = null;
         boolean ssdBroke = false;
         java.util.List<BlockPos> racks = new java.util.ArrayList<>(stats.cluster());
@@ -274,7 +275,7 @@ public final class Datacenter {
             fullHeat += rackFullHeat;
             cooling += rackCooling;
             target = Math.max(target, rack.target());
-            if (rack.temperature() >= LogicBalance.HOT_TEMPERATURE) {
+            if (rack.temperature() >= StarkConfig.Logic.HOT_TEMPERATURE) {
                 ssdBroke |= wear(level, core, rack, pos);
             }
             fire(level, core, rack);
@@ -301,19 +302,19 @@ public final class Datacenter {
 
     /** Warmte (watt) van zoveel CPU's, GPU's en RAM-latjes plus SSD's ({@code memory}), bij deze {@code load}. */
     public static double heat(int cpus, int gpus, int memory, double load) {
-        return cpus * (LogicBalance.CPU_HEAT + load * LogicBalance.CPU_BUSY_HEAT)
-                + gpus * (LogicBalance.GPU_HEAT + load * LogicBalance.GPU_BUSY_HEAT)
-                + memory * LogicBalance.MEMORY_HEAT;
+        return cpus * (StarkConfig.Logic.CPU_HEAT + load * StarkConfig.Logic.CPU_BUSY_HEAT)
+                + gpus * (StarkConfig.Logic.GPU_HEAT + load * StarkConfig.Logic.GPU_BUSY_HEAT)
+                + memory * StarkConfig.Logic.MEMORY_HEAT;
     }
 
     /** Koeling (watt) van een rack: zijn eigen fans. */
     public static double cooling(ServerRackBlockEntity rack) {
-        return rack.count(ServerPartItem.Kind.FAN) * LogicBalance.FAN_COOLING;
+        return rack.count(ServerPartItem.Kind.FAN) * StarkConfig.Logic.FAN_COOLING;
     }
 
     /** Zonder fan wordt een rack nooit warmer dan dit (dan staat het allang in brand). */
     private static double ceiling() {
-        return LogicBalance.FIRE_TEMPERATURE + 30.0;
+        return StarkConfig.Logic.FIRE_TEMPERATURE + 30.0;
     }
 
     /**
@@ -325,7 +326,7 @@ public final class Datacenter {
         if (heat > 0 && cooling <= 0) {
             return Double.POSITIVE_INFINITY;
         }
-        return LogicBalance.AMBIENT_TEMPERATURE + Math.max(0, heat - cooling) * LogicBalance.DEGREES_PER_WATT;
+        return StarkConfig.Logic.AMBIENT_TEMPERATURE + Math.max(0, heat - cooling) * StarkConfig.Logic.DEGREES_PER_WATT;
     }
 
     /**
@@ -334,10 +335,10 @@ public final class Datacenter {
      */
     public static double step(double temperature, double heat, double cooling) {
         if (heat > 0 && cooling <= 0) {
-            double warmer = temperature + heat * LogicBalance.NO_FAN_HEATING;
+            double warmer = temperature + heat * StarkConfig.Logic.NO_FAN_HEATING;
             return Math.max(temperature, Math.min(warmer, ceiling()));
         }
-        return temperature + (target(heat, cooling) - temperature) * LogicBalance.HEAT_RATE;
+        return temperature + (target(heat, cooling) - temperature) * StarkConfig.Logic.HEAT_RATE;
     }
 
     /**
@@ -346,14 +347,14 @@ public final class Datacenter {
      * fan, dan minstens één. 0 = genoeg.
      */
     public static int fansNeeded(double fullHeat, double cooling) {
-        if (fullHeat <= 0 || LogicBalance.FAN_COOLING <= 0) {
+        if (fullHeat <= 0 || StarkConfig.Logic.FAN_COOLING <= 0) {
             return 0;
         }
         int fans = cooling <= 0 ? 1 : 0;
-        double allowed = (LogicBalance.coolAgainTemperature() - LogicBalance.AMBIENT_TEMPERATURE) / LogicBalance.DEGREES_PER_WATT;
-        double missing = fullHeat - cooling - fans * LogicBalance.FAN_COOLING - allowed;
+        double allowed = (LogicStats.coolAgainTemperature() - StarkConfig.Logic.AMBIENT_TEMPERATURE) / StarkConfig.Logic.DEGREES_PER_WATT;
+        double missing = fullHeat - cooling - fans * StarkConfig.Logic.FAN_COOLING - allowed;
         if (missing > 0) {
-            fans += (int) Math.ceil(missing / LogicBalance.FAN_COOLING - 1e-9);
+            fans += (int) Math.ceil(missing / StarkConfig.Logic.FAN_COOLING - 1e-9);
         }
         return fans;
     }
@@ -381,7 +382,7 @@ public final class Datacenter {
      * weg. Geeft true als er een SSD kapot ging.
      */
     private static boolean wear(ServerLevel level, SecurityCoreBlockEntity core, ServerRackBlockEntity rack, BlockPos pos) {
-        int amount = 1 + (int) Math.max(0, (rack.temperature() - LogicBalance.HOT_TEMPERATURE) / 10.0);
+        int amount = 1 + (int) Math.max(0, (rack.temperature() - StarkConfig.Logic.HOT_TEMPERATURE) / 10.0);
         boolean ssdBroke = false;
         for (int slot = 0; slot < rack.parts().getContainerSize(); slot++) {
             ItemStack stack = rack.parts().getItem(slot);
@@ -390,7 +391,7 @@ public final class Datacenter {
                 continue;
             }
             int wear = ServerPartItem.wear(stack) + amount;
-            if (wear < LogicBalance.MAX_WEAR) {
+            if (wear < StarkConfig.Logic.MAX_WEAR) {
                 ServerPartItem.setWear(stack, wear);
                 rack.setChanged();
                 continue;
@@ -409,20 +410,20 @@ public final class Datacenter {
 
     /** Is dit rack lang genoeg boven FIRE_TEMPERATURE, dan vat het vlam. */
     private static void fire(ServerLevel level, SecurityCoreBlockEntity core, ServerRackBlockEntity rack) {
-        if (rack.isBurning() || rack.temperature() < LogicBalance.FIRE_TEMPERATURE) {
+        if (rack.isBurning() || rack.temperature() < StarkConfig.Logic.FIRE_TEMPERATURE) {
             rack.setFireTicks(0);
             return;
         }
         int ticks = rack.fireTicks() + UPDATE_TICKS;
-        if (ticks < LogicBalance.FIRE_DELAY_TICKS) {
+        if (ticks < StarkConfig.Logic.FIRE_DELAY_TICKS) {
             rack.setFireTicks(ticks);
             return;
         }
         rack.setFireTicks(0);
-        rack.ignite(level, level.getGameTime() + LogicBalance.BURN_TICKS);
+        rack.ignite(level, level.getGameTime() + StarkConfig.Logic.BURN_TICKS);
         core.logEvent(EventLog.Type.ALARM, "A server rack is on fire! (" + where(rack.getBlockPos()) + ")");
         tellOwner(level, core, Component.translatable("logic.starktech.heat.fire", core.hostname(),
-                Math.max(1, LogicBalance.BURN_TICKS / 20)), EdithMessagePayload.Level.ALERT);
+                Math.max(1, StarkConfig.Logic.BURN_TICKS / 20)), EdithMessagePayload.Level.ALERT);
     }
 
     /** Een rack is afgebrand (ServerRackBlockEntity.burnDown). Zat er een SSD in, dan zijn de gegevens weg. */
@@ -458,7 +459,7 @@ public final class Datacenter {
      * rack staat. Weer koel: dat ook één keer.
      */
     private void warn(ServerLevel level, SecurityCoreBlockEntity core, @Nullable BlockPos hottest) {
-        int now = temperature >= LogicBalance.HOT_TEMPERATURE ? HOT : temperature >= LogicBalance.WARM_TEMPERATURE ? WARM : COOL;
+        int now = temperature >= StarkConfig.Logic.HOT_TEMPERATURE ? HOT : temperature >= StarkConfig.Logic.WARM_TEMPERATURE ? WARM : COOL;
         String degrees = degrees(temperature);
         String where = hottest == null ? "?" : where(hottest);
         if (now > warned) {
@@ -473,13 +474,13 @@ public final class Datacenter {
                         EdithMessagePayload.Level.WARNING);
             }
             core.setChanged();
-        } else if (warned > COOL && temperature < LogicBalance.coolAgainTemperature()) {
+        } else if (warned > COOL && temperature < LogicStats.coolAgainTemperature()) {
             warned = COOL;
             core.logEvent(EventLog.Type.HEAT, "Datacenter cool again (" + degrees + ")");
             tellOwner(level, core, Component.translatable("logic.starktech.heat.cool", core.hostname(), degrees),
                     EdithMessagePayload.Level.INFO);
             core.setChanged();
-        } else if (warned == HOT && now == WARM && temperature < LogicBalance.HOT_TEMPERATURE - 5.0) {
+        } else if (warned == HOT && now == WARM && temperature < StarkConfig.Logic.HOT_TEMPERATURE - 5.0) {
             warned = WARM; // van heet terug naar warm: geen bericht, maar wordt het weer heet, dan wel
         }
     }

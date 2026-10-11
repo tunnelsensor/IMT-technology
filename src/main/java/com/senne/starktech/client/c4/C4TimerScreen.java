@@ -1,8 +1,8 @@
 package com.senne.starktech.client.c4;
 
-import com.senne.starktech.c4.C4Balance;
 import com.senne.starktech.c4.C4Item;
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.C4TimerPayload;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModSounds;
@@ -155,7 +155,7 @@ public class C4TimerScreen extends Screen {
 
     /** Een nieuwe tijd: hier laten zien, op het item zetten (je spel en de server) en een tikje. */
     private void set(int newSeconds) {
-        int clamped = Mth.clamp(newSeconds, C4Balance.TIMER_MIN, C4Balance.TIMER_MAX);
+        int clamped = Mth.clamp(newSeconds, StarkConfig.C4.TIMER_MIN, StarkConfig.C4.TIMER_MAX);
         if (clamped == seconds) {
             return;
         }

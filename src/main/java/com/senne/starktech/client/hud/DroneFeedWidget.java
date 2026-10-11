@@ -10,8 +10,8 @@ import static com.senne.starktech.client.hud.HudStyle.brackets;
 
 import com.senne.starktech.client.DroneCamera;
 import com.senne.starktech.client.illusion.IllusionRenderer;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.StarkDroneEntity;
-import com.senne.starktech.edith.EdithBalance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
@@ -63,7 +63,7 @@ public final class DroneFeedWidget implements HudWidget {
 
         // Signaalsterkte: hoe verder van je lichaam, hoe zwakker.
         double distance = Math.sqrt(drone.distanceToSqr(c.player));
-        float signal = 1.0f - (float) Math.min(1.0, distance / EdithBalance.SCOUT_RANGE);
+        float signal = 1.0f - (float) Math.min(1.0, distance / StarkConfig.Recon.SCOUT_RANGE);
         int bars = 1 + Math.round(signal * 4);
         for (int i = 0; i < 5; i++) {
             int barHeight = 3 + i * 2;

@@ -1,8 +1,8 @@
 package com.senne.starktech.raid;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.EdithDrones;
-import com.senne.starktech.edith.EdithConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -78,8 +78,8 @@ public final class EdithRaids {
 
     /** Een willekeurige tijd tot de volgende golf, binnen wat de config toestaat. */
     private static long randomDelay(ServerLevel level) {
-        int min = EdithConfig.raidMinMinutes();
-        int max = Math.max(min, EdithConfig.raidMaxMinutes());
+        int min = StarkConfig.Raids.MIN_MINUTES;
+        int max = Math.max(min, StarkConfig.Raids.MAX_MINUTES);
         int minutes = min + level.random.nextInt(max - min + 1);
         return (long) minutes * 60L * 20L;
     }
@@ -87,7 +87,7 @@ public final class EdithRaids {
     // ================================================================ Elke paar seconden
 
     public static void onServerTick(ServerTickEvent.Post event) {
-        if (!EdithConfig.raidsEnabled()) {
+        if (!StarkConfig.Rules.RAIDS_ENABLED) {
             return;
         }
         long now = event.getServer().overworld().getGameTime();
@@ -106,15 +106,15 @@ public final class EdithRaids {
             Watch watch = watch(player, now);
             coolDown(watch, now);
             if (now >= watch.nextRaidAt) {
-                startRaid(player, EdithConfig.raidSize());
+                startRaid(player, StarkConfig.Raids.SIZE);
                 watch.nextRaidAt = now + randomDelay(player.serverLevel());
             } else if (now >= watch.crashSiteReadyAt && atCrashSite(player)) {
-                watch.crashSiteReadyAt = now + RaidBalance.CRASH_SITE_COOLDOWN;
+                watch.crashSiteReadyAt = now + StarkConfig.Raids.CRASH_SITE_COOLDOWN;
                 // De gewone klok schuift ook op, anders komt er vlak daarna nog een golf.
                 watch.nextRaidAt = Math.max(watch.nextRaidAt, now + randomDelay(player.serverLevel()));
                 EdithServer.send(player, Component.translatable("raid.starktech.msg.crash_site"),
                         EdithMessagePayload.Level.WARNING);
-                startRaid(player, EdithConfig.raidSize());
+                startRaid(player, StarkConfig.Raids.SIZE);
             }
         }
     }
@@ -131,7 +131,7 @@ public final class EdithRaids {
         if (minutes <= 0) {
             return;
         }
-        watch.heat = Math.max(0, watch.heat - (int) minutes * RaidBalance.HEAT_COOLDOWN_PER_MINUTE);
+        watch.heat = Math.max(0, watch.heat - (int) minutes * StarkConfig.Raids.HEAT_COOLDOWN_PER_MINUTE);
         watch.lastCooled = now;
     }
 
@@ -142,7 +142,7 @@ public final class EdithRaids {
      * komen ze kijken.
      */
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (!EdithConfig.raidsEnabled() || !(event.getPlayer() instanceof ServerPlayer player)) {
+        if (!StarkConfig.Rules.RAIDS_ENABLED || !(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }
         if (player.isCreative() || !(player.level() instanceof ServerLevel level)) {
@@ -156,12 +156,12 @@ public final class EdithRaids {
         long now = level.getGameTime();
         Watch watch = watch(player, now);
         coolDown(watch, now);
-        watch.heat += RaidBalance.HEAT_PER_TOWER_BLOCK;
-        if (watch.heat >= RaidBalance.HEAT_FOR_RAID) {
+        watch.heat += StarkConfig.Raids.HEAT_PER_TOWER_BLOCK;
+        if (watch.heat >= StarkConfig.Raids.HEAT_FOR_RAID) {
             watch.heat = 0;
             watch.nextRaidAt = now + randomDelay(level);
-            startRaid(player, EdithConfig.raidSize());
-        } else if (watch.heat == RaidBalance.HEAT_PER_TOWER_BLOCK) {
+            startRaid(player, StarkConfig.Raids.SIZE);
+        } else if (watch.heat == StarkConfig.Raids.HEAT_PER_TOWER_BLOCK) {
             // Eén keer waarschuwen, bij het eerste blok.
             EdithServer.send(player, Component.translatable("raid.starktech.msg.noticed"),
                     EdithMessagePayload.Level.WARNING);
@@ -179,9 +179,9 @@ public final class EdithRaids {
             // uit een andere richting), en beginnen zo hoog als er vrije lucht is: onder een dak
             // of in een grot dus lager (zie EdithDrones.arcStart).
             double angle = i * (Math.PI * 2 / Math.max(1, count));
-            Vec3 landing = new Vec3(player.getX() + Math.cos(angle) * RaidBalance.SPREAD,
-                    player.getY() + RaidBalance.HOVER_ABOVE, player.getZ() + Math.sin(angle) * RaidBalance.SPREAD);
-            Vec3 start = EdithDrones.arcStart(level, landing, angle, RaidBalance.ARRIVAL_HEIGHT);
+            Vec3 landing = new Vec3(player.getX() + Math.cos(angle) * StarkConfig.Raids.SPREAD,
+                    player.getY() + StarkConfig.Raids.HOVER_ABOVE, player.getZ() + Math.sin(angle) * StarkConfig.Raids.SPREAD);
+            Vec3 start = EdithDrones.arcStart(level, landing, angle, StarkConfig.Raids.ARRIVAL_HEIGHT);
             if (RaidDroneEntity.spawn(level, start, landing) != null) {
                 spawned++;
             }

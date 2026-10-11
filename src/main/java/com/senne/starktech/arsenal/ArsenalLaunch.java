@@ -1,5 +1,6 @@
 package com.senne.starktech.arsenal;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.registry.ModEntities;
 import net.minecraft.server.level.ServerLevel;
@@ -20,7 +21,7 @@ public final class ArsenalLaunch {
         if (drone == null) {
             return;
         }
-        drone.setup(player, StarkDroneEntity.Mode.LAUNCH, 0, ArsenalBalance.LAUNCH_TICKS);
+        drone.setup(player, StarkDroneEntity.Mode.LAUNCH, 0, StarkConfig.Drones.LAUNCH_TICKS);
         // Twee blokken voor je, op ooghoogte: je ziet hem wegschieten in plaats van uit je hoofd.
         double x = player.getX() + player.getViewVector(1.0f).x * 2.0;
         double z = player.getZ() + player.getViewVector(1.0f).z * 2.0;

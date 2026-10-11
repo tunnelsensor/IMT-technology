@@ -1,7 +1,7 @@
 package com.senne.starktech.client.hud;
 
 import com.senne.starktech.client.DroneCamera;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
 import net.minecraft.network.chat.Component;
@@ -18,14 +18,14 @@ public final class PowerReadout {
 
     /** Hoeveel energie (SE) de bril nu per seconde verbruikt. */
     public static int drainPerSecond(ItemStack glasses) {
-        int drain = EdithBalance.DRAIN_HUD;
+        int drain = StarkConfig.Glasses.DRAIN_HUD;
         for (EdithFeature feature : EdithFeature.values()) {
             if (EdithData.isEnabled(glasses, feature)) {
                 drain += feature.drainPerSecond();
             }
         }
         if (DroneCamera.isActive()) {
-            drain += EdithBalance.DRAIN_SCOUT;
+            drain += StarkConfig.Recon.SCOUT_DRAIN;
         }
         return drain;
     }

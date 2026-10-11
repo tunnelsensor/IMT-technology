@@ -1922,6 +1922,53 @@ De stappen:
       en op 50 gebruikt hij de helft. Screenshots: `-Ponly=light` (`lt05_lamp_screen`, `lt06_dimmed_from_above`:
       een veel kleinere ruit). De showcase-functie zet de lamp met het schuifje van 100 naar 40.
 
+### 14. Eén centraal configbestand (11 oktober)
+
+Jouw wens: "een centraal config bestand waar **echt alles** in staat: **powerproduction per item**,
+**reload time voor de satelliet per level**...", makkelijk te lezen, met duidelijke uitleg, en de
+oude configbestanden erven ervan **of** de code haalt de waarde **meteen uit het hoofdbestand**. Ik
+koos het tweede: er is nu één plek, en geen tussenbestanden meer.
+
+- **`config/StarkConfig.java`**: alle getallen van de mod, in 27 hoofdstukken (Rules, Glasses,
+  Scanner, **Power**, Drones, **Satellite**, ... Raids), met een inhoudsopgave en uitleg over de
+  eenheden bovenaan, en bij elk getal een regel Nederlands. De code leest overal rechtstreeks hieruit,
+  bijvoorbeeld `StarkConfig.Satellite.COOLDOWN`.
+- **`config/starktech.toml`**: wordt daar vanzelf uit gemaakt (`config/StarkConfigLoader`), met
+  dezelfde hoofdstukken en Engelse uitleg. **344 instelbare getallen** (eerst 204 in het ene bestand en 14 in het andere). Het vervangt
+  `starktech-balance.toml` en `starktech-server.toml`; de oude namen `drones.orbitHeight`,
+  `drones.swarmMax` enzovoort zijn gebleven. Weg: `EdithBalance`, `EdithConfig`, `BalanceConfig` en
+  de 13 andere `...Balance`-klassen.
+- **`[power]`**: alles van het stroomnet bij elkaar, per blok: wat het opwekt (zonnepaneel, nu ook bij
+  regen en onweer; warmtegenerator; redstone), wat het opslaat, en wat het gebruikt (laserwand, koepel
+  per maat, holotafel, Arc Lamp, torentje, werkbank, Crusher/Compactor, serverkast, kern, camera,
+  zone, landingsplatform, drone-dock).
+- **Per niveau** als rijtje: de satelliet (wachttijd, schade, bereik, richttijd, inslagen, explosie,
+  schuiftijd, drones om een upgrade te brengen: 11 getallen voor Recharge/Power/Targeting, 10 voor de
+  schietstanden), de koepel per sterkte (schildkracht, bijladen) en per maat (stroom), de scanner per
+  niveau, en het stroomcircuit per kaartniveau (nu ook de seconden). De formules die eerst in de code
+  zaten (`SatelliteStats`, `DomeSettings`) zoeken nu alleen het getal op.
+- **Er nieuw in** (stond eerst vast in de code): alle getallen die in de balance-bestanden `final`
+  waren (vliegen met het harnas, raketten, de duik van drones, raiddrones, ...), en losse getallen van
+  elders: wachtwoordpogingen bij inbreken, hoeveel backups een datacenter bewaart, de afstanden van
+  de holotafel, hoe lang de satelliet-levering duurt, de seconden stroom voor een laserwand.
+- **Vast gebleven** (staan wél in `StarkConfig`, met `final` en "VAST" erbij): wat het spel bij het
+  opstarten al nodig heeft (levens van drones en vijanden, het pantser van het harnas, hoe vaak een
+  Bypass Kit meegaat, hoeveel kubussen een zone mag hebben) en hoe schermen eruitzien (vakjes in een
+  serverkast of vrachtdrone).
+- **Mijn invulling**: je persoonlijke instellingen (stem, volume, Spotify, zone-rand) blijven in
+  `starktech-client.toml`: die kiest elke speler zelf, en het wereldbestand komt op een server van de
+  server. Eén piepklein verschil: een bombardement op niveau 0 (dat op slot zit) rekent nu met de
+  explosie van niveau 1.
+
+De stappen:
+
+- [x] **1. StarkConfig, de lader en alles omzetten**
+      118 bestanden lezen nu uit `StarkConfig`; `logic/LogicStats` en `CircuitPuzzle` kregen de kleine
+      rekenhulpjes uit de oude bestanden. De bestaande configtest kijkt nu ook of een rijtje per niveau
+      telt (de satelliet wacht dan echt korter), of een aan/uit-regel telt, en of een rijtje met het
+      verkeerde aantal getallen terugvalt op de standaard. Alle 203 tests groen. LEESMIJ.md hoofdstuk 6
+      en de stukken die naar de oude bestanden verwezen, zijn bijgewerkt.
+
 ---
 
 ## Nog nooit in het spel bekeken

@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.config.StarkConfig;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -14,7 +15,7 @@ import net.minecraft.world.item.TooltipFlag;
  *   <li><b>CPU</b>: rekenkracht, 1 voor Logic (hoe snel de server reageert) en 1 voor het brein
  *       van E.D.I.T.H.;</li>
  *   <li><b>GPU</b>: rekenkracht, maar anders verdeeld: half zo goed voor Logic, dubbel zo goed
- *       voor het brein (zie LogicBalance.GPU_...);</li>
+ *       voor het brein (zie StarkConfig.Logic.GPU_...);</li>
  *   <li><b>RAM</b>: hoeveel diagrammen tegelijk bezig kunnen zijn (bijvoorbeeld allemaal aan het
  *       wachten met {@code wait(5)});</li>
  *   <li><b>SSD</b>: hoeveel blokjes je in totaal in je diagrammen kwijt kunt;</li>
@@ -48,25 +49,25 @@ public class ServerPartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         String key = "item.starktech.server_" + kind.name().toLowerCase(java.util.Locale.ROOT) + ".tooltip";
         Component text = switch (kind) {
-            case CPU, GPU -> Component.translatable(key, number(LogicBalance.logicPower(kind)), number(LogicBalance.brainPower(kind)));
-            case RAM -> Component.translatable(key, LogicBalance.RUNS_PER_RAM);
-            case SSD -> Component.translatable(key, LogicBalance.BLOCKS_PER_SSD);
+            case CPU, GPU -> Component.translatable(key, number(LogicStats.logicPower(kind)), number(LogicStats.brainPower(kind)));
+            case RAM -> Component.translatable(key, StarkConfig.Logic.RUNS_PER_RAM);
+            case SSD -> Component.translatable(key, StarkConfig.Logic.BLOCKS_PER_SSD);
             case FAN -> Component.translatable(key);
         };
         tooltip.add(text.copy().withStyle(ChatFormatting.GRAY));
         // De warmte (8 oktober): wat dit onderdeel aan warmte maakt, of hoeveel een fan wegkoelt.
         Component heat = switch (kind) {
-            case CPU -> Component.translatable("item.starktech.server_part.heat_busy", number(LogicBalance.CPU_HEAT),
-                    number(LogicBalance.CPU_HEAT + LogicBalance.CPU_BUSY_HEAT));
-            case GPU -> Component.translatable("item.starktech.server_part.heat_busy", number(LogicBalance.GPU_HEAT),
-                    number(LogicBalance.GPU_HEAT + LogicBalance.GPU_BUSY_HEAT));
-            case RAM, SSD -> Component.translatable("item.starktech.server_part.heat", number(LogicBalance.MEMORY_HEAT));
-            case FAN -> Component.translatable("item.starktech.server_part.cooling", number(LogicBalance.FAN_COOLING));
+            case CPU -> Component.translatable("item.starktech.server_part.heat_busy", number(StarkConfig.Logic.CPU_HEAT),
+                    number(StarkConfig.Logic.CPU_HEAT + StarkConfig.Logic.CPU_BUSY_HEAT));
+            case GPU -> Component.translatable("item.starktech.server_part.heat_busy", number(StarkConfig.Logic.GPU_HEAT),
+                    number(StarkConfig.Logic.GPU_HEAT + StarkConfig.Logic.GPU_BUSY_HEAT));
+            case RAM, SSD -> Component.translatable("item.starktech.server_part.heat", number(StarkConfig.Logic.MEMORY_HEAT));
+            case FAN -> Component.translatable("item.starktech.server_part.cooling", number(StarkConfig.Logic.FAN_COOLING));
         };
         tooltip.add(heat.copy().withStyle(kind == ServerPartItem.Kind.FAN ? ChatFormatting.AQUA : ChatFormatting.GOLD));
         int wear = wear(stack);
         if (wear > 0) {
-            tooltip.add(Component.translatable("item.starktech.server_part.worn", Math.min(100, wear * 100 / Math.max(1, LogicBalance.MAX_WEAR)))
+            tooltip.add(Component.translatable("item.starktech.server_part.worn", Math.min(100, wear * 100 / Math.max(1, StarkConfig.Logic.MAX_WEAR)))
                     .withStyle(ChatFormatting.RED));
         }
         tooltip.add(Component.translatable("item.starktech.server_part.tooltip").withStyle(ChatFormatting.DARK_GRAY));
@@ -91,13 +92,13 @@ public class ServerPartItem extends Item {
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        int left = Math.max(0, LogicBalance.MAX_WEAR - wear(stack));
-        return Math.round(13.0f * left / Math.max(1, LogicBalance.MAX_WEAR));
+        int left = Math.max(0, StarkConfig.Logic.MAX_WEAR - wear(stack));
+        return Math.round(13.0f * left / Math.max(1, StarkConfig.Logic.MAX_WEAR));
     }
 
     @Override
     public int getBarColor(ItemStack stack) {
-        float left = Math.max(0, LogicBalance.MAX_WEAR - wear(stack)) / (float) Math.max(1, LogicBalance.MAX_WEAR);
+        float left = Math.max(0, StarkConfig.Logic.MAX_WEAR - wear(stack)) / (float) Math.max(1, StarkConfig.Logic.MAX_WEAR);
         return net.minecraft.util.Mth.hsvToRgb(left / 3.0f, 1.0f, 1.0f); // groen > geel > rood
     }
 

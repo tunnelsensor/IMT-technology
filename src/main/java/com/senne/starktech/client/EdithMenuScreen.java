@@ -7,9 +7,8 @@ import com.senne.starktech.client.voice.VoiceCommandsScreen;
 import com.senne.starktech.client.voice.VoiceControl;
 import com.senne.starktech.client.voice.VoiceFeature;
 import com.senne.starktech.client.voice.VoiceInstaller;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithAction;
-import com.senne.starktech.edith.EdithBalance;
-import com.senne.starktech.suit.SuitBalance;
 import com.senne.starktech.edith.EdithCooldown;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
@@ -72,7 +71,7 @@ public class EdithMenuScreen extends Screen {
             new Option(Component.translatable(EdithAction.REPULSOR.translationKey()),
                     glasses -> RepulsorControl.isArmed()
                             ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
-                            : new Status(Component.translatable("screen.starktech.cost", SuitBalance.REPULSOR_COST), GREY),
+                            : new Status(Component.translatable("screen.starktech.cost", StarkConfig.Suit.REPULSOR_COST), GREY),
                     RepulsorControl::toggle),
             action(EdithAction.ROCKETS),
             action(EdithAction.TOGGLE_SHIELD));
@@ -354,10 +353,10 @@ public class EdithMenuScreen extends Screen {
             return new Status(Component.translatable(on ? "screen.starktech.on" : "screen.starktech.off"), on ? HudStyle.GREEN : GREY);
         }
         return switch (action) {
-            case ORE_SCAN -> costOrCooldown(EdithBalance.ORE_SCAN_COST, EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
-            case LAUNCH_DRONES -> costOrCooldown(EdithBalance.SWARM_COST, EdithClientState.cooldown(EdithCooldown.SWARM));
-            case DRONE_STRIKE -> costOrCooldown(EdithBalance.STRIKE_DRONE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
-            case ROCKETS -> costOrCooldown(SuitBalance.ROCKET_COST, EdithClientState.cooldown(EdithCooldown.ROCKETS));
+            case ORE_SCAN -> costOrCooldown(StarkConfig.Scanner.ORE_SCAN_COST, EdithClientState.cooldown(EdithCooldown.ORE_SCAN));
+            case LAUNCH_DRONES -> costOrCooldown(StarkConfig.Drones.SWARM_COST, EdithClientState.cooldown(EdithCooldown.SWARM));
+            case DRONE_STRIKE -> costOrCooldown(StarkConfig.Drones.STRIKE_COST, EdithClientState.cooldown(EdithCooldown.STRIKE));
+            case ROCKETS -> costOrCooldown(StarkConfig.Suit.ROCKET_COST, EdithClientState.cooldown(EdithCooldown.ROCKETS));
             case SATELLITE_STRIKE -> satelliteStatus(SatelliteMode.PRECISION);
             case STRIKE_PRECISION -> satelliteStatus(SatelliteMode.PRECISION);
             case STRIKE_BOMBARDMENT -> satelliteStatus(SatelliteMode.BOMBARDMENT);
@@ -368,11 +367,11 @@ public class EdithMenuScreen extends Screen {
                     EdithClientState.markedIds.isEmpty() ? GREY : HudStyle.ORANGE);
             case TRANSPORT_RIDE, TRANSPORT_AUTOPILOT -> EdithClientState.flying
                     ? new Status(Component.translatable("screen.starktech.transport.land"), HudStyle.ORANGE)
-                    : costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
+                    : costOrCooldown(StarkConfig.Transport.COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case CARGO_DRONE, CARRY_ENTITY ->
-                    costOrCooldown(EdithBalance.TRANSPORT_COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
+                    costOrCooldown(StarkConfig.Transport.COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK ->
-                    new Status(Component.translatable("screen.starktech.cost", EdithBalance.ILLUSION_COST), HudStyle.CYAN);
+                    new Status(Component.translatable("screen.starktech.cost", StarkConfig.Illusions.COST), HudStyle.CYAN);
             case ILLUSION_STOP -> com.senne.starktech.client.illusion.IllusionRenderer.count() > 0
                     ? new Status(Component.translatable("screen.starktech.illusion.count",
                             com.senne.starktech.client.illusion.IllusionRenderer.count()), HudStyle.ORANGE)
@@ -385,7 +384,7 @@ public class EdithMenuScreen extends Screen {
                     : new Status(Component.translatable("screen.starktech.none"), GREY);
             case SPY_DRONE -> EdithClientState.spyActive
                     ? new Status(Component.translatable("screen.starktech.spy.recall"), HudStyle.PURPLE)
-                    : costOrCooldown(EdithBalance.SPY_COST, EdithClientState.cooldown(EdithCooldown.SPY));
+                    : costOrCooldown(StarkConfig.Recon.SPY_COST, EdithClientState.cooldown(EdithCooldown.SPY));
             case SPY_VIEW -> {
                 if (DroneCamera.isWatchingOnly()) {
                     yield new Status(Component.translatable("screen.starktech.menu.return"), HudStyle.ORANGE);
@@ -406,7 +405,7 @@ public class EdithMenuScreen extends Screen {
             }
             case DRONE_CAMERA -> DroneCamera.isActive()
                     ? new Status(Component.translatable("screen.starktech.menu.return"), HudStyle.ORANGE)
-                    : new Status(Component.translatable("screen.starktech.cost", EdithBalance.SCOUT_COST), HudStyle.CYAN);
+                    : new Status(Component.translatable("screen.starktech.cost", StarkConfig.Recon.SCOUT_COST), HudStyle.CYAN);
             case AUTHORIZE_TRANSFER -> {
                 EdithOwner owner = glasses.isEmpty() ? null : EdithData.getOwner(glasses);
                 boolean pending = owner != null && owner.transferPending();

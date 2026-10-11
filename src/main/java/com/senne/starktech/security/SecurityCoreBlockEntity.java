@@ -1,5 +1,6 @@
 package com.senne.starktech.security;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.security.net.StarkNetworkData;
@@ -504,14 +505,14 @@ public class SecurityCoreBlockEntity extends BlockEntity {
      */
     public BlockPos zoneLow() {
         int bottom = level == null ? Integer.MIN_VALUE : level.getMinBuildHeight();
-        int reach = SecurityBalance.ZONE_REACH;
+        int reach = StarkConfig.Security.ZONE_REACH;
         return new BlockPos(worldPosition.getX() - reach, Math.max(bottom, worldPosition.getY() - reach), worldPosition.getZ() - reach);
     }
 
     /** De grootste hoek waar de zone mag komen (maar niet boven de wereld). */
     public BlockPos zoneHigh() {
         int top = level == null ? Integer.MAX_VALUE : level.getMaxBuildHeight() - 1;
-        int reach = SecurityBalance.ZONE_REACH;
+        int reach = StarkConfig.Security.ZONE_REACH;
         return new BlockPos(worldPosition.getX() + reach, Math.min(top, worldPosition.getY() + reach), worldPosition.getZ() + reach);
     }
 
@@ -534,7 +535,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         List<ZoneBox> fitted = new java.util.ArrayList<>();
         for (ZoneBox box : wanted) {
-            if (fitted.size() >= SecurityBalance.ZONE_MAX_BOXES) {
+            if (fitted.size() >= StarkConfig.Security.ZONE_MAX_BOXES) {
                 break;
             }
             ZoneBox clamped = box.clamp(zoneLow(), zoneHigh());
@@ -553,7 +554,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if (zone == null || !zone.hasBoxes()) {
             return 0;
         }
-        return (int) Math.ceil(zone.volume() / (double) Math.max(1, SecurityBalance.ZONE_BLOCKS_PER_POWER));
+        return (int) Math.ceil(zone.volume() / (double) Math.max(1, StarkConfig.Power.ZONE_BLOCKS_PER_POWER));
     }
 
     /** Vertelt het overzicht van de wereld (ZoneData) van wie de kern is en wie er mag bouwen. */
@@ -580,7 +581,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             return; // nog niets getekend: niemand hoeft het te weten
         }
         logEvent(EventLog.Type.ZONE, powered ? "Zone online: protected again"
-                : "Zone offline: not enough power (needs " + (SecurityBalance.CORE_UPKEEP + cost) + " every 2 s)");
+                : "Zone offline: not enough power (needs " + (StarkConfig.Power.SECURITY_CORE_UPKEEP + cost) + " every 2 s)");
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
         if (owner != null) {
             com.senne.starktech.edith.EdithServer.send(owner, net.minecraft.network.chat.Component.translatable(
@@ -597,13 +598,13 @@ public class SecurityCoreBlockEntity extends BlockEntity {
      */
     public void powerTick(ServerLevel level) {
         int available = com.senne.starktech.energy.StarkGrid.available(level, worldPosition);
-        online = available >= SecurityBalance.CORE_UPKEEP;
+        online = available >= StarkConfig.Power.SECURITY_CORE_UPKEEP;
         int zoneCost = zoneUpkeep();
-        boolean zonePowered = online && available >= SecurityBalance.CORE_UPKEEP + zoneCost;
+        boolean zonePowered = online && available >= StarkConfig.Power.SECURITY_CORE_UPKEEP + zoneCost;
         updateZonePower(level, zonePowered, zoneCost);
         if (online) {
             com.senne.starktech.energy.StarkGrid.draw(level, worldPosition,
-                    SecurityBalance.CORE_UPKEEP + (zonePowered ? zoneCost : 0));
+                    StarkConfig.Power.SECURITY_CORE_UPKEEP + (zonePowered ? zoneCost : 0));
         }
     }
 
@@ -636,7 +637,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         int drones = level.getEntitiesOfClass(SecurityDroneEntity.class, area(),
                 drone -> pos.equals(drone.home())).size();
-        if (drones >= SecurityBalance.MAX_DRONES) {
+        if (drones >= StarkConfig.Security.MAX_DRONES) {
             filled = true;
             nextDrone = 0;
             return;
@@ -648,7 +649,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         // Er is er een neergeschoten: na DRONE_RESPAWN ticks komt er een nieuwe.
         if (nextDrone == 0) {
-            nextDrone = now + SecurityBalance.DRONE_RESPAWN;
+            nextDrone = now + StarkConfig.Security.DRONE_RESPAWN;
         } else if (now >= nextDrone) {
             launchDrone(level, pos);
             nextDrone = 0;
@@ -680,7 +681,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
 
     /** Het gebied dat deze kern beschermt: ZONE_REACH blokken in elke richting (zie SecurityCores.inArea). */
     public AABB area() {
-        return new AABB(worldPosition).inflate(SecurityBalance.ZONE_REACH);
+        return new AABB(worldPosition).inflate(StarkConfig.Security.ZONE_REACH);
     }
 
     // ================================================================ Opslaan

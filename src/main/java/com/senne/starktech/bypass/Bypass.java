@@ -1,5 +1,6 @@
 package com.senne.starktech.bypass;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.CodePanelBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
 import com.senne.starktech.logic.KeycardReaderBlock;
@@ -110,7 +111,7 @@ public final class Bypass {
         if (kind == null) {
             return;
         }
-        if (player.distanceToSqr(pos.getCenter()) > BypassBalance.REACH * BypassBalance.REACH) {
+        if (player.distanceToSqr(pos.getCenter()) > StarkConfig.Bypass.REACH * StarkConfig.Bypass.REACH) {
             return;
         }
         long wait = lockedFor(player, pos);
@@ -149,7 +150,7 @@ public final class Bypass {
         } else {
             // De eerste code uit je diagrammen. Naar jouw spel gaan alleen de afdrukken en de lengte.
             session.code = codes.getFirst();
-            session.triesLeft = session.code.length() + BypassBalance.ORDER_EXTRA_TRIES;
+            session.triesLeft = session.code.length() + StarkConfig.Bypass.ORDER_EXTRA_TRIES;
             level.playSound(null, pos, SoundEvents.BRUSH_GENERIC, SoundSource.BLOCKS, 0.4f, 1.2f);
             args.putInt("length", session.code.length());
             args.putIntArray("prints", PanelOrders.prints(session.code));
@@ -171,7 +172,7 @@ public final class Bypass {
         switch (payload.op()) {
             case "level" -> {
                 if (session.kind == Kind.READER && session.startedAt < 0) {
-                    session.level = BypassBalance.clampLevel(payload.args().getInt("level"));
+                    session.level = CircuitPuzzle.clampLevel(payload.args().getInt("level"));
                     session.startedAt = now;
                 }
             }
@@ -179,7 +180,7 @@ public final class Bypass {
                 if (session.kind != Kind.READER || session.startedAt < 0) {
                     return;
                 }
-                if (now - session.startedAt > BypassBalance.circuitSeconds(session.level) * 20L + CLOCK_SLACK) {
+                if (now - session.startedAt > CircuitPuzzle.circuitSeconds(session.level) * 20L + CLOCK_SLACK) {
                     fail(player, session, "time");
                     return;
                 }
@@ -250,7 +251,7 @@ public final class Bypass {
         reply(player, session, why);
         ServerLevel level = player.serverLevel();
         LOCKOUTS.computeIfAbsent(player.getUUID(), id -> new HashMap<>())
-                .put(GlobalPos.of(session.dimension, session.pos), level.getGameTime() + BypassBalance.LOCKOUT_SECONDS * 20L);
+                .put(GlobalPos.of(session.dimension, session.pos), level.getGameTime() + StarkConfig.Bypass.LOCKOUT_SECONDS * 20L);
         LogicEvents.tampered(level, session.pos, player);
     }
 
@@ -274,14 +275,14 @@ public final class Bypass {
         ServerLevel level = player.serverLevel();
         long now = level.getGameTime();
         boolean gone = !player.isAlive() || session.dimension != level.dimension()
-                || player.distanceToSqr(session.pos.getCenter()) > BypassBalance.REACH * BypassBalance.REACH
+                || player.distanceToSqr(session.pos.getCenter()) > StarkConfig.Bypass.REACH * StarkConfig.Bypass.REACH
                 || !(level.getBlockEntity(session.pos) instanceof InputDeviceBlockEntity);
         boolean tooLong = session.kind == Kind.PANEL ? now - session.openedAt > PANEL_TIMEOUT
                 : session.startedAt < 0 && now - session.openedAt > CHOOSE_TIMEOUT;
         if (gone || tooLong) {
             stop(player, true);
         } else if (session.startedAt >= 0 && session.kind == Kind.READER
-                && now - session.startedAt > BypassBalance.circuitSeconds(session.level) * 20L + CLOCK_SLACK * 2) {
+                && now - session.startedAt > CircuitPuzzle.circuitSeconds(session.level) * 20L + CLOCK_SLACK * 2) {
             // Je spel zei niets meer (te laat): dan is de tijd gewoon om.
             fail(player, session, "time");
         }

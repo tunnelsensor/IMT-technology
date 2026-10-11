@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  *       waar het ook staat: zie Datacenters.</li>
  *   <li>Het model zelf (het woordenboek, het lokale model of Claude) werkt zoals altijd op jouw pc;
  *       het datacenter zet er alleen een vertraging bij zolang het nog niet sterk is (zie
- *       LogicBalance.brainDelayTicks). Die vertraging stuurt de server twee keer per seconde naar je
+ *       LogicStats.brainDelayTicks). Die vertraging stuurt de server twee keer per seconde naar je
  *       spel, met de status van je bril (EdithStatusPayload).</li>
  *   <li>Terwijl ze nadenkt, zegt je spel dat tegen de server (BRAIN_THINKING en BRAIN_DONE): dan
  *       werken de CPU's en GPU's van dat datacenter hard (de app Monitor, en het wordt warmer).</li>

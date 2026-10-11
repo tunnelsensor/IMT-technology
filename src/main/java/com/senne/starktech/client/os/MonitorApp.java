@@ -1,8 +1,9 @@
 package com.senne.starktech.client.os;
 
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.Datacenter;
-import com.senne.starktech.logic.LogicBalance;
+import com.senne.starktech.logic.LogicStats;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -105,7 +106,7 @@ final class MonitorApp {
         double target = server.getDouble("target");
         int tempColour = colour(temp);
         tile(g, font, x, y, tileW, "TEMP", Datacenter.degrees(temp), tempColour, server.getIntArray("hTemp"),
-                Math.max((int) LogicBalance.FIRE_TEMPERATURE, max(server.getIntArray("hTemp"))),
+                Math.max((int) StarkConfig.Logic.FIRE_TEMPERATURE, max(server.getIntArray("hTemp"))),
                 server.getBoolean("rising") ? "rising (no fan)"
                         : Math.abs(target - temp) >= 1.0 ? "> " + Datacenter.degrees(target) : "steady");
 
@@ -266,10 +267,10 @@ final class MonitorApp {
         double temp = server.getDouble("temp");
         String advice;
         int adviceColour;
-        if (temp >= LogicBalance.HOT_TEMPERATURE) {
+        if (temp >= StarkConfig.Logic.HOT_TEMPERATURE) {
             advice = "Overheating: parts wear out!";
             adviceColour = HudStyle.RED;
-        } else if (temp >= LogicBalance.WARM_TEMPERATURE) {
+        } else if (temp >= StarkConfig.Logic.WARM_TEMPERATURE) {
             advice = "Too hot: half speed";
             adviceColour = HudStyle.RED;
         } else if (noFan) {
@@ -341,13 +342,13 @@ final class MonitorApp {
 
     /** Groen als het koel is, geel als het bijna warm is, oranje als het warm is, rood als het heet is. */
     private static int colour(double temperature) {
-        if (temperature >= LogicBalance.HOT_TEMPERATURE) {
+        if (temperature >= StarkConfig.Logic.HOT_TEMPERATURE) {
             return HudStyle.RED;
         }
-        if (temperature >= LogicBalance.WARM_TEMPERATURE) {
+        if (temperature >= StarkConfig.Logic.WARM_TEMPERATURE) {
             return HudStyle.ORANGE;
         }
-        return temperature >= LogicBalance.coolAgainTemperature() ? SSD : HudStyle.GREEN;
+        return temperature >= LogicStats.coolAgainTemperature() ? SSD : HudStyle.GREEN;
     }
 
     private static int max(int[] values) {

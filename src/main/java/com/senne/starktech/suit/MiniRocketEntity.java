@@ -1,5 +1,6 @@
 package com.senne.starktech.suit;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithTargeting;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
@@ -56,7 +57,7 @@ public class MiniRocketEntity extends Projectile {
     public void launch(Entity owner, Vec3 from, Vec3 direction, @Nullable LivingEntity target, @Nullable Vec3 aim) {
         setOwner(owner);
         setPos(from);
-        setDeltaMovement(direction.normalize().scale(SuitBalance.ROCKET_START_SPEED));
+        setDeltaMovement(direction.normalize().scale(StarkConfig.Suit.ROCKET_START_SPEED));
         faceMotion();
         this.targetId = target == null ? null : target.getUUID();
         this.aimPoint = target == null ? aim : target.getBoundingBox().getCenter();
@@ -88,7 +89,7 @@ public class MiniRocketEntity extends Projectile {
         super.tick();
         Level level = level();
         if (!level.isClientSide) {
-            if (++age > SuitBalance.ROCKET_LIFETIME) {
+            if (++age > StarkConfig.Suit.ROCKET_LIFETIME) {
                 explode(position(), null);
                 return;
             }
@@ -121,17 +122,17 @@ public class MiniRocketEntity extends Projectile {
     /** Sneller gaan, en (na de eerste ticks) bijsturen naar het doelwit. */
     private void steer(ServerLevel level) {
         Vec3 motion = getDeltaMovement();
-        double speed = Math.min(SuitBalance.ROCKET_MAX_SPEED, motion.length() + SuitBalance.ROCKET_ACCELERATION);
+        double speed = Math.min(StarkConfig.Suit.ROCKET_MAX_SPEED, motion.length() + StarkConfig.Suit.ROCKET_ACCELERATION);
         Vec3 direction = motion.normalize();
-        if (age > SuitBalance.ROCKET_ARM_TICKS) {
+        if (age > StarkConfig.Suit.ROCKET_ARM_TICKS) {
             if (targetId != null && level.getEntity(targetId) instanceof LivingEntity target && target.isAlive()) {
                 aimPoint = target.getBoundingBox().getCenter();
             }
             if (aimPoint != null) {
                 Vec3 toAim = aimPoint.subtract(position());
                 // Dichtbij stuurt hij veel scherper bij; anders schiet hij er in een bocht langs.
-                double near = Math.max(0, 1 - toAim.length() / SuitBalance.ROCKET_SHARP_TURN_DISTANCE);
-                double turn = Mth.lerp(near, SuitBalance.ROCKET_TURN, 1.0);
+                double near = Math.max(0, 1 - toAim.length() / StarkConfig.Suit.ROCKET_SHARP_TURN_DISTANCE);
+                double turn = Mth.lerp(near, StarkConfig.Suit.ROCKET_TURN, 1.0);
                 direction = direction.add(toAim.normalize().subtract(direction).scale(turn)).normalize();
             }
         }
@@ -191,13 +192,13 @@ public class MiniRocketEntity extends Projectile {
             // Een salvo raakt hetzelfde doelwit vlak na elkaar. Normaal is een wezen na een klap
             // een halve seconde onkwetsbaar; dan zou alleen de eerste raket tellen.
             living.invulnerableTime = 0;
-            living.hurt(damageSources().explosion(this, owner), SuitBalance.ROCKET_DAMAGE * damageScale);
+            living.hurt(damageSources().explosion(this, owner), StarkConfig.Suit.ROCKET_DAMAGE * damageScale);
         }
-        AABB area = new AABB(at, at).inflate(SuitBalance.ROCKET_SPLASH_RADIUS);
+        AABB area = new AABB(at, at).inflate(StarkConfig.Suit.ROCKET_SPLASH_RADIUS);
         for (LivingEntity nearby : level.getEntitiesOfClass(LivingEntity.class, area,
                 e -> e != direct && e != owner && e.isAlive() && canHitEntity(e))) {
-            if (nearby.getBoundingBox().getCenter().distanceTo(at) <= SuitBalance.ROCKET_SPLASH_RADIUS + 0.5) {
-                nearby.hurt(damageSources().explosion(this, owner), SuitBalance.ROCKET_SPLASH_DAMAGE * damageScale);
+            if (nearby.getBoundingBox().getCenter().distanceTo(at) <= StarkConfig.Suit.ROCKET_SPLASH_RADIUS + 0.5) {
+                nearby.hurt(damageSources().explosion(this, owner), StarkConfig.Suit.ROCKET_SPLASH_DAMAGE * damageScale);
             }
         }
         level.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y, at.z, 1, 0, 0, 0, 0);

@@ -1,5 +1,6 @@
 package com.senne.starktech.suit;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithCooldown;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
@@ -7,7 +8,6 @@ import com.senne.starktech.edith.EdithTargeting;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.workbench.SuitUpgrades;
-import com.senne.starktech.workbench.WorkbenchBalance;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,12 +64,12 @@ public final class SuitRockets {
 
     /** Hoeveel raketten een salvo van deze speler telt: 6, plus 2 per raketmagazijn. */
     public static int salvoSize(Player player) {
-        return SuitBalance.ROCKET_SALVO + SuitUpgrades.magazinesOf(player) * WorkbenchBalance.MAGAZINE_ROCKETS;
+        return StarkConfig.Suit.ROCKET_SALVO + SuitUpgrades.magazinesOf(player) * StarkConfig.Workbench.MAGAZINE_ROCKETS;
     }
 
     /** Hoeveel harder de raketten van deze speler aankomen: +40% per raketkop. */
     public static float damageScale(Player player) {
-        return (float) (1.0 + SuitUpgrades.warheadsOf(player) * WorkbenchBalance.WARHEAD_DAMAGE);
+        return (float) (1.0 + SuitUpgrades.warheadsOf(player) * StarkConfig.Workbench.WARHEAD_DAMAGE);
     }
 
     private static final Map<UUID, Salvo> SALVOS = new HashMap<>();
@@ -95,9 +95,9 @@ public final class SuitRockets {
                     EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (!EdithData.tryUseEnergy(glasses, SuitBalance.ROCKET_COST)) {
+        if (!EdithData.tryUseEnergy(glasses, StarkConfig.Suit.ROCKET_COST)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    SuitBalance.ROCKET_COST), EdithMessagePayload.Level.WARNING);
+                    StarkConfig.Suit.ROCKET_COST), EdithMessagePayload.Level.WARNING);
             return;
         }
 
@@ -105,7 +105,7 @@ public final class SuitRockets {
         Vec3 aim = targets.isEmpty() ? lookPoint(player) : null;
         int size = salvoSize(player);
         SALVOS.put(player.getUUID(), new Salvo(targets, aim, size, damageScale(player), player.level().getGameTime()));
-        EdithServer.startCooldown(player, EdithCooldown.ROCKETS, SuitBalance.ROCKET_COOLDOWN);
+        EdithServer.startCooldown(player, EdithCooldown.ROCKETS, StarkConfig.Suit.ROCKET_COOLDOWN);
         EdithServer.send(player, targets.isEmpty()
                         ? Component.translatable("suit.starktech.msg.rockets_away_free", size)
                         : Component.translatable("suit.starktech.msg.rockets_away", size, targets.size()),
@@ -114,7 +114,7 @@ public final class SuitRockets {
 
     /** Je gemarkeerde doelwitten die dichtbij genoeg zijn, of anders wat je aankijkt. */
     private static List<LivingEntity> pickTargets(ServerPlayer player) {
-        double range = SuitBalance.ROCKET_RANGE;
+        double range = StarkConfig.Suit.ROCKET_RANGE;
         List<LivingEntity> targets = new ArrayList<>();
         for (LivingEntity marked : EdithServer.getMarkedTargets(player)) {
             if (marked.distanceToSqr(player) <= range * range && EdithTargeting.canTarget(player, marked)) {
@@ -133,7 +133,7 @@ public final class SuitRockets {
     /** Het blok waar je naar kijkt (of een plek ver voor je, als je naar de lucht kijkt). */
     private static Vec3 lookPoint(ServerPlayer player) {
         Vec3 eye = player.getEyePosition();
-        Vec3 end = eye.add(player.getViewVector(1.0f).scale(SuitBalance.ROCKET_RANGE));
+        Vec3 end = eye.add(player.getViewVector(1.0f).scale(StarkConfig.Suit.ROCKET_RANGE));
         return player.level().clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE, player)).getLocation();
     }
@@ -155,7 +155,7 @@ public final class SuitRockets {
         }
         launchOne(player, salvo);
         salvo.fired++;
-        salvo.nextTick = now + SuitBalance.ROCKET_INTERVAL;
+        salvo.nextTick = now + StarkConfig.Suit.ROCKET_INTERVAL;
         if (salvo.fired >= salvo.size) {
             SALVOS.remove(player.getUUID());
         }

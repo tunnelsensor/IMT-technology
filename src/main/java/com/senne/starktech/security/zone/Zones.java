@@ -1,6 +1,7 @@
 package com.senne.starktech.security.zone;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import java.util.HashMap;
@@ -289,8 +290,8 @@ public final class Zones {
      * bouwen hem veroorzaakte (je eigen TNT in je eigen basis). Wezens krijgen de klap gewoon.
      *
      * TNT en raketten van de satelliet komen er wel door (jouw wens, 9 oktober), maar met breekpunten
-     * zoals C4 en veel zwakker: TNT {@link com.senne.starktech.c4.C4Balance#TNT_BREACH} (C4 doet 10),
-     * een satellietraket {@link com.senne.starktech.c4.C4Balance#SATELLITE_BREACH}. Zo maakt TNT maar
+     * zoals C4 en veel zwakker: TNT {@link StarkConfig.C4#TNT_BREACH} (C4 doet 10),
+     * een satellietraket {@link StarkConfig.C4#SATELLITE_BREACH}. Zo maakt TNT maar
      * een klein beetje kapot aan een muur, en tellen de barsten op. Creepers, vuurballen en de rest
      * maken in een zone niets kapot.
      */
@@ -311,13 +312,13 @@ public final class Zones {
             return;
         }
         net.minecraft.world.phys.Vec3 centre = explosion.center();
-        float radius = com.senne.starktech.c4.C4Balance.EXPLOSION_BREACH_RADIUS;
+        float radius = StarkConfig.C4.EXPLOSION_BREACH_RADIUS;
         ZoneData.Zone zone = activeNear(level, BlockPos.containing(centre), radius);
         if (zone == null) {
             return;
         }
         com.senne.starktech.c4.C4Blast.Breach result = com.senne.starktech.c4.C4Blast.breach(level, centre,
-                tnt ? com.senne.starktech.c4.C4Balance.TNT_BREACH : com.senne.starktech.c4.C4Balance.SATELLITE_BREACH,
+                tnt ? StarkConfig.C4.TNT_BREACH : StarkConfig.C4.SATELLITE_BREACH,
                 radius, pos -> {
                     ZoneData.Zone here = activeAt(level, pos);
                     return here != null && !mayBuild(level, here, cause);

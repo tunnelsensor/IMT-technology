@@ -1,12 +1,11 @@
 package com.senne.starktech.satellite;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithTargeting;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -86,7 +85,7 @@ public final class SatelliteStrikes {
             this.ticksLeft = SatelliteStats.chargeTicks(upgrades.targeting());
             this.fireTicks = switch (mode) {
                 case PRECISION -> 1;
-                case BOMBARDMENT -> SatelliteStats.bombardmentShots(upgrades.bombardment()) * EdithBalance.BOMBARDMENT_INTERVAL;
+                case BOMBARDMENT -> SatelliteStats.bombardmentShots(upgrades.bombardment()) * StarkConfig.Satellite.BOMBARDMENT_INTERVAL;
                 case SWEEP -> SatelliteStats.sweepTicks(upgrades.sweep());
             };
             this.fireTicksLeft = fireTicks;
@@ -192,7 +191,7 @@ public final class SatelliteStrikes {
                 }
                 case BOMBARDMENT -> {
                     if (strike.fireTicksLeft > 0) {
-                        if (strike.fireTicksLeft % EdithBalance.BOMBARDMENT_INTERVAL == 0) {
+                        if (strike.fireTicksLeft % StarkConfig.Satellite.BOMBARDMENT_INTERVAL == 0) {
                             fireBombardmentShot(level, strike);
                         }
                         strike.fireTicksLeft--;
@@ -222,7 +221,7 @@ public final class SatelliteStrikes {
         if (shield != null) {
             Vec3 target = strike.target;
             OrbitalMissileEntity.launch(level, shield, null, at -> {
-                Vec3 hit = EdithDomes.blockedAt(level, target, null, ownerId, DomeSettings.COST_SATELLITE_BEAM);
+                Vec3 hit = EdithDomes.blockedAt(level, target, null, ownerId, StarkConfig.Dome.COST_SATELLITE_BEAM);
                 impactEffect(level, hit != null ? hit : at, BeamEffectPayload.Kind.SATELLITE_PRECISION, 1.3f);
             });
             return;
@@ -255,7 +254,7 @@ public final class SatelliteStrikes {
         Vec3 shield = EdithDomes.blockedAt(level, pos, null, ownerId, 0);
         if (shield != null) {
             OrbitalMissileEntity.launch(level, shield, null, at -> {
-                Vec3 hit = EdithDomes.blockedAt(level, pos, null, ownerId, DomeSettings.COST_SATELLITE_IMPACT);
+                Vec3 hit = EdithDomes.blockedAt(level, pos, null, ownerId, StarkConfig.Dome.COST_SATELLITE_IMPACT);
                 impactEffect(level, hit != null ? hit : at, BeamEffectPayload.Kind.SATELLITE_FIRE, 0.9f);
             });
             return;
@@ -263,7 +262,7 @@ public final class SatelliteStrikes {
         OrbitalMissileEntity.launch(level, pos, null, at -> {
             impactEffect(level, at, BeamEffectPayload.Kind.SATELLITE_FIRE, 0.9f);
             ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
-            Level.ExplosionInteraction interaction = EdithBalance.SATELLITE_BREAKS_BLOCKS
+            Level.ExplosionInteraction interaction = StarkConfig.Satellite.BREAKS_BLOCKS
                     ? Level.ExplosionInteraction.MOB   // volgt de spelregel mobGriefing
                     : Level.ExplosionInteraction.NONE;
             // In een zone werkt de klap met breekpunten (zie Zones.onExplosion): daarom zeggen we dat dit
@@ -295,7 +294,7 @@ public final class SatelliteStrikes {
         Vec3 pos = strike.target;
         // Over een schildkoepel heen? Dan schroeit hij over de koepel in plaats van over de grond
         // (om de tick kost dat schildkracht).
-        int cost = strike.fireTicksLeft % 2 == 0 ? DomeSettings.COST_SATELLITE_SWEEP : 0;
+        int cost = strike.fireTicksLeft % 2 == 0 ? StarkConfig.Dome.COST_SATELLITE_SWEEP : 0;
         Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, cost);
         if (shield != null) {
             if (cost > 0) {
@@ -309,7 +308,7 @@ public final class SatelliteStrikes {
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(strike.ownerId);
         DamageSource source = ModDamageTypes.orbitalLaser(level, owner);
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(pos, pos).inflate(EdithBalance.SWEEP_RADIUS))) {
+                new AABB(pos, pos).inflate(StarkConfig.Satellite.SWEEP_RADIUS))) {
             // Niet elke tick schade: anders is het meteen voorbij.
             if (victim.hurtTime <= 0 && mayHurt(owner, victim)) {
                 victim.hurt(source, SatelliteStats.sweepDamage(strike.upgrades.sweep(), strike.upgrades.power()));
@@ -332,7 +331,7 @@ public final class SatelliteStrikes {
 
     /** Duwt alles in de buurt weg van de inslag (en een beetje de lucht in). */
     private static void shockwave(ServerLevel level, Vec3 center, @Nullable ServerPlayer owner) {
-        double radius = EdithBalance.SHOCKWAVE_RADIUS;
+        double radius = StarkConfig.Satellite.SHOCKWAVE_RADIUS;
         for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(radius))) {
             if (victim == owner) {
                 continue;
@@ -343,7 +342,7 @@ public final class SatelliteStrikes {
                 continue;
             }
             // Dichterbij = harder weggeblazen.
-            double power = EdithBalance.SHOCKWAVE_POWER * (1.0 - distance / radius);
+            double power = StarkConfig.Satellite.SHOCKWAVE_POWER * (1.0 - distance / radius);
             Vec3 push = away.normalize().scale(power).add(0, power * 0.6, 0);
             // push() zet de snelheid; de server stuurt die daarna zelf door naar de spelers.
             victim.push(push.x, push.y, push.z);

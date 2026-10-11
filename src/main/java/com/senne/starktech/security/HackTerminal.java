@@ -1,5 +1,6 @@
 package com.senne.starktech.security;
 
+import com.senne.starktech.config.StarkConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -74,9 +75,6 @@ public final class HackTerminal {
     private static final String[] NAMED_PORTS = {"jarvis-sync", "friday-link", "karen-api", "holo-stream",
             "vault-mon", "suit-telemetry"};
     private static final String JUNK = "!@#$%^&*()[]{}<>?/\\|+=-_;:'\",.";
-    /** Zo vaak mag je een fout wachtwoord proberen, en zo lang ben je daarna geblokkeerd (ms). */
-    public static final int ATTEMPTS = 5;
-    public static final long LOCKOUT_MILLIS = 4000;
     /** Zoveel poorten scant hij per seconde. */
     private static final int SCAN_RATE = 1500;
 
@@ -460,7 +458,7 @@ public final class HackTerminal {
         candidates = List.copyOf(words);
         possible.clear();
         possible.addAll(candidates);
-        attemptsLeft = ATTEMPTS;
+        attemptsLeft = StarkConfig.Security.PASSWORD_ATTEMPTS;
         dumpRows.clear();
         for (String word : candidates) {
             dumpRows.add(new String[] {junk(random.nextInt(9)), word, ""});
@@ -538,7 +536,7 @@ public final class HackTerminal {
         good("Still possible: " + String.join("  ", possible));
         if (attemptsLeft <= 0) {
             error("TOO MANY ATTEMPTS. Terminal locked, new memory dump coming...");
-            lockedUntil = now + LOCKOUT_MILLIS;
+            lockedUntil = now + StarkConfig.Security.PASSWORD_LOCKOUT_MILLIS;
         }
     }
 

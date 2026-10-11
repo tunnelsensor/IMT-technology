@@ -1,8 +1,8 @@
 package com.senne.starktech.spy;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.EdithDrones;
 import com.senne.starktech.drone.StarkDroneEntity;
-import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.nav.EdithNavigation;
@@ -88,8 +88,8 @@ public final class EdithSpy {
             this.targetId = target.getUUID();
             this.targetName = target.getDisplayName().copy();
             this.dimension = target.level().dimension();
-            this.ticksLeft = EdithBalance.SPY_DURATION;
-            this.ticksToReport = EdithBalance.SPY_REPORT_INTERVAL;
+            this.ticksLeft = StarkConfig.Recon.SPY_DURATION;
+            this.ticksToReport = StarkConfig.Recon.SPY_REPORT_INTERVAL;
             this.lastPos = target.position();
             this.lastHealth = target.getHealth();
             this.lastMaxHealth = target.getMaxHealth();
@@ -117,7 +117,7 @@ public final class EdithSpy {
 
         /** Hoeveel van de 10 minuten er al om is, als tekst "3:07". */
         private String elapsed() {
-            int seconds = (EdithBalance.SPY_DURATION - ticksLeft) / 20;
+            int seconds = (StarkConfig.Recon.SPY_DURATION - ticksLeft) / 20;
             return seconds / 60 + ":" + (seconds % 60 < 10 ? "0" : "") + seconds % 60;
         }
     }
@@ -143,7 +143,7 @@ public final class EdithSpy {
         MISSIONS.put(owner.getUUID(), mission);
         add(mission, Component.translatable("edith.starktech.spy.log.start", mission.targetName));
         EdithServer.send(owner, Component.translatable("edith.starktech.msg.spy_started",
-                mission.targetName, EdithBalance.SPY_DURATION / 1200), EdithMessagePayload.Level.INFO);
+                mission.targetName, StarkConfig.Recon.SPY_DURATION / 1200), EdithMessagePayload.Level.INFO);
         return true;
     }
 
@@ -286,7 +286,7 @@ public final class EdithSpy {
             return "edith.starktech.spy.log.end_time";
         }
         if (--mission.ticksToReport <= 0) {
-            mission.ticksToReport = EdithBalance.SPY_REPORT_INTERVAL;
+            mission.ticksToReport = StarkConfig.Recon.SPY_REPORT_INTERVAL;
             report(owner, mission, target);
         }
         // Twee keer per seconde de HUD bijwerken.

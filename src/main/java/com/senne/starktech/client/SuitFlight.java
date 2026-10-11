@@ -1,8 +1,8 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.SuitFlightPayload;
 import com.senne.starktech.suit.StarkSuitItem;
-import com.senne.starktech.suit.SuitBalance;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
@@ -102,38 +102,38 @@ public final class SuitFlight {
         boolean down = input.shiftKeyDown;
         boosting = Minecraft.getInstance().options.keySprint.isDown() && forward > 0;
         // Stuwraket-upgrades in de laarzen (werkbank): meer stuwkracht en een hogere topsnelheid.
-        double upgrade = 1 + com.senne.starktech.workbench.WorkbenchBalance.THRUSTER_SPEED
+        double upgrade = 1 + StarkConfig.Workbench.THRUSTER_SPEED
                 * com.senne.starktech.workbench.SuitUpgrades.thrustersOf(player);
-        double power = SuitBalance.THRUST * (boosting ? SuitBalance.BOOST : 1.0) * upgrade;
+        double power = StarkConfig.Suit.THRUST * (boosting ? StarkConfig.Suit.BOOST : 1.0) * upgrade;
 
         // Vooruit is waar je kijkt, ook omhoog of omlaag. Opzij is altijd plat.
         Vec3 look = player.getLookAngle();
         double yaw = Math.toRadians(player.getYRot());
         Vec3 left = new Vec3(Math.cos(yaw), 0, Math.sin(yaw));
         Vec3 push = look.scale(forward * power).add(left.scale(strafe * power * 0.6));
-        double lift = (up ? SuitBalance.THRUST_UP : 0) - (down ? SuitBalance.THRUST_DOWN : 0);
+        double lift = (up ? StarkConfig.Suit.THRUST_UP : 0) - (down ? StarkConfig.Suit.THRUST_DOWN : 0);
 
         // Na deze methode doet Minecraft zelf nog luchtweerstand (x0,91 opzij en x0,98 in de
         // hoogte) en trekt het de zwaartekracht eraf, maar pas NA de beweging. Daarom rekenen we
         // hier terug: we zetten de vaart van vorige tick terug (inclusief de zwaartekracht die
         // Minecraft er toen afhaalde) en houden daar KEEP_SPEED van over.
         Vec3 v = player.getDeltaMovement();
-        double keep = SuitBalance.KEEP_SPEED;
+        double keep = StarkConfig.Suit.KEEP_SPEED;
         double carriedY = v.y * (keep / 0.98) + keep * player.getGravity();
         boolean steeringUpOrDown = up || down || Math.abs(forward * look.y) > 0.05;
         if (!steeringUpOrDown) {
             // Niet aan het stijgen of dalen: het harnas houdt je op hoogte.
-            carriedY *= SuitBalance.HOVER_DAMPING;
+            carriedY *= StarkConfig.Suit.HOVER_DAMPING;
         }
         Vec3 next = new Vec3(v.x * (keep / 0.91) + push.x, carriedY + push.y + lift, v.z * (keep / 0.91) + push.z);
-        double max = (boosting ? SuitBalance.MAX_BOOST_SPEED : SuitBalance.MAX_SPEED) * upgrade;
+        double max = (boosting ? StarkConfig.Suit.MAX_BOOST_SPEED : StarkConfig.Suit.MAX_SPEED) * upgrade;
         if (next.length() > max) {
             next = next.normalize().scale(max);
         }
         // Vlak boven de grond remt het harnas zelf af: je landt, je stort niet neer.
-        if (next.y < -SuitBalance.LANDING_SPEED
-                && heightAboveGround(player) < SuitBalance.LANDING_HEIGHT) {
-            next = new Vec3(next.x, Math.max(next.y * 0.7, -SuitBalance.LANDING_SPEED), next.z);
+        if (next.y < -StarkConfig.Suit.LANDING_SPEED
+                && heightAboveGround(player) < StarkConfig.Suit.LANDING_HEIGHT) {
+            next = new Vec3(next.x, Math.max(next.y * 0.7, -StarkConfig.Suit.LANDING_SPEED), next.z);
         }
         player.setDeltaMovement(next);
         player.resetFallDistance();
@@ -192,10 +192,10 @@ public final class SuitFlight {
     /** Hoe ver de grond (of water) onder je voeten is, tot LANDING_HEIGHT blokken ver. */
     private static double heightAboveGround(LocalPlayer player) {
         Vec3 feet = player.position();
-        Vec3 below = feet.add(0, -SuitBalance.LANDING_HEIGHT, 0);
+        Vec3 below = feet.add(0, -StarkConfig.Suit.LANDING_HEIGHT, 0);
         HitResult hit = player.level().clip(new ClipContext(feet, below, ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.ANY, player));
-        return hit.getType() == HitResult.Type.MISS ? SuitBalance.LANDING_HEIGHT : feet.y - hit.getLocation().y;
+        return hit.getType() == HitResult.Type.MISS ? StarkConfig.Suit.LANDING_HEIGHT : feet.y - hit.getLocation().y;
     }
 
     /** Mag je nu vliegen? Het hele harnas, en de server heeft het vliegen vrijgegeven. */

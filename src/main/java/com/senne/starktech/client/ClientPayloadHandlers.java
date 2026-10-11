@@ -1,6 +1,6 @@
 package com.senne.starktech.client;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.DroneCameraPayload;
 import com.senne.starktech.network.EdithMessagePayload;
@@ -47,7 +47,7 @@ public final class ClientPayloadHandlers {
     /** Fase 10: een onderschept privébericht boven het hoofd van een gehackte speler. */
     public static void onHackMessage(HackMessagePayload payload, IPayloadContext context) {
         EdithClientState.addHackBubble(payload.entityId(), payload.text(), payload.outgoing(),
-                EdithBalance.HACK_BUBBLE_MILLIS);
+                StarkConfig.Hack.BUBBLE_MILLIS);
         EdithClientEvents.playUi(ModSounds.COMMS_MESSAGE.get(), 1.4f);
     }
 
@@ -250,7 +250,7 @@ public final class ClientPayloadHandlers {
         long now = Util.getMillis();
         EdithClientState.pings.removeIf(ping -> ping.sender().equals(payload.sender()));
         EdithClientState.pings.add(new EdithClientState.Ping(payload.sender(), payload.pos(), now,
-                now + EdithBalance.PING_DURATION * 50L));
+                now + StarkConfig.Comms.PING_DURATION * 50L));
         if (payload.sender().equals(PingMarkerPayload.SWEEP_START)) {
             return; // alleen de markering, geen melding
         }

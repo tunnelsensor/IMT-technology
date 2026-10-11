@@ -1,9 +1,9 @@
 package com.senne.starktech.client.c4;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.senne.starktech.c4.C4Balance;
 import com.senne.starktech.c4.DetonatorData;
 import com.senne.starktech.c4.DetonatorItem;
+import com.senne.starktech.config.StarkConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -63,7 +63,7 @@ public final class DetonatorMarkers {
             if (distance > SHOW_RANGE) {
                 continue;
             }
-            boolean inRange = distance <= C4Balance.DETONATOR_RANGE;
+            boolean inRange = distance <= StarkConfig.C4.DETONATOR_RANGE;
             String text = "C4  " + Math.round(distance) + " m" + (inRange ? "" : "  (out of range)");
             label(pose, buffers, camera, mc, at, text, inRange ? 0xFF4A3A : 0x9A9A9A);
         }

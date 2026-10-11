@@ -1,5 +1,6 @@
 package com.senne.starktech.shield;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModSounds;
@@ -48,8 +49,8 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
     private @Nullable UUID ownerId;
     private String ownerName = "";
     private ShieldColor colour = ShieldColor.CYAN;
-    private int radiusIndex = DomeSettings.DEFAULT_RADIUS;
-    private int strength = DomeSettings.DEFAULT_STRENGTH;
+    private int radiusIndex = StarkConfig.Dome.DEFAULT_SIZE;
+    private int strength = StarkConfig.Dome.DEFAULT_STRENGTH;
     private boolean enabled = true;
 
     private boolean up;
@@ -208,7 +209,7 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         if (nowUp) {
             // Terug na uitvallen (of voor het eerst): met een deel van zijn schildkracht.
             if (shield <= 0) {
-                shield = Math.round(maxShield() * DomeSettings.COMEBACK_SHIELD);
+                shield = Math.round(maxShield() * StarkConfig.Dome.COMEBACK_SHIELD);
             }
             // Een koepel is groot: hetzelfde "vwoem" als een laserwand, maar dieper en verder te horen.
             level.playSound(null, pos, ModSounds.RAYSHIELD_ON.get(), SoundSource.BLOCKS, 2.0f, 0.7f);
@@ -231,7 +232,7 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         shield -= cost;
         if (shield <= 0) {
             shield = 0;
-            downUntil = level.getGameTime() + DomeSettings.DOWN_TICKS;
+            downUntil = level.getGameTime() + StarkConfig.Dome.DOWN_TICKS;
             setUp(level, false, Status.DEPLETED);
         }
     }
@@ -290,8 +291,8 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         ownerName = tag.getString("OwnerName");
         ShieldColor[] colours = ShieldColor.values();
         colour = tag.contains("Colour") ? colours[Math.floorMod(tag.getByte("Colour"), colours.length)] : ShieldColor.CYAN;
-        radiusIndex = tag.contains("Radius") ? DomeSettings.clampRadius(tag.getByte("Radius")) : DomeSettings.DEFAULT_RADIUS;
-        strength = tag.contains("Strength") ? DomeSettings.clampStrength(tag.getByte("Strength")) : DomeSettings.DEFAULT_STRENGTH;
+        radiusIndex = tag.contains("Radius") ? DomeSettings.clampRadius(tag.getByte("Radius")) : StarkConfig.Dome.DEFAULT_SIZE;
+        strength = tag.contains("Strength") ? DomeSettings.clampStrength(tag.getByte("Strength")) : StarkConfig.Dome.DEFAULT_STRENGTH;
         enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
         up = tag.getBoolean("Up");
         Status[] statuses = Status.values();

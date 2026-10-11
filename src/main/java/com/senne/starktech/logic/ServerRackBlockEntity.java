@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
@@ -55,7 +56,7 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         ONLINE, NO_NETWORK, NOT_CONNECTED, NO_POWER
     }
 
-    private final SimpleContainer parts = new SimpleContainer(LogicBalance.RACK_SLOTS) {
+    private final SimpleContainer parts = new SimpleContainer(StarkConfig.Logic.RACK_SLOTS) {
         @Override
         public boolean canPlaceItem(int slot, ItemStack stack) {
             return stack.getItem() instanceof ServerPartItem;
@@ -76,7 +77,7 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     /** Tot wanneer (speltijd) dit rack in brand staat; 0 = het brandt niet. */
     private long burnUntil;
     /** Hoe warm dit rack is (graden), en hoe lang (ticks) het al aan één stuk boven FIRE_TEMPERATURE is. */
-    private double temperature = LogicBalance.AMBIENT_TEMPERATURE;
+    private double temperature = StarkConfig.Logic.AMBIENT_TEMPERATURE;
     private int fireTicks;
     /**
      * De laatste meting (niet bewaard, na het laden meteen opnieuw): warmte nu, warmte als alle CPU's
@@ -191,10 +192,10 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             now = Status.NO_NETWORK;
         } else if (!LogicServer.inMainCluster(level, core, pos)) {
             now = Status.NOT_CONNECTED;
-        } else if (StarkGrid.available(level, pos) < LogicBalance.RACK_UPKEEP) {
+        } else if (StarkGrid.available(level, pos) < StarkConfig.Power.SERVER_RACK_UPKEEP) {
             now = Status.NO_POWER;
         } else {
-            StarkGrid.draw(level, pos, LogicBalance.RACK_UPKEEP);
+            StarkGrid.draw(level, pos, StarkConfig.Power.SERVER_RACK_UPKEEP);
             now = Status.ONLINE;
         }
         if (now != status) {
@@ -386,7 +387,7 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         }
         burnUntil = tag.getLong("BurnUntil");
         // Oude racks (van voor 8 oktober) hebben nog geen eigen temperatuur: die beginnen koel.
-        temperature = tag.contains("Temp") ? tag.getDouble("Temp") : LogicBalance.AMBIENT_TEMPERATURE;
+        temperature = tag.contains("Temp") ? tag.getDouble("Temp") : StarkConfig.Logic.AMBIENT_TEMPERATURE;
         fireTicks = Math.max(0, tag.getInt("FireTicks"));
     }
 }

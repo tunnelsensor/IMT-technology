@@ -1,6 +1,6 @@
 package com.senne.starktech.shield;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.edith.EdithServer;
@@ -56,7 +56,7 @@ public final class EdithShield {
             return;
         }
         float damage = event.getAmount();
-        int cost = (int) Math.ceil(damage * EdithBalance.SHIELD_COST_PER_DAMAGE);
+        int cost = (int) Math.ceil(damage * StarkConfig.Shields.PERSONAL_COST_PER_DAMAGE);
         if (!EdithData.tryUseEnergy(glasses, cost)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.shield_down"),
                     EdithMessagePayload.Level.ALERT);

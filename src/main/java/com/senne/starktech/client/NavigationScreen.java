@@ -1,7 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.hud.HudStyle;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.nav.EdithNavigation;
 import com.senne.starktech.nav.EdithWaypoints;
 import com.senne.starktech.nav.Waypoint;
@@ -75,7 +75,7 @@ public class NavigationScreen extends Screen {
 
         // Bovenaan: naam + kleur + "hier opslaan"
         nameBox = new EditBox(font, left + 8, top + 24, 170, 18, Component.translatable("screen.starktech.nav.name"));
-        nameBox.setMaxLength(EdithBalance.MAX_WAYPOINT_NAME);
+        nameBox.setMaxLength(StarkConfig.Navigation.MAX_WAYPOINT_NAME);
         nameBox.setValue(pendingName);
         nameBox.setResponder(value -> pendingName = value);
         nameBox.setHint(Component.translatable("screen.starktech.nav.name_hint"));
@@ -180,7 +180,7 @@ public class NavigationScreen extends Screen {
         super.render(g, mouseX, mouseY, a);
 
         g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
-        String count = shownData.waypoints().size() + "/" + EdithBalance.MAX_WAYPOINTS;
+        String count = shownData.waypoints().size() + "/" + StarkConfig.Navigation.MAX_WAYPOINTS;
         g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(180, HudStyle.WHITE), true);
         // Kleurvakje op de kleurknop
         g.fill(left + 186, top + 28, left + 196, top + 38, HudStyle.argb(255, Waypoint.COLORS[colorIndex]));

@@ -1,9 +1,9 @@
 package com.senne.starktech.client.dev;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.arsenal.ArsenalBalance;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.client.ArsenalScreen;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.network.IllusionPlacePayload;
 import com.senne.starktech.client.voice.VoiceAction;
@@ -38,7 +38,6 @@ import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.shield.DomeGeneratorBlockEntity;
-import com.senne.starktech.shield.DomeSettings;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -2432,9 +2431,9 @@ public final class VisualCheck {
         for (int i = 0; i < 12; i++) {
             UUID id = ArsenalServer.add(player);
             if (i % 4 == 1) {
-                ArsenalServer.setHealth(player, id, (float) (ArsenalBalance.DRONE_MAX_HEALTH * 0.6));
+                ArsenalServer.setHealth(player, id, (float) (StarkConfig.Drones.HEALTH * 0.6));
             } else if (i % 4 == 3) {
-                ArsenalServer.setHealth(player, id, (float) (ArsenalBalance.DRONE_MAX_HEALTH * 0.2));
+                ArsenalServer.setHealth(player, id, (float) (StarkConfig.Drones.HEALTH * 0.2));
             }
         }
 
@@ -2533,7 +2532,7 @@ public final class VisualCheck {
         DomeGeneratorBlockEntity dome = domeAt(player);
         dome.setOwner(player);
         dome.setEnabled(false);
-        dome.setRadius(DomeSettings.DEFAULT_RADIUS);
+        dome.setRadius(StarkConfig.Dome.DEFAULT_SIZE);
         dome.setColour(ShieldColor.CYAN);
     }
 

@@ -1,5 +1,6 @@
 package com.senne.starktech.light;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -32,13 +33,13 @@ import net.minecraft.world.level.block.state.BlockState;
  *
  * <h2>Stroom</h2>
  * Stroom = aan, geen stroom = uit (jouw wens). Een lamp op niveau 100 gebruikt
- * {@link LightBalance#ARC_LAMP_POWER} per tick; zachter gebruikt naar verhouding minder (op 50 de helft).
+ * {@link StarkConfig.Power#ARC_LAMP_POWER} per tick; zachter gebruikt naar verhouding minder (op 50 de helft).
  * Omdat dat geen hele getallen hoeven te zijn, houden we bij wat hij nog "schuldig" is en betalen we
  * telkens de hele stukjes. Twee kleine regels zodat hij niet knippert:
  * <ul>
  *   <li>Brandt hij, dan blijft hij aan zolang het net elke tick genoeg heeft.</li>
  *   <li>Is hij uit, dan gaat hij pas aan als het net stroom heeft voor even branden
- *       ({@link LightBalance#ARC_LAMP_START_TICKS} ticks). Anders zou hij aan een zwakke generator elke
+ *       ({@link StarkConfig.Power#ARC_LAMP_START_TICKS} ticks). Anders zou hij aan een zwakke generator elke
  *       tick aan en uit gaan.</li>
  * </ul>
  * Zet je een lichtschakelaar uit, dan ziet hij de volgende tick geen generator meer, en gaat hij meteen uit.
@@ -48,7 +49,7 @@ public class ArcLampBlockEntity extends BlockEntity {
     public static final int MAX_GLOW = 100;
 
     /** Zijn lichtniveau (1 tot het maximum uit de config). */
-    private int brightness = LightBalance.maxLevel();
+    private int brightness = StarkConfig.Lights.ARC_LAMP_MAX_LEVEL;
     /** Hoe fel de gloed om hem heen is (0 tot 100%). */
     private int glow = MAX_GLOW;
     /** Stroom die hij nog moet betalen (minder dan 1; zie {@link #powerPerTick}). */
@@ -64,7 +65,7 @@ public class ArcLampBlockEntity extends BlockEntity {
 
     /** Zijn lichtniveau (nooit meer dan de config nu toestaat). */
     public int brightness() {
-        return Mth.clamp(brightness, 1, LightBalance.maxLevel());
+        return Mth.clamp(brightness, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
     }
 
     public int glow() {
@@ -73,7 +74,7 @@ public class ArcLampBlockEntity extends BlockEntity {
 
     /** Een ander lichtniveau (uit het scherm): 1 tot het maximum. */
     public void setBrightness(int value) {
-        int clamped = Mth.clamp(value, 1, LightBalance.maxLevel());
+        int clamped = Mth.clamp(value, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
         if (clamped != brightness) {
             brightness = clamped;
             changed();
@@ -91,7 +92,7 @@ public class ArcLampBlockEntity extends BlockEntity {
 
     /** Hoeveel stroom per tick een lamp op dit lichtniveau gebruikt (2 op niveau 100, 1 op 50). */
     public static double powerPerTick(int brightness) {
-        return LightBalance.ARC_LAMP_POWER * brightness / 100.0;
+        return StarkConfig.Power.ARC_LAMP_POWER * brightness / 100.0;
     }
 
     /** Opslaan, en je eigen spel (en dat van iedereen die de lamp ziet) het nieuwe laten weten. */
@@ -109,7 +110,7 @@ public class ArcLampBlockEntity extends BlockEntity {
         int lightLevel = brightness();
         double perTick = powerPerTick(lightLevel);
         int keepOn = Math.max(1, (int) Math.ceil(perTick));
-        int start = Math.max(1, (int) Math.ceil(perTick * LightBalance.ARC_LAMP_START_TICKS));
+        int start = Math.max(1, (int) Math.ceil(perTick * StarkConfig.Power.ARC_LAMP_START_TICKS));
         boolean on = StarkGrid.available(level, pos) >= (lit ? keepOn : start);
         if (on) {
             owed += perTick;

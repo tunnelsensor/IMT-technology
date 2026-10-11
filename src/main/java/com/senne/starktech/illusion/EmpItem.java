@@ -1,6 +1,6 @@
 package com.senne.starktech.illusion;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -33,14 +33,14 @@ public class EmpItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (level instanceof ServerLevel serverLevel) {
-            int hit = EdithIllusions.emp(serverLevel, player.position(), EdithBalance.EMP_RADIUS);
+            int hit = EdithIllusions.emp(serverLevel, player.position(), StarkConfig.Illusions.EMP_RADIUS);
             player.displayClientMessage(hit > 0
                     ? Component.translatable("item.starktech.emp.hit", hit)
                     : Component.translatable("item.starktech.emp.empty"), true);
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ELYTRA_FLYING,
                     SoundSource.PLAYERS, 0.6f, 0.4f);
         }
-        player.getCooldowns().addCooldown(this, EdithBalance.EMP_COOLDOWN);
+        player.getCooldowns().addCooldown(this, StarkConfig.Illusions.EMP_COOLDOWN);
         player.swing(hand);
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
@@ -48,7 +48,7 @@ public class EmpItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.starktech.emp").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.starktech.emp.range", (int) EdithBalance.EMP_RADIUS)
+        tooltip.add(Component.translatable("tooltip.starktech.emp.range", (int) StarkConfig.Illusions.EMP_RADIUS)
                 .withStyle(ChatFormatting.DARK_AQUA));
     }
 }

@@ -1,6 +1,6 @@
 package com.senne.starktech.holo;
 
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -28,7 +28,7 @@ public class HoloTableBlockEntity extends BlockEntity {
     private HoloMode mode = HoloMode.MAP;
     /** Het voorwerp waarvan we het recept tonen (alleen in de stand BLUEPRINT). */
     private ItemStack blueprint = ItemStack.EMPTY;
-    /** Hoe ver de kaart reikt; een nummer uit HoloSettings.RANGES. */
+    /** Hoe ver de kaart reikt; een nummer uit StarkConfig.Holo.RANGES. */
     private int range = HoloSettings.DEFAULT_RANGE;
     /** Hoe groot het hologram is; een nummer uit HoloSettings.SCALES. */
     private int scale = HoloSettings.DEFAULT_SCALE;
@@ -72,7 +72,7 @@ public class HoloTableBlockEntity extends BlockEntity {
         if (Math.floorMod(level.getGameTime() + pos.hashCode(), 20) != 0) {
             return;
         }
-        int cost = EdithBalance.HOLO_UPKEEP * 20;
+        int cost = StarkConfig.Power.HOLO_TABLE_UPKEEP * 20;
         boolean now = StarkGrid.available(level, pos) >= cost;
         if (now) {
             StarkGrid.draw(level, pos, cost);

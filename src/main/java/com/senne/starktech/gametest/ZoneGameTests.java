@@ -1,11 +1,11 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.CableSpoolItem;
 import com.senne.starktech.energy.StarkCables;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
-import com.senne.starktech.security.SecurityBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.security.os.EventLog;
@@ -271,19 +271,19 @@ public final class ZoneGameTests {
         }
 
         // Genoeg voor de kern, maar niet voor een grote zone: alleen de zone valt uit.
-        int oldPerPower = SecurityBalance.ZONE_BLOCKS_PER_POWER;
+        int oldPerPower = StarkConfig.Power.ZONE_BLOCKS_PER_POWER;
         try {
-            SecurityBalance.ZONE_BLOCKS_PER_POWER = 1; // elk blok 1 stroom: 448 extra
+            StarkConfig.Power.ZONE_BLOCKS_PER_POWER = 1; // elk blok 1 stroom: 448 extra
             BlockPos generator = CORE.below();
             ChargerBlockEntity charger = (ChargerBlockEntity) helper.getBlockEntity(generator);
             charger.drain(charger.energy());
-            charger.fill(SecurityBalance.CORE_UPKEEP + 100);
+            charger.fill(StarkConfig.Power.SECURITY_CORE_UPKEEP + 100);
             core.powerTick(level);
             if (!core.isOnline() || core.zone().powered()) {
                 throw new GameTestAssertException("Met stroom voor de kern maar niet voor de zone zou alleen de zone uit moeten zijn");
             }
         } finally {
-            SecurityBalance.ZONE_BLOCKS_PER_POWER = oldPerPower;
+            StarkConfig.Power.ZONE_BLOCKS_PER_POWER = oldPerPower;
         }
         finish(helper, core);
     }
@@ -299,7 +299,7 @@ public final class ZoneGameTests {
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
         SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
         BlockPos coreAbs = helper.absolutePos(CORE);
-        int r = SecurityBalance.ZONE_REACH;
+        int r = StarkConfig.Security.ZONE_REACH;
         List<ZoneBox> wanted = new ArrayList<>();
         // Steekt 10 blokken uit naar het oosten: wordt afgeknipt op ZONE_REACH.
         wanted.add(ZoneBox.of(coreAbs.offset(r - 5, 0, 0), coreAbs.offset(r + 10, 3, 4)));
@@ -321,11 +321,11 @@ public final class ZoneGameTests {
         }
         // Meer dan het maximum: de rest valt weg.
         List<ZoneBox> many = new ArrayList<>();
-        for (int i = 0; i < SecurityBalance.ZONE_MAX_BOXES + 3; i++) {
+        for (int i = 0; i < StarkConfig.Security.ZONE_MAX_BOXES + 3; i++) {
             many.add(ZoneBox.of(coreAbs.offset(i - 20, 0, 5), coreAbs.offset(i - 20, 1, 6)));
         }
-        if (core.setZoneBoxes(many).size() != SecurityBalance.ZONE_MAX_BOXES) {
-            throw new GameTestAssertException("Meer dan " + SecurityBalance.ZONE_MAX_BOXES + " kubussen zou niet mogen");
+        if (core.setZoneBoxes(many).size() != StarkConfig.Security.ZONE_MAX_BOXES) {
+            throw new GameTestAssertException("Meer dan " + StarkConfig.Security.ZONE_MAX_BOXES + " kubussen zou niet mogen");
         }
         // Opslaan en weer laden.
         core.setZoneBoxes(fitted);
@@ -578,7 +578,7 @@ public final class ZoneGameTests {
         if (!core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
             throw new GameTestAssertException("De getypte hoeken zouden de kubus moeten worden: " + core.zoneBoxes());
         }
-        BlockPos far = helper.absolutePos(CORE).offset(SecurityBalance.ZONE_REACH + 5, 0, 0);
+        BlockPos far = helper.absolutePos(CORE).offset(StarkConfig.Security.ZONE_REACH + 5, 0, 0);
         set.putIntArray("box", new int[] {far.getX(), far.getY(), far.getZ(), far.getX() + 3, far.getY() + 3, far.getZ() + 3});
         ZoneApp.Result outside = ZoneApp.handle(owner, core, "zone_set", set, false);
         if (!outside.error() || !core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
@@ -592,12 +592,12 @@ public final class ZoneGameTests {
             throw new GameTestAssertException("Delete zou de kubus moeten weghalen");
         }
         // Meer dan het maximum kan niet.
-        for (int i = 0; i < SecurityBalance.ZONE_MAX_BOXES; i++) {
+        for (int i = 0; i < StarkConfig.Security.ZONE_MAX_BOXES; i++) {
             ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
         }
         ZoneApp.Result full = ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
-        if (!full.error() || core.zoneBoxes().size() != SecurityBalance.ZONE_MAX_BOXES) {
-            throw new GameTestAssertException("Meer dan " + SecurityBalance.ZONE_MAX_BOXES + " kubussen zou niet mogen");
+        if (!full.error() || core.zoneBoxes().size() != StarkConfig.Security.ZONE_MAX_BOXES) {
+            throw new GameTestAssertException("Meer dan " + StarkConfig.Security.ZONE_MAX_BOXES + " kubussen zou niet mogen");
         }
         finish(helper, core);
     }
@@ -627,7 +627,7 @@ public final class ZoneGameTests {
         level.setBlockAndUpdate(otherPos, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
         SecurityCoreBlockEntity other = (SecurityCoreBlockEntity) level.getBlockEntity(otherPos);
         other.setOwner(neighbour);
-        int reach = SecurityBalance.ZONE_REACH;
+        int reach = StarkConfig.Security.ZONE_REACH;
         // Een kern meldt zich pas een tick na het neerzetten aan.
         helper.runAfterDelay(2, () -> {
             // 150 blokken naar het zuiden, getypt in de app: mag, en beschermt.

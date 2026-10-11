@@ -3,7 +3,7 @@ package com.senne.starktech;
 import com.mojang.logging.LogUtils;
 import com.senne.starktech.arsenal.ArsenalServer;
 import com.senne.starktech.comms.EdithComms;
-import com.senne.starktech.edith.EdithConfig;
+import com.senne.starktech.config.StarkConfigLoader;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.edith.EdithThreats;
 import com.senne.starktech.gametest.StarkTechGameTests;
@@ -53,18 +53,16 @@ public class StarkTech {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public StarkTech(IEventBus modEventBus, ModContainer modContainer) {
-        // Instellingen van de wereld/server (bv. hoeveel drones er maximaal mogen).
-        // Deze worden ook naar de spelers gestuurd, zodat het menu dezelfde getallen toont.
-        modContainer.registerConfig(ModConfig.Type.SERVER, EdithConfig.SPEC);
-        // Alle getallen (schade, kosten, wachttijden...) per wereld: starktech-balance.toml.
-        modContainer.registerConfig(ModConfig.Type.SERVER, com.senne.starktech.edith.BalanceConfig.SPEC,
-                "starktech-balance.toml");
+        // Alle getallen van de mod (kosten, schade, wachttijden, stroom...) in één bestand: config/starktech.toml,
+        // gemaakt uit config/StarkConfig.java. Het wordt ook naar de spelers gestuurd, zodat het menu dezelfde
+        // getallen toont als de server rekent.
+        modContainer.registerConfig(ModConfig.Type.SERVER, StarkConfigLoader.SPEC, StarkConfigLoader.FILE_NAME);
         modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Loading event) ->
-                com.senne.starktech.edith.BalanceConfig.onLoad(event));
+                StarkConfigLoader.onLoad(event));
         modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Reloading event) ->
-                com.senne.starktech.edith.BalanceConfig.onLoad(event));
+                StarkConfigLoader.onLoad(event));
         modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Unloading event) ->
-                com.senne.starktech.edith.BalanceConfig.onLoad(event));
+                StarkConfigLoader.onLoad(event));
 
         // Registers: vertellen het spel welke dingen onze mod toevoegt.
         ModDataComponents.COMPONENTS.register(modEventBus);

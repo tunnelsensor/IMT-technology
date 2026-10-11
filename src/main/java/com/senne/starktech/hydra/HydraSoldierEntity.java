@@ -1,11 +1,11 @@
 package com.senne.starktech.hydra;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
 public class HydraSoldierEntity extends Monster implements RangedAttackMob {
     public HydraSoldierEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
-        this.xpReward = HydraBalance.XP_REWARD;
+        this.xpReward = StarkConfig.Hydra.XP_REWARD;
         // Deuren mogen in zijn route zitten: hij doet ze open (zie OpenDoorGoal hieronder).
         if (getNavigation() instanceof net.minecraft.world.entity.ai.navigation.GroundPathNavigation ground) {
             ground.setCanOpenDoors(true);
@@ -59,12 +59,12 @@ public class HydraSoldierEntity extends Monster implements RangedAttackMob {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, HydraBalance.SOLDIER_HEALTH)
-                .add(Attributes.ARMOR, HydraBalance.SOLDIER_ARMOR)
-                .add(Attributes.MOVEMENT_SPEED, HydraBalance.SOLDIER_SPEED)
+                .add(Attributes.MAX_HEALTH, StarkConfig.Hydra.SOLDIER_HEALTH)
+                .add(Attributes.ARMOR, StarkConfig.Hydra.SOLDIER_ARMOR)
+                .add(Attributes.MOVEMENT_SPEED, StarkConfig.Hydra.SOLDIER_SPEED)
                 // Ver vooruit denken: zo vindt hij ook een lange weg om een gebouw heen.
                 .add(Attributes.FOLLOW_RANGE, 48.0)
-                .add(Attributes.ATTACK_DAMAGE, HydraBalance.LASER_DAMAGE);
+                .add(Attributes.ATTACK_DAMAGE, StarkConfig.Hydra.LASER_DAMAGE);
     }
 
     @Override
@@ -106,12 +106,12 @@ public class HydraSoldierEntity extends Monster implements RangedAttackMob {
         Vec3 from = getEyePosition().add(getViewVector(1.0f).scale(0.6)).add(0, -0.25, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         playSound(ModSounds.DRONE_LASER.get(), 0.9f, 0.7f + random.nextFloat() * 0.1f);
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, DomeSettings.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, StarkConfig.Dome.COST_LASER);
         if (shield != null) {
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.HYDRA_LASER));
             return;
         }
-        target.hurt(damageSources().mobAttack(this), HydraBalance.LASER_DAMAGE);
+        target.hurt(damageSources().mobAttack(this), StarkConfig.Hydra.LASER_DAMAGE);
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.HYDRA_LASER));
     }
 

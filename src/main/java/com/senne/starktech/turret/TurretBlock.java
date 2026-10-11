@@ -3,6 +3,7 @@ package com.senne.starktech.turret;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.PowerConnectable;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.registry.ModItems;
@@ -197,7 +198,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
             boolean mayTake = turret.ownerId() == null || turret.ownerId().equals(player.getUUID());
             if (player.isShiftKeyDown() && mayTake && turret.ammoCount() > 0) {
-                player.getInventory().placeItemBackInInventory(turret.ammo().extractItem(0, TurretBalance.MAX_AMMO, false));
+                player.getInventory().placeItemBackInInventory(turret.ammo().extractItem(0, StarkConfig.Turrets.MAX_AMMO, false));
             }
             status(player, state, turret);
         }
@@ -224,7 +225,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
             return;
         }
         boolean power = com.senne.starktech.energy.StarkGrid.available(player.level(), turret.getBlockPos())
-                >= TurretBalance.LASER_COST;
+                >= StarkConfig.Power.TURRET_LASER_SHOT;
         Component laser = Component.translatable(power ? "turret.starktech.status.power" : "turret.starktech.status.no_power")
                 .withStyle(power ? ChatFormatting.AQUA : ChatFormatting.YELLOW);
         player.displayClientMessage(Component.translatable("turret.starktech.status.stark", onOff, laser,

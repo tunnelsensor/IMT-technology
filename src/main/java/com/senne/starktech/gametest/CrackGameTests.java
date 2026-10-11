@@ -4,12 +4,12 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.c4.C4Blast;
 import com.senne.starktech.c4.CrackData;
 import com.senne.starktech.c4.Cracks;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.repair.CrackMachineBlock;
 import com.senne.starktech.repair.CrackMachineBlockEntity;
 import com.senne.starktech.repair.FromBlockItem;
-import com.senne.starktech.repair.RepairBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.ArrayList;
@@ -307,13 +307,13 @@ public final class CrackGameTests {
         ChargerBlockEntity generator = (ChargerBlockEntity) helper.getBlockEntity(pos.west());
         int before = generator.energy();
         crusher.setItem(CrackMachineBlockEntity.SLOT_IN, FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.STONE_BRICKS, 2));
-        helper.runAfterDelay(RepairBalance.MACHINE_TICKS + 5, () -> {
+        helper.runAfterDelay(StarkConfig.Repair.MACHINE_TICKS + 5, () -> {
             ItemStack out = crusher.getItem(CrackMachineBlockEntity.SLOT_OUT);
             check(out.is(ModItems.BLOCK_POWDER.get()) && FromBlockItem.block(out) == Blocks.STONE_BRICKS && out.getCount() == 1,
                     "Na vijf seconden zou er één poeder van stenen bakstenen uit moeten komen, niet " + out);
             check(crusher.getItem(CrackMachineBlockEntity.SLOT_IN).getCount() == 1, "Er zou nog één gebarsten blok in moeten zitten");
             int used = before - generator.energy();
-            check(used >= RepairBalance.MACHINE_TICKS * RepairBalance.MACHINE_POWER, "De Crusher gebruikte te weinig stroom: " + used);
+            check(used >= StarkConfig.Repair.MACHINE_TICKS * StarkConfig.Power.CRUSHER_COMPACTOR, "De Crusher gebruikte te weinig stroom: " + used);
             helper.assertBlockProperty(pos, CrackMachineBlock.WORKING, true);
             helper.succeed();
         });
@@ -324,7 +324,7 @@ public final class CrackGameTests {
     public static void crusher_needs_power(GameTestHelper helper) {
         CrackMachineBlockEntity crusher = crusher(helper, new BlockPos(6, 2, 6), false);
         crusher.setItem(CrackMachineBlockEntity.SLOT_IN, FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.OBSIDIAN, 1));
-        helper.runAfterDelay(RepairBalance.MACHINE_TICKS + 10, () -> {
+        helper.runAfterDelay(StarkConfig.Repair.MACHINE_TICKS + 10, () -> {
             check(crusher.getItem(CrackMachineBlockEntity.SLOT_OUT).isEmpty(), "Zonder stroom maakte de Crusher toch poeder");
             check(crusher.progress() == 0 && crusher.status() == CrackMachineBlockEntity.Status.NO_POWER,
                     "Zonder stroom zou hij moeten wachten met 'No power', niet " + crusher.status());
@@ -372,7 +372,7 @@ public final class CrackGameTests {
         check(!crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, powder)
                 && crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, cracked), "De Crusher zou alleen gebarsten blokken moeten aannemen");
         compactor.setItem(CrackMachineBlockEntity.SLOT_IN, powder);
-        helper.runAfterDelay(RepairBalance.MACHINE_TICKS + 5, () -> {
+        helper.runAfterDelay(StarkConfig.Repair.MACHINE_TICKS + 5, () -> {
             ItemStack out = compactor.getItem(CrackMachineBlockEntity.SLOT_OUT);
             check(ItemStack.isSameItemSameComponents(out, new ItemStack(Blocks.OBSIDIAN)) && out.getCount() == 1,
                     "Na vijf seconden zou er een gewoon blok obsidiaan uit moeten komen, niet " + out);

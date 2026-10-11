@@ -1,10 +1,10 @@
 package com.senne.starktech.client;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.suit.StarkSuitItem;
-import com.senne.starktech.suit.SuitBalance;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -36,7 +36,7 @@ public final class RepulsorControl {
      * wachttijd in het verleden, dus "geladen". (Long.MIN_VALUE liep over bij het aftrekken,
      * en dan stond de ring altijd op leeg.)
      */
-    private static long firedAt = -SuitBalance.REPULSOR_COOLDOWN;
+    private static long firedAt = -StarkConfig.Suit.REPULSOR_COOLDOWN;
 
     public static boolean isArmed() {
         return armed;
@@ -49,7 +49,7 @@ public final class RepulsorControl {
             return 1.0f;
         }
         float since = player.level().getGameTime() - firedAt + partialTick;
-        return Math.min(1.0f, since / SuitBalance.REPULSOR_COOLDOWN);
+        return Math.min(1.0f, since / StarkConfig.Suit.REPULSOR_COOLDOWN);
     }
 
     /** Toets I (of het G-menu): aan of uit. */
@@ -112,7 +112,7 @@ public final class RepulsorControl {
         if (now < readyAt) {
             return;
         }
-        readyAt = now + SuitBalance.REPULSOR_COOLDOWN;
+        readyAt = now + StarkConfig.Suit.REPULSOR_COOLDOWN;
         firedAt = now;
         EdithClientEvents.sendAction(EdithAction.REPULSOR);
         // Je arm gaat naar voren, alsof je je handpalm naar voren duwt.
@@ -123,7 +123,7 @@ public final class RepulsorControl {
     public static void reset() {
         armed = false;
         readyAt = 0;
-        firedAt = -SuitBalance.REPULSOR_COOLDOWN;
+        firedAt = -StarkConfig.Suit.REPULSOR_COOLDOWN;
     }
 
     private static boolean hasChestplate(LocalPlayer player) {

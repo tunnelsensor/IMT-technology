@@ -2,8 +2,9 @@ package com.senne.starktech.client;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.Datacenter;
-import com.senne.starktech.logic.LogicBalance;
+import com.senne.starktech.logic.LogicStats;
 import com.senne.starktech.logic.ServerPartItem;
 import com.senne.starktech.logic.ServerRackBlockEntity;
 import com.senne.starktech.logic.ServerRackMenu;
@@ -69,11 +70,11 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         int rackX = x + ServerRackMenu.BAY_X - 5;
         int rackY = y + ServerRackMenu.BAY_Y - 5;
         int rackW = ServerRackMenu.COLUMN_STEP + 16 + 13;
-        int rackH = LogicBalance.RACK_ROWS * ServerRackMenu.BAY_STEP + 8;
+        int rackH = StarkConfig.Logic.RACK_ROWS * ServerRackMenu.BAY_STEP + 8;
         g.fill(rackX, rackY, rackX + rackW, rackY + rackH, RACK);
         g.renderOutline(rackX, rackY, rackW, rackH, FRAME);
         boolean online = menu.status() == ServerRackBlockEntity.Status.ONLINE;
-        for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
+        for (int i = 0; i < StarkConfig.Logic.RACK_SLOTS; i++) {
             int sx = x + ServerRackMenu.bayX(i);
             int sy = y + ServerRackMenu.bayY(i);
             g.fill(sx - 1, sy - 1, sx + 17, sy + 17, SLOT);
@@ -104,7 +105,7 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         small(g, state, STATS_X + 40, y, HudStyle.argb(255, status == ServerRackBlockEntity.Status.ONLINE && online()
                 ? HudStyle.GREEN : HudStyle.RED));
         if (status == ServerRackBlockEntity.Status.NO_NETWORK) {
-            wrapped(g, "Place it within " + com.senne.starktech.security.SecurityBalance.ZONE_REACH
+            wrapped(g, "Place it within " + StarkConfig.Security.ZONE_REACH
                     + " blocks of a Security Core: the server runs on your Stark OS.", y + 10,
                     HudStyle.argb(140, HudStyle.WHITE));
             return;
@@ -115,19 +116,19 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         y += 16;
         // Is een rack van de server warm (dit of een ander)? Dan werkt alles op halve snelheid (zie
         // Datacenter): de kracht telt dan maar half.
-        boolean warm = menu.serverTemperature() >= LogicBalance.WARM_TEMPERATURE;
-        double slowdown = warm ? Math.max(1.0, LogicBalance.WARM_SLOWDOWN) : 1.0;
-        double logic = (menu.cpus() * LogicBalance.logicPower(ServerPartItem.Kind.CPU)
-                + menu.gpus() * LogicBalance.logicPower(ServerPartItem.Kind.GPU)) / slowdown;
-        double brain = (menu.cpus() * LogicBalance.brainPower(ServerPartItem.Kind.CPU)
-                + menu.gpus() * LogicBalance.brainPower(ServerPartItem.Kind.GPU)) / slowdown;
+        boolean warm = menu.serverTemperature() >= StarkConfig.Logic.WARM_TEMPERATURE;
+        double slowdown = warm ? Math.max(1.0, StarkConfig.Logic.WARM_SLOWDOWN) : 1.0;
+        double logic = (menu.cpus() * LogicStats.logicPower(ServerPartItem.Kind.CPU)
+                + menu.gpus() * LogicStats.logicPower(ServerPartItem.Kind.GPU)) / slowdown;
+        double brain = (menu.cpus() * LogicStats.brainPower(ServerPartItem.Kind.CPU)
+                + menu.gpus() * LogicStats.brainPower(ServerPartItem.Kind.GPU)) / slowdown;
         stat(g, "REACTS IN", logic > 0
-                ? String.format(Locale.ROOT, "%.2f s", LogicBalance.reactionTicks(logic) / 20.0) : "-", y);
-        int delay = LogicBalance.brainDelayTicks(brain);
+                ? String.format(Locale.ROOT, "%.2f s", LogicStats.reactionTicks(logic) / 20.0) : "-", y);
+        int delay = LogicStats.brainDelayTicks(brain);
         stat(g, "E.D.I.T.H.", delay < 0 ? "can't think" : delay == 0 ? "no delay"
                 : String.format(Locale.ROOT, "+%.1f s", delay / 20.0), y + 7);
-        stat(g, "AT ONCE", menu.ram() * LogicBalance.RUNS_PER_RAM + " diagrams", y + 14);
-        stat(g, "STORAGE", menu.ssd() * LogicBalance.BLOCKS_PER_SSD + " blocks", y + 21);
+        stat(g, "AT ONCE", menu.ram() * StarkConfig.Logic.RUNS_PER_RAM + " diagrams", y + 14);
+        stat(g, "STORAGE", menu.ssd() * StarkConfig.Logic.BLOCKS_PER_SSD + " blocks", y + 21);
         // De temperatuur van DIT rack: nu, en waar hij naartoe gaat (als dat meer dan een graad scheelt).
         // Zonder fan raakt de warmte er niet uit: dan wordt het steeds warmer ("rising").
         double temp = menu.temperature();
@@ -135,7 +136,7 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         boolean rising = Double.isInfinite(target);
         String tempText = Datacenter.degrees(temp) + (rising ? "  rising"
                 : Math.abs(target - temp) >= 1.0 ? "  > " + Datacenter.degrees(target) : "");
-        int tempColour = rising ? temperatureColour(Math.max(temp, LogicBalance.WARM_TEMPERATURE))
+        int tempColour = rising ? temperatureColour(Math.max(temp, StarkConfig.Logic.WARM_TEMPERATURE))
                 : temperatureColour(Math.max(temp, target));
         small(g, "RACK TEMP", STATS_X, y + 28, label);
         small(g, tempText, STATS_X + 46, y + 28, HudStyle.argb(255, tempColour));
@@ -157,11 +158,11 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
                     HudStyle.argb(255, blink ? HudStyle.RED : HudStyle.ORANGE));
         } else if (!problem.isEmpty()) {
             wrapped(g, problem, y + 23, HudStyle.argb(230, HudStyle.RED));
-        } else if (temp >= LogicBalance.HOT_TEMPERATURE) {
+        } else if (temp >= StarkConfig.Logic.HOT_TEMPERATURE) {
             // Hooguit twee regels: een derde regel komt tegen je rugzak aan.
             wrapped(g, "Overheating: parts wear out!" + (fans > 0 ? " Add " + fanText(fans) + "!" : ""), y + 23,
                     HudStyle.argb(230, HudStyle.RED));
-        } else if (temp >= LogicBalance.WARM_TEMPERATURE) {
+        } else if (temp >= StarkConfig.Logic.WARM_TEMPERATURE) {
             wrapped(g, "Too hot: whole server at half speed." + (fans > 0 ? " Add " + fanText(fans) + "!" : ""),
                     y + 23, HudStyle.argb(230, HudStyle.RED));
         } else if (rising) {
@@ -179,13 +180,13 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
 
     /** Groen als het koel is, oranje als het warm wordt, rood als het heet is. */
     static int temperatureColour(double temperature) {
-        if (temperature >= LogicBalance.HOT_TEMPERATURE) {
+        if (temperature >= StarkConfig.Logic.HOT_TEMPERATURE) {
             return HudStyle.RED;
         }
-        if (temperature >= LogicBalance.WARM_TEMPERATURE) {
+        if (temperature >= StarkConfig.Logic.WARM_TEMPERATURE) {
             return HudStyle.ORANGE;
         }
-        return temperature >= LogicBalance.coolAgainTemperature() ? 0xE8D060 : HudStyle.GREEN;
+        return temperature >= LogicStats.coolAgainTemperature() ? 0xE8D060 : HudStyle.GREEN;
     }
 
     /** 9.5 wordt "9.5 W", 8.0 wordt "8 W". */
@@ -231,7 +232,7 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
         // Boven een leeg vakje: wat erin mag.
-        for (int i = 0; i < LogicBalance.RACK_SLOTS; i++) {
+        for (int i = 0; i < StarkConfig.Logic.RACK_SLOTS; i++) {
             int sx = leftPos + ServerRackMenu.bayX(i);
             int sy = topPos + ServerRackMenu.bayY(i);
             if (menu.getSlot(i).getItem().isEmpty() && mouseX >= sx && mouseX < sx + 16 && mouseY >= sy && mouseY < sy + 16) {

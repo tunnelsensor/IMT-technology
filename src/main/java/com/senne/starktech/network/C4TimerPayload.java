@@ -1,8 +1,8 @@
 package com.senne.starktech.network;
 
 import com.senne.starktech.StarkTech;
-import com.senne.starktech.c4.C4Balance;
 import com.senne.starktech.c4.C4Item;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModDataComponents;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -38,7 +38,7 @@ public record C4TimerPayload(boolean offhand, int seconds) implements CustomPack
     public static void handle(ServerPlayer player, C4TimerPayload payload) {
         ItemStack stack = player.getItemInHand(payload.offhand() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
         if (stack.getItem() instanceof C4Item) {
-            stack.set(ModDataComponents.C4_TIMER.get(), Mth.clamp(payload.seconds(), C4Balance.TIMER_MIN, C4Balance.TIMER_MAX));
+            stack.set(ModDataComponents.C4_TIMER.get(), Mth.clamp(payload.seconds(), StarkConfig.C4.TIMER_MIN, StarkConfig.C4.TIMER_MAX));
         }
     }
 }

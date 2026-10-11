@@ -7,8 +7,8 @@ import com.senne.starktech.client.EdithClientState;
 import com.senne.starktech.client.EdithKeys;
 import com.senne.starktech.client.music.EdithMusic;
 import com.senne.starktech.client.NavigationScreen;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithAction;
-import com.senne.starktech.edith.EdithBalance;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithFeature;
 import com.senne.starktech.nav.EdithWaypoints;
@@ -379,8 +379,8 @@ public final class VoiceControl {
         String clean = name.isBlank()
                 ? Component.translatable("edith.starktech.voice.place_name", count + 1).getString()
                 : name.strip();
-        if (clean.length() > EdithBalance.MAX_WAYPOINT_NAME) {
-            clean = clean.substring(0, EdithBalance.MAX_WAYPOINT_NAME);
+        if (clean.length() > StarkConfig.Navigation.MAX_WAYPOINT_NAME) {
+            clean = clean.substring(0, StarkConfig.Navigation.MAX_WAYPOINT_NAME);
         }
         int color = Waypoint.COLORS[count % Waypoint.COLORS.length];
         PacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, clean, color));
@@ -392,8 +392,8 @@ public final class VoiceControl {
         if (clean.isEmpty()) {
             return;
         }
-        if (clean.length() > EdithBalance.MAX_MESSAGE_LENGTH) {
-            clean = clean.substring(0, EdithBalance.MAX_MESSAGE_LENGTH);
+        if (clean.length() > StarkConfig.Comms.MAX_MESSAGE_LENGTH) {
+            clean = clean.substring(0, StarkConfig.Comms.MAX_MESSAGE_LENGTH);
         }
         PacketDistributor.sendToServer(new CommsPayload("", clean));
     }

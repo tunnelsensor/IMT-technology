@@ -1,5 +1,6 @@
 package com.senne.starktech.turret;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
@@ -8,7 +9,6 @@ import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.shield.DomeSettings;
 import com.senne.starktech.shield.EdithDomes;
 import com.senne.starktech.suit.MiniRocketEntity;
 import java.util.Comparator;
@@ -67,7 +67,7 @@ public class TurretBlockEntity extends BlockEntity {
 
         @Override
         public int getSlotLimit(int slot) {
-            return TurretBalance.MAX_AMMO;
+            return StarkConfig.Turrets.MAX_AMMO;
         }
 
         @Override
@@ -132,7 +132,7 @@ public class TurretBlockEntity extends BlockEntity {
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
         // Eén keer per seconde: is er stroom op het net? Dat zetten we in het blok.
         if ((level.getGameTime() + pos.hashCode()) % 20 == 0) {
-            boolean online = StarkGrid.available(level, pos) >= TurretBalance.LASER_COST;
+            boolean online = StarkGrid.available(level, pos) >= StarkConfig.Power.TURRET_LASER_SHOT;
             if (online != state.getValue(TurretBlock.ONLINE)) {
                 state = state.setValue(TurretBlock.ONLINE, online);
                 level.setBlock(pos, state, Block.UPDATE_CLIENTS);
@@ -151,7 +151,7 @@ public class TurretBlockEntity extends BlockEntity {
             target = level.getEntity(targetId) instanceof LivingEntity current && stillValid(level, current)
                     ? current : null;
             // Niemand? Om de halve seconde rondkijken (niet elke tick: dat is zwaar voor de server).
-            if (target == null && (level.getGameTime() + pos.hashCode()) % TurretBalance.SCAN_INTERVAL == 0) {
+            if (target == null && (level.getGameTime() + pos.hashCode()) % StarkConfig.Turrets.SCAN_INTERVAL == 0) {
                 target = findTarget(level);
             }
         }
@@ -163,7 +163,7 @@ public class TurretBlockEntity extends BlockEntity {
         if (laserCooldown == 0 && distance <= laserRange()) {
             fireLaser(level, target);
         }
-        if (rocketCooldown == 0 && ammoCount() > 0 && distance <= TurretBalance.ROCKET_RANGE) {
+        if (rocketCooldown == 0 && ammoCount() > 0 && distance <= StarkConfig.Turrets.ROCKET_RANGE) {
             fireRocket(level, target);
         }
     }
@@ -174,7 +174,7 @@ public class TurretBlockEntity extends BlockEntity {
 
     /** Zo ver kijkt hij: met raketten erin wat verder dan de laser reikt. */
     private double scanRange() {
-        return ammoCount() > 0 ? Math.max(laserRange(), TurretBalance.ROCKET_RANGE) : laserRange();
+        return ammoCount() > 0 ? Math.max(laserRange(), StarkConfig.Turrets.ROCKET_RANGE) : laserRange();
     }
 
     private @Nullable LivingEntity findTarget(ServerLevel level) {
@@ -210,10 +210,10 @@ public class TurretBlockEntity extends BlockEntity {
     private void fireLaser(ServerLevel level, LivingEntity target) {
         TurretKind kind = kind();
         // Elk schot kost stroom van het net; geen stroom = geen laser.
-        if (StarkGrid.available(level, worldPosition) < TurretBalance.LASER_COST) {
+        if (StarkGrid.available(level, worldPosition) < StarkConfig.Power.TURRET_LASER_SHOT) {
             return;
         }
-        StarkGrid.draw(level, worldPosition, TurretBalance.LASER_COST);
+        StarkGrid.draw(level, worldPosition, StarkConfig.Power.TURRET_LASER_SHOT);
         laserCooldown = kind.laserInterval();
 
         Vec3 muzzle = muzzle();
@@ -222,7 +222,7 @@ public class TurretBlockEntity extends BlockEntity {
         BeamEffectPayload.Kind beam = kind.beam();
         level.playSound(null, worldPosition, ModSounds.DRONE_LASER.get(), SoundSource.BLOCKS, 0.8f, kind.pitch());
         // Een rayshield-koepel om het doelwit houdt de straal tegen (de eigen koepel niet).
-        Vec3 shield = EdithDomes.blockedAt(level, to, muzzle, ownerId, DomeSettings.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, muzzle, ownerId, StarkConfig.Dome.COST_LASER);
         if (shield != null) {
             ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, shield, beam));
             return;
@@ -235,15 +235,15 @@ public class TurretBlockEntity extends BlockEntity {
 
     private void fireRocket(ServerLevel level, LivingEntity target) {
         // Ook de lanceerbuis werkt op stroom (een beetje per raket).
-        if (StarkGrid.available(level, worldPosition) < TurretBalance.ROCKET_POWER) {
+        if (StarkGrid.available(level, worldPosition) < StarkConfig.Power.TURRET_ROCKET) {
             return;
         }
         MiniRocketEntity rocket = ModEntities.MINI_ROCKET.get().create(level);
         if (rocket == null) {
             return;
         }
-        StarkGrid.draw(level, worldPosition, TurretBalance.ROCKET_POWER);
-        rocketCooldown = TurretBalance.ROCKET_INTERVAL;
+        StarkGrid.draw(level, worldPosition, StarkConfig.Power.TURRET_ROCKET);
+        rocketCooldown = StarkConfig.Turrets.ROCKET_INTERVAL;
         ammo.extractItem(0, 1, false);
         Vec3 muzzle = muzzle();
         Vec3 toTarget = target.getBoundingBox().getCenter().subtract(muzzle).normalize();
@@ -288,10 +288,10 @@ public class TurretBlockEntity extends BlockEntity {
             wantYaw = (float) (Mth.atan2(aim.x, aim.z) * Mth.RAD_TO_DEG);
             wantPitch = (float) (Mth.atan2(aim.y, aim.horizontalDistance()) * Mth.RAD_TO_DEG);
         } else {
-            wantYaw = yaw + TurretBalance.IDLE_TURN_SPEED; // niemand te zien: rustig rondkijken
+            wantYaw = yaw + StarkConfig.Turrets.IDLE_TURN_SPEED; // niemand te zien: rustig rondkijken
         }
-        yaw = Mth.approachDegrees(yaw, wantYaw, TurretBalance.TURN_SPEED);
-        pitch = Mth.approach(pitch, wantPitch, TurretBalance.TURN_SPEED / 2);
+        yaw = Mth.approachDegrees(yaw, wantYaw, StarkConfig.Turrets.TURN_SPEED);
+        pitch = Mth.approach(pitch, wantPitch, StarkConfig.Turrets.TURN_SPEED / 2);
     }
 
     // ================================================================ Opslaan en doorsturen

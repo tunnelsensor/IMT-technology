@@ -1,5 +1,6 @@
 package com.senne.starktech.hydra;
 
+import com.senne.starktech.config.StarkConfig;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -84,7 +85,7 @@ public class HydraCombatGoal extends Goal {
 
     @Override
     public void start() {
-        attackCooldown = HydraBalance.FIRE_INTERVAL / 2 + soldier.getRandom().nextInt(10);
+        attackCooldown = StarkConfig.Hydra.FIRE_INTERVAL / 2 + soldier.getRandom().nextInt(10);
         replanCooldown = 0;
         alertSquad();
     }
@@ -111,7 +112,7 @@ public class HydraCombatGoal extends Goal {
             seeTime = 0;
         }
         double distance = soldier.distanceTo(target);
-        boolean inRange = distance <= HydraBalance.ATTACK_RANGE;
+        boolean inRange = distance <= StarkConfig.Hydra.ATTACK_RANGE;
 
         if (sees && inRange) {
             holdAndShoot(target, distance);
@@ -151,7 +152,7 @@ public class HydraCombatGoal extends Goal {
         if (--attackCooldown <= 0 && seeTime >= 5) {
             soldier.performRangedAttack(target, 1.0f);
             // Niet allemaal tegelijk: elke soldaat een beetje anders.
-            attackCooldown = HydraBalance.FIRE_INTERVAL + soldier.getRandom().nextInt(12);
+            attackCooldown = StarkConfig.Hydra.FIRE_INTERVAL + soldier.getRandom().nextInt(12);
         }
     }
 

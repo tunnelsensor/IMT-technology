@@ -1,7 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.hud.HudStyle;
-import com.senne.starktech.edith.EdithBalance;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.redstone.EdithRedstone;
 import com.senne.starktech.redstone.EdithRelays;
@@ -56,13 +56,13 @@ public class RelayEditScreen extends Screen {
         Relay relay = data().get(index);
 
         nameBox = new EditBox(font, left + 10, top + 34, PANEL_W - 20, 18, Component.translatable("screen.starktech.relay_edit.name"));
-        nameBox.setMaxLength(EdithBalance.MAX_RELAY_NAME);
+        nameBox.setMaxLength(StarkConfig.Relays.MAX_NAME);
         nameBox.setValue(relay == null ? "" : relay.name());
         nameBox.setHint(Component.translatable("screen.starktech.relay_edit.name_hint"));
         addRenderableWidget(nameBox);
 
         groupBox = new EditBox(font, left + 10, top + 68, PANEL_W - 20, 18, Component.translatable("screen.starktech.relay_edit.group"));
-        groupBox.setMaxLength(EdithBalance.MAX_RELAY_NAME);
+        groupBox.setMaxLength(StarkConfig.Relays.MAX_NAME);
         groupBox.setValue(relay == null ? Relay.DEFAULT_GROUP : relay.group());
         groupBox.setHint(Component.translatable("screen.starktech.relay_edit.group_hint"));
         addRenderableWidget(groupBox);

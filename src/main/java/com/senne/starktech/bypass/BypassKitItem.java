@@ -1,5 +1,6 @@
 package com.senne.starktech.bypass;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.InputDeviceBlock;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -16,7 +17,7 @@ import net.minecraft.world.item.context.UseOnContext;
  * een potje poeder voor vingerafdrukken. Rechtsklik ermee op een keycardlezer of codepaneel en je
  * begint een hack (zie Bypass): bij een lezer het stroomcircuit, bij een paneel de vingerafdrukken.
  *
- * Hij gaat {@link BypassBalance#KIT_USES} keer mee: elke hack die je begint kost er één.
+ * Hij gaat {@link StarkConfig.Bypass#KIT_USES} keer mee: elke hack die je begint kost er één.
  *
  * De lezer en het paneel doen zelf niets met de kit (zie InputDeviceBlock.useItemOn): zo komt de
  * rechtsklik hier aan.

@@ -1,5 +1,6 @@
 package com.senne.starktech.c4;
 
+import com.senne.starktech.config.StarkConfig;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -16,7 +17,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * ze blijven, ook na een herstart (ze staan in {@link CrackData}), tot je
  * <ul>
  *   <li>ze <b>opvult</b> met Repair Paste: de barsten zijn weg, maar het blok is elke keer
- *       {@link C4Balance#PATCH_WEAKER} zwakker (nooit zwakker dan {@link C4Balance#PATCH_WEAKEST}); of</li>
+ *       {@link StarkConfig.Repair#PATCH_WEAKER} zwakker (nooit zwakker dan {@link StarkConfig.Repair#PATCH_WEAKEST}); of</li>
  *   <li>het blok <b>vervangt</b>: een nieuw blok is weer helemaal sterk.</li>
  * </ul>
  * Je ziet de barsten zoals wanneer iemand aan een blok hakt.
@@ -41,7 +42,7 @@ public final class Cracks {
 
     /** Hoe sterk een blok nog is na zoveel keer plamuren: 1 (nooit), 0,85, 0,70... nooit minder dan 0,40. */
     public static float factor(int patches) {
-        return Math.max(C4Balance.PATCH_WEAKEST, 1.0f - C4Balance.PATCH_WEAKER * patches);
+        return Math.max(StarkConfig.Repair.PATCH_WEAKEST, 1.0f - StarkConfig.Repair.PATCH_WEAKER * patches);
     }
 
     /**

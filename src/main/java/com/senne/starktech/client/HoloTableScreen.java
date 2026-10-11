@@ -1,6 +1,7 @@
 package com.senne.starktech.client;
 
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.holo.HoloSettings;
 import com.senne.starktech.holo.HoloTableBlock;
@@ -137,7 +138,7 @@ public class HoloTableScreen extends Screen {
         }
 
         addRenderableWidget(Button.builder(HoloSettings.rangeLabel(table.range()),
-                        b -> send(HoloActionPayload.Op.RANGE, next(table.range(), HoloSettings.RANGES.length)))
+                        b -> send(HoloActionPayload.Op.RANGE, next(table.range(), StarkConfig.Holo.RANGES.length)))
                 .bounds(valueX, rowY(ROW_RANGE), 90, 20).build());
 
         addRenderableWidget(Button.builder(HoloSettings.scaleLabel(table.scale()),

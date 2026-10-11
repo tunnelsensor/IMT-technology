@@ -1,6 +1,7 @@
 package com.senne.starktech.light;
 
 import com.mojang.serialization.MapCodec;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.PowerConnectable;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -115,7 +116,7 @@ public class ArcLampBlock extends BaseEntityBlock implements PowerConnectable {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.starktech.arc_lamp", LightBalance.maxLevel(), ArcLampLight.maxReach())
+        tooltip.add(Component.translatable("tooltip.starktech.arc_lamp", StarkConfig.Lights.ARC_LAMP_MAX_LEVEL, ArcLampLight.maxReach())
                 .withStyle(ChatFormatting.GRAY));
     }
 }

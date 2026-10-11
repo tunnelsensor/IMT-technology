@@ -1,12 +1,13 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.Backups;
 import com.senne.starktech.logic.Datacenter;
 import com.senne.starktech.logic.DatacenterBrain;
 import com.senne.starktech.logic.Datacenters;
-import com.senne.starktech.logic.LogicBalance;
 import com.senne.starktech.logic.LogicServer;
+import com.senne.starktech.logic.LogicStats;
 import com.senne.starktech.logic.ServerPartItem;
 import com.senne.starktech.logic.ServerRackBlockEntity;
 import com.senne.starktech.logic.program.GraphConverter;
@@ -78,12 +79,12 @@ public final class DatacenterGameTests {
             if (!gpu.online() || gpu.cpus() != 0 || gpu.gpus() != 1 || gpu.fans() != 1) {
                 throw new GameTestAssertException("De server met een GPU telt verkeerd: " + gpu + " (" + gpu.problem() + ")");
             }
-            int oneCpu = LogicBalance.reactionTicks(1.0);
+            int oneCpu = LogicStats.reactionTicks(1.0);
             if (gpu.reactionTicks() != oneCpu * 2) {
                 throw new GameTestAssertException("Een GPU zou twee keer zo traag moeten reageren als een CPU ("
                         + oneCpu * 2 + " ticks), niet " + gpu.reactionTicks());
             }
-            int cpuDelay = LogicBalance.brainDelayTicks(1.0);
+            int cpuDelay = LogicStats.brainDelayTicks(1.0);
             if (gpu.brainDelayTicks() != Math.round(cpuDelay / 2.0f)) {
                 throw new GameTestAssertException("Met een GPU zou het brein half zo lang moeten wachten als met een CPU ("
                         + cpuDelay / 2 + " ticks), niet " + gpu.brainDelayTicks());
@@ -96,9 +97,9 @@ public final class DatacenterGameTests {
                         + " / " + both.brainPower());
             }
             // Een groot datacenter (8 GPU's = kracht 16): geen vertraging meer. Niets: kan niet denken.
-            if (LogicBalance.brainDelayTicks(16.0) != 0 || LogicBalance.brainDelayTicks(0.0) != -1) {
-                throw new GameTestAssertException("Vertraging bij kracht 16 of 0 klopt niet: " + LogicBalance.brainDelayTicks(16.0)
-                        + " / " + LogicBalance.brainDelayTicks(0.0));
+            if (LogicStats.brainDelayTicks(16.0) != 0 || LogicStats.brainDelayTicks(0.0) != -1) {
+                throw new GameTestAssertException("Vertraging bij kracht 16 of 0 klopt niet: " + LogicStats.brainDelayTicks(16.0)
+                        + " / " + LogicStats.brainDelayTicks(0.0));
             }
             // Geen CPU en geen GPU: de server zegt wat er mist.
             rack.parts().setItem(0, ItemStack.EMPTY);
@@ -164,16 +165,16 @@ public final class DatacenterGameTests {
             }
             // De rekenregels: een rack met warmte maar zonder fan wordt steeds warmer en heeft er minstens één
             // nodig; een leeg rack niet; een fan koelt alleen zijn eigen rack.
-            if (!Double.isInfinite(Datacenter.target(LogicBalance.MEMORY_HEAT, 0)) || Datacenter.fansNeeded(LogicBalance.MEMORY_HEAT, 0) != 1
-                    || Datacenter.fansNeeded(0, 0) != 0 || Datacenter.target(3.0, LogicBalance.FAN_COOLING) != LogicBalance.AMBIENT_TEMPERATURE) {
+            if (!Double.isInfinite(Datacenter.target(StarkConfig.Logic.MEMORY_HEAT, 0)) || Datacenter.fansNeeded(StarkConfig.Logic.MEMORY_HEAT, 0) != 1
+                    || Datacenter.fansNeeded(0, 0) != 0 || Datacenter.target(3.0, StarkConfig.Logic.FAN_COOLING) != StarkConfig.Logic.AMBIENT_TEMPERATURE) {
                 throw new GameTestAssertException("De rekenregels voor één rack kloppen niet");
             }
-            int steps = settleUntil(level, core, () -> b.temperature() >= LogicBalance.WARM_TEMPERATURE, 1000);
-            if (b.temperature() < LogicBalance.WARM_TEMPERATURE) {
+            int steps = settleUntil(level, core, () -> b.temperature() >= StarkConfig.Logic.WARM_TEMPERATURE, 1000);
+            if (b.temperature() < StarkConfig.Logic.WARM_TEMPERATURE) {
                 throw new GameTestAssertException("Rack B (alleen RAM, geen fan) zou warm moeten worden, maar is na " + steps
                         + " stappen " + Datacenter.degrees(b.temperature()));
             }
-            if (a.temperature() >= LogicBalance.coolAgainTemperature()) {
+            if (a.temperature() >= LogicStats.coolAgainTemperature()) {
                 throw new GameTestAssertException("Rack A (met fan) zou koel moeten blijven, niet " + Datacenter.degrees(a.temperature()));
             }
             if (Math.abs(core.datacenter().temperature() - b.temperature()) > 0.01) {
@@ -181,7 +182,7 @@ public final class DatacenterGameTests {
                         + Datacenter.degrees(core.datacenter().temperature()));
             }
             LogicServer.Stats hot = LogicServer.stats(level, core);
-            if (!hot.warm() || hot.reactionTicks() != LogicBalance.reactionTicks(1.0 / LogicBalance.WARM_SLOWDOWN)) {
+            if (!hot.warm() || hot.reactionTicks() != LogicStats.reactionTicks(1.0 / StarkConfig.Logic.WARM_SLOWDOWN)) {
                 throw new GameTestAssertException("Eén warm rack zou de hele server half zo snel moeten maken: " + hot.reactionTicks() + " ticks");
             }
             BlockPos bAbs = helper.absolutePos(bPos);
@@ -199,9 +200,9 @@ public final class DatacenterGameTests {
             }
             // Een fan in rack B: het koelt weer af.
             b.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
-            settleUntil(level, core, () -> b.temperature() < LogicBalance.coolAgainTemperature() - 1, 200);
+            settleUntil(level, core, () -> b.temperature() < LogicStats.coolAgainTemperature() - 1, 200);
             settle(level, core, 1);
-            if (b.temperature() >= LogicBalance.coolAgainTemperature() || LogicServer.stats(level, core).warm()) {
+            if (b.temperature() >= LogicStats.coolAgainTemperature() || LogicServer.stats(level, core).warm()) {
                 throw new GameTestAssertException("Met een fan zou rack B weer koel moeten worden, niet " + Datacenter.degrees(b.temperature()));
             }
             if (!logged(core, EventLog.Type.HEAT, "cool again")) {
@@ -298,10 +299,10 @@ public final class DatacenterGameTests {
                 updates++;
             }
             if (!hot.isBurning() || setup.rackEntity(helper).isBurning()
-                    || setup.rackEntity(helper).temperature() >= LogicBalance.HOT_TEMPERATURE) {
+                    || setup.rackEntity(helper).temperature() >= StarkConfig.Logic.HOT_TEMPERATURE) {
                 throw new GameTestAssertException("Het rack met de GPU's zou in brand moeten staan (na " + updates + " keer), niet het andere");
             }
-            if (updates * 40 < LogicBalance.FIRE_DELAY_TICKS) {
+            if (updates * 40 < StarkConfig.Logic.FIRE_DELAY_TICKS) {
                 throw new GameTestAssertException("Het rack vatte te snel vlam: na " + updates * 40 + " ticks");
             }
             helper.assertBlockPresent(net.minecraft.world.level.block.Blocks.FIRE, gpuRack.above());
@@ -414,9 +415,9 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("Backup naar B mislukte: " + chosen.text() + " / " + made.text());
             }
             int size = Backups.size(a.logic());
-            if (datacenters.free(atB, null, Backups.KEEP) != LogicBalance.BLOCKS_PER_SSD - size) {
+            if (datacenters.free(atB, null, StarkConfig.Logic.BACKUPS_KEPT) != StarkConfig.Logic.BLOCKS_PER_SSD - size) {
                 throw new GameTestAssertException("De backup zou " + size + " blokjes op B moeten innemen, er is nog "
-                        + datacenters.free(atB, null, Backups.KEEP) + " vrij");
+                        + datacenters.free(atB, null, StarkConfig.Logic.BACKUPS_KEPT) + " vrij");
             }
             // Brand op A: alles weg. Restore zet het terug.
             a.logic().wipe();
@@ -431,8 +432,8 @@ public final class DatacenterGameTests {
                 backupAction(owner, a, "backup_now", "", 0);
             }
             long ofA = datacenters.backupsOf(owner.getUUID()).stream().filter(item -> item.source().equals(atA)).count();
-            if (ofA != Backups.KEEP) {
-                throw new GameTestAssertException("Er zouden " + Backups.KEEP + " backups van A moeten staan, niet " + ofA);
+            if (ofA != StarkConfig.Logic.BACKUPS_KEPT) {
+                throw new GameTestAssertException("Er zouden " + StarkConfig.Logic.BACKUPS_KEPT + " backups van A moeten staan, niet " + ofA);
             }
             // B maakt automatisch een backup naar A (de eerste meteen).
             backupAction(owner, b, "backup_target", Datacenters.key(atA), 0);
@@ -477,8 +478,8 @@ public final class DatacenterGameTests {
         helper.runAfterDelay(3, () -> {
             StarkTechGameTests.startServer(helper, setup.rack(), core);
             settle(level, core, 1);
-            if (DatacenterBrain.delayFor(owner) != LogicBalance.brainDelayTicks(1.0)) {
-                throw new GameTestAssertException("Met 1 CPU zou het brein " + LogicBalance.brainDelayTicks(1.0)
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(1.0)) {
+                throw new GameTestAssertException("Met 1 CPU zou het brein " + LogicStats.brainDelayTicks(1.0)
                         + " ticks moeten wachten, niet " + DatacenterBrain.delayFor(owner));
             }
             if (!DatacenterBrain.sourceFor(owner).equals(core.hostname())) {
@@ -491,18 +492,18 @@ public final class DatacenterGameTests {
             // Een GPU erbij: kracht 1 + 2 = 3.
             setup.rackEntity(helper).parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
             settle(level, core, 1);
-            if (DatacenterBrain.delayFor(owner) != LogicBalance.brainDelayTicks(3.0)) {
-                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicBalance.brainDelayTicks(3.0)
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0)) {
+                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicStats.brainDelayTicks(3.0)
                         + " ticks moeten zijn, niet " + DatacenterBrain.delayFor(owner));
             }
             // Warm: half zo snel.
-            setup.rackEntity(helper).setTemperature(LogicBalance.WARM_TEMPERATURE + 5);
+            setup.rackEntity(helper).setTemperature(StarkConfig.Logic.WARM_TEMPERATURE + 5);
             LogicServer.forgetAll();
             core.datacenter().update(level, core);
-            setup.rackEntity(helper).setTemperature(LogicBalance.WARM_TEMPERATURE + 5);
+            setup.rackEntity(helper).setTemperature(StarkConfig.Logic.WARM_TEMPERATURE + 5);
             LogicServer.forgetAll();
             core.datacenter().update(level, core);
-            if (DatacenterBrain.delayFor(owner) != LogicBalance.brainDelayTicks(3.0 / LogicBalance.WARM_SLOWDOWN)) {
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 / StarkConfig.Logic.WARM_SLOWDOWN)) {
                 throw new GameTestAssertException("Warm zou het brein half zo snel moeten zijn: " + DatacenterBrain.delayFor(owner));
             }
             // Nadenken: het datacenter werkt hard, en de Monitor zegt voor wie.

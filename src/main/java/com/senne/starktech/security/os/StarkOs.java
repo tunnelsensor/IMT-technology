@@ -1,12 +1,12 @@
 package com.senne.starktech.security.os;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.network.EdithMessagePayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.OsActionPayload;
 import com.senne.starktech.network.OsOpenPayload;
 import com.senne.starktech.network.OsSnapshotPayload;
-import com.senne.starktech.security.SecurityBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.security.SecurityDroneEntity;
@@ -693,12 +693,12 @@ public final class StarkOs {
     public static void springTrap(ServerPlayer reader, SecurityCoreBlockEntity core, String path) {
         ServerLevel level = reader.serverLevel();
         String name = reader.getGameProfile().getName();
-        long until = level.getGameTime() + SecurityBalance.TRAP_LOCKOUT;
+        long until = level.getGameTime() + StarkConfig.Security.TRAP_LOCKOUT;
         core.logEvent(EventLog.Type.TRAP, name + " opened the trap file " + path);
         LOCKOUTS.put(reader.getUUID(), new Lockout(core.getBlockPos().immutable(), until));
         close(reader);
         reader.displayClientMessage(Component.translatable("os.starktech.msg.trap_sprung",
-                VirtualFs.nameOf(path), SecurityBalance.TRAP_LOCKOUT / 20).withStyle(ChatFormatting.RED), true);
+                VirtualFs.nameOf(path), StarkConfig.Security.TRAP_LOCKOUT / 20).withStyle(ChatFormatting.RED), true);
         level.playSound(null, core.getBlockPos(), SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2.0f, 0.6f);
         // De eigenaar weet het meteen (waar hij ook is).
         ServerPlayer owner = core.ownerId() == null || level.getServer() == null ? null

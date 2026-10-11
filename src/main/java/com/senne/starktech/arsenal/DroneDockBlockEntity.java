@@ -1,5 +1,6 @@
 package com.senne.starktech.arsenal;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
 import com.senne.starktech.registry.ModSounds;
@@ -119,17 +120,17 @@ public class DroneDockBlockEntity extends BlockEntity {
         float nowHealth = current.health();
         if (nowPresent && !current.isFullyRepaired()) {
             // Per halve seconde de helft van wat hij per seconde repareert.
-            double repair = ArsenalBalance.DOCK_REPAIR_PER_SECOND * CHECK_TICKS / 20.0;
-            int cost = (int) Math.ceil(repair * ArsenalBalance.DOCK_ENERGY_PER_HEALTH);
+            double repair = StarkConfig.Power.DOCK_REPAIR_PER_SECOND * CHECK_TICKS / 20.0;
+            int cost = (int) Math.ceil(repair * StarkConfig.Power.DOCK_ENERGY_PER_HEALTH);
             if (StarkGrid.available(level, pos) >= cost && StarkGrid.draw(level, pos, cost) >= cost) {
-                nowHealth = (float) Math.min(ArsenalBalance.DRONE_MAX_HEALTH, nowHealth + repair);
+                nowHealth = (float) Math.min(StarkConfig.Drones.HEALTH, nowHealth + repair);
                 ArsenalServer.setHealth(player, current.id(), nowHealth);
                 nowRepairing = true;
                 level.sendParticles(ParticleTypes.ELECTRIC_SPARK, pos.getX() + 0.5, pos.getY() + 0.7, pos.getZ() + 0.5,
                         2, 0.2, 0.1, 0.2, 0.05);
             }
         }
-        float fraction = nowHealth / (float) ArsenalBalance.DRONE_MAX_HEALTH;
+        float fraction = nowHealth / (float) StarkConfig.Drones.HEALTH;
         if (nowPresent != present || nowRepairing != repairing || Math.abs(fraction - health) > 0.001f) {
             present = nowPresent;
             repairing = nowRepairing;

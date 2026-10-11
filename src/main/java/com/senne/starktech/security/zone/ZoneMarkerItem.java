@@ -1,9 +1,9 @@
 package com.senne.starktech.security.zone;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.security.SecurityBalance;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.security.os.EventLog;
@@ -159,13 +159,13 @@ public class ZoneMarkerItem extends Item {
             return;
         }
         List<ZoneBox> boxes = new ArrayList<>(core.zoneBoxes());
-        if (boxes.size() >= SecurityBalance.ZONE_MAX_BOXES) {
-            tell(player, Component.translatable("zone.starktech.marker.full", SecurityBalance.ZONE_MAX_BOXES), true);
+        if (boxes.size() >= StarkConfig.Security.ZONE_MAX_BOXES) {
+            tell(player, Component.translatable("zone.starktech.marker.full", StarkConfig.Security.ZONE_MAX_BOXES), true);
             return;
         }
         ZoneBox fittedBox = box.clamp(core.zoneLow(), core.zoneHigh());
         if (fittedBox == null) {
-            tell(player, Component.translatable("zone.starktech.marker.no_core", SecurityBalance.ZONE_REACH), true);
+            tell(player, Component.translatable("zone.starktech.marker.no_core", StarkConfig.Security.ZONE_REACH), true);
             return;
         }
         if (core.zoneBoxBlocked(fittedBox)) {
@@ -178,7 +178,7 @@ public class ZoneMarkerItem extends Item {
         core.logEvent(EventLog.Type.ZONE, "Zone: box " + fitted.size() + " added (" + added.size() + ")");
         tell(player, added.equals(box)
                 ? Component.translatable("zone.starktech.marker.added", fitted.size(), added.size(), added.volume())
-                : Component.translatable("zone.starktech.marker.added_cut", fitted.size(), SecurityBalance.ZONE_REACH,
+                : Component.translatable("zone.starktech.marker.added_cut", fitted.size(), StarkConfig.Security.ZONE_REACH,
                         added.size(), added.volume()), false);
         stack.set(ModDataComponents.ZONE_SELECTION.get(), ZoneSelection.EMPTY);
         player.playNotifySound(ModSounds.EDITH_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
@@ -255,7 +255,7 @@ public class ZoneMarkerItem extends Item {
         if (here != null && here.ownerId() != null) {
             tell(player, Component.translatable("zone.starktech.marker.not_yours", here.ownerName()), true);
         } else {
-            tell(player, Component.translatable("zone.starktech.marker.no_core", SecurityBalance.ZONE_REACH), true);
+            tell(player, Component.translatable("zone.starktech.marker.no_core", StarkConfig.Security.ZONE_REACH), true);
         }
         return null;
     }
