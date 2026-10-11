@@ -5,11 +5,14 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.station.ChargerMenu;
+import com.senne.starktech.client.hud.PowerReadout;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -45,6 +48,8 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
     private static final int FRAME = HudStyle.argb(255, 0x465460);
     private static final int WELL = HudStyle.argb(255, 0x0E1216);
     private static final int SLOT = HudStyle.argb(255, 0x141A20);
+    /** Breedte van het overzicht van het net, naast het scherm. */
+    private static final int GRID_W = 150;
 
     public ChargerScreen(ChargerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -131,6 +136,7 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
+        renderGrid(g);
         ItemStack glasses = menu.getGlasses();
         if (EdithData.isGlasses(glasses) && over(mouseX, mouseY, GLASSES_BAR_X, GLASSES_BAR_Y,
                 GLASSES_BAR_W, GLASSES_BAR_H)) {
@@ -142,6 +148,80 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
                     Component.translatable("screen.starktech.charger.stored", menu.getEnergy(), capacity()),
                     Component.translatable("screen.starktech.charger.total", menu.getTotalProduced()),
                     status()), mouseX, mouseY);
+        }
+    }
+
+    /**
+     * Naast het scherm: het hele stroomnet waar dit blok aan hangt (jouw wens, 11 oktober: "zodat je weet
+     * of je powerproduction voldoende is"). Wat alle generatoren samen maken, wat alle apparaten gebruiken,
+     * wat erin zit, en of dat genoeg is. In de tijd van de knop /tick (per tick, seconde, minuut of uur).
+     * De server meet steeds 6 seconden (zie ChargerBlockEntity.GRID_WINDOW).
+     */
+    private void renderGrid(GuiGraphics g) {
+        // Rechts of links van het scherm, waar het meeste plek is. Is er minder plek dan GRID_W, dan wordt
+        // het overzicht smaller en de tekst kleiner, zodat het nooit over het scherm heen valt.
+        int spaceRight = width - (leftPos + imageWidth) - 6;
+        int spaceLeft = leftPos - 6;
+        int panelW = Math.max(60, Math.min(GRID_W, Math.max(spaceRight, spaceLeft)));
+        float scale = Math.min(1.0f, panelW / (float) GRID_W);
+        int x = spaceRight >= spaceLeft ? leftPos + imageWidth + 4 : leftPos - 4 - panelW;
+        PowerUnit unit = PowerUnit.current();
+        List<FormattedCharSequence> lines = new ArrayList<>();
+        List<Integer> colours = new ArrayList<>();
+        int white = HudStyle.argb(230, HudStyle.WHITE);
+        int grey = HudStyle.argb(170, HudStyle.WHITE);
+        if (menu.gridSources() <= 0) {
+            add(lines, colours, Component.translatable("screen.starktech.grid.measuring"), grey);
+        } else {
+            float made = menu.gridMade();
+            float used = menu.gridUsed();
+            float missed = menu.gridMissed();
+            int stored = menu.gridStored();
+            int room = menu.gridCapacity();
+            add(lines, colours, Component.translatable("screen.starktech.grid.sources", menu.gridSources()), grey);
+            add(lines, colours, Component.translatable("screen.starktech.grid.makes", unit.rate(made)), white);
+            add(lines, colours, Component.translatable("screen.starktech.grid.uses", unit.rate(used)), white);
+            add(lines, colours, Component.translatable("screen.starktech.grid.stored", stored, room), white);
+            // Het oordeel: komt er een apparaat tekort, haalt het net meer weg dan erbij komt, of is het genoeg?
+            Component verdict;
+            int colour;
+            if (missed > 0.005f) {
+                verdict = Component.translatable("screen.starktech.grid.short", unit.rate(missed));
+                colour = HudStyle.RED;
+            } else if (made + 0.005f >= used) {
+                verdict = Component.translatable("screen.starktech.grid.enough", unit.rate(made - used));
+                colour = HudStyle.GREEN;
+            } else if (room > 0 && stored >= room * 0.95f) {
+                verdict = Component.translatable("screen.starktech.grid.full"); // vol: hij maakt pas weer als er plek is
+                colour = HudStyle.GREEN;
+            } else {
+                verdict = Component.translatable("screen.starktech.grid.draining", unit.rate(used - made),
+                        PowerReadout.timeLeft(stored, (used - made) * 20));
+                colour = HudStyle.ORANGE;
+            }
+            lines.add(FormattedCharSequence.EMPTY);
+            colours.add(white);
+            add(lines, colours, verdict, HudStyle.argb(255, colour));
+        }
+
+        int height = Math.round((16 + lines.size() * 10) * scale) + 4;
+        box(g, x, topPos, panelW, height, HudStyle.argb(235, 0x0E1216));
+        g.pose().pushPose();
+        g.pose().translate(x + 5, topPos + 5, 0);
+        g.pose().scale(scale, scale, 1.0f);
+        g.drawString(font, Component.translatable("screen.starktech.grid.title"), 0, 0,
+                HudStyle.argb(255, HudStyle.CYAN), false);
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), 0, 12 + i * 10, colours.get(i), false);
+        }
+        g.pose().popPose();
+    }
+
+    /** Een tekst (zo nodig over meer regels) met zijn kleur aan het overzicht toevoegen. */
+    private void add(List<FormattedCharSequence> lines, List<Integer> colours, Component text, int colour) {
+        for (FormattedCharSequence line : font.split(text, GRID_W - 12)) {
+            lines.add(line);
+            colours.add(colour);
         }
     }
 

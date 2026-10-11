@@ -922,6 +922,12 @@ precies mee (ook in de batterij van de bril). Tijden in ticks en aantallen worde
 tick of een halve drone bestaat niet; seconden en minuten worden eerst omgerekend, dus `0.5` seconde is
 echt 10 ticks.
 
+**Is er genoeg stroom?** Open een generator: naast het scherm staat het overzicht van **het hele net**
+waar hij aan hangt. Wat alle generatoren samen maken, wat alle apparaten gebruiken, wat erin zit, en het
+oordeel: groen = genoeg (met hoeveel er over is), oranje = je teert in op wat er opgeslagen is (met hoe
+lang dat nog duurt), rood = een apparaat krijgt zijn stroom niet. Het net meet steeds 6 seconden, dus na
+het neerzetten duurt het even.
+
 In de schermen van de **generator**, de **koepel** en de **Arc Lamp** zit een knopje **/tick**. Klik erop om
 stroom te zien **per tick, per seconde, per minuut of per uur**. De keuze geldt meteen voor alle schermen
 (ook het verbruik in het G-menu en de app Zones) en blijft bewaard (`powerUnit` in `starktech-client.toml`).

@@ -603,6 +603,12 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         int zoneCost = zoneUpkeep();
         boolean zonePowered = online && available >= StarkConfig.Power.SECURITY_CORE_UPKEEP + zoneCost;
         updateZonePower(level, zonePowered, zoneCost);
+        // Wat er niet betaald kon worden, telt als tekort op het net (voor het scherm van een generator).
+        if (!online) {
+            com.senne.starktech.energy.StarkGrid.missed(level, worldPosition, StarkConfig.Power.SECURITY_CORE_UPKEEP + zoneCost);
+        } else if (!zonePowered) {
+            com.senne.starktech.energy.StarkGrid.missed(level, worldPosition, zoneCost);
+        }
         if (online) {
             com.senne.starktech.energy.StarkGrid.pay(level, worldPosition,
                     StarkConfig.Power.SECURITY_CORE_UPKEEP + (zonePowered ? zoneCost : 0));

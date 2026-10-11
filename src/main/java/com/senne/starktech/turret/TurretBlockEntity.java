@@ -235,6 +235,7 @@ public class TurretBlockEntity extends BlockEntity {
     private void fireRocket(ServerLevel level, LivingEntity target) {
         // Ook de lanceerbuis werkt op stroom (een beetje per raket).
         if (StarkGrid.available(level, worldPosition) < StarkConfig.Power.TURRET_ROCKET) {
+            StarkGrid.missed(level, worldPosition, StarkConfig.Power.TURRET_ROCKET);
             return;
         }
         MiniRocketEntity rocket = ModEntities.MINI_ROCKET.get().create(level);

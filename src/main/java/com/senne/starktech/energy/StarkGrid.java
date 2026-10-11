@@ -97,7 +97,26 @@ public final class StarkGrid {
                 break;
             }
         }
+        if (taken < amount) {
+            missed(sources, amount - taken);
+        }
         return taken;
+    }
+
+    /**
+     * Dit apparaat wilde zoveel stroom maar kreeg het niet (het net was te leeg). Dat vertellen we aan
+     * zijn leveranciers, zodat het scherm van een generator kan zeggen dat er te weinig stroom is.
+     */
+    public static void missed(Level level, BlockPos device, double amount) {
+        if (amount > 0) {
+            missed(sources(level, device), amount);
+        }
+    }
+
+    private static void missed(List<EnergySource> sources, double amount) {
+        for (EnergySource source : sources) {
+            source.missed(amount / sources.size());
+        }
     }
 
     /**
@@ -113,6 +132,7 @@ public final class StarkGrid {
             return true;
         }
         if (available(level, device) < Math.max(1.0, Math.ceil(amount))) {
+            missed(level, device, amount);
             return false;
         }
         Map<BlockPos, Double> perLevel = OWED.computeIfAbsent(level.dimension(), key -> new HashMap<>());

@@ -4,6 +4,7 @@ import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.energy.EnergyCarry;
 import com.senne.starktech.energy.EnergySource;
+import com.senne.starktech.energy.StarkGrid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
@@ -50,7 +51,25 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
      */
     public static final int DATA_TOTAL_LOW = 2;
     public static final int DATA_TOTAL_HIGH = 3;
-    public static final int DATA_COUNT = 4;
+    /**
+     * Het hele stroomnet waar dit blok aan hangt, voor het overzicht naast het scherm. Elk getal in twee
+     * helften (net als het totaal): wat alle generatoren samen maken, wat het net gebruikt, wat apparaten
+     * tekortkomen (die drie in honderdsten per tick), wat erin zit en wat erin past.
+     */
+    public static final int DATA_GRID_MADE = 4;
+    public static final int DATA_GRID_USED = 6;
+    public static final int DATA_GRID_MISSED = 8;
+    public static final int DATA_GRID_STORED = 10;
+    public static final int DATA_GRID_CAPACITY = 12;
+    /** Hoeveel generatoren er op het net hangen; 0 = we zijn nog aan het meten. */
+    public static final int DATA_GRID_SOURCES = 14;
+    public static final int DATA_COUNT = 15;
+
+    /**
+     * Zo lang (ticks) meten we voor het overzicht van het net: 6 seconden. Dan tellen ook apparaten die
+     * maar om de één of twee seconden betalen (serverkast, kern, camera) eerlijk mee.
+     */
+    public static final int GRID_WINDOW = 120;
 
     private NonNullList<ItemStack> items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
     /**
@@ -65,6 +84,20 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
     /** Het stukje van STATION_CHARGE_RATE dat nog geen hele stroom is (zie EnergyCarry). */
     private final EnergyCarry charge = new EnergyCarry();
 
+    // Meten voor het overzicht van het net: wat er dit venster bij kwam, eruit ging en tekort was...
+    private double windowMade;
+    private double windowUsed;
+    private double windowMissed;
+    private int windowTicks;
+    // ...en het gemiddelde per tick van het vorige venster.
+    private double madePerTick;
+    private double usedPerTick;
+    private double missedPerTick;
+    private boolean measured;
+    /** Het hele net (zie DATA_GRID_...): maakt, gebruikt, tekort (honderdsten per tick), opgeslagen, past. */
+    private final int[] grid = new int[5];
+    private int gridSources;
+
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
@@ -73,7 +106,11 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
                 case DATA_RATE -> (int) Math.min(0xFFFF, Math.round(rate * 100));
                 case DATA_TOTAL_LOW -> total() & 0xFFFF;
                 case DATA_TOTAL_HIGH -> (total() >>> 16) & 0xFFFF;
-                default -> 0;
+                case DATA_GRID_SOURCES -> gridSources;
+                default -> index >= DATA_GRID_MADE && index < DATA_GRID_SOURCES
+                        ? (index % 2 == 0 ? grid[(index - DATA_GRID_MADE) / 2] & 0xFFFF
+                                : (grid[(index - DATA_GRID_MADE) / 2] >>> 16) & 0xFFFF)
+                        : 0;
             };
         }
 
@@ -84,7 +121,14 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
                 case DATA_RATE -> rate = value;
                 case DATA_TOTAL_LOW -> totalProduced = (total() & ~0xFFFF) | (value & 0xFFFF);
                 case DATA_TOTAL_HIGH -> totalProduced = (total() & 0xFFFF) | ((value & 0xFFFF) << 16);
-                default -> { }
+                case DATA_GRID_SOURCES -> gridSources = value;
+                default -> {
+                    if (index >= DATA_GRID_MADE && index < DATA_GRID_SOURCES) {
+                        int slot = (index - DATA_GRID_MADE) / 2;
+                        grid[slot] = index % 2 == 0 ? (grid[slot] & ~0xFFFF) | (value & 0xFFFF)
+                                : (grid[slot] & 0xFFFF) | ((value & 0xFFFF) << 16);
+                    }
+                }
             }
         }
 
@@ -119,9 +163,50 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         int taken = Math.min(max, energy());
         if (taken > 0) {
             energy -= taken;
+            windowUsed += taken;
             setChanged();
         }
         return taken;
+    }
+
+    @Override
+    public void missed(double amount) {
+        windowMissed += amount;
+    }
+
+    @Override
+    public double madePerTick() {
+        return madePerTick;
+    }
+
+    @Override
+    public double usedPerTick() {
+        return usedPerTick;
+    }
+
+    @Override
+    public double missedPerTick() {
+        return missedPerTick;
+    }
+
+    @Override
+    public boolean measured() {
+        return measured;
+    }
+
+    /** Het hele net (voor de tests): wat alle generatoren samen per tick maken... */
+    public float gridMadePerTick() {
+        return grid[0] / 100.0f;
+    }
+
+    /** ...wat het net per tick gebruikt... */
+    public float gridUsedPerTick() {
+        return grid[1] / 100.0f;
+    }
+
+    /** ...en wat apparaten per tick tekortkomen. */
+    public float gridMissedPerTick() {
+        return grid[2] / 100.0f;
     }
 
     /** Stroom erbij zetten zonder dat hij die zelf opwekt (voor de tests). */
@@ -143,7 +228,8 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
     // ---------------------------------------------------------------- Elke tick (alleen server)
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
-        double made = Math.max(0, Math.min(produce(level, pos), capacity() - energy));
+        double produced = Math.max(0, produce(level, pos));
+        double made = Math.max(0, Math.min(produced, capacity() - energy));
         if (made > 0) {
             energy += made;
             totalProduced += made;
@@ -154,6 +240,54 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         if (changed) {
             setChanged();
         }
+        measure(level, pos, produced);
+    }
+
+    /**
+     * Voor het overzicht van het net: optellen wat hij kon maken (ook als hij vol zit), en na elk venster
+     * het gemiddelde per tick bewaren. Elke seconde tellen we alle generatoren op het net bij elkaar op.
+     */
+    private void measure(ServerLevel level, BlockPos pos, double produced) {
+        windowMade += produced;
+        if (++windowTicks >= GRID_WINDOW) {
+            madePerTick = windowMade / windowTicks;
+            usedPerTick = windowUsed / windowTicks;
+            missedPerTick = windowMissed / windowTicks;
+            windowMade = 0;
+            windowUsed = 0;
+            windowMissed = 0;
+            windowTicks = 0;
+            measured = true;
+        }
+        if (measured && Math.floorMod(level.getGameTime() + pos.hashCode(), 20) == 0) {
+            double made = madePerTick;
+            double used = usedPerTick;
+            double missed = missedPerTick;
+            long stored = energy();
+            long room = capacity();
+            int count = 1;
+            for (EnergySource other : StarkGrid.sources(level, pos)) {
+                if (other == this) {
+                    continue;
+                }
+                made += other.madePerTick();
+                used += other.usedPerTick();
+                missed += other.missedPerTick();
+                stored += other.energy();
+                room += other.capacity();
+                count++;
+            }
+            grid[0] = hundredths(made);
+            grid[1] = hundredths(used);
+            grid[2] = hundredths(missed);
+            grid[3] = (int) Math.min(Integer.MAX_VALUE, stored);
+            grid[4] = (int) Math.min(Integer.MAX_VALUE, room);
+            gridSources = count;
+        }
+    }
+
+    private static int hundredths(double perTick) {
+        return (int) Math.min(Integer.MAX_VALUE, Math.round(perTick * 100));
     }
 
     /** Stuurt energie uit de buffer naar de bril in het slot. */
@@ -165,6 +299,7 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         int give = Math.min(charge.take(Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy)), energy());
         int added = EdithData.addEnergy(glasses, give);
         energy -= added;
+        windowUsed += added; // ook de bril in het vakje gebruikt stroom
         return added > 0;
     }
 

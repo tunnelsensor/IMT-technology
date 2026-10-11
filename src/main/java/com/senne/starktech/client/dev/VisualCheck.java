@@ -1233,7 +1233,8 @@ public final class VisualCheck {
             t.close(0);
         }
 
-        // --- De knop /tick, /sec, /min, /hour: het scherm van een warmtegenerator, vier keer op de knop geklikt
+        // --- De knop /tick, /sec, /min, /hour en het overzicht van het net: een warmtegenerator met drie
+        // holotafels erop (die gebruiken meer dan hij maakt), het scherm, en vier keer op de knop geklikt.
         if (want("power")) {
             BlockPos at = new BlockPos(-8, -60, 4);
             t.onServer(0, player -> {
@@ -1242,11 +1243,16 @@ public final class VisualCheck {
                 if (level.getBlockEntity(at) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
                     generator.setItem(com.senne.starktech.station.ChargerBlockEntity.SLOT_FUEL,
                             new ItemStack(net.minecraft.world.item.Items.COAL, 8));
+                    generator.fill(5_000);
+                }
+                for (BlockPos table : new BlockPos[] {at.east(), at.west(), at.north()}) {
+                    level.setBlockAndUpdate(table, ModBlocks.HOLO_TABLE.get().defaultBlockState());
                 }
             });
             t.step(0, () -> com.senne.starktech.client.EdithClientConfig.setPowerUnit(com.senne.starktech.client.PowerUnit.TICK));
             t.stand(10, at.getX() + 0.5, -60, at.getZ() + 3.5, 180, 25);
-            t.onServer(20, player -> {
+            // Het net meet 6 seconden voordat het overzicht iets zegt.
+            t.onServer(150, player -> {
                 if (player.serverLevel().getBlockEntity(at) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
                     player.openMenu(generator, buffer -> buffer.writeBoolean(generator.usesFuel()));
                 }

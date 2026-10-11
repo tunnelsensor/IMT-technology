@@ -378,6 +378,53 @@ public final class StarkTechGameTests {
         });
     }
 
+    /**
+     * Het overzicht van het net naast het scherm van een generator (jouw wens, 11 oktober: "zodat je weet
+     * of je powerproduction voldoende is"). Een generator die 0.25 per tick maakt, met een apparaat dat 0.5
+     * per tick betaalt: het overzicht zegt 0.25 gemaakt en 0.5 gebruikt. En een lege generator zonder
+     * brandstof, met een apparaat dat 2 per tick wil: dat telt als 2 tekort.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 240, batch = "gridstats")
+    public static void power_grid_overview_measures(GameTestHelper helper) {
+        float oldFuel = StarkConfig.Power.HEAT_RATE_FUEL;
+        float oldAmbient = StarkConfig.Power.HEAT_RATE_AMBIENT;
+        StarkConfig.Power.HEAT_RATE_FUEL = 0.25f;
+        StarkConfig.Power.HEAT_RATE_AMBIENT = 0.0f;
+        BlockPos busyPos = new BlockPos(2, 3, 2);
+        helper.setBlock(busyPos, ModBlocks.HEAT_GENERATOR.get());
+        ChargerBlockEntity busy = (ChargerBlockEntity) helper.getBlockEntity(busyPos);
+        busy.fill(1000);
+        busy.setItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(Items.COAL));
+        BlockPos emptyPos = new BlockPos(10, 3, 10);
+        helper.setBlock(emptyPos, ModBlocks.HEAT_GENERATOR.get());
+        ChargerBlockEntity empty = (ChargerBlockEntity) helper.getBlockEntity(emptyPos);
+        BlockPos busyDevice = helper.absolutePos(busyPos.east());
+        BlockPos hungryDevice = helper.absolutePos(emptyPos.east());
+        helper.onEachTick(() -> {
+            com.senne.starktech.energy.StarkGrid.pay(helper.getLevel(), busyDevice, 0.5);
+            com.senne.starktech.energy.StarkGrid.pay(helper.getLevel(), hungryDevice, 2.0);
+        });
+        // Na 6 seconden meten (en hooguit een seconde om op te tellen) staat het in het overzicht.
+        helper.runAfterDelay(170, () -> {
+            try {
+                if (Math.abs(busy.gridMadePerTick() - 0.25f) > 0.02f || Math.abs(busy.gridUsedPerTick() - 0.5f) > 0.05f
+                        || busy.gridMissedPerTick() > 0.01f) {
+                    throw new GameTestAssertException("Het net zegt: maakt " + busy.gridMadePerTick() + ", gebruikt "
+                            + busy.gridUsedPerTick() + ", tekort " + busy.gridMissedPerTick()
+                            + " per tick; verwacht 0.25, 0.5 en 0");
+                }
+                if (Math.abs(empty.gridMissedPerTick() - 2.0f) > 0.1f || empty.gridMadePerTick() > 0.01f) {
+                    throw new GameTestAssertException("Het lege net zegt: maakt " + empty.gridMadePerTick() + ", tekort "
+                            + empty.gridMissedPerTick() + " per tick; verwacht 0 en 2");
+                }
+            } finally {
+                StarkConfig.Power.HEAT_RATE_FUEL = oldFuel;
+                StarkConfig.Power.HEAT_RATE_AMBIENT = oldAmbient;
+            }
+            helper.succeed();
+        });
+    }
+
     // ================================================================ De beveiliging van de Stark Tower
 
     /** Zet een beveiligingskern neer (zonder eigenaar, of met de gegeven eigenaar). */

@@ -112,6 +112,9 @@ public class ArcLampBlockEntity extends BlockEntity {
         int keepOn = Math.max(1, (int) Math.ceil(perTick));
         int start = Math.max(1, (int) Math.ceil(perTick * StarkConfig.Power.ARC_LAMP_START_TICKS));
         boolean on = StarkGrid.available(level, pos) >= (lit ? keepOn : start);
+        if (!on) {
+            StarkGrid.missed(level, pos, perTick); // hij wil branden maar kan niet: tekort op het net
+        }
         if (on) {
             owed += perTick;
             int pay = (int) owed;

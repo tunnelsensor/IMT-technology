@@ -195,7 +195,13 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         if (!wanted && on) {
             setActive(level, pos, state, false);
         } else if (wanted && !on) {
-            if (canStart(level, pos) && pay(level, pos)) {
+            boolean enough = canStart(level, pos);
+            if (!enough) {
+                // Te weinig stroom om aan te gaan: dat telt als tekort op het net (twee seconden, tot de
+                // volgende poging), zodat het scherm van een generator zegt dat er te weinig stroom is.
+                StarkGrid.missed(level, pos, StarkConfig.Power.LASER_WALL_UPKEEP * UPKEEP_INTERVAL * 2.0);
+            }
+            if (enough && pay(level, pos)) {
                 setActive(level, pos, state, true);
             } else {
                 if (!retry && level.hasNeighborSignal(pos) && !level.getBlockTicks().hasScheduledTick(pos, this)) {

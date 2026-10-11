@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 204 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 205 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 86 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2002,6 +2002,21 @@ De stappen:
       invulling**: één keuze voor alles in plaats van per scherm. Screenshots: `-Ponly=power` (`pw01`-`pw05`:
       het generatorscherm, vier keer echt op de knop geklikt), en de knop staat ook op `99_dome_screen` en
       `lt05_lamp_screen`.
+- [x] **5. Is er genoeg stroom?** (11 oktober: "een output per instelling van tick/sec/min/hour zodat je
+      weet of je powerproduction voldoende is"). Naast het scherm van een generator staat nu een overzicht
+      van **het hele net**: hoeveel generatoren, wat ze samen **maken**, wat alle apparaten **gebruiken**,
+      wat erin zit, en een oordeel: groen "Enough power: X to spare", oranje "Not enough: running on stored
+      power, losing X. Empty in 8m 10s", of rood "Not enough power! Devices are missing X" (een apparaat
+      kreeg zijn stroom niet). Alles in de tijd van de knop /tick. Hoe: elke generator meet steeds 6
+      seconden (`ChargerBlockEntity.GRID_WINDOW`, zodat ook apparaten die om de 2 seconden betalen
+      eerlijk meetellen) wat hij kon maken, wat het net eruit haalde en wat apparaten tekortkwamen
+      (`StarkGrid.missed`: ook een laserwand of Arc Lamp die niet aan kan, een kern zonder stroom, een
+      torentje zonder stroom voor een raket); elke seconde telt hij alle generatoren op zijn net op.
+      **Mijn invulling**: een generator die vol zit, maakt even niets; dan zegt het overzicht "the generators
+      are full" in plaats van "te weinig". Het overzicht staat waar het meeste plek is (rechts of links) en
+      wordt kleiner als er weinig plek is. Een nieuwe test (`power_grid_overview_measures`): 0.25 gemaakt en
+      0.5 gebruikt wordt zo gemeten, en een lege generator met een apparaat dat 2 per tick wil, telt als 2
+      tekort. Screenshots `-Ponly=power` (met drie holotafels op één generator: oranje).
 
 ---
 

@@ -103,6 +103,43 @@ public class ChargerMenu extends AbstractContainerMenu {
                 | ((data.get(ChargerBlockEntity.DATA_TOTAL_HIGH) & 0xFFFF) << 16);
     }
 
+    // ---------------------------------------------------------------- Het hele net (overzicht naast het scherm)
+
+    /** Een getal dat in twee helften kwam (zie ChargerBlockEntity.DATA_GRID_...). */
+    private int pair(int low) {
+        return (data.get(low) & 0xFFFF) | ((data.get(low + 1) & 0xFFFF) << 16);
+    }
+
+    /** Wat alle generatoren op dit net samen per tick maken (of kunnen maken). */
+    public float gridMade() {
+        return pair(ChargerBlockEntity.DATA_GRID_MADE) / 100.0f;
+    }
+
+    /** Wat het net per tick gebruikt. */
+    public float gridUsed() {
+        return pair(ChargerBlockEntity.DATA_GRID_USED) / 100.0f;
+    }
+
+    /** Wat apparaten op het net per tick tekortkomen (0 = niemand). */
+    public float gridMissed() {
+        return pair(ChargerBlockEntity.DATA_GRID_MISSED) / 100.0f;
+    }
+
+    /** Wat er in alle generatoren samen zit. */
+    public int gridStored() {
+        return pair(ChargerBlockEntity.DATA_GRID_STORED);
+    }
+
+    /** Wat er in alle generatoren samen past. */
+    public int gridCapacity() {
+        return pair(ChargerBlockEntity.DATA_GRID_CAPACITY);
+    }
+
+    /** Hoeveel generatoren er op het net hangen; 0 = nog aan het meten. */
+    public int gridSources() {
+        return data.get(ChargerBlockEntity.DATA_GRID_SOURCES);
+    }
+
     /** Hoeveel dit apparaat kan opslaan. */
     public int getCapacity() {
         return (int) (usesFuel ? StarkConfig.Power.HEAT_CAPACITY : StarkConfig.Power.SOLAR_CAPACITY);
