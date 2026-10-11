@@ -92,9 +92,9 @@ public class ChargerMenu extends AbstractContainerMenu {
         return data.get(ChargerBlockEntity.DATA_ENERGY);
     }
 
-    /** Hoeveel het blok op dit moment oplevert (per tick). 0 = hij doet even niets. */
-    public int getRate() {
-        return data.get(ChargerBlockEntity.DATA_RATE);
+    /** Hoeveel het blok op dit moment oplevert (per tick, kan 0.3 zijn). 0 = hij doet even niets. */
+    public float getRate() {
+        return (data.get(ChargerBlockEntity.DATA_RATE) & 0xFFFF) / 100.0f; // verstuurd in honderdsten
     }
 
     /** Alles wat dit blok ooit heeft opgewekt (in twee helften verstuurd; zie DATA_TOTAL_LOW). */
@@ -105,7 +105,7 @@ public class ChargerMenu extends AbstractContainerMenu {
 
     /** Hoeveel dit apparaat kan opslaan. */
     public int getCapacity() {
-        return usesFuel ? StarkConfig.Power.HEAT_CAPACITY : StarkConfig.Power.SOLAR_CAPACITY;
+        return (int) (usesFuel ? StarkConfig.Power.HEAT_CAPACITY : StarkConfig.Power.SOLAR_CAPACITY);
     }
 
     public ItemStack getGlasses() {

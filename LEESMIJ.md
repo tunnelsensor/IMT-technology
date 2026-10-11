@@ -917,6 +917,11 @@ wereld** anders zijn, bijvoorbeeld "in deze wereld is de satelliet te sterk"? Ko
 naar `<wereld>/serverconfig/` en pas het daar aan: die kopie gaat voor. Het spel leest het bestand
 opnieuw als je het opslaat terwijl je speelt; je hoeft niets te herstarten.
 
+Alle stroomgetallen onder `[power]` mogen **kommagetallen** zijn: `0.05` per tick is 1 per seconde.
+Let op: verander je een standaardwaarde in `StarkConfig.java`, dan verandert een bestaand
+`starktech.toml` niet mee. Pas dan het `.toml`-bestand aan, of gooi het weg (dan maakt het spel een
+nieuw).
+
 Sommige getallen zijn een **rijtje per niveau**. Zo staat de herlaadtijd van de satelliet voor
 upgrade Recharge niveau 0 tot en met 10 onder `[satellite]` als
 `cooldown = [1800, 1692, 1584, ...]` (in ticks: 20 = 1 seconde). Verander de getallen, maar laat

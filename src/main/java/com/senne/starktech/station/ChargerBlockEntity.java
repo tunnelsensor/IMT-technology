@@ -2,6 +2,7 @@ package com.senne.starktech.station;
 
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.energy.EnergyCarry;
 import com.senne.starktech.energy.EnergySource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -36,7 +37,10 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
 
     /** Nummers voor de gegevens die naar het scherm gestuurd worden. */
     public static final int DATA_ENERGY = 0;
-    /** Hoeveel het blok op dit moment oplevert (per tick), zodat het scherm dat kan tonen. */
+    /**
+     * Hoeveel het blok op dit moment oplevert, in honderdsten per tick (0.3 per tick wordt 30), zodat
+     * het scherm ook kommagetallen kan tonen.
+     */
     public static final int DATA_RATE = 1;
     /**
      * Hoeveel dit blok in totaal heeft opgewekt, in twee helften.
@@ -49,20 +53,26 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
     public static final int DATA_COUNT = 4;
 
     private NonNullList<ItemStack> items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
-    private int energy;
+    /**
+     * Hoeveel stroom erin zit. Een kommagetal, zodat ook 0.3 per tick opwekken werkt: het net haalt er
+     * alleen hele stukken uit (zie {@link #energy()}), de rest groeit vanzelf aan.
+     */
+    private double energy;
     /** Wat we deze tick opwekten; puur om in het scherm te laten zien. */
-    private int rate;
+    private double rate;
     /** Alles wat dit blok ooit heeft opgewekt (voor het tekstje bij de balk). */
-    private int totalProduced;
+    private double totalProduced;
+    /** Het stukje van STATION_CHARGE_RATE dat nog geen hele stroom is (zie EnergyCarry). */
+    private final EnergyCarry charge = new EnergyCarry();
 
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
             return switch (index) {
-                case DATA_ENERGY -> energy;
-                case DATA_RATE -> rate;
-                case DATA_TOTAL_LOW -> totalProduced & 0xFFFF;
-                case DATA_TOTAL_HIGH -> (totalProduced >>> 16) & 0xFFFF;
+                case DATA_ENERGY -> (int) energy;
+                case DATA_RATE -> (int) Math.min(0xFFFF, Math.round(rate * 100));
+                case DATA_TOTAL_LOW -> total() & 0xFFFF;
+                case DATA_TOTAL_HIGH -> (total() >>> 16) & 0xFFFF;
                 default -> 0;
             };
         }
@@ -72,8 +82,8 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
             switch (index) {
                 case DATA_ENERGY -> energy = value;
                 case DATA_RATE -> rate = value;
-                case DATA_TOTAL_LOW -> totalProduced = (totalProduced & ~0xFFFF) | (value & 0xFFFF);
-                case DATA_TOTAL_HIGH -> totalProduced = (totalProduced & 0xFFFF) | ((value & 0xFFFF) << 16);
+                case DATA_TOTAL_LOW -> totalProduced = (total() & ~0xFFFF) | (value & 0xFFFF);
+                case DATA_TOTAL_HIGH -> totalProduced = (total() & 0xFFFF) | ((value & 0xFFFF) << 16);
                 default -> { }
             }
         }
@@ -92,20 +102,21 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
      * Hoeveel energie dit blok deze tick opwekt.
      * Het zonnepaneel kijkt naar de zon, de warmtegenerator naar zijn brandstof en de hitte.
      */
-    protected abstract int produce(ServerLevel level, BlockPos pos);
+    protected abstract double produce(ServerLevel level, BlockPos pos);
 
     /** Hoeveel dit blok kan opslaan. */
     public abstract int capacity();
 
+    /** Hoeveel hele stroom erin zit (wat het net eruit kan halen). */
     @Override
     public int energy() {
-        return energy;
+        return (int) energy;
     }
 
     /** Het stroomnet haalt hier stroom weg (zie StarkGrid). */
     @Override
     public int drain(int max) {
-        int taken = Math.min(max, energy);
+        int taken = Math.min(max, energy());
         if (taken > 0) {
             energy -= taken;
             setChanged();
@@ -121,17 +132,21 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
 
     /** Alles wat dit blok ooit heeft opgewekt. */
     public int totalProduced() {
-        return totalProduced;
+        return total();
+    }
+
+    /** Het totaal als heel getal (bij een paar miljard houdt het op; dat haalt niemand). */
+    private int total() {
+        return (int) Math.min(Integer.MAX_VALUE, totalProduced);
     }
 
     // ---------------------------------------------------------------- Elke tick (alleen server)
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
-        int made = Math.min(produce(level, pos), capacity() - energy);
+        double made = Math.max(0, Math.min(produce(level, pos), capacity() - energy));
         if (made > 0) {
             energy += made;
-            // Bij een paar miljard houdt het op; dat haalt niemand, maar overlopen is lelijk.
-            totalProduced = (int) Math.min(Integer.MAX_VALUE, (long) totalProduced + made);
+            totalProduced += made;
         }
         rate = made;
         boolean changed = made > 0;
@@ -147,7 +162,8 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         if (energy <= 0 || !EdithData.isGlasses(glasses)) {
             return false;
         }
-        int added = EdithData.addEnergy(glasses, Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy));
+        int give = Math.min(charge.take(Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy)), energy());
+        int added = EdithData.addEnergy(glasses, give);
         energy -= added;
         return added > 0;
     }
@@ -174,16 +190,16 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         super.loadAdditional(tag, registries);
         items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, items, registries);
-        energy = tag.getInt("Energy");
-        totalProduced = tag.getInt("TotalProduced");
+        energy = tag.getDouble("Energy"); // ook goed voor een oude wereld, waar het nog een heel getal was
+        totalProduced = tag.getDouble("TotalProduced");
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         ContainerHelper.saveAllItems(tag, items, registries);
-        tag.putInt("Energy", energy);
-        tag.putInt("TotalProduced", totalProduced);
+        tag.putDouble("Energy", energy);
+        tag.putDouble("TotalProduced", totalProduced);
     }
 
     @Override

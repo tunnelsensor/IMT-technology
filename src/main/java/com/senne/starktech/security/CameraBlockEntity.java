@@ -154,10 +154,7 @@ public class CameraBlockEntity extends BlockEntity {
     public void updateOnline(ServerLevel level, BlockPos pos, BlockState state) {
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
         boolean allowed = core == null || core.camerasEnabled();
-        boolean online = allowed && StarkGrid.available(level, pos) >= StarkConfig.Power.CAMERA_UPKEEP;
-        if (online) {
-            StarkGrid.draw(level, pos, StarkConfig.Power.CAMERA_UPKEEP);
-        }
+        boolean online = allowed && StarkGrid.pay(level, pos, StarkConfig.Power.CAMERA_UPKEEP);
         if (online != state.getValue(CameraBlock.ONLINE)) {
             level.setBlock(pos, state.setValue(CameraBlock.ONLINE, online), Block.UPDATE_CLIENTS);
         }

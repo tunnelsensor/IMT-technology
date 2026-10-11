@@ -3,6 +3,7 @@ package com.senne.starktech.station;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.UpgradeItem;
+import com.senne.starktech.energy.EnergyCarry;
 import com.senne.starktech.energy.EnergySource;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModBlockEntities;
@@ -43,7 +44,12 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     public static final int DATA_COUNT = 2;
 
     private NonNullList<ItemStack> items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
-    private int energy;
+    /** Hoeveel stroom erin zit; een kommagetal, zodat ook 0.5 per redstone werkt. */
+    private double energy;
+    /** De stukjes van de snelheden in de config die nog geen hele stroom zijn (zie EnergyCarry). */
+    private final EnergyCarry gridCarry = new EnergyCarry();
+    private final EnergyCarry storeCarry = new EnergyCarry();
+    private final EnergyCarry chargeCarry = new EnergyCarry();
     private int upgradeProgress;
 
     /** Stuurt energie en upgrade-voortgang naar het scherm van spelers die het station open hebben. */
@@ -51,7 +57,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         @Override
         public int get(int index) {
             return switch (index) {
-                case DATA_ENERGY -> energy;
+                case DATA_ENERGY -> (int) energy;
                 case DATA_UPGRADE_PROGRESS -> upgradeProgress;
                 default -> 0;
             };
@@ -92,7 +98,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     /** Stopt redstone uit het brandstof-slot in de energie-opslag, als daar plek voor is. */
     private boolean burnFuel() {
         ItemStack fuel = items.get(SLOT_FUEL);
-        int value = getFuelValue(fuel);
+        float value = getFuelValue(fuel);
         if (value > 0 && energy + value <= StarkConfig.Power.STATION_CAPACITY) {
             fuel.shrink(1);
             energy += value;
@@ -112,9 +118,9 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         if (!EdithData.isGlasses(glasses)) {
             return false;
         }
-        int missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses) - energy;
-        int room = StarkConfig.Power.STATION_CAPACITY - energy;
-        int wanted = Math.min(Math.min(missing, room), StarkConfig.Power.STATION_GRID_RATE);
+        double missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses) - energy;
+        double room = StarkConfig.Power.STATION_CAPACITY - energy;
+        int wanted = (int) Math.min(Math.min(missing, room), gridCarry.take(StarkConfig.Power.STATION_GRID_RATE));
         if (wanted <= 0) {
             return false;
         }
@@ -130,8 +136,8 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
      * altijd voorgaan; alleen wat daarboven zit, gaat langzaam het station in.
      */
     private boolean storeSpareFromGrid(ServerLevel level, BlockPos pos) {
-        int room = StarkConfig.Power.STATION_CAPACITY - energy;
-        if (room <= 0) {
+        double room = StarkConfig.Power.STATION_CAPACITY - energy;
+        if (room < 1) {
             return false;
         }
         long stored = 0;
@@ -141,7 +147,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
             capacity += source.capacity();
         }
         long spare = stored - (long) (capacity * StarkConfig.Power.STATION_GRID_RESERVE);
-        int wanted = (int) Math.min(Math.min(spare, room), StarkConfig.Power.STATION_STORE_RATE);
+        int wanted = (int) Math.min(Math.min(spare, room), storeCarry.take(StarkConfig.Power.STATION_STORE_RATE));
         if (wanted <= 0) {
             return false;
         }
@@ -152,16 +158,17 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
 
     /** Hoeveel energie er in het station zit. */
     public int energy() {
-        return energy;
+        return (int) energy;
     }
 
     /** Stuurt energie van het station naar de bril. */
     private boolean chargeGlasses() {
         ItemStack glasses = items.get(SLOT_GLASSES);
-        if (energy <= 0 || !EdithData.isGlasses(glasses)) {
+        if (energy < 1 || !EdithData.isGlasses(glasses)) {
             return false;
         }
-        int added = EdithData.addEnergy(glasses, Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy));
+        int give = Math.min(chargeCarry.take(Math.min(StarkConfig.Power.STATION_CHARGE_RATE, energy)), energy());
+        int added = EdithData.addEnergy(glasses, give);
         energy -= added;
         return added > 0;
     }
@@ -192,7 +199,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         return true;
     }
 
-    public static int getFuelValue(ItemStack stack) {
+    public static float getFuelValue(ItemStack stack) {
         if (stack.is(Items.REDSTONE)) {
             return StarkConfig.Power.ENERGY_PER_REDSTONE;
         }
@@ -221,7 +228,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         super.loadAdditional(tag, registries);
         items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, items, registries);
-        energy = tag.getInt("energy");
+        energy = tag.getDouble("energy"); // ook goed voor een oude wereld, waar het nog een heel getal was
         upgradeProgress = tag.getInt("upgrade_progress");
     }
 
@@ -229,7 +236,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         ContainerHelper.saveAllItems(tag, items, registries);
-        tag.putInt("energy", energy);
+        tag.putDouble("energy", energy);
         tag.putInt("upgrade_progress", upgradeProgress);
     }
 

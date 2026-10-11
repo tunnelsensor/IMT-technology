@@ -173,7 +173,7 @@ public class ArcLampScreen extends Screen {
         Component range = reach > 0
                 ? Component.translatable("screen.starktech.lamp.reach", reach, level)
                 : Component.translatable("screen.starktech.lamp.reach_small", level);
-        long perSecond = Math.round(ArcLampBlockEntity.powerPerTick(level) * 20);
+        String perSecond = com.senne.starktech.energy.StarkGrid.text(ArcLampBlockEntity.powerPerTick(level) * 20);
         hint(g, range, brightnessY() + 25);
         hint(g, Component.translatable("screen.starktech.lamp.power", perSecond), brightnessY() + 36);
 

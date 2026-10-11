@@ -210,10 +210,9 @@ public class TurretBlockEntity extends BlockEntity {
     private void fireLaser(ServerLevel level, LivingEntity target) {
         TurretKind kind = kind();
         // Elk schot kost stroom van het net; geen stroom = geen laser.
-        if (StarkGrid.available(level, worldPosition) < StarkConfig.Power.TURRET_LASER_SHOT) {
+        if (!StarkGrid.pay(level, worldPosition, StarkConfig.Power.TURRET_LASER_SHOT)) {
             return;
         }
-        StarkGrid.draw(level, worldPosition, StarkConfig.Power.TURRET_LASER_SHOT);
         laserCooldown = kind.laserInterval();
 
         Vec3 muzzle = muzzle();
@@ -239,10 +238,9 @@ public class TurretBlockEntity extends BlockEntity {
             return;
         }
         MiniRocketEntity rocket = ModEntities.MINI_ROCKET.get().create(level);
-        if (rocket == null) {
+        if (rocket == null || !StarkGrid.pay(level, worldPosition, StarkConfig.Power.TURRET_ROCKET)) {
             return;
         }
-        StarkGrid.draw(level, worldPosition, StarkConfig.Power.TURRET_ROCKET);
         rocketCooldown = StarkConfig.Turrets.ROCKET_INTERVAL;
         ammo.extractItem(0, 1, false);
         Vec3 muzzle = muzzle();

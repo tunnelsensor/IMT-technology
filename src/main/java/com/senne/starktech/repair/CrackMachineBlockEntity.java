@@ -119,10 +119,9 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
             progress = 0;
         } else if (!fits(result)) {
             now = Status.FULL;
-        } else if (StarkGrid.available(level, pos) < StarkConfig.Power.CRUSHER_COMPACTOR) {
+        } else if (!StarkGrid.pay(level, pos, StarkConfig.Power.CRUSHER_COMPACTOR)) {
             now = Status.NO_POWER;
         } else {
-            StarkGrid.draw(level, pos, StarkConfig.Power.CRUSHER_COMPACTOR);
             now = Status.WORKING;
             progress++;
             effects(level, pos, input);

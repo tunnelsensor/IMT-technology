@@ -170,11 +170,8 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         long now = level.getGameTime();
         // Elke halve seconde stroom betalen (zolang hij aan moet).
         if (enabled && Math.floorMod(now + pos.hashCode(), 10) == 0) {
-            int cost = DomeSettings.upkeep(radiusIndex, strength) * 10;
-            powered = StarkGrid.available(level, pos) >= cost;
-            if (powered) {
-                StarkGrid.draw(level, pos, cost);
-            }
+            double cost = DomeSettings.upkeep(radiusIndex, strength) * 10;
+            powered = StarkGrid.pay(level, pos, cost);
             sources = StarkGrid.sources(level, pos).size();
         }
         boolean depleted = now < downUntil;

@@ -22,7 +22,7 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
 
     @Override
     public int capacity() {
-        return StarkConfig.Power.SOLAR_CAPACITY;
+        return (int) StarkConfig.Power.SOLAR_CAPACITY;
     }
 
     @Override
@@ -31,7 +31,7 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
     }
 
     @Override
-    protected int produce(ServerLevel level, BlockPos pos) {
+    protected double produce(ServerLevel level, BlockPos pos) {
         if (!level.canSeeSky(pos.above())) {
             return 0; // er zit iets boven hem
         }
@@ -43,7 +43,7 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
         float height = Math.max(0.0f, net.minecraft.util.Mth.cos(angle));
         float weather = level.isThundering() ? StarkConfig.Power.SOLAR_THUNDER
                 : level.isRaining() ? StarkConfig.Power.SOLAR_RAIN : 1.0f;
-        return Math.round(StarkConfig.Power.SOLAR_RATE * height * weather);
+        return StarkConfig.Power.SOLAR_RATE * height * weather;
     }
 
     @Override

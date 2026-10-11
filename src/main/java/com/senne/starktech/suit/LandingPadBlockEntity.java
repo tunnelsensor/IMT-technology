@@ -3,6 +3,7 @@ package com.senne.starktech.suit;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithData;
 import com.senne.starktech.edith.EdithServer;
+import com.senne.starktech.energy.EnergyCarry;
 import com.senne.starktech.energy.EnergySource;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModItems;
@@ -112,6 +113,11 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
         }
     };
 
+    /** De stukjes van de snelheden in de config die nog geen hele stroom zijn (zie EnergyCarry). */
+    private final EnergyCarry fillCarry = new EnergyCarry();
+    private final EnergyCarry batteryCarry = new EnergyCarry();
+    private final EnergyCarry gridCarry = new EnergyCarry();
+
     public LandingPadBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LANDING_PAD.get(), pos, state);
         cells.addListener(container -> setChanged());
@@ -120,7 +126,7 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
     /** Hoeveel er in de eigen batterij past: een basis, plus een stuk per batterijcel. */
     public int capacity() {
         int count = Math.min(MAX_CELLS, cells.getItem(0).getCount());
-        return StarkConfig.Power.PAD_BATTERY_BASE + count * StarkConfig.Power.PAD_BATTERY_PER_CELL;
+        return (int) (StarkConfig.Power.PAD_BATTERY_BASE + count * StarkConfig.Power.PAD_BATTERY_PER_CELL);
     }
 
     public int energy() {
@@ -200,7 +206,7 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
             gridCapacity += source.capacity();
         }
         long spare = stored - (long) (gridCapacity * StarkConfig.Power.STATION_GRID_RESERVE);
-        int wanted = (int) Math.min(Math.min(spare, room), StarkConfig.Power.PAD_BATTERY_FILL);
+        int wanted = (int) Math.min(Math.min(spare, room), fillCarry.take(StarkConfig.Power.PAD_BATTERY_FILL));
         if (wanted <= 0) {
             return 0;
         }
@@ -246,9 +252,10 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (!glasses.isEmpty() && EdithData.isAuthorized(glasses, player)) {
             int missing = EdithData.getMaxEnergy(glasses) - EdithData.getEnergy(glasses);
-            int fromBattery = Math.min(Math.min(missing, energy), StarkConfig.Power.PAD_BATTERY_CHARGE);
+            int fromBattery = Math.min(Math.min(missing, energy), batteryCarry.take(StarkConfig.Power.PAD_BATTERY_CHARGE));
             energy -= fromBattery;
-            int fromGrid = StarkGrid.draw(level, pos, Math.min(missing - fromBattery, StarkConfig.Power.PAD_CHARGE_PER_SECOND));
+            int fromGrid = StarkGrid.draw(level, pos,
+                    Math.min(missing - fromBattery, gridCarry.take(StarkConfig.Power.PAD_CHARGE_PER_SECOND)));
             charged = fromBattery + fromGrid;
             if (charged > 0) {
                 EdithData.addEnergy(glasses, charged);
@@ -260,8 +267,7 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
                 continue;
             }
             int repair = Math.min(piece.getDamageValue(), StarkConfig.Power.PAD_REPAIR_PER_SECOND);
-            int cost = repair * StarkConfig.Power.PAD_REPAIR_ENERGY;
-            if (StarkGrid.available(level, pos) >= cost && StarkGrid.draw(level, pos, cost) >= cost) {
+            if (StarkGrid.pay(level, pos, repair * StarkConfig.Power.PAD_REPAIR_ENERGY)) {
                 piece.setDamageValue(piece.getDamageValue() - repair);
                 worked = true;
             }

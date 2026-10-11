@@ -310,12 +310,11 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
             setPowered(StarkGrid.available(level, pos) > 0);
             return;
         }
-        int cost = job == JOB_INSTALL ? StarkConfig.Power.WORKBENCH_INSTALL : StarkConfig.Power.WORKBENCH_BUILD;
-        setPowered(StarkGrid.available(level, pos) >= cost);
+        float cost = job == JOB_INSTALL ? StarkConfig.Power.WORKBENCH_INSTALL : StarkConfig.Power.WORKBENCH_BUILD;
+        setPowered(StarkGrid.pay(level, pos, cost));
         if (!powered) {
             return; // wachten op stroom
         }
-        StarkGrid.draw(level, pos, cost);
         progress++;
         if (level.getGameTime() % 10 == 0) {
             play(SoundEvents.SMITHING_TABLE_USE, 0.25f, 1.6f);

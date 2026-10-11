@@ -203,7 +203,7 @@ public class DomeScreen extends Screen {
 
         // Wat het kost, en of er stroom op zit.
         int infoY = rowY(ROW_STRENGTH) + ROW + 2;
-        int upkeep = DomeSettings.upkeep(dome.radiusIndex(), dome.strength());
+        String upkeep = com.senne.starktech.energy.StarkGrid.text(DomeSettings.upkeep(dome.radiusIndex(), dome.strength()));
         Component cost = Component.translatable("screen.starktech.dome.cost", upkeep, dome.sources());
         g.drawString(font, cost, left + MARGIN, infoY, HudStyle.argb(220, HudStyle.WHITE), false);
         Component hint = dome.sources() == 0

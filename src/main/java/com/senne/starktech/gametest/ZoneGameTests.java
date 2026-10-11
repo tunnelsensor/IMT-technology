@@ -271,13 +271,13 @@ public final class ZoneGameTests {
         }
 
         // Genoeg voor de kern, maar niet voor een grote zone: alleen de zone valt uit.
-        int oldPerPower = StarkConfig.Power.ZONE_BLOCKS_PER_POWER;
+        float oldPerPower = StarkConfig.Power.ZONE_BLOCKS_PER_POWER;
         try {
             StarkConfig.Power.ZONE_BLOCKS_PER_POWER = 1; // elk blok 1 stroom: 448 extra
             BlockPos generator = CORE.below();
             ChargerBlockEntity charger = (ChargerBlockEntity) helper.getBlockEntity(generator);
             charger.drain(charger.energy());
-            charger.fill(StarkConfig.Power.SECURITY_CORE_UPKEEP + 100);
+            charger.fill((int) StarkConfig.Power.SECURITY_CORE_UPKEEP + 100);
             core.powerTick(level);
             if (!core.isOnline() || core.zone().powered()) {
                 throw new GameTestAssertException("Met stroom voor de kern maar niet voor de zone zou alleen de zone uit moeten zijn");

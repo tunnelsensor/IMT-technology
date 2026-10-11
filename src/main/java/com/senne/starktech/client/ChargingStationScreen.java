@@ -77,7 +77,7 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
         // Uitleg als je met de muis over een balk gaat.
         if (isHovering(STATION_BAR_X, STATION_BAR_Y, STATION_BAR_W, STATION_BAR_H, mouseX, mouseY)) {
             g.renderTooltip(font, Component.translatable("screen.starktech.station.energy",
-                    menu.getStationEnergy(), StarkConfig.Power.STATION_CAPACITY), mouseX, mouseY);
+                    menu.getStationEnergy(), (int) StarkConfig.Power.STATION_CAPACITY), mouseX, mouseY);
         }
         ItemStack glasses = menu.getGlasses();
         if (EdithData.isGlasses(glasses) && isHovering(GLASSES_BAR_X, GLASSES_BAR_Y - 2, GLASSES_BAR_W, GLASSES_BAR_H + 4, mouseX, mouseY)) {

@@ -31,6 +31,8 @@ import net.minecraft.world.level.block.state.BlockState;
  *   kabel genoeg heeft.
  * - We halen de stroom eerst bij de leverancier die het meest heeft, zodat ze ongeveer even vol
  *   blijven.
+ * - Wat een apparaat gebruikt mag een kommagetal zijn (0.05 per tick): dat betaalt het met
+ *   {@link #pay}, dat per apparaat onthoudt wat nog geen hele stroom was.
  * - Het zoeken kost wat werk, dus we onthouden het resultaat per apparaat. Komt er ergens een
  *   kabel of leverancier bij of gaat er een weg, dan verhogen we {@link #changed()} en zoeken we
  *   de volgende keer opnieuw.
@@ -49,6 +51,9 @@ public final class StarkGrid {
     private record Found(int version, long gameTime, List<BlockPos> sources) {}
 
     private static final Map<ResourceKey<Level>, Map<BlockPos, Found>> CACHE = new HashMap<>();
+
+    /** Per apparaat: wat het nog schuldig is, minder dan 1 (zie {@link #pay}). */
+    private static final Map<ResourceKey<Level>, Map<BlockPos, Double>> OWED = new HashMap<>();
 
     /** Er kwam een kabel of leverancier bij, of er ging er een weg: alle netten opnieuw zoeken. */
     public static void changed() {
@@ -93,6 +98,36 @@ public final class StarkGrid {
             }
         }
         return taken;
+    }
+
+    /**
+     * Betaalt {@code amount} stroom uit het net van dit apparaat. Het mag een kommagetal zijn: wat nog
+     * geen hele stroom is, onthouden we per apparaat en tellen we de volgende keer op. 0.25 per tick
+     * wordt zo elke vierde tick 1 (net als {@link EnergyCarry}). Hele getallen gaan zoals altijd.
+     *
+     * Zit er minder in het net dan het bedrag (naar boven afgerond, dus bij 0.05 minstens 1), dan
+     * betaalt het niets en geeft het false: het apparaat heeft dan geen stroom.
+     */
+    public static boolean pay(Level level, BlockPos device, double amount) {
+        if (amount <= 0) {
+            return true;
+        }
+        if (available(level, device) < Math.max(1.0, Math.ceil(amount))) {
+            return false;
+        }
+        Map<BlockPos, Double> perLevel = OWED.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        double owed = perLevel.getOrDefault(device, 0.0) + amount;
+        int whole = (int) Math.min(Integer.MAX_VALUE, owed);
+        if (whole > 0) {
+            draw(level, device, whole);
+        }
+        owed -= whole;
+        if (owed > 1.0E-9) {
+            perLevel.put(device.immutable(), owed);
+        } else {
+            perLevel.remove(device);
+        }
+        return true;
     }
 
     /** Waar de leveranciers van dit apparaat staan (uit het geheugen als dat nog klopt). */
@@ -176,8 +211,15 @@ public final class StarkGrid {
         }
     }
 
+    /** Stroom als tekst: 6 wordt "6", 0.3 wordt "0.3", 0.125 wordt "0.13" (hooguit twee cijfers na de komma). */
+    public static String text(double amount) {
+        String text = String.format(java.util.Locale.ROOT, "%.2f", amount);
+        return text.replaceAll("0+$", "").replaceAll("\\.$", "");
+    }
+
     /** Bij het afsluiten van de wereld: alles vergeten. */
     public static void clear() {
         CACHE.clear();
+        OWED.clear();
     }
 }

@@ -14,7 +14,8 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 203 automatische tests, allemaal groen (`gradlew runGameTestServer`).
+**Stand van zaken:** 204 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 86 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -1968,6 +1969,21 @@ De stappen:
       telt (de satelliet wacht dan echt korter), of een aan/uit-regel telt, en of een rijtje met het
       verkeerde aantal getallen terugvalt op de standaard. Alle 203 tests groen. LEESMIJ.md hoofdstuk 6
       en de stukken die naar de oude bestanden verwezen, zijn bijgewerkt.
+- [x] **2. Kommagetallen voor stroom** (11 oktober: "ik heb bij power ints naar floats veranderd ... dit
+      werkt niet ... zorg dat alles in floats staat zodat ik makkelijk heel kleine getallen kan gebruiken")
+      Er gingen twee dingen mis. Het net rekende in hele getallen, dus 0.3 per tick werd 0. En een
+      nieuwe standaardwaarde in `StarkConfig` verandert een bestaand `starktech.toml` niet: daar stond
+      nog 6. Nu zijn **alle energiegetallen in `[power]` kommagetallen** (float; aantallen zoals "hete
+      blokken" en tijden in ticks blijven hele getallen). Generatoren bewaren hun stroom als kommagetal;
+      apparaten betalen met `StarkGrid.pay`, dat per apparaat onthoudt wat nog geen hele stroom was
+      (0.25 per tick = elke vierde tick 1); snelheden zoals "zoveel per tick in de bril" gaan via
+      `energy/EnergyCarry`. Het scherm van een generator toont nu ook "0.3 per tick". Jouw vijf nieuwe
+      waarden staan nu ook in `run/config/starktech.toml`, en `StarkConfig` waarschuwt bovenaan voor die
+      valkuil. Een nieuwe test (`power_works_with_fractions`). Met de oude waarden (6 en 14 per tick)
+      zijn alle 204 tests groen. **Met jouw nieuwe waarden** (0.3 en 0.7) zijn er 3 rood:
+      `hydra_bunker_lasers_need_the_reactor`, `stark_tower_vault_trap` en `stark_tower_lasers_have_power`.
+      De warmtegenerator naast de lava in de bunker en de toren maakt nu te weinig voor hun laserwanden
+      (elke zender gebruikt nog 1 per tick). Jouw keuze: zo laten, je kijkt zelf naar de getallen.
 
 ---
 

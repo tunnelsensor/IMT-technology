@@ -72,11 +72,7 @@ public class HoloTableBlockEntity extends BlockEntity {
         if (Math.floorMod(level.getGameTime() + pos.hashCode(), 20) != 0) {
             return;
         }
-        int cost = StarkConfig.Power.HOLO_TABLE_UPKEEP * 20;
-        boolean now = StarkGrid.available(level, pos) >= cost;
-        if (now) {
-            StarkGrid.draw(level, pos, cost);
-        }
+        boolean now = StarkGrid.pay(level, pos, StarkConfig.Power.HOLO_TABLE_UPKEEP * 20.0);
         if (now != powered) {
             powered = now;
             sync();

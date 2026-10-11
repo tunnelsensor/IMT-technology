@@ -153,7 +153,7 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
         int cy = topPos + LandingPadMenu.CELLS_Y;
         if (menu.cellsItem().isEmpty() && mouseX >= cx && mouseX < cx + 16 && mouseY >= cy && mouseY < cy + 16) {
             g.renderTooltip(font, Component.translatable("screen.starktech.landing_pad.cells_tooltip",
-                    StarkConfig.Power.PAD_BATTERY_PER_CELL, LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
+                    (int) StarkConfig.Power.PAD_BATTERY_PER_CELL, LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
         }
     }
 

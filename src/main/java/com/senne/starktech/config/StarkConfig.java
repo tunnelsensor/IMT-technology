@@ -15,6 +15,10 @@ package com.senne.starktech.config;
  *   standaardwaarden. Pas je het .toml-bestand aan, dan hoef je niets opnieuw te bouwen: het spel
  *   leest het opnieuw zodra je het opslaat, ook terwijl je speelt. Een server stuurt het naar elke
  *   speler die binnenkomt, zodat het menu en de HUD dezelfde getallen laten zien.
+ *   - LET OP: bestaat het .toml-bestand al, dan houdt het zijn eigen waarden. Verander je hieronder een
+ *     standaardwaarde, pas dan ook run/config/starktech.toml aan (of gooi het weg: dan maakt het spel
+ *     een nieuw bestand met de nieuwe standaardwaarden). Boven elke regel in het .toml-bestand staat
+ *     "Default: ...": daar zie je de standaard uit dit bestand.
  *   - Eén wereld anders? Kopieer het bestand naar de map serverconfig in die wereld
  *     (saves/<naam van de wereld>/serverconfig/) en pas het daar aan: die kopie gaat voor.
  *   - Persoonlijke dingen (je volume, de stem, Spotify, de rand van zones) staan hier niet, maar in
@@ -176,42 +180,45 @@ public final class StarkConfig {
     /*
      * Alles wat met het stroomnet (de Stark-kabels) te maken heeft, voor elk blok: wat het opwekt, wat
      * het opslaat, en wat het gebruikt. Let op de tijd bij elk getal: "per tick" (20 keer per seconde),
-     * "per seconde", of "elke twee seconden". Ter vergelijking: één zonnepaneel in de volle zon maakt
-     * 6 per tick = 120 per seconde.
+     * "per seconde", of "elke twee seconden".
+     *
+     * Alle energiegetallen hier zijn kommagetallen (float), dus ook heel kleine waarden werken: 0.3 per
+     * tick = 6 per seconde, 0.05 per tick = 1 per seconde. Wat nog geen hele stroom is, wordt bewaard en
+     * telt de volgende tick mee (zie EnergyCarry en StarkGrid.pay), zodat het gemiddeld precies klopt.
      */
     @Section("Power on the Stark grid: what every block makes, stores and uses. "
             + "Watch the time in each line: per tick (20 times a second), per second, or every two seconds. "
-            + "One solar panel in full sun makes 6 per tick = 120 per second.")
+            + "Decimals work: 0.3 per tick = 6 per second, 0.05 per tick = 1 per second.")
     public static final class Power {
         private Power() {}
 
         // ------------------------------------------------------------------------- Zonnepaneel
         /** Energie per tick met de zon recht boven je (minder als de zon laag staat, 's nachts niets). */
         @Tunable("Energy per tick a solar panel makes with the sun straight above (less when the sun is low, nothing at night)")
-        public static int SOLAR_RATE = 6;
+        public static float SOLAR_RATE = 0.3f;
         /** Welk deel van de zon een zonnepaneel nog krijgt als het regent (0.4 = 40%). */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets when it rains", max = 1)
-        public static float SOLAR_RAIN = 0.4f;
+        public static float SOLAR_RAIN = 0.02f;
         /** ...en bij onweer. */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets in a thunderstorm", max = 1)
-        public static float SOLAR_THUNDER = 0.2f;
+        public static float SOLAR_THUNDER = 0.01f;
         /** Hoeveel een zonnepaneel zelf kan opslaan. */
         @Tunable("Energy a solar panel can store")
-        public static int SOLAR_CAPACITY = 12_000;
+        public static float SOLAR_CAPACITY = 12_000.0f;
 
         // ------------------------------------------------------------------------- Warmtegenerator
         /** Energie per tick zolang er brandstof brandt (kolen, hout, ...). */
         @Tunable("Energy per tick a heat generator makes while it burns fuel")
-        public static int HEAT_RATE_FUEL = 14;
+        public static float HEAT_RATE_FUEL = 0.7f;
         /** Energie per tick per heet blok dat ertegenaan staat (lava, vuur, magma...). */
         @Tunable("Energy per tick per hot block (lava, fire, magma) next to a heat generator")
-        public static int HEAT_RATE_AMBIENT = 3;
+        public static float HEAT_RATE_AMBIENT = 0.15f;
         /** Meer hete buren dan dit tellen niet meer mee. */
         @Tunable(value = "Hot blocks above this many no longer count", max = 26)
         public static int HEAT_MAX_NEIGHBOURS = 8;
         /** Hoeveel een warmtegenerator zelf kan opslaan. */
         @Tunable("Energy a heat generator can store")
-        public static int HEAT_CAPACITY = 20_000;
+        public static float HEAT_CAPACITY = 20_000.0f;
 
         // ------------------------------------------------------------------------- Laadstation (voor de bril)
         /**
@@ -219,19 +226,19 @@ public final class StarkConfig {
          * Redstone is een noodvoorraad in je zak; voor gewone stroom zet je een generator neer.
          */
         @Tunable("Energy from one redstone dust in a charging station")
-        public static int ENERGY_PER_REDSTONE = 50;
+        public static float ENERGY_PER_REDSTONE = 50.0f;
         /** Energie uit één redstone-blok (9 redstone en een beetje bonus). */
         @Tunable("Energy from one redstone block in a charging station")
-        public static int ENERGY_PER_REDSTONE_BLOCK = 480;
+        public static float ENERGY_PER_REDSTONE_BLOCK = 480.0f;
         /** Hoeveel het laadstation zelf kan opslaan (hooguit 32000, anders klopt de balk in het scherm niet). */
         @Tunable(value = "Energy a charging station can store", min = 1, max = 32_000)
-        public static int STATION_CAPACITY = 30_000;
+        public static float STATION_CAPACITY = 30_000.0f;
         /** Hoeveel energie het station per tick in de bril stopt. */
         @Tunable("Energy per tick a charging station puts into the glasses")
-        public static int STATION_CHARGE_RATE = 50;
+        public static float STATION_CHARGE_RATE = 50.0f;
         /** Hoeveel het station per tick uit het net mag halen om de bril te laden (ruim meer dan één paneel maakt). */
         @Tunable("Energy per tick a charging station draws from the grid to charge the glasses")
-        public static int STATION_GRID_RATE = 40;
+        public static float STATION_GRID_RATE = 40.0f;
         /**
          * Zijn eigen voorraad vult het station ook uit het net, maar alleen met wat over is: dit deel van
          * wat in de generatoren past, blijft altijd voor de rest van het net (holotafel, laserwanden, koepel).
@@ -241,92 +248,92 @@ public final class StarkConfig {
         public static float STATION_GRID_RESERVE = 0.5f;
         /** ...en dat gaat langzaam: zoveel per tick. */
         @Tunable("Energy per tick a charging station puts into its own storage from spare grid energy")
-        public static int STATION_STORE_RATE = 10;
+        public static float STATION_STORE_RATE = 10.0f;
 
         // ------------------------------------------------------------------------- Landingsplatform (voor het harnas)
         /** Zoveel energie per seconde laadt een landingsplatform in je bril, uit het net. */
         @Tunable("Energy per second a landing pad puts into your glasses")
-        public static int PAD_CHARGE_PER_SECOND = 400;
+        public static float PAD_CHARGE_PER_SECOND = 400.0f;
         /** Hoeveel de eigen batterij van een platform opslaat zonder batterijcellen. */
         @Tunable("How much a landing pad's own battery holds without battery cells")
-        public static int PAD_BATTERY_BASE = 10_000;
+        public static float PAD_BATTERY_BASE = 10_000.0f;
         /** Extra per Battery Upgrade in het batterijvak van het platform (hooguit 4). */
         @Tunable("Extra landing pad battery per Battery Upgrade in its battery slot (up to 4)")
-        public static int PAD_BATTERY_PER_CELL = 15_000;
+        public static float PAD_BATTERY_PER_CELL = 15_000.0f;
         /** Zo snel vult het platform zijn batterij met wat het net over heeft (per seconde). */
         @Tunable("How fast a landing pad fills its battery from the grid's spare energy (per second)")
-        public static int PAD_BATTERY_FILL = 300;
+        public static float PAD_BATTERY_FILL = 300.0f;
         /** Zo snel laadt het platform je bril uit zijn eigen batterij (per seconde). */
         @Tunable("How fast a landing pad charges your glasses from its own battery (per second)")
-        public static int PAD_BATTERY_CHARGE = 1_600;
+        public static float PAD_BATTERY_CHARGE = 1600.0f;
         /** Zoveel duurzaamheid per seconde repareert een platform aan elk stuk harnas... */
         @Tunable("Durability per second a landing pad repairs on each suit piece")
         public static int PAD_REPAIR_PER_SECOND = 2;
         /** ...en dat kost zoveel stroom per punt. */
         @Tunable("Energy per point of durability a landing pad repairs")
-        public static int PAD_REPAIR_ENERGY = 10;
+        public static float PAD_REPAIR_ENERGY = 10.0f;
 
         // ------------------------------------------------------------------------- Drone-dock (in je hangar)
         /** Levenspunten per seconde die een dock repareert aan de drone erop (een lege drone: 48 seconden). */
         @Tunable("Health a drone dock repairs per second on the drone standing on it")
-        public static double DOCK_REPAIR_PER_SECOND = 0.25;
+        public static float DOCK_REPAIR_PER_SECOND = 0.25f;
         /** ...en dat kost zoveel stroom per levenspunt. */
         @Tunable("Energy a drone dock uses per point of health it repairs")
-        public static int DOCK_ENERGY_PER_HEALTH = 40;
+        public static float DOCK_ENERGY_PER_HEALTH = 40.0f;
 
         // ------------------------------------------------------------------------- Verbruik: verdediging
         /** Stroom per tick van één laserzender zolang zijn wand aan staat (een paar zenders = 2 per tick). */
         @Tunable("Energy per tick a laser wall emitter uses while its wall is on")
-        public static int LASER_WALL_UPKEEP = 1;
+        public static float LASER_WALL_UPKEEP = 1.0f;
         /** Zoveel seconden moet het net stroom hebben voordat een laserwand aangaat (anders knippert hij). */
         @Tunable("A laser wall only turns on when the grid has had power for this many seconds (so it doesn't flicker)")
-        public static int LASER_WALL_START_SECONDS = 5;
+        public static float LASER_WALL_START_SECONDS = 5.0f;
         /**
          * Stroom per tick van een schildkoepel, per sterkte-niveau, voor elk van zijn 5 maten (zie Dome.RADII:
          * 8, 12, 16, 24 en 32 blokken). Een koepel van 16 blokken op sterkte 2 kost dus 4 x 2 = 8 per tick.
          */
         @Tunable(value = "Energy per tick a shield dome uses PER STRENGTH LEVEL, for each of its 5 sizes (see dome.radii). "
                 + "A 16-block dome on strength 2 uses 4 x 2 = 8 per tick", max = 10_000)
-        public static int[] DOME_UPKEEP = {2, 3, 4, 6, 8};
+        public static float[] DOME_UPKEEP = {2.0f, 3.0f, 4.0f, 6.0f, 8.0f};
         /** Stroom die één laserschot van een Stark-torentje van het net haalt. */
         @Tunable("Grid energy one Stark turret laser shot uses")
-        public static int TURRET_LASER_SHOT = 60;
+        public static float TURRET_LASER_SHOT = 60.0f;
         /** Stroom per raket die een Stark-torentje afvuurt. */
         @Tunable("Grid energy per rocket a Stark turret fires")
-        public static int TURRET_ROCKET = 20;
+        public static float TURRET_ROCKET = 20.0f;
         /** Stroom die de beveiligingskern elke twee seconden van het net haalt (zonder staan hij en zijn drones uit). */
         @Tunable("Grid energy the security core uses every two seconds (without it, the core and its drones are off)")
-        public static int SECURITY_CORE_UPKEEP = 20;
+        public static float SECURITY_CORE_UPKEEP = 20.0f;
         /** Een zone kost elke twee seconden 1 extra per zoveel blokken (30 x 20 x 30 kost 9 extra). */
-        @Tunable(value = "A protected zone costs 1 extra grid energy every two seconds per this many blocks", min = 1)
-        public static int ZONE_BLOCKS_PER_POWER = 2_000;
+        @Tunable(value = "A protected zone costs 1 extra grid energy every two seconds per this many blocks", min = 0.001)
+        public static float ZONE_BLOCKS_PER_POWER = 2000.0f;
         /** Stroom die een bewakingscamera elke twee seconden haalt (zonder: "NO SIGNAL"). */
         @Tunable("Grid energy a security camera uses every two seconds (without it, it shows NO SIGNAL)")
-        public static int CAMERA_UPKEEP = 2;
+        public static float CAMERA_UPKEEP = 2.0f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */
         @Tunable("Grid energy per tick while the suit workbench builds a suit piece")
-        public static int WORKBENCH_BUILD = 10;
+        public static float WORKBENCH_BUILD = 10.0f;
         /** ...en zolang hij een upgrade installeert. */
         @Tunable("Grid energy per tick while the suit workbench installs an upgrade")
-        public static int WORKBENCH_INSTALL = 8;
+        public static float WORKBENCH_INSTALL = 8.0f;
         /** Stroom per tick van de Crusher en de Compactor zolang ze werken. */
         @Tunable("Grid energy per tick the Crusher and the Compactor use while they work")
-        public static int CRUSHER_COMPACTOR = 4;
+        public static float CRUSHER_COMPACTOR = 4.0f;
         /** Stroom die één serverkast elke twee seconden haalt (zonder tellen zijn onderdelen niet mee). */
         @Tunable("Grid energy one server rack uses every two seconds (without it, its parts do not count)")
-        public static int SERVER_RACK_UPKEEP = 3;
+        public static float SERVER_RACK_UPKEEP = 3.0f;
         /** Stroom per tick van een holotafel zolang hij aan staat. */
         @Tunable("Grid energy per tick a holo table uses while it is on")
-        public static int HOLO_TABLE_UPKEEP = 1;
+        public static float HOLO_TABLE_UPKEEP = 1.0f;
         /**
          * Stroom per tick van een Arc Lamp op lichtniveau 100 (2 per tick = 40 per seconde). Zachter gezet
          * gebruikt hij naar verhouding minder: op 50 de helft.
          */
         @Tunable("Grid energy per tick an Arc Lamp at light level 100 uses while it is on. "
                 + "A lamp set lower uses less: at level 50, half of this.")
-        public static int ARC_LAMP_POWER = 2;
+        public static float ARC_LAMP_POWER = 2.0f;
         /** Een lamp die uit is, gaat pas aan als het net zoveel ticks stroom heeft (100 = 5 seconden). */
         @Tunable("An Arc Lamp that is off only turns on when the grid has had power for this many ticks "
                 + "(so it doesn't flicker on a weak generator)")

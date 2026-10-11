@@ -56,7 +56,7 @@ public final class ZoneApp {
         data.put("boxes", boxes);
         data.putLong("volume", zone == null ? 0 : zone.volume());
         data.putInt("upkeep", core.zoneUpkeep());
-        data.putInt("coreUpkeep", StarkConfig.Power.SECURITY_CORE_UPKEEP);
+        data.putDouble("coreUpkeep", StarkConfig.Power.SECURITY_CORE_UPKEEP);
         data.putInt("max", StarkConfig.Security.ZONE_MAX_BOXES);
         data.putInt("reach", StarkConfig.Security.ZONE_REACH);
         if (viewer != null && !remote) {

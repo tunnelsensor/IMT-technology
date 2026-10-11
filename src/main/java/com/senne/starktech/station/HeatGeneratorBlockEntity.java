@@ -27,7 +27,7 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
     /** Hoeveel ticks de huidige brandstof nog brandt. */
     private int burnTicks;
     /** Wat hij de laatste tick opwekte (brandstof plus hitte), ook als zijn buffer vol zat. */
-    private int heat;
+    private double heat;
 
     public HeatGeneratorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HEAT_GENERATOR.get(), pos, state);
@@ -35,7 +35,7 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
 
     @Override
     public int capacity() {
-        return StarkConfig.Power.HEAT_CAPACITY;
+        return (int) StarkConfig.Power.HEAT_CAPACITY;
     }
 
     @Override
@@ -48,8 +48,8 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
     }
 
     @Override
-    protected int produce(ServerLevel level, BlockPos pos) {
-        int made = 0;
+    protected double produce(ServerLevel level, BlockPos pos) {
+        double made = 0;
         // 1. Brandstof.
         if (burnTicks > 0) {
             burnTicks--;

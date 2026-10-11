@@ -192,10 +192,9 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             now = Status.NO_NETWORK;
         } else if (!LogicServer.inMainCluster(level, core, pos)) {
             now = Status.NOT_CONNECTED;
-        } else if (StarkGrid.available(level, pos) < StarkConfig.Power.SERVER_RACK_UPKEEP) {
+        } else if (!StarkGrid.pay(level, pos, StarkConfig.Power.SERVER_RACK_UPKEEP)) {
             now = Status.NO_POWER;
         } else {
-            StarkGrid.draw(level, pos, StarkConfig.Power.SERVER_RACK_UPKEEP);
             now = Status.ONLINE;
         }
         if (now != status) {

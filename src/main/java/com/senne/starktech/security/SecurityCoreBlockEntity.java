@@ -554,7 +554,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if (zone == null || !zone.hasBoxes()) {
             return 0;
         }
-        return (int) Math.ceil(zone.volume() / (double) Math.max(1, StarkConfig.Power.ZONE_BLOCKS_PER_POWER));
+        return (int) Math.ceil(zone.volume() / Math.max(0.001, StarkConfig.Power.ZONE_BLOCKS_PER_POWER));
     }
 
     /** Vertelt het overzicht van de wereld (ZoneData) van wie de kern is en wie er mag bouwen. */
@@ -581,7 +581,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             return; // nog niets getekend: niemand hoeft het te weten
         }
         logEvent(EventLog.Type.ZONE, powered ? "Zone online: protected again"
-                : "Zone offline: not enough power (needs " + (StarkConfig.Power.SECURITY_CORE_UPKEEP + cost) + " every 2 s)");
+                : "Zone offline: not enough power (needs "
+                        + com.senne.starktech.energy.StarkGrid.text(StarkConfig.Power.SECURITY_CORE_UPKEEP + cost) + " every 2 s)");
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
         if (owner != null) {
             com.senne.starktech.edith.EdithServer.send(owner, net.minecraft.network.chat.Component.translatable(
@@ -603,7 +604,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         boolean zonePowered = online && available >= StarkConfig.Power.SECURITY_CORE_UPKEEP + zoneCost;
         updateZonePower(level, zonePowered, zoneCost);
         if (online) {
-            com.senne.starktech.energy.StarkGrid.draw(level, worldPosition,
+            com.senne.starktech.energy.StarkGrid.pay(level, worldPosition,
                     StarkConfig.Power.SECURITY_CORE_UPKEEP + (zonePowered ? zoneCost : 0));
         }
     }

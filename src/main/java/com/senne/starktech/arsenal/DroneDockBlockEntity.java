@@ -121,8 +121,7 @@ public class DroneDockBlockEntity extends BlockEntity {
         if (nowPresent && !current.isFullyRepaired()) {
             // Per halve seconde de helft van wat hij per seconde repareert.
             double repair = StarkConfig.Power.DOCK_REPAIR_PER_SECOND * CHECK_TICKS / 20.0;
-            int cost = (int) Math.ceil(repair * StarkConfig.Power.DOCK_ENERGY_PER_HEALTH);
-            if (StarkGrid.available(level, pos) >= cost && StarkGrid.draw(level, pos, cost) >= cost) {
+            if (StarkGrid.pay(level, pos, repair * StarkConfig.Power.DOCK_ENERGY_PER_HEALTH)) {
                 nowHealth = (float) Math.min(StarkConfig.Drones.HEALTH, nowHealth + repair);
                 ArsenalServer.setHealth(player, current.id(), nowHealth);
                 nowRepairing = true;

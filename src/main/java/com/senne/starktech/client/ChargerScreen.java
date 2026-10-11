@@ -3,6 +3,7 @@ package com.senne.starktech.client;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithData;
+import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.station.ChargerMenu;
 import java.util.List;
@@ -152,9 +153,9 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
 
     /** Wat het nu oplevert, of waarom het niets doet. */
     private Component status() {
-        int rate = menu.getRate();
+        float rate = menu.getRate();
         return rate > 0
-                ? Component.translatable("screen.starktech.charger.rate", rate)
+                ? Component.translatable("screen.starktech.charger.rate", StarkGrid.text(rate))
                 : Component.translatable(menu.usesFuel()
                         ? "screen.starktech.charger.idle_heat"
                         : "screen.starktech.charger.idle_solar");

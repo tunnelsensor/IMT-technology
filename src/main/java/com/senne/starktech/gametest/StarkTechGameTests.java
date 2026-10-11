@@ -322,6 +322,50 @@ public final class StarkTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Stroom met kommagetallen (jouw wens, 11 oktober). Een apparaat dat 0.25 betaalt, haalt pas elke
+     * vierde keer 1 uit het net: na 8 keer precies 2. En een warmtegenerator die 0.3 per tick maakt, heeft
+     * na 40 ticks ongeveer 12 (toen alles nog in hele getallen ging, werd 0.3 afgerond naar 0).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 80, batch = "fractions")
+    public static void power_works_with_fractions(GameTestHelper helper) {
+        BlockPos storePos = new BlockPos(2, 3, 2);
+        helper.setBlock(storePos, ModBlocks.HEAT_GENERATOR.get());
+        ChargerBlockEntity store = (ChargerBlockEntity) helper.getBlockEntity(storePos);
+        store.fill(10);
+        BlockPos device = helper.absolutePos(storePos.east());
+        for (int i = 0; i < 8; i++) {
+            if (!com.senne.starktech.energy.StarkGrid.pay(helper.getLevel(), device, 0.25)) {
+                throw new GameTestAssertException("Betalen van 0.25 lukte niet, met " + store.energy() + " in het net");
+            }
+        }
+        if (store.energy() != 8) {
+            throw new GameTestAssertException("8 keer 0.25 betalen kostte " + (10 - store.energy()) + " in plaats van 2");
+        }
+
+        float oldFuel = StarkConfig.Power.HEAT_RATE_FUEL;
+        float oldAmbient = StarkConfig.Power.HEAT_RATE_AMBIENT;
+        StarkConfig.Power.HEAT_RATE_FUEL = 0.3f;
+        StarkConfig.Power.HEAT_RATE_AMBIENT = 0.0f;
+        BlockPos burnerPos = new BlockPos(8, 3, 8);
+        helper.setBlock(burnerPos, ModBlocks.HEAT_GENERATOR.get());
+        ChargerBlockEntity burner = (ChargerBlockEntity) helper.getBlockEntity(burnerPos);
+        burner.setItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(Items.COAL));
+        helper.runAfterDelay(40, () -> {
+            try {
+                int made = burner.energy();
+                if (made < 11 || made > 13) {
+                    throw new GameTestAssertException("Een generator op 0.3 per tick maakte in 40 ticks " + made
+                            + " in plaats van ongeveer 12");
+                }
+            } finally {
+                StarkConfig.Power.HEAT_RATE_FUEL = oldFuel;
+                StarkConfig.Power.HEAT_RATE_AMBIENT = oldAmbient;
+            }
+            helper.succeed();
+        });
+    }
+
     // ================================================================ De beveiliging van de Stark Tower
 
     /** Zet een beveiligingskern neer (zonder eigenaar, of met de gegeven eigenaar). */
@@ -3276,8 +3320,8 @@ public final class StarkTechGameTests {
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "grid")
     public static void station_stores_only_spare_grid_power(GameTestHelper helper) {
-        BlockPos full = storeRow(helper, 1, StarkConfig.Power.HEAT_CAPACITY);
-        BlockPos quarter = storeRow(helper, 3, StarkConfig.Power.HEAT_CAPACITY / 4);
+        BlockPos full = storeRow(helper, 1, (int) StarkConfig.Power.HEAT_CAPACITY);
+        BlockPos quarter = storeRow(helper, 3, (int) (StarkConfig.Power.HEAT_CAPACITY / 4));
         helper.runAfterDelay(40, () -> {
             int fromFull = ((ChargingStationBlockEntity) helper.getBlockEntity(full)).energy();
             int fromQuarter = ((ChargingStationBlockEntity) helper.getBlockEntity(quarter)).energy();
@@ -4327,18 +4371,18 @@ public final class StarkTechGameTests {
     /** Redstone is noodvoorraad, geen stroomvoorziening: een volle bril kost er honderden. */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
     public static void redstone_is_a_small_top_up(GameTestHelper helper) {
-        int perRedstone = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE));
+        float perRedstone = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE));
         if (perRedstone != StarkConfig.Power.ENERGY_PER_REDSTONE) {
             throw new GameTestAssertException("Redstone geeft " + perRedstone + " in plaats van "
                     + StarkConfig.Power.ENERGY_PER_REDSTONE);
         }
         // Een lege bril vol krijgen hoort meer dan een stapel redstone te kosten.
-        int needed = StarkConfig.Glasses.BASE_CAPACITY / perRedstone;
+        int needed = (int) (StarkConfig.Glasses.BASE_CAPACITY / perRedstone);
         if (needed <= 64) {
             throw new GameTestAssertException("Een volle bril kost maar " + needed + " redstone; dat is te makkelijk");
         }
         // Een blok hoort ongeveer negen losse stuks waard te zijn, niet meer.
-        int perBlock = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE_BLOCK));
+        float perBlock = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE_BLOCK));
         if (perBlock < perRedstone * 9 || perBlock > perRedstone * 10) {
             throw new GameTestAssertException("Een redstone-blok geeft " + perBlock
                     + "; verwacht ongeveer negen keer " + perRedstone);

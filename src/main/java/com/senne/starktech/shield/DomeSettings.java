@@ -35,10 +35,10 @@ public final class DomeSettings {
      * Stroom per tick: het getal voor deze maat, maal de sterkte. Een koepel van 16 blokken op
      * sterkte 2 kost 4 x 2 = 8 per tick (twee zonnepanelen overdag); de grootste en sterkste 40.
      */
-    public static int upkeep(int radiusIndex, int strength) {
-        int[] perStrength = StarkConfig.Power.DOME_UPKEEP;
+    public static double upkeep(int radiusIndex, int strength) {
+        float[] perStrength = StarkConfig.Power.DOME_UPKEEP;
         int size = Mth.clamp(radiusIndex, 0, perStrength.length - 1);
-        return Math.max(1, perStrength[size] * clampStrength(strength));
+        return Math.max(0, perStrength[size] * clampStrength(strength));
     }
 
     /** Hoeveel schildkracht hij heeft bij deze sterkte. */

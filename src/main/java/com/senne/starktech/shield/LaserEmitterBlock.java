@@ -215,12 +215,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     /** Eén seconde stroom betalen. Lukt het niet, dan halen we niets weg. */
     private static boolean pay(ServerLevel level, BlockPos pos) {
-        int cost = StarkConfig.Power.LASER_WALL_UPKEEP * UPKEEP_INTERVAL;
-        if (StarkGrid.available(level, pos) < cost) {
-            return false;
-        }
-        StarkGrid.draw(level, pos, cost);
-        return true;
+        return StarkGrid.pay(level, pos, (double) StarkConfig.Power.LASER_WALL_UPKEEP * UPKEEP_INTERVAL);
     }
 
     /** Geen stroom: een zacht droog klikje en een rookpluimpje bij de lens. */
