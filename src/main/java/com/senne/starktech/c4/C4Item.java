@@ -38,8 +38,8 @@ public class C4Item extends BlockItem {
 
     /** De tijd op deze C4 (Timer), in seconden. */
     public static int timerSeconds(ItemStack stack) {
-        return Mth.clamp(stack.getOrDefault(ModDataComponents.C4_TIMER.get(), StarkConfig.C4.TIMER_DEFAULT),
-                StarkConfig.C4.TIMER_MIN, StarkConfig.C4.TIMER_MAX);
+        return Mth.clamp(stack.getOrDefault(ModDataComponents.C4_TIMER.get(), Math.round(StarkConfig.C4.TIMER_DEFAULT)),
+                Math.round(StarkConfig.C4.TIMER_MIN), Math.round(StarkConfig.C4.TIMER_MAX));
     }
 
     /** "0:10", "1:30". */

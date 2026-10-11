@@ -89,7 +89,7 @@ public class MiniRocketEntity extends Projectile {
         super.tick();
         Level level = level();
         if (!level.isClientSide) {
-            if (++age > StarkConfig.Suit.ROCKET_LIFETIME) {
+            if (++age > Math.round(StarkConfig.Suit.ROCKET_LIFETIME)) {
                 explode(position(), null);
                 return;
             }
@@ -124,7 +124,7 @@ public class MiniRocketEntity extends Projectile {
         Vec3 motion = getDeltaMovement();
         double speed = Math.min(StarkConfig.Suit.ROCKET_MAX_SPEED, motion.length() + StarkConfig.Suit.ROCKET_ACCELERATION);
         Vec3 direction = motion.normalize();
-        if (age > StarkConfig.Suit.ROCKET_ARM_TICKS) {
+        if (age > Math.round(StarkConfig.Suit.ROCKET_ARM_TICKS)) {
             if (targetId != null && level.getEntity(targetId) instanceof LivingEntity target && target.isAlive()) {
                 aimPoint = target.getBoundingBox().getCenter();
             }

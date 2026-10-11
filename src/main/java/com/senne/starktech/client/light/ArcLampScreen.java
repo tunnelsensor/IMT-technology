@@ -100,7 +100,7 @@ public class ArcLampScreen extends Screen {
         int valueX = left + VALUE_X;
         int sliderW = PANEL_W - VALUE_X - MARGIN - 2 * (STEP_W + 4);
 
-        brightness = new ValueSlider(valueX + STEP_W + 4, brightnessY(), sliderW, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL,
+        brightness = new ValueSlider(valueX + STEP_W + 4, brightnessY(), sliderW, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL),
                 lamp.brightness(), value -> Component.translatable("screen.starktech.lamp.level_value", value),
                 value -> send(LampActionPayload.Op.BRIGHTNESS, value));
         glow = new ValueSlider(valueX + STEP_W + 4, glowY(), sliderW, 0, ArcLampBlockEntity.MAX_GLOW,
@@ -113,6 +113,9 @@ public class ArcLampScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(left + PANEL_W - MARGIN - DONE_W, footerY(), DONE_W, 20).build());
+        // Links van Done: stroom per tick, seconde, minuut of uur.
+        addRenderableWidget(com.senne.starktech.client.PowerUnit.button(
+                left + PANEL_W - MARGIN - DONE_W - 4 - 50, footerY(), 50, 20));
     }
 
     /** Een min-knop links en een plus-knop rechts van een schuifje. */
@@ -173,9 +176,9 @@ public class ArcLampScreen extends Screen {
         Component range = reach > 0
                 ? Component.translatable("screen.starktech.lamp.reach", reach, level)
                 : Component.translatable("screen.starktech.lamp.reach_small", level);
-        String perSecond = com.senne.starktech.energy.StarkGrid.text(ArcLampBlockEntity.powerPerTick(level) * 20);
+        Component use = com.senne.starktech.client.PowerUnit.current().rate(ArcLampBlockEntity.powerPerTick(level));
         hint(g, range, brightnessY() + 25);
-        hint(g, Component.translatable("screen.starktech.lamp.power", perSecond), brightnessY() + 36);
+        hint(g, Component.translatable("screen.starktech.lamp.power", use), brightnessY() + 36);
 
         label(g, "screen.starktech.lamp.glow", glowY());
         hint(g, Component.translatable("screen.starktech.lamp.glow_hint"), glowY() + 25);

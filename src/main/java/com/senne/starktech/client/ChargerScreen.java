@@ -3,7 +3,6 @@ package com.senne.starktech.client;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.edith.EdithData;
-import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.station.ChargerMenu;
 import java.util.List;
@@ -23,7 +22,7 @@ import net.minecraft.world.item.Items;
  *  [    ]   ======= (balk)     1234 / 5000
  *  [    ]   Fuel    [kolen]    MADE SO FAR
  *  [    ]                      56789
- *  Producing: 4 per tick
+ *  Producing: 4 per tick                    [/tick]
  * </pre>
  * Links een verticale balk met wat het apparaat zelf heeft opgeslagen, in het midden je bril met
  * daaronder zijn eigen balk, rechts de getallen, en onderaan wat het nu oplevert (of waarom het
@@ -53,6 +52,13 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         imageHeight = 166;
         // Geen "Inventory" boven je eigen vakjes: daar staat nu de regel met wat het oplevert.
         inventoryLabelY = -1000;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        // Rechtsboven: per tick, per seconde, per minuut of per uur (geldt voor alle stroomschermen).
+        addRenderableWidget(PowerUnit.button(leftPos + imageWidth - 7 - 34, topPos + 4, 34, 12));
     }
 
     @Override
@@ -155,7 +161,7 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
     private Component status() {
         float rate = menu.getRate();
         return rate > 0
-                ? Component.translatable("screen.starktech.charger.rate", StarkGrid.text(rate))
+                ? Component.translatable("screen.starktech.charger.rate", PowerUnit.current().rate(rate))
                 : Component.translatable(menu.usesFuel()
                         ? "screen.starktech.charger.idle_heat"
                         : "screen.starktech.charger.idle_solar");

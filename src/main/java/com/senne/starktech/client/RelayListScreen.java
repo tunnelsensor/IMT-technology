@@ -187,7 +187,7 @@ public class RelayListScreen extends Screen {
         super.render(g, mouseX, mouseY, a);
 
         g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
-        String count = shown.relays().size() + "/" + StarkConfig.Relays.MAX_RELAYS;
+        String count = shown.relays().size() + "/" + Math.round(StarkConfig.Relays.MAX_RELAYS);
         g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(180, HudStyle.WHITE), true);
 
         LocalPlayer player = player();

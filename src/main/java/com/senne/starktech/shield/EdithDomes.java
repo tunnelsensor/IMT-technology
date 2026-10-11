@@ -191,7 +191,7 @@ public final class EdithDomes {
             impact(level, dome, projectile.position().subtract(motion), projectile.position());
             projectile.discard();
             dome.absorb(level, projectile instanceof AbstractHurtingProjectile
-                    ? StarkConfig.Dome.COST_FIREBALL : StarkConfig.Dome.COST_PROJECTILE);
+                    ? Math.round(StarkConfig.Dome.COST_FIREBALL) : Math.round(StarkConfig.Dome.COST_PROJECTILE));
             if (!dome.isUp()) {
                 return;
             }
@@ -212,7 +212,7 @@ public final class EdithDomes {
             intruder.hurtMarked = true;
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, intruder.getX(), intruder.getY() + 1, intruder.getZ(),
                     4, 0.2, 0.3, 0.2, 0.05);
-            dome.absorb(level, StarkConfig.Dome.COST_PUSH);
+            dome.absorb(level, Math.round(StarkConfig.Dome.COST_PUSH));
             if (!dome.isUp()) {
                 return;
             }

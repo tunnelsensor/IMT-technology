@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
 public class HydraSoldierEntity extends Monster implements RangedAttackMob {
     public HydraSoldierEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
-        this.xpReward = StarkConfig.Hydra.XP_REWARD;
+        this.xpReward = Math.round(StarkConfig.Hydra.XP_REWARD);
         // Deuren mogen in zijn route zitten: hij doet ze open (zie OpenDoorGoal hieronder).
         if (getNavigation() instanceof net.minecraft.world.entity.ai.navigation.GroundPathNavigation ground) {
             ground.setCanOpenDoors(true);
@@ -106,7 +106,7 @@ public class HydraSoldierEntity extends Monster implements RangedAttackMob {
         Vec3 from = getEyePosition().add(getViewVector(1.0f).scale(0.6)).add(0, -0.25, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         playSound(ModSounds.DRONE_LASER.get(), 0.9f, 0.7f + random.nextFloat() * 0.1f);
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, StarkConfig.Dome.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, Math.round(StarkConfig.Dome.COST_LASER));
         if (shield != null) {
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.HYDRA_LASER));
             return;

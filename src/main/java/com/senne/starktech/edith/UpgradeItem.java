@@ -31,9 +31,9 @@ public class UpgradeItem extends Item {
     public boolean canApplyTo(ItemStack glasses) {
         EdithUpgrades upgrades = EdithData.getUpgrades(glasses);
         return switch (type) {
-            case BATTERY -> upgrades.battery() < StarkConfig.Glasses.MAX_BATTERY_UPGRADES;
+            case BATTERY -> upgrades.battery() < Math.round(StarkConfig.Glasses.MAX_BATTERY_UPGRADES);
             case SCANNER -> upgrades.scanner() < StarkConfig.Scanner.MAX_SCANNER_UPGRADES;
-            case DRONE -> upgrades.drones() < StarkConfig.Drones.MAX_UPGRADES;
+            case DRONE -> upgrades.drones() < Math.round(StarkConfig.Drones.MAX_UPGRADES);
         };
     }
 

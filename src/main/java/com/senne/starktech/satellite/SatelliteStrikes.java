@@ -85,7 +85,7 @@ public final class SatelliteStrikes {
             this.ticksLeft = SatelliteStats.chargeTicks(upgrades.targeting());
             this.fireTicks = switch (mode) {
                 case PRECISION -> 1;
-                case BOMBARDMENT -> SatelliteStats.bombardmentShots(upgrades.bombardment()) * StarkConfig.Satellite.BOMBARDMENT_INTERVAL;
+                case BOMBARDMENT -> SatelliteStats.bombardmentShots(upgrades.bombardment()) * Math.round(StarkConfig.Satellite.BOMBARDMENT_INTERVAL);
                 case SWEEP -> SatelliteStats.sweepTicks(upgrades.sweep());
             };
             this.fireTicksLeft = fireTicks;
@@ -191,7 +191,7 @@ public final class SatelliteStrikes {
                 }
                 case BOMBARDMENT -> {
                     if (strike.fireTicksLeft > 0) {
-                        if (strike.fireTicksLeft % StarkConfig.Satellite.BOMBARDMENT_INTERVAL == 0) {
+                        if (strike.fireTicksLeft % Math.round(StarkConfig.Satellite.BOMBARDMENT_INTERVAL) == 0) {
                             fireBombardmentShot(level, strike);
                         }
                         strike.fireTicksLeft--;
@@ -221,7 +221,7 @@ public final class SatelliteStrikes {
         if (shield != null) {
             Vec3 target = strike.target;
             OrbitalMissileEntity.launch(level, shield, null, at -> {
-                Vec3 hit = EdithDomes.blockedAt(level, target, null, ownerId, StarkConfig.Dome.COST_SATELLITE_BEAM);
+                Vec3 hit = EdithDomes.blockedAt(level, target, null, ownerId, Math.round(StarkConfig.Dome.COST_SATELLITE_BEAM));
                 impactEffect(level, hit != null ? hit : at, BeamEffectPayload.Kind.SATELLITE_PRECISION, 1.3f);
             });
             return;
@@ -254,7 +254,7 @@ public final class SatelliteStrikes {
         Vec3 shield = EdithDomes.blockedAt(level, pos, null, ownerId, 0);
         if (shield != null) {
             OrbitalMissileEntity.launch(level, shield, null, at -> {
-                Vec3 hit = EdithDomes.blockedAt(level, pos, null, ownerId, StarkConfig.Dome.COST_SATELLITE_IMPACT);
+                Vec3 hit = EdithDomes.blockedAt(level, pos, null, ownerId, Math.round(StarkConfig.Dome.COST_SATELLITE_IMPACT));
                 impactEffect(level, hit != null ? hit : at, BeamEffectPayload.Kind.SATELLITE_FIRE, 0.9f);
             });
             return;
@@ -294,7 +294,7 @@ public final class SatelliteStrikes {
         Vec3 pos = strike.target;
         // Over een schildkoepel heen? Dan schroeit hij over de koepel in plaats van over de grond
         // (om de tick kost dat schildkracht).
-        int cost = strike.fireTicksLeft % 2 == 0 ? StarkConfig.Dome.COST_SATELLITE_SWEEP : 0;
+        int cost = strike.fireTicksLeft % 2 == 0 ? Math.round(StarkConfig.Dome.COST_SATELLITE_SWEEP) : 0;
         Vec3 shield = EdithDomes.blockedAt(level, pos, null, strike.ownerId, cost);
         if (shield != null) {
             if (cost > 0) {

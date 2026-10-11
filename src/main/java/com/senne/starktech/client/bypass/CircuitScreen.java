@@ -124,7 +124,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
         signal = puzzle.signal(rotations);
         turnFrom = new float[puzzle.cells()];
         turnStart = new long[puzzle.cells()];
-        ticksLeft = CircuitPuzzle.circuitSeconds(level) * 20;
+        ticksLeft = CircuitPuzzle.circuitTicks(level);
         phase = Phase.PLAY;
         CompoundTag args = new CompoundTag();
         args.putInt("level", level);
@@ -149,10 +149,10 @@ public class CircuitScreen extends Screen implements BypassScreen {
             int colour = levelColour(lvl);
             g.fill(x + 8, ry, x + 11, ry + ROW_H - 2, HudStyle.argb(255, colour));
             g.drawString(font, "LEVEL " + lvl, x + 16, ry + 5, HudStyle.argb(255, colour), false);
-            String size = StarkConfig.Bypass.CIRCUIT_COLUMNS[i] + " x " + StarkConfig.Bypass.CIRCUIT_ROWS[i];
+            String size = Math.round(StarkConfig.Bypass.CIRCUIT_COLUMNS[i]) + " x " + Math.round(StarkConfig.Bypass.CIRCUIT_ROWS[i]);
             g.drawString(font, size, x + 80, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
-            g.drawString(font, CircuitPuzzle.circuitSeconds(lvl) + " s", x + 128, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
-            int alarms = StarkConfig.Bypass.CIRCUIT_ALARMS[i];
+            g.drawString(font, com.senne.starktech.config.Numbers.text(CircuitPuzzle.circuitSeconds(lvl)) + " s", x + 128, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
+            int alarms = Math.round(StarkConfig.Bypass.CIRCUIT_ALARMS[i]);
             g.drawString(font, alarms + (alarms == 1 ? " ALARM" : " ALARMS"), x + 168, ry + 5, HudStyle.argb(255, HudStyle.RED), false);
             for (int pip = 0; pip < 5; pip++) {
                 g.fill(x + 254 + pip * 6, ry + 6, x + 258 + pip * 6, ry + 10,
@@ -309,7 +309,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
             String text = "Sending the card to the server...";
             g.drawString(font, text, cx - font.width(text) / 2, ty, HudStyle.argb(255, HudStyle.CYAN), false);
         } else if (alarm) {
-            float left = 1 - alarmTicks / (float) Math.max(1, StarkConfig.Bypass.ALARM_GRACE_TICKS);
+            float left = 1 - alarmTicks / (float) Math.max(1, Math.round(StarkConfig.Bypass.ALARM_GRACE_TICKS));
             String text = "ALARM! Turn that wire away!";
             g.drawString(font, text, cx - font.width(text) / 2, ty, HudStyle.argb(255, HudStyle.RED), false);
             HudStyle.bar(g, cx - 60, ty + 12, 120, 4, left, HudStyle.RED);
@@ -472,7 +472,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
                     if (alarmTicks % 5 == 0) {
                         play(ModSounds.EDITH_ALERT.get(), 1.6f, 0.5f);
                     }
-                    if (++alarmTicks >= StarkConfig.Bypass.ALARM_GRACE_TICKS) {
+                    if (++alarmTicks >= Math.round(StarkConfig.Bypass.ALARM_GRACE_TICKS)) {
                         lose("alarm");
                         return;
                     }

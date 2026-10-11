@@ -47,7 +47,7 @@ public class RaidDroneEntity extends Monster {
         super(type, level);
         this.moveControl = new RaidMoveControl(this);
         this.setNoGravity(true);
-        this.xpReward = StarkConfig.Raids.XP_REWARD;
+        this.xpReward = Math.round(StarkConfig.Raids.XP_REWARD);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -136,11 +136,11 @@ public class RaidDroneEntity extends Monster {
 
         if (canSee && distance <= StarkConfig.Raids.ATTACK_RANGE && fireCooldown <= 0) {
             fireLaser(level, target);
-            fireCooldown = StarkConfig.Raids.FIRE_INTERVAL;
+            fireCooldown = Math.round(StarkConfig.Raids.FIRE_INTERVAL);
         } else if (!canSee && breakCooldown <= 0) {
             // Verstopt achter een muur? Dan gaat de muur eraan.
             breakTowards(level, target);
-            breakCooldown = StarkConfig.Raids.BREAK_INTERVAL;
+            breakCooldown = Math.round(StarkConfig.Raids.BREAK_INTERVAL);
         }
     }
 
@@ -148,7 +148,7 @@ public class RaidDroneEntity extends Monster {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         // Staat zijn doelwit onder een schildkoepel? Dan stuit het schot daarop.
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, StarkConfig.Dome.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, Math.round(StarkConfig.Dome.COST_LASER));
         if (shield != null) {
             playSound(ModSounds.DRONE_LASER.get(), 0.8f, 1.1f);
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));

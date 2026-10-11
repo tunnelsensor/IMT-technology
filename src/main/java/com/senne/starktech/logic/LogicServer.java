@@ -114,12 +114,12 @@ public final class LogicServer {
 
         /** Zoveel diagrammen kunnen tegelijk bezig zijn. */
         public int maxRuns() {
-            return ram * StarkConfig.Logic.RUNS_PER_RAM;
+            return ram * Math.round(StarkConfig.Logic.RUNS_PER_RAM);
         }
 
         /** Zoveel blokjes passen er in totaal in de diagrammen. */
         public int capacity() {
-            return ssd * StarkConfig.Logic.BLOCKS_PER_SSD;
+            return ssd * Math.round(StarkConfig.Logic.BLOCKS_PER_SSD);
         }
     }
 
@@ -298,7 +298,7 @@ public final class LogicServer {
                 if (stack.getItem() instanceof ServerPartItem part) {
                     CompoundTag p = new CompoundTag();
                     p.putString("k", part.kind().name());
-                    p.putInt("w", Math.min(100, ServerPartItem.wear(stack) * 100 / Math.max(1, StarkConfig.Logic.MAX_WEAR)));
+                    p.putInt("w", Math.min(100, ServerPartItem.wear(stack) * 100 / Math.max(1, Math.round(StarkConfig.Logic.MAX_WEAR))));
                     parts.add(p);
                 }
             }

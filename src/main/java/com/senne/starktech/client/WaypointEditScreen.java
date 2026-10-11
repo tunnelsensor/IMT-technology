@@ -64,7 +64,7 @@ public class WaypointEditScreen extends Screen {
 
         nameBox = new EditBox(font, left + 10, top + 34, PANEL_W - 44, 18,
                 Component.translatable("screen.starktech.waypoint_edit.name"));
-        nameBox.setMaxLength(StarkConfig.Navigation.MAX_WAYPOINT_NAME);
+        nameBox.setMaxLength(Math.round(StarkConfig.Navigation.MAX_WAYPOINT_NAME));
         nameBox.setValue(waypoint.name());
         addRenderableWidget(nameBox);
 

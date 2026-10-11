@@ -165,7 +165,7 @@ public class ZoneMarkerItem extends Item {
         }
         ZoneBox fittedBox = box.clamp(core.zoneLow(), core.zoneHigh());
         if (fittedBox == null) {
-            tell(player, Component.translatable("zone.starktech.marker.no_core", StarkConfig.Security.ZONE_REACH), true);
+            tell(player, Component.translatable("zone.starktech.marker.no_core", Math.round(StarkConfig.Security.ZONE_REACH)), true);
             return;
         }
         if (core.zoneBoxBlocked(fittedBox)) {
@@ -178,7 +178,7 @@ public class ZoneMarkerItem extends Item {
         core.logEvent(EventLog.Type.ZONE, "Zone: box " + fitted.size() + " added (" + added.size() + ")");
         tell(player, added.equals(box)
                 ? Component.translatable("zone.starktech.marker.added", fitted.size(), added.size(), added.volume())
-                : Component.translatable("zone.starktech.marker.added_cut", fitted.size(), StarkConfig.Security.ZONE_REACH,
+                : Component.translatable("zone.starktech.marker.added_cut", fitted.size(), Math.round(StarkConfig.Security.ZONE_REACH),
                         added.size(), added.volume()), false);
         stack.set(ModDataComponents.ZONE_SELECTION.get(), ZoneSelection.EMPTY);
         player.playNotifySound(ModSounds.EDITH_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
@@ -255,7 +255,7 @@ public class ZoneMarkerItem extends Item {
         if (here != null && here.ownerId() != null) {
             tell(player, Component.translatable("zone.starktech.marker.not_yours", here.ownerName()), true);
         } else {
-            tell(player, Component.translatable("zone.starktech.marker.no_core", StarkConfig.Security.ZONE_REACH), true);
+            tell(player, Component.translatable("zone.starktech.marker.no_core", Math.round(StarkConfig.Security.ZONE_REACH)), true);
         }
         return null;
     }

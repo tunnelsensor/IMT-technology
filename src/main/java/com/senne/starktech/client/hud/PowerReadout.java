@@ -17,8 +17,8 @@ public final class PowerReadout {
     private PowerReadout() {}
 
     /** Hoeveel energie (SE) de bril nu per seconde verbruikt. */
-    public static int drainPerSecond(ItemStack glasses) {
-        int drain = StarkConfig.Glasses.DRAIN_HUD;
+    public static double drainPerSecond(ItemStack glasses) {
+        double drain = StarkConfig.Glasses.DRAIN_HUD;
         for (EdithFeature feature : EdithFeature.values()) {
             if (EdithData.isEnabled(glasses, feature)) {
                 drain += feature.drainPerSecond();
@@ -31,8 +31,8 @@ public final class PowerReadout {
     }
 
     /** Hoe lang de batterij nog meegaat bij dit verbruik, bv. "1u 20m" of "4m 10s". */
-    public static Component timeLeft(int energy, int drainPerSecond) {
-        int seconds = energy / Math.max(1, drainPerSecond);
+    public static Component timeLeft(int energy, double drainPerSecond) {
+        int seconds = (int) Math.min(Integer.MAX_VALUE, energy / Math.max(0.01, drainPerSecond));
         return seconds >= 3600
                 ? Component.translatable("hud.starktech.sys.time_hours", seconds / 3600, seconds % 3600 / 60)
                 : Component.translatable("hud.starktech.sys.time_minutes", seconds / 60, seconds % 60);

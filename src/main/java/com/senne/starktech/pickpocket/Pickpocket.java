@@ -117,8 +117,8 @@ public final class Pickpocket {
             }
         }
         Collections.shuffle(slots, new java.util.Random(thief.getRandom().nextLong()));
-        if (slots.size() > StarkConfig.Bypass.POCKET_MAX_CARDS) {
-            slots = new ArrayList<>(slots.subList(0, StarkConfig.Bypass.POCKET_MAX_CARDS));
+        if (slots.size() > Math.round(StarkConfig.Bypass.POCKET_MAX_CARDS)) {
+            slots = new ArrayList<>(slots.subList(0, Math.round(StarkConfig.Bypass.POCKET_MAX_CARDS)));
         }
         THEFTS.put(thief.getUUID(), new Theft(victim.getUUID(), victim.getId(), slots, thief.serverLevel().getGameTime()));
         CompoundTag args = new CompoundTag();
@@ -204,7 +204,7 @@ public final class Pickpocket {
         victim.sendSystemMessage(Component.translatable("pickpocket.starktech.msg.victim", thief.getDisplayName())
                 .withStyle(ChatFormatting.RED));
         victim.playNotifySound(ModSounds.EDITH_ALERT.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-        thief.addEffect(new MobEffectInstance(MobEffects.GLOWING, StarkConfig.Bypass.PICKPOCKET_GLOW_SECONDS * 20, 0, false, false));
+        thief.addEffect(new MobEffectInstance(MobEffects.GLOWING, Math.round(StarkConfig.Bypass.PICKPOCKET_GLOW_SECONDS * 20), 0, false, false));
         thief.displayClientMessage(Component.translatable("pickpocket.starktech.msg.caught", victim.getDisplayName())
                 .withStyle(ChatFormatting.RED), true);
         CompoundTag args = new CompoundTag();
@@ -216,7 +216,7 @@ public final class Pickpocket {
     private static void end(ServerPlayer thief, Theft theft) {
         THEFTS.remove(thief.getUUID());
         COOLDOWNS.computeIfAbsent(thief.getUUID(), id -> new HashMap<>()).put(theft.victim(),
-                thief.serverLevel().getGameTime() + StarkConfig.Bypass.PICKPOCKET_COOLDOWN_SECONDS * 20L);
+                thief.serverLevel().getGameTime() + Math.round(StarkConfig.Bypass.PICKPOCKET_COOLDOWN_SECONDS * 20));
     }
 
     private static @Nullable ServerPlayer victimOf(@Nullable MinecraftServer server, Theft theft) {

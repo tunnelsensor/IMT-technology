@@ -77,10 +77,10 @@ public final class BypassGameTests {
             for (long seed = 0; seed < 300; seed++) {
                 CircuitPuzzle puzzle = CircuitPuzzle.generate(seed * 7919L - 12345L, level);
                 String which = "Niveau " + level + ", getal " + seed + ": ";
-                check(puzzle.columns() == StarkConfig.Bypass.CIRCUIT_COLUMNS[index] && puzzle.rows() == StarkConfig.Bypass.CIRCUIT_ROWS[index],
+                check(puzzle.columns() == Math.round(StarkConfig.Bypass.CIRCUIT_COLUMNS[index]) && puzzle.rows() == Math.round(StarkConfig.Bypass.CIRCUIT_ROWS[index]),
                         which + "het raster is " + puzzle.columns() + " x " + puzzle.rows());
-                check(puzzle.alarms().size() == StarkConfig.Bypass.CIRCUIT_ALARMS[index],
-                        which + puzzle.alarms().size() + " ALARM-punten in plaats van " + StarkConfig.Bypass.CIRCUIT_ALARMS[index]);
+                check(puzzle.alarms().size() == Math.round(StarkConfig.Bypass.CIRCUIT_ALARMS[index]),
+                        which + puzzle.alarms().size() + " ALARM-punten in plaats van " + Math.round(StarkConfig.Bypass.CIRCUIT_ALARMS[index]));
                 CircuitPuzzle.Signal begin = puzzle.signal(puzzle.start());
                 check(!begin.accepted() && begin.alarms().isEmpty(), which + "het begint al opgelost of op ALARM");
                 CircuitPuzzle.Signal solved = puzzle.signal(puzzle.solution());
@@ -406,7 +406,7 @@ public final class BypassGameTests {
             startLab(helper, setup);
             Bypass.start(setup.hacker(), setup.panelAbs(), InteractionHand.MAIN_HAND);
             check(Bypass.isHacking(setup.hacker()), "De hack van het paneel begon niet");
-            check(Bypass.triesLeftOf(setup.hacker()) == 4 + StarkConfig.Bypass.ORDER_EXTRA_TRIES,
+            check(Bypass.triesLeftOf(setup.hacker()) == 4 + Math.round(StarkConfig.Bypass.ORDER_EXTRA_TRIES),
                     "Pogingen aan het begin: " + Bypass.triesLeftOf(setup.hacker()));
             int start = Bypass.triesLeftOf(setup.hacker());
             guess(setup, "4712");

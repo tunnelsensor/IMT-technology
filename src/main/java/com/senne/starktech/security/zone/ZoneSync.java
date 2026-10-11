@@ -63,7 +63,7 @@ public final class ZoneSync {
     public static List<ZoneSyncPayload.View> visibleTo(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         List<ZoneSyncPayload.View> views = new ArrayList<>();
-        double range = RANGE + StarkConfig.Security.ZONE_REACH;
+        double range = RANGE + Math.round(StarkConfig.Security.ZONE_REACH);
         for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
             if (views.size() >= ZoneSyncPayload.MAX_ZONES) {
                 break;

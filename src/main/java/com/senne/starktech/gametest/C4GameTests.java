@@ -285,7 +285,7 @@ public final class C4GameTests {
             throw new GameTestAssertException("Een andere detonator zou de lading niet mogen overnemen");
         }
         // Te ver weg: niets.
-        int oldRange = StarkConfig.C4.DETONATOR_RANGE;
+        int oldRange = Math.round(StarkConfig.C4.DETONATOR_RANGE);
         try {
             StarkConfig.C4.DETONATOR_RANGE = 3;
             player.setItemInHand(InteractionHand.MAIN_HAND, mine);

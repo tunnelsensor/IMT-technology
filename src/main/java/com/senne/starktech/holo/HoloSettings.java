@@ -29,7 +29,7 @@ public final class HoloSettings {
     }
 
     public static int rangeBlocks(int index) {
-        return StarkConfig.Holo.RANGES[clampRange(index)];
+        return Math.round(StarkConfig.Holo.RANGES[clampRange(index)]);
     }
 
     public static float scale(int index) {

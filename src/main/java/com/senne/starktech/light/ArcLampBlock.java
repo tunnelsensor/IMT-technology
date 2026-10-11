@@ -116,7 +116,7 @@ public class ArcLampBlock extends BaseEntityBlock implements PowerConnectable {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.starktech.arc_lamp", StarkConfig.Lights.ARC_LAMP_MAX_LEVEL, ArcLampLight.maxReach())
+        tooltip.add(Component.translatable("tooltip.starktech.arc_lamp", Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL), ArcLampLight.maxReach())
                 .withStyle(ChatFormatting.GRAY));
     }
 }

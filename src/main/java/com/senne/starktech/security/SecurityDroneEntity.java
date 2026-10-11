@@ -196,14 +196,14 @@ public class SecurityDroneEntity extends PathfinderMob {
         if (fireCooldown <= 0 && getSensing().hasLineOfSight(target)
                 && distanceToSqr(target) <= StarkConfig.Security.DRONE_RANGE * StarkConfig.Security.DRONE_RANGE) {
             fireLaser(level, target);
-            fireCooldown = StarkConfig.Security.DRONE_FIRE_INTERVAL;
+            fireCooldown = Math.round(StarkConfig.Security.DRONE_FIRE_INTERVAL);
         }
     }
 
     private void fireLaser(ServerLevel level, LivingEntity target) {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, StarkConfig.Dome.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, null, Math.round(StarkConfig.Dome.COST_LASER));
         playSound(ModSounds.DRONE_LASER.get(), 0.7f, 1.3f + random.nextFloat() * 0.1f);
         if (shield != null) {
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));

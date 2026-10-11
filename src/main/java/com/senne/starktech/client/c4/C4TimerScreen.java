@@ -155,7 +155,7 @@ public class C4TimerScreen extends Screen {
 
     /** Een nieuwe tijd: hier laten zien, op het item zetten (je spel en de server) en een tikje. */
     private void set(int newSeconds) {
-        int clamped = Mth.clamp(newSeconds, StarkConfig.C4.TIMER_MIN, StarkConfig.C4.TIMER_MAX);
+        int clamped = Mth.clamp(newSeconds, Math.round(StarkConfig.C4.TIMER_MIN), Math.round(StarkConfig.C4.TIMER_MAX));
         if (clamped == seconds) {
             return;
         }

@@ -49,7 +49,7 @@ public class ArcLampBlockEntity extends BlockEntity {
     public static final int MAX_GLOW = 100;
 
     /** Zijn lichtniveau (1 tot het maximum uit de config). */
-    private int brightness = StarkConfig.Lights.ARC_LAMP_MAX_LEVEL;
+    private int brightness = Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
     /** Hoe fel de gloed om hem heen is (0 tot 100%). */
     private int glow = MAX_GLOW;
     /** Stroom die hij nog moet betalen (minder dan 1; zie {@link #powerPerTick}). */
@@ -65,7 +65,7 @@ public class ArcLampBlockEntity extends BlockEntity {
 
     /** Zijn lichtniveau (nooit meer dan de config nu toestaat). */
     public int brightness() {
-        return Mth.clamp(brightness, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
+        return Mth.clamp(brightness, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL));
     }
 
     public int glow() {
@@ -74,7 +74,7 @@ public class ArcLampBlockEntity extends BlockEntity {
 
     /** Een ander lichtniveau (uit het scherm): 1 tot het maximum. */
     public void setBrightness(int value) {
-        int clamped = Mth.clamp(value, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
+        int clamped = Mth.clamp(value, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL));
         if (clamped != brightness) {
             brightness = clamped;
             changed();

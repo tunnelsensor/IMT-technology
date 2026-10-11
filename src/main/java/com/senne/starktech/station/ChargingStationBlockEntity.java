@@ -190,7 +190,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         }
 
         upgradeProgress++;
-        if (upgradeProgress >= StarkConfig.Glasses.UPGRADE_INSTALL_TIME) {
+        if (upgradeProgress >= Math.round(StarkConfig.Glasses.UPGRADE_INSTALL_TIME)) {
             ((UpgradeItem) upgrade.getItem()).applyTo(glasses);
             upgrade.shrink(1);
             upgradeProgress = 0;

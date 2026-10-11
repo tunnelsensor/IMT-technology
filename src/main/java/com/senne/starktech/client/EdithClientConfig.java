@@ -117,7 +117,26 @@ public final class EdithClientConfig {
             .comment("How loud the quiet hum of laser walls and domes is (1 = normal, 2 = twice as loud, 0 = off)")
             .defineInRange("rayshieldHumVolume", 1.0, 0.0, 3.0);
 
+    // ---------------------------------------------------------------- Stroom laten zien
+    /** In welke tijd de schermen stroom laten zien (de knop /tick, /sec, /min, /hour in de stroomschermen). */
+    public static final ModConfigSpec.EnumValue<PowerUnit> POWER_UNIT = BUILDER
+            .comment("How screens show power: per TICK, SECOND, MINUTE or HOUR (the /tick button in the power screens)")
+            .defineEnum("powerUnit", PowerUnit.TICK);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
+
+    /** In welke tijd de schermen stroom laten zien (zolang de instellingen nog niet geladen zijn: per tick). */
+    public static PowerUnit powerUnit() {
+        return SPEC.isLoaded() ? POWER_UNIT.get() : PowerUnit.TICK;
+    }
+
+    /** Kiest een andere tijd voor stroom in de schermen en bewaart de keuze. */
+    public static void setPowerUnit(PowerUnit unit) {
+        if (SPEC.isLoaded()) {
+            POWER_UNIT.set(unit);
+            SPEC.save();
+        }
+    }
 
     /** Hoe hard het zoemen van de rayshields is (zolang de instellingen nog niet geladen zijn: gewoon). */
     public static double rayshieldHumVolume() {

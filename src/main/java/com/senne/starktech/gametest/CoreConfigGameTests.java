@@ -151,7 +151,7 @@ public final class CoreConfigGameTests {
         CompoundTag backupData = new CompoundTag();
         backupData.put("Logic", new LogicStore().save());
         datacenters.add(here, elsewhere, "10.99.99.99", "other-dc", owner.getUUID(), level.getGameTime(), 1, false,
-                backupData, StarkConfig.Logic.BACKUPS_KEPT);
+                backupData, Math.round(StarkConfig.Logic.BACKUPS_KEPT));
         String ip = core.ip();
 
         ItemStack stack = mine(helper, owner, CORE);

@@ -114,6 +114,8 @@ public class DomeScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(left + PANEL_W - MARGIN - 80, top + PANEL_H - 28, 80, 20).build());
+        // Boven Done: stroom per tick, seconde, minuut of uur.
+        addRenderableWidget(PowerUnit.button(left + PANEL_W - MARGIN - 80, top + PANEL_H - 52, 80, 20));
     }
 
     private void stepper(int row, boolean canDown, boolean canUp, Runnable down, Runnable up) {
@@ -203,7 +205,7 @@ public class DomeScreen extends Screen {
 
         // Wat het kost, en of er stroom op zit.
         int infoY = rowY(ROW_STRENGTH) + ROW + 2;
-        String upkeep = com.senne.starktech.energy.StarkGrid.text(DomeSettings.upkeep(dome.radiusIndex(), dome.strength()));
+        Component upkeep = PowerUnit.current().rate(DomeSettings.upkeep(dome.radiusIndex(), dome.strength()));
         Component cost = Component.translatable("screen.starktech.dome.cost", upkeep, dome.sources());
         g.drawString(font, cost, left + MARGIN, infoY, HudStyle.argb(220, HudStyle.WHITE), false);
         Component hint = dome.sources() == 0

@@ -379,8 +379,8 @@ public final class VoiceControl {
         String clean = name.isBlank()
                 ? Component.translatable("edith.starktech.voice.place_name", count + 1).getString()
                 : name.strip();
-        if (clean.length() > StarkConfig.Navigation.MAX_WAYPOINT_NAME) {
-            clean = clean.substring(0, StarkConfig.Navigation.MAX_WAYPOINT_NAME);
+        if (clean.length() > Math.round(StarkConfig.Navigation.MAX_WAYPOINT_NAME)) {
+            clean = clean.substring(0, Math.round(StarkConfig.Navigation.MAX_WAYPOINT_NAME));
         }
         int color = Waypoint.COLORS[count % Waypoint.COLORS.length];
         PacketDistributor.sendToServer(new WaypointActionPayload(WaypointActionPayload.Op.ADD, 0, clean, color));
@@ -392,8 +392,8 @@ public final class VoiceControl {
         if (clean.isEmpty()) {
             return;
         }
-        if (clean.length() > StarkConfig.Comms.MAX_MESSAGE_LENGTH) {
-            clean = clean.substring(0, StarkConfig.Comms.MAX_MESSAGE_LENGTH);
+        if (clean.length() > Math.round(StarkConfig.Comms.MAX_MESSAGE_LENGTH)) {
+            clean = clean.substring(0, Math.round(StarkConfig.Comms.MAX_MESSAGE_LENGTH));
         }
         PacketDistributor.sendToServer(new CommsPayload("", clean));
     }

@@ -371,7 +371,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
      */
     private static List<BlockPos> wallPositions(ServerLevel level, BlockPos pos, Direction facing) {
         List<BlockPos> positions = new ArrayList<>();
-        for (int i = 1; i <= StarkConfig.Shields.LASER_MAX_LENGTH; i++) {
+        for (int i = 1; i <= Math.round(StarkConfig.Shields.LASER_MAX_LENGTH); i++) {
             BlockPos target = pos.relative(facing, i);
             BlockState state = level.getBlockState(target);
             if (state.isAir() || state.is(ModBlocks.LASER_WALL.get())) {

@@ -150,7 +150,7 @@ public final class Bypass {
         } else {
             // De eerste code uit je diagrammen. Naar jouw spel gaan alleen de afdrukken en de lengte.
             session.code = codes.getFirst();
-            session.triesLeft = session.code.length() + StarkConfig.Bypass.ORDER_EXTRA_TRIES;
+            session.triesLeft = session.code.length() + Math.round(StarkConfig.Bypass.ORDER_EXTRA_TRIES);
             level.playSound(null, pos, SoundEvents.BRUSH_GENERIC, SoundSource.BLOCKS, 0.4f, 1.2f);
             args.putInt("length", session.code.length());
             args.putIntArray("prints", PanelOrders.prints(session.code));
@@ -180,7 +180,7 @@ public final class Bypass {
                 if (session.kind != Kind.READER || session.startedAt < 0) {
                     return;
                 }
-                if (now - session.startedAt > CircuitPuzzle.circuitSeconds(session.level) * 20L + CLOCK_SLACK) {
+                if (now - session.startedAt > CircuitPuzzle.circuitTicks(session.level) + CLOCK_SLACK) {
                     fail(player, session, "time");
                     return;
                 }
@@ -251,7 +251,7 @@ public final class Bypass {
         reply(player, session, why);
         ServerLevel level = player.serverLevel();
         LOCKOUTS.computeIfAbsent(player.getUUID(), id -> new HashMap<>())
-                .put(GlobalPos.of(session.dimension, session.pos), level.getGameTime() + StarkConfig.Bypass.LOCKOUT_SECONDS * 20L);
+                .put(GlobalPos.of(session.dimension, session.pos), level.getGameTime() + Math.round(StarkConfig.Bypass.LOCKOUT_SECONDS * 20));
         LogicEvents.tampered(level, session.pos, player);
     }
 
@@ -282,7 +282,7 @@ public final class Bypass {
         if (gone || tooLong) {
             stop(player, true);
         } else if (session.startedAt >= 0 && session.kind == Kind.READER
-                && now - session.startedAt > CircuitPuzzle.circuitSeconds(session.level) * 20L + CLOCK_SLACK * 2) {
+                && now - session.startedAt > CircuitPuzzle.circuitTicks(session.level) + CLOCK_SLACK * 2) {
             // Je spel zei niets meer (te laat): dan is de tijd gewoon om.
             fail(player, session, "time");
         }

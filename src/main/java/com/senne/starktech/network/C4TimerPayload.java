@@ -38,7 +38,7 @@ public record C4TimerPayload(boolean offhand, int seconds) implements CustomPack
     public static void handle(ServerPlayer player, C4TimerPayload payload) {
         ItemStack stack = player.getItemInHand(payload.offhand() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
         if (stack.getItem() instanceof C4Item) {
-            stack.set(ModDataComponents.C4_TIMER.get(), Mth.clamp(payload.seconds(), StarkConfig.C4.TIMER_MIN, StarkConfig.C4.TIMER_MAX));
+            stack.set(ModDataComponents.C4_TIMER.get(), Mth.clamp(payload.seconds(), Math.round(StarkConfig.C4.TIMER_MIN), Math.round(StarkConfig.C4.TIMER_MAX)));
         }
     }
 }

@@ -76,8 +76,8 @@ public final class EdithHack {
                     EdithMessagePayload.Level.INFO);
             return false;
         }
-        if (targets.size() >= StarkConfig.Hack.MAX_TARGETS) {
-            EdithServer.send(hacker, Component.translatable("edith.starktech.msg.hack_too_many", StarkConfig.Hack.MAX_TARGETS),
+        if (targets.size() >= Math.round(StarkConfig.Hack.MAX_TARGETS)) {
+            EdithServer.send(hacker, Component.translatable("edith.starktech.msg.hack_too_many", Math.round(StarkConfig.Hack.MAX_TARGETS)),
                     EdithMessagePayload.Level.WARNING);
             return false;
         }
@@ -115,7 +115,7 @@ public final class EdithHack {
         if (targets == null || targets.isEmpty()) {
             return;
         }
-        int cost = StarkConfig.Hack.DRAIN * targets.size();
+        double cost = StarkConfig.Hack.DRAIN * targets.size();
         if (!EdithData.tryUseEnergy(glasses, cost)) {
             stopAll(hacker, true);
         }
@@ -181,8 +181,8 @@ public final class EdithHack {
         if (server == null) {
             return;
         }
-        String clean = text.length() > StarkConfig.Comms.MAX_MESSAGE_LENGTH
-                ? text.substring(0, StarkConfig.Comms.MAX_MESSAGE_LENGTH)
+        String clean = text.length() > Math.round(StarkConfig.Comms.MAX_MESSAGE_LENGTH)
+                ? text.substring(0, Math.round(StarkConfig.Comms.MAX_MESSAGE_LENGTH))
                 : text;
 
         for (Map.Entry<UUID, Set<UUID>> entry : HACKS.entrySet()) {

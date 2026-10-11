@@ -46,11 +46,11 @@ public class SuitModuleItem extends Item {
         }
         SuitUpgrades upgrades = SuitUpgrades.of(piece);
         return switch (kind) {
-            case THRUSTERS -> suit.getType() == ArmorItem.Type.BOOTS && upgrades.thrusters() < StarkConfig.Workbench.MAX_THRUSTERS;
-            case PLATING -> upgrades.plating() < StarkConfig.Workbench.MAX_PLATING;
-            case CAPACITOR -> suit.getType() == ArmorItem.Type.CHESTPLATE && upgrades.capacitor() < StarkConfig.Workbench.MAX_CAPACITORS;
-            case WARHEAD -> RocketPackItem.installedOn(piece) && upgrades.warheads() < StarkConfig.Workbench.MAX_WARHEADS;
-            case MAGAZINE -> RocketPackItem.installedOn(piece) && upgrades.magazines() < StarkConfig.Workbench.MAX_MAGAZINES;
+            case THRUSTERS -> suit.getType() == ArmorItem.Type.BOOTS && upgrades.thrusters() < Math.round(StarkConfig.Workbench.MAX_THRUSTERS);
+            case PLATING -> upgrades.plating() < Math.round(StarkConfig.Workbench.MAX_PLATING);
+            case CAPACITOR -> suit.getType() == ArmorItem.Type.CHESTPLATE && upgrades.capacitor() < Math.round(StarkConfig.Workbench.MAX_CAPACITORS);
+            case WARHEAD -> RocketPackItem.installedOn(piece) && upgrades.warheads() < Math.round(StarkConfig.Workbench.MAX_WARHEADS);
+            case MAGAZINE -> RocketPackItem.installedOn(piece) && upgrades.magazines() < Math.round(StarkConfig.Workbench.MAX_MAGAZINES);
         };
     }
 

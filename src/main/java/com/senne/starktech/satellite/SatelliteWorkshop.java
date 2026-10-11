@@ -98,7 +98,7 @@ public final class SatelliteWorkshop {
         }
         List<ArsenalDrone> carriers = ArsenalServer.checkOut(player, SatelliteUpgrade.dronesFor(next));
         launchCarriers(player, carriers);
-        DELIVERIES.put(player.getUUID(), new Delivery(upgrade, next, StarkConfig.Satellite.DELIVERY_TICKS));
+        DELIVERIES.put(player.getUUID(), new Delivery(upgrade, next, Math.round(StarkConfig.Satellite.DELIVERY_TICKS)));
         EdithServer.send(player, Component.translatable("satellite.starktech.msg.sent", carriers.size(),
                 upgrade.label(), next), EdithMessagePayload.Level.INFO);
     }
@@ -137,7 +137,7 @@ public final class SatelliteWorkshop {
                 ArsenalServer.returnToOrbit(player, carrier.id(), carrier.health());
                 continue;
             }
-            drone.setup(player, StarkDroneEntity.Mode.LAUNCH, 0, StarkConfig.Drones.LAUNCH_TICKS);
+            drone.setup(player, StarkDroneEntity.Mode.LAUNCH, 0, Math.round(StarkConfig.Drones.LAUNCH_TICKS));
             drone.setArsenalId(carrier.id());
             drone.setHealth(carrier.health());
             // In een kring om je heen, zodat je ze allemaal ziet opstijgen.

@@ -78,8 +78,8 @@ public final class EdithRedstone {
         if (data.indexAt(player.level().dimension(), pos) >= 0) {
             return; // stond er al in
         }
-        if (data.relays().size() >= StarkConfig.Relays.MAX_RELAYS) {
-            EdithServer.send(player, Component.translatable("edith.starktech.msg.relays_full", StarkConfig.Relays.MAX_RELAYS),
+        if (data.relays().size() >= Math.round(StarkConfig.Relays.MAX_RELAYS)) {
+            EdithServer.send(player, Component.translatable("edith.starktech.msg.relays_full", Math.round(StarkConfig.Relays.MAX_RELAYS)),
                     EdithMessagePayload.Level.WARNING);
             return;
         }
@@ -99,8 +99,8 @@ public final class EdithRedstone {
         if (data.indexAt(player.level().dimension(), pos, channel) >= 0) {
             return;
         }
-        if (data.relays().size() >= StarkConfig.Relays.MAX_RELAYS) {
-            EdithServer.send(player, Component.translatable("edith.starktech.msg.relays_full", StarkConfig.Relays.MAX_RELAYS),
+        if (data.relays().size() >= Math.round(StarkConfig.Relays.MAX_RELAYS)) {
+            EdithServer.send(player, Component.translatable("edith.starktech.msg.relays_full", Math.round(StarkConfig.Relays.MAX_RELAYS)),
                     EdithMessagePayload.Level.WARNING);
             return;
         }
@@ -212,8 +212,8 @@ public final class EdithRedstone {
         if (relay == null) {
             return;
         }
-        String name = clean(payload.name(), StarkConfig.Relays.MAX_NAME, relay.name());
-        String group = clean(payload.group(), StarkConfig.Relays.MAX_NAME, Relay.DEFAULT_GROUP);
+        String name = clean(payload.name(), Math.round(StarkConfig.Relays.MAX_NAME), relay.name());
+        String group = clean(payload.group(), Math.round(StarkConfig.Relays.MAX_NAME), Relay.DEFAULT_GROUP);
         player.setData(ModAttachments.RELAYS, data.replace(payload.index(), relay.withName(name).withGroup(group)));
         EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_named", name, group),
                 EdithMessagePayload.Level.INFO);
@@ -234,7 +234,7 @@ public final class EdithRedstone {
         }
         if (!EdithData.tryUseEnergy(glasses, StarkConfig.Relays.COST * targets.size())) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    StarkConfig.Relays.COST * targets.size()), EdithMessagePayload.Level.WARNING);
+                    com.senne.starktech.config.Numbers.text(StarkConfig.Relays.COST * targets.size())), EdithMessagePayload.Level.WARNING);
             return;
         }
         MinecraftServer server = player.getServer();
@@ -267,7 +267,7 @@ public final class EdithRedstone {
         if (level == null) {
             return false;
         }
-        return switchAt(level, relay.pos(), relay.channel(), op, StarkConfig.Relays.PULSE_TICKS);
+        return switchAt(level, relay.pos(), relay.channel(), op, Math.round(StarkConfig.Relays.PULSE_TICKS));
     }
 
     /**

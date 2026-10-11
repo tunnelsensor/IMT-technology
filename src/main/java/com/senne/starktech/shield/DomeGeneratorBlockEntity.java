@@ -49,8 +49,8 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
     private @Nullable UUID ownerId;
     private String ownerName = "";
     private ShieldColor colour = ShieldColor.CYAN;
-    private int radiusIndex = StarkConfig.Dome.DEFAULT_SIZE;
-    private int strength = StarkConfig.Dome.DEFAULT_STRENGTH;
+    private int radiusIndex = Math.round(StarkConfig.Dome.DEFAULT_SIZE);
+    private int strength = Math.round(StarkConfig.Dome.DEFAULT_STRENGTH);
     private boolean enabled = true;
 
     private boolean up;
@@ -229,7 +229,7 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         shield -= cost;
         if (shield <= 0) {
             shield = 0;
-            downUntil = level.getGameTime() + StarkConfig.Dome.DOWN_TICKS;
+            downUntil = level.getGameTime() + Math.round(StarkConfig.Dome.DOWN_TICKS);
             setUp(level, false, Status.DEPLETED);
         }
     }
@@ -288,8 +288,8 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         ownerName = tag.getString("OwnerName");
         ShieldColor[] colours = ShieldColor.values();
         colour = tag.contains("Colour") ? colours[Math.floorMod(tag.getByte("Colour"), colours.length)] : ShieldColor.CYAN;
-        radiusIndex = tag.contains("Radius") ? DomeSettings.clampRadius(tag.getByte("Radius")) : StarkConfig.Dome.DEFAULT_SIZE;
-        strength = tag.contains("Strength") ? DomeSettings.clampStrength(tag.getByte("Strength")) : StarkConfig.Dome.DEFAULT_STRENGTH;
+        radiusIndex = tag.contains("Radius") ? DomeSettings.clampRadius(tag.getByte("Radius")) : Math.round(StarkConfig.Dome.DEFAULT_SIZE);
+        strength = tag.contains("Strength") ? DomeSettings.clampStrength(tag.getByte("Strength")) : Math.round(StarkConfig.Dome.DEFAULT_STRENGTH);
         enabled = !tag.contains("Enabled") || tag.getBoolean("Enabled");
         up = tag.getBoolean("Up");
         Status[] statuses = Status.values();

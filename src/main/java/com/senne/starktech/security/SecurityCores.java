@@ -76,7 +76,7 @@ public final class SecurityCores {
      * richting? Dat getal staat in de config; verandert het, dan geldt het meteen.
      */
     public static boolean inArea(BlockPos corePos, BlockPos pos) {
-        int reach = StarkConfig.Security.ZONE_REACH;
+        int reach = Math.round(StarkConfig.Security.ZONE_REACH);
         return Math.abs(pos.getX() - corePos.getX()) <= reach
                 && Math.abs(pos.getY() - corePos.getY()) <= reach
                 && Math.abs(pos.getZ() - corePos.getZ()) <= reach;
@@ -84,7 +84,7 @@ public final class SecurityCores {
 
     /** Het gebied van de kern op {@code corePos} als één kubus (dezelfde blokken als {@link #inArea}). */
     public static ZoneBox areaOf(BlockPos corePos) {
-        int reach = StarkConfig.Security.ZONE_REACH;
+        int reach = Math.round(StarkConfig.Security.ZONE_REACH);
         return ZoneBox.of(corePos.offset(-reach, -reach, -reach), corePos.offset(reach, reach, reach));
     }
 
@@ -244,7 +244,7 @@ public final class SecurityCores {
 
     /** Overlappen de gebieden van kernen op deze twee plekken (minder dan 2 x ZONE_REACH + 1 uit elkaar)? */
     public static boolean areasOverlap(BlockPos a, BlockPos b) {
-        int both = 2 * StarkConfig.Security.ZONE_REACH;
+        int both = 2 * Math.round(StarkConfig.Security.ZONE_REACH);
         return Math.abs(a.getX() - b.getX()) <= both
                 && Math.abs(a.getZ() - b.getZ()) <= both
                 && Math.abs(a.getY() - b.getY()) <= both;

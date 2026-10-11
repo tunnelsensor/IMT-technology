@@ -124,8 +124,10 @@ final class ZoneApp {
             colour = HudStyle.RED;
         }
         g.drawString(font, status, a.x(), a.y() + 1, HudStyle.argb(255, colour), false);
-        String info = String.format("%,d blocks · power %s + %d / 2 s", zone.getLong("volume"),
-                com.senne.starktech.energy.StarkGrid.text(zone.getDouble("coreUpkeep")), zone.getInt("upkeep"));
+        com.senne.starktech.client.PowerUnit unit = com.senne.starktech.client.PowerUnit.current();
+        String info = String.format("%,d blocks · power %s + %s", zone.getLong("volume"),
+                com.senne.starktech.config.Numbers.text(zone.getDouble("coreUpkeep") / 40.0 * unit.ticks()),
+                unit.rate(zone.getInt("upkeep") / 40.0).getString());
         g.drawString(font, info, a.x() + a.w() - font.width(info), a.y() + 1, HudStyle.argb(255, OsDraw.GREY), false);
 
         // Links de kaart.

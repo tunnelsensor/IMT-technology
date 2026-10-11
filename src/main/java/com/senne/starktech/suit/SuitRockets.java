@@ -64,7 +64,7 @@ public final class SuitRockets {
 
     /** Hoeveel raketten een salvo van deze speler telt: 6, plus 2 per raketmagazijn. */
     public static int salvoSize(Player player) {
-        return StarkConfig.Suit.ROCKET_SALVO + SuitUpgrades.magazinesOf(player) * StarkConfig.Workbench.MAGAZINE_ROCKETS;
+        return Math.round(StarkConfig.Suit.ROCKET_SALVO) + SuitUpgrades.magazinesOf(player) * Math.round(StarkConfig.Workbench.MAGAZINE_ROCKETS);
     }
 
     /** Hoeveel harder de raketten van deze speler aankomen: +40% per raketkop. */
@@ -97,7 +97,7 @@ public final class SuitRockets {
         }
         if (!EdithData.tryUseEnergy(glasses, StarkConfig.Suit.ROCKET_COST)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    StarkConfig.Suit.ROCKET_COST), EdithMessagePayload.Level.WARNING);
+                    com.senne.starktech.config.Numbers.text(StarkConfig.Suit.ROCKET_COST)), EdithMessagePayload.Level.WARNING);
             return;
         }
 
@@ -105,7 +105,7 @@ public final class SuitRockets {
         Vec3 aim = targets.isEmpty() ? lookPoint(player) : null;
         int size = salvoSize(player);
         SALVOS.put(player.getUUID(), new Salvo(targets, aim, size, damageScale(player), player.level().getGameTime()));
-        EdithServer.startCooldown(player, EdithCooldown.ROCKETS, StarkConfig.Suit.ROCKET_COOLDOWN);
+        EdithServer.startCooldown(player, EdithCooldown.ROCKETS, Math.round(StarkConfig.Suit.ROCKET_COOLDOWN));
         EdithServer.send(player, targets.isEmpty()
                         ? Component.translatable("suit.starktech.msg.rockets_away_free", size)
                         : Component.translatable("suit.starktech.msg.rockets_away", size, targets.size()),
@@ -155,7 +155,7 @@ public final class SuitRockets {
         }
         launchOne(player, salvo);
         salvo.fired++;
-        salvo.nextTick = now + StarkConfig.Suit.ROCKET_INTERVAL;
+        salvo.nextTick = now + Math.round(StarkConfig.Suit.ROCKET_INTERVAL);
         if (salvo.fired >= salvo.size) {
             SALVOS.remove(player.getUUID());
         }

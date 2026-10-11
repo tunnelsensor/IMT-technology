@@ -74,7 +74,7 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
         public int get(int index) {
             return switch (index) {
                 case DATA_PROGRESS -> progress;
-                case DATA_TOTAL -> StarkConfig.Repair.MACHINE_TICKS;
+                case DATA_TOTAL -> Math.round(StarkConfig.Repair.MACHINE_TICKS);
                 case DATA_STATUS -> status.ordinal();
                 default -> 0;
             };
@@ -125,7 +125,7 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
             now = Status.WORKING;
             progress++;
             effects(level, pos, input);
-            if (progress >= StarkConfig.Repair.MACHINE_TICKS) {
+            if (progress >= Math.round(StarkConfig.Repair.MACHINE_TICKS)) {
                 progress = 0;
                 Block block = FromBlockItem.block(input);
                 input.shrink(1);

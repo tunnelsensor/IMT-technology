@@ -165,11 +165,11 @@ public final class EdithSuit {
             return;
         }
         LandingPads.forgetMissing(player);
-        int drain = speed > StarkConfig.Suit.BOOST_SPEED ? StarkConfig.Suit.DRAIN_BOOST
+        double drain = speed > StarkConfig.Suit.BOOST_SPEED ? StarkConfig.Suit.DRAIN_BOOST
                 : speed > StarkConfig.Suit.CRUISE_SPEED ? StarkConfig.Suit.DRAIN_FLY : StarkConfig.Suit.DRAIN_HOVER;
         // Stuwraket-upgrades in de laarzen: zuiniger vliegen.
-        int cost = (int) Math.ceil(drain * Math.max(0.1, 1 - StarkConfig.Workbench.THRUSTER_SAVING
-                * com.senne.starktech.workbench.SuitUpgrades.thrustersOf(player)));
+        double cost = drain * Math.max(0.1, 1 - StarkConfig.Workbench.THRUSTER_SAVING
+                * com.senne.starktech.workbench.SuitUpgrades.thrustersOf(player));
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
             return; // de volgende tick merkt dat de batterij leeg is en zet het vliegen uit
@@ -211,7 +211,7 @@ public final class EdithSuit {
                 + StarkConfig.Workbench.PLATING_REDUCTION
                 * com.senne.starktech.workbench.SuitUpgrades.platingOf(player));
         float absorbed = (float) (event.getAmount() * share);
-        int cost = (int) Math.ceil(absorbed * StarkConfig.Suit.REDUCTION_COST_PER_DAMAGE);
+        double cost = absorbed * StarkConfig.Suit.REDUCTION_COST_PER_DAMAGE;
         ItemStack glasses = EdithData.getWornGlasses(player);
         if (glasses.isEmpty() || !EdithData.tryUseEnergy(glasses, cost)) {
             return; // geen energie: de klap komt gewoon aan
@@ -275,7 +275,7 @@ public final class EdithSuit {
         }
         if (!EdithData.tryUseEnergy(glasses, StarkConfig.Suit.REPULSOR_COST)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    StarkConfig.Suit.REPULSOR_COST), EdithMessagePayload.Level.WARNING);
+                    com.senne.starktech.config.Numbers.text(StarkConfig.Suit.REPULSOR_COST)), EdithMessagePayload.Level.WARNING);
             return;
         }
 
@@ -299,7 +299,7 @@ public final class EdithSuit {
             hits++;
         }
 
-        EdithServer.startCooldown(player, EdithCooldown.REPULSOR, StarkConfig.Suit.REPULSOR_COOLDOWN);
+        EdithServer.startCooldown(player, EdithCooldown.REPULSOR, Math.round(StarkConfig.Suit.REPULSOR_COOLDOWN));
         ModNetwork.sendNear(level, player.position(), 64,
                 new BeamEffectPayload(from, to, BeamEffectPayload.Kind.REPULSOR));
         // Iedereen in de buurt hoort het schot, een beetje anders van toon elke keer.

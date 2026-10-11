@@ -52,7 +52,7 @@ public final class OreScanner {
         long now = Util.getMillis();
         EdithClientState.oreMarkers = found;
         EdithClientState.oreScanStartMillis = now;
-        EdithClientState.oreScanEndMillis = now + StarkConfig.Scanner.ORE_SCAN_DURATION * 50L;
+        EdithClientState.oreScanEndMillis = now + Math.round(StarkConfig.Scanner.ORE_SCAN_DURATION) * 50L;
         return found.size();
     }
 }

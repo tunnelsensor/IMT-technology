@@ -1233,6 +1233,33 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- De knop /tick, /sec, /min, /hour: het scherm van een warmtegenerator, vier keer op de knop geklikt
+        if (want("power")) {
+            BlockPos at = new BlockPos(-8, -60, 4);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(at, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(at) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    generator.setItem(com.senne.starktech.station.ChargerBlockEntity.SLOT_FUEL,
+                            new ItemStack(net.minecraft.world.item.Items.COAL, 8));
+                }
+            });
+            t.step(0, () -> com.senne.starktech.client.EdithClientConfig.setPowerUnit(com.senne.starktech.client.PowerUnit.TICK));
+            t.stand(10, at.getX() + 0.5, -60, at.getZ() + 3.5, 180, 25);
+            t.onServer(20, player -> {
+                if (player.serverLevel().getBlockEntity(at) instanceof com.senne.starktech.station.ChargerBlockEntity generator) {
+                    player.openMenu(generator, buffer -> buffer.writeBoolean(generator.usesFuel()));
+                }
+            });
+            t.shot(20, "pw01_unit_tick");
+            String[] names = {"pw02_unit_second", "pw03_unit_minute", "pw04_unit_hour", "pw05_unit_tick_again"};
+            for (String name : names) {
+                t.step(0, VisualCheck::clickPowerUnitButton);
+                t.shot(5, name);
+            }
+            t.close(0);
+        }
+
         // --- Satellietraketten: eentje die valt en inslaat (precisie), en een bombardement
         if (want("missile")) {
             BlockPos aim = new BlockPos(30, -60, -30); // op een lege plek, ver van de heuvel
@@ -2532,7 +2559,7 @@ public final class VisualCheck {
         DomeGeneratorBlockEntity dome = domeAt(player);
         dome.setOwner(player);
         dome.setEnabled(false);
-        dome.setRadius(StarkConfig.Dome.DEFAULT_SIZE);
+        dome.setRadius(Math.round(StarkConfig.Dome.DEFAULT_SIZE));
         dome.setColour(ShieldColor.CYAN);
     }
 
@@ -2557,6 +2584,20 @@ public final class VisualCheck {
     private static final BlockPos CRASH_SITE = new BlockPos(-150, -61, 150);
 
     /** Het wrak van de neergestorte satelliet: neerzetten (op een heuveltje), dan foto's. */
+    /** Klikt op de knop /tick (/sec, /min, /hour) in het scherm dat open staat, zoals een speler dat doet. */
+    private static void clickPowerUnitButton() {
+        if (Minecraft.getInstance().screen == null) {
+            return;
+        }
+        for (var child : Minecraft.getInstance().screen.children()) {
+            if (child instanceof net.minecraft.client.gui.components.Button button
+                    && button.getMessage().getString().startsWith("/")) {
+                button.onPress();
+                return;
+            }
+        }
+    }
+
     private static void crashSite(DevScript t) {
         int x = CRASH_SITE.getX();
         int z = CRASH_SITE.getZ();

@@ -82,7 +82,7 @@ public final class C4Blast {
             // Ander C4: gaat zelf ook af (een beetje later, dat klinkt als een kettingreactie).
             if (target.getBlock() instanceof C4Block) {
                 if (level.getBlockEntity(here) instanceof C4BlockEntity other) {
-                    other.detonateIn(StarkConfig.C4.CHAIN_DELAY);
+                    other.detonateIn(Math.round(StarkConfig.C4.CHAIN_DELAY));
                 }
                 continue;
             }

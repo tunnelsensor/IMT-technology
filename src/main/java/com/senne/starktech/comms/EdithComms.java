@@ -53,10 +53,10 @@ public final class EdithComms {
     // ---------------------------------------------------------------- Berichten
 
     public static void handleMessage(ServerPlayer sender, CommsPayload payload) {
-        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_MESSAGE_TICK, StarkConfig.Comms.MESSAGE_COOLDOWN)) {
+        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_MESSAGE_TICK, Math.round(StarkConfig.Comms.MESSAGE_COOLDOWN))) {
             return;
         }
-        String text = clean(payload.message(), StarkConfig.Comms.MAX_MESSAGE_LENGTH);
+        String text = clean(payload.message(), Math.round(StarkConfig.Comms.MAX_MESSAGE_LENGTH));
         if (text.isEmpty()) {
             return;
         }
@@ -95,7 +95,7 @@ public final class EdithComms {
     // ---------------------------------------------------------------- Pings
 
     public static void handlePing(ServerPlayer sender, PingPayload payload) {
-        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_PING_TICK, StarkConfig.Comms.PING_COOLDOWN)) {
+        if (EdithServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_PING_TICK, Math.round(StarkConfig.Comms.PING_COOLDOWN))) {
             return;
         }
         Vec3 pos = payload.pos();

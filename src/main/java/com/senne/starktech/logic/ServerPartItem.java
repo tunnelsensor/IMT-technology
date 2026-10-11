@@ -50,8 +50,8 @@ public class ServerPartItem extends Item {
         String key = "item.starktech.server_" + kind.name().toLowerCase(java.util.Locale.ROOT) + ".tooltip";
         Component text = switch (kind) {
             case CPU, GPU -> Component.translatable(key, number(LogicStats.logicPower(kind)), number(LogicStats.brainPower(kind)));
-            case RAM -> Component.translatable(key, StarkConfig.Logic.RUNS_PER_RAM);
-            case SSD -> Component.translatable(key, StarkConfig.Logic.BLOCKS_PER_SSD);
+            case RAM -> Component.translatable(key, Math.round(StarkConfig.Logic.RUNS_PER_RAM));
+            case SSD -> Component.translatable(key, Math.round(StarkConfig.Logic.BLOCKS_PER_SSD));
             case FAN -> Component.translatable(key);
         };
         tooltip.add(text.copy().withStyle(ChatFormatting.GRAY));
@@ -67,7 +67,7 @@ public class ServerPartItem extends Item {
         tooltip.add(heat.copy().withStyle(kind == ServerPartItem.Kind.FAN ? ChatFormatting.AQUA : ChatFormatting.GOLD));
         int wear = wear(stack);
         if (wear > 0) {
-            tooltip.add(Component.translatable("item.starktech.server_part.worn", Math.min(100, wear * 100 / Math.max(1, StarkConfig.Logic.MAX_WEAR)))
+            tooltip.add(Component.translatable("item.starktech.server_part.worn", Math.min(100, wear * 100 / Math.max(1, Math.round(StarkConfig.Logic.MAX_WEAR))))
                     .withStyle(ChatFormatting.RED));
         }
         tooltip.add(Component.translatable("item.starktech.server_part.tooltip").withStyle(ChatFormatting.DARK_GRAY));
@@ -92,13 +92,13 @@ public class ServerPartItem extends Item {
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        int left = Math.max(0, StarkConfig.Logic.MAX_WEAR - wear(stack));
-        return Math.round(13.0f * left / Math.max(1, StarkConfig.Logic.MAX_WEAR));
+        int left = Math.max(0, Math.round(StarkConfig.Logic.MAX_WEAR) - wear(stack));
+        return Math.round(13.0f * left / Math.max(1, Math.round(StarkConfig.Logic.MAX_WEAR)));
     }
 
     @Override
     public int getBarColor(ItemStack stack) {
-        float left = Math.max(0, StarkConfig.Logic.MAX_WEAR - wear(stack)) / (float) Math.max(1, StarkConfig.Logic.MAX_WEAR);
+        float left = Math.max(0, Math.round(StarkConfig.Logic.MAX_WEAR) - wear(stack)) / (float) Math.max(1, Math.round(StarkConfig.Logic.MAX_WEAR));
         return net.minecraft.util.Mth.hsvToRgb(left / 3.0f, 1.0f, 1.0f); // groen > geel > rood
     }
 

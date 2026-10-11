@@ -211,12 +211,6 @@ public final class StarkGrid {
         }
     }
 
-    /** Stroom als tekst: 6 wordt "6", 0.3 wordt "0.3", 0.125 wordt "0.13" (hooguit twee cijfers na de komma). */
-    public static String text(double amount) {
-        String text = String.format(java.util.Locale.ROOT, "%.2f", amount);
-        return text.replaceAll("0+$", "").replaceAll("\\.$", "");
-    }
-
     /** Bij het afsluiten van de wereld: alles vergeten. */
     public static void clear() {
         CACHE.clear();

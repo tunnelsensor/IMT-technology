@@ -299,7 +299,7 @@ public final class ZoneGameTests {
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
         SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, CORE, owner);
         BlockPos coreAbs = helper.absolutePos(CORE);
-        int r = StarkConfig.Security.ZONE_REACH;
+        int r = Math.round(StarkConfig.Security.ZONE_REACH);
         List<ZoneBox> wanted = new ArrayList<>();
         // Steekt 10 blokken uit naar het oosten: wordt afgeknipt op ZONE_REACH.
         wanted.add(ZoneBox.of(coreAbs.offset(r - 5, 0, 0), coreAbs.offset(r + 10, 3, 4)));
@@ -578,7 +578,7 @@ public final class ZoneGameTests {
         if (!core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
             throw new GameTestAssertException("De getypte hoeken zouden de kubus moeten worden: " + core.zoneBoxes());
         }
-        BlockPos far = helper.absolutePos(CORE).offset(StarkConfig.Security.ZONE_REACH + 5, 0, 0);
+        BlockPos far = helper.absolutePos(CORE).offset(Math.round(StarkConfig.Security.ZONE_REACH) + 5, 0, 0);
         set.putIntArray("box", new int[] {far.getX(), far.getY(), far.getZ(), far.getX() + 3, far.getY() + 3, far.getZ() + 3});
         ZoneApp.Result outside = ZoneApp.handle(owner, core, "zone_set", set, false);
         if (!outside.error() || !core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
@@ -627,7 +627,7 @@ public final class ZoneGameTests {
         level.setBlockAndUpdate(otherPos, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
         SecurityCoreBlockEntity other = (SecurityCoreBlockEntity) level.getBlockEntity(otherPos);
         other.setOwner(neighbour);
-        int reach = StarkConfig.Security.ZONE_REACH;
+        int reach = Math.round(StarkConfig.Security.ZONE_REACH);
         // Een kern meldt zich pas een tick na het neerzetten aan.
         helper.runAfterDelay(2, () -> {
             // 150 blokken naar het zuiden, getypt in de app: mag, en beschermt.

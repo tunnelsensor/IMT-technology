@@ -198,7 +198,7 @@ public class TurretBlock extends BaseEntityBlock implements EdithSwitchable, Pow
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
             boolean mayTake = turret.ownerId() == null || turret.ownerId().equals(player.getUUID());
             if (player.isShiftKeyDown() && mayTake && turret.ammoCount() > 0) {
-                player.getInventory().placeItemBackInInventory(turret.ammo().extractItem(0, StarkConfig.Turrets.MAX_AMMO, false));
+                player.getInventory().placeItemBackInInventory(turret.ammo().extractItem(0, Math.round(StarkConfig.Turrets.MAX_AMMO), false));
             }
             status(player, state, turret);
         }

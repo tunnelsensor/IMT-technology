@@ -121,7 +121,7 @@ public class DetonatorItem extends Item {
         int gone = 0;
         for (GlobalPos charge : data.charges()) {
             if (!charge.dimension().equals(level.dimension())
-                    || charge.pos().distToCenterSqr(player.position()) > (double) StarkConfig.C4.DETONATOR_RANGE * StarkConfig.C4.DETONATOR_RANGE
+                    || charge.pos().distToCenterSqr(player.position()) > (double) Math.round(StarkConfig.C4.DETONATOR_RANGE) * Math.round(StarkConfig.C4.DETONATOR_RANGE)
                     || !level.isLoaded(charge.pos())) {
                 outOfRange++;
                 kept.add(charge);
@@ -140,7 +140,7 @@ public class DetonatorItem extends Item {
         }
         stack.set(ModDataComponents.DETONATOR.get(), data.withCharges(kept));
         Component message = outOfRange > 0
-                ? Component.translatable("item.starktech.detonator.fired_some", ready.size(), outOfRange, StarkConfig.C4.DETONATOR_RANGE)
+                ? Component.translatable("item.starktech.detonator.fired_some", ready.size(), outOfRange, Math.round(StarkConfig.C4.DETONATOR_RANGE))
                 : Component.translatable("item.starktech.detonator.fired", ready.size());
         player.displayClientMessage(message.copy().withStyle(ready.isEmpty() ? ChatFormatting.GRAY : ChatFormatting.RED), true);
         return new Fired(ready.size(), outOfRange, gone);
@@ -154,12 +154,12 @@ public class DetonatorItem extends Item {
         if (data != null) {
             for (GlobalPos charge : data.charges()) {
                 if (charge.dimension().equals(level.dimension())
-                        && charge.pos().distToCenterSqr(player.position()) <= (double) StarkConfig.C4.DETONATOR_RANGE * StarkConfig.C4.DETONATOR_RANGE) {
+                        && charge.pos().distToCenterSqr(player.position()) <= (double) Math.round(StarkConfig.C4.DETONATOR_RANGE) * Math.round(StarkConfig.C4.DETONATOR_RANGE)) {
                     inRange++;
                 }
             }
         }
-        player.displayClientMessage(Component.translatable("item.starktech.detonator.status", linked, inRange, StarkConfig.C4.DETONATOR_RANGE)
+        player.displayClientMessage(Component.translatable("item.starktech.detonator.status", linked, inRange, Math.round(StarkConfig.C4.DETONATOR_RANGE))
                 .withStyle(ChatFormatting.AQUA), true);
     }
 
@@ -168,7 +168,7 @@ public class DetonatorItem extends Item {
         DetonatorData data = data(stack);
         tooltip.add(Component.translatable("tooltip.starktech.detonator.linked", data == null ? 0 : data.charges().size())
                 .withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.starktech.detonator.fire", StarkConfig.C4.DETONATOR_RANGE).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.starktech.detonator.fire", Math.round(StarkConfig.C4.DETONATOR_RANGE)).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.detonator.status").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.detonator.link").withStyle(ChatFormatting.GRAY));
     }

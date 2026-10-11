@@ -266,7 +266,7 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
             if (!(piece.getItem() instanceof StarkSuitItem) || !piece.isDamaged()) {
                 continue;
             }
-            int repair = Math.min(piece.getDamageValue(), StarkConfig.Power.PAD_REPAIR_PER_SECOND);
+            int repair = Math.min(piece.getDamageValue(), Math.round(StarkConfig.Power.PAD_REPAIR_PER_SECOND));
             if (StarkGrid.pay(level, pos, repair * StarkConfig.Power.PAD_REPAIR_ENERGY)) {
                 piece.setDamageValue(piece.getDamageValue() - repair);
                 worked = true;

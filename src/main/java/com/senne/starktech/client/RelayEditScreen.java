@@ -56,13 +56,13 @@ public class RelayEditScreen extends Screen {
         Relay relay = data().get(index);
 
         nameBox = new EditBox(font, left + 10, top + 34, PANEL_W - 20, 18, Component.translatable("screen.starktech.relay_edit.name"));
-        nameBox.setMaxLength(StarkConfig.Relays.MAX_NAME);
+        nameBox.setMaxLength(Math.round(StarkConfig.Relays.MAX_NAME));
         nameBox.setValue(relay == null ? "" : relay.name());
         nameBox.setHint(Component.translatable("screen.starktech.relay_edit.name_hint"));
         addRenderableWidget(nameBox);
 
         groupBox = new EditBox(font, left + 10, top + 68, PANEL_W - 20, 18, Component.translatable("screen.starktech.relay_edit.group"));
-        groupBox.setMaxLength(StarkConfig.Relays.MAX_NAME);
+        groupBox.setMaxLength(Math.round(StarkConfig.Relays.MAX_NAME));
         groupBox.setValue(relay == null ? Relay.DEFAULT_GROUP : relay.group());
         groupBox.setHint(Component.translatable("screen.starktech.relay_edit.group_hint"));
         addRenderableWidget(groupBox);

@@ -102,7 +102,7 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
                 }
             }
         }
-        return Math.min(hot, StarkConfig.Power.HEAT_MAX_NEIGHBOURS);
+        return Math.min(hot, Math.round(StarkConfig.Power.HEAT_MAX_NEIGHBOURS));
     }
 
     private static boolean isHot(BlockState state) {

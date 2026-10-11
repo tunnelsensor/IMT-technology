@@ -88,7 +88,7 @@ public class ChargingStationMenu extends AbstractContainerMenu {
     }
 
     public float getUpgradeProgress() {
-        return (float) data.get(ChargingStationBlockEntity.DATA_UPGRADE_PROGRESS) / StarkConfig.Glasses.UPGRADE_INSTALL_TIME;
+        return (float) data.get(ChargingStationBlockEntity.DATA_UPGRADE_PROGRESS) / Math.round(StarkConfig.Glasses.UPGRADE_INSTALL_TIME);
     }
 
     public ItemStack getGlasses() {

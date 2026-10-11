@@ -156,15 +156,15 @@ public final class EdithIllusions {
             place(owner);
             return;
         }
-        if (countOf(owner) >= StarkConfig.Illusions.MAX_ACTIVE) {
+        if (countOf(owner) >= Math.round(StarkConfig.Illusions.MAX_ACTIVE)) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.illusion_too_many",
-                    StarkConfig.Illusions.MAX_ACTIVE), EdithMessagePayload.Level.WARNING);
+                    Math.round(StarkConfig.Illusions.MAX_ACTIVE)), EdithMessagePayload.Level.WARNING);
             return;
         }
         IllusionScene scene = switch (kind) {
-            case WALL -> IllusionScene.wall(blockFromHand(owner), StarkConfig.Illusions.WALL_WIDTH,
-                    StarkConfig.Illusions.WALL_HEIGHT);
-            case ARMY -> IllusionScene.army(mobFromHand(owner), StarkConfig.Illusions.ARMY_SIZE, 3.0);
+            case WALL -> IllusionScene.wall(blockFromHand(owner), Math.round(StarkConfig.Illusions.WALL_WIDTH),
+                    Math.round(StarkConfig.Illusions.WALL_HEIGHT));
+            case ARMY -> IllusionScene.army(mobFromHand(owner), Math.round(StarkConfig.Illusions.ARMY_SIZE), 3.0);
             case CLOAK -> IllusionScene.CLOAK_ONLY;
         };
         // Een illusie is ook gewoon een drone: zonder drone in een baan gebeurt er niets.
@@ -174,9 +174,9 @@ public final class EdithIllusions {
             return;
         }
         // Betalen doen we pas bij het neerzetten, maar genoeg energie moet er nu al zijn.
-        if (EdithData.getEnergy(glasses) < StarkConfig.Illusions.COST) {
+        if (EdithData.getExactEnergy(glasses) < StarkConfig.Illusions.COST) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    StarkConfig.Illusions.COST), EdithMessagePayload.Level.WARNING);
+                    com.senne.starktech.config.Numbers.text(StarkConfig.Illusions.COST)), EdithMessagePayload.Level.WARNING);
             return;
         }
         if (kind == IllusionScene.Kind.CLOAK) {
@@ -228,10 +228,10 @@ public final class EdithIllusions {
             return;
         }
         ItemStack glasses = EdithServer.authorizedGlasses(owner);
-        if (glasses == null || countOf(owner) >= StarkConfig.Illusions.MAX_ACTIVE
+        if (glasses == null || countOf(owner) >= Math.round(StarkConfig.Illusions.MAX_ACTIVE)
                 || !EdithData.tryUseEnergy(glasses, StarkConfig.Illusions.COST)) {
             EdithServer.send(owner, Component.translatable("edith.starktech.msg.not_enough_energy",
-                    StarkConfig.Illusions.COST), EdithMessagePayload.Level.WARNING);
+                    com.senne.starktech.config.Numbers.text(StarkConfig.Illusions.COST)), EdithMessagePayload.Level.WARNING);
             drone.recall(owner.serverLevel());
             return;
         }
@@ -244,7 +244,7 @@ public final class EdithIllusions {
             drone.moveTo(above.getX() + 0.5, above.getY(), above.getZ() + 0.5, aim.control.yaw(), 0.0f);
             drone.setDeltaMovement(Vec3.ZERO);
         }
-        drone.setLifeTicks(StarkConfig.Illusions.LIFETIME);
+        drone.setLifeTicks(Math.round(StarkConfig.Illusions.LIFETIME));
         project(owner, drone, scene, anchor, aim.kind);
     }
 
@@ -362,7 +362,7 @@ public final class EdithIllusions {
                 new AABB(center, center).inflate(radius), StarkDroneEntity::isIllusion)) {
             Projector projector = PROJECTORS.get(drone.getUUID());
             if (projector != null) {
-                projector.jammedTicks = StarkConfig.Illusions.EMP_JAM_TICKS;
+                projector.jammedTicks = Math.round(StarkConfig.Illusions.EMP_JAM_TICKS);
                 projector.informed.clear(); // iedereen moet de nieuwe stand weten
                 hit++;
             }

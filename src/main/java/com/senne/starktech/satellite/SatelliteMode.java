@@ -21,16 +21,16 @@ public enum SatelliteMode {
     SWEEP("sweep", () -> StarkConfig.Satellite.COST_SWEEP);
 
     private final String id;
-    private final java.util.function.IntSupplier cost;
+    private final java.util.function.DoubleSupplier cost;
 
-    SatelliteMode(String id, java.util.function.IntSupplier cost) {
+    SatelliteMode(String id, java.util.function.DoubleSupplier cost) {
         this.id = id;
         this.cost = cost;
     }
 
     /** Wat deze stand aan energie kost. */
-    public int cost() {
-        return cost.getAsInt();
+    public double cost() {
+        return cost.getAsDouble();
     }
 
     public String translationKey() {

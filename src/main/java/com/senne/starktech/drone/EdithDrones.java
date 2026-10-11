@@ -48,7 +48,7 @@ public final class EdithDrones {
      * Was dit te krap, dan zou "stand down" een invallende drone gewoon missen.
      */
     public static List<StarkDroneEntity> find(ServerPlayer owner, StarkDroneEntity.Mode mode) {
-        double range = Math.max(StarkConfig.Recon.SCOUT_RANGE + 16, StarkConfig.Drones.ORBIT_HEIGHT + 16);
+        double range = Math.max(StarkConfig.Recon.SCOUT_RANGE + 16, Math.round(StarkConfig.Drones.ORBIT_HEIGHT) + 16);
         return owner.level().getEntitiesOfClass(StarkDroneEntity.class, owner.getBoundingBox().inflate(range),
                 drone -> drone.isAlive() && drone.isOwnedBy(owner) && drone.getMode() == mode);
     }
@@ -79,7 +79,7 @@ public final class EdithDrones {
         List<ArsenalDrone> available = ArsenalServer.checkOut(owner, EdithData.getSwarmSize(glasses));
         int launched = 0;
         for (int i = 0; i < available.size(); i++) {
-            if (spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, i, StarkConfig.Drones.SWARM_LIFETIME,
+            if (spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, i, Math.round(StarkConfig.Drones.SWARM_LIFETIME),
                     owner.position(), available.get(i)) != null) {
                 launched++;
             }
@@ -97,7 +97,7 @@ public final class EdithDrones {
             return null;
         }
         StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.ATTACK, 0,
-                StarkConfig.Drones.STRIKE_LIFETIME, target.position(), available);
+                Math.round(StarkConfig.Drones.STRIKE_LIFETIME), target.position(), available);
         if (drone != null) {
             drone.lockOn(target);
         }
@@ -135,7 +135,7 @@ public final class EdithDrones {
         Vec3 landing = freeLandingSpot(owner, level);
         float yaw = owner.getYRot() * Mth.DEG_TO_RAD;
         double ahead = Math.atan2(Mth.cos(yaw), -Mth.sin(yaw)); // de kant waar je naartoe kijkt
-        Vec3 start = arcStart(level, landing, ahead, StarkConfig.Drones.ORBIT_HEIGHT);
+        Vec3 start = arcStart(level, landing, ahead, Math.round(StarkConfig.Drones.ORBIT_HEIGHT));
         StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.GROUNDED, 0, -1,
                 start, level, start.y - landing.y >= MIN_DROP_HEIGHT, fromArsenal);
         if (drone != null) {
@@ -257,7 +257,7 @@ public final class EdithDrones {
         }
         Vec3 above = new Vec3(owner.getX(), owner.getY() + owner.getBbHeight() + 1.2, owner.getZ());
         StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.TRANSPORT, 0,
-                StarkConfig.Transport.MAX_TICKS, above, false, available);
+                Math.round(StarkConfig.Transport.MAX_TICKS), above, false, available);
         if (drone != null) {
             drone.setupTransport(StarkDroneEntity.TransportRole.CARRIER, destination, List.of());
         }
@@ -269,7 +269,7 @@ public final class EdithDrones {
         List<ArsenalDrone> available = ArsenalServer.checkOut(owner, count);
         for (int i = 0; i < available.size(); i++) {
             StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.TRANSPORT, i + 1,
-                    StarkConfig.Transport.MAX_TICKS, owner.position(), available.get(i));
+                    Math.round(StarkConfig.Transport.MAX_TICKS), owner.position(), available.get(i));
             if (drone != null) {
                 drone.setupTransport(StarkDroneEntity.TransportRole.FOLLOWER, null, List.of());
             }
@@ -283,7 +283,7 @@ public final class EdithDrones {
             return null;
         }
         StarkDroneEntity drone = spawnFromSky(owner, StarkDroneEntity.Mode.TRANSPORT, 0,
-                StarkConfig.Transport.MAX_TICKS, owner.position(), available);
+                Math.round(StarkConfig.Transport.MAX_TICKS), owner.position(), available);
         if (drone != null) {
             drone.setupTransport(StarkDroneEntity.TransportRole.CARGO, destination, cargo);
         }
@@ -298,7 +298,7 @@ public final class EdithDrones {
         }
         Vec3 above = new Vec3(target.getX(), target.getY() + target.getBbHeight() + 1.2, target.getZ());
         StarkDroneEntity drone = spawn(owner, StarkDroneEntity.Mode.TRANSPORT, 0,
-                StarkConfig.Transport.MAX_TICKS, above, false, available);
+                Math.round(StarkConfig.Transport.MAX_TICKS), above, false, available);
         if (drone != null) {
             drone.setupTransport(StarkDroneEntity.TransportRole.GRABBER, destination, List.of());
         }
@@ -314,7 +314,7 @@ public final class EdithDrones {
         if (available == null) {
             return null;
         }
-        return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, StarkConfig.Illusions.LIFETIME,
+        return spawn(owner, StarkDroneEntity.Mode.ILLUSION, 0, Math.round(StarkConfig.Illusions.LIFETIME),
                 illusionSpot(owner), false, available);
     }
 
@@ -411,7 +411,7 @@ public final class EdithDrones {
         double radius = 1.5 + (slot % 5) * 0.35;
         Vec3 landing = new Vec3(below.x + Math.cos(angle) * radius, below.y + StarkConfig.Drones.DIVE_BRAKE_HEIGHT,
                 below.z + Math.sin(angle) * radius);
-        Vec3 start = arcStart(level, landing, angle, StarkConfig.Drones.ORBIT_HEIGHT);
+        Vec3 start = arcStart(level, landing, angle, Math.round(StarkConfig.Drones.ORBIT_HEIGHT));
         boolean diving = start.y - landing.y >= MIN_DROP_HEIGHT;
         StarkDroneEntity drone = spawn(owner, mode, slot, lifeTicks, start, diving, fromArsenal);
         if (drone != null && diving) {
@@ -425,7 +425,7 @@ public final class EdithDrones {
      * beginnen: hooguit dropHeight blokken hoger, en nooit door een plafond heen.
      */
     private static double freeHeightAbove(ServerLevel level, double x, double fromY, double z) {
-        return freeHeightAbove(level, x, fromY, z, StarkConfig.Drones.ORBIT_HEIGHT);
+        return freeHeightAbove(level, x, fromY, z, Math.round(StarkConfig.Drones.ORBIT_HEIGHT));
     }
 
     /**

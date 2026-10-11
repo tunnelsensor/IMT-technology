@@ -458,7 +458,7 @@ public final class HackTerminal {
         candidates = List.copyOf(words);
         possible.clear();
         possible.addAll(candidates);
-        attemptsLeft = StarkConfig.Security.PASSWORD_ATTEMPTS;
+        attemptsLeft = Math.round(StarkConfig.Security.PASSWORD_ATTEMPTS);
         dumpRows.clear();
         for (String word : candidates) {
             dumpRows.add(new String[] {junk(random.nextInt(9)), word, ""});
@@ -536,7 +536,7 @@ public final class HackTerminal {
         good("Still possible: " + String.join("  ", possible));
         if (attemptsLeft <= 0) {
             error("TOO MANY ATTEMPTS. Terminal locked, new memory dump coming...");
-            lockedUntil = now + StarkConfig.Security.PASSWORD_LOCKOUT_MILLIS;
+            lockedUntil = now + Math.round(StarkConfig.Security.PASSWORD_LOCKOUT_MILLIS);
         }
     }
 

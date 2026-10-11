@@ -178,12 +178,12 @@ public final class ArcLampLight {
 
     /** Hoe ver het licht van een lamp op dit lichtniveau vol is: het lichtniveau min 15 (85 bij 100, 0 tot 15). */
     public static int reachOf(int lightLevel) {
-        return Math.max(0, Mth.clamp(lightLevel, 1, StarkConfig.Lights.ARC_LAMP_MAX_LEVEL) - LightEngine.MAX_LEVEL);
+        return Math.max(0, Mth.clamp(lightLevel, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL)) - LightEngine.MAX_LEVEL);
     }
 
     /** Het bereik van een lamp op het hoogste lichtniveau dat de config toestaat. */
     public static int maxReach() {
-        return reachOf(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
+        return reachOf(Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL));
     }
 
     // ================================================================ Voor het licht-rekenwerk (mixins)

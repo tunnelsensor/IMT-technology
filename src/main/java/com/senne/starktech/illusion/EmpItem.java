@@ -40,7 +40,7 @@ public class EmpItem extends Item {
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ELYTRA_FLYING,
                     SoundSource.PLAYERS, 0.6f, 0.4f);
         }
-        player.getCooldowns().addCooldown(this, StarkConfig.Illusions.EMP_COOLDOWN);
+        player.getCooldowns().addCooldown(this, Math.round(StarkConfig.Illusions.EMP_COOLDOWN));
         player.swing(hand);
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }

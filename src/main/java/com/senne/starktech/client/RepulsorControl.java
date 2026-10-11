@@ -36,7 +36,7 @@ public final class RepulsorControl {
      * wachttijd in het verleden, dus "geladen". (Long.MIN_VALUE liep over bij het aftrekken,
      * en dan stond de ring altijd op leeg.)
      */
-    private static long firedAt = -StarkConfig.Suit.REPULSOR_COOLDOWN;
+    private static long firedAt = -Math.round(StarkConfig.Suit.REPULSOR_COOLDOWN);
 
     public static boolean isArmed() {
         return armed;
@@ -49,7 +49,7 @@ public final class RepulsorControl {
             return 1.0f;
         }
         float since = player.level().getGameTime() - firedAt + partialTick;
-        return Math.min(1.0f, since / StarkConfig.Suit.REPULSOR_COOLDOWN);
+        return Math.min(1.0f, since / Math.round(StarkConfig.Suit.REPULSOR_COOLDOWN));
     }
 
     /** Toets I (of het G-menu): aan of uit. */
@@ -112,7 +112,7 @@ public final class RepulsorControl {
         if (now < readyAt) {
             return;
         }
-        readyAt = now + StarkConfig.Suit.REPULSOR_COOLDOWN;
+        readyAt = now + Math.round(StarkConfig.Suit.REPULSOR_COOLDOWN);
         firedAt = now;
         EdithClientEvents.sendAction(EdithAction.REPULSOR);
         // Je arm gaat naar voren, alsof je je handpalm naar voren duwt.
@@ -123,7 +123,7 @@ public final class RepulsorControl {
     public static void reset() {
         armed = false;
         readyAt = 0;
-        firedAt = -StarkConfig.Suit.REPULSOR_COOLDOWN;
+        firedAt = -Math.round(StarkConfig.Suit.REPULSOR_COOLDOWN);
     }
 
     private static boolean hasChestplate(LocalPlayer player) {

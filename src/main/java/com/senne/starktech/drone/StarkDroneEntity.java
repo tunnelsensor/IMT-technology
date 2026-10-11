@@ -616,7 +616,7 @@ public class StarkDroneEntity extends PathfinderMob {
         double horizontal = Math.sqrt(dx * dx + dz * dz);
         int groundHere = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(getX()), (int) Math.floor(getZ()));
         int groundThere = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, target.getX(), target.getZ());
-        double cruiseY = Math.max(groundHere, groundThere) + StarkConfig.Transport.CRUISE_HEIGHT;
+        double cruiseY = Math.max(groundHere, groundThere) + Math.round(StarkConfig.Transport.CRUISE_HEIGHT);
 
         if (horizontal > 2.5) {
             if (getY() < cruiseY - 3) {
@@ -707,7 +707,7 @@ public class StarkDroneEntity extends PathfinderMob {
         double range = StarkConfig.Drones.ATTACK_RANGE;
         if (fireCooldown <= 0 && distanceToSqr(target) <= range * range && hasLineOfSight(target)) {
             fireLaser(level, owner, target);
-            fireCooldown = StarkConfig.Drones.FIRE_INTERVAL + random.nextInt(5);
+            fireCooldown = Math.round(StarkConfig.Drones.FIRE_INTERVAL) + random.nextInt(5);
         }
     }
 
@@ -743,7 +743,7 @@ public class StarkDroneEntity extends PathfinderMob {
         Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
         Vec3 to = target.getBoundingBox().getCenter();
         // Staat het doelwit onder de schildkoepel van iemand anders? Dan stuit het schot daarop.
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, owner.getUUID(), StarkConfig.Dome.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, owner.getUUID(), Math.round(StarkConfig.Dome.COST_LASER));
         if (shield != null) {
             playSound(ModSounds.DRONE_LASER.get(), 0.6f, 1.5f);
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
@@ -774,9 +774,9 @@ public class StarkDroneEntity extends PathfinderMob {
         if (launchTicks % 2 == 0) {
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() - 0.2, getZ(), 2, 0.08, 0.05, 0.08, 0.02);
         }
-        boolean highEnough = getY() >= launchFrom + StarkConfig.Drones.ORBIT_HEIGHT;
+        boolean highEnough = getY() >= launchFrom + Math.round(StarkConfig.Drones.ORBIT_HEIGHT);
         boolean stuck = horizontalCollision || verticalCollision;
-        if (highEnough || stuck || launchTicks >= StarkConfig.Drones.LAUNCH_TICKS
+        if (highEnough || stuck || launchTicks >= Math.round(StarkConfig.Drones.LAUNCH_TICKS)
                 || getY() > level.getMaxBuildHeight() + 16) {
             level.sendParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 8, 0.2, 0.2, 0.2, 0.02);
             returnToArsenal(level);

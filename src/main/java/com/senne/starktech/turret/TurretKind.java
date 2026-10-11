@@ -55,9 +55,9 @@ public enum TurretKind implements StringRepresentable {
 
     public int laserInterval() {
         return switch (this) {
-            case STARK -> StarkConfig.Turrets.LASER_INTERVAL;
-            case HYDRA -> StarkConfig.Turrets.HYDRA_LASER_INTERVAL;
-            case SECURITY -> StarkConfig.Turrets.SECURITY_LASER_INTERVAL;
+            case STARK -> Math.round(StarkConfig.Turrets.LASER_INTERVAL);
+            case HYDRA -> Math.round(StarkConfig.Turrets.HYDRA_LASER_INTERVAL);
+            case SECURITY -> Math.round(StarkConfig.Turrets.SECURITY_LASER_INTERVAL);
         };
     }
 

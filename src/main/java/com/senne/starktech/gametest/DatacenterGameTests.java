@@ -302,7 +302,7 @@ public final class DatacenterGameTests {
                     || setup.rackEntity(helper).temperature() >= StarkConfig.Logic.HOT_TEMPERATURE) {
                 throw new GameTestAssertException("Het rack met de GPU's zou in brand moeten staan (na " + updates + " keer), niet het andere");
             }
-            if (updates * 40 < StarkConfig.Logic.FIRE_DELAY_TICKS) {
+            if (updates * 40 < Math.round(StarkConfig.Logic.FIRE_DELAY_TICKS)) {
                 throw new GameTestAssertException("Het rack vatte te snel vlam: na " + updates * 40 + " ticks");
             }
             helper.assertBlockPresent(net.minecraft.world.level.block.Blocks.FIRE, gpuRack.above());
@@ -415,9 +415,9 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("Backup naar B mislukte: " + chosen.text() + " / " + made.text());
             }
             int size = Backups.size(a.logic());
-            if (datacenters.free(atB, null, StarkConfig.Logic.BACKUPS_KEPT) != StarkConfig.Logic.BLOCKS_PER_SSD - size) {
+            if (datacenters.free(atB, null, Math.round(StarkConfig.Logic.BACKUPS_KEPT)) != Math.round(StarkConfig.Logic.BLOCKS_PER_SSD) - size) {
                 throw new GameTestAssertException("De backup zou " + size + " blokjes op B moeten innemen, er is nog "
-                        + datacenters.free(atB, null, StarkConfig.Logic.BACKUPS_KEPT) + " vrij");
+                        + datacenters.free(atB, null, Math.round(StarkConfig.Logic.BACKUPS_KEPT)) + " vrij");
             }
             // Brand op A: alles weg. Restore zet het terug.
             a.logic().wipe();
@@ -432,8 +432,8 @@ public final class DatacenterGameTests {
                 backupAction(owner, a, "backup_now", "", 0);
             }
             long ofA = datacenters.backupsOf(owner.getUUID()).stream().filter(item -> item.source().equals(atA)).count();
-            if (ofA != StarkConfig.Logic.BACKUPS_KEPT) {
-                throw new GameTestAssertException("Er zouden " + StarkConfig.Logic.BACKUPS_KEPT + " backups van A moeten staan, niet " + ofA);
+            if (ofA != Math.round(StarkConfig.Logic.BACKUPS_KEPT)) {
+                throw new GameTestAssertException("Er zouden " + Math.round(StarkConfig.Logic.BACKUPS_KEPT) + " backups van A moeten staan, niet " + ofA);
             }
             // B maakt automatisch een backup naar A (de eerste meteen).
             backupAction(owner, b, "backup_target", Datacenters.key(atA), 0);

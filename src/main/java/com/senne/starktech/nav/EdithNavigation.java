@@ -28,8 +28,8 @@ public final class EdithNavigation {
         EdithWaypoints data = player.getData(ModAttachments.WAYPOINTS);
         switch (payload.op()) {
             case ADD -> {
-                if (data.waypoints().size() >= StarkConfig.Navigation.MAX_WAYPOINTS) {
-                    EdithServer.send(player, Component.translatable("edith.starktech.msg.waypoints_full", StarkConfig.Navigation.MAX_WAYPOINTS),
+                if (data.waypoints().size() >= Math.round(StarkConfig.Navigation.MAX_WAYPOINTS)) {
+                    EdithServer.send(player, Component.translatable("edith.starktech.msg.waypoints_full", Math.round(StarkConfig.Navigation.MAX_WAYPOINTS)),
                             EdithMessagePayload.Level.WARNING);
                     return;
                 }
@@ -130,8 +130,8 @@ public final class EdithNavigation {
     private static String cleanName(String name, int number) {
         // "§c" enz. zijn opmaakcodes (kleuren); die halen we er in hun geheel uit.
         String clean = name.replaceAll("§.?", "").replaceAll("\\p{Cntrl}", "").trim();
-        if (clean.length() > StarkConfig.Navigation.MAX_WAYPOINT_NAME) {
-            clean = clean.substring(0, StarkConfig.Navigation.MAX_WAYPOINT_NAME).trim();
+        if (clean.length() > Math.round(StarkConfig.Navigation.MAX_WAYPOINT_NAME)) {
+            clean = clean.substring(0, Math.round(StarkConfig.Navigation.MAX_WAYPOINT_NAME)).trim();
         }
         return clean.isEmpty() ? "Waypoint " + number : clean;
     }

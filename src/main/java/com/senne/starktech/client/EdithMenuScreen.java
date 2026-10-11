@@ -7,6 +7,7 @@ import com.senne.starktech.client.voice.VoiceCommandsScreen;
 import com.senne.starktech.client.voice.VoiceControl;
 import com.senne.starktech.client.voice.VoiceFeature;
 import com.senne.starktech.client.voice.VoiceInstaller;
+import com.senne.starktech.config.Numbers;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithAction;
 import com.senne.starktech.edith.EdithCooldown;
@@ -71,7 +72,7 @@ public class EdithMenuScreen extends Screen {
             new Option(Component.translatable(EdithAction.REPULSOR.translationKey()),
                     glasses -> RepulsorControl.isArmed()
                             ? new Status(Component.translatable("screen.starktech.on"), HudStyle.GREEN)
-                            : new Status(Component.translatable("screen.starktech.cost", StarkConfig.Suit.REPULSOR_COST), GREY),
+                            : new Status(Component.translatable("screen.starktech.cost", Numbers.text(StarkConfig.Suit.REPULSOR_COST)), GREY),
                     RepulsorControl::toggle),
             action(EdithAction.ROCKETS),
             action(EdithAction.TOGGLE_SHIELD));
@@ -335,9 +336,10 @@ public class EdithMenuScreen extends Screen {
             return lines;
         }
         int energy = EdithData.getEnergy(glasses);
-        int drain = PowerReadout.drainPerSecond(glasses);
+        double drain = PowerReadout.drainPerSecond(glasses);
         lines.add(Component.translatable("hud.starktech.sys.energy", energy, EdithData.getMaxEnergy(glasses)));
-        lines.add(Component.translatable("hud.starktech.sys.drain", drain, PowerReadout.timeLeft(energy, drain)));
+        lines.add(Component.translatable("hud.starktech.sys.drain", PowerUnit.current().rate(drain / 20.0),
+                PowerReadout.timeLeft(energy, drain)));
         EdithOwner owner = EdithData.getOwner(glasses);
         if (owner != null) {
             lines.add(Component.translatable("hud.starktech.sys.owner", owner.name()));
@@ -371,7 +373,7 @@ public class EdithMenuScreen extends Screen {
             case CARGO_DRONE, CARRY_ENTITY ->
                     costOrCooldown(StarkConfig.Transport.COST, EdithClientState.cooldown(EdithCooldown.TRANSPORT));
             case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK ->
-                    new Status(Component.translatable("screen.starktech.cost", StarkConfig.Illusions.COST), HudStyle.CYAN);
+                    new Status(Component.translatable("screen.starktech.cost", Numbers.text(StarkConfig.Illusions.COST)), HudStyle.CYAN);
             case ILLUSION_STOP -> com.senne.starktech.client.illusion.IllusionRenderer.count() > 0
                     ? new Status(Component.translatable("screen.starktech.illusion.count",
                             com.senne.starktech.client.illusion.IllusionRenderer.count()), HudStyle.ORANGE)
@@ -405,7 +407,7 @@ public class EdithMenuScreen extends Screen {
             }
             case DRONE_CAMERA -> DroneCamera.isActive()
                     ? new Status(Component.translatable("screen.starktech.menu.return"), HudStyle.ORANGE)
-                    : new Status(Component.translatable("screen.starktech.cost", StarkConfig.Recon.SCOUT_COST), HudStyle.CYAN);
+                    : new Status(Component.translatable("screen.starktech.cost", Numbers.text(StarkConfig.Recon.SCOUT_COST)), HudStyle.CYAN);
             case AUTHORIZE_TRANSFER -> {
                 EdithOwner owner = glasses.isEmpty() ? null : EdithData.getOwner(glasses);
                 boolean pending = owner != null && owner.transferPending();
@@ -434,11 +436,11 @@ public class EdithMenuScreen extends Screen {
     }
 
     /** Kosten als de functie klaar is, anders de resterende wachttijd. */
-    private static Status costOrCooldown(int cost, int cooldownTicks) {
+    private static Status costOrCooldown(double cost, int cooldownTicks) {
         int seconds = EdithClientState.secondsLeft(cooldownTicks);
         return seconds > 0
                 ? new Status(Component.literal(seconds + "s"), HudStyle.ORANGE)
-                : new Status(Component.translatable("screen.starktech.cost", cost), HudStyle.CYAN);
+                : new Status(Component.translatable("screen.starktech.cost", Numbers.text(cost)), HudStyle.CYAN);
     }
 
     // ---------------------------------------------------------------- Waar wijst de muis?

@@ -28,7 +28,7 @@ public final class DomeSettings {
     }
 
     public static int radius(int index) {
-        return StarkConfig.Dome.RADII[clampRadius(index)];
+        return Math.round(StarkConfig.Dome.RADII[clampRadius(index)]);
     }
 
     /**
@@ -43,14 +43,14 @@ public final class DomeSettings {
 
     /** Hoeveel schildkracht hij heeft bij deze sterkte. */
     public static int maxShield(int strength) {
-        int[] shield = StarkConfig.Dome.MAX_SHIELD;
-        return shield[Mth.clamp(clampStrength(strength) - 1, 0, shield.length - 1)];
+        float[] shield = StarkConfig.Dome.MAX_SHIELD;
+        return Math.round(shield[Mth.clamp(clampStrength(strength) - 1, 0, shield.length - 1)]);
     }
 
     /** Hoeveel schildkracht er per tick bijkomt bij deze sterkte. */
     public static int recharge(int strength) {
-        int[] recharge = StarkConfig.Dome.RECHARGE;
-        return recharge[Mth.clamp(clampStrength(strength) - 1, 0, recharge.length - 1)];
+        float[] recharge = StarkConfig.Dome.RECHARGE;
+        return Math.round(recharge[Mth.clamp(clampStrength(strength) - 1, 0, recharge.length - 1)]);
     }
 
     public static Component radiusLabel(int index) {

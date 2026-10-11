@@ -63,7 +63,7 @@ public final class DetonatorMarkers {
             if (distance > SHOW_RANGE) {
                 continue;
             }
-            boolean inRange = distance <= StarkConfig.C4.DETONATOR_RANGE;
+            boolean inRange = distance <= Math.round(StarkConfig.C4.DETONATOR_RANGE);
             String text = "C4  " + Math.round(distance) + " m" + (inRange ? "" : "  (out of range)");
             label(pose, buffers, camera, mc, at, text, inRange ? 0xFF4A3A : 0x9A9A9A);
         }

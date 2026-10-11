@@ -56,6 +56,6 @@ public final class LogicStats {
             return -1;
         }
         int ticks = (int) Math.round(StarkConfig.Logic.BRAIN_DELAY_TICKS / brainPower);
-        return ticks <= StarkConfig.Logic.BRAIN_DELAY_GONE_TICKS ? 0 : ticks;
+        return ticks <= Math.round(StarkConfig.Logic.BRAIN_DELAY_GONE_TICKS) ? 0 : ticks;
     }
 }

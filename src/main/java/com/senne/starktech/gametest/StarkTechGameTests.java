@@ -277,22 +277,22 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("Er staan " + inFile + " getallen in het bestand, maar er zijn er "
                     + StarkConfigLoader.size() + " met @Tunable");
         }
-        net.neoforged.neoforge.common.ModConfigSpec.IntValue cost = spec.getValues().get("scanner.oreScanCost");
+        net.neoforged.neoforge.common.ModConfigSpec.DoubleValue cost = spec.getValues().get("scanner.oreScanCost");
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
         net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<java.util.List<? extends Number>> cooldown =
                 spec.getValues().get("satellite.cooldown");
         net.neoforged.neoforge.common.ModConfigSpec.BooleanValue hack = spec.getValues().get("rules.hackAllowed");
-        int oldCost = cost.get();
+        double oldCost = cost.get();
         double oldDamage = damage.get();
         java.util.List<? extends Number> oldCooldown = cooldown.get();
         boolean oldHack = hack.get();
         try {
-            cost.set(123);
+            cost.set(123.5); // een kommagetal: alles in StarkConfig mag dat zijn
             damage.set(9.5);
             cooldown.set(java.util.List.of(1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 50));
             hack.set(!oldHack);
             StarkConfigLoader.reapply();
-            if (StarkConfig.Scanner.ORE_SCAN_COST != 123 || StarkConfig.Suit.REPULSOR_DAMAGE != 9.5f) {
+            if (StarkConfig.Scanner.ORE_SCAN_COST != 123.5f || StarkConfig.Suit.REPULSOR_DAMAGE != 9.5f) {
                 throw new GameTestAssertException("De nieuwe getallen tellen niet: ertsen-scan kost "
                         + StarkConfig.Scanner.ORE_SCAN_COST + ", repulsor doet " + StarkConfig.Suit.REPULSOR_DAMAGE);
             }
@@ -342,6 +342,18 @@ public final class StarkTechGameTests {
         if (store.energy() != 8) {
             throw new GameTestAssertException("8 keer 0.25 betalen kostte " + (10 - store.energy()) + " in plaats van 2");
         }
+        // De bril rekent ook met kommagetallen: 4 keer 0.25 uit 10 = precies 9.
+        ItemStack glasses = new ItemStack(com.senne.starktech.registry.ModItems.EDITH_GLASSES.get());
+        EdithData.setEnergy(glasses, 10);
+        for (int i = 0; i < 4; i++) {
+            if (!EdithData.tryUseEnergy(glasses, 0.25)) {
+                throw new GameTestAssertException("De bril kon 0.25 niet betalen met " + EdithData.getExactEnergy(glasses));
+            }
+        }
+        if (Math.abs(EdithData.getExactEnergy(glasses) - 9.0) > 1.0E-9) {
+            throw new GameTestAssertException("4 keer 0.25 uit de bril liet " + EdithData.getExactEnergy(glasses)
+                    + " over in plaats van 9");
+        }
 
         float oldFuel = StarkConfig.Power.HEAT_RATE_FUEL;
         float oldAmbient = StarkConfig.Power.HEAT_RATE_AMBIENT;
@@ -388,7 +400,7 @@ public final class StarkTechGameTests {
      * een te dichtbij. Alleen in een test die alleen in zijn batch staat (anders merken de andere het).
      */
     static <T> T withReach(int reach, java.util.function.Supplier<T> action) {
-        int old = StarkConfig.Security.ZONE_REACH;
+        int old = Math.round(StarkConfig.Security.ZONE_REACH);
         StarkConfig.Security.ZONE_REACH = reach;
         try {
             return action.get();
@@ -444,9 +456,9 @@ public final class StarkTechGameTests {
         helper.succeedWhen(() -> {
             int drones = helper.getLevel().getEntitiesOfClass(com.senne.starktech.security.SecurityDroneEntity.class,
                     new AABB(absolute).inflate(40), drone -> absolute.equals(drone.home())).size();
-            if (drones != StarkConfig.Security.MAX_DRONES) {
+            if (drones != Math.round(StarkConfig.Security.MAX_DRONES)) {
                 throw new GameTestAssertException("Er vliegen " + drones + " beveiligingsdrones in plaats van "
-                        + StarkConfig.Security.MAX_DRONES);
+                        + Math.round(StarkConfig.Security.MAX_DRONES));
             }
         });
     }
@@ -1124,7 +1136,7 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("De server telt verkeerd: " + stats);
             }
             int expected = LogicStats.reactionTicks(2.0); // twee CPU's: kracht 2
-            if (stats.reactionTicks() != expected || stats.maxRuns() != StarkConfig.Logic.RUNS_PER_RAM) {
+            if (stats.reactionTicks() != expected || stats.maxRuns() != Math.round(StarkConfig.Logic.RUNS_PER_RAM)) {
                 throw new GameTestAssertException("Reageren of tegelijk klopt niet: " + stats.reactionTicks() + " ticks, " + stats.maxRuns() + " tegelijk");
             }
             // Zonder SSD draait hij niet, en zegt hij waarom.
@@ -2502,7 +2514,7 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("Er kwamen " + spawned + " drones in plaats van 3");
         }
         List<RaidDroneEntity> drones = helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class,
-                owner.getBoundingBox().inflate(StarkConfig.Raids.ARRIVAL_HEIGHT + 32));
+                owner.getBoundingBox().inflate(Math.round(StarkConfig.Raids.ARRIVAL_HEIGHT) + 32));
         if (drones.size() != 3) {
             throw new GameTestAssertException("Niet alle drones zijn te vinden: " + drones.size());
         }
@@ -2514,7 +2526,7 @@ public final class StarkTechGameTests {
             if (above < 6) {
                 throw new GameTestAssertException("Een raiddrone begon maar " + Math.round(above) + " blokken hoog");
             }
-            if (above > StarkConfig.Raids.ARRIVAL_HEIGHT + StarkConfig.Raids.HOVER_ABOVE + 2) {
+            if (above > Math.round(StarkConfig.Raids.ARRIVAL_HEIGHT) + StarkConfig.Raids.HOVER_ABOVE + 2) {
                 throw new GameTestAssertException("Een raiddrone begon " + Math.round(above)
                         + " blokken hoog, hoger dan hij ooit mag");
             }
@@ -2523,7 +2535,7 @@ public final class StarkTechGameTests {
         // Even laten vallen; daarna horen ze jou op de korrel te hebben.
         helper.succeedWhen(() -> {
             for (RaidDroneEntity drone : helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class,
-                    owner.getBoundingBox().inflate(StarkConfig.Raids.ARRIVAL_HEIGHT + 32))) {
+                    owner.getBoundingBox().inflate(Math.round(StarkConfig.Raids.ARRIVAL_HEIGHT) + 32))) {
                 if (drone.isDiving()) {
                     throw new GameTestAssertException("Er duikt er nog een");
                 }
@@ -2885,7 +2897,7 @@ public final class StarkTechGameTests {
                     + " in plaats van " + StarkConfig.Suit.REPULSOR_COST);
         }
         // Na de wachttijd mag hij weer.
-        helper.runAfterDelay(StarkConfig.Suit.REPULSOR_COOLDOWN + 1, () -> {
+        helper.runAfterDelay(Math.round(StarkConfig.Suit.REPULSOR_COOLDOWN) + 1, () -> {
             EdithSuit.repulsor(owner);
             if (EdithData.getEnergy(glasses) != afterTwo - StarkConfig.Suit.REPULSOR_COST) {
                 throw new GameTestAssertException("Na de wachttijd vuurde de repulsor niet opnieuw");
@@ -2923,7 +2935,7 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("Een salvo kostte " + (full - afterOne) + " in plaats van "
                     + StarkConfig.Suit.ROCKET_COST);
         }
-        helper.runAfterDelay(StarkConfig.Suit.ROCKET_SALVO * StarkConfig.Suit.ROCKET_INTERVAL + 2, () -> {
+        helper.runAfterDelay(Math.round(StarkConfig.Suit.ROCKET_SALVO) * Math.round(StarkConfig.Suit.ROCKET_INTERVAL) + 2, () -> {
             SuitRockets.fire(owner);
             if (EdithData.getEnergy(glasses) != afterOne) {
                 throw new GameTestAssertException("Een tweede salvo tijdens het herladen kostte toch energie");
@@ -2976,8 +2988,8 @@ public final class StarkTechGameTests {
         if (warhead.canApplyTo(chest) || magazine.canApplyTo(chest)) {
             throw new GameTestAssertException("Een raket-upgrade paste zonder raketpakket");
         }
-        if (SuitRockets.salvoSize(owner) != StarkConfig.Suit.ROCKET_SALVO || SuitRockets.damageScale(owner) != 1.0f) {
-            throw new GameTestAssertException("Zonder upgrades is het salvo niet gewoon " + StarkConfig.Suit.ROCKET_SALVO);
+        if (SuitRockets.salvoSize(owner) != Math.round(StarkConfig.Suit.ROCKET_SALVO) || SuitRockets.damageScale(owner) != 1.0f) {
+            throw new GameTestAssertException("Zonder upgrades is het salvo niet gewoon " + Math.round(StarkConfig.Suit.ROCKET_SALVO));
         }
         chest.set(ModDataComponents.ROCKET_PACK.get(), true);
         for (int i = 0; i < 3; i++) {
@@ -2991,7 +3003,7 @@ public final class StarkTechGameTests {
             throw new GameTestAssertException("Er paste een vierde raket-upgrade in");
         }
         int size = SuitRockets.salvoSize(owner);
-        if (size != StarkConfig.Suit.ROCKET_SALVO + 3 * StarkConfig.Workbench.MAGAZINE_ROCKETS) {
+        if (size != Math.round(StarkConfig.Suit.ROCKET_SALVO) + 3 * Math.round(StarkConfig.Workbench.MAGAZINE_ROCKETS)) {
             throw new GameTestAssertException("Met drie magazijnen telt een salvo " + size + " raketten");
         }
         if (Math.abs(SuitRockets.damageScale(owner) - (1 + 3 * StarkConfig.Workbench.WARHEAD_DAMAGE)) > 1e-4) {
@@ -3500,7 +3512,7 @@ public final class StarkTechGameTests {
                 if (!guess.equals(terminal.password())) {
                     wrong++;
                 }
-                if (wrong >= StarkConfig.Security.PASSWORD_ATTEMPTS) {
+                if (wrong >= Math.round(StarkConfig.Security.PASSWORD_ATTEMPTS)) {
                     locked++;
                     break;
                 }
@@ -3742,20 +3754,20 @@ public final class StarkTechGameTests {
         helper.runAfterDelay(20, () -> {
             ServerLevel level = helper.getLevel();
             Vec3 inside = dome.center().add(2, 0, 1);
-            if (EdithDomes.blockedAt(level, inside, null, owner.getUUID(), StarkConfig.Dome.COST_SATELLITE_BEAM) != null) {
+            if (EdithDomes.blockedAt(level, inside, null, owner.getUUID(), Math.round(StarkConfig.Dome.COST_SATELLITE_BEAM)) != null) {
                 throw new GameTestAssertException("De koepel hield de satelliet van zijn eigenaar tegen");
             }
-            if (EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), StarkConfig.Dome.COST_SATELLITE_BEAM) == null) {
+            if (EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), Math.round(StarkConfig.Dome.COST_SATELLITE_BEAM)) == null) {
                 throw new GameTestAssertException("De satelliet van een ander kwam door de koepel");
             }
             // Blijven schieten tot hij bezwijkt: dan valt hij weg en komt er niets meer tegen.
             for (int i = 0; i < 20 && dome.isUp(); i++) {
-                EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), StarkConfig.Dome.COST_SATELLITE_BEAM);
+                EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), Math.round(StarkConfig.Dome.COST_SATELLITE_BEAM));
             }
             if (dome.isUp() || dome.status() != DomeGeneratorBlockEntity.Status.DEPLETED) {
                 throw new GameTestAssertException("De koepel viel niet weg toen zijn schildkracht op was");
             }
-            if (EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), StarkConfig.Dome.COST_SATELLITE_BEAM) != null) {
+            if (EdithDomes.blockedAt(level, inside, null, UUID.randomUUID(), Math.round(StarkConfig.Dome.COST_SATELLITE_BEAM)) != null) {
                 throw new GameTestAssertException("Een weggevallen koepel hield nog iets tegen");
             }
             helper.succeed();
@@ -3862,7 +3874,7 @@ public final class StarkTechGameTests {
         if (SatelliteWorkshop.get(owner).recharge() != 0) {
             throw new GameTestAssertException("De upgrade ging in voordat de drones boven waren");
         }
-        helper.runAfterDelay(StarkConfig.Satellite.DELIVERY_TICKS + 5, () -> {
+        helper.runAfterDelay(Math.round(StarkConfig.Satellite.DELIVERY_TICKS) + 5, () -> {
             if (SatelliteWorkshop.get(owner).recharge() != 1) {
                 throw new GameTestAssertException("De upgrade ging niet in na de levering");
             }
@@ -3998,8 +4010,8 @@ public final class StarkTechGameTests {
      */
     @GameTest(template = ARENA, timeoutTicks = 600, batch = "arsenal")
     public static void drones_arrive_and_leave_through_the_sky(GameTestHelper helper) {
-        if (StarkConfig.Drones.ORBIT_HEIGHT < 64) {
-            throw new GameTestAssertException("De mod vraagt maar " + StarkConfig.Drones.ORBIT_HEIGHT
+        if (Math.round(StarkConfig.Drones.ORBIT_HEIGHT) < 64) {
+            throw new GameTestAssertException("De mod vraagt maar " + Math.round(StarkConfig.Drones.ORBIT_HEIGHT)
                     + " blokken hoogte; verwacht minstens 64");
         }
 
@@ -4844,7 +4856,7 @@ public final class StarkTechGameTests {
                 SatelliteMode.BOMBARDMENT, null, null));
         // Tijdens het opladen mag er nog niets gebeuren...
         UUID enemyId = enemy.getUUID();
-        helper.runAfterDelay(startDelay + StarkConfig.Satellite.CHARGE_TIME[0] - 10, () -> {
+        helper.runAfterDelay(startDelay + Math.round(StarkConfig.Satellite.CHARGE_TIME[0]) - 10, () -> {
             if (!(findAlive(helper, enemyId) instanceof LivingEntity alive) || alive.getHealth() < alive.getMaxHealth()) {
                 throw new GameTestAssertException("De satelliet sloeg te vroeg in");
             }

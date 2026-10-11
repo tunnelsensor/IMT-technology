@@ -58,7 +58,7 @@ public final class ZoneApp {
         data.putInt("upkeep", core.zoneUpkeep());
         data.putDouble("coreUpkeep", StarkConfig.Power.SECURITY_CORE_UPKEEP);
         data.putInt("max", StarkConfig.Security.ZONE_MAX_BOXES);
-        data.putInt("reach", StarkConfig.Security.ZONE_REACH);
+        data.putInt("reach", Math.round(StarkConfig.Security.ZONE_REACH));
         if (viewer != null && !remote) {
             data.put("player", xyz(viewer.blockPosition()));
         }
@@ -125,7 +125,7 @@ public final class ZoneApp {
         }
         ZoneBox fitted = grown.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null || fitted.equals(old)) {
-            return new Result("Your zone can't reach further (" + StarkConfig.Security.ZONE_REACH + " blocks from the core)", true);
+            return new Result("Your zone can't reach further (" + Math.round(StarkConfig.Security.ZONE_REACH) + " blocks from the core)", true);
         }
         // Kleiner maken mag altijd; groter alleen als hij dan niemand in de weg zit.
         if (by > 0 && core.zoneBoxBlocked(fitted)) {
@@ -147,7 +147,7 @@ public final class ZoneApp {
         }
         ZoneBox fitted = wanted.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null) {
-            return new Result("That is too far: a zone reaches " + StarkConfig.Security.ZONE_REACH + " blocks from the core", true);
+            return new Result("That is too far: a zone reaches " + Math.round(StarkConfig.Security.ZONE_REACH) + " blocks from the core", true);
         }
         if (!boxes.get(index).contains(fitted) && core.zoneBoxBlocked(fitted)) {
             return new Result(BLOCKED, true);
@@ -156,7 +156,7 @@ public final class ZoneApp {
         core.setZoneBoxes(boxes);
         boolean cut = !fitted.equals(wanted);
         return new Result("Box " + (index + 1) + ": " + fitted.size()
-                + (cut ? " (cut: a zone reaches " + StarkConfig.Security.ZONE_REACH + " blocks from the core)" : ""), cut);
+                + (cut ? " (cut: a zone reaches " + Math.round(StarkConfig.Security.ZONE_REACH) + " blocks from the core)" : ""), cut);
     }
 
     /** Wat de app zegt als een kubus een ander in de weg zou zitten. */

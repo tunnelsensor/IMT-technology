@@ -67,7 +67,7 @@ public class TurretBlockEntity extends BlockEntity {
 
         @Override
         public int getSlotLimit(int slot) {
-            return StarkConfig.Turrets.MAX_AMMO;
+            return Math.round(StarkConfig.Turrets.MAX_AMMO);
         }
 
         @Override
@@ -151,7 +151,7 @@ public class TurretBlockEntity extends BlockEntity {
             target = level.getEntity(targetId) instanceof LivingEntity current && stillValid(level, current)
                     ? current : null;
             // Niemand? Om de halve seconde rondkijken (niet elke tick: dat is zwaar voor de server).
-            if (target == null && (level.getGameTime() + pos.hashCode()) % StarkConfig.Turrets.SCAN_INTERVAL == 0) {
+            if (target == null && (level.getGameTime() + pos.hashCode()) % Math.round(StarkConfig.Turrets.SCAN_INTERVAL) == 0) {
                 target = findTarget(level);
             }
         }
@@ -221,7 +221,7 @@ public class TurretBlockEntity extends BlockEntity {
         BeamEffectPayload.Kind beam = kind.beam();
         level.playSound(null, worldPosition, ModSounds.DRONE_LASER.get(), SoundSource.BLOCKS, 0.8f, kind.pitch());
         // Een rayshield-koepel om het doelwit houdt de straal tegen (de eigen koepel niet).
-        Vec3 shield = EdithDomes.blockedAt(level, to, muzzle, ownerId, StarkConfig.Dome.COST_LASER);
+        Vec3 shield = EdithDomes.blockedAt(level, to, muzzle, ownerId, Math.round(StarkConfig.Dome.COST_LASER));
         if (shield != null) {
             ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, shield, beam));
             return;
@@ -241,7 +241,7 @@ public class TurretBlockEntity extends BlockEntity {
         if (rocket == null || !StarkGrid.pay(level, worldPosition, StarkConfig.Power.TURRET_ROCKET)) {
             return;
         }
-        rocketCooldown = StarkConfig.Turrets.ROCKET_INTERVAL;
+        rocketCooldown = Math.round(StarkConfig.Turrets.ROCKET_INTERVAL);
         ammo.extractItem(0, 1, false);
         Vec3 muzzle = muzzle();
         Vec3 toTarget = target.getBoundingBox().getCenter().subtract(muzzle).normalize();

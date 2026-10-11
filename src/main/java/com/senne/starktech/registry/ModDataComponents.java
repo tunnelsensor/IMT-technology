@@ -20,11 +20,14 @@ public final class ModDataComponents {
     public static final DeferredRegister.DataComponents COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, StarkTech.MODID);
 
-    /** Hoeveel energie (SE) er in de bril zit. */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ENERGY =
+    /**
+     * Hoeveel energie (SE) er in de bril zit. Een kommagetal, zodat ook 0.5 per seconde verbruiken werkt.
+     * (Een bril uit een oude wereld, met een heel getal erin, leest hij gewoon.)
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Double>> ENERGY =
             COMPONENTS.registerComponentType("energy", builder -> builder
-                    .persistent(Codec.INT)
-                    .networkSynchronized(ByteBufCodecs.VAR_INT)
+                    .persistent(Codec.DOUBLE)
+                    .networkSynchronized(ByteBufCodecs.DOUBLE)
                     // Voorkomt dat het item in je hand "wiebelt" telkens als de energie verandert.
                     );
 

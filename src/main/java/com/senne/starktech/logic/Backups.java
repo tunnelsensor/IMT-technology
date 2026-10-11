@@ -116,13 +116,13 @@ public final class Backups {
         }
         int size = size(core.logic());
         GlobalPos here = here(level, core);
-        int free = datacenters.free(target, here, StarkConfig.Logic.BACKUPS_KEPT);
+        int free = datacenters.free(target, here, Math.round(StarkConfig.Logic.BACKUPS_KEPT));
         if (size > free) {
             return Result.fail("Not enough room on " + summary.host() + ": needs " + size + " blocks, " + Math.max(0, free) + " free");
         }
         CompoundTag data = new CompoundTag();
         data.put("Logic", core.logic().save());
-        datacenters.add(target, here, core.ip(), core.hostname(), core.ownerId(), level.getGameTime(), size, auto, data, StarkConfig.Logic.BACKUPS_KEPT);
+        datacenters.add(target, here, core.ip(), core.hostname(), core.ownerId(), level.getGameTime(), size, auto, data, Math.round(StarkConfig.Logic.BACKUPS_KEPT));
         core.datacenter().backedUp(level.getGameTime());
         core.setChanged();
         core.logEvent(EventLog.Type.SYSTEM, (auto ? "Automatic backup" : "Backup by " + who) + " to " + summary.host()
@@ -234,7 +234,7 @@ public final class Backups {
             item.putString("host", summary.host());
             item.putString("ip", summary.ip());
             item.putBoolean("online", summary.online());
-            item.putInt("free", Math.max(0, datacenters.free(entry.getKey(), here, StarkConfig.Logic.BACKUPS_KEPT)));
+            item.putInt("free", Math.max(0, datacenters.free(entry.getKey(), here, Math.round(StarkConfig.Logic.BACKUPS_KEPT))));
             item.putInt("cap", summary.capacity());
             targets.add(item);
         }

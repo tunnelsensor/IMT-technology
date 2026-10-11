@@ -1984,6 +1984,24 @@ De stappen:
       `hydra_bunker_lasers_need_the_reactor`, `stark_tower_vault_trap` en `stark_tower_lasers_have_power`.
       De warmtegenerator naast de lava in de bunker en de toren maakt nu te weinig voor hun laserwanden
       (elke zender gebruikt nog 1 per tick). Jouw keuze: zo laten, je kijkt zelf naar de getallen.
+- [x] **3. Alle getallen kommagetallen** (11 oktober: "zorg dat alle getallen in de mod met komma getallen
+      kunnen werken"). De 169 getallen die nog heel waren, zijn nu ook float. **Energie** telt precies:
+      de batterij van de bril bewaart nu een kommagetal (een bril uit een oude wereld leest hij gewoon), dus
+      kosten en verbruik zoals 0.5 per seconde werken. **Tijden in ticks en aantallen** (drones, tekens,
+      niveaus, vakjes) worden afgerond waar ze gebruikt worden (`Math.round`), zodat alles met hele getallen
+      precies werkt zoals vroeger. **Seconden en minuten** (inbreken, zakkenrollen, raids) gaan eerst naar
+      ticks en worden dan pas afgerond. Schermen en berichten tonen getallen zonder ".0"
+      (`config/Numbers`). Alleen de VAST-getallen (opstarten en schermen) zijn heel gebleven. De configtest
+      zet nu 123.5 als kosten, en de kommagetallentest kijkt ook of 4 x 0.25 uit de bril precies 1 kost.
+      Met de oude stroomwaarden alle 204 tests groen.
+- [x] **4. Een knop /tick, /sec, /min, /hour** (11 oktober: "maak een knop die laat toggelen tussen per
+      tick per sec per min per uur"). `client/PowerUnit`: een knopje in het scherm van de generator
+      (rechtsboven), de koepel (boven Done) en de Arc Lamp (naast Done). Elke klik: tick, seconde, minuut,
+      uur, en weer tick. De keuze geldt meteen voor alle schermen, ook het verbruik in het G-menu en wat een
+      zone kost in de app Zones, en blijft bewaard in `starktech-client.toml` (`powerUnit`). **Mijn
+      invulling**: één keuze voor alles in plaats van per scherm. Screenshots: `-Ponly=power` (`pw01`-`pw05`:
+      het generatorscherm, vier keer echt op de knop geklikt), en de knop staat ook op `99_dome_screen` en
+      `lt05_lamp_screen`.
 
 ---
 

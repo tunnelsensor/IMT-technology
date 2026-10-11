@@ -105,7 +105,7 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         small(g, state, STATS_X + 40, y, HudStyle.argb(255, status == ServerRackBlockEntity.Status.ONLINE && online()
                 ? HudStyle.GREEN : HudStyle.RED));
         if (status == ServerRackBlockEntity.Status.NO_NETWORK) {
-            wrapped(g, "Place it within " + StarkConfig.Security.ZONE_REACH
+            wrapped(g, "Place it within " + Math.round(StarkConfig.Security.ZONE_REACH)
                     + " blocks of a Security Core: the server runs on your Stark OS.", y + 10,
                     HudStyle.argb(140, HudStyle.WHITE));
             return;
@@ -127,8 +127,8 @@ public class ServerRackScreen extends AbstractContainerScreen<ServerRackMenu> {
         int delay = LogicStats.brainDelayTicks(brain);
         stat(g, "E.D.I.T.H.", delay < 0 ? "can't think" : delay == 0 ? "no delay"
                 : String.format(Locale.ROOT, "+%.1f s", delay / 20.0), y + 7);
-        stat(g, "AT ONCE", menu.ram() * StarkConfig.Logic.RUNS_PER_RAM + " diagrams", y + 14);
-        stat(g, "STORAGE", menu.ssd() * StarkConfig.Logic.BLOCKS_PER_SSD + " blocks", y + 21);
+        stat(g, "AT ONCE", menu.ram() * Math.round(StarkConfig.Logic.RUNS_PER_RAM) + " diagrams", y + 14);
+        stat(g, "STORAGE", menu.ssd() * Math.round(StarkConfig.Logic.BLOCKS_PER_SSD) + " blocks", y + 21);
         // De temperatuur van DIT rack: nu, en waar hij naartoe gaat (als dat meer dan een graad scheelt).
         // Zonder fan raakt de warmte er niet uit: dan wordt het steeds warmer ("rising").
         double temp = menu.temperature();

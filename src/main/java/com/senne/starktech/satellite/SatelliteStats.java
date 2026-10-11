@@ -32,8 +32,8 @@ public final class SatelliteStats {
 
     /** Bombardment: hoeveel inslagen. */
     public static int bombardmentShots(int bombardment) {
-        int[] shots = StarkConfig.Satellite.BOMBARDMENT_SHOTS;
-        return shots[mode(bombardment, shots.length)];
+        float[] shots = StarkConfig.Satellite.BOMBARDMENT_SHOTS;
+        return Math.round(shots[mode(bombardment, shots.length)]);
     }
 
     /** Bombardment: hoe ver de inslagen uit elkaar liggen. */
@@ -50,8 +50,8 @@ public final class SatelliteStats {
 
     /** Sweep: hoe lang de laser schuift (ticks). */
     public static int sweepTicks(int sweep) {
-        int[] ticks = StarkConfig.Satellite.SWEEP_TICKS;
-        return ticks[mode(sweep, ticks.length)];
+        float[] ticks = StarkConfig.Satellite.SWEEP_TICKS;
+        return Math.round(ticks[mode(sweep, ticks.length)]);
     }
 
     /** Sweep: schade per treffer, met Power erbij. */
@@ -62,14 +62,14 @@ public final class SatelliteStats {
 
     /** Recharge: de wachttijd tussen twee aanvallen (ticks). */
     public static int cooldownTicks(int recharge) {
-        int[] cooldown = StarkConfig.Satellite.COOLDOWN;
-        return cooldown[upgrade(recharge, cooldown.length)];
+        float[] cooldown = StarkConfig.Satellite.COOLDOWN;
+        return Math.round(cooldown[upgrade(recharge, cooldown.length)]);
     }
 
     /** Targeting: hoe lang de satelliet richt voor de inslag (ticks). */
     public static int chargeTicks(int targeting) {
-        int[] charge = StarkConfig.Satellite.CHARGE_TIME;
-        return charge[upgrade(targeting, charge.length)];
+        float[] charge = StarkConfig.Satellite.CHARGE_TIME;
+        return Math.round(charge[upgrade(targeting, charge.length)]);
     }
 
     /** Targeting: hoe ver weg je kunt richten (blokken). */
@@ -80,8 +80,8 @@ public final class SatelliteStats {
 
     /** Hoeveel drones een upgrade naar niveau {@code nextLevel} naar boven brengen. */
     public static int deliveryDrones(int nextLevel) {
-        int[] drones = StarkConfig.Satellite.DELIVERY_DRONES;
-        return drones[mode(nextLevel, drones.length)];
+        float[] drones = StarkConfig.Satellite.DELIVERY_DRONES;
+        return Math.round(drones[mode(nextLevel, drones.length)]);
     }
 
     /** Plek in een rijtje van niveau 0 t/m 10. */

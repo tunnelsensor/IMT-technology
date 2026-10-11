@@ -56,7 +56,7 @@ public final class EdithShield {
             return;
         }
         float damage = event.getAmount();
-        int cost = (int) Math.ceil(damage * StarkConfig.Shields.PERSONAL_COST_PER_DAMAGE);
+        double cost = damage * StarkConfig.Shields.PERSONAL_COST_PER_DAMAGE;
         if (!EdithData.tryUseEnergy(glasses, cost)) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.shield_down"),
                     EdithMessagePayload.Level.ALERT);

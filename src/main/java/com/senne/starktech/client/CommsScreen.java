@@ -75,7 +75,7 @@ public class CommsScreen extends Screen {
         }).bounds(left + 8, top + 24, PANEL_W - 16, 20).build());
 
         messageBox = new EditBox(font, left + 8, top + 50, PANEL_W - 84, 20, Component.translatable("screen.starktech.comms.message"));
-        messageBox.setMaxLength(StarkConfig.Comms.MAX_MESSAGE_LENGTH);
+        messageBox.setMaxLength(Math.round(StarkConfig.Comms.MAX_MESSAGE_LENGTH));
         messageBox.setValue(pendingMessage);
         messageBox.setResponder(value -> pendingMessage = value);
         messageBox.setHint(Component.translatable("screen.starktech.comms.message_hint"));

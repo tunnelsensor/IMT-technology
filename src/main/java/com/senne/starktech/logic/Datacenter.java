@@ -229,7 +229,7 @@ public final class Datacenter {
 
     /** Hoeveel blokjes per seconde de CPU's en GPU's van deze server aankunnen (warm: minder). */
     public static double logicCapacity(LogicServer.Stats stats) {
-        return stats.logicPower() / stats.slowdown() * StarkConfig.Logic.LOGIC_STEPS_PER_SECOND;
+        return stats.logicPower() / stats.slowdown() * Math.round(StarkConfig.Logic.LOGIC_STEPS_PER_SECOND);
     }
 
     private static int percent(double fraction) {
@@ -391,7 +391,7 @@ public final class Datacenter {
                 continue;
             }
             int wear = ServerPartItem.wear(stack) + amount;
-            if (wear < StarkConfig.Logic.MAX_WEAR) {
+            if (wear < Math.round(StarkConfig.Logic.MAX_WEAR)) {
                 ServerPartItem.setWear(stack, wear);
                 rack.setChanged();
                 continue;
@@ -415,15 +415,15 @@ public final class Datacenter {
             return;
         }
         int ticks = rack.fireTicks() + UPDATE_TICKS;
-        if (ticks < StarkConfig.Logic.FIRE_DELAY_TICKS) {
+        if (ticks < Math.round(StarkConfig.Logic.FIRE_DELAY_TICKS)) {
             rack.setFireTicks(ticks);
             return;
         }
         rack.setFireTicks(0);
-        rack.ignite(level, level.getGameTime() + StarkConfig.Logic.BURN_TICKS);
+        rack.ignite(level, level.getGameTime() + Math.round(StarkConfig.Logic.BURN_TICKS));
         core.logEvent(EventLog.Type.ALARM, "A server rack is on fire! (" + where(rack.getBlockPos()) + ")");
         tellOwner(level, core, Component.translatable("logic.starktech.heat.fire", core.hostname(),
-                Math.max(1, StarkConfig.Logic.BURN_TICKS / 20)), EdithMessagePayload.Level.ALERT);
+                Math.max(1, Math.round(StarkConfig.Logic.BURN_TICKS) / 20)), EdithMessagePayload.Level.ALERT);
     }
 
     /** Een rack is afgebrand (ServerRackBlockEntity.burnDown). Zat er een SSD in, dan zijn de gegevens weg. */

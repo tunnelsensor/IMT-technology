@@ -32,6 +32,15 @@ package com.senne.starktech.config;
  *   schade    in halve hartjes: 2 = 1 hartje, 20 = een volle levensbalk
  *   delen     0.25 = 25%
  *
+ * KOMMAGETALLEN
+ *   Elk getal dat je kunt instellen is een kommagetal (float), dus 0.25 mag overal. Energie telt
+ *   precies mee: 0.25 is echt 0.25, ook in de batterij van de bril. Tijden in ticks en aantallen (drones,
+ *   tekens, niveaus) rondt de mod af naar het dichtstbijzijnde hele getal (12.6 ticks = 13), want een
+ *   halve tick of een halve drone bestaat niet. Seconden en minuten rekent hij eerst om naar ticks, dus
+ *   0.5 seconde is echt 10 ticks. Alleen de getallen met "final" (VAST, zie hieronder) zijn hele getallen.
+ *   In de schermen van de generator, de koepel en de Arc Lamp zie je stroom per tick, seconde, minuut of
+ *   uur: klik op de knop "/tick" (zie client/PowerUnit).
+ *
  * PER NIVEAU
  *   Sommige getallen zijn een rijtje: één getal per niveau. Bijvoorbeeld de wachttijd van de
  *   satelliet voor upgrade "Recharge" niveau 0 tot en met 10. In het .toml-bestand ziet dat er zo uit:
@@ -109,16 +118,16 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Batterij
         /** Hoeveel energie de bril kan opslaan zonder batterij-upgrades. */
         @Tunable("Energy the glasses hold without battery upgrades")
-        public static int BASE_CAPACITY = 10_000;
+        public static float BASE_CAPACITY = 10_000.0f;
         /** Hoeveel extra opslag elke batterij-upgrade geeft. */
         @Tunable("Extra energy per battery upgrade")
-        public static int CAPACITY_PER_BATTERY_UPGRADE = 10_000;
+        public static float CAPACITY_PER_BATTERY_UPGRADE = 10_000.0f;
         /** Hoeveel batterij-upgrades er hooguit in één bril passen. */
         @Tunable(value = "How many battery upgrades fit in one pair of glasses", max = 16)
-        public static int MAX_BATTERY_UPGRADES = 3;
+        public static float MAX_BATTERY_UPGRADES = 3.0f;
         /** Hoe lang het installeren van een upgrade in het laadstation duurt (100 = 5 seconden). */
         @Tunable(value = "How long installing an upgrade in the charging station takes (ticks)", min = 1)
-        public static int UPGRADE_INSTALL_TIME = 60;
+        public static float UPGRADE_INSTALL_TIME = 60.0f;
         /** Onder dit deel van de batterij waarschuwt E.D.I.T.H. (0.10 = 10%). */
         @Tunable(value = "Battery share (0-1) below which E.D.I.T.H. warns you", max = 1)
         public static float LOW_BATTERY_WARNING = 0.10f;
@@ -126,16 +135,16 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Verbruik per seconde
         /** Wat de HUD zelf kost zolang je de bril draagt. */
         @Tunable("Energy per second while the HUD is on")
-        public static int DRAIN_HUD = 1;
+        public static float DRAIN_HUD = 1.0f;
         /** Extra zolang nachtzicht aan staat. */
         @Tunable("Energy per second for night vision")
-        public static int DRAIN_NIGHT_VISION = 4;
+        public static float DRAIN_NIGHT_VISION = 4.0f;
         /** Extra zolang "vijanden door muren" aan staat. */
         @Tunable("Energy per second for the threat scan")
-        public static int DRAIN_THREAT_SCAN = 3;
+        public static float DRAIN_THREAT_SCAN = 3.0f;
         /** Extra zolang doelwit-analyse aan staat. */
         @Tunable("Energy per second for target analysis")
-        public static int DRAIN_TARGET_ANALYSIS = 1;
+        public static float DRAIN_TARGET_ANALYSIS = 1.0f;
 
         // ------------------------------------------------------------------------- Doelwitten en zoom
         /** Tot hoe ver je een doelwit kunt analyseren en markeren. */
@@ -143,7 +152,7 @@ public final class StarkConfig {
         public static double TARGET_RANGE = 64.0;
         /** Hoeveel doelwitten je tegelijk kunt markeren. */
         @Tunable("How many targets you can mark at once")
-        public static int MAX_MARKED_TARGETS = 10;
+        public static float MAX_MARKED_TARGETS = 10.0f;
         /** Hoeveel keer de bril inzoomt (bij het richten van de satelliet dubbel zoveel). */
         @Tunable(value = "How many times the glasses zoom in (twice this while aiming the satellite)", min = 1, max = 16)
         public static float ZOOM_FACTOR = 4.0f;
@@ -157,19 +166,19 @@ public final class StarkConfig {
 
         /** Kosten van één ertsen-scan. */
         @Tunable("Energy cost of an ore scan")
-        public static int ORE_SCAN_COST = 400;
+        public static float ORE_SCAN_COST = 400.0f;
         /** Wachttijd tussen twee scans (200 = 10 seconden). */
         @Tunable("Wait between two ore scans (ticks)")
-        public static int ORE_SCAN_COOLDOWN = 200;
+        public static float ORE_SCAN_COOLDOWN = 200.0f;
         /** Hoe lang de gevonden ertsen zichtbaar blijven (300 = 15 seconden). */
         @Tunable("How long ore markers stay visible (ticks)")
-        public static int ORE_SCAN_DURATION = 300;
+        public static float ORE_SCAN_DURATION = 300.0f;
         /** Scan-straal in blokken, per scanner-niveau 0, 1, 2 en 3. */
         @Tunable(value = "Ore scan radius (blocks) for scanner level 0, 1, 2 and 3", max = 128)
-        public static int[] ORE_SCAN_RADIUS = {12, 18, 24, 32};
+        public static float[] ORE_SCAN_RADIUS = {12.0f, 18.0f, 24.0f, 32.0f};
         /** Tot hoe ver vijanden door muren heen oplichten, per scanner-niveau 0, 1, 2 en 3. */
         @Tunable(value = "How far (blocks) enemies light up through walls, for scanner level 0, 1, 2 and 3", max = 256)
-        public static int[] THREAT_RADIUS = {24, 32, 48, 64};
+        public static float[] THREAT_RADIUS = {24.0f, 32.0f, 48.0f, 64.0f};
 
         /** VAST: hoeveel scanner-upgrades er in een bril passen (de rijtjes hierboven hebben er één meer). */
         public static final int MAX_SCANNER_UPGRADES = 3;
@@ -195,13 +204,13 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Zonnepaneel
         /** Energie per tick met de zon recht boven je (minder als de zon laag staat, 's nachts niets). */
         @Tunable("Energy per tick a solar panel makes with the sun straight above (less when the sun is low, nothing at night)")
-        public static float SOLAR_RATE = 0.3f;
+        public static float SOLAR_RATE = 0.5f;
         /** Welk deel van de zon een zonnepaneel nog krijgt als het regent (0.4 = 40%). */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets when it rains", max = 1)
-        public static float SOLAR_RAIN = 0.02f;
+        public static float SOLAR_RAIN = 0.2f;
         /** ...en bij onweer. */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets in a thunderstorm", max = 1)
-        public static float SOLAR_THUNDER = 0.01f;
+        public static float SOLAR_THUNDER = 0.1f;
         /** Hoeveel een zonnepaneel zelf kan opslaan. */
         @Tunable("Energy a solar panel can store")
         public static float SOLAR_CAPACITY = 12_000.0f;
@@ -209,13 +218,13 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Warmtegenerator
         /** Energie per tick zolang er brandstof brandt (kolen, hout, ...). */
         @Tunable("Energy per tick a heat generator makes while it burns fuel")
-        public static float HEAT_RATE_FUEL = 0.7f;
+        public static float HEAT_RATE_FUEL = 1f;
         /** Energie per tick per heet blok dat ertegenaan staat (lava, vuur, magma...). */
         @Tunable("Energy per tick per hot block (lava, fire, magma) next to a heat generator")
-        public static float HEAT_RATE_AMBIENT = 0.15f;
+        public static float HEAT_RATE_AMBIENT = 0.5f;
         /** Meer hete buren dan dit tellen niet meer mee. */
         @Tunable(value = "Hot blocks above this many no longer count", max = 26)
-        public static int HEAT_MAX_NEIGHBOURS = 8;
+        public static float HEAT_MAX_NEIGHBOURS = 8.0f;
         /** Hoeveel een warmtegenerator zelf kan opslaan. */
         @Tunable("Energy a heat generator can store")
         public static float HEAT_CAPACITY = 20_000.0f;
@@ -238,7 +247,7 @@ public final class StarkConfig {
         public static float STATION_CHARGE_RATE = 50.0f;
         /** Hoeveel het station per tick uit het net mag halen om de bril te laden (ruim meer dan één paneel maakt). */
         @Tunable("Energy per tick a charging station draws from the grid to charge the glasses")
-        public static float STATION_GRID_RATE = 40.0f;
+        public static float STATION_GRID_RATE = 20.0f;
         /**
          * Zijn eigen voorraad vult het station ook uit het net, maar alleen met wat over is: dit deel van
          * wat in de generatoren past, blijft altijd voor de rest van het net (holotafel, laserwanden, koepel).
@@ -262,13 +271,13 @@ public final class StarkConfig {
         public static float PAD_BATTERY_PER_CELL = 15_000.0f;
         /** Zo snel vult het platform zijn batterij met wat het net over heeft (per seconde). */
         @Tunable("How fast a landing pad fills its battery from the grid's spare energy (per second)")
-        public static float PAD_BATTERY_FILL = 300.0f;
+        public static float PAD_BATTERY_FILL = 200.0f;
         /** Zo snel laadt het platform je bril uit zijn eigen batterij (per seconde). */
         @Tunable("How fast a landing pad charges your glasses from its own battery (per second)")
         public static float PAD_BATTERY_CHARGE = 1600.0f;
         /** Zoveel duurzaamheid per seconde repareert een platform aan elk stuk harnas... */
         @Tunable("Durability per second a landing pad repairs on each suit piece")
-        public static int PAD_REPAIR_PER_SECOND = 2;
+        public static float PAD_REPAIR_PER_SECOND = 2.0f;
         /** ...en dat kost zoveel stroom per punt. */
         @Tunable("Energy per point of durability a landing pad repairs")
         public static float PAD_REPAIR_ENERGY = 10.0f;
@@ -323,21 +332,21 @@ public final class StarkConfig {
         public static float CRUSHER_COMPACTOR = 4.0f;
         /** Stroom die één serverkast elke twee seconden haalt (zonder tellen zijn onderdelen niet mee). */
         @Tunable("Grid energy one server rack uses every two seconds (without it, its parts do not count)")
-        public static float SERVER_RACK_UPKEEP = 3.0f;
+        public static float SERVER_RACK_UPKEEP = 10.0f;
         /** Stroom per tick van een holotafel zolang hij aan staat. */
         @Tunable("Grid energy per tick a holo table uses while it is on")
-        public static float HOLO_TABLE_UPKEEP = 1.0f;
+        public static float HOLO_TABLE_UPKEEP = 0.5f;
         /**
          * Stroom per tick van een Arc Lamp op lichtniveau 100 (2 per tick = 40 per seconde). Zachter gezet
          * gebruikt hij naar verhouding minder: op 50 de helft.
          */
         @Tunable("Grid energy per tick an Arc Lamp at light level 100 uses while it is on. "
                 + "A lamp set lower uses less: at level 50, half of this.")
-        public static float ARC_LAMP_POWER = 2.0f;
+        public static float ARC_LAMP_POWER = 10.0f;
         /** Een lamp die uit is, gaat pas aan als het net zoveel ticks stroom heeft (100 = 5 seconden). */
         @Tunable("An Arc Lamp that is off only turns on when the grid has had power for this many ticks "
                 + "(so it doesn't flicker on a weak generator)")
-        public static int ARC_LAMP_START_TICKS = 100;
+        public static float ARC_LAMP_START_TICKS = 100.0f;
     }
 
     // =============================================================================================== Drones
@@ -350,47 +359,47 @@ public final class StarkConfig {
         // Op een server met veel spelers kunnen honderden drones het spel laten haperen: hier kies je het maximum.
         /** Aanvalsdrones in een zwerm zonder drone-upgrades. */
         @Tunable(value = "Number of attack drones in a swarm without drone upgrades", min = 1, max = 64)
-        public static int SWARM_BASE = 4;
+        public static float SWARM_BASE = 4.0f;
         /** Zoveel aanvalsdrones komen erbij per drone-upgrade... */
         @Tunable(value = "How many extra attack drones each drone upgrade adds", max = 8)
-        public static int SWARM_PER_UPGRADE = 2;
+        public static float SWARM_PER_UPGRADE = 2.0f;
         /** ...maar nooit meer dan dit. */
         @Tunable(value = "Maximum number of attack drones in a swarm (with all upgrades)", min = 1, max = 64)
-        public static int SWARM_MAX = 16;
+        public static float SWARM_MAX = 16.0f;
         /** Beschermende drones (escorte) zonder drone-upgrades. */
         @Tunable(value = "Number of guard drones (escort) without drone upgrades", max = 32)
-        public static int GUARD_BASE = 2;
+        public static float GUARD_BASE = 2.0f;
         /** Zoveel beschermende drones komen erbij per drone-upgrade... */
         @Tunable(value = "How many extra guard drones each drone upgrade adds", max = 8)
-        public static int GUARDS_PER_UPGRADE = 1;
+        public static float GUARDS_PER_UPGRADE = 1.0f;
         /** ...maar nooit meer dan dit. */
         @Tunable(value = "Maximum number of guard drones (with all upgrades)", max = 32)
-        public static int GUARD_MAX = 8;
+        public static float GUARD_MAX = 8.0f;
         /** Hoeveel drone-upgrades er in één bril passen. */
         @Tunable(value = "How many drone upgrades fit in one pair of glasses", max = 16)
-        public static int MAX_UPGRADES = 6;
+        public static float MAX_UPGRADES = 6.0f;
 
         // ------------------------------------------------------------------------- De zwerm
         /** Kosten om een zwerm te lanceren. */
         @Tunable("Energy cost of launching a drone swarm")
-        public static int SWARM_COST = 1_500;
+        public static float SWARM_COST = 1_500.0f;
         /** Wachttijd tussen twee zwermen (600 = 30 seconden). */
         @Tunable("Wait between two swarms (ticks)")
-        public static int SWARM_COOLDOWN = 600;
+        public static float SWARM_COOLDOWN = 600.0f;
         /** Hoe lang een zwerm blijft voordat hij naar huis vliegt (1200 = 1 minuut). */
         @Tunable("How long a swarm stays before flying home (ticks)")
-        public static int SWARM_LIFETIME = 1_200;
+        public static float SWARM_LIFETIME = 1_200.0f;
 
         // ------------------------------------------------------------------------- Eén drone op één doelwit
         /** Kosten om één drone op één doelwit af te sturen. */
         @Tunable("Energy cost of sending a single drone")
-        public static int STRIKE_COST = 400;
+        public static float STRIKE_COST = 400.0f;
         /** Wachttijd tussen twee losse drones (160 = 8 seconden). */
         @Tunable("Wait between two single drones (ticks)")
-        public static int STRIKE_COOLDOWN = 160;
+        public static float STRIKE_COOLDOWN = 160.0f;
         /** Hoe lang die ene drone blijft jagen (1800 = 90 seconden). */
         @Tunable("How long a single drone hunts before flying home (ticks)")
-        public static int STRIKE_LIFETIME = 1_800;
+        public static float STRIKE_LIFETIME = 1_800.0f;
         /** Tot hoe ver je een los doelwit kunt aanwijzen. */
         @Tunable("How far away you can send a single drone (blocks)")
         public static double STRIKE_RANGE = 96.0;
@@ -398,7 +407,7 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Beschermende drones (escorte)
         /** Extra energie per seconde zolang de beschermende drones aan staan. */
         @Tunable("Energy per second while escort drones are on")
-        public static int GUARD_DRAIN = 6;
+        public static float GUARD_DRAIN = 6.0f;
         /** Tot hoe ver van jou ze vijanden aanvallen. */
         @Tunable("How far from you escort drones attack threats (blocks)")
         public static double GUARD_RANGE = 12.0;
@@ -409,7 +418,7 @@ public final class StarkConfig {
         public static float LASER_DAMAGE = 4.0f;
         /** Tijd tussen twee schoten van dezelfde drone. */
         @Tunable("Ticks between two drone laser shots")
-        public static int FIRE_INTERVAL = 15;
+        public static float FIRE_INTERVAL = 15.0f;
         /** Tot hoe ver een drone schiet. */
         @Tunable("How far a drone shoots (blocks)")
         public static double ATTACK_RANGE = 16.0;
@@ -429,7 +438,7 @@ public final class StarkConfig {
          * de lucht. Zit er een plafond boven je (een grot), dan komen ze zo hoog als er ruimte is.
          */
         @Tunable(value = "How high above you drones dive in from, and climb away to (blocks)", max = 320)
-        public static int ORBIT_HEIGHT = 96;
+        public static float ORBIT_HEIGHT = 96.0f;
         /** Een drone duikt in een boog: hij begint dit deel van de valhoogte opzij... */
         @Tunable(value = "A diving drone starts this share (0-1) of its fall height to the side, so it dives in an arc", max = 1)
         public static double DIVE_ARC_RATIO = 0.3;
@@ -444,7 +453,7 @@ public final class StarkConfig {
         public static double LAUNCH_SPEED = 2.2;
         /** Na zoveel ticks is een vertrekkende drone hoe dan ook weg, ook onder een plafond. */
         @Tunable("After this many ticks a leaving drone is gone, even when it bumps into a ceiling")
-        public static int LAUNCH_TICKS = 80;
+        public static float LAUNCH_TICKS = 80.0f;
 
         /** VAST: levenspunten van een drone (12 = 6 hartjes). Het spel heeft dit nodig bij het opstarten. */
         public static final double HEALTH = 12.0;
@@ -466,24 +475,24 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Kosten per schot
         /** Kosten van een precisie-straal (geen blokschade). */
         @Tunable("Energy cost of a precision beam")
-        public static int COST_PRECISION = 2_000;
+        public static float COST_PRECISION = 2_000.0f;
         /** Kosten van een bombardement (meerdere inslagen, krater). */
         @Tunable("Energy cost of a bombardment")
-        public static int COST_BOMBARDMENT = 5_000;
+        public static float COST_BOMBARDMENT = 5_000.0f;
         /** Kosten van de schuivende laser. */
         @Tunable("Energy cost of a sweeping laser")
-        public static int COST_SWEEP = 3_500;
+        public static float COST_SWEEP = 3_500.0f;
 
         // ------------------------------------------------------------------------- Recharge, Power, Targeting (niveau 0 t/m 10)
         /** Wachttijd (herlaadtijd) tussen twee aanvallen, per Recharge-niveau: 1800 = 90 seconden, 720 = 36 seconden. */
         @Tunable(value = "Reload time between two satellite strikes for Recharge level 0 to 10 (ticks; 1800 = 90 seconds)", max = 72_000)
-        public static int[] COOLDOWN = {1_800, 1_692, 1_584, 1_476, 1_368, 1_260, 1_152, 1_044, 936, 828, 720};
+        public static float[] COOLDOWN = {1_800.0f, 1_692.0f, 1_584.0f, 1_476.0f, 1_368.0f, 1_260.0f, 1_152.0f, 1_044.0f, 936.0f, 828.0f, 720.0f};
         /** Schade maal dit, voor alle standen, per Power-niveau (1.08 = 8% meer). */
         @Tunable(value = "Damage multiplier for all modes for Power level 0 to 10 (1.08 = 8% more)", max = 100)
         public static float[] DAMAGE_MULTIPLIER = {1.0f, 1.08f, 1.16f, 1.24f, 1.32f, 1.4f, 1.48f, 1.56f, 1.64f, 1.72f, 1.8f};
         /** Hoe lang de satelliet richt voordat hij inslaat, per Targeting-niveau (60 = 3 seconden). */
         @Tunable(value = "How long the satellite aims before it hits, for Targeting level 0 to 10 (ticks)", max = 1_200)
-        public static int[] CHARGE_TIME = {60, 57, 54, 51, 48, 45, 42, 39, 36, 33, 30};
+        public static float[] CHARGE_TIME = {60.0f, 57.0f, 54.0f, 51.0f, 48.0f, 45.0f, 42.0f, 39.0f, 36.0f, 33.0f, 30.0f};
         /** Hoe ver weg je kunt richten, per Targeting-niveau. */
         @Tunable(value = "How far away the satellite can aim for Targeting level 0 to 10 (blocks)", max = 100_000)
         public static double[] RANGE = {500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1_000};
@@ -506,7 +515,7 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Bombardment (niveau 1 t/m 10)
         /** Hoeveel inslagen een bombardement heeft, per niveau. */
         @Tunable(value = "Number of impacts in a bombardment for Bombardment level 1 to 10", min = 1, max = 64)
-        public static int[] BOMBARDMENT_SHOTS = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+        public static float[] BOMBARDMENT_SHOTS = {4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f};
         /** Hoe ver de inslagen rond het doel verspreid liggen, per niveau. */
         @Tunable(value = "How far the impacts spread around the target for Bombardment level 1 to 10 (blocks)", max = 64)
         public static double[] BOMBARDMENT_SPREAD = {6.0, 6.3, 6.6, 6.9, 7.2, 7.5, 7.8, 8.1, 8.4, 8.7};
@@ -518,12 +527,12 @@ public final class StarkConfig {
         public static float EXPLOSION_PER_POWER_LEVEL = 0.1f;
         /** Ticks tussen twee inslagen. */
         @Tunable(value = "Ticks between two bombardment impacts", min = 1)
-        public static int BOMBARDMENT_INTERVAL = 12;
+        public static float BOMBARDMENT_INTERVAL = 12.0f;
 
         // ------------------------------------------------------------------------- Sweep (niveau 1 t/m 10)
         /** Hoe lang de laser over de grond schuift, per niveau (56 = 2,8 seconde). */
         @Tunable(value = "How long the sweeping laser moves over the ground for Sweep level 1 to 10 (ticks)", min = 1, max = 1_200)
-        public static int[] SWEEP_TICKS = {56, 62, 68, 74, 80, 86, 92, 98, 104, 110};
+        public static float[] SWEEP_TICKS = {56.0f, 62.0f, 68.0f, 74.0f, 80.0f, 86.0f, 92.0f, 98.0f, 104.0f, 110.0f};
         /** Schade per treffer van de schuivende laser per niveau, vóór Power. */
         @Tunable(value = "Damage per hit of the sweeping laser for Sweep level 1 to 10 (before the Power multiplier)", max = 1_000)
         public static float[] SWEEP_DAMAGE = {6.96f, 7.52f, 8.08f, 8.64f, 9.2f, 9.76f, 10.32f, 10.88f, 11.44f, 12.0f};
@@ -532,7 +541,7 @@ public final class StarkConfig {
         public static double SWEEP_RADIUS = 2.5;
         /** Het beginpunt dat je met de eerste K kiest, blijft zo lang bewaard (600 = een halve minuut). */
         @Tunable("How long the start point of a sweep (your first K) is remembered (ticks)")
-        public static int SWEEP_START_TIMEOUT = 600;
+        public static float SWEEP_START_TIMEOUT = 600.0f;
 
         // ------------------------------------------------------------------------- Schokgolf (bij elke inslag)
         /** Tot hoe ver de schokgolf wezens wegduwt. */
@@ -545,10 +554,10 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Upgrades naar boven brengen
         /** Hoeveel drones een upgrade naar de satelliet brengen, per niveau 1 t/m 10 (ze komen daarna terug). */
         @Tunable(value = "How many drones it takes to bring upgrade level 1 to 10 up to the satellite (they come back)", min = 1, max = 64)
-        public static int[] DELIVERY_DRONES = {2, 2, 3, 3, 4, 4, 5, 5, 6, 6};
+        public static float[] DELIVERY_DRONES = {2.0f, 2.0f, 3.0f, 3.0f, 4.0f, 4.0f, 5.0f, 5.0f, 6.0f, 6.0f};
         /** Zo lang doen de drones erover om boven te komen. */
         @Tunable("How long the drones take to fly an upgrade up (ticks)")
-        public static int DELIVERY_TICKS = 70;
+        public static float DELIVERY_TICKS = 70.0f;
     }
 
     // =============================================================================================== Recon
@@ -560,10 +569,10 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Drone-camera
         /** Kosten om de verkenningsdrone te lanceren. */
         @Tunable("Energy cost of launching the drone camera")
-        public static int SCOUT_COST = 200;
+        public static float SCOUT_COST = 200.0f;
         /** Extra energie per seconde zolang je door de drone kijkt. */
         @Tunable("Energy per second while you look through the drone camera")
-        public static int SCOUT_DRAIN = 8;
+        public static float SCOUT_DRAIN = 8.0f;
         /** Hoe ver de drone van je lichaam mag vliegen. */
         @Tunable(value = "How far the drone camera may fly from you (blocks)", min = 1)
         public static double SCOUT_RANGE = 64.0;
@@ -577,16 +586,16 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Spionagedrone
         /** Kosten om een spionagedrone te sturen. */
         @Tunable("Energy cost of a spy drone")
-        public static int SPY_COST = 800;
+        public static float SPY_COST = 800.0f;
         /** Wachttijd tussen twee spionagedrones (400 = 20 seconden). */
         @Tunable("Wait between two spy drones (ticks)")
-        public static int SPY_COOLDOWN = 400;
+        public static float SPY_COOLDOWN = 400.0f;
         /** Hoe lang hij iemand volgt (12000 = 10 minuten). */
         @Tunable("How long a spy drone follows its target (ticks)")
-        public static int SPY_DURATION = 12_000;
+        public static float SPY_DURATION = 12_000.0f;
         /** Hoe vaak hij een rapport stuurt (600 = elke 30 seconden). */
         @Tunable(value = "How often a spy drone sends a report (ticks)", min = 1)
-        public static int SPY_REPORT_INTERVAL = 600;
+        public static float SPY_REPORT_INTERVAL = 600.0f;
         /** Tot hoe ver je een doelwit kunt aanwijzen. */
         @Tunable("How far away you can send a spy drone (blocks)")
         public static double SPY_RANGE = 96.0;
@@ -598,7 +607,7 @@ public final class StarkConfig {
         public static double SPY_FOLLOW_HEIGHT = 5.0;
         /** Extra energie per seconde zolang je door de spionagedrone meekijkt. */
         @Tunable("Energy per second while you watch through the spy drone")
-        public static int SPY_VIEW_DRAIN = 4;
+        public static float SPY_VIEW_DRAIN = 4.0f;
         /** Tot hoe ver je nog live kunt meekijken. */
         @Tunable("How far away you can still watch through the spy drone (blocks)")
         public static double SPY_VIEW_RANGE = 110.0;
@@ -612,16 +621,16 @@ public final class StarkConfig {
 
         /** Kosten om je te laten oppikken (of om een vracht te versturen). */
         @Tunable("Energy cost of a transport (ride, autopilot, cargo, carry)")
-        public static int COST = 600;
+        public static float COST = 600.0f;
         /** Wachttijd tussen twee ritten (200 = 10 seconden). */
         @Tunable("Wait between two transports (ticks)")
-        public static int COOLDOWN = 200;
+        public static float COOLDOWN = 200.0f;
         /** Energie per seconde zolang drones je dragen. */
         @Tunable("Energy per second while drones carry you")
-        public static int DRAIN = 14;
+        public static float DRAIN = 14.0f;
         /** Hoe lang een rit of levering hooguit duurt (6000 = 5 minuten). */
         @Tunable("Longest a transport may take (ticks)")
-        public static int MAX_TICKS = 6_000;
+        public static float MAX_TICKS = 6_000.0f;
         /** Vliegsnelheid als je zelf stuurt (0.45 = 9 blokken per seconde). */
         @Tunable("Flying speed when you steer yourself (blocks per tick)")
         public static double SPEED = 0.45;
@@ -633,7 +642,7 @@ public final class StarkConfig {
         public static double LAND_SPEED = 0.35;
         /** Hoe hoog boven de grond de autopiloot vliegt. */
         @Tunable("How high above the ground the autopilot flies (blocks)")
-        public static int CRUISE_HEIGHT = 14;
+        public static float CRUISE_HEIGHT = 14.0f;
 
         /** VAST: hoeveel stapels een vrachtdrone meeneemt (zoveel vakjes heeft het scherm). */
         public static final int CARGO_SLOTS = 27;
@@ -647,13 +656,13 @@ public final class StarkConfig {
 
         /** Kosten om een illusie te starten. */
         @Tunable("Energy cost of an illusion")
-        public static int COST = 1_200;
+        public static float COST = 1_200.0f;
         /** Hoeveel illusies één speler tegelijk kan hebben. */
         @Tunable("How many illusions one player can run at once")
-        public static int MAX_ACTIVE = 4;
+        public static float MAX_ACTIVE = 4.0f;
         /** Hoe lang een illusie blijft (6000 = 5 minuten). */
         @Tunable("How long an illusion lasts (ticks)")
-        public static int LIFETIME = 6_000;
+        public static float LIFETIME = 6_000.0f;
         /** Hoe groot het veld van één cloakingdrone is. */
         @Tunable("Radius of a cloak field (blocks)")
         public static double RADIUS = 16.0;
@@ -662,13 +671,13 @@ public final class StarkConfig {
         public static double AIM_RANGE = 48.0;
         /** De maat van een valse muur: breedte... */
         @Tunable(value = "Width of a fake wall (blocks)", min = 1, max = 64)
-        public static int WALL_WIDTH = 9;
+        public static float WALL_WIDTH = 9.0f;
         /** ...en hoogte. */
         @Tunable(value = "Height of a fake wall (blocks)", min = 1, max = 64)
-        public static int WALL_HEIGHT = 5;
+        public static float WALL_HEIGHT = 5.0f;
         /** Hoeveel nep-wezens er in een nep-leger staan. */
         @Tunable(value = "How many fake mobs a fake army has", max = 64)
-        public static int ARMY_SIZE = 8;
+        public static float ARMY_SIZE = 8.0f;
 
         // ------------------------------------------------------------------------- E.M.P.
         /** Hoe ver een E.M.P.-puls reikt. */
@@ -676,10 +685,10 @@ public final class StarkConfig {
         public static double EMP_RADIUS = 24.0;
         /** Hoe lang illusies plat liggen na een E.M.P. (600 = 30 seconden). */
         @Tunable("How long an E.M.P. jams illusions (ticks)")
-        public static int EMP_JAM_TICKS = 600;
+        public static float EMP_JAM_TICKS = 600.0f;
         /** Wachttijd van de E.M.P.-zender (300 = 15 seconden). */
         @Tunable("Wait between two E.M.P. pulses (ticks)")
-        public static int EMP_COOLDOWN = 300;
+        public static float EMP_COOLDOWN = 300.0f;
     }
 
     // =============================================================================================== Shields
@@ -690,16 +699,16 @@ public final class StarkConfig {
 
         /** Extra energie per seconde zolang je persoonlijke schild aan staat. */
         @Tunable("Energy per second while the personal rayshield is on")
-        public static int PERSONAL_DRAIN = 5;
+        public static float PERSONAL_DRAIN = 5.0f;
         /** Wat één punt tegengehouden schade kost. */
         @Tunable("Energy the personal shield uses per point of damage it stops")
-        public static int PERSONAL_COST_PER_DAMAGE = 120;
+        public static float PERSONAL_COST_PER_DAMAGE = 120.0f;
         /** Schade als je een laserwand aanraakt (4 = 2 hartjes). */
         @Tunable("Damage from touching a laser wall")
         public static float LASER_WALL_DAMAGE = 4.0f;
         /** Hoe lang een laserwand hooguit wordt. */
         @Tunable(value = "Longest a laser wall can be (blocks between two emitters)", min = 1, max = 64)
-        public static int LASER_MAX_LENGTH = 16;
+        public static float LASER_MAX_LENGTH = 16.0f;
     }
 
     // =============================================================================================== Dome
@@ -716,22 +725,22 @@ public final class StarkConfig {
 
         /** De 5 maten die je kunt kiezen (straal in blokken). */
         @Tunable(value = "The 5 sizes you can choose (radius in blocks)", min = 1, max = 64)
-        public static int[] RADII = {8, 12, 16, 24, 32};
+        public static float[] RADII = {8.0f, 12.0f, 16.0f, 24.0f, 32.0f};
         /** Met welke maat een nieuwe koepel begint (0 = de kleinste, 4 = de grootste). */
         @Tunable(value = "Size a new dome starts with (0 = smallest, 4 = largest)", max = 4)
-        public static int DEFAULT_SIZE = 2;
+        public static float DEFAULT_SIZE = 2.0f;
         /** Met welke sterkte een nieuwe koepel begint. */
         @Tunable(value = "Strength a new dome starts with (1-5)", min = 1, max = 5)
-        public static int DEFAULT_STRENGTH = 2;
+        public static float DEFAULT_STRENGTH = 2.0f;
         /** Hoeveel schildkracht hij heeft, per sterkte 1 t/m 5. */
         @Tunable(value = "Shield strength a dome has for strength 1 to 5", min = 1)
-        public static int[] MAX_SHIELD = {400, 800, 1_200, 1_600, 2_000};
+        public static float[] MAX_SHIELD = {400.0f, 800.0f, 1_200.0f, 1_600.0f, 2_000.0f};
         /** Hoeveel schildkracht er per tick bijkomt, per sterkte 1 t/m 5. */
         @Tunable("Shield strength a dome gets back per tick for strength 1 to 5")
-        public static int[] RECHARGE = {2, 4, 6, 8, 10};
+        public static float[] RECHARGE = {2.0f, 4.0f, 6.0f, 8.0f, 10.0f};
         /** Hoe lang hij uitvalt als zijn schildkracht op is (200 = 10 seconden). */
         @Tunable("How long a broken dome stays down before it comes back (ticks)")
-        public static int DOWN_TICKS = 200;
+        public static float DOWN_TICKS = 200.0f;
         /** Na het uitvallen komt hij terug met dit deel van zijn schildkracht. */
         @Tunable(value = "Share (0-1) of its shield strength a dome comes back with after it was down", max = 1)
         public static float COMEBACK_SHIELD = 0.25f;
@@ -739,25 +748,25 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Wat een treffer kost
         /** Een pijl, sneeuwbal, drietand of ander klein projectiel. */
         @Tunable("Dome strength lost per arrow or projectile it stops")
-        public static int COST_PROJECTILE = 15;
+        public static float COST_PROJECTILE = 15.0f;
         /** Een vuurbal (ghast, blaze, wither-schedel). */
         @Tunable("Dome strength lost per fireball it stops")
-        public static int COST_FIREBALL = 60;
+        public static float COST_FIREBALL = 60.0f;
         /** Een monster of raiddrone naar buiten duwen (elke halve seconde). */
         @Tunable("Dome strength lost per push of a mob or raid drone out of the dome (every half second)")
-        public static int COST_PUSH = 5;
+        public static float COST_PUSH = 5.0f;
         /** Een laserschot van een raiddrone of van de drone van iemand anders. */
         @Tunable("Dome strength lost per laser shot it stops")
-        public static int COST_LASER = 30;
+        public static float COST_LASER = 30.0f;
         /** Een precisiestraal van een satelliet. */
         @Tunable("Dome strength lost when it stops a satellite precision beam")
-        public static int COST_SATELLITE_BEAM = 350;
+        public static float COST_SATELLITE_BEAM = 350.0f;
         /** Eén inslag van een satellietbombardement. */
         @Tunable("Dome strength lost per bombardment impact it stops")
-        public static int COST_SATELLITE_IMPACT = 150;
+        public static float COST_SATELLITE_IMPACT = 150.0f;
         /** Eén treffer van de schuivende satellietlaser. */
         @Tunable("Dome strength lost per hit of a sweeping satellite laser it stops")
-        public static int COST_SATELLITE_SWEEP = 40;
+        public static float COST_SATELLITE_SWEEP = 40.0f;
 
         /** VAST: de laagste en hoogste sterkte (de rijtjes hierboven hebben er 5). */
         public static final int MIN_STRENGTH = 1;
@@ -772,10 +781,10 @@ public final class StarkConfig {
 
         /** Hoeveel spelers je tegelijk kunt hacken. */
         @Tunable("How many players you can hack at once")
-        public static int MAX_TARGETS = 3;
+        public static float MAX_TARGETS = 3.0f;
         /** Energie per seconde per gehackte speler. */
         @Tunable("Energy per second per hacked player")
-        public static int DRAIN = 3;
+        public static float DRAIN = 3.0f;
         /** Tot hoe ver je een speler kunt hacken. */
         @Tunable("How far away you can hack a player (blocks)")
         public static double RANGE = 64.0;
@@ -784,7 +793,7 @@ public final class StarkConfig {
         public static double VIEW_DOT = 0.45;
         /** Hoe lang een onderschept bericht boven het hoofd van de speler blijft staan (in milliseconden: 9000 = 9 seconden). */
         @Tunable("How long an intercepted message stays above the player's head (milliseconds)")
-        public static long BUBBLE_MILLIS = 9_000L;
+        public static float BUBBLE_MILLIS = 9_000.0f;
     }
 
     // =============================================================================================== Relays
@@ -795,16 +804,16 @@ public final class StarkConfig {
 
         /** Hoeveel relais en schakelbare apparaten één speler kan aanmelden. */
         @Tunable("How many relays and switchable devices one player can register")
-        public static int MAX_RELAYS = 64;
+        public static float MAX_RELAYS = 64.0f;
         /** Hoe lang de naam (en de groepsnaam) van een relais mag zijn. */
         @Tunable(value = "Longest name (and group name) of a relay (letters)", min = 1, max = 64)
-        public static int MAX_NAME = 24;
+        public static float MAX_NAME = 24.0f;
         /** Wat één schakeling kost. */
         @Tunable("Energy cost of switching a relay remotely")
-        public static int COST = 5;
+        public static float COST = 5.0f;
         /** Hoe lang een puls duurt (20 = 1 seconde). */
         @Tunable(value = "How long a redstone pulse lasts (ticks)", min = 1)
-        public static int PULSE_TICKS = 20;
+        public static float PULSE_TICKS = 20.0f;
     }
 
     // =============================================================================================== Comms
@@ -815,16 +824,16 @@ public final class StarkConfig {
 
         /** Hoe lang een bericht mag zijn. */
         @Tunable(value = "Longest message (letters)", min = 1, max = 256)
-        public static int MAX_MESSAGE_LENGTH = 100;
+        public static float MAX_MESSAGE_LENGTH = 100.0f;
         /** Wachttijd tussen twee berichten, tegen spam. */
         @Tunable("Wait between two messages (ticks)")
-        public static int MESSAGE_COOLDOWN = 20;
+        public static float MESSAGE_COOLDOWN = 20.0f;
         /** Wachttijd tussen twee pings. */
         @Tunable("Wait between two pings (ticks)")
-        public static int PING_COOLDOWN = 40;
+        public static float PING_COOLDOWN = 40.0f;
         /** Hoe lang een ping zichtbaar blijft (300 = 15 seconden). */
         @Tunable("How long a ping stays visible (ticks)")
-        public static int PING_DURATION = 300;
+        public static float PING_DURATION = 300.0f;
         /** Tot hoe ver weg anderen je ping zien. */
         @Tunable("How far away other E.D.I.T.H. wearers see your pings (blocks)")
         public static double PING_RANGE = 512.0;
@@ -841,10 +850,10 @@ public final class StarkConfig {
 
         /** Hoeveel waypoints je kunt opslaan. */
         @Tunable("How many waypoints one player can save")
-        public static int MAX_WAYPOINTS = 20;
+        public static float MAX_WAYPOINTS = 20.0f;
         /** Hoe lang de naam van een waypoint mag zijn. */
         @Tunable(value = "Longest waypoint name (letters)", min = 1, max = 64)
-        public static int MAX_WAYPOINT_NAME = 24;
+        public static float MAX_WAYPOINT_NAME = 24.0f;
         /** Binnen deze afstand ben je "aangekomen". */
         @Tunable("Within this distance of a waypoint you have arrived (blocks)")
         public static double ARRIVAL_DISTANCE = 4.0;
@@ -858,7 +867,7 @@ public final class StarkConfig {
 
         /** De 4 afstanden die je in het scherm van de holotafel kunt kiezen: zo ver reikt de kaart. */
         @Tunable(value = "The 4 map ranges you can choose on a holo table (blocks)", min = 8, max = 512)
-        public static int[] RANGES = {24, 48, 96, 160};
+        public static float[] RANGES = {24.0f, 48.0f, 96.0f, 160.0f};
     }
 
     // =============================================================================================== Suit
@@ -873,18 +882,18 @@ public final class StarkConfig {
         public static float POWERED_REDUCTION_PER_PIECE = 0.20f;
         /** Wat één punt tegengehouden schade kost. */
         @Tunable("Energy per point of damage the suit stops")
-        public static int REDUCTION_COST_PER_DAMAGE = 60;
+        public static float REDUCTION_COST_PER_DAMAGE = 60.0f;
 
         // ------------------------------------------------------------------------- Vliegen: verbruik
         /** Energie per seconde als je stilhangt. */
         @Tunable("Energy per second while hovering")
-        public static int DRAIN_HOVER = 12;
+        public static float DRAIN_HOVER = 12.0f;
         /** Energie per seconde als je vooruit vliegt. */
         @Tunable("Energy per second while flying")
-        public static int DRAIN_FLY = 26;
+        public static float DRAIN_FLY = 26.0f;
         /** Energie per seconde met de naverbrander (sprinttoets). */
         @Tunable("Energy per second with the afterburner")
-        public static int DRAIN_BOOST = 45;
+        public static float DRAIN_BOOST = 45.0f;
 
         // ------------------------------------------------------------------------- Vliegen: hoe het voelt
         // Snelheden in blokken per tick: 1 blok per tick = 20 blokken per seconde = 72 km/u.
@@ -931,7 +940,7 @@ public final class StarkConfig {
         public static float SAFE_FALL = 40.0f;
         /** Wat het opvangen van een val kost. */
         @Tunable("Energy cost of catching a fall")
-        public static int LANDING_COST = 200;
+        public static float LANDING_COST = 200.0f;
 
         // ------------------------------------------------------------------------- Repulsor
         /** Schade van één repulsorstoot (7 = 3,5 hartje). */
@@ -939,10 +948,10 @@ public final class StarkConfig {
         public static float REPULSOR_DAMAGE = 7.0f;
         /** Wat één stoot kost. */
         @Tunable("Energy cost of one repulsor blast")
-        public static int REPULSOR_COST = 200;
+        public static float REPULSOR_COST = 200.0f;
         /** Wachttijd tussen twee stoten (20 = 1 seconde). */
         @Tunable(value = "Ticks between two repulsor blasts", min = 1)
-        public static int REPULSOR_COOLDOWN = 20;
+        public static float REPULSOR_COOLDOWN = 20.0f;
         /** Hoe ver de stoot reikt. */
         @Tunable("How far a repulsor blast reaches (blocks)")
         public static double REPULSOR_RANGE = 24.0;
@@ -959,16 +968,16 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Mini-raketten
         /** Hoeveel raketten er in één salvo zitten. */
         @Tunable(value = "Number of mini rockets in a salvo", min = 1, max = 64)
-        public static int ROCKET_SALVO = 6;
+        public static float ROCKET_SALVO = 6.0f;
         /** Wat een heel salvo kost. */
         @Tunable("Energy cost of a mini rocket salvo")
-        public static int ROCKET_COST = 900;
+        public static float ROCKET_COST = 900.0f;
         /** Herlaadtijd van het raketpak (240 = 12 seconden). */
         @Tunable("Reload time of the rocket pack (ticks)")
-        public static int ROCKET_COOLDOWN = 240;
+        public static float ROCKET_COOLDOWN = 240.0f;
         /** Zoveel ticks tussen twee raketten van hetzelfde salvo. */
         @Tunable("Ticks between two rockets of the same salvo")
-        public static int ROCKET_INTERVAL = 2;
+        public static float ROCKET_INTERVAL = 2.0f;
         /** Hoe ver de raketten doelwitten zoeken (en vliegen zonder doelwit). */
         @Tunable("How far away mini rockets pick targets (blocks)")
         public static double ROCKET_RANGE = 48.0;
@@ -992,7 +1001,7 @@ public final class StarkConfig {
         public static double ROCKET_ACCELERATION = 0.08;
         /** Zo lang vliegt een raket eerst rechtdoor voor hij gaat bijsturen: het salvo waaiert uit. */
         @Tunable("Ticks a mini rocket flies straight before it starts steering (so the salvo fans out)")
-        public static int ROCKET_ARM_TICKS = 5;
+        public static float ROCKET_ARM_TICKS = 5.0f;
         /** Hoe scherp een raket bijstuurt (0 = niet, 1 = meteen recht op het doel). */
         @Tunable(value = "How sharp a mini rocket steers (0 = not at all, 1 = straight at the target at once)", max = 1)
         public static double ROCKET_TURN = 0.28;
@@ -1001,7 +1010,7 @@ public final class StarkConfig {
         public static double ROCKET_SHARP_TURN_DISTANCE = 6.0;
         /** Na zoveel ticks ontploft een raket vanzelf (100 = 5 seconden). */
         @Tunable("A mini rocket explodes by itself after this many ticks")
-        public static int ROCKET_LIFETIME = 100;
+        public static float ROCKET_LIFETIME = 100.0f;
 
         // ------------------------------------------------------------------------- Vast (pantser)
         // VAST: het spel maakt het pantser bij het opstarten, dus deze staan niet in het .toml-bestand.
@@ -1023,10 +1032,10 @@ public final class StarkConfig {
 
         /** Hoe lang het bouwen van een stuk harnas duurt (200 = 10 seconden). */
         @Tunable(value = "How long building a suit piece takes (ticks)", min = 1)
-        public static int BUILD_TICKS = 200;
+        public static float BUILD_TICKS = 200.0f;
         /** Hoe lang het installeren van een upgrade duurt. */
         @Tunable(value = "How long installing an upgrade takes (ticks)", min = 1)
-        public static int INSTALL_TICKS = 100;
+        public static float INSTALL_TICKS = 100.0f;
 
         // ------------------------------------------------------------------------- Wat elke upgrade doet
         /** Extra vliegsnelheid per straalmotor (0.12 = 12%). */
@@ -1046,19 +1055,19 @@ public final class StarkConfig {
         public static double WARHEAD_DAMAGE = 0.4;
         /** Extra raketten per salvo per magazijn. */
         @Tunable("Extra mini rockets per salvo per rocket magazine")
-        public static int MAGAZINE_ROCKETS = 2;
+        public static float MAGAZINE_ROCKETS = 2.0f;
 
         // ------------------------------------------------------------------------- Hoeveel er in één stuk passen
         @Tunable(value = "How many thruster upgrades fit in the boots", max = 16)
-        public static int MAX_THRUSTERS = 3;
+        public static float MAX_THRUSTERS = 3.0f;
         @Tunable(value = "How many armor platings fit in one suit piece", max = 16)
-        public static int MAX_PLATING = 2;
+        public static float MAX_PLATING = 2.0f;
         @Tunable(value = "How many capacitors fit in the chest piece", max = 16)
-        public static int MAX_CAPACITORS = 2;
+        public static float MAX_CAPACITORS = 2.0f;
         @Tunable(value = "How many warheads fit in the rocket pack", max = 16)
-        public static int MAX_WARHEADS = 3;
+        public static float MAX_WARHEADS = 3.0f;
         @Tunable(value = "How many rocket magazines fit in the rocket pack", max = 16)
-        public static int MAX_MAGAZINES = 3;
+        public static float MAX_MAGAZINES = 3.0f;
     }
 
     // =============================================================================================== Turrets
@@ -1077,22 +1086,22 @@ public final class StarkConfig {
         public static float LASER_DAMAGE = 4.0f;
         /** Ticks tussen twee laserschoten (20 = 1 seconde). */
         @Tunable("Ticks between two Stark turret laser shots")
-        public static int LASER_INTERVAL = 20;
+        public static float LASER_INTERVAL = 20.0f;
         /** Raketten (munitie in het torentje) reiken iets verder dan de laser. */
         @Tunable("How far a Stark turret fires rockets (blocks)")
         public static double ROCKET_RANGE = 24.0;
         /** Ticks tussen twee raketten. */
         @Tunable("Ticks between two turret rockets")
-        public static int ROCKET_INTERVAL = 50;
+        public static float ROCKET_INTERVAL = 50.0f;
         /** Zoveel raketten passen er in het torentje. */
         @Tunable(value = "How many rockets fit in a Stark turret", min = 1, max = 64)
-        public static int MAX_AMMO = 64;
+        public static float MAX_AMMO = 64.0f;
 
         // ------------------------------------------------------------------------- Hydra-torentje (geen stroom nodig)
         @Tunable("Damage of one Hydra turret laser shot")
         public static float HYDRA_LASER_DAMAGE = 3.0f;
         @Tunable("Ticks between two Hydra turret laser shots")
-        public static int HYDRA_LASER_INTERVAL = 25;
+        public static float HYDRA_LASER_INTERVAL = 25.0f;
         @Tunable("How far a Hydra turret reaches (blocks)")
         public static double HYDRA_RANGE = 14.0;
 
@@ -1100,14 +1109,14 @@ public final class StarkConfig {
         @Tunable("Damage of one Stark Tower security turret shot")
         public static float SECURITY_LASER_DAMAGE = 3.0f;
         @Tunable("Ticks between two security turret shots")
-        public static int SECURITY_LASER_INTERVAL = 20;
+        public static float SECURITY_LASER_INTERVAL = 20.0f;
         @Tunable("How far a security turret reaches (blocks)")
         public static double SECURITY_RANGE = 16.0;
 
         // ------------------------------------------------------------------------- Draaien en zoeken (alle torentjes)
         /** Hoe vaak hij rondkijkt naar een nieuw doelwit als hij er geen heeft. */
         @Tunable(value = "How often a turret without a target looks for a new one (ticks)", min = 1)
-        public static int SCAN_INTERVAL = 10;
+        public static float SCAN_INTERVAL = 10.0f;
         /** Zoveel graden per tick draait de kop hooguit (alleen voor het beeld). */
         @Tunable("Degrees per tick a turret head turns at most (only how it looks)")
         public static float TURN_SPEED = 14.0f;
@@ -1131,21 +1140,21 @@ public final class StarkConfig {
         @Tunable(value = "How far (blocks, in every direction) a security core reaches: its protected zone and all its devices "
                 + "(turrets, cameras, keycard readers, code panels, server racks, laser walls). "
                 + "Two cores must stand at least twice this far apart.", min = 1, max = 1_000)
-        public static int ZONE_REACH = 200;
+        public static float ZONE_REACH = 200.0f;
 
         // ------------------------------------------------------------------------- De drones van de kern
         /** Hoeveel beveiligingsdrones een kern in de lucht houdt. */
         @Tunable(value = "How many security drones a security core keeps flying", max = 32)
-        public static int MAX_DRONES = 4;
+        public static float MAX_DRONES = 4.0f;
         /** Hoe lang de kern wacht voordat hij een verloren drone vervangt (900 = 45 seconden). */
         @Tunable("How long a security core waits before replacing a lost security drone (ticks)")
-        public static int DRONE_RESPAWN = 900;
+        public static float DRONE_RESPAWN = 900.0f;
         /** Schade van één laserschot. */
         @Tunable("Damage of one security drone laser shot")
         public static float DRONE_LASER_DAMAGE = 3.0f;
         /** Ticks tussen twee schoten. */
         @Tunable("Ticks between two security drone shots")
-        public static int DRONE_FIRE_INTERVAL = 30;
+        public static float DRONE_FIRE_INTERVAL = 30.0f;
         /** Tot hoe ver een drone indringers ziet en raakt. */
         @Tunable("How far a security drone sees and shoots intruders (blocks)")
         public static double DRONE_RANGE = 16.0;
@@ -1159,13 +1168,13 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Het systeem (Stark OS)
         /** Zo lang mag wie een valstrik-bestand opende niet meer op dat systeem (600 = 30 seconden). */
         @Tunable("How long a trap file locks its reader out of that system (ticks)")
-        public static int TRAP_LOCKOUT = 600;
+        public static float TRAP_LOCKOUT = 600.0f;
         /** Zo vaak mag je een fout wachtwoord proberen (bij inbreken via SSH)... */
         @Tunable(value = "How many wrong passwords you may try when you break into a system", min = 1)
-        public static int PASSWORD_ATTEMPTS = 5;
+        public static float PASSWORD_ATTEMPTS = 5.0f;
         /** ...en zo lang ben je daarna geblokkeerd (milliseconden: 4000 = 4 seconden). */
         @Tunable("How long you are locked out after too many wrong passwords (milliseconds)")
-        public static long PASSWORD_LOCKOUT_MILLIS = 4_000L;
+        public static float PASSWORD_LOCKOUT_MILLIS = 4_000.0f;
 
         /** VAST: levens van een beveiligingsdrone (8 = 4 hartjes). Het spel heeft dit nodig bij het opstarten. */
         public static final double DRONE_HEALTH = 8.0;
@@ -1184,7 +1193,7 @@ public final class StarkConfig {
         /** Zo lang wacht een server met kracht 1 (één CPU) voordat hij reageert; 2 x de kracht = de helft. */
         @Tunable("How long a server with Logic power 1 (one CPU) waits before it reacts to a trigger (ticks); "
                 + "twice the power = half the time, never below 1 tick")
-        public static int REACTION_TICKS = 10;
+        public static float REACTION_TICKS = 10.0f;
         /** Hoeveel één GPU telt voor Logic (een CPU telt 1). */
         @Tunable("How much one GPU counts for Logic (a CPU counts 1)")
         public static double GPU_LOGIC_POWER = 0.5;
@@ -1194,23 +1203,23 @@ public final class StarkConfig {
         /** Zo lang denkt E.D.I.T.H. extra na op een datacenter met breinkracht 1 (160 = 8 seconden). */
         @Tunable("How long E.D.I.T.H. thinks extra on a datacenter with brain power 1 (one CPU), in ticks; "
                 + "twice the power = half the time")
-        public static int BRAIN_DELAY_TICKS = 160;
+        public static float BRAIN_DELAY_TICKS = 160.0f;
         /** Is het nadenken zo kort of korter, dan valt het helemaal weg: het datacenter is sterk genoeg. */
         @Tunable("A brain delay this short or shorter (ticks) falls away completely: the datacenter is strong enough")
-        public static int BRAIN_DELAY_GONE_TICKS = 10;
+        public static float BRAIN_DELAY_GONE_TICKS = 10.0f;
         /** Zoveel blokken per seconde kan één CPU afwerken voordat hij op 100% zit (meer werk = meer warmte). */
         @Tunable(value = "How many blocks per second one Logic power (one CPU) can work through before the CPU use is 100% "
                 + "(more work = more heat)", min = 1)
-        public static int LOGIC_STEPS_PER_SECOND = 100;
+        public static float LOGIC_STEPS_PER_SECOND = 100.0f;
         /** Hoeveel diagrammen tegelijk kunnen lopen per RAM-latje. */
         @Tunable("How many diagrams can be busy at the same time per RAM stick")
-        public static int RUNS_PER_RAM = 2;
+        public static float RUNS_PER_RAM = 2.0f;
         /** Hoeveel blokken (triggers, ifs, acties) één SSD kan bewaren. */
         @Tunable("How many blocks (triggers, ifs, actions) one SSD can hold")
-        public static int BLOCKS_PER_SSD = 24;
+        public static float BLOCKS_PER_SSD = 24.0f;
         /** Zoveel backups van één netwerk blijven op één datacenter staan (de oudste gaat eraf). */
         @Tunable(value = "How many backups of one network a datacenter keeps (the oldest goes first)", min = 1, max = 64)
-        public static int BACKUPS_KEPT = 3;
+        public static float BACKUPS_KEPT = 3.0f;
 
         // ------------------------------------------------------------------------- Warmte
         /** Warmte (watt) van één CPU die niets doet... */
@@ -1257,17 +1266,17 @@ public final class StarkConfig {
         /** Zoveel slijtage kan een onderdeel hebben; boven heet krijgt elk onderdeel er 1 of meer bij elke twee seconden. */
         @Tunable(value = "How much wear a part can take before it breaks; above the hot temperature every part gets 1 or more "
                 + "every two seconds (half of the time)", min = 1)
-        public static int MAX_WEAR = 20;
+        public static float MAX_WEAR = 20.0f;
         /** Vanaf deze temperatuur kan een kast in brand vliegen... */
         @Tunable("From this temperature a server rack can catch fire")
         public static double FIRE_TEMPERATURE = 110.0;
         /** ...als hij zo lang zo heet blijft (200 = 10 seconden)... */
         @Tunable("How long (ticks) a server rack must stay at the fire temperature before it catches fire")
-        public static int FIRE_DELAY_TICKS = 200;
+        public static float FIRE_DELAY_TICKS = 200.0f;
         /** ...en dan brandt hij zo lang voordat hij weg is, met alles erin (tijd om je onderdelen te redden). */
         @Tunable("How long (ticks) a burning server rack burns before it is gone, with everything in it "
                 + "(time to take your parts out)")
-        public static int BURN_TICKS = 200;
+        public static float BURN_TICKS = 200.0f;
 
         /** VAST: zoveel vakjes heeft één serverkast (twee kolommen van drie): zo ziet het scherm eruit. */
         public static final int RACK_SLOTS = 6;
@@ -1301,7 +1310,7 @@ public final class StarkConfig {
         public static float ENTITY_POWER = 4.0f;
         /** Andere C4 in de klap gaat zoveel ticks later ook af (een kettingreactie). */
         @Tunable("Other C4 in the blast goes off this many ticks later (a chain reaction)")
-        public static int CHAIN_DELAY = 3;
+        public static float CHAIN_DELAY = 3.0f;
 
         // ------------------------------------------------------------------------- Hoe sterk blokken zijn
         @Tunable("Breach points a weak block (wood, glass, dirt, wool, sand...) takes before it breaks")
@@ -1332,16 +1341,16 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Detonator en timer
         /** Hoe ver het signaal van een detonator reikt. */
         @Tunable("How far a detonator's signal reaches (blocks)")
-        public static int DETONATOR_RANGE = 128;
+        public static float DETONATOR_RANGE = 128.0f;
         /** De kortste tijd die je op een C4 (Timer) kunt zetten (seconden)... */
         @Tunable(value = "Shortest time you can set on a C4 (Timer) (seconds)", min = 1)
-        public static int TIMER_MIN = 5;
+        public static float TIMER_MIN = 5.0f;
         /** ...de langste... */
         @Tunable(value = "Longest time you can set on a C4 (Timer) (seconds)", min = 1)
-        public static int TIMER_MAX = 120;
+        public static float TIMER_MAX = 120.0f;
         /** ...en waar een nieuwe C4 (Timer) op staat. */
         @Tunable(value = "Time a new C4 (Timer) starts with (seconds)", min = 1)
-        public static int TIMER_DEFAULT = 10;
+        public static float TIMER_DEFAULT = 10.0f;
     }
 
     // =============================================================================================== Repair
@@ -1352,7 +1361,7 @@ public final class StarkConfig {
 
         /** Hoe lang de Crusher en de Compactor over één item doen (100 = 5 seconden). */
         @Tunable(value = "How long the Crusher and the Compactor take for one item (ticks)", min = 1)
-        public static int MACHINE_TICKS = 100;
+        public static float MACHINE_TICKS = 100.0f;
         /** Barsten genezen niet vanzelf. Elke keer opvullen met Repair Paste maakt het blok zoveel zwakker (0.15 = 15%)... */
         @Tunable(value = "How much weaker a block gets each time its cracks are filled with Repair Paste (0.15 = 15%)", max = 1)
         public static float PATCH_WEAKER = 0.15f;
@@ -1375,29 +1384,29 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Het stroomcircuit (keycard-lezer), per kaartniveau 1 t/m 5
         /** Hoeveel seconden je krijgt, per niveau van de kaart die je namaakt. */
         @Tunable(value = "Seconds you get to rewire a keycard reader for card level 1 to 5", min = 10, max = 600)
-        public static int[] CIRCUIT_SECONDS = {60, 55, 50, 45, 40};
+        public static float[] CIRCUIT_SECONDS = {60.0f, 55.0f, 50.0f, 45.0f, 40.0f};
         /** Hoe breed het raster is, per niveau... */
         @Tunable(value = "Circuit width (columns) for card level 1 to 5", min = 2, max = 12)
-        public static int[] CIRCUIT_COLUMNS = {5, 6, 6, 7, 8};
+        public static float[] CIRCUIT_COLUMNS = {5.0f, 6.0f, 6.0f, 7.0f, 8.0f};
         /** ...hoe hoog... */
         @Tunable(value = "Circuit height (rows) for card level 1 to 5", min = 2, max = 12)
-        public static int[] CIRCUIT_ROWS = {4, 4, 5, 5, 6};
+        public static float[] CIRCUIT_ROWS = {4.0f, 4.0f, 5.0f, 5.0f, 6.0f};
         /** ...en hoeveel ALARM-punten erlangs zitten. */
         @Tunable(value = "ALARM points along the circuit for card level 1 to 5", max = 10)
-        public static int[] CIRCUIT_ALARMS = {1, 1, 2, 2, 3};
+        public static float[] CIRCUIT_ALARMS = {1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
         /** Zo lang mag het signaal ALARM raken voordat het alarm afgaat (20 = 1 seconde). */
         @Tunable("How long the signal may touch ALARM before the alarm goes off (ticks)")
-        public static int ALARM_GRACE_TICKS = 20;
+        public static float ALARM_GRACE_TICKS = 20.0f;
 
         // ------------------------------------------------------------------------- Vingerafdrukken (codepaneel)
         /** Pogingen om de volgorde te vinden: de lengte van de code plus zoveel. */
         @Tunable("Tries to find the order of a code panel's digits: the code length plus this many")
-        public static int ORDER_EXTRA_TRIES = 2;
+        public static float ORDER_EXTRA_TRIES = 2.0f;
 
         // ------------------------------------------------------------------------- Na een mislukte hack
         /** Zo lang negeert die lezer of dat paneel de hacker. */
         @Tunable("After a failed hack, that reader or panel ignores the hacker for this long (seconds)")
-        public static int LOCKOUT_SECONDS = 60;
+        public static float LOCKOUT_SECONDS = 60.0f;
 
         // ------------------------------------------------------------------------- Zakkenrollen
         /** Zo dichtbij moet je zijn. */
@@ -1408,13 +1417,13 @@ public final class StarkConfig {
         public static double POCKET_LEAVE = 3.5;
         /** Zoveel keycards liggen er hooguit in een zak (heeft iemand er meer, dan zie je er zoveel). */
         @Tunable(value = "Most keycards you see in someone's pocket", min = 1, max = 8)
-        public static int POCKET_MAX_CARDS = 6;
+        public static float POCKET_MAX_CARDS = 6.0f;
         /** Zo lang voordat je dezelfde speler opnieuw mag proberen, wat er ook gebeurde. */
         @Tunable("How long before you may try the same player's pockets again (seconds), whatever happened")
-        public static int PICKPOCKET_COOLDOWN_SECONDS = 30;
+        public static float PICKPOCKET_COOLDOWN_SECONDS = 30.0f;
         /** Zo lang licht een betrapte zakkenroller op, zodat het slachtoffer de dief kan vinden. */
         @Tunable("How long a caught pickpocket glows, so the victim can find them (seconds)")
-        public static int PICKPOCKET_GLOW_SECONDS = 10;
+        public static float PICKPOCKET_GLOW_SECONDS = 10.0f;
 
         /** VAST: zo vaak gaat een Bypass Kit mee (elke hack kost er één). Het spel heeft dit nodig bij het opstarten. */
         public static final int KIT_USES = 16;
@@ -1433,7 +1442,7 @@ public final class StarkConfig {
          */
         @Tunable(value = "The highest light level you can set an Arc Lamp to (new lamps start here). Normal lamps stop at 15. "
                 + "Full light up to this minus 15 blocks away, then it fades out like normal light.", min = 15, max = 128)
-        public static int ARC_LAMP_MAX_LEVEL = 100;
+        public static float ARC_LAMP_MAX_LEVEL = 100.0f;
     }
 
     // =============================================================================================== Hydra
@@ -1447,13 +1456,13 @@ public final class StarkConfig {
         public static float LASER_DAMAGE = 4.0f;
         /** Ticks tussen twee schoten (35 = bijna 2 seconden). */
         @Tunable("Ticks between two Hydra soldier shots")
-        public static int FIRE_INTERVAL = 35;
+        public static float FIRE_INTERVAL = 35.0f;
         /** Tot hoe ver hij schiet. */
         @Tunable("How far a Hydra soldier shoots (blocks)")
         public static float ATTACK_RANGE = 18.0f;
         /** Hoeveel ervaring hij laat vallen. */
         @Tunable("Experience a Hydra soldier drops")
-        public static int XP_REWARD = 10;
+        public static float XP_REWARD = 10.0f;
 
         // VAST: het spel heeft deze nodig bij het opstarten.
         /** Levenspunten (24 = 12 hartjes): iets taaier dan een zombie. */
@@ -1473,25 +1482,25 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Wanneer en hoeveel
         /** De kortste wachttijd tussen twee raids (minuten)... */
         @Tunable(value = "Shortest wait between two raids (minutes)", min = 1, max = 1_440)
-        public static int MIN_MINUTES = 20;
+        public static float MIN_MINUTES = 20.0f;
         /** ...en de langste. */
         @Tunable(value = "Longest wait between two raids (minutes)", min = 1, max = 1_440)
-        public static int MAX_MINUTES = 45;
+        public static float MAX_MINUTES = 45.0f;
         /** Hoeveel drones er in één raid komen. */
         @Tunable(value = "How many drones come in one raid", min = 1, max = 32)
-        public static int SIZE = 4;
+        public static float SIZE = 4.0f;
         /** Hoeveel "aandacht" je trekt door een blok weg te halen in een Stark Tower... */
         @Tunable("Attention you draw by breaking one block of a Stark Tower")
-        public static int HEAT_PER_TOWER_BLOCK = 4;
+        public static float HEAT_PER_TOWER_BLOCK = 4.0f;
         /** ...bij zoveel aandacht komen ze meteen... */
         @Tunable(value = "How much attention it takes before a raid comes at once", min = 1)
-        public static int HEAT_FOR_RAID = 100;
+        public static float HEAT_FOR_RAID = 100.0f;
         /** ...en zoveel aandacht gaat er per minuut vanzelf weer af. */
         @Tunable("Attention that wears off by itself every minute")
-        public static int HEAT_COOLDOWN_PER_MINUTE = 10;
+        public static float HEAT_COOLDOWN_PER_MINUTE = 10.0f;
         /** Na een golf bij het wrak van een satelliet duurt het zo lang voordat het wrak ze opnieuw roept (12000 = 10 minuten). */
         @Tunable("Shortest wait between two raids at the same crashed satellite (ticks)")
-        public static int CRASH_SITE_COOLDOWN = 12_000;
+        public static float CRASH_SITE_COOLDOWN = 12_000.0f;
 
         // ------------------------------------------------------------------------- De drone zelf
         /** Schade van één laserschot (3 = 1,5 hartje). */
@@ -1499,10 +1508,10 @@ public final class StarkConfig {
         public static float LASER_DAMAGE = 3.0f;
         /** Ticks tussen twee schoten (40 = 2 seconden). */
         @Tunable("Ticks between two raid drone shots")
-        public static int FIRE_INTERVAL = 40;
+        public static float FIRE_INTERVAL = 40.0f;
         /** Hoeveel ervaring hij laat vallen. */
         @Tunable("Experience a raid drone drops")
-        public static int XP_REWARD = 8;
+        public static float XP_REWARD = 8.0f;
 
         // ------------------------------------------------------------------------- Jagen
         /** Tot hoe ver hij schiet. */
@@ -1525,7 +1534,7 @@ public final class StarkConfig {
         public static double ACCELERATION = 0.06;
         /** Ticks tussen twee blokken die hij wegschiet als hij je achternazit (30 = anderhalve seconde). */
         @Tunable("Ticks between two blocks a raid drone breaks while hunting you")
-        public static int BREAK_INTERVAL = 30;
+        public static float BREAK_INTERVAL = 30.0f;
         /** Hoe ver vooruit hij blokken weghaalt. */
         @Tunable("How far ahead a raid drone breaks blocks (blocks)")
         public static double BREAK_REACH = 6.0;
@@ -1533,7 +1542,7 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Aankomst
         /** Hoe hoog boven je ze verschijnen. */
         @Tunable("How high above you raid drones appear (blocks)")
-        public static int ARRIVAL_HEIGHT = 80;
+        public static float ARRIVAL_HEIGHT = 80.0f;
         /** Hoe ver de drones van een golf uit elkaar liggen als ze aankomen. */
         @Tunable("How far apart the drones of one raid arrive (blocks)")
         public static double SPREAD = 8.0;

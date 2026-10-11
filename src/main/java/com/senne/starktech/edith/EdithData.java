@@ -31,21 +31,31 @@ public final class EdithData {
 
     // ---------------------------------------------------------------- Energie
 
+    /** Hoeveel energie er in de bril zit, als heel getal (voor de HUD, de schermen en de laders). */
     public static int getEnergy(ItemStack stack) {
-        return stack.getOrDefault(ModDataComponents.ENERGY.get(), 0);
+        return (int) getExactEnergy(stack);
+    }
+
+    /** Hoeveel energie er precies in de bril zit: een kommagetal, zodat ook 0.5 per seconde verbruiken werkt. */
+    public static double getExactEnergy(ItemStack stack) {
+        return stack.getOrDefault(ModDataComponents.ENERGY.get(), 0.0);
     }
 
     public static int getMaxEnergy(ItemStack stack) {
-        return StarkConfig.Glasses.BASE_CAPACITY + getUpgrades(stack).battery() * StarkConfig.Glasses.CAPACITY_PER_BATTERY_UPGRADE;
+        return (int) (StarkConfig.Glasses.BASE_CAPACITY
+                + getUpgrades(stack).battery() * StarkConfig.Glasses.CAPACITY_PER_BATTERY_UPGRADE);
     }
 
-    public static void setEnergy(ItemStack stack, int energy) {
+    public static void setEnergy(ItemStack stack, double energy) {
         stack.set(ModDataComponents.ENERGY.get(), Mth.clamp(energy, 0, getMaxEnergy(stack)));
     }
 
-    /** Probeert energie te gebruiken. Geeft true terug als er genoeg was (en haalt het er dan af). */
-    public static boolean tryUseEnergy(ItemStack stack, int amount) {
-        int energy = getEnergy(stack);
+    /**
+     * Probeert energie te gebruiken (mag een kommagetal zijn, bv. 0.25). Geeft true terug als er genoeg
+     * was (en haalt het er dan af).
+     */
+    public static boolean tryUseEnergy(ItemStack stack, double amount) {
+        double energy = getExactEnergy(stack);
         if (energy < amount) {
             return false;
         }
@@ -53,19 +63,23 @@ public final class EdithData {
         return true;
     }
 
-    /** Voegt energie toe en geeft terug hoeveel er echt bij kon. */
+    /**
+     * Voegt hele energie toe (uit een lader) en geeft terug hoeveel die lader kwijt is. Past er nog maar
+     * een stukje bij (9999.5 van 10000), dan wordt de bril vol en kost dat de lader 1.
+     */
     public static int addEnergy(ItemStack stack, int amount) {
-        int energy = getEnergy(stack);
-        int added = Math.min(amount, getMaxEnergy(stack) - energy);
+        double energy = getExactEnergy(stack);
+        double room = getMaxEnergy(stack) - energy;
+        int added = (int) Math.min(amount, Math.ceil(room));
         if (added > 0) {
-            setEnergy(stack, energy + added);
+            setEnergy(stack, Math.min(getMaxEnergy(stack), energy + added));
         }
         return Math.max(added, 0);
     }
 
     public static float getEnergyFraction(ItemStack stack) {
         int max = getMaxEnergy(stack);
-        return max <= 0 ? 0 : (float) getEnergy(stack) / max;
+        return max <= 0 ? 0 : (float) (getExactEnergy(stack) / max);
     }
 
     // ---------------------------------------------------------------- Eigenaar
@@ -112,11 +126,11 @@ public final class EdithData {
     }
 
     public static int getOreScanRadius(ItemStack stack) {
-        return StarkConfig.Scanner.ORE_SCAN_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, StarkConfig.Scanner.ORE_SCAN_RADIUS.length - 1)];
+        return Math.round(StarkConfig.Scanner.ORE_SCAN_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, StarkConfig.Scanner.ORE_SCAN_RADIUS.length - 1)]);
     }
 
     public static int getThreatRadius(ItemStack stack) {
-        return StarkConfig.Scanner.THREAT_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, StarkConfig.Scanner.THREAT_RADIUS.length - 1)];
+        return Math.round(StarkConfig.Scanner.THREAT_RADIUS[Mth.clamp(getUpgrades(stack).scanner(), 0, StarkConfig.Scanner.THREAT_RADIUS.length - 1)]);
     }
 
     /**
@@ -124,14 +138,14 @@ public final class EdithData {
      * zodat de eigenaar van de wereld het maximum zelf kan instellen.
      */
     public static int getSwarmSize(ItemStack stack) {
-        int size = StarkConfig.Drones.SWARM_BASE + getUpgrades(stack).drones() * StarkConfig.Drones.SWARM_PER_UPGRADE;
-        return Math.min(size, StarkConfig.Drones.SWARM_MAX);
+        int size = Math.round(StarkConfig.Drones.SWARM_BASE) + getUpgrades(stack).drones() * Math.round(StarkConfig.Drones.SWARM_PER_UPGRADE);
+        return Math.min(size, Math.round(StarkConfig.Drones.SWARM_MAX));
     }
 
     /** Hoeveel beschermende drones er rond de speler vliegen (met upgrades). */
     public static int getGuardCount(ItemStack stack) {
-        int count = StarkConfig.Drones.GUARD_BASE + getUpgrades(stack).drones() * StarkConfig.Drones.GUARDS_PER_UPGRADE;
-        return Math.min(count, StarkConfig.Drones.GUARD_MAX);
+        int count = Math.round(StarkConfig.Drones.GUARD_BASE) + getUpgrades(stack).drones() * Math.round(StarkConfig.Drones.GUARDS_PER_UPGRADE);
+        return Math.min(count, Math.round(StarkConfig.Drones.GUARD_MAX));
     }
 
     // ---------------------------------------------------------------- Satelliet-stand

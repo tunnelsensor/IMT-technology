@@ -19,10 +19,10 @@ public enum EdithFeature {
     SHIELD("shield", () -> StarkConfig.Shields.PERSONAL_DRAIN, false);
 
     private final String id;
-    private final java.util.function.IntSupplier drainPerSecond;
+    private final java.util.function.DoubleSupplier drainPerSecond;
     private final boolean enabledByDefault;
 
-    EdithFeature(String id, java.util.function.IntSupplier drainPerSecond, boolean enabledByDefault) {
+    EdithFeature(String id, java.util.function.DoubleSupplier drainPerSecond, boolean enabledByDefault) {
         this.id = id;
         this.drainPerSecond = drainPerSecond;
         this.enabledByDefault = enabledByDefault;
@@ -32,8 +32,9 @@ public enum EdithFeature {
         return 1 << ordinal();
     }
 
-    public int drainPerSecond() {
-        return drainPerSecond.getAsInt();
+    /** Wat deze functie per seconde kost (mag een kommagetal zijn, bv. 0.5). */
+    public double drainPerSecond() {
+        return drainPerSecond.getAsDouble();
     }
 
     /** Sleutel voor de vertaling, bv. "edith.starktech.feature.night_vision". */

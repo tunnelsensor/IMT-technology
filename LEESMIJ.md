@@ -917,7 +917,14 @@ wereld** anders zijn, bijvoorbeeld "in deze wereld is de satelliet te sterk"? Ko
 naar `<wereld>/serverconfig/` en pas het daar aan: die kopie gaat voor. Het spel leest het bestand
 opnieuw als je het opslaat terwijl je speelt; je hoeft niets te herstarten.
 
-Alle stroomgetallen onder `[power]` mogen **kommagetallen** zijn: `0.05` per tick is 1 per seconde.
+**Alle getallen** mogen **kommagetallen** zijn, overal: `0.05` per tick is 1 per seconde. Energie telt
+precies mee (ook in de batterij van de bril). Tijden in ticks en aantallen worden afgerond, want een halve
+tick of een halve drone bestaat niet; seconden en minuten worden eerst omgerekend, dus `0.5` seconde is
+echt 10 ticks.
+
+In de schermen van de **generator**, de **koepel** en de **Arc Lamp** zit een knopje **/tick**. Klik erop om
+stroom te zien **per tick, per seconde, per minuut of per uur**. De keuze geldt meteen voor alle schermen
+(ook het verbruik in het G-menu en de app Zones) en blijft bewaard (`powerUnit` in `starktech-client.toml`).
 Let op: verander je een standaardwaarde in `StarkConfig.java`, dan verandert een bestaand
 `starktech.toml` niet mee. Pas dan het `.toml`-bestand aan, of gooi het weg (dan maakt het spel een
 nieuw).

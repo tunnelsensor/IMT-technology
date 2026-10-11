@@ -108,14 +108,19 @@ public final class CircuitPuzzle {
     }
 
     /** Hoeveel seconden je hebt voor een kaart van dit niveau (1-5): StarkConfig.Bypass.CIRCUIT_SECONDS. */
-    public static int circuitSeconds(int level) {
+    public static float circuitSeconds(int level) {
         return StarkConfig.Bypass.CIRCUIT_SECONDS[clampLevel(level) - 1];
+    }
+
+    /** Hetzelfde in ticks (20 per seconde). */
+    public static int circuitTicks(int level) {
+        return Math.round(circuitSeconds(level) * 20);
     }
 
     public static CircuitPuzzle generate(long seed, int level) {
         int index = CircuitPuzzle.clampLevel(level) - 1;
-        int columns = StarkConfig.Bypass.CIRCUIT_COLUMNS[index];
-        int rows = StarkConfig.Bypass.CIRCUIT_ROWS[index];
+        int columns = Math.round(StarkConfig.Bypass.CIRCUIT_COLUMNS[index]);
+        int rows = Math.round(StarkConfig.Bypass.CIRCUIT_ROWS[index]);
         Random random = new Random(seed * 31L + level);
         int cardRow = random.nextInt(rows);
         int acceptRow = random.nextInt(rows);
@@ -192,7 +197,7 @@ public final class CircuitPuzzle {
             boolean wrongTurn = shapes[cell] == CORNER && terminal.side() != out[cell] && terminal.side() != opposite(in[cell]);
             return wrongTurn ? 0 : 1;
         }));
-        int alarmCount = Math.min(candidates.size(), StarkConfig.Bypass.CIRCUIT_ALARMS[index]);
+        int alarmCount = Math.min(candidates.size(), Math.round(StarkConfig.Bypass.CIRCUIT_ALARMS[index]));
         List<Terminal> alarms = new ArrayList<>(candidates.subList(0, alarmCount));
 
         // Alles door elkaar draaien, tot het niet al klaar is en ALARM niet al geraakt wordt.

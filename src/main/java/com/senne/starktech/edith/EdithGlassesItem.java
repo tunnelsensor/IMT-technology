@@ -63,8 +63,8 @@ public class EdithGlassesItem extends ArmorItem {
         tooltip.add(Component.translatable("tooltip.starktech.energy", energy, max, percent).withStyle(ChatFormatting.AQUA));
 
         EdithUpgrades upgrades = EdithData.getUpgrades(stack);
-        tooltip.add(Component.translatable("tooltip.starktech.upgrade.battery", upgrades.battery(), StarkConfig.Glasses.MAX_BATTERY_UPGRADES).withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("tooltip.starktech.upgrade.battery", upgrades.battery(), Math.round(StarkConfig.Glasses.MAX_BATTERY_UPGRADES)).withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("tooltip.starktech.upgrade.scanner", upgrades.scanner(), StarkConfig.Scanner.MAX_SCANNER_UPGRADES).withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("tooltip.starktech.upgrade.drones", upgrades.drones(), StarkConfig.Drones.MAX_UPGRADES).withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("tooltip.starktech.upgrade.drones", upgrades.drones(), Math.round(StarkConfig.Drones.MAX_UPGRADES)).withStyle(ChatFormatting.DARK_GRAY));
     }
 }

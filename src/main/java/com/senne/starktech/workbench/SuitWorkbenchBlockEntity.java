@@ -118,7 +118,7 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
     }
 
     public int total() {
-        return job == JOB_INSTALL ? StarkConfig.Workbench.INSTALL_TICKS : job == JOB_BUILD ? StarkConfig.Workbench.BUILD_TICKS : 0;
+        return job == JOB_INSTALL ? Math.round(StarkConfig.Workbench.INSTALL_TICKS) : job == JOB_BUILD ? Math.round(StarkConfig.Workbench.BUILD_TICKS) : 0;
     }
 
     public boolean powered() {

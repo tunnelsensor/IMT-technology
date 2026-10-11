@@ -85,7 +85,7 @@ public class HydraCombatGoal extends Goal {
 
     @Override
     public void start() {
-        attackCooldown = StarkConfig.Hydra.FIRE_INTERVAL / 2 + soldier.getRandom().nextInt(10);
+        attackCooldown = Math.round(StarkConfig.Hydra.FIRE_INTERVAL) / 2 + soldier.getRandom().nextInt(10);
         replanCooldown = 0;
         alertSquad();
     }
@@ -152,7 +152,7 @@ public class HydraCombatGoal extends Goal {
         if (--attackCooldown <= 0 && seeTime >= 5) {
             soldier.performRangedAttack(target, 1.0f);
             // Niet allemaal tegelijk: elke soldaat een beetje anders.
-            attackCooldown = StarkConfig.Hydra.FIRE_INTERVAL + soldier.getRandom().nextInt(12);
+            attackCooldown = Math.round(StarkConfig.Hydra.FIRE_INTERVAL) + soldier.getRandom().nextInt(12);
         }
     }
 
