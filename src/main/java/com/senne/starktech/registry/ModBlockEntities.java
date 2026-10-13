@@ -121,6 +121,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.starktech.light.ArcLampBlockEntity::new,
                             java.util.Set.of(ModBlocks.ARC_LAMP.get()), null));
 
+    /** Het E.D.I.T.H.-relais: van wie het is (13 oktober: alleen de eigenaar kan het bewerken). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.redstone.RelayBlockEntity>> RELAY =
+            BLOCK_ENTITIES.register("relay",
+                    () -> new BlockEntityType<>(com.senne.starktech.redstone.RelayBlockEntity::new,
+                            java.util.Set.of(ModBlocks.RELAY.get()), null));
+
     /** De relay emitter: van wie hij is, welke relais hij schakelt en hoe (13 oktober). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.redstone.RelayEmitterBlockEntity>> RELAY_EMITTER =
             BLOCK_ENTITIES.register("relay_emitter",

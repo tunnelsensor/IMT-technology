@@ -12,6 +12,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -35,8 +37,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <b>Omgekeerd</b> (13 oktober, de knop "invert" in zijn scherm): dan geeft het redstone als het UIT
  * staat, en niets als het aan staat. Handig voor een deur die dicht moet als E.D.I.T.H. iets aanzet.
+ *
+ * <b>Van jou</b> (13 oktober): wie het neerzet, is de eigenaar, en alleen die kan het bewerken en
+ * schakelen. Dat onthoudt RelayBlockEntity.
  */
-public class RelayBlock extends Block {
+public class RelayBlock extends Block implements EntityBlock {
     /** Staat het aan (volgens E.D.I.T.H.)? Het lampje bovenop is dan groen. */
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     /** Omgekeerd: redstone als het uit staat. Je ziet het aan het rode streepje boven het lampje. */
@@ -68,6 +73,12 @@ public class RelayBlock extends Block {
         return SHAPE;
     }
 
+    /** Onthoudt van wie het relais is. */
+    @Override
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new RelayBlockEntity(pos, state);
+    }
+
     // ---------------------------------------------------------------- Redstone
 
     @Override
@@ -93,11 +104,14 @@ public class RelayBlock extends Block {
 
     // ---------------------------------------------------------------- Neerzetten en gebruiken
 
-    /** Net neergezet: meld het relais meteen aan bij de bril van de speler. */
+    /** Net neergezet: het relais is van jou, en komt meteen in de lijst van je bril. */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (placer instanceof ServerPlayer player) {
+            if (level.getBlockEntity(pos) instanceof RelayBlockEntity relay) {
+                relay.setOwner(player);
+            }
             EdithRedstone.register(player, pos);
         }
     }
@@ -114,7 +128,7 @@ public class RelayBlock extends Block {
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
-    /** Rechtsklikken: het scherm openen waarin je naam en tags instelt (ook zonder bril). */
+    /** Rechtsklikken: het scherm openen waarin je naam en tags instelt (ook zonder bril, alleen de eigenaar). */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer) {

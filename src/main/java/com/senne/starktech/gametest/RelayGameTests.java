@@ -23,6 +23,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -152,18 +153,13 @@ public final class RelayGameTests {
 
     /**
      * Zonder bril: naam en tags geven mag, omkeren en testen ook als je ernaast staat. Omgekeerd geeft het
-     * relais redstone als het UIT staat. Van ver weg (zonder bril) mag omkeren niet; met bril wel. En in de
-     * basis van een ander (het gebied van zijn kern) mag een vreemde het niet omkeren.
-     *
-     * De test zet zijn eigen kern neer (van de eigenaar): de testgebieden van eerdere tests blijven staan, en
-     * een kern daarin (bereik 200 blokken) zou de eigenaar anders een indringer maken. Een nieuwe kern meldt
-     * zich pas een tick later aan, dus eerst even wachten.
+     * relais redstone als het UIT staat. Van ver weg (zonder bril) mag omkeren niet; met bril wel. Een vreemde
+     * die ernaast staat, kan het niet in zijn lijst zetten en dus ook niet omkeren.
      */
     @GameTest(template = ARENA, timeoutTicks = 60, batch = "relays")
     public static void relay_rename_and_invert_without_glasses(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 1));
-        StarkTechGameTests.placeCore(helper, new BlockPos(9, 2, 9), owner);
         ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 1), "relay-intruder");
         stranger.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         ItemStack glasses = owner.getItemBySlot(EquipmentSlot.HEAD).copy();
@@ -177,8 +173,10 @@ public final class RelayGameTests {
             check(relay != null && relay.name().equals("Front door") && relay.tags().equals(List.of("house", "doors")),
                     "Zonder bril kreeg het relais geen naam en tags: " + relay);
 
-            // Een vreemde in jouw basis (ook als hij het relais in zijn lijst zet): niet omkeren.
+            // Een vreemde (ook als hij het relais in zijn lijst probeert te zetten): niet omkeren.
             EdithRedstone.register(stranger, abs);
+            check(stranger.getData(ModAttachments.RELAYS).indexAt(level.dimension(), abs) < 0,
+                    "Een vreemde kon jouw relais in zijn lijst zetten");
             EdithRedstone.handleAction(stranger, new RelayActionPayload(RelayActionPayload.Op.INVERT, EdithRedstone.Op.TOGGLE,
                     stranger.getData(ModAttachments.RELAYS).indexAt(level.dimension(), abs), "", ""));
             check(!helper.getBlockState(pos).getValue(RelayBlock.INVERTED), "Een vreemde kon het relais in jouw basis omkeren");
@@ -207,6 +205,86 @@ public final class RelayGameTests {
                     index(helper, owner, pos), "", ""));
             check(!helper.getBlockState(pos).getValue(RelayBlock.INVERTED), "Met bril kon je het van ver weg niet terugzetten");
         }).thenSucceed();
+    }
+
+    /**
+     * Alleen wie een relais neerzet, kan het bewerken (13 oktober: "zorg dat de relay die je zelf plaatst, jij
+     * de enige bent die die kan bewerken"). Een ander (met bril) kan het niet openen, niet in zijn lijst zetten,
+     * en als het er van vroeger nog in stond, niet schakelen, omkeren of hernoemen: dan gaat het eruit. Een
+     * relais zonder eigenaar (van vóór 13 oktober) wordt van wie het als eerste gebruikt. En een emitter van
+     * een ander schakelt het niet, ook niet uit zijn oude kopie.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "relays")
+    public static void relay_only_owner_can_edit(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 1));
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 1), "relay-stranger");
+        // Neergezet door de eigenaar, zoals met de muis.
+        BlockPos pos = new BlockPos(3, 2, 3);
+        helper.setBlock(pos, ModBlocks.RELAY.get());
+        BlockPos abs = helper.absolutePos(pos);
+        ModBlocks.RELAY.get().setPlacedBy(level, abs, helper.getBlockState(pos), owner, ItemStack.EMPTY);
+        check(owner.getUUID().equals(EdithRedstone.relayOwner(level, abs)), "Wie het neerzette, is niet de eigenaar");
+        check(index(helper, owner, pos) >= 0, "Het relais staat niet in de lijst van de eigenaar");
+
+        // Een ander: rechtsklikken of aanmelden doet niets.
+        EdithRedstone.openEditor(stranger, abs);
+        EdithRedstone.register(stranger, abs);
+        check(index(helper, stranger, pos) < 0, "Een ander kon het relais in zijn lijst zetten");
+
+        // Stond het er van vroeger nog in: schakelen, omkeren, hernoemen en opruimen gooien het eruit.
+        Relay stolen = new Relay("Loot", List.of("loot"), level.dimension(), abs);
+        stranger.setData(ModAttachments.RELAYS, EdithRelays.EMPTY.with(stolen));
+        EdithRedstone.handleAction(stranger, RelayActionPayload.switchNamed("loot", EdithRedstone.Op.ON));
+        check(!on(helper, pos), "Een ander kon het relais schakelen");
+        check(index(helper, stranger, pos) < 0, "Na schakelen stond het relais nog in de lijst van de ander");
+        stranger.setData(ModAttachments.RELAYS, EdithRelays.EMPTY.with(stolen));
+        EdithRedstone.handleAction(stranger, new RelayActionPayload(RelayActionPayload.Op.INVERT, EdithRedstone.Op.TOGGLE, 0, "", ""));
+        check(!helper.getBlockState(pos).getValue(RelayBlock.INVERTED), "Een ander kon het relais omkeren");
+        stranger.setData(ModAttachments.RELAYS, EdithRelays.EMPTY.with(stolen));
+        EdithRedstone.handleAction(stranger, new RelayActionPayload(RelayActionPayload.Op.RENAME, EdithRedstone.Op.TOGGLE, 0, "Mine", ""));
+        check(index(helper, stranger, pos) < 0, "Een ander kon het relais hernoemen");
+        stranger.setData(ModAttachments.RELAYS, EdithRelays.EMPTY.with(stolen));
+        EdithRedstone.pruneGhosts(stranger);
+        check(index(helper, stranger, pos) < 0, "Opruimen liet het relais van een ander in de lijst");
+
+        // De eigenaar kan alles nog.
+        EdithRedstone.handleAction(owner, RelayActionPayload.switchOne(index(helper, owner, pos), EdithRedstone.Op.ON));
+        check(on(helper, pos), "De eigenaar kon zijn eigen relais niet schakelen");
+
+        // Een oud relais zonder eigenaar: wie het als eerste opent, is de eigenaar.
+        BlockPos old = new BlockPos(7, 2, 3);
+        helper.setBlock(old, ModBlocks.RELAY.get());
+        BlockPos oldAbs = helper.absolutePos(old);
+        check(EdithRedstone.relayOwner(level, oldAbs) == null, "Een relais zonder neerzetter heeft toch een eigenaar");
+        EdithRedstone.openEditor(stranger, oldAbs);
+        check(stranger.getUUID().equals(EdithRedstone.relayOwner(level, oldAbs)) && index(helper, stranger, old) >= 0,
+                "Wie het oude relais als eerste opende, werd niet de eigenaar");
+        EdithRedstone.openEditor(owner, oldAbs);
+        check(index(helper, owner, old) < 0, "Daarna kon een ander het oude relais nog in zijn lijst zetten");
+
+        // Een emitter van iemand anders (offline), met een oude kopie die naar dit relais wijst: niets.
+        BlockPos emitterPos = new BlockPos(3, 2, 7);
+        helper.setBlock(emitterPos, ModBlocks.RELAY_EMITTER.get());
+        RelayEmitterBlockEntity emitter = (RelayEmitterBlockEntity) helper.getBlockEntity(emitterPos);
+        CompoundTag saved = emitter.saveWithoutMetadata(level.registryAccess());
+        saved.putUUID("Owner", UUID.randomUUID());
+        saved.putString("Target", "Loot");
+        saved.putString("Mode", RelayEmitterBlockEntity.Mode.FOLLOW.name());
+        ListTag targets = new ListTag();
+        CompoundTag target = new CompoundTag();
+        target.putString("D", level.dimension().location().toString());
+        target.putInt("X", abs.getX());
+        target.putInt("Y", abs.getY());
+        target.putInt("Z", abs.getZ());
+        target.putInt("C", -1);
+        targets.add(target);
+        saved.put("Targets", targets);
+        emitter.loadWithComponents(saved, level.registryAccess());
+        check(emitter.targets().size() == 1, "De oude kopie van de emitter werd niet ingeladen");
+        emitter.signalChanged(level, false);
+        check(on(helper, pos), "De emitter van een ander zette het relais uit");
+        helper.succeed();
     }
 
     /** De emitter in de wereld: een redstoneblok ernaast zet de relais in "base" aan, weghalen weer uit. */
@@ -261,13 +339,14 @@ public final class RelayGameTests {
         emitter.signalChanged(level, true);
         check(!on(helper, door), "Toggle: de tweede keer ging het relais niet uit");
 
-        // Offline: dezelfde emitter, maar van iemand die er niet is, op Pulse. De eigenaar is zijn relais
-        // intussen "vergeten": de emitter weet nog waar het staat.
+        // Offline: de eigenaar verlaat de server (en zijn lijst is leeg), de emitter staat op Pulse. Hij weet
+        // zelf nog waar het relais staat.
         CompoundTag saved = emitter.saveWithoutMetadata(level.registryAccess());
-        saved.putUUID("Owner", UUID.randomUUID());
         saved.putString("Mode", RelayEmitterBlockEntity.Mode.PULSE.name());
         emitter.loadWithComponents(saved, level.registryAccess());
         owner.setData(ModAttachments.RELAYS, EdithRelays.EMPTY);
+        level.getServer().getPlayerList().remove(owner);
+        check(level.getServer().getPlayerList().getPlayer(owner.getUUID()) == null, "De eigenaar is nog online");
         emitter.signalChanged(level, true);
         check(on(helper, door), "Offline: de emitter gaf geen puls");
         helper.startSequence()

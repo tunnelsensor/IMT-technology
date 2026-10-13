@@ -206,7 +206,7 @@
   "edith.starktech.msg.relay_inverted": "Relay '%s' is inverted: it now gives redstone when it is OFF.",
   "edith.starktech.msg.relay_not_inverted": "Relay '%s' gives redstone when it is ON again.",
   "edith.starktech.msg.relay_too_far": "Stand next to the relay, or put on your E.D.I.T.H. glasses.",
-  "edith.starktech.msg.relay_protected": "That relay is in %s's base. You can't change it.",
+  "edith.starktech.msg.relay_not_yours": "This relay belongs to %s. Only they can change or switch it.",
   "edith.starktech.msg.tag_created": "Tag '%s' created.",
   "edith.starktech.msg.tag_deleted": "Tag '%s' deleted. Its relays are still there.",
   "edith.starktech.msg.tag_loop": "'%s' can't go inside '%s': that would make a loop.",

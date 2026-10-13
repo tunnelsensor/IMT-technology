@@ -164,10 +164,18 @@ public class RelayEmitterBlockEntity extends BlockEntity {
         }
         for (Target target : targets) {
             ServerLevel targetLevel = level.getServer().getLevel(target.dimension());
-            if (targetLevel != null) {
-                EdithRedstone.switchAt(targetLevel, target.pos(), target.channel(), op,
-                        Math.round(StarkConfig.Relays.PULSE_TICKS));
+            if (targetLevel == null) {
+                continue;
             }
+            if (!targetLevel.hasChunkAt(target.pos())) {
+                targetLevel.getChunk(target.pos());
+            }
+            // Nooit het relais van iemand anders (13 oktober), ook niet uit een oude kopie.
+            UUID relayOwner = EdithRedstone.relayOwner(targetLevel, target.pos());
+            if (relayOwner != null && !relayOwner.equals(owner)) {
+                continue;
+            }
+            EdithRedstone.switchAt(targetLevel, target.pos(), target.channel(), op, Math.round(StarkConfig.Relays.PULSE_TICKS));
         }
     }
 

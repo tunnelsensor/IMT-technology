@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 210 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 211 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 87 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2042,9 +2042,9 @@ tags in tags zet je in een apart tag-scherm.
       tags, testen (PULSE) en weghalen. Zonder bril hoor je het antwoord boven je hotbar. De nieuwe knop
       **Invert** zet het relais om: het geeft dan redstone als het **uit** staat (`RelayBlock.INVERTED`, je
       ziet een rode rand om het lampje). **Mijn invulling**: invert staat in het blok zelf (iedereen merkt
-      het), dus mag het met je bril van overal, zonder bril alleen binnen 6 blokken, en nooit in de basis
-      van een ander (het gebied van een kern waar je geen eigenaar of vriend bent; creative mag alles).
-      Hetzelfde voor testen zonder bril. Schakelen op afstand blijft met bril.
+      het), dus mag het met je bril van overal, zonder bril alleen binnen 6 blokken. Hetzelfde voor testen
+      zonder bril. Schakelen op afstand blijft met bril. (Eerst mocht het ook niet in de basis van een
+      ander; dat is vervangen door stap 4: alleen de eigenaar.)
 - [x] **3. De relay emitter** (shapeless: een relais, een comparator en redstone). Het omgekeerde van een
       relais: krijgt hij redstone, dan schakelt hij jouw relais. In zijn scherm (`RelayEmitterScreen`) typ
       je de naam van een relais of een tag (hij zegt meteen hoeveel apparaten dat zijn) en kies je **Follow**
@@ -2060,6 +2060,20 @@ tags in tags zet je in een apart tag-scherm.
       echte redstone (Follow), en Toggle, Pulse en offline. 210 tests: 207 groen, de 3 rode van hoofdstuk 14
       stap 2 (jouw stroomwaarden). Screenshots: `-Ponly=relays` (`rl01`-`rl07`). In de showcase: "Relay tags,
       invert and emitter" (en "Relay: name and group" heet nu "Relay: name and tags").
+- [x] **4. Alleen de eigenaar** (13 oktober: "zorg dat de relay die je zelf plaatst, jij de enige bent die die
+      kan bewerken"). Er zat een lek in: vroeger kon iedereen met een bril op jouw relais rechtsklikken, het
+      zo in zijn eigen lijst zetten en het daarna van overal schakelen. Nu onthoudt een relais wie het neerzette
+      (`RelayBlockEntity`), en alleen die kan het openen, in zijn lijst zetten, hernoemen, omkeren en schakelen
+      (`EdithRedstone.otherOwner`). Een ander hoort "This relay belongs to ...". Stond jouw relais van vroeger
+      nog in de lijst van een ander, dan gaat het eruit zodra hij het probeert te gebruiken, of bij het
+      opruimen (elke 5 seconden, `pruneGhosts`). Een emitter schakelt nooit het relais van een ander, ook niet
+      uit zijn oude kopie. **Mijn invulling**: een relais van vóór vandaag heeft nog geen eigenaar; dat wordt
+      van wie het als eerste in zijn lijst heeft (bij het opruimen) of opent, dus in je eigen wereld van jou.
+      Ook vrienden en creative kunnen andermans relais niet bewerken ("jij de enige"). Slopen kan nog wel
+      (daarvoor zijn de zones). Een relais heeft nu een blok-entiteit, dus een zuiger duwt het niet meer weg
+      (zoals een kist); zo kan niemand het verschuiven en zo de eigenaar kwijtraken. Een nieuwe test
+      (`relay_only_owner_can_edit`), en de emitter-test zet de eigenaar nu echt offline. 211 tests: 208
+      groen, de 3 rode van hoofdstuk 14 stap 2.
 
 ---
 

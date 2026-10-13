@@ -236,13 +236,15 @@ komma's ertussen: `security room, doors`. Daarna kan E.D.I.T.H. het overal in de
 aan- of uitzetten, omschakelen of een korte puls geven — per relais of per hele tag. Met je stem:
 *"zet de voordeur aan"*, *"doe de val uit"*, *"geef de poort een puls"*.
 
+- **Van jou**: een relais is van wie het neerzet. Alleen jij kunt het openen, in je lijst zetten,
+  hernoemen, omkeren en schakelen; een ander hoort van wie het is.
 - **Tags in tags**: in het redstone-scherm (toets **'**) zit onderaan de knop **Tags**. Maak daar
   links onderaan een tag als `base`, klik links op `security room` en rechts op `base`: dan zit
   `security room` in `base`. Zet je `base` aan, dan gaat alles eronder mee. Een tag mag in meer
   tags zitten, maar nooit (via een omweg) in zichzelf. Het redstone-scherm toont alles als een boom.
 - **Invert**: in het scherm van een relais zet de knop **Invert** het om: dan geeft het redstone
-  als het **uit** staat. Je ziet het aan een rood streepje boven het lampje. Zonder bril moet je
-  ernaast staan, en in de basis van een ander mag het niet.
+  als het **uit** staat. Je ziet het aan een rode rand om het lampje. Zonder bril moet je ernaast
+  staan.
 - **Relay emitter** (een relais, een comparator en redstone): het omgekeerde van een relais. Geef
   hem redstone (een knop, hendel, drukplaat...) en hij schakelt jouw relais. In zijn scherm typ je
   de naam van een relais of een tag, en kies je **Follow** (redstone aan = aan, uit = uit),

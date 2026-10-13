@@ -9,8 +9,6 @@ import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.registry.ModAttachments;
-import com.senne.starktech.security.SecurityCoreBlockEntity;
-import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.shield.EdithSwitchable;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -81,8 +79,14 @@ public final class EdithRedstone {
         if (data.indexAt(player.level().dimension(), pos) >= 0) {
             return; // stond er al in
         }
+        // Een relais van iemand anders kun je niet in je lijst zetten (13 oktober).
+        String other = otherOwner(player, player.serverLevel(), pos);
+        if (other != null) {
+            tell(player, Component.translatable("edith.starktech.msg.relay_not_yours", other), EdithMessagePayload.Level.WARNING);
+            return;
+        }
         if (data.relays().size() >= Math.round(StarkConfig.Relays.MAX_RELAYS)) {
-            EdithServer.send(player, Component.translatable("edith.starktech.msg.relays_full", Math.round(StarkConfig.Relays.MAX_RELAYS)),
+            tell(player, Component.translatable("edith.starktech.msg.relays_full", Math.round(StarkConfig.Relays.MAX_RELAYS)),
                     EdithMessagePayload.Level.WARNING);
             return;
         }
@@ -90,7 +94,60 @@ public final class EdithRedstone {
         Relay relay = new Relay(name, List.of(), player.level().dimension(), pos);
         player.setData(ModAttachments.RELAYS, data.with(relay));
         StarkAdvancements.award(player, StarkAdvancements.RELAY);
-        EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
+        tell(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
+    }
+
+    // ================================================================ Van wie is het? (13 oktober)
+
+    /**
+     * Mag deze speler het relais op deze plek gebruiken? Jouw wens: "zorg dat de relay die je zelf plaatst,
+     * jij de enige bent die die kan bewerken".
+     *
+     * @return null als het mag (het relais is van jou, of het is geen relais maar bv. een koepel), anders de
+     *         naam van de eigenaar. Een relais zonder eigenaar (van vóór 13 oktober) wordt hier van jou:
+     *         wie het als eerste gebruikt, of het al in zijn lijst had.
+     */
+    public static @Nullable String otherOwner(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) {
+            level.getChunk(pos);
+        }
+        if (!(level.getBlockEntity(pos) instanceof RelayBlockEntity relay)) {
+            return null;
+        }
+        if (relay.owner() == null) {
+            relay.setOwner(player);
+            return null;
+        }
+        return relay.owner().equals(player.getUUID()) ? null : relay.ownerName();
+    }
+
+    /** Van wie is het relais op deze plek? Null als het geen relais is, of nog van niemand. */
+    public static @Nullable java.util.UUID relayOwner(ServerLevel level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof RelayBlockEntity relay ? relay.owner() : null;
+    }
+
+    /**
+     * Alleen de relais die van deze speler zijn. Staat er een relais van iemand anders in zijn lijst (dat
+     * kon vóór 13 oktober), dan gaat het eruit en zegt E.D.I.T.H. van wie het is.
+     */
+    private static List<Relay> keepOwn(ServerPlayer player, List<Relay> relays) {
+        MinecraftServer server = player.getServer();
+        List<Relay> own = new ArrayList<>();
+        for (Relay relay : relays) {
+            ServerLevel level = server == null ? null : server.getLevel(relay.dimension());
+            String other = level == null || relay.channel() >= 0 ? null : otherOwner(player, level, relay.pos());
+            if (other == null) {
+                own.add(relay);
+                continue;
+            }
+            EdithRelays data = player.getData(ModAttachments.RELAYS);
+            int index = data.indexAt(relay.dimension(), relay.pos());
+            if (index >= 0) {
+                player.setData(ModAttachments.RELAYS, data.without(index));
+            }
+            tell(player, Component.translatable("edith.starktech.msg.relay_not_yours", other), EdithMessagePayload.Level.WARNING);
+        }
+        return own;
     }
 
     /**
@@ -122,12 +179,15 @@ public final class EdithRedstone {
     }
 
     /**
-     * Ruimt relais op die er niet meer staan.
+     * Ruimt relais op die er niet meer staan, of die van iemand anders zijn.
      *
      * forget() hieronder vangt het slopen zelf op, maar niet alles: wie op dat moment uitgelogd
      * was, houdt zijn relais, en kastjes die al weg waren voordat dit bestond staan er ook nog
      * in. Daarom kijken we af en toe na of het kastje er echt nog staat. Alleen in stukken
      * wereld die geladen zijn: wat we niet kunnen zien, laten we met rust.
+     *
+     * Sinds 13 oktober ook: een relais van iemand anders gaat eruit (dat kon je vroeger aanmelden), en
+     * een relais zonder eigenaar (van vóór 13 oktober) wordt van jou, omdat jij het in je lijst had.
      */
     public static void pruneGhosts(ServerPlayer player) {
         EdithRelays data = player.getData(ModAttachments.RELAYS);
@@ -136,7 +196,8 @@ public final class EdithRedstone {
             Relay relay = data.relays().get(i);
             if (relay.dimension() == level.dimension()
                     && level.hasChunkAt(relay.pos())
-                    && !isSwitchable(level.getBlockState(relay.pos()))) {
+                    && (!isSwitchable(level.getBlockState(relay.pos()))
+                            || relay.channel() < 0 && otherOwner(player, level, relay.pos()) != null)) {
                 data = data.without(i);
             }
         }
@@ -169,13 +230,19 @@ public final class EdithRedstone {
 
     /**
      * Rechtsklikken op een relais: het scherm openen waarin je naam en tags instelt. Daar heb je je bril
-     * niet voor nodig (13 oktober): je staat er toch naast.
+     * niet voor nodig (13 oktober): je staat er toch naast. Alleen de eigenaar: een ander hoort van wie
+     * het is.
      */
     public static void openEditor(ServerPlayer player, BlockPos pos) {
+        String other = otherOwner(player, player.serverLevel(), pos);
+        if (other != null) {
+            tell(player, Component.translatable("edith.starktech.msg.relay_not_yours", other), EdithMessagePayload.Level.WARNING);
+            return;
+        }
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         int index = data.indexAt(player.level().dimension(), pos);
         if (index < 0) {
-            // Iemand anders heeft hem neergezet: dan meld je hem nu aan op jouw bril.
+            // Van jou, maar (nog) niet in je lijst (je haalde het eruit, of het is van vóór 13 oktober).
             register(player, pos);
             index = player.getData(ModAttachments.RELAYS).indexAt(player.level().dimension(), pos);
         }
@@ -223,7 +290,7 @@ public final class EdithRedstone {
 
     private static void rename(ServerPlayer player, EdithRelays data, RelayActionPayload payload) {
         Relay relay = data.get(payload.index());
-        if (relay == null) {
+        if (relay == null || keepOwn(player, List.of(relay)).isEmpty()) {
             return;
         }
         String name = clean(payload.name(), Math.round(StarkConfig.Relays.MAX_NAME), relay.name());
@@ -255,13 +322,12 @@ public final class EdithRedstone {
 
     /**
      * De knop "invert": het relais geeft voortaan redstone als het UIT staat, en niets als het aan staat.
-     * Dat staat in het blok zelf (iedereen merkt het), dus mag het alleen als je erbij staat of je bril
-     * op hebt, en niet in de basis van een ander.
+     * Alleen de eigenaar, en alleen als hij erbij staat of zijn bril op heeft.
      */
     private static void invert(ServerPlayer player, @Nullable ItemStack glasses, @Nullable Relay relay) {
         MinecraftServer server = player.getServer();
         ServerLevel level = relay == null || server == null ? null : server.getLevel(relay.dimension());
-        if (level == null || relay.channel() >= 0) {
+        if (level == null || relay.channel() >= 0 || keepOwn(player, List.of(relay)).isEmpty()) {
             return;
         }
         if (glasses == null && !nearby(player, relay)) {
@@ -274,9 +340,6 @@ public final class EdithRedstone {
         BlockState state = level.getBlockState(relay.pos());
         if (!(state.getBlock() instanceof RelayBlock)) {
             return; // een koepel of torentje geeft geen redstone: daar valt niets om te keren
-        }
-        if (protectedFrom(player, level, relay.pos())) {
-            return;
         }
         boolean inverted = !state.getValue(RelayBlock.INVERTED);
         level.setBlock(relay.pos(), state.setValue(RelayBlock.INVERTED, inverted), Block.UPDATE_ALL);
@@ -328,13 +391,17 @@ public final class EdithRedstone {
     }
 
     /**
-     * Schakelt één relais (als index >= 0) of alles wat bij de naam/groep past.
+     * Schakelt één relais (als index >= 0) of alles wat bij de naam/tag past. Alleen je eigen relais.
      * Elke schakeling kost een beetje energie.
      */
     private static void switchRelays(ServerPlayer player, ItemStack glasses, EdithRelays data, RelayActionPayload payload) {
-        List<Relay> targets = payload.index() >= 0
+        List<Relay> found = payload.index() >= 0
                 ? (data.get(payload.index()) == null ? List.<Relay>of() : List.of(data.get(payload.index())))
                 : payload.index() == RelayActionPayload.TAG_ONLY ? data.inTag(payload.name()) : data.find(payload.name());
+        List<Relay> targets = keepOwn(player, found);
+        if (targets.isEmpty() && !found.isEmpty()) {
+            return; // alleen relais van een ander: dat zei keepOwn al
+        }
         if (targets.isEmpty()) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_unknown", payload.name()),
                     EdithMessagePayload.Level.WARNING);
@@ -371,7 +438,7 @@ public final class EdithRedstone {
 
     /**
      * Zonder bril: alleen het ene relais waar je naast staat (de knop "test" in zijn scherm), en gratis.
-     * Niet in de basis van een ander.
+     * Alleen je eigen relais.
      */
     private static void switchNearby(ServerPlayer player, EdithRelays data, RelayActionPayload payload) {
         Relay relay = data.get(payload.index());
@@ -383,8 +450,7 @@ public final class EdithRedstone {
             tell(player, Component.translatable("edith.starktech.msg.relay_too_far"), EdithMessagePayload.Level.WARNING);
             return;
         }
-        ServerLevel level = server.getLevel(relay.dimension());
-        if (level != null && !protectedFrom(player, level, relay.pos())) {
+        if (!keepOwn(player, List.of(relay)).isEmpty()) {
             apply(server, relay, payload.relayOp());
         }
     }
@@ -517,22 +583,6 @@ public final class EdithRedstone {
     private static boolean nearby(ServerPlayer player, Relay relay) {
         return player.level().dimension() == relay.dimension()
                 && player.distanceToSqr(relay.pos().getCenter()) <= REACH * REACH;
-    }
-
-    /**
-     * Staat dit op een plek in de basis van iemand anders (het gebied van een beveiligingskern waar jij
-     * geen eigenaar of vriend bent)? Dan mag je het niet omkeren of zonder bril schakelen. Creative mag alles.
-     */
-    private static boolean protectedFrom(ServerPlayer player, ServerLevel level, BlockPos pos) {
-        if (player.isCreative()) {
-            return false;
-        }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
-        if (core == null || core.ownerId() == null || SecurityCores.isFriend(level, core, player)) {
-            return false;
-        }
-        tell(player, Component.translatable("edith.starktech.msg.relay_protected", core.ownerName()), EdithMessagePayload.Level.WARNING);
-        return true;
     }
 
     /**
