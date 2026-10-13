@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 218 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 219 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2140,7 +2140,7 @@ zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI 
       (`73_laser_flat`, `74_laser_flat_angle`, `75_laser_screen`: een cyaan poort van drie hoog, omgekeerd
       en liggend). In de showcase: "Rayshield: laser settings".
 
-### 17. Een keycardlezer hernoemen (13 oktober)
+### 17. Een keycardlezer of codepaneel hernoemen (13 oktober)
 
 Jouw wens: "rename keycard reader door **sneak rechts te klikken zonder item in hand**, dit kan **enkel de
 owner doen of trusted players in zone**".
@@ -2165,8 +2165,8 @@ owner doen of trusted players in zone**".
       de kern. Het is precies de regel van de laserzender, die nu op één plek staat (`security/BaseTrust`,
       de laserzender gebruikt hem ook). Een lezer van vóór vandaag heeft nog geen eigenaar: die wordt van
       wie er als eerste op sneak-klikt, behalve in iemands basis (dan alleen de vertrouwde spelers daar).
-      Alleen de keycardlezer, zoals je vroeg: een codepaneel opent bij een klik (ook met sneak) gewoon zijn
-      toetsen; dat hernoem je in Devices. De netwerkversie is nu 19 (twee nieuwe berichten).
+      Eerst alleen de keycardlezer, zoals je vroeg; het codepaneel kwam in stap 3. De netwerkversie is nu 19
+      (twee nieuwe berichten).
 - [x] **Tests en beelden.** Twee nieuwe tests (`LogicGameTests`): de eigenaar hernoemt (de naam wordt netjes,
       leeg en van ver weg niet), een vreemde niet, en een lezer zonder eigenaar wordt van wie er als eerste
       op sneak-klikt (gewoon klikken niet); en in een zone: een vertrouwde speler wel (met een regel in het
@@ -2174,6 +2174,17 @@ owner doen of trusted players in zone**".
       rode van hoofdstuk 14 stap 2. Screenshots: `-Ponly=devrename` (`dr4_reader_name_screen`,
       `dr5_reader_name_typed`, `dr6_reader_renamed`). In de showcase: in "Server racks and Logic", na het
       codepaneel (het scherm met "Lab entrance" getypt, dan Esc, zodat het diagram blijft werken).
+- [x] **3. Ook het codepaneel** (13 oktober: "zorg ook dat dit bij code panels werkt"). Sluipen + rechtsklik
+      met een lege hand op een codepaneel opent hetzelfde naamscherm, met de titel "Code Panel" en
+      `when codepanel("Front door"):` onder het vakje. Dezelfde regel voor wie mag (wie het neerzette, of
+      vertrouwd in de basis), en een paneel onthoudt nu ook wie het neerzette. Gewoon klikken opent de
+      toetsen, zoals altijd. **Mijn invulling**: mag je het paneel niet hernoemen, dan krijg je bij sneak +
+      klik gewoon de toetsen (geen "belongs to ..." zoals bij de lezer): iedereen moet een code kunnen typen,
+      ook als hij sluipt. De meldingen "Renamed to ..." en "The name cannot be empty." gelden nu voor allebei.
+      Een nieuwe test (`panel_rename_by_sneak_click`): de eigenaar krijgt het naamscherm en hernoemt, een
+      vreemde niet (en neemt niets over met sneak + klik), een paneel zonder eigenaar wordt van wie er als
+      eerste op sneak-klikt (gewoon klikken niet). 219 tests: 216 groen, de 3 rode van hoofdstuk 14 stap 2.
+      Screenshot: `dr7_panel_name_screen` (`-Ponly=devrename`).
 
 ---
 
@@ -2241,9 +2252,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
-- [ ] **Het naamscherm van de keycardlezer (13 oktober)**: gezien op screenshots (`dr4`-`dr6`) en in de
-      showcase. Probeer zelf of sluipen + rechtsklik met een lege hand fijn werkt, ook met een vriend in je
-      Access en met een vreemde (die hoort "This keycard reader belongs to ...").
+- [ ] **Het naamscherm van de keycardlezer en het codepaneel (13 oktober)**: gezien op screenshots
+      (`dr4`-`dr7`) en in de showcase. Probeer zelf of sluipen + rechtsklik met een lege hand fijn werkt, ook
+      met een vriend in je Access en met een vreemde (die hoort bij een lezer "This keycard reader belongs to
+      ...", en krijgt bij een paneel gewoon de toetsen).
 
 ---
 

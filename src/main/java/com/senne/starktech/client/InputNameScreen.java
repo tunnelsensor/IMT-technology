@@ -17,8 +17,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het naamscherm van een keycardlezer (13 oktober). Openen: sneak + rechtsklik met een lege hand, als jij hem
- * neerzette of als je in deze basis vertrouwd bent (de server kijkt dat na, zie logic/InputDevices).
+ * Het naamscherm van een keycardlezer of codepaneel (13 oktober). Openen: sneak + rechtsklik met een lege hand,
+ * als jij hem neerzette of als je in deze basis vertrouwd bent (de server kijkt dat na, zie logic/InputDevices).
+ * Bij een codepaneel staat er {@code when codepanel("...")} onder het vakje.
  * <pre>
  *   Keycard Reader                    Placed by Senne
  *   Name
@@ -51,10 +52,17 @@ public class InputNameScreen extends Screen {
     private int top;
 
     public InputNameScreen(BlockPos pos, String name, String owner) {
-        super(Component.translatable("block.starktech.keycard_reader"));
+        super(nameOf(pos));
         this.pos = pos;
         this.oldName = name;
         this.owner = owner;
+    }
+
+    /** De titel: "Keycard Reader" of "Code Panel", zoals het blok heet. */
+    private static Component nameOf(BlockPos pos) {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level == null ? Component.translatable("block.starktech.keycard_reader")
+                : mc.level.getBlockState(pos).getBlock().getName();
     }
 
     @Override
@@ -164,7 +172,7 @@ public class InputNameScreen extends Screen {
             return;
         }
         super.render(g, mouseX, mouseY, a);
-        g.drawString(font, state.getBlock().getName(), left + MARGIN, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
+        g.drawString(font, title, left + MARGIN, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         // Rechtsboven: wie hem neerzette.
         Component placedBy = owner.isEmpty()
                 ? Component.translatable("screen.starktech.input_name.no_owner")
@@ -185,7 +193,7 @@ public class InputNameScreen extends Screen {
                 .append(Component.literal("):").withColor(PLAIN));
         g.drawString(font, code, left + MARGIN, top + 72, HudStyle.argb(255, PLAIN), false);
 
-        // Een andere naam: dan ook in je diagrammen (die zoeken de lezer op zijn naam).
+        // Een andere naam: dan ook in je diagrammen (die zoeken de lezer of het paneel op zijn naam).
         String now = typed();
         if (!oldName.isEmpty() && !now.isEmpty() && !now.equalsIgnoreCase(oldName)) {
             g.drawString(font, Component.translatable("screen.starktech.input_name.changed"), left + MARGIN, top + 84,

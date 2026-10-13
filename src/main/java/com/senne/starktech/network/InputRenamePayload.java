@@ -9,10 +9,11 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Bericht van speler naar server: "geef deze keycardlezer deze naam" (Save in het naamscherm, 13 oktober).
+ * Bericht van speler naar server: "geef deze keycardlezer (of dit codepaneel) deze naam" (Save in het
+ * naamscherm, 13 oktober).
  * De server kijkt opnieuw of je dat mag en maakt de naam netjes (zie logic/InputDevices).
  *
- * @param pos  welke lezer
+ * @param pos  welke lezer of welk paneel
  * @param name de nieuwe naam, zoals je hem typte
  */
 public record InputRenamePayload(BlockPos pos, String name) implements CustomPacketPayload {

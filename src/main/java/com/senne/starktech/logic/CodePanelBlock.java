@@ -26,6 +26,9 @@ import net.minecraft.world.phys.BlockHitResult;
  *         deny()
  * </pre>
  * Zo kan een hacker die het paneel openbreekt de code er niet uit halen.
+ *
+ * Een andere naam geven: sneak + rechtsklik met een lege hand (13 oktober), voor wie het neerzette of wie
+ * vertrouwd is in de basis (zie InputDevices). Of op de desktop, in de app Devices of Logic.
  */
 public class CodePanelBlock extends InputDeviceBlock {
     public static final MapCodec<CodePanelBlock> CODEC = simpleCodec(CodePanelBlock::new);
@@ -49,11 +52,17 @@ public class CodePanelBlock extends InputDeviceBlock {
         return "Panel";
     }
 
-    /** Rechtsklik: de toetsen openen (op jouw scherm). */
+    /**
+     * Rechtsklik: de toetsen openen (op jouw scherm). Sneak + rechtsklik met een lege hand (13 oktober): het
+     * naamscherm, als jij het paneel neerzette of vertrouwd bent in de basis (zie InputDevices). Mag je dat
+     * niet, dan krijg je gewoon de toetsen: iedereen moet een code kunnen typen, ook als hij sluipt.
+     */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device) {
-            ModNetwork.sendTo(serverPlayer, new CodePanelPayload(pos, device.name()));
+            if (!player.isSecondaryUseActive() || !InputDevices.tryOpen(serverPlayer, pos)) {
+                ModNetwork.sendTo(serverPlayer, new CodePanelPayload(pos, device.name()));
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

@@ -15,21 +15,24 @@ import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Een keycardlezer hernoemen in de wereld, aan de kant van de server (13 oktober): het naamscherm openen, en
- * de naam die je erin typt op de lezer zetten. Het scherm zelf staat in client/InputNameScreen.
+ * Een keycardlezer of codepaneel hernoemen in de wereld, aan de kant van de server (13 oktober): het naamscherm
+ * openen, en de naam die je erin typt op het apparaat zetten. Het scherm zelf staat in client/InputNameScreen.
  *
- * Jouw wens: "rename keycard reader door sneak rechts te klikken zonder item in hand, dit kan enkel de owner
- * doen of trusted players in zone".
+ * Jouw wensen: "rename keycard reader door sneak rechts te klikken zonder item in hand, dit kan enkel de owner
+ * doen of trusted players in zone", en daarna "zorg ook dat dit bij code panels werkt".
  *
  * Wie mag (zie {@link #mayRename}; dezelfde regel als bij de laserzender, security/BaseTrust)?
  * <ul>
- *   <li>Wie de lezer neerzette.</li>
+ *   <li>Wie de lezer of het paneel neerzette.</li>
  *   <li>Wie vertrouwd is in de basis waar hij hangt: de eigenaar van de beveiligingskern, zijn team en zijn
  *       vertrouwde spelers (Access), in de zone en in de rest van het gebied van de kern.</li>
- *   <li>Een lezer van vóór 13 oktober heeft nog geen eigenaar: die wordt van wie hem als eerste opent, behalve
- *       in iemands basis (dan alleen de vertrouwde spelers daar).</li>
+ *   <li>Een lezer of paneel van vóór 13 oktober heeft nog geen eigenaar: die wordt van wie hem als eerste opent,
+ *       behalve in iemands basis (dan alleen de vertrouwde spelers daar).</li>
  * </ul>
- * Op de desktop (de apps Devices en Logic) hernoemt de eigenaar van de kern hem ook nog, zoals altijd.
+ * Mag je het niet, dan zegt een lezer van wie hij is ({@link #open}); een codepaneel opent dan gewoon zijn
+ * toetsen ({@link #tryOpen}), want daar moet iedereen een code op kunnen typen, ook als hij sluipt.
+ *
+ * Op de desktop (de apps Devices en Logic) hernoemt de eigenaar van de kern ze ook nog, zoals altijd.
  */
 public final class InputDevices {
     private InputDevices() {}
@@ -37,22 +40,36 @@ public final class InputDevices {
     /** Zo dichtbij moet je staan (blokken), net als bij de laserzender. */
     private static final double REACH = 6.0;
 
-    /** Sneak + rechtsklik op de lezer: mag je hem hernoemen, dan opent jouw spel het naamscherm. */
+    /**
+     * Sneak + rechtsklik op een keycardlezer: mag je hem hernoemen, dan opent jouw spel het naamscherm; anders
+     * hoor je van wie hij is.
+     */
     public static void open(ServerPlayer player, BlockPos pos) {
+        if (tryOpen(player, pos)) {
+            return;
+        }
         InputDeviceBlockEntity device = device(player, pos);
-        if (device == null) {
-            return;
-        }
-        if (!mayRename(player, device)) {
+        if (device != null) {
             player.displayClientMessage(refusal(player.serverLevel(), device), true);
-            return;
         }
-        ModNetwork.sendTo(player, new InputNameOpenPayload(pos, device.name(), device.ownerName()));
     }
 
     /**
-     * Save in het naamscherm: de nieuwe naam op de lezer zetten. De server kijkt opnieuw of je mag (iemand kan
-     * je net uit Access gehaald hebben). Hangt de lezer in het gebied van een kern, dan komt het in zijn
+     * Mag deze speler het apparaat hernoemen, dan opent jouw spel het naamscherm en geeft dit true. Anders false,
+     * zonder melding (een codepaneel opent dan gewoon zijn toetsen).
+     */
+    public static boolean tryOpen(ServerPlayer player, BlockPos pos) {
+        InputDeviceBlockEntity device = device(player, pos);
+        if (device == null || !mayRename(player, device)) {
+            return false;
+        }
+        ModNetwork.sendTo(player, new InputNameOpenPayload(pos, device.name(), device.ownerName()));
+        return true;
+    }
+
+    /**
+     * Save in het naamscherm: de nieuwe naam op de lezer of het paneel zetten. De server kijkt opnieuw of je mag
+     * (iemand kan je net uit Access gehaald hebben). Hangt hij in het gebied van een kern, dan komt het in zijn
      * logboek, net als een Rename in de app Devices.
      */
     public static void handleRename(ServerPlayer player, InputRenamePayload payload) {
@@ -62,7 +79,7 @@ public final class InputDevices {
         }
         String clean = InputDeviceBlockEntity.cleanName(payload.name());
         if (clean.isEmpty()) {
-            player.displayClientMessage(Component.translatable("logic.starktech.reader.name_empty")
+            player.displayClientMessage(Component.translatable("logic.starktech.input.name_empty")
                     .withStyle(ChatFormatting.RED), true);
             return;
         }
@@ -73,13 +90,13 @@ public final class InputDevices {
             core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed \"" + old + "\" to \""
                     + clean + "\"");
         }
-        player.displayClientMessage(Component.translatable("logic.starktech.reader.renamed", clean)
+        player.displayClientMessage(Component.translatable("logic.starktech.input.renamed", clean)
                 .withStyle(ChatFormatting.GREEN), true);
     }
 
     /**
-     * Mag deze speler de lezer hernoemen? Is de lezer nog van niemand en hangt hij niet in iemands basis, dan
-     * wordt hij meteen van deze speler (zie de uitleg bovenaan).
+     * Mag deze speler de lezer (of het paneel) hernoemen? Is hij nog van niemand en hangt hij niet in iemands
+     * basis, dan wordt hij meteen van deze speler (zie de uitleg bovenaan).
      */
     public static boolean mayRename(ServerPlayer player, InputDeviceBlockEntity device) {
         return BaseTrust.mayEdit(player, device);
@@ -93,7 +110,7 @@ public final class InputDevices {
                 : Component.translatable("logic.starktech.reader.not_yours", owner);
     }
 
-    /** De lezer waar deze speler bij kan, of null (er hangt daar geen lezer, of hij staat te ver weg). */
+    /** De lezer of het paneel waar deze speler bij kan, of null (er hangt daar niets, of het is te ver weg). */
     private static @Nullable InputDeviceBlockEntity device(ServerPlayer player, BlockPos pos) {
         if (player.distanceToSqr(pos.getCenter()) > REACH * REACH
                 || !(player.serverLevel().getBlockEntity(pos) instanceof InputDeviceBlockEntity device)) {

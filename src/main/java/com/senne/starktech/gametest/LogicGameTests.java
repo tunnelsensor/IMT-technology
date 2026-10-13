@@ -545,6 +545,49 @@ public final class LogicGameTests {
     }
 
     /**
+     * 13 oktober: "zorg ook dat dit bij code panels werkt". Hetzelfde als bij de lezer: wie het paneel neerzette,
+     * opent met sneak + klik het naamscherm en hernoemt het; een vreemde niet (die krijgt dan gewoon de toetsen,
+     * dus zijn sneak + klik neemt niets over). Een paneel zonder eigenaar wordt van wie er als eerste op
+     * sneak-klikt, gewoon klikken (de toetsen) doet dat niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "reader_rename")
+    public static void panel_rename_by_sneak_click(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 1), "panel-owner");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 1), "panel-stranger");
+        BlockPos wall = new BlockPos(3, 3, 4);
+        helper.setBlock(wall, Blocks.STONE);
+        StarkTechGameTests.withReach(4, () -> {
+            check(ZoneGameTests.place(helper, owner, ModItems.CODE_PANEL.get(), wall, Direction.NORTH), "Neerzetten lukte niet");
+            BlockPos panel = wall.north();
+            BlockPos abs = helper.absolutePos(panel);
+            check(helper.getBlockState(panel).is(ModBlocks.CODE_PANEL.get()), "Er hangt geen codepaneel");
+            check(owner.getUUID().equals(input(helper, panel).owner()), "Wie het neerzette, is niet de eigenaar");
+            String first = input(helper, panel).name();
+
+            // De eigenaar krijgt het naamscherm, een vreemde niet (en die kan het ook niet hernoemen).
+            check(InputDevices.tryOpen(owner, abs), "De eigenaar krijgt het naamscherm van zijn paneel niet");
+            check(!InputDevices.tryOpen(stranger, abs), "Een vreemde krijgt het naamscherm van het paneel");
+            click(helper, stranger, panel, true);
+            renameInWorld(helper, stranger, panel, "Hacked");
+            check(input(helper, panel).name().equals(first), "Een vreemde kon het paneel hernoemen");
+            check(owner.getUUID().equals(input(helper, panel).owner()), "Een vreemde nam het paneel over");
+            renameInWorld(helper, owner, panel, " Front door ");
+            check(input(helper, panel).name().equals("Front door"), "Hernoemen werkte niet: " + input(helper, panel).name());
+
+            // Een paneel zonder eigenaar: gewoon klikken neemt het niet over, sneak + klik wel.
+            BlockPos old = new BlockPos(1, 3, 3);
+            helper.setBlock(old, ModBlocks.CODE_PANEL.get());
+            click(helper, stranger, old, false);
+            check(input(helper, old).owner() == null, "Gewoon klikken (de toetsen) maakte de klikker eigenaar");
+            click(helper, stranger, old, true);
+            check(stranger.getUUID().equals(input(helper, old).owner()), "Wie als eerste sneak-klikte, werd niet de eigenaar");
+            check(!InputDevices.tryOpen(owner, helper.absolutePos(old)), "Daarna kreeg een ander nog het naamscherm");
+            return null;
+        });
+        helper.succeed();
+    }
+
+    /**
      * In een zone: de vertrouwde spelers van de kern hernoemen een lezer (ook een die een ander neerzette), een
      * vreemde niet, en het logboek van de kern zegt wie het deed. Een lezer zonder eigenaar in iemands basis kan
      * een vreemde niet overnemen.

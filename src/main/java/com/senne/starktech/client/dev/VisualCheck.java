@@ -1687,6 +1687,11 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "dr6_reader_renamed");
+            // En een codepaneel ("zorg ook dat dit bij code panels werkt"): hetzelfde scherm, met when codepanel(...).
+            BlockPos panel = wall.offset(0, 0, 1);
+            t.onServer(0, player -> com.senne.starktech.logic.InputDevices.open(player, panel));
+            t.shot(15, "dr7_panel_name_screen");
+            t.close(5);
         }
 
         // --- Het lab van de showcase (hoofdstuk 8): de deur met keycard, het paneel met de lamp.

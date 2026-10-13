@@ -85,7 +85,7 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
 
     /**
      * Een naam uit een aambeeld, of anders "Reader 2" (het eerste vrije nummer in dit netwerk). En wie hem
-     * neerzet, is zijn eigenaar (die mag een keycardlezer met sneak + rechtsklik hernoemen, zie InputDevices).
+     * neerzet, is zijn eigenaar (die mag hem met sneak + rechtsklik hernoemen, zie InputDevices).
      */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {

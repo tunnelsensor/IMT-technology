@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Wie mag een apparaat in een basis instellen? Eén regel voor de laserzender (zijn instelscherm) en de
- * keycardlezer (zijn naam), allebei van 13 oktober: "enkel de persoon die het heeft geplaatst (of trusted
+ * keycardlezer en het codepaneel (hun naam), allemaal van 13 oktober: "enkel de persoon die het heeft geplaatst (of trusted
  * players in zone)" en "dit kan enkel de owner doen of trusted players in zone".
  * <ul>
  *   <li>Wie het apparaat neerzette.</li>
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public final class BaseTrust {
     private BaseTrust() {}
 
-    /** Een apparaat dat onthoudt wie het neerzette (de blok-entiteit van de laserzender of de keycardlezer). */
+    /** Een apparaat dat onthoudt wie het neerzette (de blok-entiteit van de laserzender, lezer of het paneel). */
     public interface Placed {
         /** Wie het neerzette, of null (van vóór 13 oktober, of uit een gebouw). */
         @Nullable UUID owner();

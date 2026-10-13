@@ -19,11 +19,11 @@ import org.jetbrains.annotations.Nullable;
  * naam noem je hem in je diagram: {@code when keycard("Lab door"):}.
  *
  * De naam komt uit een aambeeld, of krijgt hij bij het neerzetten ("Reader 2"); je verandert hem in
- * de app Logic of Devices op de desktop, en een keycardlezer ook met sneak + rechtsklik (13 oktober, zie
- * InputDevices). Breek je hem af, dan houdt het item de naam (zoals een camera).
+ * de app Logic of Devices op de desktop, of met sneak + rechtsklik (13 oktober, zie InputDevices). Breek je
+ * hem af, dan houdt het item de naam (zoals een camera).
  *
- * Wie hem neerzette (13 oktober) bepaalt mee wie hem zo mag hernoemen (zie security/BaseTrust). Een lezer van
- * vóór die dag heeft nog geen eigenaar.
+ * Wie hem neerzette (13 oktober) bepaalt mee wie hem zo mag hernoemen (zie security/BaseTrust). Een lezer of
+ * paneel van vóór die dag heeft nog geen eigenaar.
  */
 public class InputDeviceBlockEntity extends BlockEntity implements BaseTrust.Placed {
     /** Zo lang mag de naam hooguit zijn. */
