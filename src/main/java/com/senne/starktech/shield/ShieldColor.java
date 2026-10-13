@@ -5,7 +5,7 @@ import net.minecraft.util.StringRepresentable;
 /**
  * De kleur van een rayshield (het energieveld tussen twee zenders).
  *
- * Rechtsklik op een zender om door de kleuren te bladeren; de wand neemt de kleur over.
+ * De kleur kies je in het scherm van de zender (sneak + rechtsklik); de wand neemt hem over.
  * Elke kleur heeft zijn eigen (bewegende) texture: zie assets/.../block/laser_wall_*.png.
  */
 public enum ShieldColor implements StringRepresentable {
@@ -29,7 +29,7 @@ public enum ShieldColor implements StringRepresentable {
         return rgb;
     }
 
-    /** De volgende kleur in de rij (rechtsklikken bladert er zo doorheen). */
+    /** De volgende kleur in de rij (zo bladert de holotafel erdoorheen). */
     public ShieldColor next() {
         return values()[(ordinal() + 1) % values().length];
     }

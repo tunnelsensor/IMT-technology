@@ -2143,6 +2143,16 @@ public final class StarkTechGameTests {
             if (coreEntity.ip().isEmpty() || coreEntity.hasPassword() || !coreEntity.hostname().equals("stark-sec-core")) {
                 throw new GameTestAssertException("De kern van de toren heeft geen IP, of al een wachtwoord");
             }
+            // De kern van een andere test (zoals de toren van de batch hiervoor, die er vlak naast kan staan)
+            // die dichter bij een camera staat dan de kern van deze toren, pikt die camera in. Welke batch
+            // hiervoor draait, hangt af van de namen van alle batches; die kern ruimen we dus eerst op.
+            for (BlockPos camera : cameras) {
+                var nearest = com.senne.starktech.security.SecurityCores.coreAt(level, helper.absolutePos(camera));
+                if (nearest != null && nearest != coreEntity) {
+                    level.removeBlock(nearest.getBlockPos(), false);
+                }
+            }
+            com.senne.starktech.security.SecurityDevices.forget(level, coreEntity);
             java.util.Set<String> names = new java.util.HashSet<>();
             for (var tag : com.senne.starktech.security.SecurityDevices.cameras(level, coreEntity)) {
                 names.add(((net.minecraft.nbt.CompoundTag) tag).getString("name"));

@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -35,12 +36,15 @@ public class LaserWallBlock extends Block {
     public static final DirectionProperty AXIS_FACING = BlockStateProperties.FACING;
     /** Welke kleur het veld heeft; de zender bepaalt hem. */
     public static final EnumProperty<ShieldColor> COLOR = EnumProperty.create("color", ShieldColor.class);
+    /** Een kwartslag gedraaid (liggend in plaats van staand); de zender bepaalt het (zie LaserEmitterBlock.TURNED). */
+    public static final BooleanProperty TURNED = LaserEmitterBlock.TURNED;
 
     public LaserWallBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(AXIS_FACING, net.minecraft.core.Direction.NORTH)
-                .setValue(COLOR, ShieldColor.BLUE));
+                .setValue(COLOR, ShieldColor.BLUE)
+                .setValue(TURNED, false));
     }
 
     @Override
@@ -50,7 +54,7 @@ public class LaserWallBlock extends Block {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(AXIS_FACING, COLOR);
+        builder.add(AXIS_FACING, COLOR, TURNED);
     }
 
     /**
@@ -58,17 +62,22 @@ public class LaserWallBlock extends Block {
      * De platen liggen IN de lijn van zender naar zender, zodat ze samen één doorlopende wand
      * vormen (---) en niet als losse plaatjes naast elkaar staan (| | |).
      * Loopt de wand van oost naar west (as X), dan is de plaat dun in de noord-zuidrichting.
+     *
+     * Gedraaid (TURNED, 13 oktober) ligt een wand die opzij loopt plat, als een vloertje (FLAT): je kunt
+     * er dan niet doorheen springen of vallen. Een wand die omhoog loopt, staat dan noord-zuid.
      */
     private static final VoxelShape ALONG_X = Block.box(0, 0, 7, 16, 16, 9);
     private static final VoxelShape ALONG_Z = Block.box(7, 0, 0, 9, 16, 16);
+    private static final VoxelShape FLAT = Block.box(0, 7, 0, 16, 9, 16);
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        boolean turned = state.getValue(TURNED);
         return switch (state.getValue(AXIS_FACING).getAxis()) {
-            case X -> ALONG_X;
-            case Z -> ALONG_Z;
-            // Een staande wand (zenders in vloer en plafond): ook een plaat van oost naar west.
-            case Y -> ALONG_X;
+            case X -> turned ? FLAT : ALONG_X;
+            case Z -> turned ? FLAT : ALONG_Z;
+            // Een staande wand (zenders in vloer en plafond): een plaat van oost naar west, gedraaid noord-zuid.
+            case Y -> turned ? ALONG_Z : ALONG_X;
         };
     }
 
@@ -80,7 +89,8 @@ public class LaserWallBlock extends Block {
     /** Twee velden die tegen elkaar aan liggen hoeven hun raakvlak niet te tekenen. */
     @Override
     protected boolean skipRendering(BlockState state, BlockState neighbour, net.minecraft.core.Direction side) {
-        return neighbour.is(this) && neighbour.getValue(AXIS_FACING) == state.getValue(AXIS_FACING);
+        return neighbour.is(this) && neighbour.getValue(AXIS_FACING) == state.getValue(AXIS_FACING)
+                && neighbour.getValue(TURNED) == state.getValue(TURNED);
     }
 
     /** Wie erin staat, krijgt schade (behalve items en dingen die niet leven). */

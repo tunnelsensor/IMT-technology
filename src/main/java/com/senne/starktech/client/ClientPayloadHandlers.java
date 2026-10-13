@@ -183,6 +183,14 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Het instelscherm van een laserzender openen (kleur, omkeren, liggend of staand). */
+    public static void onLaserOpen(com.senne.starktech.network.LaserOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new com.senne.starktech.client.shield.LaserEmitterScreen(payload.pos(), payload.owner()));
+        }
+    }
+
     /** De server zet je stuwraketten uit (energie op, harnas uit...). */
     public static void onSuitFlight(SuitFlightPayload payload, IPayloadContext context) {
         if (!payload.engaged()) {

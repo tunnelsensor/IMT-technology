@@ -297,8 +297,22 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   met een zachte, wolkerige gloed waar af en toe op een willekeurige plek een klein kronkeltje
   energie oplicht, en waar niemand door komt. Het schuift uit de lens naar voren tot het eerste blok (of een tweede zender die
   terugkijkt), en bij het uitgaan weer terug de zender in, net als de ray shields uit Star Wars.
-  Eén zender is genoeg. **Rechtsklik** bladert door de kleuren: blauw, cyaan, groen, geel, rood,
-  paars. Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
+  Eén zender is genoeg. **Gewoon rechtsklikken doet niets**, zodat je met een kabelrol makkelijk
+  een kabel tegen hem aan legt. **Sluipen + rechtsklik met een lege hand** opent zijn instelscherm,
+  maar alleen voor wie hem neerzette, of wie vertrouwd is in de basis waar hij staat (de eigenaar
+  van de beveiligingskern, zijn team en zijn vertrouwde spelers). Een ander hoort "This laser
+  emitter belongs to ...". In het scherm:
+  - **Color**: blauw, cyaan, groen, geel, rood of paars.
+  - **Signal**: *Normal* (redstone aan = laser aan) of *Inverted* (redstone aan = laser uit; zonder
+    redstone staat hij dan aan, en kost hij dus ook altijd stroom).
+  - **Wall**: *Vertical* (staand, zoals altijd) of *Horizontal* (plat, als een vloertje: zet er
+    drie op elkaar en je hebt drie laserstralen boven elkaar). Kijkt de zender omhoog of omlaag,
+    dan staat de wand altijd rechtop en kies je *east-west* of *north-south*.
+
+  Wat je kiest, geldt meteen voor de **hele laserpoort** (alle zenders die eraan vastzitten), en
+  een zender die je ertegen zet, neemt die instellingen over. Een zender van vóór 13 oktober wordt
+  van wie hem als eerste opent; in iemands basis, de Stark Tower of de Hydra-bunker kan dat niet.
+  Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
   staat; om aan te gaan moet het net stroom hebben voor minstens 5 seconden). Zonder stroom
   blijft hij gewoon uit: je hoort één zacht klikje als je de redstone aanzet, en daarna wacht
   hij stil tot er weer stroom is (dan gaat hij vanzelf aan). Wil je hem met E.D.I.T.H.

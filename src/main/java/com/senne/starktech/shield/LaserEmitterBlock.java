@@ -10,6 +10,7 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
@@ -20,8 +21,10 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -38,7 +41,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * Een volledig blok met een lens aan de voorkant. Aan en uit gaat met redstone: een hendel,
  * een drukplaat, of een E.D.I.T.H.-relais ernaast (dan kan E.D.I.T.H. hem toch schakelen).
- * Rechtsklikken wisselt de kleur.
+ *
+ * Gewoon rechtsklikken doet niets (13 oktober: zo leg je makkelijk een kabel tegen hem aan). Sneak +
+ * rechtsklik met een lege hand opent zijn instelscherm, maar alleen voor wie hem neerzette of wie in deze
+ * basis vertrouwd is (zie LaserEmitters). Daarin kies je de kleur, of hij omgekeerd werkt (redstone aan =
+ * laser uit) en of de wand staat of ligt. Dat geldt voor de hele laserpoort.
  *
  * Hij heeft STROOM nodig: een Stark-kabel naar een zonnepaneel of warmtegenerator (of er
  * direct tegenaan). Zolang de wand aan staat, betaalt hij elke seconde LASER_UPKEEP per tick.
@@ -52,20 +59,30 @@ import org.jetbrains.annotations.Nullable;
  * redstone op één ervan zet ze allemaal aan, en de stroom van een kabel loopt door de hele rij.
  * Zo bouw je een wand van 3 x 3 met één hendel en één kabel.
  */
-public class LaserEmitterBlock extends Block implements PowerConnectable {
+public class LaserEmitterBlock extends Block implements PowerConnectable, EntityBlock {
     public static final MapCodec<LaserEmitterBlock> CODEC = simpleCodec(LaserEmitterBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    /** De kleur van het veld dat deze zender maakt. Rechtsklikken bladert erdoorheen. */
+    /** De kleur van het veld dat deze zender maakt. Kies je in zijn scherm. */
     public static final EnumProperty<ShieldColor> COLOR = EnumProperty.create("color", ShieldColor.class);
+    /** Omgekeerd: redstone aan = laser uit, en zonder redstone staat hij aan (13 oktober). */
+    public static final BooleanProperty INVERTED = BlockStateProperties.INVERTED;
+    /**
+     * Het veld een kwartslag gedraaid (13 oktober: "kiezen of de laser horizontaal is of verticaal").
+     * Een wand die opzij loopt, ligt dan plat (zoals een vloer) in plaats van te staan; een wand die
+     * omhoog loopt (zenders in vloer en plafond), staat dan noord-zuid in plaats van oost-west.
+     */
+    public static final BooleanProperty TURNED = BooleanProperty.create("turned");
 
     public LaserEmitterBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(POWERED, false)
-                .setValue(COLOR, ShieldColor.BLUE));
+                .setValue(COLOR, ShieldColor.BLUE)
+                .setValue(INVERTED, false)
+                .setValue(TURNED, false));
     }
 
     @Override
@@ -75,13 +92,30 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED, COLOR);
+        builder.add(FACING, POWERED, COLOR, INVERTED, TURNED);
     }
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
         // Hij kijkt de kant op waar je hem tegenaan zet (dus de wand loopt van je af).
-        return defaultBlockState().setValue(FACING, context.getNearestLookingDirection().getOpposite());
+        BlockState placed = defaultBlockState().setValue(FACING, context.getNearestLookingDirection().getOpposite());
+        // Zet je hem tegen een laserpoort aan, dan hoort hij erbij: dan neemt hij haar kleur, omkeren en
+        // liggend/staand over (anders ging een omgekeerde poort half aan en half uit).
+        for (Direction direction : Direction.values()) {
+            BlockState next = context.getLevel().getBlockState(context.getClickedPos().relative(direction));
+            if (next.is(this)) {
+                return placed.setValue(COLOR, next.getValue(COLOR))
+                        .setValue(INVERTED, next.getValue(INVERTED))
+                        .setValue(TURNED, next.getValue(TURNED));
+            }
+        }
+        return placed;
+    }
+
+    /** Wie hem neerzet, is de eigenaar (zie LaserEmitterBlockEntity). */
+    @Override
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new LaserEmitterBlockEntity(pos, state);
     }
 
     @Override
@@ -123,11 +157,12 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     }
 
     /**
-     * Moet deze poort aan? Er moet redstone op staan, en de beveiligingskern van dit gebied (als
-     * die er is) moet de lasers aan hebben staan (de schakelaar "Lasers" op de desktop).
+     * Moet deze poort aan? Er moet redstone op staan (of juist niet, als hij omgekeerd is), en de
+     * beveiligingskern van dit gebied (als die er is) moet de lasers aan hebben staan (de schakelaar
+     * "Lasers" op de desktop).
      */
-    private static boolean wanted(Level level, BlockPos pos) {
-        if (!groupHasSignal(level, pos)) {
+    private static boolean wanted(Level level, BlockPos pos, BlockState state) {
+        if (groupHasSignal(level, pos) == state.getValue(INVERTED)) {
             return false;
         }
         var core = com.senne.starktech.security.SecurityCores.coreAt(level, pos);
@@ -157,10 +192,13 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         }
     }
 
-    /** Net neergezet: als er al redstone op staat, meteen aan. */
+    /** Net neergezet: wie dat deed, is de eigenaar. En als er al redstone op staat, meteen aan. */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
+        if (placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof LaserEmitterBlockEntity emitter) {
+            emitter.setOwner(player);
+        }
         if (level instanceof ServerLevel serverLevel) {
             update(serverLevel, pos, state, false);
         }
@@ -187,10 +225,11 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
      * blijft hij gewoon uit en kijkt hij elke twee seconden stil of er weer stroom is.
      *
      * @param retry true als dit zo'n stille herhaling is. Alleen als je de redstone net aanzet,
-     *              klikt de zender waar de redstone op zit één keer ("geen stroom").
+     *              klikt de zender waar de redstone op zit één keer ("geen stroom"). Bij een
+     *              omgekeerde poort klikt een zender zonder redstone (die wil dan juist aan).
      */
     private void update(ServerLevel level, BlockPos pos, BlockState state, boolean retry) {
-        boolean wanted = wanted(level, pos);
+        boolean wanted = wanted(level, pos, state);
         boolean on = state.getValue(POWERED);
         if (!wanted && on) {
             setActive(level, pos, state, false);
@@ -204,7 +243,8 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
             if (enough && pay(level, pos)) {
                 setActive(level, pos, state, true);
             } else {
-                if (!retry && level.hasNeighborSignal(pos) && !level.getBlockTicks().hasScheduledTick(pos, this)) {
+                if (!retry && level.hasNeighborSignal(pos) != state.getValue(INVERTED)
+                        && !level.getBlockTicks().hasScheduledTick(pos, this)) {
                     noPower(level, pos);
                 }
                 if (!level.getBlockTicks().hasScheduledTick(pos, this)) {
@@ -242,7 +282,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
         if (state.getValue(POWERED)) {
-            if (!wanted(level, pos)) {
+            if (!wanted(level, pos, state)) {
                 setActive(level, pos, state, false);
             } else if (pay(level, pos)) {
                 level.scheduleTick(pos, this, UPKEEP_INTERVAL);
@@ -286,27 +326,80 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
-    /** Rechtsklikken: de volgende kleur. */
+    /**
+     * Gewoon rechtsklikken doet niets (13 oktober), zodat je met een kabelrol in je hand gewoon tegen de
+     * zender aan een kabel legt. Sneak + rechtsklik met een lege hand: zijn instelscherm, als je mag (zie
+     * LaserEmitters). Met iets in je hand en sneak slaat Minecraft dit zelf over: dan gebruik je dat ding.
+     */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (level instanceof ServerLevel serverLevel) {
-            recolour(serverLevel, pos, state);
+        if (!player.isSecondaryUseActive()) {
+            return InteractionResult.PASS;
+        }
+        if (player instanceof ServerPlayer serverPlayer) {
+            LaserEmitters.open(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    /** Volgende kleur: de zender én de wand die er al staat kleuren mee. */
-    private static void recolour(ServerLevel level, BlockPos pos, BlockState state) {
-        ShieldColor colour = state.getValue(COLOR).next();
-        level.setBlock(pos, state.setValue(COLOR, colour), Block.UPDATE_ALL);
-        Direction facing = state.getValue(FACING);
-        for (BlockPos target : wallPositions(level, pos, facing)) {
-            BlockState wall = level.getBlockState(target);
-            if (wall.is(ModBlocks.LASER_WALL.get())) {
-                level.setBlock(target, wall.setValue(LaserWallBlock.COLOR, colour), Block.UPDATE_ALL);
+    // ---------------------------------------------------------------- Instellen (uit het scherm)
+
+    /** Een andere kleur: de zenders en de wand die er al staat kleuren mee. */
+    public static void applyColour(ServerLevel level, List<BlockPos> members, ShieldColor colour) {
+        apply(level, members, state -> state.setValue(COLOR, colour), false);
+        if (!members.isEmpty()) {
+            level.playSound(null, members.get(0), SoundEvents.DYE_USE, SoundSource.BLOCKS, 0.6f, 1.2f);
+        }
+    }
+
+    /** Omkeren (of terug): daarna gaan de zenders meteen aan of uit als dat nu anders moet. */
+    public static void applyInverted(ServerLevel level, List<BlockPos> members, boolean inverted) {
+        apply(level, members, state -> state.setValue(INVERTED, inverted), true);
+    }
+
+    /** Liggend of staand: een wand die er al staat, draait meteen mee. */
+    public static void applyTurned(ServerLevel level, List<BlockPos> members, boolean turned) {
+        apply(level, members, state -> state.setValue(TURNED, turned), false);
+    }
+
+    /**
+     * Verandert elke zender van de lijst, en de wand die hij nu maakt. Met {@code recheck} kijken we daarna
+     * pas of ze aan of uit moeten: als alle zenders goed staan, zodat een poort niet half omschakelt.
+     */
+    private static void apply(ServerLevel level, List<BlockPos> members,
+                              java.util.function.UnaryOperator<BlockState> change, boolean recheck) {
+        for (BlockPos member : members) {
+            BlockState state = level.getBlockState(member);
+            if (!state.is(ModBlocks.LASER_EMITTER.get())) {
+                continue;
+            }
+            BlockState changed = change.apply(state);
+            if (changed != state) {
+                level.setBlock(member, changed, Block.UPDATE_ALL);
+                if (changed.getValue(POWERED)) {
+                    restyleWall(level, member, changed);
+                }
             }
         }
-        level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 0.6f, 1.2f);
+        if (recheck) {
+            for (BlockPos member : members) {
+                BlockState state = level.getBlockState(member);
+                if (state.getBlock() instanceof LaserEmitterBlock emitter) {
+                    emitter.update(level, member, state, false);
+                }
+            }
+        }
+    }
+
+    /** De wand van deze zender krijgt zijn kleur en liggend/staand. */
+    private static void restyleWall(ServerLevel level, BlockPos pos, BlockState emitter) {
+        for (BlockPos target : wallPositions(level, pos, emitter.getValue(FACING))) {
+            BlockState wall = level.getBlockState(target);
+            if (wall.is(ModBlocks.LASER_WALL.get())) {
+                level.setBlock(target, wall.setValue(LaserWallBlock.COLOR, emitter.getValue(COLOR))
+                        .setValue(LaserWallBlock.TURNED, emitter.getValue(TURNED)), Block.UPDATE_ALL);
+            }
+        }
     }
 
     // ---------------------------------------------------------------- De wand maken en weghalen
@@ -341,7 +434,8 @@ public class LaserEmitterBlock extends Block implements PowerConnectable {
         ShieldColor colour = state.hasProperty(COLOR) ? state.getValue(COLOR) : ShieldColor.BLUE;
         BlockState wall = ModBlocks.LASER_WALL.get().defaultBlockState()
                 .setValue(LaserWallBlock.AXIS_FACING, facing)
-                .setValue(LaserWallBlock.COLOR, colour);
+                .setValue(LaserWallBlock.COLOR, colour)
+                .setValue(LaserWallBlock.TURNED, state.hasProperty(TURNED) && state.getValue(TURNED));
         LaserAnimations.start(level, wallPositions(level, pos, facing), wall, colour, true);
     }
 

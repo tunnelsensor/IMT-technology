@@ -203,18 +203,27 @@ def laser_wall_models():
                 "textures": {"particle": texture, "field": texture},
             })
 
-    # Noord/zuid: het vlak een kwartslag gedraaid. Oost/west en omhoog/omlaag: zoals het is.
-    turn = {"north": 90, "south": 90, "east": 0, "west": 0, "up": 0, "down": 0}
+    # Hoe het vlak (staand, van west naar oost) gedraaid moet worden: (x, y) in graden.
+    # Gewoon: noord/zuid een kwartslag om de y-as; oost/west en omhoog/omlaag zoals het is.
+    # Gedraaid ("turned", 13 oktober: liggend in plaats van staand): opzij lopend plat neerleggen
+    # (x = 90); omhoog lopend een kwartslag om de y-as (dan staat het noord-zuid).
+    turn = {
+        False: {"north": (0, 90), "south": (0, 90), "east": (0, 0), "west": (0, 0), "up": (0, 0), "down": (0, 0)},
+        True: {"north": (90, 90), "south": (90, 90), "east": (90, 0), "west": (90, 0), "up": (0, 90), "down": (0, 90)},
+    }
     variants = {}
     for color in RAYSHIELD_COLORS:
-        for facing, y in turn.items():
-            options = []
-            for variant in range(RAYSHIELD_VARIANTS):
-                option = {"model": "starktech:block/" + rayshield_variant_name(color, variant)}
-                if y:
-                    option["y"] = y
-                options.append(option)
-            variants["facing=%s,color=%s" % (facing, color)] = options
+        for turned, facings in turn.items():
+            for facing, (x, y) in facings.items():
+                options = []
+                for variant in range(RAYSHIELD_VARIANTS):
+                    option = {"model": "starktech:block/" + rayshield_variant_name(color, variant)}
+                    if x:
+                        option["x"] = x
+                    if y:
+                        option["y"] = y
+                    options.append(option)
+                variants["facing=%s,color=%s,turned=%s" % (facing, color, str(turned).lower())] = options
     blockstate("laser_wall", variants)
 
 

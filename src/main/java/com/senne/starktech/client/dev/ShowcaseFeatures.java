@@ -15,6 +15,7 @@ import static com.senne.starktech.client.dev.ShowcaseScene.HOLO_TABLE;
 import static com.senne.starktech.client.dev.ShowcaseScene.HOME;
 import static com.senne.starktech.client.dev.ShowcaseScene.HUT;
 import static com.senne.starktech.client.dev.ShowcaseScene.LAMP;
+import static com.senne.starktech.client.dev.ShowcaseScene.LASER_A;
 import static com.senne.starktech.client.dev.ShowcaseScene.LASER_POWER;
 import static com.senne.starktech.client.dev.ShowcaseScene.PYRAMID;
 import static com.senne.starktech.client.dev.ShowcaseScene.SOLAR_PANEL;
@@ -51,6 +52,7 @@ import com.senne.starktech.holo.HoloMode;
 import com.senne.starktech.network.CommsPayload;
 import com.senne.starktech.network.HoloActionPayload;
 import com.senne.starktech.network.IllusionPlacePayload;
+import com.senne.starktech.network.LaserActionPayload;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.network.SatelliteUpgradePayload;
 import com.senne.starktech.network.WaypointActionPayload;
@@ -545,11 +547,39 @@ final class ShowcaseFeatures {
                 + "energiewand uit de lens naar de overkant, altijd van één kant (niet meer van twee kanten naar "
                 + "het midden). Zonder redstone schuift hij terug de zender in. Een tweede zender aan de "
                 + "overkant is niet nodig. Hij draait op stroom van de warmtegenerator ernaast; zonder stroom "
-                + "gaat hij niet aan. Rechtsklik op een zender = andere kleur.", new Vec3(13.5, -60, 4.5), 0, 5, s -> s
+                + "gaat hij niet aan. Sneak + rechtsklik op een zender = zijn instelscherm (de volgende functie).",
+                new Vec3(13.5, -60, 4.5), 0, 5, s -> s
                 .onServer(20, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.REDSTONE_BLOCK.defaultBlockState()))
                 .pause(120)
                 .onServer(0, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState()))
                 .pause(80));
+
+        add("Rayshield: laser settings", "13 oktober. Gewoon rechtsklikken op een zender doet niets meer (zo leg je "
+                + "makkelijk een kabel); sneak + rechtsklik met een lege hand opent zijn scherm, alleen voor wie hem "
+                + "neerzette of wie vertrouwd is in de zone. Rood; dan Inverted: zonder redstone schuift de wand er "
+                + "nu uit; dan Horizontal: de wand ligt plat. Weer Normal: de wand schuift terug.",
+                // Dichterbij dan bij de vorige functie: het scherm werkt tot 6 blokken van de zender.
+                new Vec3(13.5, -60, 7.5), 0, 5, s -> s
+                .onServer(0, player -> {
+                    if (player.serverLevel().getBlockEntity(LASER_A) instanceof com.senne.starktech.shield.LaserEmitterBlockEntity emitter) {
+                        emitter.setOwner(player);
+                    }
+                    com.senne.starktech.shield.LaserEmitters.open(player, LASER_A);
+                })
+                .pause(40)
+                .onServer(0, player -> laser(player, LaserActionPayload.Op.COLOR, ShieldColor.RED.ordinal()))
+                .pause(40)
+                .onServer(0, player -> laser(player, LaserActionPayload.Op.INVERT, 1))
+                .pause(80)
+                .onServer(0, player -> laser(player, LaserActionPayload.Op.TURN, 1))
+                .pause(80)
+                .onServer(0, player -> laser(player, LaserActionPayload.Op.INVERT, 0))
+                .pause(60)
+                .close(0)
+                .onServer(0, player -> {
+                    laser(player, LaserActionPayload.Op.TURN, 0);
+                    laser(player, LaserActionPayload.Op.COLOR, ShieldColor.BLUE.ordinal());
+                }));
 
         add("Rayshield: dome", "De schildkoepel gaat aan: eerst een straal omhoog, dan vouwt hij bovenin open "
                 + "en zakt hij in één vloeiende beweging als koepel naar beneden (zonder hapering). De straal uit "
@@ -2375,6 +2405,11 @@ final class ShowcaseFeatures {
 
     private static void holo(HoloActionPayload.Op op, int value) {
         PacketDistributor.sendToServer(new HoloActionPayload(HOLO_TABLE, op, value));
+    }
+
+    /** Een knop uit het scherm van de laserzender LASER_A, zoals jij hem indrukt. */
+    private static void laser(ServerPlayer player, LaserActionPayload.Op op, int value) {
+        com.senne.starktech.shield.LaserEmitters.handleAction(player, new LaserActionPayload(LASER_A, op, value));
     }
 
     /** Rechtsklik op een blok, zoals met de muis. */

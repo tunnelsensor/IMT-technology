@@ -14,9 +14,9 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 212 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 216 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 87 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2095,6 +2095,51 @@ tags in tags zet je in een apart tag-scherm.
       (`relay_only_owner_can_edit`), en de emitter-test zet de eigenaar nu echt offline. 211 tests: 208
       groen, de 3 rode van hoofdstuk 14 stap 2.
 
+### 16. De laserzender instellen (13 oktober)
+
+Jouw wens: "zorg dat je gewoon op ze kunt klikken zonder dat er iets gebeurt, dit zorgt ervoor dat het
+makkelijker is om **cables te leggen**. Enkel de persoon die het heeft **geplaatst (of trusted players in
+zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI kun je de **kleur** kiezen,
+**signaal inverteren** zodat redstone aan laser uit is en kiezen of de laser **horizontaal of verticaal** is."
+
+- [x] **1. Klikken doet niets, sneak + klik opent het scherm.** Gewoon rechtsklikken op een zender doet
+      niets meer (vroeger wisselde de kleur): de klik gaat door naar wat je vasthoudt, dus met een kabelrol
+      leg je gewoon een kabel tegen de zender aan. **Sluipen + rechtsklik met een lege hand** opent het
+      scherm (`LaserEmitterBlock.useWithoutItem`). Met iets in je hand en sluipen gebruikt Minecraft zelf
+      dat ding (zo werkt sluipen bij elk blok), dus het scherm opent alleen met een lege hand.
+- [x] **2. Wie mag het openen** (`LaserEmitters.mayEdit`): wie de zender neerzette (de zender heeft nu een
+      blok-entiteit die dat onthoudt, `LaserEmitterBlockEntity`), en wie vertrouwd is in de basis waar hij
+      staat: de eigenaar van de beveiligingskern, zijn team en zijn vertrouwde spelers (Access). Een ander
+      hoort "This laser emitter belongs to ...". **Mijn invulling**: "in de basis" is de zone van de kern
+      én de rest van het gebied van de kern, net als bij de laserwand zelf (daar lopen die spelers al
+      doorheen). Een zender van vóór vandaag heeft nog geen eigenaar: die wordt van wie hem als eerste
+      opent, net als een oud relais. Behalve in iemands basis (dan alleen de vertrouwde spelers daar) en
+      in een gebouw van deze mod (de Stark Tower, de Hydra-bunker): anders kon een indringer de lasers van
+      de bunker overnemen en uitzetten. Geen uitzondering voor creative. Een zuiger duwt een zender nu
+      niet meer weg (zoals een kist), omdat hij een blok-entiteit heeft.
+- [x] **3. Het scherm** (`client/shield/LaserEmitterScreen`, Engels in het spel): **Color** (zes vakjes,
+      de gekozen kleur met een witte rand), **Signal** (*Normal*: redstone aan = laser aan; *Inverted*:
+      redstone aan = laser uit, en zonder redstone staat hij aan) en **Wall** (*Vertical*: staand zoals
+      altijd; *Horizontal*: plat als een vloertje). Kijkt de zender omhoog of omlaag, dan staat de wand
+      altijd rechtop en kies je *east-west* of *north-south*. Alles gaat meteen naar de zender (geen
+      opslaan), en de wand die er al staat kleurt en draait mee (`LaserWallBlock.TURNED`, de
+      blockstate maakt `tools/generate_block_models.py`). Bovenaan staat van wie hij is en of hij aan
+      staat, onderaan voor hoeveel zenders het geldt. **Mijn invulling**: wat je kiest geldt voor de
+      **hele laserpoort** (alle zenders die eraan vastzitten, ze gaan ook samen aan en uit), anders ging
+      een omgekeerde poort half aan en half uit. Daarom neemt een zender die je tegen een poort zet ook
+      haar kleur, omkeren en liggend/staand over. Een omgekeerde zender staat aan zonder redstone, dus
+      kost hij dan ook gewoon stroom.
+- [x] **Tests en beelden.** Vier nieuwe tests (`LaserGameTests`): klikken doet niets (ook met een kabelrol),
+      een vreemde mag niets en de eigenaar kleurt de hele poort, een nieuwe zender neemt de instellingen
+      over; omgekeerd (aan zonder redstone, uit met) en liggend (een plat vloertje); vertrouwde spelers in
+      een zone wel, een vreemde niet (ook niet een zender zonder eigenaar overnemen); en een oude zender
+      wordt van wie hem als eerste opent. 216 tests: 213 groen, de 3 rode van hoofdstuk 14 stap 2.
+      Onderweg werd `stark_tower_has_powered_cameras` rood: met de nieuwe batches lopen de tests in een andere
+      volgorde, en de toren van de kluistest stond er nu vlak naast. Zijn kern stond dichter bij de lobbycamera
+      en pikte die in. De test ruimt zo'n kern van een andere test nu eerst op. Screenshots: `-Ponly=laser`
+      (`73_laser_flat`, `74_laser_flat_angle`, `75_laser_screen`: een cyaan poort van drie hoog, omgekeerd
+      en liggend). In de showcase: "Rayshield: laser settings".
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -2158,6 +2203,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       na bouwen snel genoeg gaat, en of je spel niet hapert als je de lamp aan- of uitzet. (De gloed: "mag
       volledig weg", 13 oktober, is weg.) Sinds 13 oktober ook: zet een lamp in een kamer en kijk of de
       kamers ernaast donker blijven, en of de bundel door een open deur er goed uitziet.
+- [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
+      of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
+      en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
 
 ---
 

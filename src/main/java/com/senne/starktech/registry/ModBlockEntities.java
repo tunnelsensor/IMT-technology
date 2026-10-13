@@ -132,4 +132,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("relay_emitter",
                     () -> new BlockEntityType<>(com.senne.starktech.redstone.RelayEmitterBlockEntity::new,
                             java.util.Set.of(ModBlocks.RELAY_EMITTER.get()), null));
+
+    /** De laserzender: van wie hij is (13 oktober: alleen hij en vertrouwde spelers openen zijn scherm). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.shield.LaserEmitterBlockEntity>> LASER_EMITTER =
+            BLOCK_ENTITIES.register("laser_emitter",
+                    () -> new BlockEntityType<>(com.senne.starktech.shield.LaserEmitterBlockEntity::new,
+                            java.util.Set.of(ModBlocks.LASER_EMITTER.get()), null));
 }

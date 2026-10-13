@@ -156,6 +156,12 @@ public final class ModNetwork {
                 com.senne.starktech.light.ArcLamps.handleAction(player, payload);
             }
         });
+        // De laserzender: kleur, omkeren en liggend/staand uit zijn instelscherm (13 oktober).
+        registrar.playToServer(LaserActionPayload.TYPE, LaserActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.shield.LaserEmitters.handleAction(player, payload);
+            }
+        });
 
         // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
         // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een
@@ -187,6 +193,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
         registrar.playToClient(LampOpenPayload.TYPE, LampOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onLampOpen(payload, context));
+        registrar.playToClient(LaserOpenPayload.TYPE, LaserOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onLaserOpen(payload, context));
         // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server
         // zet ze uit (bijvoorbeeld als je energie op is).
         registrar.playBidirectional(SuitFlightPayload.TYPE, SuitFlightPayload.STREAM_CODEC,

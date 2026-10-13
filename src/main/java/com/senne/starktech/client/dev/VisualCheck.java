@@ -1167,6 +1167,16 @@ public final class VisualCheck {
             t.shot(20, "71_laser_above");
             t.view(0, 39.5, -59.5, 14.5, 35, 10);
             t.shot(20, "72_laser_angle");
+            // 13 oktober: een poort van drie hoog die omgekeerd is (aan zonder redstone) en liggend: drie
+            // platte velden boven elkaar, als laserstralen. Daarna het instelscherm van de middelste zender.
+            t.onServer(0, VisualCheck::buildFlatLaserGate);
+            t.view(60, 33.5, -59, 23.5, 0, 12);
+            t.shot(0, "73_laser_flat");
+            t.view(0, 38.5, -56.5, 31.5, 135, 25);
+            t.shot(20, "74_laser_flat_angle");
+            t.open(0, () -> new com.senne.starktech.client.shield.LaserEmitterScreen(FLAT_GATE.above(), "Dev"));
+            t.shot(20, "75_laser_screen");
+            t.close(0);
         }
 
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
@@ -2600,6 +2610,28 @@ public final class VisualCheck {
         level.setBlockAndUpdate(new BlockPos(42, -60, 24), power);
         DevWorld.powerNextTo(level, new BlockPos(43, -60, 17));
         DevWorld.powerNextTo(level, new BlockPos(43, -60, 23));
+    }
+
+    /** De onderste zender van de liggende poort (zie de sectie "laser"). */
+    private static final BlockPos FLAT_GATE = new BlockPos(30, -60, 28);
+
+    /**
+     * Drie zenders boven elkaar (cyaan, omgekeerd en liggend), met een stenen muur aan het eind en een
+     * warmtegenerator tegen de onderste. Zonder redstone gaan ze vanzelf aan (omgekeerd).
+     */
+    private static void buildFlatLaserGate(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        DevWorld.powerNextTo(level, FLAT_GATE.south());
+        // Eerst de muur: een zender meet bij het aangaan hoe ver zijn wand reikt, en hij gaat al aan zodra
+        // de volgende zender ertegen komt.
+        for (int i = 0; i < 3; i++) {
+            level.setBlockAndUpdate(FLAT_GATE.above(i).east(6), Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        for (int i = 0; i < 3; i++) {
+            level.setBlockAndUpdate(FLAT_GATE.above(i), emitter(Direction.EAST, ShieldColor.CYAN)
+                    .setValue(LaserEmitterBlock.INVERTED, true)
+                    .setValue(LaserEmitterBlock.TURNED, true));
+        }
     }
 
     private static BlockState emitter(Direction facing, ShieldColor colour) {
