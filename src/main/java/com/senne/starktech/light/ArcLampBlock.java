@@ -36,9 +36,10 @@ import org.jetbrains.annotations.Nullable;
  *       je schakelt hem met een lichtschakelaar in de kabel (zie LightSwitchBlock), of door de stroom weg
  *       te halen.</li>
  *   <li>Zijn licht: op niveau 100 tot 85 blokken ver vol licht, daarna dooft het uit tot 100 blokken (zie
- *       ArcLampLight). Het gaat niet door muren, en monsters spawnen er niet.</li>
+ *       ArcLampLight). Het gaat in rechte lijnen, niet door muren of dichte deuren en niet om hoeken: elke
+ *       kamer heeft zijn eigen lamp nodig (13 oktober). Monsters spawnen er niet.</li>
  *   <li>Rechtsklik opent zijn instelscherm (10 oktober: "zorg dat je de brightness kunt instellen"): hoe
- *       fel hij is (lichtniveau 1 tot 100) en hoe sterk de gloed om hem heen is (zie ArcLampScreen).</li>
+ *       fel hij is, lichtniveau 1 tot 100 (zie ArcLampScreen).</li>
  * </ul>
  * Een booglamp ("arc lamp") is een echte, extreem felle lamp: zo werkten de eerste straatlantaarns en
  * de zoeklichten van stadions. En "arc" past bij Stark (de arc-reactor).

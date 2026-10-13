@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 211 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 212 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 87 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -1922,6 +1922,26 @@ De stappen:
       10 geeft het blok zelf 10 en zijn er geen onzichtbare lichtbronnen; de gloed blijft tussen 0 en 100%;
       en op 50 gebruikt hij de helft. Screenshots: `-Ponly=light` (`lt05_lamp_screen`, `lt06_dimmed_from_above`:
       een veel kleinere ruit). De showcase-functie zet de lamp met het schuifje van 100 naar 40.
+- [x] **5. Licht per kamer, en geen gloed meer** (13 oktober: "zorg dat het light van de arc lamp niet door
+      muren kan, dus dat je echt light per kamer moet hebben en niet gewoon een block die overal werkt", en
+      "arc lamp glow mag volledig weg"). Het licht ging eigenlijk niet *door* muren, maar stroomde 85 stappen
+      ver om alles heen: door elke deuropening en gang, om elke hoek, en dwars door dichte deuren (in
+      Minecraft houdt een deur geen licht tegen). Zo verlichtte één lamp je hele huis. Nu meet
+      `light/LampSurvey` wat de lamp in **rechte lijnen** kan zien: schil voor schil krijgt elke plek een
+      getal van 0 tot 1 (hoe goed de lamp hem ziet, het gewogen gemiddelde van zijn buren aan de lamp-kant),
+      en vanaf 0.5 is het vol licht. Achter een muur, om een hoek of in de kamer ernaast is het donker; door
+      een open deur valt een bundel. Een **dichte deur of dicht luik** telt als muur (`stopsBeam`), en een
+      deur open- of dichtdoen laat de lamp opnieuw meten. **Mijn invulling**: de lamp kijkt vanuit elk vrij
+      plekje naast zich (anders zag een lamp in het plafond schuin langs het plafond niets, en bleef een
+      grote hal aan de randen donker); een lamp die ín een muur zit, schijnt dus naar beide kanten. Onder
+      een dichte deur door komt nog wat gewoon licht, zoals bij een fakkel (dat is het spel zelf, niet de
+      lamp). De **gloed** is helemaal weg: `ArcLampRenderer` is verwijderd, het schuifje Glow uit het scherm
+      (daar staat nu "Straight lines only, not through walls or closed doors: one lamp per room."), en een
+      oude lamp vergeet zijn opgeslagen gloed. Een nieuwe test (`arc_lamp_light_stays_in_its_room`): twee
+      kamers met een deur ertussen, de lamp in het plafond; dicht: de eigen kamer vol licht tot in de
+      hoeken, de andere kamer geen enkele plek van de lamp; open: een bundel door de deur, maar niet naast
+      de deur en niet in de verre hoek; weer dicht: de bundel weg. 212 tests: 209 groen, de 3 rode van
+      hoofdstuk 14 stap 2.
 
 ### 14. Eén centraal configbestand (11 oktober)
 
@@ -2135,8 +2155,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
 - [ ] **De Arc Lamp (9 oktober)**: gezien op screenshots en in de showcase, op een vlak veld. Kijk zelf
       in je eigen wereld (heuvels, grotten, een huis) of het licht er goed uitziet, of het opnieuw meten
-      na bouwen snel genoeg gaat, en of je spel niet hapert als je de lamp aan- of uitzet. En of je de
-      gloed om de lamp mooi vindt, of liever zachter of zonder.
+      na bouwen snel genoeg gaat, en of je spel niet hapert als je de lamp aan- of uitzet. (De gloed: "mag
+      volledig weg", 13 oktober, is weg.) Sinds 13 oktober ook: zet een lamp in een kamer en kijk of de
+      kamers ernaast donker blijven, en of de bundel door een open deur er goed uitziet.
 
 ---
 

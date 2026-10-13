@@ -902,7 +902,7 @@ final class ShowcaseFeatures {
         add("Arc Lamp and light switch", "9 oktober: een lamp met lichtniveau 100 (een gewone lamp stopt bij 15). "
                 + "Het is nacht. Een generator, een kabel over het gras met halverwege een lichtschakelaar (uit, "
                 + "rood lampje), en aan het eind een Arc Lamp op een paal: donker. Je klikt op de schakelaar (het "
-                + "lampje wordt blauw, de wip klapt om): de lamp gaat aan met een gloed eromheen, en het hele veld "
+                + "lampje wordt blauw, de wip klapt om): de lamp gaat aan, en het hele veld "
                 + "wordt licht. Van bovenaf zie je hoe ver: een ruit van 85 blokken vol licht, met een zachte rand "
                 + "tot 100 blokken. 10 oktober: dan het instelscherm van de lamp (rechtsklik). Het schuifje "
                 + "'Brightness' zakt van lichtniveau 100 naar 40 (onder het schuifje: 'Full light up to 25 blocks, dark "

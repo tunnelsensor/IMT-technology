@@ -22,19 +22,18 @@ import org.jetbrains.annotations.Nullable;
  * Het instelscherm van een Arc Lamp (10 oktober: "zorg dat je de brightness kunt instellen"). Openen:
  * rechtsklik op de lamp.
  *
- * <ul>
- *   <li><b>Brightness</b>: zijn lichtniveau, van 1 tot 100 (of wat de config toestaat). Tot 15 is het een
- *       gewone lamp; daarboven reikt het licht verder: tot "niveau min 15" blokken vol licht, en op
- *       "niveau" blokken is het donker. Zachter gebruikt ook minder stroom.</li>
- *   <li><b>Glow</b>: hoe fel de stralenkrans om de lamp is, van 0% (geen) tot 100%. Alleen voor het oog.</li>
- * </ul>
- * Elke regel heeft een schuifje met een min- en een plusknop ernaast (voor één stapje). Wat je kiest gaat
- * meteen naar de lamp, dus je ziet het licht veranderen terwijl je schuift; er is geen "opslaan". Een
- * ander licht dan 15 of minder meet de lamp opnieuw zodra je even stopt met schuiven (een halve seconde).
+ * <b>Brightness</b>: zijn lichtniveau, van 1 tot 100 (of wat de config toestaat). Tot 15 is het een gewone
+ * lamp; daarboven reikt het licht verder: tot "niveau min 15" blokken vol licht, en op "niveau" blokken is
+ * het donker. Zachter gebruikt ook minder stroom. (Tot 13 oktober was er ook een schuifje "Glow" voor de
+ * gloed om de lamp; die gloed is weg.)
+ *
+ * Het schuifje heeft een min- en een plusknop ernaast (voor één stapje). Wat je kiest gaat meteen naar de
+ * lamp, dus je ziet het licht veranderen terwijl je schuift; er is geen "opslaan". Een ander licht dan 15
+ * of minder meet de lamp opnieuw zodra je even stopt met schuiven (een halve seconde).
  */
 public class ArcLampScreen extends Screen {
     private static final int PANEL_W = 300;
-    private static final int PANEL_H = 166;
+    private static final int PANEL_H = 146;
     private static final int MARGIN = 8;
     /** Waar de schuifjes beginnen (de naam van de regel staat links daarvan). */
     private static final int VALUE_X = 84;
@@ -42,13 +41,11 @@ public class ArcLampScreen extends Screen {
     private static final int DONE_W = 80;
     /** Hoeveel een klik op min of plus verschuift. */
     private static final int BRIGHTNESS_STEP = 1;
-    private static final int GLOW_STEP = 10;
 
     private final BlockPos pos;
     private int left;
     private int top;
     private @Nullable ValueSlider brightness;
-    private @Nullable ValueSlider glow;
 
     public ArcLampScreen(BlockPos pos) {
         super(Component.translatable("screen.starktech.lamp"));
@@ -78,10 +75,6 @@ public class ArcLampScreen extends Screen {
         return top + 24;
     }
 
-    private int glowY() {
-        return top + 92;
-    }
-
     private int footerY() {
         return top + PANEL_H - 28;
     }
@@ -103,13 +96,8 @@ public class ArcLampScreen extends Screen {
         brightness = new ValueSlider(valueX + STEP_W + 4, brightnessY(), sliderW, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL),
                 lamp.brightness(), value -> Component.translatable("screen.starktech.lamp.level_value", value),
                 value -> send(LampActionPayload.Op.BRIGHTNESS, value));
-        glow = new ValueSlider(valueX + STEP_W + 4, glowY(), sliderW, 0, ArcLampBlockEntity.MAX_GLOW,
-                lamp.glow(), value -> Component.translatable("screen.starktech.lamp.glow_value", value),
-                value -> send(LampActionPayload.Op.GLOW, value));
         addStepButtons(brightness, brightnessY(), BRIGHTNESS_STEP);
-        addStepButtons(glow, glowY(), GLOW_STEP);
         addRenderableWidget(brightness);
-        addRenderableWidget(glow);
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(left + PANEL_W - MARGIN - DONE_W, footerY(), DONE_W, 20).build());
@@ -160,7 +148,7 @@ public class ArcLampScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
-        if (brightness == null || glow == null) {
+        if (brightness == null) {
             return;
         }
         super.render(g, mouseX, mouseY, a);
@@ -177,23 +165,23 @@ public class ArcLampScreen extends Screen {
                 ? Component.translatable("screen.starktech.lamp.reach", reach, level)
                 : Component.translatable("screen.starktech.lamp.reach_small", level);
         Component use = com.senne.starktech.client.PowerUnit.current().rate(ArcLampBlockEntity.powerPerTick(level));
-        hint(g, range, brightnessY() + 25);
-        hint(g, Component.translatable("screen.starktech.lamp.power", use), brightnessY() + 36);
-
-        label(g, "screen.starktech.lamp.glow", glowY());
-        hint(g, Component.translatable("screen.starktech.lamp.glow_hint"), glowY() + 25);
+        int y = hint(g, range, brightnessY() + 25);
+        y = hint(g, Component.translatable("screen.starktech.lamp.power", use), y);
+        // 13 oktober: het licht gaat in rechte lijnen, dus elke kamer heeft zijn eigen lamp nodig.
+        hint(g, Component.translatable("screen.starktech.lamp.rooms"), y + 5);
     }
 
     private void label(GuiGraphics g, String key, int y) {
         g.drawString(font, Component.translatable(key), left + MARGIN, y + 6, HudStyle.argb(190, HudStyle.WHITE), true);
     }
 
-    /** Uitleg onder een schuifje, zo nodig over meer regels (van 11 hoog). */
-    private void hint(GuiGraphics g, Component text, int y) {
+    /** Uitleg onder een schuifje, zo nodig over meer regels (van 11 hoog). Geeft de y onder de laatste regel. */
+    private int hint(GuiGraphics g, Component text, int y) {
         for (net.minecraft.util.FormattedCharSequence line : font.split(text, PANEL_W - VALUE_X - MARGIN)) {
             g.drawString(font, line, left + VALUE_X, y, HudStyle.argb(150, HudStyle.WHITE), false);
             y += 11;
         }
+        return y;
     }
 
     /**

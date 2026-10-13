@@ -420,23 +420,28 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 ### Licht: de Arc Lamp en de lichtschakelaar
 De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een Stark-chip) is een lamp met **lichtniveau
 100**. Een gewone lamp in Minecraft houdt op bij 15: dat licht reikt zo'n 15 blokken. Deze lamp geeft
-tot **85 blokken** ver vol licht, en daarna dooft het licht zacht uit tot 100 blokken. Net als gewoon
-licht gaat het niet door muren (wel door glas en water), en monsters spawnen er niet.
+tot **85 blokken** ver vol licht, en daarna dooft het licht zacht uit tot 100 blokken. Monsters
+spawnen er niet.
+- **Elke kamer zijn eigen lamp.** Het licht gaat in **rechte lijnen**, zoals echt licht: alles wat de
+  lamp kan "zien" wordt licht. Het gaat niet door muren en niet om hoeken, en een **dichte deur of
+  luik** houdt het ook tegen. Door glas en water gaat het wel. Staat er een deur open, dan valt er een
+  bundel licht door de opening, maar de kamer ernaast wordt niet helemaal licht. Onder een dichte deur
+  door komt wel een beetje gewoon licht, zoals bij een fakkel. Een lamp in het plafond verlicht de hele
+  kamer eronder; een lamp die ín een muur zit, schijnt naar beide kanten.
 - Hij werkt **alleen op Stark-stroom**: stroom = aan, geen stroom = uit. Een aan/uit-knop heeft hij
   niet. Hang hem met een Stark-kabel aan een generator, of zet hem er direct tegenaan. Op niveau 100
   gebruikt hij 2 stroom per tick zolang hij brandt (een volle warmtegenerator houdt hem ruim acht
   minuten aan).
 - De eerste keer duurt het een halve seconde voor het veld licht is: de lamp meet hoe ver zijn licht
-  komt. Daarna gaat hij met de schakelaar meteen aan en uit. Bouw je in zijn licht, dan meet hij na
-  een ogenblik opnieuw: in een dichte ruimte wordt het dan donker.
+  komt. Daarna gaat hij met de schakelaar meteen aan en uit. Bouw je in zijn licht (of doe je een deur
+  open of dicht), dan meet hij na een ogenblik opnieuw: in een dichte ruimte wordt het dan donker.
 - **Rechtsklik** op de lamp opent zijn **instelscherm** (je moet er dichtbij staan; staat hij op een
   paal, klim dan even omhoog). Rechtsboven zie je of hij brandt (ON) of geen stroom heeft (NO POWER).
   - **Brightness**: het lichtniveau, van 1 tot 100. Onder het schuifje staat wat dat betekent, zoals
     "Full light up to 25 blocks, dark after 40" bij niveau 40, en hoeveel stroom hij dan gebruikt
     (zachter = zuiniger: op 50 de helft). Tot 15 is het een gewone lamp. Schuif of klik op **-** en
     **+** voor één stapje; de lamp past zich aan zodra je even stopt met schuiven.
-  - **Glow**: hoe fel de gloed om de lamp is, van 0% (geen gloed) tot 100%. Alleen voor het oog.
-  Wat je kiest, onthoudt de lamp. Een nieuwe lamp staat op 100 met volle gloed.
+  Wat je kiest, onthoudt de lamp. Een nieuwe lamp staat op 100.
 
 De **lichtschakelaar** (een hendel, een ijzeren klompje en een Stark-kabel = 2 schakelaars) zet je
 **óp een kabel**: aan de muur, op de vloer of aan het plafond, op een plek waar de kabel loopt (of

@@ -175,7 +175,7 @@ public final class ClientPayloadHandlers {
         }
     }
 
-    /** Het instelscherm van een Arc Lamp openen (helderheid en gloed). */
+    /** Het instelscherm van een Arc Lamp openen (helderheid). */
     public static void onLampOpen(com.senne.starktech.network.LampOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

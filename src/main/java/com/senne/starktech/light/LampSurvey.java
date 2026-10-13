@@ -2,7 +2,7 @@ package com.senne.starktech.light;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import java.util.Arrays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -11,8 +11,11 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
@@ -26,11 +29,36 @@ import org.jetbrains.annotations.Nullable;
  * Eén meting van een Arc Lamp: tot waar zou het licht vol (15) zijn, als een lamp lichtniveau 100 kon
  * geven? (Zie ArcLampLight voor het hele verhaal.)
  *
- * We doen precies wat het spel met licht doet, maar met een groter getal: vanaf de lamp stap voor stap
- * naar de buren (boven, onder, noord, oost, zuid, west). Elke stap kost 1; door water of bladeren iets
- * meer (zoveel als dat blok licht tegenhoudt). Door een muur (een blok dat al het licht tegenhoudt) of
- * door de dichte kant van een trap of plaat gaat het niet. Elke plek die we binnen
- * {@code reach} stappen halen (85 bij lichtniveau 100), krijgt vol licht.
+ * <h2>Licht per kamer (13 oktober)</h2>
+ * Jouw wens: "zorg dat het licht niet door muren kan, dat je echt licht per kamer moet hebben". Eerst
+ * deden we wat het spel met licht doet: stap voor stap naar de buren, om alles heen. Bij een gewone lamp
+ * (15 stappen) merk je dat niet, maar 85 stappen ver komt dat licht door elke deuropening en gang, om
+ * elke hoek: één lamp verlichtte je hele huis. Nu gaat het licht zoals echt licht: <b>in rechte lijnen</b>.
+ * Een plek krijgt vol licht als de lamp hem kan "zien". Achter een muur, om een hoek of in de kamer
+ * ernaast is het dus donker; door een open deur of een raam valt alleen een bundel naar binnen. Een
+ * <b>dichte deur of een dicht luik</b> houdt het licht tegen zoals een muur (in het gewone spel gaat
+ * licht door een deur heen).
+ *
+ * <h2>Hoe we "zien" uitrekenen</h2>
+ * Voor elke plek een echte lijn naar de lamp trekken zou honderdduizenden lijnen kosten. Het kan sneller,
+ * schil voor schil vanaf de lamp (eerst alles op 1 stap, dan op 2, ...). Elke plek krijgt een getal van 0
+ * tot 1, hoe goed de lamp hem ziet: het gemiddelde van de buren aan de kant van de lamp, gewogen naar de
+ * richting. Een plek schuin rechtsboven de lamp (3 opzij, 1 omhoog) kijkt voor 3/4 naar zijn buur aan de
+ * lamp-kant ernaast en voor 1/4 naar de buur eronder. Zit er tussen hem en zo'n buur een muur, dan telt
+ * die buur als 0. Zo gaat het getal achter een muur naar 0 (schaduw), en in de open lucht blijft het 1.
+ * Vanaf 0.5 krijgt een plek vol licht. Licht kan zo nooit terug naar de lamp toe: een dichte kamer blijft
+ * altijd dicht, en om een hoek komt het nauwelijks.
+ *
+ * <b>Uit elke kant.</b> De lamp is een heel blok dat aan alle zes kanten licht geeft. Keken we vanuit zijn
+ * midden, dan zou een lamp in het plafond schuin langs dat plafond niets zien (de lijn loopt dan door de
+ * plafondblokken naast hem), en bleef een grote hal aan de randen donker. Daarom kijken we vanuit elk vrij
+ * plekje naast de lamp (bij een lamp in het plafond: het plekje eronder), en krijgt alles licht wat een
+ * van die plekjes ziet. Elk plekje kijkt alleen naar wat vóór zijn kant van de lamp ligt (de onderkant
+ * naar alles lager dan de lamp, enzovoort): wat erachter ligt, doet een andere kant. Dat scheelt de helft.
+ *
+ * Tot hoe ver: tot {@code reach} stappen van de lamp (85 bij lichtniveau 100), geteld zoals het spel (opzij
+ * plus omhoog plus vooruit). Daarna doet het spel de rest: in de schaduw en na die 85 stappen dooft het
+ * licht zoals gewoon licht uit, 1 per blok.
  *
  * Omdat dat veel plekken zijn (honderdduizenden), gebeurt het rekenen niet op de server zelf maar
  * ernaast, op een achtergrond-thread: de server loopt gewoon door. Daarom kijken we niet naar de wereld
@@ -45,7 +73,15 @@ final class LampSurvey {
 
     private static final Direction[] DIRECTIONS = Direction.values();
 
-    private final BlockPos origin;
+    /** Zo goed moet de lamp een plek zien (0 tot 1) voor vol licht. */
+    private static final float LIT_FROM = 0.5f;
+    /** Ziet de lamp een plek slechter dan dit, dan rekenen we daarachter niet verder (daar wordt het nooit licht). */
+    private static final float PASS_ON = 0.05f;
+    /** In {@link #sight}: deze plek staat in de rij, maar is nog niet uitgerekend. */
+    private static final float QUEUED = -1.0f;
+
+    /** De plek van de lamp, als getal (zie BlockPos.asLong). */
+    private final long lamp;
     private final int reach;
     private final int minChunkX;
     private final int minChunkZ;
@@ -60,15 +96,23 @@ final class LampSurvey {
     private final @Nullable Long2ObjectMap<long[]> previous;
     private final Snapshot getter;
 
-    /** Per sectie: hoeveel stappen het licht nodig had naar elke plek, plus 1 (0 = nog niet bereikt). */
-    private final Long2ObjectOpenHashMap<byte[]> costs = new Long2ObjectOpenHashMap<>();
+    /** De kant van de lamp waar we nu vanuit kijken, en het plekje daar (zie "Uit elke kant" bovenaan). */
+    private Direction side = Direction.DOWN;
+    private int sourceX;
+    private int sourceY;
+    private int sourceZ;
+    /** Per sectie: hoe goed dat plekje elke plek ziet, van 0 tot 1 (0 = niet, of nog niet bekeken). */
+    private final Long2ObjectOpenHashMap<float[]> sight = new Long2ObjectOpenHashMap<>();
     private long lastSection = Long.MIN_VALUE;
-    private byte[] lastCosts;
+    private float[] lastSight;
+    /** Twee kladplekken, zodat we niet voor elke plek een nieuwe BlockPos maken. */
+    private final BlockPos.MutableBlockPos here = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos there = new BlockPos.MutableBlockPos();
 
-    private LampSurvey(BlockPos origin, int reach, int minChunkX, int minChunkZ, int size, int minSection,
+    private LampSurvey(BlockPos lamp, int reach, int minChunkX, int minChunkZ, int size, int minSection,
                        LevelChunkSection[][] chunks, boolean[][] storing, @Nullable Long2ObjectMap<long[]> previous,
                        int minY, int height) {
-        this.origin = origin.immutable();
+        this.lamp = lamp.asLong();
         this.reach = reach;
         this.minChunkX = minChunkX;
         this.minChunkZ = minChunkZ;
@@ -121,62 +165,171 @@ final class LampSurvey {
      * De meting zelf (op een achtergrond-thread). Geeft per sectie (zie SectionPos.asLong) een rij van
      * 4096 bits terug: 1 = die plek krijgt vol licht. De lamp zelf zit er niet in (die geeft zelf licht).
      *
-     * Hoe: een "emmer" per aantal stappen. We pakken steeds een plek uit de laagste emmer die nog iets
-     * heeft, en zetten zijn buren in de emmer van zijn stappen plus wat die buur kost. Zo komt elke plek
-     * eerst langs via de kortste weg (net als water dat zich verspreidt).
+     * Vanuit elke vrije kant van de lamp kijken we apart ({@link #shine}), en tellen alles op.
      */
     Long2ObjectMap<long[]> run() {
-        LongArrayFIFOQueue[] buckets = new LongArrayFIFOQueue[reach + 1];
-        long start = origin.asLong();
-        setCost(start, 0);
-        bucket(buckets, 0).enqueue(start);
-        BlockPos.MutableBlockPos here = new BlockPos.MutableBlockPos();
-        BlockPos.MutableBlockPos there = new BlockPos.MutableBlockPos();
-        for (int cost = 0; cost <= reach; cost++) {
-            LongArrayFIFOQueue queue = buckets[cost];
-            if (queue == null) {
+        Long2ObjectOpenHashMap<long[]> region = new Long2ObjectOpenHashMap<>();
+        BlockState lampState = getter.getBlockState(here.set(lamp));
+        for (Direction side : DIRECTIONS) {
+            long first = BlockPos.offset(lamp, side);
+            BlockState next = stateAt(first);
+            if (next == null || stopsBeam(next, getter, there.set(first))
+                    || occludes(here.set(lamp), lampState, there.set(first), next, side)) {
+                continue; // aan deze kant zit een muur (of niets dat geladen is)
+            }
+            shine(side, region);
+        }
+        // De lamp zelf geeft zelf al licht, en hoort er niet bij.
+        long[] own = region.get(SectionPos.blockToSection(lamp));
+        if (own != null) {
+            int i = index(lamp);
+            own[i >>> 6] &= ~(1L << (i & 63));
+        }
+        Long2ObjectOpenHashMap<long[]> result = new Long2ObjectOpenHashMap<>();
+        for (Long2ObjectMap.Entry<long[]> entry : region.long2ObjectEntrySet()) {
+            int count = 0;
+            for (long word : entry.getValue()) {
+                count += Long.bitCount(word);
+            }
+            if (count == 4096) {
+                result.put(entry.getLongKey(), FULL);
+            } else if (count > 0) {
+                result.put(entry.getLongKey(), entry.getValue());
+            }
+        }
+        if (previous != null) {
+            for (Long2ObjectMap.Entry<long[]> entry : previous.long2ObjectEntrySet()) {
+                int cx = SectionPos.x(entry.getLongKey()) - minChunkX;
+                int cz = SectionPos.z(entry.getLongKey()) - minChunkZ;
+                if (cx >= 0 && cz >= 0 && cx < size && cz < size && chunks[cx + cz * size] == null) {
+                    result.put(entry.getLongKey(), entry.getValue());
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Kijk vanuit het plekje aan deze kant van de lamp: alles wat het tot {@code reach} stappen van de lamp
+     * ziet (en vóór deze kant ligt), komt in {@code region}.
+     *
+     * Hoe: schil voor schil (zie de uitleg bovenaan). Per schil zoeken we eerst de plekken die erbij
+     * komen: de buren van de vorige schil, verder van het plekje af. Daarna rekenen we voor elk uit hoe
+     * goed het plekje hem ziet ({@link #sightOf}). Zijn buren aan de kant van het plekje liggen allemaal
+     * in de vorige schil, en die is al klaar.
+     */
+    private void shine(Direction side, Long2ObjectOpenHashMap<long[]> region) {
+        long source = BlockPos.offset(lamp, side);
+        this.side = side;
+        sourceX = BlockPos.getX(source);
+        sourceY = BlockPos.getY(source);
+        sourceZ = BlockPos.getZ(source);
+        sight.clear();
+        lastSection = Long.MIN_VALUE;
+        lastSight = null;
+        setSight(source, 1.0f);
+        LongArrayList shell = new LongArrayList();
+        shell.add(source);
+        // Het plekje ligt al 1 stap van de lamp: vanaf hier nog reach - 1 stappen.
+        for (int step = 1; step < reach && !shell.isEmpty(); step++) {
+            LongArrayList next = new LongArrayList();
+            for (int i = 0; i < shell.size(); i++) {
+                long pos = shell.getLong(i);
+                if (sightAt(pos) >= PASS_ON) {
+                    queueOutward(pos, next);
+                }
+            }
+            for (int i = 0; i < next.size(); i++) {
+                long pos = next.getLong(i);
+                setSight(pos, sightOf(pos));
+            }
+            shell = next;
+        }
+        // Wat het plekje goed genoeg ziet, krijgt vol licht.
+        for (Long2ObjectMap.Entry<float[]> entry : sight.long2ObjectEntrySet()) {
+            float[] cells = entry.getValue();
+            long[] bits = null;
+            for (int i = 0; i < 4096; i++) {
+                if (cells[i] >= LIT_FROM) {
+                    if (bits == null) {
+                        bits = region.computeIfAbsent(entry.getLongKey(), key -> new long[64]);
+                    }
+                    bits[i >>> 6] |= 1L << (i & 63);
+                }
+            }
+        }
+    }
+
+    /** Zet de buren van deze plek die verder van het plekje af liggen in de volgende schil (elk één keer). */
+    private void queueOutward(long pos, LongArrayList next) {
+        int dx = BlockPos.getX(pos) - sourceX;
+        int dy = BlockPos.getY(pos) - sourceY;
+        int dz = BlockPos.getZ(pos) - sourceZ;
+        for (Direction direction : DIRECTIONS) {
+            int along = direction.getAxis().choose(dx, dy, dz);
+            if (along != 0 && Integer.signum(along) != direction.getAxisDirection().getStep()) {
+                continue; // die kant op is terug naar het plekje
+            }
+            long further = BlockPos.offset(pos, direction);
+            int ahead = side.getAxis().choose(BlockPos.getX(further) - BlockPos.getX(lamp),
+                    BlockPos.getY(further) - BlockPos.getY(lamp), BlockPos.getZ(further) - BlockPos.getZ(lamp));
+            if (ahead * side.getAxisDirection().getStep() <= 0) {
+                continue; // achter deze kant van de lamp: dat doet een andere kant
+            }
+            if (sightAt(further) == 0.0f) { // nog niet in de rij (de volgende schil is nog niet uitgerekend)
+                setSight(further, QUEUED);
+                next.add(further);
+            }
+        }
+    }
+
+    /**
+     * Hoe goed het plekje deze plek ziet, van 0 tot 1. Niet als het blok zelf het licht tegenhoudt (zie
+     * {@link #stopsBeam}). Anders: het gemiddelde van zijn buren aan de kant van het plekje, elk zo zwaar
+     * als hij in die richting ervan af ligt (3 opzij en 1 omhoog: 3/4 de buur ernaast, 1/4 de buur eronder).
+     * Zit de dichte kant van een plaat of trap tussen hem en een buur, dan telt die buur als 0.
+     */
+    private float sightOf(long pos) {
+        BlockState to = stateAt(pos);
+        if (to == null || stopsBeam(to, getter, there.set(pos))) {
+            return 0.0f; // niet geladen, een sectie zonder licht, of een muur
+        }
+        int dx = BlockPos.getX(pos) - sourceX;
+        int dy = BlockPos.getY(pos) - sourceY;
+        int dz = BlockPos.getZ(pos) - sourceZ;
+        float seen = 0.0f;
+        for (Direction direction : DIRECTIONS) {
+            int along = direction.getAxis().choose(dx, dy, dz);
+            if (along == 0 || Integer.signum(along) != direction.getAxisDirection().getStep()) {
+                continue; // het licht komt niet uit die richting
+            }
+            long back = BlockPos.offset(pos, direction.getOpposite());
+            float behind = sightAt(back);
+            if (behind <= 0.0f) {
                 continue;
             }
-            while (!queue.isEmpty()) {
-                long pos = queue.dequeueLong();
-                if (costOf(pos) != cost) {
-                    continue; // later via een kortere weg gevonden
-                }
-                BlockState from = pos == start ? getter.getBlockState(here.set(pos)) : stateAt(pos);
-                if (from == null) {
-                    continue;
-                }
-                here.set(pos);
-                for (Direction direction : DIRECTIONS) {
-                    long next = BlockPos.offset(pos, direction);
-                    BlockState to = stateAt(next);
-                    if (to == null) {
-                        continue; // niet geladen, of een sectie zonder licht
-                    }
-                    there.set(next);
-                    // Zoveel houdt dit blok tegen: lucht en glas 0, water en bladeren 1, een muur 15.
-                    int blocked = to.getLightBlock(getter, there);
-                    if (blocked >= LightEngine.MAX_LEVEL) {
-                        continue;
-                    }
-                    int step = cost + Math.max(1, blocked);
-                    if (step > reach) {
-                        continue;
-                    }
-                    int known = costOf(next);
-                    if (known >= 0 && known <= step) {
-                        continue;
-                    }
-                    if (occludes(here, from, there, to, direction)) {
-                        continue;
-                    }
-                    setCost(next, step);
-                    bucket(buckets, step).enqueue(next);
-                }
+            BlockState from = stateAt(back);
+            if (from == null || occludes(here.set(back), from, there.set(pos), to, direction)) {
+                continue;
             }
-            buckets[cost] = null; // klaar met deze emmer, mag weg
+            seen += Math.abs(along) * behind;
         }
-        return finish();
+        return seen / (Math.abs(dx) + Math.abs(dy) + Math.abs(dz));
+    }
+
+    /**
+     * Houdt dit blok het licht van de lamp helemaal tegen? Een muur (een blok dat al het licht tegenhoudt,
+     * ook getint glas), en een dichte deur of een dicht luik: in het gewone spel gaat licht daar doorheen,
+     * maar dan zou een dichte deur geen kamers scheiden. Glas, water en bladeren laten het door.
+     */
+    static boolean stopsBeam(BlockState state, BlockGetter level, BlockPos pos) {
+        return state.getLightBlock(level, pos) >= LightEngine.MAX_LEVEL || closedDoor(state);
+    }
+
+    /** Een dichte deur of een dicht luik (ook die van ijzer). */
+    static boolean closedDoor(BlockState state) {
+        return (state.getBlock() instanceof DoorBlock || state.getBlock() instanceof TrapDoorBlock)
+                && state.hasProperty(BlockStateProperties.OPEN) && !state.getValue(BlockStateProperties.OPEN);
     }
 
     /** Zit de dichte kant van een van de twee blokken (een plaat, een trap) tussen ze in? Net als het spel. */
@@ -192,43 +345,6 @@ final class LampSurvey {
     /** Hetzelfde als LightEngine.isEmptyShape (die is niet openbaar). */
     private static boolean emptyShape(BlockState state) {
         return !state.canOcclude() || !state.useShapeForLightOcclusion();
-    }
-
-    /** Van de stappen per plek naar de bits per sectie, plus wat de vorige meting vond in chunks die we niet zagen. */
-    private Long2ObjectMap<long[]> finish() {
-        Long2ObjectOpenHashMap<long[]> region = new Long2ObjectOpenHashMap<>();
-        long originSection = SectionPos.blockToSection(origin.asLong());
-        for (Long2ObjectMap.Entry<byte[]> entry : costs.long2ObjectEntrySet()) {
-            byte[] cells = entry.getValue();
-            long[] bits = new long[64];
-            int count = 0;
-            for (int i = 0; i < 4096; i++) {
-                if (cells[i] != 0) {
-                    bits[i >>> 6] |= 1L << (i & 63);
-                    count++;
-                }
-            }
-            if (entry.getLongKey() == originSection) {
-                int i = index(origin.asLong());
-                bits[i >>> 6] &= ~(1L << (i & 63));
-                count--;
-            }
-            if (count == 4096) {
-                region.put(entry.getLongKey(), FULL);
-            } else if (count > 0) {
-                region.put(entry.getLongKey(), bits);
-            }
-        }
-        if (previous != null) {
-            for (Long2ObjectMap.Entry<long[]> entry : previous.long2ObjectEntrySet()) {
-                int cx = SectionPos.x(entry.getLongKey()) - minChunkX;
-                int cz = SectionPos.z(entry.getLongKey()) - minChunkZ;
-                if (cx >= 0 && cz >= 0 && cx < size && cz < size && chunks[cx + cz * size] == null) {
-                    region.put(entry.getLongKey(), entry.getValue());
-                }
-            }
-        }
-        return region;
     }
 
     // ================================================================ Hulpjes
@@ -261,38 +377,31 @@ final class LampSurvey {
         return (BlockPos.getY(pos) & 15) << 8 | (BlockPos.getZ(pos) & 15) << 4 | (BlockPos.getX(pos) & 15);
     }
 
-    /** Hoeveel stappen het licht naar deze plek nodig had, of -1 als het er (nog) niet kwam. */
-    private int costOf(long pos) {
-        byte[] cells = cellsOf(SectionPos.blockToSection(pos), false);
-        return cells == null ? -1 : cells[index(pos)] - 1;
+    /** Hoe goed het plekje deze plek ziet (0 als het er nog niet naar keek, {@link #QUEUED} als hij in de rij staat). */
+    private float sightAt(long pos) {
+        float[] cells = cellsOf(SectionPos.blockToSection(pos), false);
+        return cells == null ? 0.0f : cells[index(pos)];
     }
 
-    private void setCost(long pos, int cost) {
-        cellsOf(SectionPos.blockToSection(pos), true)[index(pos)] = (byte) (cost + 1);
+    private void setSight(long pos, float value) {
+        cellsOf(SectionPos.blockToSection(pos), true)[index(pos)] = value;
     }
 
-    private @Nullable byte[] cellsOf(long section, boolean create) {
+    private @Nullable float[] cellsOf(long section, boolean create) {
         if (section == lastSection) {
-            return lastCosts;
+            return lastSight;
         }
-        byte[] cells = costs.get(section);
+        float[] cells = sight.get(section);
         if (cells == null) {
             if (!create) {
                 return null;
             }
-            cells = new byte[4096];
-            costs.put(section, cells);
+            cells = new float[4096];
+            sight.put(section, cells);
         }
         lastSection = section;
-        lastCosts = cells;
+        lastSight = cells;
         return cells;
-    }
-
-    private static LongArrayFIFOQueue bucket(LongArrayFIFOQueue[] buckets, int cost) {
-        if (buckets[cost] == null) {
-            buckets[cost] = new LongArrayFIFOQueue();
-        }
-        return buckets[cost];
     }
 
     private static long[] full() {

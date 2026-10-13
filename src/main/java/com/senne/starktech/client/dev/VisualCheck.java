@@ -1922,7 +1922,7 @@ public final class VisualCheck {
         }
 
         // --- Licht (9 oktober): 's nachts een Arc Lamp op een paal, met een kabel van een generator en
-        // een lichtschakelaar op de kabel. Eerst uit (donker), dan de schakelaar om: de lamp met zijn gloed
+        // een lichtschakelaar op de kabel. Eerst uit (donker), dan de schakelaar om: de lamp
         // van dichtbij, het veld van ver weg en van bovenaf (tot 85 blokken vol licht), zijn instelscherm
         // met de lamp op lichtniveau 40 (en dan het veld van bovenaf: een veel kleinere ruit), de
         // schakelaar van dichtbij, en weer uit.

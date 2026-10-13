@@ -12,6 +12,7 @@ import com.senne.starktech.network.LampActionPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.station.ChargerBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -21,8 +22,10 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -193,8 +196,8 @@ public final class LightGameTests {
      * De helderheid instellen (10 oktober: "zorg dat je de brightness kunt instellen"). Op lichtniveau 40 is
      * het tot 25 blokken vol licht (40 min 15), op 30 blokken 10, op 40 donker. Op niveau 10 is het een
      * gewone, zwakke lamp: het blok geeft zelf 10, op 5 blokken is het 5, en er zijn geen onzichtbare
-     * lichtbronnen meer. Het scherm (via de server) werkt alleen als je dichtbij staat; de gloed blijft
-     * tussen 0 en 100%, en een lamp op 50 gebruikt de helft van de stroom.
+     * lichtbronnen meer. Het scherm (via de server) werkt alleen als je dichtbij staat, en een lamp op 50
+     * gebruikt de helft van de stroom.
      *
      * Een eigen batch: dit licht reikt over de andere tests heen.
      */
@@ -227,10 +230,6 @@ public final class LightGameTests {
         near.moveTo(helper.absolutePos(lamp).getX() + 2.5, helper.absolutePos(lamp).getY(), helper.absolutePos(lamp).getZ() + 0.5);
         ArcLamps.handleAction(near, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.BRIGHTNESS, 40));
         check(entity.brightness() == 40, "Het scherm zette de lamp niet op 40, maar op " + entity.brightness());
-        ArcLamps.handleAction(near, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.GLOW, 150));
-        check(entity.glow() == 100, "De gloed kan niet boven 100%: " + entity.glow());
-        ArcLamps.handleAction(near, new LampActionPayload(helper.absolutePos(lamp), LampActionPayload.Op.GLOW, -5));
-        check(entity.glow() == 0, "De gloed kan niet onder 0%: " + entity.glow());
         check(Math.abs(ArcLampBlockEntity.powerPerTick(50) - ArcLampBlockEntity.powerPerTick(100) / 2) < 1.0E-9,
                 "Een lamp op 50 zou de helft moeten gebruiken van een lamp op 100");
 
@@ -266,7 +265,101 @@ public final class LightGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Licht per kamer (13 oktober: "zorg dat het licht niet door muren kan, dat je echt licht per kamer moet
+     * hebben"). Twee stenen kamers naast elkaar, met een deur in de muur ertussen. De lamp zit in het
+     * plafond van de linkerkamer (de generator staat erbovenop, op het dak).
+     * <ul>
+     *   <li>Deur dicht: de hele linkerkamer vol licht, tot in de hoeken en langs het plafond; in de
+     *       rechterkamer geen enkele plek van de lamp. Daar komt alleen wat gewoon licht onder de deur door
+     *       (zoals bij een fakkel), dus achterin is het niet meer dan 10.</li>
+     *   <li>Deur open: door de deuropening valt een bundel, maar naast de deur en in de verre hoek blijft het
+     *       donker.</li>
+     *   <li>Deur weer dicht: de bundel is weg.</li>
+     * </ul>
+     * Een eigen batch: zo stoort deze lamp de andere lamp-tests niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 900, batch = "arc_lamp_rooms")
+    public static void arc_lamp_light_stays_in_its_room(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // Linkerkamer: binnen x 2-6, y 3-5, z 2-6. Rechterkamer: binnen x 8-12. De muur ertussen: x 7.
+        hollowBox(helper, new BlockPos(1, 2, 1), new BlockPos(7, 6, 7));
+        hollowBox(helper, new BlockPos(7, 2, 1), new BlockPos(13, 6, 7));
+        BlockPos doorLow = new BlockPos(7, 3, 4);
+        door(helper, doorLow, false);
+        BlockPos lamp = new BlockPos(4, 6, 4);
+        BlockPos generator = lamp.above();
+        helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(20_000);
+        helper.setBlock(lamp, ModBlocks.ARC_LAMP.get());
+        BlockPos[] leftCorners = {new BlockPos(2, 3, 2), new BlockPos(6, 3, 6), new BlockPos(2, 5, 6), new BlockPos(6, 5, 2)};
+        BlockPos beam = new BlockPos(10, 3, 4);       // recht door de deuropening
+        BlockPos besideDoor = new BlockPos(8, 3, 6);  // vlak achter de muur, naast de deur
+        BlockPos farCorner = new BlockPos(12, 5, 2);  // de verre hoek, uit de bundel
+        BlockPos backOfRight = new BlockPos(12, 3, 6);
+        helper.startSequence()
+                .thenWaitUntil(slowly(() -> {
+                    check(lit(helper, lamp), "De lamp brandt niet, terwijl er een volle generator op staat");
+                    for (BlockPos corner : leftCorners) {
+                        check(ArcLampLight.isLit(level, helper.absolutePos(corner)), "De lamp verlicht zijn eigen kamer niet in de hoek " + corner);
+                    }
+                    check(light(helper, leftCorners[0]) == 15, "In de hoek van de eigen kamer zou het 15 moeten zijn, niet "
+                            + light(helper, leftCorners[0]));
+                    check(ArcLampLight.settled(level), "De lamp is nog bezig");
+                }))
+                .thenExecute(() -> {
+                    for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(8, 3, 2), new BlockPos(12, 5, 6))) {
+                        check(!ArcLampLight.isLit(level, helper.absolutePos(pos)),
+                                "Het licht van de lamp komt door de dichte deur, in de andere kamer op " + pos.immutable());
+                    }
+                    check(light(helper, backOfRight) <= 10, "Achterin de andere kamer is het nog " + light(helper, backOfRight));
+                    door(helper, doorLow, true);
+                })
+                // Deur open: een bundel door de opening, maar niet de hele kamer.
+                .thenWaitUntil(slowly(() -> {
+                    check(ArcLampLight.isLit(level, helper.absolutePos(beam)), "Door de open deur valt geen licht");
+                    check(light(helper, beam) == 15, "In de bundel door de deur zou het 15 moeten zijn, niet " + light(helper, beam));
+                    check(ArcLampLight.settled(level), "De lamp is nog bezig");
+                }))
+                .thenExecute(() -> {
+                    check(!ArcLampLight.isLit(level, helper.absolutePos(besideDoor)), "Het licht gaat om de hoek van de deur");
+                    check(!ArcLampLight.isLit(level, helper.absolutePos(farCorner)), "Het licht vult de hele andere kamer");
+                    door(helper, doorLow, false);
+                })
+                // Deur weer dicht: de bundel is weg.
+                .thenWaitUntil(slowly(() -> {
+                    check(!ArcLampLight.isLit(level, helper.absolutePos(beam)), "De deur is dicht, maar de bundel is er nog");
+                    check(light(helper, backOfRight) <= 10, "De deur is dicht, maar achterin is het nog " + light(helper, backOfRight));
+                    check(ArcLampLight.settled(level), "De lamp is nog bezig");
+                }))
+                .thenExecute(() -> {
+                    helper.setBlock(lamp, Blocks.AIR);
+                    for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(1, 2, 1), new BlockPos(13, 7, 7))) {
+                        helper.getLevel().setBlock(helper.absolutePos(pos), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                    }
+                })
+                .thenSucceed();
+    }
+
     // ================================================================ Hulpjes
+
+    /** Een holle doos van steen van {@code from} tot en met {@code to} (vloer, plafond en vier muren). */
+    private static void hollowBox(GameTestHelper helper, BlockPos from, BlockPos to) {
+        for (BlockPos pos : BlockPos.betweenClosed(from, to)) {
+            boolean wall = pos.getX() == from.getX() || pos.getX() == to.getX() || pos.getY() == from.getY()
+                    || pos.getY() == to.getY() || pos.getZ() == from.getZ() || pos.getZ() == to.getZ();
+            helper.getLevel().setBlock(helper.absolutePos(pos),
+                    (wall ? Blocks.STONE : Blocks.AIR).defaultBlockState(), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /** Een eikenhouten deur (twee blokken hoog, onderkant op {@code low}), open of dicht. */
+    private static void door(GameTestHelper helper, BlockPos low, boolean open) {
+        BlockState state = Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.EAST)
+                .setValue(DoorBlock.OPEN, open);
+        helper.getLevel().setBlock(helper.absolutePos(low), state.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), Block.UPDATE_CLIENTS);
+        helper.getLevel().setBlock(helper.absolutePos(low.above()), state.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), Block.UPDATE_CLIENTS);
+    }
 
     /**
      * Wachten op iets dat op een andere thread gebeurt (de meting van de lamp, en het licht-rekenwerk van het

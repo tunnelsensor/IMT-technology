@@ -21,15 +21,12 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * De binnenkant van een Arc Lamp: zijn instellingen, en elke tick stroom halen en aan of uit.
  *
- * <h2>Instellingen (10 oktober: "zorg dat je de brightness kunt instellen")</h2>
- * <ul>
- *   <li><b>Helderheid</b>: zijn lichtniveau, van 1 tot het maximum uit de config (100). Tot 15 is het een
- *       gewone lamp; daarboven reikt zijn licht verder (zie ArcLampLight). Een nieuwe lamp staat op het
- *       maximum.</li>
- *   <li><b>Gloed</b>: hoe fel de stralenkrans om de lamp is, van 0% (geen) tot 100%. Alleen voor het oog.</li>
- * </ul>
- * Je stelt ze in met het scherm van de lamp (zie ArcLamps en ArcLampScreen). De lamp onthoudt ze, en je
- * eigen spel krijgt ze mee (voor het scherm en de gloed).
+ * <h2>Instelling (10 oktober: "zorg dat je de brightness kunt instellen")</h2>
+ * <b>Helderheid</b>: zijn lichtniveau, van 1 tot het maximum uit de config (100). Tot 15 is het een
+ * gewone lamp; daarboven reikt zijn licht verder (zie ArcLampLight). Een nieuwe lamp staat op het
+ * maximum. Je stelt het in met het scherm van de lamp (zie ArcLamps en ArcLampScreen). De lamp onthoudt
+ * het, en je eigen spel krijgt het mee (voor het scherm). (Er was ook een gloed om de lamp; die is weg
+ * sinds 13 oktober.)
  *
  * <h2>Stroom</h2>
  * Stroom = aan, geen stroom = uit (jouw wens). Een lamp op niveau 100 gebruikt
@@ -45,13 +42,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * Zet je een lichtschakelaar uit, dan ziet hij de volgende tick geen generator meer, en gaat hij meteen uit.
  */
 public class ArcLampBlockEntity extends BlockEntity {
-    /** De gloed, in procenten. */
-    public static final int MAX_GLOW = 100;
-
     /** Zijn lichtniveau (1 tot het maximum uit de config). */
     private int brightness = Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL);
-    /** Hoe fel de gloed om hem heen is (0 tot 100%). */
-    private int glow = MAX_GLOW;
     /** Stroom die hij nog moet betalen (minder dan 1; zie {@link #powerPerTick}). */
     private double owed;
     /** In je eigen spel: wat we ArcLampLight het laatst vertelden. */
@@ -68,24 +60,11 @@ public class ArcLampBlockEntity extends BlockEntity {
         return Mth.clamp(brightness, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL));
     }
 
-    public int glow() {
-        return glow;
-    }
-
     /** Een ander lichtniveau (uit het scherm): 1 tot het maximum. */
     public void setBrightness(int value) {
         int clamped = Mth.clamp(value, 1, Math.round(StarkConfig.Lights.ARC_LAMP_MAX_LEVEL));
         if (clamped != brightness) {
             brightness = clamped;
-            changed();
-        }
-    }
-
-    /** Een andere gloed (uit het scherm): 0 tot 100%. */
-    public void setGlow(int value) {
-        int clamped = Mth.clamp(value, 0, MAX_GLOW);
-        if (clamped != glow) {
-            glow = clamped;
             changed();
         }
     }
@@ -177,22 +156,19 @@ public class ArcLampBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("Brightness", brightness);
-        tag.putInt("Glow", glow);
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        // Een lamp van vóór 10 oktober heeft dit nog niet: die blijft op het maximum, met volle gloed.
+        // Een lamp van vóór 10 oktober heeft dit nog niet: die blijft op het maximum. (Een lamp van vóór
+        // 13 oktober heeft ook nog "Glow": die gloed bestaat niet meer, dus dat slaan we over.)
         if (tag.contains("Brightness")) {
             brightness = tag.getInt("Brightness");
         }
-        if (tag.contains("Glow")) {
-            glow = Mth.clamp(tag.getInt("Glow"), 0, MAX_GLOW);
-        }
     }
 
-    /** Wat je eigen spel van de lamp krijgt: zijn helderheid en gloed (voor het scherm en de gloed). */
+    /** Wat je eigen spel van de lamp krijgt: zijn helderheid (voor het scherm). */
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         return saveWithoutMetadata(registries);

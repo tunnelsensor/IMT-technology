@@ -150,7 +150,7 @@ public final class ModNetwork {
                 HoloTables.handleAction(player, payload);
             }
         });
-        // De Arc Lamp: een schuifje uit zijn instelscherm (helderheid of gloed).
+        // De Arc Lamp: het schuifje uit zijn instelscherm (helderheid).
         registrar.playToServer(LampActionPayload.TYPE, LampActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 com.senne.starktech.light.ArcLamps.handleAction(player, payload);

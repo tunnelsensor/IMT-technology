@@ -35,7 +35,6 @@ public final class ArcLamps {
         }
         switch (payload.op()) {
             case BRIGHTNESS -> lamp.setBrightness(payload.value());
-            case GLOW -> lamp.setGlow(payload.value());
         }
     }
 

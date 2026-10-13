@@ -47,9 +47,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Hoe we er 100 van maken</h2>
  * <ol>
- *   <li>We meten zelf hoe ver het licht van de lamp zou komen als hij 100 kon geven (zie {@link LampSurvey}):
- *       stap voor stap, net als het spel, maar met 100 in plaats van 15. Elke plek waar dat licht nog 15 of
- *       meer is (tot 85 stappen ver), onthouden we.</li>
+ *   <li>We meten zelf waar het licht van de lamp zou komen als hij 100 kon geven (zie {@link LampSurvey}):
+ *       elke plek die de lamp in een rechte lijn kan zien, tot 85 stappen ver. Om hoeken en door muren
+ *       of dichte deuren gaat het niet: elke kamer heeft zijn eigen lamp nodig (13 oktober). Die plekken
+ *       onthouden we.</li>
  *   <li>Op al die plekken doen we alsof er een onzichtbare lichtbron van 15 staat. Het spel vraagt bij
  *       het rekenen aan elk blok "hoeveel licht geef jij?"; via een mixin (mixin/BlockLightEngineMixin)
  *       zeggen wij dan 15 voor die plekken ({@link #emission}).</li>
@@ -57,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
  *       zacht uit, precies zoals een lamp van 100 zou doen.</li>
  * </ol>
  * Omdat het "gewoon" licht van het spel is, werkt alles vanzelf: je ziet het (ook je vrienden op de
- * server), monsters spawnen er niet, planten groeien erbij, en het licht gaat niet door muren.
+ * server), monsters spawnen er niet, en planten groeien erbij.
  *
  * <h2>Wat erbij komt kijken</h2>
  * <ul>
@@ -306,7 +307,8 @@ public final class ArcLampLight {
 
     /**
      * Een blok veranderde (zie mixin/LevelChunkMixin). Houdt het nieuwe blok licht anders tegen dan het
-     * oude (een muur waar lucht was, glas waar een muur was), dan meten we de lampen in de buurt opnieuw.
+     * oude (een muur waar lucht was, glas waar een muur was, een deur die opengaat), dan meten we de
+     * lampen in de buurt opnieuw.
      */
     public static void blockChanged(Level level, BlockPos pos, BlockState before, BlockState after) {
         if (!(level instanceof ServerLevel)) {
@@ -326,13 +328,15 @@ public final class ArcLampLight {
 
     /**
      * Houdt het nieuwe blok licht anders tegen dan het oude? (Of is een van de twee een plaat of trap, die
-     * maar aan één kant dicht is.) Alleen dan kan de meting anders uitkomen. Een fakkel neerzetten of een
-     * andere lamp die aangaat verandert alleen hoeveel licht een blok zelf geeft: dat maakt voor de meting
-     * niets uit.
+     * maar aan één kant dicht is.) Een deur of luik dat open- of dichtgaat telt ook: voor de lamp is een
+     * dichte deur een muur (zie LampSurvey.stopsBeam). Alleen dan kan de meting anders uitkomen. Een fakkel
+     * neerzetten of een andere lamp die aangaat verandert alleen hoeveel licht een blok zelf geeft: dat
+     * maakt voor de meting niets uit.
      */
     private static boolean blocksDifferently(Level level, BlockPos pos, BlockState before, BlockState after) {
         return before.getLightBlock(level, pos) != after.getLightBlock(level, pos)
-                || before.useShapeForLightOcclusion() || after.useShapeForLightOcclusion();
+                || before.useShapeForLightOcclusion() || after.useShapeForLightOcclusion()
+                || LampSurvey.closedDoor(before) != LampSurvey.closedDoor(after);
     }
 
     /** Een chunk is geladen: de lampen die erbij kunnen, meten opnieuw (nu zien ze meer). */
