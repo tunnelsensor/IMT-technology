@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 216 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 218 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2140,6 +2140,41 @@ zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI 
       (`73_laser_flat`, `74_laser_flat_angle`, `75_laser_screen`: een cyaan poort van drie hoog, omgekeerd
       en liggend). In de showcase: "Rayshield: laser settings".
 
+### 17. Een keycardlezer hernoemen (13 oktober)
+
+Jouw wens: "rename keycard reader door **sneak rechts te klikken zonder item in hand**, dit kan **enkel de
+owner doen of trusted players in zone**".
+
+- [x] **1. Sneak + klik opent het naamscherm.** Gewoon rechtsklikken op een lezer zegt nog steeds "Hold a
+      keycard and right-click the reader." **Sluipen + rechtsklik met een lege hand** opent nu een klein
+      scherm (`client/InputNameScreen`, Engels in het spel): bovenaan van wie hij is ("Placed by ...", of
+      "Part of this base"), het vakje met de naam (helemaal geselecteerd: typen vervangt hem), en eronder
+      hoe je hem in een diagram noemt: `when keycard("Lab door"):`, in de kleuren van de app Logic. Typ je
+      een andere naam, dan zegt het scherm in het oranje "Change it in your diagrams too.": een diagram
+      zoekt de lezer op zijn naam. **Save** of Enter bewaart, **Cancel** of Esc laat het zoals het was.
+      Dezelfde regels als Rename in de app Devices: hooguit 24 tekens, geen aanhalingstekens, leeg mag
+      niet. Boven je hotbar staat dan "Renamed to ...", en het logboek van de kern zegt wie welke lezer
+      hernoemde (`InputDevices.handleRename`). Met een kaart of de Bypass Kit in je hand werkt sluipen
+      zoals altijd: dan gebruik je dat ding (de kit begint gewoon zijn hack).
+- [x] **2. Wie mag het** (`InputDevices.mayRename`): wie de lezer neerzette (een lezer onthoudt dat nu,
+      `InputDeviceBlockEntity.owner`) en wie vertrouwd is in de basis waar hij hangt: de eigenaar van de
+      beveiligingskern, zijn team en zijn vertrouwde spelers (Access). Een ander hoort "This keycard reader
+      belongs to ...". Je moet binnen 6 blokken staan. **Mijn invulling**: "de owner" lees ik als wie hem
+      neerzette; de eigenaar van de kern is in zijn eigen basis altijd vertrouwd, dus die mag het ook (zo
+      klopt het allebei). "In zone" is, net als bij de laserzender, de zone én de rest van het gebied van
+      de kern. Het is precies de regel van de laserzender, die nu op één plek staat (`security/BaseTrust`,
+      de laserzender gebruikt hem ook). Een lezer van vóór vandaag heeft nog geen eigenaar: die wordt van
+      wie er als eerste op sneak-klikt, behalve in iemands basis (dan alleen de vertrouwde spelers daar).
+      Alleen de keycardlezer, zoals je vroeg: een codepaneel opent bij een klik (ook met sneak) gewoon zijn
+      toetsen; dat hernoem je in Devices. De netwerkversie is nu 19 (twee nieuwe berichten).
+- [x] **Tests en beelden.** Twee nieuwe tests (`LogicGameTests`): de eigenaar hernoemt (de naam wordt netjes,
+      leeg en van ver weg niet), een vreemde niet, en een lezer zonder eigenaar wordt van wie er als eerste
+      op sneak-klikt (gewoon klikken niet); en in een zone: een vertrouwde speler wel (met een regel in het
+      logboek), een vreemde niet, ook niet een lezer zonder eigenaar overnemen. 218 tests: 215 groen, de 3
+      rode van hoofdstuk 14 stap 2. Screenshots: `-Ponly=devrename` (`dr4_reader_name_screen`,
+      `dr5_reader_name_typed`, `dr6_reader_renamed`). In de showcase: in "Server racks and Logic", na het
+      codepaneel (het scherm met "Lab entrance" getypt, dan Esc, zodat het diagram blijft werken).
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -2206,6 +2241,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Het naamscherm van de keycardlezer (13 oktober)**: gezien op screenshots (`dr4`-`dr6`) en in de
+      showcase. Probeer zelf of sluipen + rechtsklik met een lege hand fijn werkt, ook met een vriend in je
+      Access en met een vreemde (die hoort "This keycard reader belongs to ...").
 
 ---
 

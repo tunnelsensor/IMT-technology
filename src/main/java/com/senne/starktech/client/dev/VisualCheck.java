@@ -1669,6 +1669,24 @@ public final class VisualCheck {
             });
             t.shot(25, "dr3_devices_renamed");
             t.close(10);
+            // 13 oktober: dezelfde lezer hernoemen zonder desktop, met sneak + rechtsklik (jij bent de eigenaar van
+            // de kern, dus vertrouwd). Typen toont de regel voor je diagram en dat je die ook moet veranderen; Save
+            // zegt het boven je hotbar.
+            BlockPos reader = wall.offset(-1, 0, 1);
+            t.onServer(0, player -> com.senne.starktech.logic.InputDevices.open(player, reader));
+            t.shot(15, "dr4_reader_name_screen");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.InputNameScreen screen) {
+                    screen.tourType("Lab entrance");
+                }
+            });
+            t.shot(5, "dr5_reader_name_typed");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.InputNameScreen screen) {
+                    screen.tourSave();
+                }
+            });
+            t.shot(10, "dr6_reader_renamed");
         }
 
         // --- Het lab van de showcase (hoofdstuk 8): de deur met keycard, het paneel met de lamp.

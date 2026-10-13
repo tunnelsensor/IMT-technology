@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
@@ -82,12 +83,18 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
 
     // ================================================================ Naam
 
-    /** Een naam uit een aambeeld, of anders "Reader 2" (het eerste vrije nummer in dit netwerk). */
+    /**
+     * Een naam uit een aambeeld, of anders "Reader 2" (het eerste vrije nummer in dit netwerk). En wie hem
+     * neerzet, is zijn eigenaar (die mag een keycardlezer met sneak + rechtsklik hernoemen, zie InputDevices).
+     */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (!(level instanceof ServerLevel serverLevel) || !(level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device)) {
             return;
+        }
+        if (placer instanceof ServerPlayer player) {
+            device.setOwner(player);
         }
         if (stack.has(DataComponents.CUSTOM_NAME)) {
             device.setName(stack.getHoverName().getString());

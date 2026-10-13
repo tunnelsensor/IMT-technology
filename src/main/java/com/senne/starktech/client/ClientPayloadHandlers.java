@@ -191,6 +191,14 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Het naamscherm van een keycardlezer openen (sneak + rechtsklik, 13 oktober). */
+    public static void onInputNameOpen(com.senne.starktech.network.InputNameOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new InputNameScreen(payload.pos(), payload.name(), payload.owner()));
+        }
+    }
+
     /** De server zet je stuwraketten uit (energie op, harnas uit...). */
     public static void onSuitFlight(SuitFlightPayload payload, IPayloadContext context) {
         if (!payload.engaged()) {

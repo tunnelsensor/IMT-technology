@@ -27,6 +27,9 @@ import net.minecraft.world.phys.BlockHitResult;
  * </pre>
  * Ook een lege kaart of een kaart van een ander netwerk lees je: dan is {@code card.valid} false, en
  * kan je diagram bijvoorbeeld alarm slaan.
+ *
+ * Een andere naam geven: sneak + rechtsklik met een lege hand (13 oktober), voor wie hem neerzette of wie
+ * vertrouwd is in de basis (zie InputDevices). Of op de desktop, in de app Devices of Logic.
  */
 public class KeycardReaderBlock extends InputDeviceBlock {
     public static final MapCodec<KeycardReaderBlock> CODEC = simpleCodec(KeycardReaderBlock::new);
@@ -59,11 +62,19 @@ public class KeycardReaderBlock extends InputDeviceBlock {
         return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    /** Zonder kaart: zeg wat je moet doen. */
+    /**
+     * Zonder kaart: zeg wat je moet doen. Sneak + rechtsklik met een lege hand (13 oktober): het naamscherm, als
+     * je mag (zie InputDevices). Met iets in je hand en sneak slaat Minecraft dit zelf over: dan gebruik je dat
+     * ding (de Bypass Kit begint dan gewoon zijn hack).
+     */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (!level.isClientSide) {
-            player.displayClientMessage(Component.translatable("logic.starktech.reader.hint").withStyle(ChatFormatting.GRAY), true);
+        if (player instanceof ServerPlayer serverPlayer) {
+            if (player.isSecondaryUseActive()) {
+                InputDevices.open(serverPlayer, pos);
+            } else {
+                player.displayClientMessage(Component.translatable("logic.starktech.reader.hint").withStyle(ChatFormatting.GRAY), true);
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

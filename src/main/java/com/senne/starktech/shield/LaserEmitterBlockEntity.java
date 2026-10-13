@@ -1,6 +1,7 @@
 package com.senne.starktech.shield;
 
 import com.senne.starktech.registry.ModBlockEntities;
+import com.senne.starktech.security.BaseTrust;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -18,11 +19,11 @@ import org.jetbrains.annotations.Nullable;
  * LaserEmitterBlock), want die moet iedereen zien; alleen de eigenaar staat hier.
  *
  * Een zender van vóór 13 oktober, of een die in een gebouw stond (de Stark Tower, de Hydra-bunker), heeft
- * nog geen eigenaar. Wie dan mag, staat in LaserEmitters.mayEdit.
+ * nog geen eigenaar. Wie dan mag, staat in security/BaseTrust (dezelfde regel als bij de keycardlezer).
  *
  * Omdat de zender nu een blok-entiteit heeft, kan een zuiger hem niet meer wegduwen (zoals een kist).
  */
-public class LaserEmitterBlockEntity extends BlockEntity {
+public class LaserEmitterBlockEntity extends BlockEntity implements BaseTrust.Placed {
     private @Nullable UUID owner;
     private String ownerName = "";
 
@@ -30,14 +31,17 @@ public class LaserEmitterBlockEntity extends BlockEntity {
         super(ModBlockEntities.LASER_EMITTER.get(), pos, state);
     }
 
+    @Override
     public @Nullable UUID owner() {
         return owner;
     }
 
+    @Override
     public String ownerName() {
         return ownerName;
     }
 
+    @Override
     public void setOwner(ServerPlayer player) {
         owner = player.getUUID();
         ownerName = player.getGameProfile().getName();

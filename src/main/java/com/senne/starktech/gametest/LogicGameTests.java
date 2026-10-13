@@ -4,6 +4,7 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.InputDeviceBlock;
 import com.senne.starktech.logic.InputDeviceBlockEntity;
+import com.senne.starktech.logic.InputDevices;
 import com.senne.starktech.logic.InputLight;
 import com.senne.starktech.logic.KeycardData;
 import com.senne.starktech.logic.LogicEvents;
@@ -14,22 +15,30 @@ import com.senne.starktech.logic.program.LogicGraph;
 import com.senne.starktech.logic.program.Script;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.logic.program.ScriptPrinter;
+import com.senne.starktech.network.InputRenamePayload;
 import com.senne.starktech.network.OsActionPayload;
 import com.senne.starktech.redstone.Relay;
 import com.senne.starktech.redstone.RelayBlock;
 import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
+import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.os.StarkOs;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -447,6 +456,132 @@ public final class LogicGameTests {
         args.putInt("z", pos.getZ());
         args.putString("name", name);
         StarkOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "input_rename", args));
+    }
+
+    // ================================================================ Een lezer hernoemen met sneak + rechtsklik
+
+    private static void check(boolean ok, String message) {
+        if (!ok) {
+            throw new GameTestAssertException(message);
+        }
+    }
+
+    /** Een klik op de voorkant van de lezer op {@code pos}. */
+    private static BlockHitResult hit(GameTestHelper helper, BlockPos pos) {
+        BlockPos abs = helper.absolutePos(pos);
+        return new BlockHitResult(Vec3.atCenterOf(abs), Direction.NORTH, abs, false);
+    }
+
+    /** Sneak + rechtsklik met een lege hand op de lezer (of gewoon klikken, zonder sneak). */
+    private static void click(GameTestHelper helper, ServerPlayer player, BlockPos pos, boolean sneak) {
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        player.setShiftKeyDown(sneak);
+        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), player, hit(helper, pos));
+        player.setShiftKeyDown(false);
+    }
+
+    private static InputDeviceBlockEntity input(GameTestHelper helper, BlockPos pos) {
+        return (InputDeviceBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    /** Save in het naamscherm van de lezer, zoals jouw spel het stuurt. */
+    private static void renameInWorld(GameTestHelper helper, ServerPlayer player, BlockPos pos, String name) {
+        InputDevices.handleRename(player, new InputRenamePayload(helper.absolutePos(pos), name));
+    }
+
+    /**
+     * 13 oktober: "rename keycard reader door sneak rechts te klikken zonder item in hand, dit kan enkel de owner
+     * doen of trusted players in zone". Wie de lezer neerzet, is de eigenaar en hernoemt hem (de naam wordt
+     * netjes; leeg mag niet, van ver weg ook niet); een vreemde niet. Een lezer zonder eigenaar (van vóór vandaag)
+     * wordt van wie er als eerste op sneak-klikt; gewoon klikken doet dat niet. (In zijn eigen batch, met een
+     * kleiner bereik van de kernen, zodat de kernen van andere tests hier niet meetellen.)
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "reader_rename")
+    public static void reader_rename_by_sneak_click(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 1), "reader-owner");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 1), "reader-stranger");
+        BlockPos wall = new BlockPos(3, 3, 4);
+        helper.setBlock(wall, Blocks.STONE);
+        StarkTechGameTests.withReach(4, () -> {
+            // Neergezet met de muis, tegen de noordkant van een steen: dan is de eigenaar wie hem neerzette.
+            check(ZoneGameTests.place(helper, owner, ModItems.KEYCARD_READER.get(), wall, Direction.NORTH), "Neerzetten lukte niet");
+            BlockPos reader = wall.north();
+            check(helper.getBlockState(reader).is(ModBlocks.KEYCARD_READER.get()), "Er hangt geen lezer");
+            check(owner.getUUID().equals(input(helper, reader).owner()), "Wie hem neerzette, is niet de eigenaar");
+            String first = input(helper, reader).name();
+            check(!first.isEmpty(), "De lezer kreeg bij het neerzetten geen naam");
+
+            // Een vreemde: sneak + klik opent niets, en Save doet niets.
+            click(helper, stranger, reader, true);
+            check(!InputDevices.mayRename(stranger, input(helper, reader)), "Een vreemde mag de lezer hernoemen");
+            renameInWorld(helper, stranger, reader, "Hacked");
+            check(input(helper, reader).name().equals(first), "Een vreemde kon de lezer hernoemen");
+
+            // De eigenaar: de naam wordt netjes (spaties eromheen weg, aanhalingstekens eruit).
+            renameInWorld(helper, owner, reader, "  Lab \"door\"  ");
+            check(input(helper, reader).name().equals("Lab door"), "Hernoemen werkte niet: " + input(helper, reader).name());
+            renameInWorld(helper, owner, reader, "   ");
+            check(input(helper, reader).name().equals("Lab door"), "Een lege naam werd toch bewaard");
+            // Van ver weg (meer dan 6 blokken) niet.
+            Vec3 near = owner.position();
+            Vec3 far = helper.absoluteVec(new Vec3(3.5, 2, -8.5));
+            owner.moveTo(far.x, far.y, far.z);
+            renameInWorld(helper, owner, reader, "Far away");
+            owner.moveTo(near.x, near.y, near.z);
+            check(input(helper, reader).name().equals("Lab door"), "Van ver weg kon je de lezer hernoemen");
+
+            // Een lezer zonder eigenaar: gewoon klikken neemt hem niet over, sneak + klik wel.
+            BlockPos old = new BlockPos(1, 3, 3);
+            helper.setBlock(old, ModBlocks.KEYCARD_READER.get());
+            check(input(helper, old).owner() == null, "Een lezer zonder neerzetter heeft toch een eigenaar");
+            click(helper, stranger, old, false);
+            check(input(helper, old).owner() == null, "Gewoon klikken maakte de klikker eigenaar");
+            click(helper, stranger, old, true);
+            check(stranger.getUUID().equals(input(helper, old).owner()), "Wie als eerste sneak-klikte, werd niet de eigenaar");
+            check(!InputDevices.mayRename(owner, input(helper, old)), "Daarna mocht een ander hem nog hernoemen");
+            return null;
+        });
+        helper.succeed();
+    }
+
+    /**
+     * In een zone: de vertrouwde spelers van de kern hernoemen een lezer (ook een die een ander neerzette), een
+     * vreemde niet, en het logboek van de kern zegt wie het deed. Een lezer zonder eigenaar in iemands basis kan
+     * een vreemde niet overnemen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void reader_rename_trusted_in_zone(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 6), "zone-owner");
+        ServerPlayer friend = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(9, 3, 6), "zone-friend");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(10, 3, 6), "zone-outsider");
+        SecurityCoreBlockEntity core = ZoneGameTests.zoneCore(helper, owner);
+        core.addTrusted(friend.getUUID(), friend.getGameProfile().getName());
+
+        BlockPos placed = new BlockPos(8, 3, 8);
+        BlockPos old = new BlockPos(10, 3, 10);
+        helper.setBlock(placed, ModBlocks.KEYCARD_READER.get());
+        helper.setBlock(old, ModBlocks.KEYCARD_READER.get());
+        // Een nieuwe kern meldt zich pas een tick later aan (dan pas vindt een lezer zijn logboek).
+        helper.runAfterDelay(2, () -> {
+            ModBlocks.KEYCARD_READER.get().setPlacedBy(helper.getLevel(), helper.absolutePos(placed), helper.getBlockState(placed),
+                    owner, ItemStack.EMPTY);
+            String first = input(helper, placed).name();
+            renameInWorld(helper, stranger, placed, "Hacked");
+            check(input(helper, placed).name().equals(first), "Een vreemde in de zone kon de lezer hernoemen");
+            renameInWorld(helper, friend, placed, "Vault door");
+            check(input(helper, placed).name().equals("Vault door"), "De vertrouwde speler kon de lezer niet hernoemen");
+            String line = "zone-friend renamed \"" + first + "\" to \"Vault door\"";
+            check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(line)),
+                    "Het logboek zegt niet wie de lezer hernoemde: " + lastLog(core));
+
+            // Zonder eigenaar (zoals in een oude wereld): een vreemde neemt hem niet over, een vriend mag erbij.
+            click(helper, stranger, old, true);
+            check(input(helper, old).owner() == null && !InputDevices.mayRename(stranger, input(helper, old)),
+                    "Een vreemde kon een lezer zonder eigenaar in iemands zone overnemen");
+            renameInWorld(helper, friend, old, "Back door");
+            check(input(helper, old).name().equals("Back door"), "Een vriend mag een lezer zonder eigenaar in de zone niet hernoemen");
+            ZoneGameTests.finish(helper, core);
+        });
     }
 
     /** Staat deze tekst als regel van een diagram (LOGIC) in het logboek? */

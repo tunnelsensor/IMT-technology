@@ -1,12 +1,9 @@
 package com.senne.starktech.shield;
 
-import com.senne.starktech.StarkTech;
 import com.senne.starktech.network.LaserActionPayload;
 import com.senne.starktech.network.LaserOpenPayload;
 import com.senne.starktech.network.ModNetwork;
-import com.senne.starktech.security.SecurityCoreBlockEntity;
-import com.senne.starktech.security.SecurityCores;
-import com.senne.starktech.security.zone.ZoneData;
+import com.senne.starktech.security.BaseTrust;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -23,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
  * makkelijker is om cables te leggen. Enkel de persoon die het heeft geplaatst (of trusted players in zone)
  * kunnen hier op sneak klikken en dan een GUI openen."
  *
- * Wie mag het scherm openen (zie {@link #mayEdit})?
+ * Wie mag het scherm openen (zie {@link #mayEdit}; dezelfde regel als bij de keycardlezer, security/BaseTrust)?
  * <ul>
  *   <li>Wie de zender neerzette.</li>
  *   <li>Wie in deze basis vertrouwd is: de eigenaar van de beveiligingskern, zijn team en de spelers die hij
@@ -82,56 +79,15 @@ public final class LaserEmitters {
      * of in een gebouw, dan wordt hij meteen van deze speler (zie de uitleg bovenaan).
      */
     public static boolean mayEdit(ServerPlayer player, LaserEmitterBlockEntity emitter) {
-        ServerLevel level = player.serverLevel();
-        BlockPos pos = emitter.getBlockPos();
-        if (player.getUUID().equals(emitter.owner()) || trustedHere(level, pos, player)) {
-            return true;
-        }
-        if (emitter.owner() == null && inBase(level, pos) == null && !inBuilding(level, pos)) {
-            emitter.setOwner(player);
-            return true;
-        }
-        return false;
-    }
-
-    /** Is deze speler vertrouwd in de basis waar deze plek in ligt (zijn zone, of het gebied van zijn kern)? */
-    private static boolean trustedHere(ServerLevel level, BlockPos pos, ServerPlayer player) {
-        ZoneData.Zone zone = ZoneData.get(level).at(level.dimension(), pos);
-        if (zone != null && zone.isBuilder(level, player)) {
-            return true;
-        }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
-        return core != null && SecurityCores.isFriend(level, core, player);
-    }
-
-    /** De naam van de basis waar deze plek in ligt ("" als die van niemand is), of null als hij nergens in ligt. */
-    private static @Nullable String inBase(ServerLevel level, BlockPos pos) {
-        ZoneData.Zone zone = ZoneData.get(level).at(level.dimension(), pos);
-        if (zone != null) {
-            return zone.ownerName();
-        }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
-        if (core != null) {
-            return core.ownerId() == null ? "" : core.ownerName();
-        }
-        return null;
-    }
-
-    /** Ligt deze plek in een gebouw van deze mod (de Stark Tower, de Hydra-bunker...)? */
-    private static boolean inBuilding(ServerLevel level, BlockPos pos) {
-        return level.structureManager().getStructureWithPieceAt(pos, holder -> holder.unwrapKey()
-                .map(key -> key.location().getNamespace().equals(StarkTech.MODID)).orElse(false)).isValid();
+        return BaseTrust.mayEdit(player, emitter);
     }
 
     /** Wat je te horen krijgt als je de zender niet mag instellen. */
     private static Component refusal(ServerLevel level, LaserEmitterBlockEntity emitter) {
-        if (emitter.owner() != null) {
-            return Component.translatable("edith.starktech.msg.laser_not_yours", emitter.ownerName());
-        }
-        String base = inBase(level, emitter.getBlockPos());
-        return base == null || base.isEmpty()
+        String owner = BaseTrust.belongsTo(level, emitter);
+        return owner.isEmpty()
                 ? Component.translatable("edith.starktech.msg.laser_locked")
-                : Component.translatable("edith.starktech.msg.laser_not_yours", base);
+                : Component.translatable("edith.starktech.msg.laser_not_yours", owner);
     }
 
     /** De zender waar deze speler bij kan, of null (er staat daar geen zender, of hij staat te ver weg). */

@@ -1191,7 +1191,9 @@ final class ShowcaseFeatures {
                 + "2 SSD's). In de muur een ijzeren deur, links een keycardlezer, rechts een codepaneel en een lamp. "
                 + "Eerst de kaart (niveau 3) tegen de lezer: oranje, dan groen, en de deur gaat 3 seconden open "
                 + "(het diagram doet pulse(\"Lab door lock\", 3)). Dan een kaart die geblokkeerd is: rood. Dan de "
-                + "code 4321 op het paneel: de lamp gaat aan. Daarna de app Logic op de desktop: de code van het "
+                + "code 4321 op het paneel: de lamp gaat aan. Dan sneak + rechtsklik op de lezer (13 oktober): zijn "
+                + "naamscherm, met 'Lab entrance' getypt (eronder de regel voor je diagram, en in oranje dat je die "
+                + "ook moet veranderen); Esc laat het zoals het was. Daarna de app Logic op de desktop: de code van het "
                 + "diagram (met kleuren; de deur openen staat in een eigen blok, def open_door(), dat de kaart en "
                 + "de code 7777 allebei gebruiken), en dezelfde code als blokjes met draadjes (de DEF in paars). "
                 + "Luister ook naar de nieuwe "
@@ -1222,6 +1224,16 @@ final class ShowcaseFeatures {
                                 player, "4321");
                     })
                     .pause(60)
+                    // 13 oktober: sneak + rechtsklik op de lezer = zijn naamscherm (jij bent de eigenaar van de kern).
+                    // "Lab entrance" getypt; Esc laat het zoals het was, anders vindt het diagram hem niet meer.
+                    .onServer(0, player -> com.senne.starktech.logic.InputDevices.open(player, LOGIC_LAB.offset(1, 1, 7)))
+                    .step(10, () -> {
+                        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.InputNameScreen screen) {
+                            screen.tourType("Lab entrance");
+                        }
+                    })
+                    .pause(90)
+                    .close(0)
                     // De racks van dichtbij, en dan de desktop bij de kern.
                     .stand(0, LOGIC_LAB.getX() + 3.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 15)
                     .pause(50)

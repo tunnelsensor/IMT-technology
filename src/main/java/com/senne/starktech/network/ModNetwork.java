@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "18";
+    private static final String PROTOCOL_VERSION = "19";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -162,6 +162,12 @@ public final class ModNetwork {
                 com.senne.starktech.shield.LaserEmitters.handleAction(player, payload);
             }
         });
+        // De keycardlezer: Save in zijn naamscherm (13 oktober).
+        registrar.playToServer(InputRenamePayload.TYPE, InputRenamePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.logic.InputDevices.handleRename(player, payload);
+            }
+        });
 
         // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
         // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een
@@ -195,6 +201,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onLampOpen(payload, context));
         registrar.playToClient(LaserOpenPayload.TYPE, LaserOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onLaserOpen(payload, context));
+        registrar.playToClient(InputNameOpenPayload.TYPE, InputNameOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onInputNameOpen(payload, context));
         // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server
         // zet ze uit (bijvoorbeeld als je energie op is).
         registrar.playBidirectional(SuitFlightPayload.TYPE, SuitFlightPayload.STREAM_CODEC,
