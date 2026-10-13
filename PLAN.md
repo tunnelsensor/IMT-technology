@@ -14,9 +14,9 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 205 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 210 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 86 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 87 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2017,6 +2017,49 @@ De stappen:
       wordt kleiner als er weinig plek is. Een nieuwe test (`power_grid_overview_measures`): 0.25 gemaakt en
       0.5 gebruikt wordt zo gemeten, en een lege generator met een apparaat dat 2 per tick wil, telt als 2
       tekort. Screenshots `-Ponly=power` (met drie holotafels op één generator: oranje).
+
+### 15. Relais: tags, omkeren en de relay emitter (13 oktober)
+
+Jouw wensen: "maak een block die **relay emitter** is zodat je ook relays kunt triggeren door redstone",
+"zorg dat je relays kunt **renamen zonder bril** en dat je een **button om het off signaal te inverten**
+hebt", en "zorg dat de relaygroups **tags** worden zodat je **groepen in groepen** hebt, vb: deur1 en deur2
+zitten in security room en die zit in base". Jouw antwoorden: de emitter kiest in zijn scherm Follow,
+Toggle of Pulse; hij werkt altijd, gratis, ook als je offline bent; een relais mag meerdere tags hebben;
+tags in tags zet je in een apart tag-scherm.
+
+- [x] **1. Tags in plaats van groepen.** Een relais heeft nu een lijst tags (`Relay.tags`), en je lijst
+      onthoudt welke tag in welke tag zit (`EdithRelays.tagParents`). Een tag mag in meerdere tags zitten,
+      nooit (via een omweg) in zichzelf (`wouldLoop`). Schakelen op een tag pakt alles eronder mee
+      (`inTag`): je stem, de knoppen in het redstone-scherm, en ook de diagrammen op een server
+      (`on("base")`, `LogicDevices`). In het scherm van een relais typ je de tags met komma's
+      (`security room, doors`); hooguit 8 per relais (`relays.maxTags` in de config). Het redstone-scherm
+      toont alles als **boom** (base > security room > deur1), met onderaan de knop **Tags**: het
+      **tag-scherm** (`RelayTagsScreen`): links je tags (als boom, met een vakje om een nieuwe tag te
+      maken), rechts klik je in welke tags de gekozen tag zit (vinkje; wat een rondje zou maken, staat
+      grijs). Daar gooi je ook een tag weg (de relais blijven). Oude werelden: een groep wordt vanzelf een
+      tag, de oude standaardgroep "general" wordt "geen tag".
+- [x] **2. Zonder bril, en Invert.** Rechtsklik op een relais opent zijn scherm nu ook zonder bril: naam,
+      tags, testen (PULSE) en weghalen. Zonder bril hoor je het antwoord boven je hotbar. De nieuwe knop
+      **Invert** zet het relais om: het geeft dan redstone als het **uit** staat (`RelayBlock.INVERTED`, je
+      ziet een rode rand om het lampje). **Mijn invulling**: invert staat in het blok zelf (iedereen merkt
+      het), dus mag het met je bril van overal, zonder bril alleen binnen 6 blokken, en nooit in de basis
+      van een ander (het gebied van een kern waar je geen eigenaar of vriend bent; creative mag alles).
+      Hetzelfde voor testen zonder bril. Schakelen op afstand blijft met bril.
+- [x] **3. De relay emitter** (shapeless: een relais, een comparator en redstone). Het omgekeerde van een
+      relais: krijgt hij redstone, dan schakelt hij jouw relais. In zijn scherm (`RelayEmitterScreen`) typ
+      je de naam van een relais of een tag (hij zegt meteen hoeveel apparaten dat zijn) en kies je **Follow**
+      (aan = aan, uit = uit, standaard), **Toggle** of **Pulse**. Gratis, geen bril nodig, en hij werkt ook
+      als je offline bent: hij onthoudt zelf waar de relais staan (`RelayEmitterBlockEntity.targets`), en
+      werkt dat bij zolang jij online bent (bij opslaan, elke 5 seconden en vlak voor het schakelen). Alleen
+      wie hem neerzette, kan hem instellen. **Mijn invulling**: hij reageert één tick na de redstone (zoals
+      een repeater), zodat een relais naast zijn eigen emitter het spel nooit in een eindeloze kring laat
+      vastlopen; en hij zoekt precies (een naam, anders een tag), niet half zoals je stem.
+- [x] **Tests en beelden.** Vijf nieuwe tests (`RelayGameTests`): tags in tags en schakelen (ook een rondje
+      weigeren en een tag weggooien), oude groepen worden tags (en opslaan/doorsturen klopt), naam en invert
+      zonder bril (ook: van ver weg niet, met bril wel, en een vreemde in jouw basis niet), de emitter met
+      echte redstone (Follow), en Toggle, Pulse en offline. 210 tests: 207 groen, de 3 rode van hoofdstuk 14
+      stap 2 (jouw stroomwaarden). Screenshots: `-Ponly=relays` (`rl01`-`rl07`). In de showcase: "Relay tags,
+      invert and emitter" (en "Relay: name and group" heet nu "Relay: name and tags").
 
 ---
 

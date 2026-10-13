@@ -9,6 +9,8 @@ import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RelayActionPayload;
 import com.senne.starktech.network.RelayEditPayload;
 import com.senne.starktech.registry.ModAttachments;
+import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.shield.EdithSwitchable;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -27,6 +29,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * E.D.I.T.H. stuurt je redstone aan.
@@ -84,7 +87,7 @@ public final class EdithRedstone {
             return;
         }
         String name = Component.translatable(defaultNameKey, data.relays().size() + 1).getString();
-        Relay relay = new Relay(name, Relay.DEFAULT_GROUP, player.level().dimension(), pos);
+        Relay relay = new Relay(name, List.of(), player.level().dimension(), pos);
         player.setData(ModAttachments.RELAYS, data.with(relay));
         StarkAdvancements.award(player, StarkAdvancements.RELAY);
         EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
@@ -92,9 +95,9 @@ public final class EdithRedstone {
 
     /**
      * Meldt één schakelaar van een blok aan (een kant van een stroomkast), met een eigen naam en
-     * groep. Stond hij er al, dan gebeurt er niets.
+     * tag. Stond hij er al, dan gebeurt er niets.
      */
-    public static void registerChannel(ServerPlayer player, BlockPos pos, int channel, String name, String group) {
+    public static void registerChannel(ServerPlayer player, BlockPos pos, int channel, String name, String tag) {
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         if (data.indexAt(player.level().dimension(), pos, channel) >= 0) {
             return;
@@ -104,15 +107,15 @@ public final class EdithRedstone {
                     EdithMessagePayload.Level.WARNING);
             return;
         }
-        player.setData(ModAttachments.RELAYS, data.with(new Relay(name, group, player.level().dimension(), pos, channel)));
+        player.setData(ModAttachments.RELAYS, data.with(new Relay(name, List.of(tag), player.level().dimension(), pos, channel)));
     }
 
-    /** Een naam voor de volgende stroomkast van deze speler: "Cabinet 1", "Cabinet 2"... */
+    /** Een tag voor de volgende stroomkast van deze speler: "Cabinet 1", "Cabinet 2"... */
     public static String nextCabinetGroup(ServerPlayer player) {
-        java.util.Set<String> groups = player.getData(ModAttachments.RELAYS).groups();
+        EdithRelays data = player.getData(ModAttachments.RELAYS);
         String base = Component.translatable("screen.starktech.cabinet.group").getString();
         int number = 1;
-        while (groups.contains(base + " " + number)) {
+        while (data.hasTag(base + " " + number)) {
             number++;
         }
         return base + " " + number;
@@ -164,14 +167,11 @@ public final class EdithRedstone {
         }
     }
 
-    /** Rechtsklikken op een relais: het scherm openen waarin je naam en groep instelt. */
+    /**
+     * Rechtsklikken op een relais: het scherm openen waarin je naam en tags instelt. Daar heb je je bril
+     * niet voor nodig (13 oktober): je staat er toch naast.
+     */
     public static void openEditor(ServerPlayer player, BlockPos pos) {
-        ItemStack glasses = EdithServer.authorizedGlasses(player);
-        if (glasses == null) {
-            EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_needs_edith"),
-                    EdithMessagePayload.Level.WARNING);
-            return;
-        }
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         int index = data.indexAt(player.level().dimension(), pos);
         if (index < 0) {
@@ -186,12 +186,15 @@ public final class EdithRedstone {
 
     // ================================================================ Wat de speler vraagt
 
-    /** Een bericht van het scherm (of van een spraakcommando) uitvoeren. */
+    /**
+     * Een bericht van het scherm (of van een spraakcommando) uitvoeren.
+     *
+     * Wat alleen je eigen lijst verandert (naam, tags, weghalen), mag zonder bril: je stond bij het
+     * relais toen je het scherm opende (13 oktober: "relays renamen zonder bril"). Op afstand schakelen
+     * kan alleen met je bril op; zonder bril alleen het relais waar je naast staat.
+     */
     public static void handleAction(ServerPlayer player, RelayActionPayload payload) {
         ItemStack glasses = EdithServer.authorizedGlasses(player);
-        if (glasses == null) {
-            return;
-        }
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         switch (payload.op()) {
             case RENAME -> rename(player, data, payload);
@@ -199,11 +202,22 @@ public final class EdithRedstone {
                 Relay relay = data.get(payload.index());
                 if (relay != null) {
                     player.setData(ModAttachments.RELAYS, data.without(payload.index()));
-                    EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_removed", relay.name()),
+                    tell(player, Component.translatable("edith.starktech.msg.relay_removed", relay.name()),
                             EdithMessagePayload.Level.INFO);
                 }
             }
-            case SWITCH -> switchRelays(player, glasses, data, payload);
+            case SWITCH -> {
+                if (glasses != null) {
+                    switchRelays(player, glasses, data, payload);
+                } else {
+                    switchNearby(player, data, payload);
+                }
+            }
+            case INVERT -> invert(player, glasses, data.get(payload.index()));
+            case TAG_CREATE -> createTag(player, data, payload.name());
+            case TAG_PARENT -> setParent(player, data, payload.name(), payload.text(), true);
+            case TAG_UNPARENT -> setParent(player, data, payload.name(), payload.text(), false);
+            case TAG_DELETE -> deleteTag(player, data, payload.name());
         }
     }
 
@@ -213,10 +227,104 @@ public final class EdithRedstone {
             return;
         }
         String name = clean(payload.name(), Math.round(StarkConfig.Relays.MAX_NAME), relay.name());
-        String group = clean(payload.group(), Math.round(StarkConfig.Relays.MAX_NAME), Relay.DEFAULT_GROUP);
-        player.setData(ModAttachments.RELAYS, data.replace(payload.index(), relay.withName(name).withGroup(group)));
-        EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_named", name, group),
+        List<String> tags = parseTags(payload.text());
+        player.setData(ModAttachments.RELAYS, data.replace(payload.index(), relay.withName(name).withTags(tags)));
+        tell(player, tags.isEmpty()
+                        ? Component.translatable("edith.starktech.msg.relay_named_untagged", name)
+                        : Component.translatable("edith.starktech.msg.relay_named", name, String.join(", ", tags)),
                 EdithMessagePayload.Level.INFO);
+    }
+
+    /**
+     * Maakt van wat je typte ("security room, doors") een lijst tags: netjes, elke tag één keer
+     * (hoofdletters maken niet uit), hooguit MAX_TAGS.
+     */
+    public static List<String> parseTags(String text) {
+        List<String> tags = new ArrayList<>();
+        int max = Math.round(StarkConfig.Relays.MAX_TAGS);
+        for (String part : text.split(",")) {
+            String tag = clean(part, Math.round(StarkConfig.Relays.MAX_NAME), "");
+            if (!tag.isEmpty() && tags.size() < max && tags.stream().noneMatch(own -> own.equalsIgnoreCase(tag))) {
+                tags.add(tag);
+            }
+        }
+        return tags;
+    }
+
+    // ================================================================ Omkeren (13 oktober)
+
+    /**
+     * De knop "invert": het relais geeft voortaan redstone als het UIT staat, en niets als het aan staat.
+     * Dat staat in het blok zelf (iedereen merkt het), dus mag het alleen als je erbij staat of je bril
+     * op hebt, en niet in de basis van een ander.
+     */
+    private static void invert(ServerPlayer player, @Nullable ItemStack glasses, @Nullable Relay relay) {
+        MinecraftServer server = player.getServer();
+        ServerLevel level = relay == null || server == null ? null : server.getLevel(relay.dimension());
+        if (level == null || relay.channel() >= 0) {
+            return;
+        }
+        if (glasses == null && !nearby(player, relay)) {
+            tell(player, Component.translatable("edith.starktech.msg.relay_too_far"), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        if (!level.hasChunkAt(relay.pos())) {
+            level.getChunk(relay.pos());
+        }
+        BlockState state = level.getBlockState(relay.pos());
+        if (!(state.getBlock() instanceof RelayBlock)) {
+            return; // een koepel of torentje geeft geen redstone: daar valt niets om te keren
+        }
+        if (protectedFrom(player, level, relay.pos())) {
+            return;
+        }
+        boolean inverted = !state.getValue(RelayBlock.INVERTED);
+        level.setBlock(relay.pos(), state.setValue(RelayBlock.INVERTED, inverted), Block.UPDATE_ALL);
+        level.playSound(null, relay.pos(), SoundEvents.COMPARATOR_CLICK, SoundSource.BLOCKS, 0.5f, inverted ? 0.55f : 0.5f);
+        tell(player, Component.translatable(inverted ? "edith.starktech.msg.relay_inverted" : "edith.starktech.msg.relay_not_inverted",
+                relay.name()), EdithMessagePayload.Level.INFO);
+    }
+
+    // ================================================================ Tags in tags (13 oktober)
+
+    /** Een nieuwe, lege tag (zoals "base") om andere tags in te zetten. */
+    private static void createTag(ServerPlayer player, EdithRelays data, String typed) {
+        String tag = clean(typed, Math.round(StarkConfig.Relays.MAX_NAME), "");
+        if (tag.isEmpty() || data.hasTag(tag)) {
+            return;
+        }
+        player.setData(ModAttachments.RELAYS, data.withTag(tag));
+        tell(player, Component.translatable("edith.starktech.msg.tag_created", tag), EdithMessagePayload.Level.INFO);
+    }
+
+    /** "{@code tag} zit (niet meer) in {@code parent}". Een rondje (base in base) weigeren we. */
+    private static void setParent(ServerPlayer player, EdithRelays data, String tag, String parent, boolean add) {
+        if (!data.hasTag(tag) || !data.hasTag(parent)) {
+            return;
+        }
+        if (!add) {
+            player.setData(ModAttachments.RELAYS, data.withoutParent(tag, parent));
+            return;
+        }
+        if (data.wouldLoop(tag, parent)) {
+            tell(player, Component.translatable("edith.starktech.msg.tag_loop", tag, parent), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        if (data.parentsOf(tag).size() >= Math.round(StarkConfig.Relays.MAX_TAGS)) {
+            tell(player, Component.translatable("edith.starktech.msg.tag_full", tag, Math.round(StarkConfig.Relays.MAX_TAGS)),
+                    EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        player.setData(ModAttachments.RELAYS, data.withParent(tag, parent));
+    }
+
+    /** Gooit een tag weg (van alle relais en uit alle tags). De relais zelf blijven. */
+    private static void deleteTag(ServerPlayer player, EdithRelays data, String tag) {
+        if (!data.hasTag(tag)) {
+            return;
+        }
+        player.setData(ModAttachments.RELAYS, data.withoutTag(tag));
+        tell(player, Component.translatable("edith.starktech.msg.tag_deleted", tag), EdithMessagePayload.Level.INFO);
     }
 
     /**
@@ -226,7 +334,7 @@ public final class EdithRedstone {
     private static void switchRelays(ServerPlayer player, ItemStack glasses, EdithRelays data, RelayActionPayload payload) {
         List<Relay> targets = payload.index() >= 0
                 ? (data.get(payload.index()) == null ? List.<Relay>of() : List.of(data.get(payload.index())))
-                : data.find(payload.name());
+                : payload.index() == RelayActionPayload.TAG_ONLY ? data.inTag(payload.name()) : data.find(payload.name());
         if (targets.isEmpty()) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_unknown", payload.name()),
                     EdithMessagePayload.Level.WARNING);
@@ -258,6 +366,26 @@ public final class EdithRedstone {
         if (missing > 0) {
             EdithServer.send(player, Component.translatable("edith.starktech.msg.relay_missing", missing),
                     EdithMessagePayload.Level.WARNING);
+        }
+    }
+
+    /**
+     * Zonder bril: alleen het ene relais waar je naast staat (de knop "test" in zijn scherm), en gratis.
+     * Niet in de basis van een ander.
+     */
+    private static void switchNearby(ServerPlayer player, EdithRelays data, RelayActionPayload payload) {
+        Relay relay = data.get(payload.index());
+        MinecraftServer server = player.getServer();
+        if (relay == null || server == null) {
+            return;
+        }
+        if (!nearby(player, relay)) {
+            tell(player, Component.translatable("edith.starktech.msg.relay_too_far"), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        ServerLevel level = server.getLevel(relay.dimension());
+        if (level != null && !protectedFrom(player, level, relay.pos())) {
+            apply(server, relay, payload.relayOp());
         }
     }
 
@@ -316,7 +444,7 @@ public final class EdithRedstone {
      * Staat het apparaat op deze plek aan? Null als er niets staat dat E.D.I.T.H. kan schakelen (of
      * een stroomkast zonder dit kanaal).
      */
-    public static @org.jetbrains.annotations.Nullable Boolean isOnAt(ServerLevel level, BlockPos pos, int channel) {
+    public static @Nullable Boolean isOnAt(ServerLevel level, BlockPos pos, int channel) {
         BlockState state = level.getBlockState(pos);
         if (channel >= 0) {
             return state.getBlock() instanceof com.senne.starktech.energy.PowerCabinetBlock
@@ -382,8 +510,45 @@ public final class EdithRedstone {
 
     // ================================================================ Hulpjes
 
+    /** Zo dichtbij moet je zonder bril bij een relais staan (blokken), net als bij een lamp of stroomkast. */
+    private static final double REACH = 6.0;
+
+    /** Staat de speler bij dit relais (zelfde wereld, binnen REACH blokken)? */
+    private static boolean nearby(ServerPlayer player, Relay relay) {
+        return player.level().dimension() == relay.dimension()
+                && player.distanceToSqr(relay.pos().getCenter()) <= REACH * REACH;
+    }
+
+    /**
+     * Staat dit op een plek in de basis van iemand anders (het gebied van een beveiligingskern waar jij
+     * geen eigenaar of vriend bent)? Dan mag je het niet omkeren of zonder bril schakelen. Creative mag alles.
+     */
+    private static boolean protectedFrom(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        if (player.isCreative()) {
+            return false;
+        }
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        if (core == null || core.ownerId() == null || SecurityCores.isFriend(level, core, player)) {
+            return false;
+        }
+        tell(player, Component.translatable("edith.starktech.msg.relay_protected", core.ownerName()), EdithMessagePayload.Level.WARNING);
+        return true;
+    }
+
+    /**
+     * Iets zeggen tegen de speler. Met je bril op zegt E.D.I.T.H. het (in je HUD); zonder bril zie je
+     * het even boven je hotbar, anders merk je niet dat het gelukt is.
+     */
+    private static void tell(ServerPlayer player, Component message, EdithMessagePayload.Level level) {
+        if (EdithServer.authorizedGlasses(player) != null) {
+            EdithServer.send(player, message, level);
+        } else {
+            player.displayClientMessage(message, true);
+        }
+    }
+
     /** Maakt een naam netjes: geen opmaakcodes of rare tekens, niet te lang, nooit leeg. */
-    private static String clean(String text, int maxLength, String fallback) {
+    public static String clean(String text, int maxLength, String fallback) {
         String clean = text.replaceAll("§.?", "").replaceAll("\\p{Cntrl}", "").trim();
         if (clean.length() > maxLength) {
             clean = clean.substring(0, maxLength).trim();

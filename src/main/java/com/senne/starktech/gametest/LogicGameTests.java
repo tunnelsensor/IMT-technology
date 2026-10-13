@@ -536,7 +536,7 @@ public final class LogicGameTests {
         helper.setBlock(pos, ModBlocks.RELAY.get());
         BlockPos abs = helper.absolutePos(pos);
         var data = setup.owner().getData(ModAttachments.RELAYS);
-        setup.owner().setData(ModAttachments.RELAYS, data.with(new Relay(name, Relay.DEFAULT_GROUP,
+        setup.owner().setData(ModAttachments.RELAYS, data.with(new Relay(name, java.util.List.of(),
                 helper.getLevel().dimension(), abs)));
         return abs;
     }

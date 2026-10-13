@@ -63,6 +63,7 @@ public final class ModItems {
             ModBlocks.HEAT_GENERATOR);
 
     public static final DeferredItem<BlockItem> RELAY = ITEMS.registerSimpleBlockItem("relay", ModBlocks.RELAY);
+    public static final DeferredItem<BlockItem> RELAY_EMITTER = ITEMS.registerSimpleBlockItem("relay_emitter", ModBlocks.RELAY_EMITTER);
     /** De Stark-kabel voor het stroomnet. */
     /** Een rol Stark-kabel: daarmee teken je kabels (zie CableSpoolItem). Vroeger een blok. */
     public static final DeferredItem<com.senne.starktech.energy.CableSpoolItem> CABLE = ITEMS.registerItem("cable",

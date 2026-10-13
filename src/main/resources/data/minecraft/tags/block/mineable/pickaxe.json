@@ -2,6 +2,7 @@
   "values": [
     "starktech:charging_station",
     "starktech:relay",
+    "starktech:relay_emitter",
     "starktech:laser_emitter",
     "starktech:dome_generator",
     "starktech:holo_table",

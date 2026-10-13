@@ -23,7 +23,8 @@ import net.minecraft.server.level.ServerPlayer;
  * redstone-lijst heeft (de namen die hij ze met zijn bril gaf), voor zover ze in het gebied van de
  * kern staan. Die lijst hoort bij de speler; daarom neemt de kern hem over in zijn eigen
  * "telefoonboek" (LogicStore) zolang de eigenaar online is. Zo werken je diagrammen ook als jij er
- * niet bent.
+ * niet bent. Ook je tags staan erin (13 oktober): {@code on("base")} zet alles in "base" aan, ook wat in
+ * tags eronder zit ("security room").
  *
  * <b>Ingangen</b> (wat een diagram start: {@code when keycard("Lab door"):}): de keycardlezers en
  * codepanelen in het gebied, met de naam die in het blok zelf staat.
@@ -44,8 +45,15 @@ public final class LogicDevices {
         EdithRelays relays = owner.getData(ModAttachments.RELAYS);
         for (Relay relay : relays.relays()) {
             if (relay.dimension() == level.dimension() && SecurityCores.ownedBy(level, core, relay.pos())) {
-                fresh.computeIfAbsent(relay.name(), key -> new ArrayList<>())
-                        .add(new LogicStore.Target(relay.pos().immutable(), relay.channel()));
+                add(fresh, relay.name(), relay);
+            }
+        }
+        // Tags: alles wat erin zit (ook via tags eronder), voor zover het in het gebied staat.
+        for (String tag : relays.tags()) {
+            for (Relay relay : relays.inTag(tag)) {
+                if (relay.dimension() == level.dimension() && SecurityCores.ownedBy(level, core, relay.pos())) {
+                    add(fresh, tag, relay);
+                }
             }
         }
         // Oude namen van apparaten die er nog staan maar niet in deze lijst zitten, blijven.
@@ -62,6 +70,20 @@ public final class LogicDevices {
         }
         if (core.logic().setDevices(fresh)) {
             core.setChanged();
+        }
+    }
+
+    /**
+     * Zet een apparaat onder deze naam in het telefoonboek. Hoofdletters maken niet uit: heet een relais
+     * "Base" en heb je ook een tag "base", dan komen ze samen onder één naam (anders zou de ene de andere
+     * wegdrukken).
+     */
+    private static void add(Map<String, List<LogicStore.Target>> book, String name, Relay relay) {
+        String key = book.keySet().stream().filter(own -> own.equalsIgnoreCase(name)).findFirst().orElse(name);
+        List<LogicStore.Target> list = book.computeIfAbsent(key, k -> new ArrayList<>());
+        LogicStore.Target target = new LogicStore.Target(relay.pos().immutable(), relay.channel());
+        if (!list.contains(target)) {
+            list.add(target);
         }
     }
 

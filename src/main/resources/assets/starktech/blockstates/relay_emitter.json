@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "starktech:block/relay_emitter"
+    },
+    "powered=true": {
+      "model": "starktech:block/relay_emitter_on"
+    }
+  }
+}

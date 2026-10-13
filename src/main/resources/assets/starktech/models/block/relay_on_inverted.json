@@ -1,0 +1,44 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "starktech:block/relay_side",
+    "side": "starktech:block/relay_side",
+    "top": "starktech:block/relay_top_on_inverted",
+    "bottom": "starktech:block/relay_bottom"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        14,
+        4,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bottom",
+          "cullface": "down"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    }
+  ]
+}

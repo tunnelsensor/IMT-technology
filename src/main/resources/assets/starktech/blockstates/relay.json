@@ -1,10 +1,16 @@
 {
   "variants": {
-    "powered=false": {
+    "inverted=false,powered=false": {
       "model": "starktech:block/relay"
     },
-    "powered=true": {
+    "inverted=false,powered=true": {
       "model": "starktech:block/relay_on"
+    },
+    "inverted=true,powered=false": {
+      "model": "starktech:block/relay_inverted"
+    },
+    "inverted=true,powered=true": {
+      "model": "starktech:block/relay_on_inverted"
     }
   }
 }

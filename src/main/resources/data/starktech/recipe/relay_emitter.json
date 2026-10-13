@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "starktech:relay"
+    },
+    {
+      "item": "minecraft:comparator"
+    },
+    {
+      "tag": "c:dusts/redstone"
+    }
+  ],
+  "result": {
+    "id": "starktech:relay_emitter",
+    "count": 1
+  }
+}

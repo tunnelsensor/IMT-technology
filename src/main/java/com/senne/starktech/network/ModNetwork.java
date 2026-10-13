@@ -90,6 +90,12 @@ public final class ModNetwork {
                 EdithRedstone.handleAction(player, payload);
             }
         });
+        // De relay emitter: "Save" in zijn scherm.
+        registrar.playToServer(EmitterSavePayload.TYPE, EmitterSavePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.redstone.RelayEmitters.handleSave(player, payload);
+            }
+        });
         // Fase 15: het drone-arsenaal
         registrar.playToServer(ArsenalActionPayload.TYPE, ArsenalActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -229,6 +235,9 @@ public final class ModNetwork {
         // Fase 9: het scherm om een relais een naam te geven
         registrar.playToClient(RelayEditPayload.TYPE, RelayEditPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onRelayEdit(payload, context));
+        // Het scherm van de relay emitter (13 oktober)
+        registrar.playToClient(EmitterOpenPayload.TYPE, EmitterOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onEmitterOpen(payload, context));
         // Fase 12: illusies van cloakingdrones
         registrar.playToClient(IllusionScenePayload.TYPE, IllusionScenePayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onIllusionScene(payload, context));

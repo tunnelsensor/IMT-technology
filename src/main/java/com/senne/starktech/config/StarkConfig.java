@@ -805,9 +805,12 @@ public final class StarkConfig {
         /** Hoeveel relais en schakelbare apparaten één speler kan aanmelden. */
         @Tunable("How many relays and switchable devices one player can register")
         public static float MAX_RELAYS = 64.0f;
-        /** Hoe lang de naam (en de groepsnaam) van een relais mag zijn. */
-        @Tunable(value = "Longest name (and group name) of a relay (letters)", min = 1, max = 64)
+        /** Hoe lang de naam (en elke tag) van een relais mag zijn. */
+        @Tunable(value = "Longest name (and tag) of a relay (letters)", min = 1, max = 64)
         public static float MAX_NAME = 24.0f;
+        /** Hoeveel tags één relais mag hebben, en in hoeveel andere tags één tag mag zitten. */
+        @Tunable(value = "Most tags on one relay, and most tags one tag can be inside of", min = 1, max = 32)
+        public static float MAX_TAGS = 8.0f;
         /** Wat één schakeling kost. */
         @Tunable("Energy cost of switching a relay remotely")
         public static float COST = 5.0f;

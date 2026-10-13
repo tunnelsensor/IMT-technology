@@ -1216,6 +1216,69 @@ def relay_textures():
     save(bottom, "block/relay_bottom.png")
 
 
+def relay_inverted_textures():
+    """
+    Een omgekeerd relais (13 oktober: de knop "invert"): dezelfde bovenkant, met een rode rand om het
+    lampje en een rood streepje erboven. Zo teken je in een schakelschema ook "niet" (een streep erboven).
+    """
+    def top(lamp, glow):
+        im = img(16, 16, METAL_2)
+        dd = ImageDraw.Draw(im)
+        dd.rectangle([0, 0, 15, 15], outline=METAL_3)
+        dd.rectangle([2, 2, 13, 13], outline=METAL_DARK)
+        for (x, y) in ((3, 3), (12, 3), (3, 12), (12, 12)):
+            px(im, [(x, y)], METAL_3)
+        dd.ellipse([5, 5, 10, 10], fill=(220, 50, 45, 255))
+        dd.ellipse([6, 6, 9, 9], fill=lamp, outline=glow)
+        dd.line([5, 3, 10, 3], fill=(220, 50, 45, 255))
+        return im
+
+    save(top((40, 60, 55, 255), (70, 90, 85, 255)), "block/relay_top_inverted.png")
+    save(top((92, 255, 157, 255), (200, 255, 225, 255)), "block/relay_top_on_inverted.png")
+
+
+def relay_emitter_textures():
+    """
+    De relay emitter (13 oktober): een plat kastje met een antennetje. Krijgt hij redstone, dan
+    gloeit zijn lampje rood en schakelt hij jouw relais.
+    """
+    # Zijkant: zoals het relais, maar met een cyaan streepje (hij zendt, het relais ontvangt)
+    side = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 0], fill=METAL_3)
+    d.rectangle([0, 15, 15, 15], fill=METAL_DARK)
+    d.line([1, 9, 14, 9], fill=METAL_DARK)
+    d.line([2, 12, 6, 12], fill=CYAN_DIM)
+    d.line([9, 12, 13, 12], fill=(170, 40, 40, 255))
+    for x in (1, 14):
+        px(side, [(x, 3), (x, 6)], METAL_3)
+    save(side, "block/relay_emitter_side.png")
+
+    # Bovenkant: vier schroeven, een lampje (redstone erin = rood) en golfjes (hij zendt)
+    def top(lamp, glow, wave):
+        im = img(16, 16, METAL_2)
+        dd = ImageDraw.Draw(im)
+        dd.rectangle([0, 0, 15, 15], outline=METAL_3)
+        dd.rectangle([2, 2, 13, 13], outline=METAL_DARK)
+        for (x, y) in ((3, 3), (12, 3), (3, 12), (12, 12)):
+            px(im, [(x, y)], METAL_3)
+        dd.arc([4, 4, 11, 11], 200, 340, fill=wave)
+        dd.arc([2, 2, 13, 13], 210, 330, fill=wave)
+        dd.rectangle([6, 9, 9, 12], fill=lamp, outline=glow)
+        return im
+
+    save(top((70, 24, 22, 255), (100, 40, 36, 255), CYAN_DIM), "block/relay_emitter_top.png")
+    save(top((235, 50, 40, 255), (255, 140, 120, 255), CYAN), "block/relay_emitter_top_on.png")
+
+    # Het antennetje: dun metaal met een cyaan puntje bovenaan
+    antenna = img(16, 16, METAL_3)
+    da = ImageDraw.Draw(antenna)
+    da.rectangle([0, 0, 15, 3], fill=CYAN)
+    da.line([0, 4, 15, 4], fill=CYAN_DIM)
+    da.line([0, 15, 15, 15], fill=METAL_DARK)
+    save(antenna, "block/relay_emitter_antenna.png")
+
+
 # --------------------------------------------------------------------- Fase 11: rayshield
 
 def shield_textures():
@@ -2970,6 +3033,8 @@ if __name__ == "__main__":
     arc_lamp_textures()
     light_switch_textures()
     relay_textures()
+    relay_inverted_textures()
+    relay_emitter_textures()
     shield_textures()
     rayshield_walls()
     charger_textures()

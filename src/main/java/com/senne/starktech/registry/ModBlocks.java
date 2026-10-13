@@ -50,6 +50,20 @@ public final class ModBlocks {
                     .noOcclusion());
 
     /**
+     * De relay emitter (13 oktober): het omgekeerde van een relais. Krijgt hij redstone, dan schakelt hij
+     * jouw relais (een naam of een tag). Zijn lampje gloeit rood als er redstone in gaat.
+     */
+    public static final DeferredBlock<com.senne.starktech.redstone.RelayEmitterBlock> RELAY_EMITTER = BLOCKS.registerBlock(
+            "relay_emitter", com.senne.starktech.redstone.RelayEmitterBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0f, 4.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.starktech.redstone.RelayEmitterBlock.POWERED) ? 6 : 1)
+                    .noOcclusion());
+
+    /**
      * De Stark-kabel: verbindt zonnepanelen en warmtegeneratoren met alles wat stroom gebruikt.
      * Dun en snel te breken, net als een stuk draad.
      */

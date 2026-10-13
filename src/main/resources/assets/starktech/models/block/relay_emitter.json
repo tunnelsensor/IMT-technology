@@ -1,0 +1,104 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "starktech:block/relay_emitter_side",
+    "side": "starktech:block/relay_emitter_side",
+    "top": "starktech:block/relay_emitter_top",
+    "bottom": "starktech:block/relay_bottom",
+    "antenna": "starktech:block/relay_emitter_antenna"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        14,
+        3,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bottom",
+          "cullface": "down"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        3,
+        3
+      ],
+      "to": [
+        12,
+        9,
+        4
+      ],
+      "faces": {
+        "north": {
+          "texture": "#antenna",
+          "uv": [
+            7,
+            0,
+            8,
+            6
+          ]
+        },
+        "south": {
+          "texture": "#antenna",
+          "uv": [
+            7,
+            0,
+            8,
+            6
+          ]
+        },
+        "west": {
+          "texture": "#antenna",
+          "uv": [
+            7,
+            0,
+            8,
+            6
+          ]
+        },
+        "east": {
+          "texture": "#antenna",
+          "uv": [
+            7,
+            0,
+            8,
+            6
+          ]
+        },
+        "up": {
+          "texture": "#antenna",
+          "uv": [
+            7,
+            0,
+            8,
+            1
+          ]
+        }
+      }
+    }
+  ]
+}

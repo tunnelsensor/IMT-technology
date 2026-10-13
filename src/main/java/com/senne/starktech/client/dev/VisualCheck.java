@@ -1738,7 +1738,7 @@ public final class VisualCheck {
                     level.setBlockAndUpdate(relay, ModBlocks.RELAY.get().defaultBlockState());
                     var data = player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
                     player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, data.with(new com.senne.starktech.redstone.Relay(
-                            names[i], com.senne.starktech.redstone.Relay.DEFAULT_GROUP, level.dimension(), relay)));
+                            names[i], java.util.List.of(), level.dimension(), relay)));
                 }
                 level.setBlockAndUpdate(core.offset(-3, 0, 3), ModBlocks.KEYCARD_READER.get().defaultBlockState());
                 if (level.getBlockEntity(core.offset(-3, 0, 3)) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
@@ -1972,6 +1972,48 @@ public final class VisualCheck {
             t.shot(60, "lt08_lamp_off_again");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.command(0, "time set noon");
+        }
+
+        // --- Relais (13 oktober): twee deuren met de tag "security room" (die in "base" zit), een omgekeerde
+        // tuinlamp, en een relay emitter met een hendel die "base" schakelt. Eerst de hendel uit, dan aan (de
+        // deurlampen gaan aan), dan de schermen: de boom van tags, het tag-scherm, een relais en de emitter.
+        if (want("relays")) {
+            BlockPos y = RELAY_YARD;
+            t.onServer(0, VisualCheck::buildRelayYard);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, y.getX() + 3.5, y.getY(), y.getZ() + 6.5, 180, 30);
+            t.shot(40, "rl01_relay_yard");
+            t.onServer(0, player -> {
+                BlockPos lever = y.offset(7, 0, 2);
+                player.serverLevel().setBlockAndUpdate(lever, player.serverLevel().getBlockState(lever)
+                        .setValue(net.minecraft.world.level.block.LeverBlock.POWERED, true));
+            });
+            t.shot(20, "rl02_emitter_switched_base");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.open(0, RelayListScreen::new);
+            t.shot(20, "rl03_relay_tree");
+            t.open(0, com.senne.starktech.client.RelayTagsScreen::new);
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.RelayTagsScreen screen) {
+                    screen.tourSelect("security room");
+                }
+            });
+            t.shot(10, "rl04_relay_tags");
+            t.close(0);
+            t.open(0, () -> {
+                var data = Minecraft.getInstance().player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
+                return new com.senne.starktech.client.RelayEditScreen(data.indexAt(Minecraft.getInstance().level.dimension(), y.offset(5, 0, 0)));
+            });
+            t.shot(20, "rl05_relay_edit_inverted");
+            t.close(0);
+            t.onServer(5, player -> com.senne.starktech.redstone.RelayEmitters.open(player, y.offset(6, 0, 2)));
+            t.shot(15, "rl06_emitter_screen");
+            t.close(0);
+            // Van dichtbij, van bovenaf: de twee deuren aan (groen), de tuinlamp omgekeerd (rode rand) en uit.
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(0, y.getX() + 3.5, y.getY(), y.getZ() + 2.5, 180, 65);
+            t.shot(30, "rl07_relays_closeup");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
         // --- Barsten herstellen (hoofdstuk 11): de Crusher en de Compactor aan het werk, elk naast een
@@ -2325,6 +2367,43 @@ public final class VisualCheck {
                 .setValue(com.senne.starktech.light.LightSwitchBlock.ON, false));
         player.getInventory().setItem(0, new ItemStack(ModItems.LIGHT_SWITCH.get(), 8));
         player.getInventory().setItem(1, new ItemStack(ModItems.ARC_LAMP.get(), 4));
+    }
+
+    /** Waar de relais van 13 oktober staan (zie "relays"): een eigen plekje. */
+    private static final BlockPos RELAY_YARD = new BlockPos(-200, -60, -320);
+
+    /**
+     * Drie relais op een rij met een redstonelamp erachter: "Door 1" en "Door 2" (tag "security room", die in
+     * "base" zit) en "Garden light" (tag "garden", omgekeerd: zijn lamp brandt terwijl hij uit staat). Ervoor
+     * een relay emitter op "base" (Follow) met een hendel (uit) ernaast.
+     */
+    private static void buildRelayYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos y = RELAY_YARD;
+        var data = com.senne.starktech.redstone.EdithRelays.EMPTY;
+        String[][] relays = {{"Door 1", "security room"}, {"Door 2", "security room"}, {"Garden light", "garden"}};
+        for (int i = 0; i < relays.length; i++) {
+            BlockPos relay = y.offset(1 + i * 2, 0, 0);
+            boolean inverted = i == 2;
+            // Eerst de lamp: een redstonelamp kijkt pas of hij stroom krijgt als er naast hem iets verandert.
+            level.setBlockAndUpdate(relay.north(), Blocks.REDSTONE_LAMP.defaultBlockState());
+            level.setBlockAndUpdate(relay, ModBlocks.RELAY.get().defaultBlockState()
+                    .setValue(com.senne.starktech.redstone.RelayBlock.INVERTED, inverted));
+            data = data.with(new com.senne.starktech.redstone.Relay(relays[i][0], List.of(relays[i][1]), level.dimension(), relay));
+        }
+        data = data.withTag("base").withParent("security room", "base");
+        player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, data);
+        BlockPos emitter = y.offset(6, 0, 2);
+        level.setBlockAndUpdate(emitter, ModBlocks.RELAY_EMITTER.get().defaultBlockState());
+        if (level.getBlockEntity(emitter) instanceof com.senne.starktech.redstone.RelayEmitterBlockEntity entity) {
+            entity.setOwner(player);
+            entity.configure(player, "base", com.senne.starktech.redstone.RelayEmitterBlockEntity.Mode.FOLLOW);
+        }
+        level.setBlockAndUpdate(emitter.east(), Blocks.LEVER.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.LeverBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(net.minecraft.world.level.block.LeverBlock.POWERED, false));
+        player.getInventory().setItem(0, new ItemStack(ModItems.RELAY_EMITTER.get(), 4));
+        player.getInventory().setItem(1, new ItemStack(ModItems.RELAY.get(), 8));
     }
 
     /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */

@@ -483,12 +483,45 @@ final class ShowcaseFeatures {
                 .pause(60)
                 .step(0, () -> relay(EdithRedstone.Op.OFF)));
 
-        add("Relay: name and group", "Een relais een naam en een groep geven (rechtsklik op het relais met "
-                + "de bril op, of 'Edit' in het relaisscherm). Alles in dezelfde groep ('house', 'trap') zet "
-                + "je met één commando tegelijk aan of uit.", new Vec3(3.5, -60, 2.5), 0, 20, s -> s
+        add("Relay: name and tags", "Een relais een naam en tags geven (rechtsklik op het relais, ook zonder "
+                + "bril, of 'rename' in het relaisscherm). Tags typ je met komma's ertussen ('house, doors'); alles "
+                + "met dezelfde tag zet je met één commando tegelijk aan of uit.", new Vec3(3.5, -60, 2.5), 0, 20, s -> s
                 .open(10, () -> new RelayEditScreen(0))
                 .pause(150)
                 .close(0));
+
+        add("Relay tags, invert and emitter", "13 oktober. Drie relais met een redstonelamp erachter: 'Door 1' en "
+                + "'Door 2' met de tag 'security room' (die in de tag 'base' zit), en 'Garden light', omgekeerd "
+                + "(Invert, rode rand om zijn lampje): zijn lamp brandt terwijl het relais UIT staat. Rechts een relay "
+                + "emitter met een hendel. De hendel gaat aan: de emitter (op 'base', Follow) zet beide deuren aan, en "
+                + "weer uit. Dan het redstone-scherm als boom (base > security room > deuren), het tag-scherm (rechts "
+                + "het vinkje bij 'base'), het scherm van de tuinlamp (Invert: ON) en het scherm van de emitter.",
+                at(RELAY_YARD.offset(3, 0, 6)), 180, 30, s -> s
+                .onServer(0, ShowcaseFeatures::buildRelayYard)
+                .pause(60)
+                .onServer(0, player -> relayLever(player, true))
+                .pause(70)
+                .onServer(0, player -> relayLever(player, false))
+                .pause(50)
+                .open(0, RelayListScreen::new)
+                .pause(100)
+                .open(0, com.senne.starktech.client.RelayTagsScreen::new)
+                .step(5, () -> {
+                    if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.RelayTagsScreen screen) {
+                        screen.tourSelect("security room");
+                    }
+                })
+                .pause(100)
+                .close(0)
+                .open(0, () -> new RelayEditScreen(Minecraft.getInstance().player.getData(ModAttachments.RELAYS)
+                        .indexAt(Minecraft.getInstance().level.dimension(), RELAY_YARD.offset(5, 0, 0))))
+                .pause(90)
+                .close(0)
+                .onServer(0, player -> com.senne.starktech.redstone.RelayEmitters.open(player, RELAY_YARD.offset(6, 0, 2)))
+                .pause(100)
+                .close(0)
+                .stand(0, RELAY_YARD.getX() + 3.5, RELAY_YARD.getY(), RELAY_YARD.getZ() + 2.5, 180, 65)
+                .pause(60));
 
         add("Rayshield: personal shield", "Een energieschild om je heen (van buitenaf bekeken). Dan komen er "
                 + "drie pijlen van opzij op je af: het schild vangt ze op (blauwe flits en een tik) en elke "
@@ -1647,6 +1680,51 @@ final class ShowcaseFeatures {
 
     // ================================================================ Hulpjes
 
+    /** Waar de relais van 13 oktober staan (tags, invert en de emitter): een eigen plekje. */
+    static final BlockPos RELAY_YARD = new BlockPos(130, -60, 140);
+
+    /**
+     * Drie relais met een redstonelamp erachter ("Door 1" en "Door 2" met de tag "security room", die in "base"
+     * zit, en "Garden light", omgekeerd), en een relay emitter op "base" met een hendel (uit). De relais komen
+     * erbij in je lijst, niet in plaats van: de andere relais-demo's gebruiken het eerste relais.
+     */
+    static void buildRelayYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos y = RELAY_YARD;
+        var data = player.getData(ModAttachments.RELAYS);
+        String[][] relays = {{"Door 1", "security room"}, {"Door 2", "security room"}, {"Garden light", "garden"}};
+        for (int i = 0; i < relays.length; i++) {
+            BlockPos relay = y.offset(1 + i * 2, 0, 0);
+            // Eerst de lamp: een redstonelamp kijkt pas of hij stroom krijgt als er naast hem iets verandert.
+            level.setBlockAndUpdate(relay.north(), Blocks.REDSTONE_LAMP.defaultBlockState());
+            level.setBlockAndUpdate(relay, com.senne.starktech.registry.ModBlocks.RELAY.get().defaultBlockState()
+                    .setValue(com.senne.starktech.redstone.RelayBlock.INVERTED, i == 2));
+            if (data.indexAt(level.dimension(), relay) < 0) {
+                data = data.with(new com.senne.starktech.redstone.Relay(relays[i][0], List.of(relays[i][1]), level.dimension(), relay));
+            }
+        }
+        data = data.withTag("base").withParent("security room", "base");
+        player.setData(ModAttachments.RELAYS, data);
+        BlockPos emitter = y.offset(6, 0, 2);
+        level.setBlockAndUpdate(emitter, com.senne.starktech.registry.ModBlocks.RELAY_EMITTER.get().defaultBlockState());
+        if (level.getBlockEntity(emitter) instanceof com.senne.starktech.redstone.RelayEmitterBlockEntity entity) {
+            entity.setOwner(player);
+            entity.configure(player, "base", com.senne.starktech.redstone.RelayEmitterBlockEntity.Mode.FOLLOW);
+        }
+        level.setBlockAndUpdate(emitter.east(), Blocks.LEVER.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.LeverBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(net.minecraft.world.level.block.LeverBlock.POWERED, false));
+    }
+
+    /** De hendel naast de emitter om. */
+    private static void relayLever(ServerPlayer player, boolean on) {
+        BlockPos lever = RELAY_YARD.offset(7, 0, 2);
+        player.serverLevel().setBlockAndUpdate(lever, player.serverLevel().getBlockState(lever)
+                .setValue(net.minecraft.world.level.block.LeverBlock.POWERED, on));
+        player.serverLevel().playSound(null, lever, net.minecraft.sounds.SoundEvents.LEVER_CLICK,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.3f, on ? 0.6f : 0.5f);
+    }
+
     /** Waar de generator voor de Arc Lamp staat: ver van de rest, want zijn licht reikt 100 blokken. */
     static final BlockPos LAMP_YARD = new BlockPos(220, -60, -220);
 
@@ -1800,10 +1878,10 @@ final class ShowcaseFeatures {
         // De twee relais in je redstone-lijst (erbij, niet in plaats van: de relais-demo heeft zijn lamp nodig).
         var relays = player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
         if (relays.indexAt(level.dimension(), doorRelay) < 0) {
-            relays = relays.with(new com.senne.starktech.redstone.Relay("Lab door lock", "lab", level.dimension(), doorRelay));
+            relays = relays.with(new com.senne.starktech.redstone.Relay("Lab door lock", java.util.List.of("lab"), level.dimension(), doorRelay));
         }
         if (relays.indexAt(level.dimension(), lightRelay) < 0) {
-            relays = relays.with(new com.senne.starktech.redstone.Relay("Lab lights", "lab", level.dimension(), lightRelay));
+            relays = relays.with(new com.senne.starktech.redstone.Relay("Lab lights", java.util.List.of("lab"), level.dimension(), lightRelay));
         }
         player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, relays);
         placeInput(level, lab.offset(1, 1, 7), com.senne.starktech.registry.ModBlocks.KEYCARD_READER.get().defaultBlockState(), "Lab door");

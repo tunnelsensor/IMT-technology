@@ -231,10 +231,23 @@ In creative zet de knop **Max all** alles in één keer op 10.
 
 ### Redstone-relais (')
 Craft een **E.D.I.T.H.-relais**, zet het naast een deur, lamp, zuiger of trechter en klik er
-rechts op (met de bril op) om het een **naam** en een **groep** te geven. Daarna kan E.D.I.T.H.
-het overal in dezelfde wereld aan- of uitzetten, omschakelen of een korte puls geven — per
-relais of per hele groep. Met je stem: *"zet de voordeur aan"*, *"doe de val uit"*,
-*"geef de poort een puls"*.
+rechts op (daar heb je je bril niet voor nodig) om het een **naam** en **tags** te geven, met
+komma's ertussen: `security room, doors`. Daarna kan E.D.I.T.H. het overal in dezelfde wereld
+aan- of uitzetten, omschakelen of een korte puls geven — per relais of per hele tag. Met je stem:
+*"zet de voordeur aan"*, *"doe de val uit"*, *"geef de poort een puls"*.
+
+- **Tags in tags**: in het redstone-scherm (toets **'**) zit onderaan de knop **Tags**. Maak daar
+  links onderaan een tag als `base`, klik links op `security room` en rechts op `base`: dan zit
+  `security room` in `base`. Zet je `base` aan, dan gaat alles eronder mee. Een tag mag in meer
+  tags zitten, maar nooit (via een omweg) in zichzelf. Het redstone-scherm toont alles als een boom.
+- **Invert**: in het scherm van een relais zet de knop **Invert** het om: dan geeft het redstone
+  als het **uit** staat. Je ziet het aan een rood streepje boven het lampje. Zonder bril moet je
+  ernaast staan, en in de basis van een ander mag het niet.
+- **Relay emitter** (een relais, een comparator en redstone): het omgekeerde van een relais. Geef
+  hem redstone (een knop, hendel, drukplaat...) en hij schakelt jouw relais. In zijn scherm typ je
+  de naam van een relais of een tag, en kies je **Follow** (redstone aan = aan, uit = uit),
+  **Toggle** (elke keer omschakelen) of **Pulse** (elke keer een korte puls). Hij is gratis, heeft
+  geen bril nodig en werkt ook als jij offline bent. Alleen wie hem neerzette, kan hem instellen.
 
 ### Hack player (;)
 Kijk een speler aan en hack hem. Daarna zie je zijn **privéberichten** (/msg, /tell, /w,
@@ -450,7 +463,8 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    Elk rack met iets erin heeft ook minstens één **fan** nodig, anders wordt het te heet (zie
    hieronder, "Het datacenter").
 2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
-   naam ("Vault door"): met die naam noem je ze in je diagram. Een **Keycard Reader** en een
+   naam ("Vault door"): met die naam noem je ze in je diagram. Een **tag** werkt ook: `on("base")`
+   zet alles in `base` aan, ook wat in tags eronder zit. Een **Keycard Reader** en een
    **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld). Een andere
    naam geef je op de desktop in de app **Devices**: klik **Rename** bij de lezer of het paneel,
    typ de naam en druk Enter (Esc = laat maar). Daar zie je ook in hoeveel diagrammen hij staat:

@@ -167,6 +167,14 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Het scherm van een relay emitter openen (welke relais, en wat hij doet). */
+    public static void onEmitterOpen(com.senne.starktech.network.EmitterOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new RelayEmitterScreen(payload));
+        }
+    }
+
     /** Het instelscherm van een Arc Lamp openen (helderheid en gloed). */
     public static void onLampOpen(com.senne.starktech.network.LampOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

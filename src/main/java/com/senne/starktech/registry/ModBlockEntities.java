@@ -120,4 +120,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("arc_lamp",
                     () -> new BlockEntityType<>(com.senne.starktech.light.ArcLampBlockEntity::new,
                             java.util.Set.of(ModBlocks.ARC_LAMP.get()), null));
+
+    /** De relay emitter: van wie hij is, welke relais hij schakelt en hoe (13 oktober). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.redstone.RelayEmitterBlockEntity>> RELAY_EMITTER =
+            BLOCK_ENTITIES.register("relay_emitter",
+                    () -> new BlockEntityType<>(com.senne.starktech.redstone.RelayEmitterBlockEntity::new,
+                            java.util.Set.of(ModBlocks.RELAY_EMITTER.get()), null));
 }

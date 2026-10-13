@@ -18,10 +18,20 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Het redstone-scherm: al je E.D.I.T.H.-relais, netjes per groep.
+ * Het redstone-scherm: al je E.D.I.T.H.-relais, als een boom van tags.
  *
- * Per relais kun je AAN, UIT of PULS kiezen, en per groep kun je alles in één keer schakelen.
- * Met "wijzig" geef je een relais een andere naam of groep.
+ * Per soort apparaat (relais, koepels, torentjes, stroomkasten) zie je je tags, met de tags die erin
+ * zitten eronder (13 oktober: "deur1 en deur2 zitten in security room en die zit in base"):
+ * <pre>
+ *   base                  [ON] [OFF] [PULSE]
+ *     security room       [ON] [OFF] [PULSE]
+ *       deur1             [ON] [OFF] [PULSE] [rename]
+ *       deur2             ...
+ * </pre>
+ * Een relais met twee tags staat onder allebei. Relais zonder tag staan onderaan onder "No tag".
+ * Per relais kun je AAN, UIT of PULS kiezen, en per tag alles wat erin zit (ook in tags eronder).
+ * Met "rename" geef je een relais een andere naam of andere tags; met "Tags" onderaan zet je tags in
+ * elkaar.
  *
  * Openen: G-menu > tabblad Tech > Redstone (of de sneltoets).
  */
@@ -29,9 +39,16 @@ public class RelayListScreen extends Screen {
     private static final int PANEL_W = 340;
     private static final int ROW_H = 20;
     private static final int ROWS_PER_PAGE = 8;
+    /** Zo ver springt elke laag van de boom in (pixels). */
+    private static final int INDENT = 10;
+    /** Zo diep tekenen we de boom hooguit (een rondje kan niet, maar zo loopt het nooit vast). */
+    private static final int MAX_DEPTH = 8;
 
-    /** Een regel in de lijst: een groepskopje (index -1) of een relais. */
-    private record Row(String group, int index, int y) {}
+    /** Wat er op een regel staat. */
+    private enum Type { KIND, TAG, NO_TAG, RELAY }
+
+    /** Een regel in de lijst: een kopje (soort apparaat of tag) of een relais. */
+    private record Row(Type type, String label, int index, int depth, int y) {}
 
     private final List<Row> rows = new ArrayList<>();
     private EdithRelays shown = EdithRelays.EMPTY;
@@ -66,28 +83,28 @@ public class RelayListScreen extends Screen {
         shown = data();
         rows.clear();
 
-        // Alle regels bedenken. Eerst per soort apparaat (relais, laserzenders, koepels) en
-        // daarbinnen per groep: zo staan je deuren niet tussen je lampen.
+        // Alle regels bedenken. Eerst per soort apparaat (relais, koepels, ...) en daarbinnen de boom
+        // van tags: zo staan je deuren niet tussen je torentjes.
         List<Row> all = new ArrayList<>();
         for (RelayLabels.Kind kind : RelayLabels.Kind.values()) {
-            boolean anyOfKind = false;
-            for (String group : shown.groups()) {
-                boolean headerDone = false;
-                for (int i = 0; i < shown.relays().size(); i++) {
-                    Relay relay = shown.relays().get(i);
-                    if (!relay.group().equals(group) || RelayLabels.kindOf(relay) != kind) {
-                        continue;
+            List<Row> ofKind = new ArrayList<>();
+            for (String tag : shown.topTags()) {
+                addTag(ofKind, kind, tag, 0, new ArrayList<>());
+            }
+            boolean noTagHeader = false;
+            for (int i = 0; i < shown.relays().size(); i++) {
+                Relay relay = shown.relays().get(i);
+                if (relay.tags().isEmpty() && RelayLabels.kindOf(relay) == kind) {
+                    if (!noTagHeader) {
+                        ofKind.add(new Row(Type.NO_TAG, Component.translatable("screen.starktech.relays.no_tag").getString(), -1, 0, 0));
+                        noTagHeader = true;
                     }
-                    if (!anyOfKind) {
-                        all.add(new Row(Component.translatable(kind.key).getString(), -2, 0));
-                        anyOfKind = true;
-                    }
-                    if (!headerDone) {
-                        all.add(new Row(group, -1, 0));
-                        headerDone = true;
-                    }
-                    all.add(new Row(group, i, 0));
+                    ofKind.add(new Row(Type.RELAY, relay.name(), i, 1, 0));
                 }
+            }
+            if (!ofKind.isEmpty()) {
+                all.add(new Row(Type.KIND, Component.translatable(kind.key).getString(), -1, 0, 0));
+                all.addAll(ofKind);
             }
         }
         int pages = Math.max(1, (all.size() + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE);
@@ -96,17 +113,11 @@ public class RelayListScreen extends Screen {
         int y = top + 28;
         for (int i = page * ROWS_PER_PAGE; i < Math.min(all.size(), (page + 1) * ROWS_PER_PAGE); i++) {
             Row row = all.get(i);
-            rows.add(new Row(row.group(), row.index(), y));
-            if (row.index() == -2) {
-                // Kopje van een soort apparaat: daar hoort geen knop bij.
-                y += ROW_H;
-                continue;
-            }
-            if (row.index() < 0) {
-                // Groepskopje: schakel de hele groep.
-                addGroupButtons(row.group(), y);
-            } else {
-                addRelayButtons(row.index(), y);
+            rows.add(new Row(row.type(), row.label(), row.index(), row.depth(), y));
+            switch (row.type()) {
+                case TAG -> addTagButtons(row.label(), y);
+                case RELAY -> addRelayButtons(row.index(), y);
+                default -> { } // een kopje: daar hoort geen knop bij
             }
             y += ROW_H;
         }
@@ -118,8 +129,34 @@ public class RelayListScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal(">"), button -> changePage(1))
                     .bounds(left + 32, bottom, 20, 20).build());
         }
+        addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.tags"),
+                        button -> Minecraft.getInstance().setScreen(new RelayTagsScreen()))
+                .bounds(left + PANEL_W - 172, bottom, 80, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(left + PANEL_W - 88, bottom, 80, 20).build());
+    }
+
+    /**
+     * Een tag met alles eronder: eerst de tags die erin zitten, dan zijn eigen relais. Alleen als er
+     * (ergens eronder) een apparaat van deze soort in zit.
+     */
+    private void addTag(List<Row> out, RelayLabels.Kind kind, String tag, int depth, List<String> path) {
+        if (depth > MAX_DEPTH || path.stream().anyMatch(seen -> seen.equalsIgnoreCase(tag))
+                || shown.inTag(tag).stream().noneMatch(relay -> RelayLabels.kindOf(relay) == kind)) {
+            return;
+        }
+        out.add(new Row(Type.TAG, tag, -1, depth, 0));
+        List<String> deeper = new ArrayList<>(path);
+        deeper.add(tag);
+        for (String child : shown.childrenOf(tag)) {
+            addTag(out, kind, child, depth + 1, deeper);
+        }
+        for (int i = 0; i < shown.relays().size(); i++) {
+            Relay relay = shown.relays().get(i);
+            if (relay.hasTag(tag) && RelayLabels.kindOf(relay) == kind) {
+                out.add(new Row(Type.RELAY, relay.name(), i, depth + 1, 0));
+            }
+        }
     }
 
     /** De knoppen van één relais: aan, uit, puls en wijzigen. */
@@ -135,15 +172,15 @@ public class RelayListScreen extends Screen {
                 button -> Minecraft.getInstance().setScreen(new RelayEditScreen(index))).bounds(x + 114, y, 66, 18).build());
     }
 
-    /** De knoppen van een hele groep. */
-    private void addGroupButtons(String group, int y) {
+    /** De knoppen van een hele tag (met alles wat erin zit, ook in tags eronder). */
+    private void addTagButtons(String tag, int y) {
         int x = left + PANEL_W - 190;
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.on"),
-                button -> send(RelayActionPayload.switchNamed(group, EdithRedstone.Op.ON))).bounds(x, y, 34, 18).build());
+                button -> send(RelayActionPayload.switchTag(tag, EdithRedstone.Op.ON))).bounds(x, y, 34, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.off"),
-                button -> send(RelayActionPayload.switchNamed(group, EdithRedstone.Op.OFF))).bounds(x + 36, y, 34, 18).build());
+                button -> send(RelayActionPayload.switchTag(tag, EdithRedstone.Op.OFF))).bounds(x + 36, y, 34, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.pulse"),
-                button -> send(RelayActionPayload.switchNamed(group, EdithRedstone.Op.PULSE))).bounds(x + 72, y, 40, 18).build());
+                button -> send(RelayActionPayload.switchTag(tag, EdithRedstone.Op.PULSE))).bounds(x + 72, y, 40, 18).build());
     }
 
     private void changePage(int delta) {
@@ -198,29 +235,39 @@ public class RelayListScreen extends Screen {
                     left + PANEL_W / 2, top + 54, PANEL_W - 24, HudStyle.argb(140, HudStyle.WHITE));
             return;
         }
+        // Tekst mag niet onder de knoppen doorlopen.
+        int textRight = left + PANEL_W - 194;
         for (Row row : rows) {
-            if (row.index() == -2) {
-                // Kopje van een soort apparaat (relais / laserzenders / koepels).
-                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(70, HudStyle.ORANGE));
-                g.drawString(font, row.group(), left + 8, row.y() + 3, HudStyle.argb(255, HudStyle.ORANGE), true);
-                continue;
+            int x = left + 8 + row.depth() * INDENT;
+            switch (row.type()) {
+                case KIND -> {
+                    // Kopje van een soort apparaat (relais / koepels / torentjes / stroomkasten).
+                    g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(70, HudStyle.ORANGE));
+                    g.drawString(font, row.label(), left + 8, row.y() + 3, HudStyle.argb(255, HudStyle.ORANGE), true);
+                }
+                case TAG, NO_TAG -> {
+                    // Een tag (of "No tag"): een streepje cyaan, iets lichter naarmate hij dieper zit.
+                    g.fill(x - 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(Math.max(18, 45 - row.depth() * 8), HudStyle.CYAN));
+                    String label = row.type() == Type.TAG
+                            ? Component.translatable("screen.starktech.relays.tag", row.label()).getString()
+                            : row.label();
+                    g.drawString(font, font.plainSubstrByWidth(label, textRight - x), x, row.y() + 3,
+                            HudStyle.argb(255, HudStyle.CYAN), true);
+                }
+                case RELAY -> {
+                    Relay relay = shown.get(row.index());
+                    if (relay == null || player == null) {
+                        continue;
+                    }
+                    boolean on = RelayLabels.isOn(relay);
+                    g.fill(x + 2, row.y() + 5, x + 8, row.y() + 11, HudStyle.argb(255, on ? HudStyle.GREEN : 0x40525C));
+                    g.drawString(font, font.plainSubstrByWidth(relay.name(), textRight - x - 14), x + 14, row.y() + 1,
+                            HudStyle.argb(255, HudStyle.WHITE), true);
+                    String where = NavigationScreen.locationText(player, relay.dimension(), relay.pos()).getString();
+                    g.drawString(font, font.plainSubstrByWidth(where, textRight - x - 14), x + 14, row.y() + 10,
+                            HudStyle.argb(165, 0x9FC9D6), false);
+                }
             }
-            if (row.index() < 0) {
-                // Groepskopje
-                g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(45, HudStyle.CYAN));
-                g.drawString(font, Component.translatable("screen.starktech.relays.group", row.group()),
-                        left + 8, row.y() + 3, HudStyle.argb(255, HudStyle.CYAN), true);
-                continue;
-            }
-            Relay relay = shown.get(row.index());
-            if (relay == null || player == null) {
-                continue;
-            }
-            boolean on = RelayLabels.isOn(relay);
-            g.fill(left + 10, row.y() + 5, left + 16, row.y() + 11, HudStyle.argb(255, on ? HudStyle.GREEN : 0x40525C));
-            g.drawString(font, relay.name(), left + 22, row.y() + 1, HudStyle.argb(255, HudStyle.WHITE), true);
-            g.drawString(font, NavigationScreen.locationText(player, relay.dimension(), relay.pos()),
-                    left + 22, row.y() + 10, HudStyle.argb(165, 0x9FC9D6), false);
         }
     }
 }
