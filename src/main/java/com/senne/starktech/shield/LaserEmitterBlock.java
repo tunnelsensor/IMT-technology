@@ -71,7 +71,8 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     /**
      * Het veld een kwartslag gedraaid (13 oktober: "kiezen of de laser horizontaal is of verticaal").
      * Een wand die opzij loopt, ligt dan plat (zoals een vloer) in plaats van te staan; een wand die
-     * omhoog loopt (zenders in vloer en plafond), staat dan noord-zuid in plaats van oost-west.
+     * omhoog of omlaag loopt (zenders in vloer en plafond), kijkt dan naar het westen in plaats van naar
+     * het zuiden (hij loopt dan van noord naar zuid).
      */
     public static final BooleanProperty TURNED = BooleanProperty.create("turned");
 
@@ -98,15 +99,25 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
         // Hij kijkt de kant op waar je hem tegenaan zet (dus de wand loopt van je af).
-        BlockState placed = defaultBlockState().setValue(FACING, context.getNearestLookingDirection().getOpposite());
-        // Zet je hem tegen een laserpoort aan, dan hoort hij erbij: dan neemt hij haar kleur, omkeren en
-        // liggend/staand over (anders ging een omgekeerde poort half aan en half uit).
+        Direction facing = context.getNearestLookingDirection().getOpposite();
+        BlockState placed = defaultBlockState().setValue(FACING, facing);
+        // In het plafond of de vloer (13 oktober: "facing west of south, zodat het er vanaf boven ook mooi
+        // uitziet"): de wand komt dwars voor je te staan, zoals je in de gang kijkt. Kijk je naar het westen
+        // of oosten, dan kijkt de wand naar het westen (TURNED); anders naar het zuiden.
+        if (facing.getAxis() == Direction.Axis.Y) {
+            placed = placed.setValue(TURNED, context.getHorizontalDirection().getAxis() == Direction.Axis.X);
+        }
+        // Zet je hem tegen een laserpoort aan, dan hoort hij erbij: dan neemt hij haar kleur en omkeren over
+        // (anders ging een omgekeerde poort half aan en half uit), en liggend/staand als hij dezelfde kant op
+        // schiet (een wand die omhoog loopt, draait anders dan een die opzij loopt).
         for (Direction direction : Direction.values()) {
             BlockState next = context.getLevel().getBlockState(context.getClickedPos().relative(direction));
             if (next.is(this)) {
-                return placed.setValue(COLOR, next.getValue(COLOR))
-                        .setValue(INVERTED, next.getValue(INVERTED))
-                        .setValue(TURNED, next.getValue(TURNED));
+                placed = placed.setValue(COLOR, next.getValue(COLOR)).setValue(INVERTED, next.getValue(INVERTED));
+                if (next.getValue(FACING).getAxis() == facing.getAxis()) {
+                    placed = placed.setValue(TURNED, next.getValue(TURNED));
+                }
+                return placed;
             }
         }
         return placed;

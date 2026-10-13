@@ -28,7 +28,7 @@ public final class LaserAnimations {
     private LaserAnimations() {}
 
     /** Hoeveel ticks tussen twee stappen. Lager = sneller dicht. */
-    private static final int TICKS_PER_STEP = 2;
+    private static final int TICKS_PER_STEP = 1;
 
     /** Eén wand die op dit moment open- of dichtschuift. */
     private static final class Sliding {

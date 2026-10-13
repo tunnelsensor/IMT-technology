@@ -26,7 +26,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Signal</b>: Normal (redstone aan = laser aan) of Inverted (redstone aan = laser uit; zonder
  *       redstone staat hij dan aan).</li>
  *   <li><b>Wall</b>: Vertical (staand, zoals altijd) of Horizontal (plat, als een vloertje). Voor zenders
- *       in de vloer of het plafond loopt de wand omhoog; dan kies je East-west of North-south.</li>
+ *       in de vloer of het plafond loopt de wand omhoog of omlaag; dan kies je Facing south (de wand loopt
+ *       van oost naar west) of Facing west (van noord naar zuid).</li>
  * </ul>
  * Alles geldt meteen voor de hele laserpoort (de zenders die eraan vastzitten); er is geen "opslaan". Het
  * scherm leest wat er nu ingesteld is gewoon uit het blok, dus je ziet het veranderen zodra de server het
@@ -146,11 +147,11 @@ public class LaserEmitterScreen extends Screen {
         }
     }
 
-    /** "Vertical" of "Horizontal"; voor een wand die omhoog loopt "East-west" of "North-south". */
+    /** "Vertical" of "Horizontal"; voor een wand die omhoog of omlaag loopt "Facing south" of "Facing west". */
     private static String wallKey(BlockState state) {
         boolean turned = state.getValue(LaserEmitterBlock.TURNED);
         if (state.getValue(LaserEmitterBlock.FACING).getAxis() == Direction.Axis.Y) {
-            return turned ? "screen.starktech.laser.north_south" : "screen.starktech.laser.east_west";
+            return turned ? "screen.starktech.laser.facing_west" : "screen.starktech.laser.facing_south";
         }
         return turned ? "screen.starktech.laser.horizontal" : "screen.starktech.laser.vertical";
     }

@@ -204,30 +204,30 @@ public final class StarkConfig {
         // ------------------------------------------------------------------------- Zonnepaneel
         /** Energie per tick met de zon recht boven je (minder als de zon laag staat, 's nachts niets). */
         @Tunable("Energy per tick a solar panel makes with the sun straight above (less when the sun is low, nothing at night)")
-        public static float SOLAR_RATE = 0.5f;
+        public static float SOLAR_RATE = 2f;
         /** Welk deel van de zon een zonnepaneel nog krijgt als het regent (0.4 = 40%). */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets when it rains", max = 1)
-        public static float SOLAR_RAIN = 0.2f;
+        public static float SOLAR_RAIN = 1f;
         /** ...en bij onweer. */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets in a thunderstorm", max = 1)
-        public static float SOLAR_THUNDER = 0.1f;
+        public static float SOLAR_THUNDER = 0.5f;
         /** Hoeveel een zonnepaneel zelf kan opslaan. */
         @Tunable("Energy a solar panel can store")
-        public static float SOLAR_CAPACITY = 12_000.0f;
+        public static float SOLAR_CAPACITY = 5_000.0f;
 
         // ------------------------------------------------------------------------- Warmtegenerator
         /** Energie per tick zolang er brandstof brandt (kolen, hout, ...). */
         @Tunable("Energy per tick a heat generator makes while it burns fuel")
-        public static float HEAT_RATE_FUEL = 1f;
+        public static float HEAT_RATE_FUEL = 10f;
         /** Energie per tick per heet blok dat ertegenaan staat (lava, vuur, magma...). */
         @Tunable("Energy per tick per hot block (lava, fire, magma) next to a heat generator")
-        public static float HEAT_RATE_AMBIENT = 0.5f;
+        public static float HEAT_RATE_AMBIENT = 5f;
         /** Meer hete buren dan dit tellen niet meer mee. */
         @Tunable(value = "Hot blocks above this many no longer count", max = 26)
         public static float HEAT_MAX_NEIGHBOURS = 8.0f;
         /** Hoeveel een warmtegenerator zelf kan opslaan. */
         @Tunable("Energy a heat generator can store")
-        public static float HEAT_CAPACITY = 20_000.0f;
+        public static float HEAT_CAPACITY = 5_000.0f;
 
         // ------------------------------------------------------------------------- Laadstation (voor de bril)
         /**
