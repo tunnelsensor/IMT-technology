@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -56,6 +57,16 @@ public class HeatGeneratorBlock extends ChargerBlock {
     @Override
     protected BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
+    }
+
+    /**
+     * Licht houdt hij tegen, net als vroeger (ook de bundel van een Arc Lamp): het is een dichte kast. Dat
+     * moet er apart bij sinds noOcclusion() (zie ModBlocks), anders ging het licht er een beetje doorheen.
+     * Getint glas doet het precies zo.
+     */
+    @Override
+    protected int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
+        return level.getMaxLightLevel();
     }
 
     @Override

@@ -1120,6 +1120,12 @@ public final class VisualCheck {
             t.view(0, 40.5, -60, 37.0, 0, 22);
             t.shot(30, "98_models_night");
             t.command(0, "time set noon");
+            // De generator in het muurtje, van dichtbij: in de kier langs de kast hoort steen te zitten,
+            // geen lucht (14 oktober: "de heatgens geven xray langs de blokken").
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.view(0, 51.7, -59.9, 38.0, 31, 5);
+            t.shot(20, "98a_models_in_wall");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
@@ -2843,6 +2849,18 @@ public final class VisualCheck {
         level.setBlockAndUpdate(centre.below(), Blocks.MAGMA_BLOCK.defaultBlockState());
         level.setBlockAndUpdate(centre, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         level.setBlockAndUpdate(centre.offset(2, 0, 0), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+
+        // Een eind opzij (buiten de andere foto's): een generator ingemetseld in steen, met steen eronder,
+        // links, rechts, erboven en erachter, en de voorkant vrij. Zo zie je of de kieren langs zijn kast
+        // dwars door de wereld kijken.
+        BlockPos inWall = new BlockPos(50, -59, 40);
+        for (BlockPos pos : BlockPos.betweenClosed(inWall.offset(-3, -1, -3), inWall.offset(3, 3, 3))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(inWall.offset(-1, -1, 0), inWall.offset(1, 1, 1))) {
+            level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
+        }
+        level.setBlockAndUpdate(inWall, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
     }
 
     /**

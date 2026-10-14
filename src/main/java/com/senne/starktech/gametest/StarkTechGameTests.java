@@ -104,6 +104,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -2554,6 +2555,35 @@ public final class StarkTechGameTests {
                 throw new GameTestAssertException("Het rooster gloeit niet terwijl hij brandt");
             }
         });
+    }
+
+    /**
+     * Geen röntgenblik langs de warmtegenerator (14 oktober: "de heatgens geven xray langs de blokken").
+     * Zijn model is geen vol blok: tussen de sokkel en het deksel staat de kast een pixel naar binnen, en
+     * boven het deksel zit alleen het luchtrooster. Toch lieten de blokken ernaast hun kant naar de
+     * generator weg (het spel dacht dat hij die kant helemaal bedekte), en door die kieren keek je dwars
+     * door de wereld. Hier vragen we precies wat het spel bij het tekenen vraagt: tekent de steen ernaast
+     * zijn kant naar de generator? Dat moet aan alle vier de kanten en erboven. (Eronder hoeft niet: de
+     * sokkel bedekt het blok eronder wel helemaal.) Licht houdt hij nog wel tegen, zoals vroeger.
+     */
+    @GameTest(template = ARENA, batch = "voice")
+    public static void heat_generator_hides_no_neighbour_faces(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(5, 3, 5);
+        helper.setBlock(pos, ModBlocks.HEAT_GENERATOR.get());
+        for (Direction side : new Direction[] {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.UP}) {
+            BlockPos neighbour = pos.relative(side);
+            helper.setBlock(neighbour, Blocks.STONE);
+            if (!Block.shouldRenderFace(Blocks.STONE.defaultBlockState(), helper.getLevel(), helper.absolutePos(neighbour),
+                    side.getOpposite(), helper.absolutePos(pos))) {
+                throw new GameTestAssertException("De steen aan de kant " + side.getName() + " tekent zijn kant naar de"
+                        + " warmtegenerator niet: door de kier kijk je dan dwars door de wereld");
+            }
+        }
+        if (helper.getBlockState(pos).getLightBlock(helper.getLevel(), helper.absolutePos(pos))
+                < helper.getLevel().getMaxLightLevel()) {
+            throw new GameTestAssertException("Licht (en de bundel van een Arc Lamp) gaat nu door de warmtegenerator heen");
+        }
+        helper.succeed();
     }
 
     // ================================================================ Fase 15: raids

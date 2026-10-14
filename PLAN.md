@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 219 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 220 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2185,6 +2185,27 @@ owner doen of trusted players in zone**".
       vreemde niet (en neemt niets over met sneak + klik), een paneel zonder eigenaar wordt van wie er als
       eerste op sneak-klikt (gewoon klikken niet). 219 tests: 216 groen, de 3 rode van hoofdstuk 14 stap 2.
       Screenshot: `dr7_panel_name_screen` (`-Ponly=devrename`).
+
+### 18. Geen doorkijkje langs de warmtegenerator (14 oktober)
+
+Jouw melding: "de heatgens geven **xray langs de blokken**".
+
+- [x] **De oorzaak.** Sinds zijn 3D-model (`7c527b8`) is de warmtegenerator geen vol blok meer: tussen de
+      sokkel en het deksel staat de kast een pixel naar binnen, en boven het deksel zit alleen het
+      luchtrooster. Voor het spel was hij nog wel een dicht, vol blok, dus lieten de blokken ernaast (een
+      muur, een plafond) hun kant naar de generator weg: die zou je toch niet zien. Door de kieren keek je
+      zo dwars door de wereld. Ik heb de andere blokken van de mod nagelopen: alleen de generator had dit.
+- [x] **De oplossing.** `.noOcclusion()` bij de generator in `ModBlocks`: de blokken ernaast tekenen hun kant
+      nu gewoon, en in de kieren zie je steen (in de schaduw) in plaats van lucht. **Mijn invulling**: licht
+      houdt hij tegen zoals vroeger, ook de bundel van een Arc Lamp (`HeatGeneratorBlock.getLightBlock`,
+      net als getint glas). Zonder dat ging het licht er na deze fix ineens doorheen, en kon een generator
+      in een muur licht naar de kamer ernaast laten lekken.
+- [x] **Tests en beelden.** Een nieuwe test (`heat_generator_hides_no_neighbour_faces`): tekent de steen aan
+      alle vier de kanten en erboven zijn kant naar de generator, en houdt hij nog licht tegen? Zonder de
+      oplossing was hij rood. 220 tests: 217 groen, de 3 rode van hoofdstuk 14 stap 2. Screenshot:
+      `98a_models_in_wall` (`-Ponly=models`): een generator ingemetseld in steen, van dichtbij. Vóór de
+      oplossing zag je door de kier boven het deksel en langs de kast de lucht en het gras, nu een donkere
+      naad.
 
 ---
 

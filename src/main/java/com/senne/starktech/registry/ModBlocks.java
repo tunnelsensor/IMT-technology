@@ -94,7 +94,11 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     // Alleen licht als hij werkt (dan gloeit zijn rooster).
-                    .lightLevel(state -> state.getValue(HeatGeneratorBlock.LIT) ? 7 : 0));
+                    .lightLevel(state -> state.getValue(HeatGeneratorBlock.LIT) ? 7 : 0)
+                    // Zijn model is geen vol blok (er zitten kieren langs de kast). Zonder dit lieten de
+                    // blokken ernaast hun kant weg, en keek je door die kieren dwars door de wereld.
+                    // (Licht houdt hij wel tegen: zie HeatGeneratorBlock.getLightBlock.)
+                    .noOcclusion());
 
     // ---------------------------------------------------------------- Fase 11: rayshield
 
