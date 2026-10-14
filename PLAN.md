@@ -2040,6 +2040,8 @@ De stappen:
 
 ### 15. Relais: tags, omkeren en de relay emitter (13 oktober)
 
+(De tags van stap 1 zijn op 14 oktober vervangen door groepen in een boom: zie hoofdstuk 19.)
+
 Jouw wensen: "maak een block die **relay emitter** is zodat je ook relays kunt triggeren door redstone",
 "zorg dat je relays kunt **renamen zonder bril** en dat je een **button om het off signaal te inverten**
 hebt", en "zorg dat de relaygroups **tags** worden zodat je **groepen in groepen** hebt, vb: deur1 en deur2
@@ -2207,6 +2209,58 @@ Jouw melding: "de heatgens geven **xray langs de blokken**".
       oplossing zag je door de kier boven het deksel en langs de kast de lucht en het gras, nu een donkere
       naad.
 
+### 19. Relaisgroepen: een boom in plaats van tags (14 oktober)
+
+Jouw wens: "de tags mogen aangepast worden naar **groepen**, deze groepen configureer je **in de desktop
+en/of in de relay**, dan kies je een groep waar die bij hoort, een groep is ook **optioneel**, hierdoor kun
+je **groepen in groepen** doen", met als voorbeeld base > visitors (cafe, storage) en base > restricted
+(security room, power room). En erachteraan: "zorg ook dat je een **tree van de groups** kunt zien, voor de
+duidelijkheid **tags zijn volledig weg**, je kunt enkel relay namen in groepen steken en groepen in groepen
+(zorg dat **base niet in temp** kan en temp in base waardoor je een **loop** krijgt)".
+
+- [x] **1. Groepen in plaats van tags.** Een relais zit in hooguit één groep (`Relay.group`, leeg = geen
+      groep), en een groep in hooguit één andere groep (`EdithRelays.groupParents`, leeg = bovenaan). Zo is
+      het een echte boom. Een groep kan nooit (via een omweg) in zichzelf (`wouldLoop`): zit `temp` in
+      `base`, dan weigert de server `base` in `temp` ("that would make a loop"), en in de schermen staat die
+      keuze grijs (of rood bij slepen). Schakelen op een groep pakt alles eronder mee: je stem, de knoppen in
+      het redstone-scherm, de relay emitter en de diagrammen op een server (`on("base")`). Tags bestaan
+      niet meer (`RelayTagsScreen` is weg). Oude werelden: van een relais met tags wordt de eerste tag zijn
+      groep, en van "tag in tags" de eerste tag erboven (een rondje daarin wordt gebroken).
+- [x] **2. In het relais.** De knop **Group** in het scherm van een relais toont waar het in zit (`base ›
+      restricted › security room`, of `No group`). Klik erop: het groepen-scherm opent als kiezer (bovenaan
+      "Pick a group for 'Door 1'", links eerst **(No group)** en dan de boom). Kies een groep en klik
+      **Choose**; **Save** bewaart naam en groep samen. In die kiezer kun je ook meteen groepen maken en
+      verhuizen.
+- [x] **3. Het groepen-scherm** (`RelayGroupsScreen`, de knop **Groups** onderaan het redstone-scherm, of via
+      een relais). Links de boom van groepen. Een nieuwe groep (links onderaan, **+**) komt **in de groep die
+      je gekozen hebt**, zodat je jouw voorbeeld zo intikt: kies `base`, typ `visitors`; kies `visitors`, typ
+      `cafe`. Rechts: in welke groep de gekozen groep zit (een vinkje; **(top level)** = nergens in; wat een
+      rondje zou maken staat grijs), **Rename** en **Delete group**.
+- [x] **4. Op de desktop: de app Groups** (`GroupsApp`, icoon **G** op de Stark OS-desktop). Dezelfde boom,
+      met je relais erin (lampje groen = aan, rechts waar het staat) en per groep hoeveel apparaten hij
+      schakelt. **Sleep** een relais of groep op een groep om hem erin te zetten (groen = mag, rood = rondje),
+      of op de bovenste regel "Your relays (top level)" om hem uit elke groep te halen. Bovenaan **New group**
+      (in de gekozen groep), **Rename** (een groep of een relais) en **Delete**.
+- [x] **Mijn invulling** (niet gevraagd):
+      - De app Groups toont altijd **jouw eigen** relais, ook aan de desktop van een vriend (een relais is van
+        wie het neerzette, hoofdstuk 15 stap 4). Een indringer aan jouw desktop ziet dus zijn eigen relais,
+        niet die van jou.
+      - **Weggooien** van een groep gooit niets anders weg: wat erin zat (relais en groepen) schuift één laag
+        omhoog. Gooi je `restricted` weg, dan zitten `security room` en `power room` direct in `base`, en
+        blijft `base` alles schakelen.
+      - Een groep kan een **andere naam** krijgen; de relais en groepen erin gaan mee. Een naam die al bestaat,
+        mag niet. Let op: een emitter of diagram met de oude naam moet je zelf bijwerken (zoals bij een relais).
+      - In de config: `relays.maxTags` is weg, `relays.maxGroups` (standaard 32 groepen per speler) is nieuw.
+      - De groepen blijven van jou (bij je speler opgeslagen), niet van de desktop of de kern.
+- [x] **Tests en beelden.** Twee tests vervangen de tag-tests (`RelayGameTests`): `relay_groups_nest_and_switch`
+      (jouw boom, schakelen op `base`, één groep per relais en per groep, `base` in `temp` geweigerd, ook in
+      zichzelf en via een omweg, hernoemen, weggooien schuift omhoog, het maximum) en
+      `relay_old_tags_become_groups` (oude groep, oude tags, oude tags-in-tags met een rondje, opslaan en
+      doorsturen). 220 tests: 217 groen, de 3 rode van hoofdstuk 14 stap 2. Screenshots `-Ponly=relays`: `rl03` (de boom), `rl04` en `rl041` (het
+      groepen-scherm, met `base` gekozen: alles eronder grijs), `rl042` (de kiezer van een relais), `rl043`
+      (het scherm van een relais met de knop Group) en `rl061` (de app Groups op de desktop). In de showcase:
+      "Relay groups, invert and emitter" en "Relay: name and group" (eerst "... tags").
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -2273,6 +2327,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Relaisgroepen (14 oktober)**: gezien op screenshots (`rl03`-`rl061`) en in de showcase. Probeer zelf
+      of slepen in de app Groups op de desktop fijn werkt (ook met veel relais, als je moet scrollen), en of
+      het groepen-scherm duidelijk is: een nieuwe groep komt in de groep die je gekozen hebt.
 - [ ] **Het naamscherm van de keycardlezer en het codepaneel (13 oktober)**: gezien op screenshots
       (`dr4`-`dr7`) en in de showcase. Probeer zelf of sluipen + rechtsklik met een lege hand fijn werkt, ook
       met een vriend in je Access en met een vreemde (die hoort bij een lezer "This keycard reader belongs to

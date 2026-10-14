@@ -231,23 +231,46 @@ In creative zet de knop **Max all** alles in één keer op 10.
 
 ### Redstone-relais (')
 Craft een **E.D.I.T.H.-relais**, zet het naast een deur, lamp, zuiger of trechter en klik er
-rechts op (daar heb je je bril niet voor nodig) om het een **naam** en **tags** te geven, met
-komma's ertussen: `security room, doors`. Daarna kan E.D.I.T.H. het overal in dezelfde wereld
-aan- of uitzetten, omschakelen of een korte puls geven — per relais of per hele tag. Met je stem:
+rechts op (daar heb je je bril niet voor nodig) om het een **naam** te geven en eventueel in een
+**groep** te zetten (de knop **Group**). Daarna kan E.D.I.T.H. het overal in dezelfde wereld
+aan- of uitzetten, omschakelen of een korte puls geven — per relais of per hele groep. Met je stem:
 *"zet de voordeur aan"*, *"doe de val uit"*, *"geef de poort een puls"*.
 
 - **Van jou**: een relais is van wie het neerzet. Alleen jij kunt het openen, in je lijst zetten,
   hernoemen, omkeren en schakelen; een ander hoort van wie het is.
-- **Tags in tags**: in het redstone-scherm (toets **'**) zit onderaan de knop **Tags**. Maak daar
-  links onderaan een tag als `base`, klik links op `security room` en rechts op `base`: dan zit
-  `security room` in `base`. Zet je `base` aan, dan gaat alles eronder mee. Een tag mag in meer
-  tags zitten, maar nooit (via een omweg) in zichzelf. Het redstone-scherm toont alles als een boom.
+- **Groepen in groepen**: een relais zit in hooguit één groep, en een groep in hooguit één andere
+  groep. Zo bouw je een boom:
+
+  ```
+  base
+    visitors
+      cafe
+      storage
+    restricted
+      security room
+      power room
+  ```
+
+  Zet je `base` aan, dan gaat alles eronder mee. Een groep kan nooit (via een omweg) in zichzelf:
+  zit `temp` in `base`, dan kan `base` niet in `temp`. Groepen maak je op drie plekken:
+  - in het **groepen-scherm**: de knop **Groups** onderaan het redstone-scherm (toets **'**), of
+    de knop **Group** in het scherm van een relais (dan kies je er meteen een met **Choose**).
+    Links staat de boom; kies een groep en typ links onderaan een naam (**+**): de nieuwe groep
+    komt in de gekozen groep. Rechts klik je in welke groep de gekozen groep hoort (of
+    **(top level)**), geef je hem een andere naam of gooi je hem weg (wat erin zat, schuift een
+    laag omhoog);
+  - op de **Stark OS-desktop**, in de app **Groups**: dezelfde boom, met je relais erin. Sleep een
+    relais of groep op een groep om hem erin te zetten, of op de bovenste regel om hem uit elke
+    groep te halen. Met **New group**, **Rename** en **Delete** bovenaan doe je de rest.
+
+  Het redstone-scherm toont alles als een boom. (Tot 14 oktober waren dit tags; een oude wereld
+  houdt van elk relais de eerste tag als groep.)
 - **Invert**: in het scherm van een relais zet de knop **Invert** het om: dan geeft het redstone
   als het **uit** staat. Je ziet het aan een rode rand om het lampje. Zonder bril moet je ernaast
   staan.
 - **Relay emitter** (een relais, een comparator en redstone): het omgekeerde van een relais. Geef
   hem redstone (een knop, hendel, drukplaat...) en hij schakelt jouw relais. In zijn scherm typ je
-  de naam van een relais of een tag, en kies je **Follow** (redstone aan = aan, uit = uit),
+  de naam van een relais of een groep, en kies je **Follow** (redstone aan = aan, uit = uit),
   **Toggle** (elke keer omschakelen) of **Pulse** (elke keer een korte puls). Hij is gratis, heeft
   geen bril nodig en werkt ook als jij offline bent. Alleen wie hem neerzette, kan hem instellen.
 
@@ -484,8 +507,8 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    Elk rack met iets erin heeft ook minstens één **fan** nodig, anders wordt het te heet (zie
    hieronder, "Het datacenter").
 2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
-   naam ("Vault door"): met die naam noem je ze in je diagram. Een **tag** werkt ook: `on("base")`
-   zet alles in `base` aan, ook wat in tags eronder zit. Een **Keycard Reader** en een
+   naam ("Vault door"): met die naam noem je ze in je diagram. Een **groep** werkt ook: `on("base")`
+   zet alles in `base` aan, ook wat in groepen eronder zit. Een **Keycard Reader** en een
    **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld). Een andere
    naam geef je op de desktop in de app **Devices**: klik **Rename** bij de lezer of het paneel,
    typ de naam en druk Enter (Esc = laat maar). Daar zie je ook in hoeveel diagrammen hij staat:

@@ -8,6 +8,7 @@ import com.senne.starktech.redstone.EdithRelays;
 import com.senne.starktech.redstone.Relay;
 import com.senne.starktech.redstone.RelayBlock;
 import com.senne.starktech.registry.ModAttachments;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -21,15 +22,15 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Eén relais een naam en tags geven, en het eventueel omkeren.
+ * Eén relais een naam en een groep geven, en het eventueel omkeren.
  *
  * Dit scherm opent als je rechtsklikt op een E.D.I.T.H.-relais (ook zonder bril, sinds 13 oktober), of
  * via "rename" in het redstone-scherm.
  *
  * <ul>
- *   <li><b>Tags</b>: typ ze met komma's ertussen ("security room, doors"). Met één commando zet je alles
- *       met die tag tegelijk aan of uit. Welke tag in welke tag zit, stel je in met de knop "Tags" in het
- *       redstone-scherm.</li>
+ *   <li><b>Group</b> (14 oktober, in plaats van tags): de knop toont waar het relais nu in zit ("base ›
+ *       restricted › security room", of "No group"). Klik erop en je kiest een groep in het groepen-scherm
+ *       (daar maak je ook nieuwe groepen en zet je groepen in groepen). Bewaren doe je hier met Save.</li>
  *   <li><b>Invert</b>: het relais geeft redstone als het UIT staat (alleen bij een echt relais; een koepel
  *       of torentje geeft geen redstone).</li>
  * </ul>
@@ -40,7 +41,10 @@ public class RelayEditScreen extends Screen {
 
     private final int index;
     private EditBox nameBox;
-    private EditBox tagBox;
+    /** Wat je in het naamvak typte (blijft staan terwijl je in het groepen-scherm een groep kiest). */
+    private @Nullable String typedName;
+    /** De gekozen groep ("" = geen groep), nog niet bewaard; null = nog zoals het relais hem heeft. */
+    private @Nullable String group;
     private @Nullable Button invertButton;
     private int left;
     private int top;
@@ -80,15 +84,19 @@ public class RelayEditScreen extends Screen {
 
         nameBox = new EditBox(font, left + 10, top + 34, PANEL_W - 20, 18, Component.translatable("screen.starktech.relay_edit.name"));
         nameBox.setMaxLength(Math.round(StarkConfig.Relays.MAX_NAME));
-        nameBox.setValue(relay == null ? "" : relay.name());
+        nameBox.setValue(typedName != null ? typedName : relay == null ? "" : relay.name());
         nameBox.setHint(Component.translatable("screen.starktech.relay_edit.name_hint"));
+        nameBox.setResponder(text -> typedName = text);
         addRenderableWidget(nameBox);
 
-        tagBox = new EditBox(font, left + 10, top + 68, PANEL_W - 20, 18, Component.translatable("screen.starktech.relay_edit.tags"));
-        tagBox.setMaxLength((Math.round(StarkConfig.Relays.MAX_NAME) + 2) * Math.round(StarkConfig.Relays.MAX_TAGS));
-        tagBox.setValue(relay == null ? "" : relay.tagText());
-        tagBox.setHint(Component.translatable("screen.starktech.relay_edit.tags_hint"));
-        addRenderableWidget(tagBox);
+        // De groep: een knop die het groepen-scherm opent om er een te kiezen.
+        if (group == null) {
+            group = relay == null ? "" : relay.group();
+        }
+        addRenderableWidget(Button.builder(groupLabel(), button -> Minecraft.getInstance().setScreen(new RelayGroupsScreen(this, group)))
+                .bounds(left + 10, top + 68, PANEL_W - 20, 20)
+                .tooltip(Tooltip.create(Component.translatable("screen.starktech.relay_edit.group.tip")))
+                .build());
 
         // Omkeren: alleen bij een echt relais dat jouw spel kan zien.
         invertButton = null;
@@ -113,6 +121,28 @@ public class RelayEditScreen extends Screen {
         setInitialFocus(nameBox);
     }
 
+    /** De knop van de groep: "base › restricted › security room", of "No group". */
+    private Component groupLabel() {
+        String chosen = group == null ? "" : group;
+        if (chosen.isEmpty()) {
+            return Component.translatable("screen.starktech.relay_edit.no_group");
+        }
+        List<String> path = data().pathOf(chosen);
+        String text = path.isEmpty() ? chosen : String.join(" › ", path);
+        return Component.literal(font.plainSubstrByWidth(text, PANEL_W - 30));
+    }
+
+    /** Het groepen-scherm koos een groep ("" = geen groep). Bewaard wordt pas met Save. */
+    public void chooseGroup(String chosen) {
+        group = chosen;
+    }
+
+    /** De naam van dit relais (zoals je hem nu typt), voor de kop van het groepen-scherm. */
+    public String relayName() {
+        Relay relay = data().get(index);
+        return typedName != null && !typedName.isBlank() ? typedName : relay == null ? "" : relay.name();
+    }
+
     /** "Invert: OFF" of "Invert: ON", zoals het blok nu staat. */
     private Component invertLabel() {
         BlockState state = relayBlock();
@@ -130,8 +160,7 @@ public class RelayEditScreen extends Screen {
     }
 
     private void save() {
-        PacketDistributor.sendToServer(new RelayActionPayload(RelayActionPayload.Op.RENAME, EdithRedstone.Op.TOGGLE,
-                index, nameBox.getValue(), tagBox.getValue()));
+        PacketDistributor.sendToServer(RelayActionPayload.rename(index, nameBox.getValue(), group == null ? "" : group));
         onClose();
     }
 
@@ -164,14 +193,7 @@ public class RelayEditScreen extends Screen {
         }
         g.drawString(font, Component.translatable("screen.starktech.relay_edit.name"), left + 10, top + 24,
                 HudStyle.argb(200, HudStyle.WHITE), false);
-        g.drawString(font, Component.translatable("screen.starktech.relay_edit.tags"), left + 10, top + 58,
+        g.drawString(font, Component.translatable("screen.starktech.relay_edit.group"), left + 10, top + 58,
                 HudStyle.argb(200, HudStyle.WHITE), false);
-        // De tags die je al hebt, zodat je ze precies zo kunt overtypen.
-        java.util.List<String> known = data().tags();
-        if (!known.isEmpty()) {
-            String line = Component.translatable("screen.starktech.relay_edit.known", String.join(", ", known)).getString();
-            g.drawString(font, font.plainSubstrByWidth(line, PANEL_W - 20), left + 10, top + 91,
-                    HudStyle.argb(150, 0x9FC9D6), false);
-        }
     }
 }

@@ -152,17 +152,17 @@ public final class BrainPrompt {
         com.senne.starktech.redstone.EdithRelays relayData = player.getData(ModAttachments.RELAYS);
         Set<String> relays = new LinkedHashSet<>();
         for (Relay relay : relayData.relays()) {
-            relays.add(relay.tags().isEmpty() ? relay.name() : relay.name() + " (tags " + relay.tagText() + ")");
+            relays.add(relay.hasGroup() ? relay.name() + " (group " + relay.group() + ")" : relay.name());
         }
         line(text, "Relays", relays.isEmpty() ? "none" : String.join(", ", relays));
-        // Tags in tags: "security room is inside base". Een tag schakelen pakt ook alles eronder.
+        // Groepen in groepen: "security room is inside restricted". Een groep schakelen pakt ook alles eronder.
         List<String> nesting = new ArrayList<>();
-        for (String tag : relayData.tags()) {
-            if (!relayData.parentsOf(tag).isEmpty()) {
-                nesting.add(tag + " is inside " + String.join(" and ", relayData.parentsOf(tag)));
+        for (String group : relayData.groups()) {
+            if (!relayData.parentOf(group).isEmpty()) {
+                nesting.add(group + " is inside " + relayData.parentOf(group));
             }
         }
-        line(text, "Relay tags", nesting.isEmpty() ? "" : String.join("; ", nesting));
+        line(text, "Relay groups", nesting.isEmpty() ? "" : String.join("; ", nesting));
         if (!EdithClientState.operational) {
             line(text, "Note", "the glasses are low on power or still starting");
         }

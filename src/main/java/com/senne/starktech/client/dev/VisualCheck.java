@@ -1777,7 +1777,7 @@ public final class VisualCheck {
                     level.setBlockAndUpdate(relay, ModBlocks.RELAY.get().defaultBlockState());
                     var data = player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
                     player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, data.with(new com.senne.starktech.redstone.Relay(
-                            names[i], java.util.List.of(), level.dimension(), relay)));
+                            names[i], "", level.dimension(), relay)));
                 }
                 level.setBlockAndUpdate(core.offset(-3, 0, 3), ModBlocks.KEYCARD_READER.get().defaultBlockState());
                 if (level.getBlockEntity(core.offset(-3, 0, 3)) instanceof com.senne.starktech.logic.InputDeviceBlockEntity be) {
@@ -2013,9 +2013,10 @@ public final class VisualCheck {
             t.command(0, "time set noon");
         }
 
-        // --- Relais (13 oktober): twee deuren met de tag "security room" (die in "base" zit), een omgekeerde
-        // tuinlamp, en een relay emitter met een hendel die "base" schakelt. Eerst de hendel uit, dan aan (de
-        // deurlampen gaan aan), dan de schermen: de boom van tags, het tag-scherm, een relais en de emitter.
+        // --- Relais (13 en 14 oktober): twee deuren in de groep "security room" (in "restricted", in "base"), een
+        // omgekeerde tuinlamp, en een relay emitter met een hendel die "base" schakelt. Eerst de hendel uit, dan
+        // aan (de deurlampen gaan aan), dan de schermen: de boom van groepen, het groepen-scherm, de groepskiezer
+        // van een relais, een relais, de emitter, en de app Groups op de Stark OS-desktop.
         if (want("relays")) {
             BlockPos y = RELAY_YARD;
             t.onServer(0, VisualCheck::buildRelayYard);
@@ -2031,13 +2032,30 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.open(0, RelayListScreen::new);
             t.shot(20, "rl03_relay_tree");
-            t.open(0, com.senne.starktech.client.RelayTagsScreen::new);
+            t.open(0, com.senne.starktech.client.RelayGroupsScreen::new);
             t.step(5, () -> {
-                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.RelayTagsScreen screen) {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.RelayGroupsScreen screen) {
                     screen.tourSelect("security room");
                 }
             });
-            t.shot(10, "rl04_relay_tags");
+            t.shot(10, "rl04_relay_groups");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.RelayGroupsScreen screen) {
+                    screen.tourSelect("base"); // "base" kan nergens in die erin zit: die staan grijs
+                }
+            });
+            t.shot(10, "rl041_relay_groups_base");
+            t.open(0, () -> {
+                var data = Minecraft.getInstance().player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
+                var door = new com.senne.starktech.client.RelayEditScreen(data.indexAt(Minecraft.getInstance().level.dimension(), y.offset(1, 0, 0)));
+                return new com.senne.starktech.client.RelayGroupsScreen(door, "security room");
+            });
+            t.shot(20, "rl042_relay_group_picker");
+            t.open(0, () -> {
+                var data = Minecraft.getInstance().player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
+                return new com.senne.starktech.client.RelayEditScreen(data.indexAt(Minecraft.getInstance().level.dimension(), y.offset(1, 0, 0)));
+            });
+            t.shot(20, "rl043_relay_edit_group");
             t.close(0);
             t.open(0, () -> {
                 var data = Minecraft.getInstance().player.getData(com.senne.starktech.registry.ModAttachments.RELAYS);
@@ -2047,6 +2065,16 @@ public final class VisualCheck {
             t.close(0);
             t.onServer(5, player -> com.senne.starktech.redstone.RelayEmitters.open(player, y.offset(6, 0, 2)));
             t.shot(15, "rl06_emitter_screen");
+            t.close(0);
+            // De app Groups op de Stark OS-desktop van een eigen kern in de tuin.
+            t.stand(0, y.getX() + 0.5, y.getY(), y.getZ() + 5.5, 180, 30);
+            t.onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, y.offset(0, 0, 3)));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourGroups("restricted");
+                }
+            });
+            t.shot(10, "rl061_os_groups");
             t.close(0);
             // Van dichtbij, van bovenaf: de twee deuren aan (groen), de tuinlamp omgekeerd (rode rand) en uit.
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
@@ -2412,9 +2440,10 @@ public final class VisualCheck {
     private static final BlockPos RELAY_YARD = new BlockPos(-200, -60, -320);
 
     /**
-     * Drie relais op een rij met een redstonelamp erachter: "Door 1" en "Door 2" (tag "security room", die in
-     * "base" zit) en "Garden light" (tag "garden", omgekeerd: zijn lamp brandt terwijl hij uit staat). Ervoor
-     * een relay emitter op "base" (Follow) met een hendel (uit) ernaast.
+     * Drie relais op een rij met een redstonelamp erachter: "Door 1" en "Door 2" (groep "security room", in
+     * "restricted", in "base") en "Garden light" (groep "garden", omgekeerd: zijn lamp brandt terwijl hij uit
+     * staat). Ervoor een relay emitter op "base" (Follow) met een hendel (uit) ernaast, en links een
+     * beveiligingskern (van jou, met wachtwoord) voor de app Groups.
      */
     private static void buildRelayYard(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -2428,10 +2457,17 @@ public final class VisualCheck {
             level.setBlockAndUpdate(relay.north(), Blocks.REDSTONE_LAMP.defaultBlockState());
             level.setBlockAndUpdate(relay, ModBlocks.RELAY.get().defaultBlockState()
                     .setValue(com.senne.starktech.redstone.RelayBlock.INVERTED, inverted));
-            data = data.with(new com.senne.starktech.redstone.Relay(relays[i][0], List.of(relays[i][1]), level.dimension(), relay));
+            data = data.with(new com.senne.starktech.redstone.Relay(relays[i][0], relays[i][1], level.dimension(), relay));
         }
-        data = data.withTag("base").withParent("security room", "base");
+        data = ShowcaseFeatures.exampleGroups(data);
         player.setData(com.senne.starktech.registry.ModAttachments.RELAYS, data);
+        BlockPos core = y.offset(0, 0, 3);
+        level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+            be.setOwner(player);
+            be.ensureSystem(level);
+            be.setPassword("jarvis1", level.random);
+        }
         BlockPos emitter = y.offset(6, 0, 2);
         level.setBlockAndUpdate(emitter, ModBlocks.RELAY_EMITTER.get().defaultBlockState());
         if (level.getBlockEntity(emitter) instanceof com.senne.starktech.redstone.RelayEmitterBlockEntity entity) {

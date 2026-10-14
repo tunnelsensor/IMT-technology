@@ -33,7 +33,8 @@ import org.jetbrains.annotations.Nullable;
  * E.D.I.T.H. stuurt je redstone aan.
  *
  * Je zet een E.D.I.T.H.-relais (RelayBlock) naast wat je wil aansturen: een deur, een lamp,
- * een zuiger, een trechter... Je geeft het een naam ("voordeur") en een groep ("huis").
+ * een zuiger, een trechter... Je geeft het een naam ("voordeur") en eventueel een groep ("huis"), en
+ * groepen kunnen in groepen zitten ("huis" in "base", zie EdithRelays).
  * Daarna kan E.D.I.T.H. het aanzetten, uitzetten, omschakelen of een korte puls geven -
  * één relais, of een hele groep tegelijk.
  *
@@ -91,7 +92,7 @@ public final class EdithRedstone {
             return;
         }
         String name = Component.translatable(defaultNameKey, data.relays().size() + 1).getString();
-        Relay relay = new Relay(name, List.of(), player.level().dimension(), pos);
+        Relay relay = new Relay(name, "", player.level().dimension(), pos);
         player.setData(ModAttachments.RELAYS, data.with(relay));
         StarkAdvancements.award(player, StarkAdvancements.RELAY);
         tell(player, Component.translatable("edith.starktech.msg.relay_added", name), EdithMessagePayload.Level.INFO);
@@ -152,9 +153,9 @@ public final class EdithRedstone {
 
     /**
      * Meldt één schakelaar van een blok aan (een kant van een stroomkast), met een eigen naam en
-     * tag. Stond hij er al, dan gebeurt er niets.
+     * groep. Stond hij er al, dan gebeurt er niets.
      */
-    public static void registerChannel(ServerPlayer player, BlockPos pos, int channel, String name, String tag) {
+    public static void registerChannel(ServerPlayer player, BlockPos pos, int channel, String name, String group) {
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         if (data.indexAt(player.level().dimension(), pos, channel) >= 0) {
             return;
@@ -164,15 +165,15 @@ public final class EdithRedstone {
                     EdithMessagePayload.Level.WARNING);
             return;
         }
-        player.setData(ModAttachments.RELAYS, data.with(new Relay(name, List.of(tag), player.level().dimension(), pos, channel)));
+        player.setData(ModAttachments.RELAYS, data.with(new Relay(name, group, player.level().dimension(), pos, channel)));
     }
 
-    /** Een tag voor de volgende stroomkast van deze speler: "Cabinet 1", "Cabinet 2"... */
+    /** Een groep voor de volgende stroomkast van deze speler: "Cabinet 1", "Cabinet 2"... */
     public static String nextCabinetGroup(ServerPlayer player) {
         EdithRelays data = player.getData(ModAttachments.RELAYS);
         String base = Component.translatable("screen.starktech.cabinet.group").getString();
         int number = 1;
-        while (data.hasTag(base + " " + number)) {
+        while (data.hasGroup(base + " " + number)) {
             number++;
         }
         return base + " " + number;
@@ -229,7 +230,7 @@ public final class EdithRedstone {
     }
 
     /**
-     * Rechtsklikken op een relais: het scherm openen waarin je naam en tags instelt. Daar heb je je bril
+     * Rechtsklikken op een relais: het scherm openen waarin je naam en groep instelt. Daar heb je je bril
      * niet voor nodig (13 oktober): je staat er toch naast. Alleen de eigenaar: een ander hoort van wie
      * het is.
      */
@@ -256,9 +257,10 @@ public final class EdithRedstone {
     /**
      * Een bericht van het scherm (of van een spraakcommando) uitvoeren.
      *
-     * Wat alleen je eigen lijst verandert (naam, tags, weghalen), mag zonder bril: je stond bij het
-     * relais toen je het scherm opende (13 oktober: "relays renamen zonder bril"). Op afstand schakelen
-     * kan alleen met je bril op; zonder bril alleen het relais waar je naast staat.
+     * Wat alleen je eigen lijst verandert (naam, groep, groepen, weghalen), mag zonder bril: je stond bij
+     * het relais toen je het scherm opende (13 oktober: "relays renamen zonder bril"), of je zit aan de
+     * Stark OS-desktop (14 oktober: "groepen configureer je in de desktop"). Op afstand schakelen kan alleen
+     * met je bril op; zonder bril alleen het relais waar je naast staat.
      */
     public static void handleAction(ServerPlayer player, RelayActionPayload payload) {
         ItemStack glasses = EdithServer.authorizedGlasses(player);
@@ -281,10 +283,10 @@ public final class EdithRedstone {
                 }
             }
             case INVERT -> invert(player, glasses, data.get(payload.index()));
-            case TAG_CREATE -> createTag(player, data, payload.name());
-            case TAG_PARENT -> setParent(player, data, payload.name(), payload.text(), true);
-            case TAG_UNPARENT -> setParent(player, data, payload.name(), payload.text(), false);
-            case TAG_DELETE -> deleteTag(player, data, payload.name());
+            case GROUP_CREATE -> createGroup(player, data, payload.name(), payload.text());
+            case GROUP_PARENT -> setParent(player, data, payload.name(), payload.text());
+            case GROUP_RENAME -> renameGroup(player, data, payload.name(), payload.text());
+            case GROUP_DELETE -> deleteGroup(player, data, payload.name());
         }
     }
 
@@ -294,28 +296,17 @@ public final class EdithRedstone {
             return;
         }
         String name = clean(payload.name(), Math.round(StarkConfig.Relays.MAX_NAME), relay.name());
-        List<String> tags = parseTags(payload.text());
-        player.setData(ModAttachments.RELAYS, data.replace(payload.index(), relay.withName(name).withTags(tags)));
-        tell(player, tags.isEmpty()
-                        ? Component.translatable("edith.starktech.msg.relay_named_untagged", name)
-                        : Component.translatable("edith.starktech.msg.relay_named", name, String.join(", ", tags)),
-                EdithMessagePayload.Level.INFO);
-    }
-
-    /**
-     * Maakt van wat je typte ("security room, doors") een lijst tags: netjes, elke tag één keer
-     * (hoofdletters maken niet uit), hooguit MAX_TAGS.
-     */
-    public static List<String> parseTags(String text) {
-        List<String> tags = new ArrayList<>();
-        int max = Math.round(StarkConfig.Relays.MAX_TAGS);
-        for (String part : text.split(",")) {
-            String tag = clean(part, Math.round(StarkConfig.Relays.MAX_NAME), "");
-            if (!tag.isEmpty() && tags.size() < max && tags.stream().noneMatch(own -> own.equalsIgnoreCase(tag))) {
-                tags.add(tag);
-            }
+        // De groep kies je uit je groepen; een nieuwe (die er net nog niet was) mag, als je er nog plek voor hebt.
+        String group = clean(payload.text(), Math.round(StarkConfig.Relays.MAX_NAME), "");
+        if (!group.isEmpty() && !data.hasGroup(group) && groupsFull(player, data)) {
+            group = relay.group();
         }
-        return tags;
+        group = data.spelling(group);
+        player.setData(ModAttachments.RELAYS, data.replace(payload.index(), relay.withName(name).withGroup(group)));
+        tell(player, group.isEmpty()
+                        ? Component.translatable("edith.starktech.msg.relay_named_ungrouped", name)
+                        : Component.translatable("edith.starktech.msg.relay_named", name, group),
+                EdithMessagePayload.Level.INFO);
     }
 
     // ================================================================ Omkeren (13 oktober)
@@ -348,56 +339,94 @@ public final class EdithRedstone {
                 relay.name()), EdithMessagePayload.Level.INFO);
     }
 
-    // ================================================================ Tags in tags (13 oktober)
+    // ================================================================ Groepen in groepen (14 oktober)
 
-    /** Een nieuwe, lege tag (zoals "base") om andere tags in te zetten. */
-    private static void createTag(ServerPlayer player, EdithRelays data, String typed) {
-        String tag = clean(typed, Math.round(StarkConfig.Relays.MAX_NAME), "");
-        if (tag.isEmpty() || data.hasTag(tag)) {
-            return;
+    /** Heeft deze speler al zoveel groepen als mag? Dan zegt E.D.I.T.H. het. */
+    private static boolean groupsFull(ServerPlayer player, EdithRelays data) {
+        int max = Math.round(StarkConfig.Relays.MAX_GROUPS);
+        if (data.groups().size() < max) {
+            return false;
         }
-        player.setData(ModAttachments.RELAYS, data.withTag(tag));
-        tell(player, Component.translatable("edith.starktech.msg.tag_created", tag), EdithMessagePayload.Level.INFO);
+        tell(player, Component.translatable("edith.starktech.msg.groups_full", max), EdithMessagePayload.Level.WARNING);
+        return true;
     }
 
-    /** "{@code tag} zit (niet meer) in {@code parent}". Een rondje (base in base) weigeren we. */
-    private static void setParent(ServerPlayer player, EdithRelays data, String tag, String parent, boolean add) {
-        if (!data.hasTag(tag) || !data.hasTag(parent)) {
+    /** Een nieuwe, lege groep (zoals "base"), in {@code parent} ("" = bovenaan). */
+    private static void createGroup(ServerPlayer player, EdithRelays data, String typed, String parent) {
+        String group = clean(typed, Math.round(StarkConfig.Relays.MAX_NAME), "");
+        if (group.isEmpty()) {
             return;
         }
-        if (!add) {
-            player.setData(ModAttachments.RELAYS, data.withoutParent(tag, parent));
+        if (data.hasGroup(group)) {
+            tell(player, Component.translatable("edith.starktech.msg.group_exists", data.spelling(group)), EdithMessagePayload.Level.WARNING);
             return;
         }
-        if (data.wouldLoop(tag, parent)) {
-            tell(player, Component.translatable("edith.starktech.msg.tag_loop", tag, parent), EdithMessagePayload.Level.WARNING);
+        if (groupsFull(player, data)) {
             return;
         }
-        if (data.parentsOf(tag).size() >= Math.round(StarkConfig.Relays.MAX_TAGS)) {
-            tell(player, Component.translatable("edith.starktech.msg.tag_full", tag, Math.round(StarkConfig.Relays.MAX_TAGS)),
-                    EdithMessagePayload.Level.WARNING);
-            return;
-        }
-        player.setData(ModAttachments.RELAYS, data.withParent(tag, parent));
-    }
-
-    /** Gooit een tag weg (van alle relais en uit alle tags). De relais zelf blijven. */
-    private static void deleteTag(ServerPlayer player, EdithRelays data, String tag) {
-        if (!data.hasTag(tag)) {
-            return;
-        }
-        player.setData(ModAttachments.RELAYS, data.withoutTag(tag));
-        tell(player, Component.translatable("edith.starktech.msg.tag_deleted", tag), EdithMessagePayload.Level.INFO);
+        player.setData(ModAttachments.RELAYS, data.withGroup(group, parent));
+        tell(player, data.hasGroup(parent)
+                        ? Component.translatable("edith.starktech.msg.group_created_in", group, data.spelling(parent))
+                        : Component.translatable("edith.starktech.msg.group_created", group),
+                EdithMessagePayload.Level.INFO);
     }
 
     /**
-     * Schakelt één relais (als index >= 0) of alles wat bij de naam/tag past. Alleen je eigen relais.
+     * "{@code group} zit voortaan in {@code parent}" ("" = bovenaan). Een groep zit maar in één groep, dus hij
+     * verhuist. Een rondje ("base" in "temp" terwijl "temp" al in "base" zit) weigeren we.
+     */
+    private static void setParent(ServerPlayer player, EdithRelays data, String group, String parent) {
+        if (!data.hasGroup(group) || !parent.isEmpty() && !data.hasGroup(parent) || data.parentOf(group).equalsIgnoreCase(parent)) {
+            return;
+        }
+        if (data.wouldLoop(group, parent)) {
+            tell(player, Component.translatable("edith.starktech.msg.group_loop", data.spelling(group), data.spelling(parent)),
+                    EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        player.setData(ModAttachments.RELAYS, data.withParent(group, parent));
+        tell(player, parent.isEmpty()
+                        ? Component.translatable("edith.starktech.msg.group_moved_top", data.spelling(group))
+                        : Component.translatable("edith.starktech.msg.group_moved", data.spelling(group), data.spelling(parent)),
+                EdithMessagePayload.Level.INFO);
+    }
+
+    /** Een groep een andere naam geven. De relais en groepen erin gaan mee. */
+    private static void renameGroup(ServerPlayer player, EdithRelays data, String group, String typed) {
+        String fresh = clean(typed, Math.round(StarkConfig.Relays.MAX_NAME), "");
+        if (!data.hasGroup(group) || fresh.isEmpty() || fresh.equals(data.spelling(group))) {
+            return;
+        }
+        if (data.hasGroup(fresh) && !fresh.equalsIgnoreCase(group)) {
+            tell(player, Component.translatable("edith.starktech.msg.group_exists", data.spelling(fresh)), EdithMessagePayload.Level.WARNING);
+            return;
+        }
+        String old = data.spelling(group);
+        player.setData(ModAttachments.RELAYS, data.renameGroup(group, fresh));
+        tell(player, Component.translatable("edith.starktech.msg.group_renamed", old, fresh), EdithMessagePayload.Level.INFO);
+    }
+
+    /** Gooit een groep weg. Wat erin zat, schuift een laag omhoog; de relais zelf blijven. */
+    private static void deleteGroup(ServerPlayer player, EdithRelays data, String group) {
+        if (!data.hasGroup(group)) {
+            return;
+        }
+        String parent = data.parentOf(group);
+        player.setData(ModAttachments.RELAYS, data.withoutGroup(group));
+        tell(player, parent.isEmpty()
+                        ? Component.translatable("edith.starktech.msg.group_deleted", data.spelling(group))
+                        : Component.translatable("edith.starktech.msg.group_deleted_into", data.spelling(group), data.spelling(parent)),
+                EdithMessagePayload.Level.INFO);
+    }
+
+    /**
+     * Schakelt één relais (als index >= 0) of alles wat bij de naam/groep past. Alleen je eigen relais.
      * Elke schakeling kost een beetje energie.
      */
     private static void switchRelays(ServerPlayer player, ItemStack glasses, EdithRelays data, RelayActionPayload payload) {
         List<Relay> found = payload.index() >= 0
                 ? (data.get(payload.index()) == null ? List.<Relay>of() : List.of(data.get(payload.index())))
-                : payload.index() == RelayActionPayload.TAG_ONLY ? data.inTag(payload.name()) : data.find(payload.name());
+                : payload.index() == RelayActionPayload.GROUP_ONLY ? data.inGroup(payload.name()) : data.find(payload.name());
         List<Relay> targets = keepOwn(player, found);
         if (targets.isEmpty() && !found.isEmpty()) {
             return; // alleen relais van een ander: dat zei keepOwn al

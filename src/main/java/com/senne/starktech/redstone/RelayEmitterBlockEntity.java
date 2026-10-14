@@ -64,7 +64,7 @@ public class RelayEmitterBlockEntity extends BlockEntity {
 
     private @Nullable UUID owner;
     private String ownerName = "";
-    /** De naam van een relais, of een tag. */
+    /** De naam van een relais, of een groep. */
     private String target = "";
     private Mode mode = Mode.FOLLOW;
     /** Waar de relais stonden toen we het laatst in de lijst van de eigenaar keken. */
@@ -112,7 +112,7 @@ public class RelayEmitterBlockEntity extends BlockEntity {
 
     // ================================================================ De kopie bijwerken
 
-    /** Kijkt in de lijst van de eigenaar welke relais nu bij zijn naam of tag horen. */
+    /** Kijkt in de lijst van de eigenaar welke relais nu bij zijn naam of groep horen. */
     public void refresh(ServerPlayer player) {
         List<Target> fresh = new ArrayList<>();
         for (Relay relay : player.getData(ModAttachments.RELAYS).named(target)) {

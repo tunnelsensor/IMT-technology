@@ -33,6 +33,8 @@ public class StarkOsScreen extends Screen {
         STATUS("Status", "i", 240, 120),
         CAMERAS("Cameras", "C", 336, 196),
         DEVICES("Devices", "D", 330, 196),
+        /** Je relais in groepen, en groepen in groepen (14 oktober). */
+        GROUPS("Groups", "G", 340, 186),
         ACCESS("Access", "A", 280, 190),
         KEYCARDS("Keycards", "K", 300, 190),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
@@ -118,6 +120,7 @@ public class StarkOsScreen extends Screen {
     private final FilesApp files = new FilesApp(this);
     private final NotesApp notes = new NotesApp(this);
     private final DevicesApp devices = new DevicesApp(this);
+    private final GroupsApp groups = new GroupsApp(this);
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
@@ -260,6 +263,12 @@ public class StarkOsScreen extends Screen {
         zone.tourSelect(box);
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Groups, met deze groep gekozen (of niets). */
+    public void tourGroups(@Nullable String group) {
+        openApp(App.GROUPS);
+        groups.tourSelect(group);
+    }
+
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
     public void tourOpen(App app) {
         openApp(app);
@@ -341,6 +350,9 @@ public class StarkOsScreen extends Screen {
         if (win.app != App.DEVICES) {
             devices.blur();
         }
+        if (win.app != App.GROUPS) {
+            groups.blur();
+        }
         if (win.app != App.ZONE) {
             zone.blur();
         }
@@ -376,6 +388,9 @@ public class StarkOsScreen extends Screen {
         }
         if (win.app == App.DEVICES) {
             devices.blur(); // hier ook niet
+        }
+        if (win.app == App.GROUPS) {
+            groups.blur(); // ook geen half getypte groepsnaam
         }
         if (win.app == App.ZONE) {
             zone.blur(); // half getypte getallen niet bewaren
@@ -468,6 +483,7 @@ public class StarkOsScreen extends Screen {
             case FILES -> files.mouseClicked(font, contentArea(win), mx, my, button);
             case NOTES -> notes.mouseClicked(font, contentArea(win), mx, my, button);
             case DEVICES -> devices.mouseClicked(font, contentArea(win), mx, my);
+            case GROUPS -> groups.mouseClicked(font, contentArea(win), mx, my);
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
@@ -508,6 +524,9 @@ public class StarkOsScreen extends Screen {
         if (pressedIn != null && pressedIn.app == App.LOGIC) {
             return logic.mouseDragged((int) mouseX, (int) mouseY);
         }
+        if (pressedIn != null && pressedIn.app == App.GROUPS) {
+            return groups.mouseDragged((int) mouseX, (int) mouseY);
+        }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
@@ -524,6 +543,8 @@ public class StarkOsScreen extends Screen {
             cameras.mouseReleased((int) mouseX, (int) mouseY);
         } else if (win != null && win.app == App.LOGIC) {
             logic.mouseReleased((int) mouseX, (int) mouseY);
+        } else if (win != null && win.app == App.GROUPS) {
+            groups.mouseReleased(contentArea(win), (int) mouseX, (int) mouseY);
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -542,6 +563,7 @@ public class StarkOsScreen extends Screen {
             case FILES -> files.mouseScrolled(scrollY);
             case NOTES -> notes.mouseScrolled((int) mouseX, (int) mouseY, scrollY);
             case DEVICES -> devices.mouseScrolled(scrollY);
+            case GROUPS -> groups.mouseScrolled(scrollY);
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(scrollY);
@@ -563,6 +585,7 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.DEVICES && devices.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.GROUPS && groups.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.ZONE && zone.charTyped(codePoint, modifiers)) {
@@ -585,6 +608,7 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.DEVICES && devices.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.GROUPS && groups.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ZONE && zone.keyPressed(keyCode, scanCode, modifiers)) {
@@ -707,6 +731,7 @@ public class StarkOsScreen extends Screen {
         switch (win.app) {
             case STATUS -> renderStatus(g, area.x(), area.y());
             case DEVICES -> devices.render(g, font, area, mouseX, mouseY, partialTick);
+            case GROUPS -> groups.render(g, font, area, mouseX, mouseY, partialTick);
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);

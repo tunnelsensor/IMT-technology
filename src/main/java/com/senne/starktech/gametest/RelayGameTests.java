@@ -35,10 +35,11 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tests voor de relais van 13 oktober. Jouw wensen: "maak een block die relay emitter is zodat je ook relays
- * kunt triggeren door redstone", "relays renamen zonder bril, en een button om het off signaal te inverten",
- * en "relaygroups worden tags zodat je groepen in groepen hebt: deur1 en deur2 zitten in security room en
- * die zit in base".
+ * Tests voor de relais van 13 en 14 oktober. Jouw wensen: "maak een block die relay emitter is zodat je ook
+ * relays kunt triggeren door redstone", "relays renamen zonder bril, en een button om het off signaal te
+ * inverten", en (14 oktober, in plaats van de tags van de 13e) "groepen in groepen: base > restricted >
+ * security room; tags zijn volledig weg, je kunt enkel relays in groepen steken en groepen in groepen, en base
+ * kan niet in temp als temp in base zit".
  */
 @GameTestHolder(StarkTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -53,15 +54,14 @@ public final class RelayGameTests {
         }
     }
 
-    /** Zet een relais neer, meldt het aan, en geeft het een naam en tags ("a, b"). */
-    private static BlockPos relay(GameTestHelper helper, ServerPlayer owner, BlockPos pos, String name, String tags) {
+    /** Zet een relais neer, meldt het aan, en geeft het een naam en een groep ("" = geen groep). */
+    private static BlockPos relay(GameTestHelper helper, ServerPlayer owner, BlockPos pos, String name, String group) {
         helper.setBlock(pos, ModBlocks.RELAY.get());
         BlockPos abs = helper.absolutePos(pos);
         EdithRedstone.register(owner, abs);
         int index = owner.getData(ModAttachments.RELAYS).indexAt(helper.getLevel().dimension(), abs);
         check(index >= 0, "Het relais " + name + " kwam niet in de lijst");
-        EdithRedstone.handleAction(owner, new RelayActionPayload(RelayActionPayload.Op.RENAME, EdithRedstone.Op.TOGGLE,
-                index, name, tags));
+        EdithRedstone.handleAction(owner, RelayActionPayload.rename(index, name, group));
         return pos;
     }
 
@@ -74,75 +74,146 @@ public final class RelayGameTests {
     }
 
     /**
-     * Tags in tags: deur1 en deur2 hebben de tag "security room", die zit in "base". "base" schakelen zet
-     * de deuren om, de tuinlamp niet. Een rondje (base in security room) wordt geweigerd. Een relais dat
-     * zelf "Base" heet, verstopt de tag niet voor de tag-knoppen. Een tag weggooien laat de relais staan.
+     * Groepen in groepen (jouw voorbeeld): deur1 en deur2 zitten in "security room", die in "restricted", die in
+     * "base". "base" schakelen zet de deuren om, de tuinlamp niet. Een groep zit in hooguit één groep (verhuizen
+     * vervangt de oude plek), een relais ook. Rondjes worden geweigerd: "temp" in "base", en dan "base" in
+     * "temp" kan niet. Een relais dat zelf "Base" heet, verstopt de groep niet voor de groepsknoppen.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "relays")
-    public static void relay_tags_nest_and_switch(GameTestHelper helper) {
+    public static void relay_groups_nest_and_switch(GameTestHelper helper) {
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 1));
         BlockPos door1 = relay(helper, owner, new BlockPos(3, 2, 3), "deur1", "security room");
-        BlockPos door2 = relay(helper, owner, new BlockPos(5, 2, 3), "deur2", "Security Room, doors");
+        BlockPos door2 = relay(helper, owner, new BlockPos(5, 2, 3), "deur2", "Security Room");
         BlockPos lamp = relay(helper, owner, new BlockPos(7, 2, 3), "Base", "garden");
         EdithRelays data = owner.getData(ModAttachments.RELAYS);
-        check(data.relays().get(index(helper, owner, door2)).tags().equals(List.of("Security Room", "doors")),
-                "deur2 kreeg niet de tags 'Security Room' en 'doors': " + data.relays().get(index(helper, owner, door2)).tags());
+        check(data.relays().get(index(helper, owner, door2)).group().equals("security room"),
+                "deur2 kwam niet in de bestaande groep 'security room': " + data.relays().get(index(helper, owner, door2)).group());
 
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_CREATE, "base", ""));
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_PARENT, "security room", "base"));
+        // base > restricted (nieuw, meteen in base) > security room (verhuist erin).
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_CREATE, "base", ""));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_CREATE, "restricted", "base"));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "security room", "restricted"));
         data = owner.getData(ModAttachments.RELAYS);
-        check(data.isInside("security room", "base"), "'security room' zit niet in 'base'");
-        check(data.inTag("base").size() == 2, "In 'base' zitten " + data.inTag("base").size() + " relais in plaats van 2");
+        check(data.parentOf("restricted").equals("base"), "'restricted' kwam niet in 'base'");
+        check(data.pathOf("security room").equals(List.of("base", "restricted", "security room")),
+                "De weg naar 'security room' klopt niet: " + data.pathOf("security room"));
+        check(data.inGroup("base").size() == 2, "In 'base' zitten " + data.inGroup("base").size() + " relais in plaats van 2");
 
-        // Rondjes kunnen niet.
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_PARENT, "base", "security room"));
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_PARENT, "base", "base"));
-        check(owner.getData(ModAttachments.RELAYS).parentsOf("base").isEmpty(), "Een rondje van tags werd toch aangenomen");
+        // Rondjes kunnen niet (jouw voorbeeld: temp in base, dan base in temp), ook niet in zichzelf of via een omweg.
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_CREATE, "temp", "base"));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "base", "temp"));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "base", "base"));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "base", "security room"));
+        data = owner.getData(ModAttachments.RELAYS);
+        check(data.parentOf("base").isEmpty(), "Een rondje van groepen werd toch aangenomen: 'base' zit in '" + data.parentOf("base") + "'");
+        check(data.parentOf("temp").equals("base"), "'temp' zit niet meer in 'base'");
 
-        // De tag-knop schakelt de tag, ook al heet de lamp zelf "Base".
-        EdithRedstone.handleAction(owner, RelayActionPayload.switchTag("base", EdithRedstone.Op.ON));
+        // Eén plek: 'temp' verhuist naar 'restricted' en zit dan niet meer (direct) in 'base'.
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "temp", "restricted"));
+        data = owner.getData(ModAttachments.RELAYS);
+        check(data.parentOf("temp").equals("restricted") && !data.childrenOf("base").contains("temp"),
+                "'temp' zit nu in '" + data.parentOf("temp") + "', of nog steeds direct in 'base'");
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "temp", ""));
+        check(owner.getData(ModAttachments.RELAYS).parentOf("temp").isEmpty(), "'temp' kwam niet bovenaan");
+
+        // De groepsknop schakelt de groep, ook al heet de lamp zelf "Base".
+        EdithRedstone.handleAction(owner, RelayActionPayload.switchGroup("base", EdithRedstone.Op.ON));
         check(on(helper, door1) && on(helper, door2), "'base' zette de deuren in 'security room' niet aan");
-        check(!on(helper, lamp), "De tag 'base' zette ook het relais aan dat zo heet");
+        check(!on(helper, lamp), "De groep 'base' zette ook het relais aan dat zo heet");
         // Op naam (zoals je stem) wint de naam: dan gaat juist de lamp aan.
         EdithRedstone.handleAction(owner, RelayActionPayload.switchNamed("base", EdithRedstone.Op.ON));
         check(on(helper, lamp), "Het relais dat 'Base' heet, ging niet aan op zijn naam");
-        // Een tag van een tag van een tag: alles eronder gaat mee.
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_CREATE, "world", ""));
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_PARENT, "base", "world"));
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_PARENT, "garden", "world"));
-        EdithRedstone.handleAction(owner, RelayActionPayload.switchNamed("world", EdithRedstone.Op.OFF));
-        check(!on(helper, door1) && !on(helper, door2) && !on(helper, lamp), "'world' zette niet alles eronder uit");
 
-        // Weggooien: de relais blijven, de tag is overal weg.
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_DELETE, "security room", ""));
+        // Een relais zit in één groep: deur2 naar 'garden' is weg uit 'base'.
+        EdithRedstone.handleAction(owner, RelayActionPayload.rename(index(helper, owner, door2), "deur2", "garden"));
         data = owner.getData(ModAttachments.RELAYS);
-        check(data.relays().size() == 3, "Bij het weggooien van een tag verdwenen relais");
-        check(!data.hasTag("security room"), "De tag 'security room' bestaat nog");
-        check(data.inTag("base").isEmpty(), "Na het weggooien zit er nog iets in 'base'");
-        check(data.relays().get(index(helper, owner, door2)).tags().equals(List.of("doors")), "deur2 verloor ook zijn andere tag");
+        check(data.inGroup("base").size() == 1 && data.inGroup("garden").size() == 2, "deur2 zit nog in 'base', of niet in 'garden'");
+        // En zonder groep.
+        EdithRedstone.handleAction(owner, RelayActionPayload.rename(index(helper, owner, door2), "deur2", ""));
+        check(!owner.getData(ModAttachments.RELAYS).relays().get(index(helper, owner, door2)).hasGroup(), "deur2 zit nog in een groep");
+
+        // Een andere naam: wat erin zit gaat mee. Een naam die al bestaat, mag niet.
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_RENAME, "restricted", "garden"));
+        check(owner.getData(ModAttachments.RELAYS).hasGroup("restricted"), "'restricted' kreeg een naam die al bestond");
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_RENAME, "restricted", "secure"));
+        data = owner.getData(ModAttachments.RELAYS);
+        check(!data.hasGroup("restricted") && data.parentOf("secure").equals("base") && data.parentOf("security room").equals("secure"),
+                "Na het hernoemen klopt de boom niet: security room in '" + data.parentOf("security room") + "'");
+        check(data.inGroup("base").size() == 1, "Na het hernoemen zit deur1 niet meer in 'base'");
+
+        // Weggooien: wat erin zat, schuift een laag omhoog; de relais blijven.
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_DELETE, "secure", ""));
+        data = owner.getData(ModAttachments.RELAYS);
+        check(!data.hasGroup("secure") && data.parentOf("security room").equals("base"), "'security room' schoof niet omhoog naar 'base'");
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_DELETE, "security room", ""));
+        data = owner.getData(ModAttachments.RELAYS);
+        check(data.relays().size() == 3, "Bij het weggooien van een groep verdwenen relais");
+        check(data.relays().get(index(helper, owner, door1)).group().equals("base"), "deur1 schoof niet omhoog naar 'base'");
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_DELETE, "base", ""));
+        check(!owner.getData(ModAttachments.RELAYS).relays().get(index(helper, owner, door1)).hasGroup(),
+                "Na het weggooien van 'base' zit deur1 nog in een groep");
+
+        // Niet meer groepen dan de config toestaat.
+        float max = StarkConfig.Relays.MAX_GROUPS;
+        try {
+            StarkConfig.Relays.MAX_GROUPS = owner.getData(ModAttachments.RELAYS).groups().size();
+            EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_CREATE, "one too many", ""));
+            check(!owner.getData(ModAttachments.RELAYS).hasGroup("one too many"), "Er kwam een groep bij boven het maximum");
+        } finally {
+            StarkConfig.Relays.MAX_GROUPS = max;
+        }
         helper.succeed();
     }
 
     /**
-     * Opslaan: een relais uit een oude wereld (met "group") krijgt die groep als tag, behalve de oude
-     * standaardgroep. De lijst met tags-in-tags overleeft opslaan en doorsturen naar je eigen spel.
+     * Oude werelden: een relais met "group" (vóór 13 oktober) of met "tags" (13 oktober) krijgt één groep (de
+     * oude standaardgroep of geen tags = geen groep), en "tag_parents" wordt "zit in" (de eerste tag erboven;
+     * een rondje wordt gebroken). Opslaan en doorsturen naar je eigen spel geeft hetzelfde terug.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "relays")
-    public static void relay_old_groups_become_tags(GameTestHelper helper) {
-        Relay fresh = new Relay("Door", List.of("x"), Level.OVERWORLD, new BlockPos(1, 2, 3));
+    public static void relay_old_tags_become_groups(GameTestHelper helper) {
+        Relay fresh = new Relay("Door", "x", Level.OVERWORLD, new BlockPos(1, 2, 3));
         CompoundTag old = (CompoundTag) Relay.CODEC.encodeStart(NbtOps.INSTANCE, fresh).getOrThrow();
-        old.remove("tags");
+        check(old.getString("in_group").equals("x"), "Een relais bewaart zijn groep niet als 'in_group'");
+        old.remove("in_group");
         old.putString("group", "house");
-        check(Relay.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().tags().equals(List.of("house")),
-                "De oude groep 'house' werd geen tag");
+        check(Relay.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().group().equals("house"), "De oude groep 'house' bleef geen groep");
         for (String standard : List.of("general", "algemeen")) {
             old.putString("group", standard);
-            check(Relay.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().tags().isEmpty(),
-                    "De oude standaardgroep '" + standard + "' werd een tag");
+            check(!Relay.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().hasGroup(),
+                    "De oude standaardgroep '" + standard + "' werd een groep");
         }
+        old.remove("group");
+        ListTag tags = new ListTag();
+        tags.add(net.minecraft.nbt.StringTag.valueOf("security room"));
+        tags.add(net.minecraft.nbt.StringTag.valueOf("doors"));
+        old.put("tags", tags);
+        check(Relay.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().group().equals("security room"),
+                "De eerste tag werd niet de groep");
+        old.put("tags", new ListTag());
+        check(!Relay.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().hasGroup(), "Een relais zonder tags kreeg een groep");
 
-        EdithRelays data = new EdithRelays(List.of(new Relay("deur1", List.of("security room", "doors"), Level.OVERWORLD,
-                new BlockPos(4, 5, 6))), Map.of("security room", List.of("base")));
+        // tag_parents van 13 oktober: de eerste tag erboven wordt de groep erboven; een rondje wordt gebroken.
+        CompoundTag oldList = new CompoundTag();
+        oldList.put("relays", new ListTag());
+        CompoundTag parents = new CompoundTag();
+        ListTag above = new ListTag();
+        above.add(net.minecraft.nbt.StringTag.valueOf("base"));
+        above.add(net.minecraft.nbt.StringTag.valueOf("world"));
+        parents.put("security room", above);
+        ListTag loopA = new ListTag();
+        loopA.add(net.minecraft.nbt.StringTag.valueOf("b"));
+        parents.put("a", loopA);
+        ListTag loopB = new ListTag();
+        loopB.add(net.minecraft.nbt.StringTag.valueOf("a"));
+        parents.put("b", loopB);
+        oldList.put("tag_parents", parents);
+        EdithRelays loaded = EdithRelays.CODEC.codec().parse(NbtOps.INSTANCE, oldList).getOrThrow();
+        check(loaded.parentOf("security room").equals("base"), "'security room' kwam niet in 'base' maar in '" + loaded.parentOf("security room") + "'");
+        check(!loaded.isInside("a", "b") || !loaded.isInside("b", "a"), "Het oude rondje a in b in a werd niet gebroken");
+
+        EdithRelays data = new EdithRelays(List.of(new Relay("deur1", "security room", Level.OVERWORLD,
+                new BlockPos(4, 5, 6))), Map.of("security room", "restricted", "restricted", "base", "base", ""));
         var saved = EdithRelays.CODEC.codec().encodeStart(NbtOps.INSTANCE, data).getOrThrow();
         check(EdithRelays.CODEC.codec().parse(NbtOps.INSTANCE, saved).getOrThrow().equals(data), "Opslaan en weer inladen gaf iets anders");
         ByteBuf buffer = Unpooled.buffer();
@@ -152,7 +223,7 @@ public final class RelayGameTests {
     }
 
     /**
-     * Zonder bril: naam en tags geven mag, omkeren en testen ook als je ernaast staat. Omgekeerd geeft het
+     * Zonder bril: naam en groep geven mag, omkeren en testen ook als je ernaast staat. Omgekeerd geeft het
      * relais redstone als het UIT staat. Van ver weg (zonder bril) mag omkeren niet; met bril wel. Een vreemde
      * die ernaast staat, kan het niet in zijn lijst zetten en dus ook niet omkeren.
      */
@@ -165,13 +236,13 @@ public final class RelayGameTests {
         ItemStack glasses = owner.getItemBySlot(EquipmentSlot.HEAD).copy();
         owner.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         check(EdithServer.authorizedGlasses(owner) == null, "De testspeler heeft nog een bril op");
-        BlockPos pos = relay(helper, owner, new BlockPos(3, 2, 3), "Front door", "house, doors");
+        BlockPos pos = relay(helper, owner, new BlockPos(3, 2, 3), "Front door", "house");
         BlockPos abs = helper.absolutePos(pos);
 
         helper.startSequence().thenIdle(2).thenExecute(() -> {
             Relay relay = owner.getData(ModAttachments.RELAYS).get(index(helper, owner, pos));
-            check(relay != null && relay.name().equals("Front door") && relay.tags().equals(List.of("house", "doors")),
-                    "Zonder bril kreeg het relais geen naam en tags: " + relay);
+            check(relay != null && relay.name().equals("Front door") && relay.group().equals("house"),
+                    "Zonder bril kreeg het relais geen naam en groep: " + relay);
 
             // Een vreemde (ook als hij het relais in zijn lijst probeert te zetten): niet omkeren.
             EdithRedstone.register(stranger, abs);
@@ -233,7 +304,7 @@ public final class RelayGameTests {
         check(index(helper, stranger, pos) < 0, "Een ander kon het relais in zijn lijst zetten");
 
         // Stond het er van vroeger nog in: schakelen, omkeren, hernoemen en opruimen gooien het eruit.
-        Relay stolen = new Relay("Loot", List.of("loot"), level.dimension(), abs);
+        Relay stolen = new Relay("Loot", "loot", level.dimension(), abs);
         stranger.setData(ModAttachments.RELAYS, EdithRelays.EMPTY.with(stolen));
         EdithRedstone.handleAction(stranger, RelayActionPayload.switchNamed("loot", EdithRedstone.Op.ON));
         check(!on(helper, pos), "Een ander kon het relais schakelen");
@@ -292,8 +363,8 @@ public final class RelayGameTests {
     public static void relay_emitter_follows_redstone(GameTestHelper helper) {
         ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 1));
         BlockPos door = relay(helper, owner, new BlockPos(2, 2, 3), "deur1", "security room");
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_CREATE, "base", ""));
-        EdithRedstone.handleAction(owner, RelayActionPayload.tag(RelayActionPayload.Op.TAG_PARENT, "security room", "base"));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_CREATE, "base", ""));
+        EdithRedstone.handleAction(owner, RelayActionPayload.group(RelayActionPayload.Op.GROUP_PARENT, "security room", "base"));
         BlockPos emitterPos = new BlockPos(7, 2, 3);
         helper.setBlock(emitterPos, ModBlocks.RELAY_EMITTER.get());
         RelayEmitterBlockEntity emitter = (RelayEmitterBlockEntity) helper.getBlockEntity(emitterPos);

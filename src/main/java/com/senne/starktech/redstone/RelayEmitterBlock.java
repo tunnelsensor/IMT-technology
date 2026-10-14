@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Het omgekeerde van een relais: een relais GEEFT redstone als E.D.I.T.H. het aanzet, de emitter KRIJGT
  * redstone (een knop, hendel, drukplaat, daglichtsensor...) en zet dan jouw relais om. In zijn scherm
- * typ je welke: de naam van één relais, of een tag ("base" = alles wat erin zit, ook in tags eronder).
+ * typ je welke: de naam van één relais, of een groep ("base" = alles wat erin zit, ook in groepen eronder).
  * En je kiest wat hij doet:
  * <ul>
  *   <li><b>Follow</b> (standaard): redstone aan = relais aan, redstone uit = relais uit.</li>

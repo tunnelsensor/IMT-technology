@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * wat op redstone reageert.
  *
  * Rechtsklikken (ook zonder bril, sinds 13 oktober) opent het scherm waarin je het een naam en
- * tags geeft. Jouw bril (E.D.I.T.H.) weet welke relais je hebt, waar ze staan en hoe ze heten
+ * een groep geeft. Jouw bril (E.D.I.T.H.) weet welke relais je hebt, waar ze staan en hoe ze heten
  * (zie EdithRelays en EdithRedstone). Het relais zelf onthoudt maar twee dingen: staat het aan,
  * en is het omgekeerd?
  *
@@ -128,7 +128,7 @@ public class RelayBlock extends Block implements EntityBlock {
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
-    /** Rechtsklikken: het scherm openen waarin je naam en tags instelt (ook zonder bril, alleen de eigenaar). */
+    /** Rechtsklikken: het scherm openen waarin je naam en groep instelt (ook zonder bril, alleen de eigenaar). */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer) {

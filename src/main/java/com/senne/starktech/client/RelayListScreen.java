@@ -18,20 +18,21 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Het redstone-scherm: al je E.D.I.T.H.-relais, als een boom van tags.
+ * Het redstone-scherm: al je E.D.I.T.H.-relais, als een boom van groepen.
  *
- * Per soort apparaat (relais, koepels, torentjes, stroomkasten) zie je je tags, met de tags die erin
- * zitten eronder (13 oktober: "deur1 en deur2 zitten in security room en die zit in base"):
+ * Per soort apparaat (relais, koepels, torentjes, stroomkasten) zie je je groepen, met de groepen die
+ * erin zitten eronder (14 oktober: "base > restricted > security room"):
  * <pre>
  *   base                  [ON] [OFF] [PULSE]
- *     security room       [ON] [OFF] [PULSE]
- *       deur1             [ON] [OFF] [PULSE] [rename]
- *       deur2             ...
+ *     restricted          [ON] [OFF] [PULSE]
+ *       security room     [ON] [OFF] [PULSE]
+ *         deur1           [ON] [OFF] [PULSE] [rename]
+ *         deur2           ...
  * </pre>
- * Een relais met twee tags staat onder allebei. Relais zonder tag staan onderaan onder "No tag".
- * Per relais kun je AAN, UIT of PULS kiezen, en per tag alles wat erin zit (ook in tags eronder).
- * Met "rename" geef je een relais een andere naam of andere tags; met "Tags" onderaan zet je tags in
- * elkaar.
+ * Een relais zit in hooguit één groep, dus het staat er één keer in. Relais zonder groep staan onderaan
+ * onder "No group". Per relais kun je AAN, UIT of PULS kiezen, en per groep alles wat erin zit (ook in
+ * groepen eronder). Met "rename" geef je een relais een andere naam of groep; met "Groups" onderaan maak
+ * je groepen en zet je ze in elkaar.
  *
  * Openen: G-menu > tabblad Tech > Redstone (of de sneltoets).
  */
@@ -45,9 +46,9 @@ public class RelayListScreen extends Screen {
     private static final int MAX_DEPTH = 8;
 
     /** Wat er op een regel staat. */
-    private enum Type { KIND, TAG, NO_TAG, RELAY }
+    private enum Type { KIND, GROUP, NO_GROUP, RELAY }
 
-    /** Een regel in de lijst: een kopje (soort apparaat of tag) of een relais. */
+    /** Een regel in de lijst: een kopje (soort apparaat of groep) of een relais. */
     private record Row(Type type, String label, int index, int depth, int y) {}
 
     private final List<Row> rows = new ArrayList<>();
@@ -84,20 +85,20 @@ public class RelayListScreen extends Screen {
         rows.clear();
 
         // Alle regels bedenken. Eerst per soort apparaat (relais, koepels, ...) en daarbinnen de boom
-        // van tags: zo staan je deuren niet tussen je torentjes.
+        // van groepen: zo staan je deuren niet tussen je torentjes.
         List<Row> all = new ArrayList<>();
         for (RelayLabels.Kind kind : RelayLabels.Kind.values()) {
             List<Row> ofKind = new ArrayList<>();
-            for (String tag : shown.topTags()) {
-                addTag(ofKind, kind, tag, 0, new ArrayList<>());
+            for (String group : shown.topGroups()) {
+                addGroup(ofKind, kind, group, 0);
             }
-            boolean noTagHeader = false;
+            boolean noGroupHeader = false;
             for (int i = 0; i < shown.relays().size(); i++) {
                 Relay relay = shown.relays().get(i);
-                if (relay.tags().isEmpty() && RelayLabels.kindOf(relay) == kind) {
-                    if (!noTagHeader) {
-                        ofKind.add(new Row(Type.NO_TAG, Component.translatable("screen.starktech.relays.no_tag").getString(), -1, 0, 0));
-                        noTagHeader = true;
+                if (!relay.hasGroup() && RelayLabels.kindOf(relay) == kind) {
+                    if (!noGroupHeader) {
+                        ofKind.add(new Row(Type.NO_GROUP, Component.translatable("screen.starktech.relays.no_group").getString(), -1, 0, 0));
+                        noGroupHeader = true;
                     }
                     ofKind.add(new Row(Type.RELAY, relay.name(), i, 1, 0));
                 }
@@ -115,7 +116,7 @@ public class RelayListScreen extends Screen {
             Row row = all.get(i);
             rows.add(new Row(row.type(), row.label(), row.index(), row.depth(), y));
             switch (row.type()) {
-                case TAG -> addTagButtons(row.label(), y);
+                case GROUP -> addGroupButtons(row.label(), y);
                 case RELAY -> addRelayButtons(row.index(), y);
                 default -> { } // een kopje: daar hoort geen knop bij
             }
@@ -129,31 +130,28 @@ public class RelayListScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal(">"), button -> changePage(1))
                     .bounds(left + 32, bottom, 20, 20).build());
         }
-        addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.tags"),
-                        button -> Minecraft.getInstance().setScreen(new RelayTagsScreen()))
+        addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.groups"),
+                        button -> Minecraft.getInstance().setScreen(new RelayGroupsScreen()))
                 .bounds(left + PANEL_W - 172, bottom, 80, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(left + PANEL_W - 88, bottom, 80, 20).build());
     }
 
     /**
-     * Een tag met alles eronder: eerst de tags die erin zitten, dan zijn eigen relais. Alleen als er
+     * Een groep met alles eronder: eerst de groepen die erin zitten, dan zijn eigen relais. Alleen als er
      * (ergens eronder) een apparaat van deze soort in zit.
      */
-    private void addTag(List<Row> out, RelayLabels.Kind kind, String tag, int depth, List<String> path) {
-        if (depth > MAX_DEPTH || path.stream().anyMatch(seen -> seen.equalsIgnoreCase(tag))
-                || shown.inTag(tag).stream().noneMatch(relay -> RelayLabels.kindOf(relay) == kind)) {
+    private void addGroup(List<Row> out, RelayLabels.Kind kind, String group, int depth) {
+        if (depth > MAX_DEPTH || shown.inGroup(group).stream().noneMatch(relay -> RelayLabels.kindOf(relay) == kind)) {
             return;
         }
-        out.add(new Row(Type.TAG, tag, -1, depth, 0));
-        List<String> deeper = new ArrayList<>(path);
-        deeper.add(tag);
-        for (String child : shown.childrenOf(tag)) {
-            addTag(out, kind, child, depth + 1, deeper);
+        out.add(new Row(Type.GROUP, group, -1, depth, 0));
+        for (String child : shown.childrenOf(group)) {
+            addGroup(out, kind, child, depth + 1);
         }
         for (int i = 0; i < shown.relays().size(); i++) {
             Relay relay = shown.relays().get(i);
-            if (relay.hasTag(tag) && RelayLabels.kindOf(relay) == kind) {
+            if (relay.isIn(group) && RelayLabels.kindOf(relay) == kind) {
                 out.add(new Row(Type.RELAY, relay.name(), i, depth + 1, 0));
             }
         }
@@ -172,15 +170,15 @@ public class RelayListScreen extends Screen {
                 button -> Minecraft.getInstance().setScreen(new RelayEditScreen(index))).bounds(x + 114, y, 66, 18).build());
     }
 
-    /** De knoppen van een hele tag (met alles wat erin zit, ook in tags eronder). */
-    private void addTagButtons(String tag, int y) {
+    /** De knoppen van een hele groep (met alles wat erin zit, ook in groepen eronder). */
+    private void addGroupButtons(String group, int y) {
         int x = left + PANEL_W - 190;
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.on"),
-                button -> send(RelayActionPayload.switchTag(tag, EdithRedstone.Op.ON))).bounds(x, y, 34, 18).build());
+                button -> send(RelayActionPayload.switchGroup(group, EdithRedstone.Op.ON))).bounds(x, y, 34, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.off"),
-                button -> send(RelayActionPayload.switchTag(tag, EdithRedstone.Op.OFF))).bounds(x + 36, y, 34, 18).build());
+                button -> send(RelayActionPayload.switchGroup(group, EdithRedstone.Op.OFF))).bounds(x + 36, y, 34, 18).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.starktech.relays.pulse"),
-                button -> send(RelayActionPayload.switchTag(tag, EdithRedstone.Op.PULSE))).bounds(x + 72, y, 40, 18).build());
+                button -> send(RelayActionPayload.switchGroup(group, EdithRedstone.Op.PULSE))).bounds(x + 72, y, 40, 18).build());
     }
 
     private void changePage(int delta) {
@@ -245,11 +243,11 @@ public class RelayListScreen extends Screen {
                     g.fill(left + 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(70, HudStyle.ORANGE));
                     g.drawString(font, row.label(), left + 8, row.y() + 3, HudStyle.argb(255, HudStyle.ORANGE), true);
                 }
-                case TAG, NO_TAG -> {
-                    // Een tag (of "No tag"): een streepje cyaan, iets lichter naarmate hij dieper zit.
+                case GROUP, NO_GROUP -> {
+                    // Een groep (of "No group"): een streepje cyaan, iets lichter naarmate hij dieper zit.
                     g.fill(x - 4, row.y() - 2, left + PANEL_W - 4, row.y() + 16, HudStyle.argb(Math.max(18, 45 - row.depth() * 8), HudStyle.CYAN));
-                    String label = row.type() == Type.TAG
-                            ? Component.translatable("screen.starktech.relays.tag", row.label()).getString()
+                    String label = row.type() == Type.GROUP
+                            ? Component.translatable("screen.starktech.relays.group", row.label()).getString()
                             : row.label();
                     g.drawString(font, font.plainSubstrByWidth(label, textRight - x), x, row.y() + 3,
                             HudStyle.argb(255, HudStyle.CYAN), true);

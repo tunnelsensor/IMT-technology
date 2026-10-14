@@ -23,8 +23,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * redstone krijgt.
  *
  * <ul>
- *   <li><b>Relay or tag</b>: de naam van één relais ("voordeur"), of een tag ("base" = alles wat erin
- *       zit, ook in tags eronder). Terwijl je typt, zie je hoeveel apparaten dat zijn.</li>
+ *   <li><b>Relay or group</b>: de naam van één relais ("voordeur"), of een groep ("base" = alles wat erin
+ *       zit, ook in groepen eronder). Terwijl je typt, zie je hoeveel apparaten dat zijn.</li>
  *   <li><b>Mode</b>: Follow (redstone aan = aan, uit = uit), Toggle (elke keer omschakelen) of Pulse
  *       (elke keer een korte puls).</li>
  * </ul>
@@ -132,7 +132,7 @@ public class RelayEmitterScreen extends Screen {
                 HudStyle.argb(150, 0x9FC9D6), false);
         g.drawString(font, Component.translatable("screen.starktech.relay_emitter.target"), left + 10, top + 36,
                 HudStyle.argb(200, HudStyle.WHITE), false);
-        // Hoeveel apparaten die naam of tag nu zijn (in jouw eigen lijst; van een ander: wat de server zei).
+        // Hoeveel apparaten die naam of groep nu zijn (in jouw eigen lijst; van een ander: wat de server zei).
         int found = start.mine() ? data().named(targetBox.getValue()).size() : start.found();
         if (!targetBox.getValue().isBlank()) {
             Component line = found == 0

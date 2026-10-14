@@ -148,7 +148,7 @@ public final class BypassGameTests {
         helper.setBlock(vault, ModBlocks.RELAY.get());
         BlockPos vaultAbs = helper.absolutePos(vault);
         owner.setData(ModAttachments.RELAYS, owner.getData(ModAttachments.RELAYS).with(new Relay("Vault door",
-                java.util.List.of(), helper.getLevel().dimension(), vaultAbs)));
+                "", helper.getLevel().dimension(), vaultAbs)));
         BlockPos reader = new BlockPos(8, 3, 8);
         helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
         ((InputDeviceBlockEntity) helper.getBlockEntity(reader)).setName("Lab door");
