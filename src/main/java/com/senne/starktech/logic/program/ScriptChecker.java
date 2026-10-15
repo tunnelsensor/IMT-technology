@@ -64,6 +64,10 @@ public final class ScriptChecker {
         }
         // Namen (variabelen) en de soort van elke waarde, en elke voorwaarde streng nagekeken.
         checkNames(script, functions.keySet(), problems);
+        // break alleen in een lus (in een def: in een lus van die def zelf).
+        for (Script.Top item : script.items()) {
+            checkBreaks(item.body(), false, problems);
+        }
         // Past elke def bij de when die hem gebruikt?
         for (Script.Handler handler : script.handlers()) {
             forEachCall(handler.body(), call -> {
@@ -139,6 +143,20 @@ public final class ScriptChecker {
                 // Een naam die in een tak een waarde krijgt, bestaat daarna ook (zoals in Python).
                 checkNames(branch.yes(), trigger, globals, locals, defNames, problems);
                 checkNames(branch.no(), trigger, globals, locals, defNames, problems);
+            } else if (statement instanceof Script.Loop loop) {
+                try {
+                    if (loop.op() == Op.WHILE) {
+                        Expr.parseCondition(loop.expr(), trigger, scope(globals, locals));
+                    } else if (loop.op() == Op.REPEAT) {
+                        Expr.Type type = Expr.typeOf(Expr.parseValue(loop.expr(), trigger, scope(globals, locals)));
+                        if (type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
+                            throw new LogicException("repeat needs a number, like repeat(3):");
+                        }
+                    }
+                } catch (LogicException e) {
+                    problems.add(new Problem(loop.ref(), e.getMessage()));
+                }
+                checkNames(loop.body(), trigger, globals, locals, defNames, problems);
             } else if (statement instanceof Script.Assign assign) {
                 String problem = assignProblem(assign, trigger, globals, locals, defNames);
                 if (problem != null) {
@@ -178,7 +196,21 @@ public final class ScriptChecker {
         return scope;
     }
 
-    /** Elke keer dat een def gebruikt wordt (ook in de takken van een if). */
+    /** Een break buiten een lus: die zou nergens heen kunnen. */
+    private static void checkBreaks(List<Script.Stmt> statements, boolean inLoop, List<Problem> problems) {
+        for (Script.Stmt statement : statements) {
+            if (statement instanceof Script.Action action && action.op() == Op.BREAK && !inLoop) {
+                problems.add(new Problem(action.ref(), "break only works inside forever, repeat or while"));
+            } else if (statement instanceof Script.If branch) {
+                checkBreaks(branch.yes(), inLoop, problems);
+                checkBreaks(branch.no(), inLoop, problems);
+            } else if (statement instanceof Script.Loop loop) {
+                checkBreaks(loop.body(), true, problems);
+            }
+        }
+    }
+
+    /** Elke keer dat een def gebruikt wordt (ook in de takken van een if en in een lus). */
     static void forEachCall(List<Script.Stmt> statements, Consumer<Script.Action> action) {
         for (Script.Stmt statement : statements) {
             if (statement instanceof Script.Action call && call.op() == Op.CALL) {
@@ -186,6 +218,8 @@ public final class ScriptChecker {
             } else if (statement instanceof Script.If branch) {
                 forEachCall(branch.yes(), action);
                 forEachCall(branch.no(), action);
+            } else if (statement instanceof Script.Loop loop) {
+                forEachCall(loop.body(), action);
             }
         }
     }
@@ -244,6 +278,13 @@ public final class ScriptChecker {
                 }
             } else if (statement instanceof Script.Assign assign) {
                 need = expressionNeed(assign.value(), false, trigger);
+            } else if (statement instanceof Script.Loop loop) {
+                if (!loop.expr().isEmpty()) {
+                    need = expressionNeed(loop.expr(), loop.op() == Op.WHILE, trigger);
+                }
+                if (need == null) {
+                    need = need(loop.body(), trigger, functions, seen);
+                }
             } else if (statement instanceof Script.If branch) {
                 need = expressionNeed(branch.condition(), true, trigger);
                 if (need == null) {

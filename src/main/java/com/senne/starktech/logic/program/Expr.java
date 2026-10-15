@@ -206,7 +206,7 @@ public sealed interface Expr {
             }
             Expr expr = or();
             if (condition) {
-                requireType(expr, Type.BOOL, "The check after if must be true or false");
+                requireType(expr, Type.BOOL, "The check must be true or false, like card.level >= 3");
             }
             return expr;
         }

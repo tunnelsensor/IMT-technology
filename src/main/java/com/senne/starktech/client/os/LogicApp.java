@@ -651,6 +651,14 @@ final class LogicApp {
                 "Inside a when or def: give a name a (new) value. A def has its own names.", 0xF1E87C, null));
         lines.add(new HelpLine("if count >= 3:", "if count >= 3:\n    pass",
                 "Use your name like card.level. A number stays a number, text stays text.", HudStyle.WHITE, null));
+        lines.add(header("LOOPS (again and again)"));
+        lines.add(new HelpLine("repeat(3):", "repeat(3):\n    pulse(\"" + device + "\", 0.5)\n    wait(1)",
+                "Do the steps inside 3 times. The number may be a name or a sum: repeat(count + 1):", 0xFF79C6, null));
+        lines.add(new HelpLine("while count < 3:", "while count < 3:\n    count = count + 1",
+                "As long as the check is true. Change something inside, or it never stops.", 0xFF79C6, null));
+        lines.add(new HelpLine("forever:", "forever:\n    wait(1)",
+                "Again and again. Put a wait inside: a loop without waiting keeps your CPU busy.", 0xFF79C6, null));
+        lines.add(new HelpLine("break", "break", Op.BREAK.help(), 0xFF79C6, null));
         lines.add(header("YOUR OWN BLOCKS (def)"));
         lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",
                 "Write steps once (at the left edge), then use them in many whens with open_door()", 0xC9A0FF, null));

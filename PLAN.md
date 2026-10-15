@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 223 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 225 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2306,9 +2306,19 @@ ene run.
       but not give it a value", "Did you mean is_night?". **Mijn invulling**: helemaal links mag je alleen
       getallen, tekst en andere namen van links gebruiken (geen `card.level`: er is dan nog geen kaart).
       Twee nieuwe tests (`logic_variables`, `logic_variables_run`: een timer telt tot 3, dan pas gaat de
-      lamp aan).
-- [ ] **4. Lussen en break** — `forever:`, `repeat(n):`, `while ...:`, `break`. In de blokjes: een lus
-      met een "do"-uitgang en een "after"-uitgang.
+      lamp aan). Commit: `eff9511`.
+- [x] **4. Lussen en break** — `forever:`, `repeat(n):` (het aantal mag een naam of een berekening zijn),
+      `while ...:` en `break` (meteen uit de binnenste lus, ook vanuit een if erin). In de blokjes een roze
+      **FOREVER**-, **REPEAT**- of **WHILE**-blokje met de uitgang "do" rechtsboven (de stappen erin) en
+      "after" onderaan, en een **BREAK**-blokje; code wordt blokjes en terug. De tolk onthoudt een lus op
+      zijn stapel (met de rondjes die nog over zijn). Een lus zonder wachten laat de server niet hangen:
+      elke run doet hooguit 64 blokjes per tick, de rest de volgende tick (een `forever` die tot 1000 telt,
+      doet daar een paar seconden over). Ctrl+Spatie stelt `repeat(3):`, `while ...:`, `forever:` en `break`
+      voor; de Help heeft een stuk LOOPS; de kleuren in de editor kennen de nieuwe woorden. Fouten: "break
+      only works inside forever, repeat or while", "repeat needs a number, like repeat(3):", "while needs a
+      check". **Mijn invulling**: een `forever` zonder `wait` houdt een stukje RAM bezet en laat je CPU's
+      hard werken (warm datacenter): dat zegt de Help ook. Twee nieuwe tests (`logic_loops`,
+      `logic_loops_run`).
 - [x] **5. De tolk apart** (vóór stap 3 gedaan: variabelen hebben hem nodig) — het aflopen van de blokjes
       (if met yes, no en after, eigen blokken, `wait`, hooguit 64 blokjes per tick) zit nu in
       `logic/program/Interpreter`, zonder Minecraft erin. Wat een blokje echt doet, vraagt hij aan een

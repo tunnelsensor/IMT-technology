@@ -234,6 +234,98 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /** Lussen (hoofdstuk 20, stap 4): repeat, while, forever en break, in code en als blokjes. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_loops(GameTestHelper helper) {
+        String code = """
+                when every(10):
+                    repeat(3):
+                        pulse("Lamp", 0.5)
+                        wait(1)
+                    count = 0
+                    while count < 5:
+                        count = count + 1
+                        if count == 4:
+                            break
+                    forever:
+                        wait(1)
+                        if is_night:
+                            break
+                    log("done")
+                """;
+        String printed = ScriptPrinter.print(ScriptParser.parse(code));
+        check(printed.equals(code), "Lussen terugschrijven gaf andere code:\n" + printed);
+        LogicGraph graph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        check(graph.problems().isEmpty(), "De blokjes met lussen hebben fouten: " + graph.problems());
+        String back = ScriptPrinter.print(GraphConverter.toScript(graph));
+        check(back.equals(code), "Van blokjes terug naar code ging mis:\n" + back);
+        // Een lus-blokje heeft de uitgangen "do" (YES, de stappen erin) en "after" (NEXT).
+        LogicGraph.Node repeat = graph.nodes().stream().filter(node -> node.op == Op.REPEAT).findFirst().orElseThrow();
+        check(repeat.ports().equals(List.of(LogicGraph.Port.YES, LogicGraph.Port.NEXT)) && repeat.yes >= 0 && repeat.next >= 0,
+                "Het REPEAT-blokje heeft niet de uitgangen do en after");
+        // Fouten.
+        expectError("when every(5):\n    break", 2, "only works inside forever, repeat or while");
+        expectError("when every(5):\n    repeat(\"x\"):\n        pass", 2, "repeat needs a number");
+        expectError("when every(5):\n    while 3:\n        pass", 2, "must be true or false");
+        expectError("forever:\n    pass", 1, "must be inside a when");
+        expectError("when every(5):\n    repeat(3)\n        pass", 2, "must end with a :");
+        expectError("when every(5):\n    while:\n        pass", 2, "while needs a check");
+        expectError("def go():\n    break\nwhen every(5):\n    repeat(2):\n        go()", 2, "only works inside");
+        helper.succeed();
+    }
+
+    /**
+     * Lussen tijdens het uitvoeren: repeat, while en break zetten samen een lamp aan; en een forever-lus
+     * zonder wachten loopt over meerdere ticks (hooguit 64 blokjes per tick) zonder de server te laten
+     * hangen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 240, batch = "logic_runner_loops")
+    public static void logic_loops_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos lamp = relay(helper, setup, new BlockPos(9, 3, 4), "Lamp");
+        BlockPos fan = relay(helper, setup, new BlockPos(9, 3, 6), "Fan");
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), setup.core());
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Loops", """
+                    count = 0
+
+                    when every(1):
+                        repeat(3):
+                            count = count + 1
+                        while count < 10:
+                            count = count + 1
+                            if count == 7:
+                                break
+                        if count == 7:
+                            on("Lamp")
+                    """);
+            save(setup, "Spinner", """
+                    n = 0
+
+                    when every(1):
+                        forever:
+                            n = n + 1
+                            if n == 1000:
+                                on("Fan")
+                    """);
+            check(setup.core().logic().program("Loops") != null && setup.core().logic().program("Spinner") != null,
+                    "De diagrammen werden niet bewaard: " + lastLog(setup.core()));
+        });
+        // De forever-lus loopt hooguit 64 blokjes per tick: na een paar ticks is hij nog lang niet op 1000.
+        helper.runAfterDelay(40, () -> check(!level.getBlockState(fan).getValue(RelayBlock.POWERED),
+                "De forever-lus was te snel: hij liep niet over meerdere ticks"));
+        // De eerste run: 3 rondjes repeat, dan de while tot 7 en break: de lamp aan.
+        helper.runAfterDelay(60, () -> check(level.getBlockState(lamp).getValue(RelayBlock.POWERED),
+                "repeat, while en break kwamen niet op 7. Logboek: " + lastLog(setup.core())));
+        helper.runAfterDelay(200, () -> {
+            check(level.getBlockState(fan).getValue(RelayBlock.POWERED),
+                    "De forever-lus kwam niet op 1000. Logboek: " + lastLog(setup.core()));
+            helper.succeed();
+        });
+    }
+
     /**
      * Namen tijdens het uitvoeren: een naam van links houdt zijn waarde tussen de runs. Een timer telt
      * elke seconde één op, en pas bij 3 gaat de lamp aan.

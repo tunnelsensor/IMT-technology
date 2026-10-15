@@ -45,7 +45,8 @@ final class CodeEditor {
     private static final int SELECTION = 0x24506A;
     private static final int ERROR_LINE = 0x4A1A1E;
 
-    private static final Set<String> KEYWORDS = Set.of("when", "if", "elif", "else", "pass", "and", "or", "not", "def");
+    private static final Set<String> KEYWORDS = Set.of("when", "if", "elif", "else", "pass", "and", "or", "not", "def",
+            "forever", "repeat", "while", "break");
     /** De kleur van je eigen blokken (de naam na def, en waar je ze gebruikt). */
     static final int FUNCTION = 0xC9A0FF;
     private static final Set<String> CONSTANTS = Set.of("true", "false", "True", "False");

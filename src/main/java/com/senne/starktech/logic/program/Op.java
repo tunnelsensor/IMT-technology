@@ -57,10 +57,20 @@ public enum Op {
      * {@code count = 0} helemaal links: een naam voor het hele programma (alle whens en defs). Hij
      * houdt zijn waarde tussen de runs, zolang de server draait. Een wortel zonder uitgangen.
      */
-    GLOBAL(Kind.SET, "var", Arg.VARIABLE, Arg.NONE, "A name for the whole program, at the left edge, like count = 0");
+    GLOBAL(Kind.SET, "var", Arg.VARIABLE, Arg.NONE, "A name for the whole program, at the left edge, like count = 0"),
 
-    /** Wat voor blokje. SET = een naam een waarde geven (SET en GLOBAL). */
-    public enum Kind { TRIGGER, DEF, IF, ACTION, SET }
+    // ---------------------------------------------------------------- Lussen (hoofdstuk 20)
+    /** {@code forever:} de stappen erin steeds opnieuw (tot een break). Uitgang YES = "do", NEXT = "after". */
+    FOREVER(Kind.LOOP, "forever", Arg.NONE, Arg.NONE, "Do the steps inside again and again (until break)"),
+    /** {@code repeat(3):} de stappen erin zo vaak. De tekst is het aantal, als code (mag een naam zijn). */
+    REPEAT(Kind.LOOP, "repeat", Arg.NONE, Arg.NONE, "Do the steps inside so many times, like repeat(3):"),
+    /** {@code while count < 3:} de stappen erin zolang de voorwaarde klopt. De tekst is de voorwaarde. */
+    WHILE(Kind.LOOP, "while", Arg.NONE, Arg.NONE, "Do the steps inside as long as the check is true"),
+    /** {@code break}: meteen uit de binnenste lus, en verder met wat na die lus komt. */
+    BREAK(Kind.ACTION, "break", Arg.NONE, Arg.NONE, "Stop the loop you are in, and go on after it");
+
+    /** Wat voor blokje. SET = een naam een waarde geven (SET en GLOBAL); LOOP = een lus. */
+    public enum Kind { TRIGGER, DEF, IF, ACTION, SET, LOOP }
 
     /**
      * Wat voor gegevens. DEVICE, TEXT en NAME (van een def) zijn tekst, SECONDS een getal, VARIABLE

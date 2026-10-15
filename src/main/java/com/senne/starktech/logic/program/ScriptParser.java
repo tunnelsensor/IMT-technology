@@ -99,8 +99,9 @@ public final class ScriptParser {
                 Op op = first.type() == Lexer.Type.NAME ? Op.byCode(first.text()) : null;
                 boolean own = first.type() == Lexer.Type.NAME && functionNames.contains(first.text());
                 if (own || op != null && !op.isTrigger() && op != Op.IF) {
-                    throw new LogicException(line.number(), first.text()
-                            + "() must be inside a when: indent it with 4 spaces under a line like when keycard(\"Lab door\"):");
+                    boolean keyword = op != null && (op.kind() == Op.Kind.LOOP || op == Op.BREAK);
+                    throw new LogicException(line.number(), first.text() + (keyword ? "" : "()")
+                            + " must be inside a when: indent it with 4 spaces under a line like when keycard(\"Lab door\"):");
                 }
                 throw new LogicException(line.number(), "Every diagram starts with when (or def), like: when keycard(\"Lab door\"):"
                         + " (a name with a value, like count = 0, may also stand at the left edge)");
@@ -209,6 +210,17 @@ public final class ScriptParser {
             index++;
             return null;
         }
+        if (first.is("forever") || first.is("repeat") || first.is("while")) {
+            return loop(line, trigger);
+        }
+        if (first.is("break")) {
+            // Of hij in een lus staat, kijkt ScriptChecker na (die ziet ook de blokjes).
+            if (line.tokens().get(1).type() != Lexer.Type.END) {
+                throw new LogicException(line.number(), "Nothing may come after break");
+            }
+            index++;
+            return new Script.Action(Op.BREAK, "", 0, line.number());
+        }
         if (isAssignment(line)) {
             String[] parts = assignment(line);
             return new Script.Assign(parts[0], parts[1], line.number());
@@ -275,6 +287,58 @@ public final class ScriptParser {
             }
         }
         return new Script.If(Expr.print(condition), yes, no, line.number());
+    }
+
+    // ================================================================ Lussen
+
+    /**
+     * Een lus (hoofdstuk 20) met de stappen eronder: {@code forever:}, {@code repeat(3):} (het aantal mag
+     * een berekening of een naam zijn) of {@code while count < 3:}.
+     */
+    private Script.Loop loop(Line line, @Nullable Op trigger) {
+        List<Lexer.Token> tokens = line.tokens();
+        Op op;
+        String expr = "";
+        int colon;
+        int[] end = new int[1];
+        if (line.first().is("forever")) {
+            op = Op.FOREVER;
+            colon = 1;
+        } else if (line.first().is("repeat")) {
+            op = Op.REPEAT;
+            if (!tokens.get(1).is("(") || tokens.get(2).is(")")) {
+                throw new LogicException(line.number(), "repeat needs a number between brackets, like repeat(3):");
+            }
+            Expr count;
+            try {
+                count = Expr.parseValue(tokens, 2, end);
+            } catch (LogicException e) {
+                throw e.atLine(line.number());
+            }
+            if (!tokens.get(end[0]).is(")")) {
+                throw new LogicException(line.number(), "repeat( is missing its closing )");
+            }
+            Expr.Type type = Expr.typeOf(count);
+            if (type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
+                throw new LogicException(line.number(), "repeat needs a number, like repeat(3):");
+            }
+            expr = Expr.print(count);
+            colon = end[0] + 1;
+        } else {
+            op = Op.WHILE;
+            if (tokens.get(1).type() == Lexer.Type.END || tokens.get(1).is(":")) {
+                throw new LogicException(line.number(), "while needs a check, like: while count < 3:");
+            }
+            try {
+                expr = Expr.print(Expr.parse(tokens, 1, trigger, end));
+            } catch (LogicException e) {
+                throw e.atLine(line.number());
+            }
+            colon = end[0];
+        }
+        expectColon(line, colon);
+        index++;
+        return new Script.Loop(op, expr, block(line, trigger), line.number());
     }
 
     // ================================================================ naam = waarde

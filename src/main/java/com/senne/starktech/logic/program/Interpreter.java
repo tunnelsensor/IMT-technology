@@ -46,11 +46,19 @@ public final class Interpreter {
         void report(String message);
     }
 
+    /** Wat er op de stapel ligt: na een if, na een eigen blok, of een lus die nog bezig is. */
+    private enum FrameKind { AFTER, DEF, LOOP }
+
     /**
-     * Waar het verder gaat als een tak van een if, of een eigen blok, klaar is. Bij een eigen blok
-     * onthouden we ook de namen van wie hem gebruikte ({@code locals}), om die daarna terug te zetten.
+     * Eén plek op de stapel.
+     * <ul>
+     *   <li>AFTER: na een tak van een if verder bij blokje {@code node};</li>
+     *   <li>DEF: na een eigen blok verder bij {@code node}, met de namen van wie hem gebruikte
+     *       ({@code locals}), die we dan terugzetten;</li>
+     *   <li>LOOP: de lus {@code node} is bezig; {@code remaining} rondjes over (repeat), of -1.</li>
+     * </ul>
      */
-    private record Frame(int next, @Nullable Map<String, Object> locals) {}
+    private record Frame(FrameKind kind, int node, @Nullable Map<String, Object> locals, long remaining) {}
 
     private final LogicGraph graph;
     private final Map<String, Object> globals;
@@ -89,10 +97,14 @@ public final class Interpreter {
                     return true;
                 }
                 Frame frame = frames.pop();
-                if (frame.locals() != null) {
-                    locals = frame.locals(); // terug uit een eigen blok: de namen van de gebruiker weer
+                switch (frame.kind()) {
+                    case AFTER -> current = frame.node();
+                    case DEF -> {
+                        locals = frame.locals(); // terug uit een eigen blok: de namen van de gebruiker weer
+                        current = frame.node();
+                    }
+                    case LOOP -> current = again(host, frame); // de stappen van de lus zijn klaar
                 }
-                current = frame.next();
                 continue;
             }
             LogicGraph.Node node = graph.node(current);
@@ -109,7 +121,7 @@ public final class Interpreter {
                     current = node.next;
                     continue;
                 }
-                frames.push(new Frame(node.next, locals));
+                frames.push(new Frame(FrameKind.DEF, node.next, locals, -1));
                 locals = new HashMap<>();
                 current = def.next;
                 continue;
@@ -117,9 +129,17 @@ public final class Interpreter {
             if (node.op == Op.IF) {
                 boolean yes = host.test(this, node);
                 if (node.next >= 0) {
-                    frames.push(new Frame(node.next, null));
+                    frames.push(new Frame(FrameKind.AFTER, node.next, null, -1));
                 }
                 current = yes ? node.yes : node.no;
+                continue;
+            }
+            if (node.op.kind() == Op.Kind.LOOP) {
+                current = enter(host, node);
+                continue;
+            }
+            if (node.op == Op.BREAK) {
+                current = leaveLoop();
                 continue;
             }
             current = node.next;
@@ -139,6 +159,87 @@ public final class Interpreter {
             host.act(this, node);
         }
         return false;
+    }
+
+    // ================================================================ Lussen
+
+    /**
+     * Een lus begint: de eerste ronde (de stappen aan "do"), of meteen verder na de lus als er niets te
+     * doen is ({@code repeat(0)}, of een while die meteen niet klopt). Geeft het volgende blokje.
+     * Een lus zonder wachten loopt niet eindeloos in één tick: elke run doet hooguit zijn budget aan
+     * blokjes per tick (zie {@link #step}), de rest volgt de volgende tick.
+     */
+    private int enter(Host host, LogicGraph.Node loop) {
+        switch (loop.op) {
+            case REPEAT -> {
+                long times = Math.round(number(host, loop.text));
+                if (times <= 0) {
+                    return loop.next;
+                }
+                frames.push(new Frame(FrameKind.LOOP, loop.id, null, times - 1));
+            }
+            case WHILE -> {
+                if (!host.test(this, loop)) {
+                    return loop.next;
+                }
+                frames.push(new Frame(FrameKind.LOOP, loop.id, null, -1));
+            }
+            default -> frames.push(new Frame(FrameKind.LOOP, loop.id, null, -1)); // forever
+        }
+        return loop.yes;
+    }
+
+    /** De stappen van een lus zijn klaar: nog een ronde, of verder na de lus. */
+    private int again(Host host, Frame frame) {
+        LogicGraph.Node loop = graph.node(frame.node());
+        if (loop == null) {
+            return -1;
+        }
+        switch (loop.op) {
+            case REPEAT -> {
+                if (frame.remaining() <= 0) {
+                    return loop.next;
+                }
+                frames.push(new Frame(FrameKind.LOOP, loop.id, null, frame.remaining() - 1));
+            }
+            case WHILE -> {
+                if (!host.test(this, loop)) {
+                    return loop.next;
+                }
+                frames.push(frame);
+            }
+            default -> frames.push(frame); // forever
+        }
+        return loop.yes;
+    }
+
+    /**
+     * {@code break}: alles op de stapel weg tot en met de binnenste lus (ook de ifs erin), en verder na die
+     * lus. Staat hij niet in een lus (dat laat de controle niet toe), dan stopt het eigen blok of de run.
+     */
+    private int leaveLoop() {
+        while (!frames.isEmpty()) {
+            Frame frame = frames.pop();
+            if (frame.kind() == FrameKind.LOOP) {
+                LogicGraph.Node loop = graph.node(frame.node());
+                return loop == null ? -1 : loop.next;
+            }
+            if (frame.kind() == FrameKind.DEF) {
+                locals = frame.locals();
+                return frame.node();
+            }
+        }
+        return -1;
+    }
+
+    /** Een getal uitrekenen (het aantal van repeat); 0 als het geen getal is. */
+    private double number(Host host, String text) {
+        Expr expr = ExprCache.value(text);
+        if (expr == null) {
+            host.report("the number \"" + text + "\" is not valid, so it counts as 0");
+            return 0;
+        }
+        return ExprCache.eval(expr, host.facts(this)) instanceof Double value ? value : 0;
     }
 
     /** Het DEF-blok met deze naam, of null. */

@@ -62,10 +62,15 @@ final class BlockCanvas {
     private static final Op[][] PALETTE = palette();
     private static final String[] PALETTE_HEADERS = {"START (when, def)", "CHECK AND DO"};
 
-    /** Eerst alles waar een rij mee begint (triggers en def), dan de if en alle acties. */
+    /** Eerst alles waar een rij mee begint (triggers, def, AT START), dan de if, de lussen en alle acties. */
     private static Op[][] palette() {
         List<Op> start = new ArrayList<>();
         List<Op> rest = new ArrayList<>(List.of(Op.IF));
+        for (Op op : Op.values()) {
+            if (op.kind() == Op.Kind.LOOP) {
+                rest.add(op);
+            }
+        }
         for (Op op : Op.values()) {
             if (op.isRoot()) {
                 start.add(op);
@@ -370,14 +375,15 @@ final class BlockCanvas {
     }
 
     private static int colour(Op op) {
-        return op.isTrigger() ? TRIGGER : op == Op.IF ? IF : op == Op.DEF || op == Op.CALL ? FUNCTION
-                : op.kind() == Op.Kind.SET ? VARIABLE : ACTION;
+        return op.isTrigger() ? TRIGGER : op == Op.IF || op.kind() == Op.Kind.LOOP || op == Op.BREAK ? IF
+                : op == Op.DEF || op == Op.CALL ? FUNCTION : op.kind() == Op.Kind.SET ? VARIABLE : ACTION;
     }
 
-    /** De titel bovenop een blokje: "WHEN keycard", "IF", "DEF", "use def", "SET", "AT START", "pulse". */
+    /** De titel bovenop een blokje: "WHEN keycard", "IF", "REPEAT", "DEF", "use def", "SET", "AT START", "pulse". */
     private static String title(Op op) {
         return op.isTrigger() ? "WHEN " + op.code() : op == Op.IF ? "IF" : op == Op.DEF ? "DEF"
-                : op == Op.CALL ? "use def" : op == Op.SET ? "SET" : op == Op.GLOBAL ? "AT START" : op.code();
+                : op == Op.CALL ? "use def" : op == Op.SET ? "SET" : op == Op.GLOBAL ? "AT START"
+                : op.kind() == Op.Kind.LOOP || op == Op.BREAK ? op.code().toUpperCase(Locale.ROOT) : op.code();
     }
 
     private static int darker(int rgb) {
@@ -399,6 +405,15 @@ final class BlockCanvas {
     private static String detail(LogicGraph.Node node) {
         if (node.op.kind() == Op.Kind.SET) {
             return node.text + " = " + node.expr;
+        }
+        if (node.op == Op.REPEAT) {
+            return node.text + " times";
+        }
+        if (node.op == Op.FOREVER) {
+            return "again and again";
+        }
+        if (node.op == Op.BREAK) {
+            return "out of the loop";
         }
         return switch (node.op) {
             case EVERY -> seconds(node.number) + " s";
@@ -426,6 +441,9 @@ final class BlockCanvas {
         if (node.op.kind() == Op.Kind.SET) {
             return node.text + " = " + node.expr;
         }
+        if (node.op.kind() == Op.Kind.LOOP) {
+            return com.senne.starktech.logic.program.ScriptPrinter.loopLine(node.op, node.text);
+        }
         String call = com.senne.starktech.logic.program.ScriptPrinter.call(node.op, node.text, node.number);
         return node.op.isTrigger() ? "when " + call + ":" : node.op == Op.DEF ? call + ":" : call;
     }
@@ -441,7 +459,8 @@ final class BlockCanvas {
     private int[] portPos(LogicGraph.Node node, LogicGraph.Port port) {
         int x = node.x;
         int y = node.y;
-        if (node.op != Op.IF) {
+        // Een if en een lus: YES ("yes", of "do" bij een lus) rechtsboven, NO rechtsonder, NEXT ("after") onderaan.
+        if (node.op != Op.IF && node.op.kind() != Op.Kind.LOOP) {
             return new int[] {x + NODE_W, y + NODE_H / 2};
         }
         return switch (port) {
@@ -538,6 +557,10 @@ final class BlockCanvas {
         } else if (op.kind() == Op.Kind.SET) {
             node.text = "count";
             node.expr = op == Op.SET ? "count + 1" : "0";
+        } else if (op == Op.REPEAT) {
+            node.text = "3";
+        } else if (op == Op.WHILE) {
+            node.text = "true";
         }
         edited();
         selectNode(node.id);
@@ -636,8 +659,11 @@ final class BlockCanvas {
 
     /** Hoe het tekstvak van dit blokje heet. */
     private static @Nullable String textLabel(Op op) {
-        if (op == Op.IF) {
+        if (op == Op.IF || op == Op.WHILE) {
             return "Check";
+        }
+        if (op == Op.REPEAT) {
+            return "Times (a number)";
         }
         return switch (op.textArg()) {
             case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";
@@ -674,7 +700,7 @@ final class BlockCanvas {
             for (LogicGraph.Node def : defs) {
                 names.add(def.text);
             }
-        } else if (op == Op.IF) {
+        } else if (op == Op.IF || op == Op.WHILE) {
             names.addAll(List.of("card.valid and card.level >= 3", "code == \"1234\"", "player.trusted", "is_night"));
             for (Tag tag : info.get().getList("outputs", Tag.TAG_STRING)) {
                 names.add("is_on(\"" + tag.getAsString() + "\")");
@@ -700,6 +726,9 @@ final class BlockCanvas {
             } catch (LogicException e) {
                 return e.getMessage();
             }
+        }
+        if (node.op.kind() == Op.Kind.LOOP) {
+            return LogicGraph.loopProblem(node);
         }
         if (node.op.kind() == Op.Kind.SET) {
             String problem = Checks.variableProblem(node.text, java.util.Set.of());
@@ -766,7 +795,8 @@ final class BlockCanvas {
         // Suggesties: klik om in te vullen.
         List<String> names = suggestions(node.op);
         if (!names.isEmpty()) {
-            g.drawString(font, node.op == Op.IF ? "Ideas:" : "Yours:", x, y, HudStyle.argb(255, HudStyle.ORANGE), false);
+            boolean ideas = node.op == Op.IF || node.op == Op.WHILE;
+            g.drawString(font, ideas ? "Ideas:" : "Yours:", x, y, HudStyle.argb(255, HudStyle.ORANGE), false);
             y += 10;
             for (String name : names) {
                 if (y + 9 > cy + ch - 36) {
@@ -777,7 +807,7 @@ final class BlockCanvas {
                     g.fill(px + 2, y - 1, px + PANEL_W - 2, y + 9, HudStyle.argb(255, 0x16303F));
                 }
                 g.drawString(font, OsDraw.fitRight(font, name, PANEL_W - 10), x + 2, y,
-                        HudStyle.argb(255, node.op == Op.IF ? 0xF1E87C : 0x9ED8FF), false);
+                        HudStyle.argb(255, ideas ? 0xF1E87C : 0x9ED8FF), false);
                 y += 10;
             }
         }

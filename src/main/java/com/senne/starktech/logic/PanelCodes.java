@@ -60,6 +60,13 @@ public final class PanelCodes {
                 }
                 walk(graph, node.yes, seen, codes);
                 walk(graph, node.no, seen, codes);
+            } else if (node.op.kind() == Op.Kind.LOOP) {
+                // Een lus (hoofdstuk 20): een while kan ook een code controleren; dan de stappen erin.
+                Expr condition = node.op == Op.WHILE ? ExprCache.get(node.text, Op.CODEPANEL) : null;
+                if (condition != null) {
+                    collect(condition, codes);
+                }
+                walk(graph, node.yes, seen, codes);
             } else if (node.op == Op.CALL) {
                 for (LogicGraph.Node def : graph.nodes()) {
                     if (def.op == Op.DEF && def.text.equals(node.text)) {

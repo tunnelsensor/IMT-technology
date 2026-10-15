@@ -46,6 +46,9 @@ public final class ScriptPrinter {
                 out.append(INDENT.repeat(depth)).append(call(action.op(), action.text(), action.number())).append('\n');
             } else if (statement instanceof Script.Assign assign) {
                 out.append(INDENT.repeat(depth)).append(assign.name()).append(" = ").append(assign.value()).append('\n');
+            } else if (statement instanceof Script.Loop loop) {
+                out.append(INDENT.repeat(depth)).append(loopLine(loop.op(), loop.expr())).append('\n');
+                block(out, loop.body(), depth + 1);
             }
         }
     }
@@ -61,6 +64,15 @@ public final class ScriptPrinter {
         }
     }
 
+    /** De eerste regel van een lus: {@code forever:}, {@code repeat(3):} of {@code while count < 3:}. */
+    public static String loopLine(Op op, String expr) {
+        return switch (op) {
+            case FOREVER -> "forever:";
+            case REPEAT -> "repeat(" + expr + "):";
+            default -> "while " + expr + ":";
+        };
+    }
+
     /**
      * Een aanroep: {@code keycard("Lab door")}, {@code wait(2)}, {@code pulse("Gate", 0.5)},
      * {@code accept()}, en een eigen blok: {@code open_lab()}.
@@ -68,6 +80,9 @@ public final class ScriptPrinter {
     public static String call(Op op, String text, double number) {
         if (op == Op.CALL) {
             return text + "()";
+        }
+        if (op == Op.BREAK) {
+            return "break";
         }
         if (op == Op.DEF) {
             return "def " + text + "()";

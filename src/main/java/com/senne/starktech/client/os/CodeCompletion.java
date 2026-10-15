@@ -160,12 +160,17 @@ public final class CodeCompletion {
         // Elke actie die er is (zie Op): een nieuwe actie staat hier vanzelf bij. Een eigen blok (CALL)
         // staat hieronder bij de namen van je defs.
         for (Op op : Op.values()) {
-            if (op.kind() == Op.Kind.ACTION && op != Op.CALL) {
+            if (op.kind() == Op.Kind.ACTION && op != Op.CALL && op != Op.BREAK) {
                 items.add(item(op, "", ACTION));
             }
         }
         items.add(new Item("name = value", "count = count + 1", 0, 5, Op.SET.help(), VARIABLE));
         items.add(new Item("if ...:", "if :", 3, Op.IF.help(), KEYWORD));
+        // De lussen (het aantal van repeat is meteen geselecteerd: typen vervangt het).
+        items.add(new Item("repeat(3):", "repeat(3):", 7, 1, Op.REPEAT.help(), KEYWORD));
+        items.add(new Item("while ...:", "while :", 6, Op.WHILE.help(), KEYWORD));
+        items.add(new Item("forever:", "forever:", -1, Op.FOREVER.help(), KEYWORD));
+        items.add(new Item("break", "break", -1, Op.BREAK.help(), KEYWORD));
         items.add(new Item("elif ...:", "elif :", 5, "Another check, when the if above was not true", KEYWORD));
         items.add(new Item("else:", "else:", -1, "What happens when the if above is not true", KEYWORD));
         items.add(new Item("pass", "pass", -1, "Do nothing (for an empty block)", KEYWORD));
@@ -198,7 +203,8 @@ public final class CodeCompletion {
     /** Staan we in een voorwaarde (na if, elif, and, or, not, of een vergelijkingsteken)? */
     private static boolean isConditionContext(String head) {
         String lower = head.toLowerCase(Locale.ROOT);
-        if (lower.startsWith("if ") || lower.equals("if") || lower.startsWith("elif ") || lower.equals("elif")) {
+        if (lower.startsWith("if ") || lower.equals("if") || lower.startsWith("elif ") || lower.equals("elif")
+                || lower.startsWith("while ") || lower.equals("while") || lower.startsWith("repeat(")) {
             return true;
         }
         for (String end : List.of(" and", " or", " not", "(", "==", "!=", "<", ">", "<=", ">=", "+", "-", "*", "/")) {

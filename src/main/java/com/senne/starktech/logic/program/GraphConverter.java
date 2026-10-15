@@ -71,6 +71,9 @@ public final class GraphConverter {
                         chain(graph, node.no, seen), node.id));
             } else if (node.op == Op.SET) {
                 statements.add(new Script.Assign(node.text, cleanValue(node.expr), node.id));
+            } else if (node.op.kind() == Op.Kind.LOOP) {
+                String expr = node.op == Op.REPEAT ? cleanValue(node.text) : node.op == Op.WHILE ? cleanCondition(node.text) : "";
+                statements.add(new Script.Loop(node.op, expr, chain(graph, node.yes, seen), node.id));
             } else {
                 statements.add(new Script.Action(node.op, node.op.textArg() == Op.Arg.NONE ? "" : node.text,
                         node.op.numberArg() == Op.Arg.NONE ? 0 : node.number, node.id));
@@ -153,6 +156,8 @@ public final class GraphConverter {
             if (node.op == Op.IF) {
                 paths(graph, node.yes, path + ".y", out, seen);
                 paths(graph, node.no, path + ".n", out, seen);
+            } else if (node.op.kind() == Op.Kind.LOOP) {
+                paths(graph, node.yes, path + ".y", out, seen);
             }
             id = node.next;
         }
@@ -218,6 +223,15 @@ public final class GraphConverter {
                     node.no = no[0];
                     rows = Math.max(rows, Math.max(1, yes[2]) + Math.max(1, no[2]));
                     c += 1 + Math.max(1, Math.max(yes[1], no[1]));
+                } else if (statement instanceof Script.Loop loop) {
+                    // Een lus: de stappen erin rechts ernaast (aan "do"), wat erna komt rechts daarvan.
+                    node = graph.add(loop.op(), 0, 0);
+                    node.text = loop.expr();
+                    cells.put(node, new int[] {c, row});
+                    int[] body = statements(loop.body(), path + ".y", c + 1, row);
+                    node.yes = body[0];
+                    rows = Math.max(rows, Math.max(1, body[2]));
+                    c += 1 + Math.max(1, body[1]);
                 } else if (statement instanceof Script.Assign assign) {
                     node = graph.add(Op.SET, 0, 0);
                     node.text = assign.name();

@@ -55,6 +55,13 @@ public record Script(List<Top> items) {
     public record Assign(String name, String value, int ref) implements Stmt {}
 
     /**
+     * Een lus (hoofdstuk 20): {@code forever:}, {@code repeat(3):} of {@code while count < 3:}, met de
+     * stappen erin. {@code expr} is het aantal (repeat) of de voorwaarde (while) als nette code; leeg bij
+     * forever.
+     */
+    public record Loop(Op op, String expr, List<Stmt> body, int ref) implements Stmt {}
+
+    /**
      * Een actie, zoals {@code pulse("Vault door", 3)}. {@code text} is leeg en {@code number} 0 als hij
      * ze niet heeft. Een eigen blok gebruiken ({@code open_lab()}) is een actie CALL met de naam als tekst.
      */
@@ -111,6 +118,8 @@ public record Script(List<Top> items) {
             count++;
             if (statement instanceof If branch) {
                 count += blocks(branch.yes()) + blocks(branch.no());
+            } else if (statement instanceof Loop loop) {
+                count += blocks(loop.body());
             }
         }
         return count;

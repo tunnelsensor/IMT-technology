@@ -76,9 +76,18 @@ public final class LogicGraph {
             }
         }
 
-        /** Welke uitgangen dit blokje heeft. (Een naam helemaal links, GLOBAL, heeft er geen.) */
+        /**
+         * Welke uitgangen dit blokje heeft. Een lus heeft YES ("do": de stappen erin) en NEXT ("after");
+         * een naam helemaal links (GLOBAL) heeft er geen.
+         */
         public List<Port> ports() {
-            return op == Op.IF ? List.of(Port.YES, Port.NO, Port.NEXT) : op == Op.GLOBAL ? List.of() : List.of(Port.NEXT);
+            if (op == Op.IF) {
+                return List.of(Port.YES, Port.NO, Port.NEXT);
+            }
+            if (op.kind() == Op.Kind.LOOP) {
+                return List.of(Port.YES, Port.NEXT);
+            }
+            return op == Op.GLOBAL ? List.of() : List.of(Port.NEXT);
         }
 
         Node copy() {
@@ -269,6 +278,8 @@ public final class LogicGraph {
                 } catch (LogicException e) {
                     problem = e.getMessage();
                 }
+            } else if (node.op.kind() == Op.Kind.LOOP) {
+                problem = loopProblem(node);
             } else if (node.op.kind() == Op.Kind.SET) {
                 problem = Checks.variableProblem(node.text, Set.of());
                 if (problem == null && node.expr.isBlank()) {
@@ -301,6 +312,25 @@ public final class LogicGraph {
             }
         }
         return problems;
+    }
+
+    /** Kan de lus zijn aantal (repeat) of voorwaarde (while) lezen? Null als het klopt. */
+    public static @Nullable String loopProblem(Node node) {
+        try {
+            if (node.op == Op.REPEAT) {
+                if (node.text.isBlank()) {
+                    return "repeat needs a number, like 3";
+                }
+                Expr.Type type = Expr.typeOf(Expr.parseLenient(node.text, false));
+                return type == Expr.Type.NUMBER || type == Expr.Type.ANY ? null : "repeat needs a number, like 3";
+            }
+            if (node.op == Op.WHILE) {
+                Expr.parseLenient(node.text, true);
+            }
+            return null;
+        } catch (LogicException e) {
+            return e.getMessage();
+        }
     }
 
     public LogicGraph copy() {
