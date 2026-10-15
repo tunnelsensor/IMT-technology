@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 227 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 228 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2337,12 +2337,15 @@ ene run.
       tot 60 s), en een berekend bericht is hooguit 200 tekens. `say(Hello)` zonder aanhalingstekens zegt
       "Hello has no value yet... If you meant text, put it between quotes: say("Hello")". De robot-acties met
       meerdere waarden (`goto(x, y, z)`, `write(pin, waarde)`) gebruiken straks hetzelfde. Twee nieuwe tests
-      (`logic_values_in_actions`, `logic_values_run`).
+      (`logic_values_in_actions`, `logic_values_run`). Commit: `8bdfe7b`.
 - [ ] **7. Soorten programma's** — *verschoven naar hoofdstuk 23*: een soort "Robot" of "Drone" doet pas iets
       als er robots zijn. Daar komt hij als eerste stap, met de controle per soort (een `accept()` kan niet in
       een robotprogramma).
-- [ ] **8. Oude programma's** — een def met een naam die nu een woord van de taal is (zoals `repeat`),
-      krijgt bij het laden een andere naam (`repeat_1`).
+- [x] **8. Oude programma's** — een def met een naam die nu een woord van de taal is (`repeat`, `while`,
+      `forever`, `break`, `set` of `var`), krijgt bij het laden een andere naam (`repeat_1`, of `_2` als die
+      al bestaat); de blokjes die hem gebruiken gaan mee, en de bewaarde code wordt opnieuw uit de blokjes
+      geschreven (je commentaar in dat ene diagram valt dan weg). Ook een backup die je terugzet, gaat zo.
+      Eén nieuwe test (`logic_old_programs`).
 
 Tests: taaltests zonder wereld (rekenen, haakjes, typefouten, `break` buiten een lus, een variabele zonder
 waarde, code en blokjes met lussen), en runner-tests (`repeat(3)` pulst drie keer, een oneindige lus legt

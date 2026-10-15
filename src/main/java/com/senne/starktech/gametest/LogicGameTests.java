@@ -272,6 +272,40 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /**
+     * Oude diagrammen (hoofdstuk 20, stap 8): een def die nu een woord van de taal heet ({@code repeat}),
+     * krijgt bij het laden een andere naam ({@code repeat_1}), de blokjes die hem gebruiken gaan mee, en de
+     * bewaarde code is weer geldig.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_old_programs(GameTestHelper helper) {
+        LogicGraph old = new LogicGraph();
+        LogicGraph.Node def = old.add(Op.DEF, 0, 0);
+        def.text = "repeat";
+        LogicGraph.Node log = old.add(Op.LOG, 0, 0);
+        log.text = "hi";
+        def.next = log.id;
+        LogicGraph.Node every = old.add(Op.EVERY, 0, 0);
+        every.number = 5;
+        LogicGraph.Node use = old.add(Op.CALL, 0, 0);
+        use.text = "repeat";
+        every.next = use.id;
+        CompoundTag tag = new CompoundTag();
+        tag.putString("Name", "Old");
+        tag.putBoolean("On", true);
+        tag.put("Graph", old.save());
+        tag.putString("Source", "def repeat():\n    log(\"hi\")\n\nwhen every(5):\n    repeat()\n");
+        var program = com.senne.starktech.logic.program.LogicProgram.load(tag);
+        check(program.graph().nodes().stream().anyMatch(node -> node.op == Op.DEF && node.text.equals("repeat_1"))
+                        && program.graph().nodes().stream().anyMatch(node -> node.op == Op.CALL && node.text.equals("repeat_1")),
+                "De def repeat kreeg geen nieuwe naam (of de use def ging niet mee)");
+        String expected = "def repeat_1():\n    log(\"hi\")\n\nwhen every(5):\n    repeat_1()\n";
+        check(program.source().equals(expected), "De bewaarde code werd niet opnieuw geschreven:\n" + program.source());
+        ScriptParser.parse(program.source()); // gooit een fout als de code niet klopt
+        check(program.graph().problems().isEmpty(), "Het oude diagram heeft na het laden fouten: " + program.graph().problems());
+        helper.succeed();
+    }
+
     /** Berekeningen tijdens het uitvoeren: een berekend bericht in het logboek, en berekende seconden wachten. */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_values")
     public static void logic_values_run(GameTestHelper helper) {

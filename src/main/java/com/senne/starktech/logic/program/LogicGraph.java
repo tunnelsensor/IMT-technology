@@ -322,6 +322,40 @@ public final class LogicGraph {
         return problems;
     }
 
+    /**
+     * Een def uit een diagram van vóór hoofdstuk 20 die nu een woord van de taal heet ({@code repeat},
+     * {@code while}, {@code forever}, {@code break}, {@code set}, {@code var}), krijgt een andere naam
+     * ({@code repeat_1}); de blokjes die hem gebruiken gaan mee. Geeft true als er iets veranderde.
+     */
+    public boolean renameReservedDefs() {
+        Set<String> used = new HashSet<>();
+        for (Node node : nodes.values()) {
+            if (node.op == Op.DEF) {
+                used.add(node.text);
+            }
+        }
+        boolean changed = false;
+        for (Node def : nodes.values()) {
+            if (def.op != Op.DEF || Op.byCode(def.text) == null) {
+                continue;
+            }
+            String old = def.text;
+            String name = old + "_1";
+            for (int number = 2; used.contains(name); number++) {
+                name = old + "_" + number;
+            }
+            used.add(name);
+            for (Node call : nodes.values()) {
+                if (call.op == Op.CALL && call.text.equals(old)) {
+                    call.text = name;
+                }
+            }
+            def.text = name;
+            changed = true;
+        }
+        return changed;
+    }
+
     /** Kan de lus zijn aantal (repeat) of voorwaarde (while) lezen? Null als het klopt. */
     public static @Nullable String loopProblem(Node node) {
         try {

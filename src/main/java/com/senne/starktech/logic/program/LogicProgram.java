@@ -37,7 +37,13 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
 
     public static LogicProgram load(CompoundTag tag) {
         String source = tag.getString("Source");
+        LogicGraph graph = LogicGraph.load(tag.getCompound("Graph"));
+        if (graph.renameReservedDefs()) {
+            // Een oud diagram met een def die nu een woord van de taal is (repeat...): die kreeg een andere
+            // naam, dus de bewaarde code past niet meer. We schrijven hem opnieuw uit de blokjes.
+            source = ScriptPrinter.print(GraphConverter.toScript(graph));
+        }
         return new LogicProgram(tag.getString("Name"), !tag.contains("On") || tag.getBoolean("On"),
-                LogicGraph.load(tag.getCompound("Graph")), source.length() > MAX_SOURCE ? "" : source);
+                graph, source.length() > MAX_SOURCE ? "" : source);
     }
 }
