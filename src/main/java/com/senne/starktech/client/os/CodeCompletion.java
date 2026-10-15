@@ -194,7 +194,7 @@ public final class CodeCompletion {
         if (lower.startsWith("if ") || lower.equals("if") || lower.startsWith("elif ") || lower.equals("elif")) {
             return true;
         }
-        for (String end : List.of(" and", " or", " not", "(", "==", "!=", "<", ">", "<=", ">=")) {
+        for (String end : List.of(" and", " or", " not", "(", "==", "!=", "<", ">", "<=", ">=", "+", "-", "*", "/")) {
             if (lower.endsWith(end)) {
                 return true;
             }

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 220 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 221 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2283,7 +2283,15 @@ ene run.
       geschreven, want die heeft echte voorbeelden (een hele `when keycard` met `accept()` en `deny()`); de
       controles per soort programma komen in stap 7, samen met die soorten. Geen gedragsverandering: 220
       tests, 217 groen (de 3 rode van hoofdstuk 14 stap 2).
-- [ ] **2. Rekenen** — `+ - * /`, haakjes, negatieve getallen, tekst plakken met `+`.
+- [x] **2. Rekenen** — in een `if` kun je nu rekenen: `if card.level * 2 - 1 >= 5:`. Keer en delen gaan voor
+      (zoals op school: `2 + 3 * 4` is 14), haakjes, een minteken (`-20`, `-card.level`), en met `+` plak je
+      tekst aan elkaar (`"Level " + card.level` wordt "Level 3"; een getal zonder overbodige nullen).
+      Terugschrijven zet alleen de haakjes die nodig zijn (`((2 + 3) * 4)` wordt `(2 + 3) * 4`). Fouten voor
+      een beginner: "You can only subtract numbers", "A - in front only works with a number, like -20". In
+      de editor hebben `+ - * /` de kleur van de vergelijkingstekens, Ctrl+Spatie na een rekenteken toont de
+      gegevens, en de Help heeft een regel over rekenen. **Mijn invulling**: delen door 0 geeft 0 (geen
+      foutmelding midden in een diagram), en `true`/`false` mag je ook aan tekst plakken. Eén nieuwe test
+      (`logic_arithmetic`).
 - [ ] **3. Variabelen** — `naam = waarde`, met de regel hierboven.
 - [ ] **4. Lussen en break** — `forever:`, `repeat(n):`, `while ...:`, `break`. In de blokjes: een lus
       met een "do"-uitgang en een "after"-uitgang.

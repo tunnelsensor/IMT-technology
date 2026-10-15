@@ -475,7 +475,7 @@ final class CodeEditor {
                 previousWord = word;
                 i = end;
             } else {
-                if ("=<>!".indexOf(c) >= 0) {
+                if ("=<>!+-*/".indexOf(c) >= 0) {
                     colours[i] = 0xFF79C6;
                 }
                 i++;

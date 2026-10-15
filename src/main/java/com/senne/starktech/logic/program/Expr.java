@@ -37,6 +37,15 @@ public sealed interface Expr {
     /** {@code is_on("Lamp")}: staat dat apparaat nu aan? */
     record IsOn(String device) implements Expr {}
 
+    /** {@code -card.level}: het tegengestelde getal. (Een los getal zoals -20 wordt meteen een Num.) */
+    record Neg(Expr inner) implements Expr {}
+
+    /**
+     * Rekenen (hoofdstuk 20): {@code a + b}, {@code a - b}, {@code a * b}, {@code a / b}. Met
+     * {@code +} plak je ook tekst aan elkaar: {@code "Level " + card.level} wordt "Level 3".
+     */
+    record Arith(Expr left, char op, Expr right) implements Expr {}
+
     /** De soorten waarden: een getal, tekst, of waar/onwaar. */
     enum Type { NUMBER, TEXT, BOOL }
 
@@ -185,15 +194,69 @@ public sealed interface Expr {
         }
 
         private Expr compare() {
-            Expr left = primary();
+            Expr left = sum();
             Lexer.Token token = peek();
             if (token.type() == Lexer.Type.SYMBOL && List.of("==", "!=", "<", "<=", ">", ">=").contains(token.text())) {
                 next();
-                Expr right = primary();
+                Expr right = sum();
                 checkCompare(left, token.text(), right);
                 return new Compare(left, token.text(), right);
             }
             return left;
+        }
+
+        /** Optellen en aftrekken, van links naar rechts: {@code a + b - c}. Met + plak je ook tekst. */
+        private Expr sum() {
+            Expr left = product();
+            while (peek().is("+") || peek().is("-")) {
+                char op = next().text().charAt(0);
+                left = arith(left, op, product());
+            }
+            return left;
+        }
+
+        /** Keer en delen gaan voor (zoals op school): {@code 2 + 3 * 4} is 14. */
+        private Expr product() {
+            Expr left = unary();
+            while (peek().is("*") || peek().is("/")) {
+                char op = next().text().charAt(0);
+                left = arith(left, op, unary());
+            }
+            return left;
+        }
+
+        /** Een minteken ervoor: {@code -20}, {@code -card.level}. */
+        private Expr unary() {
+            if (peek().is("-")) {
+                next();
+                Expr inner = unary();
+                if (typeOf(inner) != Type.NUMBER) {
+                    throw new LogicException("A - in front only works with a number, like -20");
+                }
+                return inner instanceof Num num ? new Num(-num.value()) : new Neg(inner);
+            }
+            return primary();
+        }
+
+        /**
+         * Kloppen de soorten aan beide kanten? Rekenen gaat met getallen; met + mag ook tekst (dan
+         * wordt de andere kant ook tekst: "Level " + 3 is "Level 3").
+         */
+        private static Expr arith(Expr left, char op, Expr right) {
+            Type a = typeOf(left);
+            Type b = typeOf(right);
+            if (op == '+' && (a == Type.TEXT || b == Type.TEXT)) {
+                return new Arith(left, op, right);
+            }
+            if (a != Type.NUMBER || b != Type.NUMBER) {
+                throw new LogicException(switch (op) {
+                    case '+' -> "You can only add numbers (or glue text together with +)";
+                    case '-' -> "You can only subtract numbers";
+                    case '*' -> "You can only multiply numbers";
+                    default -> "You can only divide numbers";
+                });
+            }
+            return new Arith(left, op, right);
         }
 
         private Expr primary() {
@@ -324,6 +387,11 @@ public sealed interface Expr {
                 collectVariables(c.right(), names);
             }
             case Var v -> names.add(v.name());
+            case Neg n -> collectVariables(n.inner(), names);
+            case Arith a -> {
+                collectVariables(a.left(), names);
+                collectVariables(a.right(), names);
+            }
             default -> { }
         }
     }
@@ -334,6 +402,9 @@ public sealed interface Expr {
             case Num n -> Type.NUMBER;
             case Str s -> Type.TEXT;
             case Var v -> Variable.byName(v.name()) == null ? Type.BOOL : Variable.byName(v.name()).type;
+            case Neg n -> Type.NUMBER;
+            case Arith a -> a.op() == '+' && (typeOf(a.left()) == Type.TEXT || typeOf(a.right()) == Type.TEXT)
+                    ? Type.TEXT : Type.NUMBER;
             default -> Type.BOOL;
         };
     }
@@ -345,14 +416,16 @@ public sealed interface Expr {
         return print(expr, 0);
     }
 
-    /** Hoe sterk iets bindt: or 1, and 2, not 3, vergelijken 4, de rest 5. */
+    /** Hoe sterk iets bindt: or 1, and 2, not 3, vergelijken 4, + en - 5, * en / 6, een minteken 7, de rest 8. */
     private static int strength(Expr expr) {
         return switch (expr) {
             case Or o -> 1;
             case And a -> 2;
             case Not n -> 3;
             case Compare c -> 4;
-            default -> 5;
+            case Arith a -> a.op() == '+' || a.op() == '-' ? 5 : 6;
+            case Neg n -> 7;
+            default -> 8;
         };
     }
 
@@ -362,6 +435,9 @@ public sealed interface Expr {
             case And a -> print(a.left(), 2) + " and " + print(a.right(), 3);
             case Not n -> "not " + print(n.inner(), 3);
             case Compare c -> print(c.left(), 5) + " " + c.op() + " " + print(c.right(), 5);
+            // Van links naar rechts: rechts haakjes als hij even sterk bindt (a - (b - c)).
+            case Arith a -> print(a.left(), strength(a)) + " " + a.op() + " " + print(a.right(), strength(a) + 1);
+            case Neg n -> "-" + print(n.inner(), 7);
             case Num n -> number(n.value());
             case Str s -> quote(s.value());
             case Bool b -> b.value() ? "true" : "false";
@@ -415,7 +491,36 @@ public sealed interface Expr {
             case Bool b -> b.value();
             case Var v -> facts.value(v.name());
             case IsOn i -> facts.isOn(i.device());
+            case Neg n -> -toNumber(eval(n.inner(), facts));
+            case Arith a -> arith(eval(a.left(), facts), a.op(), eval(a.right(), facts));
         };
+    }
+
+    /**
+     * Rekent het uit. Staat er aan een kant van + tekst, dan worden ze aan elkaar geplakt. Delen door 0
+     * geeft 0, zodat een diagram nooit vastloopt op een rare uitkomst.
+     */
+    private static Object arith(Object a, char op, Object b) {
+        if (op == '+' && (a instanceof String || b instanceof String)) {
+            return text(a) + text(b);
+        }
+        double x = toNumber(a);
+        double y = toNumber(b);
+        return switch (op) {
+            case '+' -> x + y;
+            case '-' -> x - y;
+            case '*' -> x * y;
+            default -> y == 0 ? 0.0 : x / y;
+        };
+    }
+
+    private static double toNumber(Object value) {
+        return value instanceof Double d ? d : 0.0;
+    }
+
+    /** Een waarde als tekst: een getal zonder overbodige nullen (3, 0.5), en true of false. */
+    static String text(Object value) {
+        return value instanceof Double d ? number(d) : String.valueOf(value);
     }
 
     private static boolean compare(Object a, String op, Object b) {

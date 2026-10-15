@@ -640,6 +640,9 @@ final class LogicApp {
         lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "the owner, their team, and trusted players (Access)", HudStyle.WHITE, null));
         lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
         lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", "also: is_day, player.owner, player.name, card.number, card.name", HudStyle.WHITE, null));
+        lines.add(new HelpLine("if card.level * 2 - 1 >= 5:", "if card.level * 2 - 1 >= 5:\n    pass",
+                "calculate with + - * / and brackets (* and / go first); + also glues text: \"Level \" + card.level",
+                HudStyle.WHITE, null));
         lines.add(new HelpLine("else: / elif ...:", "else:\n    pass", "what happens when the if is not true", HudStyle.WHITE, null));
         lines.add(header("YOUR OWN BLOCKS (def)"));
         lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",

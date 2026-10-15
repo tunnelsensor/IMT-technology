@@ -9,9 +9,12 @@ import com.senne.starktech.logic.InputLight;
 import com.senne.starktech.logic.KeycardData;
 import com.senne.starktech.logic.LogicEvents;
 import com.senne.starktech.logic.LogicRunner;
+import com.senne.starktech.logic.program.Expr;
+import com.senne.starktech.logic.program.ExprCache;
 import com.senne.starktech.logic.program.GraphConverter;
 import com.senne.starktech.logic.program.LogicException;
 import com.senne.starktech.logic.program.LogicGraph;
+import com.senne.starktech.logic.program.Op;
 import com.senne.starktech.logic.program.Script;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.logic.program.ScriptPrinter;
@@ -126,6 +129,64 @@ public final class LogicGameTests {
             return;
         }
         throw new GameTestAssertException("Deze code zou een fout moeten geven:\n" + code);
+    }
+
+    /**
+     * Rekenen (hoofdstuk 20, stap 2): + - * / met de voorrang van school (keer en delen eerst),
+     * haakjes, een minteken, tekst plakken met +, en delen door 0 geeft 0. Terugschrijven zet alleen
+     * de haakjes die nodig zijn, en als blokjes is het gewoon een if.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_arithmetic(GameTestHelper helper) {
+        String code = """
+                when keycard("Lab door"):
+                    if card.level * 2 - 1 >= 5 and card.name + "!" == "Boss!":
+                        accept()
+                    elif -card.level < -3 or (card.level + 1) * 2 == 8:
+                        deny()
+                """;
+        String printed = ScriptPrinter.print(ScriptParser.parse(code));
+        check(printed.equals(code), "Rekenen terugschrijven gaf andere code:\n" + printed);
+        LogicGraph graph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        check(graph.problems().isEmpty(), "De blokjes met rekenen hebben fouten: " + graph.problems());
+        check(ScriptPrinter.print(GraphConverter.toScript(graph)).equals(code), "Van blokjes terug naar code ging mis");
+        // Haakjes alleen waar ze nodig zijn: overbodige vallen weg, nodige blijven staan.
+        String messy = "when every(5):\n    if ((2 + 3) * 4) == 20 and 10 - (4 - 1) == 7 and 2 + (3 * 4) == 14:\n        pass\n";
+        String clean = ScriptPrinter.print(ScriptParser.parse(messy));
+        check(clean.equals("when every(5):\n    if (2 + 3) * 4 == 20 and 10 - (4 - 1) == 7 and 2 + 3 * 4 == 14:\n        pass\n"),
+                "De haakjes kloppen niet:\n" + clean);
+        // Uitrekenen, met een kaart van niveau 3 met de naam "Boss".
+        Expr.Facts card = new Expr.Facts() {
+            @Override
+            public Object value(String variable) {
+                return switch (variable) {
+                    case "card.level" -> 3.0;
+                    case "card.name" -> "Boss";
+                    default -> false;
+                };
+            }
+
+            @Override
+            public boolean isOn(String device) {
+                return false;
+            }
+        };
+        for (String yes : List.of("card.level * 2 - 1 >= 5", "2 + 3 * 4 == 14", "(2 + 3) * 4 == 20", "10 / 4 == 2.5",
+                "1 / 0 == 0", "-card.level == -3", "card.name + \"!\" == \"Boss!\"", "\"Level \" + card.level == \"Level 3\"",
+                "10 - 4 - 3 == 3", "-(card.level + 1) == -4")) {
+            Expr expr = ExprCache.get(yes, Op.KEYCARD);
+            check(expr != null && ExprCache.test(expr, card), "Dit zou waar moeten zijn: " + yes);
+        }
+        Expr no = ExprCache.get("card.level * 2 - 1 >= 6", Op.KEYCARD);
+        check(no != null && !ExprCache.test(no, card), "3 * 2 - 1 is 5, niet 6 of meer");
+        // Foutmeldingen die een beginner snapt.
+        expectError("when keycard(\"Lab\"):\n    if card.name - 1 > 0:\n        pass", 2, "only subtract numbers");
+        expectError("when keycard(\"Lab\"):\n    if card.level * \"2\" > 1:\n        pass", 2, "only multiply numbers");
+        expectError("when keycard(\"Lab\"):\n    if card.valid + 1 > 0:\n        pass", 2, "only add numbers");
+        expectError("when keycard(\"Lab\"):\n    if -card.name == \"x\":\n        pass", 2, "only works with a number");
+        expectError("when keycard(\"Lab\"):\n    if card.level + 1:\n        pass", 2, "must be true or false");
+        expectError("when keycard(\"Lab\"):\n    if card.level + :\n        pass", 2, "I did not expect");
+        helper.succeed();
     }
 
     /**

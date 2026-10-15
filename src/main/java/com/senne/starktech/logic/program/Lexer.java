@@ -6,7 +6,8 @@ import java.util.List;
 /**
  * Knipt één regel code in stukjes ("tokens"): woorden ({@code keycard}, {@code card.level}),
  * getallen ({@code 3}, {@code 0.5}), tekst tussen aanhalingstekens ({@code "Lab door"}) en tekens
- * ({@code ==}, {@code (}, {@code :}). Een {@code #} begint commentaar: de rest van de regel telt niet.
+ * ({@code ==}, {@code (}, {@code :}, {@code +}). Een {@code #} begint commentaar: de rest van de
+ * regel telt niet.
  *
  * Klopt er iets niet (een vreemd teken, een tekst zonder sluitend aanhalingsteken), dan gooit hij
  * een {@link LogicException} met uitleg in begrijpelijk Engels.
@@ -100,7 +101,9 @@ public final class Lexer {
                 if (two.equals("==") || two.equals("!=") || two.equals("<=") || two.equals(">=")) {
                     tokens.add(new Token(Type.SYMBOL, two, 0, i));
                     i += 2;
-                } else if ("()<>,:".indexOf(c) >= 0) {
+                } else if ("()<>,:+-*/".indexOf(c) >= 0) {
+                    // Haakjes, vergelijken, komma, dubbele punt, en rekenen (+ - * /). Een minteken
+                    // voor een getal (-20) is ook een los stukje: de voorwaarde maakt er -20 van.
                     tokens.add(new Token(Type.SYMBOL, String.valueOf(c), 0, i));
                     i++;
                 } else if (c == '=') {
