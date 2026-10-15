@@ -56,11 +56,23 @@ final class BlockCanvas {
     private static final int NO = 0xFF5A50;
     private static final int AFTER = 0xC8D2D8;
 
-    /** De blokjes in het palet, per kopje. */
-    private static final Op[][] PALETTE = {
-            {Op.KEYCARD, Op.CODEPANEL, Op.TURNED_ON, Op.TURNED_OFF, Op.EVERY, Op.DEF},
-            {Op.IF, Op.CALL, Op.ON, Op.OFF, Op.TOGGLE, Op.PULSE, Op.WAIT, Op.ACCEPT, Op.DENY, Op.SAY, Op.ALARM, Op.LOG}};
+    /** De blokjes in het palet, per kopje. Ze komen uit Op: een nieuw blokje staat er vanzelf in. */
+    private static final Op[][] PALETTE = palette();
     private static final String[] PALETTE_HEADERS = {"START (when, def)", "CHECK AND DO"};
+
+    /** Eerst alles waar een rij mee begint (triggers en def), dan de if en alle acties. */
+    private static Op[][] palette() {
+        List<Op> start = new ArrayList<>();
+        List<Op> rest = new ArrayList<>(List.of(Op.IF));
+        for (Op op : Op.values()) {
+            if (op.isRoot()) {
+                start.add(op);
+            } else if (op.kind() == Op.Kind.ACTION) {
+                rest.add(op);
+            }
+        }
+        return new Op[][] {start.toArray(new Op[0]), rest.toArray(new Op[0])};
+    }
 
     private final Supplier<CompoundTag> info;
     private final Runnable changed;

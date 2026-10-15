@@ -141,6 +141,34 @@ public enum Op {
         return 1;
     }
 
+    /** Een voorbeeldgetal voor in een lijstje met suggesties: every(10), wait(2), pulse("...", 3). */
+    public int exampleSeconds() {
+        return switch (this) {
+            case EVERY -> 10;
+            case WAIT -> 2;
+            case PULSE -> 3;
+            default -> 1;
+        };
+    }
+
+    /**
+     * Een voorbeeld van hoe je dit blokje in de code schrijft. De {@code |} is waar de cursor komt
+     * (tussen de aanhalingstekens): {@code on("|")}, {@code pulse("|", 3)}, {@code wait(2)},
+     * {@code accept()}. De lijstjes van Ctrl+Spatie lezen dit, zodat een nieuw blokje daar vanzelf
+     * in komt. Niet voor DEF, CALL en IF: die zien er anders uit.
+     */
+    public String example() {
+        StringBuilder text = new StringBuilder(code).append('(');
+        boolean quotes = this.text == Arg.DEVICE || this.text == Arg.TEXT;
+        if (quotes) {
+            text.append("\"|\"");
+        }
+        if (number == Arg.SECONDS || number == Arg.OPTIONAL_SECONDS) {
+            text.append(quotes ? ", " : "").append(exampleSeconds());
+        }
+        return text.append(')').toString();
+    }
+
     /** Werken {@code accept()} en {@code deny()} hier? Alleen na een keycardlezer of codepaneel. */
     public boolean hasSourceDevice() {
         return this == KEYCARD || this == CODEPANEL;

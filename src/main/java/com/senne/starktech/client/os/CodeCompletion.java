@@ -118,36 +118,49 @@ public final class CodeCompletion {
         String reader = first(data.readers(), "Reader 1");
         String panel = first(data.panels(), "Panel 1");
         String device = first(data.outputs(), "Lamp");
-        items.add(new Item("when keycard(...):", "when keycard(\"" + reader + "\"):\n    ", -1, Op.KEYCARD.help(), TRIGGER));
-        items.add(new Item("when codepanel(...):", "when codepanel(\"" + panel + "\"):\n    ", -1, Op.CODEPANEL.help(), TRIGGER));
-        items.add(new Item("when turned_on(...):", "when turned_on(\"" + device + "\"):\n    ", -1, Op.TURNED_ON.help(), TRIGGER));
-        items.add(new Item("when turned_off(...):", "when turned_off(\"" + device + "\"):\n    ", -1, Op.TURNED_OFF.help(), TRIGGER));
-        items.add(new Item("when every(10):", "when every(10):\n    ", -1, Op.EVERY.help(), TRIGGER));
+        // Elke trigger die er is (zie Op): een nieuwe trigger staat hier vanzelf bij.
+        for (Op op : Op.values()) {
+            if (!op.isTrigger()) {
+                continue;
+            }
+            boolean named = op.textArg() != Op.Arg.NONE;
+            String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel : device;
+            String label = "when " + (named ? op.code() + "(...)" : op.example()) + ":";
+            String call = named ? op.code() + "(\"" + name + "\")" : op.example();
+            items.add(new Item(label, "when " + call + ":\n    ", -1, op.help(), TRIGGER));
+        }
         // De naam is meteen geselecteerd: typen vervangt hem.
         items.add(new Item("def name():", "def my_block():\n    ", 4, 8, Op.DEF.help(), CodeEditor.FUNCTION));
     }
 
     /** Na "when ": de triggers (de cursor komt tussen de aanhalingstekens). */
     private static void triggers(List<Item> items, Data data) {
-        items.add(new Item("keycard(\"...\"):", "keycard(\"\"):", 9, Op.KEYCARD.help(), TRIGGER));
-        items.add(new Item("codepanel(\"...\"):", "codepanel(\"\"):", 11, Op.CODEPANEL.help(), TRIGGER));
-        items.add(new Item("turned_on(\"...\"):", "turned_on(\"\"):", 11, Op.TURNED_ON.help(), TRIGGER));
-        items.add(new Item("turned_off(\"...\"):", "turned_off(\"\"):", 12, Op.TURNED_OFF.help(), TRIGGER));
-        items.add(new Item("every(10):", "every(10):", -1, Op.EVERY.help(), TRIGGER));
+        for (Op op : Op.values()) {
+            if (op.isTrigger()) {
+                items.add(item(op, ":", TRIGGER));
+            }
+        }
+    }
+
+    /**
+     * Een blokje uit Op als suggestie, met wat erachter moet ({@code suffix}, bijvoorbeeld de ":" van
+     * een trigger). De cursor komt waar de | in het voorbeeld staat (zie {@link Op#example}).
+     */
+    private static Item item(Op op, String suffix, int colour) {
+        String example = op.example();
+        return new Item(example.replace("|", "...") + suffix, example.replace("|", "") + suffix,
+                example.indexOf('|'), op.help(), colour);
     }
 
     /** Een ingesprongen regel: acties, if/elif/else/pass en je eigen defs. */
     private static void statements(List<Item> items, List<String> lines, Data data) {
-        items.add(new Item("on(\"...\")", "on(\"\")", 4, Op.ON.help(), ACTION));
-        items.add(new Item("off(\"...\")", "off(\"\")", 5, Op.OFF.help(), ACTION));
-        items.add(new Item("toggle(\"...\")", "toggle(\"\")", 8, Op.TOGGLE.help(), ACTION));
-        items.add(new Item("pulse(\"...\", 3)", "pulse(\"\", 3)", 7, Op.PULSE.help(), ACTION));
-        items.add(new Item("wait(2)", "wait(2)", -1, Op.WAIT.help(), ACTION));
-        items.add(new Item("accept()", "accept()", -1, Op.ACCEPT.help(), ACTION));
-        items.add(new Item("deny()", "deny()", -1, Op.DENY.help(), ACTION));
-        items.add(new Item("say(\"...\")", "say(\"\")", 5, Op.SAY.help(), ACTION));
-        items.add(new Item("alarm(\"...\")", "alarm(\"\")", 7, Op.ALARM.help(), ACTION));
-        items.add(new Item("log(\"...\")", "log(\"\")", 5, Op.LOG.help(), ACTION));
+        // Elke actie die er is (zie Op): een nieuwe actie staat hier vanzelf bij. Een eigen blok (CALL)
+        // staat hieronder bij de namen van je defs.
+        for (Op op : Op.values()) {
+            if (op.kind() == Op.Kind.ACTION && op != Op.CALL) {
+                items.add(item(op, "", ACTION));
+            }
+        }
         items.add(new Item("if ...:", "if :", 3, Op.IF.help(), KEYWORD));
         items.add(new Item("elif ...:", "elif :", 5, "Another check, when the if above was not true", KEYWORD));
         items.add(new Item("else:", "else:", -1, "What happens when the if above is not true", KEYWORD));

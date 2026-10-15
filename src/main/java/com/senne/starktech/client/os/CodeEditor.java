@@ -49,8 +49,17 @@ final class CodeEditor {
     /** De kleur van je eigen blokken (de naam na def, en waar je ze gebruikt). */
     static final int FUNCTION = 0xC9A0FF;
     private static final Set<String> CONSTANTS = Set.of("true", "false", "True", "False");
-    private static final Set<String> VARIABLES = Set.of("card.level", "card.number", "card.valid", "card.name", "code",
-            "player.name", "player.trusted", "player.owner", "is_night", "is_day", "is_on");
+    /** Alle gegevens die je in een voorwaarde kunt gebruiken (zie Expr.Variable), en is_on. */
+    private static final Set<String> VARIABLES = variables();
+
+    private static Set<String> variables() {
+        Set<String> names = new java.util.HashSet<>();
+        for (com.senne.starktech.logic.program.Expr.Variable variable : com.senne.starktech.logic.program.Expr.Variable.values()) {
+            names.add(variable.code());
+        }
+        names.add("is_on");
+        return names;
+    }
 
     private final Font font;
     private List<String> lines = new ArrayList<>(List.of(""));

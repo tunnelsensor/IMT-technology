@@ -2276,9 +2276,13 @@ blijven werken.
 `goto(x, y - 1, -20)`. Een naam bovenaan het programma geldt voor alle whens; in een blok alleen voor die
 ene run.
 
-- [ ] **1. Eén bron voor alle lijsten** — welke blokjes er zijn, hun uitleg en welke soort programma ze
-      mogen gebruiken, staat op één plek. Editor, palet, Help en de controles lezen daaruit. Geen
-      gedragsverandering.
+- [x] **1. Eén bron voor alle lijsten** — `Op.example()` zegt hoe je een blokje schrijft en waar de cursor
+      dan komt (`on("|")`, `pulse("|", 3)`, `wait(2)`). Ctrl+Spatie (de whens, de triggers en de acties),
+      het palet van de blokjes en de kleur van de gegevens in de editor lezen nu uit `Op` en
+      `Expr.Variable`: een nieuw blokje staat er vanzelf in. **Mijn invulling**: de Help blijft met de hand
+      geschreven, want die heeft echte voorbeelden (een hele `when keycard` met `accept()` en `deny()`); de
+      controles per soort programma komen in stap 7, samen met die soorten. Geen gedragsverandering: 220
+      tests, 217 groen (de 3 rode van hoofdstuk 14 stap 2).
 - [ ] **2. Rekenen** — `+ - * /`, haakjes, negatieve getallen, tekst plakken met `+`.
 - [ ] **3. Variabelen** — `naam = waarde`, met de regel hierboven.
 - [ ] **4. Lussen en break** — `forever:`, `repeat(n):`, `while ...:`, `break`. In de blokjes: een lus
