@@ -2295,8 +2295,11 @@ ene run.
 - [ ] **3. Variabelen** — `naam = waarde`, met de regel hierboven.
 - [ ] **4. Lussen en break** — `forever:`, `repeat(n):`, `while ...:`, `break`. In de blokjes: een lus
       met een "do"-uitgang en een "after"-uitgang.
-- [ ] **5. De tolk apart** — het uitvoeren van diagrammen komt in één `Interpreter` met stapels en
-      variabelen. De server is de eerste die hem gebruikt, met hetzelfde gedrag als nu.
+- [x] **5. De tolk apart** (vóór stap 3 gedaan: variabelen hebben hem nodig) — het aflopen van de blokjes
+      (if met yes, no en after, eigen blokken, `wait`, hooguit 64 blokjes per tick) zit nu in
+      `logic/program/Interpreter`, zonder Minecraft erin. Wat een blokje echt doet, vraagt hij aan een
+      `Host`: op de server is dat `LogicRunner.ServerHost` (relais, lampjes, E.D.I.T.H., het logboek), straks
+      ook een robot, een drone en het Training End-blok. Geen gedragsverandering: 221 tests, 218 groen.
 - [ ] **6. Meerdere waarden** — `goto(x, y - 1, -20)` en `write(laserPin, true)`, met uitdrukkingen als
       argument.
 - [ ] **7. Soorten programma's** — server, robot, drone en training-einde hebben elk hun eigen soort, zodat

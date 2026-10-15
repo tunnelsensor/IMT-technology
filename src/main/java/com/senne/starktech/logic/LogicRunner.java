@@ -3,6 +3,7 @@ package com.senne.starktech.logic;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.logic.program.ExprCache;
+import com.senne.starktech.logic.program.Interpreter;
 import com.senne.starktech.logic.program.LogicGraph;
 import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.Op;
@@ -55,10 +56,11 @@ public final class LogicRunner {
     private static final int MAX_QUEUE = 32;
     /** Zoveel triggers per seconde neemt één server hooguit aan (tegen eindeloze kettingreacties). */
     private static final int MAX_TRIGGERS_PER_SECOND = 40;
-    /** Zoveel blokjes loopt een run hooguit af in één tick (een diagram heeft nooit lussen, dus dit is ruim). */
+    /**
+     * Zoveel blokjes loopt een run hooguit af in één tick (zie Interpreter). Wat dan nog over is, doet
+     * hij de volgende tick: zo kan een lang of druk diagram de server nooit laten vastlopen.
+     */
     private static final int STEPS_PER_TICK = 64;
-    /** Zo diep mogen ifs en defs in elkaar zitten (een def die zichzelf gebruikt, mag al niet). */
-    private static final int MAX_DEPTH = 64;
     /** Zo lang (ticks) jaagt de beveiliging op wie een alarm() veroorzaakte. */
     private static final int ALARM_HUNT = 600;
     /** Om de zoveel ticks neemt de kern de namen van de apparaten over van de eigenaar. */
@@ -76,21 +78,37 @@ public final class LogicRunner {
         }
     }
 
-    /** Eén run: een vingertje dat de blokjes van één when-blok afloopt. */
+    /** Eén run: een vingertje (de tolk, zie Interpreter) dat de blokjes van één when-blok afloopt. */
     private static final class Run {
         final LogicProgram program;
         final Context context;
         final long startAt;
-        int current;
-        /** Waar het verder gaat als een tak van een if klaar is (de "after"-uitgangen). */
-        final ArrayDeque<Integer> after = new ArrayDeque<>();
-        long wakeAt;
+        final Interpreter machine;
 
         Run(LogicProgram program, int first, Context context, long startAt) {
             this.program = program;
-            this.current = first;
             this.context = context;
             this.startAt = startAt;
+            this.machine = new Interpreter(program.graph(), first);
+        }
+    }
+
+    /** Wat een blokje op de server écht doet (de tolk vraagt het hier): relais, lampjes, E.D.I.T.H., het logboek. */
+    private record ServerHost(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run)
+            implements Interpreter.Host {
+        @Override
+        public boolean test(Interpreter machine, LogicGraph.Node node) {
+            return check(level, core, runtime, run, node);
+        }
+
+        @Override
+        public void act(Interpreter machine, LogicGraph.Node node) {
+            LogicRunner.act(level, core, runtime, run, node);
+        }
+
+        @Override
+        public void report(String message) {
+            LogicRunner.report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": " + message);
         }
     }
 
@@ -235,13 +253,13 @@ public final class LogicRunner {
         // Uit de rij: zoveel als het RAM toelaat, als hun reactietijd voorbij is.
         while (!runtime.queue.isEmpty() && runtime.running.size() < stats.maxRuns() && runtime.queue.peekFirst().startAt <= now) {
             Run run = runtime.queue.removeFirst();
-            run.wakeAt = now;
+            run.machine.wakeAt(now);
             runtime.running.add(run);
         }
         Iterator<Run> it = runtime.running.iterator();
         while (it.hasNext()) {
             Run run = it.next();
-            if (run.wakeAt <= now && step(level, core, runtime, run, now)) {
+            if (run.machine.wakeAt() <= now && step(level, core, runtime, run, now)) {
                 it.remove();
             }
         }
@@ -277,62 +295,9 @@ public final class LogicRunner {
      * Loopt de blokjes van een run af tot hij moet wachten of klaar is. Geeft true als hij klaar is.
      */
     private static boolean step(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, long now) {
-        LogicGraph graph = run.program.graph();
-        for (int steps = 0; steps < STEPS_PER_TICK; steps++) {
-            runtime.steps++;
-            if (run.current < 0) {
-                if (run.after.isEmpty()) {
-                    return true;
-                }
-                run.current = run.after.pop();
-                continue;
-            }
-            LogicGraph.Node node = graph.node(run.current);
-            if (node == null || node.op.isRoot()) {
-                run.current = -1;
-                continue;
-            }
-            if (node.op == Op.CALL) {
-                // Een eigen blok: eerst zijn stappen, en daarna verder met wat na de CALL komt.
-                LogicGraph.Node def = findDef(graph, node.text);
-                if (def == null || run.after.size() >= MAX_DEPTH) {
-                    report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
-                            + (def == null ? "there is no def " + node.text : node.text + "() goes too deep"));
-                    run.current = node.next;
-                    continue;
-                }
-                if (node.next >= 0) {
-                    run.after.push(node.next);
-                }
-                run.current = def.next;
-                continue;
-            }
-            if (node.op == Op.IF) {
-                boolean yes = check(level, core, runtime, run, node);
-                if (node.next >= 0) {
-                    run.after.push(node.next);
-                }
-                run.current = yes ? node.yes : node.no;
-                continue;
-            }
-            run.current = node.next;
-            if (node.op == Op.WAIT) {
-                run.wakeAt = now + Math.max(1, Math.round(node.number * 20));
-                return false;
-            }
-            act(level, core, runtime, run, node);
-        }
-        return false;
-    }
-
-    /** Het DEF-blok met deze naam, of null. */
-    private static @Nullable LogicGraph.Node findDef(LogicGraph graph, String name) {
-        for (LogicGraph.Node node : graph.nodes()) {
-            if (node.op == Op.DEF && node.text.equals(name)) {
-                return node;
-            }
-        }
-        return null;
+        boolean done = run.machine.step(new ServerHost(level, core, runtime, run), now, STEPS_PER_TICK);
+        runtime.steps += run.machine.takeSteps(); // voor de CPU-meter van het datacenter
+        return done;
     }
 
     // ================================================================ Een if
