@@ -1265,6 +1265,38 @@ final class ShowcaseFeatures {
                     .close(20);
         });
 
+        add("Logic: names, sums and loops", "Hoofdstuk 20: de taal groeit. Hetzelfde lab, met een tweede diagram "
+                + "'Blink': count = 0 helemaal links (een naam voor het hele programma), en als de lamp aangaat telt "
+                + "het één op, zegt E.D.I.T.H. 'The lights went on 1 times' (een berekend bericht: tekst + een getal), "
+                + "en gaat de deur drie keer even open (repeat(3) met pulse en wait). Eerst de code 4321 op het "
+                + "paneel: de lamp gaat aan, E.D.I.T.H. zegt het, en de deur gaat drie keer open en dicht. Dan de app "
+                + "Logic: de code (de nieuwe woorden roze, = en + ook), en als blokjes: AT START en een geel "
+                + "SET-blokje, en het roze REPEAT-blokje met zijn uitgangen do (rechtsboven, de stappen erin) en "
+                + "after (onderaan); daarna het REPEAT-blokje gekozen (rechts: Times). Het palet rechts scrolt nu "
+                + "met het muiswiel (pijltje onderaan).",
+                Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
+            s.onServer(0, ShowcaseFeatures::buildLogicLab)
+                    .onServer(0, ShowcaseFeatures::addBlinkProgram)
+                    .lookAt(40, Vec3.atCenterOf(LOGIC_LAB.offset(3, 1, 6)))
+                    .pause(30)
+                    // De code 4321: "Lab" zet de lamp aan, en "Blink" hoort dat (when turned_on).
+                    .onServer(0, player -> {
+                        com.senne.starktech.logic.LogicEvents.clear();
+                        com.senne.starktech.logic.LogicEvents.codePanel(player.serverLevel(), LOGIC_LAB.offset(5, 1, 7),
+                                player, "4321");
+                    })
+                    .pause(130)
+                    .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, LOGIC_LAB))
+                    .step(10, () -> desktop(os -> os.tourLogic("Blink", BLINK_CODE, false)))
+                    .pause(120)
+                    .step(0, () -> desktop(os -> os.tourLogicBlocks(null)))
+                    .pause(100)
+                    .step(0, () -> desktop(os -> os.tourLogicBlocks(com.senne.starktech.logic.program.Op.REPEAT)))
+                    .pause(80)
+                    .close(20);
+        });
+
         add("The datacenter", "Hoofdstuk 9: het datacenter (in survival). Het lab van hiervoor: elk rack heeft "
                 + "zijn eigen temperatuur en dus zijn eigen fan, maar het rack rechts heeft nu RAM, een SSD en vier "
                 + "GPU's en geen fan meer. Eerst zijn scherm: zes vakjes in twee kolommen, en onderaan RACK TEMP "
@@ -1895,6 +1927,33 @@ final class ShowcaseFeatures {
                 else:
                     deny()
             """;
+
+    /**
+     * Hoofdstuk 20: een tweede diagram in het lab, met een naam voor het hele programma, een berekend
+     * bericht en een lus. Gaat de lamp aan (code 4321 op het paneel), dan telt het, zegt E.D.I.T.H. hoe
+     * vaak, en gaat de deur drie keer even open.
+     */
+    private static final String BLINK_CODE = """
+            count = 0
+
+            when turned_on("Lab lights"):
+                count = count + 1
+                say("The lights went on " + count + " times")
+                repeat(3):
+                    pulse("Lab door lock", 0.5)
+                    wait(1)
+            """;
+
+    /** Zet het diagram "Blink" (hierboven) naast "Lab" op de kern van het lab. */
+    private static void addBlinkProgram(net.minecraft.server.level.ServerPlayer player) {
+        if (player.serverLevel().getBlockEntity(LOGIC_LAB) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.logic().remove("Blink");
+            var graph = com.senne.starktech.logic.program.GraphConverter.toGraph(
+                    com.senne.starktech.logic.program.ScriptParser.parse(BLINK_CODE), null);
+            core.logic().put(null, new com.senne.starktech.logic.program.LogicProgram("Blink", true, graph, BLINK_CODE));
+            core.setChanged();
+        }
+    }
 
     /**
      * Bouwt het lab (elke keer opnieuw, zodat de showcase altijd hetzelfde laat zien): een kern met

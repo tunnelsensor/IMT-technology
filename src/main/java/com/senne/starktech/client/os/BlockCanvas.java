@@ -96,6 +96,8 @@ final class BlockCanvas {
     private float zoom = 0.75f;
     private static final float[] ZOOMS = {0.5f, 0.625f, 0.75f, 0.875f, 1.0f};
     private int selected = -1;
+    /** Hoe ver het palet rechts gescrold is (pixels): er zijn meer blokjes dan er onder elkaar passen. */
+    private int paletteScroll;
 
     // Wat de muis aan het doen is.
     private enum Drag { NONE, NODE, PAN, WIRE }
@@ -485,9 +487,32 @@ final class BlockCanvas {
 
     // ================================================================ Het palet
 
+    /** Hoe hoog alles in het palet samen is (de kopjes en de rijen knoppen). */
+    private static int paletteHeight() {
+        int height = 3;
+        for (Op[] ops : PALETTE) {
+            height += 10 + ((ops.length + 1) / 2) * 12 + 3;
+        }
+        return height;
+    }
+
+    /** Hoe ver het palet hooguit kan scrollen (0 als alles past). */
+    private int maxPaletteScroll() {
+        return Math.max(0, paletteHeight() - ch);
+    }
+
+    /** De naam van een blokje in het palet: zoals in de code, behalve AT START (in de code gewoon count = 0). */
+    private static String paletteLabel(Op op) {
+        return op == Op.GLOBAL ? "at start" : op.code();
+    }
+
     private void renderPalette(GuiGraphics g, Font font, int mx, int my) {
         OsDraw.field(g, px, cy, px + PANEL_W, cy + ch, false);
-        int y = cy + 3;
+        // Er zijn meer blokjes dan er passen: het palet scrollt (muiswiel boven het palet).
+        paletteScroll = Math.max(0, Math.min(paletteScroll, maxPaletteScroll()));
+        g.enableScissor(px + 1, cy + 1, px + PANEL_W - 1, cy + ch - 1);
+        int y = cy + 3 - paletteScroll;
+        boolean inPanel = my >= cy && my < cy + ch;
         for (int section = 0; section < PALETTE.length; section++) {
             g.drawString(font, PALETTE_HEADERS[section], px + 4, y, HudStyle.argb(255, HudStyle.ORANGE), false);
             y += 10;
@@ -495,10 +520,10 @@ final class BlockCanvas {
             for (int i = 0; i < ops.length; i++) {
                 int bx = px + 3 + (i % 2) * 54;
                 int by = y + (i / 2) * 12;
-                boolean hover = OsDraw.inside(mx, my, bx, by, 52, 11);
+                boolean hover = inPanel && OsDraw.inside(mx, my, bx, by, 52, 11);
                 g.fill(bx, by, bx + 52, by + 11, HudStyle.argb(255, hover ? 0x1E3A48 : 0x13222C));
                 g.renderOutline(bx, by, 52, 11, HudStyle.argb(hover ? 255 : 110, colour(ops[i])));
-                String label = ops[i].code();
+                String label = paletteLabel(ops[i]);
                 float scale = Math.min(1f, 48f / font.width(label));
                 g.pose().pushPose();
                 g.pose().translate(bx + 3, by + 2 + (1 - scale) * 4, 0);
@@ -511,11 +536,22 @@ final class BlockCanvas {
             }
             y += ((ops.length + 1) / 2) * 12 + 3;
         }
+        g.disableScissor();
+        // Pijltjes: er is nog meer boven of onder (scroll met het muiswiel boven het palet).
+        if (paletteScroll > 0) {
+            g.drawString(font, "▲", px + PANEL_W - 10, cy + 2, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+        if (paletteScroll < maxPaletteScroll()) {
+            g.drawString(font, "▼", px + PANEL_W - 10, cy + ch - 10, HudStyle.argb(255, OsDraw.GREY), false);
+        }
     }
 
     /** Het blokje uit het palet onder de muis, of null. */
     private @Nullable Op paletteAt(int mx, int my) {
-        int y = cy + 3;
+        if (my < cy || my >= cy + ch) {
+            return null;
+        }
+        int y = cy + 3 - paletteScroll;
         for (Op[] ops : PALETTE) {
             y += 10;
             for (int i = 0; i < ops.length; i++) {
@@ -696,7 +732,7 @@ final class BlockCanvas {
             case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";
             case TEXT -> "Message";
             case NAME -> op == Op.DEF ? "Name (letters, digits, _)" : "Def to use";
-            case VARIABLE -> "Name (letters, digits, _)";
+            case VARIABLE -> "Name";
             default -> null;
         };
     }
@@ -1048,6 +1084,11 @@ final class BlockCanvas {
 
     /** Scrollen schuift het vlak (met Shift opzij); met Ctrl zoom je in en uit. */
     void mouseScrolled(int mx, int my, double scrollY, boolean sideways, boolean zoomKey) {
+        if (mx >= px && graph.node(selected) == null) {
+            // Boven het palet: het palet scrollen (er zijn meer blokjes dan er passen).
+            paletteScroll = Math.max(0, Math.min(maxPaletteScroll(), paletteScroll - (int) Math.signum(scrollY) * 12));
+            return;
+        }
         if (zoomKey) {
             zoomStep((int) Math.signum(scrollY), mx, my);
         } else if (sideways) {

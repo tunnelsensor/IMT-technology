@@ -16,7 +16,7 @@ Afspraken die overal gelden:
 
 **Stand van zaken:** 228 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2345,11 +2345,21 @@ ene run.
       `forever`, `break`, `set` of `var`), krijgt bij het laden een andere naam (`repeat_1`, of `_2` als die
       al bestaat); de blokjes die hem gebruiken gaan mee, en de bewaarde code wordt opnieuw uit de blokjes
       geschreven (je commentaar in dat ene diagram valt dan weg). Ook een backup die je terugzet, gaat zo.
-      Eén nieuwe test (`logic_old_programs`).
+      Eén nieuwe test (`logic_old_programs`). Commit: `dfa8b87`.
 
 Tests: taaltests zonder wereld (rekenen, haakjes, typefouten, `break` buiten een lus, een variabele zonder
 waarde, code en blokjes met lussen), en runner-tests (`repeat(3)` pulst drie keer, een oneindige lus legt
 de server niet plat, een oud diagram laadt nog).
+
+- [x] **Afronding** — 228 tests: 225 groen, de 3 rode van hoofdstuk 14 stap 2 (jouw stroomwaarden). Screenshots
+      `-Ponly=logic` (`l12_logic_names_loops`: de code met namen, rekenen en een lus; `l13`: dezelfde code als
+      blokjes met AT START en SET; `l14`: het REPEAT-blokje gekozen, met "do" en "after"; `l15`: het SET-blokje
+      gekozen, met de vakken Name en Value). Op de screenshots zag ik dat het palet rechts te lang was geworden
+      (`break` viel eraf): het palet **scrolt** nu met het muiswiel (met ▲/▼ als er meer is), en het
+      AT START-blokje heet in het palet "at start" in plaats van "var". In de showcase de nieuwe functie
+      **"Logic: names, sums and loops"** na "Server racks and Logic" (het lab met een tweede diagram "Blink":
+      code 4321, E.D.I.T.H. telt mee, de deur gaat drie keer open, en dan de code en de blokjes). LEESMIJ.md,
+      "De server": rekenen, namen en lussen, met voorbeelden.
 
 ### 21. De guard robot bouwen (14 oktober)
 
@@ -2620,6 +2630,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **De taal groeit (15 oktober)**: gezien op screenshots (`l12`-`l15`), getest met 8 nieuwe tests. Probeer
+      zelf met de muis: het palet scrollen met het muiswiel, een SET-blokje met zijn vak Value, een lus-blokje
+      met "do" en "after" verbinden, en of de fouten in begrijpelijk Engels staan als je iets verkeerd typt
+      (`count has no value yet`, `break only works inside ...`).
 - [ ] **Relaisgroepen (14 oktober)**: gezien op screenshots (`rl03`-`rl061`) en in de showcase. Probeer zelf
       of slepen in de app Groups op de desktop fijn werkt (ook met veel relais, als je moet scrollen), en of
       het groepen-scherm duidelijk is: een nieuwe groep komt in de groep die je gekozen hebt.

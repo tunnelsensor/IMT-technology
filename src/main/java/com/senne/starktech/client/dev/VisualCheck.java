@@ -1861,6 +1861,43 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "l11_ctrl_space_devices");
+            // Hoofdstuk 20: namen, rekenen en lussen, in de code en als blokjes.
+            String loops = """
+                    count = 0
+
+                    when keycard("Lab door"):
+                        count = count + 1
+                        say("Card " + count + ": " + card.name)
+                        if count >= 3:
+                            repeat(3):
+                                pulse("Lab lights", 0.5)
+                                wait(1)
+                            count = 0
+                    """;
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogic("Counter", loops, false);
+                }
+            });
+            t.shot(10, "l12_logic_names_loops");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(null);
+                }
+            });
+            t.shot(10, "l13_logic_loop_blocks");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(com.senne.starktech.logic.program.Op.REPEAT);
+                }
+            });
+            t.shot(10, "l14_logic_block_repeat");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(com.senne.starktech.logic.program.Op.SET);
+                }
+            });
+            t.shot(10, "l15_logic_block_set");
             t.close(10);
         }
 

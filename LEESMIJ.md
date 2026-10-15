@@ -574,6 +574,40 @@ when keycard("Lab door"):
   Een def mag andere defs gebruiken, maar niet zichzelf. Gebruikt hij `card.level` of `accept()`,
   dan werkt hij alleen in een when die daarbij past (Check zegt het je). In de blokjes is een def
   een paars **DEF**-blok met de stappen erachter, en **use def** voert hem uit.
+- **Rekenen**: `+ - * /` met haakjes (keer en delen gaan voor), een minteken (`-20`), en met `+` plak
+  je tekst aan elkaar: `if card.level * 2 - 1 >= 5:`, `say("Level " + card.level)`. Een bericht
+  (`say`, `log`, `alarm`) en de seconden (`wait`, `pulse`) mogen een berekening zijn: `wait(delay * 2)`.
+  Een apparaat blijft gewone tekst tussen aanhalingstekens. Delen door 0 geeft 0.
+- **Namen** (variabelen): `count = 0` helemaal links is een naam voor het hele programma; hij houdt
+  zijn waarde tussen de runs (tot je het programma opnieuw bewaart). `count = count + 1` in een when of
+  def geeft hem een nieuwe waarde. Een naam die je pas in een when maakt, bestaat alleen in die run; een
+  def heeft zijn eigen namen (hij ziet de namen van de when die hem gebruikt niet). Een getal blijft een
+  getal en tekst blijft tekst.
+  ```
+  count = 0
+
+  when keycard("Lab door"):
+      count = count + 1
+      if count >= 3:
+          alarm("Three cards at the lab: " + card.name)
+          count = 0
+  ```
+- **Lussen**: `repeat(3):` doet de stappen eronder 3 keer (het aantal mag een naam of een berekening
+  zijn), `while count < 3:` zolang de voorwaarde klopt, en `forever:` steeds opnieuw. `break` springt uit
+  de binnenste lus. Een lus laat de server nooit hangen: een run doet hooguit 64 blokjes per tick en gaat
+  de volgende tick verder. Maar een `forever` zonder `wait` houdt wel een stukje RAM bezet en laat je
+  CPU's hard werken (je datacenter wordt warm): zet er een `wait` in.
+  ```
+  when turned_on("Alarm button"):
+      repeat(5):
+          pulse("Siren lamp", 0.5)
+          wait(1)
+  ```
+  In de blokjes is een lus een roze blokje met twee uitgangen: **do** (rechtsboven: de stappen erin) en
+  **after** (onderaan: wat erna komt). Een naam een waarde geven is een geel **SET**-blokje, een naam
+  helemaal links een **AT START**-blokje (met een vak voor de naam en een vak voor de waarde).
+- Had een diagram van vóór 15 oktober een def die nu een woord van de taal is (`repeat`, `while`,
+  `forever`, `break`, `set` of `var`), dan heet die def nu `repeat_1` (ook waar hij gebruikt wordt).
 
 Neemt iemand je kern over, dan krijgt hij ook je diagrammen en kaarten. De code van een codepaneel
 staat alleen in je diagram, niet in het logboek.
