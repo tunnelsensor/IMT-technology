@@ -52,6 +52,8 @@ final class BlockCanvas {
     private static final int ACTION = 0x9ED8FF;
     /** Je eigen blokken (def en het gebruik ervan). */
     private static final int FUNCTION = 0xC9A0FF;
+    /** Een naam een waarde geven (SET, en AT START helemaal links): geel, zoals gegevens in de code. */
+    private static final int VARIABLE = 0xF1E87C;
     private static final int YES = 0x5BE37D;
     private static final int NO = 0xFF5A50;
     private static final int AFTER = 0xC8D2D8;
@@ -67,7 +69,7 @@ final class BlockCanvas {
         for (Op op : Op.values()) {
             if (op.isRoot()) {
                 start.add(op);
-            } else if (op.kind() == Op.Kind.ACTION) {
+            } else if (op.kind() == Op.Kind.ACTION || op.kind() == Op.Kind.SET) {
                 rest.add(op);
             }
         }
@@ -111,6 +113,8 @@ final class BlockCanvas {
 
     private @Nullable EditBox textBox;
     private @Nullable EditBox numberBox;
+    /** De waarde van {@code naam = waarde} (SET en AT START), als code. */
+    private @Nullable EditBox exprBox;
     /** Zetten we zelf een waarde in een vak? Dan niet doen alsof jij typte. */
     private boolean filling;
 
@@ -366,13 +370,14 @@ final class BlockCanvas {
     }
 
     private static int colour(Op op) {
-        return op.isTrigger() ? TRIGGER : op == Op.IF ? IF : op == Op.DEF || op == Op.CALL ? FUNCTION : ACTION;
+        return op.isTrigger() ? TRIGGER : op == Op.IF ? IF : op == Op.DEF || op == Op.CALL ? FUNCTION
+                : op.kind() == Op.Kind.SET ? VARIABLE : ACTION;
     }
 
-    /** De titel bovenop een blokje: "WHEN keycard", "IF", "DEF", "use def", "pulse". */
+    /** De titel bovenop een blokje: "WHEN keycard", "IF", "DEF", "use def", "SET", "AT START", "pulse". */
     private static String title(Op op) {
         return op.isTrigger() ? "WHEN " + op.code() : op == Op.IF ? "IF" : op == Op.DEF ? "DEF"
-                : op == Op.CALL ? "use def" : op.code();
+                : op == Op.CALL ? "use def" : op == Op.SET ? "SET" : op == Op.GLOBAL ? "AT START" : op.code();
     }
 
     private static int darker(int rgb) {
@@ -392,6 +397,9 @@ final class BlockCanvas {
 
     /** Wat er op de tweede regel van een blokje staat: het apparaat, de seconden, de voorwaarde. */
     private static String detail(LogicGraph.Node node) {
+        if (node.op.kind() == Op.Kind.SET) {
+            return node.text + " = " + node.expr;
+        }
         return switch (node.op) {
             case EVERY -> seconds(node.number) + " s";
             case WAIT -> seconds(node.number) + " s";
@@ -414,6 +422,9 @@ final class BlockCanvas {
     private static String describe(LogicGraph.Node node) {
         if (node.op == Op.IF) {
             return "if " + node.text + ":";
+        }
+        if (node.op.kind() == Op.Kind.SET) {
+            return node.text + " = " + node.expr;
         }
         String call = com.senne.starktech.logic.program.ScriptPrinter.call(node.op, node.text, node.number);
         return node.op.isTrigger() ? "when " + call + ":" : node.op == Op.DEF ? call + ":" : call;
@@ -524,6 +535,9 @@ final class BlockCanvas {
         } else if (op == Op.CALL) {
             List<String> names = suggestions(op);
             node.text = names.isEmpty() ? "" : names.getFirst();
+        } else if (op.kind() == Op.Kind.SET) {
+            node.text = "count";
+            node.expr = op == Op.SET ? "count + 1" : "0";
         }
         edited();
         selectNode(node.id);
@@ -588,6 +602,23 @@ final class BlockCanvas {
         return numberBox;
     }
 
+    private EditBox exprBox() {
+        if (exprBox == null) {
+            exprBox = new EditBox(Minecraft.getInstance().font, 0, 0, 80, 10, Component.literal("Value"));
+            exprBox.setBordered(false);
+            exprBox.setMaxLength(Op.MAX_TEXT * 2);
+            exprBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
+            exprBox.setResponder(value -> {
+                LogicGraph.Node node = graph.node(selected);
+                if (!filling && node != null) {
+                    node.expr = value;
+                    edited();
+                }
+            });
+        }
+        return exprBox;
+    }
+
     private void selectNode(int id) {
         selected = id;
         LogicGraph.Node node = graph.node(id);
@@ -595,9 +626,12 @@ final class BlockCanvas {
         textBox().setValue(node == null ? "" : node.text);
         textBox().moveCursorToStart(false);
         numberBox().setValue(node == null ? "" : seconds(node.number));
+        exprBox().setValue(node == null ? "" : node.expr);
+        exprBox().moveCursorToStart(false);
         filling = false;
         textBox().setFocused(false);
         numberBox().setFocused(false);
+        exprBox().setFocused(false);
     }
 
     /** Hoe het tekstvak van dit blokje heet. */
@@ -609,6 +643,7 @@ final class BlockCanvas {
             case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";
             case TEXT -> "Message";
             case NAME -> op == Op.DEF ? "Name (letters, digits, _)" : "Def to use";
+            case VARIABLE -> "Name (letters, digits, _)";
             default -> null;
         };
     }
@@ -660,7 +695,19 @@ final class BlockCanvas {
         }
         if (node.op == Op.IF) {
             try {
-                Expr.parse(node.text, null);
+                Expr.parseLenient(node.text, true);
+                return null;
+            } catch (LogicException e) {
+                return e.getMessage();
+            }
+        }
+        if (node.op.kind() == Op.Kind.SET) {
+            String problem = Checks.variableProblem(node.text, java.util.Set.of());
+            if (problem != null) {
+                return problem;
+            }
+            try {
+                Expr.parseLenient(node.expr, false);
                 return null;
             } catch (LogicException e) {
                 return e.getMessage();
@@ -686,6 +733,18 @@ final class BlockCanvas {
             g.drawString(font, label, x, y, HudStyle.argb(255, HudStyle.WHITE), false);
             y += 10;
             EditBox box = textBox();
+            OsDraw.field(g, x - 1, y, px + PANEL_W - 3, y + OsDraw.BUTTON_H, box.isFocused());
+            box.setX(x + 2);
+            box.setY(y + 2);
+            box.setWidth(PANEL_W - 12);
+            box.render(g, mx, my, partialTick);
+            y += OsDraw.BUTTON_H + 3;
+        }
+        if (node.op.kind() == Op.Kind.SET) {
+            // De waarde, als code: 0, count + 1, "Level " + card.level...
+            g.drawString(font, "Value", x, y, HudStyle.argb(255, HudStyle.WHITE), false);
+            y += 10;
+            EditBox box = exprBox();
             OsDraw.field(g, x - 1, y, px + PANEL_W - 3, y + OsDraw.BUTTON_H, box.isFocused());
             box.setX(x + 2);
             box.setY(y + 2);
@@ -751,11 +810,21 @@ final class BlockCanvas {
         int y = cy + 14 + font.split(Component.literal(node.op.help()), PANEL_W - 8).size() * 9 + 3;
         textBox().setFocused(false);
         numberBox().setFocused(false);
+        exprBox().setFocused(false);
         if (textLabel(node.op) != null) {
             y += 10;
             if (OsDraw.inside(mx, my, x - 1, y, PANEL_W - 6, OsDraw.BUTTON_H)) {
                 textBox().setFocused(true);
                 textBox().mouseClicked(mx, my, 0);
+                return;
+            }
+            y += OsDraw.BUTTON_H + 3;
+        }
+        if (node.op.kind() == Op.Kind.SET) {
+            y += 10;
+            if (OsDraw.inside(mx, my, x - 1, y, PANEL_W - 6, OsDraw.BUTTON_H)) {
+                exprBox().setFocused(true);
+                exprBox().mouseClicked(mx, my, 0);
                 return;
             }
             y += OsDraw.BUTTON_H + 3;
@@ -812,6 +881,7 @@ final class BlockCanvas {
         }
         textBox().setFocused(false);
         numberBox().setFocused(false);
+        exprBox().setFocused(false);
         // De zoomknoppen rechtsboven.
         int zx = cx + cw - zoomButtonsWidth(font) - 3 + font.width(Math.round(zoom * 100) + "%") + 3;
         if (OsDraw.inside(mx, my, zx, cy + 3, OsDraw.buttonWidth(font, "-"), OsDraw.BUTTON_H)) {
@@ -933,7 +1003,7 @@ final class BlockCanvas {
     // ================================================================ Toetsen
 
     boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        for (EditBox box : new EditBox[] {textBox(), numberBox()}) {
+        for (EditBox box : new EditBox[] {textBox(), numberBox(), exprBox()}) {
             if (box.isFocused()) {
                 if (keyCode == 256 || keyCode == 257 || keyCode == 335) {
                     box.setFocused(false);
@@ -955,7 +1025,7 @@ final class BlockCanvas {
     }
 
     boolean charTyped(char codePoint, int modifiers) {
-        for (EditBox box : new EditBox[] {textBox(), numberBox()}) {
+        for (EditBox box : new EditBox[] {textBox(), numberBox(), exprBox()}) {
             if (box.isFocused()) {
                 box.charTyped(codePoint, modifiers);
                 return true;
@@ -967,5 +1037,6 @@ final class BlockCanvas {
     void blur() {
         textBox().setFocused(false);
         numberBox().setFocused(false);
+        exprBox().setFocused(false);
     }
 }

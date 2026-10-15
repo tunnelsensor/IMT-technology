@@ -16,8 +16,13 @@ public final class ScriptPrinter {
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < script.items().size(); i++) {
             Script.Top item = script.items().get(i);
-            if (i > 0) {
+            // Een lege regel tussen de blokken, maar namen bovenaan (count = 0) staan onder elkaar.
+            if (i > 0 && !(item instanceof Script.Global && script.items().get(i - 1) instanceof Script.Global)) {
                 out.append('\n');
+            }
+            if (item instanceof Script.Global global) {
+                out.append(global.name()).append(" = ").append(global.value()).append('\n');
+                continue;
             }
             if (item instanceof Script.Function function) {
                 out.append("def ").append(function.name()).append("():\n");
@@ -39,6 +44,8 @@ public final class ScriptPrinter {
                 ifStatement(out, branch, depth, "if");
             } else if (statement instanceof Script.Action action) {
                 out.append(INDENT.repeat(depth)).append(call(action.op(), action.text(), action.number())).append('\n');
+            } else if (statement instanceof Script.Assign assign) {
+                out.append(INDENT.repeat(depth)).append(assign.name()).append(" = ").append(assign.value()).append('\n');
             }
         }
     }

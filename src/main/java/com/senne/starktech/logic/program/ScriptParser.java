@@ -89,6 +89,12 @@ public final class ScriptParser {
                 items.add(function(line));
                 continue;
             }
+            if (isAssignment(line)) {
+                // count = 0 helemaal links: een naam voor het hele programma.
+                String[] parts = assignment(line);
+                items.add(new Script.Global(parts[0], parts[1], line.number()));
+                continue;
+            }
             if (!first.is("when")) {
                 Op op = first.type() == Lexer.Type.NAME ? Op.byCode(first.text()) : null;
                 boolean own = first.type() == Lexer.Type.NAME && functionNames.contains(first.text());
@@ -96,7 +102,8 @@ public final class ScriptParser {
                     throw new LogicException(line.number(), first.text()
                             + "() must be inside a when: indent it with 4 spaces under a line like when keycard(\"Lab door\"):");
                 }
-                throw new LogicException(line.number(), "Every diagram starts with when (or def), like: when keycard(\"Lab door\"):");
+                throw new LogicException(line.number(), "Every diagram starts with when (or def), like: when keycard(\"Lab door\"):"
+                        + " (a name with a value, like count = 0, may also stand at the left edge)");
             }
             Call call = call(line, 1);
             Op trigger = Op.byCode(call.name());
@@ -202,6 +209,10 @@ public final class ScriptParser {
             index++;
             return null;
         }
+        if (isAssignment(line)) {
+            String[] parts = assignment(line);
+            return new Script.Assign(parts[0], parts[1], line.number());
+        }
         Call call = call(line, 0);
         if (line.tokens().get(call.end()).type() != Lexer.Type.END) {
             Lexer.Token extra = line.tokens().get(call.end());
@@ -219,6 +230,9 @@ public final class ScriptParser {
         Op op = Op.byCode(call.name());
         if (op == Op.CALL || op == Op.DEF) {
             throw new LogicException(line.number(), "Write the name of your def with brackets, like open_door()");
+        }
+        if (op != null && op.kind() == Op.Kind.SET) {
+            throw new LogicException(line.number(), "Give a name a value with =, like count = 0");
         }
         if (op == null) {
             throw new LogicException(line.number(), unknown(call.name()));
@@ -261,6 +275,42 @@ public final class ScriptParser {
             }
         }
         return new Script.If(Expr.print(condition), yes, no, line.number());
+    }
+
+    // ================================================================ naam = waarde
+
+    /** Is dit een regel als {@code count = count + 1}: een naam, dan één =? */
+    private static boolean isAssignment(Line line) {
+        return line.first().type() == Lexer.Type.NAME && line.tokens().get(1).is("=");
+    }
+
+    /**
+     * Leest {@code naam = waarde} (hoofdstuk 20). Geeft {naam, waarde als nette code}. Of de naam al
+     * een waarde had en of de soort klopt, controleert ScriptChecker (die kent het hele diagram).
+     */
+    private String[] assignment(Line line) {
+        String name = line.first().text();
+        String problem = Checks.variableProblem(name, functionNames);
+        if (problem != null) {
+            throw new LogicException(line.number(), problem);
+        }
+        if (line.tokens().get(2).type() == Lexer.Type.END) {
+            throw new LogicException(line.number(), "Give " + name + " a value after the =, like " + name + " = 0");
+        }
+        int[] end = new int[1];
+        Expr value;
+        try {
+            value = Expr.parseValue(line.tokens(), 2, end);
+        } catch (LogicException e) {
+            throw e.atLine(line.number());
+        }
+        Lexer.Token extra = line.tokens().get(end[0]);
+        if (extra.type() != Lexer.Type.END) {
+            throw new LogicException(line.number(), extra.is(":") ? "A name with a value does not end with a :"
+                    : "I did not expect " + extra + " here");
+        }
+        index++;
+        return new String[] {name, Expr.print(value)};
     }
 
     // ================================================================ naam(...)

@@ -62,6 +62,8 @@ public final class ScriptChecker {
                         + String.join(" > ", loop) + "): that would never stop"));
             }
         }
+        // Namen (variabelen) en de soort van elke waarde, en elke voorwaarde streng nagekeken.
+        checkNames(script, functions.keySet(), problems);
         // Past elke def bij de when die hem gebruikt?
         for (Script.Handler handler : script.handlers()) {
             forEachCall(handler.body(), call -> {
@@ -76,6 +78,104 @@ public final class ScriptChecker {
         }
         problems.sort(Comparator.comparingInt(Problem::ref));
         return problems;
+    }
+
+    // ================================================================ Namen (hoofdstuk 20)
+
+    /**
+     * Loopt het diagram af in de volgorde van de code en houdt bij welke namen er op elke plek een
+     * waarde hebben, en van welke soort (getal, tekst, waar/onwaar). Zo kijken we elke if en elke
+     * {@code naam = waarde} streng na:
+     * <ul>
+     *   <li>een naam helemaal links ({@code count = 0}) geldt overal; hij mag alleen getallen, tekst en
+     *       andere namen van links gebruiken (geen {@code card.level}: er is dan nog geen kaart);</li>
+     *   <li>in een when of def bestaat een naam vanaf de regel waar hij zijn waarde krijgt; een def
+     *       ziet de namen van de when die hem gebruikt niet (zoals een functie in Python);</li>
+     *   <li>een naam houdt zijn soort: wie een getal is, kan geen tekst worden.</li>
+     * </ul>
+     */
+    private static void checkNames(Script script, Set<String> defNames, List<Problem> problems) {
+        Map<String, Expr.Type> globals = new LinkedHashMap<>();
+        for (Script.Global global : script.globals()) {
+            String problem = Checks.variableProblem(global.name(), defNames);
+            if (problem == null && globals.containsKey(global.name())) {
+                problem = "There already is a " + global.name() + " at the left edge: give it its value only once";
+            }
+            if (problem == null) {
+                try {
+                    Expr value = Expr.parseValue(global.value(), null, globals);
+                    if (!Expr.variables(value).isEmpty()) {
+                        problem = "At the left edge you can only use numbers, text and other names from the left edge"
+                                + " (like count = 0): " + Expr.variables(value).iterator().next() + " only exists inside a when";
+                    } else {
+                        globals.put(global.name(), Expr.typeOf(value));
+                    }
+                } catch (LogicException e) {
+                    problem = e.getMessage();
+                }
+            }
+            if (problem != null) {
+                problems.add(new Problem(global.ref(), problem));
+            }
+        }
+        for (Script.Top item : script.items()) {
+            if (item instanceof Script.Handler handler) {
+                checkNames(handler.body(), handler.trigger(), globals, new java.util.HashMap<>(), defNames, problems);
+            } else if (item instanceof Script.Function function) {
+                checkNames(function.body(), null, globals, new java.util.HashMap<>(), defNames, problems);
+            }
+        }
+    }
+
+    private static void checkNames(List<Script.Stmt> statements, @Nullable Op trigger, Map<String, Expr.Type> globals,
+                                   Map<String, Expr.Type> locals, Set<String> defNames, List<Problem> problems) {
+        for (Script.Stmt statement : statements) {
+            if (statement instanceof Script.If branch) {
+                try {
+                    Expr.parseCondition(branch.condition(), trigger, scope(globals, locals));
+                } catch (LogicException e) {
+                    problems.add(new Problem(branch.ref(), e.getMessage()));
+                }
+                // Een naam die in een tak een waarde krijgt, bestaat daarna ook (zoals in Python).
+                checkNames(branch.yes(), trigger, globals, locals, defNames, problems);
+                checkNames(branch.no(), trigger, globals, locals, defNames, problems);
+            } else if (statement instanceof Script.Assign assign) {
+                String problem = assignProblem(assign, trigger, globals, locals, defNames);
+                if (problem != null) {
+                    problems.add(new Problem(assign.ref(), problem));
+                }
+            }
+        }
+    }
+
+    /** Wat er mis is met {@code naam = waarde} op deze plek (en anders: de naam bestaat vanaf nu). */
+    private static @Nullable String assignProblem(Script.Assign assign, @Nullable Op trigger, Map<String, Expr.Type> globals,
+                                                  Map<String, Expr.Type> locals, Set<String> defNames) {
+        String name = assign.name();
+        String problem = Checks.variableProblem(name, defNames);
+        if (problem != null) {
+            return problem;
+        }
+        Expr.Type type;
+        try {
+            type = Expr.typeOf(Expr.parseValue(assign.value(), trigger, scope(globals, locals)));
+        } catch (LogicException e) {
+            return e.getMessage();
+        }
+        Expr.Type old = globals.containsKey(name) ? globals.get(name) : locals.get(name);
+        if (old == null) {
+            locals.put(name, type);
+        } else if (old != type && old != Expr.Type.ANY && type != Expr.Type.ANY) {
+            return name + " holds " + Expr.describe(old) + ", so you cannot give it " + Expr.describe(type);
+        }
+        return null;
+    }
+
+    /** De namen met een waarde op deze plek: die van links, en die van dit blok. */
+    private static Map<String, Expr.Type> scope(Map<String, Expr.Type> globals, Map<String, Expr.Type> locals) {
+        Map<String, Expr.Type> scope = new java.util.HashMap<>(globals);
+        scope.putAll(locals);
+        return scope;
     }
 
     /** Elke keer dat een def gebruikt wordt (ook in de takken van een if). */
@@ -142,8 +242,10 @@ public final class ScriptChecker {
                 } else if (action.op() == Op.CALL) {
                     need = need(action.text(), trigger, functions, seen);
                 }
+            } else if (statement instanceof Script.Assign assign) {
+                need = expressionNeed(assign.value(), false, trigger);
             } else if (statement instanceof Script.If branch) {
-                need = conditionNeed(branch.condition(), trigger);
+                need = expressionNeed(branch.condition(), true, trigger);
                 if (need == null) {
                     need = need(branch.yes(), trigger, functions, seen);
                 }
@@ -158,11 +260,11 @@ public final class ScriptChecker {
         return null;
     }
 
-    /** Gebruikt deze voorwaarde iets dat niet werkt onder deze trigger (zoals card.level na every)? */
-    private static @Nullable Need conditionNeed(String condition, Op trigger) {
+    /** Gebruikt deze voorwaarde of waarde iets dat niet werkt onder deze trigger (zoals card.level na every)? */
+    private static @Nullable Need expressionNeed(String text, boolean condition, Op trigger) {
         Expr expr;
         try {
-            expr = Expr.parse(condition, null);
+            expr = Expr.parseLenient(text, condition);
         } catch (LogicException e) {
             return null; // dat meldt een andere controle al
         }

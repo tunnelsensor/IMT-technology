@@ -42,6 +42,8 @@ public final class LogicGraph {
         public String text = "";
         /** Seconden (wait, pulse, every); anders 0. */
         public double number;
+        /** Een waarde als nette code: rechts van {@code count = ...} (SET en GLOBAL, hoofdstuk 20); anders leeg. */
+        public String expr = "";
         /** Waar het staat op het vlak van de blokjes-editor. */
         public int x;
         public int y;
@@ -74,15 +76,16 @@ public final class LogicGraph {
             }
         }
 
-        /** Welke uitgangen dit blokje heeft. */
+        /** Welke uitgangen dit blokje heeft. (Een naam helemaal links, GLOBAL, heeft er geen.) */
         public List<Port> ports() {
-            return op == Op.IF ? List.of(Port.YES, Port.NO, Port.NEXT) : List.of(Port.NEXT);
+            return op == Op.IF ? List.of(Port.YES, Port.NO, Port.NEXT) : op == Op.GLOBAL ? List.of() : List.of(Port.NEXT);
         }
 
         Node copy() {
             Node copy = new Node(id, op);
             copy.text = text;
             copy.number = number;
+            copy.expr = expr;
             copy.x = x;
             copy.y = y;
             copy.next = next;
@@ -258,11 +261,25 @@ public final class LogicGraph {
             Op triggerOp = root == null || root.op == Op.DEF ? null : root.op;
             String problem;
             if (node.op == Op.IF) {
+                // Hier alleen of het te lezen is; welke namen en gegevens er mogen, kijkt ScriptChecker
+                // hieronder na (die kent de volgorde van de blokjes).
                 try {
-                    Expr.parse(node.text, triggerOp);
+                    Expr.parseLenient(node.text, true);
                     problem = null;
                 } catch (LogicException e) {
                     problem = e.getMessage();
+                }
+            } else if (node.op.kind() == Op.Kind.SET) {
+                problem = Checks.variableProblem(node.text, Set.of());
+                if (problem == null && node.expr.isBlank()) {
+                    problem = "Give " + node.text + " a value, like " + node.text + " = 0";
+                }
+                if (problem == null) {
+                    try {
+                        Expr.parseLenient(node.expr, false);
+                    } catch (LogicException e) {
+                        problem = e.getMessage();
+                    }
                 }
             } else {
                 String text = node.op.textArg() == Op.Arg.NONE ? null : node.text;
@@ -310,6 +327,9 @@ public final class LogicGraph {
             if (node.number != 0) {
                 entry.putDouble("n", node.number);
             }
+            if (!node.expr.isEmpty()) {
+                entry.putString("e", node.expr);
+            }
             entry.putInt("x", node.x);
             entry.putInt("y", node.y);
             entry.putInt("nx", node.next);
@@ -344,6 +364,8 @@ public final class LogicGraph {
             if (!Double.isFinite(node.number)) {
                 node.number = 0;
             }
+            String expr = entry.getString("e"); // een diagram van vóór hoofdstuk 20 heeft hem niet: leeg
+            node.expr = expr.length() > Op.MAX_TEXT * 3 ? expr.substring(0, Op.MAX_TEXT * 3) : expr;
             node.x = entry.getInt("x");
             node.y = entry.getInt("y");
             node.next = entry.getInt("nx");

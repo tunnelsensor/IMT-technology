@@ -190,6 +190,85 @@ public final class LogicGameTests {
     }
 
     /**
+     * Namen (variabelen, hoofdstuk 20, stap 3): helemaal links voor het hele programma, in een when of
+     * def alleen voor die run. Terugschrijven, blokjes, opslaan en laden, en de foutmeldingen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_variables(GameTestHelper helper) {
+        String code = """
+                count = 0
+                limit = 3 * 2
+
+                when keycard("Lab door"):
+                    count = count + 1
+                    label = "Card " + card.name
+                    if count >= limit:
+                        alarm("Too many cards")
+                        count = 0
+
+                def reset():
+                    count = 0
+                """;
+        String printed = ScriptPrinter.print(ScriptParser.parse(code));
+        check(printed.equals(code), "Namen terugschrijven gaf andere code:\n" + printed);
+        LogicGraph graph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        check(graph.problems().isEmpty(), "De blokjes met namen hebben fouten: " + graph.problems());
+        String back = ScriptPrinter.print(GraphConverter.toScript(graph));
+        check(back.equals(code), "Van blokjes terug naar code ging mis:\n" + back);
+        // Opslaan en weer laden (de waarde staat onder "e"): hetzelfde diagram.
+        LogicGraph loaded = LogicGraph.load(graph.save());
+        check(ScriptPrinter.print(GraphConverter.toScript(loaded)).equals(code), "Na opslaan en laden was het anders");
+        // Fouten die een beginner snapt.
+        expectError("when every(5):\n    if count > 1:\n        pass", 2, "count has no value yet");
+        expectError("count = 0\nwhen every(5):\n    count = \"x\"", 3, "count holds a number");
+        expectError("when every(5):\n    on = 1", 2, "already a word of the language");
+        expectError("when keycard(\"A\"):\n    card.level = 3", 2, "not give it a value");
+        expectError("def go():\n    pass\nwhen every(5):\n    go = 1", 4, "one of your own blocks");
+        expectError("x = card.level\nwhen every(5):\n    pass", 1, "only exists inside a when");
+        expectError("when every(5):\n    if is_nigt:\n        pass", 2, "Did you mean is_night?");
+        expectError("when every(5):\n    x =", 2, "Give x a value");
+        // Een def ziet de namen van de when die hem gebruikt niet (zoals een functie in Python).
+        expectError("when every(5):\n    x = 1\n    helper()\ndef helper():\n    if x > 0:\n        pass", 5, "x has no value yet");
+        expectError("count = 0\ncount = 1\nwhen every(5):\n    pass", 2, "already is a count");
+        expectError("when keycard(\"Lab\"):\n    if card.level = 3:\n        accept()", 2, "Use == to compare");
+        helper.succeed();
+    }
+
+    /**
+     * Namen tijdens het uitvoeren: een naam van links houdt zijn waarde tussen de runs. Een timer telt
+     * elke seconde één op, en pas bij 3 gaat de lamp aan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_names")
+    public static void logic_variables_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos lamp = relay(helper, setup, new BlockPos(9, 3, 4), "Lamp");
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), setup.core());
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Counter", """
+                    count = 0
+
+                    when every(1):
+                        count = count + 1
+                        if count == 3:
+                            on("Lamp")
+                    """);
+            if (setup.core().logic().program("Counter") == null) {
+                throw new GameTestAssertException("Het diagram werd niet bewaard: " + lastLog(setup.core()));
+            }
+        });
+        // De timer gaat na 1 s voor het eerst af (plus 0,5 s reactietijd): na 2,5 s is count hooguit 2.
+        helper.runAfterDelay(50, () -> check(!level.getBlockState(lamp).getValue(RelayBlock.POWERED),
+                "De lamp ging te vroeg aan (count was nog geen 3)"));
+        helper.runAfterDelay(110, () -> {
+            check(level.getBlockState(lamp).getValue(RelayBlock.POWERED),
+                    "De lamp ging niet aan bij count 3. Logboek: " + lastLog(setup.core()));
+            helper.succeed();
+        });
+    }
+
+    /**
      * Code naar blokjes en terug geeft dezelfde code. De blokjes staan netjes (de yes-tak naast de if,
      * de no-tak eronder), en een when-blok dat niet veranderde, houdt zijn plek.
      */

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 221 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 223 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2292,7 +2292,21 @@ ene run.
       gegevens, en de Help heeft een regel over rekenen. **Mijn invulling**: delen door 0 geeft 0 (geen
       foutmelding midden in een diagram), en `true`/`false` mag je ook aan tekst plakken. Eén nieuwe test
       (`logic_arithmetic`).
-- [ ] **3. Variabelen** — `naam = waarde`, met de regel hierboven.
+- [x] **3. Variabelen** — `naam = waarde`. Helemaal links (`count = 0`) is het een naam voor het hele
+      programma: hij houdt zijn waarde tussen de runs (zolang de server draait; opnieuw bewaren zet hem
+      terug). In een when of def bestaat een naam vanaf de regel waar hij zijn waarde krijgt, en een def
+      heeft zijn eigen namen (de namen van de when die hem gebruikt, ziet hij niet, zoals een functie in
+      Python). Een naam houdt zijn soort: een getal kan geen tekst worden. Een nieuwe controle-ronde
+      (`ScriptChecker`) loopt het hele diagram af en kijkt elke `if` en elke `naam = waarde` streng na,
+      voor code én blokjes; de parser en de server lezen soepel. In de blokjes: een geel **SET**-blokje
+      (in een rij) en **AT START** (een naam helemaal links, zonder draadjes), met een vak voor de naam en
+      een vak voor de waarde. Ctrl+Spatie stelt `count = 0` voor en kent je eigen namen; de Help heeft een
+      stuk NAMES. Fouten: "count has no value yet: give it one first, like count = 0", "count holds a
+      number, so you cannot give it text", "card.level is information from E.D.I.T.H.: you can read it,
+      but not give it a value", "Did you mean is_night?". **Mijn invulling**: helemaal links mag je alleen
+      getallen, tekst en andere namen van links gebruiken (geen `card.level`: er is dan nog geen kaart).
+      Twee nieuwe tests (`logic_variables`, `logic_variables_run`: een timer telt tot 3, dan pas gaat de
+      lamp aan).
 - [ ] **4. Lussen en break** — `forever:`, `repeat(n):`, `while ...:`, `break`. In de blokjes: een lus
       met een "do"-uitgang en een "after"-uitgang.
 - [x] **5. De tolk apart** (vóór stap 3 gedaan: variabelen hebben hem nodig) — het aflopen van de blokjes
@@ -2300,6 +2314,7 @@ ene run.
       `logic/program/Interpreter`, zonder Minecraft erin. Wat een blokje echt doet, vraagt hij aan een
       `Host`: op de server is dat `LogicRunner.ServerHost` (relais, lampjes, E.D.I.T.H., het logboek), straks
       ook een robot, een drone en het Training End-blok. Geen gedragsverandering: 221 tests, 218 groen.
+      Commit: `9685b84`.
 - [ ] **6. Meerdere waarden** — `goto(x, y - 1, -20)` en `write(laserPin, true)`, met uitdrukkingen als
       argument.
 - [ ] **7. Soorten programma's** — server, robot, drone en training-einde hebben elk hun eigen soort, zodat

@@ -35,6 +35,10 @@ public final class GraphConverter {
     public static Script toScript(LogicGraph graph) {
         List<Script.Top> items = new ArrayList<>();
         for (LogicGraph.Node root : roots(graph)) {
+            if (root.op == Op.GLOBAL) {
+                items.add(new Script.Global(root.text, cleanValue(root.expr), root.id));
+                continue;
+            }
             List<Script.Stmt> body = chain(graph, root.next, new HashSet<>());
             items.add(root.op == Op.DEF ? new Script.Function(root.text, body, root.id)
                     : new Script.Handler(root.op, root.text, root.number, body, root.id));
@@ -65,6 +69,8 @@ public final class GraphConverter {
             if (node.op == Op.IF) {
                 statements.add(new Script.If(cleanCondition(node.text), chain(graph, node.yes, seen),
                         chain(graph, node.no, seen), node.id));
+            } else if (node.op == Op.SET) {
+                statements.add(new Script.Assign(node.text, cleanValue(node.expr), node.id));
             } else {
                 statements.add(new Script.Action(node.op, node.op.textArg() == Op.Arg.NONE ? "" : node.text,
                         node.op.numberArg() == Op.Arg.NONE ? 0 : node.number, node.id));
@@ -77,9 +83,18 @@ public final class GraphConverter {
     /** Een voorwaarde zoals de code hem schrijft ("card.level>=3" wordt "card.level >= 3"), als hij klopt. */
     private static String cleanCondition(String text) {
         try {
-            return Expr.print(Expr.parse(text, null));
+            return Expr.print(Expr.parseLenient(text, true));
         } catch (LogicException e) {
             return text.isBlank() ? "true" : text;
+        }
+    }
+
+    /** Een waarde zoals de code hem schrijft ("count+1" wordt "count + 1"), als hij klopt. */
+    private static String cleanValue(String text) {
+        try {
+            return Expr.print(Expr.parseLenient(text, false));
+        } catch (LogicException e) {
+            return text.isBlank() ? "0" : text;
         }
     }
 
@@ -159,6 +174,15 @@ public final class GraphConverter {
 
         void top(Script.Top item) {
             LogicGraph.Node root;
+            if (item instanceof Script.Global global) {
+                // Een naam helemaal links: één blokje zonder uitgangen.
+                root = graph.add(Op.GLOBAL, 0, 0);
+                root.text = global.name();
+                root.expr = global.value();
+                byPath.put("w", root);
+                cells.put(root, new int[] {0, 0});
+                return;
+            }
             if (item instanceof Script.Function function) {
                 root = graph.add(Op.DEF, 0, 0);
                 root.text = function.name();
@@ -194,13 +218,20 @@ public final class GraphConverter {
                     node.no = no[0];
                     rows = Math.max(rows, Math.max(1, yes[2]) + Math.max(1, no[2]));
                     c += 1 + Math.max(1, Math.max(yes[1], no[1]));
-                } else {
-                    Script.Action action = (Script.Action) statement;
+                } else if (statement instanceof Script.Assign assign) {
+                    node = graph.add(Op.SET, 0, 0);
+                    node.text = assign.name();
+                    node.expr = assign.value();
+                    cells.put(node, new int[] {c, row});
+                    c++;
+                } else if (statement instanceof Script.Action action) {
                     node = graph.add(action.op(), 0, 0);
                     node.text = action.text();
                     node.number = action.number();
                     cells.put(node, new int[] {c, row});
                     c++;
+                } else {
+                    throw new IllegalStateException("GraphConverter does not know " + statement);
                 }
                 byPath.put(path, node);
                 if (previous == null) {

@@ -85,13 +85,16 @@ public final class LogicRunner {
         final long startAt;
         final Interpreter machine;
 
-        Run(LogicProgram program, int first, Context context, long startAt) {
+        Run(LogicProgram program, int first, Context context, long startAt, Map<String, Object> globals) {
             this.program = program;
             this.context = context;
             this.startAt = startAt;
-            this.machine = new Interpreter(program.graph(), first);
+            this.machine = new Interpreter(program.graph(), first, globals);
         }
     }
+
+    /** De namen van links van één programma ({@code count = 0}), bij deze versie van dat programma. */
+    private record Globals(LogicProgram program, Map<String, Object> values) {}
 
     /** Wat een blokje op de server écht doet (de tolk vraagt het hier): relais, lampjes, E.D.I.T.H., het logboek. */
     private record ServerHost(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run)
@@ -104,6 +107,11 @@ public final class LogicRunner {
         @Override
         public void act(Interpreter machine, LogicGraph.Node node) {
             LogicRunner.act(level, core, runtime, run, node);
+        }
+
+        @Override
+        public Expr.Facts facts(Interpreter machine) {
+            return LogicRunner.facts(level, core, run);
         }
 
         @Override
@@ -127,7 +135,35 @@ public final class LogicRunner {
         boolean wasOnline = true;
         /** Hoeveel werk (blokjes en triggers) de server deed sinds de laatste meting (zie Datacenter). */
         int steps;
+        /** Per programma (naam) zijn namen van links; na opnieuw bewaren beginnen ze opnieuw. */
+        final Map<String, Globals> globals = new HashMap<>();
     }
+
+    /**
+     * De namen van links van dit programma. Bij de eerste run (of na opnieuw bewaren: dan is het een
+     * ander LogicProgram) rekenen we ze uit; daarna houden ze hun waarde tussen de runs.
+     */
+    private static Map<String, Object> globals(Runtime runtime, LogicProgram program) {
+        Globals globals = runtime.globals.get(program.name());
+        if (globals == null || globals.program() != program) {
+            globals = new Globals(program, Interpreter.initGlobals(program.graph(), NO_FACTS));
+            runtime.globals.put(program.name(), globals);
+        }
+        return globals.values();
+    }
+
+    /** Bovenaan een programma is er nog niets gebeurd: geen kaart, geen speler, alles uit. */
+    private static final Expr.Facts NO_FACTS = new Expr.Facts() {
+        @Override
+        public Object value(String variable) {
+            return false;
+        }
+
+        @Override
+        public boolean isOn(String device) {
+            return false;
+        }
+    };
 
     private static final Map<GlobalPos, Runtime> RUNTIMES = new HashMap<>();
 
@@ -155,7 +191,8 @@ public final class LogicRunner {
                     if (!allowTrigger(level, core, runtime, now)) {
                         return matched;
                     }
-                    enqueue(level, core, runtime, new Run(program, node.next, context, now + stats.reactionTicks()));
+                    enqueue(level, core, runtime, new Run(program, node.next, context, now + stats.reactionTicks(),
+                            globals(runtime, program)));
                     matched++;
                 }
             }
@@ -284,7 +321,8 @@ public final class LogicRunner {
                 } else if (now >= next) {
                     runtime.timers.put(key, now + interval);
                     if (allowTrigger(level, core, runtime, now)) {
-                        enqueue(level, core, runtime, new Run(program, node.next, Context.plain(Op.EVERY, ""), now + stats.reactionTicks()));
+                        enqueue(level, core, runtime, new Run(program, node.next, Context.plain(Op.EVERY, ""),
+                                now + stats.reactionTicks(), globals(runtime, program)));
                     }
                 }
             }
@@ -309,8 +347,16 @@ public final class LogicRunner {
                     + "\" is not valid, so it counts as no");
             return false;
         }
+        return ExprCache.test(condition, facts(level, core, run));
+    }
+
+    /**
+     * De gegevens voor een voorwaarde of een waarde: wat er gebeurde (de kaart, de code, de speler), of
+     * het nacht is, de apparaten, en de namen (variabelen) van deze run.
+     */
+    private static Expr.Facts facts(ServerLevel level, SecurityCoreBlockEntity core, Run run) {
         Context context = run.context;
-        return ExprCache.test(condition, new Expr.Facts() {
+        return new Expr.Facts() {
             @Override
             public Object value(String variable) {
                 return switch (variable) {
@@ -332,7 +378,12 @@ public final class LogicRunner {
             public boolean isOn(String device) {
                 return LogicDevices.isOn(level, core, device);
             }
-        });
+
+            @Override
+            public @Nullable Object variable(String name) {
+                return run.machine.variable(name);
+            }
+        };
     }
 
     // ================================================================ Een actie

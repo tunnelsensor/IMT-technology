@@ -32,6 +32,12 @@ public final class Checks {
                     return problem;
                 }
             }
+            case VARIABLE -> {
+                String problem = variableProblem(text, java.util.Set.of());
+                if (problem != null) {
+                    return problem;
+                }
+            }
             default -> {
                 if (text != null) {
                     return op.code() + " does not take a name";
@@ -90,6 +96,35 @@ public final class Checks {
         return null;
     }
 
+    /**
+     * Mag een naam (een variabele, hoofdstuk 20) zo heten? Net als een def: letters, cijfers en _ (niet
+     * met een cijfer beginnen), geen woord van de taal, geen gegeven van E.D.I.T.H. (zoals
+     * {@code card.level}), en niet de naam van een van je eigen blokken. Geeft de fout, of null.
+     */
+    public static @Nullable String variableProblem(@Nullable String name, java.util.Collection<String> defNames) {
+        if (name == null || name.isBlank()) {
+            return "A name needs letters, like count";
+        }
+        if (name.contains(".")) {
+            return Expr.Variable.byName(name) != null
+                    ? name + " is information from E.D.I.T.H.: you can read it, but not give it a value"
+                    : "\"" + name + "\": a name may not have a dot (only E.D.I.T.H.'s own information has one, like card.level)";
+        }
+        if (name.length() > MAX_NAME) {
+            return "That name is too long (at most " + MAX_NAME + " letters)";
+        }
+        if (!name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            return "\"" + name + "\": a name may only have letters, digits and _ (and must not start with a digit), like count";
+        }
+        if (RESERVED.contains(name) || Op.byCode(name) != null || Expr.Variable.byName(name) != null) {
+            return "\"" + name + "\" is already a word of the language: pick another name, like my_" + name;
+        }
+        if (defNames.contains(name)) {
+            return "\"" + name + "\" is one of your own blocks (def): pick another name";
+        }
+        return null;
+    }
+
     /** Mag deze actie onder deze trigger? accept() en deny() alleen na een lezer of paneel. */
     public static @Nullable String contextProblem(Op action, @Nullable Op trigger) {
         if ((action == Op.ACCEPT || action == Op.DENY) && trigger != null && !trigger.hasSourceDevice()) {
@@ -105,13 +140,19 @@ public final class Checks {
     public static @Nullable String suggest(String word, java.util.Collection<String> ownNames) {
         java.util.List<String> known = new java.util.ArrayList<>(ownNames);
         for (Op op : Op.values()) {
-            if (op != Op.DEF && op != Op.CALL && op != Op.IF) {
+            // Blokjes die je niet als naam(...) typt, raden we niet.
+            if (op != Op.DEF && op != Op.CALL && op != Op.IF && op.kind() != Op.Kind.SET) {
                 known.add(op.code());
             }
         }
+        return closest(word, known);
+    }
+
+    /** De naam uit {@code names} die het meest op {@code word} lijkt (hooguit 2 letters anders), of null. */
+    public static @Nullable String closest(String word, java.util.Collection<String> names) {
         String best = null;
         int bestDistance = 3;
-        for (String name : known) {
+        for (String name : names) {
             int distance = distance(word.toLowerCase(java.util.Locale.ROOT), name.toLowerCase(java.util.Locale.ROOT));
             if (distance < bestDistance) {
                 bestDistance = distance;

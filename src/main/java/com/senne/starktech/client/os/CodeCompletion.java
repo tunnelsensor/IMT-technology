@@ -61,6 +61,8 @@ public final class CodeCompletion {
     private static final int NAME = 0x6BE88B;
     private static final Pattern DEF = Pattern.compile("^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern WHEN = Pattern.compile("^when\\s+([A-Za-z_]+)\\s*\\(");
+    /** {@code count = ...} (één =, geen ==): een naam die een waarde krijgt. */
+    private static final Pattern ASSIGN = Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*=(?!=)");
 
     public static Result complete(List<String> lines, int line, int col, Data data) {
         String text = lines.get(line);
@@ -103,10 +105,10 @@ public final class CodeCompletion {
         } else if (trimmed.equals("def")) {
             return new Result(start, List.of(), false); // een nieuwe naam: die verzin je zelf
         } else if (isConditionContext(trimmed)) {
-            conditions(items, triggerAbove(lines, line), data);
+            conditions(items, lines, triggerAbove(lines, line), data);
         } else {
             statements(items, lines, data);
-            conditions(items, triggerAbove(lines, line), data);
+            conditions(items, lines, triggerAbove(lines, line), data);
         }
         return new Result(start, filter(items, prefix), false);
     }
@@ -131,6 +133,7 @@ public final class CodeCompletion {
         }
         // De naam is meteen geselecteerd: typen vervangt hem.
         items.add(new Item("def name():", "def my_block():\n    ", 4, 8, Op.DEF.help(), CodeEditor.FUNCTION));
+        items.add(new Item("name = value", "count = 0", 0, 5, Op.GLOBAL.help(), VARIABLE));
     }
 
     /** Na "when ": de triggers (de cursor komt tussen de aanhalingstekens). */
@@ -161,6 +164,7 @@ public final class CodeCompletion {
                 items.add(item(op, "", ACTION));
             }
         }
+        items.add(new Item("name = value", "count = count + 1", 0, 5, Op.SET.help(), VARIABLE));
         items.add(new Item("if ...:", "if :", 3, Op.IF.help(), KEYWORD));
         items.add(new Item("elif ...:", "elif :", 5, "Another check, when the if above was not true", KEYWORD));
         items.add(new Item("else:", "else:", -1, "What happens when the if above is not true", KEYWORD));
@@ -171,12 +175,15 @@ public final class CodeCompletion {
         }
     }
 
-    /** Na if/and/or/not of een vergelijking: de gegevens die onder deze trigger werken. */
-    private static void conditions(List<Item> items, @Nullable Op trigger, Data data) {
+    /** Na if/and/or/not of een vergelijking: de gegevens die onder deze trigger werken, en je eigen namen. */
+    private static void conditions(List<Item> items, List<String> lines, @Nullable Op trigger, Data data) {
         for (Expr.Variable variable : Expr.Variable.values()) {
             if (variable.allowedAfter(trigger)) {
                 items.add(new Item(variable.code(), variable.code(), -1, variable.help(), VARIABLE));
             }
+        }
+        for (String name : ownNames(lines)) {
+            items.add(new Item(name, name, -1, "One of your own names (it got a value with " + name + " = ...)", VARIABLE));
         }
         items.add(new Item("is_on(\"...\")", "is_on(\"\")", 7, "Is that device switched on right now?", VARIABLE));
         items.add(new Item("not", "not ", -1, "The opposite: not is_night", KEYWORD));
@@ -217,6 +224,18 @@ public final class CodeCompletion {
             return null; // een def (of iets anders aan de linkerkant): alles mag
         }
         return null;
+    }
+
+    /** De namen die ergens in de code een waarde krijgen ({@code count = ...}), in de volgorde van de code. */
+    static Set<String> ownNames(List<String> lines) {
+        Set<String> names = new LinkedHashSet<>();
+        for (String text : lines) {
+            Matcher name = ASSIGN.matcher(text);
+            if (name.find() && Op.byCode(name.group(1)) == null) {
+                names.add(name.group(1));
+            }
+        }
+        return names;
     }
 
     /** De namen van alle defs in de code. */

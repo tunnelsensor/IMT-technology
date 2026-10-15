@@ -5,13 +5,15 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Alle blokjes die je in een diagram kunt gebruiken, met hun naam in de code (Python-achtig, jouw
- * diagram-taal van 7 oktober). Er zijn vier soorten:
+ * diagram-taal van 7 oktober). Er zijn vijf soorten:
  * <ul>
  *   <li><b>triggers</b> ("when ..."): waar een diagram mee begint;</li>
  *   <li><b>def</b>: je eigen blok, een rijtje acties met een naam (jouw wens: "functions, zodat je
  *       meerdere triggers hetzelfde kunt laten doen"); je gebruikt het met {@code naam()} (CALL);</li>
  *   <li><b>if</b>: een keuze met een "yes"- en een "no"-uitgang;</li>
- *   <li><b>acties</b>: wat de server doet (een relais aan, wachten, een alarm...).</li>
+ *   <li><b>acties</b>: wat de server doet (een relais aan, wachten, een alarm...);</li>
+ *   <li><b>namen</b> (variabelen, hoofdstuk 20): {@code count = count + 1}, of helemaal links
+ *       {@code count = 0} voor het hele programma.</li>
  * </ul>
  * Elk blokje zegt welke gegevens het nodig heeft: een naam (tekst tussen aanhalingstekens) en/of
  * een getal (seconden).
@@ -43,13 +45,28 @@ public enum Op {
     DENY(Kind.ACTION, "deny", Arg.NONE, Arg.NONE, "Red light and a buzz on the reader or panel"),
     SAY(Kind.ACTION, "say", Arg.TEXT, Arg.NONE, "E.D.I.T.H. tells the owner something"),
     ALARM(Kind.ACTION, "alarm", Arg.TEXT, Arg.NONE, "Alarm: E.D.I.T.H. warns the owner and the security hunts the player"),
-    LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log");
+    LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log"),
 
-    /** Wat voor blokje. */
-    public enum Kind { TRIGGER, DEF, IF, ACTION }
+    // ---------------------------------------------------------------- Namen (variabelen, hoofdstuk 20)
+    /**
+     * {@code count = count + 1} in een when of def: een naam een waarde geven. De tekst is de naam,
+     * {@code expr} van het blokje de waarde (als nette code).
+     */
+    SET(Kind.SET, "set", Arg.VARIABLE, Arg.NONE, "Give a name a value, like count = count + 1"),
+    /**
+     * {@code count = 0} helemaal links: een naam voor het hele programma (alle whens en defs). Hij
+     * houdt zijn waarde tussen de runs, zolang de server draait. Een wortel zonder uitgangen.
+     */
+    GLOBAL(Kind.SET, "var", Arg.VARIABLE, Arg.NONE, "A name for the whole program, at the left edge, like count = 0");
 
-    /** Wat voor gegevens. DEVICE, TEXT en NAME (van een def) zijn tekst, SECONDS een getal. */
-    public enum Arg { NONE, DEVICE, TEXT, NAME, SECONDS, OPTIONAL_SECONDS }
+    /** Wat voor blokje. SET = een naam een waarde geven (SET en GLOBAL). */
+    public enum Kind { TRIGGER, DEF, IF, ACTION, SET }
+
+    /**
+     * Wat voor gegevens. DEVICE, TEXT en NAME (van een def) zijn tekst, SECONDS een getal, VARIABLE
+     * de naam van een variabele (de waarde staat dan apart, als code).
+     */
+    public enum Arg { NONE, DEVICE, TEXT, NAME, SECONDS, OPTIONAL_SECONDS, VARIABLE }
 
     /** Zo lang mag een tekst (say, alarm, log) of een naam hooguit zijn. */
     public static final int MAX_TEXT = 80;
@@ -101,7 +118,7 @@ public enum Op {
      * rij die niet aan zo'n begin hangt, ligt los.
      */
     public boolean isRoot() {
-        return kind == Kind.TRIGGER || kind == Kind.DEF;
+        return kind == Kind.TRIGGER || kind == Kind.DEF || this == GLOBAL;
     }
 
     /** Het blokje met deze naam in de code, of null. */

@@ -35,10 +35,24 @@ public record Script(List<Top> items) {
     /** Eén "def naam():" (je eigen blok) met de regels eronder. */
     public record Function(String name, List<Stmt> body, int ref) implements Top {}
 
-    /** Een regel onder een when of def: een actie of een if. */
+    /**
+     * {@code count = 0} helemaal links (hoofdstuk 20): een naam voor het hele programma. {@code value}
+     * is de waarde als nette code. Er staan geen regels onder.
+     */
+    public record Global(String name, String value, int ref) implements Top {
+        @Override
+        public List<Stmt> body() {
+            return List.of();
+        }
+    }
+
+    /** Een regel onder een when of def: een actie, een if, of een naam een waarde geven. */
     public sealed interface Stmt {
         int ref();
     }
+
+    /** {@code count = count + 1} (hoofdstuk 20): een naam een waarde geven. {@code value} is nette code. */
+    public record Assign(String name, String value, int ref) implements Stmt {}
 
     /**
      * Een actie, zoals {@code pulse("Vault door", 3)}. {@code text} is leeg en {@code number} 0 als hij
@@ -58,6 +72,17 @@ public record Script(List<Top> items) {
             }
         }
         return handlers;
+    }
+
+    /** Alle namen helemaal links ({@code count = 0}), in de volgorde van de code. */
+    public List<Global> globals() {
+        List<Global> globals = new ArrayList<>();
+        for (Top item : items) {
+            if (item instanceof Global global) {
+                globals.add(global);
+            }
+        }
+        return globals;
     }
 
     /** Alle eigen blokken (defs), in de volgorde van de code. */

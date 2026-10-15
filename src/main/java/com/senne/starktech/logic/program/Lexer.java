@@ -107,7 +107,10 @@ public final class Lexer {
                     tokens.add(new Token(Type.SYMBOL, String.valueOf(c), 0, i));
                     i++;
                 } else if (c == '=') {
-                    throw new LogicException("Use == to compare (one = is not allowed here)");
+                    // Eén = geeft een naam een waarde (count = 0). In een if zegt de voorwaarde zelf
+                    // "Use == to compare".
+                    tokens.add(new Token(Type.SYMBOL, "=", 0, i));
+                    i++;
                 } else if (c == '&' || c == '|' || c == '!') {
                     throw new LogicException("Use the words and, or, not instead of " + c);
                 } else {

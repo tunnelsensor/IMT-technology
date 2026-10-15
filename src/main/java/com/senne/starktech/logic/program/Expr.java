@@ -15,6 +15,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>netjes terugschrijven als tekst ({@link #print});</li>
  *   <li>uitrekenen op de server ({@link #test}), met de gegevens van wat er net gebeurde.</li>
  * </ul>
+ * Sinds hoofdstuk 20 is het ook een waarde, zoals rechts van {@code count = count + 1}: rekenen
+ * ({@link Arith}) en je eigen namen ({@link Ref}).
  */
 public sealed interface Expr {
     record Or(Expr left, Expr right) implements Expr {}
@@ -46,8 +48,17 @@ public sealed interface Expr {
      */
     record Arith(Expr left, char op, Expr right) implements Expr {}
 
-    /** De soorten waarden: een getal, tekst, of waar/onwaar. */
-    enum Type { NUMBER, TEXT, BOOL }
+    /**
+     * Een naam die je zelf een waarde gaf (een variabele, hoofdstuk 20): {@code count}. {@code type}
+     * is wat erin zit; ANY als we dat pas bij het uitvoeren weten.
+     */
+    record Ref(String name, Type type) implements Expr {}
+
+    /**
+     * De soorten waarden: een getal, tekst, of waar/onwaar. ANY = "pas bij het uitvoeren bekend" (zoals
+     * een variabele als we de code soepel lezen): die mag overal, de echte controle komt elders.
+     */
+    enum Type { NUMBER, TEXT, BOOL, ANY }
 
     /**
      * Alle gegevens die je in een voorwaarde kunt gebruiken, met hun soort, en bij welke trigger ze
@@ -106,24 +117,58 @@ public sealed interface Expr {
     // ================================================================ Lezen
 
     /**
-     * Leest een voorwaarde uit tekst. {@code trigger} is de trigger waar hij onder hangt (null = nog
-     * onbekend, bijvoorbeeld een los blokje): dan weten we welke gegevens er zijn. Gooit een
-     * LogicException met uitleg als hij niet klopt.
+     * Leest een voorwaarde uit tekst, zonder variabelen. {@code trigger} is de trigger waar hij onder
+     * hangt (null = nog onbekend, bijvoorbeeld een los blokje): dan weten we welke gegevens er zijn.
+     * Gooit een LogicException met uitleg als hij niet klopt.
      */
     static Expr parse(String text, @Nullable Op trigger) {
-        List<Lexer.Token> tokens = Lexer.tokens(text);
-        Parser parser = new Parser(tokens, 0, trigger);
-        Expr expr = parser.parse();
+        return parseCondition(text, trigger, java.util.Map.of());
+    }
+
+    /**
+     * Streng lezen (voor de controle, zie ScriptChecker): een voorwaarde met de namen die op die plek
+     * een waarde hebben ({@code scope}: naam en soort). Een gegeven dat niet bij de trigger hoort
+     * ({@code code} onder {@code when keycard}) of een naam zonder waarde geeft een fout.
+     */
+    public static Expr parseCondition(String text, @Nullable Op trigger, java.util.Map<String, Type> scope) {
+        return whole(text, new Parser(Lexer.tokens(text), 0, trigger, scope), true);
+    }
+
+    /** Streng lezen, zoals {@link #parseCondition}, maar een waarde van elke soort (rechts van een =). */
+    public static Expr parseValue(String text, @Nullable Op trigger, java.util.Map<String, Type> scope) {
+        return whole(text, new Parser(Lexer.tokens(text), 0, trigger, scope), false);
+    }
+
+    /**
+     * Soepel lezen: een naam die we niet kennen (zonder punt) is een variabele waarvan we de soort nog
+     * niet weten, en of een gegeven bij de trigger hoort, controleren we niet. Zo lezen de parser en de
+     * server een diagram; de strenge controle doet ScriptChecker. {@code condition}: moet het waar of
+     * onwaar zijn (een if)?
+     */
+    public static Expr parseLenient(String text, boolean condition) {
+        return whole(text, new Parser(Lexer.tokens(text), 0, null, null), condition);
+    }
+
+    private static Expr whole(String text, Parser parser, boolean condition) {
+        Expr expr = parser.parse(condition);
         if (parser.peek().type() != Lexer.Type.END) {
             throw new LogicException("I did not expect " + parser.peek() + " here");
         }
         return expr;
     }
 
-    /** Leest een voorwaarde uit een stuk van een regel (na "if", tot de ":"). */
+    /** Leest een voorwaarde (soepel) uit een stuk van een regel (na "if", tot de ":"). */
     static Expr parse(List<Lexer.Token> tokens, int start, @Nullable Op trigger, int[] end) {
-        Parser parser = new Parser(tokens, start, trigger);
-        Expr expr = parser.parse();
+        Parser parser = new Parser(tokens, start, trigger, null);
+        Expr expr = parser.parse(true);
+        end[0] = parser.pos;
+        return expr;
+    }
+
+    /** Leest een waarde (soepel) uit een stuk van een regel: wat rechts van {@code naam =} staat. */
+    static Expr parseValue(List<Lexer.Token> tokens, int start, int[] end) {
+        Parser parser = new Parser(tokens, start, null, null);
+        Expr expr = parser.parse(false);
         end[0] = parser.pos;
         return expr;
     }
@@ -133,11 +178,14 @@ public sealed interface Expr {
         private final List<Lexer.Token> tokens;
         private int pos;
         private final @Nullable Op trigger;
+        /** De variabelen die hier een waarde hebben (naam en soort), of null = soepel lezen. */
+        private final java.util.@Nullable Map<String, Type> scope;
 
-        Parser(List<Lexer.Token> tokens, int start, @Nullable Op trigger) {
+        Parser(List<Lexer.Token> tokens, int start, @Nullable Op trigger, java.util.@Nullable Map<String, Type> scope) {
             this.tokens = tokens;
             this.pos = start;
             this.trigger = trigger;
+            this.scope = scope;
         }
 
         Lexer.Token peek() {
@@ -150,12 +198,16 @@ public sealed interface Expr {
             return token;
         }
 
-        Expr parse() {
+        /** Het geheel: een voorwaarde ({@code condition}: waar of onwaar) of een waarde (van elke soort). */
+        Expr parse(boolean condition) {
             if (peek().type() == Lexer.Type.END || peek().is(":")) {
-                throw new LogicException("The if is missing what to check, like: if card.level >= 3:");
+                throw new LogicException(condition ? "The if is missing what to check, like: if card.level >= 3:"
+                        : "Something is missing here: a number, a text or a name, like 0");
             }
             Expr expr = or();
-            requireType(expr, Type.BOOL, "The check after if must be true or false");
+            if (condition) {
+                requireType(expr, Type.BOOL, "The check after if must be true or false");
+            }
             return expr;
         }
 
@@ -195,6 +247,9 @@ public sealed interface Expr {
 
         private Expr compare() {
             Expr left = sum();
+            if (peek().is("=")) {
+                throw new LogicException("Use == to compare (one = is not allowed here)");
+            }
             Lexer.Token token = peek();
             if (token.type() == Lexer.Type.SYMBOL && List.of("==", "!=", "<", "<=", ">", ">=").contains(token.text())) {
                 next();
@@ -230,7 +285,7 @@ public sealed interface Expr {
             if (peek().is("-")) {
                 next();
                 Expr inner = unary();
-                if (typeOf(inner) != Type.NUMBER) {
+                if (typeOf(inner) != Type.NUMBER && typeOf(inner) != Type.ANY) {
                     throw new LogicException("A - in front only works with a number, like -20");
                 }
                 return inner instanceof Num num ? new Num(-num.value()) : new Neg(inner);
@@ -245,10 +300,10 @@ public sealed interface Expr {
         private static Expr arith(Expr left, char op, Expr right) {
             Type a = typeOf(left);
             Type b = typeOf(right);
-            if (op == '+' && (a == Type.TEXT || b == Type.TEXT)) {
+            if (op == '+' && (a == Type.TEXT || b == Type.TEXT || a == Type.ANY || b == Type.ANY)) {
                 return new Arith(left, op, right);
             }
-            if (a != Type.NUMBER || b != Type.NUMBER) {
+            if (a != Type.NUMBER && a != Type.ANY || b != Type.NUMBER && b != Type.ANY) {
                 throw new LogicException(switch (op) {
                     case '+' -> "You can only add numbers (or glue text together with +)";
                     case '-' -> "You can only subtract numbers";
@@ -312,15 +367,44 @@ public sealed interface Expr {
                 }
             }
             Variable variable = Variable.byName(word);
+            if (variable == null && !word.contains(".")) {
+                return reference(word);
+            }
             if (variable == null) {
                 throw new LogicException("I don't know \"" + word + "\". You can use: " + known());
             }
-            if (!variable.allowedAfter(trigger)) {
+            if (scope != null && !variable.allowedAfter(trigger)) {
                 String where = variable.only != null ? "when " + variable.only.code() + "(...)"
                         : "when keycard(...) or when codepanel(...)";
                 throw new LogicException(word + " only works inside " + where);
             }
             return new Var(word);
+        }
+
+        /**
+         * Een naam zonder punt die geen gegeven van E.D.I.T.H. is: een variabele. Soepel gelezen weten we
+         * zijn soort nog niet (ANY); streng moet hij hier al een waarde hebben.
+         */
+        private Expr reference(String word) {
+            if (scope == null) {
+                return new Ref(word, Type.ANY);
+            }
+            Type type = scope.get(word);
+            if (type != null) {
+                return new Ref(word, type);
+            }
+            // Een tikfout in een gegeven of in een van je eigen namen? Dan zeggen we dat.
+            List<String> names = new java.util.ArrayList<>(scope.keySet());
+            for (Variable variable : Variable.values()) {
+                if (variable.allowedAfter(trigger)) {
+                    names.add(variable.name);
+                }
+            }
+            String guess = Checks.closest(word, names);
+            if (guess != null) {
+                throw new LogicException("I don't know \"" + word + "\". Did you mean " + guess + "?");
+            }
+            throw new LogicException(word + " has no value yet: give it one first, like " + word + " = 0");
         }
 
         /** Welke gegevens je hier kunt gebruiken (voor de foutmelding). */
@@ -341,6 +425,9 @@ public sealed interface Expr {
                     || right instanceof Var var2 && var2.name().equals("code") && a == Type.NUMBER) {
                 throw new LogicException("code is text: put the code between quotes, like code == \"4321\"");
             }
+            if (a == Type.ANY || b == Type.ANY) {
+                return; // pas bij het uitvoeren bekend
+            }
             if (a != b) {
                 throw new LogicException("You cannot compare " + describe(a) + " with " + describe(b));
             }
@@ -350,18 +437,21 @@ public sealed interface Expr {
         }
 
         private static void requireType(Expr expr, Type wanted, String message) {
-            if (typeOf(expr) != wanted) {
+            Type type = typeOf(expr);
+            if (type != wanted && type != Type.ANY) {
                 throw new LogicException(message);
             }
         }
+    }
 
-        private static String describe(Type type) {
-            return switch (type) {
-                case NUMBER -> "a number";
-                case TEXT -> "text";
-                case BOOL -> "true/false";
-            };
-        }
+    /** Een soort in begrijpelijk Engels: "a number", "text", "true/false". */
+    static String describe(Type type) {
+        return switch (type) {
+            case NUMBER -> "a number";
+            case TEXT -> "text";
+            case BOOL -> "true/false";
+            case ANY -> "a value";
+        };
     }
 
     /** Alle gegevens (card.level, code, player.name...) die in deze voorwaarde voorkomen. */
@@ -403,10 +493,20 @@ public sealed interface Expr {
             case Str s -> Type.TEXT;
             case Var v -> Variable.byName(v.name()) == null ? Type.BOOL : Variable.byName(v.name()).type;
             case Neg n -> Type.NUMBER;
-            case Arith a -> a.op() == '+' && (typeOf(a.left()) == Type.TEXT || typeOf(a.right()) == Type.TEXT)
-                    ? Type.TEXT : Type.NUMBER;
+            case Arith a -> arithType(a);
+            case Ref r -> r.type();
             default -> Type.BOOL;
         };
+    }
+
+    /** + met tekst is tekst; + met iets onbekends is onbekend; de rest is een getal. */
+    private static Type arithType(Arith a) {
+        Type left = typeOf(a.left());
+        Type right = typeOf(a.right());
+        if (a.op() == '+' && (left == Type.TEXT || right == Type.TEXT)) {
+            return Type.TEXT;
+        }
+        return a.op() == '+' && (left == Type.ANY || right == Type.ANY) ? Type.ANY : Type.NUMBER;
     }
 
     // ================================================================ Terugschrijven
@@ -442,6 +542,7 @@ public sealed interface Expr {
             case Str s -> quote(s.value());
             case Bool b -> b.value() ? "true" : "false";
             case Var v -> v.name();
+            case Ref r -> r.name();
             case IsOn i -> "is_on(" + quote(i.device()) + ")";
         };
         return strength(expr) < needed ? "(" + text + ")" : text;
@@ -473,11 +574,21 @@ public sealed interface Expr {
 
         /** Staat het apparaat met deze naam aan? */
         boolean isOn(String device);
+
+        /** De waarde van een van je eigen namen (variabelen), of null als hij (nog) geen waarde heeft. */
+        default @Nullable Object variable(String name) {
+            return null;
+        }
     }
 
     /** Is deze voorwaarde nu waar? */
     static boolean test(Expr expr, Facts facts) {
         return Boolean.TRUE.equals(eval(expr, facts));
+    }
+
+    /** Wat deze uitdrukking nu waard is: een Double, een String of een Boolean. */
+    static Object value(Expr expr, Facts facts) {
+        return eval(expr, facts);
     }
 
     private static Object eval(Expr expr, Facts facts) {
@@ -493,6 +604,11 @@ public sealed interface Expr {
             case IsOn i -> facts.isOn(i.device());
             case Neg n -> -toNumber(eval(n.inner(), facts));
             case Arith a -> arith(eval(a.left(), facts), a.op(), eval(a.right(), facts));
+            case Ref r -> {
+                Object value = facts.variable(r.name());
+                // Nog geen waarde (kan alleen bij vreemde blokjes): dan de "lege" waarde van zijn soort.
+                yield value != null ? value : r.type() == Type.TEXT ? "" : r.type() == Type.BOOL ? (Object) false : (Object) 0.0;
+            }
         };
     }
 

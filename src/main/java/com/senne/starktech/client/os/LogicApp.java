@@ -644,6 +644,13 @@ final class LogicApp {
                 "calculate with + - * / and brackets (* and / go first); + also glues text: \"Level \" + card.level",
                 HudStyle.WHITE, null));
         lines.add(new HelpLine("else: / elif ...:", "else:\n    pass", "what happens when the if is not true", HudStyle.WHITE, null));
+        lines.add(header("NAMES (variables)"));
+        lines.add(new HelpLine("count = 0", "count = 0\n",
+                "At the left edge: a name for the whole program. It keeps its value between runs.", 0xF1E87C, null));
+        lines.add(new HelpLine("count = count + 1", "count = count + 1",
+                "Inside a when or def: give a name a (new) value. A def has its own names.", 0xF1E87C, null));
+        lines.add(new HelpLine("if count >= 3:", "if count >= 3:\n    pass",
+                "Use your name like card.level. A number stays a number, text stays text.", HudStyle.WHITE, null));
         lines.add(header("YOUR OWN BLOCKS (def)"));
         lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",
                 "Write steps once (at the left edge), then use them in many whens with open_door()", 0xC9A0FF, null));
