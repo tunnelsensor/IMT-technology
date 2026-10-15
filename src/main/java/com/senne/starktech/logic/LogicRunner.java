@@ -398,7 +398,11 @@ public final class LogicRunner {
                     case TOGGLE -> EdithRedstone.Op.TOGGLE;
                     default -> EdithRedstone.Op.PULSE;
                 };
-                int pulseTicks = (int) Math.max(1, Math.round(node.number * 20));
+                // Berekende seconden (pulse("Lamp", delay)) houden we tussen 0,05 en 60 s.
+                double seconds = node.op == Op.PULSE && !node.expr.isEmpty()
+                        ? Math.max(Op.PULSE.minSeconds(), Math.min(Op.PULSE.maxSeconds(), number(level, core, run, node.expr)))
+                        : node.number;
+                int pulseTicks = (int) Math.max(1, Math.round(seconds * 20));
                 if (LogicDevices.switchByName(level, core, node.text, op, pulseTicks) == 0) {
                     report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": there is no device called \""
                             + node.text + "\" in this network");
@@ -413,16 +417,39 @@ public final class LogicRunner {
                 }
             }
             case SAY -> {
-                core.logEvent(EventLog.Type.LOGIC, node.text);
+                String message = message(level, core, run, node);
+                core.logEvent(EventLog.Type.LOGIC, message);
                 ServerPlayer owner = owner(level, core);
                 if (owner != null) {
-                    EdithServer.send(owner, Component.literal(node.text), EdithMessagePayload.Level.INFO);
+                    EdithServer.send(owner, Component.literal(message), EdithMessagePayload.Level.INFO);
                 }
             }
-            case LOG -> core.logEvent(EventLog.Type.LOGIC, node.text);
-            case ALARM -> alarm(level, core, context, node.text);
+            case LOG -> core.logEvent(EventLog.Type.LOGIC, message(level, core, run, node));
+            case ALARM -> alarm(level, core, context, message(level, core, run, node));
             default -> { }
         }
+    }
+
+    /** Zo lang mag een berekend bericht (say, log, alarm) hooguit zijn. */
+    private static final int MAX_MESSAGE = 200;
+
+    /**
+     * Het bericht van say, log of alarm: de tekst, of (hoofdstuk 20) wat de berekening nu oplevert
+     * ({@code say("Count: " + count)}).
+     */
+    private static String message(ServerLevel level, SecurityCoreBlockEntity core, Run run, LogicGraph.Node node) {
+        if (node.expr.isEmpty()) {
+            return node.text;
+        }
+        Expr expr = ExprCache.value(node.expr);
+        String text = expr == null ? node.expr : Expr.text(ExprCache.eval(expr, facts(level, core, run)));
+        return text.length() > MAX_MESSAGE ? text.substring(0, MAX_MESSAGE) : text;
+    }
+
+    /** Een berekend getal (de seconden van pulse); 0 als het geen getal is. */
+    private static double number(ServerLevel level, SecurityCoreBlockEntity core, Run run, String text) {
+        Expr expr = ExprCache.value(text);
+        return expr != null && ExprCache.eval(expr, facts(level, core, run)) instanceof Double value ? value : 0;
     }
 
     /**

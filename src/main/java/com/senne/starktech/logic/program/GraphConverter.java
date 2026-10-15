@@ -76,7 +76,8 @@ public final class GraphConverter {
                 statements.add(new Script.Loop(node.op, expr, chain(graph, node.yes, seen), node.id));
             } else {
                 statements.add(new Script.Action(node.op, node.op.textArg() == Op.Arg.NONE ? "" : node.text,
-                        node.op.numberArg() == Op.Arg.NONE ? 0 : node.number, node.id));
+                        node.op.numberArg() == Op.Arg.NONE ? 0 : node.number,
+                        node.expr.isBlank() ? "" : cleanValue(node.expr), node.id));
             }
             id = node.next;
         }
@@ -242,6 +243,7 @@ public final class GraphConverter {
                     node = graph.add(action.op(), 0, 0);
                     node.text = action.text();
                     node.number = action.number();
+                    node.expr = action.expr();
                     cells.put(node, new int[] {c, row});
                     c++;
                 } else {

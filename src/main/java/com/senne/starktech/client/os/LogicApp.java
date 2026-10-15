@@ -651,6 +651,9 @@ final class LogicApp {
                 "Inside a when or def: give a name a (new) value. A def has its own names.", 0xF1E87C, null));
         lines.add(new HelpLine("if count >= 3:", "if count >= 3:\n    pass",
                 "Use your name like card.level. A number stays a number, text stays text.", HudStyle.WHITE, null));
+        lines.add(new HelpLine("say(\"Count: \" + count)", "say(\"Count: \" + count)",
+                "A message (say, log, alarm) or the seconds (wait, pulse) may be calculated: wait(delay * 2)",
+                0x9ED8FF, null));
         lines.add(header("LOOPS (again and again)"));
         lines.add(new HelpLine("repeat(3):", "repeat(3):\n    pulse(\"" + device + "\", 0.5)\n    wait(1)",
                 "Do the steps inside 3 times. The number may be a name or a sum: repeat(count + 1):", 0xFF79C6, null));

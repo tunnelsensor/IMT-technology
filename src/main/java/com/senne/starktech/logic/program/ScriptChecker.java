@@ -162,7 +162,35 @@ public final class ScriptChecker {
                 if (problem != null) {
                     problems.add(new Problem(assign.ref(), problem));
                 }
+            } else if (statement instanceof Script.Action action && !action.expr().isEmpty()) {
+                String problem = actionProblem(action, trigger, scope(globals, locals));
+                if (problem != null) {
+                    problems.add(new Problem(action.ref(), problem));
+                }
             }
+        }
+    }
+
+    /**
+     * Een berekend bericht ({@code say("Count: " + count)}) of berekende seconden ({@code wait(delay)}):
+     * bestaan de namen, en zijn seconden een getal?
+     */
+    private static @Nullable String actionProblem(Script.Action action, @Nullable Op trigger, Map<String, Expr.Type> scope) {
+        try {
+            Expr.Type type = Expr.typeOf(Expr.parseValue(action.expr(), trigger, scope));
+            if (!Checks.exprIsText(action.op()) && type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
+                return action.op().code() + " needs a number of seconds, like " + action.op().code() + "("
+                        + action.op().exampleSeconds() + ")";
+            }
+            return null;
+        } catch (LogicException e) {
+            // say(Hello): waarschijnlijk bedoelde je tekst.
+            if (Checks.exprIsText(action.op()) && action.expr().matches("[A-Za-z_][A-Za-z0-9_]*")
+                    && e.getMessage().contains("has no value yet")) {
+                return e.getMessage() + ". If you meant text, put it between quotes: " + action.op().code()
+                        + "(\"" + action.expr() + "\")";
+            }
+            return e.getMessage();
         }
     }
 
@@ -275,6 +303,8 @@ public final class ScriptChecker {
                     need = new Need(action.op().code() + "()", "when keycard(...) or when codepanel(...)");
                 } else if (action.op() == Op.CALL) {
                     need = need(action.text(), trigger, functions, seen);
+                } else if (!action.expr().isEmpty()) {
+                    need = expressionNeed(action.expr(), false, trigger);
                 }
             } else if (statement instanceof Script.Assign assign) {
                 need = expressionNeed(assign.value(), false, trigger);

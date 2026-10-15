@@ -69,6 +69,27 @@ public final class Checks {
         return null;
     }
 
+    /**
+     * Zoals {@link #argsProblem(Op, String, Double)}, maar een vakje kan ook een berekening zijn
+     * ({@code expr}, hoofdstuk 20): dan is het bericht of het aantal seconden er wel, alleen pas bij het
+     * uitvoeren bekend.
+     */
+    public static @Nullable String argsProblem(Op op, @Nullable String text, @Nullable Double number, String expr) {
+        if (!expr.isEmpty()) {
+            if (exprIsText(op)) {
+                text = text == null ? "" : text;
+            } else {
+                number = op.defaultSeconds();
+            }
+        }
+        return argsProblem(op, text, number);
+    }
+
+    /** Is de berekening van dit blokje het bericht (say, log, alarm)? Anders zijn het de seconden (wait, pulse). */
+    public static boolean exprIsText(Op op) {
+        return op.textArg() == Op.Arg.TEXT;
+    }
+
     /** Zo lang mag de naam van een def hooguit zijn. */
     public static final int MAX_NAME = 24;
 

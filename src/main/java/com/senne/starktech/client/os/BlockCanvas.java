@@ -415,6 +415,11 @@ final class BlockCanvas {
         if (node.op == Op.BREAK) {
             return "out of the loop";
         }
+        if (!node.expr.isEmpty()) {
+            // Een berekend bericht of berekende seconden (hoofdstuk 20).
+            return Checks.exprIsText(node.op) ? node.expr
+                    : (node.op.textArg() != Op.Arg.NONE ? node.text + ", " : "") + node.expr + " s";
+        }
         return switch (node.op) {
             case EVERY -> seconds(node.number) + " s";
             case WAIT -> seconds(node.number) + " s";
@@ -444,7 +449,7 @@ final class BlockCanvas {
         if (node.op.kind() == Op.Kind.LOOP) {
             return com.senne.starktech.logic.program.ScriptPrinter.loopLine(node.op, node.text);
         }
-        String call = com.senne.starktech.logic.program.ScriptPrinter.call(node.op, node.text, node.number);
+        String call = com.senne.starktech.logic.program.ScriptPrinter.call(node.op, node.text, node.number, node.expr);
         return node.op.isTrigger() ? "when " + call + ":" : node.op == Op.DEF ? call + ":" : call;
     }
 
@@ -657,6 +662,28 @@ final class BlockCanvas {
         exprBox().setFocused(false);
     }
 
+    /**
+     * Staat er een berekening (code) in het vak "Value"? Bij SET altijd (de waarde); bij een actie als
+     * het bericht of de seconden een berekening zijn ({@code say("Count: " + count)}, {@code wait(delay)}).
+     */
+    private static boolean showsExpr(LogicGraph.Node node) {
+        return node.op.kind() == Op.Kind.SET || !node.expr.isEmpty();
+    }
+
+    /** Het gewone tekstvak, behalve als het bericht een berekening is (dan staat het in het code-vak). */
+    private static boolean showsText(LogicGraph.Node node) {
+        return textLabel(node.op) != null && !(Checks.exprIsText(node.op) && !node.expr.isEmpty());
+    }
+
+    /** Het gewone getalvak (seconden), behalve als de seconden een berekening zijn. */
+    private static boolean showsNumber(LogicGraph.Node node) {
+        return node.op.numberArg() != Op.Arg.NONE && node.expr.isEmpty();
+    }
+
+    private static String exprLabel(LogicGraph.Node node) {
+        return node.op.kind() == Op.Kind.SET ? "Value" : Checks.exprIsText(node.op) ? "Message (code)" : "Seconds (code)";
+    }
+
     /** Hoe het tekstvak van dit blokje heet. */
     private static @Nullable String textLabel(Op op) {
         if (op == Op.IF || op == Op.WHILE) {
@@ -743,7 +770,7 @@ final class BlockCanvas {
             }
         }
         return Checks.argsProblem(node.op, node.op.textArg() == Op.Arg.NONE ? null : node.text,
-                node.op.numberArg() == Op.Arg.NONE ? null : node.number);
+                node.op.numberArg() == Op.Arg.NONE ? null : node.number, node.expr);
     }
 
     private void renderSettings(GuiGraphics g, Font font, LogicGraph.Node node, int mx, int my, float partialTick) {
@@ -758,7 +785,7 @@ final class BlockCanvas {
         }
         y += 3;
         String label = textLabel(node.op);
-        if (label != null) {
+        if (label != null && showsText(node)) {
             g.drawString(font, label, x, y, HudStyle.argb(255, HudStyle.WHITE), false);
             y += 10;
             EditBox box = textBox();
@@ -769,9 +796,9 @@ final class BlockCanvas {
             box.render(g, mx, my, partialTick);
             y += OsDraw.BUTTON_H + 3;
         }
-        if (node.op.kind() == Op.Kind.SET) {
+        if (showsExpr(node)) {
             // De waarde, als code: 0, count + 1, "Level " + card.level...
-            g.drawString(font, "Value", x, y, HudStyle.argb(255, HudStyle.WHITE), false);
+            g.drawString(font, exprLabel(node), x, y, HudStyle.argb(255, HudStyle.WHITE), false);
             y += 10;
             EditBox box = exprBox();
             OsDraw.field(g, x - 1, y, px + PANEL_W - 3, y + OsDraw.BUTTON_H, box.isFocused());
@@ -781,7 +808,7 @@ final class BlockCanvas {
             box.render(g, mx, my, partialTick);
             y += OsDraw.BUTTON_H + 3;
         }
-        if (node.op.numberArg() != Op.Arg.NONE) {
+        if (showsNumber(node)) {
             g.drawString(font, "Seconds", x, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
             EditBox box = numberBox();
             int fx = x + font.width("Seconds") + 4;
@@ -841,7 +868,7 @@ final class BlockCanvas {
         textBox().setFocused(false);
         numberBox().setFocused(false);
         exprBox().setFocused(false);
-        if (textLabel(node.op) != null) {
+        if (textLabel(node.op) != null && showsText(node)) {
             y += 10;
             if (OsDraw.inside(mx, my, x - 1, y, PANEL_W - 6, OsDraw.BUTTON_H)) {
                 textBox().setFocused(true);
@@ -850,7 +877,7 @@ final class BlockCanvas {
             }
             y += OsDraw.BUTTON_H + 3;
         }
-        if (node.op.kind() == Op.Kind.SET) {
+        if (showsExpr(node)) {
             y += 10;
             if (OsDraw.inside(mx, my, x - 1, y, PANEL_W - 6, OsDraw.BUTTON_H)) {
                 exprBox().setFocused(true);
@@ -859,7 +886,7 @@ final class BlockCanvas {
             }
             y += OsDraw.BUTTON_H + 3;
         }
-        if (node.op.numberArg() != Op.Arg.NONE) {
+        if (showsNumber(node)) {
             if (OsDraw.inside(mx, my, x, y, PANEL_W - 8, OsDraw.BUTTON_H)) {
                 numberBox().setFocused(true);
                 numberBox().mouseClicked(mx, my, 0);

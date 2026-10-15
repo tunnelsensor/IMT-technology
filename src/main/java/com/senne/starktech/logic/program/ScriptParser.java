@@ -117,11 +117,12 @@ public final class ScriptParser {
                 throw new LogicException(line.number(), hint);
             }
             expectColon(line, call.end());
-            check(line, trigger, call);
+            Values values = values(line, trigger, call);
+            check(line, trigger, values);
             index++;
             List<Script.Stmt> body = block(line, trigger);
-            items.add(new Script.Handler(trigger, call.text() == null ? "" : call.text(),
-                    call.number() == null ? 0 : call.number(), body, line.number()));
+            items.add(new Script.Handler(trigger, values.text() == null ? "" : values.text(),
+                    values.number() == null ? 0 : values.number(), body, line.number()));
         }
         return new Script(items);
     }
@@ -233,7 +234,7 @@ public final class ScriptParser {
         }
         if (functionNames.contains(call.name())) {
             // Een van je eigen blokken.
-            if (call.args() > 0) {
+            if (!call.args().isEmpty()) {
                 throw new LogicException(line.number(), "Your own blocks take nothing between the brackets: " + call.name() + "()");
             }
             index++;
@@ -253,14 +254,16 @@ public final class ScriptParser {
             throw new LogicException(line.number(), call.name() + "(...) starts a diagram: write it at the left edge as when "
                     + call.name() + "(...):");
         }
-        check(line, op, call);
+        Values values = values(line, op, call);
+        check(line, op, values);
         String problem = Checks.contextProblem(op, trigger);
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }
         index++;
-        double number = call.number() != null ? call.number() : op.numberArg() == Op.Arg.OPTIONAL_SECONDS ? op.defaultSeconds() : 0;
-        return new Script.Action(op, call.text() == null ? "" : call.text(), number, line.number());
+        double number = values.number() != null ? values.number()
+                : op.numberArg() == Op.Arg.OPTIONAL_SECONDS ? op.defaultSeconds() : 0;
+        return new Script.Action(op, values.text() == null ? "" : values.text(), number, values.expr(), line.number());
     }
 
     /** if (of elif) voorwaarde: blok, en dan eventueel elif/else met hun blok. */
@@ -379,8 +382,73 @@ public final class ScriptParser {
 
     // ================================================================ naam(...)
 
-    /** Een aanroep zoals {@code pulse("Vault door", 3)}: de naam, de tekst en het getal (of null), en waar hij ophoudt. */
-    private record Call(String name, @Nullable String text, @Nullable Double number, int args, int end) {}
+    /**
+     * Een aanroep zoals {@code pulse("Vault door", 3)}: de naam, de waarden tussen de haakjes (elk een
+     * uitdrukking, sinds hoofdstuk 20), en waar hij ophoudt.
+     */
+    private record Call(String name, List<Expr> args, int end) {}
+
+    /**
+     * De waarden van een aanroep, verdeeld over de vakjes van het blokje: de tekst (een apparaat of
+     * bericht), het getal (seconden), en een berekening ({@code expr}) als het bericht of het getal geen
+     * gewone tekst of gewoon getal is.
+     */
+    private record Values(@Nullable String text, @Nullable Double number, String expr) {}
+
+    /**
+     * Verdeelt de waarden van een aanroep over de vakjes van {@code op}. Een apparaat moet gewone tekst
+     * tussen aanhalingstekens zijn (zo kan de editor de namen voorstellen en controleren); een bericht
+     * (say, log, alarm) en het aantal seconden (wait, pulse) mogen een berekening zijn. Een trigger
+     * neemt alleen gewone tekst en gewone getallen.
+     */
+    private static Values values(Line line, Op op, Call call) {
+        List<Expr> args = call.args();
+        boolean hasText = op.textArg() != Op.Arg.NONE;
+        boolean hasNumber = op.numberArg() != Op.Arg.NONE;
+        if (args.size() > (hasText ? 1 : 0) + (hasNumber ? 1 : 0)) {
+            if (!hasText && !hasNumber) {
+                throw new LogicException(line.number(), op.code() + " does not take "
+                        + (args.getFirst() instanceof Expr.Str ? "a name" : "a number"));
+            }
+            throw new LogicException(line.number(), op.code() + "(...) has too much between the brackets, like "
+                    + op.example().replace("|", "..."));
+        }
+        String text = null;
+        Double number = null;
+        String expr = "";
+        int index = 0;
+        if (hasText && index < args.size()) {
+            Expr arg = args.get(index++);
+            if (arg instanceof Expr.Str str) {
+                text = str.value();
+            } else if (Checks.exprIsText(op) && !op.isTrigger()) {
+                expr = Expr.print(arg); // een berekend bericht: say("Count: " + count)
+            } else if (arg instanceof Expr.Ref ref) {
+                throw new LogicException(line.number(), "Put names between quotes: " + op.code() + "(\"" + ref.name() + "\")");
+            } else {
+                String problem = Checks.argsProblem(op, null, null);
+                throw new LogicException(line.number(), problem != null ? problem
+                        : op.code() + " needs a name between quotes, like " + op.code() + "(\"Lab door\")");
+            }
+        }
+        if (hasNumber && index < args.size()) {
+            Expr arg = args.get(index);
+            if (arg instanceof Expr.Num num) {
+                number = num.value();
+            } else if (op.isTrigger()) {
+                throw new LogicException(line.number(), op.code() + " needs a plain number of seconds, like "
+                        + op.code() + "(" + op.exampleSeconds() + ")");
+            } else {
+                Expr.Type type = Expr.typeOf(arg);
+                if (type == Expr.Type.TEXT || type == Expr.Type.BOOL) {
+                    throw new LogicException(line.number(), op.code() + " needs a number of seconds, like "
+                            + op.code() + "(" + (hasText ? "\"Lab door\", " : "") + op.exampleSeconds() + ")");
+                }
+                expr = Expr.print(arg); // berekende seconden: wait(delay * 2)
+            }
+        }
+        return new Values(text, number, expr);
+    }
 
     private Call call(Line line, int start) {
         List<Lexer.Token> tokens = line.tokens();
@@ -398,25 +466,20 @@ public final class ScriptParser {
                     : unknown(name.text()));
         }
         int i = start + 2;
-        String text = null;
-        Double number = null;
-        int args = 0;
+        List<Expr> args = new ArrayList<>();
         if (!tokens.get(i).is(")")) {
             while (true) {
-                Lexer.Token arg = tokens.get(i);
-                if (arg.type() == Lexer.Type.STRING && text == null && number == null) {
-                    text = arg.text();
-                } else if (arg.type() == Lexer.Type.NUMBER && number == null) {
-                    number = arg.number();
-                } else if (arg.type() == Lexer.Type.END) {
+                if (tokens.get(i).type() == Lexer.Type.END) {
                     throw new LogicException(line.number(), name.text() + "( is missing its closing )");
-                } else if (arg.type() == Lexer.Type.NAME) {
-                    throw new LogicException(line.number(), "Put names between quotes: " + name.text() + "(\"" + arg.text() + "\")");
-                } else {
-                    throw new LogicException(line.number(), "I did not expect " + arg + " between the brackets of " + name.text());
                 }
-                args++;
-                i++;
+                // Elke waarde is een uitdrukking: "Lab door", 3, delay * 2, "Count: " + count.
+                int[] end = new int[1];
+                try {
+                    args.add(Expr.parseValue(tokens, i, end));
+                } catch (LogicException e) {
+                    throw e.atLine(line.number());
+                }
+                i = end[0];
                 if (tokens.get(i).is(",")) {
                     i++;
                     continue;
@@ -428,12 +491,12 @@ public final class ScriptParser {
                 break;
             }
         }
-        return new Call(name.text(), text, number, args, i + 1);
+        return new Call(name.text(), args, i + 1);
     }
 
     /** Kloppen de naam en het getal voor dit blokje? */
-    private static void check(Line line, Op op, Call call) {
-        String problem = Checks.argsProblem(op, call.text(), call.number());
+    private static void check(Line line, Op op, Values values) {
+        String problem = Checks.argsProblem(op, values.text(), values.number(), values.expr());
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }

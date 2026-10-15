@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 225 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 227 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 88 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2318,17 +2318,29 @@ ene run.
       only works inside forever, repeat or while", "repeat needs a number, like repeat(3):", "while needs a
       check". **Mijn invulling**: een `forever` zonder `wait` houdt een stukje RAM bezet en laat je CPU's
       hard werken (warm datacenter): dat zegt de Help ook. Twee nieuwe tests (`logic_loops`,
-      `logic_loops_run`).
+      `logic_loops_run`). Commit: `e2621ff`.
 - [x] **5. De tolk apart** (vóór stap 3 gedaan: variabelen hebben hem nodig) — het aflopen van de blokjes
       (if met yes, no en after, eigen blokken, `wait`, hooguit 64 blokjes per tick) zit nu in
       `logic/program/Interpreter`, zonder Minecraft erin. Wat een blokje echt doet, vraagt hij aan een
       `Host`: op de server is dat `LogicRunner.ServerHost` (relais, lampjes, E.D.I.T.H., het logboek), straks
       ook een robot, een drone en het Training End-blok. Geen gedragsverandering: 221 tests, 218 groen.
       Commit: `9685b84`.
-- [ ] **6. Meerdere waarden** — `goto(x, y - 1, -20)` en `write(laserPin, true)`, met uitdrukkingen als
-      argument.
-- [ ] **7. Soorten programma's** — server, robot, drone en training-einde hebben elk hun eigen soort, zodat
-      de controle per soort klopt (een `accept()` kan niet in een robotprogramma).
+- [x] **6. Meerdere waarden en berekeningen als argument** — wat tussen de haakjes staat, is nu een
+      uitdrukking. Een bericht (`say`, `log`, `alarm`) en het aantal seconden (`wait`, `pulse`) mogen een
+      berekening zijn: `say("Count: " + count)`, `wait(delay * 2)`, `pulse("Lamp", delay + 0.5)`. Een gewone
+      tekst of een gewoon getal blijft bewaard zoals vroeger (oude diagrammen blijven precies hetzelfde);
+      alleen een echte berekening komt in het nieuwe veld `expr` van het blokje. In de blokjes staat zo'n
+      berekening in een code-vak ("Message (code)" of "Seconds (code)"). De Help heeft er een regel over.
+      **Mijn invulling**: een apparaat blijft gewone tekst tussen aanhalingstekens (zo kan de editor je
+      apparaten blijven voorstellen en nakijken), een trigger neemt alleen gewone tekst en getallen
+      (`every(10)`), berekende seconden houden we binnen de grenzen (`wait` 0,05 s tot 10 minuten, `pulse`
+      tot 60 s), en een berekend bericht is hooguit 200 tekens. `say(Hello)` zonder aanhalingstekens zegt
+      "Hello has no value yet... If you meant text, put it between quotes: say("Hello")". De robot-acties met
+      meerdere waarden (`goto(x, y, z)`, `write(pin, waarde)`) gebruiken straks hetzelfde. Twee nieuwe tests
+      (`logic_values_in_actions`, `logic_values_run`).
+- [ ] **7. Soorten programma's** — *verschoven naar hoofdstuk 23*: een soort "Robot" of "Drone" doet pas iets
+      als er robots zijn. Daar komt hij als eerste stap, met de controle per soort (een `accept()` kan niet in
+      een robotprogramma).
 - [ ] **8. Oude programma's** — een def met een naam die nu een woord van de taal is (zoals `repeat`),
       krijgt bij het laden een andere naam (`repeat_1`).
 

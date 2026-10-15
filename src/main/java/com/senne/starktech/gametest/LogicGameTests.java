@@ -234,6 +234,75 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /**
+     * Berekeningen in een actie (hoofdstuk 20, stap 6): een bericht en de seconden mogen een berekening
+     * zijn; een gewone tekst of een gewoon getal blijft zoals vroeger; een apparaat blijft gewone tekst.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_values_in_actions(GameTestHelper helper) {
+        String code = """
+                delay = 2
+
+                when every(10):
+                    count = 3
+                    say("Count: " + count)
+                    log("Night: " + is_night)
+                    wait(delay * 2)
+                    pulse("Lamp", delay + 0.5)
+                    alarm("Level " + count)
+                    say("plain text")
+                    wait(1)
+                    pulse("Lamp")
+                """;
+        String printed = ScriptPrinter.print(ScriptParser.parse(code));
+        check(printed.equals(code), "Berekeningen terugschrijven gaf andere code:\n" + printed);
+        LogicGraph graph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        check(graph.problems().isEmpty(), "De blokjes met berekeningen hebben fouten: " + graph.problems());
+        check(ScriptPrinter.print(GraphConverter.toScript(LogicGraph.load(graph.save()))).equals(code),
+                "Na blokjes, opslaan en laden was het anders");
+        // Een gewone tekst blijft gewone tekst (oude diagrammen zien er hetzelfde uit).
+        check(graph.nodes().stream().anyMatch(node -> node.op == Op.SAY && node.text.equals("plain text") && node.expr.isEmpty()),
+                "say(\"plain text\") werd een berekening");
+        expectError("when every(5):\n    wait(\"x\")", 2, "wait needs a number of seconds");
+        expectError("when every(5):\n    on(\"A\" + \"B\")", 2, "needs the name of a device between quotes");
+        expectError("when every(x):\n    pass", 1, "every needs a plain number");
+        expectError("when every(5):\n    say(missing)", 2, "If you meant text, put it between quotes");
+        expectError("when every(5):\n    pulse(\"Lamp\", \"x\")", 2, "pulse needs a number of seconds");
+        expectError("when every(5):\n    accept(\"x\")", 2, "accept does not take a name");
+        helper.succeed();
+    }
+
+    /** Berekeningen tijdens het uitvoeren: een berekend bericht in het logboek, en berekende seconden wachten. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_values")
+    public static void logic_values_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos lamp = relay(helper, setup, new BlockPos(9, 3, 4), "Lamp");
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), setup.core());
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Values", """
+                    delay = 1
+
+                    when every(1):
+                        count = 2
+                        log("Computed " + count * 3)
+                        wait(delay * 2)
+                        on("Lamp")
+                    """);
+            check(setup.core().logic().program("Values") != null, "Het diagram werd niet bewaard: " + lastLog(setup.core()));
+        });
+        // De eerste run begint na ~1,5 s: meteen "Computed 6" in het logboek, en dan 2 s wachten.
+        helper.runAfterDelay(60, () -> {
+            check(logged(setup.core(), "Computed 6"), "Het berekende bericht staat niet in het logboek: " + lastLog(setup.core()));
+            check(!level.getBlockState(lamp).getValue(RelayBlock.POWERED), "De lamp wachtte niet de berekende 2 seconden");
+        });
+        helper.runAfterDelay(110, () -> {
+            check(level.getBlockState(lamp).getValue(RelayBlock.POWERED), "De lamp ging niet aan na het wachten");
+            helper.succeed();
+        });
+    }
+
     /** Lussen (hoofdstuk 20, stap 4): repeat, while, forever en break, in code en als blokjes. */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
     public static void logic_loops(GameTestHelper helper) {

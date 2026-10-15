@@ -64,8 +64,15 @@ public record Script(List<Top> items) {
     /**
      * Een actie, zoals {@code pulse("Vault door", 3)}. {@code text} is leeg en {@code number} 0 als hij
      * ze niet heeft. Een eigen blok gebruiken ({@code open_lab()}) is een actie CALL met de naam als tekst.
+     * {@code expr} (hoofdstuk 20) is een berekening als nette code, als een bericht of het aantal
+     * seconden geen gewone tekst of gewoon getal is: {@code say("Count: " + count)}, {@code wait(delay)}.
      */
-    public record Action(Op op, String text, double number, int ref) implements Stmt {}
+    public record Action(Op op, String text, double number, String expr, int ref) implements Stmt {
+        /** Een actie zonder berekening (zoals vóór hoofdstuk 20). */
+        public Action(Op op, String text, double number, int ref) {
+            this(op, text, number, "", ref);
+        }
+    }
 
     /** Een if met wat er bij "yes" en bij "no" (else) gebeurt. {@code condition} is de voorwaarde als nette tekst. */
     public record If(String condition, List<Stmt> yes, List<Stmt> no, int ref) implements Stmt {}

@@ -43,7 +43,8 @@ public final class ScriptPrinter {
             if (statement instanceof Script.If branch) {
                 ifStatement(out, branch, depth, "if");
             } else if (statement instanceof Script.Action action) {
-                out.append(INDENT.repeat(depth)).append(call(action.op(), action.text(), action.number())).append('\n');
+                out.append(INDENT.repeat(depth)).append(call(action.op(), action.text(), action.number(), action.expr()))
+                        .append('\n');
             } else if (statement instanceof Script.Assign assign) {
                 out.append(INDENT.repeat(depth)).append(assign.name()).append(" = ").append(assign.value()).append('\n');
             } else if (statement instanceof Script.Loop loop) {
@@ -62,6 +63,21 @@ public final class ScriptPrinter {
             out.append(INDENT.repeat(depth)).append("else:\n");
             block(out, branch.no(), depth + 1);
         }
+    }
+
+    /**
+     * Een aanroep met een berekening ({@code expr}, hoofdstuk 20): {@code say("Count: " + count)},
+     * {@code wait(delay * 2)}, {@code pulse("Lamp", delay)}. Zonder berekening zoals {@link #call(Op, String, double)}.
+     */
+    public static String call(Op op, String text, double number, String expr) {
+        if (expr.isEmpty()) {
+            return call(op, text, number);
+        }
+        StringBuilder call = new StringBuilder(op.code()).append('(');
+        if (!Checks.exprIsText(op) && op.textArg() != Op.Arg.NONE) {
+            call.append(Expr.quote(text)).append(", "); // eerst het apparaat, dan de berekende seconden
+        }
+        return call.append(expr).append(')').toString();
     }
 
     /** De eerste regel van een lus: {@code forever:}, {@code repeat(3):} of {@code while count < 3:}. */

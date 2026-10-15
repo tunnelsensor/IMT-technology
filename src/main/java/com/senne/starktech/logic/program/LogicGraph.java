@@ -295,7 +295,15 @@ public final class LogicGraph {
             } else {
                 String text = node.op.textArg() == Op.Arg.NONE ? null : node.text;
                 Double number = node.op.numberArg() == Op.Arg.NONE ? null : node.number;
-                problem = Checks.argsProblem(node.op, text, number);
+                problem = Checks.argsProblem(node.op, text, number, node.expr);
+                if (problem == null && !node.expr.isBlank()) {
+                    // Een berekend bericht of berekende seconden: is het te lezen?
+                    try {
+                        Expr.parseLenient(node.expr, false);
+                    } catch (LogicException e) {
+                        problem = e.getMessage();
+                    }
+                }
                 if (problem == null && !node.op.isRoot()) {
                     problem = Checks.contextProblem(node.op, triggerOp);
                 }
