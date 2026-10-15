@@ -2261,6 +2261,244 @@ duidelijkheid **tags zijn volledig weg**, je kunt enkel relay namen in groepen s
       (het scherm van een relais met de knop Group) en `rl061` (de app Groups op de desktop). In de showcase:
       "Relay groups, invert and emitter" en "Relay: name and group" (eerst "... tags").
 
+### 20. De taal groeit (14 oktober)
+
+Hoofdstukken 20 tot en met 27 komen uit één verzoek van 14 oktober: guard robots, programmeerbare
+security drones, training zoals Domino squad, en een inbraak- of uitbraakoefening. Ze bouwen op elkaar:
+eerst de taal, dan de robot, dan de upgrades, en pas daarna de training.
+
+Jouw wens: een pin die je een naam geeft "zoals bij C++" (`scanPin = pinNumber(1)`), en een robot die
+steeds opnieuw patrouilleert. Dat vraagt om variabelen, rekenen en lussen. Alle bestaande diagrammen
+blijven werken.
+
+**Mijn invulling**: `pin(1)` in de code (korter dan `pinNumber`); `=` maakt een naam (vergelijken blijft
+`==`); lussen `forever:`, `repeat(n):`, `while ...:` en `break`; aanroepen met meerdere waarden, zoals
+`goto(x, y - 1, -20)`. Een naam bovenaan het programma geldt voor alle whens; in een blok alleen voor die
+ene run.
+
+- [ ] **1. Eén bron voor alle lijsten** — welke blokjes er zijn, hun uitleg en welke soort programma ze
+      mogen gebruiken, staat op één plek. Editor, palet, Help en de controles lezen daaruit. Geen
+      gedragsverandering.
+- [ ] **2. Rekenen** — `+ - * /`, haakjes, negatieve getallen, tekst plakken met `+`.
+- [ ] **3. Variabelen** — `naam = waarde`, met de regel hierboven.
+- [ ] **4. Lussen en break** — `forever:`, `repeat(n):`, `while ...:`, `break`. In de blokjes: een lus
+      met een "do"-uitgang en een "after"-uitgang.
+- [ ] **5. De tolk apart** — het uitvoeren van diagrammen komt in één `Interpreter` met stapels en
+      variabelen. De server is de eerste die hem gebruikt, met hetzelfde gedrag als nu.
+- [ ] **6. Meerdere waarden** — `goto(x, y - 1, -20)` en `write(laserPin, true)`, met uitdrukkingen als
+      argument.
+- [ ] **7. Soorten programma's** — server, robot, drone en training-einde hebben elk hun eigen soort, zodat
+      de controle per soort klopt (een `accept()` kan niet in een robotprogramma).
+- [ ] **8. Oude programma's** — een def met een naam die nu een woord van de taal is (zoals `repeat`),
+      krijgt bij het laden een andere naam (`repeat_1`).
+
+Tests: taaltests zonder wereld (rekenen, haakjes, typefouten, `break` buiten een lus, een variabele zonder
+waarde, code en blokjes met lussen), en runner-tests (`repeat(3)` pulst drie keer, een oneindige lus legt
+de server niet plat, een oud diagram laadt nog).
+
+### 21. De guard robot bouwen (14 oktober)
+
+Jouw wens: "robots die ik via de security core programmeer, met een laadstation en een batterij". Als ze uit
+staan, staan ze in hun laadblok. Je kunt er upgrades op zetten, en met een camera kijk je vanaf de core door
+hun ogen. Dit hoofdstuk bouwt de robot zelf; de upgrades komen in 22 en 24.
+
+Jouw antwoorden: de robot heeft **zijn eigen code** en praat met de server. Het uiterlijk stel je zelf samen
+uit **hoofd, body, armen en benen**, elk in een van vier stijlen die op Star Wars lijken: commando droid,
+trainingsdroid van Kamino, battle droid en super battle droid.
+
+**Mijn invulling**: de namen in het spel zijn Commando, Trainer, Battle en Super Battle (zonder "droid", dat
+is een merk). Het ontwerp is van ons, in die sfeer. Samenstellen gebeurt in een nieuw blok, de **Robot
+Assembler**, met een draaiend 3D-voorbeeld. De onderdelen verschillen een beetje: benen = snelheid, body =
+leven en batterij, armen = schieten, hoofd = kijkhoek. De robot hoort bij de core in wiens gebied hij staat.
+Een robot opent een deur door een relais aan te sturen (jouw wens). Aan = hij stapt uit zijn laadblok; uit =
+hij loopt terug en laadt.
+
+- [ ] **1. Config en de robot** — `[robots]` in `StarkConfig`, `GuardRobotEntity` (geen Monster, zodat je
+      eigen torentjes hem met rust laten), gesynchroniseerde onderdelen, toestand en batterij.
+- [ ] **2. Onderdelen** — 16 onderdelen (4 soorten × 4 stijlen), recepten, taal.
+- [ ] **3. Het model** — één humanoid model met per stijl eigen afmetingen en textuur (4 texturen uit
+      `tools/generate_textures.py`).
+- [ ] **4. Printplaat** — de **Robot Circuit Board** (leeg, 8 pinnen).
+- [ ] **5. Robot Assembler** — blok met vier vakjes en de printplaat, 3D-voorbeeld, **Assemble** (maakt het
+      robotitem) en **Take apart**.
+- [ ] **6. Robot Dock en batterij** — laadstation op kabelstroom, dat één robot als thuis heeft; aan en uit.
+- [ ] **7. Robotscherm en opslag** — sneak + rechtsklik met een lege hand (wie hem neerzette of vertrouwd
+      is in de basis, zoals bij de laserzender); `BotNetwork` bewaart alle robots van een core; netwerkversie
+      omhoog.
+- [ ] **8. App Robots** — lijst met batterij, verbinding en dock; aan/uit en hernoemen.
+- [ ] **9. Geluid, showcase, LEESMIJ** — servogeluiden, opstarten en uitzetten, zacht zoemen op het dock
+      (met een volumeknop).
+
+Tests: samenstellen en uit elkaar halen; een robot op een dock laadt via de kabel en niet zonder stroom;
+aan = eruit, uit = terug; een vreemde kan hem niet bewerken; opslaan en laden klopt.
+
+### 22. De printplaat: solderen (14 oktober)
+
+Jouw antwoorden: je soldeert de upgrades op de **pinnen** van de printplaat, met een **soldeerbout** en
+vasthouden. Het is een **klein spelletje**: je kunt per ongeluk een **kortsluiting** maken (een soldeerbrug
+naar de pin ernaast). Zet je de robot niet aan, dan is dat geen probleem: je kunt lossolderen en opnieuw
+proberen. Zag je het niet en zet je hem wel aan, dan kunnen de robot of de onderdelen afbranden.
+
+**Mijn invulling**: acht modules (Scan, Distance, Face Recognition, Pathfinding, Laser, Gun, Solar Panel,
+Camera). Het spelletje: een hittebalk; loslaten in het groene vak = goede verbinding; te vroeg = niets
+(opnieuw); te laat = een brug. Een brug zie je alleen als je goed kijkt, of met de knop Inspect. De kans op
+brand staat in de config.
+
+- [ ] **1. Modules** — acht modules plus de *Burnt Module*, recepten, texturen.
+- [ ] **2. Het bord** — pinnen, soldeerbruggen, solderen en lossolderen; de server bepaalt de uitkomst.
+- [ ] **3. Het spelletje** — hittebalk, groen vak, een brug bij te laat, Inspect, en de soldeerbout (slijt).
+- [ ] **4. Aanzetten met een brug** — de modules op die pinnen verbranden; met een kans brandt de hele robot
+      af; logboek en E.D.I.T.H.-melding met de pinnummers.
+- [ ] **5. Zichtbaar op de robot** — laser op de arm, zonnepaneel op de rug, antenne, cameralens.
+
+Tests: goed solderen geeft een module; te laat geeft een brug; aanzetten met een brug verbrandt de modules;
+zonder brug gebeurt er niets; lossolderen geeft de module terug; solderen aan een robot die aan staat wordt
+geweigerd.
+
+### 23. Robots programmeren en praten met de server (14 oktober)
+
+Jouw antwoord: de robot heeft **zijn eigen code**, maar **praat met de server**. Een scan laat hij door de
+server nakijken ("is dit oké?"), hij stuurt de server opdrachten (zoals een alarm), en de server geeft hem
+opdrachten (zoals "val punt x aan").
+
+**Mijn invulling**: een robotprogramma maak je in de app Logic (soort Robot), in code of in blokjes. De core
+stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
+- Bewegen: `forward(n)`, `back(n)`, `turn_left()`, `turn_right()`, `wait(s)`, `stop()`; `robot.battery`;
+  `charge()` loopt zelf naar het laadstation; `goto(x, y, z)` alleen met de Pathfinding-module.
+- Robot naar server: `alarm`, `say`, `log`, `on/off/toggle/pulse("Door 1")`, `send("intruder")`.
+- Server naar robot: `order("Guard 1", "attack", x, y, z)`, `activate` en `deactivate`. In de robot:
+  `when started:` en `when order("attack"):`.
+
+- [ ] **1. Het brein van de robot** — dezelfde tolk, met een stappenbudget per tick; bewegen stap voor stap;
+      `blocked` als er iets in de weg staat.
+- [ ] **2. Programma's naar de robot** — uploaden via de verbinding; de robot bewaart zijn eigen kopie.
+- [ ] **3. Verbinding** — alleen binnen het gebied van de core, met stroom en een werkende server. Zonder
+      verbinding geen alarm en geen relais, wel lopen en scannen.
+- [ ] **4. Robot naar server** — alarm, say, log, relais, en `send(...)` met `sender.name`.
+- [ ] **5. Server naar robot** — order, activate, deactivate; een opdracht aan een robot die niet geladen is,
+      wacht tot die weer geladen wordt.
+- [ ] **6. De app Logic** — soort Robot, Help en Ctrl+Spatie met de pinnen van de gekozen robot, en
+      voorbeeldprogramma's.
+
+Tests: vierkantje lopen (vier keer `turn_right()` na `forward(2)` komt op de plek waar hij begon); batterij
+laden en terug; een opdracht onderbreekt het programma en het hervat; zonder verbinding geen alarm maar wel
+lopen; een relais via `pulse`; een wachtende opdracht bij laden.
+
+### 24. Zien en schieten (14 oktober)
+
+Jouw wens: scan geeft true of false ("zoek naar player"); gezichtsherkenning verbetert de scan door op
+spelers te filteren; een laser of een geweer; een zonnepaneel; een camera waarmee je door zijn ogen kijkt.
+
+**Mijn invulling**: modules geven gegevens met `read(pin)` en krijgen opdrachten met `write(pin, ...)`:
+
+| Module | `read(pin)` | `write(pin, ...)` |
+|---|---|---|
+| Scan | true als hij een speler ziet (zicht, niet door muren) | — |
+| Distance | blokken tot wat voor hem staat | — |
+| Face Recognition | de naam van wie de scan ziet | filter: everyone, strangers, trusted, trainee of een naam |
+| Pathfinding | true zolang hij onderweg is | — |
+| Laser | true als hij klaar is | true = één schot |
+| Gun | kogels over | true = één schot (Robot Ammo) |
+| Solar Panel | zon die hij vangt (0-100) | — |
+| Camera | true als iemand meekijkt | false = uit |
+
+"strangers" en "trusted" vraagt de robot aan de server. Robots met een camera staan in de app Cameras, met
+"ROBOT" erbij. De **Ion Blaster** laat robots en drones neervallen zonder ze kapot te maken; op mensen en
+dieren werkt hij niet.
+
+- [ ] **1. Scan en Distance** — zicht via de kijkhoek van zijn hoofd; niet door muren.
+- [ ] **2. Face Recognition** — de naam van de herkende speler, en het filter.
+- [ ] **3. Laser en Gun** — een straal zoals bij de Hydra-soldaat; Robot Ammo; batterijkosten; koepels
+      houden ze tegen.
+- [ ] **4. Zonnepaneel** — laadt overdag, met dezelfde zonberekening als het zonnepaneel van het net.
+- [ ] **5. Camera** — de robot in de app Cameras; alleen binnen het volgbereik; zijn eigen model wordt
+      overgeslagen.
+- [ ] **6. Ion Blaster** — de robot valt neer (DOWN); buiten een training staat hij na 60 s weer op.
+
+Tests: de scan ziet een speler in zicht en niet door een muur; het filter "strangers" ziet een vreemde en
+niet de eigenaar; zonder verbinding ziet hij niemand; een koepel houdt de laser tegen; zon laadt overdag; de
+Ion Blaster zet een robot DOWN en een speler blijft ongeschonden.
+
+### 25. Programmeerbare security drones (14 oktober)
+
+Jouw antwoorden: de security drones krijgen dezelfde programmeerbaarheid, plus **omhoog en omlaag**. Hun
+laadstation wordt de **Drone Dock**. De **arsenal-drones** laden daar niet meer, die blijven in hun baan.
+Drones bouw je zelf, met een eigen printplaat. De Stark Tower krijgt docks met drones die Tony al
+geprogrammeerd heeft.
+
+**Mijn invulling**: de core maakt geen gratis drones meer; de schakelaar "Drones" in de app Devices zet al je
+drones aan of uit. Arsenal-drones herstellen zich in hun baan, even snel als vroeger op een dock, zodat je
+niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergeschoten worden.
+
+- [ ] **1. Vliegende beweging** — `up(n)` en `down(n)`, in drie assen.
+- [ ] **2. De drone bouwen** — item met printplaat en modules; plaatsen op een dock.
+- [ ] **3. De Drone Dock opnieuw** — laadt zijn eigen drone; arsenal-drones komen er niet meer op; herstel in
+      de baan.
+- [ ] **4. De core** — geen gratis drones meer; schakelaar "Drones" in Devices.
+- [ ] **5. De Stark Tower** — vier docks bij de kern met Tony's drones (programma "Tower patrol"). Wie de
+      toren hackt, krijgt ze.
+
+Tests: bouwen en laden op een dock; `up(3)` stijgt; de core spawnt zelf geen drones meer; een dock pakt geen
+arsenal-drone meer; de toren heeft vier gewapende drones; een oude drone patrouilleert nog.
+
+### 26. Training zoals Domino squad (14 oktober)
+
+Jouw wens: programma's die gecoördineerde golven op de speler sturen, die non-lethal of lethal schieten (jouw
+keuze). Een **Training End**-blok geeft redstone als de trainee geraakt wordt, en daarin programmeer je wat
+er dan gebeurt (robots aan of uit).
+
+Jouw antwoorden: een **Training Start**-blok; wie erop klikt, is de trainee; daar kies je de training en
+lethal of non-lethal. Het Training End-blok heeft een **mini-code-editor** in het blok, dezelfde taal. Je
+diagram hoort `when training_started("Kamino"):`.
+
+**Mijn invulling**: standaard 1 leven (één treffer en je ligt eruit). Non-lethal = geen schade, een blauwe
+flits en 1 seconde trager. Alleen de eigenaar, zijn team en vertrouwde spelers starten een training. Golven
+via squads: `activate("Wave 1")`, `when squad_down("Wave 1"):`. Een **Training Goal**-blok: erop komen is
+geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
+
+- [ ] **1. Centraal schot** — één plek (`Shots`) voor lethal en non-lethal; torentjes, drones, laserwanden en
+      robots sluiten erop aan.
+- [ ] **2. Training-sessie** — per core: trainee, naam, soort, lethal, levens, treffers; de triggers
+      training_started, training_hit en training_ended.
+- [ ] **3. Training Start-blok** — instellingen (sneak + klik), aftellen, alleen voor vertrouwden.
+- [ ] **4. Squads** — robots in een squad; activate, deactivate, squad_down, active.
+- [ ] **5. Training End-blok** — redstone-puls bij elke treffer, en de mini-editor (dezelfde taal, eigen soort
+      programma).
+- [ ] **6. Training Goal-blok** — geslaagd als de trainee erop komt.
+- [ ] **7. Einde en rapport** — robots die down zijn, staan weer op en lopen naar hun dock; rapport van
+      E.D.I.T.H.; app Training.
+
+Tests: een non-lethal treffer doet geen schade maar telt; lethal doet schade; levens op beëindigt de training;
+het End-blok geeft een puls en deactiveert een squad; een inbreker kan geen training starten; het Goal-blok
+beëindigt met succes; down-robots staan na afloop weer op.
+
+### 27. Inbraak- en uitbraakoefening (14 oktober)
+
+Jouw wens: "test hoe moeilijk het is om tot bij de security core te geraken en hem te hacken, of hoe moeilijk
+het is om uit je prison uit te breken." Jouw antwoord op de vraag wat er daarna gebeurt: **niets wordt
+teruggezet**. Wat kapot gaat, blijft kapot; robots staan weer op, tenzij ze echt vernietigd zijn.
+
+**Mijn invulling**: de soorten **Break-in** en **Break-out**, alleen in survival. Tijdens zo'n oefening
+behandelt je hele basis de trainee als indringer, ook de eigenaar zelf: torentjes, drones, robots (filter
+"strangers"), laserwanden, de zone (niets bouwen of slopen, behalve vrije blokken en C4), de desktop (niet te
+openen) en de bril (niet op afstand schakelen). Kaarten die hij bij het begin had, werken niet. Een geslaagde
+hack (de Stark Laptop-minigame) telt als rapport; de core blijft van jou. Break-out is geslaagd als hij het
+Goal-blok buiten de cel haalt. Het rapport zegt hoe dicht hij bij de core kwam en wie hem raakte.
+
+- [ ] **1. Soorten en sessie** — Break-in en Break-out, alleen in survival, één sessie per core.
+- [ ] **2. Indringer in je eigen basis** — één plek (`Training.isDrillTrainee`) die alle uitzonderingen
+      uitschakelt: torentjes, drones, robots, laserwanden, zones, kaarten, desktop en de bril.
+- [ ] **3. Hack zonder eigenaarswissel** — de laptop-hack van de trainee maakt hem geen eigenaar; het rapport
+      zegt "core hacked in 4:12".
+- [ ] **4. Uitbraak** — geslaagd als hij het Goal-blok buiten de cel bereikt.
+- [ ] **5. Rapport** — dichtste afstand tot de core, en wie hem raakte.
+
+Tests: de eigenaar als trainee wordt geraakt door zijn eigen torentje en robot; hij kan de zone niet slopen;
+een oude kaart opent de lezer niet; een geslaagde hack laat de eigenaar ongemoeid; de oefening eindigt als hij
+sterft of uitlogt; creative wordt geweigerd.
+
+Bouwen gaat in volgorde, één stap per commit, met bij elke stap de tests, de screenshots en de showcase.
+
 ---
 
 ## Nog nooit in het spel bekeken
