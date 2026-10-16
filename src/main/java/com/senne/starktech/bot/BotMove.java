@@ -107,6 +107,11 @@ public final class BotMove {
         blocked = true;
     }
 
+    /** Is hij met {@code goto} onderweg? (Wat de Pathfinding-module zegt.) */
+    public boolean goingSomewhere() {
+        return plan instanceof GoTo && !finished;
+    }
+
     /** Is hij met een beweging bezig? */
     public boolean busy() {
         return plan != null;

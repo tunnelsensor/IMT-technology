@@ -55,6 +55,8 @@ import org.jetbrains.annotations.Nullable;
 public final class BotBrain {
     private final GuardRobotEntity robot;
     private final BotMove body;
+    /** Zijn pinnen: read en write (hoofdstuk 24). */
+    private final BotPins pins;
     private @Nullable LogicProgram program;
     /** De namen van links ({@code scanPin = pin(1)}), zolang hij aan staat. */
     private Map<String, Object> globals = new HashMap<>();
@@ -79,6 +81,12 @@ public final class BotBrain {
     public BotBrain(GuardRobotEntity robot) {
         this.robot = robot;
         this.body = new BotMove(robot);
+        this.pins = new BotPins(robot, this);
+    }
+
+    /** Zijn pinnen (wat zijn modules zeggen en doen). */
+    public BotPins pins() {
+        return pins;
     }
 
     /** Eén when die bezig is: een vingertje van de tolk, met deze robot als host. */
@@ -324,7 +332,12 @@ public final class BotBrain {
                 run.machine.pause();
             }
             case SAY, LOG, ALARM, ON, OFF, TOGGLE, PULSE, SEND -> server(run, node);
-            // write naar een module: hoofdstuk 24.
+            case WRITE -> {
+                List<Object> values = values(run, node);
+                if (values.size() >= 2) {
+                    pins.write((int) Math.rint(toNumber(values.get(0))), values.get(1));
+                }
+            }
             default -> { }
         }
     }
@@ -433,6 +446,12 @@ public final class BotBrain {
             public @Nullable Object variable(String name) {
                 return run == null ? globals.get(name) : run.machine.variable(name);
             }
+
+            /** {@code read(scanPin)}: wat de module op die pin zegt (hoofdstuk 24). */
+            @Override
+            public Object read(int pin) {
+                return pins.read(pin);
+            }
         };
     }
 
@@ -440,7 +459,7 @@ public final class BotBrain {
      * Er klopt iets niet aan zijn programma: een regel in het logboek van de core in wiens gebied hij staat
      * (dezelfde melding hooguit één keer per minuut).
      */
-    private void report(String message) {
+    void report(String message) {
         if (!(robot.level() instanceof ServerLevel level)) {
             return;
         }
