@@ -5,6 +5,13 @@ import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.edith.EdithGlassesItem;
 import com.senne.starktech.edith.UpgradeItem;
 import com.senne.starktech.arsenal.StarkDroneItem;
+import com.senne.starktech.robot.RobotPartItem;
+import com.senne.starktech.robot.RobotSlot;
+import com.senne.starktech.robot.RobotStyle;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import com.senne.starktech.suit.RocketPackItem;
 import com.senne.starktech.suit.StarkSuitItem;
 import net.minecraft.world.item.ArmorItem;
@@ -249,6 +256,30 @@ public final class ModItems {
     public static final DeferredItem<DeferredSpawnEggItem> GUARD_ROBOT_SPAWN_EGG = ITEMS.register(
             "guard_robot_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.GUARD_ROBOT, 0x464A50, 0xCDBA8C,
                     new Item.Properties()));
+
+    /**
+     * Hoofdstuk 21: de 16 onderdelen van een guard robot, per onderdeel (hoofd, lijf, armen, benen) de vier
+     * stijlen op volgorde van RobotStyle. Ze heten "commando_head" tot "super_battle_legs".
+     */
+    public static final Map<RobotSlot, List<DeferredItem<RobotPartItem>>> ROBOT_PARTS = registerRobotParts();
+
+    private static Map<RobotSlot, List<DeferredItem<RobotPartItem>>> registerRobotParts() {
+        Map<RobotSlot, List<DeferredItem<RobotPartItem>>> parts = new EnumMap<>(RobotSlot.class);
+        for (RobotSlot slot : RobotSlot.values()) {
+            List<DeferredItem<RobotPartItem>> styles = new ArrayList<>();
+            for (RobotStyle style : RobotStyle.values()) {
+                styles.add(ITEMS.registerItem(RobotPartItem.id(slot, style),
+                        properties -> new RobotPartItem(properties, slot, style), new Item.Properties().stacksTo(16)));
+            }
+            parts.put(slot, List.copyOf(styles));
+        }
+        return parts;
+    }
+
+    /** Het onderdeel-item van deze soort in deze stijl. */
+    public static RobotPartItem robotPart(RobotSlot slot, RobotStyle style) {
+        return ROBOT_PARTS.get(slot).get(style.ordinal()).get();
+    }
 
     /** Fase 15: een gebouwde drone. Gebruik hem en hij vliegt naar je arsenaal in een baan. */
     public static final DeferredItem<StarkDroneItem> STARK_DRONE = ITEMS.registerItem("stark_drone",

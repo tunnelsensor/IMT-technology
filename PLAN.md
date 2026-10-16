@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 232 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 234 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2387,7 +2387,14 @@ hij loopt terug en laadt.
       (`BaseTrust.Placed`, dezelfde regel als de laserzender). Een spawn-ei (creative) geeft willekeurige
       onderdelen. Zonder programma staat hij stil en kijkt hij rond. Toestand en batterij komen in stap 6.
       Nieuwe testklasse `RobotGameTests` (4 tests).
-- [ ] **2. Onderdelen** — 16 onderdelen (4 soorten × 4 stijlen), recepten, taal.
+- [x] **2. Onderdelen** — 16 onderdelen als item (`commando_head` tot `super_battle_legs`, "Commando Head" tot
+      "Super Battle Legs"), elk met een icoontje (`robot_part_items()` in `tools/generate_textures.py`) en een
+      recept: ijzer plus de stof van de stijl (Commando grijze kleurstof, Trainer witte, Battle koper, Super
+      Battle een ijzerblok: het zwaarst); een hoofd heeft een Stark Chip en een glasruit, een lijf een
+      redstoneblok, armen en benen zuigers. Als je erover beweegt zegt het item wat het doet, met de getallen
+      uit de config ("Body: 44 health, 10 armor, battery 8000"). Gaat een robot echt kapot, dan blijft elk
+      onderdeel met een kans heel (`partSurviveChance`, standaard 0,5) en valt het op de grond. Twee nieuwe
+      tests (alle items met recept; kapot = onderdelen bij kans 1, niets bij kans 0). Vorige stap: `7aa87b6`.
 - [x] **3. Het model** — *samen met stap 1 gedaan* (anders kon je de robot niet zien). `client/robot/RobotModel`:
       de botten van een mens (dus lopen en armzwaaien gratis), en aan elk bot vier versies, één per stijl;
       per robot staat alleen de gekozen stijl aan. De armen hangen aan de schouders van het gekozen lijf

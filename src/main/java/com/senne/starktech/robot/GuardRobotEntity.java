@@ -1,5 +1,7 @@
 package com.senne.starktech.robot;
 
+import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.BaseTrust;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -8,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -25,6 +28,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -127,6 +131,21 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             setHealth(getMaxHealth());
         }
         return result;
+    }
+
+    /**
+     * Echt kapot (zijn leven is op): elk onderdeel blijft met een kans heel en valt op de grond (zie
+     * PART_SURVIVE_CHANCE in de config). Wat kapot gaat, blijft kapot.
+     */
+    @Override
+    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
+        RobotParts parts = parts();
+        for (RobotSlot slot : RobotSlot.values()) {
+            if (random.nextFloat() < StarkConfig.Robots.PART_SURVIVE_CHANCE) {
+                spawnAtLocation(new ItemStack(ModItems.robotPart(slot, parts.get(slot))));
+            }
+        }
     }
 
     // ================================================================ Eigenaar (BaseTrust)

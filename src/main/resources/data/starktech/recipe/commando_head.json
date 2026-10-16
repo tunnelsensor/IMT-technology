@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "M": {
+      "tag": "c:dyes/gray"
+    }
+  },
+  "pattern": [
+    " M ",
+    "ICI",
+    " G "
+  ],
+  "result": {
+    "id": "starktech:commando_head",
+    "count": 1
+  }
+}

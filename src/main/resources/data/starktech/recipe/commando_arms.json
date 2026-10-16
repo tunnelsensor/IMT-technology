@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "M": {
+      "tag": "c:dyes/gray"
+    }
+  },
+  "pattern": [
+    "M M",
+    "I I",
+    "P P"
+  ],
+  "result": {
+    "id": "starktech:commando_arms",
+    "count": 1
+  }
+}

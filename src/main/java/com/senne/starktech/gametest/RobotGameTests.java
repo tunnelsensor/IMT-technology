@@ -3,18 +3,26 @@ package com.senne.starktech.gametest;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModEntities;
+import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.robot.GuardRobotEntity;
+import com.senne.starktech.robot.RobotPartItem;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
 import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.security.BaseTrust;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -133,5 +141,63 @@ public final class RobotGameTests {
         check(!BaseTrust.mayEdit(stranger, robot), "Een vreemde mag de robot instellen");
         check(owner.getUUID().equals(robot.owner()), "De robot werd van een ander");
         helper.succeed();
+    }
+
+    /** Alle 16 onderdelen bestaan als item ("commando_head" tot "super_battle_legs"), elk met een recept. */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_parts_are_items_with_recipes(GameTestHelper helper) {
+        for (RobotSlot slot : RobotSlot.values()) {
+            for (RobotStyle style : RobotStyle.values()) {
+                RobotPartItem item = ModItems.robotPart(slot, style);
+                String id = style.id() + "_" + slot.id();
+                check(BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, id)),
+                        "Het onderdeel " + id + " heet " + BuiltInRegistries.ITEM.getKey(item));
+                check(item.slot() == slot && item.style() == style, id + " weet niet wat het is");
+                ItemStack made = helper.getLevel().getRecipeManager()
+                        .byKey(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, id))
+                        .map(recipe -> recipe.value().getResultItem(helper.getLevel().registryAccess()))
+                        .orElse(ItemStack.EMPTY);
+                check(made.is(item), "Geen recept dat " + id + " maakt");
+            }
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Een robot die echt kapot gaat, laat zijn onderdelen vallen met de kans uit de config: bij 1 alle vier,
+     * bij 0 niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "robot_config")
+    public static void robot_destroyed_drops_parts(GameTestHelper helper) {
+        float before = StarkConfig.Robots.PART_SURVIVE_CHANCE;
+        try {
+            RobotParts parts = new RobotParts(RobotStyle.COMMANDO, RobotStyle.TRAINER, RobotStyle.BATTLE, RobotStyle.SUPER_BATTLE);
+            StarkConfig.Robots.PART_SURVIVE_CHANCE = 1.0f;
+            robot(helper, new BlockPos(2, 2, 2), parts).kill();
+            for (RobotSlot slot : RobotSlot.values()) {
+                RobotPartItem part = ModItems.robotPart(slot, parts.get(slot));
+                check(dropped(helper, new BlockPos(2, 2, 2), part) == 1, "Na kapot lag er geen " + part + " op de grond");
+            }
+            StarkConfig.Robots.PART_SURVIVE_CHANCE = 0.0f;
+            robot(helper, new BlockPos(8, 2, 8), parts).kill();
+            for (RobotSlot slot : RobotSlot.values()) {
+                check(dropped(helper, new BlockPos(8, 2, 8), ModItems.robotPart(slot, parts.get(slot))) == 0,
+                        "Bij kans 0 viel er toch een onderdeel");
+            }
+        } finally {
+            StarkConfig.Robots.PART_SURVIVE_CHANCE = before;
+        }
+        helper.succeed();
+    }
+
+    /** Hoeveel van dit item er vlak bij deze plek op de grond ligt. */
+    private static int dropped(GameTestHelper helper, BlockPos pos, Item item) {
+        int count = 0;
+        for (ItemEntity entity : helper.getEntities(EntityType.ITEM, pos, 2.0)) {
+            if (entity.getItem().is(item)) {
+                count += entity.getItem().getCount();
+            }
+        }
+        return count;
     }
 }

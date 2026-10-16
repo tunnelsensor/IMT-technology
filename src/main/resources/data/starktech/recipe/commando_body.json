@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "R": {
+      "tag": "c:storage_blocks/redstone"
+    },
+    "M": {
+      "tag": "c:dyes/gray"
+    }
+  },
+  "pattern": [
+    "IMI",
+    "IRI",
+    "IMI"
+  ],
+  "result": {
+    "id": "starktech:commando_body",
+    "count": 1
+  }
+}

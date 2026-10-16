@@ -1478,6 +1478,9 @@ public final class StarkConfig {
         /** Hoe breed hij kijkt (graden; 360 = rondom), naar de stijl van het hoofd (hoofdstuk 24). */
         @Tunable(value = "How wide a robot looks (degrees, 360 = all around), by the style of its head", min = 10, max = 360)
         public static float[] HEAD_SCAN_ANGLE = {120.0f, 360.0f, 90.0f, 70.0f};
+        /** De kans dat een onderdeel heel blijft als je een robot echt kapotmaakt (0 = nooit, 1 = altijd). */
+        @Tunable(value = "Chance that each part survives when a robot is destroyed (0 = never, 1 = always)", max = 1)
+        public static float PART_SURVIVE_CHANCE = 0.5f;
     }
 
     // =============================================================================================== Hydra

@@ -3069,6 +3069,67 @@ def robot_textures():
     save(glow, "entity/robot/guard_robot_glow.png")
 
 
+# Elk onderdeel als icoontje (16 x 16): rechthoekjes in de verf van zijn stijl, (x1, y1, x2, y2) met de
+# randen erbij, zoals ImageDraw.rectangle. "m" = hoofdkleur, "d" = donker, "l" = lichtjes, "x" = details.
+ROBOT_PART_ICONS = {
+    ("commando", "head"): [("m", 4, 3, 11, 11), ("m", 6, 2, 9, 2), ("d", 7, 12, 8, 13), ("x", 6, 6, 9, 9), ("l", 7, 7, 8, 8)],
+    ("trainer", "head"): [("m", 3, 4, 12, 11), ("m", 4, 3, 11, 12), ("m", 5, 2, 10, 2), ("l", 4, 6, 11, 6),
+                          ("l", 2, 8, 2, 8), ("l", 13, 8, 13, 8), ("d", 7, 13, 8, 14)],
+    # De Battle van opzij: dunne nek, schedel, en een lange snuit naar rechts.
+    ("battle", "head"): [("d", 6, 9, 6, 14), ("m", 3, 4, 8, 8), ("m", 4, 3, 7, 3), ("m", 9, 6, 11, 8),
+                         ("m", 12, 7, 14, 9), ("x", 10, 7, 10, 7)],
+    ("super_battle", "head"): [("m", 4, 5, 11, 11), ("d", 6, 4, 9, 4), ("x", 5, 7, 10, 7)],
+
+    ("commando", "body"): [("m", 3, 2, 12, 8), ("d", 5, 9, 10, 11), ("m", 4, 12, 11, 14), ("d", 4, 4, 11, 4)],
+    ("trainer", "body"): [("m", 2, 3, 13, 8), ("m", 3, 2, 12, 9), ("l", 7, 4, 8, 5), ("d", 4, 10, 11, 11),
+                          ("m", 4, 12, 11, 14), ("l", 5, 13, 10, 13)],
+    ("battle", "body"): [("m", 4, 2, 11, 7), ("m", 5, 3, 10, 6), ("d", 7, 8, 8, 11), ("m", 5, 12, 10, 14)],
+    ("super_battle", "body"): [("m", 1, 3, 14, 10), ("m", 3, 1, 12, 2), ("d", 6, 11, 9, 12), ("m", 5, 13, 10, 14)],
+
+    ("commando", "arms"): [("m", 5, 1, 10, 4), ("d", 6, 5, 9, 8), ("m", 5, 9, 10, 12), ("d", 6, 13, 9, 14)],
+    ("trainer", "arms"): [("m", 5, 1, 10, 3), ("m", 6, 4, 9, 7), ("d", 7, 8, 8, 8), ("m", 6, 9, 9, 11),
+                          ("l", 5, 12, 10, 12), ("d", 7, 13, 8, 14)],
+    ("battle", "arms"): [("d", 7, 1, 8, 2), ("m", 7, 3, 8, 6), ("d", 7, 7, 8, 7), ("m", 7, 8, 8, 11), ("d", 6, 12, 9, 13)],
+    ("super_battle", "arms"): [("m", 4, 1, 11, 3), ("d", 5, 4, 9, 5), ("m", 4, 6, 11, 12), ("x", 5, 10, 7, 11),
+                               ("d", 5, 13, 9, 14)],
+
+    ("commando", "legs"): [("m", 3, 1, 5, 6), ("m", 10, 1, 12, 6), ("d", 3, 7, 5, 7), ("d", 10, 7, 12, 7),
+                           ("m", 3, 8, 5, 12), ("m", 10, 8, 12, 12), ("d", 2, 13, 5, 14), ("d", 10, 13, 13, 14)],
+    ("trainer", "legs"): [("m", 2, 1, 6, 6), ("m", 9, 1, 13, 6), ("l", 4, 7, 4, 7), ("l", 11, 7, 11, 7),
+                          ("d", 3, 7, 3, 7), ("d", 5, 7, 5, 7), ("d", 10, 7, 10, 7), ("d", 12, 7, 12, 7),
+                          ("m", 2, 8, 6, 12), ("m", 9, 8, 13, 12), ("m", 2, 13, 6, 14), ("m", 9, 13, 13, 14)],
+    ("battle", "legs"): [("m", 4, 1, 5, 6), ("m", 10, 1, 11, 6), ("d", 4, 7, 5, 7), ("d", 10, 7, 11, 7),
+                         ("m", 4, 8, 5, 12), ("m", 10, 8, 11, 12), ("d", 3, 13, 6, 14), ("d", 9, 13, 12, 14)],
+    ("super_battle", "legs"): [("d", 3, 1, 5, 5), ("d", 10, 1, 12, 5), ("m", 2, 6, 6, 12), ("m", 9, 6, 13, 12),
+                               ("d", 2, 13, 6, 14), ("d", 9, 13, 13, 14)],
+}
+
+
+def robot_part_items():
+    """De 16 onderdelen van een guard robot als item-icoon, met een donker randje zodat ze goed zichtbaar zijn."""
+    for name, main, dark, light, detail, glows in ROBOT_STYLES:
+        paint = {"m": main, "d": dark, "l": light, "x": detail}
+        edge = (max(0, main[0] // 4), max(0, main[1] // 4), max(0, main[2] // 4), 255)
+        for slot in ("head", "body", "arms", "legs"):
+            im = img(16, 16)
+            d = ImageDraw.Draw(im)
+            for key, x1, y1, x2, y2 in ROBOT_PART_ICONS[(name, slot)]:
+                d.rectangle([x1, y1, x2, y2], fill=paint[key] + (255,))
+            # Een lichter randje bovenaan elk stuk hoofdkleur (licht van boven), dan de omtrek.
+            r, g, b = main
+            shine = (min(255, r + 30), min(255, g + 30), min(255, b + 30), 255)
+            for x in range(16):
+                for y in range(16):
+                    if im.getpixel((x, y)) == main + (255,) and (y == 0 or im.getpixel((x, y - 1))[3] == 0):
+                        im.putpixel((x, y), shine)
+            outline = [(x, y) for x in range(16) for y in range(16) if im.getpixel((x, y))[3] == 0 and any(
+                0 <= x + dx < 16 and 0 <= y + dy < 16 and im.getpixel((x + dx, y + dy))[3] == 255 and
+                im.getpixel((x + dx, y + dy)) != edge for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+            for point in outline:
+                im.putpixel(point, edge)
+            save(im, f"item/robot/{name}_{slot}.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3127,3 +3188,4 @@ if __name__ == "__main__":
     code_panel_textures()
     bypass_kit_item()
     robot_textures()
+    robot_part_items()
