@@ -6,6 +6,7 @@ import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.logic.program.LogicException;
 import com.senne.starktech.logic.program.LogicGraph;
 import com.senne.starktech.logic.program.Op;
+import com.senne.starktech.logic.program.ProgramKind;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -58,12 +59,21 @@ final class BlockCanvas {
     private static final int NO = 0xFF5A50;
     private static final int AFTER = 0xC8D2D8;
 
-    /** De blokjes in het palet, per kopje. Ze komen uit Op: een nieuw blokje staat er vanzelf in. */
-    private static final Op[][] PALETTE = palette();
+    /**
+     * De blokjes in het palet, per kopje, voor elke soort programma (hoofdstuk 23: een robot kent andere
+     * blokjes). Ze komen uit Op: een nieuw blokje staat er vanzelf in.
+     */
+    private static final java.util.Map<ProgramKind, Op[][]> PALETTES = new java.util.EnumMap<>(ProgramKind.class);
+
+    static {
+        for (ProgramKind kind : ProgramKind.values()) {
+            PALETTES.put(kind, palette(kind));
+        }
+    }
     private static final String[] PALETTE_HEADERS = {"START (when, def)", "CHECK AND DO"};
 
     /** Eerst alles waar een rij mee begint (triggers, def, AT START), dan de if, de lussen en alle acties. */
-    private static Op[][] palette() {
+    private static Op[][] palette(ProgramKind kind) {
         List<Op> start = new ArrayList<>();
         List<Op> rest = new ArrayList<>(List.of(Op.IF));
         for (Op op : Op.values()) {
@@ -72,6 +82,9 @@ final class BlockCanvas {
             }
         }
         for (Op op : Op.values()) {
+            if (!op.allowedIn(kind)) {
+                continue;
+            }
             if (op.isRoot()) {
                 start.add(op);
             } else if (op.kind() == Op.Kind.ACTION || op.kind() == Op.Kind.SET) {
@@ -89,6 +102,8 @@ final class BlockCanvas {
     private List<LogicGraph.Problem> problemsCache = List.of();
     private final Consumer<String> hint;
     private LogicGraph graph = new LogicGraph();
+    /** Wat voor programma je bewerkt (hoofdstuk 23): bepaalt het palet en de controle. */
+    private ProgramKind kind = ProgramKind.SERVER;
 
     /** Welk stuk van het vlak je ziet (linksboven, in de maat van de blokjes) en hoe ver ingezoomd. */
     private double panX;
@@ -149,10 +164,24 @@ final class BlockCanvas {
     /** Wat er mis is met de blokjes (onthouden tot de volgende verandering). */
     private List<LogicGraph.Problem> problems() {
         if (problemsVersion != version) {
-            problemsCache = graph.problems();
+            problemsCache = graph.problems(kind);
             problemsVersion = version;
         }
         return problemsCache;
+    }
+
+    /** Wat voor programma je bewerkt: een ander palet, en de controle opnieuw. */
+    void setKind(ProgramKind kind) {
+        if (this.kind != kind) {
+            this.kind = kind;
+            paletteScroll = 0;
+            problemsVersion = -1;
+        }
+    }
+
+    /** De blokjes van het palet voor de soort programma die je bewerkt. */
+    private Op[][] palette() {
+        return PALETTES.get(kind);
     }
 
     /** Een ander diagram: het vlak schuift naar de blokjes. */
@@ -488,9 +517,9 @@ final class BlockCanvas {
     // ================================================================ Het palet
 
     /** Hoe hoog alles in het palet samen is (de kopjes en de rijen knoppen). */
-    private static int paletteHeight() {
+    private int paletteHeight() {
         int height = 3;
-        for (Op[] ops : PALETTE) {
+        for (Op[] ops : palette()) {
             height += 10 + ((ops.length + 1) / 2) * 12 + 3;
         }
         return height;
@@ -513,10 +542,10 @@ final class BlockCanvas {
         g.enableScissor(px + 1, cy + 1, px + PANEL_W - 1, cy + ch - 1);
         int y = cy + 3 - paletteScroll;
         boolean inPanel = my >= cy && my < cy + ch;
-        for (int section = 0; section < PALETTE.length; section++) {
+        for (int section = 0; section < palette().length; section++) {
             g.drawString(font, PALETTE_HEADERS[section], px + 4, y, HudStyle.argb(255, HudStyle.ORANGE), false);
             y += 10;
-            Op[] ops = PALETTE[section];
+            Op[] ops = palette()[section];
             for (int i = 0; i < ops.length; i++) {
                 int bx = px + 3 + (i % 2) * 54;
                 int by = y + (i / 2) * 12;
@@ -552,7 +581,7 @@ final class BlockCanvas {
             return null;
         }
         int y = cy + 3 - paletteScroll;
-        for (Op[] ops : PALETTE) {
+        for (Op[] ops : palette()) {
             y += 10;
             for (int i = 0; i < ops.length; i++) {
                 if (OsDraw.inside(mx, my, px + 3 + (i % 2) * 54, y + (i / 2) * 12, 52, 11)) {
@@ -764,7 +793,10 @@ final class BlockCanvas {
                 names.add(def.text);
             }
         } else if (op == Op.IF || op == Op.WHILE) {
-            names.addAll(List.of("card.valid and card.level >= 3", "code == \"1234\"", "player.trusted", "is_night"));
+            if (kind == ProgramKind.SERVER) {
+                names.addAll(List.of("card.valid and card.level >= 3", "code == \"1234\"", "player.trusted"));
+            }
+            names.add("is_night");
             for (Tag tag : info.get().getList("outputs", Tag.TAG_STRING)) {
                 names.add("is_on(\"" + tag.getAsString() + "\")");
             }

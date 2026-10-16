@@ -14,7 +14,9 @@ import com.senne.starktech.logic.program.ExprCache;
 import com.senne.starktech.logic.program.GraphConverter;
 import com.senne.starktech.logic.program.LogicException;
 import com.senne.starktech.logic.program.LogicGraph;
+import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.Op;
+import com.senne.starktech.logic.program.ProgramKind;
 import com.senne.starktech.logic.program.Script;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.logic.program.ScriptPrinter;
@@ -799,6 +801,83 @@ public final class LogicGameTests {
         if (!ok) {
             throw new GameTestAssertException(message);
         }
+    }
+
+    // ================================================================ Hoofdstuk 23: soorten programma's
+
+    /**
+     * Soorten programma's (hoofdstuk 23): een robot kent geen keycard, accept of card.level (die horen bij de
+     * server), de server wel. De soort blijft bij bewaren en laden; een oud diagram (zonder soort) is een
+     * diagram op de server. De blokjes geven dezelfde fout als de code.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_program_kinds(GameTestHelper helper) {
+        String reader = "when keycard(\"Lab\"):\n    accept()\n";
+        ScriptParser.parse(reader, ProgramKind.SERVER);
+        expectKindError(reader, ProgramKind.ROBOT, 1, "keycard(...) only works in a server diagram, not in a robot program");
+        expectKindError("when every(5):\n    accept()\n", ProgramKind.ROBOT, 2, "accept() only works in a server diagram");
+        expectKindError("when every(5):\n    if card.level > 1:\n        log(\"x\")\n", ProgramKind.ROBOT, 2,
+                "card.level only works in a server diagram");
+        // is_night en je eigen namen werken overal.
+        ScriptParser.parse("count = 0\n\nwhen every(5):\n    if is_night:\n        count = count + 1\n", ProgramKind.ROBOT);
+
+        String code = "when every(5):\n    log(\"tick\")\n";
+        LogicGraph graph = GraphConverter.toGraph(ScriptParser.parse(code, ProgramKind.ROBOT), null);
+        LogicProgram robot = new LogicProgram("Patrol", true, graph, code, ProgramKind.ROBOT);
+        LogicProgram loaded = LogicProgram.load(robot.save());
+        check(loaded.kind() == ProgramKind.ROBOT, "Na bewaren en laden is de soort " + loaded.kind());
+        CompoundTag old = new LogicProgram("Old", true, graph, code).save();
+        old.remove("Kind");
+        check(LogicProgram.load(old).kind() == ProgramKind.SERVER, "Een oud diagram is geen diagram op de server");
+
+        LogicGraph keycard = GraphConverter.toGraph(ScriptParser.parse(reader), null);
+        check(keycard.problems(ProgramKind.SERVER).isEmpty(), "Op de server zou een keycard mogen");
+        check(keycard.problems(ProgramKind.ROBOT).stream().anyMatch(problem -> problem.message().contains("only works in a server diagram")),
+                "De blokjes van een robotprogramma lieten een keycard toe: " + keycard.problems(ProgramKind.ROBOT));
+        helper.succeed();
+    }
+
+    /** Een robotprogramma staat op de server (het telt mee voor de SSD's), maar de server voert het niet uit. */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "logic_runner_kinds")
+    public static void logic_robot_programs_do_not_run_on_the_server(GameTestHelper helper) {
+        Setup setup = setup(helper);
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, setup.rack(), setup.core());
+            StarkOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Server", "when every(1):\n    log(\"server tick\")\n");
+            CompoundTag args = new CompoundTag();
+            args.putString("old", "");
+            args.putString("name", "Robot");
+            String code = "when every(1):\n    log(\"robot tick\")\n";
+            args.put("graph", GraphConverter.toGraph(ScriptParser.parse(code, ProgramKind.ROBOT), null).save());
+            args.putString("source", code);
+            args.putString("kind", "ROBOT");
+            StarkOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "logic_save", args));
+            LogicProgram robot = setup.core().logic().program("Robot");
+            check(robot != null && robot.kind() == ProgramKind.ROBOT, "Het robotprogramma werd niet als robotprogramma bewaard: "
+                    + lastLog(setup.core()));
+            check(setup.core().logic().blocks() == robot.graph().size() + setup.core().logic().program("Server").graph().size(),
+                    "Het robotprogramma telt niet mee voor de SSD's");
+        });
+        helper.runAfterDelay(100, () -> {
+            check(logged(setup.core(), "server tick"), "Het diagram op de server draaide niet: " + lastLog(setup.core()));
+            check(!logged(setup.core(), "robot tick"), "De server voerde het robotprogramma uit");
+            helper.succeed();
+        });
+    }
+
+    /** De code moet een fout geven die bij deze soort programma hoort, op deze regel. */
+    private static void expectKindError(String code, ProgramKind kind, int line, String part) {
+        try {
+            ScriptParser.parse(code, kind);
+        } catch (LogicException e) {
+            if (e.line() != line || !e.getMessage().contains(part)) {
+                throw new GameTestAssertException("Voor:\n" + code + "\nverwachtte ik regel " + line + " met \"" + part
+                        + "\", maar kreeg: " + e.describe());
+            }
+            return;
+        }
+        throw new GameTestAssertException("Voor:\n" + code + "\nverwachtte ik een fout (" + part + "), maar het klopte");
     }
 
     /** Een klik op de voorkant van de lezer op {@code pos}. */

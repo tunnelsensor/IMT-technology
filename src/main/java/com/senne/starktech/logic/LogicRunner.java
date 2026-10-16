@@ -237,7 +237,7 @@ public final class LogicRunner {
 
     /**
      * De diagrammen die nu mogen draaien: aan, en (van boven naar beneden) zolang ze op de SSD's
-     * passen.
+     * passen. Een robotprogramma (hoofdstuk 23) telt mee voor de SSD's, maar draait op de robot, niet hier.
      */
     private static List<LogicProgram> runnable(SecurityCoreBlockEntity core, LogicServer.Stats stats) {
         List<LogicProgram> fits = new ArrayList<>();
@@ -247,7 +247,7 @@ public final class LogicRunner {
             if (used > stats.capacity()) {
                 break;
             }
-            if (program.enabled()) {
+            if (program.enabled() && program.kind() == com.senne.starktech.logic.program.ProgramKind.SERVER) {
                 fits.add(program);
             }
         }

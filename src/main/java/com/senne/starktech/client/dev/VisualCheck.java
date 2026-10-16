@@ -2074,6 +2074,19 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "l15_logic_block_set");
+            // Hoofdstuk 23: na + kies je wat voor programma (een diagram op de server, of een robotprogramma).
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicChooseKind();
+                }
+            });
+            t.shot(10, "l16_logic_new_kind");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicNew(com.senne.starktech.logic.program.ProgramKind.ROBOT);
+                }
+            });
+            t.shot(10, "l17_logic_robot_program");
             t.close(10);
         }
 

@@ -1,5 +1,6 @@
 package com.senne.starktech.logic.program;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.jetbrains.annotations.Nullable;
@@ -94,6 +95,15 @@ public sealed interface Expr {
 
         public String help() {
             return help;
+        }
+
+        /** Mag dit gegeven in deze soort programma (hoofdstuk 23)? Kaarten, codes en spelers kent alleen de server. */
+        public boolean allowedIn(ProgramKind kind) {
+            return switch (this) {
+                case CARD_LEVEL, CARD_NUMBER, CARD_VALID, CARD_NAME, CODE, PLAYER_NAME, PLAYER_TRUSTED, PLAYER_OWNER ->
+                        kind == ProgramKind.SERVER;
+                default -> true;
+            };
         }
 
         /** Mag dit gegeven na deze trigger? (player.* alleen na een lezer of paneel; null = in een def: alles.) */
@@ -578,6 +588,38 @@ public sealed interface Expr {
         /** De waarde van een van je eigen namen (variabelen), of null als hij (nog) geen waarde heeft. */
         default @Nullable Object variable(String name) {
             return null;
+        }
+    }
+
+    /** De ingebouwde gegevens ({@code card.level}, {@code robot.battery}...) die in deze uitdrukking staan. */
+    static List<String> builtins(Expr expr) {
+        List<String> names = new ArrayList<>();
+        collect(expr, names);
+        return names;
+    }
+
+    private static void collect(Expr expr, List<String> names) {
+        switch (expr) {
+            case Or o -> {
+                collect(o.left(), names);
+                collect(o.right(), names);
+            }
+            case And a -> {
+                collect(a.left(), names);
+                collect(a.right(), names);
+            }
+            case Not n -> collect(n.inner(), names);
+            case Compare c -> {
+                collect(c.left(), names);
+                collect(c.right(), names);
+            }
+            case Neg n -> collect(n.inner(), names);
+            case Arith a -> {
+                collect(a.left(), names);
+                collect(a.right(), names);
+            }
+            case Var v -> names.add(v.name());
+            default -> { }
         }
     }
 

@@ -6,6 +6,7 @@ import com.senne.starktech.logic.program.LogicException;
 import com.senne.starktech.logic.program.LogicGraph;
 import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.Op;
+import com.senne.starktech.logic.program.ProgramKind;
 import com.senne.starktech.logic.program.Script;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.logic.program.ScriptPrinter;
@@ -50,7 +51,7 @@ final class LogicApp {
     private static final int HELP_W = 152;
 
     /** Eén diagram zoals de server het stuurde. */
-    private record Entry(String name, boolean on, LogicGraph graph, String source) {}
+    private record Entry(String name, boolean on, LogicGraph graph, String source, ProgramKind kind) {}
 
     /** Code of blokjes: twee manieren om hetzelfde diagram te bewerken. */
     private enum Mode { CODE, BLOCKS }
@@ -72,6 +73,10 @@ final class LogicApp {
 
     /** Het diagram dat open is: zijn naam op de server (null = nieuw, nog niet bewaard). */
     private @Nullable String current;
+    /** Wat voor programma er open is (hoofdstuk 23): een diagram op de server, of een robotprogramma. */
+    private ProgramKind kind = ProgramKind.SERVER;
+    /** Na een klik op +: kiezen wat voor programma je maakt (twee knoppen in de zijbalk). */
+    private boolean choosingKind;
     private boolean open;
     private String loadedCode = "";
     private String loadedName = "";
@@ -138,7 +143,7 @@ final class LogicApp {
         entries.clear();
         for (Tag element : logic.getList("programs", Tag.TAG_COMPOUND)) {
             LogicProgram program = LogicProgram.load((CompoundTag) element);
-            entries.add(new Entry(program.name(), program.enabled(), program.graph(), program.source()));
+            entries.add(new Entry(program.name(), program.enabled(), program.graph(), program.source(), program.kind()));
         }
         if (pendingSelect != null && find(pendingSelect) != null) {
             openEntry(find(pendingSelect), true);
@@ -175,6 +180,7 @@ final class LogicApp {
     private void openEntry(Entry entry, boolean keepCursor) {
         current = entry.name();
         open = true;
+        setKind(entry.kind());
         baseGraph = entry.graph();
         blockGraph = entry.graph().copy();
         blocksEdited = false;
@@ -203,10 +209,14 @@ final class LogicApp {
 
     /** De code van een diagram: zoals jij hem schreef als die nog bij de blokjes past, anders uit de blokjes. */
     static String codeFor(LogicGraph graph, String source) {
+        return codeFor(graph, source, ProgramKind.SERVER);
+    }
+
+    static String codeFor(LogicGraph graph, String source, ProgramKind kind) {
         String printed = ScriptPrinter.print(GraphConverter.toScript(graph));
         if (!source.isEmpty()) {
             try {
-                if (ScriptPrinter.print(ScriptParser.parse(source)).equals(printed)) {
+                if (ScriptPrinter.print(ScriptParser.parse(source, kind)).equals(printed)) {
                     return source;
                 }
             } catch (LogicException e) {
@@ -217,7 +227,13 @@ final class LogicApp {
     }
 
     private static String codeFor(Entry entry) {
-        return codeFor(entry.graph(), entry.source());
+        return codeFor(entry.graph(), entry.source(), entry.kind());
+    }
+
+    /** Een ander soort programma open: het palet en Ctrl+Spatie gaan mee. */
+    private void setKind(ProgramKind kind) {
+        this.kind = kind;
+        canvas.setKind(kind);
     }
 
     /** Zijn er wijzigingen die nog niet bewaard zijn? */
@@ -270,7 +286,7 @@ final class LogicApp {
         if (blockGraph == null) {
             return false;
         }
-        var problems = blockGraph.problems();
+        var problems = blockGraph.problems(kind);
         if (!problems.isEmpty()) {
             if (select) {
                 canvas.select(problems.getFirst().node());
@@ -297,7 +313,7 @@ final class LogicApp {
     /** Controleert de code. {@code jump}: spring naar de regel met de fout. Geeft het Script, of null bij een fout. */
     private @Nullable Script check(boolean jump) {
         try {
-            Script script = ScriptParser.parse(editor.text());
+            Script script = ScriptParser.parse(editor.text(), kind);
             editor.setErrorLine(0);
             int blocks = script.blocks();
             if (script.items().isEmpty()) {
@@ -351,6 +367,7 @@ final class LogicApp {
         args.putString("name", name);
         args.put("graph", graph.save());
         args.putString("source", source);
+        args.putString("kind", kind.name());
         screen.send("logic_save", args);
         pendingSelect = name;
     }
@@ -361,40 +378,49 @@ final class LogicApp {
             return;
         }
         if (mode == Mode.BLOCKS) {
-            if (blockGraph != null && blockGraph.problems().isEmpty()) {
+            if (blockGraph != null && blockGraph.problems(kind).isEmpty()) {
                 save();
             }
             return;
         }
         try {
-            ScriptParser.parse(editor.text());
+            ScriptParser.parse(editor.text(), kind);
             save();
         } catch (LogicException e) {
             // Kapotte code bewaren we niet vanzelf.
         }
     }
 
-    private void newDiagram() {
+    /**
+     * Een nieuw programma van deze soort: een diagram op de server, of (hoofdstuk 23) een robotprogramma. Het
+     * krijgt een vrije naam ("Diagram 2", "Robot 1") en een begin dat al klopt.
+     */
+    private void newDiagram(ProgramKind newKind) {
+        choosingKind = false;
         if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
             return;
         }
+        String base = newKind == ProgramKind.ROBOT ? "Robot " : "Diagram ";
         int number = 1;
-        while (find("Diagram " + number) != null) {
+        while (find(base + number) != null) {
             number++;
         }
         current = null;
         open = true;
         baseGraph = null;
-        nameBox().setValue("Diagram " + number);
+        setKind(newKind);
+        nameBox().setValue(base + number);
         loadedName = "";
         String reader = firstInput(false);
-        String code = reader != null
+        String code = newKind == ProgramKind.ROBOT
+                ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen every(10):\n    pass\n"
+                : reader != null
                 ? "when keycard(\"" + reader + "\"):\n    if card.valid and card.level >= 1:\n        accept()\n    else:\n        deny()\n"
                 : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
         editor.setText(code);
         loadedCode = "";
         codeAtSwitch = code;
-        blockGraph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        blockGraph = GraphConverter.toGraph(ScriptParser.parse(code, newKind), null);
         blocksEdited = false;
         if (mode == Mode.BLOCKS) {
             canvas.setGraph(blockGraph);
@@ -453,7 +479,7 @@ final class LogicApp {
         statusColour = colour;
     }
 
-    /** Wat Ctrl+Spatie aan namen kan voorstellen: je apparaten, je lezers en je panelen. */
+    /** Wat Ctrl+Spatie aan namen kan voorstellen: je apparaten, je lezers en je panelen (en voor welke soort programma). */
     private CodeCompletion.Data completionData() {
         List<String> outputs = new ArrayList<>();
         for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
@@ -465,7 +491,7 @@ final class LogicApp {
             CompoundTag input = (CompoundTag) element;
             (input.getBoolean("p") ? panels : readers).add(input.getString("n"));
         }
-        return new CodeCompletion.Data(outputs, readers, panels);
+        return new CodeCompletion.Data(outputs, readers, panels, kind);
     }
 
     private @Nullable String firstInput(boolean panel) {
@@ -551,7 +577,8 @@ final class LogicApp {
     private List<String> toolbar() {
         Entry entry = current == null ? null : find(current);
         String view = mode == Mode.CODE ? "Blocks" : "Code";
-        if (entry == null) {
+        if (entry == null || entry.kind() != ProgramKind.SERVER) {
+            // Een robotprogramma zet je niet aan of uit op de server: de robot draait het (app Robots).
             return List.of(view, "Check", "Save", "Delete");
         }
         return List.of(view, "Check", "Save", entry.on() ? "Off" : "On", "Delete");
@@ -564,6 +591,14 @@ final class LogicApp {
         int top = a.y() + TOOLBAR;
         int bottom = a.y() + a.h() - 34;
         OsDraw.field(g, x, top, x + SIDE, bottom, false);
+        if (choosingKind) {
+            // Na +: wat voor programma? (Hoofdstuk 23.)
+            g.drawString(font, "New:", x + 4, top + 4, HudStyle.argb(255, HudStyle.WHITE), false);
+            OsDraw.button(g, font, x + 4, top + 15, "Server diagram", true, HudStyle.CYAN);
+            OsDraw.button(g, font, x + 4, top + 15 + OsDraw.BUTTON_H + 3, "Robot program", true, 0xF1E87C);
+            OsDraw.button(g, font, x + 4, top + 15 + 2 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
+            return;
+        }
         int y = top + 3;
         List<Entry> shown = new ArrayList<>(entries);
         sideScroll = Math.max(0, Math.min(sideScroll, Math.max(0, shown.size() - 1)));
@@ -575,8 +610,13 @@ final class LogicApp {
             }
             g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
             String name = (selected && dirty() ? "*" : "") + entry.name();
-            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - 14), x + 10, y,
-                    HudStyle.argb(255, entry.on() ? HudStyle.WHITE : OsDraw.GREY), false);
+            boolean robot = entry.kind() == ProgramKind.ROBOT;
+            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (robot ? 24 : 14)), x + 10, y,
+                    HudStyle.argb(255, entry.on() || robot ? HudStyle.WHITE : OsDraw.GREY), false);
+            if (robot) {
+                // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server).
+                g.drawString(font, "R", x + SIDE - 10, y, HudStyle.argb(255, 0xF1E87C), false);
+            }
             y += ROW;
         }
         if (open && current == null && y + ROW <= bottom) {
@@ -620,27 +660,36 @@ final class LogicApp {
             outputs.add(tag.getAsString());
         }
         String device = outputs.isEmpty() ? "Lamp" : outputs.getFirst();
+        boolean server = kind == ProgramKind.SERVER;
         lines.add(header("START WITH (when)"));
+        if (server) {
         lines.add(item("keycard(...)", "when keycard(\"" + (reader == null ? "Reader 1" : reader) + "\"):\n    if card.valid:\n        accept()\n    else:\n        deny()\n", Op.KEYCARD));
         lines.add(item("codepanel(...)", "when codepanel(\"" + (panel == null ? "Panel 1" : panel) + "\"):\n    if code == \"1234\":\n        accept()\n    else:\n        deny()\n", Op.CODEPANEL));
         lines.add(item("turned_on(...)", "when turned_on(\"" + device + "\"):\n    pass\n", Op.TURNED_ON));
         lines.add(item("turned_off(...)", "when turned_off(\"" + device + "\"):\n    pass\n", Op.TURNED_OFF));
+        }
         lines.add(item("every(10)", "when every(10):\n    pass\n", Op.EVERY));
         lines.add(header("DO (actions)"));
         lines.add(item("on / off / toggle", "on(\"" + device + "\")", Op.ON));
         lines.add(item("pulse(..., 3)", "pulse(\"" + device + "\", 3)", Op.PULSE));
         lines.add(item("wait(2)", "wait(2)", Op.WAIT));
-        lines.add(item("accept() / deny()", "accept()", Op.ACCEPT));
+        if (server) {
+            lines.add(item("accept() / deny()", "accept()", Op.ACCEPT));
+        }
         lines.add(item("say(...)", "say(\"Someone is at the door\")", Op.SAY));
         lines.add(item("alarm(...)", "alarm(\"Intruder!\")", Op.ALARM));
         lines.add(item("log(...)", "log(\"Door opened\")", Op.LOG));
         lines.add(header("CHECK (if)"));
+        if (server) {
         lines.add(new HelpLine("if card.level >= 3:", "if card.valid and card.level >= 3:\n    pass", "card.level: 1-5; card.valid: written by this network and not blocked", HudStyle.WHITE, null));
         lines.add(new HelpLine("if code == \"1234\":", "if code == \"1234\":\n    pass", "the code typed on a code panel (between quotes)", HudStyle.WHITE, null));
         lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "the owner, their team, and trusted players (Access)", HudStyle.WHITE, null));
+        }
         lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
-        lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", "also: is_day, player.owner, player.name, card.number, card.name", HudStyle.WHITE, null));
-        lines.add(new HelpLine("if card.level * 2 - 1 >= 5:", "if card.level * 2 - 1 >= 5:\n    pass",
+        lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", server ? "also: is_day, player.owner, player.name, card.number, card.name"
+                : "also: is_day", HudStyle.WHITE, null));
+        lines.add(new HelpLine(server ? "if card.level * 2 - 1 >= 5:" : "if count * 2 - 1 >= 5:",
+                server ? "if card.level * 2 - 1 >= 5:\n    pass" : "if count * 2 - 1 >= 5:\n    pass",
                 "calculate with + - * / and brackets (* and / go first); + also glues text: \"Level \" + card.level",
                 HudStyle.WHITE, null));
         lines.add(new HelpLine("else: / elif ...:", "else:\n    pass", "what happens when the if is not true", HudStyle.WHITE, null));
@@ -678,6 +727,9 @@ final class LogicApp {
         }
         for (String name : outputs) {
             lines.add(new HelpLine(name, quoted(name), "a relay, laser, dome, turret or cabinet switch", 0x9ED8FF, null));
+        }
+        if (!server) {
+            return lines; // lezers en panelen horen bij de server
         }
         lines.add(header("READERS AND PANELS"));
         for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
@@ -749,10 +801,23 @@ final class LogicApp {
     void mouseClicked(Font font, StarkOsScreen.Area a, int mx, int my, int button) {
         // De zijbalk: + en de diagrammen.
         if (OsDraw.inside(mx, my, a.x() + SIDE - OsDraw.buttonWidth(font, "+"), a.y(), OsDraw.buttonWidth(font, "+"), OsDraw.BUTTON_H)) {
-            newDiagram();
+            choosingKind = !choosingKind;
             return;
         }
         int top = a.y() + TOOLBAR;
+        if (choosingKind) {
+            int bx = a.x() + 4;
+            if (OsDraw.inside(mx, my, bx, top + 15, OsDraw.buttonWidth(font, "Server diagram"), OsDraw.BUTTON_H)) {
+                newDiagram(ProgramKind.SERVER);
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + OsDraw.BUTTON_H + 3, OsDraw.buttonWidth(font, "Robot program"), OsDraw.BUTTON_H)) {
+                newDiagram(ProgramKind.ROBOT);
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 2 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
+                choosingKind = false;
+            }
+            if (mx >= a.x() && mx < a.x() + SIDE) {
+                return;
+            }
+        }
         if (mx >= a.x() && mx < a.x() + SIDE && my >= top) {
             int index = sideScroll + (my - top - 1) / ROW;
             if (index >= 0 && index < entries.size()) {
@@ -978,6 +1043,21 @@ final class LogicApp {
     /** De knop Save, zoals jij hem indrukt. */
     void tourSave() {
         save();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: na + de keuze tussen een diagram op de server en een robotprogramma. */
+    void tourChooseKind() {
+        choosingKind = true;
+    }
+
+    /** Alleen voor de screenshot-rondleiding: een nieuw programma van deze soort, met Help open. */
+    void tourNew(ProgramKind newKind) {
+        open = false; // geen "wijzigingen weggooien?"
+        newDiagram(newKind);
+        if (mode == Mode.BLOCKS) {
+            switchMode();
+        }
+        helpOpen = true;
     }
 
     /** Een nieuw diagram met deze code en naam, en meteen Check. */

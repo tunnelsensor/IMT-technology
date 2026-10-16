@@ -13,15 +13,23 @@ import net.minecraft.nbt.CompoundTag;
  *
  * Dit object verandert niet: opslaan maakt een nieuw diagram. Zo kan een diagram dat nog bezig is
  * (aan het wachten met wait()) rustig afmaken met de blokjes waarmee het begon.
+ *
+ * Hoofdstuk 23: elk programma heeft een soort ({@link ProgramKind}). Een robotprogramma staat ook op de
+ * server (het telt mee voor je SSD's), maar de server voert het niet uit: dat doet de robot.
  */
-public record LogicProgram(String name, boolean enabled, LogicGraph graph, String source) {
+public record LogicProgram(String name, boolean enabled, LogicGraph graph, String source, ProgramKind kind) {
     /** Zo lang mag de naam van een diagram hooguit zijn. */
     public static final int MAX_NAME = 24;
     /** Zo lang mag de bewaarde code hooguit zijn (tekens). */
     public static final int MAX_SOURCE = 8000;
 
+    /** Een diagram op de server (zoals vóór hoofdstuk 23). */
+    public LogicProgram(String name, boolean enabled, LogicGraph graph, String source) {
+        this(name, enabled, graph, source, ProgramKind.SERVER);
+    }
+
     public LogicProgram withEnabled(boolean on) {
-        return new LogicProgram(name, on, graph, source);
+        return new LogicProgram(name, on, graph, source, kind);
     }
 
     public CompoundTag save() {
@@ -31,6 +39,9 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
         tag.put("Graph", graph.save());
         if (!source.isEmpty()) {
             tag.putString("Source", source);
+        }
+        if (kind != ProgramKind.SERVER) {
+            tag.putString("Kind", kind.name());
         }
         return tag;
     }
@@ -44,6 +55,6 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
             source = ScriptPrinter.print(GraphConverter.toScript(graph));
         }
         return new LogicProgram(tag.getString("Name"), !tag.contains("On") || tag.getBoolean("On"),
-                graph, source.length() > MAX_SOURCE ? "" : source);
+                graph, source.length() > MAX_SOURCE ? "" : source, ProgramKind.byName(tag.getString("Kind")));
     }
 }

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 247 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 249 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2338,9 +2338,8 @@ ene run.
       "Hello has no value yet... If you meant text, put it between quotes: say("Hello")". De robot-acties met
       meerdere waarden (`goto(x, y, z)`, `write(pin, waarde)`) gebruiken straks hetzelfde. Twee nieuwe tests
       (`logic_values_in_actions`, `logic_values_run`). Commit: `8bdfe7b`.
-- [ ] **7. Soorten programma's** — *verschoven naar hoofdstuk 23*: een soort "Robot" of "Drone" doet pas iets
-      als er robots zijn. Daar komt hij als eerste stap, met de controle per soort (een `accept()` kan niet in
-      een robotprogramma).
+- [x] **7. Soorten programma's** — *verschoven naar hoofdstuk 23*: een soort "Robot" of "Drone" doet pas iets
+      als er robots zijn. Gedaan als stap 1 van hoofdstuk 23 (een "Drone" komt in hoofdstuk 25).
 - [x] **8. Oude programma's** — een def met een naam die nu een woord van de taal is (`repeat`, `while`,
       `forever`, `break`, `set` of `var`), krijgt bij het laden een andere naam (`repeat_1`, of `_2` als die
       al bestaat); de blokjes die hem gebruiken gaan mee, en de bewaarde code wordt opnieuw uit de blokjes
@@ -2553,16 +2552,31 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
 - Server naar robot: `order("Guard 1", "attack", x, y, z)`, `activate` en `deactivate`. In de robot:
   `when started:` en `when order("attack"):`.
 
-- [ ] **1. Het brein van de robot** — dezelfde tolk, met een stappenbudget per tick; bewegen stap voor stap;
-      `blocked` als er iets in de weg staat.
-- [ ] **2. Programma's naar de robot** — uploaden via de verbinding; de robot bewaart zijn eigen kopie.
-- [ ] **3. Verbinding** — alleen binnen het gebied van de core, met stroom en een werkende server. Zonder
-      verbinding geen alarm en geen relais, wel lopen en scannen.
-- [ ] **4. Robot naar server** — alarm, say, log, relais, en `send(...)` met `sender.name`.
-- [ ] **5. Server naar robot** — order, activate, deactivate; een opdracht aan een robot die niet geladen is,
+- [x] **1. Soorten programma's** (stap 7 van hoofdstuk 20) — elk programma heeft nu een soort
+      (`ProgramKind`): een **Server diagram** (zoals altijd) of een **Robot program**. Bij **+** in de app
+      Logic kies je welke (screenshot `l16`); een robotprogramma heet "Robot 1", "Robot 2"... en krijgt in de
+      lijst een geel **R**. Een robot kent geen `keycard`, `codepanel`, `turned_on/off`, `accept`, `deny` en
+      geen `card.*`, `code` of `player.*` (die horen bij een lezer of paneel van je server): de code zegt dan
+      "Line 1: keycard(...) only works in a server diagram, not in a robot program", en het palet van de
+      blokjes, Help en Ctrl+Spatie laten ze bij een robotprogramma gewoon weg (screenshot `l17`). De soort
+      wordt bewaard (NBT `Kind`; een oud diagram is een diagram op de server). Een robotprogramma staat op je
+      SSD's (het telt mee), maar de server voert het nooit uit, en de knop On/Off heeft het niet. Twee nieuwe
+      tests (`logic_program_kinds`, `logic_robot_programs_do_not_run_on_the_server`).
+- [ ] **2. De woorden van een robot** — in de taal: `when started:` en `when order("attack"):`;
+      `forward(n)`, `back(n)`, `turn_left()`, `turn_right()`, `stop()`, `charge()`, `goto(x, y, z)`,
+      `write(pin, waarde)`, `send("...")`; `pin(n)` en `read(p)`; `robot.battery/x/y/z/facing/name/blocked/
+      connected` en `order.x/y/z/name`. In een serverdiagram: `order(...)`, `activate(...)`, `deactivate(...)`
+      en `when message("..."):` met `sender.name/x/y/z`.
+- [ ] **3. Het brein van de robot** — dezelfde tolk, met een stappenbudget per tick; bewegen stap voor stap;
+      `blocked` als er iets in de weg staat; `charge()` loopt naar zijn dock en terug.
+- [ ] **4. Programma's naar de robot** — kiezen in de app Robots; uploaden via de verbinding; de robot bewaart
+      zijn eigen kopie.
+- [ ] **5. Robot naar server** — alleen met verbinding (in het gebied van de core, met stroom en een werkende
+      server): alarm, say, log, relais, en `send(...)` met `sender.name`. Zonder verbinding wel lopen.
+- [ ] **6. Server naar robot** — order, activate, deactivate; een opdracht aan een robot die niet geladen is,
       wacht tot die weer geladen wordt.
-- [ ] **6. De app Logic** — soort Robot, Help en Ctrl+Spatie met de pinnen van de gekozen robot, en
-      voorbeeldprogramma's.
+- [ ] **7. De app Logic** — Help en Ctrl+Spatie met de pinnen van de gekozen robot, voorbeeldprogramma's,
+      screenshots, LEESMIJ en de showcase.
 
 Tests: vierkantje lopen (vier keer `turn_right()` na `forward(2)` komt op de plek waar hij begon); batterij
 laden en terug; een opdracht onderbreekt het programma en het hervat; zonder verbinding geen alarm maar wel

@@ -218,7 +218,7 @@ public final class StarkOs {
             case "card_delete" -> deleteCard(player, core, session, args.getInt("n"));
             case "card_delete_blocked" -> deleteBlockedCards(player, core, session);
             case "logic_save" -> saveProgram(player, core, session, args.getString("old"), args.getString("name"),
-                    args.getCompound("graph"), args.getString("source"));
+                    args.getCompound("graph"), args.getString("source"), args.getString("kind"));
             case "logic_delete" -> deleteProgram(player, core, session, args.getString("name"));
             case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "input_rename" -> renameInput(player, core, session,
@@ -429,7 +429,7 @@ public final class StarkOs {
      * bestaat is geen fout (misschien bouw je het straks), maar je hoort het wel.
      */
     private static void saveProgram(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String oldName,
-                                    String newName, CompoundTag graphTag, String source) {
+                                    String newName, CompoundTag graphTag, String source, String kindName) {
         ServerLevel level = player.serverLevel();
         com.senne.starktech.logic.LogicStore store = core.logic();
         String name = com.senne.starktech.logic.InputDeviceBlockEntity.cleanName(newName);
@@ -438,7 +438,8 @@ public final class StarkOs {
             return;
         }
         var graph = com.senne.starktech.logic.program.LogicGraph.load(graphTag);
-        var problems = graph.problems();
+        var kind = com.senne.starktech.logic.program.ProgramKind.byName(kindName);
+        var problems = graph.problems(kind);
         if (!problems.isEmpty()) {
             notify(player, core, session, "Not saved: " + problems.getFirst().message(), true);
             return;
@@ -467,7 +468,7 @@ public final class StarkOs {
         }
         store.put(old == null ? null : old.name(), new com.senne.starktech.logic.program.LogicProgram(name,
                 old == null || old.enabled(), graph,
-                source.length() > com.senne.starktech.logic.program.LogicProgram.MAX_SOURCE ? "" : source));
+                source.length() > com.senne.starktech.logic.program.LogicProgram.MAX_SOURCE ? "" : source, kind));
         core.setChanged();
         com.senne.starktech.logic.LogicDevices.refresh(level, core, player);
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " saved the diagram \"" + name + "\"");

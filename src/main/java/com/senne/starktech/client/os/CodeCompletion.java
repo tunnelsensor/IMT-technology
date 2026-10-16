@@ -3,6 +3,7 @@ package com.senne.starktech.client.os;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.logic.program.Op;
+import com.senne.starktech.logic.program.ProgramKind;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,7 +31,12 @@ public final class CodeCompletion {
     private CodeCompletion() {}
 
     /** De namen die de server stuurde: je apparaten, lezers en panelen. */
-    public record Data(List<String> outputs, List<String> readers, List<String> panels) {}
+    public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind) {
+        /** Voor een diagram op de server. */
+        public Data(List<String> outputs, List<String> readers, List<String> panels) {
+            this(outputs, readers, panels, ProgramKind.SERVER);
+        }
+    }
 
     /**
      * Eén suggestie: wat je ziet, wat er ingevuld wordt, waar de cursor daarna staat ({@code caret}
@@ -122,7 +128,7 @@ public final class CodeCompletion {
         String device = first(data.outputs(), "Lamp");
         // Elke trigger die er is (zie Op): een nieuwe trigger staat hier vanzelf bij.
         for (Op op : Op.values()) {
-            if (!op.isTrigger()) {
+            if (!op.isTrigger() || !op.allowedIn(data.kind())) {
                 continue;
             }
             boolean named = op.textArg() != Op.Arg.NONE;
@@ -139,7 +145,7 @@ public final class CodeCompletion {
     /** Na "when ": de triggers (de cursor komt tussen de aanhalingstekens). */
     private static void triggers(List<Item> items, Data data) {
         for (Op op : Op.values()) {
-            if (op.isTrigger()) {
+            if (op.isTrigger() && op.allowedIn(data.kind())) {
                 items.add(item(op, ":", TRIGGER));
             }
         }
@@ -160,7 +166,7 @@ public final class CodeCompletion {
         // Elke actie die er is (zie Op): een nieuwe actie staat hier vanzelf bij. Een eigen blok (CALL)
         // staat hieronder bij de namen van je defs.
         for (Op op : Op.values()) {
-            if (op.kind() == Op.Kind.ACTION && op != Op.CALL && op != Op.BREAK) {
+            if (op.kind() == Op.Kind.ACTION && op != Op.CALL && op != Op.BREAK && op.allowedIn(data.kind())) {
                 items.add(item(op, "", ACTION));
             }
         }
@@ -183,7 +189,7 @@ public final class CodeCompletion {
     /** Na if/and/or/not of een vergelijking: de gegevens die onder deze trigger werken, en je eigen namen. */
     private static void conditions(List<Item> items, List<String> lines, @Nullable Op trigger, Data data) {
         for (Expr.Variable variable : Expr.Variable.values()) {
-            if (variable.allowedAfter(trigger)) {
+            if (variable.allowedAfter(trigger) && variable.allowedIn(data.kind())) {
                 items.add(new Item(variable.code(), variable.code(), -1, variable.help(), VARIABLE));
             }
         }

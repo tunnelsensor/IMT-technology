@@ -30,11 +30,84 @@ public final class ScriptChecker {
     /** Wat er mis is, en waar (regel of blokje). */
     public record Problem(int ref, String message) {}
 
+    /**
+     * Past elk blokje en elk gegeven bij de soort programma? {@code keycard()} kent alleen de server; straks kent
+     * alleen een robot {@code forward()} of {@code robot.battery}.
+     */
+    private static void checkKind(Script script, ProgramKind kind, List<Problem> problems) {
+        for (Script.Top item : script.items()) {
+            if (item instanceof Script.Handler handler && !handler.trigger().allowedIn(kind)) {
+                problems.add(new Problem(handler.ref(), wrongKind(handler.trigger().code() + "(...)", kind)));
+            }
+            if (item instanceof Script.Global global) {
+                checkKind(global.value(), false, global.ref(), kind, problems);
+            }
+            checkKind(item.body(), kind, problems);
+        }
+    }
+
+    private static void checkKind(List<Script.Stmt> body, ProgramKind kind, List<Problem> problems) {
+        for (Script.Stmt statement : body) {
+            switch (statement) {
+                case Script.If branch -> {
+                    checkKind(branch.condition(), true, branch.ref(), kind, problems);
+                    checkKind(branch.yes(), kind, problems);
+                    checkKind(branch.no(), kind, problems);
+                }
+                case Script.Loop loop -> {
+                    checkKind(loop.expr(), loop.op() == Op.WHILE, loop.ref(), kind, problems);
+                    checkKind(loop.body(), kind, problems);
+                }
+                case Script.Assign assign -> checkKind(assign.value(), false, assign.ref(), kind, problems);
+                case Script.Action action -> {
+                    if (!action.op().allowedIn(kind)) {
+                        problems.add(new Problem(action.ref(), wrongKind(action.op().code() + "()", kind)));
+                    }
+                    checkKind(action.expr(), false, action.ref(), kind, problems);
+                }
+                default -> { }
+            }
+        }
+    }
+
+    /** De gegevens in een voorwaarde of waarde: passen ze bij de soort programma? */
+    private static void checkKind(String text, boolean condition, int ref, ProgramKind kind, List<Problem> problems) {
+        if (text.isBlank()) {
+            return;
+        }
+        Expr expr;
+        try {
+            expr = Expr.parseLenient(text, condition);
+        } catch (LogicException e) {
+            return; // de andere controles zeggen wat er mis is
+        }
+        for (String name : Expr.builtins(expr)) {
+            Expr.Variable variable = Expr.Variable.byName(name);
+            if (variable != null && !variable.allowedIn(kind)) {
+                problems.add(new Problem(ref, wrongKind(name, kind)));
+                return;
+            }
+        }
+    }
+
+    /** "keycard(...) only works in a server diagram, not in a robot program". */
+    static String wrongKind(String what, ProgramKind kind) {
+        ProgramKind other = kind == ProgramKind.SERVER ? ProgramKind.ROBOT : ProgramKind.SERVER;
+        return what + " only works in a " + other.noun() + ", not in a " + kind.noun();
+    }
+
     /** Iets dat een def gebruikt maar niet overal werkt: wat het is, en waar het wel werkt. */
     private record Need(String what, String where) {}
 
+    /** De controles voor een diagram op de server. */
     public static List<Problem> check(Script script) {
+        return check(script, ProgramKind.SERVER);
+    }
+
+    /** De controles, voor deze soort programma (hoofdstuk 23: een robot kent andere woorden dan de server). */
+    public static List<Problem> check(Script script, ProgramKind kind) {
         List<Problem> problems = new ArrayList<>();
+        checkKind(script, kind, problems);
         Map<String, Script.Function> functions = new LinkedHashMap<>();
         for (Script.Function function : script.functions()) {
             if (functions.containsKey(function.name())) {

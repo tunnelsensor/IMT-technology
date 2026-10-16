@@ -258,6 +258,11 @@ public final class LogicGraph {
      * blokjes worden niet gecontroleerd (ze doen toch niets).
      */
     public List<Problem> problems() {
+        return problems(ProgramKind.SERVER);
+    }
+
+    /** Hetzelfde, voor deze soort programma (hoofdstuk 23). */
+    public List<Problem> problems(ProgramKind kind) {
         List<Problem> problems = new ArrayList<>();
         Set<Integer> reachable = reachable();
         Set<Integer> wrong = new HashSet<>();
@@ -314,7 +319,7 @@ public final class LogicGraph {
             }
         }
         // Je eigen blokken: dezelfde controles als in de code (het "ref" is hier het blokje).
-        for (ScriptChecker.Problem problem : ScriptChecker.check(GraphConverter.toScript(this))) {
+        for (ScriptChecker.Problem problem : ScriptChecker.check(GraphConverter.toScript(this), kind)) {
             if (wrong.add(problem.ref())) {
                 problems.add(new Problem(problem.ref(), problem.message()));
             }

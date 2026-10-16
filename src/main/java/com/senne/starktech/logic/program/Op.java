@@ -196,6 +196,17 @@ public enum Op {
         return text.append(')').toString();
     }
 
+    /**
+     * Mag dit blokje in deze soort programma (hoofdstuk 23)? Wat met lezers, panelen en relais-triggers te
+     * maken heeft, hoort alleen de server; de rest werkt overal (een robot schakelt relais via de server).
+     */
+    public boolean allowedIn(ProgramKind kind) {
+        return switch (this) {
+            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY -> kind == ProgramKind.SERVER;
+            default -> true;
+        };
+    }
+
     /** Werken {@code accept()} en {@code deny()} hier? Alleen na een keycardlezer of codepaneel. */
     public boolean hasSourceDevice() {
         return this == KEYCARD || this == CODEPANEL;

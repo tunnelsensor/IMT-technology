@@ -238,6 +238,18 @@ public class StarkOsScreen extends Screen {
         logic.tourComplete(lineText, after);
     }
 
+    /** Alleen voor de screenshot-rondleiding: in de app Logic na + kiezen wat voor programma (hoofdstuk 23). */
+    public void tourLogicChooseKind() {
+        openApp(App.LOGIC);
+        logic.tourChooseKind();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: in de app Logic een nieuw programma van deze soort (met Help). */
+    public void tourLogicNew(com.senne.starktech.logic.program.ProgramKind kind) {
+        openApp(App.LOGIC);
+        logic.tourNew(kind);
+    }
+
     /** Alleen voor de screenshot-rondleiding: de knop Save van de app Logic. */
     public void tourSaveLogic() {
         logic.tourSave();

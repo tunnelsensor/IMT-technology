@@ -40,8 +40,11 @@ public final class ScriptParser {
     private int index;
     /** De namen van alle defs in deze code (eerst opgezocht, zodat je ze overal kunt gebruiken). */
     private final java.util.Set<String> functionNames = new java.util.LinkedHashSet<>();
+    /** Wat voor programma (hoofdstuk 23): een woord dat hier niet bestaat, zeggen we meteen. */
+    private final ProgramKind kind;
 
-    private ScriptParser(String source) {
+    private ScriptParser(String source, ProgramKind kind) {
+        this.kind = kind;
         String[] raw = source.replace("\r", "").split("\n", -1);
         for (int i = 0; i < raw.length; i++) {
             String text = raw[i].replace("\t", "    ");
@@ -64,11 +67,16 @@ public final class ScriptParser {
         }
     }
 
-    /** Leest de code. Gooit een LogicException (met regelnummer) bij de eerste fout. */
+    /** Leest de code van een diagram op de server. Gooit een LogicException (met regelnummer) bij de eerste fout. */
     public static Script parse(String source) {
-        Script script = new ScriptParser(source).script();
+        return parse(source, ProgramKind.SERVER);
+    }
+
+    /** Leest de code van deze soort programma (hoofdstuk 23: een robotprogramma kent andere woorden). */
+    public static Script parse(String source, ProgramKind kind) {
+        Script script = new ScriptParser(source, kind).script();
         // Dan wat over meerdere regels gaat (defs): zelfde controles als bij de blokjes.
-        List<ScriptChecker.Problem> problems = ScriptChecker.check(script);
+        List<ScriptChecker.Problem> problems = ScriptChecker.check(script, kind);
         if (!problems.isEmpty()) {
             throw new LogicException(problems.getFirst().ref(), problems.getFirst().message());
         }
@@ -115,6 +123,9 @@ public final class ScriptParser {
                         : trigger == null ? unknown(call.name())
                         : call.name() + " is not a trigger. A when starts with one of: keycard, codepanel, turned_on, turned_off, every";
                 throw new LogicException(line.number(), hint);
+            }
+            if (!trigger.allowedIn(kind)) {
+                throw new LogicException(line.number(), ScriptChecker.wrongKind(trigger.code() + "(...)", kind));
             }
             expectColon(line, call.end());
             Values values = values(line, trigger, call);
@@ -253,6 +264,9 @@ public final class ScriptParser {
         if (op.isTrigger()) {
             throw new LogicException(line.number(), call.name() + "(...) starts a diagram: write it at the left edge as when "
                     + call.name() + "(...):");
+        }
+        if (!op.allowedIn(kind)) {
+            throw new LogicException(line.number(), ScriptChecker.wrongKind(op.code() + "()", kind));
         }
         Values values = values(line, op, call);
         check(line, op, values);
