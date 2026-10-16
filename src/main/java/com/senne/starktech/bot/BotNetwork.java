@@ -1,5 +1,6 @@
 package com.senne.starktech.bot;
 
+import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotState;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
@@ -29,8 +30,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Alle guard robots van de wereld (hoofdstuk 21; later ook de drones), ook die in een stuk wereld staan dat
  * nu niet geladen is: hun naam, eigenaar, waar ze het laatst waren, hun dock, hoe het met ze gaat en in het
- * gebied van welke beveiligingskern ze staan. De app Robots op de desktop leest hieruit, en straks
- * (hoofdstuk 23) wachten hier de opdrachten voor robots die niet geladen zijn.
+ * gebied van welke beveiligingskern ze staan. De app Robots op de desktop leest hieruit, en hier wacht een
+ * nieuw programma (hoofdstuk 23) voor een robot die niet geladen is, tot hij terug is en verbinding heeft.
  *
  * Een robot meldt zich zelf: als hij in de wereld komt, om de seconde, en als hij kapot gaat of opgepakt wordt
  * (dan gaat hij eruit). Elke robot krijgt een naam die bij zijn eigenaar nog niet bestaat: "Guard 1",
@@ -47,14 +48,20 @@ public final class BotNetwork extends SavedData {
     /**
      * Wat we van één robot weten.
      *
-     * @param core de beveiligingskern in wiens gebied hij stond (of null)
-     * @param seen wanneer hij zich het laatst meldde (speltijd in ticks)
+     * @param core    de beveiligingskern in wiens gebied hij stond (of null)
+     * @param program de naam van het programma dat hij draait ("" = geen)
+     * @param seen    wanneer hij zich het laatst meldde (speltijd in ticks)
      */
     public record Entry(UUID id, String name, @Nullable UUID owner, String ownerName, GlobalPos pos,
                         @Nullable BlockPos home, @Nullable GlobalPos core, int parts, RobotState state,
-                        float battery, long seen) {}
+                        float battery, String program, long seen) {}
 
     private final Map<UUID, Entry> robots = new LinkedHashMap<>();
+    /**
+     * Programma's die wachten op een robot die niet geladen is (zoals LogicProgram.save ze schrijft; leeg = "geen
+     * programma meer"). Hij krijgt het als hij terug is en verbinding heeft.
+     */
+    private final Map<UUID, CompoundTag> pending = new LinkedHashMap<>();
 
     public static BotNetwork get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -67,16 +74,22 @@ public final class BotNetwork extends SavedData {
 
     // ================================================================ Bijhouden
 
-    /** Een robot meldt zich: zet hem erin of werk hem bij. */
+    /** Een robot meldt zich: zet hem erin of werk hem bij (en geef hem zijn wachtende programma, als hij verbinding heeft). */
     public void update(GuardRobotEntity robot) {
         if (!(robot.level() instanceof ServerLevel level)) {
             return;
+        }
+        CompoundTag waiting = pending.get(robot.getUUID());
+        if (waiting != null && BotLink.connected(robot)) {
+            robot.setProgram(waiting.isEmpty() ? null : LogicProgram.load(waiting));
+            pending.remove(robot.getUUID());
+            setDirty();
         }
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, robot.blockPosition());
         Entry entry = new Entry(robot.getUUID(), robot.hasCustomName() ? robot.getCustomName().getString() : "",
                 robot.owner(), robot.ownerName(), GlobalPos.of(level.dimension(), robot.blockPosition()), robot.home(),
                 core == null ? null : GlobalPos.of(level.dimension(), core.getBlockPos()), robot.parts().pack(),
-                robot.state(), robot.batteryFraction(), level.getGameTime());
+                robot.state(), robot.batteryFraction(), robot.program() == null ? "" : robot.program().name(), level.getGameTime());
         Entry old = robots.put(robot.getUUID(), entry);
         // Alleen "veranderd" als er echt iets anders is (de tijd alleen telt niet), zodat we niet elke seconde opslaan.
         if (old == null || !same(old, entry)) {
@@ -87,14 +100,27 @@ public final class BotNetwork extends SavedData {
     private static boolean same(Entry a, Entry b) {
         return a.name().equals(b.name()) && Objects.equals(a.owner(), b.owner()) && a.pos().equals(b.pos())
                 && Objects.equals(a.home(), b.home()) && Objects.equals(a.core(), b.core()) && a.parts() == b.parts()
-                && a.state() == b.state() && Math.abs(a.battery() - b.battery()) < 0.01f;
+                && a.state() == b.state() && Math.abs(a.battery() - b.battery()) < 0.01f && a.program().equals(b.program());
     }
 
     /** Een robot is weg (kapot of opgepakt). */
     public void remove(UUID id) {
-        if (robots.remove(id) != null) {
+        if (robots.remove(id) != null | pending.remove(id) != null) {
             setDirty();
         }
+    }
+
+    // ================================================================ Wachtende programma's (hoofdstuk 23)
+
+    /** Dit programma (of null = geen programma meer) wacht op deze robot tot hij terug is en verbinding heeft. */
+    public void setPending(UUID id, @Nullable LogicProgram program) {
+        pending.put(id, program == null ? new CompoundTag() : program.save());
+        setDirty();
+    }
+
+    /** Wat er op deze robot wacht (leeg = "geen programma meer"), of null als er niets wacht. */
+    public @Nullable CompoundTag pending(UUID id) {
+        return pending.get(id);
     }
 
     public @Nullable Entry get(UUID id) {
@@ -183,10 +209,19 @@ public final class BotNetwork extends SavedData {
             item.putInt("Parts", entry.parts());
             item.putString("State", entry.state().name());
             item.putFloat("Battery", entry.battery());
+            item.putString("Program", entry.program());
             item.putLong("Seen", entry.seen());
             list.add(item);
         }
         tag.put("Robots", list);
+        ListTag waiting = new ListTag();
+        for (Map.Entry<UUID, CompoundTag> entry : pending.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("Id", entry.getKey());
+            item.put("Program", entry.getValue());
+            waiting.add(item);
+        }
+        tag.put("Pending", waiting);
         return tag;
     }
 
@@ -206,7 +241,13 @@ public final class BotNetwork extends SavedData {
                     item.getString("OwnerName"), getPos(item, "Pos"),
                     item.contains("Home") ? BlockPos.of(item.getLong("Home")) : null,
                     item.contains("Core") ? getPos(item, "Core") : null, item.getInt("Parts"), state,
-                    item.getFloat("Battery"), item.getLong("Seen")));
+                    item.getFloat("Battery"), item.getString("Program"), item.getLong("Seen")));
+        }
+        for (Tag element : tag.getList("Pending", Tag.TAG_COMPOUND)) {
+            CompoundTag item = (CompoundTag) element;
+            if (item.hasUUID("Id")) {
+                data.pending.put(item.getUUID("Id"), item.getCompound("Program"));
+            }
         }
         return data;
     }

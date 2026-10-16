@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 258 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 259 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2598,8 +2598,18 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       blok voor zijn dock stond, niet meer thuiskwam (nu loopt hij dat stukje zelf). Zeven nieuwe tests
       (`BotProgramGameTests`: vierkantje, muur, goto met en zonder module, eindeloze lus, laden en terug,
       stop, opnieuw opstarten).
-- [ ] **4. Programma's naar de robot** — kiezen in de app Robots; uploaden via de verbinding; de robot bewaart
-      zijn eigen kopie.
+- [x] **4. Programma's naar de robot** — in de app Robots heeft elke robot nu een derde regel: welk programma
+      hij draait, en de knop **Program** met de robotprogramma's van deze server en "(no program)" (screenshots
+      `rb13`, `rb18`). De kern stuurt een kopie via de verbinding (`bot/BotLink`: de robot staat in het gebied van
+      de kern, zijn eigenaar is daar de eigenaar of vertrouwd, de kern heeft stroom en de server draait); de robot
+      begint dan opnieuw bij `when started:`. Een serverdiagram kan niet ("... is a server diagram, not a robot
+      program"), zonder verbinding ook niet ("... has no connection"). De robot houdt zijn eigen kopie: verander
+      je het programma op de server, dan zegt de app "(older than on the server)" tot je hem opnieuw stuurt, en
+      opgepakt zit het programma in zijn item. Een robot die ver weg is (niet geladen), krijgt het als hij terug is
+      en verbinding heeft (het wacht in `BotNetwork`; de app zegt "waiting: Patrol"). `robot.connected` werkt nu
+      ook. Onderweg gevonden: sinds hoofdstuk 22 stond de camera van de screenshots te ver van de kern, waardoor
+      `rb13` de wereld liet zien in plaats van de app (de desktop opent alleen vlakbij); hersteld. Eén nieuwe
+      test (`robot_program_upload_from_the_desktop`).
 - [ ] **5. Robot naar server** — alleen met verbinding (in het gebied van de core, met stroom en een werkende
       server): alarm, say, log, relais, en `send(...)` met `sender.name`. Zonder verbinding wel lopen.
 - [ ] **6. Server naar robot** — order, activate, deactivate; een opdracht aan een robot die niet geladen is,

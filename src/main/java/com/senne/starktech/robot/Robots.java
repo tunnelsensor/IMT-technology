@@ -1,11 +1,14 @@
 package com.senne.starktech.robot;
 
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotLink;
 import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotModuleItem;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.bot.Soldering;
 import com.senne.starktech.bot.SolderingIronItem;
+import com.senne.starktech.logic.program.LogicProgram;
+import com.senne.starktech.logic.program.ProgramKind;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RobotActionPayload;
 import com.senne.starktech.network.RobotOpenPayload;
@@ -199,11 +202,14 @@ public final class Robots {
 
     /**
      * De robots in het gebied van deze kern, voor de app Robots: naam, toestand, aan of uit, batterij, waar hij
-     * staat, of hij een dock heeft, en of hij nu geladen is (anders kan de desktop hem niet bedienen).
+     * staat, of hij een dock heeft, of hij nu geladen is (anders kan de desktop hem niet bedienen), en (hoofdstuk
+     * 23) welk programma hij draait, of zijn kopie ouder is dan die op de server, of hij verbinding heeft, en welk
+     * programma op hem wacht.
      */
     public static ListTag snapshot(ServerLevel level, SecurityCoreBlockEntity core) {
         ListTag list = new ListTag();
-        for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+        BotNetwork network = BotNetwork.get(level);
+        for (BotNetwork.Entry entry : network.atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
             GuardRobotEntity robot = level.getEntity(entry.id()) instanceof GuardRobotEntity found && found.isAlive() ? found : null;
             CompoundTag row = new CompoundTag();
             row.putString("id", entry.id().toString());
@@ -216,14 +222,36 @@ public final class Robots {
             row.putInt("z", entry.pos().pos().getZ());
             row.putBoolean("dock", entry.home() != null);
             row.putBoolean("loaded", robot != null);
+            LogicProgram program = robot != null ? robot.program() : null;
+            String name = robot != null ? program == null ? "" : program.name() : entry.program();
+            LogicProgram newest = name.isEmpty() ? null : core.logic().program(name);
+            row.putString("prog", name);
+            row.putBoolean("old", program != null && newest != null && !newest.source().equals(program.source()));
+            row.putBoolean("link", robot != null && BotLink.connected(robot));
+            CompoundTag waiting = network.pending(entry.id());
+            if (waiting != null) {
+                row.putString("wait", waiting.isEmpty() ? "-" : waiting.getString("Name"));
+            }
             list.add(row);
         }
         return list;
     }
 
+    /** De robotprogramma's op de server van deze kern (voor de knop Program in de app Robots). */
+    public static ListTag programNames(SecurityCoreBlockEntity core) {
+        ListTag names = new ListTag();
+        for (LogicProgram program : core.logic().programs()) {
+            if (program.kind() == ProgramKind.ROBOT) {
+                names.add(net.minecraft.nbt.StringTag.valueOf(program.name()));
+            }
+        }
+        return names;
+    }
+
     /**
-     * Een knop uit de app Robots: aan/uit ("robot_switch") of een andere naam ("robot_rename"). Alleen voor robots
-     * in het gebied van deze kern, en alleen als ze nu geladen zijn. Geeft de melding voor de taakbalk terug.
+     * Een knop uit de app Robots: aan/uit ("robot_switch"), een andere naam ("robot_rename") of (hoofdstuk 23) een
+     * programma ("robot_program"). Alleen voor robots in het gebied van deze kern; aan/uit en hernoemen alleen als
+     * ze nu geladen zijn. Geeft de melding voor de taakbalk terug.
      */
     public static Desktop desktop(ServerPlayer player, SecurityCoreBlockEntity core, String op, CompoundTag args) {
         ServerLevel level = player.serverLevel();
@@ -237,6 +265,9 @@ public final class Robots {
         BotNetwork.Entry entry = network.get(id);
         if (entry == null || !GlobalPos.of(level.dimension(), core.getBlockPos()).equals(entry.core())) {
             return new Desktop("That robot is not in this network's area", true);
+        }
+        if (op.equals("robot_program")) {
+            return upload(level, core, network, entry, args.getString("program"));
         }
         if (!(level.getEntity(id) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
             return new Desktop(entry.name() + " is too far away (its chunk is not loaded)", true);
@@ -254,6 +285,40 @@ public final class Robots {
         }
         network.update(robot);
         return result;
+    }
+
+    /**
+     * Een programma naar een robot (hoofdstuk 23): de kern stuurt een kopie via de verbinding, en de robot bewaart
+     * die zelf (ook als je hem oppakt). Hij begint dan meteen opnieuw bij when started (als hij aan staat). Een
+     * robot die niet geladen is, krijgt het als hij terug is en verbinding heeft. {@code name} leeg = geen
+     * programma meer.
+     */
+    private static Desktop upload(ServerLevel level, SecurityCoreBlockEntity core, BotNetwork network, BotNetwork.Entry entry,
+                                  String name) {
+        LogicProgram program = null;
+        if (!name.isEmpty()) {
+            LogicProgram found = core.logic().program(name);
+            if (found == null) {
+                return new Desktop("There is no program called " + name, true);
+            }
+            if (found.kind() != ProgramKind.ROBOT) {
+                return new Desktop(name + " is a server diagram, not a robot program", true);
+            }
+            program = LogicProgram.load(found.save()); // een kopie: de robot houdt hem, ook als je hem later verandert
+        }
+        String what = program == null ? "no program" : program.name();
+        if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+            network.setPending(entry.id(), program);
+            return new Desktop(entry.name() + " is far away: it gets " + what + " as soon as it is back", false);
+        }
+        String robotName = robot.hasCustomName() ? robot.getCustomName().getString() : entry.name();
+        if (!BotLink.connected(robot)) {
+            return new Desktop(robotName + " has no connection: it must stand in this network's area, and the server must run",
+                    true);
+        }
+        robot.setProgram(program);
+        network.update(robot);
+        return new Desktop(program == null ? robotName + " has no program now" : "Uploaded " + what + " to " + robotName, false);
     }
 
     /** Wat de desktop in de taakbalk zegt na een knop van de app Robots. */

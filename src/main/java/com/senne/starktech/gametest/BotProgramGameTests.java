@@ -3,18 +3,24 @@ package com.senne.starktech.gametest;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.bot.BotModule;
+import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
-import com.senne.starktech.station.ChargerBlockEntity;
+import com.senne.starktech.logic.LogicServer;
 import com.senne.starktech.logic.program.GraphConverter;
 import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.ProgramKind;
 import com.senne.starktech.logic.program.ScriptParser;
+import com.senne.starktech.network.OsActionPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.GuardRobotItem;
 import com.senne.starktech.robot.RobotData;
 import com.senne.starktech.robot.RobotParts;
+import com.senne.starktech.robot.Robots;
+import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.os.StarkOs;
+import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,9 +28,11 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Blocks;
@@ -295,6 +303,110 @@ public final class BotProgramGameTests {
             check(copy.brain().body().facing() == Direction.WEST, "Hij vergat welke kant hij op keek: " + copy.brain().body().facing());
             helper.succeed();
         });
+    }
+
+    // ================================================================ Stap 4: programma's naar de robot
+
+    /**
+     * De app Robots stuurt een robotprogramma naar een robot (een serverdiagram kan niet). De robot bewaart zijn eigen
+     * kopie: verander je het programma op de server, dan houdt hij de oude (en zegt de app "older"), en opgepakt zit
+     * het in zijn item. Zonder werkende server heeft hij geen verbinding: dan lukt het niet. Een robot die niet
+     * geladen is, krijgt zijn programma als hij terug is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_upload")
+    public static void robot_program_upload_from_the_desktop(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "upload-owner");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos rack = new BlockPos(12, 3, 12);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        GuardRobotEntity robot = helper.spawn(ModEntities.GUARD_ROBOT.get(), new BlockPos(8, 2, 8));
+        robot.setOwner(owner);
+        String patrol = "when started:\n    forward(1)\n";
+        helper.runAfterDelay(25, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            StarkOs.open(owner, coreAbs);
+            saveProgram(owner, coreAbs, "", "Patrol", patrol, ProgramKind.ROBOT);
+            saveProgram(owner, coreAbs, "", "Doors", "when every(5):\n    log(\"x\")\n", ProgramKind.SERVER);
+            check(core.logic().program("Patrol") != null && core.logic().program("Doors") != null, "De programma's werden niet bewaard");
+
+            Robots.Desktop wrong = upload(owner, core, robot, "Doors");
+            check(wrong.error() && wrong.text().contains("not a robot program"), "Een serverdiagram naar een robot: " + wrong.text());
+            Robots.Desktop ok = upload(owner, core, robot, "Patrol");
+            check(!ok.error() && robot.program() != null && robot.program().name().equals("Patrol"), "Uploaden lukte niet: " + ok.text());
+            CompoundTag row = row(helper, core, robot);
+            check(row.getString("prog").equals("Patrol") && !row.getBoolean("old") && row.getBoolean("link"),
+                    "De app Robots ziet het programma niet goed: " + row);
+
+            // Op de server veranderd: de robot houdt zijn kopie, de app zegt dat die ouder is.
+            saveProgram(owner, coreAbs, "Patrol", "Patrol", "when started:\n    forward(2)\n", ProgramKind.ROBOT);
+            check(robot.program().source().equals(patrol), "De robot kreeg vanzelf de nieuwe versie");
+            check(row(helper, core, robot).getBoolean("old"), "De app zegt niet dat zijn kopie ouder is");
+
+            // Opgepakt: zijn programma zit in het item.
+            RobotData data = robot.toData();
+            GuardRobotEntity copy = ModEntities.GUARD_ROBOT.get().create(helper.getLevel());
+            copy.applyData(data);
+            check(copy.program() != null && copy.program().source().equals(patrol), "Het programma zat niet in zijn item");
+
+            // Zonder werkende server: geen verbinding.
+            helper.setBlock(rack, Blocks.AIR);
+            LogicServer.forgetAll();
+            Robots.Desktop offline = upload(owner, core, robot, "");
+            check(offline.error() && offline.text().contains("no connection") && robot.program() != null,
+                    "Zonder server kon hij toch een programma krijgen: " + offline.text());
+            check(!row(helper, core, robot).getBoolean("link"), "Zonder server zegt de app dat hij verbinding heeft");
+            StarkTechGameTests.placeServer(helper, rack, core);
+            StarkTechGameTests.startServer(helper, rack, core);
+
+            // Ver weg (niet geladen): het wacht in BotNetwork tot hij terug is.
+            CompoundTag saved = new CompoundTag();
+            robot.saveWithoutId(saved);
+            robot.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK);
+            Robots.Desktop far = upload(owner, core, robot, "");
+            check(!far.error() && far.text().contains("far away"), "Voor een robot ver weg: " + far.text());
+            check(BotNetwork.get(helper.getLevel()).pending(robot.getUUID()) != null, "Er wacht niets op de robot");
+            GuardRobotEntity back = ModEntities.GUARD_ROBOT.get().create(helper.getLevel());
+            back.load(saved);
+            helper.getLevel().addFreshEntity(back);
+            check(back.program() != null, "Terug had hij zijn eigen programma niet meer");
+            helper.runAfterDelay(25, () -> {
+                check(back.program() == null, "Terug kreeg hij het wachtende programma (geen) niet");
+                check(BotNetwork.get(helper.getLevel()).pending(back.getUUID()) == null, "Het programma bleef wachten");
+                helper.succeed();
+            });
+        });
+    }
+
+    /** Een programma bewaren zoals de app Logic dat doet. */
+    private static void saveProgram(ServerPlayer owner, BlockPos coreAbs, String old, String name, String code, ProgramKind kind) {
+        CompoundTag args = new CompoundTag();
+        args.putString("old", old);
+        args.putString("name", name);
+        args.put("graph", GraphConverter.toGraph(ScriptParser.parse(code, kind), null).save());
+        args.putString("source", code);
+        args.putString("kind", kind.name());
+        StarkOs.handleAction(owner, new OsActionPayload(coreAbs, "logic_save", args));
+    }
+
+    /** De knop Program in de app Robots, met dit programma ("" = geen). */
+    private static Robots.Desktop upload(ServerPlayer owner, SecurityCoreBlockEntity core, GuardRobotEntity robot, String program) {
+        CompoundTag args = new CompoundTag();
+        args.putString("id", robot.getUUID().toString());
+        args.putString("program", program);
+        return Robots.desktop(owner, core, "robot_program", args);
+    }
+
+    /** De regel van deze robot in de app Robots. */
+    private static CompoundTag row(GameTestHelper helper, SecurityCoreBlockEntity core, GuardRobotEntity robot) {
+        for (Tag element : Robots.snapshot(helper.getLevel(), core)) {
+            CompoundTag row = (CompoundTag) element;
+            if (row.getString("id").equals(robot.getUUID().toString())) {
+                return row;
+            }
+        }
+        throw new GameTestAssertException("De robot staat niet in de app Robots");
     }
 
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */

@@ -250,6 +250,12 @@ public class StarkOsScreen extends Screen {
         logic.tourNew(kind);
     }
 
+    /** Alleen voor de screenshot-rondleiding: in de app Robots de lijst met programma's voor de eerste robot (hoofdstuk 23). */
+    public void tourRobotsProgram() {
+        openApp(App.ROBOTS);
+        robots.tourChooseProgram();
+    }
+
     /** Alleen voor de screenshot-rondleiding: de knop Save van de app Logic. */
     public void tourSaveLogic() {
         logic.tourSave();

@@ -233,8 +233,8 @@ public final class StarkOs {
                     sendSnapshot(player, core, session);
                 }
             }
-            case "robot_switch", "robot_rename" -> {
-                // De app Robots (hoofdstuk 21), zie robot/Robots.
+            case "robot_switch", "robot_rename", "robot_program" -> {
+                // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23), zie robot/Robots.
                 com.senne.starktech.robot.Robots.Desktop result = com.senne.starktech.robot.Robots.desktop(
                         player, core, payload.op(), args);
                 notify(player, core, session, result.text(), result.error());
@@ -784,6 +784,7 @@ public final class StarkOs {
         data.put("cameras", com.senne.starktech.security.SecurityDevices.cameras(level, core));
         // De guard robots in het gebied van de kern (de app Robots, hoofdstuk 21).
         data.put("robots", com.senne.starktech.robot.Robots.snapshot(level, core));
+        data.put("robotPrograms", com.senne.starktech.robot.Robots.programNames(core));
         // De server (serverracks) waar de redstone-diagrammen op draaien.
         data.put("server", com.senne.starktech.logic.LogicServer.snapshot(level, core));
         // De backups van deze server en van de eigenaar (de app Backup).

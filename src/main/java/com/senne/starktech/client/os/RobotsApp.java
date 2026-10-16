@@ -16,25 +16,33 @@ import org.jetbrains.annotations.Nullable;
 /**
  * De app Robots van de Stark OS-desktop (hoofdstuk 21): de guard robots in het gebied van deze kern, elk met
  * zijn naam, waar hij staat, hoe het met hem gaat, zijn batterij en of hij een dock heeft. Per robot een knop
- * Switch on/off en Rename (typ de naam, Enter bewaart, Esc laat het zoals het was).
+ * Switch on/off en Rename (typ de naam, Enter bewaart, Esc laat het zoals het was), en (hoofdstuk 23) welk
+ * programma hij draait, met de knop Program om hem een robotprogramma van deze server te sturen.
  *
  * <pre>
  *  Guard 1   12 64 -40                      [Rename] [Switch off]
  *    active  battery 86%  dock
+ *    program Patrol  (older than on the server)       [Program]
  *  Door guard   20 64 -38                   [Rename] [Switch on]
  *    standby  battery 100%  dock
+ *    no program                                       [Program]
  * </pre>
  * Een robot in een stuk wereld dat niet geladen is, staat er grijs bij ("far away"): die kun je van hier
- * niet bedienen. De lijst komt van de server (zie robot/Robots.snapshot, uit BotNetwork).
+ * niet aan- of uitzetten, maar een programma wacht op hem tot hij terug is. De lijst komt van de server (zie
+ * robot/Robots.snapshot, uit BotNetwork).
  */
 final class RobotsApp {
-    private static final int ROW_H = 21;
+    private static final int ROW_H = 31;
+    /** Zo hoog is één keuze in de lijst van programma's. */
+    private static final int OPTION_H = 12;
 
     private final StarkOsScreen screen;
     private int scroll;
     /** Welke robot je een andere naam aan het geven bent (zijn nummer), of null. */
     private @Nullable String renaming;
     private @Nullable EditBox nameBox;
+    /** Voor welke robot je een programma kiest (zijn nummer), of null. */
+    private @Nullable String choosing;
 
     RobotsApp(StarkOsScreen screen) {
         this.screen = screen;
@@ -67,6 +75,25 @@ final class RobotsApp {
         return robot.getString("id").equals(renaming) ? "Save" : "Rename";
     }
 
+    /** De robotprogramma's op deze server, en "" = geen programma. */
+    private List<String> programOptions() {
+        List<String> options = new ArrayList<>();
+        for (Tag tag : screen.data().getList("robotPrograms", Tag.TAG_STRING)) {
+            options.add(tag.getAsString());
+        }
+        options.add("");
+        return options;
+    }
+
+    private @Nullable CompoundTag robot(@Nullable String id) {
+        for (CompoundTag robot : robots()) {
+            if (robot.getString("id").equals(id)) {
+                return robot;
+            }
+        }
+        return null;
+    }
+
     // ================================================================ Tekenen
 
     void render(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my, float partialTick) {
@@ -74,6 +101,9 @@ final class RobotsApp {
         List<CompoundTag> robots = robots();
         if (renaming != null && robots.stream().noneMatch(robot -> robot.getString("id").equals(renaming))) {
             renaming = null; // de robot is weg
+        }
+        if (choosing != null && robot(choosing) == null) {
+            choosing = null;
         }
         if (robots.isEmpty()) {
             g.drawString(font, "No guard robots in this network's area yet.", a.x() + 5, a.y() + 5, HudStyle.argb(255, OsDraw.GREY), false);
@@ -83,9 +113,52 @@ final class RobotsApp {
         scroll = Math.max(0, Math.min(scroll, robots.size() - 1));
         int y = a.y() + 3;
         for (int i = scroll; i < robots.size() && y + ROW_H <= a.y() + a.h(); i++) {
-            renderRobot(g, font, a, y, robots.get(i), mx, my, partialTick);
+            renderRobot(g, font, a, y, robots.get(i), choosing == null ? mx : -1, my, partialTick);
             y += ROW_H;
         }
+        if (choosing != null) {
+            renderChooser(g, font, a, mx, my);
+        }
+    }
+
+    /** Waar de lijst met programma's staat: midden in de app, zo hoog als nodig. */
+    private int[] chooserBox(StarkOsScreen.Area a) {
+        int w = Math.min(a.w() - 20, 200);
+        int h = 30 + programOptions().size() * OPTION_H + OsDraw.BUTTON_H;
+        return new int[] {a.x() + (a.w() - w) / 2, a.y() + 8, w, Math.min(h, a.h() - 16)};
+    }
+
+    /** De keuze na de knop Program: de robotprogramma's van deze server, "no program", en Cancel. */
+    private void renderChooser(GuiGraphics g, Font font, StarkOsScreen.Area a, int mx, int my) {
+        CompoundTag robot = robot(choosing);
+        int[] box = chooserBox(a);
+        int x = box[0];
+        int y = box[1];
+        g.fill(a.x(), a.y(), a.x() + a.w(), a.y() + a.h(), HudStyle.argb(190, 0x05080B)); // de lijst erachter wat donkerder
+        g.fill(x, y, x + box[2], y + box[3], HudStyle.argb(250, 0x0B141B));
+        OsDraw.field(g, x, y, x + box[2], y + box[3], true);
+        g.drawString(font, OsDraw.fitLeft(font, "Program for " + (robot == null ? "?" : robot.getString("n")) + ":", box[2] - 8),
+                x + 4, y + 4, HudStyle.argb(255, HudStyle.ORANGE), false);
+        int oy = y + 16;
+        List<String> options = programOptions();
+        if (options.size() == 1) {
+            g.drawString(font, OsDraw.fitLeft(font, "No robot programs yet: make one in Logic (+)", box[2] - 8), x + 4, oy,
+                    HudStyle.argb(255, OsDraw.GREY), false);
+            oy += OPTION_H;
+        }
+        String current = robot == null ? "" : robot.getString("prog");
+        for (String option : options) {
+            boolean hover = OsDraw.inside(mx, my, x + 2, oy - 1, box[2] - 4, OPTION_H);
+            if (hover) {
+                g.fill(x + 2, oy - 2, x + box[2] - 2, oy + OPTION_H - 2, HudStyle.argb(255, 0x16303F));
+            }
+            String label = (option.equals(current) ? "> " : "  ") + (option.isEmpty() ? "(no program)" : option);
+            g.drawString(font, OsDraw.fitLeft(font, label, box[2] - 8), x + 4, oy,
+                    HudStyle.argb(255, option.isEmpty() ? OsDraw.GREY : 0x9ED8FF), false);
+            oy += OPTION_H;
+        }
+        OsDraw.button(g, font, x + box[2] - 4 - OsDraw.buttonWidth(font, "Cancel"), y + box[3] - OsDraw.BUTTON_H - 3, "Cancel", true,
+                HudStyle.CYAN);
     }
 
     private void renderRobot(GuiGraphics g, Font font, StarkOsScreen.Area a, int y, CompoundTag robot,
@@ -124,15 +197,42 @@ final class RobotsApp {
         String details = "  battery " + robot.getInt("bat") + "%" + (robot.getBoolean("dock") ? "  dock" : "  no dock");
         g.drawString(font, state, a.x() + 10, y + 10, HudStyle.argb(255, colour), false);
         g.drawString(font, details, a.x() + 10 + font.width(state), y + 10, HudStyle.argb(255, OsDraw.GREY), false);
+        // Zijn programma (hoofdstuk 23), en de knop om hem een ander te sturen.
+        String program = robot.getString("prog");
+        int programRight = a.x() + a.w() - 4 - OsDraw.buttonWidth(font, "Program");
+        OsDraw.button(g, font, programRight, y + 17, "Program", true, 0x9ED8FF);
+        int px = a.x() + 10;
+        String line = program.isEmpty() ? "no program" : "program " + program;
+        g.drawString(font, line, px, y + 19, HudStyle.argb(255, program.isEmpty() ? OsDraw.GREY : 0x9ED8FF), false);
+        px += font.width(line);
+        String note = robot.contains("wait") ? "  waiting: " + ("-".equals(robot.getString("wait")) ? "no program" : robot.getString("wait"))
+                : robot.getBoolean("old") ? "  (older than on the server)"
+                : loaded && !robot.getBoolean("link") ? "  no connection" : "";
+        if (!note.isEmpty()) {
+            int noteColour = loaded && !robot.getBoolean("link") && !robot.contains("wait") && !robot.getBoolean("old")
+                    ? HudStyle.RED : HudStyle.ORANGE;
+            g.drawString(font, OsDraw.fitLeft(font, note, Math.max(0, programRight - px - 4)), px, y + 19,
+                    HudStyle.argb(255, noteColour), false);
+        }
     }
 
     // ================================================================ Muis
 
     void mouseClicked(Font font, StarkOsScreen.Area a, int mx, int my) {
+        if (choosing != null) {
+            clickChooser(font, a, mx, my);
+            return;
+        }
         List<CompoundTag> robots = robots();
         int y = a.y() + 3;
         for (int i = scroll; i < robots.size() && y + ROW_H <= a.y() + a.h(); i++) {
             CompoundTag robot = robots.get(i);
+            int programW = OsDraw.buttonWidth(font, "Program");
+            if (OsDraw.inside(mx, my, a.x() + a.w() - 4 - programW, y + 17, programW, OsDraw.BUTTON_H)) {
+                choosing = robot.getString("id");
+                renaming = null;
+                return;
+            }
             if (robot.getBoolean("loaded")) {
                 int right = a.x() + a.w() - 4;
                 int toggleW = OsDraw.buttonWidth(font, switchLabel(robot));
@@ -165,8 +265,32 @@ final class RobotsApp {
         renaming = null;
     }
 
+    /** Een klik in de lijst met programma's: dat programma naar de robot, of Cancel (of ernaast: ook dicht). */
+    private void clickChooser(Font font, StarkOsScreen.Area a, int mx, int my) {
+        int[] box = chooserBox(a);
+        int oy = box[1] + 16 + (programOptions().size() == 1 ? OPTION_H : 0);
+        for (String option : programOptions()) {
+            if (OsDraw.inside(mx, my, box[0] + 2, oy - 1, box[2] - 4, OPTION_H)) {
+                CompoundTag args = new CompoundTag();
+                args.putString("id", choosing);
+                args.putString("program", option);
+                screen.send("robot_program", args);
+                choosing = null;
+                return;
+            }
+            oy += OPTION_H;
+        }
+        choosing = null; // Cancel, of ernaast geklikt
+    }
+
     void mouseScrolled(double scrollY) {
         scroll = Math.max(0, scroll - (int) Math.signum(scrollY));
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de lijst met programma's voor de eerste robot. */
+    void tourChooseProgram() {
+        List<CompoundTag> robots = robots();
+        choosing = robots.isEmpty() ? null : robots.getFirst().getString("id");
     }
 
     // ================================================================ Een andere naam
@@ -193,6 +317,10 @@ final class RobotsApp {
     }
 
     boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (choosing != null && keyCode == 256) {
+            choosing = null; // esc
+            return true;
+        }
         if (renaming == null) {
             return false;
         }
@@ -212,8 +340,9 @@ final class RobotsApp {
         return true;
     }
 
-    /** Een ander venster kwam bovenop, of dit venster ging dicht: stop met typen. */
+    /** Een ander venster kwam bovenop, of dit venster ging dicht: stop met typen (en met kiezen). */
     void blur() {
         renaming = null;
+        choosing = null;
     }
 }

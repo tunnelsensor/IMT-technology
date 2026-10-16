@@ -303,9 +303,10 @@ public final class BotBrain {
                     case "robot.facing" -> body.facing().getName();
                     case "robot.name" -> robot.getName().getString();
                     case "robot.blocked" -> body.blocked();
+                    case "robot.connected" -> BotLink.connected(robot);
                     case "is_night" -> robot.level().isNight();
                     case "is_day" -> !robot.level().isNight();
-                    // robot.connected en de relais (stap 5), order.* (stap 6): nog niets.
+                    // De relais (stap 5) en order.* (stap 6): nog niets.
                     default -> false;
                 };
             }

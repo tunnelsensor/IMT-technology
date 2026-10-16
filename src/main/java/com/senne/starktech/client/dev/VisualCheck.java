@@ -1191,13 +1191,26 @@ public final class VisualCheck {
                 if (level.getBlockEntity(robotCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
+                    // Hoofdstuk 23: twee robotprogramma's op deze server. De eerste robot heeft een oudere kopie van
+                    // Patrol, de tweede Door guard; de rest niets.
+                    be.logic().put(null, robotProgram("Patrol", "when started:\n    forever:\n        forward(4)\n        turn_right()\n"));
+                    be.logic().put(null, robotProgram("Door guard", "when started:\n    pass\n"));
+                    java.util.List<com.senne.starktech.robot.GuardRobotEntity> robots = level.getEntitiesOfClass(
+                            com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(56, -60, 57, 65, -58, 58));
+                    robots.sort(java.util.Comparator.comparingDouble(com.senne.starktech.robot.GuardRobotEntity::getX));
+                    if (robots.size() >= 2) {
+                        robots.get(0).setProgram(robotProgram("Patrol", "when started:\n    forward(2)\n"));
+                        robots.get(1).setProgram(be.logic().program("Door guard"));
+                    }
                 }
                 level.setBlockAndUpdate(robotCore.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(robotCore.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
                     charger.fill(20_000);
                 }
             });
-            // Even wachten: de robots melden zich om de seconde, nu bij deze kern.
+            // Even wachten: de robots melden zich om de seconde, nu bij deze kern. (Dichtbij gaan staan: de desktop
+            // gaat alleen open als je bij de kern bent.)
+            t.view(0, 67.5, -60, 68.5, 180, 15);
             t.onServer(40, player -> com.senne.starktech.security.os.StarkOs.open(player, robotCore));
             t.step(10, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
@@ -1205,6 +1218,13 @@ public final class VisualCheck {
                 }
             });
             t.shot(15, "rb13_os_robots");
+            // Hoofdstuk 23: de knop Program van de eerste robot: de robotprogramma's van deze server.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourRobotsProgram();
+                }
+            });
+            t.shot(10, "rb18_os_robot_program");
             t.close(10);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
@@ -2527,6 +2547,14 @@ public final class VisualCheck {
 }
 
     /** Waar de C4-muur van de rondleiding staat (zie buildC4Wall). */
+    /** Een robotprogramma uit deze code (hoofdstuk 23), zoals de app Logic hem bewaart. */
+    private static com.senne.starktech.logic.program.LogicProgram robotProgram(String name, String code) {
+        var kind = com.senne.starktech.logic.program.ProgramKind.ROBOT;
+        return new com.senne.starktech.logic.program.LogicProgram(name, true,
+                com.senne.starktech.logic.program.GraphConverter.toGraph(com.senne.starktech.logic.program.ScriptParser.parse(code, kind), null),
+                code, kind);
+    }
+
     private static final BlockPos C4_WALL = new BlockPos(120, -60, 128);
 
     /** Een C4 (Timer) tegen de kant {@code outward} van {@code support}, die over {@code seconds} afgaat. */

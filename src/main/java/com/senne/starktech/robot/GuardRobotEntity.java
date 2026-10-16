@@ -233,20 +233,21 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         shownSlots = mask;
     }
 
-    /** Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat, naam en batterij (zie GuardRobotItem). */
+    /** Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat, naam, batterij en programma (zie GuardRobotItem). */
     public void applyData(RobotData data) {
         setParts(data.robotParts());
         setHealth(getMaxHealth());
         setBoard(data.board());
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
+        brain.setProgram(data.program().isEmpty() ? null : LogicProgram.load(data.program()));
         updateState(false);
     }
 
-    /** Wat er in zijn item komt als je hem oppakt. */
+    /** Wat er in zijn item komt als je hem oppakt (zijn programma gaat mee). */
     public RobotData toData() {
         return new RobotData(parts().pack(), board(), hasCustomName() ? getCustomName().getString() : "",
-                (float) (battery / Math.max(1.0, maxBattery())));
+                (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag() : brain.program().save());
     }
 
     // ================================================================ Batterij, aan en uit, zijn dock
