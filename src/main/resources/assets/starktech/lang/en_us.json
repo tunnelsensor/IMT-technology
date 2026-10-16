@@ -69,6 +69,7 @@
   "tooltip.starktech.guard_robot.board": "Circuit board: %s of 8 pins in use",
   "tooltip.starktech.guard_robot.use": "Right-click a block to put the robot there (you become its owner)",
   "block.starktech.training_start": "Training Start",
+  "block.starktech.training_end": "Training End",
   "block.starktech.training_goal": "Training Goal",
   "item.starktech.guard_drone": "Security Drone",
   "entity.starktech.guard_drone": "Security Drone",

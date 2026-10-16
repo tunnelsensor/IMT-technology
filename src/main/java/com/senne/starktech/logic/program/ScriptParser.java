@@ -544,7 +544,7 @@ public final class ScriptParser {
 
     /** Hoe een when in deze soort programma begint, voor de foutmeldingen. */
     private String exampleWhen() {
-        return kind.onBot() ? "when started:" : "when keycard(\"Lab door\"):";
+        return kind.onBot() ? "when started:" : kind == ProgramKind.TRAINING_END ? "when trainee_hit:" : "when keycard(\"Lab door\"):";
     }
 
     /** De triggers die in deze soort programma bestaan: "keycard, codepanel, turned_on, turned_off, every, message". */

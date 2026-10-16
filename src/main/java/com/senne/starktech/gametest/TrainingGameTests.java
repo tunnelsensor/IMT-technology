@@ -224,6 +224,65 @@ public final class TrainingGameTests {
     }
 
     /**
+     * Het Training End-blok: zijn programma bewaart hij alleen als het klopt. Bij een treffer geeft hij even redstone,
+     * en zijn {@code when trainee_hit:} loopt op de server: met 0 levens zet het "Wave 1" uit, en het schrijft wie er geraakt is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "training_end")
+    public static void training_end_block_pulses_and_runs_its_program(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "end-owner");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos rack = new BlockPos(14, 3, 3);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        BlockPos block = new BlockPos(6, 2, 6);
+        helper.setBlock(block, com.senne.starktech.registry.ModBlocks.TRAINING_END.get());
+        BlockPos abs = helper.absolutePos(block);
+        var end = (com.senne.starktech.training.TrainingEndBlockEntity) helper.getBlockEntity(block);
+        java.util.List<com.senne.starktech.robot.GuardRobotEntity> wave = new java.util.ArrayList<>();
+        for (BlockPos pos : new BlockPos[] {new BlockPos(9, 2, 8), new BlockPos(11, 2, 8)}) {
+            com.senne.starktech.robot.GuardRobotEntity robot = helper.spawn(com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), pos);
+            robot.setOwner(owner);
+            robot.setSquad("Wave 1");
+            wave.add(robot);
+        }
+        String code = """
+                when trainee_hit:
+                    if lives == 0:
+                        deactivate("Wave 1")
+                    log("hit " + trainee + " " + hits)
+                """;
+        String name = owner.getGameProfile().getName();
+        helper.runAfterDelay(25, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            net.minecraft.nbt.CompoundTag data = new net.minecraft.nbt.CompoundTag();
+            data.putString("Code", code);
+            com.senne.starktech.training.TrainingBlocks.handleAction(owner, new com.senne.starktech.network.TrainingActionPayload(abs, data));
+            check(end.source().equals(code), "Het programma van het End-blok werd niet bewaard");
+            data.putString("Code", "when every(5):\n    pass\n");
+            com.senne.starktech.training.TrainingBlocks.handleAction(owner, new com.senne.starktech.network.TrainingActionPayload(abs, data));
+            check(end.source().equals(code), "Een programma dat niet klopt (every in een End-blok) werd toch bewaard");
+        });
+        helper.runAfterDelay(45, () -> {
+            check(com.senne.starktech.bot.BotLink.switchOn(helper.getLevel(), core, "Wave 1", true)
+                    == com.senne.starktech.bot.BotLink.Result.DONE, "Wave 1 ging niet aan");
+            check(Training.start(helper.getLevel(), core, owner,
+                    new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 1, 0), null) == null, "De training begon niet");
+        });
+        helper.runAfterDelay(45 + afterCountdown(), () -> {
+            check(!helper.getBlockState(block).getValue(com.senne.starktech.training.TrainingEndBlock.POWERED), "Het End-blok gaf al redstone");
+            Shots.hit(helper.getLevel(), owner, owner.damageSources().generic(), 5, "Test turret");
+            check(helper.getBlockState(block).getValue(com.senne.starktech.training.TrainingEndBlock.POWERED),
+                    "Bij een treffer gaf het End-blok geen redstone");
+        });
+        helper.runAfterDelay(45 + afterCountdown() + 20, () -> check(
+                !helper.getBlockState(block).getValue(com.senne.starktech.training.TrainingEndBlock.POWERED), "De puls hield niet op"));
+        helper.runAfterDelay(45 + afterCountdown() + 22, () -> helper.succeedWhen(() -> {
+            check(logged(core, EventLog.Type.LOGIC, "hit " + name + " 1"), "when trainee_hit: liep niet (of zonder trainee/hits)");
+            check(wave.stream().noneMatch(com.senne.starktech.robot.GuardRobotEntity::isActive),
+                    "Met 0 levens zette het End-blok Wave 1 niet uit");
+        }));
+    }
+
+    /**
      * Een tijdslimiet zonder Goal-blok: wie het volhoudt, is geslaagd. Een tweede training bij dezelfde kern kan niet
      * tegelijk, en de trainee kan niet in twee trainingen tegelijk.
      */

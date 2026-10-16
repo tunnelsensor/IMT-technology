@@ -151,6 +151,9 @@ public sealed interface Expr {
             if (name.startsWith("order.")) {
                 return kind.onBot();
             }
+            if (this == TRAINEE || this == LIVES || this == HITS) {
+                return kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
+            }
             return switch (this) {
                 case IS_NIGHT, IS_DAY -> true;
                 default -> kind == ProgramKind.SERVER;
@@ -166,7 +169,8 @@ public sealed interface Expr {
                 return trigger == null || trigger.hasSourceDevice();
             }
             if (this == TRAINEE || this == LIVES || this == HITS) {
-                return trigger == null || trigger == Op.TRAINING_STARTED || trigger == Op.TRAINING_HIT || trigger == Op.TRAINING_ENDED;
+                return trigger == null || trigger == Op.TRAINING_STARTED || trigger == Op.TRAINING_HIT || trigger == Op.TRAINING_ENDED
+                        || trigger == Op.HIT;
             }
             return only == null || trigger == null || only == trigger;
         }
@@ -174,7 +178,7 @@ public sealed interface Expr {
         /** Waar dit gegeven wel werkt, voor de foutmeldingen: "when keycard(...)". Null = overal. */
         public @Nullable String where() {
             if (this == TRAINEE || this == LIVES || this == HITS) {
-                return "when training_started(...), training_hit(...) or training_ended(...)";
+                return "when training_started(...), training_hit(...), training_ended(...) or (in a Training End block) when trainee_hit:";
             }
             return only == null ? null : "when " + only.code() + "(...)";
         }
@@ -227,7 +231,7 @@ public sealed interface Expr {
 
         /** Pinnen heeft alleen een robot of een drone; active() kent de server (die weet wie er staat). */
         public boolean allowedIn(ProgramKind kind) {
-            return this == ACTIVE ? kind == ProgramKind.SERVER : kind.onBot();
+            return this == ACTIVE ? kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END : kind.onBot();
         }
 
         public static @Nullable Function byName(String name) {

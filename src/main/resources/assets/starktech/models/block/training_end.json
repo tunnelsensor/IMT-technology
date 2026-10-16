@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "starktech:block/training_end_top",
+    "bottom": "starktech:block/training_bottom",
+    "side": "starktech:block/training_end_side"
+  }
+}

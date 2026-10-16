@@ -38,6 +38,11 @@ public enum Op {
     TRAINING_HIT(Kind.TRIGGER, "training_hit", Arg.TEXT, Arg.NONE, "The trainee of this training is hit"),
     /** {@code when training_ended("Kamino"):}: de training is voorbij (passed zegt of hij geslaagd is). */
     TRAINING_ENDED(Kind.TRIGGER, "training_ended", Arg.TEXT, Arg.NONE, "This training is over (passed or not)"),
+    /**
+     * {@code when trainee_hit:} (hoofdstuk 26): in een Training End-blok, de trainee is geraakt. (Niet gewoon "hit": dat
+     * woord gebruik je misschien al als naam in je programma's.)
+     */
+    HIT(Kind.TRIGGER, "trainee_hit", Arg.NONE, Arg.NONE, "The trainee is hit (only in a Training End block)"),
     /** {@code when squad_down("Wave 1"):} (hoofdstuk 26): elke robot en drone van die squad ligt neer (of is kapot). */
     SQUAD_DOWN(Kind.TRIGGER, "squad_down", Arg.TEXT, Arg.NONE, "Every robot and drone of this squad is down, out of power or destroyed"),
 
@@ -335,8 +340,13 @@ public enum Op {
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
-            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE, ORDER, ACTIVATE, DEACTIVATE,
+            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE,
                  TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED, SQUAD_DOWN -> kind == ProgramKind.SERVER;
+            // Robots en squads aansturen kan ook een Training End-blok (hoofdstuk 26: deactivate("Wave 1")).
+            case ORDER, ACTIVATE, DEACTIVATE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
+            case HIT -> kind == ProgramKind.TRAINING_END;
+            // Een Training End-blok doet alleen iets bij een treffer.
+            case EVERY -> kind != ProgramKind.TRAINING_END;
             case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
             default -> true;

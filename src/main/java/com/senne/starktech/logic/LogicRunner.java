@@ -227,6 +227,32 @@ public final class LogicRunner {
                 false, false, null, false, "", info));
     }
 
+    /**
+     * De trainee is geraakt (hoofdstuk 26): het programmaatje van een Training End-blok begint bij {@code when trainee_hit:}, op
+     * deze server (met zijn grenzen: draait de server niet, dan gebeurt er niets).
+     */
+    public static int trainingEnd(ServerLevel level, SecurityCoreBlockEntity core, LogicProgram program,
+                                  com.senne.starktech.training.Training.Info info, UUID trainee) {
+        LogicServer.Stats stats = LogicServer.stats(level, core);
+        if (!stats.online()) {
+            return 0;
+        }
+        Runtime runtime = runtime(level, core);
+        long now = level.getGameTime();
+        Context context = new Context(Op.HIT, info.name(), null, trainee, info.trainee(), false, false, null, false, "", info);
+        int matched = 0;
+        for (LogicGraph.Node node : program.graph().nodes()) {
+            if (node.op == Op.HIT) {
+                if (!allowTrigger(level, core, runtime, now)) {
+                    return matched;
+                }
+                enqueue(level, core, runtime, new Run(program, node.next, context, now + stats.reactionTicks(), globals(runtime, program)));
+                matched++;
+            }
+        }
+        return matched;
+    }
+
     /** Elke robot en drone van deze squad ligt neer (hoofdstuk 26): start {@code when squad_down("Wave 1"):}. */
     public static int squadDown(ServerLevel level, SecurityCoreBlockEntity core, String squad) {
         return fire(level, core, Op.SQUAD_DOWN, squad, Context.plain(Op.SQUAD_DOWN, squad));
@@ -407,11 +433,12 @@ public final class LogicRunner {
                     case "sender.x" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getX();
                     case "sender.y" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getY();
                     case "sender.z" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getZ();
-                    // Na een trainingstrigger (hoofdstuk 26).
-                    case "trainee" -> context.training() == null ? "" : context.training().trainee();
-                    case "lives" -> context.training() == null ? 0.0 : (double) context.training().lives();
-                    case "hits" -> context.training() == null ? 0.0 : (double) context.training().hits();
-                    case "passed" -> context.training() != null && context.training().passed();
+                    // Na een trainingstrigger (hoofdstuk 26). Daarbuiten: een oud programma kan een eigen naam "lives"
+                    // of "hits" hebben (van voor deze woorden bestonden); dan geldt die.
+                    case "trainee" -> context.training() != null ? context.training().trainee() : own(run, variable, "");
+                    case "lives" -> context.training() != null ? (Object) (double) context.training().lives() : own(run, variable, 0.0);
+                    case "hits" -> context.training() != null ? (Object) (double) context.training().hits() : own(run, variable, 0.0);
+                    case "passed" -> context.training() != null ? (Object) context.training().passed() : own(run, variable, false);
                     default -> false;
                 };
             }
@@ -432,6 +459,12 @@ public final class LogicRunner {
                 return (double) BotLink.active(level, core, name);
             }
         };
+    }
+
+    /** De eigen naam {@code name} van dit programma (een variabele), of {@code fallback} als het die niet heeft. */
+    private static Object own(Run run, String name, Object fallback) {
+        Object value = run.machine.variable(name);
+        return value != null ? value : fallback;
     }
 
     // ================================================================ Een actie

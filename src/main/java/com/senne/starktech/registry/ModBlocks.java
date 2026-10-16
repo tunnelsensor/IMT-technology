@@ -368,6 +368,15 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
 
+    /** Hoofdstuk 26: het Training End-blok (een redstone-puls en zijn programma bij elke treffer). */
+    public static final DeferredBlock<com.senne.starktech.training.TrainingEndBlock> TRAINING_END = BLOCKS.registerBlock(
+            "training_end", com.senne.starktech.training.TrainingEndBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     /** Hoofdstuk 26: het Training Goal-blok (de trainee stapt erop: geslaagd). */
     public static final DeferredBlock<com.senne.starktech.training.TrainingGoalBlock> TRAINING_GOAL = BLOCKS.registerBlock(
             "training_goal", com.senne.starktech.training.TrainingGoalBlock::new,

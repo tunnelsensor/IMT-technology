@@ -157,6 +157,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.starktech.training.TrainingStartBlockEntity::new,
                             java.util.Set.of(ModBlocks.TRAINING_START.get()), null));
 
+    /** Hoofdstuk 26: het programma van een Training End-blok. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.training.TrainingEndBlockEntity>> TRAINING_END =
+            BLOCK_ENTITIES.register("training_end",
+                    () -> new BlockEntityType<>(com.senne.starktech.training.TrainingEndBlockEntity::new,
+                            java.util.Set.of(ModBlocks.TRAINING_END.get()), null));
+
     /** Hoofdstuk 26: een Training Goal-blok (meldt zich aan bij TrainingGoals). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.training.TrainingGoalBlockEntity>> TRAINING_GOAL =
             BLOCK_ENTITIES.register("training_goal",

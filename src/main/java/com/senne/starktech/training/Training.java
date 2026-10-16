@@ -351,6 +351,8 @@ public final class Training {
         if (core != null) {
             com.senne.starktech.logic.LogicRunner.training(level, core, com.senne.starktech.logic.program.Op.TRAINING_HIT,
                     session.info(false), session.trainee);
+            // De Training End-blokken van deze basis: een puls, en hun programma (when trainee_hit:).
+            TrainingEnds.hit(level, core, session.info(false), session.trainee);
         }
         if (session.lives <= 0) {
             end(level, session, Result.OUT_OF_LIVES);

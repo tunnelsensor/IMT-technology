@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 283 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 284 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2857,8 +2857,15 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       `active("Wave 1")` zegt hoeveel er nu aan staan en rechtop. De Help toont je squads en wie erin zit. Een
       onbekende naam zegt nu "there is no robot, drone or squad called ...". Eén nieuwe test
       (`squads_switch_together_and_report_down`).
-- [ ] **5. Training End-blok** — redstone-puls bij elke treffer, en de mini-editor (dezelfde taal, eigen soort
-      programma).
+- [x] **5. Training End-blok** — bij elke treffer in een training van zijn basis geeft hij een redstone-puls (een
+      halve seconde, `endPulse`; het lampje op de zijkanten brandt dan rood) en loopt zijn eigen programmaatje op je
+      server (met de grenzen van zijn RAM). Sneak + klik met een lege hand (wie hem neerzette of vertrouwd is): de
+      **mini-editor**, dezelfde code-editor als in de app Logic (kleuren, Ctrl+Spatie met je apparaten, robots en
+      squads, Check). Zo'n "Training End program" kent alleen `when trainee_hit:` (niet gewoon "hit": dat woord
+      gebruik je misschien al als naam), met `trainee`, `lives` en `hits`, en mag robots en squads aansturen:
+      `if lives == 0: deactivate("Wave 1")`. Hij bewaart een programma alleen als het klopt. Recept: ijzer, een rode
+      kleurstof, redstone en een Stark Chip. Een oud diagram dat zelf al een naam `lives` of `hits` had, houdt die
+      buiten een training gewoon. Eén nieuwe test (`training_end_block_pulses_and_runs_its_program`).
 - [x] **6. Training Goal-blok** — een geblokte finishvlag met een gouden rand (recept: witte en zwarte wol en een
       gouden staaf). Stapt de trainee erop (in het gebied van zijn training), dan is hij geslaagd. Staat er een in de
       basis, dan is "de tijd is om" mislukt: hij moest het doel halen. Twee nieuwe tests

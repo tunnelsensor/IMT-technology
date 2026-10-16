@@ -124,6 +124,7 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> {
             com.senne.starktech.training.Training.clear();
             com.senne.starktech.training.TrainingGoals.clear();
+            com.senne.starktech.training.TrainingEnds.clear();
         });
         NeoForge.EVENT_BUS.addListener(EdithServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(EdithServer::onLivingDamaged);

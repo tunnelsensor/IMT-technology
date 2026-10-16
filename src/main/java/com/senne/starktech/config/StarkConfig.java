@@ -1617,6 +1617,9 @@ public final class StarkConfig {
         /** Zoveel rapporten bewaart een kern (de app Training). */
         @Tunable(value = "How many training reports a security core keeps (the Training app)", min = 1, max = 100)
         public static float MAX_REPORTS = 10.0f;
+        /** Zo lang (ticks) geeft een Training End-blok redstone na een treffer. */
+        @Tunable(value = "Ticks a Training End block gives a redstone signal after each hit", min = 1, max = 200)
+        public static float END_PULSE = 10.0f;
     }
 
     // =============================================================================================== Hydra

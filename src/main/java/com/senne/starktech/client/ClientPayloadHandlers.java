@@ -197,6 +197,8 @@ public final class ClientPayloadHandlers {
         if (mc.screen == null && !payload.end()) {
             mc.setScreen(new com.senne.starktech.client.training.TrainingStartScreen(payload.pos(),
                     com.senne.starktech.training.Training.Settings.load(payload.data())));
+        } else if (mc.screen == null) {
+            mc.setScreen(new com.senne.starktech.client.os.TrainingEndScreen(payload.pos(), payload.data()));
         }
     }
 

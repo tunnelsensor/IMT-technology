@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "starktech:block/training_end"
+    },
+    "powered=true": {
+      "model": "starktech:block/training_end_on"
+    }
+  }
+}

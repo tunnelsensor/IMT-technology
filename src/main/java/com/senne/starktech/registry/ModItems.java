@@ -292,6 +292,8 @@ public final class ModItems {
     /** Hoofdstuk 26: de trainingsblokken. */
     public static final DeferredItem<BlockItem> TRAINING_START = ITEMS.registerSimpleBlockItem("training_start",
             ModBlocks.TRAINING_START, new Item.Properties());
+    public static final DeferredItem<BlockItem> TRAINING_END = ITEMS.registerSimpleBlockItem("training_end",
+            ModBlocks.TRAINING_END, new Item.Properties());
     public static final DeferredItem<BlockItem> TRAINING_GOAL = ITEMS.registerSimpleBlockItem("training_goal",
             ModBlocks.TRAINING_GOAL, new Item.Properties());
 

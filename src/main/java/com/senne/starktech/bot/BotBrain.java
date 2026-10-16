@@ -459,6 +459,11 @@ public final class BotBrain {
                     case "order.x" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getX();
                     case "order.y" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getY();
                     case "order.z" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getZ();
+                    // Woorden van de server (hoofdstuk 26) die een oud robotprogramma als eigen naam kan hebben.
+                    case "trainee", "lives", "hits", "passed" -> {
+                        Object own = run == null ? globals.get(variable) : run.machine.variable(variable);
+                        yield own != null ? own : false;
+                    }
                     default -> false;
                 };
             }

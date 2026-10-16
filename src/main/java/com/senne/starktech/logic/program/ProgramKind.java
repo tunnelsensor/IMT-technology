@@ -12,6 +12,8 @@ import java.util.Locale;
  *       maar draait op de robot zelf: lopen, draaien, scannen, en via de verbinding ook je relais.</li>
  *   <li><b>DRONE</b> (hoofdstuk 25): het programma van een security drone. Hetzelfde als een robotprogramma,
  *       maar hij vliegt, dus hij kan ook omhoog en omlaag ({@code up(3)}, {@code down(1)}).</li>
+ *   <li><b>TRAINING_END</b> (hoofdstuk 26): het programmaatje in een Training End-blok. Alleen {@code when trainee_hit:} (de
+ *       trainee is geraakt), met {@code trainee}, {@code lives} en {@code hits}; het draait op je server.</li>
  * </ul>
  * Welke woorden in welke soort mogen, staat bij elk blokje ({@link Op#allowedIn}) en elk gegeven
  * ({@code Expr.Variable}); ScriptChecker kijkt het na.
@@ -19,7 +21,8 @@ import java.util.Locale;
 public enum ProgramKind {
     SERVER("Server diagram", "server diagram"),
     ROBOT("Robot program", "robot program"),
-    DRONE("Drone program", "drone program");
+    DRONE("Drone program", "drone program"),
+    TRAINING_END("Training End program", "Training End program");
 
     private final String title;
     private final String noun;

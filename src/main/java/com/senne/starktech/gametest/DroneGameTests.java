@@ -325,7 +325,7 @@ public final class DroneGameTests {
         expectProblem("when every(5):\n    forward(3)\n", ProgramKind.SERVER,
                 "forward() only works in a robot program or a drone program, not in a server diagram");
         expectProblem("when started:\n    activate(\"Drone 1\")\n", ProgramKind.DRONE,
-                "activate() only works in a server diagram, not in a drone program");
+                "activate() only works in a server diagram or a Training End program, not in a drone program");
         helper.succeed();
     }
 

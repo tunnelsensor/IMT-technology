@@ -28,6 +28,7 @@
     "starktech:robot_assembler",
     "starktech:robot_dock",
     "starktech:training_start",
-    "starktech:training_goal"
+    "starktech:training_goal",
+    "starktech:training_end"
   ]
 }
