@@ -163,7 +163,9 @@ public class TurretBlockEntity extends BlockEntity {
         if (laserCooldown == 0 && distance <= laserRange()) {
             fireLaser(level, target);
         }
-        if (rocketCooldown == 0 && ammoCount() > 0 && distance <= StarkConfig.Turrets.ROCKET_RANGE) {
+        // Met trainingsschoten (hoofdstuk 26) alleen de laser, geen raketten.
+        if (rocketCooldown == 0 && ammoCount() > 0 && distance <= StarkConfig.Turrets.ROCKET_RANGE
+                && !com.senne.starktech.training.Shots.trainingShots(target)) {
             fireRocket(level, target);
         }
     }
@@ -227,8 +229,9 @@ public class TurretBlockEntity extends BlockEntity {
             return;
         }
         ServerPlayer owner = ownerId == null ? null : level.getServer().getPlayerList().getPlayer(ownerId);
-        target.hurt(ModDamageTypes.turretLaser(level, owner),
-                kind.laserDamage());
+        // Via Shots (hoofdstuk 26): de trainee van een training krijgt misschien geen schade, maar het telt wel.
+        com.senne.starktech.training.Shots.hit(level, target, ModDamageTypes.turretLaser(level, owner), kind.laserDamage(),
+                kind == TurretKind.SECURITY ? "Security turret" : "Stark turret");
         ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, to, beam));
     }
 

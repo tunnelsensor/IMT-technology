@@ -72,6 +72,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private boolean online = true;
     /** Zette deze kern (van een Stark Tower) Tony's drones al op zijn docks (hoofdstuk 25)? Dat doet hij maar één keer. */
     private boolean towerDrones;
+    /** De rapporten van de laatste trainingen (hoofdstuk 26), de oudste eerst. */
+    private final java.util.List<com.senne.starktech.training.TrainingReport> trainingReports = new java.util.ArrayList<>();
 
     // ---------------------------------------------------------------- Toegang (de desktop regelt dit)
     /**
@@ -379,6 +381,20 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     }
 
     /** Een regel in het logboek (met de speltijd van nu). */
+    /** De rapporten van de laatste trainingen (hoofdstuk 26), de oudste eerst. */
+    public java.util.List<com.senne.starktech.training.TrainingReport> trainingReports() {
+        return java.util.Collections.unmodifiableList(trainingReports);
+    }
+
+    /** Een training is voorbij: zijn rapport erbij (hooguit {@code maxReports}; de oudste gaat eruit). */
+    public void addTrainingReport(com.senne.starktech.training.TrainingReport report) {
+        trainingReports.add(report);
+        while (trainingReports.size() > Math.max(1, Math.round(StarkConfig.Training.MAX_REPORTS))) {
+            trainingReports.removeFirst();
+        }
+        setChanged();
+    }
+
     public void logEvent(EventLog.Type type, String text) {
         log.add(level == null ? 0 : level.getGameTime(), type, text);
         setChanged();
@@ -672,6 +688,11 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         tag.put("Files", fs.save());
         tag.put("Log", log.save());
+        net.minecraft.nbt.ListTag reports = new net.minecraft.nbt.ListTag();
+        for (com.senne.starktech.training.TrainingReport report : trainingReports) {
+            reports.add(report.save());
+        }
+        tag.put("TrainingReports", reports);
         tag.put("Logic", logic.save());
         tag.put("Datacenter", datacenter.save());
         // Toegang
@@ -726,6 +747,10 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             if (person.hasUUID("Id")) {
                 trusted.put(person.getUUID("Id"), person.getString("Name"));
             }
+        }
+        trainingReports.clear();
+        for (net.minecraft.nbt.Tag element : tag.getList("TrainingReports", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            trainingReports.add(com.senne.starktech.training.TrainingReport.load((CompoundTag) element));
         }
     }
 }

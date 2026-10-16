@@ -77,7 +77,9 @@ public final class BotShot {
             return null;
         }
         float damage = laser ? StarkConfig.Robots.LASER_DAMAGE : StarkConfig.Robots.GUN_DAMAGE;
-        return hit.hurt(ModDamageTypes.robotShot(level, bot.entity(), laser), damage) ? hit : null;
+        // Via Shots (hoofdstuk 26): de trainee van een training krijgt misschien geen schade, maar het telt wel.
+        return com.senne.starktech.training.Shots.hit(level, hit, ModDamageTypes.robotShot(level, bot.entity(), laser), damage,
+                bot.getName().getString()) ? hit : null;
     }
 
     /** Spelers alleen met PvP aan (of als de bot van niemand is), en niet in creative of als toeschouwer; de rest altijd. */

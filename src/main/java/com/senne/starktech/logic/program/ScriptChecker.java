@@ -448,8 +448,7 @@ public final class ScriptChecker {
             for (String name : Expr.variables(expr)) {
                 Expr.Variable variable = Expr.Variable.byName(name);
                 if (variable != null && !variable.allowedAfter(trigger)) {
-                    String where = variable.only != null ? "when " + variable.only.code() + "(...)"
-                            : "when keycard(...) or when codepanel(...)";
+                    String where = variable.where() != null ? variable.where() : "when keycard(...) or when codepanel(...)";
                     return new Need(name, where);
                 }
             }

@@ -110,6 +110,7 @@ public class StarkTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.BotProgramGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.BotSenseGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.DroneGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.starktech.gametest.TrainingGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.starktech.gametest.StructureCheck.registerIfEnabled();
 
@@ -118,6 +119,12 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogin);
         NeoForge.EVENT_BUS.addListener(ArsenalServer::onPlayerTick);
+        // Hoofdstuk 26: trainingen (aftellen, de tijd, en of de trainee er nog is).
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.training.Training::onServerTick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> {
+            com.senne.starktech.training.Training.clear();
+            com.senne.starktech.training.TrainingGoals.clear();
+        });
         NeoForge.EVENT_BUS.addListener(EdithServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(EdithServer::onLivingDamaged);
         // Onthouden wie jou raakte, zodat de dreigingsscan alleen echte aanvallers toont

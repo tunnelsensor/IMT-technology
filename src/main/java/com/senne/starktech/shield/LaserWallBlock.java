@@ -98,7 +98,8 @@ public class LaserWallBlock extends Block {
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level instanceof ServerLevel serverLevel && entity instanceof LivingEntity living && living.hurtTime <= 0
                 && !friendOfTheTower(serverLevel, pos, living)) {
-            if (living.hurt(ModDamageTypes.laserWall(serverLevel), StarkConfig.Shields.LASER_WALL_DAMAGE)) {
+            if (com.senne.starktech.training.Shots.hit(serverLevel, living, ModDamageTypes.laserWall(serverLevel),
+                    StarkConfig.Shields.LASER_WALL_DAMAGE, "Laser wall")) {
                 // Een knetter, zoals tegen een Star Wars-laserpoort aanlopen.
                 serverLevel.playSound(null, living.getX(), living.getY() + living.getBbHeight() / 2, living.getZ(),
                         com.senne.starktech.registry.ModSounds.RAYSHIELD_HIT.get(),

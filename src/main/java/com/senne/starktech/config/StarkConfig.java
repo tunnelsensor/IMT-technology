@@ -1599,6 +1599,26 @@ public final class StarkConfig {
         public static float DRONE_TAKE_OFF = 1.0f;
     }
 
+    // =============================================================================================== Training
+
+    @Section("Training like Domino squad (chapter 26): the countdown, what a hit does, and the reports")
+    public static final class Training {
+        private Training() {}
+
+        /** Zoveel seconden telt E.D.I.T.H. af voordat een training begint. */
+        @Tunable(value = "Seconds E.D.I.T.H. counts down before a training starts", max = 30)
+        public static float COUNTDOWN_SECONDS = 3.0f;
+        /** Zo lang (ticks) na een treffer telt een volgende niet mee: anders kostte een laserwand elke tick een leven. */
+        @Tunable(value = "Ticks after a hit during which the trainee cannot be hit again (so one shot is one life)", min = 1, max = 200)
+        public static float HIT_COOLDOWN = 20.0f;
+        /** Zo lang (ticks) is de trainee trager na een treffer met trainingsschoten. */
+        @Tunable(value = "Ticks the trainee is slower after a hit with training shots", max = 200)
+        public static float SLOW_TICKS = 20.0f;
+        /** Zoveel rapporten bewaart een kern (de app Training). */
+        @Tunable(value = "How many training reports a security core keeps (the Training app)", min = 1, max = 100)
+        public static float MAX_REPORTS = 10.0f;
+    }
+
     // =============================================================================================== Hydra
 
     @Section("Hydra soldiers (in the bunker)")

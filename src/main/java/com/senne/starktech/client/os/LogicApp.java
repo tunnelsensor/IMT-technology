@@ -703,6 +703,16 @@ final class LogicApp {
             lines.add(item("order(..., \"attack\")", "order(\"Guard 1\", \"attack\", sender.x, sender.y, sender.z)", Op.ORDER));
             lines.add(item("activate(...)", "activate(\"Guard 1\")", Op.ACTIVATE));
             lines.add(item("deactivate(...)", "deactivate(\"Guard 1\")", Op.DEACTIVATE));
+            // Trainingen (hoofdstuk 26).
+            lines.add(header("TRAINING"));
+            lines.add(item("training_started(...)", "when training_started(\"Kamino\"):\n    say(\"Good luck, \" + trainee)\n",
+                    Op.TRAINING_STARTED));
+            lines.add(item("training_hit(...)", "when training_hit(\"Kamino\"):\n    say(trainee + \" has \" + lives + \" lives left\")\n",
+                    Op.TRAINING_HIT));
+            lines.add(item("training_ended(...)", "when training_ended(\"Kamino\"):\n    if passed:\n        say(\"Well done, \" + trainee)\n",
+                    Op.TRAINING_ENDED));
+            lines.add(new HelpLine("trainee, lives, hits, passed", "trainee",
+                    "who trains, lives left, how often hit, and (when ended) if they passed", HudStyle.WHITE, null));
         } else {
             // Wat een robot (of een drone, hoofdstuk 25) zelf kan (hoofdstuk 23).
             String self = kind == ProgramKind.DRONE ? "drone" : "robot";

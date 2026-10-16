@@ -252,6 +252,14 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
             return;
         }
         downUntil = level.getGameTime() + Math.max(1, ticks);
+        // In een training (hoofdstuk 26) blijft hij liggen tot die voorbij is (zie TrainingBots).
+        com.senne.starktech.security.SecurityCoreBlockEntity core = com.senne.starktech.security.SecurityCores.coreAt(level, blockPosition());
+        com.senne.starktech.training.Training.Session session = core == null ? null
+                : com.senne.starktech.training.Training.at(level, core.getBlockPos());
+        if (session != null && session.running()) {
+            downUntil = Long.MAX_VALUE;
+            session.addDowned(getUUID());
+        }
         brain.stop();
         getNavigation().stop();
         knockedDown();
@@ -263,6 +271,14 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
 
     /** Net neergeschoten (een robot stapt dan niet meer uit zijn dock; een drone valt). */
     protected void knockedDown() {}
+
+    /** Hij staat weer op (na een training waarin hij neerging, hoofdstuk 26). */
+    public void standUp() {
+        if (downUntil > 0) {
+            downUntil = 0;
+            updateState();
+        }
+    }
 
     /** Ligt hij neer (na de Ion Blaster)? (Ook in je spel.) */
     @Override
@@ -560,7 +576,10 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         tag.putByte("Facing", (byte) brain.body().facing().get2DDataValue());
         tag.putInt("Ammo", ammo());
         if (downUntil > 0) {
-            tag.putLong("DownTicks", Math.max(1, downUntil - level().getGameTime()));
+            // Neer tot het einde van een training: die bestaat na opnieuw laden niet meer, dus dan gewoon de gewone tijd.
+            long left = downUntil == Long.MAX_VALUE ? Math.round(StarkConfig.Robots.ION_DOWN_SECONDS * 20)
+                    : downUntil - level().getGameTime();
+            tag.putLong("DownTicks", Math.max(1, left));
         }
         if (owner != null) {
             tag.putUUID("Owner", owner);

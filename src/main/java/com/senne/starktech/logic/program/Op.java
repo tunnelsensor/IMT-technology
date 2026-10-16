@@ -32,6 +32,12 @@ public enum Op {
     ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...)"),
     /** {@code when message("intruder"):} (hoofdstuk 23): een robot stuurt de server een bericht met send(...). */
     MESSAGE(Kind.TRIGGER, "message", Arg.TEXT, Arg.NONE, "One of your robots or drones sends this message with send(...)"),
+    /** {@code when training_started("Kamino"):} (hoofdstuk 26): een training begint (na het aftellen). */
+    TRAINING_STARTED(Kind.TRIGGER, "training_started", Arg.TEXT, Arg.NONE, "This training starts (after the countdown)"),
+    /** {@code when training_hit("Kamino"):}: de trainee is geraakt (lives is nu een minder). */
+    TRAINING_HIT(Kind.TRIGGER, "training_hit", Arg.TEXT, Arg.NONE, "The trainee of this training is hit"),
+    /** {@code when training_ended("Kamino"):}: de training is voorbij (passed zegt of hij geslaagd is). */
+    TRAINING_ENDED(Kind.TRIGGER, "training_ended", Arg.TEXT, Arg.NONE, "This training is over (passed or not)"),
 
     // ---------------------------------------------------------------- Je eigen blokjes (functies)
     /** Een eigen blok: in de code {@code def open_lab():} met de acties eronder. De tekst is de naam. */
@@ -241,6 +247,7 @@ public enum Op {
             case LOG -> "Door opened";
             case ORDERED -> "attack";
             case MESSAGE, SEND -> "intruder";
+            case TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> "Kamino";
             case ACTIVATE, DEACTIVATE -> "Guard 1";
             default -> "Someone is at the door";
         };
@@ -325,8 +332,8 @@ public enum Op {
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
-            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE, ORDER, ACTIVATE, DEACTIVATE ->
-                    kind == ProgramKind.SERVER;
+            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE, ORDER, ACTIVATE, DEACTIVATE,
+                 TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> kind == ProgramKind.SERVER;
             case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
             default -> true;

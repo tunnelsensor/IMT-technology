@@ -109,7 +109,12 @@ public sealed interface Expr {
         SENDER_NAME("sender.name", Type.TEXT, "the robot that sent the message", Op.MESSAGE),
         SENDER_X("sender.x", Type.NUMBER, "where that robot stood: x", Op.MESSAGE),
         SENDER_Y("sender.y", Type.NUMBER, "where that robot stood: y", Op.MESSAGE),
-        SENDER_Z("sender.z", Type.NUMBER, "where that robot stood: z", Op.MESSAGE);
+        SENDER_Z("sender.z", Type.NUMBER, "where that robot stood: z", Op.MESSAGE),
+        // Na when training_started/training_hit/training_ended(...) (hoofdstuk 26): de training.
+        TRAINEE("trainee", Type.TEXT, "the name of the player in the training", Op.TRAINING_HIT),
+        LIVES("lives", Type.NUMBER, "how many lives the trainee has left", Op.TRAINING_HIT),
+        HITS("hits", Type.NUMBER, "how often the trainee was hit", Op.TRAINING_HIT),
+        PASSED("passed", Type.BOOL, "true if the trainee passed (reached the goal, or survived the time)", Op.TRAINING_ENDED);
 
         final String name;
         final Type type;
@@ -152,12 +157,26 @@ public sealed interface Expr {
             };
         }
 
-        /** Mag dit gegeven na deze trigger? (player.* alleen na een lezer of paneel; null = in een def: alles.) */
+        /**
+         * Mag dit gegeven na deze trigger? (player.* alleen na een lezer of paneel; trainee, lives en hits na elke
+         * trainingstrigger; null = in een def: alles.)
+         */
         public boolean allowedAfter(@Nullable Op trigger) {
             if (name.startsWith("player.")) {
                 return trigger == null || trigger.hasSourceDevice();
             }
+            if (this == TRAINEE || this == LIVES || this == HITS) {
+                return trigger == null || trigger == Op.TRAINING_STARTED || trigger == Op.TRAINING_HIT || trigger == Op.TRAINING_ENDED;
+            }
             return only == null || trigger == null || only == trigger;
+        }
+
+        /** Waar dit gegeven wel werkt, voor de foutmeldingen: "when keycard(...)". Null = overal. */
+        public @Nullable String where() {
+            if (this == TRAINEE || this == LIVES || this == HITS) {
+                return "when training_started(...), training_hit(...) or training_ended(...)";
+            }
+            return only == null ? null : "when " + only.code() + "(...)";
         }
 
         static @Nullable Variable byName(String name) {
@@ -539,8 +558,7 @@ public sealed interface Expr {
                         : ". You can use: " + known()));
             }
             if (scope != null && !variable.allowedAfter(trigger)) {
-                String where = variable.only != null ? "when " + variable.only.code() + "(...)"
-                        : "when keycard(...) or when codepanel(...)";
+                String where = variable.where() != null ? variable.where() : "when keycard(...) or when codepanel(...)";
                 throw new LogicException(word + " only works inside " + where);
             }
             return new Var(word);

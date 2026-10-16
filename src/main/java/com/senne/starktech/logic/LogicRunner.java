@@ -72,7 +72,14 @@ public final class LogicRunner {
      * welke speler, en de kaart of code.
      */
     public record Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
-                          boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code) {
+                          boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
+                          com.senne.starktech.training.Training.@Nullable Info training) {
+        /** Zonder training (alles behalve de trainingstriggers van hoofdstuk 26). */
+        public Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
+                       boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code) {
+            this(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, null);
+        }
+
         /** Een trigger zonder speler (een relais, een timer). */
         static Context plain(Op trigger, String source) {
             return new Context(trigger, source, null, null, "", false, false, null, false, "");
@@ -207,6 +214,17 @@ public final class LogicRunner {
             }
         }
         return matched;
+    }
+
+    /**
+     * Een training (hoofdstuk 26) begon, de trainee werd geraakt, of hij is voorbij: start {@code when
+     * training_started("Kamino"):} (of training_hit, training_ended), met {@code trainee}, {@code lives}, {@code hits}
+     * en {@code passed}.
+     */
+    public static int training(ServerLevel level, SecurityCoreBlockEntity core, Op trigger,
+                               com.senne.starktech.training.Training.Info info, UUID trainee) {
+        return fire(level, core, trigger, info.name(), new Context(trigger, info.name(), null, trainee, info.trainee(),
+                false, false, null, false, "", info));
     }
 
     /** Een relais (of laser, koepel, torentje) ging aan of uit: start "when turned_on/turned_off". */
@@ -384,6 +402,11 @@ public final class LogicRunner {
                     case "sender.x" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getX();
                     case "sender.y" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getY();
                     case "sender.z" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getZ();
+                    // Na een trainingstrigger (hoofdstuk 26).
+                    case "trainee" -> context.training() == null ? "" : context.training().trainee();
+                    case "lives" -> context.training() == null ? 0.0 : (double) context.training().lives();
+                    case "hits" -> context.training() == null ? 0.0 : (double) context.training().hits();
+                    case "passed" -> context.training() != null && context.training().passed();
                     default -> false;
                 };
             }

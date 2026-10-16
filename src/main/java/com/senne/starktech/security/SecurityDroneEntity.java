@@ -209,7 +209,8 @@ public class SecurityDroneEntity extends PathfinderMob {
             ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.DRONE_LASER));
             return;
         }
-        target.hurt(ModDamageTypes.droneLaser(level, this, this), StarkConfig.Security.DRONE_LASER_DAMAGE);
+        com.senne.starktech.training.Shots.hit(level, target, ModDamageTypes.droneLaser(level, this, this),
+                StarkConfig.Security.DRONE_LASER_DAMAGE, "Patrol drone");
         ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.DRONE_LASER));
     }
 

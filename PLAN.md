@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 277 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 280 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2825,10 +2825,24 @@ flits en 1 seconde trager. Alleen de eigenaar, zijn team en vertrouwde spelers s
 via squads: `activate("Wave 1")`, `when squad_down("Wave 1"):`. Een **Training Goal**-blok: erop komen is
 geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
 
-- [ ] **1. Centraal schot** — één plek (`Shots`) voor lethal en non-lethal; torentjes, drones, laserwanden en
-      robots sluiten erop aan.
-- [ ] **2. Training-sessie** — per core: trainee, naam, soort, lethal, levens, treffers; de triggers
-      training_started, training_hit en training_ended.
+- [x] **1. Centraal schot** — elk schot van je beveiliging komt nu op één plek uit (`training/Shots`): torentjes,
+      laserwanden, de oude patrouilledrones, robots en security drones. Is wie geraakt wordt de trainee van een
+      training die bezig is, dan beslist de training: met **trainingsschoten** geen schade, maar een blauwe flits
+      (met een "zap"), een seconde trager en een leven eraf; **lethal** doet echte schade en telt ook. Eén schot is
+      één leven: na een treffer telt een volgende even niet mee (`hitCooldown` in `[training]`, 20 ticks; anders
+      kostte een laserwand elke tick een leven). Met trainingsschoten schieten torentjes alleen hun laser, geen
+      raketten.
+- [x] **2. Training-sessie** — één training tegelijk per kern (alleen in het geheugen van de server), met een naam,
+      trainingsschoten of lethal, 1-10 levens en eventueel een tijdslimiet. E.D.I.T.H. telt af (`countdownSeconds`,
+      3) en zegt "go!". Hij stopt als de levens op zijn, de tijd om is (zonder Training Goal-blok in de basis ben je
+      dan geslaagd, met zo'n blok niet: je moest het doel halen), de trainee doodgaat, uitlogt of het gebied van de
+      kern verlaat, of als hij gestopt wordt. Dan zegt E.D.I.T.H. het rapport tegen de trainee en de eigenaar
+      ("Training Kamino: Senne ran out of lives after 1:12 (3 hits: Guard 2 x2, Guard 1 x1; 2 robots down)"), de
+      kern bewaart het (de laatste 10, `maxReports`) en het logboek krijgt een regel (TRAINING). Je diagrammen
+      horen `when training_started("Kamino"):`, `when training_hit("Kamino"):` en `when training_ended("Kamino"):`,
+      met `trainee`, `lives`, `hits` en (na het einde) `passed`; in de Help onder TRAINING. Een robot of drone die
+      tijdens een training neergaat (de Ion Blaster), blijft liggen tot hij voorbij is; dan staat hij op en gaat hij
+      naar zijn dock. Nieuw in de config: `[training]`. Drie nieuwe tests (`TrainingGameTests`).
 - [ ] **3. Training Start-blok** — instellingen (sneak + klik), aftellen, alleen voor vertrouwden.
 - [ ] **4. Squads** — robots in een squad; activate, deactivate, squad_down, active.
 - [ ] **5. Training End-blok** — redstone-puls bij elke treffer, en de mini-editor (dezelfde taal, eigen soort
