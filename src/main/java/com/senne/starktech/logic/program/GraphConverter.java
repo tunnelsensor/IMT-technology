@@ -93,10 +93,13 @@ public final class GraphConverter {
         }
     }
 
-    /** Een waarde zoals de code hem schrijft ("count+1" wordt "count + 1"), als hij klopt. */
+    /**
+     * Een waarde zoals de code hem schrijft ("count+1" wordt "count + 1"), als hij klopt. Ook een rijtje
+     * waarden, zoals bij goto ("1,2 ,3" wordt "1, 2, 3").
+     */
     private static String cleanValue(String text) {
         try {
-            return Expr.print(Expr.parseLenient(text, false));
+            return Expr.printList(Expr.parseLenientList(text));
         } catch (LogicException e) {
             return text.isBlank() ? "0" : text;
         }

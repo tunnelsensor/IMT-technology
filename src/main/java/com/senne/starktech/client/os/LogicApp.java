@@ -1,6 +1,7 @@
 package com.senne.starktech.client.os;
 
 import com.senne.starktech.client.hud.HudStyle;
+import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.logic.program.GraphConverter;
 import com.senne.starktech.logic.program.LogicException;
 import com.senne.starktech.logic.program.LogicGraph;
@@ -413,7 +414,7 @@ final class LogicApp {
         loadedName = "";
         String reader = firstInput(false);
         String code = newKind == ProgramKind.ROBOT
-                ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen every(10):\n    pass\n"
+                ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen started:\n    pass\n"
                 : reader != null
                 ? "when keycard(\"" + reader + "\"):\n    if card.valid and card.level >= 1:\n        accept()\n    else:\n        deny()\n"
                 : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
@@ -667,6 +668,10 @@ final class LogicApp {
         lines.add(item("codepanel(...)", "when codepanel(\"" + (panel == null ? "Panel 1" : panel) + "\"):\n    if code == \"1234\":\n        accept()\n    else:\n        deny()\n", Op.CODEPANEL));
         lines.add(item("turned_on(...)", "when turned_on(\"" + device + "\"):\n    pass\n", Op.TURNED_ON));
         lines.add(item("turned_off(...)", "when turned_off(\"" + device + "\"):\n    pass\n", Op.TURNED_OFF));
+        lines.add(item("message(...)", "when message(\"intruder\"):\n    alarm(\"Intruder seen by \" + sender.name)\n", Op.MESSAGE));
+        } else {
+            lines.add(item("started", "when started:\n    forever:\n        forward(3)\n        turn_right()\n", Op.STARTED));
+            lines.add(item("ordered(...)", "when ordered(\"attack\"):\n    goto(order.x, order.y, order.z)\n", Op.ORDERED));
         }
         lines.add(item("every(10)", "when every(10):\n    pass\n", Op.EVERY));
         lines.add(header("DO (actions)"));
@@ -679,6 +684,29 @@ final class LogicApp {
         lines.add(item("say(...)", "say(\"Someone is at the door\")", Op.SAY));
         lines.add(item("alarm(...)", "alarm(\"Intruder!\")", Op.ALARM));
         lines.add(item("log(...)", "log(\"Door opened\")", Op.LOG));
+        if (server) {
+            // Je robots een opdracht geven (hoofdstuk 23).
+            lines.add(header("ROBOTS"));
+            lines.add(item("order(..., \"attack\")", "order(\"Guard 1\", \"attack\", sender.x, sender.y, sender.z)", Op.ORDER));
+            lines.add(item("activate(...)", "activate(\"Guard 1\")", Op.ACTIVATE));
+            lines.add(item("deactivate(...)", "deactivate(\"Guard 1\")", Op.DEACTIVATE));
+        } else {
+            // Wat een robot zelf kan (hoofdstuk 23).
+            lines.add(header("MOVE"));
+            lines.add(item("forward(3) / back(1)", "forward(3)", Op.FORWARD));
+            lines.add(item("turn_left() / turn_right()", "turn_right()", Op.TURN_RIGHT));
+            lines.add(item("goto(x, y, z)", "goto(robot.x + 5, robot.y, robot.z)", Op.GOTO));
+            lines.add(item("charge() / charge(80)", "if robot.battery < 10:\n    charge()", Op.CHARGE));
+            lines.add(item("stop()", "stop()", Op.STOP));
+            lines.add(header("PINS AND THE SERVER"));
+            lines.add(new HelpLine("scanPin = pin(1)", "scanPin = pin(1)\n", Expr.Function.PIN.help(), 0xF1E87C, null));
+            lines.add(new HelpLine("if read(scanPin):", "if read(scanPin):\n    pass", Expr.Function.READ.help(), HudStyle.WHITE, null));
+            lines.add(item("write(laserPin, true)", "write(laserPin, true)", Op.WRITE));
+            lines.add(item("send(...)", "send(\"intruder\")", Op.SEND));
+            lines.add(new HelpLine("if robot.battery < 10:", "if robot.battery < 10:\n    charge()",
+                    "also: robot.x, robot.y, robot.z, robot.facing, robot.name, robot.blocked, robot.connected",
+                    HudStyle.WHITE, null));
+        }
         lines.add(header("CHECK (if)"));
         if (server) {
         lines.add(new HelpLine("if card.level >= 3:", "if card.valid and card.level >= 3:\n    pass", "card.level: 1-5; card.valid: written by this network and not blocked", HudStyle.WHITE, null));

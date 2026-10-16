@@ -400,7 +400,7 @@ public final class LogicRunner {
                 };
                 // Berekende seconden (pulse("Lamp", delay)) houden we tussen 0,05 en 60 s.
                 double seconds = node.op == Op.PULSE && !node.expr.isEmpty()
-                        ? Math.max(Op.PULSE.minSeconds(), Math.min(Op.PULSE.maxSeconds(), number(level, core, run, node.expr)))
+                        ? Math.max(Op.PULSE.minNumber(), Math.min(Op.PULSE.maxNumber(), number(level, core, run, node.expr)))
                         : node.number;
                 int pulseTicks = (int) Math.max(1, Math.round(seconds * 20));
                 if (LogicDevices.switchByName(level, core, node.text, op, pulseTicks) == 0) {

@@ -109,23 +109,24 @@ public final class ScriptParser {
                 if (own || op != null && !op.isTrigger() && op != Op.IF) {
                     boolean keyword = op != null && (op.kind() == Op.Kind.LOOP || op == Op.BREAK);
                     throw new LogicException(line.number(), first.text() + (keyword ? "" : "()")
-                            + " must be inside a when: indent it with 4 spaces under a line like when keycard(\"Lab door\"):");
+                            + " must be inside a when: indent it with 4 spaces under a line like " + exampleWhen());
                 }
-                throw new LogicException(line.number(), "Every diagram starts with when (or def), like: when keycard(\"Lab door\"):"
+                throw new LogicException(line.number(), "Every " + kind.noun() + " starts with when (or def), like: " + exampleWhen()
                         + " (a name with a value, like count = 0, may also stand at the left edge)");
             }
-            Call call = call(line, 1);
+            // when started: (hoofdstuk 23) heeft geen haakjes: er hoort niets bij.
+            Call call = line.tokens().get(1).type() == Lexer.Type.NAME && !line.tokens().get(2).is("(")
+                    ? new Call(line.tokens().get(1).text(), List.of(), 2) : call(line, 1);
             Op trigger = Op.byCode(call.name());
             if (trigger == null || !trigger.isTrigger()) {
                 String hint = functionNames.contains(call.name())
-                        ? call.name() + " is your own block, not a trigger. A when starts with one of: keycard, codepanel,"
-                        + " turned_on, turned_off, every"
+                        ? call.name() + " is your own block, not a trigger. A when starts with one of: " + triggers()
                         : trigger == null ? unknown(call.name())
-                        : call.name() + " is not a trigger. A when starts with one of: keycard, codepanel, turned_on, turned_off, every";
+                        : call.name() + " is not a trigger. A when starts with one of: " + triggers();
                 throw new LogicException(line.number(), hint);
             }
             if (!trigger.allowedIn(kind)) {
-                throw new LogicException(line.number(), ScriptChecker.wrongKind(trigger.code() + "(...)", kind));
+                throw new LogicException(line.number(), ScriptChecker.wrongKind(ScriptChecker.triggerWord(trigger), kind));
             }
             expectColon(line, call.end());
             Values values = values(line, trigger, call);
@@ -258,6 +259,10 @@ public final class ScriptParser {
         if (op != null && op.kind() == Op.Kind.SET) {
             throw new LogicException(line.number(), "Give a name a value with =, like count = 0");
         }
+        if (op == null && Expr.Function.byName(call.name()) != null) {
+            throw new LogicException(line.number(), call.name() + "(...) gives a value: use it in an if or after =, like "
+                    + (call.name().equals("pin") ? "scanPin = pin(1)" : "if read(scanPin):"));
+        }
         if (op == null) {
             throw new LogicException(line.number(), unknown(call.name()));
         }
@@ -268,6 +273,15 @@ public final class ScriptParser {
         if (!op.allowedIn(kind)) {
             throw new LogicException(line.number(), ScriptChecker.wrongKind(op.code() + "()", kind));
         }
+        if (op.textArg() == Op.Arg.VALUES) {
+            // goto(x, y, z), write(pin, true), order("Guard 1", "attack"): een rijtje waarden, als code bewaard.
+            String problem = Checks.valuesProblem(op, call.args());
+            if (problem != null) {
+                throw new LogicException(line.number(), problem);
+            }
+            index++;
+            return new Script.Action(op, "", 0, Expr.printList(call.args()), line.number());
+        }
         Values values = values(line, op, call);
         check(line, op, values);
         String problem = Checks.contextProblem(op, trigger);
@@ -276,7 +290,7 @@ public final class ScriptParser {
         }
         index++;
         double number = values.number() != null ? values.number()
-                : op.numberArg() == Op.Arg.OPTIONAL_SECONDS ? op.defaultSeconds() : 0;
+                : op.numberArg() == Op.Arg.OPTIONAL_NUMBER ? op.defaultNumber() : 0;
         return new Script.Action(op, values.text() == null ? "" : values.text(), number, values.expr(), line.number());
     }
 
@@ -450,13 +464,13 @@ public final class ScriptParser {
             if (arg instanceof Expr.Num num) {
                 number = num.value();
             } else if (op.isTrigger()) {
-                throw new LogicException(line.number(), op.code() + " needs a plain number of seconds, like "
-                        + op.code() + "(" + op.exampleSeconds() + ")");
+                throw new LogicException(line.number(), op.code() + " needs a plain number of " + op.unit() + ", like "
+                        + op.code() + "(" + op.exampleNumber() + ")");
             } else {
                 Expr.Type type = Expr.typeOf(arg);
                 if (type == Expr.Type.TEXT || type == Expr.Type.BOOL) {
-                    throw new LogicException(line.number(), op.code() + " needs a number of seconds, like "
-                            + op.code() + "(" + (hasText ? "\"Lab door\", " : "") + op.exampleSeconds() + ")");
+                    throw new LogicException(line.number(), op.code() + " needs a number of " + op.unit() + ", like "
+                            + op.code() + "(" + (hasText ? "\"Lab door\", " : "") + op.exampleNumber() + ")");
                 }
                 expr = Expr.print(arg); // berekende seconden: wait(delay * 2)
             }
@@ -476,7 +490,7 @@ public final class ScriptParser {
             }
             Op op = Op.byCode(name.text());
             throw new LogicException(line.number(), op != null
-                    ? name.text() + " needs brackets, like " + name.text() + "(" + (op.textArg() != Op.Arg.NONE ? "\"...\"" : "") + ")"
+                    ? name.text() + " needs brackets, like " + op.example().replace("|", "...")
                     : unknown(name.text()));
         }
         int i = start + 2;
@@ -526,6 +540,22 @@ public final class ScriptParser {
         if (line.tokens().get(at + 1).type() != Lexer.Type.END) {
             throw new LogicException(line.number(), "Nothing may come after the : (put it on the next line, indented)");
         }
+    }
+
+    /** Hoe een when in deze soort programma begint, voor de foutmeldingen. */
+    private String exampleWhen() {
+        return kind == ProgramKind.ROBOT ? "when started:" : "when keycard(\"Lab door\"):";
+    }
+
+    /** De triggers die in deze soort programma bestaan: "keycard, codepanel, turned_on, turned_off, every, message". */
+    private String triggers() {
+        List<String> names = new ArrayList<>();
+        for (Op op : Op.values()) {
+            if (op.isTrigger() && op.allowedIn(kind)) {
+                names.add(op.code());
+            }
+        }
+        return String.join(", ", names);
     }
 
     private String unknown(String name) {

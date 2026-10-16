@@ -74,9 +74,10 @@ public final class ScriptPrinter {
             return call(op, text, number);
         }
         StringBuilder call = new StringBuilder(op.code()).append('(');
-        if (!Checks.exprIsText(op) && op.textArg() != Op.Arg.NONE) {
+        if (!Checks.exprIsText(op) && op.textArg() != Op.Arg.NONE && op.textArg() != Op.Arg.VALUES) {
             call.append(Expr.quote(text)).append(", "); // eerst het apparaat, dan de berekende seconden
         }
+        // Bij goto(x, y, z) (hoofdstuk 23) is expr het hele rijtje waarden.
         return call.append(expr).append(')').toString();
     }
 
@@ -91,7 +92,7 @@ public final class ScriptPrinter {
 
     /**
      * Een aanroep: {@code keycard("Lab door")}, {@code wait(2)}, {@code pulse("Gate", 0.5)},
-     * {@code accept()}, en een eigen blok: {@code open_lab()}.
+     * {@code accept()}, een eigen blok: {@code open_lab()}, en een trigger zonder haakjes: {@code started}.
      */
     public static String call(Op op, String text, double number) {
         if (op == Op.CALL) {
@@ -103,12 +104,15 @@ public final class ScriptPrinter {
         if (op == Op.DEF) {
             return "def " + text + "()";
         }
+        if (op.withoutBrackets()) {
+            return op.code(); // when started:
+        }
         StringBuilder call = new StringBuilder(op.code()).append('(');
-        if (op.textArg() != Op.Arg.NONE) {
+        if (op.textArg() != Op.Arg.NONE && op.textArg() != Op.Arg.VALUES) {
             call.append(Expr.quote(text));
         }
-        boolean showNumber = op.numberArg() == Op.Arg.SECONDS
-                || op.numberArg() == Op.Arg.OPTIONAL_SECONDS && number != op.defaultSeconds();
+        boolean showNumber = op.numberArg() == Op.Arg.NUMBER
+                || op.numberArg() == Op.Arg.OPTIONAL_NUMBER && number != op.defaultNumber();
         if (showNumber) {
             if (op.textArg() != Op.Arg.NONE) {
                 call.append(", ");

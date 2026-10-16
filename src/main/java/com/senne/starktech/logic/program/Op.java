@@ -16,7 +16,8 @@ import org.jetbrains.annotations.Nullable;
  *       {@code count = 0} voor het hele programma.</li>
  * </ul>
  * Elk blokje zegt welke gegevens het nodig heeft: een naam (tekst tussen aanhalingstekens) en/of
- * een getal (seconden).
+ * een getal (seconden, blokken of procent), of (hoofdstuk 23) een rijtje waarden zoals {@code goto(x, y, z)}.
+ * Niet elk blokje werkt in elke soort programma: zie {@link #allowedIn}.
  */
 public enum Op {
     // ---------------------------------------------------------------- Triggers
@@ -24,7 +25,13 @@ public enum Op {
     CODEPANEL(Kind.TRIGGER, "codepanel", Arg.DEVICE, Arg.NONE, "Someone types a code on this panel"),
     TURNED_ON(Kind.TRIGGER, "turned_on", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched on"),
     TURNED_OFF(Kind.TRIGGER, "turned_off", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched off"),
-    EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.SECONDS, "Every so many seconds"),
+    EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.NUMBER, "Every so many seconds"),
+    /** {@code when started:} (hoofdstuk 23): een robotprogramma begint. Zonder haakjes: er hoort niets bij. */
+    STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot is switched on (or gets this program)"),
+    /** {@code when ordered("attack"):} (hoofdstuk 23): de server geeft deze robot een opdracht met order(...). */
+    ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot an order with order(...)"),
+    /** {@code when message("intruder"):} (hoofdstuk 23): een robot stuurt de server een bericht met send(...). */
+    MESSAGE(Kind.TRIGGER, "message", Arg.TEXT, Arg.NONE, "One of your robots sends this message with send(...)"),
 
     // ---------------------------------------------------------------- Je eigen blokjes (functies)
     /** Een eigen blok: in de code {@code def open_lab():} met de acties eronder. De tekst is de naam. */
@@ -39,13 +46,40 @@ public enum Op {
     ON(Kind.ACTION, "on", Arg.DEVICE, Arg.NONE, "Switch a relay (or laser, dome, turret) on"),
     OFF(Kind.ACTION, "off", Arg.DEVICE, Arg.NONE, "Switch it off"),
     TOGGLE(Kind.ACTION, "toggle", Arg.DEVICE, Arg.NONE, "Switch it on if it is off, off if it is on"),
-    PULSE(Kind.ACTION, "pulse", Arg.DEVICE, Arg.OPTIONAL_SECONDS, "Switch it on for a few seconds"),
-    WAIT(Kind.ACTION, "wait", Arg.NONE, Arg.SECONDS, "Wait a few seconds before going on"),
+    PULSE(Kind.ACTION, "pulse", Arg.DEVICE, Arg.OPTIONAL_NUMBER, "Switch it on for a few seconds"),
+    WAIT(Kind.ACTION, "wait", Arg.NONE, Arg.NUMBER, "Wait a few seconds before going on"),
     ACCEPT(Kind.ACTION, "accept", Arg.NONE, Arg.NONE, "Green light and a beep on the reader or panel"),
     DENY(Kind.ACTION, "deny", Arg.NONE, Arg.NONE, "Red light and a buzz on the reader or panel"),
     SAY(Kind.ACTION, "say", Arg.TEXT, Arg.NONE, "E.D.I.T.H. tells the owner something"),
     ALARM(Kind.ACTION, "alarm", Arg.TEXT, Arg.NONE, "Alarm: E.D.I.T.H. warns the owner and the security hunts the player"),
     LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log"),
+
+    // ---------------------------------------------------------------- Een robot (hoofdstuk 23)
+    /** {@code forward(3)}: zoveel blokken vooruit, blok voor blok. */
+    FORWARD(Kind.ACTION, "forward", Arg.NONE, Arg.NUMBER, "Walk this many blocks forward"),
+    /** {@code back(1)}: zoveel blokken achteruit (hij blijft dezelfde kant op kijken). */
+    BACK(Kind.ACTION, "back", Arg.NONE, Arg.NUMBER, "Walk this many blocks backwards (still looking the same way)"),
+    TURN_LEFT(Kind.ACTION, "turn_left", Arg.NONE, Arg.NONE, "Turn a quarter to the left"),
+    TURN_RIGHT(Kind.ACTION, "turn_right", Arg.NONE, Arg.NONE, "Turn a quarter to the right"),
+    /** {@code goto(x, y, z)}: naar een plek lopen (alleen met de Pathfinding-module). De waarden staan in expr. */
+    GOTO(Kind.ACTION, "goto", Arg.VALUES, Arg.NONE, "Walk to a place: goto(x, y, z). Needs the Pathfinding module"),
+    /** {@code charge()} of {@code charge(80)}: naar het dock lopen, laden tot zoveel procent, en terug. */
+    CHARGE(Kind.ACTION, "charge", Arg.NONE, Arg.OPTIONAL_NUMBER, "Walk to the dock, charge (to 100%, or charge(80)) and walk back"),
+    /** {@code stop()}: zichzelf uitzetten; hij loopt naar zijn dock en blijft daar. */
+    STOP(Kind.ACTION, "stop", Arg.NONE, Arg.NONE, "Switch yourself off: walk to the dock and stay there"),
+    /** {@code write(laserPin, true)}: een pin iets laten doen. De waarden (pin, waarde) staan in expr. */
+    WRITE(Kind.ACTION, "write", Arg.VALUES, Arg.NONE, "Tell the module on a pin what to do: write(laserPin, true)"),
+    /** {@code send("intruder")}: een bericht naar de server; daar begint {@code when message("intruder"):}. */
+    SEND(Kind.ACTION, "send", Arg.TEXT, Arg.NONE, "Send the server a message: its when message(...) starts"),
+
+    // ---------------------------------------------------------------- De server geeft robots opdrachten (hoofdstuk 23)
+    /**
+     * {@code order("Guard 1", "attack")} of {@code order("Guard 1", "attack", x, y, z)}: de robot begint zijn
+     * {@code when ordered("attack"):}. De waarden staan in expr.
+     */
+    ORDER(Kind.ACTION, "order", Arg.VALUES, Arg.NONE, "Give a robot an order: its when ordered(...) starts"),
+    ACTIVATE(Kind.ACTION, "activate", Arg.ROBOT, Arg.NONE, "Switch a robot on: it walks out of its dock"),
+    DEACTIVATE(Kind.ACTION, "deactivate", Arg.ROBOT, Arg.NONE, "Switch a robot off: it walks back to its dock"),
 
     // ---------------------------------------------------------------- Namen (variabelen, hoofdstuk 20)
     /**
@@ -73,10 +107,12 @@ public enum Op {
     public enum Kind { TRIGGER, DEF, IF, ACTION, SET, LOOP }
 
     /**
-     * Wat voor gegevens. DEVICE, TEXT en NAME (van een def) zijn tekst, SECONDS een getal, VARIABLE
-     * de naam van een variabele (de waarde staat dan apart, als code).
+     * Wat voor gegevens. DEVICE, TEXT, ROBOT (de naam van een robot) en NAME (van een def) zijn tekst,
+     * NUMBER een getal (seconden, blokken of procent: zie {@link #unit}), VARIABLE de naam van een variabele
+     * (de waarde staat dan apart, als code). VALUES (hoofdstuk 23) is een rijtje waarden met komma's ertussen,
+     * zoals {@code goto(x, y, z)}: dat staat helemaal als code in {@code expr}.
      */
-    public enum Arg { NONE, DEVICE, TEXT, NAME, SECONDS, OPTIONAL_SECONDS, VARIABLE }
+    public enum Arg { NONE, DEVICE, TEXT, ROBOT, NAME, NUMBER, OPTIONAL_NUMBER, VARIABLE, VALUES }
 
     /** Zo lang mag een tekst (say, alarm, log) of een naam hooguit zijn. */
     public static final int MAX_TEXT = 80;
@@ -109,7 +145,7 @@ public enum Op {
         return text;
     }
 
-    /** Of dit blokje een getal (seconden) heeft: SECONDS (moet), OPTIONAL_SECONDS (mag) of NONE. */
+    /** Of dit blokje een getal heeft: NUMBER (moet), OPTIONAL_NUMBER (mag) of NONE. */
     public Arg numberArg() {
         return number;
     }
@@ -150,59 +186,143 @@ public enum Op {
         }
     }
 
-    /** Het kleinste en grootste getal (seconden) dat dit blokje aanneemt. */
-    public double minSeconds() {
-        return this == EVERY ? 1 : 0.05;
+    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back) of "percent" (charge). */
+    public String unit() {
+        return switch (this) {
+            case FORWARD, BACK -> "blocks";
+            case CHARGE -> "percent";
+            default -> "seconds";
+        };
     }
 
-    public double maxSeconds() {
+    /** Het kleinste en grootste getal dat dit blokje aanneemt. */
+    public double minNumber() {
+        return switch (this) {
+            case EVERY, FORWARD, BACK, CHARGE -> 1;
+            default -> 0.05;
+        };
+    }
+
+    public double maxNumber() {
         return switch (this) {
             case EVERY -> 3600;
             case WAIT -> 600;
+            case FORWARD, BACK -> 64;
+            case CHARGE -> 100;
             default -> 60;
         };
     }
 
-    /** Als het getal weggelaten mag worden (pulse), is dit de standaard. */
-    public double defaultSeconds() {
-        return 1;
+    /** Als het getal weggelaten mag worden (pulse, charge), is dit de standaard. */
+    public double defaultNumber() {
+        return this == CHARGE ? 100 : 1;
     }
 
-    /** Een voorbeeldgetal voor in een lijstje met suggesties: every(10), wait(2), pulse("...", 3). */
-    public int exampleSeconds() {
+    /** Een voorbeeldgetal voor in een lijstje met suggesties: every(10), wait(2), pulse("...", 3), forward(3). */
+    public int exampleNumber() {
         return switch (this) {
             case EVERY -> 10;
             case WAIT -> 2;
-            case PULSE -> 3;
+            case PULSE, FORWARD -> 3;
+            case CHARGE -> 80;
             default -> 1;
         };
+    }
+
+    /** Een voorbeeld van de tekst van dit blokje: een bericht, een opdracht, een robot. */
+    public String textExample() {
+        return switch (this) {
+            case ALARM -> "Intruder!";
+            case LOG -> "Door opened";
+            case ORDERED -> "attack";
+            case MESSAGE, SEND -> "intruder";
+            case ACTIVATE, DEACTIVATE -> "Guard 1";
+            default -> "Someone is at the door";
+        };
+    }
+
+    /**
+     * Een trigger zonder gegevens ({@code started}) schrijf je zonder haakjes: {@code when started:}.
+     */
+    public boolean withoutBrackets() {
+        return isTrigger() && text == Arg.NONE && number == Arg.NONE;
     }
 
     /**
      * Een voorbeeld van hoe je dit blokje in de code schrijft. De {@code |} is waar de cursor komt
      * (tussen de aanhalingstekens): {@code on("|")}, {@code pulse("|", 3)}, {@code wait(2)},
-     * {@code accept()}. De lijstjes van Ctrl+Spatie lezen dit, zodat een nieuw blokje daar vanzelf
-     * in komt. Niet voor DEF, CALL en IF: die zien er anders uit.
+     * {@code accept()}, {@code goto(|)}. De lijstjes van Ctrl+Spatie lezen dit, zodat een nieuw blokje daar
+     * vanzelf in komt. Niet voor DEF, CALL en IF: die zien er anders uit.
      */
     public String example() {
+        if (withoutBrackets()) {
+            return code;
+        }
+        if (this == ORDER) {
+            return "order(\"|\", \"attack\")";
+        }
+        if (text == Arg.VALUES) {
+            return code + "(|)";
+        }
         StringBuilder text = new StringBuilder(code).append('(');
-        boolean quotes = this.text == Arg.DEVICE || this.text == Arg.TEXT;
+        boolean quotes = this.text == Arg.DEVICE || this.text == Arg.TEXT || this.text == Arg.ROBOT;
         if (quotes) {
             text.append("\"|\"");
         }
-        if (number == Arg.SECONDS || number == Arg.OPTIONAL_SECONDS) {
-            text.append(quotes ? ", " : "").append(exampleSeconds());
+        if (number == Arg.NUMBER || number == Arg.OPTIONAL_NUMBER) {
+            text.append(quotes ? ", " : "").append(exampleNumber());
         }
         return text.append(')').toString();
     }
 
+    // ================================================================ Een rijtje waarden (VALUES, hoofdstuk 23)
+
+    /** De namen van de waarden van een VALUES-blokje, zoals in de uitleg: {"x", "y", "z"}. */
+    public String[] valueNames() {
+        return switch (this) {
+            case GOTO -> new String[] {"x", "y", "z"};
+            case WRITE -> new String[] {"pin", "value"};
+            case ORDER -> new String[] {"robot", "order", "x", "y", "z"};
+            default -> new String[0];
+        };
+    }
+
+    /** Wat elke waarde moet zijn (ANY = alles mag: write(pin, true) en write(pin, "strangers")). */
+    public Expr.Type[] valueTypes() {
+        return switch (this) {
+            case GOTO -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
+            case WRITE -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.ANY};
+            case ORDER -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.TEXT, Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
+            default -> new Expr.Type[0];
+        };
+    }
+
+    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek). */
+    public int requiredValues() {
+        return this == ORDER ? 2 : valueNames().length;
+    }
+
+    /** Hoe je het schrijft, voor de foutmeldingen: {@code goto(10, 64, -20)}. */
+    public String valuesExample() {
+        return switch (this) {
+            case GOTO -> "goto(10, 64, -20)";
+            case WRITE -> "write(laserPin, true)";
+            case ORDER -> "order(\"Guard 1\", \"attack\") or order(\"Guard 1\", \"attack\", 10, 64, -20)";
+            default -> code + "()";
+        };
+    }
+
     /**
-     * Mag dit blokje in deze soort programma (hoofdstuk 23)? Wat met lezers, panelen en relais-triggers te
-     * maken heeft, hoort alleen de server; de rest werkt overal (een robot schakelt relais via de server).
+     * Mag dit blokje in deze soort programma (hoofdstuk 23)? Wat met lezers, panelen, relais-triggers en het
+     * besturen van robots te maken heeft, hoort bij de server; lopen, pinnen en berichten sturen bij een robot.
+     * De rest werkt overal (een robot schakelt relais via de server).
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
-            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY -> kind == ProgramKind.SERVER;
+            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE, ORDER, ACTIVATE, DEACTIVATE ->
+                    kind == ProgramKind.SERVER;
+            case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND ->
+                    kind == ProgramKind.ROBOT;
             default -> true;
         };
     }

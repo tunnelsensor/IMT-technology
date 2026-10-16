@@ -18,13 +18,22 @@ public final class Checks {
             case DEVICE -> {
                 if (text == null || text.isBlank()) {
                     return op.code() + " needs the name of a device between quotes, like "
-                            + op.code() + "(\"Lab door\")" + (op.numberArg() == Op.Arg.OPTIONAL_SECONDS ? " or " + op.code() + "(\"Lab door\", 3)" : "");
+                            + op.code() + "(\"Lab door\")" + (op.numberArg() == Op.Arg.OPTIONAL_NUMBER ? " or " + op.code() + "(\"Lab door\", 3)" : "");
                 }
             }
             case TEXT -> {
                 if (text == null) {
-                    return op.code() + " needs a message between quotes, like " + op.code() + "(\"Someone is at the door\")";
+                    String what = op == Op.ORDERED ? "an order" : "a message";
+                    return op.code() + " needs " + what + " between quotes, like " + op.code() + "(\"" + op.textExample() + "\")";
                 }
+            }
+            case ROBOT -> {
+                if (text == null || text.isBlank()) {
+                    return op.code() + " needs the name of a robot between quotes, like " + op.code() + "(\"" + op.textExample() + "\")";
+                }
+            }
+            case VALUES -> {
+                // Een rijtje waarden staat in expr: zie valuesProblem.
             }
             case NAME -> {
                 String problem = nameProblem(text);
@@ -48,16 +57,16 @@ public final class Checks {
             return "That text is too long (at most " + Op.MAX_TEXT + " letters)";
         }
         switch (op.numberArg()) {
-            case SECONDS, OPTIONAL_SECONDS -> {
+            case NUMBER, OPTIONAL_NUMBER -> {
                 if (number == null) {
-                    if (op.numberArg() == Op.Arg.OPTIONAL_SECONDS) {
+                    if (op.numberArg() == Op.Arg.OPTIONAL_NUMBER) {
                         return null;
                     }
-                    return op.code() + " needs a number of seconds, like " + op.code() + "(" + (op == Op.EVERY ? "10" : "2") + ")";
+                    return op.code() + " needs a number of " + op.unit() + ", like " + op.code() + "(" + op.exampleNumber() + ")";
                 }
-                if (number < op.minSeconds() || number > op.maxSeconds()) {
-                    return op.code() + " takes " + Expr.number(op.minSeconds()) + " to " + Expr.number(op.maxSeconds())
-                            + " seconds, not " + Expr.number(number);
+                if (number < op.minNumber() || number > op.maxNumber()) {
+                    return op.code() + " takes " + Expr.number(op.minNumber()) + " to " + Expr.number(op.maxNumber())
+                            + " " + op.unit() + ", not " + Expr.number(number);
                 }
             }
             default -> {
@@ -75,11 +84,16 @@ public final class Checks {
      * uitvoeren bekend.
      */
     public static @Nullable String argsProblem(Op op, @Nullable String text, @Nullable Double number, String expr) {
+        if (op.textArg() == Op.Arg.VALUES) {
+            // goto(x, y, z): alles staat in expr. Of het er genoeg zijn, zegt valuesProblem.
+            return expr.isBlank() ? op.code() + " needs " + valuesCount(op) + " between the brackets, like " + op.valuesExample()
+                    : null;
+        }
         if (!expr.isEmpty()) {
             if (exprIsText(op)) {
                 text = text == null ? "" : text;
             } else {
-                number = op.defaultSeconds();
+                number = op.defaultNumber();
             }
         }
         return argsProblem(op, text, number);
@@ -88,6 +102,52 @@ public final class Checks {
     /** Is de berekening van dit blokje het bericht (say, log, alarm)? Anders zijn het de seconden (wait, pulse). */
     public static boolean exprIsText(Op op) {
         return op.textArg() == Op.Arg.TEXT;
+    }
+
+    /**
+     * Klopt het rijtje waarden van een VALUES-blokje (hoofdstuk 23)? Genoeg waarden ({@code goto} 3,
+     * {@code write} 2, {@code order} 2 of 5), en van de goede soort (een plek zijn getallen, een robot en een
+     * opdracht zijn tekst). Een naam waarvan we de soort nog niet weten (ANY) mag altijd.
+     */
+    public static @Nullable String valuesProblem(Op op, java.util.List<Expr> values) {
+        String[] names = op.valueNames();
+        Expr.Type[] types = op.valueTypes();
+        if (values.size() != op.requiredValues() && values.size() != names.length) {
+            return op.code() + " needs " + valuesCount(op) + " between the brackets, like " + op.valuesExample();
+        }
+        for (int i = 0; i < values.size(); i++) {
+            Expr.Type type = Expr.typeOf(values.get(i));
+            if (types[i] != Expr.Type.ANY && type != Expr.Type.ANY && type != types[i]) {
+                return op.code() + ": the " + names[i] + " must be " + Expr.describe(types[i]) + ", like " + op.valuesExample();
+            }
+        }
+        return null;
+    }
+
+    /** "3 values (x, y, z)", "2 or 5 values (robot, order, x, y, z)". */
+    private static String valuesCount(Op op) {
+        int all = op.valueNames().length;
+        String count = op.requiredValues() == all ? String.valueOf(all) : op.requiredValues() + " or " + all;
+        return count + " values (" + String.join(", ", op.valueNames()) + ")";
+    }
+
+    /**
+     * Is de berekening van dit blokje te lezen ({@code expr})? Bij een VALUES-blokje een rijtje, dat ook
+     * moet kloppen (zie {@link #valuesProblem}). Geeft de fout, of null. Voor de blokjes.
+     */
+    public static @Nullable String exprProblem(Op op, String expr) {
+        if (expr.isBlank()) {
+            return null;
+        }
+        try {
+            if (op.textArg() == Op.Arg.VALUES) {
+                return valuesProblem(op, Expr.parseLenientList(expr));
+            }
+            Expr.parseLenient(expr, false);
+            return null;
+        } catch (LogicException e) {
+            return e.getMessage();
+        }
     }
 
     /** Zo lang mag de naam van een def hooguit zijn. */
@@ -111,10 +171,15 @@ public final class Checks {
         if (!name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
             return "\"" + name + "\": a name may only have letters, digits and _ (and must not start with a digit), like open_door";
         }
-        if (RESERVED.contains(name) || Op.byCode(name) != null) {
+        if (isWord(name)) {
             return "\"" + name + "\" is already a word of the language: pick another name, like my_" + name;
         }
         return null;
+    }
+
+    /** Is dit al een woord van de taal: een sleutelwoord, een blokje ({@code forward}) of een functie ({@code read})? */
+    public static boolean isWord(String name) {
+        return RESERVED.contains(name) || Op.byCode(name) != null || Expr.Function.byName(name) != null;
     }
 
     /**
@@ -128,8 +193,8 @@ public final class Checks {
         }
         if (name.contains(".")) {
             return Expr.Variable.byName(name) != null
-                    ? name + " is information from E.D.I.T.H.: you can read it, but not give it a value"
-                    : "\"" + name + "\": a name may not have a dot (only E.D.I.T.H.'s own information has one, like card.level)";
+                    ? name + " is built-in information: you can read it, but not give it a value"
+                    : "\"" + name + "\": a name may not have a dot (only built-in information has one, like card.level)";
         }
         if (name.length() > MAX_NAME) {
             return "That name is too long (at most " + MAX_NAME + " letters)";
@@ -137,7 +202,7 @@ public final class Checks {
         if (!name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
             return "\"" + name + "\": a name may only have letters, digits and _ (and must not start with a digit), like count";
         }
-        if (RESERVED.contains(name) || Op.byCode(name) != null || Expr.Variable.byName(name) != null) {
+        if (isWord(name) || Expr.Variable.byName(name) != null) {
             return "\"" + name + "\" is already a word of the language: pick another name, like my_" + name;
         }
         if (defNames.contains(name)) {

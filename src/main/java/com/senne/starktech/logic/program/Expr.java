@@ -56,6 +56,11 @@ public sealed interface Expr {
     record Ref(String name, Type type) implements Expr {}
 
     /**
+     * Een ingebouwde functie die een waarde geeft (hoofdstuk 23): {@code pin(1)} of {@code read(scanPin)}.
+     */
+    record Call(Function function, List<Expr> args) implements Expr {}
+
+    /**
      * De soorten waarden: een getal, tekst, of waar/onwaar. ANY = "pas bij het uitvoeren bekend" (zoals
      * een variabele als we de code soepel lezen): die mag overal, de echte controle komt elders.
      */
@@ -75,7 +80,26 @@ public sealed interface Expr {
         PLAYER_TRUSTED("player.trusted", Type.BOOL, "true for the owner, their team and trusted players", null),
         PLAYER_OWNER("player.owner", Type.BOOL, "true if the player owns this network", null),
         IS_NIGHT("is_night", Type.BOOL, "true at night", null),
-        IS_DAY("is_day", Type.BOOL, "true during the day", null);
+        IS_DAY("is_day", Type.BOOL, "true during the day", null),
+        // Een robot (hoofdstuk 23): over zichzelf.
+        ROBOT_BATTERY("robot.battery", Type.NUMBER, "how full the battery of the robot is (0-100)", null),
+        ROBOT_X("robot.x", Type.NUMBER, "where the robot stands: x", null),
+        ROBOT_Y("robot.y", Type.NUMBER, "where the robot stands: y (the height)", null),
+        ROBOT_Z("robot.z", Type.NUMBER, "where the robot stands: z", null),
+        ROBOT_FACING("robot.facing", Type.TEXT, "where the robot looks: \"north\", \"east\", \"south\" or \"west\"", null),
+        ROBOT_NAME("robot.name", Type.TEXT, "the name of the robot", null),
+        ROBOT_BLOCKED("robot.blocked", Type.BOOL, "true if something stood in the way at its last step", null),
+        ROBOT_CONNECTED("robot.connected", Type.BOOL, "true if the robot can talk to the server (in the area of the core, with power)", null),
+        // Na when ordered(...): de opdracht van de server.
+        ORDER_NAME("order.name", Type.TEXT, "the order the server gave, like \"attack\"", Op.ORDERED),
+        ORDER_X("order.x", Type.NUMBER, "the place the server gave with the order: x", Op.ORDERED),
+        ORDER_Y("order.y", Type.NUMBER, "the place the server gave with the order: y", Op.ORDERED),
+        ORDER_Z("order.z", Type.NUMBER, "the place the server gave with the order: z", Op.ORDERED),
+        // Na when message(...) in een serverdiagram: de robot die het bericht stuurde.
+        SENDER_NAME("sender.name", Type.TEXT, "the robot that sent the message", Op.MESSAGE),
+        SENDER_X("sender.x", Type.NUMBER, "where that robot stood: x", Op.MESSAGE),
+        SENDER_Y("sender.y", Type.NUMBER, "where that robot stood: y", Op.MESSAGE),
+        SENDER_Z("sender.z", Type.NUMBER, "where that robot stood: z", Op.MESSAGE);
 
         final String name;
         final Type type;
@@ -97,12 +121,17 @@ public sealed interface Expr {
             return help;
         }
 
-        /** Mag dit gegeven in deze soort programma (hoofdstuk 23)? Kaarten, codes en spelers kent alleen de server. */
+        /**
+         * Mag dit gegeven in deze soort programma (hoofdstuk 23)? Kaarten, codes, spelers en wie een bericht stuurde
+         * kent alleen de server; {@code robot.*} en {@code order.*} alleen een robot. is_night en is_day kent iedereen.
+         */
         public boolean allowedIn(ProgramKind kind) {
+            if (name.startsWith("robot.") || name.startsWith("order.")) {
+                return kind == ProgramKind.ROBOT;
+            }
             return switch (this) {
-                case CARD_LEVEL, CARD_NUMBER, CARD_VALID, CARD_NAME, CODE, PLAYER_NAME, PLAYER_TRUSTED, PLAYER_OWNER ->
-                        kind == ProgramKind.SERVER;
-                default -> true;
+                case IS_NIGHT, IS_DAY -> true;
+                default -> kind == ProgramKind.SERVER;
             };
         }
 
@@ -118,6 +147,55 @@ public sealed interface Expr {
             for (Variable variable : values()) {
                 if (variable.name.equals(name)) {
                     return variable;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * De ingebouwde functies die een waarde geven (hoofdstuk 23), allebei voor een robot:
+     * <ul>
+     *   <li>{@code pin(1)} is gewoon het getal 1, maar zo kun je een pin een naam geven, zoals in C++:
+     *       {@code scanPin = pin(1)};</li>
+     *   <li>{@code read(scanPin)} is wat de module op die pin nu zegt (een scan: true of false; een
+     *       afstand: een getal). Wat dat is, weten we pas als het programma draait (ANY).</li>
+     * </ul>
+     */
+    enum Function {
+        PIN("pin", Type.NUMBER, "the number of a pin (1-8), so you can give it a name: scanPin = pin(1)"),
+        READ("read", Type.ANY, "what the module on that pin says right now, like read(scanPin)");
+
+        /** Zoveel pinnen heeft de printplaat van een robot (zoals BotBoard.PINS). */
+        public static final int PINS = 8;
+
+        final String name;
+        final Type type;
+        final String help;
+
+        Function(String name, Type type, String help) {
+            this.name = name;
+            this.type = type;
+            this.help = help;
+        }
+
+        public String code() {
+            return name;
+        }
+
+        public String help() {
+            return help;
+        }
+
+        /** Pinnen heeft alleen een robot. */
+        public boolean allowedIn(ProgramKind kind) {
+            return kind == ProgramKind.ROBOT;
+        }
+
+        public static @Nullable Function byName(String name) {
+            for (Function function : values()) {
+                if (function.name.equals(name)) {
+                    return function;
                 }
             }
             return null;
@@ -141,12 +219,55 @@ public sealed interface Expr {
      * ({@code code} onder {@code when keycard}) of een naam zonder waarde geeft een fout.
      */
     public static Expr parseCondition(String text, @Nullable Op trigger, java.util.Map<String, Type> scope) {
-        return whole(text, new Parser(Lexer.tokens(text), 0, trigger, scope), true);
+        return parseCondition(text, trigger, scope, null);
+    }
+
+    /**
+     * Zoals hierboven, voor deze soort programma ({@code kind}, hoofdstuk 23; null = elke soort): bij een
+     * tikfout raden we dan alleen gegevens die daar bestaan ("Did you mean robot.battery?").
+     */
+    public static Expr parseCondition(String text, @Nullable Op trigger, java.util.Map<String, Type> scope,
+                                      @Nullable ProgramKind kind) {
+        return whole(text, new Parser(Lexer.tokens(text), 0, trigger, scope, kind), true);
     }
 
     /** Streng lezen, zoals {@link #parseCondition}, maar een waarde van elke soort (rechts van een =). */
     public static Expr parseValue(String text, @Nullable Op trigger, java.util.Map<String, Type> scope) {
-        return whole(text, new Parser(Lexer.tokens(text), 0, trigger, scope), false);
+        return parseValue(text, trigger, scope, null);
+    }
+
+    public static Expr parseValue(String text, @Nullable Op trigger, java.util.Map<String, Type> scope,
+                                  @Nullable ProgramKind kind) {
+        return whole(text, new Parser(Lexer.tokens(text), 0, trigger, scope, kind), false);
+    }
+
+    /**
+     * Streng lezen: een rijtje waarden met komma's ertussen (hoofdstuk 23), zoals wat tussen de haakjes van
+     * {@code goto(x, y + 1, -20)} staat. Eén waarde is een rijtje van één.
+     */
+    public static List<Expr> parseValues(String text, @Nullable Op trigger, java.util.Map<String, Type> scope,
+                                         @Nullable ProgramKind kind) {
+        return list(new Parser(Lexer.tokens(text), 0, trigger, scope, kind));
+    }
+
+    /** Soepel lezen (zie {@link #parseLenient}): een rijtje waarden met komma's ertussen. */
+    public static List<Expr> parseLenientList(String text) {
+        return list(new Parser(Lexer.tokens(text), 0, null, null, null));
+    }
+
+    private static List<Expr> list(Parser parser) {
+        List<Expr> values = new ArrayList<>();
+        while (true) {
+            values.add(parser.parse(false));
+            if (parser.peek().is(",")) {
+                parser.next();
+                continue;
+            }
+            if (parser.peek().type() != Lexer.Type.END) {
+                throw new LogicException("I did not expect " + parser.peek() + " here");
+            }
+            return values;
+        }
     }
 
     /**
@@ -156,7 +277,7 @@ public sealed interface Expr {
      * onwaar zijn (een if)?
      */
     public static Expr parseLenient(String text, boolean condition) {
-        return whole(text, new Parser(Lexer.tokens(text), 0, null, null), condition);
+        return whole(text, new Parser(Lexer.tokens(text), 0, null, null, null), condition);
     }
 
     private static Expr whole(String text, Parser parser, boolean condition) {
@@ -169,7 +290,7 @@ public sealed interface Expr {
 
     /** Leest een voorwaarde (soepel) uit een stuk van een regel (na "if", tot de ":"). */
     static Expr parse(List<Lexer.Token> tokens, int start, @Nullable Op trigger, int[] end) {
-        Parser parser = new Parser(tokens, start, trigger, null);
+        Parser parser = new Parser(tokens, start, trigger, null, null);
         Expr expr = parser.parse(true);
         end[0] = parser.pos;
         return expr;
@@ -177,7 +298,7 @@ public sealed interface Expr {
 
     /** Leest een waarde (soepel) uit een stuk van een regel: wat rechts van {@code naam =} staat. */
     static Expr parseValue(List<Lexer.Token> tokens, int start, int[] end) {
-        Parser parser = new Parser(tokens, start, null, null);
+        Parser parser = new Parser(tokens, start, null, null, null);
         Expr expr = parser.parse(false);
         end[0] = parser.pos;
         return expr;
@@ -190,19 +311,23 @@ public sealed interface Expr {
         private final @Nullable Op trigger;
         /** De variabelen die hier een waarde hebben (naam en soort), of null = soepel lezen. */
         private final java.util.@Nullable Map<String, Type> scope;
+        /** Wat voor programma (hoofdstuk 23), voor de suggesties bij een tikfout; null = elke soort. */
+        private final @Nullable ProgramKind kind;
 
-        Parser(List<Lexer.Token> tokens, int start, @Nullable Op trigger, java.util.@Nullable Map<String, Type> scope) {
+        Parser(List<Lexer.Token> tokens, int start, @Nullable Op trigger, java.util.@Nullable Map<String, Type> scope,
+               @Nullable ProgramKind kind) {
             this.tokens = tokens;
             this.pos = start;
             this.trigger = trigger;
             this.scope = scope;
+            this.kind = kind;
         }
 
         Lexer.Token peek() {
             return tokens.get(Math.min(pos, tokens.size() - 1));
         }
 
-        private Lexer.Token next() {
+        Lexer.Token next() {
             Lexer.Token token = peek();
             pos++;
             return token;
@@ -376,12 +501,25 @@ public sealed interface Expr {
                 default -> {
                 }
             }
+            Function function = Function.byName(word);
+            if (function != null) {
+                return call(function);
+            }
             Variable variable = Variable.byName(word);
             if (variable == null && !word.contains(".")) {
                 return reference(word);
             }
             if (variable == null) {
-                throw new LogicException("I don't know \"" + word + "\". You can use: " + known());
+                // Een tikfout in een gegeven met een punt (robot.batery)? Dan raden we.
+                List<String> names = new ArrayList<>();
+                for (Variable known : Variable.values()) {
+                    if (known.allowedAfter(trigger) && (kind == null || known.allowedIn(kind))) {
+                        names.add(known.name);
+                    }
+                }
+                String guess = Checks.closest(word, names);
+                throw new LogicException("I don't know \"" + word + "\"" + (guess != null ? ". Did you mean " + guess + "?"
+                        : ". You can use: " + known()));
             }
             if (scope != null && !variable.allowedAfter(trigger)) {
                 String where = variable.only != null ? "when " + variable.only.code() + "(...)"
@@ -389,6 +527,41 @@ public sealed interface Expr {
                 throw new LogicException(word + " only works inside " + where);
             }
             return new Var(word);
+        }
+
+        /**
+         * {@code pin(1)} of {@code read(scanPin)} (hoofdstuk 23): de functie, haakjes, en één getal ertussen.
+         * Een vast pinnummer moet 1 tot 8 zijn.
+         */
+        private Expr call(Function function) {
+            if (!next().is("(")) {
+                throw new LogicException(function.name + " needs brackets, like " + function.name + "(1)");
+            }
+            List<Expr> args = new ArrayList<>();
+            if (!peek().is(")")) {
+                while (true) {
+                    args.add(or());
+                    if (!peek().is(",")) {
+                        break;
+                    }
+                    next();
+                }
+            }
+            if (!next().is(")")) {
+                throw new LogicException(function.name + "( is missing its closing )");
+            }
+            String example = function == Function.PIN ? "pin(1)" : "read(scanPin)";
+            if (args.size() != 1) {
+                throw new LogicException(function.name + " needs one pin between the brackets, like " + example);
+            }
+            Expr pin = args.getFirst();
+            if (typeOf(pin) != Type.NUMBER && typeOf(pin) != Type.ANY) {
+                throw new LogicException("A pin is a number, like " + example);
+            }
+            if (pin instanceof Num num && (num.value() < 1 || num.value() > Function.PINS || num.value() != Math.rint(num.value()))) {
+                throw new LogicException("A robot has " + Function.PINS + " pins: pin(1) to pin(" + Function.PINS + ")");
+            }
+            return new Call(function, List.copyOf(args));
         }
 
         /**
@@ -406,7 +579,7 @@ public sealed interface Expr {
             // Een tikfout in een gegeven of in een van je eigen namen? Dan zeggen we dat.
             List<String> names = new java.util.ArrayList<>(scope.keySet());
             for (Variable variable : Variable.values()) {
-                if (variable.allowedAfter(trigger)) {
+                if (variable.allowedAfter(trigger) && (kind == null || variable.allowedIn(kind))) {
                     names.add(variable.name);
                 }
             }
@@ -421,7 +594,7 @@ public sealed interface Expr {
         private String known() {
             StringBuilder list = new StringBuilder();
             for (Variable variable : Variable.values()) {
-                if (variable.allowedAfter(trigger)) {
+                if (variable.allowedAfter(trigger) && (kind == null || variable.allowedIn(kind))) {
                     list.append(list.isEmpty() ? "" : ", ").append(variable.name);
                 }
             }
@@ -492,6 +665,7 @@ public sealed interface Expr {
                 collectVariables(a.left(), names);
                 collectVariables(a.right(), names);
             }
+            case Call c -> c.args().forEach(arg -> collectVariables(arg, names));
             default -> { }
         }
     }
@@ -505,6 +679,7 @@ public sealed interface Expr {
             case Neg n -> Type.NUMBER;
             case Arith a -> arithType(a);
             case Ref r -> r.type();
+            case Call c -> c.function().type;
             default -> Type.BOOL;
         };
     }
@@ -554,8 +729,18 @@ public sealed interface Expr {
             case Var v -> v.name();
             case Ref r -> r.name();
             case IsOn i -> "is_on(" + quote(i.device()) + ")";
+            case Call c -> c.function().name + "(" + printList(c.args()) + ")";
         };
         return strength(expr) < needed ? "(" + text + ")" : text;
+    }
+
+    /** Een rijtje waarden met komma's ertussen: {@code 10, y + 1, -20}. */
+    public static String printList(List<Expr> values) {
+        StringBuilder text = new StringBuilder();
+        for (Expr value : values) {
+            text.append(text.isEmpty() ? "" : ", ").append(print(value));
+        }
+        return text.toString();
     }
 
     /** Een getal zonder overbodige nullen: 3, 0.5, 1.25. */
@@ -589,6 +774,11 @@ public sealed interface Expr {
         default @Nullable Object variable(String name) {
             return null;
         }
+
+        /** Wat {@code read(pin)} nu geeft (hoofdstuk 23: dat weet de robot). Standaard: niets (false). */
+        default Object read(int pin) {
+            return false;
+        }
     }
 
     /** De ingebouwde gegevens ({@code card.level}, {@code robot.battery}...) die in deze uitdrukking staan. */
@@ -619,6 +809,42 @@ public sealed interface Expr {
                 collect(a.right(), names);
             }
             case Var v -> names.add(v.name());
+            case Call c -> c.args().forEach(arg -> collect(arg, names));
+            default -> { }
+        }
+    }
+
+    /** De ingebouwde functies ({@code pin}, {@code read}) die in deze uitdrukking staan. */
+    static List<Function> functions(Expr expr) {
+        List<Function> found = new ArrayList<>();
+        collectFunctions(expr, found);
+        return found;
+    }
+
+    private static void collectFunctions(Expr expr, List<Function> found) {
+        switch (expr) {
+            case Or o -> {
+                collectFunctions(o.left(), found);
+                collectFunctions(o.right(), found);
+            }
+            case And a -> {
+                collectFunctions(a.left(), found);
+                collectFunctions(a.right(), found);
+            }
+            case Not n -> collectFunctions(n.inner(), found);
+            case Compare c -> {
+                collectFunctions(c.left(), found);
+                collectFunctions(c.right(), found);
+            }
+            case Neg n -> collectFunctions(n.inner(), found);
+            case Arith a -> {
+                collectFunctions(a.left(), found);
+                collectFunctions(a.right(), found);
+            }
+            case Call c -> {
+                found.add(c.function());
+                c.args().forEach(arg -> collectFunctions(arg, found));
+            }
             default -> { }
         }
     }
@@ -650,6 +876,11 @@ public sealed interface Expr {
                 Object value = facts.variable(r.name());
                 // Nog geen waarde (kan alleen bij vreemde blokjes): dan de "lege" waarde van zijn soort.
                 yield value != null ? value : r.type() == Type.TEXT ? "" : r.type() == Type.BOOL ? (Object) false : (Object) 0.0;
+            }
+            case Call c -> {
+                // pin(1) is gewoon het getal; read(pin) vraagt het aan de robot.
+                double pin = Math.rint(toNumber(eval(c.args().getFirst(), facts)));
+                yield c.function() == Function.PIN ? (Object) pin : facts.read((int) pin);
             }
         };
     }

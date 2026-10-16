@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 249 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 251 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2550,7 +2550,7 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
   `charge()` loopt zelf naar het laadstation; `goto(x, y, z)` alleen met de Pathfinding-module.
 - Robot naar server: `alarm`, `say`, `log`, `on/off/toggle/pulse("Door 1")`, `send("intruder")`.
 - Server naar robot: `order("Guard 1", "attack", x, y, z)`, `activate` en `deactivate`. In de robot:
-  `when started:` en `when order("attack"):`.
+  `when started:` en `when ordered("attack"):`.
 
 - [x] **1. Soorten programma's** (stap 7 van hoofdstuk 20) — elk programma heeft nu een soort
       (`ProgramKind`): een **Server diagram** (zoals altijd) of een **Robot program**. Bij **+** in de app
@@ -2562,11 +2562,22 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       wordt bewaard (NBT `Kind`; een oud diagram is een diagram op de server). Een robotprogramma staat op je
       SSD's (het telt mee), maar de server voert het nooit uit, en de knop On/Off heeft het niet. Twee nieuwe
       tests (`logic_program_kinds`, `logic_robot_programs_do_not_run_on_the_server`).
-- [ ] **2. De woorden van een robot** — in de taal: `when started:` en `when order("attack"):`;
-      `forward(n)`, `back(n)`, `turn_left()`, `turn_right()`, `stop()`, `charge()`, `goto(x, y, z)`,
-      `write(pin, waarde)`, `send("...")`; `pin(n)` en `read(p)`; `robot.battery/x/y/z/facing/name/blocked/
-      connected` en `order.x/y/z/name`. In een serverdiagram: `order(...)`, `activate(...)`, `deactivate(...)`
-      en `when message("..."):` met `sender.name/x/y/z`.
+- [x] **2. De woorden van een robot** — de taal kent ze nu (de robot voert ze uit vanaf stap 3). In een
+      robotprogramma: `when started:` (zonder haakjes) en `when ordered("attack"):` (met -ed, want `order`
+      is het woord van de server); `forward(3)` en `back(1)` (1 tot 64 blokken), `turn_left()`,
+      `turn_right()`, `goto(x, y, z)`, `charge()` of `charge(80)`, `stop()`, `write(laserPin, true)` en
+      `send("intruder")`; als waarde `pin(1)` (gewoon het getal, zodat je een pin een naam kunt geven:
+      `scanPin = pin(1)`, 1 tot 8) en `read(scanPin)`; de gegevens `robot.battery`, `robot.x/y/z`,
+      `robot.facing`, `robot.name`, `robot.blocked`, `robot.connected`, en na `when ordered` ook
+      `order.name` en `order.x/y/z`. In een serverdiagram: `order("Guard 1", "attack")` of met een plek erbij
+      (`order("Guard 1", "attack", x, y, z)`), `activate("Guard 1")`, `deactivate("Guard 1")`, en
+      `when message("intruder"):` met `sender.name` en `sender.x/y/z`. Een aanroep met meerdere waarden
+      (`goto`, `write`, `order`) bewaart ze als een rijtje code; in de blokjes is dat één vak "x, y, z"
+      (screenshot `l19`). Elk woord werkt alleen in zijn eigen soort ("forward() only works in a robot
+      program, not in a server diagram"), een tikfout raadt ("Did you mean robot.battery?"), Ctrl+Spatie en
+      Help kennen alles per soort (screenshot `l18`), en een oude def die nu `forward`, `stop`, `send`,
+      `read`... heet, krijgt bij het laden een andere naam. Twee nieuwe tests (`logic_robot_words`,
+      `logic_robot_values`).
 - [ ] **3. Het brein van de robot** — dezelfde tolk, met een stappenbudget per tick; bewegen stap voor stap;
       `blocked` als er iets in de weg staat; `charge()` loopt naar zijn dock en terug.
 - [ ] **4. Programma's naar de robot** — kiezen in de app Robots; uploaden via de verbinding; de robot bewaart

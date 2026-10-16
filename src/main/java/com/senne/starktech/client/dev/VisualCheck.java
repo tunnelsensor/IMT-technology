@@ -2087,6 +2087,35 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "l17_logic_robot_program");
+            // Hoofdstuk 23, stap 2: de woorden van een robot, in code (met Help) en in blokjes.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogic("Patrol", """
+                            scanPin = pin(1)
+                            laserPin = pin(3)
+
+                            when started:
+                                forever:
+                                    if robot.battery < 10:
+                                        charge()
+                                    forward(5)
+                                    turn_right()
+                                    if read(scanPin):
+                                        alarm("Intruder near " + robot.name)
+                                        write(laserPin, true)
+
+                            when ordered("attack"):
+                                goto(order.x, order.y, order.z)
+                            """, true);
+                }
+            });
+            t.shot(10, "l18_logic_robot_code");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicBlocks(com.senne.starktech.logic.program.Op.GOTO);
+                }
+            });
+            t.shot(10, "l19_logic_robot_blocks");
             t.close(10);
         }
 

@@ -866,6 +866,134 @@ public final class LogicGameTests {
         });
     }
 
+    /** Het voorbeeld uit het plan (hoofdstuk 23): een robot die patrouilleert, laadt, scant en schiet. */
+    private static final String PATROL = """
+            scanPin = pin(1)
+            facePin = pin(2)
+            laserPin = pin(3)
+
+            when started:
+                write(facePin, "strangers")
+                forever:
+                    if robot.battery < 10:
+                        charge()
+                    forward(5)
+                    turn_right()
+                    if read(scanPin):
+                        alarm("Intruder near " + robot.name)
+                        write(laserPin, true)
+
+            when ordered("attack"):
+                goto(order.x, order.y, order.z)
+            """;
+
+    /**
+     * De woorden van een robot (hoofdstuk 23, stap 2): {@code when started:} zonder haakjes, lopen, laden,
+     * pinnen, {@code goto(x, y, z)} met drie waarden, en de woorden van de server om robots aan te sturen.
+     * Code naar blokjes naar code blijft hetzelfde, en elk woord werkt alleen in zijn eigen soort programma.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_robot_words(GameTestHelper helper) {
+        Script script = ScriptParser.parse(PATROL, ProgramKind.ROBOT);
+        String printed = ScriptPrinter.print(script);
+        check(printed.contains("when started:\n") && printed.contains("    write(facePin, \"strangers\")")
+                && printed.contains("charge()") && printed.contains("goto(order.x, order.y, order.z)"),
+                "Terugschrijven klopt niet:\n" + printed);
+        LogicGraph graph = GraphConverter.toGraph(script, null);
+        String again = ScriptPrinter.print(GraphConverter.toScript(LogicGraph.load(graph.save())));
+        check(again.equals(printed), "Code > blokjes > code veranderde:\n" + printed + "\nwerd\n" + again);
+        check(graph.problems(ProgramKind.ROBOT).isEmpty(), "De blokjes van een goed robotprogramma geven fouten: "
+                + graph.problems(ProgramKind.ROBOT));
+        // De server stuurt robots aan en hoort hun berichten.
+        ScriptParser.parse("""
+                when message("intruder"):
+                    order("Guard 1", "attack", sender.x, sender.y, sender.z)
+                    activate("Guard 2")
+                    deactivate("Guard 3")
+                """);
+
+        // Elk woord alleen in zijn eigen soort programma.
+        expectError("when started:\n    pass", 1, "when started: only works in a robot program, not in a server diagram");
+        expectError("when every(5):\n    forward(3)", 2, "forward() only works in a robot program");
+        expectError("when every(5):\n    if read(1):\n        pass", 2, "read(...) only works in a robot program");
+        expectError("when every(5):\n    if robot.battery < 10:\n        pass", 2, "robot.battery only works in a robot program");
+        expectKindError("when started:\n    order(\"Guard 1\", \"attack\")", ProgramKind.ROBOT, 2,
+                "order() only works in a server diagram");
+        expectKindError("when message(\"x\"):\n    pass", ProgramKind.ROBOT, 1, "message(...) only works in a server diagram");
+        // Waarden en getallen.
+        expectKindError("when started:\n    goto(1, 2)", ProgramKind.ROBOT, 2, "goto needs 3 values (x, y, z)");
+        expectKindError("when started:\n    goto(\"a\", 2, 3)", ProgramKind.ROBOT, 2, "goto: the x must be a number");
+        expectError("when every(5):\n    order(\"Guard 1\", \"attack\", 1)", 2, "order needs 2 or 5 values");
+        expectKindError("when started:\n    forward()", ProgramKind.ROBOT, 2, "forward needs a number of blocks, like forward(3)");
+        expectKindError("when started:\n    forward(100)", ProgramKind.ROBOT, 2, "forward takes 1 to 64 blocks, not 100");
+        expectKindError("when started:\n    charge(150)", ProgramKind.ROBOT, 2, "charge takes 1 to 100 percent, not 150");
+        expectKindError("when started:\n    x = pin(9)", ProgramKind.ROBOT, 2, "A robot has 8 pins: pin(1) to pin(8)");
+        expectKindError("when started:\n    read(1)", ProgramKind.ROBOT, 2, "read(...) gives a value");
+        expectKindError("when started:\n    goto(order.x, 1, 2)", ProgramKind.ROBOT, 2, "order.x only works inside when ordered(...)");
+        expectError("when every(5):\n    say(sender.name)", 2, "sender.name only works inside when message(...)");
+        expectKindError("when started:\n    if robot.batery < 10:\n        pass", ProgramKind.ROBOT, 2, "Did you mean robot.battery?");
+        expectKindError("when started:\n    forward = 3", ProgramKind.ROBOT, 2, "is already a word of the language");
+        expectKindError("when started:\n    activate(\"Guard 1\")", ProgramKind.ROBOT, 2, "activate() only works in a server diagram");
+        expectError("when every(5):\n    activate(Guard)", 2, "Put names between quotes");
+        helper.succeed();
+    }
+
+    /**
+     * Rekenen met pinnen (hoofdstuk 23): {@code pin(2)} is het getal 2, {@code read(p)} vraagt de robot wat er
+     * op pin p binnenkomt. In de blokjes geeft een goto met twee waarden een fout, en een oude def die nu een
+     * woord van een robot is ({@code forward}), krijgt bij het laden een andere naam.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_robot_values(GameTestHelper helper) {
+        Expr.Facts facts = new Expr.Facts() {
+            @Override
+            public Object value(String variable) {
+                return variable.equals("robot.battery") ? (Object) 42.0 : (Object) false;
+            }
+
+            @Override
+            public boolean isOn(String device) {
+                return false;
+            }
+
+            @Override
+            public Object read(int pin) {
+                return pin == 2 ? (Object) true : (Object) 7.0;
+            }
+        };
+        check(Double.valueOf(3.0).equals(ExprCache.eval(ExprCache.value("pin(2) + 1"), facts)), "pin(2) + 1 is geen 3");
+        check(Boolean.TRUE.equals(ExprCache.eval(ExprCache.value("read(pin(1) + 1)"), facts)), "read(2) gaf niet wat de robot zei");
+        check(Double.valueOf(7.0).equals(ExprCache.eval(ExprCache.value("read(3)"), facts)), "read(3) gaf niet 7");
+        check(ExprCache.test(ExprCache.get("robot.battery > 40 and read(2)", null), facts), "robot.battery > 40 and read(2)");
+
+        // Blokjes: een goto met twee waarden, en een write in een serverdiagram.
+        LogicGraph graph = new LogicGraph();
+        LogicGraph.Node start = graph.add(Op.STARTED, 0, 0);
+        LogicGraph.Node go = graph.add(Op.GOTO, 100, 0);
+        go.expr = "1, 2";
+        start.next = go.id;
+        check(graph.problems(ProgramKind.ROBOT).stream().anyMatch(problem -> problem.message().contains("goto needs 3 values")),
+                "Een goto met twee waarden gaf geen fout: " + graph.problems(ProgramKind.ROBOT));
+        go.expr = "robot.x+5,robot.y ,robot.z";
+        check(graph.problems(ProgramKind.ROBOT).isEmpty(), "Een goede goto gaf een fout: " + graph.problems(ProgramKind.ROBOT));
+        check(ScriptPrinter.print(GraphConverter.toScript(graph)).contains("goto(robot.x + 5, robot.y, robot.z)"),
+                "De goto werd niet netjes geschreven: " + ScriptPrinter.print(GraphConverter.toScript(graph)));
+        check(graph.problems(ProgramKind.SERVER).stream().anyMatch(problem -> problem.message().contains("only works in a robot program")),
+                "Een robotprogramma als serverdiagram gaf geen fout");
+
+        // Een oude def die forward heette.
+        LogicGraph old = new LogicGraph();
+        LogicGraph.Node def = old.add(Op.DEF, 0, 0);
+        def.text = "forward";
+        LogicGraph.Node every = old.add(Op.EVERY, 0, 40);
+        LogicGraph.Node call = old.add(Op.CALL, 100, 40);
+        call.text = "forward";
+        every.next = call.id;
+        check(old.renameReservedDefs() && def.text.equals("forward_1") && call.text.equals("forward_1"),
+                "De def forward kreeg geen andere naam: " + def.text + " / " + call.text);
+        helper.succeed();
+    }
+
     /** De code moet een fout geven die bij deze soort programma hoort, op deze regel. */
     private static void expectKindError(String code, ProgramKind kind, int line, String part) {
         try {

@@ -37,7 +37,7 @@ public final class ScriptChecker {
     private static void checkKind(Script script, ProgramKind kind, List<Problem> problems) {
         for (Script.Top item : script.items()) {
             if (item instanceof Script.Handler handler && !handler.trigger().allowedIn(kind)) {
-                problems.add(new Problem(handler.ref(), wrongKind(handler.trigger().code() + "(...)", kind)));
+                problems.add(new Problem(handler.ref(), wrongKind(triggerWord(handler.trigger()), kind)));
             }
             if (item instanceof Script.Global global) {
                 checkKind(global.value(), false, global.ref(), kind, problems);
@@ -70,24 +70,47 @@ public final class ScriptChecker {
         }
     }
 
-    /** De gegevens in een voorwaarde of waarde: passen ze bij de soort programma? */
+    /**
+     * De gegevens en functies in een voorwaarde of waarde (of een rijtje waarden, zoals bij goto): passen ze bij
+     * de soort programma?
+     */
     private static void checkKind(String text, boolean condition, int ref, ProgramKind kind, List<Problem> problems) {
-        if (text.isBlank()) {
-            return;
-        }
-        Expr expr;
-        try {
-            expr = Expr.parseLenient(text, condition);
-        } catch (LogicException e) {
-            return; // de andere controles zeggen wat er mis is
-        }
-        for (String name : Expr.builtins(expr)) {
-            Expr.Variable variable = Expr.Variable.byName(name);
-            if (variable != null && !variable.allowedIn(kind)) {
-                problems.add(new Problem(ref, wrongKind(name, kind)));
-                return;
+        List<Expr> exprs = lenient(text, condition);
+        for (Expr expr : exprs) {
+            for (String name : Expr.builtins(expr)) {
+                Expr.Variable variable = Expr.Variable.byName(name);
+                if (variable != null && !variable.allowedIn(kind)) {
+                    problems.add(new Problem(ref, wrongKind(name, kind)));
+                    return;
+                }
+            }
+            for (Expr.Function function : Expr.functions(expr)) {
+                if (!function.allowedIn(kind)) {
+                    problems.add(new Problem(ref, wrongKind(function.code() + "(...)", kind)));
+                    return;
+                }
             }
         }
+    }
+
+    /**
+     * Soepel gelezen: een voorwaarde, of een waarde (of een rijtje waarden met komma's, zoals bij goto). Leeg
+     * als hij niet te lezen is: dat zeggen de andere controles al.
+     */
+    private static List<Expr> lenient(String text, boolean condition) {
+        if (text.isBlank()) {
+            return List.of();
+        }
+        try {
+            return condition ? List.of(Expr.parseLenient(text, true)) : Expr.parseLenientList(text);
+        } catch (LogicException e) {
+            return List.of();
+        }
+    }
+
+    /** Hoe we een trigger in een foutmelding noemen: "keycard(...)", of "when started:" (zonder haakjes). */
+    static String triggerWord(Op trigger) {
+        return trigger.withoutBrackets() ? "when " + trigger.code() + ":" : trigger.code() + "(...)";
     }
 
     /** "keycard(...) only works in a server diagram, not in a robot program". */
@@ -136,7 +159,7 @@ public final class ScriptChecker {
             }
         }
         // Namen (variabelen) en de soort van elke waarde, en elke voorwaarde streng nagekeken.
-        checkNames(script, functions.keySet(), problems);
+        checkNames(script, functions.keySet(), kind, problems);
         // break alleen in een lus (in een def: in een lus van die def zelf).
         for (Script.Top item : script.items()) {
             checkBreaks(item.body(), false, problems);
@@ -171,7 +194,7 @@ public final class ScriptChecker {
      *   <li>een naam houdt zijn soort: wie een getal is, kan geen tekst worden.</li>
      * </ul>
      */
-    private static void checkNames(Script script, Set<String> defNames, List<Problem> problems) {
+    private static void checkNames(Script script, Set<String> defNames, ProgramKind kind, List<Problem> problems) {
         Map<String, Expr.Type> globals = new LinkedHashMap<>();
         for (Script.Global global : script.globals()) {
             String problem = Checks.variableProblem(global.name(), defNames);
@@ -197,31 +220,32 @@ public final class ScriptChecker {
         }
         for (Script.Top item : script.items()) {
             if (item instanceof Script.Handler handler) {
-                checkNames(handler.body(), handler.trigger(), globals, new java.util.HashMap<>(), defNames, problems);
+                checkNames(handler.body(), handler.trigger(), globals, new java.util.HashMap<>(), defNames, kind, problems);
             } else if (item instanceof Script.Function function) {
-                checkNames(function.body(), null, globals, new java.util.HashMap<>(), defNames, problems);
+                checkNames(function.body(), null, globals, new java.util.HashMap<>(), defNames, kind, problems);
             }
         }
     }
 
     private static void checkNames(List<Script.Stmt> statements, @Nullable Op trigger, Map<String, Expr.Type> globals,
-                                   Map<String, Expr.Type> locals, Set<String> defNames, List<Problem> problems) {
+                                   Map<String, Expr.Type> locals, Set<String> defNames, ProgramKind kind,
+                                   List<Problem> problems) {
         for (Script.Stmt statement : statements) {
             if (statement instanceof Script.If branch) {
                 try {
-                    Expr.parseCondition(branch.condition(), trigger, scope(globals, locals));
+                    Expr.parseCondition(branch.condition(), trigger, scope(globals, locals), kind);
                 } catch (LogicException e) {
                     problems.add(new Problem(branch.ref(), e.getMessage()));
                 }
                 // Een naam die in een tak een waarde krijgt, bestaat daarna ook (zoals in Python).
-                checkNames(branch.yes(), trigger, globals, locals, defNames, problems);
-                checkNames(branch.no(), trigger, globals, locals, defNames, problems);
+                checkNames(branch.yes(), trigger, globals, locals, defNames, kind, problems);
+                checkNames(branch.no(), trigger, globals, locals, defNames, kind, problems);
             } else if (statement instanceof Script.Loop loop) {
                 try {
                     if (loop.op() == Op.WHILE) {
-                        Expr.parseCondition(loop.expr(), trigger, scope(globals, locals));
+                        Expr.parseCondition(loop.expr(), trigger, scope(globals, locals), kind);
                     } else if (loop.op() == Op.REPEAT) {
-                        Expr.Type type = Expr.typeOf(Expr.parseValue(loop.expr(), trigger, scope(globals, locals)));
+                        Expr.Type type = Expr.typeOf(Expr.parseValue(loop.expr(), trigger, scope(globals, locals), kind));
                         if (type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
                             throw new LogicException("repeat needs a number, like repeat(3):");
                         }
@@ -229,14 +253,14 @@ public final class ScriptChecker {
                 } catch (LogicException e) {
                     problems.add(new Problem(loop.ref(), e.getMessage()));
                 }
-                checkNames(loop.body(), trigger, globals, locals, defNames, problems);
+                checkNames(loop.body(), trigger, globals, locals, defNames, kind, problems);
             } else if (statement instanceof Script.Assign assign) {
-                String problem = assignProblem(assign, trigger, globals, locals, defNames);
+                String problem = assignProblem(assign, trigger, globals, locals, defNames, kind);
                 if (problem != null) {
                     problems.add(new Problem(assign.ref(), problem));
                 }
             } else if (statement instanceof Script.Action action && !action.expr().isEmpty()) {
-                String problem = actionProblem(action, trigger, scope(globals, locals));
+                String problem = actionProblem(action, trigger, scope(globals, locals), kind);
                 if (problem != null) {
                     problems.add(new Problem(action.ref(), problem));
                 }
@@ -248,12 +272,17 @@ public final class ScriptChecker {
      * Een berekend bericht ({@code say("Count: " + count)}) of berekende seconden ({@code wait(delay)}):
      * bestaan de namen, en zijn seconden een getal?
      */
-    private static @Nullable String actionProblem(Script.Action action, @Nullable Op trigger, Map<String, Expr.Type> scope) {
+    private static @Nullable String actionProblem(Script.Action action, @Nullable Op trigger, Map<String, Expr.Type> scope,
+                                                  ProgramKind kind) {
         try {
-            Expr.Type type = Expr.typeOf(Expr.parseValue(action.expr(), trigger, scope));
+            if (action.op().textArg() == Op.Arg.VALUES) {
+                // goto(x, y, z): elke waarde streng gelezen, en dan of het er genoeg zijn en van de goede soort.
+                return Checks.valuesProblem(action.op(), Expr.parseValues(action.expr(), trigger, scope, kind));
+            }
+            Expr.Type type = Expr.typeOf(Expr.parseValue(action.expr(), trigger, scope, kind));
             if (!Checks.exprIsText(action.op()) && type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
-                return action.op().code() + " needs a number of seconds, like " + action.op().code() + "("
-                        + action.op().exampleSeconds() + ")";
+                return action.op().code() + " needs a number of " + action.op().unit() + ", like " + action.op().code() + "("
+                        + action.op().exampleNumber() + ")";
             }
             return null;
         } catch (LogicException e) {
@@ -269,7 +298,7 @@ public final class ScriptChecker {
 
     /** Wat er mis is met {@code naam = waarde} op deze plek (en anders: de naam bestaat vanaf nu). */
     private static @Nullable String assignProblem(Script.Assign assign, @Nullable Op trigger, Map<String, Expr.Type> globals,
-                                                  Map<String, Expr.Type> locals, Set<String> defNames) {
+                                                  Map<String, Expr.Type> locals, Set<String> defNames, ProgramKind kind) {
         String name = assign.name();
         String problem = Checks.variableProblem(name, defNames);
         if (problem != null) {
@@ -277,7 +306,7 @@ public final class ScriptChecker {
         }
         Expr.Type type;
         try {
-            type = Expr.typeOf(Expr.parseValue(assign.value(), trigger, scope(globals, locals)));
+            type = Expr.typeOf(Expr.parseValue(assign.value(), trigger, scope(globals, locals), kind));
         } catch (LogicException e) {
             return e.getMessage();
         }
@@ -406,18 +435,14 @@ public final class ScriptChecker {
 
     /** Gebruikt deze voorwaarde of waarde iets dat niet werkt onder deze trigger (zoals card.level na every)? */
     private static @Nullable Need expressionNeed(String text, boolean condition, Op trigger) {
-        Expr expr;
-        try {
-            expr = Expr.parseLenient(text, condition);
-        } catch (LogicException e) {
-            return null; // dat meldt een andere controle al
-        }
-        for (String name : Expr.variables(expr)) {
-            Expr.Variable variable = Expr.Variable.byName(name);
-            if (variable != null && !variable.allowedAfter(trigger)) {
-                String where = variable.only != null ? "when " + variable.only.code() + "(...)"
-                        : "when keycard(...) or when codepanel(...)";
-                return new Need(name, where);
+        for (Expr expr : lenient(text, condition)) {
+            for (String name : Expr.variables(expr)) {
+                Expr.Variable variable = Expr.Variable.byName(name);
+                if (variable != null && !variable.allowedAfter(trigger)) {
+                    String where = variable.only != null ? "when " + variable.only.code() + "(...)"
+                            : "when keycard(...) or when codepanel(...)";
+                    return new Need(name, where);
+                }
             }
         }
         return null;

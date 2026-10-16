@@ -146,7 +146,7 @@ public final class Interpreter {
             if (node.op == Op.WAIT) {
                 // Berekende seconden (wait(delay * 2)) houden we tussen 0,05 s en 10 minuten.
                 double seconds = node.expr.isEmpty() ? node.number
-                        : Math.max(Op.WAIT.minSeconds(), Math.min(Op.WAIT.maxSeconds(), number(host, node.expr)));
+                        : Math.max(Op.WAIT.minNumber(), Math.min(Op.WAIT.maxNumber(), number(host, node.expr)));
                 wakeAt = now + Math.max(1, Math.round(seconds * 20));
                 return false;
             }

@@ -446,19 +446,35 @@ final class BlockCanvas {
         if (node.op == Op.BREAK) {
             return "out of the loop";
         }
+        if (node.op.textArg() == Op.Arg.VALUES) {
+            return node.expr; // goto(x, y, z): het rijtje waarden
+        }
         if (!node.expr.isEmpty()) {
-            // Een berekend bericht of berekende seconden (hoofdstuk 20).
+            // Een berekend bericht of berekend getal (hoofdstuk 20).
             return Checks.exprIsText(node.op) ? node.expr
-                    : (node.op.textArg() != Op.Arg.NONE ? node.text + ", " : "") + node.expr + " s";
+                    : (node.op.textArg() != Op.Arg.NONE ? node.text + ", " : "") + node.expr + unitSuffix(node.op);
         }
         return switch (node.op) {
-            case EVERY -> seconds(node.number) + " s";
-            case WAIT -> seconds(node.number) + " s";
+            case EVERY, WAIT, FORWARD, BACK -> seconds(node.number) + unitSuffix(node.op);
             case PULSE -> node.text + ", " + seconds(node.number) + " s";
+            case CHARGE -> "to " + seconds(node.number) + "%";
             case ACCEPT -> "green light";
             case DENY -> "red light";
+            case STARTED -> "switched on";
+            case TURN_LEFT -> "a quarter left";
+            case TURN_RIGHT -> "a quarter right";
+            case STOP -> "switch off";
             case DEF, CALL -> node.text + "()";
             default -> node.text;
+        };
+    }
+
+    /** Achter een getal op een blokje: " s" (seconden), " blocks" of "%". */
+    private static String unitSuffix(Op op) {
+        return switch (op.unit()) {
+            case "blocks" -> " blocks";
+            case "percent" -> "%";
+            default -> " s";
         };
     }
 
@@ -618,7 +634,16 @@ final class BlockCanvas {
         } else if (op == Op.IF) {
             node.text = "true";
         } else if (op.textArg() == Op.Arg.TEXT) {
-            node.text = op == Op.ALARM ? "Intruder!" : "Hello";
+            node.text = op == Op.SAY ? "Hello" : op.textExample();
+        } else if (op.textArg() == Op.Arg.ROBOT) {
+            node.text = op.textExample();
+        } else if (op.textArg() == Op.Arg.VALUES) {
+            // Een begin dat al klopt: goto naar een plek, pin 1 aan, een opdracht aan "Guard 1".
+            node.expr = switch (op) {
+                case GOTO -> "robot.x + 5, robot.y, robot.z";
+                case WRITE -> "1, true";
+                default -> "\"Guard 1\", \"attack\"";
+            };
         } else if (op == Op.DEF) {
             node.text = freeDefName();
         } else if (op == Op.CALL) {
@@ -732,7 +757,7 @@ final class BlockCanvas {
      * het bericht of de seconden een berekening zijn ({@code say("Count: " + count)}, {@code wait(delay)}).
      */
     private static boolean showsExpr(LogicGraph.Node node) {
-        return node.op.kind() == Op.Kind.SET || !node.expr.isEmpty();
+        return node.op.kind() == Op.Kind.SET || node.op.textArg() == Op.Arg.VALUES || !node.expr.isEmpty();
     }
 
     /** Het gewone tekstvak, behalve als het bericht een berekening is (dan staat het in het code-vak). */
@@ -746,7 +771,24 @@ final class BlockCanvas {
     }
 
     private static String exprLabel(LogicGraph.Node node) {
-        return node.op.kind() == Op.Kind.SET ? "Value" : Checks.exprIsText(node.op) ? "Message (code)" : "Seconds (code)";
+        if (node.op.textArg() == Op.Arg.VALUES) {
+            // goto: "x, y, z (code)"; order: "robot, order (x, y, z)"
+            String[] names = node.op.valueNames();
+            int required = node.op.requiredValues();
+            String label = String.join(", ", java.util.Arrays.copyOf(names, required));
+            if (required < names.length) {
+                label += " (" + String.join(", ", java.util.Arrays.copyOfRange(names, required, names.length)) + ")";
+            }
+            return label;
+        }
+        return node.op.kind() == Op.Kind.SET ? "Value" : Checks.exprIsText(node.op) ? "Message (code)"
+                : unitLabel(node.op) + " (code)";
+    }
+
+    /** Hoe het getalvak heet: "Seconds", "Blocks" of "Percent". */
+    private static String unitLabel(Op op) {
+        String unit = op.unit();
+        return Character.toUpperCase(unit.charAt(0)) + unit.substring(1);
     }
 
     /** Hoe het tekstvak van dit blokje heet. */
@@ -759,7 +801,8 @@ final class BlockCanvas {
         }
         return switch (op.textArg()) {
             case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";
-            case TEXT -> "Message";
+            case TEXT -> op == Op.ORDERED ? "Order" : "Message";
+            case ROBOT -> "Robot";
             case NAME -> op == Op.DEF ? "Name (letters, digits, _)" : "Def to use";
             case VARIABLE -> "Name";
             default -> null;
@@ -795,6 +838,8 @@ final class BlockCanvas {
         } else if (op == Op.IF || op == Op.WHILE) {
             if (kind == ProgramKind.SERVER) {
                 names.addAll(List.of("card.valid and card.level >= 3", "code == \"1234\"", "player.trusted"));
+            } else {
+                names.addAll(List.of("robot.battery < 10", "robot.blocked", "read(1)"));
             }
             names.add("is_night");
             for (Tag tag : info.get().getList("outputs", Tag.TAG_STRING)) {
@@ -837,8 +882,9 @@ final class BlockCanvas {
                 return e.getMessage();
             }
         }
-        return Checks.argsProblem(node.op, node.op.textArg() == Op.Arg.NONE ? null : node.text,
+        String problem = Checks.argsProblem(node.op, node.op.textArg() == Op.Arg.NONE ? null : node.text,
                 node.op.numberArg() == Op.Arg.NONE ? null : node.number, node.expr);
+        return problem != null ? problem : Checks.exprProblem(node.op, node.expr);
     }
 
     private void renderSettings(GuiGraphics g, Font font, LogicGraph.Node node, int mx, int my, float partialTick) {
@@ -877,9 +923,10 @@ final class BlockCanvas {
             y += OsDraw.BUTTON_H + 3;
         }
         if (showsNumber(node)) {
-            g.drawString(font, "Seconds", x, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+            String unit = unitLabel(node.op);
+            g.drawString(font, unit, x, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
             EditBox box = numberBox();
-            int fx = x + font.width("Seconds") + 4;
+            int fx = x + font.width(unit) + 4;
             OsDraw.field(g, fx, y, fx + 40, y + OsDraw.BUTTON_H, box.isFocused());
             box.setX(fx + 3);
             box.setY(y + 2);

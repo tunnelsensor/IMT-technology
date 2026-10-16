@@ -42,7 +42,10 @@ public final class LogicGraph {
         public String text = "";
         /** Seconden (wait, pulse, every); anders 0. */
         public double number;
-        /** Een waarde als nette code: rechts van {@code count = ...} (SET en GLOBAL, hoofdstuk 20); anders leeg. */
+        /**
+         * Een waarde als nette code: rechts van {@code count = ...} (SET en GLOBAL, hoofdstuk 20), een berekend
+         * bericht of getal, of (hoofdstuk 23) het rijtje waarden van goto, write en order; anders leeg.
+         */
         public String expr = "";
         /** Waar het staat op het vlak van de blokjes-editor. */
         public int x;
@@ -54,8 +57,8 @@ public final class LogicGraph {
         Node(int id, Op op) {
             this.id = id;
             this.op = op;
-            if (op.numberArg() == Op.Arg.SECONDS || op.numberArg() == Op.Arg.OPTIONAL_SECONDS) {
-                number = op == Op.EVERY ? 10 : op.defaultSeconds();
+            if (op.numberArg() == Op.Arg.NUMBER || op.numberArg() == Op.Arg.OPTIONAL_NUMBER) {
+                number = op == Op.EVERY ? 10 : op.defaultNumber();
             }
         }
 
@@ -301,13 +304,9 @@ public final class LogicGraph {
                 String text = node.op.textArg() == Op.Arg.NONE ? null : node.text;
                 Double number = node.op.numberArg() == Op.Arg.NONE ? null : node.number;
                 problem = Checks.argsProblem(node.op, text, number, node.expr);
-                if (problem == null && !node.expr.isBlank()) {
-                    // Een berekend bericht of berekende seconden: is het te lezen?
-                    try {
-                        Expr.parseLenient(node.expr, false);
-                    } catch (LogicException e) {
-                        problem = e.getMessage();
-                    }
+                if (problem == null) {
+                    // Een berekend bericht, berekende seconden, of een rijtje waarden (goto): is het te lezen?
+                    problem = Checks.exprProblem(node.op, node.expr);
                 }
                 if (problem == null && !node.op.isRoot()) {
                     problem = Checks.contextProblem(node.op, triggerOp);
@@ -328,9 +327,10 @@ public final class LogicGraph {
     }
 
     /**
-     * Een def uit een diagram van vóór hoofdstuk 20 die nu een woord van de taal heet ({@code repeat},
-     * {@code while}, {@code forever}, {@code break}, {@code set}, {@code var}), krijgt een andere naam
-     * ({@code repeat_1}); de blokjes die hem gebruiken gaan mee. Geeft true als er iets veranderde.
+     * Een def uit een ouder diagram die nu een woord van de taal heet ({@code repeat}, {@code while},
+     * {@code forever}, {@code break}, {@code set}, {@code var}, en sinds hoofdstuk 23 ook {@code forward},
+     * {@code stop}, {@code send}, {@code read}...), krijgt een andere naam ({@code repeat_1}); de blokjes die hem
+     * gebruiken gaan mee. Geeft true als er iets veranderde.
      */
     public boolean renameReservedDefs() {
         Set<String> used = new HashSet<>();
@@ -341,7 +341,7 @@ public final class LogicGraph {
         }
         boolean changed = false;
         for (Node def : nodes.values()) {
-            if (def.op != Op.DEF || Op.byCode(def.text) == null) {
+            if (def.op != Op.DEF || !Checks.isWord(def.text)) {
                 continue;
             }
             String old = def.text;

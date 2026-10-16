@@ -66,7 +66,8 @@ public final class CodeCompletion {
     private static final int VARIABLE = 0xF1E87C;
     private static final int NAME = 0x6BE88B;
     private static final Pattern DEF = Pattern.compile("^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
-    private static final Pattern WHEN = Pattern.compile("^when\\s+([A-Za-z_]+)\\s*\\(");
+    /** {@code when keycard(...)} of (hoofdstuk 23) {@code when started:} zonder haakjes. */
+    private static final Pattern WHEN = Pattern.compile("^when\\s+([A-Za-z_]+)\\s*[(:]");
     /** {@code count = ...} (één =, geen ==): een naam die een waarde krijgt. */
     private static final Pattern ASSIGN = Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*=(?!=)");
 
@@ -132,7 +133,8 @@ public final class CodeCompletion {
                 continue;
             }
             boolean named = op.textArg() != Op.Arg.NONE;
-            String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel : device;
+            String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel
+                    : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
             String label = "when " + (named ? op.code() + "(...)" : op.example()) + ":";
             String call = named ? op.code() + "(\"" + name + "\")" : op.example();
             items.add(new Item(label, "when " + call + ":\n    ", -1, op.help(), TRIGGER));
@@ -195,6 +197,13 @@ public final class CodeCompletion {
         }
         for (String name : ownNames(lines)) {
             items.add(new Item(name, name, -1, "One of your own names (it got a value with " + name + " = ...)", VARIABLE));
+        }
+        // pin(1) en read(scanPin) (hoofdstuk 23): de cursor komt tussen de haakjes.
+        for (Expr.Function function : Expr.Function.values()) {
+            if (function.allowedIn(data.kind())) {
+                items.add(new Item(function.code() + "(...)", function.code() + "()", function.code().length() + 1,
+                        function.help(), VARIABLE));
+            }
         }
         items.add(new Item("is_on(\"...\")", "is_on(\"\")", 7, "Is that device switched on right now?", VARIABLE));
         items.add(new Item("not", "not ", -1, "The opposite: not is_night", KEYWORD));

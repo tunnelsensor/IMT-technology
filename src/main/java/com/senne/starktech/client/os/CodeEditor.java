@@ -50,13 +50,16 @@ final class CodeEditor {
     /** De kleur van je eigen blokken (de naam na def, en waar je ze gebruikt). */
     static final int FUNCTION = 0xC9A0FF;
     private static final Set<String> CONSTANTS = Set.of("true", "false", "True", "False");
-    /** Alle gegevens die je in een voorwaarde kunt gebruiken (zie Expr.Variable), en is_on. */
+    /** Alle gegevens die je in een voorwaarde kunt gebruiken (zie Expr.Variable), is_on, en pin en read (hoofdstuk 23). */
     private static final Set<String> VARIABLES = variables();
 
     private static Set<String> variables() {
         Set<String> names = new java.util.HashSet<>();
         for (com.senne.starktech.logic.program.Expr.Variable variable : com.senne.starktech.logic.program.Expr.Variable.values()) {
             names.add(variable.code());
+        }
+        for (com.senne.starktech.logic.program.Expr.Function function : com.senne.starktech.logic.program.Expr.Function.values()) {
+            names.add(function.code());
         }
         names.add("is_on");
         return names;
