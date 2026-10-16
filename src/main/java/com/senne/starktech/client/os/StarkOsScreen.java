@@ -35,6 +35,8 @@ public class StarkOsScreen extends Screen {
         DEVICES("Devices", "D", 330, 196),
         /** Je relais in groepen, en groepen in groepen (14 oktober). */
         GROUPS("Groups", "G", 340, 186),
+        /** De guard robots in het gebied van de kern: aan/uit en hernoemen (hoofdstuk 21). */
+        ROBOTS("Robots", "R", 340, 190),
         ACCESS("Access", "A", 280, 190),
         KEYCARDS("Keycards", "K", 300, 190),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
@@ -121,6 +123,7 @@ public class StarkOsScreen extends Screen {
     private final NotesApp notes = new NotesApp(this);
     private final DevicesApp devices = new DevicesApp(this);
     private final GroupsApp groups = new GroupsApp(this);
+    private final RobotsApp robots = new RobotsApp(this);
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
@@ -353,6 +356,9 @@ public class StarkOsScreen extends Screen {
         if (win.app != App.GROUPS) {
             groups.blur();
         }
+        if (win.app != App.ROBOTS) {
+            robots.blur();
+        }
         if (win.app != App.ZONE) {
             zone.blur();
         }
@@ -391,6 +397,9 @@ public class StarkOsScreen extends Screen {
         }
         if (win.app == App.GROUPS) {
             groups.blur(); // ook geen half getypte groepsnaam
+        }
+        if (win.app == App.ROBOTS) {
+            robots.blur(); // geen half getypte robotnaam
         }
         if (win.app == App.ZONE) {
             zone.blur(); // half getypte getallen niet bewaren
@@ -484,6 +493,7 @@ public class StarkOsScreen extends Screen {
             case NOTES -> notes.mouseClicked(font, contentArea(win), mx, my, button);
             case DEVICES -> devices.mouseClicked(font, contentArea(win), mx, my);
             case GROUPS -> groups.mouseClicked(font, contentArea(win), mx, my);
+            case ROBOTS -> robots.mouseClicked(font, contentArea(win), mx, my);
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
@@ -564,6 +574,7 @@ public class StarkOsScreen extends Screen {
             case NOTES -> notes.mouseScrolled((int) mouseX, (int) mouseY, scrollY);
             case DEVICES -> devices.mouseScrolled(scrollY);
             case GROUPS -> groups.mouseScrolled(scrollY);
+            case ROBOTS -> robots.mouseScrolled(scrollY);
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(scrollY);
@@ -586,6 +597,7 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.DEVICES && devices.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.GROUPS && groups.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.ROBOTS && robots.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.ZONE && zone.charTyped(codePoint, modifiers)) {
@@ -609,6 +621,7 @@ public class StarkOsScreen extends Screen {
                 || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.DEVICES && devices.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.GROUPS && groups.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.ROBOTS && robots.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ZONE && zone.keyPressed(keyCode, scanCode, modifiers)) {
@@ -732,6 +745,7 @@ public class StarkOsScreen extends Screen {
             case STATUS -> renderStatus(g, area.x(), area.y());
             case DEVICES -> devices.render(g, font, area, mouseX, mouseY, partialTick);
             case GROUPS -> groups.render(g, font, area, mouseX, mouseY, partialTick);
+            case ROBOTS -> robots.render(g, font, area, mouseX, mouseY, partialTick);
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);

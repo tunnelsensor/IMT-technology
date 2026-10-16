@@ -1134,6 +1134,29 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.shot(30, "rb12_robot_screen");
             t.close(0);
+            // De app Robots: een beveiligingskern vlakbij, en de robots van hierboven in zijn lijst.
+            BlockPos robotCore = new BlockPos(72, -60, 68);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(robotCore, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(robotCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                }
+                level.setBlockAndUpdate(robotCore.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(robotCore.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                    charger.fill(20_000);
+                }
+            });
+            // Even wachten: de robots melden zich om de seconde, nu bij deze kern.
+            t.onServer(40, player -> com.senne.starktech.security.os.StarkOs.open(player, robotCore));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ROBOTS);
+                }
+            });
+            t.shot(15, "rb13_os_robots");
+            t.close(10);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 

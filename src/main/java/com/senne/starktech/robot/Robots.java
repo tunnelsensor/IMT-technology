@@ -5,6 +5,12 @@ import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RobotActionPayload;
 import com.senne.starktech.network.RobotOpenPayload;
 import com.senne.starktech.security.BaseTrust;
+import com.senne.starktech.security.SecurityCoreBlockEntity;
+import java.util.Locale;
+import java.util.UUID;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import java.util.Optional;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -89,6 +95,70 @@ public final class Robots {
         }
         player.displayClientMessage(Component.translatable("message.starktech.robot.picked_up", stack.getHoverName()), true);
     }
+
+    // ================================================================ De app Robots op de desktop
+
+    /**
+     * De robots in het gebied van deze kern, voor de app Robots: naam, toestand, aan of uit, batterij, waar hij
+     * staat, of hij een dock heeft, en of hij nu geladen is (anders kan de desktop hem niet bedienen).
+     */
+    public static ListTag snapshot(ServerLevel level, SecurityCoreBlockEntity core) {
+        ListTag list = new ListTag();
+        for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+            GuardRobotEntity robot = level.getEntity(entry.id()) instanceof GuardRobotEntity found && found.isAlive() ? found : null;
+            CompoundTag row = new CompoundTag();
+            row.putString("id", entry.id().toString());
+            row.putString("n", entry.name());
+            row.putString("st", entry.state().title().toLowerCase(Locale.ROOT));
+            row.putBoolean("on", robot != null ? robot.isActive() : entry.state() == RobotState.ACTIVE);
+            row.putInt("bat", Math.round(entry.battery() * 100));
+            row.putInt("x", entry.pos().pos().getX());
+            row.putInt("y", entry.pos().pos().getY());
+            row.putInt("z", entry.pos().pos().getZ());
+            row.putBoolean("dock", entry.home() != null);
+            row.putBoolean("loaded", robot != null);
+            list.add(row);
+        }
+        return list;
+    }
+
+    /**
+     * Een knop uit de app Robots: aan/uit ("robot_switch") of een andere naam ("robot_rename"). Alleen voor robots
+     * in het gebied van deze kern, en alleen als ze nu geladen zijn. Geeft de melding voor de taakbalk terug.
+     */
+    public static Desktop desktop(ServerPlayer player, SecurityCoreBlockEntity core, String op, CompoundTag args) {
+        ServerLevel level = player.serverLevel();
+        UUID id;
+        try {
+            id = UUID.fromString(args.getString("id"));
+        } catch (IllegalArgumentException e) {
+            return new Desktop("No such robot", true);
+        }
+        BotNetwork network = BotNetwork.get(level);
+        BotNetwork.Entry entry = network.get(id);
+        if (entry == null || !GlobalPos.of(level.dimension(), core.getBlockPos()).equals(entry.core())) {
+            return new Desktop("That robot is not in this network's area", true);
+        }
+        if (!(level.getEntity(id) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+            return new Desktop(entry.name() + " is too far away (its chunk is not loaded)", true);
+        }
+        String name = robot.hasCustomName() ? robot.getCustomName().getString() : entry.name();
+        Desktop result;
+        if (op.equals("robot_switch")) {
+            boolean on = args.getBoolean("on");
+            robot.setActive(on);
+            result = new Desktop(name + (on ? " switched on" : " switched off"), false);
+        } else {
+            result = rename(player, robot, args.getString("name"))
+                    ? new Desktop("Renamed to " + robot.getCustomName().getString(), false)
+                    : new Desktop("That name is not allowed or already taken", true);
+        }
+        network.update(robot);
+        return result;
+    }
+
+    /** Wat de desktop in de taakbalk zegt na een knop van de app Robots. */
+    public record Desktop(String text, boolean error) {}
 
     /** De robot met dit nummer, als hij dichtbij genoeg is; anders null. */
     private static @Nullable GuardRobotEntity robot(ServerPlayer player, int entityId) {

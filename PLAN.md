@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 242 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 243 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2450,7 +2450,13 @@ hij loopt terug en laadt.
       vrij). Nieuwe berichten `RobotOpenPayload` en `RobotActionPayload`; netwerkversie 19 → 20. Twee nieuwe
       tests (namen, opslaan en laden, oppakken, kapot; een vreemde kan niets, een dubbele naam mag niet).
       Screenshot `rb12`. Vorige stap: `9b7896e`.
-- [ ] **8. App Robots** — lijst met batterij, verbinding en dock; aan/uit en hernoemen.
+- [x] **8. App Robots** — een nieuwe app op de Stark OS-desktop (icoon "R", na Groups): de robots in het gebied
+      van de kern (uit `BotNetwork`), elk met naam, plek, toestand, batterij en of hij een dock heeft, en de
+      knoppen **Rename** (Enter bewaart, Esc niet) en **Switch on/off**. Een robot in een stuk wereld dat
+      niet geladen is, staat er grijs bij ("far away") zonder knoppen. Werkt ook op afstand (SSH), zoals
+      Devices. De desktop bedient alleen robots in het gebied van zijn eigen kern. "Verbinding" komt in
+      hoofdstuk 23 (dan pas praat een robot met de server). Eén nieuwe test (de lijst; aanzetten en
+      hernoemen van de desktop; een rare id doet niets). Screenshot `rb13`. Vorige stap: `1f9c408`.
 - [ ] **9. Geluid, showcase, LEESMIJ** — servogeluiden, opstarten en uitzetten, zacht zoemen op het dock
       (met een volumeknop).
 

@@ -5,6 +5,7 @@ import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.bot.CircuitBoardItem;
 import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.network.OsActionPayload;
 import com.senne.starktech.network.RobotActionPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModDataComponents;
@@ -23,6 +24,8 @@ import com.senne.starktech.robot.RobotState;
 import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.robot.Robots;
 import com.senne.starktech.security.BaseTrust;
+import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.os.StarkOs;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -32,6 +35,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -462,6 +466,51 @@ public final class RobotGameTests {
         Robots.handleAction(owner, new RobotActionPayload(second.getId(), RobotActionPayload.Op.RENAME, ""));
         check("Guard 2".equals(second.getCustomName().getString()), "Een lege naam werd aanvaard");
         helper.succeed();
+    }
+
+    // ================================================================ Stap 8: de app Robots
+
+    /**
+     * De app Robots: een robot in het gebied van de kern staat in de lijst (naam, toestand, batterij, dock); van
+     * de desktop zet je hem aan en geef je hem een andere naam. Een rare robot-id doet niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "robot_desktop")
+    public static void robot_desktop_app(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "desk-owner");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
+        GuardRobotEntity robot = dockedRobot(helper, owner, new BlockPos(8, 1, 8), RobotParts.DEFAULT);
+
+        // De kern meldt zich pas een tick na het neerzetten aan; de robot meldt zich om de seconde opnieuw.
+        helper.runAfterDelay(25, () -> {
+            ListTag list = Robots.snapshot(helper.getLevel(), core);
+            check(list.size() == 1, "De app ziet " + list.size() + " robots");
+            CompoundTag row = list.getCompound(0);
+            check("Guard 1".equals(row.getString("n")) && row.getBoolean("loaded") && row.getBoolean("dock")
+                    && !row.getBoolean("on") && "standby".equals(row.getString("st")) && row.getInt("bat") == 100,
+                    "De rij van de robot klopt niet: " + row);
+
+            StarkOs.open(owner, coreAbs);
+            CompoundTag on = new CompoundTag();
+            on.putString("id", robot.getUUID().toString());
+            on.putBoolean("on", true);
+            StarkOs.handleAction(owner, new OsActionPayload(coreAbs, "robot_switch", on));
+            check(robot.isActive(), "Van de desktop aangezet staat hij niet aan");
+            CompoundTag rename = new CompoundTag();
+            rename.putString("id", robot.getUUID().toString());
+            rename.putString("name", "Lab guard");
+            StarkOs.handleAction(owner, new OsActionPayload(coreAbs, "robot_rename", rename));
+            check("Lab guard".equals(robot.getCustomName().getString()), "Van de desktop hernoemd heet hij " + robot.getCustomName().getString());
+            check(Robots.snapshot(helper.getLevel(), core).getCompound(0).getBoolean("on"), "De app ziet niet dat hij aan staat");
+
+            CompoundTag bad = new CompoundTag();
+            bad.putString("id", "not-a-robot");
+            bad.putBoolean("on", false);
+            StarkOs.handleAction(owner, new OsActionPayload(coreAbs, "robot_switch", bad));
+            check(robot.isActive(), "Een rare id deed toch iets");
+            StarkOs.close(owner);
+            helper.succeed();
+        });
     }
 
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */
