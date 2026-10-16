@@ -82,13 +82,13 @@ final class TrainingApp {
                     : HudStyle.RED), false);
             rx += font.width(verdict) + 6;
             String time = TrainingReport.time(report.getLong("Ticks"));
-            g.drawString(font, OsDraw.fitLeft(font, report.getString("text"), a.x() + a.w() - 8 - font.width(time) - rx), rx, y,
+            g.drawString(font, OsDraw.fitRight(font, report.getString("text"), a.x() + a.w() - 8 - font.width(time) - rx), rx, y,
                     HudStyle.argb(255, OsDraw.GREY), false);
             g.drawString(font, time, a.x() + a.w() - 5 - font.width(time), y, HudStyle.argb(255, OsDraw.GREY), false);
             int hits = report.getInt("Hits");
             String details = hits + (hits == 1 ? " hit" : " hits") + (report.getString("HitsBy").isEmpty() ? "" : ": " + report.getString("HitsBy"))
                     + (report.getInt("Downed") > 0 ? "; " + report.getInt("Downed") + (report.getInt("Downed") == 1 ? " robot down" : " robots down") : "");
-            g.drawString(font, OsDraw.fitLeft(font, details, a.w() - 18), x + 8, y + 10, HudStyle.argb(255, 0x9FC9D6), false);
+            g.drawString(font, OsDraw.fitRight(font, details, a.w() - 18), x + 8, y + 10, HudStyle.argb(255, 0x9FC9D6), false);
             y += REPORT_H;
         }
     }

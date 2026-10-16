@@ -27,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  */
 public class TrainingStartScreen extends Screen {
-    private static final int PANEL_W = 290;
-    private static final int PANEL_H = 170;
+    private static final int PANEL_W = 316;
+    private static final int PANEL_H = 180;
     private static final int MARGIN = 8;
     private static final int VALUE_X = 58;
     /** De stappen van de tijdslimiet (seconden; 0 = geen limiet). */
@@ -138,7 +138,7 @@ public class TrainingStartScreen extends Screen {
         centred(g, String.valueOf(lives), left + VALUE_X + 45, top + 80);
         label(g, "Time", top + 106);
         centred(g, seconds == 0 ? "no limit" : seconds / 60 + ":" + String.format("%02d", seconds % 60), left + VALUE_X + 45, top + 106);
-        g.drawString(font, "Click the block (without sneaking) to start: you are the trainee.", left + MARGIN, top + 126,
+        g.drawString(font, "Click the block to start: you are the trainee.", left + MARGIN, top + 126,
                 HudStyle.argb(200, 0x9FC9D6), false);
         g.drawString(font, "Diagrams: when training_started(\"" + name + "\"):", left + MARGIN, top + 137,
                 HudStyle.argb(170, 0x9FC9D6), false);

@@ -1938,6 +1938,65 @@ final class ShowcaseFeatures {
                     .pause(160);
         });
 
+        add("Training", "Hoofdstuk 26: training zoals de clones op Kamino. In de werkplaats staat nu vooraan links een Training "
+                + "Start-blok, en achteraan een Training Goal-blok (een geblokte finishvlag) met links een Training End-blok (met "
+                + "een redstonelamp erop) en rechts een donkere Super Battle-robot (squad Wave 2). Links en rechts in het midden "
+                + "staan twee witte Trainer-robots (squad Wave 1). Alle robots staan uit. Eerst het instelscherm van Start (sneak + "
+                + "klik): naam Kamino, Training shots, 5 lives, geen tijdslimiet. Dan de mini-editor van End: when trainee_hit: "
+                + "say(\"You're hit, cadet\"). Dan klik jij op Start (in survival): E.D.I.T.H. telt af (3, 2, 1, go!; met Voice "
+                + "text uit hoor je het alleen) en je diagram Waves zegt 'Good luck' en zet Wave 1 aan. De Trainers schieten alleen "
+                + "op de trainee: geen schade, maar een blauwe flits rond je lijf, een 'zap', je bent even trager en een leven eraf "
+                + "(onderaan 'Hit by Trainer 1: 4 lives left'); de lamp op het End-blok knippert en E.D.I.T.H. zegt 'You're hit, "
+                + "cadet'. Jij schiet ze neer met de Ion Blaster: ze blijven liggen zolang de training duurt. Ligt Wave 1 helemaal "
+                + "neer, dan zet je diagram Wave 2 aan (when squad_down) en schiet de Super Battle ook. Dan sta je op het "
+                + "Goal-blok: geslaagd! E.D.I.T.H. geeft het rapport (tijd, treffers en door wie, 2 robots down), de Trainers "
+                + "staan op en de robots gaan uit. Tot slot de app Training op de desktop met dat rapport.", GameType.SURVIVAL,
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(4, 0, 12)), 180, 15, s -> {
+            BlockPos core = ROBOT_BAY.offset(10, 0, 6);
+            BlockPos startBlock = ROBOT_BAY.offset(2, 0, 9);
+            BlockPos endBlock = ROBOT_BAY.offset(3, 0, 0);
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .onServer(0, player -> {
+                        buildBayServer(player);
+                        buildTraining(player);
+                    })
+                    .pause(50)
+                    // Het instelscherm van Start (sneak + klik).
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 11.5, 180, 25)
+                    .onServer(10, player -> com.senne.starktech.training.TrainingBlocks.useStart(player, startBlock, true))
+                    .pause(100)
+                    .close(10)
+                    // Achteraan: het End-blok met zijn lamp, het doel en Wave 2. Dan de mini-editor van End.
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 4.5, 180, 20)
+                    .pause(40)
+                    .onServer(0, player -> com.senne.starktech.training.TrainingBlocks.useEnd(player, endBlock, true))
+                    .pause(100)
+                    .close(10)
+                    // Klik op Start: jij bent de trainee, met de Ion Blaster in je hand. E.D.I.T.H. telt af (3 seconden).
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 11.5, 180, 25)
+                    .onServer(10, player -> {
+                        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.ION_BLASTER.get()));
+                        com.senne.starktech.training.TrainingBlocks.useStart(player, startBlock, false);
+                    })
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 10)
+                    // Go: Wave 1 gaat aan en schiet op jou. Na de eerste treffer schiet jij Trainer 1 neer, dan Trainer 2.
+                    .pause(65)
+                    .onServer(15, player -> ionAt(player, ROBOT_BAY.offset(0, 0, 5)))
+                    .onServer(15, player -> ionAt(player, ROBOT_BAY.offset(8, 0, 5)))
+                    // Wave 1 ligt neer: je diagram zet Wave 2 aan, de Super Battle bij het doel schiet.
+                    .look(2, 180, 10)
+                    .pause(33)
+                    // Op het doel: geslaagd, het rapport, en de robots staan op.
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY() + 1, ROBOT_BAY.getZ() + 0.5, 0, 15)
+                    .pause(120)
+                    // De app Training: het rapport.
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core))
+                    .step(30, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.TRAINING)))
+                    .pause(140)
+                    .close(10);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes Drone Docks "
                 + "langs de muur; op vier staan de security drones die Tony programmeerde (hoofdstuk 25: Tower drone 1 tot 4, "
                 + "programma Tower patrol, met Scan, Face Recognition, Laser en Pathfinding). Na de hack zijn ze van jou: ze "
@@ -2836,7 +2895,87 @@ final class ShowcaseFeatures {
         com.senne.starktech.robot.TowerDrones.handOver(level, core, player);
     }
 
-    /** Iets doen met de Stark OS-desktop die nu openstaat (als hij openstaat). */
+    // ================================================================ Hoofdstuk 26: training
+
+    /** Het robotprogramma van de showcase "Training": de trainee zoeken, schieten als de laser klaar is, en dan even wachten. */
+    private static final String TRAINEE_HUNTER = """
+            when started:
+                write(pin(2), "trainee")
+                forever:
+                    if read(pin(1)) and read(pin(3)):
+                        write(pin(3), true)
+                        wait(2)
+                    wait(0.25)
+            """;
+
+    /**
+     * Voor "Training" (hoofdstuk 26), in de werkplaats: vooraan links een Training Start-blok (Kamino, trainingsschoten, 5
+     * levens); achteraan een Training Goal-blok, links ervan een Training End-blok met een redstonelamp erop en rechts een
+     * Super Battle in squad "Wave 2"; in het midden links en rechts twee Trainer-robots in squad "Wave 1" (alle drie uit,
+     * met Scan, Face Recognition en Laser); en het diagram Waves.
+     */
+    private static void buildTraining(net.minecraft.server.level.ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        com.senne.starktech.training.Training.Session old = com.senne.starktech.training.Training.of(player.getUUID());
+        if (old != null) {
+            com.senne.starktech.training.Training.end(level, old, com.senne.starktech.training.Training.Result.STOPPED);
+        }
+        BlockPos start = ROBOT_BAY.offset(2, 0, 9);
+        level.setBlockAndUpdate(start, ModBlocks.TRAINING_START.get().defaultBlockState());
+        if (level.getBlockEntity(start) instanceof com.senne.starktech.training.TrainingStartBlockEntity be) {
+            be.setOwner(player);
+            be.setSettings(new com.senne.starktech.training.Training.Settings("Kamino",
+                    com.senne.starktech.training.Training.Mode.TRAINING_SHOTS, 5, 0));
+        }
+        BlockPos end = ROBOT_BAY.offset(3, 0, 0);
+        level.setBlockAndUpdate(end, ModBlocks.TRAINING_END.get().defaultBlockState());
+        level.setBlockAndUpdate(end.above(), Blocks.REDSTONE_LAMP.defaultBlockState());
+        if (level.getBlockEntity(end) instanceof com.senne.starktech.training.TrainingEndBlockEntity be) {
+            be.setOwner(player);
+            be.setSource("""
+                    # Runs at every hit on the trainee.
+                    when trainee_hit:
+                        say("You're hit, cadet")
+                    """);
+        }
+        level.setBlockAndUpdate(ROBOT_BAY.offset(4, 0, 0), ModBlocks.TRAINING_GOAL.get().defaultBlockState());
+        Object[][] robots = {
+                {"Trainer 1", "Wave 1", ROBOT_BAY.offset(0, 0, 5), -90f, com.senne.starktech.robot.RobotStyle.TRAINER},
+                {"Trainer 2", "Wave 1", ROBOT_BAY.offset(8, 0, 5), 90f, com.senne.starktech.robot.RobotStyle.TRAINER},
+                {"Heavy 1", "Wave 2", ROBOT_BAY.offset(5, 0, 0), 0f, com.senne.starktech.robot.RobotStyle.SUPER_BATTLE}};
+        for (Object[] r : robots) {
+            if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), (BlockPos) r[2], (float) r[3])
+                    instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
+                com.senne.starktech.robot.RobotStyle style = (com.senne.starktech.robot.RobotStyle) r[4];
+                robot.setParts(new com.senne.starktech.robot.RobotParts(style, style, style, style));
+                robot.setOwner(player);
+                robot.setCustomName(net.minecraft.network.chat.Component.literal((String) r[0]));
+                robot.setSquad((String) r[1]);
+                robot.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition").with(3, "laser"));
+                robot.setProgram(program("Trainee hunter", TRAINEE_HUNTER, com.senne.starktech.logic.program.ProgramKind.ROBOT));
+            }
+        }
+        if (level.getBlockEntity(ROBOT_BAY.offset(10, 0, 6)) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.logic().put(null, program("Waves", """
+                    when training_started("Kamino"):
+                        say("Good luck, " + trainee)
+                        activate("Wave 1")
+
+                    when squad_down("Wave 1"):
+                        say("Wave 1 is down. Here comes Wave 2")
+                        activate("Wave 2")
+                    """, com.senne.starktech.logic.program.ProgramKind.SERVER));
+        }
+    }
+
+    /** Jij schiet met de Ion Blaster op de robot die het dichtst bij deze plek staat. */
+    private static void ionAt(net.minecraft.server.level.ServerPlayer player, BlockPos pos) {
+        robotNear(player, pos, robot -> {
+            player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, robot.getBoundingBox().getCenter());
+            com.senne.starktech.robot.IonBlasterItem.fire(player.serverLevel(), player);
+        });
+    }
+
     // ================================================================ Hoofdstuk 21: de robotwerkplaats
 
     static final BlockPos ROBOT_BAY = new BlockPos(-220, -60, 140);
@@ -2995,6 +3134,7 @@ final class ShowcaseFeatures {
         }
     }
 
+    /** Iets doen met de Stark OS-desktop die nu openstaat (als hij openstaat). */
     private static void desktop(Consumer<com.senne.starktech.client.os.StarkOsScreen> action) {
         if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
             action.accept(os);

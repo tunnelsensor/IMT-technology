@@ -336,9 +336,10 @@ public final class Training {
         session.lives = Math.max(0, session.lives - 1);
         session.hitsBy.merge(shooter, 1, Integer::sum);
         if (session.settings.mode() == Mode.TRAINING_SHOTS) {
-            // Een blauwe flits en een zacht "zap", en even trager.
-            level.sendParticles(new DustParticleOptions(new Vector3f(0.25f, 0.65f, 1.0f), 1.4f), trainee.getX(),
-                    trainee.getY() + 1.0, trainee.getZ(), 30, 0.35, 0.6, 0.35, 0.0);
+            // Een blauwe flits rond zijn lijf en een zacht "zap", en even trager. (De flits blijft onder zijn ogen: in de
+            // eerste persoon zat hij anders vlak voor je camera, en dan zag de trainee een seconde lang bijna niets.)
+            level.sendParticles(new DustParticleOptions(new Vector3f(0.25f, 0.65f, 1.0f), 1.0f), trainee.getX(),
+                    trainee.getY() + 0.7, trainee.getZ(), 18, 0.3, 0.35, 0.3, 0.0);
             level.playSound(null, trainee.blockPosition(), SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS, 1.0f, 1.6f);
             int slow = Math.round(StarkConfig.Training.SLOW_TICKS);
             if (slow > 0) {

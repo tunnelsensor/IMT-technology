@@ -1280,29 +1280,7 @@ public final class VisualCheck {
                 flying.setBoard(all);
                 flying.setActive(true);
                 // Een kern met stroom en een serverrack (zoals bij de robots): dan hebben de drones verbinding.
-                if (!(level.getBlockEntity(droneCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity)) {
-                    level.setBlockAndUpdate(droneCore, ModBlocks.SECURITY_CORE.get().defaultBlockState());
-                    if (level.getBlockEntity(droneCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
-                        be.setOwner(player);
-                        be.ensureSystem(level);
-                    }
-                    level.setBlockAndUpdate(droneCore.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
-                    if (level.getBlockEntity(droneCore.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
-                    }
-                    BlockPos rack = droneCore.east(2);
-                    level.setBlockAndUpdate(rack.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
-                    if (level.getBlockEntity(rack.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
-                    }
-                    level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
-                    if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
-                        be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                        be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                        be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-                        be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
-                    }
-                }
+                ensureBotCore(level, player, droneCore);
                 if (level.getBlockEntity(droneCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
                     be.logic().put(null, robotProgram("Hover patrol", "when started:\n    up(2)\n    forever:\n        forward(3)\n        turn_right()\n",
                             com.senne.starktech.logic.program.ProgramKind.DRONE));
@@ -1385,6 +1363,102 @@ public final class VisualCheck {
             t.view(0, 63.5, -59, 76.0, 180, 25);
             t.shot(40, "sd11_drone_down");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
+        // --- Hoofdstuk 26: training. De drie trainingsblokken, het instelscherm van Start, de mini-editor van End, het
+        // aftellen, en op de desktop de apps Training (een training bezig, twee rapporten), Robots (met squads) en Logic.
+        if (want("training")) {
+            BlockPos start = new BlockPos(58, -60, 78);
+            BlockPos end = new BlockPos(60, -60, 78);
+            BlockPos goal = new BlockPos(62, -60, 78);
+            BlockPos trainingCore = new BlockPos(72, -60, 68);
+            t.onServer(20, player -> {
+                ServerLevel level = player.serverLevel();
+                ensureBotCore(level, player, trainingCore);
+                level.setBlockAndUpdate(start, ModBlocks.TRAINING_START.get().defaultBlockState());
+                level.setBlockAndUpdate(end, ModBlocks.TRAINING_END.get().defaultBlockState());
+                level.setBlockAndUpdate(goal, ModBlocks.TRAINING_GOAL.get().defaultBlockState());
+                if (level.getBlockEntity(end) instanceof com.senne.starktech.training.TrainingEndBlockEntity be) {
+                    be.setSource("""
+                            # Runs when the trainee is hit.
+                            when trainee_hit:
+                                say("You're hit, cadet")
+                                if lives == 0:
+                                    deactivate("Wave 1")
+                                    deactivate("Wave 2")
+                            """);
+                }
+                // Een squad van twee robots en een drone ("Wave 1"), en een drone in "Wave 2".
+                for (int i = 0; i < 2; i++) {
+                    if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(),
+                            new BlockPos(65 + i * 2, -60, 79), 180) instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
+                        com.senne.starktech.robot.RobotStyle style = com.senne.starktech.robot.RobotStyle.BATTLE;
+                        robot.setParts(new com.senne.starktech.robot.RobotParts(style, style, style, style));
+                        robot.setOwner(player);
+                        robot.setSquad("Wave 1");
+                    }
+                }
+                com.senne.starktech.robot.GuardDroneEntity drone = securityDrone(level, player, new BlockPos(69, -59, 79), false);
+                drone.setSquad("Wave 2");
+                if (level.getBlockEntity(trainingCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    com.senne.starktech.training.Training.Mode shots = com.senne.starktech.training.Training.Mode.TRAINING_SHOTS;
+                    long now = level.getGameTime();
+                    be.addTrainingReport(new com.senne.starktech.training.TrainingReport("Kamino", player.getGameProfile().getName(), shots,
+                            com.senne.starktech.training.Training.Result.OUT_OF_LIVES, 1440, 3, 0, "Guard 2 x2, Guard 1 x1", 1, now - 4000));
+                    be.addTrainingReport(new com.senne.starktech.training.TrainingReport("Kamino", player.getGameProfile().getName(), shots,
+                            com.senne.starktech.training.Training.Result.GOAL, 2680, 1, 2, "Guard 1 x1", 2, now - 1200));
+                    be.logic().put(null, robotProgram("Waves", """
+                            when training_started("Kamino"):
+                                say("Good luck, " + trainee)
+                                activate("Wave 1")
+
+                            when squad_down("Wave 1"):
+                                activate("Wave 2")
+                            """, com.senne.starktech.logic.program.ProgramKind.SERVER));
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(0, 60.5, -59, 82.5, 180, 15);
+            t.shot(30, "tr01_training_blocks");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> com.senne.starktech.training.TrainingBlocks.useStart(player, start, true));
+            t.shot(20, "tr02_training_start_screen");
+            t.close(0);
+            t.onServer(0, player -> com.senne.starktech.training.TrainingBlocks.useEnd(player, end, true));
+            t.shot(20, "tr03_training_end_editor");
+            t.close(0);
+            // Klik op Start (zonder sneak): jij bent de trainee, E.D.I.T.H. telt af.
+            t.onServer(0, player -> com.senne.starktech.training.TrainingBlocks.useStart(player, start, false));
+            t.shot(25, "tr04_training_countdown");
+            // De desktop: de app Training (de training is nu bezig), Robots (met squads) en de Help van Logic.
+            t.view(0, 67.5, -60, 68.5, 180, 15);
+            t.onServer(40, player -> com.senne.starktech.security.os.StarkOs.open(player, trainingCore));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.TRAINING);
+                }
+            });
+            t.shot(25, "tr05_os_training_app");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ROBOTS);
+                }
+            });
+            t.shot(15, "tr06_os_robots_squads");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicNew(com.senne.starktech.logic.program.ProgramKind.SERVER);
+                    os.tourLogicHelpAt("TRAINING");
+                }
+            });
+            t.shot(10, "tr07_logic_training_help");
+            t.close(10);
+            t.onServer(0, player -> {
+                com.senne.starktech.training.Training.Session session = com.senne.starktech.training.Training.of(player.getUUID());
+                if (session != null) {
+                    com.senne.starktech.training.Training.end(player.serverLevel(), session, com.senne.starktech.training.Training.Result.STOPPED);
+                }
+            });
         }
 
         // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde
@@ -2705,6 +2779,37 @@ public final class VisualCheck {
 }
 
     /** Waar de C4-muur van de rondleiding staat (zie buildC4Wall). */
+    /**
+     * Een beveiligingskern van deze speler op {@code core}, met stroom en een serverrack ernaast (dan hebben robots en
+     * drones verbinding), als die er nog niet staat. Voor de groepen secdrones en training.
+     */
+    private static void ensureBotCore(ServerLevel level, ServerPlayer player, BlockPos core) {
+        if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity) {
+            return;
+        }
+        level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+            be.setOwner(player);
+            be.ensureSystem(level);
+        }
+        level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(core.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+            charger.fill(20_000);
+        }
+        BlockPos rack = core.east(2);
+        level.setBlockAndUpdate(rack.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(rack.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+            charger.fill(20_000);
+        }
+        level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
+        if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+        }
+    }
+
     /**
      * Een security drone (hoofdstuk 25) van deze speler: op het Drone Dock op {@code pos} (zijn thuis, uit), of hangend
      * in dat blok.

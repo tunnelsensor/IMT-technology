@@ -952,7 +952,7 @@ per module.
 |---|---|---|
 | **Scan** | `true` als hij een speler ziet: binnen het bereik en de kijkhoek van zijn hoofd, niet door muren | — |
 | **Distance** | hoeveel blokken tot wat recht voor hem staat (een muur vlak voor hem = 1, niets = 99) | — |
-| **Face Recognition** | de naam van wie hij ziet (`""` = niemand) | wie hij zoekt: `"everyone"`, `"strangers"`, `"trusted"` of een naam |
+| **Face Recognition** | de naam van wie hij ziet (`""` = niemand) | wie hij zoekt: `"everyone"`, `"strangers"`, `"trusted"`, `"trainee"` (zie Training) of een naam |
 | **Pathfinding** | `true` zolang hij met `goto` onderweg is | — (zonder deze module werkt `goto` niet) |
 | **Laser** | `true` als hij kan schieten | `true` = één schot (kost batterij) |
 | **Gun** | hoeveel kogels hij nog heeft | `true` = één schot (kost één Robot Ammo) |
@@ -984,7 +984,7 @@ op een vriend omdat hij het niet weet). Een naam herkent hij altijd.
 hij niemand ziet, schiet hij recht vooruit en raakt hij wat daar staat (tot 24 blokken). De laser zit aan zijn
 rechterarm, het geweer aan zijn linker. Hoe snel hij opnieuw kan schieten, hangt aan zijn armen (Super Battle
 het snelst, Battle het traagst). Een muur en een schildkoepel houden een schot tegen; spelers raakt hij alleen
-als PvP aan staat. **Robot Ammo** maak je van buskruit, een koperstaaf en twee ijzerklompjes (16 kogels);
+als PvP aan staat (of als het de trainee van een training is). **Robot Ammo** maak je van buskruit, een koperstaaf en twee ijzerklompjes (16 kogels);
 rechtsklik je robot ermee om hem te laden (tot 64), en zijn scherm zegt hoeveel hij er nog heeft.
 
 **Door zijn ogen kijken.** Een robot met een Camera-module en verbinding staat in de app **Cameras** tussen je
@@ -1067,6 +1067,89 @@ niemand.
 De getallen staan in `config/starktech.toml` onder `[robots]` (`droneHealth`, `droneBattery`,
 `droneDockChargeRate`, `droneDrainOn`, `droneDrainFlying`, `droneSpeed`, `droneScanRange`, `droneScanAngle`,
 `droneFireInterval`, `droneTakeOff`) en `[security]` (`towerDrones`).
+
+### Training zoals Domino squad
+Zoals de clones op Kamino: je laat je eigen beveiliging op jezelf (of een vriend) schieten, met
+**trainingsschoten** die geen schade doen. Daarvoor zijn er drie blokken:
+
+- **Training Start** (ijzer, een limoengroene kleurstof, redstone en een Stark Chip). Zet hem in het gebied van je
+  beveiligingskern. **Sneak + klik** met een lege hand: de instellingen. **Name** is hoe de training heet in je
+  diagrammen (bijvoorbeeld Kamino), **Shots** is *Training shots* (geen schade) of *Lethal* (echte schade),
+  **Lives** 1 tot 10, en **Time** geen limiet tot een uur. Gewoon **klikken**: de training begint, en jij bent de
+  **trainee**. E.D.I.T.H. telt af (3, 2, 1) en zegt "go!". Nog een klik stopt hem.
+- **Training Goal** (witte en zwarte wol en een gouden staaf): een geblokte finishvlag. Stapt de trainee erop, dan
+  is hij geslaagd.
+- **Training End** (ijzer, een rode kleurstof, redstone en een Stark Chip): bij elke treffer een korte
+  redstone-puls (het lampje op zijn zijkanten brandt dan rood), en zijn eigen programmaatje (zie verder).
+
+Alleen de eigenaar van de basis, zijn team, vertrouwde spelers en wie het blok neerzette, starten een training of
+stellen hem in. Anders kon een inbreker je verdediging op trainingsschoten zetten. Per kern loopt er één training
+tegelijk. In creative schiet er niemand op je.
+
+**Een treffer.** Elk schot van je beveiliging op de trainee telt: torentjes, laserwanden, robots en security
+drones. Met trainingsschoten doet het geen schade, maar er is een blauwe flits rond je lijf en een zachte "zap",
+je bent een seconde trager en je verliest een leven (onderaan staat "Hit by Trainer 1: 4 lives left"). Torentjes schieten dan alleen hun laser,
+geen raketten. Lethal doet echte schade en telt ook. Eén schot is één leven: vlak na een treffer telt een volgende
+even niet mee. Robots en drones mogen de trainee raken, ook als PvP uit staat (hij koos er zelf voor).
+
+**Golven: squads.** In de app **Robots** heeft elke robot en drone een knop **Squad**. Typ een naam, bijvoorbeeld
+"Wave 1" (leeg = geen squad); de knop zegt dan "Squad: Wave 1". Overal waar in een diagram een robotnaam mag
+staan, mag ook een squad staan: `activate("Wave 1")`, `deactivate("Wave 1")` en `order("Wave 1", "attack", x, y, z)`
+gaan naar de hele squad tegelijk. `when squad_down("Wave 1"):` begint als elk lid neer ligt (de Ion Blaster), geen
+stroom meer heeft of kapot is. `active("Wave 1")` zegt hoeveel er nu aan staan en rechtop. Met het filter
+`"trainee"` (`write(facePin, "trainee")`) ziet een robot of drone alleen de trainee, en alleen zolang de training
+bezig is. Een robot of drone die tijdens de training neergaat, blijft liggen tot hij voorbij is.
+
+Je diagram stuurt de golven:
+
+```
+when training_started("Kamino"):
+    say("Good luck, " + trainee)
+    activate("Wave 1")
+
+when squad_down("Wave 1"):
+    activate("Wave 2")
+
+when training_ended("Kamino"):
+    if passed:
+        say(trainee + " passed")
+```
+
+Ook `when training_hit("Kamino"):` bestaat. Daarin, en in de andere twee, ken je `trainee` (zijn naam), `lives`,
+`hits` en (na het einde) `passed`. In de Help van de app Logic staan ze onder **TRAINING**.
+
+**Het programma van het End-blok.** Sneak + klik met een lege hand (wie hem neerzette of vertrouwd is): een kleine
+code-editor, dezelfde als in de app Logic (kleuren, Ctrl+Spatie, Check). Zo'n programma kent alleen
+`when trainee_hit:`, met `trainee`, `lives` en `hits`, en mag je robots en squads aansturen:
+
+```
+when trainee_hit:
+    say("You're hit, cadet")
+    if lives == 0:
+        deactivate("Wave 1")
+        deactivate("Wave 2")
+```
+
+Hij bewaart het alleen als het klopt, en het draait op je server (met de grenzen van zijn RAM).
+
+**Het einde.** De training stopt als:
+- de levens op zijn (mislukt);
+- de trainee op het Goal-blok stapt (geslaagd);
+- de tijd om is: zonder Goal-blok in je basis ben je dan geslaagd (je hield het vol), met zo'n blok niet (je moest
+  het doel halen);
+- de trainee doodgaat, uitlogt of het gebied van de kern verlaat (mislukt);
+- iemand hem stopt (het Start-blok of de app Training).
+
+Dan staan de robots die neer lagen op en gaan ze uit (naar hun dock), en geeft E.D.I.T.H. het rapport aan de
+trainee en de eigenaar: "Training Kamino: Senne reached the goal after 2:14 (1 hit: Guard 1 x1; 2 robots down)".
+**Er wordt niets teruggezet**: wat kapot ging, blijft kapot.
+
+**De app Training** op de desktop: bovenaan de training die nu bezig is (wie, trainingsschoten of lethal, levens,
+treffers, hoe lang al), met een knop **Stop**; daaronder de rapporten van de laatste tien trainingen (PASSED, FAILED
+of STOPPED, hoe lang, en wie er raakte).
+
+De getallen staan in `config/starktech.toml` onder `[training]` (`countdownSeconds`, `hitCooldown`, `slowTicks`,
+`maxReports`, `endPulse`).
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je

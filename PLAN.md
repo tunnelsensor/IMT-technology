@@ -16,7 +16,7 @@ Afspraken die overal gelden:
 
 **Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 95 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2884,6 +2884,20 @@ Tests: een non-lethal treffer doet geen schade maar telt; lethal doet schade; le
 het End-blok geeft een puls en deactiveert een squad; een inbreker kan geen training starten; het Goal-blok
 beëindigt met succes; down-robots staan na afloop weer op.
 
+- [x] **Afronding** — 286 tests: 283 groen, de 3 rode van hoofdstuk 14 stap 2. Negen nieuwe in `TrainingGameTests`
+      (trainingsschoten tegen lethal, alleen vertrouwden starten, het doel, de tijdslimiet, squads, het End-blok,
+      robots in een training, en van begin tot eind een robot die de trainee raakt). Screenshots `tr01`-`tr07`
+      (`gradlew runVisualCheck -Ponly=training`): de drie blokken, het instelscherm van Start, de mini-editor van End,
+      het aftellen, en de apps Training, Robots (met squads) en Logic (Help onder TRAINING). Wat ik op de screenshots
+      zag en verbeterde: in de app Robots liep de regel "squad Wave 1" onder de knoppen door (nu zegt de knop zelf
+      **Squad: Wave 1**), op het instelscherm van Start raakte de onderste regel de knoppen en stak een uitleg buiten het
+      venster, en de blauwe flits van een
+      treffer zat in de eerste persoon vlak voor je ogen, zodat je een seconde bijna niets zag (nu kleiner en rond je
+      lijf). In de showcase de nieuwe functie **"Training"** (87, na "Security drones", in survival): het
+      instelscherm, de mini-editor, aftellen, twee Trainers (Wave 1) die op je schieten, de lamp op het End-blok, jij
+      met de Ion Blaster, Wave 2 die aangaat, het doel, het rapport en de app Training. "Stark Tower: hangar and
+      landing pad" is nu 88. LEESMIJ.md: een nieuw stuk "Training zoals Domino squad". Het jar gebouwd.
+
 ### 27. Inbraak- en uitbraakoefening (14 oktober)
 
 Jouw wens: "test hoe moeilijk het is om tot bij de security core te geraken en hem te hacken, of hoe moeilijk
@@ -2977,6 +2991,12 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Training (16 oktober)**: gezien op screenshots (`tr01`-`tr07`) en in de showcase (87), getest met 9 nieuwe
+      tests. Niet gehoord: de "zap" van een treffer, het aftellen en de "go!" (tikjes van een nootblok). Probeer zelf
+      met een vriend als trainee (of jezelf, in survival): of 1 seconde trager en 1 seconde zonder nieuwe treffer goed
+      voelen (`slowTicks`, `hitCooldown`), of je de blauwe flits rond je lijf nog genoeg ziet, of het knipperen van een
+      lamp aan het End-blok duidelijk is (`endPulse`), en of de golven met `squad_down` lekker lopen. Ook: het
+      instelscherm (Enter in het naamvak) en de mini-editor van End met de muis.
 - [ ] **Security drones (16 oktober)**: gezien op screenshots (`sd01`-`sd11`, `t25`) en in de showcase (86 en 87),
       getest met 8 nieuwe tests. Niet gehoord: de rotors (er is geen eigen vlieggeluid; ik gebruikte de geluiden van
       de robot voor opstarten en uitschakelen) en het zachte laadzoemen op het dock. Probeer zelf: hoe het vliegen

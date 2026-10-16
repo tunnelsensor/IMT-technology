@@ -78,8 +78,9 @@ final class RobotsApp {
         return robot.getString("id").equals(renaming) ? "Save" : "Rename";
     }
 
+    /** De knop van de squad zegt meteen in welke squad hij zit: "Squad: Wave 1" (of gewoon "Squad"). */
     private String squadLabel(CompoundTag robot) {
-        return "Squad";
+        return robot.getString("sq").isEmpty() ? "Squad" : "Squad: " + robot.getString("sq");
     }
 
     /** De robotprogramma's op deze server (of de droneprogramma's, voor een drone), en "" = geen programma. */
@@ -213,10 +214,6 @@ final class RobotsApp {
             case "standby" -> HudStyle.ORANGE;
             default -> HudStyle.RED;
         };
-        String details = "  battery " + robot.getInt("bat") + "%" + (robot.getBoolean("dock") ? "  dock" : "  no dock")
-                + (robot.getString("sq").isEmpty() ? "" : "  squad " + robot.getString("sq"));
-        g.drawString(font, state, a.x() + 10, y + 10, HudStyle.argb(255, colour), false);
-        g.drawString(font, details, a.x() + 10 + font.width(state), y + 10, HudStyle.argb(255, OsDraw.GREY), false);
         // Zijn programma (hoofdstuk 23), en de knop om hem een ander te sturen.
         String program = robot.getString("prog");
         int programRight = a.x() + a.w() - 4 - OsDraw.buttonWidth(font, "Program");
@@ -226,6 +223,14 @@ final class RobotsApp {
             programRight -= OsDraw.buttonWidth(font, squadLabel(robot)) + 4;
             OsDraw.button(g, font, programRight, y + 17, squadLabel(robot), true, 0xF1E87C);
         }
+        // De regel met zijn toestand staat tussen de twee rijen knoppen: hij stopt voor de knop die het meest links staat.
+        // Zijn squad staat op zijn knop; alleen een robot ver weg (zonder knoppen) zegt hem hier.
+        String details = "  battery " + robot.getInt("bat") + "%" + (robot.getBoolean("dock") ? "  dock" : "  no dock")
+                + (loaded || robot.getString("sq").isEmpty() ? "" : "  squad " + robot.getString("sq"));
+        int detailsX = a.x() + 10 + font.width(state);
+        g.drawString(font, state, a.x() + 10, y + 10, HudStyle.argb(255, colour), false);
+        g.drawString(font, OsDraw.fitRight(font, details, Math.max(0, Math.min(right, programRight) - detailsX - 4)), detailsX, y + 10,
+                HudStyle.argb(255, OsDraw.GREY), false);
         int px = a.x() + 10;
         String line = program.isEmpty() ? "no program" : "program " + program;
         g.drawString(font, line, px, y + 19, HudStyle.argb(255, program.isEmpty() ? OsDraw.GREY : 0x9ED8FF), false);
