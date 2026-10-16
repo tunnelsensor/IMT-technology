@@ -16,7 +16,7 @@ Afspraken die overal gelden:
 
 **Stand van zaken:** 247 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 90 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2521,11 +2521,23 @@ brand staat in de config.
       E.D.I.T.H.-melding ("Short circuit in Guard 1: pin 3 burnt out"), het logboek van de kern een regel, en wie
       hem aanzette (robotscherm of app Robots) hoort "Short circuit!". Een brug tussen twee lege pinnen doet
       niets; daarna gaat hij gewoon aan. Eén nieuwe test. Vorige stap: `4f1b9ec`.
-- [ ] **5. Zichtbaar op de robot** — laser op de arm, zonnepaneel op de rug, antenne, cameralens.
+- [x] **5. Zichtbaar op de robot** — wat er op het bord zit, zie je op de robot (in elke stijl op een eigen
+      plek): een paaltje met een schoteltje op zijn hoofd (Scan), een camerakastje rechts opzij met een lens
+      (Camera), een cyaan lensstrook bovenaan zijn gezicht (Face Recognition), een sensortje met een rood lampje
+      op zijn borst (Distance), een sprietantenne met een rood lampje (Pathfinding) en een zonnepaneel op zijn
+      rug, een laser met een rode punt aan zijn rechterarm en een geweerloop aan zijn linker. De lenzen en rode
+      lampjes gloeien als hij aan staat. De textuur van de robot is daarvoor 128 x 160 geworden (onderaan de
+      verven van de modules). Screenshots `rb16` (van voren) en `rb17` (van achteren). Vorige stap: `f27e90c`.
 
 Tests: goed solderen geeft een module; te laat geeft een brug; aanzetten met een brug verbrandt de modules;
 zonder brug gebeurt er niets; lossolderen geeft de module terug; solderen aan een robot die aan staat wordt
 geweigerd.
+
+- [x] **Afronding** — 247 tests: 244 groen, de 3 rode van hoofdstuk 14 stap 2. Vier nieuwe in hoofdstuk 22
+      (modules, solderen en lossolderen, bruggen op het bord, kortsluiting). In de showcase de nieuwe functie
+      **"Soldering modules"** (83, na "Guard robots"): het bordscherm met de hittebalk, Inspect met de
+      verstopte brug, aanzetten = kortsluiting, het bord daarna, en de vier stijlen met alle modules.
+      LEESMIJ.md: een nieuw stuk "Modules solderen". Het jar gebouwd.
 
 ### 23. Robots programmeren en praten met de server (14 oktober)
 
@@ -2737,6 +2749,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Solderen (16 oktober)**: gezien op screenshots (`rb14`-`rb17`) en in de showcase (83), getest met 4 nieuwe
+      tests. Probeer zelf met de muis: een module slepen en vasthouden (voelt de hittebalk goed? is het groene vak
+      te makkelijk of te moeilijk? zie `solderCold`/`solderHot`), of je een brug zonder Inspect echt over het
+      hoofd ziet, rechtsklik om los te solderen, en de knal bij een kortsluiting (die heb ik niet gehoord).
 - [ ] **Guard robots (16 oktober)**: gezien op screenshots (`rb01`-`rb13`) en in de showcase (82), getest met 15
       nieuwe tests. Niet gehoord: luister zelf naar de servo-stapjes, opstarten en uitschakelen, de klang als je
       hem slaat, en het laadzoemen op het dock (is het stil genoeg? `robotHumVolume`). Probeer zelf: slepen in de

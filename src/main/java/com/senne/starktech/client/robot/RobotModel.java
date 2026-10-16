@@ -1,6 +1,7 @@
 package com.senne.starktech.client.robot;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
@@ -39,6 +40,12 @@ import net.minecraft.resources.ResourceLocation;
  *
  * Maten in pixels (een blok is 16). Voor een arm en een been staat hier de RECHTER; de linker is het
  * spiegelbeeld. De binnenkant van een arm ligt op x = +1 (naast het lijf), net als bij een speler.
+ *
+ * Hoofdstuk 22: wat er op zijn printplaat gesoldeerd is, zie je ook op de robot (zie {@link #moduleShapes}):
+ * een schoteltje op zijn hoofd (Scan), een camera opzij (Camera), een cyaan lensstrook (Face Recognition), een
+ * sensor op zijn borst (Distance), een sprietantenne (Pathfinding) en een zonnepaneel op zijn rug, een laser op
+ * zijn rechterarm en een geweer op zijn linker. Die blokjes hangen in elke stijl op een eigen plek, en hebben
+ * hun eigen verven onderaan de textuur (die is daarom 128 x 160).
  */
 public class RobotModel extends HumanoidModel<GuardRobotEntity> {
     public static final ModelLayerLocation LAYER =
@@ -57,6 +64,8 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
     private final Map<RobotSlot, ModelPart[]> versions = new EnumMap<>(RobotSlot.class);
     private final ModelPart[] leftArms = new ModelPart[4];
     private final ModelPart[] leftLegs = new ModelPart[4];
+    /** Per module de blokjes die hem laten zien (in elke stijl en elk bot waar hij hangt). */
+    private final Map<BotModule, List<ModelPart>> modules = new EnumMap<>(BotModule.class);
 
     public RobotModel(ModelPart root) {
         super(root);
@@ -71,6 +80,14 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
             versions.get(RobotSlot.LEGS)[i] = rightLeg.getChild(style.id());
             leftArms[i] = leftArm.getChild(style.id());
             leftLegs[i] = leftLeg.getChild(style.id());
+            for (ModelPart group : new ModelPart[] {head.getChild(style.id()), body.getChild(style.id()),
+                    rightArm.getChild(style.id()), leftArm.getChild(style.id())}) {
+                for (BotModule module : BotModule.values()) {
+                    if (group.hasChild("mod_" + module.id())) {
+                        modules.computeIfAbsent(module, m -> new ArrayList<>()).add(group.getChild("mod_" + module.id()));
+                    }
+                }
+            }
         }
     }
 
@@ -79,6 +96,14 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
                           float netHeadYaw, float headPitch) {
         super.setupAnim(robot, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
         showParts(robot.parts());
+        // De modules die op zijn printplaat zitten (hoofdstuk 22).
+        int soldered = robot.board().modules();
+        for (Map.Entry<BotModule, List<ModelPart>> entry : modules.entrySet()) {
+            boolean on = (soldered & 1 << entry.getKey().ordinal()) != 0;
+            for (ModelPart part : entry.getValue()) {
+                part.visible = on;
+            }
+        }
         // In het voorbeeld van de Robot Assembler: wat er nog niet ligt, tekenen we niet.
         for (RobotSlot slot : RobotSlot.values()) {
             if (!robot.shows(slot)) {
@@ -124,23 +149,41 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
 
     // ================================================================ De vormen
 
-    /** De vier verven op de textuur van een stijl, met waar ze in zijn vierkant beginnen. */
+    /**
+     * De verven op de textuur: vier per stijl (met waar ze in het vierkant van die stijl beginnen), en de verven van
+     * de modules (onderaan de textuur, voor alle stijlen hetzelfde; elk 32 x 16).
+     */
     private enum Paint {
         /** De hoofdkleur (64 x 32). */
-        MAIN(0, 0),
+        MAIN(0, 0, false),
         /** Donker: gewrichten, nek, handen (64 x 16). */
-        DARK(0, 32),
+        DARK(0, 32, false),
         /** Lichtjes; bij de Commando en de Trainer gloeien die ook in het donker (32 x 16). */
-        LIGHT(0, 48),
+        LIGHT(0, 48, false),
         /** Bijna zwart: ogen, sleuven, lopen (32 x 16). */
-        DETAIL(32, 48);
+        DETAIL(32, 48, false),
+        /** Modules: lichtgrijs staal. */
+        STEEL(0, 128, true),
+        /** Modules: donker geweermetaal. */
+        GUNMETAL(32, 128, true),
+        /** Modules: een cyaan lens (gloeit). */
+        GLASS(64, 128, true),
+        /** Modules: een rood lampje of de punt van de laser (gloeit). */
+        RED(96, 128, true),
+        /** Modules: blauwe zonnecellen. */
+        SOLAR(0, 144, true),
+        /** Modules: een witte antenne. */
+        ANTENNA(32, 144, true);
 
         final int u;
         final int v;
+        /** Een moduleverf: niet verschoven naar het vierkant van een stijl. */
+        final boolean shared;
 
-        Paint(int u, int v) {
+        Paint(int u, int v, boolean shared) {
             this.u = u;
             this.v = v;
+            this.shared = shared;
         }
     }
 
@@ -200,8 +243,84 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
             add(leftArm, style, arm(style), true);
             add(rightLeg, style, leg(style), false);
             add(leftLeg, style, leg(style), true);
+            // De modules (hoofdstuk 22), aan de versie van deze stijl van elk bot.
+            addModules(head.getChild(style.id()), style, "head", false);
+            addModules(body.getChild(style.id()), style, "body", false);
+            addModules(rightArm.getChild(style.id()), style, "right_arm", false);
+            addModules(leftArm.getChild(style.id()), style, "left_arm", true);
         }
-        return LayerDefinition.create(mesh, 128, 128);
+        return LayerDefinition.create(mesh, 128, 160);
+    }
+
+    private static void addModules(PartDefinition group, RobotStyle style, String bone, boolean mirror) {
+        for (Map.Entry<BotModule, List<Box>> entry : moduleShapes(style, bone).entrySet()) {
+            List<Box> boxes = mirror ? entry.getValue().stream().map(Box::mirrored).toList() : entry.getValue();
+            group.addOrReplaceChild("mod_" + entry.getKey().id(), cubes(style, boxes), PartPose.ZERO);
+        }
+    }
+
+    /** Waar het hoofd van elke stijl bovenaan ophoudt (y), waar zijn voorkant is (z) en hoe breed (de helft). */
+    private static final float[] HEAD_TOP = {-7.0f, -7.5f, -6.5f, -4.5f};
+    private static final float[] HEAD_FRONT = {-3.0f, -3.5f, -1.0f, -3.0f};
+    private static final float[] HEAD_SIDE = {3.0f, 3.5f, 2.0f, 2.5f};
+    /** De voor- en achterkant van elk lijf (z). */
+    private static final float[] BODY_FRONT = {-2.5f, -3.0f, -2.0f, -4.5f};
+    private static final float[] BODY_BACK = {2.5f, 3.0f, 3.5f, 4.5f};
+    /** De buitenkant (x, rechterarm) en het midden van de onderarm (y) van elke stijl armen. */
+    private static final float[] ARM_OUT = {-1.5f, -1.5f, -1.0f, -3.0f};
+    private static final float[] FORE_Y = {6.5f, 7.0f, 6.5f, 5.0f};
+
+    /**
+     * De blokjes van de modules aan dit bot ("head", "body", "right_arm" of "left_arm") in deze stijl. Voor de
+     * linkerarm staan ze hier als op de rechterarm; {@link #addModules} spiegelt ze.
+     */
+    private static Map<BotModule, List<Box>> moduleShapes(RobotStyle style, String bone) {
+        int s = style.ordinal();
+        Map<BotModule, List<Box>> map = new EnumMap<>(BotModule.class);
+        switch (bone) {
+            case "head" -> {
+                float top = HEAD_TOP[s];
+                float side = HEAD_SIDE[s];
+                float front = HEAD_FRONT[s];
+                // Scan: een paaltje met een schoteltje erop, links bovenop.
+                map.put(BotModule.SCAN, List.of(box(Paint.STEEL, 0.5f, top - 3, -0.5f, 1, 3, 1),
+                        box(Paint.ANTENNA, -0.5f, top - 4, -1.5f, 3, 1, 3)));
+                // Camera: een kastje rechts opzij met een lens naar voren.
+                map.put(BotModule.CAMERA, List.of(box(Paint.GUNMETAL, -side - 1.5f, top + 1, -1.5f, 2, 2, 3),
+                        box(Paint.GLASS, -side - 1.0f, top + 1.5f, -2.2f, 1, 1, 1)));
+                // Face Recognition: een cyaan lensstrook bovenaan de voorkant.
+                int w = Math.max(2, Math.round(2 * side - 2));
+                map.put(BotModule.FACE_RECOGNITION, List.of(box(Paint.GLASS, -w / 2.0f, top + 1, front - 0.4f, w, 1, 1)));
+            }
+            case "body" -> {
+                float front = BODY_FRONT[s];
+                float back = BODY_BACK[s];
+                // Distance: een sensortje op de borst met een rood lampje.
+                map.put(BotModule.DISTANCE, List.of(box(Paint.GUNMETAL, 1.0f, 2.0f, front - 1, 2, 2, 1),
+                        box(Paint.RED, 1.5f, 2.5f, front - 1.3f, 1, 1, 1)));
+                // Pathfinding: een sprietantenne op de rug, met een rood lampje bovenaan.
+                map.put(BotModule.PATHFINDING, List.of(box(Paint.ANTENNA, -2.5f, -6, back - 1, 1, 7, 1),
+                        box(Paint.RED, -2.5f, -7, back - 1, 1, 1, 1)));
+                // Solar Panel: een plat paneel op de rug.
+                map.put(BotModule.SOLAR_PANEL, List.of(box(Paint.SOLAR, -3, 0.5f, back, 6, 6, 1)));
+            }
+            case "right_arm" -> {
+                // Laser: een buisje aan de buitenkant van de onderarm, met een rode punt.
+                float out = ARM_OUT[s];
+                float y = FORE_Y[s];
+                map.put(BotModule.LASER, List.of(box(Paint.GUNMETAL, out - 1, y, -2.5f, 1, 1, 4),
+                        box(Paint.RED, out - 1, y, -3.5f, 1, 1, 1)));
+            }
+            case "left_arm" -> {
+                // Gun: een dikkere loop aan de buitenkant van de onderarm (de linkerarm, dus gespiegeld).
+                float out = ARM_OUT[s];
+                float y = FORE_Y[s];
+                map.put(BotModule.GUN, List.of(box(Paint.GUNMETAL, out - 2, y - 0.5f, -3, 2, 2, 5),
+                        box(Paint.STEEL, out - 2, y - 1.5f, -1, 2, 1, 2)));
+            }
+            default -> { }
+        }
+        return map;
     }
 
     /** Hang een onderdeel in één stijl aan zijn bot (het eerste stuk zelf, de gekantelde als kinderen). */
@@ -218,7 +337,9 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
         int v0 = style.ordinal() / 2 * 64;
         CubeListBuilder builder = CubeListBuilder.create();
         for (Box b : boxes) {
-            builder.texOffs(u0 + b.paint().u, v0 + b.paint().v).addBox(b.x(), b.y(), b.z(), b.w(), b.h(), b.d());
+            int u = b.paint().shared ? b.paint().u : u0 + b.paint().u;
+            int v = b.paint().shared ? b.paint().v : v0 + b.paint().v;
+            builder.texOffs(u, v).addBox(b.x(), b.y(), b.z(), b.w(), b.h(), b.d());
         }
         return builder;
     }

@@ -1669,6 +1669,71 @@ final class ShowcaseFeatures {
                     .close(20);
         });
 
+        add("Soldering modules", "Hoofdstuk 22: modules solderen. Dezelfde werkplaats; op de printplaat van de Commando "
+                + "rechts zitten al een Scan (pin 1) en een Laser (pin 3), en er loopt een verstopte soldeerbrug van pin 3 "
+                + "naar pin 4. Eerst het bordscherm (Board in het robotscherm): de hittebalk boven pin 2 (je houdt er "
+                + "een Camera op; groen vak = goed). Dan Inspect: de brug wordt een roze balk, met 'switching on now "
+                + "would short!'. Dan zet hij aan zonder dat iemand de brug weghaalde: kortsluiting! Vonken, rook, een "
+                + "knal; de Laser op pin 3 is nu een Burnt Module (E.D.I.T.H. zegt het, rood) en hij blijft uit. Daarna "
+                + "het bord nog eens: op pin 3 de verbrande module, en de brug is weg. Tot slot de vier robots van "
+                + "dichtbij met alle modules: een schoteltje op hun hoofd (Scan), een camera opzij, een cyaan lensstrook "
+                + "(Face Recognition), een sensor op de borst (Distance), een laser rechts en een geweer links.",
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(5, 0, 9)), 180, 12, s -> {
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .onServer(0, player -> {
+                        com.senne.starktech.robot.RobotStyle c = com.senne.starktech.robot.RobotStyle.COMMANDO;
+                        placeRobot(player, ROBOT_BAY.offset(8, 0, 2), com.senne.starktech.robot.GuardRobotItem.create(
+                                new com.senne.starktech.robot.RobotData(new com.senne.starktech.robot.RobotParts(c, c, c, c).pack(),
+                                        com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(3, "laser").withBridge(3), "", 1.0f)));
+                        player.getInventory().add(new ItemStack(ModItems.SOLDERING_IRON.get()));
+                        player.getInventory().add(new ItemStack(ModItems.robotModule(com.senne.starktech.bot.BotModule.CAMERA)));
+                    })
+                    .pause(30)
+                    .step(0, () -> showBoard(ROBOT_BAY.offset(8, 0, 2), board -> board.tourHeat(
+                            com.senne.starktech.bot.BotModule.CAMERA, 2,
+                            Math.round(com.senne.starktech.config.StarkConfig.Robots.SOLDER_FULL_TICKS * 0.6f))))
+                    .pause(80)
+                    .step(0, () -> {
+                        if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.robot.BoardScreen board) {
+                            board.tourHeat(com.senne.starktech.bot.BotModule.CAMERA, -1, 0);
+                            board.tourInspect(true);
+                        }
+                    })
+                    .pause(80)
+                    .close(10)
+                    // Aan, met de brug: kortsluiting (voor de showcase brandt hij niet helemaal af).
+                    .onServer(0, player -> robotAt(player, ROBOT_BAY.offset(8, 0, 2), robot -> {
+                        float burn = com.senne.starktech.config.StarkConfig.Robots.BURN_CHANCE;
+                        com.senne.starktech.config.StarkConfig.Robots.BURN_CHANCE = 0.0f;
+                        robot.setActive(true);
+                        com.senne.starktech.config.StarkConfig.Robots.BURN_CHANCE = burn;
+                    }))
+                    .pause(80)
+                    .step(0, () -> showBoard(ROBOT_BAY.offset(8, 0, 2), board -> board.tourInspect(true)))
+                    .pause(80)
+                    .close(10)
+                    // De vier stijlen met alle modules.
+                    .onServer(0, player -> {
+                        com.senne.starktech.bot.BotBoard all = com.senne.starktech.bot.BotBoard.EMPTY;
+                        String[] ids = {"scan", "distance", "face_recognition", "pathfinding", "laser", "gun", "solar_panel", "camera"};
+                        for (int i = 0; i < ids.length; i++) {
+                            all = all.with(i + 1, ids[i]);
+                        }
+                        com.senne.starktech.robot.RobotStyle[] styles = com.senne.starktech.robot.RobotStyle.values();
+                        for (int i = 0; i < styles.length; i++) {
+                            com.senne.starktech.robot.RobotStyle st = styles[i];
+                            if (DevWorld.spawnStill(player.serverLevel(), com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(),
+                                    ROBOT_BAY.offset(1 + i * 3, 0, 7), 0) instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
+                                robot.setParts(new com.senne.starktech.robot.RobotParts(st, st, st, st));
+                                robot.setBoard(all);
+                                robot.setActive(true);
+                            }
+                        }
+                    })
+                    .stand(0, ROBOT_BAY.getX() + 5.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 10.5, 180, 8)
+                    .pause(100);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -2532,6 +2597,21 @@ final class ShowcaseFeatures {
                 Vec3.atCenterOf(dock).add(0, 0.5, 0), net.minecraft.core.Direction.UP, dock, false);
         robot.useOn(new net.minecraft.world.item.context.UseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit));
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, before);
+    }
+
+    /** Opent in jouw spel het bordscherm van de robot op deze plek, en doet er iets mee (de hittebalk, Inspect). */
+    private static void showBoard(BlockPos pos, Consumer<com.senne.starktech.client.robot.BoardScreen> action) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        for (com.senne.starktech.robot.GuardRobotEntity robot : mc.level.getEntitiesOfClass(
+                com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(pos))) {
+            com.senne.starktech.client.robot.BoardScreen board = new com.senne.starktech.client.robot.BoardScreen(robot.getId(), null);
+            mc.setScreen(board);
+            action.accept(board);
+            return;
+        }
     }
 
     /** Doe iets met de robot die op deze plek staat. */

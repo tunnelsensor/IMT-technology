@@ -1165,6 +1165,24 @@ public final class VisualCheck {
             });
             t.shot(10, "rb15_board_inspect");
             t.close(0);
+            // Hoofdstuk 22: de vier robots vooraan met alle modules erop (van voren en van achteren).
+            t.onServer(0, player -> {
+                com.senne.starktech.bot.BotBoard all = com.senne.starktech.bot.BotBoard.EMPTY;
+                String[] ids = {"scan", "distance", "face_recognition", "pathfinding", "laser", "gun", "solar_panel", "camera"};
+                for (int i = 0; i < ids.length; i++) {
+                    all = all.with(i + 1, ids[i]);
+                }
+                for (com.senne.starktech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                        com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(56, -60, 57, 65, -58, 58))) {
+                    robot.setBoard(all);
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(5, 60.5, -59, 60.5, 180, 12);
+            t.shot(20, "rb16_modules_front");
+            t.view(0, 60.5, -59, 54.5, 0, 12);
+            t.shot(20, "rb17_modules_back");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             // De app Robots: een beveiligingskern vlakbij, en de robots van hierboven in zijn lijst.
             BlockPos robotCore = new BlockPos(72, -60, 68);
             t.onServer(0, player -> {

@@ -856,6 +856,31 @@ op afstand). Een robot in een stuk wereld dat niet geladen is, staat er grijs bi
 Gaat een robot echt kapot (zijn leven is op), dan blijft elk onderdeel met een kans heel
 (`partSurviveChance`, standaard de helft) en valt het op de grond. Je torentjes laten robots met rust.
 
+### Modules solderen
+Wat een robot kan, soldeer je op zijn **printplaat**: 8 genummerde pinnen. Er zijn acht **modules**:
+**Scan** (ziet hij iemand?), **Distance** (hoe ver tot wat voor hem staat), **Face Recognition** (wie
+hij ziet), **Pathfinding** (naar een plek lopen), **Laser**, **Gun**, **Solar Panel** (laden in de zon)
+en **Camera** (door zijn ogen kijken). Elk recept: een Stark Chip, twee redstone en iets dat erbij past.
+Wat ze precies doen, en hoe je ze in je code gebruikt (`scanPin = pin(1)`), komt in de volgende
+hoofdstukken; je ziet ze wel al op de robot (een schoteltje op zijn hoofd, een laser op zijn arm...).
+
+**Solderen.** Je hebt een **Soldering Iron** nodig (ijzer, blazepoeder en een stok; ergens in je rugzak
+is genoeg; hij slijt). Zet de robot **uit**, open zijn scherm (sneak + rechtsklik) en druk op **Board**.
+Sleep een module van onderaan op een lege pin en **houd de muis ingedrukt**: boven de pin loopt een
+hittebalk op. Laat los in het **groene vak**. Te vroeg: het soldeer pakt niet (de module blijft bij
+jou, opnieuw proberen). Te laat: de module zit erop, maar het soldeer is vaak naar de pin ernaast
+gelopen: een **soldeerbrug**. Dat zegt niemand je; je ziet alleen een dun zilveren streepje tussen
+twee pinnen. Met **Inspect** zie je bruggen duidelijk (roze), en of aanzetten nu kortsluiting geeft.
+**Rechtsklik** op een pin = lossolderen: de module komt terug en de bruggen aan die pin gaan weg.
+
+**Kortsluiting.** Zolang de robot uit staat, kan een brug geen kwaad. Zet je hem aan met een brug aan
+een module, dan krijg je **kortsluiting**: vonken, rook en een knal, de modules op die pinnen worden
+**Burnt Modules** (die doen niets meer; lossolderen en een nieuwe erop), en met een kans van 1 op 4
+brandt de hele robot af. Hij blijft uit; E.D.I.T.H. vertelt het de eigenaar, en het logboek van de kern
+krijgt een regel. Een brug tussen twee lege pinnen doet niets. De getallen van het spelletje staan in
+`config/starktech.toml` onder `[robots]` (`solderCold`, `solderHot`, `bridgeChanceGood`,
+`bridgeChanceHot`, `burnChance`).
+
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):

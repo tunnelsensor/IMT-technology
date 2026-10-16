@@ -3030,8 +3030,8 @@ def robot_textures():
     """
     import random
     rng = random.Random(21)
-    base = img(128, 128)
-    glow = img(128, 128)
+    base = img(128, 160)
+    glow = img(128, 160)
 
     def metal(im, x0, y0, w, h, colour, spread, scratches):
         r, g, b = colour
@@ -3065,6 +3065,25 @@ def robot_textures():
             for x in range(qx, qx + 32):
                 for y in range(qy + 48, qy + 64):
                     glow.putpixel((x, y), (lr, lg, lb, 255))
+    # Onderaan (hoofdstuk 22): de verven van de modules, voor alle stijlen hetzelfde (zie Paint in RobotModel).
+    module_paints = [
+        (0, 128, (176, 184, 194), True, 4),    # staal
+        (32, 128, (52, 56, 64), True, 3),      # geweermetaal
+        (64, 128, (90, 225, 255), False, 0),   # lens (gloeit)
+        (96, 128, (255, 70, 55), False, 0),    # rood lampje (gloeit)
+        (0, 144, (36, 62, 140), True, 3),      # zonnecellen
+        (32, 144, (232, 236, 240), True, 2),   # antenne
+    ]
+    for x0, y0, colour, noisy, spread in module_paints:
+        metal(base, x0, y0, 32, 16, colour, spread, 6 if noisy else 0)
+    # De zonnecellen krijgen een raster, zoals een echt paneel.
+    for x in range(0, 32, 3):
+        for y in range(144, 160):
+            base.putpixel((x, y), (190, 200, 215, 255))
+    for (x0, y0, colour, noisy, spread) in module_paints[2:4]:
+        for x in range(x0, x0 + 32):
+            for y in range(y0, y0 + 16):
+                glow.putpixel((x, y), colour + (255,))
     save(base, "entity/robot/guard_robot.png")
     save(glow, "entity/robot/guard_robot_glow.png")
 
