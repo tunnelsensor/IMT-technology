@@ -1845,10 +1845,104 @@ final class ShowcaseFeatures {
                     .close(20);
         });
 
-        add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
-                + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
-                + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
-                + "een blauw hologram staan. Daarna landen ze weer. Dan het dak: in het harnas stijg je op, en de "
+        add("Security drones", "Hoofdstuk 25: programmeerbare security drones. In de werkplaats staan nu ook twee Drone Docks, "
+                + "elk met een warmtegenerator ernaast; op elk zet jij een Security Drone met het item (Drone 1 links, Drone 2 "
+                + "rechts). Eerst het scherm van Drone 1 (sneak + rechtsklik): zoals bij een robot, maar zonder onderdelen; dan "
+                + "zijn bord met Scan, Face Recognition, Laser en Camera (zie je de modules ook op de drone: een radarkoepel, een "
+                + "cyaan lensstrook, een laserloop onder zijn buik, een camera onder zijn neus). Dan de app Logic: na + staat er nu "
+                + "ook Drone program, en het droneprogramma Hover patrol (een lichtblauwe D in de lijst): eerst up(2), dan steeds "
+                + "3 vooruit en een kwartslag rechts, en onder 30% batterij charge(50). De app Robots toont beide drones met "
+                + "'drone' achter hun naam. Dan gaan ze aan: ze stijgen op van hun dock, nog 2 hoger, en vliegen elk hun "
+                + "vierkantje, blok voor blok, met draaiende rotors en cyaan lichtjes. Drone 2 heeft maar 33% batterij: na een "
+                + "paar zijden vliegt hij terug, landt op zijn dock, laadt tot 50% (heel zacht zoemen) en vliegt terug naar waar "
+                + "hij was. Daarna kijk je in de app Cameras door de camera van Drone 1 (een beetje naar beneden), schiet je hem "
+                + "neer met de Ion Blaster (hij valt scheef op de grond), en zet je in de app Devices de schakelaar Drones uit: "
+                + "Drone 2 vliegt naar zijn dock en landt.",
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(3, 0, 15)), 180, 15, s -> {
+            BlockPos core = ROBOT_BAY.offset(10, 0, 6);
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .onServer(0, player -> {
+                        buildBayServer(player);
+                        buildDroneDocks(player);
+                        placeDrone(player, ROBOT_BAY.offset(1, 0, 7));
+                        placeDrone(player, ROBOT_BAY.offset(5, 0, 7));
+                        if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                            be.logic().put(null, program("Hover patrol", HOVER_PATROL, com.senne.starktech.logic.program.ProgramKind.DRONE));
+                        }
+                        droneAt(player, ROBOT_BAY.offset(1, 0, 7), drone -> {
+                            drone.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition")
+                                    .with(3, "laser").with(4, "camera"));
+                            drone.setProgram(program("Hover patrol", HOVER_PATROL, com.senne.starktech.logic.program.ProgramKind.DRONE));
+                        });
+                        droneAt(player, ROBOT_BAY.offset(5, 0, 7), drone -> {
+                            drone.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(1, "solar_panel").with(2, "distance")
+                                    .with(3, "pathfinding").with(4, "gun"));
+                            drone.setProgram(program("Hover patrol", HOVER_PATROL, com.senne.starktech.logic.program.ProgramKind.DRONE));
+                        });
+                    })
+                    .pause(50)
+                    // Het scherm van Drone 1, en zijn bord.
+                    .onServer(0, player -> droneAt(player, ROBOT_BAY.offset(1, 0, 7),
+                            drone -> com.senne.starktech.robot.Robots.open(player, drone)))
+                    .pause(80)
+                    .step(0, () -> showDroneBoard(ROBOT_BAY.offset(1, 0, 7)))
+                    .pause(80)
+                    .close(10)
+                    // De app Logic: + met Drone program, en het programma Hover patrol met zijn Help. Dan de app Robots.
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core))
+                    .step(30, () -> desktop(os -> os.tourLogicChooseKind()))
+                    .pause(60)
+                    .step(0, () -> desktop(os -> {
+                        os.tourLogicNew(com.senne.starktech.logic.program.ProgramKind.DRONE);
+                        os.tourLogic("Hover patrol", HOVER_PATROL, true);
+                    }))
+                    .pause(120)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ROBOTS)))
+                    .pause(80)
+                    .close(10)
+                    // Aan: ze stijgen op en vliegen hun vierkantje. Drone 2 moet al snel laden.
+                    .stand(0, ROBOT_BAY.getX() + 3.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 15.5, 180, 15)
+                    .onServer(0, player -> {
+                        droneAt(player, ROBOT_BAY.offset(1, 0, 7), drone -> drone.setActive(true));
+                        droneAt(player, ROBOT_BAY.offset(5, 0, 7), drone -> {
+                            drone.setBattery(drone.maxBattery() * 0.33);
+                            drone.setActive(true);
+                        });
+                    })
+                    .pause(520)
+                    // Door de camera van Drone 1.
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core))
+                    .step(30, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.CAMERAS)))
+                    .pause(30)
+                    .step(0, () -> desktop(os -> os.tourRobotCamera("Drone 1")))
+                    .pause(150)
+                    .close(10)
+                    // De Ion Blaster: Drone 1 valt neer.
+                    .stand(0, ROBOT_BAY.getX() + 3.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 15.5, 180, 15)
+                    .onServer(10, player -> droneNear(player, ROBOT_BAY.offset(0, 2, 8), drone -> {
+                        player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, drone.getBoundingBox().getCenter());
+                        com.senne.starktech.robot.IonBlasterItem.fire(player.serverLevel(), player);
+                    }))
+                    .pause(100)
+                    // De schakelaar Drones (app Devices): Drone 2 vliegt naar zijn dock en landt.
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, core))
+                    .step(30, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.DEVICES)))
+                    .pause(30)
+                    .onServer(0, player -> networkSwitch(player, core, "drones", false))
+                    .pause(80)
+                    .close(10)
+                    .stand(0, ROBOT_BAY.getX() + 3.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 15.5, 180, 15)
+                    .pause(160);
+        });
+
+        add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes Drone Docks "
+                + "langs de muur; op vier staan de security drones die Tony programmeerde (hoofdstuk 25: Tower drone 1 tot 4, "
+                + "programma Tower patrol, met Scan, Face Recognition, Laser en Pathfinding). Na de hack zijn ze van jou: ze "
+                + "stijgen op en vliegen hun rondjes door de hangar, en op jou schieten ze niet. (Zonder eigen server in de "
+                + "toren hebben ze geen verbinding, en dan schieten ze op niemand.) Dan het dak: in het harnas stijg je op, en de "
                 + "HUD wijst je landingsplatform aan (groen ruitje, afstand, en dichtbij het landingsvak als "
                 + "gestippeld vierkant). Je daalt op het platform: E.D.I.T.H. zegt 'Welcome home', en je bril "
                 + "laadt op (kijk naar het percentage linksboven).", GameType.SURVIVAL,
@@ -1858,21 +1952,10 @@ final class ShowcaseFeatures {
             s.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
+                    towerDrones(player, be);
                 }
-                DevWorld.freshArsenal(player, 6);
             })
-                    .pause(80)
-                    // Twee drones op pad, en weer terug.
-                    .onServer(0, player -> com.senne.starktech.arsenal.ArsenalServer.checkOut(player, 2))
-                    .pause(100)
-                    .onServer(0, player -> {
-                        for (com.senne.starktech.arsenal.ArsenalDrone drone : com.senne.starktech.arsenal.ArsenalServer.get(player).drones()) {
-                            if (drone.state() == com.senne.starktech.arsenal.ArsenalDrone.State.DEPLOYED) {
-                                com.senne.starktech.arsenal.ArsenalServer.returnToOrbit(player, drone.id(), drone.health());
-                            }
-                        }
-                    })
-                    .pause(60)
+                    .pause(240)
                     // Het dak: harnas aan, opstijgen, en de HUD wijst het platform aan.
                     .onServer(0, player -> {
                         wearSuit(player);
@@ -2643,6 +2726,114 @@ final class ShowcaseFeatures {
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack);
         com.senne.starktech.logic.LogicEvents.clear();
         com.senne.starktech.logic.LogicEvents.keycard(level, LOGIC_LAB.offset(1, 1, 7), player, data);
+    }
+
+    // ================================================================ Hoofdstuk 25: security drones
+
+    /** Het droneprogramma van de showcase "Security drones": een vierkant vliegen, en laden als de batterij laag is. */
+    private static final String HOVER_PATROL = """
+            when started:
+                up(2)
+                forever:
+                    forward(3)
+                    turn_right()
+                    if drone.battery < 30:
+                        charge(50)
+            """;
+
+    /**
+     * Twee Drone Docks in de werkplaats (voor "Security drones"), elk met een volle warmtegenerator ernaast, en weg met
+     * de drones van een vorige keer.
+     */
+    private static void buildDroneDocks(net.minecraft.server.level.ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (com.senne.starktech.robot.GuardDroneEntity old : level.getEntitiesOfClass(com.senne.starktech.robot.GuardDroneEntity.class,
+                new net.minecraft.world.phys.AABB(ROBOT_BAY).inflate(24))) {
+            old.discard();
+        }
+        net.minecraft.world.level.block.state.BlockState dock = com.senne.starktech.registry.ModBlocks.DRONE_DOCK.get().defaultBlockState()
+                .setValue(com.senne.starktech.arsenal.DroneDockBlock.FACING, net.minecraft.core.Direction.SOUTH);
+        for (int x : new int[] {1, 5}) {
+            level.setBlockAndUpdate(ROBOT_BAY.offset(x, 0, 7), dock);
+            if (level.getBlockEntity(ROBOT_BAY.offset(x, 0, 7)) instanceof com.senne.starktech.arsenal.DroneDockBlockEntity be) {
+                be.setOwner(player.getUUID());
+                be.setBot(null);
+            }
+            BlockPos generator = ROBOT_BAY.offset(x == 1 ? 0 : 6, 0, 7);
+            level.setBlockAndUpdate(generator, com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+    }
+
+    /** Zet een nieuwe security drone neer op dit dock, zoals een speler dat doet (met de rechtermuisknop). */
+    private static void placeDrone(net.minecraft.server.level.ServerPlayer player, BlockPos dock) {
+        ItemStack before = player.getMainHandItem();
+        ItemStack drone = com.senne.starktech.robot.GuardDroneItem.create(com.senne.starktech.robot.DroneData.DEFAULT);
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, drone);
+        net.minecraft.world.phys.BlockHitResult hit = new net.minecraft.world.phys.BlockHitResult(
+                Vec3.atCenterOf(dock).add(0, 0.5, 0), net.minecraft.core.Direction.UP, dock, false);
+        drone.useOn(new net.minecraft.world.item.context.UseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit));
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, before);
+    }
+
+    /** Doe iets met de drone op dit dock. */
+    private static void droneAt(net.minecraft.server.level.ServerPlayer player, BlockPos dock,
+                                Consumer<com.senne.starktech.robot.GuardDroneEntity> action) {
+        for (com.senne.starktech.robot.GuardDroneEntity drone : player.serverLevel().getEntitiesOfClass(
+                com.senne.starktech.robot.GuardDroneEntity.class, new net.minecraft.world.phys.AABB(dock))) {
+            action.accept(drone);
+            return;
+        }
+    }
+
+    /** Doe iets met de drone die het dichtst bij deze plek hangt (binnen 6 blokken). */
+    private static void droneNear(net.minecraft.server.level.ServerPlayer player, BlockPos pos,
+                                  Consumer<com.senne.starktech.robot.GuardDroneEntity> action) {
+        com.senne.starktech.robot.GuardDroneEntity best = null;
+        for (com.senne.starktech.robot.GuardDroneEntity drone : player.serverLevel().getEntitiesOfClass(
+                com.senne.starktech.robot.GuardDroneEntity.class, new net.minecraft.world.phys.AABB(pos).inflate(6))) {
+            if (best == null || drone.distanceToSqr(Vec3.atCenterOf(pos)) < best.distanceToSqr(Vec3.atCenterOf(pos))) {
+                best = drone;
+            }
+        }
+        if (best != null) {
+            action.accept(best);
+        }
+    }
+
+    /** Opent in jouw spel het bordscherm van de drone op dit dock. */
+    private static void showDroneBoard(BlockPos dock) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        for (com.senne.starktech.robot.GuardDroneEntity drone : mc.level.getEntitiesOfClass(
+                com.senne.starktech.robot.GuardDroneEntity.class, new net.minecraft.world.phys.AABB(dock))) {
+            mc.setScreen(new com.senne.starktech.client.robot.BoardScreen(drone.getId(), null));
+            return;
+        }
+    }
+
+    /**
+     * Tony's drones in de hangar van de toren (hoofdstuk 25), van deze speler: weg met die van een vorige keer, de docks
+     * weer vrij, de kern zet er nieuwe op, en ze zijn van jou (alsof je de toren net gehackt hebt).
+     */
+    private static void towerDrones(net.minecraft.server.level.ServerPlayer player,
+                                    com.senne.starktech.security.SecurityCoreBlockEntity core) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.world.phys.AABB tower = new net.minecraft.world.phys.AABB(STARK_TOWER).expandTowards(41, 110, 55);
+        for (com.senne.starktech.robot.GuardDroneEntity old : level.getEntitiesOfClass(com.senne.starktech.robot.GuardDroneEntity.class, tower)) {
+            old.discard();
+        }
+        for (int x = 10; x <= 30; x += 4) {
+            if (level.getBlockEntity(STARK_TOWER.offset(x, 34, 7)) instanceof com.senne.starktech.arsenal.DroneDockBlockEntity dock) {
+                dock.setBot(null);
+            }
+        }
+        com.senne.starktech.robot.TowerDrones.fill(level, core);
+        com.senne.starktech.robot.TowerDrones.handOver(level, core, player);
     }
 
     /** Iets doen met de Stark OS-desktop die nu openstaat (als hij openstaat). */

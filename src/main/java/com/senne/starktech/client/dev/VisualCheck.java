@@ -3333,6 +3333,9 @@ public final class VisualCheck {
         t.shot(30, "t23_aquarium");
         t.view(0, x + 12.5, y + 25, z + 22.5, 0, -10);
         t.shot(30, "t24_globe");
+        // Hoofdstuk 25: de hangar, met Tony's security drones die rondvliegen (de kern zette ze op de docks).
+        t.view(0, x + 20.5, y + 36, z + 22.5, 180, 12);
+        t.shot(40, "t25_hangar_tony_drones");
         t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
     }

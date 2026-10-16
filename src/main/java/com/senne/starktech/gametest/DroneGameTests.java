@@ -333,8 +333,21 @@ public final class DroneGameTests {
      * Tony's drones (hoofdstuk 25): een Stark Tower van niemand zet op vier van zijn zes hangar-docks een security drone,
      * aan, met Scan, Face Recognition, Laser en Pathfinding, en het programma "Tower patrol".
      */
-    @GameTest(template = "stark_tower", timeoutTicks = 140, batch = "tower_drones")
+    @GameTest(template = "stark_tower", timeoutTicks = 400, batch = "tower_drones")
     public static void stark_tower_has_tony_drones(GameTestHelper helper) {
+        // Welke drones al eens 2 blokken (plat gemeten) van hun dock vlogen: dan patrouilleren ze echt.
+        java.util.Set<java.util.UUID> patrolled = new java.util.HashSet<>();
+        helper.onEachTick(() -> {
+            for (GuardDroneEntity drone : helper.getLevel().getEntitiesOfClass(GuardDroneEntity.class, helper.getBounds())) {
+                if (drone.home() != null && Math.abs(drone.getX() - (drone.home().getX() + 0.5))
+                        + Math.abs(drone.getZ() - (drone.home().getZ() + 0.5)) >= 2) {
+                    patrolled.add(drone.getUUID());
+                }
+            }
+        });
+        helper.runAfterDelay(360, () -> check(patrolled.size() == Math.round(StarkConfig.Security.TOWER_DRONES),
+                "Maar " + patrolled.size() + " drones vlogen hun rondje door de hangar"));
+        helper.runAfterDelay(380, helper::succeed);
         helper.runAfterDelay(80, () -> {
             List<GuardDroneEntity> drones = helper.getLevel().getEntitiesOfClass(GuardDroneEntity.class, helper.getBounds());
             check(drones.size() == Math.round(StarkConfig.Security.TOWER_DRONES),
@@ -348,7 +361,6 @@ public final class DroneGameTests {
                 check(drone.home() != null && helper.getLevel().getBlockState(drone.home()).is(ModBlocks.DRONE_DOCK.get()),
                         name + " heeft geen Drone Dock als thuis");
             }
-            helper.succeed();
         });
     }
 

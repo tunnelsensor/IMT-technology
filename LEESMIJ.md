@@ -45,23 +45,24 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   blokken om zich heen, dus de hele toren (zie "Het bereik van een kern" hieronder):
   - **beveiligingstorentjes** (wit met rood) bij de lift in de lobby, op de
     beveiligingsverdieping en in de kluis schieten op iedereen die binnenkomt (niet in creative);
-  - vier **beveiligingsdrones** met rode lampjes patrouilleren rond de kern en vallen je aan.
-    Schiet je er een neer, dan stuurt de kern na zo'n 45 seconden een nieuwe.
+  - in de **hangar** vliegen vier **security drones** die Tony zelf programmeerde (zie "Security
+    drones" hieronder). Ze schieten op iedereen die ze zien (niet in creative), ook zonder PvP.
+    Wat je neerschiet, komt niet terug: de kern maakt geen nieuwe.
   De kern is heel sterk (slopen kan met diamant, maar duurt lang). Wie hem **hackt**, krijgt de
-  toren: dan brandt het lampje groen, worden de lampjes van de drones blauw, laten torentjes,
-  drones en laserwanden jou en je team met rust, en bewaken ze de toren voor jou. Andere
-  spelers vallen ze dan alleen aan als PvP aan staat.
+  toren: dan brandt het lampje groen, zijn Tony's drones van jou, laten torentjes en laserwanden
+  jou en je team met rust, en bewaken ze de toren voor jou. Andere spelers vallen ze dan alleen
+  aan als PvP aan staat.
 - Alle beveiliging draait op **stroom** van de verborgen krachtcentrale op de
   beveiligingsverdieping (een dicht blok met een mantel van **obsidiaan**). Daarin zit de
   **stroomkast**: een schakelaar voor de lasers en de kluis, en een voor de beveiliging (de
   kern, de torentjes en via de koperen zuil van de lift ook de lobby). Zonder stroom hangen de
-  lopen van de torentjes omlaag en zakken de drones met gedoofde lampjes naar de grond. De
+  lopen van de torentjes omlaag. De
   kabels lopen verborgen in de vloeren: met de bril zie je ze door de vloer heen, en met een
   **schaar** knip je ze door (eerst de vloer openhakken).
 - **Hacken** doe je met een **Stark Laptop** (drie zwarte glasruiten, redstone met een
   Stark-chip ertussen, drie ijzer; een bril heb je er niet voor nodig). Klik ermee op de kern:
   je zet de laptop **opengeklapt bovenop de kern** (er moet daar dus plek zijn), het alarm gaat
-  af en alle drones komen op je af. Op je scherm opent de **terminal** van de laptop, waarin je
+  af en Tony's drones komen kijken (als ze bij je kunnen komen). Op je scherm opent de **terminal** van de laptop, waarin je
   commando's typt (Enter = uitvoeren, **Tab** = aanvullen, pijltje omhoog = vorige commando,
   scrollwiel = terug, `help` = wat je hier kunt):
   1. **Recon**: `scan` laat de poorten zien, maar ze staan allemaal op "filtered". Lees het
@@ -169,7 +170,9 @@ hij uithangt:
   (de knop **Launch** in het scherm doet hetzelfde).
 
 Schade blijft bewaard: een drone die gehavend terugkomt, gaat gehavend weer de lucht in tot je
-hem repareert. Wordt een drone **neergehaald**, dan is hij weg — je krijgt ongeveer 10% van de
+hem repareert. Een drone die **in zijn baan** hangt, herstelt zich daar wel vanzelf, langzaam
+(0,25 leven per seconde, `drones.orbitRepairPerSecond`). Op een Drone Dock komen drones uit je
+arsenaal niet meer: die is sinds hoofdstuk 25 voor je eigen security drones. Wordt een drone **neergehaald**, dan is hij weg — je krijgt ongeveer 10% van de
 bouwkosten terug als schroot op de plek waar hij viel, de rest kost je een nieuwe drone.
 
 ### Drones in het veld
@@ -995,6 +998,75 @@ spelers en dieren doet de straal niets. Wil je een robot echt kapot, gebruik dan
 De getallen staan in `config/starktech.toml` onder `[robots]` (`laserDamage`, `laserEnergy`, `gunDamage`,
 `shotRange`, `maxAmmo`, `solarCharge`, `ionDownSeconds`, `ionRange`, `ionCooldown`, en per stijl
 `armsFireInterval`, `headScanRange`, `headScanAngle`).
+
+### Security drones: een vliegende robot
+Een **Security Drone** is een guard robot die vliegt: dezelfde printplaat met 8 pinnen, dezelfde modules en
+hetzelfde solderen, een batterij, aan en uit, de Ion Blaster, en een programma uit de app Logic. Je **bouwt** hem
+aan de werkbank: ijzer, een amethist, redstone, een **Robot Circuit Board** en een **Stark Chip**.
+
+**Zijn dock.** Zet hem met een rechtsklik op een **Drone Dock**: dat is zijn thuis en zijn lader (hangt het dock aan
+het stroomnet, dan laadt hij daar). Op een ander blok hangt hij erboven, zonder thuis. Hij heet "Drone 1",
+"Drone 2"... Je mag hem alleen op je eigen dock zetten, of op een dock in een basis waar je vertrouwd bent.
+Rechtsklik op een dock zegt hoe het met zijn drone gaat ("Drone 1 is charging (56%)"). Sneak + rechtsklik op de
+drone met een lege hand: hetzelfde scherm als een robot (Switch on/off, Rename, **Board** om te solderen, Pick
+up). De modules zie je op de drone: een radarkoepel (Scan), een cyaan lensstrook (Face Recognition), een rood
+sensoroogje (Distance), een antenne (Pathfinding), een laserloop en een geweerloop onder zijn buik, twee
+zonnevleugels en een camera onder zijn neus.
+
+**Aan en uit.** Aan op zijn dock: hij stijgt een blok op, en dan begint zijn programma. Uit: hij vliegt terug naar
+zijn dock en landt erop. Is zijn batterij leeg, of raakt de Ion Blaster hem, dan valt hij naar de grond (zonder
+schade).
+
+**Zijn programma.** In de app Logic druk je op **+** en kies je **Drone program** (een lichtblauwe **D** in de
+lijst). Het kent alles van een robotprogramma (zie "Robots programmeren" en "Zien en schieten"), maar met
+`drone.` in plaats van `robot.`, en hij kan omhoog en omlaag:
+
+```
+scanPin = pin(1)
+laserPin = pin(3)
+
+when started:
+    up(2)
+    forever:
+        if drone.battery < 30:
+            charge(50)
+        forward(3)
+        turn_right()
+
+when every(1):
+    if read(scanPin) and read(laserPin):
+        write(laserPin, true)
+```
+
+- `up(2)` en `down(1)`: blok voor blok recht omhoog of omlaag. Niet door een plafond en niet door de grond: dan
+  stopt hij en is `drone.blocked` waar.
+- `forward(3)` en `back(1)`: op dezelfde hoogte, blok voor blok. `goto(x, y, z)` (met de Pathfinding-module)
+  vliegt om muren heen. `charge()` vliegt naar zijn dock, landt, laadt, stijgt op en vliegt terug naar waar hij
+  was.
+- Gegevens: `drone.battery`, `drone.x`, `drone.y`, `drone.z`, `drone.height` (hoeveel blokken lucht er onder hem
+  zijn), `drone.facing`, `drone.name`, `drone.blocked` en `drone.connected`.
+- Zijn Scan kijkt rondom (16 blokken); zijn camera in de app **Cameras** (met DRONE erbij) kijkt een beetje naar
+  beneden.
+
+In de app **Robots** staat "drone" achter zijn naam, en **Program** toont je droneprogramma's. Je server stuurt hem
+aan zoals een robot: `order("Drone 1", "attack", x, y, z)`, `activate("Drone 1")`, `deactivate("Drone 1")`.
+
+**De schakelaar Drones.** De kern maakt geen gratis drones meer. De schakelaar **Drones** in de apps Access en
+Devices zet al je security drones in zijn gebied aan of uit (uit: ze vliegen naar hun dock en landen). In de app
+**Devices** staan ze bij DRONES, met hun batterij. Oude drones uit een bestaande wereld ("Patrol drone 1")
+blijven werken tot ze neergeschoten worden.
+
+**Tony's drones.** In de hangar van een Stark Tower staan zes Drone Docks; op vier zette Tony een security drone
+("Tower drone 1" tot 4) met Scan, Face Recognition, Laser en Pathfinding, en zijn programma **Tower patrol**: ze
+vliegen rondjes door de hangar en schieten op iedereen die ze zien (voor een drone van niemand is iedereen een
+vreemde, en het is de toren die schiet, dus ook zonder PvP). Gaat het alarm (iemand begint de kern te hacken), dan
+komen ze naar de indringer. **Hack je de toren, dan zijn ze van jou.** Let op: om te weten wie er vreemd is,
+hebben ze dan verbinding nodig (een eigen server in het gebied van de kern); zonder verbinding schieten ze op
+niemand.
+
+De getallen staan in `config/starktech.toml` onder `[robots]` (`droneHealth`, `droneBattery`,
+`droneDockChargeRate`, `droneDrainOn`, `droneDrainFlying`, `droneSpeed`, `droneScanRange`, `droneScanAngle`,
+`droneFireInterval`, `droneTakeOff`) en `[security]` (`towerDrones`).
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je

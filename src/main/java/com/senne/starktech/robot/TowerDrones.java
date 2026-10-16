@@ -58,7 +58,6 @@ public final class TowerDrones {
                 forever:
                     if drone.battery < 25:
                         charge()
-                        up(2)
                     forward(3)
                     turn_right()
 

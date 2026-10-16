@@ -16,7 +16,7 @@ Afspraken die overal gelden:
 
 **Stand van zaken:** 277 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 93 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2799,6 +2799,17 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
 Tests: bouwen en laden op een dock; `up(3)` stijgt; de core spawnt zelf geen drones meer; een dock pakt geen
 arsenal-drone meer; de toren heeft vier gewapende drones; een oude drone patrouilleert nog.
 
+- [x] **Afronding** — 277 tests: 274 groen, de 3 rode van hoofdstuk 14 stap 2. Acht nieuwe in `DroneGameTests`
+      (vliegen met up/back/turn, plafond en grond, laden op het dock, neer en zonder stroom, de taal, de
+      schakelaar Drones, Tony's drones in de toren en hoe ze schieten, het alarm en de hack), en twee herschreven
+      (`arsenal_drones_repair_in_orbit`, `security_core_launches_no_drones`). Screenshots `sd01`-`sd11`
+      (`-Ponly=secdrones`) en `t25_hangar_tony_drones` (`-Ponly=tower`). In de showcase de nieuwe functie
+      **"Security drones"** (86, na "Robot senses and weapons"): twee drones op hun dock, hun scherm en bord, de app
+      Logic met Drone program, opstijgen en vierkantjes vliegen, een drone die gaat laden, de camera van een drone,
+      de Ion Blaster en de schakelaar Drones. "Stark Tower: hangar and landing pad" (nu 87) toont Tony's drones in de
+      hangar in plaats van arsenaal-drones op de docks. LEESMIJ.md: een nieuw stuk "Security drones", en het stuk
+      over de Stark Tower en het arsenaal bijgewerkt. Het jar gebouwd.
+
 ### 26. Training zoals Domino squad (14 oktober)
 
 Jouw wens: programma's die gecoördineerde golven op de speler sturen, die non-lethal of lethal schieten (jouw
@@ -2923,6 +2934,13 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Security drones (16 oktober)**: gezien op screenshots (`sd01`-`sd11`, `t25`) en in de showcase (86 en 87),
+      getest met 8 nieuwe tests. Niet gehoord: de rotors (er is geen eigen vlieggeluid; ik gebruikte de geluiden van
+      de robot voor opstarten en uitschakelen) en het zachte laadzoemen op het dock. Probeer zelf: hoe het vliegen
+      eruitziet (3 blokken per seconde, `droneSpeed`; blok voor blok met een klein stopje in elk midden), opstijgen
+      en landen op het dock (ook als je hem uitzet terwijl hij ver weg is), `goto` rond een muur, een drone met
+      lege batterij die valt, en of Tony's drones in de hangar van een echte toren lastig genoeg (of te lastig)
+      zijn. Ook: een drone op een dock van een vriend zetten (in zijn basis, als hij je vertrouwt).
 - [ ] **Zien en schieten (16 oktober)**: gezien op screenshots (`rb20`-`rb25`) en in de showcase (85), getest met 7
       nieuwe tests. Probeer zelf: of de laser en het geweer goed voelen (schade, hoe snel, de geluiden "pew" en de
       knal: die heb ik niet gehoord), of een robot je echt niet door een muur ziet, de Ion Blaster op een robot die
