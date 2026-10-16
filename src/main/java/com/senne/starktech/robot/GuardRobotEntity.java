@@ -87,6 +87,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     /** Hoe vol zijn batterij is (0 tot 1), voor de schermen. */
     private static final EntityDataAccessor<Float> BATTERY =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.FLOAT);
+    /** Hoeveel Robot Ammo er in zijn geweer zit (hoofdstuk 24), voor zijn scherm. */
+    private static final EntityDataAccessor<Integer> AMMO =
+            SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.INT);
     /** Hoe hoog de plaat van een Robot Dock is: daar staat hij op. */
     private static final double DOCK_FLOOR = 3.0 / 16.0;
 
@@ -142,6 +145,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         builder.define(SWITCHED_ON, false);
         builder.define(CHARGING, false);
         builder.define(BOARD, new CompoundTag());
+        builder.define(AMMO, 0);
     }
 
     @Override
@@ -241,13 +245,54 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
         brain.setProgram(data.program().isEmpty() ? null : LogicProgram.load(data.program()));
+        setAmmo(data.ammo());
         updateState(false);
     }
 
-    /** Wat er in zijn item komt als je hem oppakt (zijn programma gaat mee). */
+    /** Wat er in zijn item komt als je hem oppakt (zijn programma en kogels gaan mee). */
     public RobotData toData() {
         return new RobotData(parts().pack(), board(), hasCustomName() ? getCustomName().getString() : "",
-                (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag() : brain.program().save());
+                (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag() : brain.program().save(),
+                ammo());
+    }
+
+    // ================================================================ Kogels (hoofdstuk 24)
+
+    /** Hoeveel Robot Ammo er in zijn geweer zit (ook in je spel). */
+    public int ammo() {
+        return entityData.get(AMMO);
+    }
+
+    /** Zoveel kogels (hooguit MAX_AMMO). */
+    public void setAmmo(int ammo) {
+        entityData.set(AMMO, Math.max(0, Math.min(maxAmmo(), ammo)));
+    }
+
+    public static int maxAmmo() {
+        return Math.max(1, Math.round(StarkConfig.Robots.MAX_AMMO));
+    }
+
+    /**
+     * Rechtsklik met Robot Ammo (als je hem mag instellen): zoveel kogels als erin passen gaan uit je hand in zijn
+     * geweer. Geeft true als dat gebeurde (of als hij al vol is: dan zegt hij dat).
+     */
+    private boolean loadAmmo(ServerPlayer player, ItemStack stack) {
+        if (!Robots.mayEdit(player, this)) {
+            Robots.open(player, this); // dezelfde melding als bij het scherm: "not yours"
+            return false;
+        }
+        String name = hasCustomName() ? getCustomName().getString() : "The robot";
+        int room = maxAmmo() - ammo();
+        if (room <= 0) {
+            player.displayClientMessage(Component.translatable("message.starktech.robot.full", name, ammo()), true);
+            return true;
+        }
+        int moved = Math.min(room, stack.getCount());
+        setAmmo(ammo() + moved);
+        stack.consume(moved, player);
+        playSound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.8f, 1.2f);
+        player.displayClientMessage(Component.translatable("message.starktech.robot.loaded", name, ammo()), true);
+        return true;
     }
 
     // ================================================================ Batterij, aan en uit, zijn dock
@@ -483,9 +528,19 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         super.remove(reason);
     }
 
-    /** Sneak + rechtsklik met een lege hand: zijn scherm (als je hem mag instellen, zie Robots). */
+    /**
+     * Sneak + rechtsklik met een lege hand: zijn scherm (als je hem mag instellen, zie Robots). Rechtsklik met Robot
+     * Ammo: kogels laden (hoofdstuk 24).
+     */
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        if (held.getItem() instanceof com.senne.starktech.bot.RobotAmmoItem && !player.isSecondaryUseActive()) {
+            if (player instanceof ServerPlayer serverPlayer) {
+                loadAmmo(serverPlayer, held);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
         if (hand != InteractionHand.MAIN_HAND || !player.isSecondaryUseActive() || !player.getMainHandItem().isEmpty()) {
             return InteractionResult.PASS;
         }
@@ -706,6 +761,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             tag.put("Program", brain.program().save());
         }
         tag.putByte("Facing", (byte) brain.body().facing().get2DDataValue());
+        tag.putInt("Ammo", ammo());
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
@@ -727,6 +783,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         home = tag.contains("Home") ? BlockPos.of(tag.getLong("Home")) : null;
         brain.setProgram(tag.contains("Program") ? LogicProgram.load(tag.getCompound("Program")) : null);
         brain.body().setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);
+        setAmmo(tag.getInt("Ammo"));
         updateState(false);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");

@@ -82,6 +82,10 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_HURT = register("robot.hurt");
     /** Laden op zijn dock: een heel zachte lus (zie client/robot/RobotChargeHum). */
     public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_CHARGE_HUM = register("robot.charge_hum");
+    /** Het laserschot van een robot (hoofdstuk 24): een volle "pew" met een zoemende staart. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_LASER = register("robot.laser");
+    /** Het geweer van een robot: een droge knal. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_GUN = register("robot.gun");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, name)));

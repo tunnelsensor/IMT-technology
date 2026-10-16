@@ -723,6 +723,30 @@ def robot_charge_hum():
     return (loop / np.max(np.abs(loop)) * 0.4).astype(np.float32)
 
 
+def robot_laser():
+    """Het laserschot van een robot: een vollere, lagere "pew" dan die van een drone, met een zoemende staart."""
+    phase = sweep(1800, 420, 0.24, curve=0.6)
+    zap = (np.sin(phase) + 0.45 * np.sin(2 * phase) + 0.2 * signal.square(phase)) * decay(0.24, 12)
+    crack = bandpass(noise(0.06), 2500, 8000) * decay(0.06, 70) * 0.5
+    buzz = np.sin(2 * np.pi * 110 * seconds(0.2)) * decay(0.2, 14) * 0.25
+    total = np.zeros(int(RATE * 0.3))
+    place(total, fade(zap * 0.6, 0.001, 0.04), 0.0)
+    place(total, crack, 0.0)
+    place(total, buzz, 0.02)
+    return finish(total, peak=0.55)
+
+
+def robot_gun():
+    """Het geweer van een robot: een droge knal (ruis met een korte dreun eronder) en een metalen klikje."""
+    total = np.zeros(int(RATE * 0.35))
+    bang = bandpass(noise(0.12), 300, 6000) * decay(0.12, 35)
+    thump = np.sin(sweep(150, 55, 0.15)) * decay(0.15, 22)
+    place(total, bang * 0.9, 0.0)
+    place(total, thump * 0.8, 0.0)
+    place(total, metal_tap(0.08, [2400, 3900], 60) * 0.25, 0.14)
+    return finish(total, peak=0.6)
+
+
 SOUNDS = {
     "edith_boot": edith_boot,
     "edith_blip": edith_blip,
@@ -763,6 +787,8 @@ SOUNDS = {
     "robot_power_off": robot_power_off,
     "robot_hurt": robot_hurt,
     "robot_charge_hum": robot_charge_hum,
+    "robot_laser": robot_laser,
+    "robot_gun": robot_gun,
 }
 
 

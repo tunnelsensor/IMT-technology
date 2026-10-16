@@ -1516,6 +1516,23 @@ public final class StarkConfig {
                 min = 1, max = 600)
         public static float GOTO_SECONDS = 60.0f;
 
+        // Wapens (hoofdstuk 24): de Laser- en Gun-module. Hoe snel hij schiet, hangt aan zijn armen (ARMS_FIRE_INTERVAL).
+        /** Schade van één laserschot van een robot (5 = 2,5 hartjes). */
+        @Tunable(value = "Damage of one robot laser shot", max = 100)
+        public static float LASER_DAMAGE = 5.0f;
+        /** Hoeveel van zijn batterij één laserschot kost. */
+        @Tunable(value = "Battery one robot laser shot costs", max = 10_000)
+        public static float LASER_ENERGY = 60.0f;
+        /** Schade van één kogel uit de Gun-module (een kogel is één Robot Ammo). */
+        @Tunable(value = "Damage of one robot gun shot (each shot uses one Robot Ammo)", max = 100)
+        public static float GUN_DAMAGE = 6.0f;
+        /** Hoe ver de laser en het geweer van een robot reiken. */
+        @Tunable(value = "How far a robot laser or gun reaches (blocks)", min = 1, max = 64)
+        public static float SHOT_RANGE = 24.0f;
+        /** Zoveel Robot Ammo past er in een robot. */
+        @Tunable(value = "How much Robot Ammo fits in a robot", min = 1, max = 1_000)
+        public static float MAX_AMMO = 64.0f;
+
         // Solderen (hoofdstuk 22): de hittebalk en wat er misgaat.
         /** Zoveel ticks duurt het tot de hittebalk vol is. */
         @Tunable(value = "Soldering: ticks the heat bar takes to fill up", min = 5, max = 400)

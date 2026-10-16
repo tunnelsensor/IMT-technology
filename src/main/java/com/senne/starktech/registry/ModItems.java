@@ -316,6 +316,10 @@ public final class ModItems {
             "soldering_iron", com.senne.starktech.bot.SolderingIronItem::new,
             new Item.Properties().durability(com.senne.starktech.bot.SolderingIronItem.USES));
 
+    /** Hoofdstuk 24: kogels voor de Gun-module (rechtsklik op een robot laadt ze). */
+    public static final DeferredItem<com.senne.starktech.bot.RobotAmmoItem> ROBOT_AMMO = ITEMS.registerItem(
+            "robot_ammo", com.senne.starktech.bot.RobotAmmoItem::new, new Item.Properties());
+
     /** Het item van deze module. */
     public static com.senne.starktech.bot.BotModuleItem robotModule(com.senne.starktech.bot.BotModule module) {
         return ROBOT_MODULES.get(module).get();

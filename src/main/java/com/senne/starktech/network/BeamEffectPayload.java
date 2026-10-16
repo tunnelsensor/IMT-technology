@@ -30,7 +30,11 @@ public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements Custom
         /** Fase 15: een repulsorstoot uit je handpalm. */
         REPULSOR,
         /** Het lasergeweer van een Hydra-soldaat: een rode straal. */
-        HYDRA_LASER
+        HYDRA_LASER,
+        /** De Laser-module van een guard robot (hoofdstuk 24): een oranjerode straal met vonkjes. */
+        ROBOT_LASER,
+        /** De Gun-module van een guard robot: een dun geel spoortje en een rookwolkje waar hij raakt. */
+        ROBOT_BULLET
     }
 
     public static final StreamCodec<ByteBuf, BeamEffectPayload> STREAM_CODEC = StreamCodec.composite(

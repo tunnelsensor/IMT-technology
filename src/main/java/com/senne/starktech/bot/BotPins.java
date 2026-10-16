@@ -1,5 +1,6 @@
 package com.senne.starktech.bot;
 
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
@@ -23,6 +24,10 @@ import org.jetbrains.annotations.Nullable;
  *       Wie bij de basis hoort, vraagt hij aan de server: zonder verbinding ziet hij met "strangers" en "trusted"
  *       niemand (zo schiet hij nooit op een vriend omdat hij het niet weet);</li>
  *   <li><b>Pathfinding</b>: {@code read} = true zolang hij met {@code goto} onderweg is;</li>
+ *   <li><b>Laser</b>: {@code read} = true als hij kan schieten (zijn armen zijn klaar en zijn batterij is vol
+ *       genoeg), {@code write(laserPin, true)} = één schot (zie BotShot; kost batterij);</li>
+ *   <li><b>Gun</b>: {@code read} = hoeveel kogels hij nog heeft, {@code write(gunPin, true)} = één schot (kost één
+ *       Robot Ammo; rechtsklik hem met Robot Ammo om te laden);</li>
  *   <li>een lege pin, of een verbrande module: {@code read} = false.</li>
  * </ul>
  * Een module die niets met {@code write} doet, zegt dat in het logboek (één keer per minuut).
@@ -35,6 +40,9 @@ public final class BotPins {
     private List<Player> seen = List.of();
     /** Het filter van zijn Face Recognition (kleine letters, of een spelernaam). */
     private String filter = EVERYONE;
+    /** Wanneer (speltijd) zijn laser en zijn geweer weer mogen schieten. */
+    private long nextLaser;
+    private long nextGun;
 
     public static final String EVERYONE = "everyone";
     public static final String STRANGERS = "strangers";
@@ -57,8 +65,32 @@ public final class BotPins {
             case FACE_RECOGNITION -> targets().isEmpty() ? "" : targets().getFirst().getGameProfile().getName();
             case DISTANCE -> BotSense.distance(robot);
             case PATHFINDING -> brain.body().goingSomewhere();
+            case LASER -> laserReady();
+            case GUN -> (double) robot.ammo();
             default -> false;
         };
+    }
+
+    /** Kan de laser nu schieten? Zijn armen moeten klaar zijn, en zijn batterij vol genoeg voor een schot. */
+    private boolean laserReady() {
+        return robot.level().getGameTime() >= nextLaser && robot.battery() >= StarkConfig.Robots.LASER_ENERGY;
+    }
+
+    /** Zoveel ticks tussen twee schoten: van zijn armen. */
+    private long fireInterval() {
+        return Math.max(1, Math.round(robot.parts().fireInterval()));
+    }
+
+    /**
+     * Wie hij nu als doelwit kiest: de dichtste die zijn Scan ziet en door het filter komt. Zonder Scan-module richt
+     * hij niet (dan schiet hij recht vooruit).
+     */
+    private @Nullable Player target() {
+        if (!robot.board().has(BotModule.SCAN)) {
+            return null;
+        }
+        List<Player> targets = targets();
+        return targets.isEmpty() ? null : targets.getFirst();
     }
 
     /** Vertel de module op deze pin iets. */
@@ -68,6 +100,23 @@ public final class BotPins {
             String text = Expr.text(value).strip();
             String lower = text.toLowerCase(Locale.ROOT);
             filter = List.of(EVERYONE, STRANGERS, TRUSTED, TRAINEE).contains(lower) ? lower : text;
+            return;
+        }
+        if (module == BotModule.LASER || module == BotModule.GUN) {
+            // Alleen write(pin, true) schiet; niet klaar (of geen kogels): dan gebeurt er niets.
+            if (!Boolean.TRUE.equals(value)) {
+                return;
+            }
+            long now = robot.level().getGameTime();
+            if (module == BotModule.LASER && laserReady()) {
+                nextLaser = now + fireInterval();
+                robot.setBattery(robot.battery() - StarkConfig.Robots.LASER_ENERGY);
+                BotShot.fire(robot, BotShot.Weapon.LASER, target());
+            } else if (module == BotModule.GUN && now >= nextGun && robot.ammo() > 0) {
+                nextGun = now + fireInterval();
+                robot.setAmmo(robot.ammo() - 1);
+                BotShot.fire(robot, BotShot.Weapon.GUN, target());
+            }
             return;
         }
         brain.report("pin " + pin + (module == null ? " is empty" : " (" + module.title() + ")") + ": write(...) does nothing there");

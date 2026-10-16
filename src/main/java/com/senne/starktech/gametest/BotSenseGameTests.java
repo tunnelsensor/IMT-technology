@@ -2,18 +2,27 @@ package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.LogicServer;
+import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
+import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.shield.DomeGeneratorBlockEntity;
+import com.senne.starktech.station.ChargerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -133,6 +142,112 @@ public final class BotSenseGameTests {
             check(Boolean.FALSE.equals(strangers.brain().global("seen")) && "".equals(strangers.brain().global("who")),
                     "Zonder verbinding zag hij met \"strangers\" toch " + strangers.brain().global("who"));
             check("face-stranger".equals(named.brain().global("who")), "Zonder verbinding herkende hij de naam niet meer");
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Stap 3: laser en geweer
+
+    /** Schiet met de laser (pin 3) zodra hij klaar is; telt de schoten, en of hij vlak na een schot weer klaar was. */
+    private static final String LASER = """
+            shots = 0
+            readyAfter = true
+            when started:
+                forever:
+                    if read(pin(3)):
+                        write(pin(3), true)
+                        shots = shots + 1
+                        readyAfter = read(pin(3))
+                    wait(0.1)
+            """;
+
+    /** Schiet met het geweer (pin 4) zolang er kogels zijn; een schot telt als er een kogel minder is. */
+    private static final String GUN = """
+            shots = 0
+            when started:
+                forever:
+                    before = read(pin(4))
+                    if before > 0:
+                        write(pin(4), true)
+                        if read(pin(4)) < before:
+                            shots = shots + 1
+                    wait(0.1)
+            """;
+
+    /**
+     * De laser schiet recht vooruit (hij ziet geen speler) en raakt de koe: dat kost batterij, en vlak na een schot is
+     * hij niet klaar. Het geweer schiet niet zonder kogels; de eigenaar laadt er drie (rechtsklik met Robot Ammo), een
+     * vreemde mag dat niet, en dan schiet hij ze alle drie op.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_weapons")
+    public static void robot_laser_and_gun_shoot(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(20, 2, 20), "gun-owner");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(21, 2, 21), "gun-stranger");
+        owner.getAbilities().instabuild = false; // testspelers houden anders creative-handen: dan raakt de stapel niet op
+        stranger.getAbilities().instabuild = false;
+        Cow laserCow = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(4, 2, 9));
+        Cow gunCow = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(12, 2, 9));
+        GuardRobotEntity laser = robot(helper, new BlockPos(4, 2, 14), RobotStyle.BATTLE, BotBoard.EMPTY.with(3, "laser"), LASER);
+        GuardRobotEntity gun = robot(helper, new BlockPos(12, 2, 14), RobotStyle.BATTLE, BotBoard.EMPTY.with(4, "gun"), GUN);
+        gun.setOwner(owner);
+        double full = laser.maxBattery();
+        helper.runAfterDelay(20, () -> {
+            check((Double) laser.brain().global("shots") >= 1, "De laser schoot niet");
+            check(Boolean.FALSE.equals(laser.brain().global("readyAfter")), "Vlak na een schot was de laser al weer klaar");
+            check(laserCow.getHealth() < laserCow.getMaxHealth(), "De laser raakte de koe niet");
+            check(laser.battery() <= full - StarkConfig.Robots.LASER_ENERGY, "Een laserschot kostte geen batterij: " + laser.battery());
+            check(Double.valueOf(0).equals(gun.brain().global("shots")) && gunCow.getHealth() == gunCow.getMaxHealth(),
+                    "Het geweer schoot zonder kogels");
+            // Laden: de eigenaar wel, een vreemde niet.
+            stranger.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ROBOT_AMMO.get(), 5));
+            stranger.interactOn(gun, InteractionHand.MAIN_HAND);
+            check(gun.ammo() == 0 && stranger.getMainHandItem().getCount() == 5, "Een vreemde kon kogels laden");
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ROBOT_AMMO.get(), 3));
+            owner.interactOn(gun, InteractionHand.MAIN_HAND);
+            check(gun.ammo() == 3 && owner.getMainHandItem().isEmpty(), "Laden lukte niet: " + gun.ammo() + " kogels");
+        });
+        helper.runAfterDelay(140, () -> {
+            check(gun.ammo() == 0 && Double.valueOf(3).equals(gun.brain().global("shots")),
+                    "Het geweer schoot niet drie keer: " + gun.brain().global("shots") + " schoten, " + gun.ammo() + " kogels over");
+            check(!gunCow.isAlive() || gunCow.getHealth() < gunCow.getMaxHealth(), "Het geweer raakte de koe niet");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Wat een schot tegenhoudt: een muur en een schildkoepel (de koe erachter blijft heel). En zonder PvP (zoals in de testwereld) schiet hij wel op een speler die hij ziet, maar raakt hij
+     * hem niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "robot_weapons")
+    public static void robot_shots_stop_at_walls_domes_and_pvp(GameTestHelper helper) {
+        ServerPlayer target = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 9), "pvp-target");
+        GuardRobotEntity sees = robot(helper, new BlockPos(4, 2, 14), RobotStyle.COMMANDO,
+                BotBoard.EMPTY.with(1, "scan").with(3, "laser"), LASER);
+        // Een muur tussen de robot en de koe.
+        helper.setBlock(new BlockPos(20, 2, 12), Blocks.STONE);
+        helper.setBlock(new BlockPos(20, 3, 12), Blocks.STONE);
+        Cow walled = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(20, 2, 9));
+        robot(helper, new BlockPos(20, 2, 14), RobotStyle.BATTLE, BotBoard.EMPTY.with(3, "laser"), LASER);
+        // Een koepel (8 blokken) rond de koe in het midden; de robot staat erbuiten.
+        BlockPos domePos = new BlockPos(12, 3, 12);
+        helper.setBlock(domePos, ModBlocks.DOME_GENERATOR.get());
+        helper.setBlock(domePos.east(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(domePos.east())).fill(20_000);
+        DomeGeneratorBlockEntity dome = (DomeGeneratorBlockEntity) helper.getBlockEntity(domePos);
+        dome.setRadius(0);
+        Cow shielded = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(12, 2, 14));
+        GuardRobotEntity[] outside = new GuardRobotEntity[1];
+        helper.runAfterDelay(25, () -> {
+            check(dome.isUp(), "De koepel ging niet op: " + dome.status());
+            outside[0] = robot(helper, new BlockPos(12, 2, 22), RobotStyle.BATTLE, BotBoard.EMPTY.with(3, "laser"), LASER);
+        });
+        helper.runAfterDelay(50, () -> {
+            check((Double) sees.brain().global("shots") >= 1, "De robot schoot niet op de speler die hij zag");
+            check(target.getHealth() == target.getMaxHealth(), "Zonder PvP raakte hij toch een speler");
+            check(walled.getHealth() == walled.getMaxHealth(), "Het schot ging door de muur");
+            check((Double) outside[0].brain().global("shots") >= 1, "De robot buiten de koepel schoot niet");
+            check(shielded.getHealth() == shielded.getMaxHealth(), "Het schot ging door de koepel");
+            check(dome.isUp(), "De koepel ging neer");
             helper.succeed();
         });
     }

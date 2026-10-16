@@ -1234,6 +1234,31 @@ public final class VisualCheck {
             });
             t.shot(10, "rb19_logic_robot_help");
             t.close(10);
+            // Hoofdstuk 24: een robot kijkt naar het oosten, met een koe zes blokken verder. Eerst schiet hij met zijn
+            // laser (rechterarm), daarna met zijn geweer (linkerarm).
+            BlockPos shooter = new BlockPos(56, -60, 62);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                DevWorld.spawnStill(level, net.minecraft.world.entity.EntityType.COW, shooter.east(6), 90);
+                if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), shooter, -90)
+                        instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
+                    com.senne.starktech.robot.RobotStyle c = com.senne.starktech.robot.RobotStyle.COMMANDO;
+                    robot.setParts(new com.senne.starktech.robot.RobotParts(c, c, c, c));
+                    robot.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(3, "laser").with(4, "gun"));
+                    robot.setActive(true);
+                }
+            });
+            t.view(10, 59.0, -58.8, 67.5, 180, 12);
+            for (com.senne.starktech.bot.BotShot.Weapon weapon : com.senne.starktech.bot.BotShot.Weapon.values()) {
+                t.onServer(0, player -> {
+                    for (com.senne.starktech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                            com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(shooter).inflate(0.5))) {
+                        com.senne.starktech.bot.BotShot.fire(robot, weapon, null);
+                    }
+                });
+                t.shot(2, weapon == com.senne.starktech.bot.BotShot.Weapon.LASER ? "rb20_robot_laser" : "rb21_robot_gun");
+                t.step(20, () -> { });
+            }
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 

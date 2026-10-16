@@ -310,5 +310,21 @@
         "name": "starktech:robot_charge_hum"
       }
     ]
+  },
+  "robot.laser": {
+    "subtitle": "subtitles.starktech.robot.laser",
+    "sounds": [
+      {
+        "name": "starktech:robot_laser"
+      }
+    ]
+  },
+  "robot.gun": {
+    "subtitle": "subtitles.starktech.robot.gun",
+    "sounds": [
+      {
+        "name": "starktech:robot_gun"
+      }
+    ]
   }
 }

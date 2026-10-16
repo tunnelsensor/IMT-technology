@@ -44,6 +44,18 @@ public final class ModDamageTypes {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(TURRET_LASER), owner, owner);
     }
 
+    public static final ResourceKey<DamageType> ROBOT_LASER =
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "robot_laser"));
+
+    public static final ResourceKey<DamageType> ROBOT_GUN =
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "robot_gun"));
+
+    /** Een schot van een guard robot (hoofdstuk 24): de robot is de aanvaller ("was lasered by Guard 1"). */
+    public static DamageSource robotShot(ServerLevel level, Entity robot, boolean laser) {
+        return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(laser ? ROBOT_LASER : ROBOT_GUN),
+                robot, robot);
+    }
+
     /** Laserschade van een drone; de eigenaar telt als "aanvaller" (voor PvP-regels en buit). */
     public static DamageSource droneLaser(ServerLevel level, Entity drone, @Nullable Entity owner) {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(DRONE_LASER), drone, owner);

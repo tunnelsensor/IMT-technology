@@ -18,8 +18,9 @@ import net.minecraft.network.codec.StreamCodec;
  * @param name    zijn naam ("" = nog geen)
  * @param battery hoe vol zijn batterij is, van 0 tot 1 (een nieuwe robot is vol)
  * @param program zijn programma (zoals LogicProgram.save het schrijft), leeg = geen
+ * @param ammo    hoeveel Robot Ammo er in zijn geweer zit (hoofdstuk 24)
  */
-public record RobotData(int parts, BotBoard board, String name, float battery, CompoundTag program) {
+public record RobotData(int parts, BotBoard board, String name, float battery, CompoundTag program, int ammo) {
     /** Een robot zonder bijzondere keuze: helemaal Battle, met een lege printplaat en een volle batterij. */
     public static final RobotData DEFAULT = new RobotData(RobotParts.DEFAULT.pack(), BotBoard.EMPTY, "", 1.0f);
 
@@ -30,7 +31,7 @@ public record RobotData(int parts, BotBoard board, String name, float battery, C
 
     /** Zonder programma. */
     public RobotData(int parts, BotBoard board, String name, float battery) {
-        this(parts, board, name, battery, new CompoundTag());
+        this(parts, board, name, battery, new CompoundTag(), 0);
     }
 
     public RobotParts robotParts() {
@@ -42,7 +43,8 @@ public record RobotData(int parts, BotBoard board, String name, float battery, C
             BotBoard.CODEC.optionalFieldOf("board", BotBoard.EMPTY).forGetter(RobotData::board),
             Codec.STRING.optionalFieldOf("name", "").forGetter(RobotData::name),
             Codec.FLOAT.optionalFieldOf("battery", 1.0f).forGetter(RobotData::battery),
-            CompoundTag.CODEC.optionalFieldOf("program", new CompoundTag()).forGetter(RobotData::program)
+            CompoundTag.CODEC.optionalFieldOf("program", new CompoundTag()).forGetter(RobotData::program),
+            Codec.INT.optionalFieldOf("ammo", 0).forGetter(RobotData::ammo)
     ).apply(instance, RobotData::new));
 
     public static final StreamCodec<ByteBuf, RobotData> STREAM_CODEC = StreamCodec.composite(
@@ -51,5 +53,6 @@ public record RobotData(int parts, BotBoard board, String name, float battery, C
             ByteBufCodecs.STRING_UTF8, RobotData::name,
             ByteBufCodecs.FLOAT, RobotData::battery,
             ByteBufCodecs.COMPOUND_TAG, RobotData::program,
+            ByteBufCodecs.VAR_INT, RobotData::ammo,
             RobotData::new);
 }

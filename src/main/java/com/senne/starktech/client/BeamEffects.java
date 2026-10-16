@@ -29,6 +29,10 @@ public final class BeamEffects {
     private static final DustParticleOptions TARGETING = new DustParticleOptions(color(0xFF3030), 1.0f);
     private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
     private static final DustParticleOptions HYDRA = new DustParticleOptions(color(0xFF2A1A), 0.7f);
+    /** De laser van een guard robot: oranjerood, iets dikker dan die van een Hydra-soldaat. */
+    private static final DustParticleOptions ROBOT_LASER = new DustParticleOptions(color(0xFF5A1E), 0.85f);
+    /** Het spoortje van een kogel: dun en lichtgeel. */
+    private static final DustParticleOptions BULLET = new DustParticleOptions(color(0xFFE9A0), 0.55f);
 
     public static void play(BeamEffectPayload payload) {
         ClientLevel level = Minecraft.getInstance().level;
@@ -48,6 +52,8 @@ public final class BeamEffects {
             }
             case REPULSOR -> repulsor(level, payload.from(), payload.to());
             case HYDRA_LASER -> hydraLaser(level, payload.from(), payload.to());
+            case ROBOT_LASER -> robotLaser(level, payload.from(), payload.to());
+            case ROBOT_BULLET -> robotBullet(level, payload.from(), payload.to());
             case SATELLITE_SWEEP -> {
                 satelliteSweep(level, payload.from(), payload.to());
                 shakeNear(payload.to(), 0.6f, 300);
@@ -79,6 +85,29 @@ public final class BeamEffects {
                     (random.nextDouble() - 0.5) * 0.08, random.nextDouble() * 0.06, (random.nextDouble() - 0.5) * 0.08);
         }
         level.addParticle(ParticleTypes.SMOKE, to.x, to.y, to.z, 0, 0.03, 0);
+    }
+
+    /** De laser van een guard robot (hoofdstuk 24): een oranjerode straal, vonken en een vlammetje waar hij raakt. */
+    private static void robotLaser(ClientLevel level, Vec3 from, Vec3 to) {
+        line(level, from, to, 0.2, ROBOT_LASER, false);
+        RandomSource random = level.getRandom();
+        for (int i = 0; i < 6; i++) {
+            level.addParticle(ParticleTypes.ELECTRIC_SPARK, to.x, to.y, to.z,
+                    (random.nextDouble() - 0.5) * 0.3, random.nextDouble() * 0.25, (random.nextDouble() - 0.5) * 0.3);
+        }
+        level.addParticle(ParticleTypes.SMALL_FLAME, to.x, to.y, to.z, 0, 0.02, 0);
+    }
+
+    /** Een kogel van een guard robot: een dun spoortje, een vonkje uit de loop, en stof en rook waar hij raakt. */
+    private static void robotBullet(ClientLevel level, Vec3 from, Vec3 to) {
+        line(level, from, to, 0.3, BULLET, false);
+        level.addParticle(ParticleTypes.SMOKE, from.x, from.y, from.z, 0, 0.02, 0);
+        RandomSource random = level.getRandom();
+        for (int i = 0; i < 3; i++) {
+            level.addParticle(ParticleTypes.CRIT, to.x, to.y, to.z,
+                    (random.nextDouble() - 0.5) * 0.2, random.nextDouble() * 0.15, (random.nextDouble() - 0.5) * 0.2);
+        }
+        level.addParticle(ParticleTypes.SMOKE, to.x, to.y, to.z, 0, 0.04, 0);
     }
 
     /** Dunne blauwe straal met vonkjes waar hij raakt. */

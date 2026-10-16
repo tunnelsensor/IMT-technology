@@ -1,0 +1,97 @@
+package com.senne.starktech.bot;
+
+import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.network.BeamEffectPayload;
+import com.senne.starktech.network.ModNetwork;
+import com.senne.starktech.registry.ModDamageTypes;
+import com.senne.starktech.registry.ModSounds;
+import com.senne.starktech.robot.GuardRobotEntity;
+import com.senne.starktech.shield.EdithDomes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Eén schot van een guard robot (hoofdstuk 24): met de Laser-module (kost batterij) of de Gun-module (kost één
+ * Robot Ammo). Wie BotPins aanwijst (wie de robot ziet, door het filter van zijn Face Recognition) wordt het
+ * doelwit; ziet hij niemand, dan schiet hij recht vooruit en raakt hij wat daar staat.
+ * <ul>
+ *   <li>Een muur houdt het schot tegen, en een schildkoepel ook (zoals bij de Hydra-soldaat; de koepels van zijn
+ *       eigenaar niet).</li>
+ *   <li>Spelers raakt hij alleen als PvP aan staat, en niet in creative of als toeschouwer (net als torentjes).</li>
+ *   <li>De laser komt uit zijn rechterarm, het geweer uit zijn linker (daar zitten ze op het model).</li>
+ * </ul>
+ */
+public final class BotShot {
+    private BotShot() {}
+
+    public enum Weapon { LASER, GUN }
+
+    /** Schiet. Geeft het wezen dat geraakt (en verwond) werd, of null. */
+    public static @Nullable LivingEntity fire(GuardRobotEntity robot, Weapon weapon, @Nullable LivingEntity target) {
+        if (!(robot.level() instanceof ServerLevel level)) {
+            return null;
+        }
+        boolean laser = weapon == Weapon.LASER;
+        Vec3 from = muzzle(robot, laser);
+        double range = StarkConfig.Robots.SHOT_RANGE;
+        LivingEntity hit = null;
+        Vec3 to;
+        if (target != null && target.isAlive() && target.getBoundingBox().getCenter().distanceTo(from) <= range) {
+            hit = target;
+            to = target.getBoundingBox().getCenter();
+        } else {
+            // Niemand in zicht: recht vooruit, en raak wat daar staat.
+            to = from.add(Vec3.directionFromRotation(0, robot.getYRot()).scale(range));
+            EntityHitResult first = ProjectileUtil.getEntityHitResult(level, robot, from, to, new AABB(from, to).inflate(1.0),
+                    entity -> entity instanceof LivingEntity living && living.isAlive() && entity != robot, 0.3f);
+            if (first != null) {
+                hit = (LivingEntity) first.getEntity();
+                to = first.getLocation();
+            }
+        }
+        // Een muur ertussen: daar houdt het op.
+        HitResult wall = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, robot));
+        if (wall.getType() != HitResult.Type.MISS) {
+            to = wall.getLocation();
+            hit = null;
+        }
+        // Een schildkoepel ertussen: die vangt het op (dat kost hem schildkracht).
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, robot.owner(), Math.round(StarkConfig.Dome.COST_LASER));
+        if (shield != null) {
+            to = shield;
+            hit = null;
+        }
+        robot.playSound(laser ? ModSounds.ROBOT_LASER.get() : ModSounds.ROBOT_GUN.get(), 1.0f, 0.95f + robot.getRandom().nextFloat() * 0.1f);
+        ModNetwork.sendNear(level, robot.position(), 64, new BeamEffectPayload(from, to,
+                laser ? BeamEffectPayload.Kind.ROBOT_LASER : BeamEffectPayload.Kind.ROBOT_BULLET));
+        if (hit == null || !mayHurt(level, hit)) {
+            return null;
+        }
+        float damage = laser ? StarkConfig.Robots.LASER_DAMAGE : StarkConfig.Robots.GUN_DAMAGE;
+        return hit.hurt(ModDamageTypes.robotShot(level, robot, laser), damage) ? hit : null;
+    }
+
+    /** Spelers alleen met PvP aan, en niet in creative of als toeschouwer; de rest altijd. */
+    private static boolean mayHurt(ServerLevel level, Entity entity) {
+        if (entity instanceof Player player) {
+            return !player.isCreative() && !player.isSpectator() && level.getServer().isPvpAllowed();
+        }
+        return true;
+    }
+
+    /** Waar het schot begint: de laser aan zijn rechterarm, het geweer aan zijn linker. */
+    private static Vec3 muzzle(GuardRobotEntity robot, boolean right) {
+        Vec3 forward = Vec3.directionFromRotation(0, robot.getYRot());
+        Vec3 side = new Vec3(-forward.z, 0, forward.x); // naar rechts, gezien vanuit de robot
+        return robot.position().add(0, 1.15, 0).add(forward.scale(0.45)).add(side.scale(right ? 0.38 : -0.38));
+    }
+}

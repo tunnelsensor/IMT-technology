@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 265 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 267 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2684,8 +2684,20 @@ dieren werkt hij niet.
       naam van een speler (hoofdletters tellen niet). Wie een vriend is, vraagt hij aan de server: zonder
       verbinding ziet hij met "strangers" en "trusted" niemand, een naam herkent hij wel. Eén nieuwe test
       (`robot_face_recognition_filters`).
-- [ ] **3. Laser en Gun** — een straal zoals bij de Hydra-soldaat; Robot Ammo; batterijkosten; koepels
-      houden ze tegen.
+- [x] **3. Laser en Gun** — `write(laserPin, true)` is één laserschot (5 schade, kost 60 batterij),
+      `write(gunPin, true)` één kogel (6 schade, kost één **Robot Ammo**). Hij richt op wie zijn Scan ziet (door
+      het filter van zijn Face Recognition), en zonder Scan-module of als hij niemand ziet schiet hij recht
+      vooruit en raakt hij wat daar staat (tot 24 blokken). Tussen twee schoten zit de tijd van zijn armen
+      (`armsFireInterval`: Commando 24 ticks, Trainer 30, Battle 36, Super Battle 18); `read(laserPin)` zegt of de
+      laser klaar is, `read(gunPin)` hoeveel kogels hij nog heeft. Een muur en een schildkoepel houden een schot
+      tegen (zijn eigen koepels niet); spelers raakt hij alleen met PvP aan en niet in creative. De laser komt uit
+      zijn rechterarm (oranjerode straal, vonken), het geweer uit zijn linker (een dun geel spoortje en rook);
+      twee nieuwe geluiden (`robot_laser`, `robot_gun`). **Robot Ammo**: buskruit, een koperstaaf en twee
+      ijzerklompjes geven 16 kogels; rechtsklik een robot ermee (als je hem mag instellen) en hij laadt ze, tot
+      64 (`maxAmmo`); zijn scherm zegt "Ammo 12/64" als hij een Gun-module heeft, en opgepakt gaan ze mee in zijn
+      item. Sterfberichten: "... was lasered by Guard 1" en "... was shot by Guard 1". Netwerkversie 22.
+      Screenshots `rb20` (laser) en `rb21` (geweer). Twee nieuwe tests (`robot_laser_and_gun_shoot`,
+      `robot_shots_stop_at_walls_domes_and_pvp`; in de testwereld staat PvP uit, dus daar test ik op koeien).
 - [ ] **4. Zonnepaneel** — laadt overdag, met dezelfde zonberekening als het zonnepaneel van het net.
 - [ ] **5. Camera** — de robot in de app Cameras; alleen binnen het volgbereik; zijn eigen model wordt
       overgeslagen.

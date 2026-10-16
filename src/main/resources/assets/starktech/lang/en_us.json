@@ -1419,5 +1419,15 @@
   "pickpocket.starktech.msg.not_behind": "Get behind %s first: they would see you.",
   "pickpocket.starktech.msg.wait": "%s is still wary: wait %s s before you try again.",
   "pickpocket.starktech.msg.victim": "%s tried to pick your pocket!",
-  "pickpocket.starktech.msg.caught": "Caught! %s noticed you."
+  "pickpocket.starktech.msg.caught": "Caught! %s noticed you.",
+  "item.starktech.robot_ammo": "Robot Ammo",
+  "tooltip.starktech.robot_ammo": "Right-click a guard robot to load its Gun module",
+  "subtitles.starktech.robot.laser": "Robot laser fires",
+  "subtitles.starktech.robot.gun": "Robot gun fires",
+  "death.attack.starktech.robot_laser": "%1$s was lasered by %2$s",
+  "death.attack.starktech.robot_laser.player": "%1$s was lasered by %2$s",
+  "death.attack.starktech.robot_gun": "%1$s was shot by %2$s",
+  "death.attack.starktech.robot_gun.player": "%1$s was shot by %2$s",
+  "message.starktech.robot.loaded": "%s now has %s Robot Ammo",
+  "message.starktech.robot.full": "%s is full (%s Robot Ammo)"
 }

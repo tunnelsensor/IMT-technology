@@ -165,6 +165,12 @@ public class RobotScreen extends Screen {
         g.drawString(font, stateText, left + PANEL_W - MARGIN - font.width(stateText), top + 7, HudStyle.argb(255, stateColour), true);
         g.drawString(font, owner.isEmpty() ? "No owner yet" : "Owner: " + owner, left + MARGIN, top + 20,
                 HudStyle.argb(150, 0x9FC9D6), false);
+        // Met een Gun-module (hoofdstuk 24): hoeveel kogels hij nog heeft.
+        if (robot.board().has(com.senne.starktech.bot.BotModule.GUN)) {
+            String ammo = "Ammo " + robot.ammo() + "/" + GuardRobotEntity.maxAmmo();
+            g.drawString(font, ammo, left + PANEL_W - MARGIN - font.width(ammo), top + 20,
+                    HudStyle.argb(220, robot.ammo() == 0 ? HudStyle.RED : HudStyle.ORANGE), false);
+        }
 
         // De onderdelen, twee per regel.
         RobotParts parts = robot.parts();

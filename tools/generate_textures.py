@@ -3346,6 +3346,19 @@ def soldering_iron():
     save(im, "item/soldering_iron.png")
 
 
+def robot_ammo():
+    """Robot Ammo (hoofdstuk 24): een groen doosje met drie koperen patronen die eruit steken."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.rectangle([2, 7, 13, 14], fill=(62, 84, 52, 255), outline=(34, 48, 28, 255))   # doosje
+    d.line([3, 9, 12, 9], fill=(84, 110, 70, 255))
+    for x in (4, 7, 10):
+        d.rectangle([x, 3, x + 1, 7], fill=(205, 140, 60, 255))                      # koperen huls
+        px(im, [(x, 2), (x + 1, 2)], (230, 225, 210, 255))                            # punt
+        px(im, [(x + 1, 4), (x + 1, 5)], (240, 180, 90, 255))                         # glans
+    save(im, "item/robot_ammo.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
