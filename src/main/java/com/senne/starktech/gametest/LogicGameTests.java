@@ -994,6 +994,47 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /**
+     * Ctrl+Spatie in een robotprogramma (hoofdstuk 23): de woorden van een robot (forward, goto...) en zijn gegevens
+     * (robot.battery, read, pin), geen keycard of card.level. In een serverdiagram staan de namen van je robots tussen
+     * de aanhalingstekens van activate, deactivate en order.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_robot_completion(GameTestHelper helper) {
+        List<String> statements = complete("when started:\n    |", ProgramKind.ROBOT);
+        check(statements.contains("forward(3)") && statements.contains("goto(...)") && statements.contains("charge(80)")
+                && statements.contains("write(...)"), "Een robot mist woorden: " + statements);
+        check(!statements.contains("accept()") && !statements.contains("order(\"...\", \"attack\")"), "Een robot krijgt woorden van de server: " + statements);
+        List<String> checks = complete("when started:\n    if |", ProgramKind.ROBOT);
+        check(checks.contains("robot.battery") && checks.contains("read(...)") && checks.contains("pin(...)") && !checks.contains("card.level"),
+                "In een if van een robot klopt het niet: " + checks);
+        List<String> top = complete("|", ProgramKind.ROBOT);
+        check(top.contains("when started:") && top.contains("when ordered(...):") && !top.contains("when keycard(...):"),
+                "Bovenaan een robotprogramma klopt het niet: " + top);
+        List<String> server = complete("when every(5):\n    |", ProgramKind.SERVER);
+        check(server.contains("order(\"...\", \"attack\")") && server.contains("activate(\"...\")") && !server.contains("forward(3)"),
+                "Een serverdiagram mist de robotwoorden: " + server);
+        List<String> names = complete("when every(5):\n    activate(\"|\")", ProgramKind.SERVER);
+        check(names.contains("Guard 1") && names.contains("Door guard"), "De namen van je robots ontbreken: " + names);
+        helper.succeed();
+    }
+
+    /** Ctrl+Spatie op de | in deze code, voor deze soort programma, met twee robots in het netwerk. */
+    private static List<String> complete(String code, ProgramKind kind) {
+        String[] lines = code.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            int at = lines[i].indexOf('|');
+            if (at >= 0) {
+                List<String> clean = new java.util.ArrayList<>(List.of(code.replace("|", "").split("\n", -1)));
+                var data = new com.senne.starktech.client.os.CodeCompletion.Data(List.of("Vault door"), List.of("Lab door"),
+                        List.of("Front door"), kind, List.of("Guard 1", "Door guard"));
+                return com.senne.starktech.client.os.CodeCompletion.complete(clean, i, at, data).items().stream()
+                        .map(com.senne.starktech.client.os.CodeCompletion.Item::label).toList();
+            }
+        }
+        throw new GameTestAssertException("Geen | in de test-code");
+    }
+
     /** De code moet een fout geven die bij deze soort programma hoort, op deze regel. */
     private static void expectKindError(String code, ProgramKind kind, int line, String part) {
         try {

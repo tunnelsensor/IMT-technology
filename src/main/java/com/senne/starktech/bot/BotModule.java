@@ -55,6 +55,21 @@ public enum BotModule {
     }
 
     /** De module met deze naam (zoals op een pin), of null. */
+    /** Een naam voor zijn pin in je code, zoals de Help van de app Logic hem voorstelt: {@code scanPin = pin(1)}. */
+    public String pinName() {
+        return switch (this) {
+            case SCAN -> "scanPin";
+            case DISTANCE -> "distancePin";
+            case FACE_RECOGNITION -> "facePin";
+            case PATHFINDING -> "pathPin";
+            case LASER -> "laserPin";
+            case GUN -> "gunPin";
+            case SOLAR_PANEL -> "solarPin";
+            case CAMERA -> "cameraPin";
+            case BURNT -> "burntPin";
+        };
+    }
+
     public static @Nullable BotModule byId(String id) {
         for (BotModule module : values()) {
             if (module.id().equals(id)) {

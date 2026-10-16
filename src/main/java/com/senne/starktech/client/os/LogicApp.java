@@ -492,7 +492,11 @@ final class LogicApp {
             CompoundTag input = (CompoundTag) element;
             (input.getBoolean("p") ? panels : readers).add(input.getString("n"));
         }
-        return new CodeCompletion.Data(outputs, readers, panels, kind);
+        List<String> robots = new ArrayList<>();
+        for (Tag element : info().getList("robots", Tag.TAG_COMPOUND)) {
+            robots.add(((CompoundTag) element).getString("n"));
+        }
+        return new CodeCompletion.Data(outputs, readers, panels, kind, robots);
     }
 
     private @Nullable String firstInput(boolean panel) {
@@ -739,6 +743,7 @@ final class LogicApp {
         lines.add(new HelpLine("forever:", "forever:\n    wait(1)",
                 "Again and again. Put a wait inside: a loop without waiting keeps your CPU busy.", 0xFF79C6, null));
         lines.add(new HelpLine("break", "break", Op.BREAK.help(), 0xFF79C6, null));
+        robotHelp(lines, server);
         lines.add(header("YOUR OWN BLOCKS (def)"));
         lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",
                 "Write steps once (at the left edge), then use them in many whens with open_door()", 0xC9A0FF, null));
@@ -769,6 +774,89 @@ final class LogicApp {
             lines.add(new HelpLine("(none in this network yet)", null, "Place a Keycard Reader or Code Panel near the core", OsDraw.GREY, null));
         }
         return lines;
+    }
+
+    /** Een robot die een vierkant loopt, en laadt als zijn batterij bijna leeg is (voorbeeld in Help). */
+    private static final String PATROL_EXAMPLE = """
+            when started:
+                forever:
+                    if robot.battery < 20:
+                        charge()
+                    forward(4)
+                    turn_right()
+            """;
+
+    /** Een robot die komt als de server roept (voorbeeld in Help). */
+    private static final String COME_EXAMPLE = """
+            when ordered("come"):
+                goto(order.x, order.y, order.z)
+                send("arrived")
+            """;
+
+    /** Een serverdiagram dat een robot roept (voorbeeld in Help). */
+    private static final String CALL_EXAMPLE = """
+            when message("help"):
+                order("Guard 1", "come", sender.x, sender.y, sender.z)
+            """;
+
+    /**
+     * Je robots in de Help (hoofdstuk 23). In een robotprogramma: wat er op hun pinnen zit (klik = de pinnen met een
+     * naam in je code, zoals {@code scanPin = pin(1)}) en voorbeeldprogramma's. In een serverdiagram: hun namen (voor
+     * order, activate en deactivate) en een voorbeeld.
+     */
+    private void robotHelp(List<HelpLine> lines, boolean server) {
+        lines.add(header("YOUR ROBOTS"));
+        net.minecraft.nbt.ListTag robots = info().getList("robots", Tag.TAG_COMPOUND);
+        if (robots.isEmpty()) {
+            lines.add(new HelpLine("(none in this network's area)", null, "Build one in a Robot Assembler and put it here",
+                    OsDraw.GREY, null));
+        }
+        for (Tag element : robots) {
+            CompoundTag robot = (CompoundTag) element;
+            String name = robot.getString("n");
+            if (server) {
+                lines.add(new HelpLine(name, quoted(name), "a guard robot: use its name in order, activate and deactivate", 0x9ED8FF, null));
+                continue;
+            }
+            if (!robot.contains("pins")) {
+                lines.add(new HelpLine(name + " (far away)", null, "too far away to see its circuit board", OsDraw.GREY, null));
+                continue;
+            }
+            StringBuilder modules = new StringBuilder();
+            StringBuilder code = new StringBuilder();
+            int count = 0;
+            java.util.Set<String> used = new java.util.HashSet<>();
+            net.minecraft.nbt.ListTag pins = robot.getList("pins", Tag.TAG_STRING);
+            for (int pin = 1; pin <= pins.size(); pin++) {
+                com.senne.starktech.bot.BotModule module = com.senne.starktech.bot.BotModule.byId(pins.getString(pin - 1));
+                if (module == null || module == com.senne.starktech.bot.BotModule.BURNT) {
+                    continue;
+                }
+                count++;
+                modules.append(modules.isEmpty() ? "" : ", ").append(pin).append(' ').append(module.title().toLowerCase(java.util.Locale.ROOT));
+                String pinName = module.pinName();
+                for (int number = 2; !used.add(pinName); number++) {
+                    pinName = module.pinName() + number;
+                }
+                code.append(pinName).append(" = pin(").append(pin).append(")\n");
+            }
+            // Past het niet op de regel, dan alleen hoeveel; de pinnen staan in de uitleg eronder.
+            String label = name + ": " + (count == 0 ? "no modules" : modules);
+            if (label.length() > 26) {
+                label = name + ": " + count + (count == 1 ? " module" : " modules");
+            }
+            lines.add(new HelpLine(label, code.isEmpty() ? null : code.toString(),
+                    code.isEmpty() ? "solder modules onto its circuit board first" : "pins " + modules + ". Click to put them in your code",
+                    0x9ED8FF, null));
+        }
+        lines.add(header("EXAMPLES"));
+        if (server) {
+            lines.add(new HelpLine("Call a robot", CALL_EXAMPLE, "a robot says send(\"help\"): Guard 1 comes to it", 0xC9A0FF, null));
+        } else {
+            lines.add(new HelpLine("Patrol a square", PATROL_EXAMPLE, "walks a square, and charges when its battery is low", 0xC9A0FF, null));
+            lines.add(new HelpLine("Come when called", COME_EXAMPLE, "goes where the server says (needs the Pathfinding module)",
+                    0xC9A0FF, null));
+        }
     }
 
     private static String quoted(String text) {
@@ -1086,6 +1174,17 @@ final class LogicApp {
             switchMode();
         }
         helpOpen = true;
+    }
+
+    /** Alleen voor de screenshot-rondleiding: scroll de Help tot het kopje met deze naam bovenaan staat. */
+    void tourHelpAt(String header) {
+        List<HelpLine> lines = helpLines();
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).label().equals(header)) {
+                helpScroll = i;
+                return;
+            }
+        }
     }
 
     /** Een nieuw diagram met deze code en naam, en meteen Check. */

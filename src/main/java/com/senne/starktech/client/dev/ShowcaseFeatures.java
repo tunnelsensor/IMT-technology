@@ -1734,6 +1734,66 @@ final class ShowcaseFeatures {
                     .pause(100);
         });
 
+        add("Robot programs", "Hoofdstuk 23: robots programmeren. Dezelfde werkplaats, nu met een serverrack naast de "
+                + "kern. Eerst de app Logic met het robotprogramma Patrol (geel R in de lijst): when started, dan steeds "
+                + "3 vooruit, een kwartslag rechts en send(\"corner\"); en when ordered(\"wave\"): een paar keer links-rechts "
+                + "draaien. Rechts de Help met de woorden van een robot. Dan de app Robots: de knop Program, je kiest Patrol, "
+                + "en de taakbalk zegt 'Uploaded Patrol to Guard 1'. Dan gaat hij aan: hij stapt uit zijn dock en loopt "
+                + "precies zijn vierkantje, blok voor blok (luister naar de stapjes). Op de server staat het diagram "
+                + "Corners (when message(\"corner\")): na elke vier hoeken zegt E.D.I.T.H. 'Guard 1 walked a full round'. "
+                + "Tot slot geeft de server hem de opdracht wave: hij stopt midden in zijn rondje, draait links-rechts, en "
+                + "loopt dan verder waar hij was.",
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(5, 0, 11)), 180, 25, s -> {
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .onServer(0, player -> {
+                        buildBayServer(player);
+                        placeRobot(player, ROBOT_BAY.offset(6, 0, 2), com.senne.starktech.robot.GuardRobotItem.create(
+                                new com.senne.starktech.robot.RobotData(new com.senne.starktech.robot.RobotParts(
+                                        com.senne.starktech.robot.RobotStyle.COMMANDO, com.senne.starktech.robot.RobotStyle.BATTLE,
+                                        com.senne.starktech.robot.RobotStyle.BATTLE, com.senne.starktech.robot.RobotStyle.BATTLE).pack(),
+                                        com.senne.starktech.bot.BotBoard.EMPTY, "Guard 1", 1.0f)));
+                    })
+                    .pause(50)
+                    // De app Logic: het robotprogramma Patrol, met de Help.
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, ROBOT_BAY.offset(10, 0, 6)))
+                    .step(10, () -> desktop(os -> {
+                        os.tourLogicNew(com.senne.starktech.logic.program.ProgramKind.ROBOT);
+                        os.tourLogic("Patrol", BAY_PATROL, true);
+                    }))
+                    .pause(120)
+                    // De app Robots: Program, en Patrol naar Guard 1.
+                    .step(0, () -> desktop(os -> os.tourRobotsProgram()))
+                    .pause(60)
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ROBOT_BAY.offset(10, 0, 6))
+                                instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+                            robotAt(player, ROBOT_BAY.offset(6, 0, 2), robot -> {
+                                net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                                args.putString("id", robot.getUUID().toString());
+                                args.putString("program", "Patrol");
+                                com.senne.starktech.security.os.StarkOs.handleAction(player, new com.senne.starktech.network.OsActionPayload(
+                                        ROBOT_BAY.offset(10, 0, 6), "robot_program", args));
+                            });
+                        }
+                    })
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ROBOTS)))
+                    .pause(80)
+                    .close(10)
+                    // Aan: hij stapt uit zijn dock en loopt zijn vierkantje.
+                    .onServer(0, player -> robotAt(player, ROBOT_BAY.offset(6, 0, 2), robot -> robot.setActive(true)))
+                    .stand(0, ROBOT_BAY.getX() + 5.5, ROBOT_BAY.getY() + 2, ROBOT_BAY.getZ() + 11.5, 180, 30)
+                    .pause(320)
+                    // De server geeft hem een opdracht: wave.
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ROBOT_BAY.offset(10, 0, 6))
+                                instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+                            com.senne.starktech.bot.BotLink.order(player.serverLevel(), core, "Guard 1", "wave", null);
+                        }
+                    })
+                    .pause(160);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -2587,6 +2647,60 @@ final class ShowcaseFeatures {
             be.setOwner(player);
             be.ensureSystem(level);
         }
+    }
+
+    /** Het robotprogramma van de showcase "Robot programs": een vierkantje, en zwaaien als de server dat zegt. */
+    private static final String BAY_PATROL = """
+            when started:
+                forever:
+                    forward(3)
+                    turn_right()
+                    send("corner")
+
+            when ordered("wave"):
+                repeat(2):
+                    turn_left()
+                    turn_right()
+            """;
+
+    /**
+     * Voor "Robot programs" (hoofdstuk 23): een serverrack naast de kern van de werkplaats (met stroom), het
+     * robotprogramma Patrol en het diagram Corners op die server.
+     */
+    private static void buildBayServer(net.minecraft.server.level.ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos rack = ROBOT_BAY.offset(12, 0, 6);
+        level.setBlockAndUpdate(rack.below(), com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(rack.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+            charger.fill(30_000);
+        }
+        level.setBlockAndUpdate(rack, com.senne.starktech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState()
+                .setValue(com.senne.starktech.logic.ServerRackBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+        }
+        if (level.getBlockEntity(ROBOT_BAY.offset(10, 0, 6)) instanceof com.senne.starktech.security.SecurityCoreBlockEntity core) {
+            core.logic().put(null, program("Patrol", BAY_PATROL, com.senne.starktech.logic.program.ProgramKind.ROBOT));
+            core.logic().put(null, program("Corners", """
+                    corners = 0
+
+                    when message("corner"):
+                        corners = corners + 1
+                        if corners == 4:
+                            say(sender.name + " walked a full round")
+                            corners = 0
+                    """, com.senne.starktech.logic.program.ProgramKind.SERVER));
+        }
+    }
+
+    /** Een programma uit deze code, zoals de app Logic hem bewaart. */
+    private static com.senne.starktech.logic.program.LogicProgram program(String name, String code,
+                                                                       com.senne.starktech.logic.program.ProgramKind kind) {
+        return new com.senne.starktech.logic.program.LogicProgram(name, true, com.senne.starktech.logic.program.GraphConverter.toGraph(
+                com.senne.starktech.logic.program.ScriptParser.parse(code, kind), null), code, kind);
     }
 
     /** Zet een robot-item neer op dit dock, zoals een speler dat doet (met de rechtermuisknop). */

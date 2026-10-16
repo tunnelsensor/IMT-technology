@@ -14,9 +14,9 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 262 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 263 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2627,12 +2627,25 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       ..."). Een robot die niet geladen is, krijgt zijn aan/uit en zijn laatste opdracht als hij terug is en
       verbinding heeft (ze wachten in `BotNetwork`). Ook: `charge(80)` als hij al vol genoeg is, loopt niet meer
       naar zijn dock. Twee nieuwe tests (`robot_obeys_orders_from_the_server`, `robot_orders_wait_for_a_far_robot`).
-- [ ] **7. De app Logic** — Help en Ctrl+Spatie met de pinnen van de gekozen robot, voorbeeldprogramma's,
-      screenshots, LEESMIJ en de showcase.
+- [x] **7. De app Logic** — de Help van een robotprogramma heeft nu **YOUR ROBOTS**: elke robot in het gebied
+      van de kern met wat er op zijn pinnen zit ("Guard 7: 1 scan, 3 laser, 6 camera", of "8 modules" als het
+      niet past); klik erop en de regels `scanPin = pin(1)`, `laserPin = pin(3)`... staan in je code (een
+      robot ver weg: "far away"). Daaronder **EXAMPLES**: "Patrol a square" en "Come when called"; in een
+      serverdiagram de namen van je robots en het voorbeeld "Call a robot". Ctrl+Spatie stelt de namen van je
+      robots voor tussen de aanhalingstekens van `order(`, `activate(` en `deactivate(`. Screenshot `rb19`. Eén
+      nieuwe test (`logic_robot_completion`). In de showcase de nieuwe functie **"Robot programs"** (84, na
+      "Soldering modules"); LEESMIJ.md: een nieuw stuk "Robots programmeren".
 
 Tests: vierkantje lopen (vier keer `turn_right()` na `forward(2)` komt op de plek waar hij begon); batterij
 laden en terug; een opdracht onderbreekt het programma en het hervat; zonder verbinding geen alarm maar wel
 lopen; een relais via `pulse`; een wachtende opdracht bij laden.
+
+- [x] **Afronding** — 263 tests: 260 groen, de 3 rode van hoofdstuk 14 stap 2. Zestien nieuwe in hoofdstuk 23
+      (soorten programma's, de woorden van een robot, ctrl+spatie, `BotProgramGameTests` met lopen, laden,
+      uploaden, praten met de server en opdrachten). De showcase-functie **"Robot programs"** (84) heb ik
+      helemaal laten lopen: het programma kwam via de app Robots op de robot, hij liep zijn vierkantje, en de
+      server zei drie keer "Guard 1 walked a full round" (gecontroleerd in het logboek van de kern). Het jar
+      gebouwd.
 
 ### 24. Zien en schieten (14 oktober)
 
@@ -2815,6 +2828,12 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Robots programmeren (16 oktober)**: gezien op screenshots (`l16`-`l19`, `rb13`, `rb18`, `rb19`) en in de
+      showcase (84), getest met 16 nieuwe tests. Probeer zelf: hoe het lopen eruitziet (blok voor blok, met een
+      klein rukje als hij precies in het midden gaat staan: te snel of te traag? zie `walkFactor`), of
+      `charge()` netjes zijn dock in en uit loopt vanaf verschillende plekken, en of een opdracht van de server
+      (`order`) lekker voelt (hij stopt midden in zijn rondje). Ook: een robot die tegen een speler of dier
+      aanloopt (na 2 seconden `robot.blocked`).
 - [ ] **Solderen (16 oktober)**: gezien op screenshots (`rb14`-`rb17`) en in de showcase (83), getest met 4 nieuwe
       tests. Probeer zelf met de muis: een module slepen en vasthouden (voelt de hittebalk goed? is het groene vak
       te makkelijk of te moeilijk? zie `solderCold`/`solderHot`), of je een brug zonder Inspect echt over het

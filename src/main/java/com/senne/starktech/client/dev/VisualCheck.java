@@ -1225,6 +1225,14 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "rb18_os_robot_program");
+            // Hoofdstuk 23: in de app Logic een nieuw robotprogramma; de Help kent je robots en hun pinnen.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicNew(com.senne.starktech.logic.program.ProgramKind.ROBOT);
+                    os.tourLogicHelpAt("YOUR ROBOTS");
+                }
+            });
+            t.shot(10, "rb19_logic_robot_help");
             t.close(10);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }

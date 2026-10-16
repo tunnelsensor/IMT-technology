@@ -826,6 +826,8 @@ public final class StarkOs {
             inputs.add(entry);
         }
         info.put("inputs", inputs);
+        // Je robots (hoofdstuk 23): hun namen en wat er op hun pinnen zit, voor Help en Ctrl+Spatie.
+        info.put("robots", com.senne.starktech.robot.Robots.logicInfo(level, core));
         data.put("logicInfo", info);
         // De diagrammen zelf: alleen als het scherm een oudere versie heeft (anders zou wat je aan het
         // bewerken bent steeds overschreven worden).

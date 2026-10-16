@@ -256,6 +256,12 @@ public class StarkOsScreen extends Screen {
         robots.tourChooseProgram();
     }
 
+    /** Alleen voor de screenshot-rondleiding: in de app Logic de Help scrollen tot dit kopje (hoofdstuk 23). */
+    public void tourLogicHelpAt(String header) {
+        openApp(App.LOGIC);
+        logic.tourHelpAt(header);
+    }
+
     /** Alleen voor de screenshot-rondleiding: de knop Save van de app Logic. */
     public void tourSaveLogic() {
         logic.tourSave();

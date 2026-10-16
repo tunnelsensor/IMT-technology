@@ -861,8 +861,9 @@ Wat een robot kan, soldeer je op zijn **printplaat**: 8 genummerde pinnen. Er zi
 **Scan** (ziet hij iemand?), **Distance** (hoe ver tot wat voor hem staat), **Face Recognition** (wie
 hij ziet), **Pathfinding** (naar een plek lopen), **Laser**, **Gun**, **Solar Panel** (laden in de zon)
 en **Camera** (door zijn ogen kijken). Elk recept: een Stark Chip, twee redstone en iets dat erbij past.
-Wat ze precies doen, en hoe je ze in je code gebruikt (`scanPin = pin(1)`), komt in de volgende
-hoofdstukken; je ziet ze wel al op de robot (een schoteltje op zijn hoofd, een laser op zijn arm...).
+Hoe je ze in je code noemt (`scanPin = pin(1)`) staat hieronder bij "Robots programmeren"; wat ze precies
+doen, komt in hoofdstuk 24. Je ziet ze wel al op de robot (een schoteltje op zijn hoofd, een laser op zijn
+arm...).
 
 **Solderen.** Je hebt een **Soldering Iron** nodig (ijzer, blazepoeder en een stok; ergens in je rugzak
 is genoeg; hij slijt). Zet de robot **uit**, open zijn scherm (sneak + rechtsklik) en druk op **Board**.
@@ -880,6 +881,63 @@ brandt de hele robot af. Hij blijft uit; E.D.I.T.H. vertelt het de eigenaar, en 
 krijgt een regel. Een brug tussen twee lege pinnen doet niets. De getallen van het spelletje staan in
 `config/starktech.toml` onder `[robots]` (`solderCold`, `solderHot`, `bridgeChanceGood`,
 `bridgeChanceHot`, `burnChance`).
+
+### Robots programmeren
+Een guard robot doet wat zijn **programma** zegt. Dat maak je in de app **Logic** op de desktop, net als een
+diagram voor je server: druk op **+** en kies **Robot program** (een robotprogramma heeft een geel **R** in de
+lijst). Code of blokjes, allebei kan. Een robotprogramma staat op de SSD's van je server, maar draait op de
+robot zelf. Een voorbeeld:
+
+```
+scanPin = pin(1)
+
+when started:
+    forever:
+        if robot.battery < 20:
+            charge()
+        forward(4)
+        turn_right()
+        send("corner")
+
+when ordered("attack"):
+    goto(order.x, order.y, order.z)
+```
+
+**Wat een robot kan.**
+- `when started:` begint als hij aangaat (stapt hij uit zijn dock, dan als hij eruit is); `when every(10):`
+  werkt ook, en loopt naast de andere whens.
+- `forward(3)` en `back(1)`: blok voor blok, precies van midden naar midden, één blok op of af. Staat er iets in
+  de weg (een muur, een gat), dan stopt hij en is `robot.blocked` waar. Achteruit blijft hij vooruit kijken.
+- `turn_left()` en `turn_right()`: een kwartslag. `robot.facing` zegt welke kant hij op kijkt ("north"...).
+- `goto(x, y, z)`: naar een plek lopen. Alleen met de **Pathfinding**-module op een van zijn pinnen.
+- `charge()` of `charge(80)`: hij loopt naar zijn dock, laadt (tot 80%), stapt eruit en loopt terug naar waar hij
+  was. Daarna gaat zijn programma verder.
+- `stop()`: hij zet zichzelf uit en loopt naar zijn dock.
+- `scanPin = pin(1)` geeft pin 1 een naam (zoals in C++); `read(scanPin)` en `write(laserPin, true)` gebruiken
+  straks de modules op zijn pinnen (hoofdstuk 24). In de Help van de app Logic staat bij **YOUR ROBOTS** wat er
+  op de pinnen van je robots zit: klik erop en de regels met `pin(...)` staan in je code.
+- Gegevens: `robot.battery` (0-100), `robot.x`, `robot.y`, `robot.z`, `robot.facing`, `robot.name`,
+  `robot.blocked` en `robot.connected`.
+
+**Het programma naar de robot.** In de app **Robots** heeft elke robot een knop **Program**: kies een
+robotprogramma, en de kern stuurt hem een kopie. De robot bewaart die zelf (ook in zijn item als je hem
+oppakt). Verander je het programma later op de server, dan zegt de app "(older than on the server)" tot je
+hem opnieuw stuurt. Een robot die ver weg is, krijgt het als hij terug is.
+
+**Verbinding.** Een robot praat alleen met zijn server als hij **verbinding** heeft: hij staat in het gebied
+van je kern, hij is van jou (of van iemand die daar vertrouwd is), de kern heeft stroom en je server draait.
+Dan gaan `say(...)`, `log(...)`, `alarm(...)`, `on/off/toggle/pulse("Door")` en `is_on("Door")` via de server,
+en `send("corner")` laat elke `when message("corner"):` op je server beginnen; daar zijn `sender.name` en
+`sender.x/y/z` de robot die het stuurde. Zonder verbinding gebeurt dat niet, maar loopt hij gewoon door.
+
+**De server stuurt robots aan.** In een gewoon diagram: `order("Guard 1", "attack")` of met een plek erbij
+`order("Guard 1", "attack", x, y, z)`, `activate("Guard 1")` en `deactivate("Guard 1")`. Een opdracht
+onderbreekt wat de robot doet: zijn `when ordered("attack"):` loopt (met `order.x/y/z`), en daarna gaat hij
+verder waar hij was. Heeft hij geen `when ordered` met die naam, dan negeert hij hem (dat staat in het
+logboek). Een robot die ver weg is, krijgt zijn opdracht als hij terug is.
+
+Hoe snel hij loopt en hoeveel hij per tick doet, staat in `config/starktech.toml` onder `[robots]`
+(`stepsPerTick`, `maxRuns`, `walkFactor`, `stuckSeconds`, `turnSeconds`, `gotoSeconds`).
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je

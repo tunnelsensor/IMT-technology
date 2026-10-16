@@ -237,6 +237,27 @@ public final class Robots {
         return list;
     }
 
+    /**
+     * De robots in het gebied van deze kern voor de app Logic (hoofdstuk 23): hun naam (voor order, activate en
+     * deactivate) en, als ze geladen zijn, wat er op hun pinnen zit (voor {@code scanPin = pin(1)} in de Help).
+     */
+    public static ListTag logicInfo(ServerLevel level, SecurityCoreBlockEntity core) {
+        ListTag robots = new ListTag();
+        for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+            CompoundTag row = new CompoundTag();
+            row.putString("n", entry.name());
+            if (level.getEntity(entry.id()) instanceof GuardRobotEntity robot && robot.isAlive()) {
+                ListTag pins = new ListTag();
+                for (int pin = 1; pin <= BotBoard.PINS; pin++) {
+                    pins.add(net.minecraft.nbt.StringTag.valueOf(robot.board().pin(pin)));
+                }
+                row.put("pins", pins);
+            }
+            robots.add(row);
+        }
+        return robots;
+    }
+
     /** De robotprogramma's op de server van deze kern (voor de knop Program in de app Robots). */
     public static ListTag programNames(SecurityCoreBlockEntity core) {
         ListTag names = new ListTag();

@@ -30,11 +30,16 @@ import org.jetbrains.annotations.Nullable;
 public final class CodeCompletion {
     private CodeCompletion() {}
 
-    /** De namen die de server stuurde: je apparaten, lezers en panelen. */
-    public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind) {
+    /** De namen die de server stuurde: je apparaten, lezers, panelen en (hoofdstuk 23) robots. */
+    public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots) {
         /** Voor een diagram op de server. */
         public Data(List<String> outputs, List<String> readers, List<String> panels) {
-            this(outputs, readers, panels, ProgramKind.SERVER);
+            this(outputs, readers, panels, ProgramKind.SERVER, List.of());
+        }
+
+        /** Zonder robots. */
+        public Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind) {
+            this(outputs, readers, panels, kind, List.of());
         }
     }
 
@@ -84,9 +89,11 @@ public final class CodeCompletion {
                 case "keycard" -> data.readers();
                 case "codepanel" -> data.panels();
                 case "on", "off", "toggle", "pulse", "turned_on", "turned_off", "is_on" -> data.outputs();
+                case "order", "activate", "deactivate" -> data.robots();
                 default -> List.of();
             };
             String what = function.equals("keycard") ? "a keycard reader" : function.equals("codepanel") ? "a code panel"
+                    : data.robots() == source ? "a guard robot in this network's area"
                     : "a relay, laser, dome, turret or cabinet switch";
             for (String name : source) {
                 names.add(new Item(name, name, -1, what + " in this network", NAME));
