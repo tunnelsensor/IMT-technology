@@ -3263,6 +3263,57 @@ def robot_dock_textures():
     save(img(16, 16, CYAN), "block/robot_dock_light.png")
 
 
+def robot_module_items():
+    """
+    De modules van hoofdstuk 22: elk een klein groen printplaatje met twee gouden pootjes onderaan (daarmee
+    soldeer je hem op een pin), en erop een tekentje: radarboogjes (Scan), een pijl met een meetlat (Distance),
+    een gezichtje met een cyaan oog (Face Recognition), een gestippeld pad met een vlag (Pathfinding), een rode
+    straal (Laser), een geweerloop (Gun), blauwe zonnecellen (Solar Panel), een lens (Camera). De verbrande
+    module is zwartgeblakerd, met as en een gloeiend randje.
+    """
+    board = (34, 110, 58, 255)
+    board_dark = (20, 66, 36, 255)
+    gold = (236, 196, 70, 255)
+
+    def base(burnt=False):
+        im = img(16, 16)
+        d = ImageDraw.Draw(im)
+        fill = (40, 34, 30, 255) if burnt else board
+        edge = (16, 14, 12, 255) if burnt else board_dark
+        d.rectangle([2, 2, 13, 12], fill=fill, outline=edge)
+        px(im, [(5, 13), (5, 14), (10, 13), (10, 14)], (90, 80, 60, 255) if burnt else gold)
+        return im, d
+
+    symbols = {
+        "scan": lambda im, d: (d.arc([4, 5, 11, 12], 200, 340, fill=CYAN), d.arc([6, 7, 9, 10], 200, 340, fill=CYAN),
+                               px(im, [(7, 9), (8, 9)], (255, 255, 255, 255))),
+        "distance": lambda im, d: (d.line([4, 6, 11, 6], fill=(250, 220, 80, 255)), px(im, [(10, 5), (10, 7), (9, 4), (9, 8)],
+                                   (250, 220, 80, 255)), [d.line([x, 9, x, 10 if x % 2 else 9], fill=(230, 230, 230, 255)) for x in range(4, 12)]),
+        "face_recognition": lambda im, d: (d.ellipse([5, 4, 10, 10], outline=(235, 240, 245, 255)),
+                                           px(im, [(6, 6), (9, 6)], CYAN), d.line([6, 8, 9, 8], fill=(235, 240, 245, 255))),
+        "pathfinding": lambda im, d: (px(im, [(4, 10), (6, 9), (8, 8), (9, 6)], (255, 255, 255, 255)),
+                                      d.line([10, 4, 10, 8], fill=(220, 220, 220, 255)), d.rectangle([11, 4, 12, 5], fill=(230, 60, 50, 255))),
+        "laser": lambda im, d: (d.rectangle([4, 6, 7, 8], fill=(60, 64, 72, 255)), d.line([8, 7, 12, 7], fill=(255, 70, 60, 255)),
+                                px(im, [(12, 6), (12, 8)], (255, 160, 150, 255))),
+        "gun": lambda im, d: (d.rectangle([4, 6, 12, 7], fill=(70, 74, 82, 255)), d.rectangle([5, 8, 6, 10], fill=(70, 74, 82, 255)),
+                              px(im, [(12, 6)], (20, 20, 22, 255))),
+        "solar_panel": lambda im, d: (d.rectangle([4, 4, 11, 10], fill=(40, 70, 150, 255), outline=(200, 210, 220, 255)),
+                                      d.line([7, 4, 7, 10], fill=(200, 210, 220, 255)), d.line([4, 7, 11, 7], fill=(200, 210, 220, 255))),
+        "camera": lambda im, d: (d.rectangle([4, 5, 11, 10], fill=(40, 44, 52, 255)), d.ellipse([6, 6, 9, 9], fill=(12, 14, 18, 255),
+                                 outline=(140, 150, 160, 255)), px(im, [(7, 7)], CYAN)),
+    }
+    for name, draw in symbols.items():
+        im, d = base()
+        draw(im, d)
+        save(im, f"item/module/{name}.png")
+    # De verbrande module: zwart, met as en een gloeiend randje.
+    im, d = base(burnt=True)
+    px(im, [(4, 4), (7, 5), (10, 4), (5, 8), (9, 9), (11, 7)], (90, 86, 82, 255))
+    px(im, [(6, 6), (8, 7), (7, 10)], (255, 120, 40, 255))
+    px(im, [(9, 6)], (255, 200, 90, 255))
+    save(im, "item/module/burnt.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3326,3 +3377,4 @@ if __name__ == "__main__":
     robot_assembler_textures()
     guard_robot_item()
     robot_dock_textures()
+    robot_module_items()

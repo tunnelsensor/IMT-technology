@@ -294,6 +294,28 @@ public final class ModItems {
             "guard_robot", com.senne.starktech.robot.GuardRobotItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
+    /**
+     * Hoofdstuk 22: de modules die je op de printplaat soldeert ("scan_module" tot "camera_module"), en de
+     * verbrande module die overblijft na een kortsluiting ("burnt_module").
+     */
+    public static final Map<com.senne.starktech.bot.BotModule, DeferredItem<com.senne.starktech.bot.BotModuleItem>> ROBOT_MODULES =
+            registerModules();
+
+    private static Map<com.senne.starktech.bot.BotModule, DeferredItem<com.senne.starktech.bot.BotModuleItem>> registerModules() {
+        Map<com.senne.starktech.bot.BotModule, DeferredItem<com.senne.starktech.bot.BotModuleItem>> modules =
+                new EnumMap<>(com.senne.starktech.bot.BotModule.class);
+        for (com.senne.starktech.bot.BotModule module : com.senne.starktech.bot.BotModule.values()) {
+            modules.put(module, ITEMS.registerItem(module.id() + "_module",
+                    properties -> new com.senne.starktech.bot.BotModuleItem(properties, module), new Item.Properties().stacksTo(16)));
+        }
+        return modules;
+    }
+
+    /** Het item van deze module. */
+    public static com.senne.starktech.bot.BotModuleItem robotModule(com.senne.starktech.bot.BotModule module) {
+        return ROBOT_MODULES.get(module).get();
+    }
+
     /** Het onderdeel-item van deze soort in deze stijl. */
     public static RobotPartItem robotPart(RobotSlot slot, RobotStyle style) {
         return ROBOT_PARTS.get(slot).get(style.ordinal()).get();

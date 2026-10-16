@@ -2,6 +2,8 @@ package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotModule;
+import com.senne.starktech.bot.BotModuleItem;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.bot.CircuitBoardItem;
 import com.senne.starktech.config.StarkConfig;
@@ -512,6 +514,25 @@ public final class RobotGameTests {
             StarkOs.close(owner);
             helper.succeed();
         });
+    }
+
+    // ================================================================ Hoofdstuk 22: modules en solderen
+
+    /** De negen modules bestaan als item ("scan_module" ...); acht hebben een recept, de verbrande niet. */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_modules_are_items(GameTestHelper helper) {
+        for (BotModule module : BotModule.values()) {
+            BotModuleItem item = ModItems.robotModule(module);
+            check(item.module() == module, module + " weet niet wat het is");
+            check(BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, module.id() + "_module")),
+                    "De module " + module + " heet " + BuiltInRegistries.ITEM.getKey(item));
+            check(BotModule.byId(module.id()) == module, "byId vindt " + module + " niet terug");
+            boolean recipe = helper.getLevel().getRecipeManager()
+                    .byKey(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, module.id() + "_module")).isPresent();
+            check(recipe == (module != BotModule.BURNT), module + (recipe ? " heeft een recept" : " heeft geen recept"));
+        }
+        check(BotModule.byId("nonsense") == null, "byId vond iets dat niet bestaat");
+        helper.succeed();
     }
 
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */

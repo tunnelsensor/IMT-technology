@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "X": {
+      "item": "minecraft:daylight_detector"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    }
+  },
+  "pattern": [
+    " X ",
+    "RCR"
+  ],
+  "result": {
+    "id": "starktech:solar_panel_module",
+    "count": 1
+  }
+}

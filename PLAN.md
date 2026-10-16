@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 243 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 244 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 90 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2487,7 +2487,13 @@ Camera). Het spelletje: een hittebalk; loslaten in het groene vak = goede verbin
 (opnieuw); te laat = een brug. Een brug zie je alleen als je goed kijkt, of met de knop Inspect. De kans op
 brand staat in de config.
 
-- [ ] **1. Modules** — acht modules plus de *Burnt Module*, recepten, texturen.
+- [x] **1. Modules** — `BotModule` (in `bot/`) en negen items: **Scan**, **Distance**, **Face Recognition**,
+      **Pathfinding**, **Laser**, **Gun**, **Solar Panel**, **Camera** en de **Burnt Module** (wat overblijft na
+      een kortsluiting; geen recept). Elk recept: een Stark Chip, twee redstone en iets dat bij de module past
+      (een glasruit, een observer, een verrekijker, een kompas, een diamant met een blazestaaf, een dispenser
+      met ijzer, een daglichtsensor, getint glas). Icoontjes: een groen printplaatje met twee gouden pootjes
+      en een tekentje (`robot_module_items()`). Tooltip: wat hij doet en "Solder it onto a pin...". Eén
+      nieuwe test. Vorige commit: `bff8e91` (einde hoofdstuk 21).
 - [ ] **2. Het bord** — pinnen, soldeerbruggen, solderen en lossolderen; de server bepaalt de uitkomst.
 - [ ] **3. Het spelletje** — hittebalk, groen vak, een brug bij te laat, Inspect, en de soldeerbout (slijt).
 - [ ] **4. Aanzetten met een brug** — de modules op die pinnen verbranden; met een kans brandt de hele robot
