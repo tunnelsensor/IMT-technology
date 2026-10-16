@@ -1532,6 +1532,9 @@ public final class StarkConfig {
         /** Zoveel Robot Ammo past er in een robot. */
         @Tunable(value = "How much Robot Ammo fits in a robot", min = 1, max = 1_000)
         public static float MAX_AMMO = 64.0f;
+        /** Zoveel stroom per tick stopt de Solar Panel-module in zijn batterij, in de volle middagzon. */
+        @Tunable(value = "Energy per tick the Solar Panel module puts into a robot's battery in full midday sun", max = 100)
+        public static float SOLAR_CHARGE = 0.5f;
 
         // Solderen (hoofdstuk 22): de hittebalk en wat er misgaat.
         /** Zoveel ticks duurt het tot de hittebalk vol is. */

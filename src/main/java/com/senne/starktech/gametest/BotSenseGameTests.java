@@ -251,4 +251,40 @@ public final class BotSenseGameTests {
             helper.succeed();
         });
     }
+
+    // ================================================================ Stap 4: het zonnepaneel
+
+    /**
+     * De Solar Panel-module laadt in de zon, ook als hij uit staat: om 12 uur 's middags (dat blijft dag, dus andere
+     * tests merken het niet) zegt hij bijna 100 zon. Onder een dak, of zonder de module, laadt hij niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100)
+    public static void robot_solar_panel_charges_in_the_sun(GameTestHelper helper) {
+        helper.getLevel().setDayTime(6000);
+        BotBoard solar = BotBoard.EMPTY.with(5, "solar_panel");
+        GuardRobotEntity sunny = still(helper, new BlockPos(6, 2, 6), solar);
+        GuardRobotEntity covered = still(helper, new BlockPos(14, 2, 6), solar);
+        helper.setBlock(new BlockPos(14, 5, 6), Blocks.STONE); // een dak boven zijn hoofd
+        GuardRobotEntity plain = still(helper, new BlockPos(10, 2, 6), BotBoard.EMPTY);
+        double half = sunny.maxBattery() / 2;
+        for (GuardRobotEntity robot : java.util.List.of(sunny, covered, plain)) {
+            robot.setBattery(half);
+        }
+        helper.runAfterDelay(45, () -> {
+            check((Double) sunny.brain().pins().read(5) >= 90, "Om 12 uur ving hij maar " + sunny.brain().pins().read(5) + " zon");
+            check(sunny.battery() >= half + 20 * StarkConfig.Robots.SOLAR_CHARGE * 0.9, "In de zon laadde hij niet: " + sunny.battery());
+            check(Double.valueOf(0).equals(covered.brain().pins().read(5)) && covered.battery() == half,
+                    "Onder een dak laadde hij toch: " + covered.battery());
+            check(plain.battery() == half, "Zonder module laadde hij toch: " + plain.battery());
+            helper.succeed();
+        });
+    }
+
+    /** Een robot met zijn verstand aan, maar uit en zonder programma, met deze modules. */
+    private static GuardRobotEntity still(GameTestHelper helper, BlockPos pos, BotBoard board) {
+        GuardRobotEntity robot = helper.spawn(ModEntities.GUARD_ROBOT.get(), pos);
+        robot.setParts(RobotParts.DEFAULT);
+        robot.setBoard(board);
+        return robot;
+    }
 }

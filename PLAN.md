@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 267 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 268 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2698,7 +2698,11 @@ dieren werkt hij niet.
       item. Sterfberichten: "... was lasered by Guard 1" en "... was shot by Guard 1". Netwerkversie 22.
       Screenshots `rb20` (laser) en `rb21` (geweer). Twee nieuwe tests (`robot_laser_and_gun_shoot`,
       `robot_shots_stop_at_walls_domes_and_pvp`; in de testwereld staat PvP uit, dus daar test ik op koeien).
-- [ ] **4. Zonnepaneel** — laadt overdag, met dezelfde zonberekening als het zonnepaneel van het net.
+- [x] **4. Zonnepaneel** — de Solar Panel-module laadt zijn batterij in de zon, ook als hij uit staat: in de
+      volle middagzon 0,5 per tick (`solarCharge`; zo houdt een robot die stilstaat het overdag vol), minder als
+      de zon laag staat of het regent, niets 's nachts of onder een dak. `read(solarPin)` is hoeveel zon hij
+      vangt (0-100). De zonberekening staat nu op één plek (`station/SolarMath`), voor het zonnepaneel van het
+      net en de module. Eén nieuwe test (`robot_solar_panel_charges_in_the_sun`).
 - [ ] **5. Camera** — de robot in de app Cameras; alleen binnen het volgbereik; zijn eigen model wordt
       overgeslagen.
 - [ ] **6. Ion Blaster** — de robot valt neer (DOWN); buiten een training staat hij na 60 s weer op.

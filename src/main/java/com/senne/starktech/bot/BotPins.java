@@ -28,6 +28,8 @@ import org.jetbrains.annotations.Nullable;
  *       genoeg), {@code write(laserPin, true)} = één schot (zie BotShot; kost batterij);</li>
  *   <li><b>Gun</b>: {@code read} = hoeveel kogels hij nog heeft, {@code write(gunPin, true)} = één schot (kost één
  *       Robot Ammo; rechtsklik hem met Robot Ammo om te laden);</li>
+ *   <li><b>Solar Panel</b>: {@code read} = hoeveel zon hij nu vangt, van 0 tot 100 (hij laadt er zelf mee, ook
+ *       als hij uit staat);</li>
  *   <li>een lege pin, of een verbrande module: {@code read} = false.</li>
  * </ul>
  * Een module die niets met {@code write} doet, zegt dat in het logboek (één keer per minuut).
@@ -67,6 +69,7 @@ public final class BotPins {
             case PATHFINDING -> brain.body().goingSomewhere();
             case LASER -> laserReady();
             case GUN -> (double) robot.ammo();
+            case SOLAR_PANEL -> robot.level() instanceof ServerLevel level ? (double) Math.round(robot.sunlight(level) * 100) : 0.0;
             default -> false;
         };
     }

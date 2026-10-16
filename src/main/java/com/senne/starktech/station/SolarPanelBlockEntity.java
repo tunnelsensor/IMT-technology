@@ -32,18 +32,8 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
 
     @Override
     protected double produce(ServerLevel level, BlockPos pos) {
-        if (!level.canSeeSky(pos.above())) {
-            return 0; // er zit iets boven hem
-        }
-        if (!level.isDay()) {
-            return 0;
-        }
-        // Hoe hoger de zon staat, hoe meer hij oplevert (middags het meest).
-        float angle = level.getSunAngle(1.0f);
-        float height = Math.max(0.0f, net.minecraft.util.Mth.cos(angle));
-        float weather = level.isThundering() ? StarkConfig.Power.SOLAR_THUNDER
-                : level.isRaining() ? StarkConfig.Power.SOLAR_RAIN : 1.0f;
-        return StarkConfig.Power.SOLAR_RATE * height * weather;
+        // Hoeveel zon er op hem valt (niets onder een dak of 's nachts, het meest 's middags): zie SolarMath.
+        return StarkConfig.Power.SOLAR_RATE * SolarMath.sunlight(level, pos.above());
     }
 
     @Override

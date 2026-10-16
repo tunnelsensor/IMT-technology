@@ -444,6 +444,11 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         this.home = home == null ? null : home.immutable();
     }
 
+    /** Hoeveel zon er op zijn rug valt, van 0 tot 1 (voor zijn Solar Panel-module). */
+    public float sunlight(ServerLevel level) {
+        return com.senne.starktech.station.SolarMath.sunlight(level, blockPosition().above());
+    }
+
     /** Staat hij in zijn dock? */
     public boolean isOnDock() {
         return home != null && blockPosition().equals(home);
@@ -479,6 +484,10 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         }
         if (entityData.get(CHARGING) != charging) {
             entityData.set(CHARGING, charging);
+        }
+        // De Solar Panel-module (hoofdstuk 24): laadt in de zon, ook als hij uit staat (één keer per seconde).
+        if (tickCount % 20 == 0 && battery < max && board().has(BotModule.SOLAR_PANEL)) {
+            battery = Math.min(max, battery + 20 * StarkConfig.Robots.SOLAR_CHARGE * sunlight(level));
         }
         boolean walking = getDeltaMovement().horizontalDistanceSqr() > 1.0E-4 || !getNavigation().isDone()
                 || getMoveControl().hasWanted();
