@@ -63,6 +63,7 @@
   "message.starktech.robot.bad_name": "A robot name has 1 to %s characters (no quotes)",
   "message.starktech.robot.name_taken": "Another robot of yours is already called %s",
   "message.starktech.robot.picked_up": "%s is in your inventory",
+  "message.starktech.robot.short_circuit": "Short circuit! A solder bridge burnt out the modules on its board",
   "item.starktech.guard_robot": "Guard Robot",
   "tooltip.starktech.guard_robot.part": "%s: %s",
   "tooltip.starktech.guard_robot.board": "Circuit board: %s of 8 pins in use",

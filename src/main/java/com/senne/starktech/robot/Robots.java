@@ -59,7 +59,11 @@ public final class Robots {
             return;
         }
         switch (payload.op()) {
-            case TURN_ON -> robot.setActive(true);
+            case TURN_ON -> {
+                if (!robot.setActive(true)) {
+                    player.displayClientMessage(Component.translatable("message.starktech.robot.short_circuit"), true);
+                }
+            }
             case TURN_OFF -> robot.setActive(false);
             case RENAME -> rename(player, robot, payload.text());
             case PICK_UP -> pickUp(player, robot);
@@ -241,8 +245,8 @@ public final class Robots {
         Desktop result;
         if (op.equals("robot_switch")) {
             boolean on = args.getBoolean("on");
-            robot.setActive(on);
-            result = new Desktop(name + (on ? " switched on" : " switched off"), false);
+            result = robot.setActive(on) ? new Desktop(name + (on ? " switched on" : " switched off"), false)
+                    : new Desktop("Short circuit in " + name + "! Check its circuit board", true);
         } else {
             result = rename(player, robot, args.getString("name"))
                     ? new Desktop("Renamed to " + robot.getCustomName().getString(), false)

@@ -1,6 +1,7 @@
 package com.senne.starktech.robot;
 
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
@@ -21,6 +23,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -280,11 +283,16 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     /**
      * Zet hem aan of uit. Aan in zijn dock: hij stapt er naar voren uit. Uit: hij loopt naar zijn dock (zie
-     * ReturnToDockGoal) en laadt daar.
+     * ReturnToDockGoal) en laadt daar. Aanzetten met een soldeerbrug aan een module geeft kortsluiting (zie
+     * {@link #shortCircuit}): dan blijft hij uit en geeft dit false.
      */
-    public void setActive(boolean on) {
+    public boolean setActive(boolean on) {
         if (active == on) {
-            return;
+            return true;
+        }
+        if (on && level() instanceof ServerLevel level && !board().shorts().isEmpty()) {
+            shortCircuit(level);
+            return false;
         }
         active = on;
         getNavigation().stop();
@@ -294,6 +302,56 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             stepOut = home.relative(front, Math.max(1, Math.round(StarkConfig.Robots.STEP_OUT)));
         }
         updateState();
+        return true;
+    }
+
+    /**
+     * Kortsluiting (hoofdstuk 22, jouw antwoord: "heb je het niet gezien en je gebruikt de robot, dan kortsluiting:
+     * de robot of de onderdelen kunnen afbranden"). Elke soldeerbrug aan een module brandt door: de modules op die
+     * pinnen worden Burnt Modules en de brug is weg. Vonken, rook en een knal; met de kans {@code burnChance} brandt
+     * de hele robot af (hij is dan echt kapot: zijn onderdelen vallen eruit met hun kans). De eigenaar hoort het
+     * van E.D.I.T.H., en het logboek van de kern waar hij staat krijgt een regel.
+     */
+    private void shortCircuit(ServerLevel level) {
+        BotBoard board = board();
+        java.util.TreeSet<Integer> burnt = new java.util.TreeSet<>();
+        int bridges = board.bridges();
+        for (int left : board.shorts()) {
+            for (int pin = left; pin <= left + 1; pin++) {
+                if (!board.pin(pin).isEmpty()) {
+                    board = board.with(pin, BotModule.BURNT.id());
+                    burnt.add(pin);
+                }
+            }
+            bridges &= ~(1 << (left - 1));
+        }
+        setBoard(new BotBoard(board.pins(), bridges));
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 1.2, getZ(), 40, 0.35, 0.5, 0.35, 0.25);
+        level.sendParticles(ParticleTypes.LARGE_SMOKE, getX(), getY() + 1.4, getZ(), 12, 0.25, 0.4, 0.25, 0.02);
+        playSound(SoundEvents.GENERIC_EXPLODE.value(), 0.6f, 1.6f);
+        playSound(ModSounds.ROBOT_HURT.get(), 1.0f, 0.8f);
+        boolean burnsDown = random.nextFloat() < StarkConfig.Robots.BURN_CHANCE;
+        String name = hasCustomName() ? getCustomName().getString() : "A guard robot";
+        StringBuilder pins = new StringBuilder();
+        for (int pin : burnt) {
+            pins.append(pins.isEmpty() ? "" : burnt.last() == pin ? " and " : ", ").append(pin);
+        }
+        String text = "Short circuit in " + name + ": " + (burnt.size() == 1 ? "pin " : "pins ") + pins + " burnt out"
+                + (burnsDown ? ", and the robot burnt down" : "");
+        com.senne.starktech.security.SecurityCoreBlockEntity core = com.senne.starktech.security.SecurityCores.coreAt(level, blockPosition());
+        if (core != null) {
+            core.log().add(level.getGameTime(), com.senne.starktech.security.os.EventLog.Type.DEVICE, text);
+            core.setChanged();
+        }
+        ServerPlayer owner = this.owner == null ? null : level.getServer().getPlayerList().getPlayer(this.owner);
+        if (owner != null) {
+            com.senne.starktech.edith.EdithServer.send(owner, Component.literal(text),
+                    com.senne.starktech.network.EdithMessagePayload.Level.ALERT);
+        }
+        if (burnsDown) {
+            igniteForSeconds(4);
+            hurt(damageSources().inFire(), Float.MAX_VALUE);
+        }
     }
 
     /** Zijn Robot Dock, of null. */

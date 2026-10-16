@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 246 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 247 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 90 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2514,8 +2514,13 @@ brand staat in de config.
       een roze balk, en bovenaan "switching on now would short!" (of dat hij tussen lege pinnen niets doet).
       Rechtsklik op een pin = lossolderen. Staat de robot aan of heb je geen bout, dan zegt het scherm dat.
       Screenshots `rb14` (hittebalk) en `rb15` (Inspect). Vorige stap: `a37fe66`.
-- [ ] **4. Aanzetten met een brug** — de modules op die pinnen verbranden; met een kans brandt de hele robot
-      af; logboek en E.D.I.T.H.-melding met de pinnummers.
+- [x] **4. Aanzetten met een brug** — `GuardRobotEntity.shortCircuit`: zet je een robot aan met een soldeerbrug aan
+      een module, dan blijft hij uit; vonken, rook, een knal; de modules op die pinnen worden **Burnt Modules**
+      (lossolderen geeft je de verbrande module) en de brug is weggebrand. Met de kans `burnChance` (0,25)
+      brandt de hele robot af (echt kapot: zijn onderdelen vallen met hun kans). De eigenaar krijgt een rode
+      E.D.I.T.H.-melding ("Short circuit in Guard 1: pin 3 burnt out"), het logboek van de kern een regel, en wie
+      hem aanzette (robotscherm of app Robots) hoort "Short circuit!". Een brug tussen twee lege pinnen doet
+      niets; daarna gaat hij gewoon aan. Eén nieuwe test. Vorige stap: `4f1b9ec`.
 - [ ] **5. Zichtbaar op de robot** — laser op de arm, zonnepaneel op de rug, antenne, cameralens.
 
 Tests: goed solderen geeft een module; te laat geeft een brug; aanzetten met een brug verbrandt de modules;

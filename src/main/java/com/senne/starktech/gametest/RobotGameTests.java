@@ -612,6 +612,37 @@ public final class RobotGameTests {
         helper.succeed();
     }
 
+    /**
+     * Aanzetten met een brug aan een module: kortsluiting. Hij blijft uit, de module op die pin wordt een Burnt
+     * Module, de brug is weg, en een module zonder brug blijft heel; daarna gaat hij gewoon aan. Een brug tussen
+     * twee lege pinnen doet niets. Met brandkans 1 brandt de hele robot af.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "robot_config")
+    public static void robot_short_circuit(GameTestHelper helper) {
+        float before = StarkConfig.Robots.BURN_CHANCE;
+        try {
+            StarkConfig.Robots.BURN_CHANCE = 0.0f;
+            GuardRobotEntity robot = robot(helper, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+            robot.setBoard(BotBoard.EMPTY.with(1, "scan").with(3, "laser").withBridge(3).withBridge(6));
+            check(!robot.setActive(true) && !robot.isActive(), "Met een brug aan een module ging hij toch aan");
+            BotBoard after = robot.board();
+            check(after.module(3) == BotModule.BURNT && after.pin(4).isEmpty() && after.module(1) == BotModule.SCAN,
+                    "Na de kortsluiting: " + after);
+            check(!after.bridge(3) && after.bridge(6), "De verbrande brug is er nog, of de onschuldige brug is weg: " + after);
+            check(robot.isAlive(), "Met brandkans 0 brandde hij toch af");
+            check(robot.setActive(true) && robot.isActive(), "Zonder gevaarlijke brug gaat hij niet aan");
+
+            StarkConfig.Robots.BURN_CHANCE = 1.0f;
+            GuardRobotEntity doomed = robot(helper, new BlockPos(8, 1, 8), RobotParts.DEFAULT);
+            doomed.setBoard(BotBoard.EMPTY.with(5, "gun").withBridge(4));
+            check(!doomed.setActive(true), "Met een brug ging hij toch aan");
+            check(doomed.isDeadOrDying(), "Met brandkans 1 brandde hij niet af");
+        } finally {
+            StarkConfig.Robots.BURN_CHANCE = before;
+        }
+        helper.succeed();
+    }
+
     /** Hoeveel van dit item er in de rugzak zit. */
     private static int count(ServerPlayer player, Item item) {
         int count = 0;
