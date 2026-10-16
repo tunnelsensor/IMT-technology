@@ -1,6 +1,8 @@
 package com.senne.starktech.bot;
 
 import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.logic.LogicDevices;
+import com.senne.starktech.logic.LogicRunner;
 import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.logic.program.ExprCache;
 import com.senne.starktech.logic.program.Interpreter;
@@ -38,9 +40,11 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Zijn lijf ({@link BotMove}) doet één beweging tegelijk. Wil een when lopen terwijl een andere loopt, dan
  *       wacht hij zijn beurt af: wie het eerst vroeg, is eerst.</li>
  * </ul>
- * Wat niet klopt (een def die er niet is, goto zonder Pathfinding-module), komt in het logboek van de core in
- * wiens gebied hij staat. Praten met de server (alarm, relais, berichten) komt in stap 5, zijn modules
- * ({@code read} en {@code write}) in hoofdstuk 24.
+ * Met verbinding (zie BotLink) praat hij met zijn server: {@code say}, {@code log}, {@code alarm}, de relais
+ * ({@code on}, {@code off}, {@code toggle}, {@code pulse}, {@code is_on}) en {@code send("intruder")}, waarop
+ * {@code when message("intruder"):} van de server begint. Zonder verbinding gebeurt dat gewoon niet, maar loopt
+ * hij wel door. Wat niet klopt (een def die er niet is, goto zonder Pathfinding-module), komt in het logboek van
+ * de core in wiens gebied hij staat. Zijn modules ({@code read} en {@code write}) komen in hoofdstuk 24.
  */
 public final class BotBrain {
     private final GuardRobotEntity robot;
@@ -248,9 +252,41 @@ public final class BotBrain {
                 stopRequested = true;
                 run.machine.pause();
             }
-            // alarm, say, log, de relais en send gaan via de server (stap 5); write naar een module (hoofdstuk 24).
+            case SAY, LOG, ALARM, ON, OFF, TOGGLE, PULSE, SEND -> server(run, node);
+            // write naar een module: hoofdstuk 24.
             default -> { }
         }
+    }
+
+    /**
+     * Wat via de server gaat (alleen met verbinding; zonder gebeurt het niet, en loopt zijn programma gewoon door):
+     * iets zeggen, een alarm, een relais schakelen, of de server een bericht sturen.
+     */
+    private void server(Run run, LogicGraph.Node node) {
+        SecurityCoreBlockEntity core = BotLink.core(robot);
+        if (core == null || !(robot.level() instanceof ServerLevel level)) {
+            return;
+        }
+        String name = robot.getName().getString();
+        switch (node.op) {
+            case SAY, LOG, ALARM -> LogicRunner.robotMessage(level, core, name, node.op, message(run, node));
+            case SEND -> LogicRunner.robotSend(level, core, name, robot.blockPosition(), message(run, node));
+            default -> {
+                double seconds = node.op == Op.PULSE ? number(run, node) : 0;
+                if (!LogicRunner.robotSwitch(level, core, node.op, node.text, seconds)) {
+                    report("there is no device called \"" + node.text + "\" in this network");
+                }
+            }
+        }
+    }
+
+    /** Het bericht van say, log, alarm of send: de tekst, of wat de berekening nu oplevert. */
+    private String message(Run run, LogicGraph.Node node) {
+        if (node.expr.isEmpty()) {
+            return node.text;
+        }
+        Expr expr = ExprCache.value(node.expr);
+        return expr == null ? node.expr : Expr.text(ExprCache.eval(expr, facts(run)));
     }
 
     /** Deze when wil bewegen: hij wacht (in de rij) tot zijn lijf het gedaan heeft. */
@@ -306,14 +342,16 @@ public final class BotBrain {
                     case "robot.connected" -> BotLink.connected(robot);
                     case "is_night" -> robot.level().isNight();
                     case "is_day" -> !robot.level().isNight();
-                    // De relais (stap 5) en order.* (stap 6): nog niets.
+                    // order.* (stap 6): nog niets.
                     default -> false;
                 };
             }
 
+            /** {@code is_on("Door")}: dat vraagt hij aan de server (zonder verbinding: nee). */
             @Override
             public boolean isOn(String device) {
-                return false;
+                SecurityCoreBlockEntity core = BotLink.core(robot);
+                return core != null && robot.level() instanceof ServerLevel level && LogicDevices.isOn(level, core, device);
             }
 
             @Override

@@ -76,6 +76,14 @@ public final class LogicRunner {
         static Context plain(Op trigger, String source) {
             return new Context(trigger, source, null, null, "", false, false, null, false, "");
         }
+
+        /**
+         * Een bericht van een robot ({@code send("intruder")}, hoofdstuk 23): de bron is de naam van de robot en
+         * waar hij stond. Dat zijn {@code sender.name} en {@code sender.x/y/z} in {@code when message(...)}.
+         */
+        static Context fromRobot(String robot, BlockPos where) {
+            return new Context(Op.MESSAGE, robot, where.immutable(), null, "", false, false, null, false, "");
+        }
     }
 
     /** Eén run: een vingertje (de tolk, zie Interpreter) dat de blokjes van één when-blok afloopt. */
@@ -370,6 +378,11 @@ public final class LogicRunner {
                     case "player.owner" -> context.owner();
                     case "is_night" -> level.isNight();
                     case "is_day" -> !level.isNight();
+                    // Na when message(...) (hoofdstuk 23): de robot die het stuurde.
+                    case "sender.name" -> context.trigger() == Op.MESSAGE ? context.source() : "";
+                    case "sender.x" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getX();
+                    case "sender.y" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getY();
+                    case "sender.z" -> context.sourcePos() == null ? 0.0 : (double) context.sourcePos().getZ();
                     default -> false;
                 };
             }
@@ -480,6 +493,51 @@ public final class LogicRunner {
         if (runtime.reported.add(text)) {
             core.logEvent(type, text);
         }
+    }
+
+    // ================================================================ Een robot via zijn verbinding (hoofdstuk 23)
+
+    /**
+     * Een robot zegt iets via zijn verbinding: {@code say} (E.D.I.T.H. vertelt het de eigenaar), {@code log} of
+     * {@code alarm}. In het logboek staat zijn naam ervoor: "Guard 1: Intruder!".
+     */
+    public static void robotMessage(ServerLevel level, SecurityCoreBlockEntity core, String robot, Op op, String text) {
+        String line = robot + ": " + (text.length() > MAX_MESSAGE ? text.substring(0, MAX_MESSAGE) : text);
+        switch (op) {
+            case SAY -> {
+                core.logEvent(EventLog.Type.LOGIC, line);
+                ServerPlayer owner = owner(level, core);
+                if (owner != null) {
+                    EdithServer.send(owner, Component.literal(line), EdithMessagePayload.Level.INFO);
+                }
+            }
+            case LOG -> core.logEvent(EventLog.Type.LOGIC, line);
+            case ALARM -> alarm(level, core, Context.plain(Op.ALARM, robot), line);
+            default -> { }
+        }
+    }
+
+    /**
+     * Een robot schakelt een apparaat van zijn basis (on, off, toggle of pulse), zoals een diagram dat doet.
+     * Geeft false als er geen apparaat met die naam is.
+     */
+    public static boolean robotSwitch(ServerLevel level, SecurityCoreBlockEntity core, Op op, String device, double seconds) {
+        EdithRedstone.Op redstone = switch (op) {
+            case ON -> EdithRedstone.Op.ON;
+            case OFF -> EdithRedstone.Op.OFF;
+            case TOGGLE -> EdithRedstone.Op.TOGGLE;
+            default -> EdithRedstone.Op.PULSE;
+        };
+        double clamped = Math.max(Op.PULSE.minNumber(), Math.min(Op.PULSE.maxNumber(), seconds));
+        return LogicDevices.switchByName(level, core, device, redstone, (int) Math.max(1, Math.round(clamped * 20))) > 0;
+    }
+
+    /**
+     * Een robot stuurt de server een bericht ({@code send("intruder")}): elke {@code when message("intruder"):}
+     * begint, met {@code sender.name} en {@code sender.x/y/z}. Geeft terug hoeveel when-blokken erop pasten.
+     */
+    public static int robotSend(ServerLevel level, SecurityCoreBlockEntity core, String robot, BlockPos where, String message) {
+        return fire(level, core, Op.MESSAGE, message, Context.fromRobot(robot, where));
     }
 
     // ================================================================ Voor de desktop en de tests

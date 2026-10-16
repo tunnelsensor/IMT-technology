@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 259 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 260 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2610,8 +2610,12 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       ook. Onderweg gevonden: sinds hoofdstuk 22 stond de camera van de screenshots te ver van de kern, waardoor
       `rb13` de wereld liet zien in plaats van de app (de desktop opent alleen vlakbij); hersteld. Eén nieuwe
       test (`robot_program_upload_from_the_desktop`).
-- [ ] **5. Robot naar server** — alleen met verbinding (in het gebied van de core, met stroom en een werkende
-      server): alarm, say, log, relais, en `send(...)` met `sender.name`. Zonder verbinding wel lopen.
+- [x] **5. Robot naar server** — met verbinding gaat wat een robot zegt via zijn server: `say(...)` (E.D.I.T.H.
+      vertelt het de eigenaar), `log(...)` en `alarm(...)` komen in het logboek met zijn naam ervoor ("Scout:
+      Intruder!"), `on`/`off`/`toggle`/`pulse("Door")` schakelen een apparaat van de basis, `is_on("Door")` vraagt
+      het aan de server, en `send("intruder")` laat elke `when message("intruder"):` op de server beginnen, met
+      `sender.name` en `sender.x/y/z` (waar de robot stond). Zonder verbinding gebeurt dat gewoon niet, maar loopt
+      zijn programma door. Eén nieuwe test (`robot_talks_to_the_server`).
 - [ ] **6. Server naar robot** — order, activate, deactivate; een opdracht aan een robot die niet geladen is,
       wacht tot die weer geladen wordt.
 - [ ] **7. De app Logic** — Help en Ctrl+Spatie met de pinnen van de gekozen robot, voorbeeldprogramma's,

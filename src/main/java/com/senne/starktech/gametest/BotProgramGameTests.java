@@ -11,6 +11,8 @@ import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.ProgramKind;
 import com.senne.starktech.logic.program.ScriptParser;
 import com.senne.starktech.network.OsActionPayload;
+import com.senne.starktech.redstone.Relay;
+import com.senne.starktech.registry.ModAttachments;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.robot.GuardRobotEntity;
@@ -19,6 +21,7 @@ import com.senne.starktech.robot.RobotData;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.Robots;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.os.StarkOs;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.List;
@@ -407,6 +410,82 @@ public final class BotProgramGameTests {
             }
         }
         throw new GameTestAssertException("De robot staat niet in de app Robots");
+    }
+
+    // ================================================================ Stap 5: de robot praat met de server
+
+    /**
+     * Met verbinding gaat wat de robot zegt via zijn server: log en alarm komen in het logboek (met zijn naam
+     * ervoor), pulse zet een relais aan, is_on vraagt het aan de server, en send("intruder") start
+     * {@code when message("intruder"):} met sender.name en sender.x. Zonder werkende server gebeurt dat allemaal
+     * niet, maar loopt zijn programma gewoon door.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_talk")
+    public static void robot_talks_to_the_server(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "talk-owner");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos rack = new BlockPos(12, 3, 12);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        BlockPos door = new BlockPos(4, 2, 12);
+        helper.setBlock(door, ModBlocks.RELAY.get());
+        owner.setData(ModAttachments.RELAYS, owner.getData(ModAttachments.RELAYS).with(new Relay("Door", "",
+                helper.getLevel().dimension(), helper.absolutePos(door))));
+        String code = """
+                done = false
+                open = false
+                when started:
+                    log("hello from " + robot.name)
+                    pulse("Door", 3)
+                    open = is_on("Door")
+                    send("intruder")
+                    alarm("Intruder!")
+                    done = true
+                """;
+        GuardRobotEntity talker = helper.spawn(ModEntities.GUARD_ROBOT.get(), new BlockPos(8, 2, 8));
+        talker.setOwner(owner);
+        talker.setCustomName(net.minecraft.network.chat.Component.literal("Scout"));
+        int talkerX = helper.absolutePos(new BlockPos(8, 2, 8)).getX();
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            StarkOs.open(owner, coreAbs); // de kern neemt de namen van de relais over
+            saveProgram(owner, coreAbs, "", "Messages", "when message(\"intruder\"):\n    log(\"message from \" + sender.name + \" at \" + sender.x)\n",
+                    ProgramKind.SERVER);
+            talker.setProgram(program(code));
+            talker.setActive(true);
+        });
+        helper.runAfterDelay(60, () -> {
+            check(Boolean.TRUE.equals(talker.brain().global("done")), "Zijn programma liep niet tot het einde");
+            check(logged(core, EventLog.Type.LOGIC, "Scout: hello from Scout"), "log() van de robot kwam niet in het logboek: " + lastLog(core));
+            check(logged(core, EventLog.Type.ALARM, "Scout: Intruder!"), "alarm() van de robot kwam niet in het logboek: " + lastLog(core));
+            check(logged(core, EventLog.Type.LOGIC, "message from Scout at " + talkerX),
+                    "when message(\"intruder\") begon niet (of sender klopt niet): " + lastLog(core));
+            check(Boolean.TRUE.equals(talker.brain().global("open")), "is_on(\"Door\") na pulse was niet waar");
+
+            // Zonder werkende server: geen verbinding. Hij loopt door, maar er komt niets aan.
+            helper.setBlock(rack, Blocks.AIR);
+            LogicServer.forgetAll();
+            int before = core.log().entries().size();
+            talker.setProgram(program("done = false\nwhen started:\n    log(\"lonely\")\n    send(\"intruder\")\n    done = true\n"));
+            helper.runAfterDelay(20, () -> {
+                check(Boolean.TRUE.equals(talker.brain().global("done")), "Zonder verbinding liep zijn programma niet door");
+                check(core.log().entries().stream().skip(before)
+                        .noneMatch(entry -> entry.text().contains("lonely") || entry.text().contains("message from")),
+                        "Zonder verbinding kwam er toch iets aan: " + lastLog(core));
+                helper.succeed();
+            });
+        });
+    }
+
+    /** Staat deze regel (van deze soort) in het logboek van de kern? */
+    private static boolean logged(SecurityCoreBlockEntity core, EventLog.Type type, String text) {
+        return core.log().entries().stream().anyMatch(entry -> entry.type() == type && entry.text().equals(text));
+    }
+
+    private static String lastLog(SecurityCoreBlockEntity core) {
+        var entries = core.log().entries();
+        return entries.isEmpty() ? "" : entries.getLast().type() + ": " + entries.getLast().text();
     }
 
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */
