@@ -21,8 +21,6 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -33,10 +31,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Een drone-dock: een laag platform in je hangar waar een drone uit je arsenaal op staat.
- * Aangesloten op het stroomnet repareert hij die drone vanzelf (zie DroneDockBlockEntity).
- * Docks naast elkaar geven de stroom aan elkaar door, net als een kabel. Een rechtsklik vertelt
- * hoe het met de drone gaat.
+ * Een Drone Dock: een laag platform waar je security drone (hoofdstuk 25) op landt: zijn thuis en zijn lader. Zet
+ * een Security Drone erop (rechtsklik met het item) en aangesloten op het stroomnet laadt hij daar zijn batterij
+ * (zie DroneDockBlockEntity en GuardDroneEntity). Docks naast elkaar geven de stroom aan elkaar door, net als een
+ * kabel. Een rechtsklik vertelt hoe het met zijn drone gaat.
  */
 public class DroneDockBlock extends BaseEntityBlock implements PowerConnectable {
     public static final MapCodec<DroneDockBlock> CODEC = simpleCodec(DroneDockBlock::new);
@@ -88,19 +86,6 @@ public class DroneDockBlock extends BaseEntityBlock implements PowerConnectable 
         return new DroneDockBlockEntity(pos, state);
     }
 
-    @Override
-    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
-                                                                            BlockEntityType<T> type) {
-        if (level.isClientSide) {
-            return null;
-        }
-        return (tickLevel, pos, tickState, blockEntity) -> {
-            if (blockEntity instanceof DroneDockBlockEntity dock && tickLevel instanceof ServerLevel serverLevel) {
-                dock.serverTick(serverLevel, pos);
-            }
-        };
-    }
-
     /** Wie hem neerzet, is de eigenaar. */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
@@ -122,23 +107,30 @@ public class DroneDockBlock extends BaseEntityBlock implements PowerConnectable 
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    /** Hoe het met de drone van dit dock gaat: thuis en aan het laden, op pad, ver weg, of geen drone. */
     private static Component status(ServerLevel level, DroneDockBlockEntity dock, Player player) {
         UUID owner = dock.ownerId(level);
-        if (owner == null) {
+        if (owner == null && dock.bot() == null) {
             return Component.translatable("block.starktech.drone_dock.no_owner");
         }
-        if (!owner.equals(player.getUUID())) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) || !dock.mayUse(serverPlayer)) {
             return Component.translatable("block.starktech.drone_dock.not_yours");
         }
-        if (!dock.hasDrone()) {
+        if (dock.bot() == null) {
             return Component.translatable("block.starktech.drone_dock.empty");
         }
-        int percent = Math.round(dock.health() * 100);
-        if (!dock.present()) {
-            return Component.translatable("block.starktech.drone_dock.away", percent);
+        if (level.getEntity(dock.bot()) instanceof com.senne.starktech.robot.GuardDroneEntity drone && drone.isAlive()) {
+            int percent = Math.round(drone.batteryFraction() * 100);
+            if (!drone.isOnDock()) {
+                return Component.translatable("block.starktech.drone_dock.out", drone.displayName(), percent);
+            }
+            return Component.translatable(drone.isCharging() ? "block.starktech.drone_dock.charging"
+                    : percent >= 100 ? "block.starktech.drone_dock.home" : "block.starktech.drone_dock.no_power",
+                    drone.displayName(), percent);
         }
-        return Component.translatable(dock.repairing() ? "block.starktech.drone_dock.repairing"
-                : percent >= 100 ? "block.starktech.drone_dock.ready" : "block.starktech.drone_dock.no_power", percent);
+        var entry = com.senne.starktech.bot.BotNetwork.get(level).get(dock.bot());
+        return entry == null ? Component.translatable("block.starktech.drone_dock.gone")
+                : Component.translatable("block.starktech.drone_dock.far", entry.name());
     }
 
     /** Een dock geeft stroom door: erbij of eraf verandert het net (StarkGrid zoekt opnieuw). */
@@ -150,14 +142,11 @@ public class DroneDockBlock extends BaseEntityBlock implements PowerConnectable 
         }
     }
 
-    /** Afgebroken: de drone heeft geen plek meer in de hangar. */
+    /** Afgebroken: het stroomnet zoekt opnieuw (zijn drone merkt zelf dat zijn thuis weg is). */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock())) {
             StarkGrid.changed();
-            if (level.getBlockEntity(pos) instanceof DroneDockBlockEntity dock) {
-                dock.onBroken();
-            }
         }
         super.onRemove(state, level, pos, newState, moved);
     }

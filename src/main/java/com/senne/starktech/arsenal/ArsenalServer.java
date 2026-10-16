@@ -19,7 +19,9 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import com.senne.starktech.config.StarkConfig;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -105,12 +107,28 @@ public final class ArsenalServer {
         }
     }
 
-    /** Zet de "staat in de hangar"-vlag van een drone (zie DroneDockBlockEntity). */
-    public static void setDocked(ServerPlayer player, UUID id, boolean docked) {
+    /**
+     * Drones in hun baan herstellen zich daar (hoofdstuk 25, jouw antwoord: "arsenaal-drones gaan niet meer op een
+     * dock, ze blijven in hun baan"): elke seconde {@code ORBIT_REPAIR_PER_SECOND} leven, even snel als vroeger op
+     * een dock, en zonder stroom. Een drone die op pad is (DEPLOYED), herstelt niet.
+     */
+    public static void orbitRepair(ServerPlayer player) {
         EdithArsenal arsenal = get(player);
-        ArsenalDrone drone = arsenal.find(id);
-        if (drone != null && drone.docked() != docked) {
-            set(player, arsenal.replace(drone.withDocked(docked)));
+        EdithArsenal repaired = arsenal;
+        for (ArsenalDrone drone : arsenal.drones()) {
+            if (drone.state() == ArsenalDrone.State.ORBIT && drone.health() > 0 && !drone.isFullyRepaired()) {
+                repaired = repaired.replace(drone.withHealth(drone.health() + StarkConfig.Drones.ORBIT_REPAIR_PER_SECOND));
+            }
+        }
+        if (repaired != arsenal) {
+            set(player, repaired);
+        }
+    }
+
+    /** Elke seconde, voor elke speler: zijn drones in hun baan herstellen. */
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player && player.tickCount % 20 == 0) {
+            orbitRepair(player);
         }
     }
 
@@ -197,7 +215,8 @@ public final class ArsenalServer {
 
     /**
      * Je drones verdwijnen uit de wereld zodra jij weg bent. Wat nog als "bezig" geboekt
-     * stond, hangt dus gewoon weer in een baan.
+     * stond, hangt dus gewoon weer in een baan. (En een oude "in de hangar"-vlag gaat weg: drones
+     * staan sinds hoofdstuk 25 niet meer op een dock.)
      */
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {

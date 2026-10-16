@@ -117,6 +117,7 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(EdithServer::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogin);
+        NeoForge.EVENT_BUS.addListener(ArsenalServer::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(EdithServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(EdithServer::onLivingDamaged);
         // Onthouden wie jou raakte, zodat de dreigingsscan alleen echte aanvallers toont
@@ -219,8 +220,6 @@ public class StarkTech {
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.c4.C4Block::onLeftClick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.security.zone.ZoneSync::onServerStopped);
-        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
-                com.senne.starktech.arsenal.DroneDocks.clear());
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan
         NeoForge.EVENT_BUS.addListener(LaserAnimations::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) -> LaserAnimations.clear());

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 275 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 274 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 93 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2768,8 +2768,14 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       als hij aan staat. In de app Robots staat "drone" achter zijn naam (en Program toont je droneprogramma's), in
       de app Cameras "DRONE" (zijn camera kijkt een beetje naar beneden). Screenshots `sd01`-`sd11`
       (`gradlew runVisualCheck -Ponly=secdrones`).
-- [ ] **3. De Drone Dock opnieuw** — laadt zijn eigen drone; arsenal-drones komen er niet meer op; herstel in
-      de baan.
+- [x] **3. De Drone Dock opnieuw** — een Drone Dock is nu het thuis en de lader van één security drone. Je zet
+      je drone erop met het item, alleen op je eigen dock of op een dock in een basis waar je vertrouwd bent.
+      Rechtsklik op het dock zegt hoe het met zijn drone gaat ("Drone 1 is charging (56%)", "is out (battery
+      80%)", "is far away", of "empty (right-click it with a Security Drone)"). Drones uit je arsenaal komen er niet
+      meer op: ze herstellen zich in hun baan, even snel als vroeger op een dock en zonder stroom (nieuw in
+      `[drones]`: `orbitRepairPerSecond`, 0,25 leven per seconde). De oude vlag "In hangar" gaat bij het inloggen
+      weg. Weg: het hologram op het dock, `dockRepairPerSecond` en `dockEnergyPerHealth` in `[power]`, en de
+      screenshots `d01`-`d05`. De twee oude dock-tests zijn één nieuwe geworden (`arsenal_drones_repair_in_orbit`).
 - [ ] **4. De core** — geen gratis drones meer; schakelaar "Drones" in Devices.
 - [ ] **5. De Stark Tower** — vier docks bij de kern met Tony's drones (programma "Tower patrol"). Wie de
       toren hackt, krijgt ze.

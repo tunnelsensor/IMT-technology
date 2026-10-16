@@ -141,7 +141,6 @@ public class StarkTechClient {
         event.registerBlockEntityRenderer(ModBlockEntities.C4.get(), com.senne.starktech.client.c4.C4Renderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TURRET.get(), com.senne.starktech.client.turret.TurretRenderer::new);
-        event.registerBlockEntityRenderer(ModBlockEntities.DRONE_DOCK.get(), com.senne.starktech.client.drone.DroneDockRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SUIT_WORKBENCH.get(),
                 com.senne.starktech.client.workbench.SuitHologramRenderer::new);
     }

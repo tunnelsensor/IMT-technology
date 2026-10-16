@@ -283,13 +283,6 @@ public final class StarkConfig {
         @Tunable("Energy per point of durability a landing pad repairs")
         public static float PAD_REPAIR_ENERGY = 10.0f;
 
-        // ------------------------------------------------------------------------- Drone-dock (in je hangar)
-        /** Levenspunten per seconde die een dock repareert aan de drone erop (een lege drone: 48 seconden). */
-        @Tunable("Health a drone dock repairs per second on the drone standing on it")
-        public static float DOCK_REPAIR_PER_SECOND = 0.25f;
-        /** ...en dat kost zoveel stroom per levenspunt. */
-        @Tunable("Energy a drone dock uses per point of health it repairs")
-        public static float DOCK_ENERGY_PER_HEALTH = 40.0f;
 
         // ------------------------------------------------------------------------- Verbruik: verdediging
         /** Stroom per tick van één laserzender zolang zijn wand aan staat (een paar zenders = 2 per tick). */
@@ -355,6 +348,11 @@ public final class StarkConfig {
     @Section("Your own drones: how many, the swarm, a single strike drone, escort drones, and the arsenal")
     public static final class Drones {
         private Drones() {}
+
+        // ------------------------------------------------------------------------- Herstellen (hoofdstuk 25)
+        /** Levenspunten per seconde die een drone in zijn baan herstelt (even snel als vroeger op een dock). */
+        @Tunable("Health an arsenal drone repairs per second while it waits in orbit")
+        public static float ORBIT_REPAIR_PER_SECOND = 0.25f;
 
         // ------------------------------------------------------------------------- Hoeveel
         // Op een server met veel spelers kunnen honderden drones het spel laten haperen: hier kies je het maximum.

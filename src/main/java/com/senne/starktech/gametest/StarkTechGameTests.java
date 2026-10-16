@@ -1639,63 +1639,41 @@ public final class StarkTechGameTests {
         });
     }
 
-    // ================================================================ Drone-docks in de hangar
+    // ================================================================ Arsenaal-drones herstellen in hun baan
 
     /**
-     * Een drone-dock pakt een drone uit het arsenaal van zijn eigenaar ("In hangar" in het
-     * arsenaal) en repareert hem met stroom van het net. Afgebroken: de drone staat niet meer
-     * in de hangar.
+     * Hoofdstuk 25: een drone uit je arsenaal gaat niet meer op een drone-dock (dat is nu het thuis van een security
+     * drone). Hij herstelt zich in zijn baan, elke seconde ORBIT_REPAIR_PER_SECOND, zonder stroom; een drone die op
+     * pad is, herstelt niet.
      */
-    @GameTest(template = ARENA, timeoutTicks = 200, batch = "drone_dock")
-    public static void drone_dock_repairs_its_drone(GameTestHelper helper) {
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "drone_dock")
+    public static void arsenal_drones_repair_in_orbit(GameTestHelper helper) {
         ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
         owner.setData(ModAttachments.ARSENAL, EdithArsenal.EMPTY);
-        UUID id = ArsenalServer.add(owner);
-        ArsenalServer.returnToOrbit(owner, id, 3.0f);
+        UUID resting = ArsenalServer.add(owner);
+        UUID busy = ArsenalServer.add(owner);
+        ArsenalServer.returnToOrbit(owner, resting, 3.0f);
+        ArsenalServer.markDeployed(owner, busy);
+        ArsenalServer.setHealth(owner, busy, 3.0f);
         BlockPos pos = new BlockPos(6, 3, 6);
         helper.setBlock(pos, ModBlocks.DRONE_DOCK.get());
-        helper.setBlock(pos.east(), ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(pos.east())).fill(20_000);
         var dock = (com.senne.starktech.arsenal.DroneDockBlockEntity) helper.getBlockEntity(pos);
         dock.setOwner(owner.getUUID());
-
-        helper.startSequence()
-                .thenWaitUntil(() -> {
-                    ArsenalDrone drone = ArsenalServer.get(owner).find(id);
-                    if (drone == null || !drone.docked() || !dock.present()) {
-                        throw new GameTestAssertException("De drone staat nog niet op de dock: " + drone);
-                    }
-                    if (drone.health() < 3.5f) {
-                        throw new GameTestAssertException("De drone wordt niet gerepareerd: " + drone.health());
-                    }
-                })
-                .thenExecute(() -> helper.destroyBlock(pos))
-                .thenExecuteAfter(1, () -> {
-                    ArsenalDrone drone = ArsenalServer.get(owner).find(id);
-                    if (drone == null || drone.docked()) {
-                        throw new GameTestAssertException("Na het afbreken staat de drone nog in de hangar: " + drone);
-                    }
-                })
-                .thenSucceed();
-    }
-
-    /** Eén drone, twee docks: hij staat maar op één van de twee. */
-    @GameTest(template = ARENA, timeoutTicks = 60, batch = "drone_dock")
-    public static void one_drone_one_dock(GameTestHelper helper) {
-        ServerPlayer owner = makeEdithOwner(helper, new BlockPos(1, 3, 1));
-        owner.setData(ModAttachments.ARSENAL, EdithArsenal.EMPTY);
-        ArsenalServer.add(owner);
-        List<com.senne.starktech.arsenal.DroneDockBlockEntity> docks = new java.util.ArrayList<>();
-        for (BlockPos pos : List.of(new BlockPos(6, 3, 6), new BlockPos(9, 3, 6))) {
-            helper.setBlock(pos, ModBlocks.DRONE_DOCK.get());
-            var dock = (com.senne.starktech.arsenal.DroneDockBlockEntity) helper.getBlockEntity(pos);
-            dock.setOwner(owner.getUUID());
-            docks.add(dock);
+        for (int second = 0; second < 4; second++) {
+            ArsenalServer.orbitRepair(owner);
         }
-        helper.runAfterDelay(40, () -> {
-            long taken = docks.stream().filter(com.senne.starktech.arsenal.DroneDockBlockEntity::hasDrone).count();
-            if (taken != 1) {
-                throw new GameTestAssertException("De drone staat op " + taken + " docks in plaats van 1");
+        helper.runAfterDelay(20, () -> {
+            float expected = 3.0f + 4 * com.senne.starktech.config.StarkConfig.Drones.ORBIT_REPAIR_PER_SECOND;
+            ArsenalDrone repaired = ArsenalServer.get(owner).find(resting);
+            ArsenalDrone away = ArsenalServer.get(owner).find(busy);
+            if (repaired == null || repaired.health() < expected - 0.01f) {
+                throw new GameTestAssertException("De drone in zijn baan herstelde niet: " + repaired);
+            }
+            if (away == null || away.health() != 3.0f) {
+                throw new GameTestAssertException("Een drone op pad herstelde toch: " + away);
+            }
+            if (repaired.docked() || dock.bot() != null) {
+                throw new GameTestAssertException("De arsenaal-drone ging toch op het dock");
             }
             helper.succeed();
         });

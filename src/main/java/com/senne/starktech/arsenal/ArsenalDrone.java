@@ -20,7 +20,8 @@ import net.minecraft.util.Mth;
  * @param id     het vaste nummer van deze drone; hiermee vindt de drone in de wereld zichzelf terug
  * @param health hoeveel levenspunten hij nog heeft
  * @param state  waar hij nu is (zie {@link State})
- * @param docked heeft hij een vaste plek op een drone-dock in je hangar (zie DroneDockBlockEntity)?
+ * @param docked stond hij vroeger op een drone-dock in je hangar? Sinds hoofdstuk 25 niet meer gebruikt (drones blijven in
+ *               hun baan); het blijft bestaan zodat oude werelden nog laden, en gaat bij het inloggen weg.
  *               Klaar voor gebruik staat hij dan daar, en niet in een baan om de planeet.
  */
 public record ArsenalDrone(UUID id, float health, State state, boolean docked) {

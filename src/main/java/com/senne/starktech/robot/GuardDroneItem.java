@@ -55,6 +55,10 @@ public class GuardDroneItem extends Item {
         Player player = context.getPlayer();
         // Op een Drone Dock: daar is hij thuis (als het dock nog vrij is).
         DroneDockBlockEntity dock = level.getBlockEntity(clicked) instanceof DroneDockBlockEntity found ? found : null;
+        if (dock != null && player instanceof ServerPlayer user && !dock.mayUse(user)) {
+            player.displayClientMessage(Component.translatable("block.starktech.drone_dock.not_yours"), true);
+            return InteractionResult.FAIL;
+        }
         if (dock != null && dock.bot() != null && level.getEntity(dock.bot()) instanceof GuardDroneEntity other && other.isAlive()) {
             if (player != null) {
                 player.displayClientMessage(Component.translatable("message.starktech.drone_dock.taken"), true);
