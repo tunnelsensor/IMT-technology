@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 240 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 242 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2438,9 +2438,18 @@ hij loopt terug en laadt.
       (het pad bleef bij zijn eerste stap); daarom de laatste meter rechtdoor. Drie nieuwe tests (laden met
       en zonder stroom; aan = eruit, uit = terug in het midden; batterij leeg = stil). Screenshot `rb11`.
       Vorige stap: `ed39e6e`.
-- [ ] **7. Robotscherm en opslag** — sneak + rechtsklik met een lege hand (wie hem neerzette of vertrouwd
-      is in de basis, zoals bij de laserzender); `BotNetwork` bewaart alle robots van een core; netwerkversie
-      omhoog.
+- [x] **7. Robotscherm en opslag** — **`BotNetwork`** (in `bot/`, bewaard in de wereld als
+      `starktech_bots`): elke robot met naam, eigenaar, laatste plek, dock, onderdelen, toestand, batterij en
+      de kern in wiens gebied hij staat. Een robot meldt zich om de seconde; kapot of opgepakt gaat hij eruit
+      (een stuk wereld dat niet geladen is, telt niet). Elke robot krijgt een **naam** die bij zijn eigenaar
+      nog niet bestaat ("Guard 1", "Guard 2"...): in je code noem je hem straks zo, dus een naam mag maar
+      één keer per eigenaar (hoofdletters tellen niet). Het **robotscherm** (sneak + rechtsklik met een lege
+      hand; wie hem neerzette of vertrouwd is in de basis, zoals bij de laserzender, anders "This robot
+      belongs to ..."): naam en toestand, eigenaar, de vier onderdelen, een batterijbalk, zijn dock,
+      **Rename**, **Switch on/off**, **Pick up** (hij wordt weer een item met alles erop, zijn dock is weer
+      vrij). Nieuwe berichten `RobotOpenPayload` en `RobotActionPayload`; netwerkversie 19 → 20. Twee nieuwe
+      tests (namen, opslaan en laden, oppakken, kapot; een vreemde kan niets, een dubbele naam mag niet).
+      Screenshot `rb12`. Vorige stap: `9b7896e`.
 - [ ] **8. App Robots** — lijst met batterij, verbinding en dock; aan/uit en hernoemen.
 - [ ] **9. Geluid, showcase, LEESMIJ** — servogeluiden, opstarten en uitzetten, zacht zoemen op het dock
       (met een volumeknop).

@@ -1,6 +1,7 @@
 package com.senne.starktech.robot;
 
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModItems;
@@ -21,6 +22,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -66,6 +69,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     /** Hoe het met hem gaat (RobotState): je spel doet zijn lichtjes uit als hij niet aan staat. */
     private static final EntityDataAccessor<Byte> STATE =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BYTE);
+    /** Staat hij aan (ook met een lege batterij), voor de knop in zijn scherm. */
+    private static final EntityDataAccessor<Boolean> SWITCHED_ON =
+            SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BOOLEAN);
     /** Hoe vol zijn batterij is (0 tot 1), voor de schermen. */
     private static final EntityDataAccessor<Float> BATTERY =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.FLOAT);
@@ -118,6 +124,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         builder.define(PARTS, RobotParts.DEFAULT.pack());
         builder.define(STATE, (byte) RobotState.STANDBY.ordinal());
         builder.define(BATTERY, 1.0f);
+        builder.define(SWITCHED_ON, false);
     }
 
     @Override
@@ -241,9 +248,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         updateState();
     }
 
-    /** Staat hij aan? */
+    /** Staat hij aan? (Ook in je spel.) */
     public boolean isActive() {
-        return active;
+        return level().isClientSide ? entityData.get(SWITCHED_ON) : active;
     }
 
     /**
@@ -312,6 +319,44 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             settleInDock(level);
         }
         updateState();
+        // Om de seconde melden bij BotNetwork (de app Robots leest daaruit). Nog geen naam? Dan krijgt hij er een.
+        if (tickCount % 20 == 1 && !isDeadOrDying()) {
+            BotNetwork network = BotNetwork.get(level);
+            if (!hasCustomName()) {
+                setCustomName(Component.literal(network.freeName(owner)));
+            }
+            network.update(this);
+        }
+    }
+
+    /** Echt kapot: meteen weg uit BotNetwork (niet pas na het omvallen). */
+    @Override
+    public void die(DamageSource source) {
+        super.die(source);
+        if (level() instanceof ServerLevel level && isDeadOrDying()) {
+            BotNetwork.get(level).remove(getUUID());
+        }
+    }
+
+    /** Kapot of opgepakt: weg uit BotNetwork. (Een stuk wereld dat niet meer geladen is, telt niet.) */
+    @Override
+    public void remove(RemovalReason reason) {
+        if (level() instanceof ServerLevel level && reason.shouldDestroy()) {
+            BotNetwork.get(level).remove(getUUID());
+        }
+        super.remove(reason);
+    }
+
+    /** Sneak + rechtsklik met een lege hand: zijn scherm (als je hem mag instellen, zie Robots). */
+    @Override
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (hand != InteractionHand.MAIN_HAND || !player.isSecondaryUseActive() || !player.getMainHandItem().isEmpty()) {
+            return InteractionResult.PASS;
+        }
+        if (player instanceof ServerPlayer serverPlayer) {
+            Robots.open(serverPlayer, this);
+        }
+        return InteractionResult.sidedSuccess(level().isClientSide);
     }
 
     /** Staat hij vlak bij het midden van zijn dock (om er netjes in te gaan staan)? */
@@ -336,6 +381,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         RobotState state = battery <= 0 ? RobotState.NO_POWER : active ? RobotState.ACTIVE : RobotState.STANDBY;
         if (state() != state) {
             entityData.set(STATE, (byte) state.ordinal());
+        }
+        if (entityData.get(SWITCHED_ON) != active) {
+            entityData.set(SWITCHED_ON, active);
         }
         float fraction = (float) (battery / Math.max(1.0, maxBattery()));
         if (Math.abs(batteryFraction() - fraction) >= 0.005f || (fraction == 0) != (batteryFraction() == 0)) {

@@ -1,5 +1,6 @@
 package com.senne.starktech.robot;
 
+import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
@@ -77,11 +78,18 @@ public class GuardRobotItem extends Item {
         if (player instanceof ServerPlayer serverPlayer) {
             robot.setOwner(serverPlayer);
         }
+        // Een naam die bij deze eigenaar nog niet bestaat ("Guard 1"...): in je code noem je hem zo.
+        BotNetwork network = BotNetwork.get(level);
+        String name = data(stack).name();
+        if (name.isEmpty() || network.nameTaken(robot.owner(), name, null)) {
+            robot.setCustomName(Component.literal(network.freeName(robot.owner())));
+        }
         if (dock != null) {
             robot.setHome(pos);
             dock.setRobot(robot.getUUID());
         }
         level.addFreshEntity(robot);
+        network.update(robot);
         level.playSound(null, pos, SoundEvents.IRON_GOLEM_REPAIR, SoundSource.NEUTRAL, 0.6f, 1.4f);
         level.gameEvent(player, GameEvent.ENTITY_PLACE, pos);
         stack.consume(1, player); // in creative blijft hij

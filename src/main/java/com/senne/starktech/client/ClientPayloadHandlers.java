@@ -191,6 +191,15 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Het scherm van een guard robot openen (sneak + rechtsklik, hoofdstuk 21). */
+    public static void onRobotOpen(com.senne.starktech.network.RobotOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new com.senne.starktech.client.robot.RobotScreen(payload.entityId(), payload.owner(),
+                    payload.home().orElse(null)));
+        }
+    }
+
     /** Het naamscherm van een keycardlezer openen (sneak + rechtsklik, 13 oktober). */
     public static void onInputNameOpen(com.senne.starktech.network.InputNameOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

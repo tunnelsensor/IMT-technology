@@ -2,8 +2,10 @@ package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.bot.CircuitBoardItem;
 import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.network.RobotActionPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
@@ -13,11 +15,13 @@ import com.senne.starktech.robot.GuardRobotItem;
 import com.senne.starktech.robot.RobotAssemblerBlockEntity;
 import com.senne.starktech.robot.RobotData;
 import com.senne.starktech.robot.RobotDockBlock;
+import com.senne.starktech.robot.RobotDockBlockEntity;
 import com.senne.starktech.robot.RobotPartItem;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
 import com.senne.starktech.robot.RobotState;
 import com.senne.starktech.robot.RobotStyle;
+import com.senne.starktech.robot.Robots;
 import com.senne.starktech.security.BaseTrust;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.List;
@@ -390,6 +394,74 @@ public final class RobotGameTests {
             check(robot.toData().battery() == 0.0f, "Opgepakt zou hij een lege batterij hebben");
             helper.succeed();
         });
+    }
+
+    // ================================================================ Stap 7: BotNetwork en het robotscherm
+
+    /**
+     * Twee robots van dezelfde eigenaar heten "Guard 1" en "Guard 2"; BotNetwork kent ze (eigenaar, dock), en
+     * onthoudt ze na opslaan en laden. Opgepakt: het item heeft zijn naam, zijn dock is weer vrij en hij is weg
+     * uit BotNetwork. Kapot: ook weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "robot_network")
+    public static void robot_network_names_and_remembers(GameTestHelper helper) {
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 1, 8), "net-owner");
+        player.getAbilities().instabuild = false;
+        GuardRobotEntity first = dockedRobot(helper, player, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+        GuardRobotEntity second = dockedRobot(helper, player, new BlockPos(8, 1, 4), RobotParts.DEFAULT);
+        check("Guard 1".equals(first.getCustomName().getString()) && "Guard 2".equals(second.getCustomName().getString()),
+                "De namen zijn " + first.getCustomName().getString() + " en " + second.getCustomName().getString());
+        BotNetwork network = BotNetwork.get(helper.getLevel());
+        BotNetwork.Entry entry = network.get(first.getUUID());
+        check(entry != null && "Guard 1".equals(entry.name()) && player.getUUID().equals(entry.owner())
+                && helper.absolutePos(new BlockPos(4, 1, 4)).equals(entry.home()), "BotNetwork kent de eerste robot niet goed: " + entry);
+        check(network.ownedBy(player.getUUID()).size() == 2, "BotNetwork heeft niet twee robots van deze speler");
+        check(network.nameTaken(player.getUUID(), "guard 2", first.getUUID()), "Guard 2 is niet bezet (hoofdletters tellen niet)");
+
+        BotNetwork loaded = BotNetwork.load(network.save(new CompoundTag(), helper.getLevel().registryAccess()),
+                helper.getLevel().registryAccess());
+        check(entry.equals(loaded.get(first.getUUID())), "Na opslaan en laden: " + loaded.get(first.getUUID()));
+
+        Robots.pickUp(player, first);
+        check(network.get(first.getUUID()) == null, "Opgepakt staat hij nog in BotNetwork");
+        check(((RobotDockBlockEntity) helper.getBlockEntity(new BlockPos(4, 1, 4))).robot() == null, "Zijn dock is niet vrij");
+        boolean inInventory = false;
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.is(ModItems.GUARD_ROBOT.get()) && "Guard 1".equals(GuardRobotItem.data(stack).name())) {
+                inInventory = true;
+            }
+        }
+        check(inInventory, "Guard 1 zit niet als item in de rugzak");
+        second.kill();
+        check(network.get(second.getUUID()) == null, "Kapot staat hij nog in BotNetwork");
+        helper.succeed();
+    }
+
+    /**
+     * Het robotscherm: een vreemde kan niets (aanzetten, hernoemen); de eigenaar wel. Een naam die een andere robot
+     * van hem al heeft, mag niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "robot_network")
+    public static void robot_screen_only_for_owner(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 1, 8), "screen-owner");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 1, 8), "screen-stranger");
+        GuardRobotEntity first = dockedRobot(helper, owner, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+        GuardRobotEntity second = dockedRobot(helper, owner, new BlockPos(8, 1, 4), RobotParts.DEFAULT);
+
+        Robots.handleAction(stranger, new RobotActionPayload(first.getId(), RobotActionPayload.Op.TURN_ON, ""));
+        Robots.handleAction(stranger, new RobotActionPayload(first.getId(), RobotActionPayload.Op.RENAME, "Mine now"));
+        check(!first.isActive() && "Guard 1".equals(first.getCustomName().getString()), "Een vreemde kon de robot instellen");
+
+        Robots.handleAction(owner, new RobotActionPayload(first.getId(), RobotActionPayload.Op.TURN_ON, ""));
+        check(first.isActive(), "De eigenaar kon hem niet aanzetten");
+        Robots.handleAction(owner, new RobotActionPayload(first.getId(), RobotActionPayload.Op.RENAME, "guard 2"));
+        check("Guard 1".equals(first.getCustomName().getString()), "Hij kreeg de naam van een andere robot");
+        Robots.handleAction(owner, new RobotActionPayload(first.getId(), RobotActionPayload.Op.RENAME, "  Door guard  "));
+        check("Door guard".equals(first.getCustomName().getString()), "Hernoemen lukte niet: " + first.getCustomName().getString());
+        check("Door guard".equals(BotNetwork.get(helper.getLevel()).get(first.getUUID()).name()), "BotNetwork kent de nieuwe naam niet");
+        Robots.handleAction(owner, new RobotActionPayload(second.getId(), RobotActionPayload.Op.RENAME, ""));
+        check("Guard 2".equals(second.getCustomName().getString()), "Een lege naam werd aanvaard");
+        helper.succeed();
     }
 
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */
