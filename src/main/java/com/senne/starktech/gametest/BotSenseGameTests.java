@@ -4,13 +4,16 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.logic.LogicServer;
+import com.senne.starktech.network.OsActionPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotStyle;
+import com.senne.starktech.robot.Robots;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.os.StarkOs;
 import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.station.ChargerBlockEntity;
 import net.minecraft.core.BlockPos;
@@ -18,6 +21,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
@@ -286,5 +291,53 @@ public final class BotSenseGameTests {
         robot.setParts(RobotParts.DEFAULT);
         robot.setBoard(board);
         return robot;
+    }
+
+    // ================================================================ Stap 5: de camera
+
+    /**
+     * Een robot met een Camera-module en verbinding staat in de app Cameras (met zijn nummer, zodat je spel zijn hoofd
+     * volgt); zet zijn programma de camera uit, dan staat hij er "uit" bij. Zonder module of zonder verbinding staat
+     * hij er niet. Kijkt iemand door zijn ogen (de app zegt het), dan is {@code read(cameraPin)} true.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "robot_camera")
+    public static void robot_camera_in_the_cameras_app(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "camera-owner");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos rack = new BlockPos(12, 3, 2);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        BotBoard camera = BotBoard.EMPTY.with(6, "camera");
+        GuardRobotEntity watcher = robot(helper, new BlockPos(6, 2, 12), RobotStyle.COMMANDO, camera,
+                "watched = false\nwhen started:\n    forever:\n        watched = read(pin(6))\n        wait(0.1)\n");
+        GuardRobotEntity shy = robot(helper, new BlockPos(9, 2, 12), RobotStyle.COMMANDO, camera,
+                "when started:\n    write(pin(6), false)\n");
+        GuardRobotEntity blind = robot(helper, new BlockPos(12, 2, 12), RobotStyle.COMMANDO, BotBoard.EMPTY, "when started:\n    pass\n");
+        GuardRobotEntity stranger = robot(helper, new BlockPos(15, 2, 12), RobotStyle.COMMANDO, camera, "when started:\n    pass\n");
+        for (GuardRobotEntity robot : java.util.List.of(watcher, shy, blind)) {
+            robot.setOwner(owner); // "stranger" heeft geen eigenaar: geen verbinding
+        }
+        helper.runAfterDelay(25, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            java.util.Map<Integer, CompoundTag> listed = new java.util.HashMap<>();
+            for (Tag element : Robots.cameras(helper.getLevel(), core)) {
+                CompoundTag tag = (CompoundTag) element;
+                listed.put(tag.getInt("robot"), tag);
+            }
+            check(listed.containsKey(watcher.getId()) && listed.get(watcher.getId()).getBoolean("on"),
+                    "De robot met een camera staat niet (aan) in de app Cameras: " + listed);
+            check(listed.containsKey(shy.getId()) && !listed.get(shy.getId()).getBoolean("on"), "De uitgezette camera staat er niet uit bij");
+            check(!listed.containsKey(blind.getId()), "Een robot zonder Camera-module staat erin");
+            check(!listed.containsKey(stranger.getId()), "Een robot zonder verbinding staat erin");
+            check(Boolean.FALSE.equals(watcher.brain().global("watched")), "Er keek al iemand mee");
+            StarkOs.open(owner, helper.absolutePos(corePos));
+            CompoundTag args = new CompoundTag();
+            args.putInt("robot", watcher.getId());
+            StarkOs.handleAction(owner, new OsActionPayload(helper.absolutePos(corePos), "cam_watch", args));
+        });
+        helper.runAfterDelay(30, () -> {
+            check(Boolean.TRUE.equals(watcher.brain().global("watched")), "read(cameraPin) zag niet dat iemand meekeek");
+            helper.succeed();
+        });
     }
 }

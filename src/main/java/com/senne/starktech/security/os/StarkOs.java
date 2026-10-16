@@ -233,6 +233,7 @@ public final class StarkOs {
                     sendSnapshot(player, core, session);
                 }
             }
+            case "cam_watch" -> com.senne.starktech.robot.Robots.watched(player.serverLevel(), core, args.getInt("robot"));
             case "robot_switch", "robot_rename", "robot_program" -> {
                 // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23), zie robot/Robots.
                 com.senne.starktech.robot.Robots.Desktop result = com.senne.starktech.robot.Robots.desktop(
@@ -781,7 +782,9 @@ public final class StarkOs {
         data.put("access", access);
         // De apparaten met hun status.
         data.put("devices", com.senne.starktech.security.SecurityDevices.snapshot(level, core));
-        data.put("cameras", com.senne.starktech.security.SecurityDevices.cameras(level, core));
+        ListTag cameras = com.senne.starktech.security.SecurityDevices.cameras(level, core);
+        cameras.addAll(com.senne.starktech.robot.Robots.cameras(level, core)); // robots met een camera (hoofdstuk 24)
+        data.put("cameras", cameras);
         // De guard robots in het gebied van de kern (de app Robots, hoofdstuk 21).
         data.put("robots", com.senne.starktech.robot.Robots.snapshot(level, core));
         data.put("robotPrograms", com.senne.starktech.robot.Robots.programNames(core));

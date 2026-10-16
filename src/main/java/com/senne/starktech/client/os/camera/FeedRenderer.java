@@ -74,9 +74,10 @@ final class FeedRenderer {
 
     /**
      * Tekent één beeld. {@code eye} is de lens, {@code yaw}/{@code pitch} de richting (zoals bij een
-     * speler), {@code distance} hoe ver de camera kijkt.
+     * speler), {@code distance} hoe ver de camera kijkt. {@code skip} is het nummer van een wezen dat we niet
+     * tekenen (de robot waar de camera op zit), of -1.
      */
-    static void render(TextureTarget target, Vec3 eye, float yaw, float pitch, float partialTick, int distance) {
+    static void render(TextureTarget target, Vec3 eye, float yaw, float pitch, float partialTick, int distance, int skip) {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LevelRenderer levelRenderer = mc.levelRenderer;
@@ -132,7 +133,7 @@ final class FeedRenderer {
             }
             MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
             PoseStack pose = new PoseStack();
-            renderEntities(mc, level, eye, frustum, distance, partialTick, pose, buffers);
+            renderEntities(mc, level, eye, frustum, distance, partialTick, pose, buffers, skip);
             renderBlockEntities(mc, level, sections, eye, frustum, partialTick, pose, buffers);
             buffers.endLastBatch();
             buffers.endBatch();
@@ -275,14 +276,14 @@ final class FeedRenderer {
         type.clearRenderState();
     }
 
-    /** De wezens binnen bereik die in beeld vallen (ook jijzelf: de camera ziet je). */
+    /** De wezens binnen bereik die in beeld vallen (ook jijzelf: de camera ziet je), behalve {@code skip}. */
     private static void renderEntities(Minecraft mc, ClientLevel level, Vec3 eye, Frustum frustum, int distance,
-                                       float partialTick, PoseStack pose, MultiBufferSource buffers) {
+                                       float partialTick, PoseStack pose, MultiBufferSource buffers, int skip) {
         EntityRenderDispatcher dispatcher = mc.getEntityRenderDispatcher();
         dispatcher.prepare(level, CAMERA, null);
         double reach = (double) distance * distance;
         for (Entity entity : level.entitiesForRendering()) {
-            if (entity.distanceToSqr(eye) > reach || entity == mc.player && mc.player.isSpectator()
+            if (entity.getId() == skip || entity.distanceToSqr(eye) > reach || entity == mc.player && mc.player.isSpectator()
                     || !dispatcher.shouldRender(entity, frustum, eye.x, eye.y, eye.z)) {
                 continue;
             }

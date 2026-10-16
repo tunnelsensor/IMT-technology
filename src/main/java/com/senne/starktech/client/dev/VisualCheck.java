@@ -1207,6 +1207,24 @@ public final class VisualCheck {
                 if (level.getBlockEntity(robotCore.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
                     charger.fill(20_000);
                 }
+                // Hoofdstuk 24: een serverrack naast de kern, en de robots van de speler: dan hebben ze verbinding
+                // (en staan de robots met een camera in de app Cameras).
+                BlockPos rack = robotCore.east(2);
+                level.setBlockAndUpdate(rack.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(rack.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                    charger.fill(20_000);
+                }
+                level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
+                if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+                }
+                for (com.senne.starktech.robot.GuardRobotEntity robot : level.getEntitiesOfClass(com.senne.starktech.robot.GuardRobotEntity.class,
+                        new net.minecraft.world.phys.AABB(robotCore).inflate(24))) {
+                    robot.setOwner(player);
+                }
             });
             // Even wachten: de robots melden zich om de seconde, nu bij deze kern. (Dichtbij gaan staan: de desktop
             // gaat alleen open als je bij de kern bent.)
@@ -1233,6 +1251,19 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "rb19_logic_robot_help");
+            // Hoofdstuk 24: de app Cameras met de robots die een camera hebben, en het grote beeld van de eerste.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.CAMERAS);
+                }
+            });
+            t.shot(30, "rb22_os_robot_cameras");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourRobotCamera();
+                }
+            });
+            t.shot(30, "rb23_os_robot_camera_big");
             t.close(10);
             // Hoofdstuk 24: een robot kijkt naar het oosten, met een koe zes blokken verder. Eerst schiet hij met zijn
             // laser (rechterarm), daarna met zijn geweer (linkerarm).

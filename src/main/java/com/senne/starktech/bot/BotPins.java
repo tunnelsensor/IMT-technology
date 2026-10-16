@@ -30,6 +30,8 @@ import org.jetbrains.annotations.Nullable;
  *       Robot Ammo; rechtsklik hem met Robot Ammo om te laden);</li>
  *   <li><b>Solar Panel</b>: {@code read} = hoeveel zon hij nu vangt, van 0 tot 100 (hij laadt er zelf mee, ook
  *       als hij uit staat);</li>
+ *   <li><b>Camera</b>: {@code read} = true als iemand op de desktop door zijn ogen kijkt (de app Cameras),
+ *       {@code write(cameraPin, false)} zet de camera uit, {@code true} weer aan;</li>
  *   <li>een lege pin, of een verbrande module: {@code read} = false.</li>
  * </ul>
  * Een module die niets met {@code write} doet, zegt dat in het logboek (één keer per minuut).
@@ -45,6 +47,10 @@ public final class BotPins {
     /** Wanneer (speltijd) zijn laser en zijn geweer weer mogen schieten. */
     private long nextLaser;
     private long nextGun;
+    /** Staat zijn camera aan (write(cameraPin, false) zet hem uit)? */
+    private boolean cameraOn = true;
+    /** Tot wanneer (speltijd) er iemand door zijn camera kijkt (de app Cameras zegt het om de seconde). */
+    private long watchedUntil = Long.MIN_VALUE;
 
     public static final String EVERYONE = "everyone";
     public static final String STRANGERS = "strangers";
@@ -70,6 +76,7 @@ public final class BotPins {
             case LASER -> laserReady();
             case GUN -> (double) robot.ammo();
             case SOLAR_PANEL -> robot.level() instanceof ServerLevel level ? (double) Math.round(robot.sunlight(level) * 100) : 0.0;
+            case CAMERA -> watched();
             default -> false;
         };
     }
@@ -105,6 +112,10 @@ public final class BotPins {
             filter = List.of(EVERYONE, STRANGERS, TRUSTED, TRAINEE).contains(lower) ? lower : text;
             return;
         }
+        if (module == BotModule.CAMERA) {
+            cameraOn = Boolean.TRUE.equals(value);
+            return;
+        }
         if (module == BotModule.LASER || module == BotModule.GUN) {
             // Alleen write(pin, true) schiet; niet klaar (of geen kogels): dan gebeurt er niets.
             if (!Boolean.TRUE.equals(value)) {
@@ -130,9 +141,27 @@ public final class BotPins {
         return filter;
     }
 
-    /** Opnieuw opstarten: het filter weer op iedereen. */
+    /** Opnieuw opstarten: het filter weer op iedereen, de camera weer aan. */
     void reset() {
         filter = EVERYONE;
+        cameraOn = true;
+    }
+
+    // ================================================================ De camera
+
+    /** Kan de app Cameras door zijn ogen kijken? (Een Camera-module, en zijn programma zette hem niet uit.) */
+    public boolean cameraOn() {
+        return cameraOn && robot.board().has(BotModule.CAMERA);
+    }
+
+    /** Iemand kijkt nu door zijn camera (de app Cameras zegt het om de seconde); dat geldt 2 seconden. */
+    public void watch() {
+        watchedUntil = robot.level().getGameTime() + 40;
+    }
+
+    /** Kijkt er nu iemand door zijn camera? */
+    public boolean watched() {
+        return robot.level().getGameTime() < watchedUntil;
     }
 
     /** Wie hij ziet en die door het filter komt, de dichtste eerst. */

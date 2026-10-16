@@ -307,6 +307,12 @@ public class StarkOsScreen extends Screen {
         cameras.tourBig(camera);
     }
 
+    /** Alleen voor de screenshot-rondleiding: het grote beeld van de eerste robot met een camera (hoofdstuk 24). */
+    public void tourRobotCamera() {
+        openApp(App.CAMERAS);
+        cameras.tourBigRobot();
+    }
+
     /** Alleen voor de screenshot-rondleiding: het grote beeld van deze camera, met {@code typed} in het naamvak. */
     public void tourRenameCamera(BlockPos camera, String typed) {
         tourCameras(camera);

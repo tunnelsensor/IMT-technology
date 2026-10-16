@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 268 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 269 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2703,8 +2703,14 @@ dieren werkt hij niet.
       de zon laag staat of het regent, niets 's nachts of onder een dak. `read(solarPin)` is hoeveel zon hij
       vangt (0-100). De zonberekening staat nu op één plek (`station/SolarMath`), voor het zonnepaneel van het
       net en de module. Eén nieuwe test (`robot_solar_panel_charges_in_the_sun`).
-- [ ] **5. Camera** — de robot in de app Cameras; alleen binnen het volgbereik; zijn eigen model wordt
-      overgeslagen.
+- [x] **5. Camera** — een robot met een Camera-module en verbinding staat in de app **Cameras**, tussen je
+      camera's, met "ROBOT" linksonder (screenshot `rb22`). Het beeld kijkt live mee met zijn hoofd (een stukje
+      voor zijn ogen; de robot zelf tekenen we niet, anders keek je in zijn hoofd), alleen als je spel hem ziet
+      (anders OUT OF RANGE). Zijn grote beeld heeft alleen Back: draaien doet zijn programma (screenshot `rb23`).
+      Zolang je naar een robot kijkt, zegt de app dat om de seconde tegen de server, en dan is `read(cameraPin)`
+      true; `write(cameraPin, false)` zet de camera uit (NO SIGNAL), `true` weer aan. Binnenin herkent de app
+      een camera nu aan een sleutel (plek van een camerablok, of nummer van een robot), want een robot loopt.
+      Eén nieuwe test (`robot_camera_in_the_cameras_app`).
 - [ ] **6. Ion Blaster** — de robot valt neer (DOWN); buiten een training staat hij na 60 s weer op.
 
 Tests: de scan ziet een speler in zicht en niet door een muur; het filter "strangers" ziet een vreemde en

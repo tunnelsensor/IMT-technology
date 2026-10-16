@@ -10,7 +10,9 @@ import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.client.os.camera.CameraFeeds;
 import com.senne.starktech.security.CameraBlockEntity;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -21,6 +23,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -30,6 +33,11 @@ import org.joml.Matrix4f;
  * raster met een live beeldje van elke camera in het gebied van de kern; klik er een aan voor het
  * grote beeld, waar je de camera draait en kantelt (pijltjes, of het beeld verslepen) en hem een
  * andere naam geeft (de knop Rename: typ de naam, Enter bewaart, Esc laat het zoals het was).
+ *
+ * Sinds hoofdstuk 24 staan hier ook de guard robots met een Camera-module (met "ROBOT" erbij): hun beeld
+ * kijkt mee met hun hoofd. Een robot draai je niet van hieruit (dat doet zijn programma), dus bij zijn grote
+ * beeld staat alleen Back. Zolang je naar een robot kijkt, weet hij dat ({@code read(cameraPin)} is dan true):
+ * de app zegt het om de seconde tegen de server.
  *
  * Elk beeldje heeft een CRT-randje (scanlijnen, hoekjes, de naam en een knipperend REC) zoals het
  * camerabeeld van de verkenningsdrone. Heeft een camera geen stroom of staat hij uit: "NO SIGNAL";
@@ -47,10 +55,12 @@ final class CamerasApp {
     private static final float DRAG = 0.4f;
     /** Waar de knop Rename staat, onder de pijltjes (ten opzichte van de bovenkant van het beeld). */
     private static final int RENAME_DY = 106;
+    /** Zo vaak (ms) zegt de app tegen de server dat je naar een robot kijkt. */
+    private static final long WATCH_EVERY = 1000;
 
     private final StarkOsScreen screen;
-    /** Het grote beeld: van welke camera (de plek), of null = de muur met alle beeldjes. */
-    private @Nullable BlockPos big;
+    /** Het grote beeld: van welke camera (zie {@link #key}), of null = de muur met alle beeldjes. */
+    private @Nullable String big;
     private int scroll;
     // Slepen in het grote beeld
     private boolean dragging;
@@ -59,6 +69,8 @@ final class CamerasApp {
     /** Ben je de naam van de camera in het grote beeld aan het typen? */
     private boolean renaming;
     private @Nullable EditBox nameBox;
+    /** Wanneer we de server voor het laatst zeiden dat je naar deze robot kijkt. */
+    private final Map<Integer, Long> watched = new HashMap<>();
 
     CamerasApp(StarkOsScreen screen) {
         this.screen = screen;
@@ -76,9 +88,23 @@ final class CamerasApp {
         return new BlockPos(camera.getInt("x"), camera.getInt("y"), camera.getInt("z"));
     }
 
-    private @Nullable CompoundTag find(BlockPos pos) {
+    /** Is dit het beeld van een robot (hoofdstuk 24)? */
+    private static boolean isRobot(CompoundTag camera) {
+        return camera.contains("robot");
+    }
+
+    /** Waar we een camera aan herkennen: een camerablok aan zijn plek, een robot (die loopt) aan zijn nummer. */
+    private static String key(CompoundTag camera) {
+        return isRobot(camera) ? "r" + camera.getInt("robot") : blockKey(posOf(camera));
+    }
+
+    private static String blockKey(BlockPos pos) {
+        return "b" + pos.asLong();
+    }
+
+    private @Nullable CompoundTag find(String key) {
         for (CompoundTag camera : cameras()) {
-            if (posOf(camera).equals(pos)) {
+            if (key(camera).equals(key)) {
                 return camera;
             }
         }
@@ -90,7 +116,7 @@ final class CamerasApp {
             nameBox = new EditBox(Minecraft.getInstance().font, 0, 0, 100, 10, Component.literal("Camera name"));
             nameBox.setBordered(false);
             nameBox.setMaxLength(CameraBlockEntity.MAX_NAME);
-            nameBox.setFilter(value -> value.indexOf('\u00A7') < 0); // geen kleurcodes
+            nameBox.setFilter(value -> value.indexOf('§') < 0); // geen kleurcodes
             nameBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
         }
         return nameBox;
@@ -110,7 +136,7 @@ final class CamerasApp {
                 renderBig(g, font, a, camera, mx, my, partialTick);
                 return;
             }
-            showWall(); // de camera is weg
+            showWall(); // de camera (of robot) is weg
         }
         List<CompoundTag> cameras = cameras();
         String head = cameras.isEmpty() ? "No cameras in this network's area yet."
@@ -129,16 +155,16 @@ final class CamerasApp {
             int x = a.x() + (i % columns) * (TILE_W + GAP);
             int y = top + row * (TILE_H + GAP);
             boolean hover = OsDraw.inside(mx, my, x, y, TILE_W, TILE_H);
-            renderFeed(g, font, cameras.get(i), x, y, TILE_W, TILE_H, false, hover);
+            renderFeed(g, font, cameras.get(i), x, y, TILE_W, TILE_H, false, hover, partialTick);
         }
     }
 
     private void renderBig(GuiGraphics g, Font font, StarkOsScreen.Area a, CompoundTag camera, int mx, int my, float partialTick) {
-        BlockPos pos = posOf(camera);
         int fw = bigWidth(a);
         int fh = fw * 9 / 16;
         int fy = a.y() + 12;
-        if (renaming) {
+        boolean robot = isRobot(camera);
+        if (renaming && !robot) {
             // Bovenaan het vak waar je de nieuwe naam typt (in plaats van de naam).
             EditBox box = nameBox();
             OsDraw.field(g, a.x(), a.y() - 2, a.x() + fw, a.y() + 10, true);
@@ -147,16 +173,21 @@ final class CamerasApp {
             box.setWidth(fw - 6);
             box.render(g, mx, my, partialTick);
         } else {
-            g.drawString(font, camera.getString("name") + "   " + pos.getX() + " " + pos.getY() + " " + pos.getZ(),
-                    a.x(), a.y(), HudStyle.argb(255, HudStyle.CYAN), false);
+            BlockPos pos = robot ? robotPos(camera) : posOf(camera);
+            g.drawString(font, camera.getString("name") + (robot ? "  ROBOT" : "") + "   " + pos.getX() + " " + pos.getY() + " "
+                    + pos.getZ(), a.x(), a.y(), HudStyle.argb(255, HudStyle.CYAN), false);
         }
-        renderFeed(g, font, camera, a.x(), fy, fw, fh, true, false);
-        String hint = renaming ? "Enter = save   Esc = cancel   empty = number"
+        renderFeed(g, font, camera, a.x(), fy, fw, fh, true, false, partialTick);
+        String hint = robot ? "You look through its eyes: its program decides where it looks"
+                : renaming ? "Enter = save   Esc = cancel   empty = number"
                 : "Drag the image or use the arrow keys to aim";
-        g.drawString(font, hint, a.x(), fy + fh + 4, HudStyle.argb(255, OsDraw.GREY), false);
-        // Rechts: terug, de pijltjes, en een andere naam geven.
+        g.drawString(font, OsDraw.fitLeft(font, hint, a.w()), a.x(), fy + fh + 4, HudStyle.argb(255, OsDraw.GREY), false);
+        // Rechts: terug, en (alleen bij een camerablok) de pijltjes en een andere naam geven.
         int px = a.x() + fw + 8;
         OsDraw.button(g, font, px, fy, "Back", true, HudStyle.CYAN);
+        if (robot) {
+            return;
+        }
         for (Arrow arrow : Arrow.values()) {
             OsDraw.button(g, font, px + arrow.dx, fy + arrow.dy, arrow.label, true, HudStyle.CYAN);
         }
@@ -192,25 +223,57 @@ final class CamerasApp {
         }
     }
 
+    /** De robot met dit beeld, zoals je spel hem kent (null als hij te ver weg is om te zien). */
+    private static @Nullable Entity robotEntity(CompoundTag camera) {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level == null ? null : mc.level.getEntity(camera.getInt("robot"));
+    }
+
+    /** Waar de robot nu staat (zoals je spel hem ziet; anders wat de server laatst zei). */
+    private static BlockPos robotPos(CompoundTag camera) {
+        Entity entity = robotEntity(camera);
+        return entity != null ? entity.blockPosition() : posOf(camera);
+    }
+
     /** Eén camerabeeld, met zijn CRT-randje, of de reden waarom er geen beeld is. */
-    private void renderFeed(GuiGraphics g, Font font, CompoundTag camera, int x, int y, int w, int h, boolean large, boolean hover) {
-        BlockPos pos = posOf(camera);
-        Vec3 eye = new Vec3(camera.getDouble("ex"), camera.getDouble("ey"), camera.getDouble("ez"));
+    private void renderFeed(GuiGraphics g, Font font, CompoundTag camera, int x, int y, int w, int h, boolean large, boolean hover,
+                            float partialTick) {
+        boolean robot = isRobot(camera);
+        Entity entity = robot ? robotEntity(camera) : null;
+        Vec3 eye;
+        float yaw;
+        float pitch;
+        if (entity != null) {
+            // Het hoofd van de robot, een stukje naar voren (anders kijk je tegen de binnenkant van zijn hoofd).
+            float headYaw = entity instanceof net.minecraft.world.entity.LivingEntity living
+                    ? net.minecraft.util.Mth.rotLerp(partialTick, living.yHeadRotO, living.yHeadRot) : entity.getYRot();
+            eye = entity.getEyePosition(partialTick).add(Vec3.directionFromRotation(0, headYaw).scale(0.35));
+            yaw = headYaw;
+            pitch = entity.getXRot();
+        } else {
+            eye = new Vec3(camera.getDouble("ex"), camera.getDouble("ey"), camera.getDouble("ez"));
+            yaw = camera.getFloat("yaw");
+            pitch = camera.getFloat("pitch");
+        }
         g.fill(x, y, x + w, y + h, HudStyle.argb(255, 0x05080B));
         String problem = null;
         if (!camera.getBoolean("on")) {
             problem = "NO SIGNAL";
-        } else if (!CameraFeeds.inRange(eye)) {
+        } else if (robot && entity == null || !CameraFeeds.inRange(eye)) {
             problem = "OUT OF RANGE";
-        } else if (CameraFeeds.broken(pos)) {
+        } else if (robot ? CameraFeeds.brokenRobot(camera.getInt("robot")) : CameraFeeds.broken(posOf(camera))) {
             problem = "FEED ERROR";
         }
         boolean live = false;
         if (problem == null) {
-            int texture = CameraFeeds.request(pos, eye, camera.getFloat("yaw"), camera.getFloat("pitch"), large);
+            int texture = robot ? CameraFeeds.requestRobot(camera.getInt("robot"), eye, yaw, pitch, large)
+                    : CameraFeeds.request(posOf(camera), eye, yaw, pitch, large);
             if (texture >= 0) {
                 blit(g, texture, x, y, w, h);
                 live = true;
+            }
+            if (robot) {
+                watching(camera.getInt("robot"));
             }
         }
         if (problem != null) {
@@ -230,11 +293,30 @@ final class CamerasApp {
         String name = camera.getString("name");
         g.fill(x + 1, y + 1, x + 6 + font.width(name), y + 11, HudStyle.argb(170, 0x000000));
         g.drawString(font, name, x + 3, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+        if (robot) {
+            // "ROBOT" linksonder: dit beeld loopt mee met een robot.
+            String tag = "ROBOT";
+            g.fill(x + 1, y + h - 11, x + 6 + font.width(tag), y + h - 1, HudStyle.argb(170, 0x000000));
+            g.drawString(font, tag, x + 3, y + h - 10, HudStyle.argb(255, 0xF1E87C), false);
+        }
         if (live && (Util.getMillis() / 600) % 2 == 0) {
             int rx = x + w - font.width("REC") - 4;
             g.fill(rx - 6, y + 4, rx - 2, y + 8, HudStyle.argb(255, HudStyle.RED));
             g.drawString(font, "REC", rx, y + 2, HudStyle.argb(255, HudStyle.RED), false);
         }
+    }
+
+    /** Je kijkt naar deze robot: zeg het (hooguit om de seconde) tegen de server, zodat zijn read(cameraPin) true is. */
+    private void watching(int robot) {
+        long now = Util.getMillis();
+        Long last = watched.get(robot);
+        if (last != null && now - last < WATCH_EVERY) {
+            return;
+        }
+        watched.put(robot, now);
+        CompoundTag args = new CompoundTag();
+        args.putInt("robot", robot);
+        screen.send("cam_watch", args);
     }
 
     /** Ruis zoals op een oude tv (grijze vlekjes die elke 80 ms veranderen). */
@@ -272,12 +354,25 @@ final class CamerasApp {
 
     // ================================================================ Muis en toetsen
 
+    /** Het camerablok in het grote beeld, of null (de muur, of een robot: die draai of hernoem je niet). */
+    private @Nullable BlockPos bigBlock() {
+        CompoundTag camera = big == null ? null : find(big);
+        return camera == null || isRobot(camera) ? null : posOf(camera);
+    }
+
     void mouseClicked(Font font, StarkOsScreen.Area a, int mx, int my) {
         if (big != null) {
             int fw = bigWidth(a);
             int fh = fw * 9 / 16;
             int fy = a.y() + 12;
             int px = a.x() + fw + 8;
+            if (OsDraw.inside(mx, my, px, fy, OsDraw.buttonWidth(font, "Back"), OsDraw.BUTTON_H) && !renaming) {
+                showWall();
+                return;
+            }
+            if (bigBlock() == null) {
+                return; // een robot: alleen Back
+            }
             boolean onRename = OsDraw.inside(mx, my, px, fy + RENAME_DY, OsDraw.buttonWidth(font, renameLabel()), OsDraw.BUTTON_H);
             if (renaming) {
                 if (onRename) {
@@ -291,10 +386,6 @@ final class CamerasApp {
             }
             if (onRename) {
                 startRename();
-                return;
-            }
-            if (OsDraw.inside(mx, my, px, fy, OsDraw.buttonWidth(font, "Back"), OsDraw.BUTTON_H)) {
-                showWall();
                 return;
             }
             for (Arrow arrow : Arrow.values()) {
@@ -319,7 +410,7 @@ final class CamerasApp {
             int x = a.x() + (i % columns) * (TILE_W + GAP);
             int y = top + row * (TILE_H + GAP);
             if (row >= 0 && OsDraw.inside(mx, my, x, y, TILE_W, TILE_H)) {
-                big = posOf(cameras.get(i));
+                big = key(cameras.get(i));
                 return;
             }
         }
@@ -394,7 +485,7 @@ final class CamerasApp {
     /** De knop Rename: het naamvak met de huidige naam, helemaal geselecteerd (typen vervangt hem). */
     private void startRename() {
         CompoundTag camera = big == null ? null : find(big);
-        if (camera == null) {
+        if (camera == null || isRobot(camera)) {
             return;
         }
         EditBox box = nameBox();
@@ -408,25 +499,27 @@ final class CamerasApp {
     /** De nieuwe naam naar de server (die maakt hem netjes; leeg = weer "Camera 3"). */
     private void submitName() {
         renaming = false;
-        if (big == null) {
+        BlockPos pos = bigBlock();
+        if (pos == null) {
             return;
         }
         CompoundTag args = new CompoundTag();
-        args.putInt("x", big.getX());
-        args.putInt("y", big.getY());
-        args.putInt("z", big.getZ());
+        args.putInt("x", pos.getX());
+        args.putInt("y", pos.getY());
+        args.putInt("z", pos.getZ());
         args.putString("name", nameBox().getValue());
         screen.send("cam_rename", args);
     }
 
     private void aim(float pan, float tilt) {
-        if (big == null) {
+        BlockPos pos = bigBlock();
+        if (pos == null) {
             return;
         }
         CompoundTag args = new CompoundTag();
-        args.putInt("x", big.getX());
-        args.putInt("y", big.getY());
-        args.putInt("z", big.getZ());
+        args.putInt("x", pos.getX());
+        args.putInt("y", pos.getY());
+        args.putInt("z", pos.getZ());
         args.putFloat("pan", pan);
         args.putFloat("tilt", tilt);
         screen.send("cam_aim", args);
@@ -434,8 +527,19 @@ final class CamerasApp {
 
     /** Alleen voor de screenshot-rondleiding: het grote beeld van deze camera (of null: de muur). */
     void tourBig(@Nullable BlockPos camera) {
-        big = camera;
+        big = camera == null ? null : blockKey(camera);
         renaming = false;
+    }
+
+    /** Alleen voor de screenshot-rondleiding: het grote beeld van de eerste robot met een camera. */
+    void tourBigRobot() {
+        for (CompoundTag camera : cameras()) {
+            if (isRobot(camera)) {
+                big = key(camera);
+                renaming = false;
+                return;
+            }
+        }
     }
 
     /** Alleen voor de screenshot-rondleiding: op Rename geklikt en {@code typed} getypt. */

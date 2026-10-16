@@ -258,6 +258,46 @@ public final class Robots {
         return robots;
     }
 
+    /**
+     * De robots met een Camera-module voor de app Cameras (hoofdstuk 24): alleen die met verbinding (hun beeld gaat via
+     * de server) en die nu geladen zijn. Met hun nummer (je spel volgt het hoofd van die robot), naam, of de camera aan
+     * staat, en waar hij nu kijkt.
+     */
+    public static ListTag cameras(ServerLevel level, SecurityCoreBlockEntity core) {
+        ListTag list = new ListTag();
+        for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+            if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()
+                    || !robot.board().has(BotModule.CAMERA) || BotLink.core(robot) != core) {
+                continue;
+            }
+            CompoundTag tag = new CompoundTag();
+            tag.putInt("robot", robot.getId());
+            tag.putString("name", robot.hasCustomName() ? robot.getCustomName().getString() : entry.name());
+            tag.putBoolean("on", robot.brain().pins().cameraOn());
+            tag.putInt("x", robot.getBlockX());
+            tag.putInt("y", robot.getBlockY());
+            tag.putInt("z", robot.getBlockZ());
+            net.minecraft.world.phys.Vec3 eye = robot.getEyePosition();
+            tag.putDouble("ex", eye.x);
+            tag.putDouble("ey", eye.y);
+            tag.putDouble("ez", eye.z);
+            tag.putFloat("yaw", robot.getYHeadRot());
+            tag.putFloat("pitch", robot.getXRot());
+            list.add(tag);
+        }
+        return list;
+    }
+
+    /**
+     * De app Cameras kijkt door de ogen van deze robot (zijn nummer): dan zegt zijn {@code read(cameraPin)} even true.
+     * Alleen voor een robot die in de lijst van deze kern staat.
+     */
+    public static void watched(ServerLevel level, SecurityCoreBlockEntity core, int entityId) {
+        if (level.getEntity(entityId) instanceof GuardRobotEntity robot && robot.isAlive() && BotLink.core(robot) == core) {
+            robot.brain().pins().watch();
+        }
+    }
+
     /** De robotprogramma's op de server van deze kern (voor de knop Program in de app Robots). */
     public static ListTag programNames(SecurityCoreBlockEntity core) {
         ListTag names = new ListTag();

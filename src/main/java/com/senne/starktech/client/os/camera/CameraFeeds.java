@@ -25,6 +25,9 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
  * Het tekenen zelf staat in FeedRenderer. Gaat daar iets mis (een wezen of blok van een andere mod
  * dat zich niet laat tekenen), dan vangen we dat op: dat beeld laat dan "NO SIGNAL" zien, en het
  * spel loopt gewoon door.
+ *
+ * Sinds hoofdstuk 24 kan een beeld ook van een robot met een Camera-module komen ({@link #requestRobot}): dan
+ * kijkt het mee met zijn hoofd, en tekenen we de robot zelf niet (anders keek je in zijn eigen hoofd).
  */
 public final class CameraFeeds {
     private CameraFeeds() {}
@@ -43,6 +46,8 @@ public final class CameraFeeds {
         boolean ready;
         /** Ging het tekenen mis? Dan proberen we het niet opnieuw. */
         boolean broken;
+        /** Het wezen dat we niet tekenen (de robot zelf), of -1. */
+        int skip = -1;
     }
 
     private static final Map<Long, Feed> FEEDS = new HashMap<>();
@@ -53,19 +58,45 @@ public final class CameraFeeds {
      * van het plaatje terug, of -1 als er nog geen beeld is (net gevraagd, of het tekenen ging mis).
      */
     public static int request(BlockPos camera, Vec3 eye, float yaw, float pitch, boolean big) {
-        long key = camera.asLong();
+        return request(camera.asLong(), eye, yaw, pitch, big, -1);
+    }
+
+    /**
+     * Hetzelfde voor de camera van een robot (hoofdstuk 24): {@code eye}, {@code yaw} en {@code pitch} komen van zijn
+     * hoofd, en hem zelf tekenen we niet.
+     */
+    public static int requestRobot(int entityId, Vec3 eye, float yaw, float pitch, boolean big) {
+        return request(robotKey(entityId), eye, yaw, pitch, big, entityId);
+    }
+
+    private static int request(long key, Vec3 eye, float yaw, float pitch, boolean big, int skip) {
         Feed feed = FEEDS.computeIfAbsent(key, k -> new Feed());
         feed.eye = eye;
         feed.yaw = yaw;
         feed.pitch = pitch;
         feed.big = big;
+        feed.skip = skip;
         PLANNER.want(key, Util.getMillis(), big);
         return feed.ready && !feed.broken && feed.target != null ? feed.target.getColorTextureId() : -1;
+    }
+
+    /**
+     * Het nummer van het beeld van een robot. Een camerablok gebruikt zijn plek ({@code BlockPos.asLong}); een robot
+     * een "plek" op hoogte -2048, waar nooit een blok staat, zodat ze nooit hetzelfde nummer krijgen.
+     */
+    private static long robotKey(int entityId) {
+        return BlockPos.asLong(entityId & 0x1FFFFFF, -2048, entityId >>> 25);
     }
 
     /** Ging het tekenen van dit beeld mis? */
     public static boolean broken(BlockPos camera) {
         Feed feed = FEEDS.get(camera.asLong());
+        return feed != null && feed.broken;
+    }
+
+    /** Ging het tekenen van het beeld van deze robot mis? */
+    public static boolean brokenRobot(int entityId) {
+        Feed feed = FEEDS.get(robotKey(entityId));
         return feed != null && feed.broken;
     }
 
@@ -121,7 +152,7 @@ public final class CameraFeeds {
                 feed.target.resize(width, height, Minecraft.ON_OSX);
             }
             try {
-                FeedRenderer.render(feed.target, feed.eye, feed.yaw, feed.pitch, partialTick, distance);
+                FeedRenderer.render(feed.target, feed.eye, feed.yaw, feed.pitch, partialTick, distance, feed.skip);
                 feed.ready = true;
             } catch (RuntimeException e) {
                 feed.broken = true;
