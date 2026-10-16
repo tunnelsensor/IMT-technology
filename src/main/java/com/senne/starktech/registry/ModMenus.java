@@ -36,4 +36,7 @@ public final class ModMenus {
     /** Het scherm van een landingsplatform: zijn batterij (zie LandingPadMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.suit.LandingPadMenu>> LANDING_PAD =
             MENUS.register("landing_pad", () -> IMenuTypeExtension.create(com.senne.starktech.suit.LandingPadMenu::new));
+    /** Het scherm van de Robot Assembler (hoofdstuk 21, zie RobotAssemblerMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.starktech.robot.RobotAssemblerMenu>> ROBOT_ASSEMBLER =
+            MENUS.register("robot_assembler", () -> IMenuTypeExtension.create(com.senne.starktech.robot.RobotAssemblerMenu::new));
 }

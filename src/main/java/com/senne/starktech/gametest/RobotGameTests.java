@@ -4,10 +4,14 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.bot.CircuitBoardItem;
 import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.robot.GuardRobotEntity;
+import com.senne.starktech.robot.GuardRobotItem;
+import com.senne.starktech.robot.RobotAssemblerBlockEntity;
+import com.senne.starktech.robot.RobotData;
 import com.senne.starktech.robot.RobotPartItem;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
@@ -15,6 +19,7 @@ import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.security.BaseTrust;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -24,11 +29,17 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -222,6 +233,84 @@ public final class RobotGameTests {
                 .map(recipe -> recipe.value().getResultItem(helper.getLevel().registryAccess()))
                 .orElse(ItemStack.EMPTY);
         check(made.is(ModItems.ROBOT_CIRCUIT_BOARD.get()), "Geen recept voor de printplaat");
+        helper.succeed();
+    }
+
+    /**
+     * De Robot Assembler: zonder printplaat lukt Assemble niet en zegt hij wat er ontbreekt; met alles erin
+     * maakt hij een robot-item met die onderdelen en die printplaat (er gaat er van elk één af). Take apart
+     * kan pas als de andere vakjes leeg zijn, en geeft alles terug (de printplaat met wat erop zit).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_assembler_builds_and_takes_apart(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(3, 2, 3);
+        helper.setBlock(pos, ModBlocks.ROBOT_ASSEMBLER.get());
+        RobotAssemblerBlockEntity assembler = (RobotAssemblerBlockEntity) helper.getBlockEntity(pos);
+        SimpleContainer items = assembler.items();
+        check(!assembler.assemble(), "Een robot uit niets");
+
+        RobotParts parts = new RobotParts(RobotStyle.COMMANDO, RobotStyle.SUPER_BATTLE, RobotStyle.TRAINER, RobotStyle.BATTLE);
+        for (RobotSlot slot : RobotSlot.values()) {
+            items.setItem(slot.ordinal(), new ItemStack(ModItems.robotPart(slot, parts.get(slot)), slot == RobotSlot.ARMS ? 2 : 1));
+        }
+        check(RobotAssemblerBlockEntity.missing(items).equals(List.of("board")),
+                "Zonder printplaat ontbreekt: " + RobotAssemblerBlockEntity.missing(items));
+        check(!assembler.assemble(), "Een robot zonder printplaat");
+        check(!RobotAssemblerBlockEntity.fits(RobotSlot.HEAD.ordinal(), new ItemStack(ModItems.robotPart(RobotSlot.LEGS, RobotStyle.BATTLE))),
+                "Benen passen in het vakje van het hoofd");
+
+        BotBoard soldered = new BotBoard(List.of("scan"), 0);
+        ItemStack board = new ItemStack(ModItems.ROBOT_CIRCUIT_BOARD.get());
+        board.set(ModDataComponents.BOT_BOARD.get(), soldered);
+        items.setItem(RobotAssemblerBlockEntity.BOARD, board);
+        check(assembler.assemble(), "Assemble lukte niet met alles erin");
+        ItemStack robot = items.getItem(RobotAssemblerBlockEntity.ROBOT);
+        check(robot.is(ModItems.GUARD_ROBOT.get()), "Er ligt geen robot in het robotvakje");
+        check(GuardRobotItem.data(robot).robotParts().equals(parts), "De robot heeft andere onderdelen: " + GuardRobotItem.data(robot));
+        check(GuardRobotItem.data(robot).board().equals(soldered), "De robot heeft een andere printplaat");
+        check(items.getItem(RobotSlot.ARMS.ordinal()).getCount() == 1 && items.getItem(RobotSlot.HEAD.ordinal()).isEmpty()
+                && items.getItem(RobotAssemblerBlockEntity.BOARD).isEmpty(), "Er ging niet van elk onderdeel één af");
+        check(!assembler.assemble(), "Een tweede robot terwijl het robotvakje vol is");
+
+        check(!assembler.takeApart(), "Uit elkaar terwijl er nog armen in hun vakje liggen");
+        items.setItem(RobotSlot.ARMS.ordinal(), ItemStack.EMPTY);
+        check(assembler.takeApart(), "Take apart lukte niet");
+        for (RobotSlot slot : RobotSlot.values()) {
+            check(items.getItem(slot.ordinal()).is(ModItems.robotPart(slot, parts.get(slot))), "Na uit elkaar halen mist: " + slot);
+        }
+        check(CircuitBoardItem.board(items.getItem(RobotAssemblerBlockEntity.BOARD)).equals(soldered),
+                "De printplaat kwam terug zonder zijn module");
+        check(items.getItem(RobotAssemblerBlockEntity.ROBOT).isEmpty(), "De robot ligt er nog");
+        helper.succeed();
+    }
+
+    /**
+     * Een Guard Robot-item op een blok: de robot staat erbovenop, met de onderdelen, printplaat en naam uit het
+     * item, en wie hem neerzette is zijn eigenaar. In survival is het item dan op.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_item_places_robot(GameTestHelper helper) {
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 1), "robot-placer");
+        player.getAbilities().instabuild = false; // een testspeler mag anders alles houden, zoals in creative
+        BlockPos floor = new BlockPos(3, 2, 3);
+        helper.setBlock(floor, Blocks.STONE);
+        RobotParts parts = new RobotParts(RobotStyle.TRAINER, RobotStyle.TRAINER, RobotStyle.COMMANDO, RobotStyle.SUPER_BATTLE);
+        BotBoard soldered = new BotBoard(List.of("", "laser"), 0);
+        ItemStack stack = GuardRobotItem.create(new RobotData(parts, soldered, "Guard 7"));
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        BlockPos abs = helper.absolutePos(floor);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);
+        check(stack.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit)).consumesAction(), "Neerzetten lukte niet");
+
+        List<GuardRobotEntity> robots = helper.getEntities(ModEntities.GUARD_ROBOT.get(), floor.above(), 1.0);
+        check(robots.size() == 1, "Er staan " + robots.size() + " robots op het blok");
+        GuardRobotEntity robot = robots.get(0);
+        check(robot.blockPosition().equals(abs.above()), "De robot staat niet bovenop het blok");
+        check(robot.parts().equals(parts) && robot.board().equals(soldered), "De robot is niet wat er in het item zat");
+        check(robot.hasCustomName() && "Guard 7".equals(robot.getCustomName().getString()), "Zijn naam ging verloren");
+        check(player.getUUID().equals(robot.owner()), "Wie hem neerzette is niet de eigenaar");
+        check(robot.toData().equals(new RobotData(parts, soldered, "Guard 7")), "Terug naar een item geeft iets anders");
+        check(player.getMainHandItem().isEmpty(), "In survival is het item niet op");
         helper.succeed();
     }
 

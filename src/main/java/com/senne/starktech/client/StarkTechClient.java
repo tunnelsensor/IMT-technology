@@ -122,6 +122,7 @@ public class StarkTechClient {
         event.register(ModMenus.LANDING_PAD.get(), com.senne.starktech.client.LandingPadScreen::new);
         event.register(ModMenus.SERVER_RACK.get(), com.senne.starktech.client.ServerRackScreen::new);
         event.register(ModMenus.CRACK_MACHINE.get(), com.senne.starktech.client.repair.CrackMachineScreen::new);
+        event.register(ModMenus.ROBOT_ASSEMBLER.get(), com.senne.starktech.client.robot.RobotAssemblerScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {

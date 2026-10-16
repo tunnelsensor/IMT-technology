@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 235 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 237 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2412,8 +2412,17 @@ hij loopt terug en laadt.
       (`BotBoard` in de nieuwe map `bot/`, die robots en later drones delen): 8 pinnen met elk de naam van
       een module of leeg, en de soldeerbruggen tussen naburige pinnen (voor hoofdstuk 22). Een nieuwe
       printplaat is leeg. Eén nieuwe test (8 pinnen, bewaren en laden, recept). Vorige stap: `ca743d5`.
-- [ ] **5. Robot Assembler** — blok met vier vakjes en de printplaat, 3D-voorbeeld, **Assemble** (maakt het
-      robotitem) en **Take apart**.
+- [x] **5. Robot Assembler** — een stalen werkbank (recept: ijzer, Stark Chip, zuigers en een werkbank; voorop
+      een scherm met een cyaan robot, bovenop een werkblad met klemmen). Zijn scherm: links vier vakjes
+      (hoofd, lijf, armen, benen; elk neemt alleen zijn eigen soort), in het midden een **draaiend
+      3D-voorbeeld** dat meegroeit (wat nog niet ligt, zie je niet), rechts de printplaat en het robotvakje,
+      de knoppen **Assemble** en **Take apart**, en eronder wat er nog ontbreekt ("Missing: arms, legs,
+      board."). Assemble maakt een **Guard Robot**-item (`GuardRobotItem`, met `RobotData`: onderdelen,
+      printplaat, naam); Take apart kan als de andere vakjes leeg zijn en geeft alles terug, ook de
+      printplaat met wat erop zit. Een Guard Robot-item op een blok zet de robot erop, met zijn gezicht naar
+      jou; jij bent zijn eigenaar. De knoppen gaan als "knop van een menu" naar de server (zoals de
+      betafel), geen nieuw netwerkbericht. Twee nieuwe tests (bouwen en uit elkaar halen; neerzetten).
+      Screenshots `rb07`-`rb10`. Vorige stap: `4b85ae0`.
 - [ ] **6. Robot Dock en batterij** — laadstation op kabelstroom, dat één robot als thuis heeft; aan en uit.
 - [ ] **7. Robotscherm en opslag** — sneak + rechtsklik met een lege hand (wie hem neerzette of vertrouwd
       is in de basis, zoals bij de laserzender); `BotNetwork` bewaart alle robots van een core; netwerkversie

@@ -358,4 +358,13 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noCollission()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
+
+    /** Hoofdstuk 21: de Robot Assembler, de werkbank waarop je een guard robot in elkaar zet. */
+    public static final DeferredBlock<com.senne.starktech.robot.RobotAssemblerBlock> ROBOT_ASSEMBLER = BLOCKS.registerBlock(
+            "robot_assembler", com.senne.starktech.robot.RobotAssemblerBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
 }

@@ -138,4 +138,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("laser_emitter",
                     () -> new BlockEntityType<>(com.senne.starktech.shield.LaserEmitterBlockEntity::new,
                             java.util.Set.of(ModBlocks.LASER_EMITTER.get()), null));
+
+    /** De Robot Assembler (hoofdstuk 21): zijn zes vakjes. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.robot.RobotAssemblerBlockEntity>> ROBOT_ASSEMBLER =
+            BLOCK_ENTITIES.register("robot_assembler",
+                    () -> new BlockEntityType<>(com.senne.starktech.robot.RobotAssemblerBlockEntity::new,
+                            java.util.Set.of(ModBlocks.ROBOT_ASSEMBLER.get()), null));
 }

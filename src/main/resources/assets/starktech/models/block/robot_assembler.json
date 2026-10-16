@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "starktech:block/robot_assembler_front",
+    "side": "starktech:block/robot_assembler_side",
+    "top": "starktech:block/robot_assembler_top"
+  }
+}

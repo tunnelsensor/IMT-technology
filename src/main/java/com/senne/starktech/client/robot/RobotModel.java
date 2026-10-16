@@ -79,6 +79,18 @@ public class RobotModel extends HumanoidModel<GuardRobotEntity> {
                           float netHeadYaw, float headPitch) {
         super.setupAnim(robot, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
         showParts(robot.parts());
+        // In het voorbeeld van de Robot Assembler: wat er nog niet ligt, tekenen we niet.
+        for (RobotSlot slot : RobotSlot.values()) {
+            if (!robot.shows(slot)) {
+                versions.get(slot)[robot.parts().get(slot).ordinal()].visible = false;
+                if (slot == RobotSlot.ARMS) {
+                    leftArms[robot.parts().arms().ordinal()].visible = false;
+                }
+                if (slot == RobotSlot.LEGS) {
+                    leftLegs[robot.parts().legs().ordinal()].visible = false;
+                }
+            }
+        }
     }
 
     /**

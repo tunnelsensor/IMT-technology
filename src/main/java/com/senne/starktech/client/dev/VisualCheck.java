@@ -1066,6 +1066,42 @@ public final class VisualCheck {
             t.shot(40, "rb06_robot_styles_night");
             t.command(0, "time set noon");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // De Robot Assembler: eerst half gevuld (hoofd en lijf: het voorbeeld toont alleen die), dan vol.
+            BlockPos bench = new BlockPos(60, -60, 64);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(bench, ModBlocks.ROBOT_ASSEMBLER.get().defaultBlockState()
+                        .setValue(com.senne.starktech.robot.RobotAssemblerBlock.FACING, net.minecraft.core.Direction.SOUTH));
+                if (level.getBlockEntity(bench) instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+                    be.items().setItem(0, new ItemStack(ModItems.robotPart(com.senne.starktech.robot.RobotSlot.HEAD,
+                            com.senne.starktech.robot.RobotStyle.COMMANDO)));
+                    be.items().setItem(1, new ItemStack(ModItems.robotPart(com.senne.starktech.robot.RobotSlot.BODY,
+                            com.senne.starktech.robot.RobotStyle.SUPER_BATTLE)));
+                    player.openMenu(be, bench);
+                }
+            });
+            t.shot(30, "rb07_assembler_half");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+                    be.items().setItem(2, new ItemStack(ModItems.robotPart(com.senne.starktech.robot.RobotSlot.ARMS,
+                            com.senne.starktech.robot.RobotStyle.SUPER_BATTLE)));
+                    be.items().setItem(3, new ItemStack(ModItems.robotPart(com.senne.starktech.robot.RobotSlot.LEGS,
+                            com.senne.starktech.robot.RobotStyle.COMMANDO)));
+                    be.items().setItem(4, new ItemStack(ModItems.ROBOT_CIRCUIT_BOARD.get()));
+                }
+            });
+            t.shot(30, "rb08_assembler_ready");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+                    be.assemble();
+                }
+            });
+            t.shot(30, "rb09_assembler_built");
+            t.close(0);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(0, 60.5, -60, 66.5, 180, 25);
+            t.shot(20, "rb10_assembler_block");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
         // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde

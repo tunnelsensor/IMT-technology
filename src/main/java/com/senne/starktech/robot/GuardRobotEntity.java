@@ -1,5 +1,6 @@
 package com.senne.starktech.robot;
 
+import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.BaseTrust;
@@ -7,6 +8,8 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -53,6 +56,13 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     private @Nullable UUID owner;
     private String ownerName = "";
+    /** Zijn printplaat: wat er op zijn 8 pinnen gesoldeerd is (hoofdstuk 22). */
+    private BotBoard board = BotBoard.EMPTY;
+    /**
+     * Alleen in je spel, voor het voorbeeld in de Robot Assembler: welke onderdelen we tekenen (bit per
+     * RobotSlot). Een onderdeel dat nog niet in de assembler ligt, tekenen we niet.
+     */
+    private int shownSlots = 0b1111;
 
     public GuardRobotEntity(EntityType<? extends GuardRobotEntity> type, Level level) {
         super(type, level);
@@ -121,6 +131,34 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         }
     }
 
+    /** Zijn printplaat. */
+    public BotBoard board() {
+        return board;
+    }
+
+    /** Welke onderdelen je spel tekent (zie {@link #shownSlots}). */
+    public boolean shows(RobotSlot slot) {
+        return (shownSlots & 1 << slot.ordinal()) != 0;
+    }
+
+    /** Voor het voorbeeld in de Robot Assembler: teken alleen deze onderdelen (bit per RobotSlot). */
+    public void setShownSlots(int mask) {
+        shownSlots = mask;
+    }
+
+    /** Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat en naam (zie GuardRobotItem). */
+    public void applyData(RobotData data) {
+        setParts(data.robotParts());
+        setHealth(getMaxHealth());
+        board = data.board();
+        setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
+    }
+
+    /** Wat er in zijn item komt als je hem oppakt. */
+    public RobotData toData() {
+        return new RobotData(parts(), board, hasCustomName() ? getCustomName().getString() : "");
+    }
+
     /** Uit een spawn-ei (creative) komt een robot met willekeurige onderdelen. */
     @Override
     public @Nullable SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
@@ -178,6 +216,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("Parts", parts().pack());
+        tag.put("Board", BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, board).getOrThrow());
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
@@ -190,6 +229,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         if (tag.contains("Parts")) {
             entityData.set(PARTS, tag.getInt("Parts"));
         }
+        board = tag.contains("Board") ? BotBoard.CODEC.parse(NbtOps.INSTANCE, tag.get("Board")).result().orElse(BotBoard.EMPTY)
+                : BotBoard.EMPTY;
         // Na het laden van leven en eigenschappen: de config kan intussen andere getallen hebben.
         applyParts();
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;

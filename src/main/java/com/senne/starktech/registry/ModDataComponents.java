@@ -127,4 +127,9 @@ public final class ModDataComponents {
                     .persistent(com.senne.starktech.bot.BotBoard.CODEC)
                     .networkSynchronized(com.senne.starktech.bot.BotBoard.STREAM_CODEC));
 
+    /** Hoofdstuk 21: wat er in een Guard Robot-item zit (onderdelen, printplaat, naam; zie RobotData). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.robot.RobotData>> ROBOT_DATA =
+            COMPONENTS.registerComponentType("robot_data", builder -> builder
+                    .persistent(com.senne.starktech.robot.RobotData.CODEC)
+                    .networkSynchronized(com.senne.starktech.robot.RobotData.STREAM_CODEC));
 }

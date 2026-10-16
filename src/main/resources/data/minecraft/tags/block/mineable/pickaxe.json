@@ -24,6 +24,7 @@
     "starktech:crusher",
     "starktech:compactor",
     "starktech:arc_lamp",
-    "starktech:light_switch"
+    "starktech:light_switch",
+    "starktech:robot_assembler"
   ]
 }

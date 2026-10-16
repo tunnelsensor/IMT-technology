@@ -3161,6 +3161,78 @@ def robot_circuit_board():
     save(im, "item/robot_circuit_board.png")
 
 
+def robot_assembler_textures():
+    """
+    De Robot Assembler: een stalen werkbank. Voorop een scherm met het silhouet van een robot in cyaan, opzij
+    stalen panelen met een geel-zwarte rand onderaan, en bovenop een werkblad met een raster en de klemmen
+    waar de robot op ligt.
+    """
+    steel = (78, 86, 96, 255)
+    steel_dark = (44, 50, 58, 255)
+    steel_light = (112, 122, 134, 255)
+    bolt = (150, 160, 172, 255)
+
+    side = img(16, 16, steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.line([1, 1, 14, 1], fill=steel_light)
+    d.line([7, 2, 7, 11], fill=steel_dark)
+    for y in range(12, 15):
+        for x in range(1, 15):
+            side.putpixel((x, y), (230, 190, 40, 255) if (x + y) % 4 < 2 else (30, 30, 34, 255))
+    px(side, [(2, 3), (13, 3), (2, 10), (13, 10)], bolt)
+    save(side, "block/robot_assembler_side.png")
+
+    front = side.copy()
+    d = ImageDraw.Draw(front)
+    d.rectangle([2, 2, 13, 11], fill=(12, 18, 24, 255), outline=steel_dark)
+    # Het silhouet van een robot op het scherm.
+    robot = [(7, 3), (8, 3), (7, 4), (8, 4), (6, 5), (7, 5), (8, 5), (9, 5), (5, 6), (6, 6), (7, 6), (8, 6), (9, 6),
+             (10, 6), (6, 7), (7, 7), (8, 7), (9, 7), (7, 8), (8, 8), (6, 9), (9, 9), (6, 10), (9, 10)]
+    px(front, robot, CYAN)
+    px(front, [(4, 3), (11, 3), (4, 10), (11, 10)], CYAN_DIM)
+    save(front, "block/robot_assembler_front.png")
+
+    top = img(16, 16, (58, 64, 72, 255))
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for i in range(3, 16, 4):
+        d.line([i, 1, i, 14], fill=(68, 76, 86, 255))
+        d.line([1, i, 14, i], fill=(68, 76, 86, 255))
+    # De klemmen: vier hoekjes in geel, en in het midden een lichte omtrek van een liggende robot.
+    for x, y, dx, dy in ((2, 2, 1, 1), (13, 2, -1, 1), (2, 13, 1, -1), (13, 13, -1, -1)):
+        px(top, [(x, y), (x + dx, y), (x, y + dy)], (230, 190, 40, 255))
+    d.rectangle([6, 3, 9, 4], outline=steel_light)
+    d.rectangle([5, 5, 10, 9], outline=steel_light)
+    d.line([6, 10, 6, 12], fill=steel_light)
+    d.line([9, 10, 9, 12], fill=steel_light)
+    save(top, "block/robot_assembler_top.png")
+
+
+def guard_robot_item():
+    """Een samengestelde guard robot als icoon: een grijze robot van voren, met één cyaan oog."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    body = (110, 118, 128, 255)
+    dark = (52, 58, 66, 255)
+    edge = (24, 26, 30, 255)
+    d.rectangle([6, 1, 9, 4], fill=body)          # hoofd
+    px(im, [(7, 2), (8, 2)], CYAN)                # oog
+    d.rectangle([5, 5, 10, 9], fill=body)         # lijf
+    d.rectangle([7, 10, 8, 10], fill=dark)        # middel
+    d.rectangle([3, 5, 4, 10], fill=dark)         # armen
+    d.rectangle([11, 5, 12, 10], fill=dark)
+    d.rectangle([5, 11, 6, 14], fill=body)        # benen
+    d.rectangle([9, 11, 10, 14], fill=body)
+    px(im, [(7, 6)], CYAN_DIM)
+    outline = [(x, y) for x in range(16) for y in range(16) if im.getpixel((x, y))[3] == 0 and any(
+        0 <= x + dx < 16 and 0 <= y + dy < 16 and im.getpixel((x + dx, y + dy))[3] == 255
+        and im.getpixel((x + dx, y + dy)) != edge for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    for point in outline:
+        im.putpixel(point, edge)
+    save(im, "item/guard_robot.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3221,3 +3293,5 @@ if __name__ == "__main__":
     robot_textures()
     robot_part_items()
     robot_circuit_board()
+    robot_assembler_textures()
+    guard_robot_item()

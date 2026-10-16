@@ -281,6 +281,15 @@ public final class ModItems {
             "robot_circuit_board", com.senne.starktech.bot.CircuitBoardItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
+    /** Hoofdstuk 21: de werkbank waarop je een guard robot in elkaar zet. */
+    public static final DeferredItem<BlockItem> ROBOT_ASSEMBLER = ITEMS.registerSimpleBlockItem("robot_assembler",
+            ModBlocks.ROBOT_ASSEMBLER, new Item.Properties().rarity(Rarity.UNCOMMON));
+
+    /** Hoofdstuk 21: een samengestelde guard robot (uit de Robot Assembler); rechtsklik zet hem neer. */
+    public static final DeferredItem<com.senne.starktech.robot.GuardRobotItem> GUARD_ROBOT = ITEMS.registerItem(
+            "guard_robot", com.senne.starktech.robot.GuardRobotItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
     /** Het onderdeel-item van deze soort in deze stijl. */
     public static RobotPartItem robotPart(RobotSlot slot, RobotStyle style) {
         return ROBOT_PARTS.get(slot).get(style.ordinal()).get();
