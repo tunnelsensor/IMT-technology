@@ -2,10 +2,12 @@ package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.logic.LogicServer;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotStyle;
+import com.senne.starktech.security.SecurityCoreBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -87,6 +89,50 @@ public final class BotSenseGameTests {
         helper.runAfterDelay(30, () -> {
             check(Boolean.FALSE.equals(commando.brain().global("seen")), "Een Commando-hoofd zag iemand achter hem");
             check(Boolean.TRUE.equals(trainer.brain().global("seen")), "Een Trainer-hoofd (rondom) zag de speler achter hem niet");
+            helper.succeed();
+        });
+    }
+
+    /** Kijkt met een filter op zijn Face Recognition (pin 2): ziet zijn Scan (pin 1) iemand, en wie? */
+    private static String faceProgram(String filter) {
+        return "seen = false\nwho = \"\"\nwhen started:\n    write(pin(2), \"" + filter + "\")\n    forever:\n"
+                + "        seen = read(pin(1))\n        who = read(pin(2))\n        wait(0.1)\n";
+    }
+
+    /**
+     * Face Recognition: met "strangers" ziet hij de vreemde en niet de eigenaar, met "trusted" juist de eigenaar,
+     * met een naam alleen die speler. Wie een vriend is, vraagt hij aan de server: zonder werkende server ziet hij met
+     * "strangers" niemand meer, maar een naam herkent hij nog wel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 160, batch = "robot_face")
+    public static void robot_face_recognition_filters(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 2, 7), "face-owner");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(10, 2, 6), "face-stranger");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos rack = new BlockPos(12, 3, 2);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        BotBoard board = BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition");
+        GuardRobotEntity strangers = robot(helper, new BlockPos(6, 2, 12), RobotStyle.COMMANDO, board, faceProgram("strangers"));
+        GuardRobotEntity trusted = robot(helper, new BlockPos(9, 2, 12), RobotStyle.COMMANDO, board, faceProgram("trusted"));
+        GuardRobotEntity named = robot(helper, new BlockPos(12, 2, 12), RobotStyle.COMMANDO, board, faceProgram("Face-Stranger"));
+        for (GuardRobotEntity robot : java.util.List.of(strangers, trusted, named)) {
+            robot.setOwner(owner);
+        }
+        helper.runAfterDelay(2, () -> StarkTechGameTests.startServer(helper, rack, core));
+        helper.runAfterDelay(20, () -> {
+            check("face-stranger".equals(strangers.brain().global("who")) && Boolean.TRUE.equals(strangers.brain().global("seen")),
+                    "Met \"strangers\" zag hij " + strangers.brain().global("who"));
+            check("face-owner".equals(trusted.brain().global("who")), "Met \"trusted\" zag hij " + trusted.brain().global("who"));
+            check("face-stranger".equals(named.brain().global("who")), "Met een naam zag hij " + named.brain().global("who"));
+            check(strangers.brain().pins().filter().equals("strangers"), "Het filter is " + strangers.brain().pins().filter());
+            // Geen werkende server meer: geen verbinding.
+            helper.setBlock(rack, Blocks.AIR);
+            LogicServer.forgetAll();
+        });
+        helper.runAfterDelay(35, () -> {
+            check(Boolean.FALSE.equals(strangers.brain().global("seen")) && "".equals(strangers.brain().global("who")),
+                    "Zonder verbinding zag hij met \"strangers\" toch " + strangers.brain().global("who"));
+            check("face-stranger".equals(named.brain().global("who")), "Zonder verbinding herkende hij de naam niet meer");
             helper.succeed();
         });
     }

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 264 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 265 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2677,7 +2677,13 @@ dieren werkt hij niet.
       `read(pathPin)` is true zolang hij met `goto` onderweg is; een lege pin zegt false; `write` naar een
       module die daar niets mee doet, zegt dat in het logboek. Nieuw: `bot/BotSense` (wat hij ziet) en
       `bot/BotPins` (wat elke pin doet). Eén nieuwe test (`robot_scan_sees_players_in_sight`).
-- [ ] **2. Face Recognition** — de naam van de herkende speler, en het filter.
+- [x] **2. Face Recognition** — `read(facePin)` is de naam van wie hij ziet ("" = niemand, de dichtste
+      eerst), en `write(facePin, "strangers")` zet het filter waar zijn Scan (en straks zijn wapens) zich aan
+      houden: "everyone" (zo begint hij, ook na opnieuw opstarten), "strangers" (wie niet bij de basis hoort),
+      "trusted" (de eigenaar, zijn team en vertrouwde spelers), "trainee" (hoofdstuk 26; tot dan niemand) of de
+      naam van een speler (hoofdletters tellen niet). Wie een vriend is, vraagt hij aan de server: zonder
+      verbinding ziet hij met "strangers" en "trusted" niemand, een naam herkent hij wel. Eén nieuwe test
+      (`robot_face_recognition_filters`).
 - [ ] **3. Laser en Gun** — een straal zoals bij de Hydra-soldaat; Robot Ammo; batterijkosten; koepels
       houden ze tegen.
 - [ ] **4. Zonnepaneel** — laadt overdag, met dezelfde zonberekening als het zonnepaneel van het net.

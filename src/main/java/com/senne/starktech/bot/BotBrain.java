@@ -297,6 +297,7 @@ public final class BotBrain {
         started = false;
         stopRequested = false;
         incoming = null;
+        pins.reset();
         body.stop();
     }
 
