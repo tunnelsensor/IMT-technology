@@ -367,4 +367,14 @@ public final class ModBlocks {
                     .strength(3.5f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
+
+    /** Hoofdstuk 21: het Robot Dock, het laadstation van één guard robot (op kabelstroom). */
+    public static final DeferredBlock<com.senne.starktech.robot.RobotDockBlock> ROBOT_DOCK = BLOCKS.registerBlock(
+            "robot_dock", com.senne.starktech.robot.RobotDockBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .sound(SoundType.METAL));
 }

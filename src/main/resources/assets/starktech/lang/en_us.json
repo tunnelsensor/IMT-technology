@@ -35,6 +35,8 @@
   "tooltip.starktech.circuit_board.pin": "Pin %s: %s",
   "tooltip.starktech.circuit_board.use": "The brain of a guard robot: put it in a Robot Assembler",
   "block.starktech.robot_assembler": "Robot Assembler",
+  "block.starktech.robot_dock": "Robot Dock",
+  "message.starktech.robot_dock.taken": "This Robot Dock already has a robot",
   "item.starktech.guard_robot": "Guard Robot",
   "tooltip.starktech.guard_robot.part": "%s: %s",
   "tooltip.starktech.guard_robot.board": "Circuit board: %s of 8 pins in use",

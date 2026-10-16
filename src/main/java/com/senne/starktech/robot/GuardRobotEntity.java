@@ -2,10 +2,13 @@ package com.senne.starktech.robot;
 
 import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.BaseTrust;
+import java.util.EnumSet;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -28,6 +31,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
@@ -35,6 +39,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.fluids.FluidType;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,6 +51,11 @@ import org.jetbrains.annotations.Nullable;
  * Hij is geen monster (dus je torentjes laten hem met rust) en verdwijnt nooit vanzelf. Zolang hij nog
  * geen programma heeft (hoofdstuk 23) staat hij stil en kijkt hij rond.
  *
+ * Hij heeft een batterij (hoe groot: zijn lijf). Staat hij aan, dan gebruikt hij stroom (meer als hij loopt);
+ * is de batterij leeg, dan valt hij stil ({@link RobotState#NO_POWER}). Zijn thuis is een Robot Dock: daar
+ * laadt hij via het stroomnet. Zet je hem uit, dan loopt hij naar zijn dock en blijft hij daar staan laden;
+ * zet je hem aan terwijl hij in zijn dock staat, dan stapt hij er naar voren uit.
+ *
  * Wie hem neerzette is zijn eigenaar; samen met wie in die basis vertrouwd is mag die hem instellen
  * (dezelfde regel als bij de laserzender, zie BaseTrust).
  */
@@ -53,6 +63,14 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     /** De onderdelen, ingepakt in één getal (zie RobotParts.pack): je spel heeft ze nodig om hem te tekenen. */
     private static final EntityDataAccessor<Integer> PARTS =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.INT);
+    /** Hoe het met hem gaat (RobotState): je spel doet zijn lichtjes uit als hij niet aan staat. */
+    private static final EntityDataAccessor<Byte> STATE =
+            SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BYTE);
+    /** Hoe vol zijn batterij is (0 tot 1), voor de schermen. */
+    private static final EntityDataAccessor<Float> BATTERY =
+            SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.FLOAT);
+    /** Hoe hoog de plaat van een Robot Dock is: daar staat hij op. */
+    private static final double DOCK_FLOOR = 3.0 / 16.0;
 
     private @Nullable UUID owner;
     private String ownerName = "";
@@ -63,12 +81,21 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
      * RobotSlot). Een onderdeel dat nog niet in de assembler ligt, tekenen we niet.
      */
     private int shownSlots = 0b1111;
+    /** Staat hij aan (zijn eigenaar zette hem aan)? Een nieuwe robot staat uit. */
+    private boolean active;
+    /** Hoeveel stroom er in zijn batterij zit (hoogstens {@link #maxBattery()}). */
+    private double battery;
+    /** Zijn Robot Dock, of null als hij (nog) geen thuis heeft. */
+    private @Nullable BlockPos home;
+    /** Waar hij naartoe stapt als hij in zijn dock aangezet wordt (daarna null). */
+    private @Nullable BlockPos stepOut;
 
     public GuardRobotEntity(EntityType<? extends GuardRobotEntity> type, Level level) {
         super(type, level);
         setPersistenceRequired();
         applyParts();
         setHealth(getMaxHealth());
+        battery = maxBattery();
     }
 
     /**
@@ -89,13 +116,37 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(PARTS, RobotParts.DEFAULT.pack());
+        builder.define(STATE, (byte) RobotState.STANDBY.ordinal());
+        builder.define(BATTERY, 1.0f);
     }
 
     @Override
     protected void registerGoals() {
-        // Nog geen programma: hij blijft staan en kijkt wie er langskomt.
-        goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
-        goalSelector.addGoal(7, new RandomLookAroundGoal(this));
+        goalSelector.addGoal(1, new ReturnToDockGoal());
+        goalSelector.addGoal(1, new StepOutGoal());
+        // Nog geen programma: als hij aan staat, blijft hij staan en kijkt hij wie er langskomt.
+        goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f) {
+            @Override
+            public boolean canUse() {
+                return state() == RobotState.ACTIVE && super.canUse();
+            }
+
+            @Override
+            public boolean canContinueToUse() {
+                return state() == RobotState.ACTIVE && super.canContinueToUse();
+            }
+        });
+        goalSelector.addGoal(7, new RandomLookAroundGoal(this) {
+            @Override
+            public boolean canUse() {
+                return state() == RobotState.ACTIVE && super.canUse();
+            }
+
+            @Override
+            public boolean canContinueToUse() {
+                return state() == RobotState.ACTIVE && super.canContinueToUse();
+            }
+        });
     }
 
     // ================================================================ Onderdelen
@@ -146,20 +197,251 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         shownSlots = mask;
     }
 
-    /** Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat en naam (zie GuardRobotItem). */
+    /** Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat, naam en batterij (zie GuardRobotItem). */
     public void applyData(RobotData data) {
         setParts(data.robotParts());
         setHealth(getMaxHealth());
         board = data.board();
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
+        battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
+        updateState();
     }
 
     /** Wat er in zijn item komt als je hem oppakt. */
     public RobotData toData() {
-        return new RobotData(parts(), board, hasCustomName() ? getCustomName().getString() : "");
+        return new RobotData(parts().pack(), board, hasCustomName() ? getCustomName().getString() : "",
+                (float) (battery / Math.max(1.0, maxBattery())));
     }
 
-    /** Uit een spawn-ei (creative) komt een robot met willekeurige onderdelen. */
+    // ================================================================ Batterij, aan en uit, zijn dock
+
+    /** Hoe het met hem gaat. Op de server uitgerekend, in je spel meegestuurd. */
+    public RobotState state() {
+        return RobotState.byIndex(entityData.get(STATE));
+    }
+
+    /** Hoeveel stroom er in zijn batterij zit. */
+    public double battery() {
+        return battery;
+    }
+
+    /** Hoeveel stroom er hoogstens in zijn batterij past (van zijn lijf). */
+    public double maxBattery() {
+        return parts().battery();
+    }
+
+    /** Hoe vol zijn batterij is, van 0 tot 1 (ook in je spel). */
+    public float batteryFraction() {
+        return entityData.get(BATTERY);
+    }
+
+    /** Zet de batterij op zoveel stroom (voor tests en het oppakken). */
+    public void setBattery(double energy) {
+        battery = Math.max(0, Math.min(maxBattery(), energy));
+        updateState();
+    }
+
+    /** Staat hij aan? */
+    public boolean isActive() {
+        return active;
+    }
+
+    /**
+     * Zet hem aan of uit. Aan in zijn dock: hij stapt er naar voren uit. Uit: hij loopt naar zijn dock (zie
+     * ReturnToDockGoal) en laadt daar.
+     */
+    public void setActive(boolean on) {
+        if (active == on) {
+            return;
+        }
+        active = on;
+        getNavigation().stop();
+        stepOut = null;
+        if (on && isOnDock() && level().getBlockState(home).getBlock() instanceof RobotDockBlock) {
+            Direction front = level().getBlockState(home).getValue(RobotDockBlock.FACING);
+            stepOut = home.relative(front, Math.max(1, Math.round(StarkConfig.Robots.STEP_OUT)));
+        }
+        updateState();
+    }
+
+    /** Zijn Robot Dock, of null. */
+    public @Nullable BlockPos home() {
+        return home;
+    }
+
+    public void setHome(@Nullable BlockPos home) {
+        this.home = home == null ? null : home.immutable();
+    }
+
+    /** Staat hij in zijn dock? */
+    public boolean isOnDock() {
+        return home != null && blockPosition().equals(home);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (level() instanceof ServerLevel level) {
+            serverTick(level);
+        }
+    }
+
+    /** Elke tick op de server: is zijn dock er nog, laden, stroom gebruiken, en in zijn dock gaan staan. */
+    private void serverTick(ServerLevel level) {
+        if (home != null && tickCount % 40 == 0 && level.isLoaded(home)
+                && !(level.getBlockEntity(home) instanceof RobotDockBlockEntity dock && getUUID().equals(dock.robot()))) {
+            home = null; // zijn dock is weg, of er woont een andere robot
+        }
+        double max = maxBattery();
+        if (isOnDock() && battery < max) {
+            double charge = Math.min(StarkConfig.Robots.DOCK_CHARGE_RATE, max - battery);
+            if (StarkGrid.pay(level, home, charge)) {
+                battery += charge;
+            }
+        }
+        boolean walking = getDeltaMovement().horizontalDistanceSqr() > 1.0E-4 || !getNavigation().isDone()
+                || getMoveControl().hasWanted();
+        if (battery > 0 && (active || walking)) {
+            battery = Math.max(0, battery - (active ? StarkConfig.Robots.DRAIN_ON : 0)
+                    - (walking ? StarkConfig.Robots.DRAIN_WALKING : 0));
+        }
+        if (battery <= 0) {
+            getNavigation().stop();
+        }
+        if (!active && home != null && closeToHome() && flatDistance(home) > 0.001) {
+            settleInDock(level);
+        }
+        updateState();
+    }
+
+    /** Staat hij vlak bij het midden van zijn dock (om er netjes in te gaan staan)? */
+    private boolean closeToHome() {
+        return home != null && Math.abs(getY() - (home.getY() + DOCK_FLOOR)) < 0.6
+                && Vec3.atBottomCenterOf(home).distanceToSqr(getX(), home.getY(), getZ()) < 0.6 * 0.6;
+    }
+
+    /** Ga precies in het midden van het dock staan, met je gezicht naar de open kant. */
+    private void settleInDock(ServerLevel level) {
+        BlockState dock = level.getBlockState(home);
+        float yaw = dock.getBlock() instanceof RobotDockBlock ? dock.getValue(RobotDockBlock.FACING).toYRot() : getYRot();
+        getNavigation().stop();
+        moveTo(home.getX() + 0.5, home.getY() + DOCK_FLOOR, home.getZ() + 0.5, yaw, 0);
+        setYHeadRot(yaw);
+        yBodyRot = yaw;
+        setDeltaMovement(Vec3.ZERO);
+    }
+
+    /** Zet wat je spel moet weten (toestand en batterij) klaar om mee te sturen, als het veranderd is. */
+    private void updateState() {
+        RobotState state = battery <= 0 ? RobotState.NO_POWER : active ? RobotState.ACTIVE : RobotState.STANDBY;
+        if (state() != state) {
+            entityData.set(STATE, (byte) state.ordinal());
+        }
+        float fraction = (float) (battery / Math.max(1.0, maxBattery()));
+        if (Math.abs(batteryFraction() - fraction) >= 0.005f || (fraction == 0) != (batteryFraction() == 0)) {
+            entityData.set(BATTERY, fraction);
+        }
+    }
+
+    /** In zijn dock duwt niemand hem eruit. */
+    @Override
+    public boolean isPushable() {
+        return !isOnDock() && super.isPushable();
+    }
+
+    /** Het blok vóór zijn dock (aan de open kant), of het dock zelf als daar geen dock meer staat. */
+    private BlockPos frontOfHome() {
+        BlockState dock = level().getBlockState(home);
+        return dock.getBlock() instanceof RobotDockBlock ? home.relative(dock.getValue(RobotDockBlock.FACING)) : home;
+    }
+
+    /** Hoe ver (in het platte vlak) hij van het midden van dit blok staat. */
+    private double flatDistance(BlockPos pos) {
+        double dx = getX() - (pos.getX() + 0.5);
+        double dz = getZ() - (pos.getZ() + 0.5);
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /**
+     * Uitgezet: loop terug naar je dock (geen dock of lege batterij: blijf staan). Eerst met de gewone padzoeker
+     * naar het blok vóór het dock, dan het laatste stukje rechtdoor erin: van en naar een plek op de lage plaat
+     * van het dock vindt de padzoeker geen weg.
+     */
+    private class ReturnToDockGoal extends Goal {
+        ReturnToDockGoal() {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return !active && home != null && battery > 0 && !closeToHome() && onGround();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return !active && home != null && battery > 0 && !closeToHome();
+        }
+
+        @Override
+        public void start() {
+            walkToFront();
+        }
+
+        @Override
+        public void tick() {
+            BlockPos front = frontOfHome();
+            boolean level = Math.abs(getY() - front.getY()) < 1.2;
+            if (level && (flatDistance(front) < 0.9 || flatDistance(home) < 1.2 && !front.equals(home))) {
+                // Het laatste stukje: rechtdoor het dock in.
+                getNavigation().stop();
+                getMoveControl().setWantedPosition(home.getX() + 0.5, home.getY() + DOCK_FLOOR, home.getZ() + 0.5, 0.7);
+            } else if (getNavigation().isDone() && tickCount % 20 == 0) {
+                walkToFront(); // de weg was op of werd niet gevonden: opnieuw proberen
+            }
+        }
+
+        private void walkToFront() {
+            BlockPos front = frontOfHome();
+            getNavigation().moveTo(front.getX() + 0.5, front.getY(), front.getZ() + 0.5, 1.0);
+        }
+    }
+
+    /** Aangezet in zijn dock: stap er rechtdoor naar voren uit (hooguit 4 seconden, dan blijft hij staan). */
+    private class StepOutGoal extends Goal {
+        private int ticks;
+
+        StepOutGoal() {
+            setFlags(EnumSet.of(Flag.MOVE));
+        }
+
+        @Override
+        public boolean canUse() {
+            return active && stepOut != null && battery > 0 && onGround();
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return active && stepOut != null && battery > 0 && ticks < 80 && flatDistance(stepOut) > 0.25;
+        }
+
+        @Override
+        public void start() {
+            ticks = 0;
+        }
+
+        @Override
+        public void tick() {
+            ticks++;
+            getMoveControl().setWantedPosition(stepOut.getX() + 0.5, stepOut.getY(), stepOut.getZ() + 0.5, 1.0);
+        }
+
+        @Override
+        public void stop() {
+            stepOut = null;
+        }
+    }
+
+    /** Uit een spawn-ei (creative) komt een robot met willekeurige onderdelen, en hij staat meteen aan. */
     @Override
     public @Nullable SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
                                                   MobSpawnType spawnType, @Nullable SpawnGroupData data) {
@@ -167,6 +449,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         if (spawnType == MobSpawnType.SPAWN_EGG) {
             setParts(RobotParts.random(level.getRandom()));
             setHealth(getMaxHealth());
+            battery = maxBattery();
+            setActive(true);
         }
         return result;
     }
@@ -216,6 +500,11 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("Parts", parts().pack());
+        tag.putBoolean("Active", active);
+        tag.putDouble("Battery", battery);
+        if (home != null) {
+            tag.putLong("Home", home.asLong());
+        }
         tag.put("Board", BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, board).getOrThrow());
         if (owner != null) {
             tag.putUUID("Owner", owner);
@@ -233,6 +522,10 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
                 : BotBoard.EMPTY;
         // Na het laden van leven en eigenschappen: de config kan intussen andere getallen hebben.
         applyParts();
+        active = tag.getBoolean("Active");
+        battery = tag.contains("Battery") ? Math.min(tag.getDouble("Battery"), maxBattery()) : maxBattery();
+        home = tag.contains("Home") ? BlockPos.of(tag.getLong("Home")) : null;
+        updateState();
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");
     }

@@ -12,11 +12,14 @@ import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.GuardRobotItem;
 import com.senne.starktech.robot.RobotAssemblerBlockEntity;
 import com.senne.starktech.robot.RobotData;
+import com.senne.starktech.robot.RobotDockBlock;
 import com.senne.starktech.robot.RobotPartItem;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
+import com.senne.starktech.robot.RobotState;
 import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.security.BaseTrust;
+import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,6 +32,7 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EntityType;
@@ -312,6 +316,93 @@ public final class RobotGameTests {
         check(robot.toData().equals(new RobotData(parts, soldered, "Guard 7")), "Terug naar een item geeft iets anders");
         check(player.getMainHandItem().isEmpty(), "In survival is het item niet op");
         helper.succeed();
+    }
+
+    // ================================================================ Stap 6: het Robot Dock en de batterij
+
+    /**
+     * Een robot op zijn dock (neergezet met het item, dus gekoppeld): op een dock met stroom laadt hij, op een
+     * dock zonder stroom niet. Zijn batterij leeg = NO_POWER; geladen = weer STANDBY (hij staat uit).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100)
+    public static void robot_dock_charges_from_the_grid(GameTestHelper helper) {
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 1, 12), "dock-owner");
+        BlockPos powered = new BlockPos(4, 1, 4);
+        BlockPos dark = new BlockPos(12, 1, 4);
+        helper.setBlock(powered.west(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(powered.west())).fill(5_000);
+        GuardRobotEntity charging = dockedRobot(helper, player, powered, RobotParts.DEFAULT);
+        GuardRobotEntity waiting = dockedRobot(helper, player, dark, RobotParts.DEFAULT);
+        check(charging.home() != null && charging.home().equals(helper.absolutePos(powered)) && charging.isOnDock(),
+                "De robot is niet thuis op het dock waar hij op gezet werd");
+        check(!charging.isActive() && charging.state() == RobotState.STANDBY, "Een nieuwe robot staat aan: " + charging.state());
+        charging.setBattery(0);
+        waiting.setBattery(0);
+        check(charging.state() == RobotState.NO_POWER, "Een lege batterij is niet NO_POWER");
+        helper.runAfterDelay(40, () -> {
+            check(charging.battery() >= 30 * StarkConfig.Robots.DOCK_CHARGE_RATE,
+                    "Op een dock met stroom laadde hij maar tot " + charging.battery());
+            check(charging.state() == RobotState.STANDBY, "Geladen is hij niet weer STANDBY maar " + charging.state());
+            check(waiting.battery() == 0 && waiting.state() == RobotState.NO_POWER, "Zonder stroom laadde hij toch");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Aan in zijn dock: hij stapt er naar voren uit. Uit: hij loopt terug, gaat precies in het midden staan met
+     * zijn gezicht naar de open kant, en je kunt hem daar niet wegduwen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400)
+    public static void robot_on_steps_out_and_off_walks_home(GameTestHelper helper) {
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 1, 20), "dock-walker");
+        BlockPos dock = new BlockPos(8, 1, 12);
+        GuardRobotEntity robot = dockedRobot(helper, player, dock, RobotParts.DEFAULT);
+        BlockPos home = helper.absolutePos(dock);
+        robot.setActive(true);
+        check(robot.state() == RobotState.ACTIVE, "Aangezet is hij niet ACTIVE");
+        helper.runAfterDelay(80, () -> {
+            check(!robot.isOnDock(), "Aangezet bleef hij in zijn dock staan");
+            Direction front = helper.getLevel().getBlockState(home).getValue(RobotDockBlock.FACING);
+            BlockPos expected = home.relative(front, Math.round(StarkConfig.Robots.STEP_OUT));
+            check(robot.blockPosition().distManhattan(expected) <= 1, "Hij stapte niet naar voren uit: hij staat op "
+                    + robot.blockPosition() + ", verwacht " + expected);
+            robot.setActive(false);
+            helper.succeedWhen(() -> {
+                check(robot.isOnDock(), "Uitgezet is hij (nog) niet terug in zijn dock");
+                check(Math.abs(robot.getX() - (home.getX() + 0.5)) < 0.01 && Math.abs(robot.getZ() - (home.getZ() + 0.5)) < 0.01,
+                        "Hij staat niet in het midden van zijn dock");
+                check(Math.abs(Mth.wrapDegrees(robot.getYRot() - front.toYRot())) < 1,
+                        "Hij kijkt niet naar de open kant van zijn dock");
+                check(!robot.isPushable(), "In zijn dock kun je hem nog wegduwen");
+            });
+        });
+    }
+
+    /** Aan en zonder dock: zijn batterij loopt leeg, en leeg staat hij stil (NO_POWER). */
+    @GameTest(template = ARENA, timeoutTicks = 60)
+    public static void robot_runs_out_of_battery(GameTestHelper helper) {
+        GuardRobotEntity robot = robot(helper, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+        robot.setActive(true);
+        robot.setBattery(4 * StarkConfig.Robots.DRAIN_ON + 0.01);
+        helper.runAfterDelay(10, () -> {
+            check(robot.battery() == 0 && robot.state() == RobotState.NO_POWER,
+                    "Na 10 ticks aan zou zijn batterij leeg moeten zijn: " + robot.battery() + " " + robot.state());
+            check(robot.toData().battery() == 0.0f, "Opgepakt zou hij een lege batterij hebben");
+            helper.succeed();
+        });
+    }
+
+    /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */
+    private static GuardRobotEntity dockedRobot(GameTestHelper helper, ServerPlayer player, BlockPos dock, RobotParts parts) {
+        helper.setBlock(dock, ModBlocks.ROBOT_DOCK.get());
+        ItemStack stack = GuardRobotItem.create(new RobotData(parts, BotBoard.EMPTY, ""));
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        BlockPos abs = helper.absolutePos(dock);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);
+        check(stack.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit)).consumesAction(), "Neerzetten op het dock lukte niet");
+        List<GuardRobotEntity> robots = helper.getEntities(ModEntities.GUARD_ROBOT.get(), dock, 1.0);
+        check(robots.size() == 1, "Er staan " + robots.size() + " robots op het dock");
+        return robots.get(0);
     }
 
     /** Hoeveel van dit item er vlak bij deze plek op de grond ligt. */

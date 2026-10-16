@@ -25,6 +25,7 @@
     "starktech:compactor",
     "starktech:arc_lamp",
     "starktech:light_switch",
-    "starktech:robot_assembler"
+    "starktech:robot_assembler",
+    "starktech:robot_dock"
   ]
 }

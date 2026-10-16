@@ -21,7 +21,8 @@ import net.minecraft.world.level.gameevent.GameEvent;
 
 /**
  * Een guard robot in je rugzak (hoofdstuk 21): uit de Robot Assembler, of opgepakt. Rechtsklik op een blok
- * en hij staat erbovenop, met zijn gezicht naar jou; jij bent dan zijn eigenaar. Wat hij is (onderdelen,
+ * en hij staat erbovenop, met zijn gezicht naar jou; jij bent dan zijn eigenaar. Op een vrij Robot Dock is
+ * dat dock zijn thuis: daar laadt hij, en daar loopt hij heen als je hem uitzet. Wat hij is (onderdelen,
  * printplaat, naam) staat in het item (zie RobotData).
  */
 public class GuardRobotItem extends Item {
@@ -47,16 +48,25 @@ public class GuardRobotItem extends Item {
             return InteractionResult.SUCCESS;
         }
         BlockPos clicked = context.getClickedPos();
-        BlockPos pos = level.getBlockState(clicked).getCollisionShape(level, clicked).isEmpty()
+        Player player = context.getPlayer();
+        // Op een Robot Dock: daar is hij thuis (als het dock nog vrij is), met zijn gezicht naar de open kant.
+        RobotDockBlockEntity dock = level.getBlockEntity(clicked) instanceof RobotDockBlockEntity found ? found : null;
+        if (dock != null && dock.robot() != null && level.getEntity(dock.robot()) instanceof GuardRobotEntity other && other.isAlive()) {
+            if (player != null) {
+                player.displayClientMessage(Component.translatable("message.starktech.robot_dock.taken"), true);
+            }
+            return InteractionResult.FAIL;
+        }
+        BlockPos pos = dock != null || level.getBlockState(clicked).getCollisionShape(level, clicked).isEmpty()
                 ? clicked : clicked.relative(context.getClickedFace());
         GuardRobotEntity robot = ModEntities.GUARD_ROBOT.get().create(level);
         if (robot == null) {
             return InteractionResult.FAIL;
         }
-        Player player = context.getPlayer();
-        // Met zijn gezicht naar wie hem neerzet.
-        float yaw = player == null ? 0 : player.getYRot() + 180.0f;
-        robot.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, yaw, 0);
+        // Met zijn gezicht naar wie hem neerzet (of naar de open kant van zijn dock).
+        float yaw = dock != null ? level.getBlockState(clicked).getValue(RobotDockBlock.FACING).toYRot()
+                : player == null ? 0 : player.getYRot() + 180.0f;
+        robot.moveTo(pos.getX() + 0.5, pos.getY() + (dock != null ? 3.0 / 16.0 : 0.0), pos.getZ() + 0.5, yaw, 0);
         robot.setYHeadRot(yaw);
         robot.yBodyRot = yaw;
         if (!level.noCollision(robot)) {
@@ -66,6 +76,10 @@ public class GuardRobotItem extends Item {
         robot.applyData(data(stack));
         if (player instanceof ServerPlayer serverPlayer) {
             robot.setOwner(serverPlayer);
+        }
+        if (dock != null) {
+            robot.setHome(pos);
+            dock.setRobot(robot.getUUID());
         }
         level.addFreshEntity(robot);
         level.playSound(null, pos, SoundEvents.IRON_GOLEM_REPAIR, SoundSource.NEUTRAL, 0.6f, 1.4f);

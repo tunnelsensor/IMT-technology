@@ -144,4 +144,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("robot_assembler",
                     () -> new BlockEntityType<>(com.senne.starktech.robot.RobotAssemblerBlockEntity::new,
                             java.util.Set.of(ModBlocks.ROBOT_ASSEMBLER.get()), null));
+
+    /** Het Robot Dock (hoofdstuk 21): welke robot hier thuis is. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.robot.RobotDockBlockEntity>> ROBOT_DOCK =
+            BLOCK_ENTITIES.register("robot_dock",
+                    () -> new BlockEntityType<>(com.senne.starktech.robot.RobotDockBlockEntity::new,
+                            java.util.Set.of(ModBlocks.ROBOT_DOCK.get()), null));
 }

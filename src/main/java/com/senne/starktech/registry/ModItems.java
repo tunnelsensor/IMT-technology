@@ -285,6 +285,10 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> ROBOT_ASSEMBLER = ITEMS.registerSimpleBlockItem("robot_assembler",
             ModBlocks.ROBOT_ASSEMBLER, new Item.Properties().rarity(Rarity.UNCOMMON));
 
+    /** Hoofdstuk 21: het laadstation van een guard robot. */
+    public static final DeferredItem<BlockItem> ROBOT_DOCK = ITEMS.registerSimpleBlockItem("robot_dock",
+            ModBlocks.ROBOT_DOCK, new Item.Properties());
+
     /** Hoofdstuk 21: een samengestelde guard robot (uit de Robot Assembler); rechtsklik zet hem neer. */
     public static final DeferredItem<com.senne.starktech.robot.GuardRobotItem> GUARD_ROBOT = ITEMS.registerItem(
             "guard_robot", com.senne.starktech.robot.GuardRobotItem::new,

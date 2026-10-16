@@ -1101,6 +1101,28 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.view(0, 60.5, -60, 66.5, 180, 25);
             t.shot(20, "rb10_assembler_block");
+            // Twee Robot Docks naast elkaar: in het linker staat een robot te laden (uit, dus zijn lichtjes uit),
+            // het rechter is leeg.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockState dock = ModBlocks.ROBOT_DOCK.get().defaultBlockState()
+                        .setValue(com.senne.starktech.robot.RobotDockBlock.FACING, net.minecraft.core.Direction.SOUTH);
+                BlockPos left = new BlockPos(66, -60, 64);
+                level.setBlockAndUpdate(left, dock);
+                level.setBlockAndUpdate(left.east(2), dock);
+                if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), left, 0)
+                        instanceof com.senne.starktech.robot.GuardRobotEntity robot
+                        && level.getBlockEntity(left) instanceof com.senne.starktech.robot.RobotDockBlockEntity be) {
+                    robot.setParts(new com.senne.starktech.robot.RobotParts(com.senne.starktech.robot.RobotStyle.TRAINER,
+                            com.senne.starktech.robot.RobotStyle.TRAINER, com.senne.starktech.robot.RobotStyle.TRAINER,
+                            com.senne.starktech.robot.RobotStyle.TRAINER));
+                    robot.setPos(left.getX() + 0.5, left.getY() + 3.0 / 16.0, left.getZ() + 0.5);
+                    robot.setHome(left);
+                    be.setRobot(robot.getUUID());
+                }
+            });
+            t.view(0, 67.5, -60, 68.5, 180, 15);
+            t.shot(20, "rb11_robot_docks");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
@@ -3049,11 +3071,12 @@ public final class VisualCheck {
         com.senne.starktech.energy.StarkCables.add(level, new BlockPos(20, -60, -19));
     }
 
-    /** Een guard robot die stil staat en naar het zuiden kijkt (naar de camera). */
+    /** Een guard robot die aan staat, stil, en naar het zuiden kijkt (naar de camera). */
     private static void robotStill(ServerLevel level, BlockPos pos, com.senne.starktech.robot.RobotParts parts) {
         if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), pos, 0)
                 instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
             robot.setParts(parts);
+            robot.setActive(true);
         }
     }
 

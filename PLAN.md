@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 237 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 240 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2423,7 +2423,21 @@ hij loopt terug en laadt.
       jou; jij bent zijn eigenaar. De knoppen gaan als "knop van een menu" naar de server (zoals de
       betafel), geen nieuw netwerkbericht. Twee nieuwe tests (bouwen en uit elkaar halen; neerzetten).
       Screenshots `rb07`-`rb10`. Vorige stap: `4b85ae0`.
-- [ ] **6. Robot Dock en batterij** — laadstation op kabelstroom, dat één robot als thuis heeft; aan en uit.
+- [x] **6. Robot Dock en batterij** — het **Robot Dock** (`RobotDockBlock`): een lage laadplaat met een geel-zwarte
+      rand en een cyaan ring, achteraan een paal met een stekker en een cyaan lampje (recept: een kabel, ijzer
+      en een redstoneblok). Zet je een Guard Robot-item op een vrij dock, dan is het zijn thuis (het dock
+      onthoudt zijn robot; is het dock weg, dan vergeet de robot het). De robot heeft een **batterij** (zo
+      groot als zijn lijf zegt); op zijn dock laadt hij via het stroomnet (`dockChargeRate`, 5 per tick),
+      aan gebruikt hij `drainOn` (0,25 per tick) en lopend `drainWalking` (0,5 extra). Toestanden
+      (`RobotState`): **Active**, **Standby** (uit) en **No power** (leeg: hij staat stil); je spel krijgt ze
+      mee en zijn lichtjes gloeien alleen als hij aan staat. **Aan** in zijn dock: hij stapt `stepOut` (2)
+      blokken naar voren. **Uit**: hij loopt naar het blok vóór zijn dock, het laatste stukje rechtdoor erin,
+      gaat precies in het midden staan met zijn gezicht naar voren, en daar duw je hem niet weg. Een nieuwe
+      robot staat uit; uit een spawn-ei staat hij aan. De batterij gaat mee in het item als je hem oppakt.
+      *Wat ik vond*: de gewone padzoeker van Minecraft vindt geen weg van of naar een plek op de lage plaat
+      (het pad bleef bij zijn eerste stap); daarom de laatste meter rechtdoor. Drie nieuwe tests (laden met
+      en zonder stroom; aan = eruit, uit = terug in het midden; batterij leeg = stil). Screenshot `rb11`.
+      Vorige stap: `ed39e6e`.
 - [ ] **7. Robotscherm en opslag** — sneak + rechtsklik met een lege hand (wie hem neerzette of vertrouwd
       is in de basis, zoals bij de laserzender); `BotNetwork` bewaart alle robots van een core; netwerkversie
       omhoog.

@@ -363,6 +363,34 @@ def light_switch():
     blockstate("light_switch", variants)
 
 
+def robot_dock():
+    """
+    Het Robot Dock (hoofdstuk 21): een lage laadplaat waar de robot op staat, met achteraan een paal met een
+    stekker die in zijn rug past en een cyaan lampje. Het model kijkt naar het noorden (de open kant); de
+    paal staat dus aan de zuidkant. De blockstate draait het.
+    """
+    textures = {"particle": "starktech:block/robot_dock_side",
+                "pad": "starktech:block/robot_dock_pad",
+                "side": "starktech:block/robot_dock_side",
+                "pole": "starktech:block/robot_dock_pole",
+                "light": "starktech:block/robot_dock_light"}
+    elements = [
+        box([0, 0, 0], [16, 3, 16], {"up": "#pad", "rest": "#side"}),
+        box([5, 3, 13], [11, 16, 16], "#pole", skip=("down",)),
+        box([6, 9, 11], [10, 12, 13], "#pole", skip=("south",)),
+        box([7, 13, 12.9], [9, 15, 13], "#light", glow=True),
+    ]
+    save("robot_dock", textures, elements)
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    variants = {}
+    for facing, y in turn.items():
+        option = {"model": "starktech:block/robot_dock"}
+        if y:
+            option["y"] = y
+        variants["facing=" + facing] = option
+    blockstate("robot_dock", variants)
+
+
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
@@ -376,3 +404,4 @@ if __name__ == "__main__":
     laser_wall_models()
     arc_lamp()
     light_switch()
+    robot_dock()

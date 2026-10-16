@@ -89,6 +89,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.GUARD_ROBOT_SPAWN_EGG.get());
                 output.accept(ModItems.ROBOT_ASSEMBLER.get());
                 output.accept(ModItems.GUARD_ROBOT.get());
+                output.accept(ModItems.ROBOT_DOCK.get());
                 output.accept(ModItems.ROBOT_CIRCUIT_BOARD.get());
                 // De onderdelen van een guard robot: per stijl hoofd, lijf, armen en benen.
                 for (com.senne.starktech.robot.RobotStyle style : com.senne.starktech.robot.RobotStyle.values()) {

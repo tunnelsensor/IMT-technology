@@ -3233,6 +3233,36 @@ def guard_robot_item():
     save(im, "item/guard_robot.png")
 
 
+def robot_dock_textures():
+    """
+    Het Robot Dock: een donkere laadplaat met een geel-zwarte rand en een cyaan ring in het midden (daar staat
+    de robot), stalen zijkanten, een paal met verticale groeven, en het cyaan lampje.
+    """
+    steel = (70, 78, 88, 255)
+    steel_dark = (40, 46, 54, 255)
+    pad = img(16, 16, (34, 38, 44, 255))
+    for i in range(16):
+        for x, y in ((i, 0), (i, 15), (0, i), (15, i)):
+            pad.putpixel((x, y), (230, 190, 40, 255) if (x + y) % 4 < 2 else (24, 24, 28, 255))
+    d = ImageDraw.Draw(pad)
+    d.ellipse([3, 3, 12, 12], outline=CYAN_DIM)
+    d.ellipse([5, 5, 10, 10], outline=CYAN)
+    save(pad, "block/robot_dock_pad.png")
+
+    side = img(16, 16, steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.line([0, 13, 15, 13], fill=CYAN_DIM)
+    save(side, "block/robot_dock_side.png")
+
+    pole = img(16, 16, steel)
+    d = ImageDraw.Draw(pole)
+    for x in (2, 6, 10, 14):
+        d.line([x, 0, x, 15], fill=steel_dark)
+    save(pole, "block/robot_dock_pole.png")
+    save(img(16, 16, CYAN), "block/robot_dock_light.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3295,3 +3325,4 @@ if __name__ == "__main__":
     robot_circuit_board()
     robot_assembler_textures()
     guard_robot_item()
+    robot_dock_textures()

@@ -1481,6 +1481,18 @@ public final class StarkConfig {
         /** De kans dat een onderdeel heel blijft als je een robot echt kapotmaakt (0 = nooit, 1 = altijd). */
         @Tunable(value = "Chance that each part survives when a robot is destroyed (0 = never, 1 = always)", max = 1)
         public static float PART_SURVIVE_CHANCE = 0.5f;
+        /** Hoeveel stroom per tick een Robot Dock uit het net in de robot op hem stopt. */
+        @Tunable(value = "Energy per tick a robot dock takes from the grid and puts into the robot standing on it", max = 1_000)
+        public static float DOCK_CHARGE_RATE = 5.0f;
+        /** Hoeveel van zijn batterij een robot per tick gebruikt als hij aan staat. */
+        @Tunable(value = "Battery a robot uses per tick while it is switched on", max = 100)
+        public static float DRAIN_ON = 0.25f;
+        /** Hoeveel er per tick bij komt terwijl hij loopt. */
+        @Tunable(value = "Extra battery a robot uses per tick while it walks", max = 100)
+        public static float DRAIN_WALKING = 0.5f;
+        /** Hoeveel blokken een robot uit zijn dock stapt als je hem aanzet. */
+        @Tunable(value = "How many blocks a robot walks out of its dock when you switch it on", max = 16)
+        public static float STEP_OUT = 2.0f;
     }
 
     // =============================================================================================== Hydra
