@@ -10,13 +10,16 @@ import java.util.Locale;
  *       gebeurt (een kaart, een code, een relais) en schakelt je relais.</li>
  *   <li><b>ROBOT</b>: het programma van een guard robot. Het staat op je server (het telt mee voor je SSD's),
  *       maar draait op de robot zelf: lopen, draaien, scannen, en via de verbinding ook je relais.</li>
+ *   <li><b>DRONE</b> (hoofdstuk 25): het programma van een security drone. Hetzelfde als een robotprogramma,
+ *       maar hij vliegt, dus hij kan ook omhoog en omlaag ({@code up(3)}, {@code down(1)}).</li>
  * </ul>
  * Welke woorden in welke soort mogen, staat bij elk blokje ({@link Op#allowedIn}) en elk gegeven
  * ({@code Expr.Variable}); ScriptChecker kijkt het na.
  */
 public enum ProgramKind {
     SERVER("Server diagram", "server diagram"),
-    ROBOT("Robot program", "robot program");
+    ROBOT("Robot program", "robot program"),
+    DRONE("Drone program", "drone program");
 
     private final String title;
     private final String noun;
@@ -34,6 +37,11 @@ public enum ProgramKind {
     /** Zoals in een zin: "only works in a robot program". */
     public String noun() {
         return noun;
+    }
+
+    /** Draait het op een robot of een drone (een "bot")? Dan kent het lopen, pinnen en opdrachten. */
+    public boolean onBot() {
+        return this == ROBOT || this == DRONE;
     }
 
     /** De soort met deze naam (zoals bewaard); onbekend = SERVER (oude diagrammen). */

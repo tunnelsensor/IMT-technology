@@ -1,6 +1,7 @@
 package com.senne.starktech.bot;
 
 import com.senne.starktech.logic.program.LogicProgram;
+import com.senne.starktech.logic.program.ProgramKind;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotState;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
@@ -28,15 +29,15 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Alle guard robots van de wereld (hoofdstuk 21; later ook de drones), ook die in een stuk wereld staan dat
+ * Alle guard robots en security drones (hoofdstuk 25) van de wereld, ook die in een stuk wereld staan dat
  * nu niet geladen is: hun naam, eigenaar, waar ze het laatst waren, hun dock, hoe het met ze gaat en in het
  * gebied van welke beveiligingskern ze staan. De app Robots op de desktop leest hieruit, en hier wacht een
  * nieuw programma (hoofdstuk 23) voor een robot die niet geladen is, tot hij terug is en verbinding heeft.
  *
  * Een robot meldt zich zelf: als hij in de wereld komt, om de seconde, en als hij kapot gaat of opgepakt wordt
  * (dan gaat hij eruit). Elke robot krijgt een naam die bij zijn eigenaar nog niet bestaat: "Guard 1",
- * "Guard 2"... In je code noem je hem straks bij die naam, daarom mag een eigenaar een naam maar één keer
- * hebben.
+ * "Guard 2"... (een drone: "Drone 1"). In je code noem je hem bij die naam, daarom mag een eigenaar een naam
+ * maar één keer hebben, voor robots en drones samen.
  *
  * Dit is "SavedData": Minecraft bewaart het in de wereld (data/starktech_bots.dat van de overworld).
  */
@@ -49,12 +50,19 @@ public final class BotNetwork extends SavedData {
      * Wat we van één robot weten.
      *
      * @param core    de beveiligingskern in wiens gebied hij stond (of null)
+     * @param parts   de onderdelen van een robot (RobotParts.pack; een drone: 0)
      * @param program de naam van het programma dat hij draait ("" = geen)
      * @param seen    wanneer hij zich het laatst meldde (speltijd in ticks)
+     * @param kind    een robot (ROBOT) of een drone (DRONE): welke programma's hij draait
      */
     public record Entry(UUID id, String name, @Nullable UUID owner, String ownerName, GlobalPos pos,
                         @Nullable BlockPos home, @Nullable GlobalPos core, int parts, RobotState state,
-                        float battery, String program, long seen) {}
+                        float battery, String program, long seen, ProgramKind kind) {
+        /** Is het een drone? */
+        public boolean drone() {
+            return kind == ProgramKind.DRONE;
+        }
+    }
 
     private final Map<UUID, Entry> robots = new LinkedHashMap<>();
     /**
@@ -108,7 +116,8 @@ public final class BotNetwork extends SavedData {
         Entry entry = new Entry(bot.getUUID(), bot.hasCustomName() ? bot.getName().getString() : "",
                 bot.owner(), bot.ownerName(), GlobalPos.of(level.dimension(), bot.blockPosition()), bot.home(),
                 core == null ? null : GlobalPos.of(level.dimension(), core.getBlockPos()), bot instanceof GuardRobotEntity robot ? robot.parts().pack() : 0,
-                bot.state(), bot.batteryFraction(), bot.program() == null ? "" : bot.program().name(), level.getGameTime());
+                bot.state(), bot.batteryFraction(), bot.program() == null ? "" : bot.program().name(), level.getGameTime(),
+                bot.programKind());
         Entry old = robots.put(bot.getUUID(), entry);
         // Alleen "veranderd" als er echt iets anders is (de tijd alleen telt niet), zodat we niet elke seconde opslaan.
         if (old == null || !same(old, entry)) {
@@ -119,7 +128,8 @@ public final class BotNetwork extends SavedData {
     private static boolean same(Entry a, Entry b) {
         return a.name().equals(b.name()) && Objects.equals(a.owner(), b.owner()) && a.pos().equals(b.pos())
                 && Objects.equals(a.home(), b.home()) && Objects.equals(a.core(), b.core()) && a.parts() == b.parts()
-                && a.state() == b.state() && Math.abs(a.battery() - b.battery()) < 0.01f && a.program().equals(b.program());
+                && a.state() == b.state() && Math.abs(a.battery() - b.battery()) < 0.01f && a.program().equals(b.program())
+                && a.kind() == b.kind();
     }
 
     /** Een robot is weg (kapot of opgepakt). */
@@ -217,8 +227,14 @@ public final class BotNetwork extends SavedData {
 
     /** De eerste vrije naam voor een nieuwe robot van deze eigenaar: "Guard 1", "Guard 2"... */
     public String freeName(@Nullable UUID owner) {
+        return freeName(owner, ProgramKind.ROBOT);
+    }
+
+    /** Hetzelfde, voor een robot ("Guard 1") of een drone ("Drone 1"). */
+    public String freeName(@Nullable UUID owner, ProgramKind kind) {
+        String prefix = kind == ProgramKind.DRONE ? "Drone " : "Guard ";
         for (int i = 1; ; i++) {
-            String name = "Guard " + i;
+            String name = prefix + i;
             if (!nameTaken(owner, name, null)) {
                 return name;
             }
@@ -255,6 +271,7 @@ public final class BotNetwork extends SavedData {
                 putPos(item, "Core", entry.core());
             }
             item.putInt("Parts", entry.parts());
+            item.putString("Kind", entry.kind().name());
             item.putString("State", entry.state().name());
             item.putFloat("Battery", entry.battery());
             item.putString("Program", entry.program());
@@ -304,7 +321,8 @@ public final class BotNetwork extends SavedData {
                     item.getString("OwnerName"), getPos(item, "Pos"),
                     item.contains("Home") ? BlockPos.of(item.getLong("Home")) : null,
                     item.contains("Core") ? getPos(item, "Core") : null, item.getInt("Parts"), state,
-                    item.getFloat("Battery"), item.getString("Program"), item.getLong("Seen")));
+                    item.getFloat("Battery"), item.getString("Program"), item.getLong("Seen"),
+                    item.contains("Kind") ? ProgramKind.byName(item.getString("Kind")) : ProgramKind.ROBOT));
         }
         for (Tag element : tag.getList("Pending", Tag.TAG_COMPOUND)) {
             CompoundTag item = (CompoundTag) element;

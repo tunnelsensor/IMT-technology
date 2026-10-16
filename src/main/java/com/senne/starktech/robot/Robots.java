@@ -1,6 +1,7 @@
 package com.senne.starktech.robot;
 
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotEntity;
 import com.senne.starktech.bot.BotLink;
 import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotModuleItem;
@@ -32,7 +33,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Het robotscherm, aan de kant van de server (hoofdstuk 21): het scherm openen, en de knoppen uitvoeren. Het
- * scherm zelf staat in client/robot/RobotScreen.
+ * scherm zelf staat in client/robot/RobotScreen. Een security drone (hoofdstuk 25) heeft hetzelfde scherm, en
+ * staat ook in de app Robots: alles hier werkt voor elke BotEntity.
  *
  * Openen: sneak + rechtsklik met een lege hand op de robot. Dat mag wie hem neerzette, en wie vertrouwd is in
  * de basis waar hij staat (dezelfde regel als bij de laserzender, zie BaseTrust). Een robot van niemand (uit
@@ -45,7 +47,7 @@ public final class Robots {
     private static final double REACH = 8.0;
 
     /** Sneak + rechtsklik op de robot: mag je hem instellen, dan opent jouw spel het scherm. */
-    public static void open(ServerPlayer player, GuardRobotEntity robot) {
+    public static void open(ServerPlayer player, BotEntity robot) {
         if (!mayEdit(player, robot)) {
             String owner = BaseTrust.belongsTo(player.serverLevel(), robot);
             player.displayClientMessage(owner.isEmpty() ? Component.translatable("message.starktech.robot.locked")
@@ -57,7 +59,7 @@ public final class Robots {
 
     /** Een knop uit het scherm. */
     public static void handleAction(ServerPlayer player, RobotActionPayload payload) {
-        GuardRobotEntity robot = robot(player, payload.entityId());
+        BotEntity robot = robot(player, payload.entityId());
         if (robot == null || !mayEdit(player, robot)) {
             return;
         }
@@ -75,12 +77,12 @@ public final class Robots {
     }
 
     /** Mag deze speler de robot instellen? (Zie de uitleg bovenaan.) */
-    public static boolean mayEdit(ServerPlayer player, GuardRobotEntity robot) {
+    public static boolean mayEdit(ServerPlayer player, BotEntity robot) {
         return BaseTrust.mayEdit(player, robot);
     }
 
     /** Een nieuwe naam: niet leeg, niet te lang, en geen andere robot van dezelfde eigenaar heet al zo. */
-    public static boolean rename(ServerPlayer player, GuardRobotEntity robot, String typed) {
+    public static boolean rename(ServerPlayer player, BotEntity robot, String typed) {
         String name = BotNetwork.cleanName(typed);
         if (name == null) {
             player.displayClientMessage(Component.translatable("message.starktech.robot.bad_name", BotNetwork.MAX_NAME), true);
@@ -95,13 +97,10 @@ public final class Robots {
     }
 
     /** Oppakken: de robot wordt een item in je rugzak (met alles erop en eraan), en zijn dock is weer vrij. */
-    public static void pickUp(ServerPlayer player, GuardRobotEntity robot) {
+    public static void pickUp(ServerPlayer player, BotEntity robot) {
         ServerLevel level = player.serverLevel();
-        if (robot.home() != null && level.getBlockEntity(robot.home()) instanceof RobotDockBlockEntity dock
-                && robot.getUUID().equals(dock.robot())) {
-            dock.setRobot(null);
-        }
-        ItemStack stack = GuardRobotItem.create(robot.toData());
+        robot.leaveHome();
+        ItemStack stack = robot.toItem();
         level.playSound(null, robot.blockPosition(), SoundEvents.IRON_GOLEM_REPAIR, SoundSource.NEUTRAL, 0.6f, 0.8f);
         robot.discard();
         if (!player.getInventory().add(stack)) {
@@ -119,12 +118,12 @@ public final class Robots {
      * we je niet). Lossolderen: de module komt terug (ook een verbrande), en de bruggen aan die pin gaan weg.
      */
     public static void handleSolder(ServerPlayer player, SolderPayload payload) {
-        GuardRobotEntity robot = robot(player, payload.entityId());
+        BotEntity robot = robot(player, payload.entityId());
         int pin = payload.pin();
         if (robot == null || !mayEdit(player, robot) || pin < 1 || pin > BotBoard.PINS) {
             return;
         }
-        String name = robot.hasCustomName() ? robot.getCustomName().getString() : "the robot";
+        String name = robot.displayName();
         if (robot.isActive()) {
             player.displayClientMessage(Component.translatable("message.starktech.solder.robot_on", name), true);
             return;
@@ -201,19 +200,20 @@ public final class Robots {
     // ================================================================ De app Robots op de desktop
 
     /**
-     * De robots in het gebied van deze kern, voor de app Robots: naam, toestand, aan of uit, batterij, waar hij
-     * staat, of hij een dock heeft, of hij nu geladen is (anders kan de desktop hem niet bedienen), en (hoofdstuk
-     * 23) welk programma hij draait, of zijn kopie ouder is dan die op de server, of hij verbinding heeft, en welk
-     * programma op hem wacht.
+     * De robots en drones in het gebied van deze kern, voor de app Robots: naam, toestand, aan of uit, batterij,
+     * waar hij staat, of hij een dock heeft, of hij nu geladen is (anders kan de desktop hem niet bedienen), en
+     * (hoofdstuk 23) welk programma hij draait, of zijn kopie ouder is dan die op de server, of hij verbinding
+     * heeft, en welk programma op hem wacht. Een drone (hoofdstuk 25) krijgt "drone" erbij.
      */
     public static ListTag snapshot(ServerLevel level, SecurityCoreBlockEntity core) {
         ListTag list = new ListTag();
         BotNetwork network = BotNetwork.get(level);
         for (BotNetwork.Entry entry : network.atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
-            GuardRobotEntity robot = level.getEntity(entry.id()) instanceof GuardRobotEntity found && found.isAlive() ? found : null;
+            BotEntity robot = level.getEntity(entry.id()) instanceof BotEntity found && found.isAlive() ? found : null;
             CompoundTag row = new CompoundTag();
             row.putString("id", entry.id().toString());
             row.putString("n", entry.name());
+            row.putBoolean("drone", entry.drone());
             row.putString("st", entry.state().title().toLowerCase(Locale.ROOT));
             row.putBoolean("on", robot != null ? robot.isActive() : entry.state() == RobotState.ACTIVE);
             row.putInt("bat", Math.round(entry.battery() * 100));
@@ -246,7 +246,8 @@ public final class Robots {
         for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
             CompoundTag row = new CompoundTag();
             row.putString("n", entry.name());
-            if (level.getEntity(entry.id()) instanceof GuardRobotEntity robot && robot.isAlive()) {
+            row.putBoolean("drone", entry.drone());
+            if (level.getEntity(entry.id()) instanceof BotEntity robot && robot.isAlive()) {
                 ListTag pins = new ListTag();
                 for (int pin = 1; pin <= BotBoard.PINS; pin++) {
                     pins.add(net.minecraft.nbt.StringTag.valueOf(robot.board().pin(pin)));
@@ -266,12 +267,13 @@ public final class Robots {
     public static ListTag cameras(ServerLevel level, SecurityCoreBlockEntity core) {
         ListTag list = new ListTag();
         for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(GlobalPos.of(level.dimension(), core.getBlockPos()))) {
-            if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()
+            if (!(level.getEntity(entry.id()) instanceof BotEntity robot) || !robot.isAlive()
                     || !robot.board().has(BotModule.CAMERA) || BotLink.core(robot) != core) {
                 continue;
             }
             CompoundTag tag = new CompoundTag();
             tag.putInt("robot", robot.getId());
+            tag.putBoolean("drone", entry.drone());
             tag.putString("name", robot.hasCustomName() ? robot.getCustomName().getString() : entry.name());
             tag.putBoolean("on", robot.brain().pins().cameraOn() && !robot.isDown()); // neergeschoten: geen beeld
             tag.putInt("x", robot.getBlockX());
@@ -293,16 +295,16 @@ public final class Robots {
      * Alleen voor een robot die in de lijst van deze kern staat.
      */
     public static void watched(ServerLevel level, SecurityCoreBlockEntity core, int entityId) {
-        if (level.getEntity(entityId) instanceof GuardRobotEntity robot && robot.isAlive() && BotLink.core(robot) == core) {
+        if (level.getEntity(entityId) instanceof BotEntity robot && robot.isAlive() && BotLink.core(robot) == core) {
             robot.brain().pins().watch();
         }
     }
 
-    /** De robotprogramma's op de server van deze kern (voor de knop Program in de app Robots). */
-    public static ListTag programNames(SecurityCoreBlockEntity core) {
+    /** De robotprogramma's (of droneprogramma's) op de server van deze kern (voor de knop Program in de app Robots). */
+    public static ListTag programNames(SecurityCoreBlockEntity core, ProgramKind kind) {
         ListTag names = new ListTag();
         for (LogicProgram program : core.logic().programs()) {
-            if (program.kind() == ProgramKind.ROBOT) {
+            if (program.kind() == kind) {
                 names.add(net.minecraft.nbt.StringTag.valueOf(program.name()));
             }
         }
@@ -330,7 +332,7 @@ public final class Robots {
         if (op.equals("robot_program")) {
             return upload(level, core, network, entry, args.getString("program"));
         }
-        if (!(level.getEntity(id) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+        if (!(level.getEntity(id) instanceof BotEntity robot) || !robot.isAlive()) {
             return new Desktop(entry.name() + " is too far away (its chunk is not loaded)", true);
         }
         String name = robot.hasCustomName() ? robot.getCustomName().getString() : entry.name();
@@ -362,13 +364,13 @@ public final class Robots {
             if (found == null) {
                 return new Desktop("There is no program called " + name, true);
             }
-            if (found.kind() != ProgramKind.ROBOT) {
-                return new Desktop(name + " is a server diagram, not a robot program", true);
+            if (found.kind() != entry.kind()) {
+                return new Desktop(name + " is a " + found.kind().noun() + ", not a " + entry.kind().noun(), true);
             }
             program = LogicProgram.load(found.save()); // een kopie: de robot houdt hem, ook als je hem later verandert
         }
         String what = program == null ? "no program" : program.name();
-        if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+        if (!(level.getEntity(entry.id()) instanceof BotEntity robot) || !robot.isAlive()) {
             network.setPending(entry.id(), program);
             return new Desktop(entry.name() + " is far away: it gets " + what + " as soon as it is back", false);
         }
@@ -386,8 +388,8 @@ public final class Robots {
     public record Desktop(String text, boolean error) {}
 
     /** De robot met dit nummer, als hij dichtbij genoeg is; anders null. */
-    private static @Nullable GuardRobotEntity robot(ServerPlayer player, int entityId) {
-        if (player.serverLevel().getEntity(entityId) instanceof GuardRobotEntity robot && robot.isAlive()
+    private static @Nullable BotEntity robot(ServerPlayer player, int entityId) {
+        if (player.serverLevel().getEntity(entityId) instanceof BotEntity robot && robot.isAlive()
                 && player.distanceToSqr(robot) <= REACH * REACH) {
             return robot;
         }

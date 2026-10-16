@@ -787,7 +787,8 @@ public final class StarkOs {
         data.put("cameras", cameras);
         // De guard robots in het gebied van de kern (de app Robots, hoofdstuk 21).
         data.put("robots", com.senne.starktech.robot.Robots.snapshot(level, core));
-        data.put("robotPrograms", com.senne.starktech.robot.Robots.programNames(core));
+        data.put("robotPrograms", com.senne.starktech.robot.Robots.programNames(core, com.senne.starktech.logic.program.ProgramKind.ROBOT));
+        data.put("dronePrograms", com.senne.starktech.robot.Robots.programNames(core, com.senne.starktech.logic.program.ProgramKind.DRONE));
         // De server (serverracks) waar de redstone-diagrammen op draaien.
         data.put("server", com.senne.starktech.logic.LogicServer.snapshot(level, core));
         // De backups van deze server en van de eigenaar (de app Backup).

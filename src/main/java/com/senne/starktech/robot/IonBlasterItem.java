@@ -29,7 +29,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * De Ion Blaster (hoofdstuk 24, jouw wens: "een wapen waardoor ze worden gedisabled maar niet kapot gaan"). Rechtsklik
- * en hij schiet een blauwe ionenstraal, recht vooruit. Raakt hij een guard robot, dan valt die neer
+ * en hij schiet een blauwe ionenstraal, recht vooruit. Raakt hij een guard robot of een security drone (hoofdstuk
+ * 25), dan valt die neer
  * ({@link RobotState#DOWN}): zijn programma staat stil, en na een tijdje (ionDownSeconds) staat hij weer op. Kapot
  * gaat hij er niet van; wil je hem echt kapot, gebruik dan een gewoon wapen. Op mensen en dieren doet de straal
  * niets. Een muur en een schildkoepel houden hem tegen, zoals andere schoten.
@@ -83,8 +84,8 @@ public class IonBlasterItem extends Item {
         level.playSound(null, player.blockPosition(), ModSounds.ION_BLASTER_FIRE.get(), SoundSource.PLAYERS, 0.9f,
                 0.95f + level.getRandom().nextFloat() * 0.1f);
         ModNetwork.sendNear(level, player.position(), 64, new BeamEffectPayload(muzzle, end, BeamEffectPayload.Kind.ION_BEAM));
-        if (hit instanceof GuardRobotEntity robot) {
-            robot.knockDown(Math.round(StarkConfig.Robots.ION_DOWN_SECONDS * 20));
+        if (hit instanceof com.senne.starktech.bot.BotEntity bot) {
+            bot.knockDown(Math.round(StarkConfig.Robots.ION_DOWN_SECONDS * 20));
         }
         return hit;
     }
