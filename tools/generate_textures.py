@@ -3314,6 +3314,19 @@ def robot_module_items():
     save(im, "item/module/burnt.png")
 
 
+def soldering_iron():
+    """De Soldering Iron: schuin, met een zwart-rood handvat, een stalen staaf en een gloeiend oranje puntje."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.line([2, 13, 5, 10], fill=(30, 30, 34, 255), width=2)          # handvat
+    px(im, [(3, 13), (4, 12)], (200, 40, 40, 255))                    # rode band
+    d.line([6, 9, 11, 4], fill=(170, 176, 186, 255))                  # staaf
+    d.line([6, 10, 11, 5], fill=(110, 116, 126, 255))
+    px(im, [(12, 3), (12, 4)], (255, 140, 40, 255))                   # gloeiende punt
+    px(im, [(13, 2)], (255, 220, 120, 255))
+    save(im, "item/soldering_iron.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3378,3 +3391,4 @@ if __name__ == "__main__":
     guard_robot_item()
     robot_dock_textures()
     robot_module_items()
+    soldering_iron()

@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 244 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 246 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 90 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2494,7 +2494,17 @@ brand staat in de config.
       met ijzer, een daglichtsensor, getint glas). Icoontjes: een groen printplaatje met twee gouden pootjes
       en een tekentje (`robot_module_items()`). Tooltip: wat hij doet en "Solder it onto a pin...". Eén
       nieuwe test. Vorige commit: `bff8e91` (einde hoofdstuk 21).
-- [ ] **2. Het bord** — pinnen, soldeerbruggen, solderen en lossolderen; de server bepaalt de uitkomst.
+- [x] **2. Het bord** — `BotBoard` kan nu solderen (`with`), bruggen leggen (`withBridge`), lossolderen (de module
+      eraf en de bruggen aan die pin weg, ook aan een lege pin) en zegt welke bruggen kortsluiting geven
+      (`shorts()`: een brug tussen twee lege pinnen doet niets). De robot stuurt zijn bord mee naar je spel
+      (voor het bordscherm en het model). **`Soldering`** beslist op de server hoe het afloopt, uit hoe lang je
+      vasthield: onder `solderCold` (0,45 van de hittebalk) pakt het niet (de module blijft bij jou), tot
+      `solderHot` (0,75) is het goed (kans op een brug `bridgeChanceGood` 0,03), langer geeft meestal een brug
+      naar een buurpin (`bridgeChanceHot` 0,7) — en dat zeggen we je niet. De **Soldering Iron** (recept: ijzer,
+      blazepoeder, een stok; slijt, 128 keer) hoeft alleen in je rugzak. Alleen als je de robot mag instellen
+      en hij uit staat. Nieuw bericht `SolderPayload`; netwerkversie 20 → 21. Twee nieuwe tests (solderen,
+      te kort, te lang, lossolderen, aan = geweigerd, geen bout, een vreemde; bruggen op het bord). Vorige
+      stap: `52594c8`.
 - [ ] **3. Het spelletje** — hittebalk, groen vak, een brug bij te laat, Inspect, en de soldeerbout (slijt).
 - [ ] **4. Aanzetten met een brug** — de modules op die pinnen verbranden; met een kans brandt de hele robot
       af; logboek en E.D.I.T.H.-melding met de pinnummers.

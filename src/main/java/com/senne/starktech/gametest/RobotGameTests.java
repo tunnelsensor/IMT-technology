@@ -5,10 +5,12 @@ import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotModuleItem;
 import com.senne.starktech.bot.BotNetwork;
+import com.senne.starktech.bot.SolderingIronItem;
 import com.senne.starktech.bot.CircuitBoardItem;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.OsActionPayload;
 import com.senne.starktech.network.RobotActionPayload;
+import com.senne.starktech.network.SolderPayload;
 import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
@@ -533,6 +535,92 @@ public final class RobotGameTests {
         }
         check(BotModule.byId("nonsense") == null, "byId vond iets dat niet bestaat");
         helper.succeed();
+    }
+
+    /**
+     * Solderen (de server beslist): te kort pakt niet (de module blijft bij jou, de bout slijt wel), in het groene
+     * vak zit de module erop, te lang geeft een brug naar een buurpin. Lossolderen geeft de module terug en haalt
+     * de brug weg. Aan staat: geweigerd. Zonder soldeerbout: geweigerd. Een vreemde: niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "robot_config")
+    public static void robot_solder_and_desolder(GameTestHelper helper) {
+        ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 1, 8), "solder-owner");
+        player.getAbilities().instabuild = false;
+        GuardRobotEntity robot = dockedRobot(helper, player, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+        float good = StarkConfig.Robots.BRIDGE_CHANCE_GOOD;
+        float hot = StarkConfig.Robots.BRIDGE_CHANCE_HOT;
+        StarkConfig.Robots.BRIDGE_CHANCE_GOOD = 0.0f;
+        StarkConfig.Robots.BRIDGE_CHANCE_HOT = 1.0f;
+        try {
+            int full = Math.round(StarkConfig.Robots.SOLDER_FULL_TICKS);
+            int inGreen = Math.round(full * (StarkConfig.Robots.SOLDER_COLD + StarkConfig.Robots.SOLDER_HOT) / 2);
+            // Zonder soldeerbout: niets.
+            player.getInventory().add(new ItemStack(ModItems.robotModule(BotModule.LASER), 2));
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), false, 3, "laser", inGreen));
+            check(robot.board().pin(3).isEmpty(), "Zonder soldeerbout kon hij toch solderen");
+            ItemStack iron = new ItemStack(ModItems.SOLDERING_IRON.get());
+            player.getInventory().add(iron);
+            ItemStack ironInBag = SolderingIronItem.find(player);
+            // Te kort: het pakt niet.
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), false, 3, "laser", 1));
+            check(robot.board().pin(3).isEmpty() && count(player, ModItems.robotModule(BotModule.LASER)) == 2,
+                    "Te kort vastgehouden zat de module er toch op");
+            check(ironInBag != null && ironInBag.getDamageValue() == 1, "De soldeerbout sleet niet");
+            // In het groene vak: erop, geen brug.
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), false, 3, "laser", inGreen));
+            check(robot.board().module(3) == BotModule.LASER && robot.board().bridges() == 0, "Goed gesoldeerd: " + robot.board());
+            check(count(player, ModItems.robotModule(BotModule.LASER)) == 1, "De module ging niet uit de rugzak");
+            // Op een pin met een module: geweigerd.
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), false, 3, "laser", inGreen));
+            check(count(player, ModItems.robotModule(BotModule.LASER)) == 1, "Op een volle pin solderen kostte een module");
+            // Te lang: een brug naar pin 4 (pin 8 heeft maar één buur).
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), false, 8, "laser", full * 2));
+            check(robot.board().module(8) == BotModule.LASER && robot.board().bridge(7), "Te lang gaf geen brug: " + robot.board());
+            check(robot.board().shorts().equals(List.of(7)), "De brug zou kortsluiting geven: " + robot.board().shorts());
+            // Lossolderen: de module terug, de brug weg.
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), true, 8, "", 0));
+            check(robot.board().pin(8).isEmpty() && robot.board().bridges() == 0, "Lossolderen liet iets achter: " + robot.board());
+            check(count(player, ModItems.robotModule(BotModule.LASER)) == 1, "Lossolderen gaf de module niet terug");
+            // Aan: geweigerd. Een vreemde: niets.
+            robot.setActive(true);
+            Robots.handleSolder(player, new SolderPayload(robot.getId(), true, 3, "", 0));
+            check(robot.board().module(3) == BotModule.LASER, "Aan kon je toch lossolderen");
+            robot.setActive(false);
+            ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 1, 8), "solder-stranger");
+            stranger.getInventory().add(new ItemStack(ModItems.SOLDERING_IRON.get()));
+            Robots.handleSolder(stranger, new SolderPayload(robot.getId(), true, 3, "", 0));
+            check(robot.board().module(3) == BotModule.LASER, "Een vreemde kon lossolderen");
+        } finally {
+            StarkConfig.Robots.BRIDGE_CHANCE_GOOD = good;
+            StarkConfig.Robots.BRIDGE_CHANCE_HOT = hot;
+        }
+        helper.succeed();
+    }
+
+    /** Het bord zelf: een brug tussen twee lege pinnen geeft geen kortsluiting; lossolderen van een lege pin haalt de brug weg. */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_board_bridges(GameTestHelper helper) {
+        BotBoard board = BotBoard.EMPTY.withBridge(1).withBridge(5).with(6, "scan");
+        check(board.bridge(1) && board.bridge(5) && !board.bridge(2), "Bruggen op de verkeerde plek: " + board);
+        check(board.shorts().equals(List.of(5)), "Een brug tussen lege pinnen gaf toch kortsluiting: " + board.shorts());
+        check(board.modules() == 1 << BotModule.SCAN.ordinal(), "Welke modules erop zitten klopt niet");
+        BotBoard cleaned = board.desolder(1);
+        check(!cleaned.bridge(1) && cleaned.bridge(5), "Lossolderen van pin 1 haalde de verkeerde brug weg");
+        check(!board.desolder(6).bridge(5) && board.desolder(6).bridge(1) && board.desolder(6).pin(6).isEmpty(),
+                "Lossolderen van pin 6 deed iets anders: " + board.desolder(6));
+        check(!BotBoard.EMPTY.bridge(0) && !BotBoard.EMPTY.bridge(8), "Een brug buiten het bord?");
+        helper.succeed();
+    }
+
+    /** Hoeveel van dit item er in de rugzak zit. */
+    private static int count(ServerPlayer player, Item item) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.is(item)) {
+                count += stack.getCount();
+            }
+        }
+        return count;
     }
 
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */

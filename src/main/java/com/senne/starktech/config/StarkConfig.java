@@ -1493,6 +1493,26 @@ public final class StarkConfig {
         /** Hoeveel blokken een robot uit zijn dock stapt als je hem aanzet. */
         @Tunable(value = "How many blocks a robot walks out of its dock when you switch it on", max = 16)
         public static float STEP_OUT = 2.0f;
+
+        // Solderen (hoofdstuk 22): de hittebalk en wat er misgaat.
+        /** Zoveel ticks duurt het tot de hittebalk vol is. */
+        @Tunable(value = "Soldering: ticks the heat bar takes to fill up", min = 5, max = 400)
+        public static float SOLDER_FULL_TICKS = 40.0f;
+        /** Laat je los voor dit deel van de balk, dan pakt het soldeer niet. */
+        @Tunable(value = "Soldering: let go below this share of the heat bar (0-1) and the solder does not hold", max = 1)
+        public static float SOLDER_COLD = 0.45f;
+        /** Boven dit deel van de balk is het te heet: het soldeer loopt vaak naar de pin ernaast. */
+        @Tunable(value = "Soldering: above this share of the heat bar (0-1) the solder may run to the next pin", max = 2)
+        public static float SOLDER_HOT = 0.75f;
+        /** De kans op een brug als je in het groene vak loslaat. */
+        @Tunable(value = "Soldering: chance of a solder bridge when you let go in the green zone", max = 1)
+        public static float BRIDGE_CHANCE_GOOD = 0.03f;
+        /** De kans op een brug als je te lang vasthield. */
+        @Tunable(value = "Soldering: chance of a solder bridge when you held too long", max = 1)
+        public static float BRIDGE_CHANCE_HOT = 0.7f;
+        /** De kans dat een kortsluiting de hele robot laat afbranden (anders alleen de modules). */
+        @Tunable(value = "Chance that a short circuit burns down the whole robot (otherwise only the modules on those pins)", max = 1)
+        public static float BURN_CHANCE = 0.25f;
     }
 
     // =============================================================================================== Hydra

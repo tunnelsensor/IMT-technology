@@ -75,6 +75,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     /** Laadt hij nu op zijn dock? Dan zoemt hij zachtjes in je spel (zie client/robot/RobotChargeHum). */
     private static final EntityDataAccessor<Boolean> CHARGING =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Zijn printplaat (wat er op de pinnen zit en de bruggen), voor het bordscherm en het model in je spel. */
+    private static final EntityDataAccessor<CompoundTag> BOARD =
+            SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.COMPOUND_TAG);
     /** Hoe vol zijn batterij is (0 tot 1), voor de schermen. */
     private static final EntityDataAccessor<Float> BATTERY =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.FLOAT);
@@ -83,8 +86,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     private @Nullable UUID owner;
     private String ownerName = "";
-    /** Zijn printplaat: wat er op zijn 8 pinnen gesoldeerd is (hoofdstuk 22). */
+    /** Zijn printplaat zoals hij het laatst uit BOARD gelezen werd (zodat we dat niet elke keer opnieuw doen). */
     private BotBoard board = BotBoard.EMPTY;
+    private @Nullable CompoundTag boardTag;
     /**
      * Alleen in je spel, voor het voorbeeld in de Robot Assembler: welke onderdelen we tekenen (bit per
      * RobotSlot). Een onderdeel dat nog niet in de assembler ligt, tekenen we niet.
@@ -129,6 +133,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         builder.define(BATTERY, 1.0f);
         builder.define(SWITCHED_ON, false);
         builder.define(CHARGING, false);
+        builder.define(BOARD, new CompoundTag());
     }
 
     @Override
@@ -193,9 +198,20 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         }
     }
 
-    /** Zijn printplaat. */
+    /** Zijn printplaat: wat er op zijn 8 pinnen gesoldeerd is (ook in je spel). */
     public BotBoard board() {
+        CompoundTag tag = entityData.get(BOARD);
+        if (tag != boardTag) {
+            boardTag = tag;
+            board = tag.isEmpty() ? BotBoard.EMPTY
+                    : BotBoard.CODEC.parse(NbtOps.INSTANCE, tag).result().orElse(BotBoard.EMPTY);
+        }
         return board;
+    }
+
+    /** Een ander bord (na solderen of een kortsluiting). */
+    public void setBoard(BotBoard board) {
+        entityData.set(BOARD, (CompoundTag) BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, board).getOrThrow());
     }
 
     /** Welke onderdelen je spel tekent (zie {@link #shownSlots}). */
@@ -212,7 +228,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     public void applyData(RobotData data) {
         setParts(data.robotParts());
         setHealth(getMaxHealth());
-        board = data.board();
+        setBoard(data.board());
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
         updateState(false);
@@ -220,7 +236,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     /** Wat er in zijn item komt als je hem oppakt. */
     public RobotData toData() {
-        return new RobotData(parts().pack(), board, hasCustomName() ? getCustomName().getString() : "",
+        return new RobotData(parts().pack(), board(), hasCustomName() ? getCustomName().getString() : "",
                 (float) (battery / Math.max(1.0, maxBattery())));
     }
 
@@ -576,7 +592,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         if (home != null) {
             tag.putLong("Home", home.asLong());
         }
-        tag.put("Board", BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, board).getOrThrow());
+        tag.put("Board", BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, board()).getOrThrow());
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
@@ -589,8 +605,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         if (tag.contains("Parts")) {
             entityData.set(PARTS, tag.getInt("Parts"));
         }
-        board = tag.contains("Board") ? BotBoard.CODEC.parse(NbtOps.INSTANCE, tag.get("Board")).result().orElse(BotBoard.EMPTY)
-                : BotBoard.EMPTY;
+        setBoard(tag.contains("Board") ? BotBoard.CODEC.parse(NbtOps.INSTANCE, tag.get("Board")).result().orElse(BotBoard.EMPTY)
+                : BotBoard.EMPTY);
         // Na het laden van leven en eigenschappen: de config kan intussen andere getallen hebben.
         applyParts();
         active = tag.getBoolean("Active");

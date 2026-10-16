@@ -1,9 +1,16 @@
 package com.senne.starktech.robot;
 
+import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotModule;
+import com.senne.starktech.bot.BotModuleItem;
 import com.senne.starktech.bot.BotNetwork;
+import com.senne.starktech.bot.Soldering;
+import com.senne.starktech.bot.SolderingIronItem;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.network.RobotActionPayload;
 import com.senne.starktech.network.RobotOpenPayload;
+import com.senne.starktech.network.SolderPayload;
+import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.security.BaseTrust;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import java.util.Locale;
@@ -94,6 +101,94 @@ public final class Robots {
             player.drop(stack, false);
         }
         player.displayClientMessage(Component.translatable("message.starktech.robot.picked_up", stack.getHoverName()), true);
+    }
+
+    // ================================================================ Solderen (hoofdstuk 22)
+
+    /**
+     * Solderen of lossolderen op het bord van een robot (uit het bordscherm). Alleen als je hem mag instellen,
+     * hij uit staat en je een Soldering Iron bij je hebt (die slijt een beetje). Solderen: de module komt uit je
+     * rugzak; hoe het afloopt, beslist Soldering (te kort = het pakt niet, te lang = vaak een brug, en dat zeggen
+     * we je niet). Lossolderen: de module komt terug (ook een verbrande), en de bruggen aan die pin gaan weg.
+     */
+    public static void handleSolder(ServerPlayer player, SolderPayload payload) {
+        GuardRobotEntity robot = robot(player, payload.entityId());
+        int pin = payload.pin();
+        if (robot == null || !mayEdit(player, robot) || pin < 1 || pin > BotBoard.PINS) {
+            return;
+        }
+        String name = robot.hasCustomName() ? robot.getCustomName().getString() : "the robot";
+        if (robot.isActive()) {
+            player.displayClientMessage(Component.translatable("message.starktech.solder.robot_on", name), true);
+            return;
+        }
+        ItemStack iron = SolderingIronItem.find(player);
+        if (iron == null) {
+            player.displayClientMessage(Component.translatable("message.starktech.solder.no_iron"), true);
+            return;
+        }
+        BotBoard board = robot.board();
+        ServerLevel level = player.serverLevel();
+        if (payload.desolder()) {
+            boolean bridged = board.bridge(pin - 1) || board.bridge(pin);
+            if (board.pin(pin).isEmpty() && !bridged) {
+                player.displayClientMessage(Component.translatable("message.starktech.solder.nothing", pin), true);
+                return;
+            }
+            BotModule module = board.module(pin);
+            robot.setBoard(board.desolder(pin));
+            if (module != null) {
+                give(player, new ItemStack(ModItems.robotModule(module)));
+            }
+            iron.hurtAndBreak(1, level, player, item -> {});
+            level.playSound(null, robot.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.4f, 1.6f);
+            player.displayClientMessage(Component.translatable("message.starktech.solder.desoldered", pin), true);
+            return;
+        }
+        BotModule module = BotModule.byId(payload.module());
+        if (module == null || module == BotModule.BURNT) {
+            return;
+        }
+        if (!board.pin(pin).isEmpty()) {
+            player.displayClientMessage(Component.translatable("message.starktech.solder.pin_taken", pin), true);
+            return;
+        }
+        ItemStack stack = moduleIn(player, module);
+        boolean creative = player.getAbilities().instabuild;
+        if (stack == null && !creative) {
+            player.displayClientMessage(Component.translatable("message.starktech.solder.no_module", module.title()), true);
+            return;
+        }
+        Soldering.Result result = Soldering.solder(board, pin, module, payload.holdTicks(), robot.getRandom());
+        iron.hurtAndBreak(1, level, player, item -> {});
+        if (result.joint() == Soldering.Joint.COLD) {
+            level.playSound(null, robot.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.3f, 0.7f);
+            player.displayClientMessage(Component.translatable("message.starktech.solder.cold", pin), true);
+            return;
+        }
+        robot.setBoard(result.board());
+        if (stack != null && !creative) {
+            stack.shrink(1);
+        }
+        // Goed of met een brug: je hoort en leest hetzelfde. Een brug zie je alleen als je goed kijkt.
+        level.playSound(null, robot.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.4f, 1.3f);
+        player.displayClientMessage(Component.translatable("message.starktech.solder.done", pin, module.title()), true);
+    }
+
+    /** Een stapel van deze module in de rugzak van de speler, of null. */
+    private static @Nullable ItemStack moduleIn(ServerPlayer player, BotModule module) {
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.getItem() instanceof BotModuleItem item && item.module() == module) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    private static void give(ServerPlayer player, ItemStack stack) {
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
     }
 
     // ================================================================ De app Robots op de desktop

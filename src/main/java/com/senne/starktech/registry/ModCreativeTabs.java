@@ -91,6 +91,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.GUARD_ROBOT.get());
                 output.accept(ModItems.ROBOT_DOCK.get());
                 output.accept(ModItems.ROBOT_CIRCUIT_BOARD.get());
+                output.accept(ModItems.SOLDERING_IRON.get());
                 for (com.senne.starktech.bot.BotModule module : com.senne.starktech.bot.BotModule.values()) {
                     output.accept(ModItems.robotModule(module));
                 }

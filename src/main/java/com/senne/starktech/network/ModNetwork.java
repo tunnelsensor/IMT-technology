@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "20";
+    private static final String PROTOCOL_VERSION = "21";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -166,6 +166,12 @@ public final class ModNetwork {
         registrar.playToServer(RobotActionPayload.TYPE, RobotActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 com.senne.starktech.robot.Robots.handleAction(player, payload);
+            }
+        });
+        // Solderen op het bord van een robot (hoofdstuk 22).
+        registrar.playToServer(SolderPayload.TYPE, SolderPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.robot.Robots.handleSolder(player, payload);
             }
         });
         // De keycardlezer: Save in zijn naamscherm (13 oktober).

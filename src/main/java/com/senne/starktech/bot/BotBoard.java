@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * De printplaat van een robot (hoofdstuk 21; later ook van een drone): 8 genummerde pinnen. Op elke pin
@@ -60,5 +61,70 @@ public record BotBoard(List<String> pins, int bridges) {
             }
         }
         return used;
+    }
+
+    /** De module op pin {@code number}, of null als hij leeg is (of als er iets onbekends op staat). */
+    public @Nullable BotModule module(int number) {
+        return BotModule.byId(pin(number));
+    }
+
+    /** Is er een soldeerbrug tussen pin {@code left} en pin {@code left + 1}? */
+    public boolean bridge(int left) {
+        return left >= 1 && left < PINS && (bridges & 1 << (left - 1)) != 0;
+    }
+
+    /** Hetzelfde bord, met deze module op pin {@code number} ("" = leeg). */
+    public BotBoard with(int number, String module) {
+        List<String> copy = new ArrayList<>(pins);
+        copy.set(number - 1, module);
+        return new BotBoard(copy, bridges);
+    }
+
+    /** Hetzelfde bord, met een soldeerbrug tussen pin {@code left} en {@code left + 1}. */
+    public BotBoard withBridge(int left) {
+        return new BotBoard(pins, bridges | 1 << (left - 1));
+    }
+
+    /** Hetzelfde bord zonder de soldeerbruggen aan pin {@code number} (links en rechts). */
+    public BotBoard withoutBridgesAt(int number) {
+        int mask = 0;
+        if (number > 1) {
+            mask |= 1 << (number - 2);
+        }
+        if (number < PINS) {
+            mask |= 1 << (number - 1);
+        }
+        return new BotBoard(pins, bridges & ~mask);
+    }
+
+    /** Lossolderen: de module eraf en de bruggen aan deze pin weg (een brug kan ook aan een lege pin zitten). */
+    public BotBoard desolder(int number) {
+        return with(number, "").withoutBridgesAt(number);
+    }
+
+    /**
+     * De bruggen die kortsluiting geven als je de robot aanzet (de linker pin van elke brug): een brug tussen
+     * twee lege pinnen doet niets, maar raakt hij een module, dan gaat het mis.
+     */
+    public List<Integer> shorts() {
+        List<Integer> list = new ArrayList<>();
+        for (int left = 1; left < PINS; left++) {
+            if (bridge(left) && (!pin(left).isEmpty() || !pin(left + 1).isEmpty())) {
+                list.add(left);
+            }
+        }
+        return list;
+    }
+
+    /** Welke modules er op zitten, één bit per BotModule (voor het model in je spel). */
+    public int modules() {
+        int mask = 0;
+        for (int number = 1; number <= PINS; number++) {
+            BotModule module = module(number);
+            if (module != null) {
+                mask |= 1 << module.ordinal();
+            }
+        }
+        return mask;
     }
 }

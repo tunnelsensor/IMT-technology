@@ -311,6 +311,11 @@ public final class ModItems {
         return modules;
     }
 
+    /** Hoofdstuk 22: de soldeerbout (slijt; hoeft alleen in je rugzak). */
+    public static final DeferredItem<com.senne.starktech.bot.SolderingIronItem> SOLDERING_IRON = ITEMS.registerItem(
+            "soldering_iron", com.senne.starktech.bot.SolderingIronItem::new,
+            new Item.Properties().durability(com.senne.starktech.bot.SolderingIronItem.USES));
+
     /** Het item van deze module. */
     public static com.senne.starktech.bot.BotModuleItem robotModule(com.senne.starktech.bot.BotModule module) {
         return ROBOT_MODULES.get(module).get();
