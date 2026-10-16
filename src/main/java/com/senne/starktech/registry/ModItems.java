@@ -289,6 +289,12 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> ROBOT_DOCK = ITEMS.registerSimpleBlockItem("robot_dock",
             ModBlocks.ROBOT_DOCK, new Item.Properties());
 
+    /** Hoofdstuk 26: de trainingsblokken. */
+    public static final DeferredItem<BlockItem> TRAINING_START = ITEMS.registerSimpleBlockItem("training_start",
+            ModBlocks.TRAINING_START, new Item.Properties());
+    public static final DeferredItem<BlockItem> TRAINING_GOAL = ITEMS.registerSimpleBlockItem("training_goal",
+            ModBlocks.TRAINING_GOAL, new Item.Properties());
+
     /** Hoofdstuk 21: een samengestelde guard robot (uit de Robot Assembler); rechtsklik zet hem neer. */
     public static final DeferredItem<com.senne.starktech.robot.GuardRobotItem> GUARD_ROBOT = ITEMS.registerItem(
             "guard_robot", com.senne.starktech.robot.GuardRobotItem::new,

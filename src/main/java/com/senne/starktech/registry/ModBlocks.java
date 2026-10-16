@@ -359,6 +359,24 @@ public final class ModBlocks {
                     .noCollission()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
 
+    /** Hoofdstuk 26: het Training Start-blok (klik = een training beginnen, met jou als trainee). */
+    public static final DeferredBlock<com.senne.starktech.training.TrainingStartBlock> TRAINING_START = BLOCKS.registerBlock(
+            "training_start", com.senne.starktech.training.TrainingStartBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
+    /** Hoofdstuk 26: het Training Goal-blok (de trainee stapt erop: geslaagd). */
+    public static final DeferredBlock<com.senne.starktech.training.TrainingGoalBlock> TRAINING_GOAL = BLOCKS.registerBlock(
+            "training_goal", com.senne.starktech.training.TrainingGoalBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.GOLD)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     /** Hoofdstuk 21: de Robot Assembler, de werkbank waarop je een guard robot in elkaar zet. */
     public static final DeferredBlock<com.senne.starktech.robot.RobotAssemblerBlock> ROBOT_ASSEMBLER = BLOCKS.registerBlock(
             "robot_assembler", com.senne.starktech.robot.RobotAssemblerBlock::new,

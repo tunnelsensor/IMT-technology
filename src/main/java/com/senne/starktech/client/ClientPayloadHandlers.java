@@ -191,6 +191,15 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Het scherm van een trainingsblok openen (sneak + rechtsklik, hoofdstuk 26): de instellingen van een Start-blok. */
+    public static void onTrainingOpen(com.senne.starktech.network.TrainingOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null && !payload.end()) {
+            mc.setScreen(new com.senne.starktech.client.training.TrainingStartScreen(payload.pos(),
+                    com.senne.starktech.training.Training.Settings.load(payload.data())));
+        }
+    }
+
     /** Het scherm van een guard robot openen (sneak + rechtsklik, hoofdstuk 21). */
     public static void onRobotOpen(com.senne.starktech.network.RobotOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

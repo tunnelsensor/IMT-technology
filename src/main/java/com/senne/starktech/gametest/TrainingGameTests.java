@@ -123,6 +123,70 @@ public final class TrainingGameTests {
     }
 
     /**
+     * Het Training Start-blok: een vreemde kan geen training beginnen (en de instellingen niet veranderen), de eigenaar
+     * wel (hij is dan de trainee), en een tweede klik stopt hem. Wat hij instelt, bewaart het blok.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "training_start")
+    public static void training_start_block_only_for_trusted(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 8), "start-owner");
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 2, 6), "start-stranger");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos block = new BlockPos(6, 2, 6);
+        helper.setBlock(block, com.senne.starktech.registry.ModBlocks.TRAINING_START.get());
+        BlockPos abs = helper.absolutePos(block);
+        var start = (com.senne.starktech.training.TrainingStartBlockEntity) helper.getBlockEntity(block);
+        helper.runAfterDelay(5, () -> {
+            Training.Settings waves = new Training.Settings("Waves", Training.Mode.LETHAL, 3, 60);
+            com.senne.starktech.training.TrainingBlocks.handleAction(stranger,
+                    new com.senne.starktech.network.TrainingActionPayload(abs, waves.save()));
+            check(start.settings().equals(Training.Settings.DEFAULT), "Een vreemde veranderde de instellingen");
+            com.senne.starktech.training.TrainingBlocks.handleAction(owner,
+                    new com.senne.starktech.network.TrainingActionPayload(abs, waves.save()));
+            check(start.settings().equals(waves), "De eigenaar kon de instellingen niet bewaren: " + start.settings());
+
+            com.senne.starktech.training.TrainingBlocks.useStart(stranger, abs);
+            check(Training.at(helper.getLevel(), core.getBlockPos()) == null, "Een vreemde begon een training");
+            com.senne.starktech.training.TrainingBlocks.useStart(owner, abs);
+            Training.Session session = Training.at(helper.getLevel(), core.getBlockPos());
+            check(session != null && session.trainee().equals(owner.getUUID()) && session.settings().name().equals("Waves")
+                    && session.lives() == 3, "De eigenaar begon geen training (met zijn instellingen)");
+            com.senne.starktech.training.TrainingBlocks.useStart(owner, abs);
+            check(Training.at(helper.getLevel(), core.getBlockPos()) == null, "Een tweede klik stopte de training niet");
+            check(core.trainingReports().getLast().result() == Training.Result.STOPPED, "Het rapport zegt niet dat hij gestopt is");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Het Training Goal-blok: stapt de trainee erop, dan is hij geslaagd. Staat er een doel in de basis, dan is de tijd
+     * om wel mislukt (hij moest het doel halen).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "training_goal")
+    public static void training_goal_ends_with_success(GameTestHelper helper) {
+        ServerPlayer trainee = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 6), "goal-trainee");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), trainee);
+        BlockPos goal = new BlockPos(8, 1, 6);
+        helper.setBlock(goal, com.senne.starktech.registry.ModBlocks.TRAINING_GOAL.get());
+        helper.runAfterDelay(5, () -> check(Training.start(helper.getLevel(), core, trainee,
+                new Training.Settings("Run", Training.Mode.TRAINING_SHOTS, 1, 0), null) == null, "De training begon niet"));
+        helper.runAfterDelay(5 + afterCountdown(), () -> {
+            var state = helper.getBlockState(goal);
+            state.getBlock().stepOn(helper.getLevel(), helper.absolutePos(goal), state, trainee);
+            check(Training.of(trainee.getUUID()) == null, "Op het doel stappen stopte de training niet");
+            TrainingReport report = core.trainingReports().getLast();
+            check(report.result() == Training.Result.GOAL && report.result().passed(), "Het rapport klopt niet: " + report.line());
+            check(Training.start(helper.getLevel(), core, trainee,
+                    new Training.Settings("Run", Training.Mode.TRAINING_SHOTS, 1, 1), null) == null, "De tweede training begon niet");
+        });
+        helper.runAfterDelay(5 + 2 * afterCountdown() + 30, () -> {
+            TrainingReport report = core.trainingReports().getLast();
+            check(report.result() == Training.Result.TIME_UP && !report.result().passed(),
+                    "Met een doel in de basis is de tijd om niet mislukt: " + report.line());
+            helper.succeed();
+        });
+    }
+
+    /**
      * Een tijdslimiet zonder Goal-blok: wie het volhoudt, is geslaagd. Een tweede training bij dezelfde kern kan niet
      * tegelijk, en de trainee kan niet in twee trainingen tegelijk.
      */

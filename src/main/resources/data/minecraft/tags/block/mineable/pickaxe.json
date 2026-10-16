@@ -26,6 +26,8 @@
     "starktech:arc_lamp",
     "starktech:light_switch",
     "starktech:robot_assembler",
-    "starktech:robot_dock"
+    "starktech:robot_dock",
+    "starktech:training_start",
+    "starktech:training_goal"
   ]
 }

@@ -150,4 +150,16 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("robot_dock",
                     () -> new BlockEntityType<>(com.senne.starktech.robot.RobotDockBlockEntity::new,
                             java.util.Set.of(ModBlocks.ROBOT_DOCK.get()), null));
+
+    /** Hoofdstuk 26: de instellingen van een Training Start-blok. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.training.TrainingStartBlockEntity>> TRAINING_START =
+            BLOCK_ENTITIES.register("training_start",
+                    () -> new BlockEntityType<>(com.senne.starktech.training.TrainingStartBlockEntity::new,
+                            java.util.Set.of(ModBlocks.TRAINING_START.get()), null));
+
+    /** Hoofdstuk 26: een Training Goal-blok (meldt zich aan bij TrainingGoals). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.starktech.training.TrainingGoalBlockEntity>> TRAINING_GOAL =
+            BLOCK_ENTITIES.register("training_goal",
+                    () -> new BlockEntityType<>(com.senne.starktech.training.TrainingGoalBlockEntity::new,
+                            java.util.Set.of(ModBlocks.TRAINING_GOAL.get()), null));
 }

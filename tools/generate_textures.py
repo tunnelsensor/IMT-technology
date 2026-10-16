@@ -3480,6 +3480,78 @@ def guard_drone_textures():
     save(im, "item/guard_drone.png")
 
 
+def training_block_textures():
+    """
+    De trainingsblokken (hoofdstuk 26): Training Start (een groen afspeel-driehoekje in een cyaan ring), Training End
+    (een rood stop-vierkantje, en aan de zijkanten een lampje dat rood brandt bij een treffer) en Training Goal (een
+    zwart-wit geblokte finishvlag met een gouden rand). Allemaal op een donkere metalen kast met waarschuwingsstrepen.
+    """
+    dark, darker, edge = (40, 45, 52, 255), (26, 29, 34, 255), (70, 78, 88, 255)
+    yellow, black = (222, 186, 40, 255), (22, 22, 24, 255)
+    green, green_dim = (90, 220, 90, 255), (40, 120, 45, 255)
+    red, red_dim, red_off = (255, 70, 55, 255), (150, 34, 26, 255), (70, 24, 22, 255)
+    white, gold, gold_dark = (230, 232, 236, 255), (232, 190, 60, 255), (160, 120, 30, 255)
+
+    def side(stripe):
+        im = img(16, 16, dark)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=edge)
+        for x in range(16):
+            im.putpixel((x, 14), yellow if (x // 2) % 2 == 0 else black)
+            im.putpixel((x, 15), black if (x // 2) % 2 == 0 else yellow)
+        if stripe:
+            d.line([1, 6, 14, 6], fill=stripe)
+        return im
+
+    bottom = img(16, 16, darker)
+    ImageDraw.Draw(bottom).rectangle([0, 0, 15, 15], outline=edge)
+    save(bottom, "block/training_bottom.png")
+
+    # Training Start
+    save(side(green_dim), "block/training_start_side.png")
+    top = img(16, 16, dark)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=edge)
+    d.ellipse([2, 2, 13, 13], outline=CYAN)
+    d.polygon([(6, 4), (6, 11), (11, 7)], fill=green)
+    px(top, [(6, 4), (6, 11)], green_dim)
+    save(top, "block/training_start_top.png")
+
+    # Training End: een rood stop-vierkantje; het lampje op de zijkant brandt bij een treffer.
+    top = img(16, 16, dark)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=edge)
+    d.ellipse([2, 2, 13, 13], outline=red_dim)
+    d.rectangle([5, 5, 10, 10], fill=red)
+    save(top, "block/training_end_top.png")
+    for lit in (False, True):
+        im = side(None)
+        d = ImageDraw.Draw(im)
+        d.rectangle([5, 4, 10, 9], fill=red if lit else red_off, outline=darker)
+        if lit:
+            px(im, [(6, 5), (7, 5)], (255, 190, 170, 255))
+        save(im, "block/training_end_side_on.png" if lit else "block/training_end_side.png")
+
+    # Training Goal: een geblokte finishvlag met een gouden rand.
+    top = img(16, 16, white)
+    for x in range(1, 15):
+        for y in range(1, 15):
+            if ((x - 1) // 2 + (y - 1) // 2) % 2 == 0:
+                top.putpixel((x, y), black)
+    ImageDraw.Draw(top).rectangle([0, 0, 15, 15], outline=gold)
+    save(top, "block/training_goal_top.png")
+    im = img(16, 16, white)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, 15, 2], fill=gold)
+    d.line([0, 3, 15, 3], fill=gold_dark)
+    for x in range(16):
+        for y in range(7, 11):
+            if (x // 2 + (y - 7) // 2) % 2 == 0:
+                im.putpixel((x, y), black)
+    d.rectangle([0, 0, 15, 15], outline=gold_dark)
+    save(im, "block/training_goal_side.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3548,3 +3620,4 @@ if __name__ == "__main__":
     robot_ammo()
     ion_blaster()
     guard_drone_textures()
+    training_block_textures()

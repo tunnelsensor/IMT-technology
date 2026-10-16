@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "22";
+    private static final String PROTOCOL_VERSION = "23";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -162,6 +162,12 @@ public final class ModNetwork {
                 com.senne.starktech.shield.LaserEmitters.handleAction(player, payload);
             }
         });
+        // De trainingsblokken (hoofdstuk 26): de instellingen van een Training Start-blok bewaren.
+        registrar.playToServer(TrainingActionPayload.TYPE, TrainingActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.starktech.training.TrainingBlocks.handleAction(player, payload);
+            }
+        });
         // Het robotscherm (hoofdstuk 21): aan/uit, hernoemen en oppakken.
         registrar.playToServer(RobotActionPayload.TYPE, RobotActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -215,6 +221,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onLaserOpen(payload, context));
         registrar.playToClient(RobotOpenPayload.TYPE, RobotOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onRobotOpen(payload, context));
+        registrar.playToClient(TrainingOpenPayload.TYPE, TrainingOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onTrainingOpen(payload, context));
         registrar.playToClient(InputNameOpenPayload.TYPE, InputNameOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onInputNameOpen(payload, context));
         // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server

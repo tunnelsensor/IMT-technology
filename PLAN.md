@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 280 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 282 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2843,11 +2843,19 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       met `trainee`, `lives`, `hits` en (na het einde) `passed`; in de Help onder TRAINING. Een robot of drone die
       tijdens een training neergaat (de Ion Blaster), blijft liggen tot hij voorbij is; dan staat hij op en gaat hij
       naar zijn dock. Nieuw in de config: `[training]`. Drie nieuwe tests (`TrainingGameTests`).
-- [ ] **3. Training Start-blok** — instellingen (sneak + klik), aftellen, alleen voor vertrouwden.
+- [x] **3. Training Start-blok** — een klik begint de training, met jou als trainee: alleen de eigenaar van de
+      basis, zijn team, vertrouwde spelers of wie het blok neerzette (anders kon een inbreker jouw verdediging op
+      trainingsschoten zetten). Loopt hij al, dan stopt een klik van de trainee of een vertrouwde speler hem. Sneak +
+      klik met een lege hand: de instellingen (Name, Training shots of Lethal, Lives 1-10, Time: geen limiet tot een
+      uur). Het moet in het gebied van een beveiligingskern staan. In creative zegt hij erbij dat niemand op je
+      schiet. Recept: ijzer, een limoengroene kleurstof, redstone en een Stark Chip. Netwerkversie 23.
 - [ ] **4. Squads** — robots in een squad; activate, deactivate, squad_down, active.
 - [ ] **5. Training End-blok** — redstone-puls bij elke treffer, en de mini-editor (dezelfde taal, eigen soort
       programma).
-- [ ] **6. Training Goal-blok** — geslaagd als de trainee erop komt.
+- [x] **6. Training Goal-blok** — een geblokte finishvlag met een gouden rand (recept: witte en zwarte wol en een
+      gouden staaf). Stapt de trainee erop (in het gebied van zijn training), dan is hij geslaagd. Staat er een in de
+      basis, dan is "de tijd is om" mislukt: hij moest het doel halen. Twee nieuwe tests
+      (`training_start_block_only_for_trusted`, `training_goal_ends_with_success`).
 - [ ] **7. Einde en rapport** — robots die down zijn, staan weer op en lopen naar hun dock; rapport van
       E.D.I.T.H.; app Training.
 

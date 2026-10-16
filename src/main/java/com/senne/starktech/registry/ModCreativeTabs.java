@@ -95,6 +95,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SOLDERING_IRON.get());
                 output.accept(ModItems.ROBOT_AMMO.get());
                 output.accept(ModItems.ION_BLASTER.get());
+                output.accept(ModItems.TRAINING_START.get());
+                output.accept(ModItems.TRAINING_GOAL.get());
                 for (com.senne.starktech.bot.BotModule module : com.senne.starktech.bot.BotModule.values()) {
                     output.accept(ModItems.robotModule(module));
                 }
