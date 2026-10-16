@@ -83,9 +83,11 @@ public final class BotLink {
     /** {@code activate("Guard 1")} of {@code deactivate("Guard 1")}: zet de robot aan of uit. */
     public static Result switchOn(ServerLevel level, SecurityCoreBlockEntity core, String name, boolean on) {
         BotNetwork.Entry entry = find(level, core, name);
-        if (entry == null) {
-            return Result.UNKNOWN;
-        }
+        return entry == null ? Result.UNKNOWN : switchOn(level, core, entry, on);
+    }
+
+    /** Hetzelfde, voor deze robot of drone uit BotNetwork (hoofdstuk 25: de schakelaar "Drones" van de kern). */
+    public static Result switchOn(ServerLevel level, SecurityCoreBlockEntity core, BotNetwork.Entry entry, boolean on) {
         if (!(level.getEntity(entry.id()) instanceof Bot bot) || !bot.isAlive()) {
             BotNetwork.get(level).setPendingSwitch(entry.id(), on);
             return Result.WAITING;

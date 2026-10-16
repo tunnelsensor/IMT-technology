@@ -2,7 +2,6 @@ package com.senne.starktech.security;
 
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.registry.ModBlockEntities;
-import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.security.net.StarkNetworkData;
 import com.senne.starktech.security.os.EventLog;
 import com.senne.starktech.security.os.SystemDefaults;
@@ -27,16 +26,16 @@ import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De "binnenkant" van een beveiligingskern: van wie de toren is (niemand, tot iemand hem hackt),
- * en de beveiligingsdrones die de kern in de lucht houdt.
+ * De "binnenkant" van een beveiligingskern: van wie de toren is (niemand, tot iemand hem hackt).
  *
- * Elke twee seconden telt de kern zijn drones. Zijn het er minder dan MAX_DRONES (eentje
- * neergeschoten), dan stuurt hij na DRONE_RESPAWN ticks een nieuwe. Zo blijft een toren die van
- * niemand is gevaarlijk; na het hacken zijn diezelfde drones jouw bewakers.
+ * Tot hoofdstuk 25 hield de kern zelf vier beveiligingsdrones in de lucht (en verving hij ze gratis). Dat doet hij
+ * niet meer (jouw antwoord van 14 oktober: "de core maakt geen gratis drones meer"): je bouwt zelf security drones
+ * (GuardDroneEntity), en de schakelaar "Drones" op de desktop zet ze allemaal aan of uit. Oude drones uit een
+ * bestaande wereld (SecurityDroneEntity) blijven werken tot ze neergeschoten worden.
  *
  * De kern heeft STROOM nodig (van de krachtcentrale van de toren): elke twee seconden betaalt
- * hij CORE_UPKEEP. Is er geen stroom, dan stuurt hij geen drones, en de drones die er zijn doen
- * niets meer: ze zakken naar de grond en hun lampjes gaan uit (zie SecurityDroneEntity).
+ * hij CORE_UPKEEP. Is er geen stroom, dan doen de oude drones niets meer: ze zakken naar de grond
+ * en hun lampjes gaan uit (zie SecurityDroneEntity).
  *
  * Sinds 28 september is de kern ook een kleine COMPUTER (het "systeem"): hij heeft een IP-adres,
  * een SSH-poort, een naam (hostname), een wachtwoord, mappen en bestanden (VirtualFs) en een
@@ -69,8 +68,6 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private com.senne.starktech.logic.LogicStore logic = new com.senne.starktech.logic.LogicStore();
     /** Het datacenter: de temperatuur van de racks (zie Datacenter). */
     private com.senne.starktech.logic.Datacenter datacenter = new com.senne.starktech.logic.Datacenter();
-    /** Tot wanneer (speltijd) hij wacht voor hij een nieuwe drone stuurt. */
-    private long nextDrone;
     /** Had de kern bij de laatste telling stroom? */
     private boolean online = true;
 
@@ -84,7 +81,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private boolean attackMobs = true;
     /** Schiet de beveiliging op andere spelers? (Standaard nee; ook dan alleen met PvP aan.) */
     private boolean attackPlayers;
-    /** Vliegen de beveiligingsdrones? Uit = ze landen bij de kern. */
+    /** Staan de drones aan? Uit = je security drones gaan naar hun dock, en oude drones landen bij de kern. */
     private boolean dronesEnabled = true;
     /** Staan de laserwanden in dit gebied aan? */
     private boolean lasersEnabled = true;
@@ -460,8 +457,6 @@ public class SecurityCoreBlockEntity extends BlockEntity {
      */
     public void unpack(ServerLevel level, CompoundTag config, String placedBy) {
         loadConfig(config.getCompound("Core"));
-        filled = false; // zijn drones zijn weg: de eerste komen weer snel
-        nextDrone = 0;
         level.setBlock(worldPosition, getBlockState().setValue(SecurityCoreBlock.CLAIMED, ownerId != null), Block.UPDATE_ALL);
         ensureSystem(level);
         syncZone();
@@ -615,7 +610,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
     }
 
-    // ================================================================ Drones
+    // ================================================================ Elke tick
 
     /** Staat deze kern (sinds hij geladen is) al in het netwerk? Niet bewaard: na laden opnieuw. */
     private boolean registered;
@@ -636,54 +631,6 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         // Stroom voor de kern en zijn zone (zie powerTick).
         powerTick(level);
-        if (!online) {
-            return;
-        }
-        if (!dronesEnabled) {
-            return; // de eigenaar zette de drones uit: ze landen, en er komen er geen nieuwe
-        }
-        int drones = level.getEntitiesOfClass(SecurityDroneEntity.class, area(),
-                drone -> pos.equals(drone.home())).size();
-        if (drones >= Math.round(StarkConfig.Security.MAX_DRONES)) {
-            filled = true;
-            nextDrone = 0;
-            return;
-        }
-        if (!filled) {
-            // De allereerste keer: de drones komen snel achter elkaar (één per twee seconden).
-            launchDrone(level, pos);
-            return;
-        }
-        // Er is er een neergeschoten: na DRONE_RESPAWN ticks komt er een nieuwe.
-        if (nextDrone == 0) {
-            nextDrone = now + Math.round(StarkConfig.Security.DRONE_RESPAWN);
-        } else if (now >= nextDrone) {
-            launchDrone(level, pos);
-            nextDrone = 0;
-        }
-    }
-
-    /** Zijn de drones al eens allemaal in de lucht geweest? Daarna gaat vervangen langzaam. */
-    private boolean filled;
-
-    /** Een nieuwe drone op een vrije plek vlak bij de kern. */
-    private void launchDrone(ServerLevel level, BlockPos pos) {
-        for (int attempt = 0; attempt < 12; attempt++) {
-            BlockPos spot = pos.offset(level.random.nextInt(13) - 6, 1 + level.random.nextInt(3),
-                    level.random.nextInt(13) - 6);
-            if (!level.getBlockState(spot).isAir() || !level.getBlockState(spot.above()).isAir()) {
-                continue;
-            }
-            SecurityDroneEntity drone = ModEntities.SECURITY_DRONE.get().create(level);
-            if (drone == null) {
-                return;
-            }
-            drone.moveTo(spot.getX() + 0.5, spot.getY() + 0.3, spot.getZ() + 0.5, level.random.nextFloat() * 360, 0);
-            drone.setHome(pos);
-            level.addFreshEntity(drone);
-            setChanged();
-            return;
-        }
     }
 
     /** Het gebied dat deze kern beschermt: ZONE_REACH blokken in elke richting (zie SecurityCores.inArea). */
@@ -697,11 +644,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         saveConfig(tag);
-        tag.putBoolean("Filled", filled);
-        tag.putLong("NextDrone", nextDrone);
     }
 
-    /** Alles wat de kern onthoudt behalve zijn drones: dit gaat ook mee als je hem weghakt (zie pack). */
+    /** Alles wat de kern onthoudt: dit gaat ook mee als je hem weghakt (zie pack). */
     private void saveConfig(CompoundTag tag) {
         if (ownerId != null) {
             tag.putUUID("Owner", ownerId);
@@ -740,8 +685,6 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         loadConfig(tag);
-        filled = tag.getBoolean("Filled");
-        nextDrone = tag.getLong("NextDrone");
     }
 
     /** Terug uit {@link #saveConfig}. */

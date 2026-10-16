@@ -495,19 +495,28 @@ public final class StarkTechGameTests {
         });
     }
 
-    /** De kern stuurt zijn beveiligingsdrones de lucht in, tot er vier rondvliegen. */
-    @GameTest(template = ARENA, timeoutTicks = 300, batch = "security")
-    public static void security_core_launches_drones(GameTestHelper helper) {
+    /**
+     * Hoofdstuk 25: de kern maakt geen gratis drones meer. Een oude drone uit een bestaande wereld (van voor hoofdstuk
+     * 25, zonder printplaat) patrouilleert nog gewoon rond zijn kern.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "security")
+    public static void security_core_launches_no_drones(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         placeCore(helper, pos, null);
         BlockPos absolute = helper.absolutePos(pos);
-        helper.succeedWhen(() -> {
+        var old = helper.spawn(com.senne.starktech.registry.ModEntities.SECURITY_DRONE.get(), new BlockPos(12, 6, 8));
+        old.setHome(absolute);
+        Vec3 start = old.position();
+        helper.runAfterDelay(160, () -> {
             int drones = helper.getLevel().getEntitiesOfClass(com.senne.starktech.security.SecurityDroneEntity.class,
                     new AABB(absolute).inflate(40), drone -> absolute.equals(drone.home())).size();
-            if (drones != Math.round(StarkConfig.Security.MAX_DRONES)) {
-                throw new GameTestAssertException("Er vliegen " + drones + " beveiligingsdrones in plaats van "
-                        + Math.round(StarkConfig.Security.MAX_DRONES));
+            if (drones != 1) {
+                throw new GameTestAssertException("Er vliegen " + drones + " beveiligingsdrones in plaats van alleen de oude");
             }
+            if (!old.isAlive() || old.position().distanceTo(start) < 1.0) {
+                throw new GameTestAssertException("De oude drone patrouilleert niet meer (hij bleef op " + old.position() + ")");
+            }
+            helper.succeed();
         });
     }
 
@@ -1372,7 +1381,7 @@ public final class StarkTechGameTests {
     }
 
     /** Een opdracht van de desktop, zoals het Files- of Notes-venster hem stuurt. */
-    private static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
+    static void osAction(ServerPlayer player, BlockPos core, String op, String... keysAndValues) {
         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
         for (int i = 0; i + 1 < keysAndValues.length; i += 2) {
             if (keysAndValues[i + 1].equals("true") || keysAndValues[i + 1].equals("false")) {

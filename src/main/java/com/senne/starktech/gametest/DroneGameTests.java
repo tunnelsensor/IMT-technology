@@ -17,6 +17,9 @@ import com.senne.starktech.robot.GuardDroneEntity;
 import com.senne.starktech.robot.GuardDroneItem;
 import com.senne.starktech.robot.IonBlasterItem;
 import com.senne.starktech.robot.RobotState;
+import com.senne.starktech.security.SecurityCoreBlockEntity;
+import com.senne.starktech.security.SecurityDevices;
+import com.senne.starktech.security.os.StarkOs;
 import com.senne.starktech.station.ChargerBlockEntity;
 import java.util.List;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -25,6 +28,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -162,17 +167,8 @@ public final class DroneGameTests {
     public static void drone_charges_on_its_dock(GameTestHelper helper) {
         ServerPlayer player = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 14), "drone-owner");
         BlockPos dockPos = new BlockPos(6, 2, 9);
-        helper.setBlock(dockPos, ModBlocks.DRONE_DOCK.get());
-        helper.setBlock(dockPos.west(), ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(dockPos.west())).fill(20_000);
-        ItemStack stack = GuardDroneItem.create(DroneData.DEFAULT);
-        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        GuardDroneEntity drone = dockedDrone(helper, player, dockPos);
         BlockPos abs = helper.absolutePos(dockPos);
-        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);
-        check(stack.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit)).consumesAction(), "Neerzetten op het dock lukte niet");
-        List<GuardDroneEntity> drones = helper.getEntities(ModEntities.GUARD_DRONE.get(), dockPos, 1.0);
-        check(drones.size() == 1, "Er staan " + drones.size() + " drones op het dock");
-        GuardDroneEntity drone = drones.get(0);
         DroneDockBlockEntity dock = (DroneDockBlockEntity) helper.getBlockEntity(dockPos);
         check(abs.equals(drone.home()) && drone.getUUID().equals(dock.bot()), "Het dock is niet zijn thuis");
         check(drone.isSettled(), "Hij staat niet netjes op het dock");
@@ -209,6 +205,66 @@ public final class DroneGameTests {
             check(drone.isSettled(), "Uitgezet landde hij niet op zijn dock");
             check(BotNetwork.get(helper.getLevel()).get(drone.getUUID()) != null
                     && BotNetwork.get(helper.getLevel()).get(drone.getUUID()).drone(), "BotNetwork kent hem niet als drone");
+        });
+    }
+
+    /**
+     * Een drone die je met het item op een nieuw Drone Dock zet (met een volle warmtegenerator ernaast). Het dock is van
+     * jou, zoals wanneer je het zelf neerzet (anders is het van de kern in wiens gebied het staat: in de testwereld
+     * kan dat de kern van een andere test zijn).
+     */
+    private static GuardDroneEntity dockedDrone(GameTestHelper helper, ServerPlayer player, BlockPos dockPos) {
+        helper.setBlock(dockPos, ModBlocks.DRONE_DOCK.get());
+        ((DroneDockBlockEntity) helper.getBlockEntity(dockPos)).setOwner(player.getUUID());
+        helper.setBlock(dockPos.west(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(dockPos.west())).fill(20_000);
+        ItemStack stack = GuardDroneItem.create(DroneData.DEFAULT);
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        BlockPos abs = helper.absolutePos(dockPos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);
+        check(stack.useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit)).consumesAction(), "Neerzetten op het dock lukte niet");
+        List<GuardDroneEntity> drones = helper.getEntities(ModEntities.GUARD_DRONE.get(), dockPos, 1.0);
+        check(drones.size() == 1, "Er staan " + drones.size() + " drones op het dock");
+        return drones.get(0);
+    }
+
+    /**
+     * De schakelaar "Drones" van de kern (hoofdstuk 25): uit = je security drones vliegen naar hun dock en landen erop,
+     * en de kern maakt zelf geen drones. In de app Devices staat de drone met zijn batterij.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "drone_switch")
+    public static void core_drones_switch_sends_drones_home(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "switch-owner"); // vlak bij de kern
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos rack = new BlockPos(14, 3, 3);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        GuardDroneEntity drone = dockedDrone(helper, owner, new BlockPos(8, 2, 9));
+        helper.runAfterDelay(25, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            drone.setActive(true);
+        });
+        helper.runAfterDelay(80, () -> {
+            check(drone.isActive() && !drone.isOnDock(), "Aangezet steeg hij niet op van zijn dock");
+            StarkOs.open(owner, coreAbs);
+            StarkTechGameTests.osAction(owner, coreAbs, "flag", "name", "drones", "on", "false");
+            check(!core.dronesEnabled(), "De schakelaar Drones ging niet uit (de desktop deed niets)");
+            check(!drone.isActive(), "De schakelaar Drones zette de drone niet uit");
+            boolean listed = false;
+            for (Tag element : SecurityDevices.snapshot(helper.getLevel(), core)) {
+                CompoundTag device = (CompoundTag) element;
+                if (device.getString("name").equals(drone.getName().getString())) {
+                    listed = device.contains("bat");
+                }
+            }
+            check(listed, "De app Devices toont de drone (met zijn batterij) niet");
+            helper.succeedWhen(() -> {
+                check(drone.isSettled(), "Uitgezet landde hij niet op zijn dock");
+                int old = helper.getLevel().getEntitiesOfClass(com.senne.starktech.security.SecurityDroneEntity.class,
+                        new net.minecraft.world.phys.AABB(coreAbs).inflate(40)).size();
+                check(old == 0, "De kern maakte toch " + old + " drones");
+            });
         });
     }
 

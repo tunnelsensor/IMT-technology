@@ -270,8 +270,11 @@ public final class StarkOs {
                 text = on ? "Security attacks other players" : "Security ignores other players";
             }
             case "drones" -> {
+                // De oude drones landen (of vliegen weer); je security drones (hoofdstuk 25) gaan aan of naar hun dock.
                 core.setDronesEnabled(on);
-                text = on ? "Drones on" : "Drones landing";
+                int drones = com.senne.starktech.security.SecurityDevices.switchDrones(player.serverLevel(), core, on);
+                text = (on ? "Drones on" : "Drones landing")
+                        + (drones == 0 ? "" : " (" + drones + " security drone" + (drones == 1 ? ")" : "s)"));
             }
             case "lasers" -> {
                 com.senne.starktech.security.SecurityDevices.setLasers(player.serverLevel(), core, on);

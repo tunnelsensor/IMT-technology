@@ -1144,15 +1144,11 @@ public final class StarkConfig {
                 + "Two cores must stand at least twice this far apart.", min = 1, max = 1_000)
         public static float ZONE_REACH = 200.0f;
 
-        // ------------------------------------------------------------------------- De drones van de kern
-        /** Hoeveel beveiligingsdrones een kern in de lucht houdt. */
-        @Tunable(value = "How many security drones a security core keeps flying", max = 32)
-        public static float MAX_DRONES = 4.0f;
-        /** Hoe lang de kern wacht voordat hij een verloren drone vervangt (900 = 45 seconden). */
-        @Tunable("How long a security core waits before replacing a lost security drone (ticks)")
-        public static float DRONE_RESPAWN = 900.0f;
+        // ------------------------------------------------------------------------- De oude drones van de kern
+        // Tot hoofdstuk 25 maakte een kern zelf drones; die maakt hij niet meer, maar oude drones uit een bestaande
+        // wereld vliegen nog (zie SecurityDroneEntity). Een security drone die je zelf bouwt, staat onder [robots].
         /** Schade van één laserschot. */
-        @Tunable("Damage of one security drone laser shot")
+        @Tunable("Damage of one laser shot of an old patrol drone (from before you built your own security drones)")
         public static float DRONE_LASER_DAMAGE = 3.0f;
         /** Ticks tussen twee schoten. */
         @Tunable("Ticks between two security drone shots")

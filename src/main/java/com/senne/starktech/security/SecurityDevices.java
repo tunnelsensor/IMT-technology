@@ -153,10 +153,29 @@ public final class SecurityDevices {
                 || turret.kind() == TurretKind.STARK && core.ownerId() != null && core.ownerId().equals(turret.ownerId());
     }
 
-    /** De beveiligingsdrones van deze kern. */
+    /** De oude beveiligingsdrones van deze kern (van voor hoofdstuk 25: de kern maakt er geen meer). */
     public static List<SecurityDroneEntity> drones(ServerLevel level, SecurityCoreBlockEntity core) {
         return level.getEntitiesOfClass(SecurityDroneEntity.class, core.area(),
                 drone -> core.getBlockPos().equals(drone.home()));
+    }
+
+    /**
+     * De schakelaar "Drones" (hoofdstuk 25): zet al je security drones in het gebied van deze kern aan of uit (uit =
+     * ze vliegen naar hun dock en landen erop). Alleen drones met verbinding horen het; een drone die nu niet geladen
+     * is, krijgt het als hij terug is. Geeft hoeveel drones het hoorden (of zullen horen).
+     */
+    public static int switchDrones(ServerLevel level, SecurityCoreBlockEntity core, boolean on) {
+        int count = 0;
+        for (com.senne.starktech.bot.BotNetwork.Entry entry : com.senne.starktech.bot.BotNetwork.get(level)
+                .atCore(net.minecraft.core.GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+            if (entry.drone()) {
+                com.senne.starktech.bot.BotLink.Result result = com.senne.starktech.bot.BotLink.switchOn(level, core, entry, on);
+                if (result == com.senne.starktech.bot.BotLink.Result.DONE || result == com.senne.starktech.bot.BotLink.Result.WAITING) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     /** Vergeet wat we zagen (na een schakelaar: dan meteen opnieuw kijken). */
@@ -293,10 +312,27 @@ public final class SecurityDevices {
             }
             list.add(device);
         }
+        // Je security drones (hoofdstuk 25), zoals ze zich het laatst bij BotNetwork meldden.
+        for (com.senne.starktech.bot.BotNetwork.Entry entry : com.senne.starktech.bot.BotNetwork.get(level)
+                .atCore(net.minecraft.core.GlobalPos.of(level.dimension(), core.getBlockPos()))) {
+            if (!entry.drone()) {
+                continue;
+            }
+            CompoundTag device = position("drone", entry.pos().pos());
+            device.putString("name", entry.name());
+            if (level.getEntity(entry.id()) instanceof com.senne.starktech.robot.GuardDroneEntity drone && drone.isAlive()) {
+                device.putInt("hp", (int) Math.ceil(drone.getHealth()));
+                device.putInt("max", (int) Math.ceil(drone.getMaxHealth()));
+            }
+            device.putString("st", entry.state().title().toLowerCase(java.util.Locale.ROOT));
+            device.putInt("bat", Math.round(entry.battery() * 100));
+            list.add(device);
+        }
+        // De oude drones (die maakte de kern vroeger zelf).
         int number = 1;
         for (SecurityDroneEntity drone : drones(level, core)) {
             CompoundTag device = position("drone", drone.blockPosition());
-            device.putString("name", "Drone " + number++);
+            device.putString("name", "Patrol drone " + number++);
             device.putInt("hp", (int) Math.ceil(drone.getHealth()));
             device.putInt("max", (int) Math.ceil(drone.getMaxHealth()));
             device.putString("st", drone.statusText());

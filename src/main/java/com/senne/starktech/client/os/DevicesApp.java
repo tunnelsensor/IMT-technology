@@ -182,7 +182,7 @@ final class DevicesApp {
         String status = device.getString("st");
         int colour = switch (status) {
             case "online", "patrolling", "active", "ready" -> HudStyle.GREEN;
-            case "attacking" -> HudStyle.ORANGE;
+            case "attacking", "standby" -> HudStyle.ORANGE;
             case "open" -> HudStyle.CYAN;
             default -> HudStyle.RED;
         };
@@ -190,8 +190,12 @@ final class DevicesApp {
         if (device.contains("ammo")) {
             details.append("  ").append(device.getInt("ammo")).append(" rockets");
         }
-        if (kind.equals("drone")) {
+        if (kind.equals("drone") && device.contains("hp")) {
             details.append("  hp ").append(device.getInt("hp")).append("/").append(device.getInt("max"));
+        }
+        if (device.contains("bat")) {
+            // Een security drone (hoofdstuk 25): zijn batterij.
+            details.append("  battery ").append(device.getInt("bat")).append("%");
         }
         if (device.contains("tgt")) {
             details.append("  > ").append(device.getString("tgt"));

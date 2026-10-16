@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 274 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 275 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 93 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2776,7 +2776,14 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       `[drones]`: `orbitRepairPerSecond`, 0,25 leven per seconde). De oude vlag "In hangar" gaat bij het inloggen
       weg. Weg: het hologram op het dock, `dockRepairPerSecond` en `dockEnergyPerHealth` in `[power]`, en de
       screenshots `d01`-`d05`. De twee oude dock-tests zijn één nieuwe geworden (`arsenal_drones_repair_in_orbit`).
-- [ ] **4. De core** — geen gratis drones meer; schakelaar "Drones" in Devices.
+- [x] **4. De core** — de kern maakt geen gratis drones meer (weg uit `[security]`: `maxDrones` en
+      `droneRespawn`). De schakelaar **Drones** (apps Access en Devices) zet nu ook al je security drones in zijn
+      gebied aan of uit: uit vliegen ze naar hun dock en landen erop, en de taakbalk zegt bijvoorbeeld "Drones
+      landing (2 security drones)". Alleen drones met verbinding horen het; een drone die nu niet geladen is, krijgt
+      het als hij terug is. In de app Devices staan je security drones bij DRONES, met hun toestand en batterij. De
+      oude drones van vroeger heten daar nu "Patrol drone 1", "Patrol drone 2"... en blijven werken tot ze
+      neergeschoten worden. Tests: `security_core_launches_no_drones` (in plaats van `security_core_launches_drones`:
+      de kern maakt er geen meer, en een oude drone patrouilleert nog) en `core_drones_switch_sends_drones_home`.
 - [ ] **5. De Stark Tower** — vier docks bij de kern met Tony's drones (programma "Tower patrol"). Wie de
       toren hackt, krijgt ze.
 
