@@ -79,37 +79,37 @@ public final class BotNetwork extends SavedData {
     // ================================================================ Bijhouden
 
     /** Een robot meldt zich: zet hem erin of werk hem bij (en geef hem zijn wachtende programma, als hij verbinding heeft). */
-    public void update(GuardRobotEntity robot) {
-        if (!(robot.level() instanceof ServerLevel level)) {
+    public void update(Bot bot) {
+        if (!(bot.level() instanceof ServerLevel level)) {
             return;
         }
-        CompoundTag waiting = pending.get(robot.getUUID());
-        boolean connected = (waiting != null || pendingSwitch.containsKey(robot.getUUID()) || pendingOrders.containsKey(robot.getUUID()))
-                && BotLink.connected(robot);
+        CompoundTag waiting = pending.get(bot.getUUID());
+        boolean connected = (waiting != null || pendingSwitch.containsKey(bot.getUUID()) || pendingOrders.containsKey(bot.getUUID()))
+                && BotLink.connected(bot);
         if (waiting != null && connected) {
-            robot.setProgram(waiting.isEmpty() ? null : LogicProgram.load(waiting));
-            pending.remove(robot.getUUID());
+            bot.setProgram(waiting.isEmpty() ? null : LogicProgram.load(waiting));
+            pending.remove(bot.getUUID());
             setDirty();
         }
         // Wat de server hem opdroeg terwijl hij weg was: eerst aan of uit, dan de opdracht.
-        Boolean on = pendingSwitch.get(robot.getUUID());
+        Boolean on = pendingSwitch.get(bot.getUUID());
         if (on != null && connected) {
-            robot.setActive(on);
-            pendingSwitch.remove(robot.getUUID());
+            bot.setActive(on);
+            pendingSwitch.remove(bot.getUUID());
             setDirty();
         }
-        CompoundTag order = pendingOrders.get(robot.getUUID());
+        CompoundTag order = pendingOrders.get(bot.getUUID());
         if (order != null && connected) {
-            robot.brain().order(order.getString("Order"), order.contains("Place") ? BlockPos.of(order.getLong("Place")) : null);
-            pendingOrders.remove(robot.getUUID());
+            bot.brain().order(order.getString("Order"), order.contains("Place") ? BlockPos.of(order.getLong("Place")) : null);
+            pendingOrders.remove(bot.getUUID());
             setDirty();
         }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, robot.blockPosition());
-        Entry entry = new Entry(robot.getUUID(), robot.hasCustomName() ? robot.getCustomName().getString() : "",
-                robot.owner(), robot.ownerName(), GlobalPos.of(level.dimension(), robot.blockPosition()), robot.home(),
-                core == null ? null : GlobalPos.of(level.dimension(), core.getBlockPos()), robot.parts().pack(),
-                robot.state(), robot.batteryFraction(), robot.program() == null ? "" : robot.program().name(), level.getGameTime());
-        Entry old = robots.put(robot.getUUID(), entry);
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, bot.blockPosition());
+        Entry entry = new Entry(bot.getUUID(), bot.hasCustomName() ? bot.getName().getString() : "",
+                bot.owner(), bot.ownerName(), GlobalPos.of(level.dimension(), bot.blockPosition()), bot.home(),
+                core == null ? null : GlobalPos.of(level.dimension(), core.getBlockPos()), bot instanceof GuardRobotEntity robot ? robot.parts().pack() : 0,
+                bot.state(), bot.batteryFraction(), bot.program() == null ? "" : bot.program().name(), level.getGameTime());
+        Entry old = robots.put(bot.getUUID(), entry);
         // Alleen "veranderd" als er echt iets anders is (de tijd alleen telt niet), zodat we niet elke seconde opslaan.
         if (old == null || !same(old, entry)) {
             setDirty();

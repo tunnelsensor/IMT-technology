@@ -5,7 +5,6 @@ import com.senne.starktech.network.BeamEffectPayload;
 import com.senne.starktech.network.ModNetwork;
 import com.senne.starktech.registry.ModDamageTypes;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.shield.EdithDomes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -36,12 +35,12 @@ public final class BotShot {
     public enum Weapon { LASER, GUN }
 
     /** Schiet. Geeft het wezen dat geraakt (en verwond) werd, of null. */
-    public static @Nullable LivingEntity fire(GuardRobotEntity robot, Weapon weapon, @Nullable LivingEntity target) {
-        if (!(robot.level() instanceof ServerLevel level)) {
+    public static @Nullable LivingEntity fire(Bot bot, Weapon weapon, @Nullable LivingEntity target) {
+        if (!(bot.level() instanceof ServerLevel level)) {
             return null;
         }
         boolean laser = weapon == Weapon.LASER;
-        Vec3 from = muzzle(robot, laser);
+        Vec3 from = bot.muzzle(laser, Vec3.directionFromRotation(0, bot.getYRot()));
         double range = StarkConfig.Robots.SHOT_RANGE;
         LivingEntity hit = null;
         Vec3 to;
@@ -50,34 +49,34 @@ public final class BotShot {
             to = target.getBoundingBox().getCenter();
         } else {
             // Niemand in zicht: recht vooruit, en raak wat daar staat.
-            to = from.add(Vec3.directionFromRotation(0, robot.getYRot()).scale(range));
-            EntityHitResult first = ProjectileUtil.getEntityHitResult(level, robot, from, to, new AABB(from, to).inflate(1.0),
-                    entity -> entity instanceof LivingEntity living && living.isAlive() && entity != robot, 0.3f);
+            to = from.add(Vec3.directionFromRotation(0, bot.getYRot()).scale(range));
+            EntityHitResult first = ProjectileUtil.getEntityHitResult(level, bot.entity(), from, to, new AABB(from, to).inflate(1.0),
+                    entity -> entity instanceof LivingEntity living && living.isAlive() && entity != bot.entity(), 0.3f);
             if (first != null) {
                 hit = (LivingEntity) first.getEntity();
                 to = first.getLocation();
             }
         }
         // Een muur ertussen: daar houdt het op.
-        HitResult wall = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, robot));
+        HitResult wall = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, bot.entity()));
         if (wall.getType() != HitResult.Type.MISS) {
             to = wall.getLocation();
             hit = null;
         }
         // Een schildkoepel ertussen: die vangt het op (dat kost hem schildkracht).
-        Vec3 shield = EdithDomes.blockedAt(level, to, from, robot.owner(), Math.round(StarkConfig.Dome.COST_LASER));
+        Vec3 shield = EdithDomes.blockedAt(level, to, from, bot.owner(), Math.round(StarkConfig.Dome.COST_LASER));
         if (shield != null) {
             to = shield;
             hit = null;
         }
-        robot.playSound(laser ? ModSounds.ROBOT_LASER.get() : ModSounds.ROBOT_GUN.get(), 1.0f, 0.95f + robot.getRandom().nextFloat() * 0.1f);
-        ModNetwork.sendNear(level, robot.position(), 64, new BeamEffectPayload(from, to,
+        bot.playSound(laser ? ModSounds.ROBOT_LASER.get() : ModSounds.ROBOT_GUN.get(), 1.0f, 0.95f + bot.getRandom().nextFloat() * 0.1f);
+        ModNetwork.sendNear(level, bot.position(), 64, new BeamEffectPayload(from, to,
                 laser ? BeamEffectPayload.Kind.ROBOT_LASER : BeamEffectPayload.Kind.ROBOT_BULLET));
         if (hit == null || !mayHurt(level, hit)) {
             return null;
         }
         float damage = laser ? StarkConfig.Robots.LASER_DAMAGE : StarkConfig.Robots.GUN_DAMAGE;
-        return hit.hurt(ModDamageTypes.robotShot(level, robot, laser), damage) ? hit : null;
+        return hit.hurt(ModDamageTypes.robotShot(level, bot.entity(), laser), damage) ? hit : null;
     }
 
     /** Spelers alleen met PvP aan, en niet in creative of als toeschouwer; de rest altijd. */
@@ -88,10 +87,4 @@ public final class BotShot {
         return true;
     }
 
-    /** Waar het schot begint: de laser aan zijn rechterarm, het geweer aan zijn linker. */
-    private static Vec3 muzzle(GuardRobotEntity robot, boolean right) {
-        Vec3 forward = Vec3.directionFromRotation(0, robot.getYRot());
-        Vec3 side = new Vec3(-forward.z, 0, forward.x); // naar rechts, gezien vanuit de robot
-        return robot.position().add(0, 1.15, 0).add(forward.scale(0.45)).add(side.scale(right ? 0.38 : -0.38));
-    }
 }

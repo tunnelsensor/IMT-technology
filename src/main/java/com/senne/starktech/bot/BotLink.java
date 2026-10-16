@@ -1,7 +1,6 @@
 package com.senne.starktech.bot;
 
 import com.senne.starktech.logic.LogicServer;
-import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import java.util.Locale;
@@ -27,20 +26,20 @@ public final class BotLink {
     private BotLink() {}
 
     /** De kern waarmee deze robot nu verbonden is, of null. */
-    public static @Nullable SecurityCoreBlockEntity core(GuardRobotEntity robot) {
-        if (!(robot.level() instanceof ServerLevel level) || robot.owner() == null) {
+    public static @Nullable SecurityCoreBlockEntity core(Bot bot) {
+        if (!(bot.level() instanceof ServerLevel level) || bot.owner() == null) {
             return null;
         }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, robot.blockPosition());
-        if (core == null || !belongs(core, robot.owner())) {
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, bot.blockPosition());
+        if (core == null || !belongs(core, bot.owner())) {
             return null;
         }
         return LogicServer.stats(level, core).online() ? core : null;
     }
 
     /** Is deze robot nu verbonden met een server? ({@code robot.connected}) */
-    public static boolean connected(GuardRobotEntity robot) {
-        return core(robot) != null;
+    public static boolean connected(Bot bot) {
+        return core(bot) != null;
     }
 
     /** Hoort een robot van deze eigenaar bij deze basis? */
@@ -70,14 +69,14 @@ public final class BotLink {
         if (entry == null) {
             return Result.UNKNOWN;
         }
-        if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+        if (!(level.getEntity(entry.id()) instanceof Bot bot) || !bot.isAlive()) {
             BotNetwork.get(level).setPendingOrder(entry.id(), order, place);
             return Result.WAITING;
         }
-        if (core(robot) != core) {
+        if (core(bot) != core) {
             return Result.NOT_CONNECTED;
         }
-        robot.brain().order(order, place);
+        bot.brain().order(order, place);
         return Result.DONE;
     }
 
@@ -87,15 +86,15 @@ public final class BotLink {
         if (entry == null) {
             return Result.UNKNOWN;
         }
-        if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+        if (!(level.getEntity(entry.id()) instanceof Bot bot) || !bot.isAlive()) {
             BotNetwork.get(level).setPendingSwitch(entry.id(), on);
             return Result.WAITING;
         }
-        if (core(robot) != core) {
+        if (core(bot) != core) {
             return Result.NOT_CONNECTED;
         }
-        robot.setActive(on);
-        BotNetwork.get(level).update(robot);
+        bot.setActive(on);
+        BotNetwork.get(level).update(bot);
         return Result.DONE;
     }
 }

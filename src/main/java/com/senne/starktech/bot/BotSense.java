@@ -1,6 +1,5 @@
 package com.senne.starktech.bot;
 
-import com.senne.starktech.robot.GuardRobotEntity;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -32,13 +31,13 @@ public final class BotSense {
     public static final double NOTHING = 99;
 
     /** De spelers die deze robot nu ziet, de dichtste eerst. */
-    public static List<Player> seen(GuardRobotEntity robot) {
-        double range = robot.parts().scanRange();
-        double half = robot.parts().scanAngle() / 2.0;
-        Vec3 eye = robot.getEyePosition();
-        Vec3 look = Vec3.directionFromRotation(0, robot.getYHeadRot());
+    public static List<Player> seen(Bot bot) {
+        double range = bot.scanRange();
+        double half = bot.scanAngle() / 2.0;
+        Vec3 eye = bot.getEyePosition();
+        Vec3 look = Vec3.directionFromRotation(0, bot.getYHeadRot());
         List<Player> seen = new ArrayList<>();
-        for (Player player : robot.level().players()) {
+        for (Player player : bot.level().players()) {
             if (!player.isAlive() || player.isSpectator() || player.isCreative()) {
                 continue;
             }
@@ -49,12 +48,12 @@ public final class BotSense {
             if (half < 180 && angle(look, to) > half) {
                 continue;
             }
-            if (!robot.hasLineOfSight(player)) {
+            if (!bot.hasLineOfSight(player)) {
                 continue;
             }
             seen.add(player);
         }
-        seen.sort(Comparator.comparingDouble(player -> player.distanceToSqr(robot)));
+        seen.sort(Comparator.comparingDouble(player -> player.distanceToSqr(bot.position())));
         return seen;
     }
 
@@ -70,17 +69,17 @@ public final class BotSense {
     }
 
     /** Hoeveel blokken tot wat recht voor hem staat (1 = het blok vlak voor hem), of {@link #NOTHING}. */
-    public static double distance(GuardRobotEntity robot) {
-        Vec3 from = robot.position().add(0, 0.9, 0);
-        Vec3 way = Vec3.directionFromRotation(0, robot.getYRot());
+    public static double distance(Bot bot) {
+        Vec3 from = bot.position().add(0, 0.9, 0);
+        Vec3 way = Vec3.directionFromRotation(0, bot.getYRot());
         Vec3 to = from.add(way.scale(MAX_DISTANCE));
         double nearest = Double.MAX_VALUE;
-        HitResult block = robot.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, robot));
+        HitResult block = bot.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, bot.entity()));
         if (block.getType() != HitResult.Type.MISS) {
             nearest = block.getLocation().distanceTo(from);
         }
         AABB path = new AABB(from, to).inflate(0.5);
-        for (Entity entity : robot.level().getEntities(robot, path, entity -> entity instanceof LivingEntity && entity.isAlive()
+        for (Entity entity : bot.level().getEntities(bot.entity(), path, entity -> entity instanceof LivingEntity && entity.isAlive()
                 && !(entity instanceof Player player && player.isSpectator()))) {
             var hit = entity.getBoundingBox().inflate(0.1).clip(from, to);
             if (hit.isPresent()) {

@@ -27,9 +27,9 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * Hij kijkt altijd recht een windrichting op ({@link #facing}): dat is waar "vooruit" heen gaat.
  */
-public final class BotMove {
+public final class BotMove implements BotBody {
     /** Wat zijn programma van zijn lijf vraagt. */
-    public sealed interface Plan permits Walk, Turn, GoTo, Charge {}
+    public sealed interface Plan permits Walk, Turn, GoTo, Charge, Climb {}
 
     /** {@code forward(n)} (blocks positief) of {@code back(n)} (negatief). */
     public record Walk(int blocks) implements Plan {}
@@ -42,6 +42,9 @@ public final class BotMove {
 
     /** Naar het dock, laden tot {@code percent} procent, en terug. */
     public record Charge(double percent) implements Plan {}
+
+    /** {@code up(n)} (blocks positief) of {@code down(n)} (negatief): alleen een drone kan dat (hoofdstuk 25). */
+    public record Climb(int blocks) implements Plan {}
 
     /** Zo dicht (blokken) bij het midden van een blok telt als "aangekomen". */
     private static final double ARRIVED = 0.12;
@@ -150,6 +153,11 @@ public final class BotMove {
                 wantsDock = robot.battery() < robot.maxBattery() * charge.percent() / 100.0 - 1.0e-6;
                 finished = !wantsDock;
             }
+            case Climb climb -> {
+                // Een robot kan niet vliegen: geblokkeerd (de controle laat up/down alleen in een droneprogramma toe).
+                blocked = true;
+                finished = true;
+            }
         }
     }
 
@@ -165,6 +173,7 @@ public final class BotMove {
             case Turn turn -> null;
             case GoTo goTo -> finished ? null : goTo;
             case Charge charge -> finished ? null : charge;
+            case Climb climb -> null;
         };
         if (plan instanceof Turn) {
             setYaw(facing().toYRot()); // de draai meteen af
@@ -198,6 +207,7 @@ public final class BotMove {
             case Turn turn -> tickTurn();
             case GoTo goTo -> tickGoTo(level, goTo.target());
             case Charge charge -> tickCharge(level, charge.percent());
+            case Climb climb -> true;
         };
         if (done) {
             plan = null;

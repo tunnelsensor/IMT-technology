@@ -9,7 +9,6 @@ import com.senne.starktech.logic.program.Interpreter;
 import com.senne.starktech.logic.program.LogicGraph;
 import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.logic.program.Op;
-import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
 import com.senne.starktech.security.os.EventLog;
@@ -53,8 +52,8 @@ import org.jetbrains.annotations.Nullable;
  * de core in wiens gebied hij staat. Zijn modules ({@code read} en {@code write}) komen in hoofdstuk 24.
  */
 public final class BotBrain {
-    private final GuardRobotEntity robot;
-    private final BotMove body;
+    private final Bot bot;
+    private final BotBody body;
     /** Zijn pinnen: read en write (hoofdstuk 24). */
     private final BotPins pins;
     private @Nullable LogicProgram program;
@@ -78,10 +77,11 @@ public final class BotBrain {
     private final Set<String> reported = new HashSet<>();
     private long reportedReset;
 
-    public BotBrain(GuardRobotEntity robot) {
-        this.robot = robot;
-        this.body = new BotMove(robot);
-        this.pins = new BotPins(robot, this);
+    /** Het brein van deze Bot, met dit lijf (lopen of vliegen). */
+    public BotBrain(Bot bot, BotBody body) {
+        this.bot = bot;
+        this.body = body;
+        this.pins = new BotPins(bot, this);
     }
 
     /** Zijn pinnen (wat zijn modules zeggen en doen). */
@@ -147,7 +147,7 @@ public final class BotBrain {
     }
 
     /** Zijn lijf: de kant waar hij naar kijkt, en of hij geblokkeerd was. */
-    public BotMove body() {
+    public BotBody body() {
         return body;
     }
 
@@ -165,7 +165,7 @@ public final class BotBrain {
         }
         long now = level.getGameTime();
         if (!started) {
-            if (robot.isSteppingOut()) {
+            if (bot.isLeavingDock()) {
                 return; // eerst uit zijn dock
             }
             started = true;
@@ -198,7 +198,7 @@ public final class BotBrain {
         }
         if (stopRequested) {
             stopRequested = false;
-            robot.setActive(false); // stop(): hij zet zichzelf uit, en dit brein stopt de volgende tick
+            bot.setActive(false); // stop(): hij zet zichzelf uit, en dit brein stopt de volgende tick
             return;
         }
         // Wie het eerst vroeg, mag nu bewegen (een opdracht gaat voor).
@@ -220,7 +220,7 @@ public final class BotBrain {
      * {@code when ordered(...)} met die naam; anders negeert hij hem, en dat staat in het logboek.
      */
     public void order(String name, @Nullable BlockPos place) {
-        if (program == null || !robot.isActive() || robot.battery() <= 0) {
+        if (program == null || !bot.isActive() || bot.battery() <= 0) {
             report(program == null ? "it has no program, so it ignored the order \"" + name + "\""
                     : "it is switched off, so it ignored the order \"" + name + "\"");
             return;
@@ -312,7 +312,7 @@ public final class BotBrain {
             case TURN_LEFT, TURN_RIGHT -> move(run, new BotMove.Turn(node.op == Op.TURN_RIGHT));
             case GOTO -> {
                 List<Object> values = values(run, node);
-                if (!robot.board().has(BotModule.PATHFINDING)) {
+                if (!bot.board().has(BotModule.PATHFINDING)) {
                     report("goto(...) needs the Pathfinding module on one of its pins");
                     body.markBlocked();
                 } else if (values.size() >= 3) {
@@ -321,7 +321,7 @@ public final class BotBrain {
                 }
             }
             case CHARGE -> {
-                if (robot.home() == null) {
+                if (bot.home() == null) {
                     report("charge(): it has no Robot Dock to charge on");
                     body.markBlocked();
                 } else {
@@ -348,14 +348,14 @@ public final class BotBrain {
      * iets zeggen, een alarm, een relais schakelen, of de server een bericht sturen.
      */
     private void server(Run run, LogicGraph.Node node) {
-        SecurityCoreBlockEntity core = BotLink.core(robot);
-        if (core == null || !(robot.level() instanceof ServerLevel level)) {
+        SecurityCoreBlockEntity core = BotLink.core(bot);
+        if (core == null || !(bot.level() instanceof ServerLevel level)) {
             return;
         }
-        String name = robot.getName().getString();
+        String name = bot.getName().getString();
         switch (node.op) {
             case SAY, LOG, ALARM -> LogicRunner.robotMessage(level, core, name, node.op, message(run, node));
-            case SEND -> LogicRunner.robotSend(level, core, name, robot.blockPosition(), message(run, node));
+            case SEND -> LogicRunner.robotSend(level, core, name, bot.blockPosition(), message(run, node));
             default -> {
                 double seconds = node.op == Op.PULSE ? number(run, node) : 0;
                 if (!LogicRunner.robotSwitch(level, core, node.op, node.text, seconds)) {
@@ -415,18 +415,18 @@ public final class BotBrain {
         return new Expr.Facts() {
             @Override
             public Object value(String variable) {
-                BlockPos pos = robot.blockPosition();
+                BlockPos pos = bot.blockPosition();
                 return switch (variable) {
-                    case "robot.battery" -> Math.floor(robot.battery() / Math.max(1.0, robot.maxBattery()) * 100);
+                    case "robot.battery" -> Math.floor(bot.battery() / Math.max(1.0, bot.maxBattery()) * 100);
                     case "robot.x" -> (double) pos.getX();
                     case "robot.y" -> (double) pos.getY();
                     case "robot.z" -> (double) pos.getZ();
                     case "robot.facing" -> body.facing().getName();
-                    case "robot.name" -> robot.getName().getString();
+                    case "robot.name" -> bot.getName().getString();
                     case "robot.blocked" -> body.blocked();
-                    case "robot.connected" -> BotLink.connected(robot);
-                    case "is_night" -> robot.level().isNight();
-                    case "is_day" -> !robot.level().isNight();
+                    case "robot.connected" -> BotLink.connected(bot);
+                    case "is_night" -> bot.level().isNight();
+                    case "is_day" -> !bot.level().isNight();
                     // Na when ordered(...): de opdracht van de server (zonder plek: 0).
                     case "order.name" -> run == null || run.order == null ? "" : run.order.name();
                     case "order.x" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getX();
@@ -439,8 +439,8 @@ public final class BotBrain {
             /** {@code is_on("Door")}: dat vraagt hij aan de server (zonder verbinding: nee). */
             @Override
             public boolean isOn(String device) {
-                SecurityCoreBlockEntity core = BotLink.core(robot);
-                return core != null && robot.level() instanceof ServerLevel level && LogicDevices.isOn(level, core, device);
+                SecurityCoreBlockEntity core = BotLink.core(bot);
+                return core != null && bot.level() instanceof ServerLevel level && LogicDevices.isOn(level, core, device);
             }
 
             @Override
@@ -461,7 +461,7 @@ public final class BotBrain {
      * (dezelfde melding hooguit één keer per minuut).
      */
     void report(String message) {
-        if (!(robot.level() instanceof ServerLevel level)) {
+        if (!(bot.level() instanceof ServerLevel level)) {
             return;
         }
         long now = level.getGameTime();
@@ -472,9 +472,9 @@ public final class BotBrain {
         if (!reported.add(message)) {
             return;
         }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, robot.blockPosition());
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, bot.blockPosition());
         if (core != null) {
-            core.logEvent(EventLog.Type.LOGIC, robot.getName().getString() + ": " + message);
+            core.logEvent(EventLog.Type.LOGIC, bot.getName().getString() + ": " + message);
         }
     }
 

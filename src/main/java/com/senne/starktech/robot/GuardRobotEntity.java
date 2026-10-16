@@ -1,7 +1,9 @@
 package com.senne.starktech.robot;
 
+import com.senne.starktech.bot.Bot;
 import com.senne.starktech.bot.BotBoard;
 import com.senne.starktech.bot.BotBrain;
+import com.senne.starktech.bot.BotMove;
 import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
@@ -68,7 +70,7 @@ import org.jetbrains.annotations.Nullable;
  * Wie hem neerzette is zijn eigenaar; samen met wie in die basis vertrouwd is mag die hem instellen
  * (dezelfde regel als bij de laserzender, zie BaseTrust).
  */
-public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed {
+public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed, Bot {
     /** De onderdelen, ingepakt in één getal (zie RobotParts.pack): je spel heeft ze nodig om hem te tekenen. */
     private static final EntityDataAccessor<Integer> PARTS =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.INT);
@@ -112,7 +114,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     /** Waar hij naartoe stapt als hij in zijn dock aangezet wordt (daarna null). */
     private @Nullable BlockPos stepOut;
     /** Zijn brein (hoofdstuk 23): hier draait zijn programma, alleen op de server. */
-    private final BotBrain brain = new BotBrain(this);
+    private final BotBrain brain = new BotBrain(this, new BotMove(this));
     /** Tot wanneer (speltijd) hij neerligt na een treffer van de Ion Blaster (hoofdstuk 24); 0 = hij staat. */
     private long downUntil;
 
@@ -369,6 +371,42 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     /** Is hij nog uit zijn dock aan het stappen? */
     public boolean isSteppingOut() {
         return stepOut != null;
+    }
+
+    // ================================================================ Wat elke Bot heeft (hoofdstuk 25)
+
+    @Override
+    public com.senne.starktech.logic.program.ProgramKind programKind() {
+        return com.senne.starktech.logic.program.ProgramKind.ROBOT;
+    }
+
+    @Override
+    public boolean isLeavingDock() {
+        return isSteppingOut();
+    }
+
+    /** Hoe ver hij kijkt: van zijn hoofd. */
+    @Override
+    public double scanRange() {
+        return parts().scanRange();
+    }
+
+    @Override
+    public double scanAngle() {
+        return parts().scanAngle();
+    }
+
+    /** Hoe snel hij opnieuw schiet: van zijn armen. */
+    @Override
+    public double fireInterval() {
+        return parts().fireInterval();
+    }
+
+    /** De laser zit aan zijn rechterarm, het geweer aan zijn linker. */
+    @Override
+    public Vec3 muzzle(boolean laser, Vec3 forward) {
+        Vec3 side = new Vec3(-forward.z, 0, forward.x); // naar rechts, gezien vanuit de robot
+        return position().add(0, 1.15, 0).add(forward.scale(0.45)).add(side.scale(laser ? 0.38 : -0.38));
     }
 
     // ================================================================ Neer (hoofdstuk 24)
