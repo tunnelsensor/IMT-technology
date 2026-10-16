@@ -30,13 +30,13 @@ import org.jetbrains.annotations.Nullable;
  *  Battery [##########--------]  56%
  *  Dock    12, 64, -40
  *  Name    [Guard 1          ] [Rename]
- *  [Switch off] [Pick up]                 [Done]
+ *  [Switch off] [Pick up] [Board]           [Done]
  * </pre>
  * Wat er nu is (naam, toestand, batterij) leest het scherm gewoon van de robot: dat kent jouw spel al, dus je
  * ziet het veranderen zodra de server iets gedaan heeft.
  */
 public class RobotScreen extends Screen {
-    private static final int PANEL_W = 260;
+    private static final int PANEL_W = 300;
     private static final int PANEL_H = 176;
     private static final int MARGIN = 8;
     private static final int VALUE_X = 58;
@@ -100,9 +100,12 @@ public class RobotScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Pick up"), b -> {
             send(RobotActionPayload.Op.PICK_UP, "");
             onClose();
-        }).bounds(left + MARGIN + 86, footerY(), 70, 20).build());
+        }).bounds(left + MARGIN + 86, footerY(), 66, 20).build());
+        // Het bord: modules solderen (hoofdstuk 22).
+        addRenderableWidget(Button.builder(Component.literal("Board"), b -> minecraft.setScreen(new BoardScreen(entityId, this)))
+                .bounds(left + MARGIN + 158, footerY(), 60, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(left + PANEL_W - MARGIN - 70, footerY(), 70, 20).build());
+                .bounds(left + PANEL_W - MARGIN - 60, footerY(), 60, 20).build());
         refresh(robot);
     }
 

@@ -2505,7 +2505,15 @@ brand staat in de config.
       en hij uit staat. Nieuw bericht `SolderPayload`; netwerkversie 20 → 21. Twee nieuwe tests (solderen,
       te kort, te lang, lossolderen, aan = geweigerd, geen bout, een vreemde; bruggen op het bord). Vorige
       stap: `52594c8`.
-- [ ] **3. Het spelletje** — hittebalk, groen vak, een brug bij te laat, Inspect, en de soldeerbout (slijt).
+- [x] **3. Het spelletje** — het **bordscherm** (`client/robot/BoardScreen`, knop **Board** in het robotscherm):
+      een groen bord met 8 genummerde gouden pinnen (met het icoon van de module die erop zit), onderaan je
+      modules uit je rugzak, en hoeveel je soldeerbout nog kan. Sleep een module op een lege pin (of klik hem
+      aan en druk op een pin) en houd vast: boven de pin loopt een **hittebalk** op, met het groene vak
+      (oranje = te koud, groen = goed, rood = te heet). Loslaten stuurt hoe lang je vasthield naar de server.
+      Een brug is zonder Inspect maar een dun groenig-zilver streepje tussen twee pinnen; met **Inspect**
+      een roze balk, en bovenaan "switching on now would short!" (of dat hij tussen lege pinnen niets doet).
+      Rechtsklik op een pin = lossolderen. Staat de robot aan of heb je geen bout, dan zegt het scherm dat.
+      Screenshots `rb14` (hittebalk) en `rb15` (Inspect). Vorige stap: `a37fe66`.
 - [ ] **4. Aanzetten met een brug** — de modules op die pinnen verbranden; met een kans brandt de hele robot
       af; logboek en E.D.I.T.H.-melding met de pinnummers.
 - [ ] **5. Zichtbaar op de robot** — laser op de arm, zonnepaneel op de rug, antenne, cameralens.

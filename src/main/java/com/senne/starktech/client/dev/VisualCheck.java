@@ -1134,6 +1134,37 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.shot(30, "rb12_robot_screen");
             t.close(0);
+            // Hoofdstuk 22: het bordscherm. Modules op pin 1, 3 en 6, een verstopte brug tussen 3 en 4; jij hebt
+            // een soldeerbout en wat modules. Eerst met de hittebalk boven pin 2, dan met Inspect.
+            t.onServer(0, player -> {
+                player.getInventory().add(new ItemStack(ModItems.SOLDERING_IRON.get()));
+                player.getInventory().add(new ItemStack(ModItems.robotModule(com.senne.starktech.bot.BotModule.SCAN), 2));
+                player.getInventory().add(new ItemStack(ModItems.robotModule(com.senne.starktech.bot.BotModule.GUN)));
+                for (com.senne.starktech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                        com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(new BlockPos(66, -60, 64)).inflate(0.5))) {
+                    robot.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(3, "laser").with(6, "camera").withBridge(3));
+                }
+            });
+            t.step(10, () -> {
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.level != null) {
+                    for (com.senne.starktech.robot.GuardRobotEntity robot : mc.level.getEntitiesOfClass(
+                            com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(new BlockPos(66, -60, 64)).inflate(0.5))) {
+                        com.senne.starktech.client.robot.BoardScreen board = new com.senne.starktech.client.robot.BoardScreen(robot.getId(), null);
+                        mc.setScreen(board);
+                        board.tourHeat(com.senne.starktech.bot.BotModule.SCAN, 2, Math.round(com.senne.starktech.config.StarkConfig.Robots.SOLDER_FULL_TICKS * 0.6f));
+                    }
+                }
+            });
+            t.shot(20, "rb14_board_heat");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.robot.BoardScreen board) {
+                    board.tourHeat(com.senne.starktech.bot.BotModule.SCAN, -1, 0);
+                    board.tourInspect(true);
+                }
+            });
+            t.shot(10, "rb15_board_inspect");
+            t.close(0);
             // De app Robots: een beveiligingskern vlakbij, en de robots van hierboven in zijn lijst.
             BlockPos robotCore = new BlockPos(72, -60, 68);
             t.onServer(0, player -> {
