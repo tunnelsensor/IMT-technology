@@ -10,7 +10,12 @@ public enum RobotState {
     /** Uit: hij loopt naar zijn dock (of staat er al in) en laadt daar. */
     STANDBY("Standby"),
     /** Zijn batterij is leeg: hij staat stil tot hij weer op zijn dock laadt. */
-    NO_POWER("No power");
+    NO_POWER("No power"),
+    /**
+     * Neergeschoten met een Ion Blaster (hoofdstuk 24): hij ligt op de grond, zijn programma staat stil, en na een
+     * tijdje (ionDownSeconds) staat hij weer op. Kapot is hij niet.
+     */
+    DOWN("Down");
 
     private final String title;
 

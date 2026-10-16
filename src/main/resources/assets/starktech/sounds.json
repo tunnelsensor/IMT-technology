@@ -326,5 +326,13 @@
         "name": "starktech:robot_gun"
       }
     ]
+  },
+  "ion_blaster.fire": {
+    "subtitle": "subtitles.starktech.ion_blaster.fire",
+    "sounds": [
+      {
+        "name": "starktech:ion_blaster"
+      }
+    ]
   }
 }

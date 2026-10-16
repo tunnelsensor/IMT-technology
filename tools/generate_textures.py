@@ -3359,6 +3359,22 @@ def robot_ammo():
     save(im, "item/robot_ammo.png")
 
 
+def ion_blaster():
+    """De Ion Blaster (hoofdstuk 24): een wit-blauw pistool met een gloeiende blauwe ionenkamer en een brede loop."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    white, grey, dark = (226, 232, 238, 255), (150, 160, 172, 255), (60, 66, 76, 255)
+    blue, glow = (60, 150, 255, 255), (170, 225, 255, 255)
+    d.polygon([(5, 10), (7, 10), (5, 13), (3, 13)], fill=dark)       # schuine handgreep, vast aan het lijf
+    d.rectangle([4, 7, 11, 9], fill=white, outline=grey)             # lijf
+    d.rectangle([11, 6, 14, 8], fill=grey)                           # brede loop
+    px(im, [(14, 7)], blue)
+    d.rectangle([6, 5, 9, 6], fill=blue)                             # ionenkamer bovenop
+    px(im, [(7, 5), (8, 5)], glow)
+    px(im, [(5, 8), (8, 8)], blue)                                   # blauwe streepjes op het lijf
+    save(im, "item/ion_blaster.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()

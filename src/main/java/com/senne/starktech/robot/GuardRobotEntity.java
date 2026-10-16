@@ -113,6 +113,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     private @Nullable BlockPos stepOut;
     /** Zijn brein (hoofdstuk 23): hier draait zijn programma, alleen op de server. */
     private final BotBrain brain = new BotBrain(this);
+    /** Tot wanneer (speltijd) hij neerligt na een treffer van de Ion Blaster (hoofdstuk 24); 0 = hij staat. */
+    private long downUntil;
 
     public GuardRobotEntity(EntityType<? extends GuardRobotEntity> type, Level level) {
         super(type, level);
@@ -369,6 +371,32 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         return stepOut != null;
     }
 
+    // ================================================================ Neer (hoofdstuk 24)
+
+    /**
+     * Geraakt door de Ion Blaster: hij valt neer ({@link RobotState#DOWN}). Zijn programma stopt, hij loopt niet en
+     * gebruikt geen stroom, en na {@code ticks} staat hij weer op (aan: dan begint zijn programma weer bij when
+     * started). Nog eens raken terwijl hij ligt, begint de tijd opnieuw.
+     */
+    public void knockDown(int ticks) {
+        if (!(level() instanceof ServerLevel level)) {
+            return;
+        }
+        downUntil = level.getGameTime() + Math.max(1, ticks);
+        brain.stop();
+        getNavigation().stop();
+        stepOut = null;
+        setDeltaMovement(0, getDeltaMovement().y, 0);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 1.0, getZ(), 30, 0.3, 0.6, 0.3, 0.2);
+        playSound(ModSounds.ROBOT_HURT.get(), 0.8f, 1.4f);
+        updateState();
+    }
+
+    /** Ligt hij neer (na de Ion Blaster)? (Ook in je spel: dan ligt hij op zijn rug.) */
+    public boolean isDown() {
+        return level().isClientSide ? state() == RobotState.DOWN : downUntil > 0;
+    }
+
     // ================================================================ Zijn programma (hoofdstuk 23)
 
     /** Zijn brein: het programma dat hij draait (zie BotBrain). Alleen op de server bezig. */
@@ -469,6 +497,16 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     /** Elke tick op de server: is zijn dock er nog, laden, stroom gebruiken, en in zijn dock gaan staan. */
     private void serverTick(ServerLevel level) {
+        if (downUntil > 0) {
+            if (level.getGameTime() >= downUntil) {
+                downUntil = 0; // hij staat weer op (updateState hieronder laat hem weer opstarten)
+            } else {
+                getNavigation().stop();
+                if (tickCount % 20 == 0) {
+                    level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.3, getZ(), 4, 0.4, 0.1, 0.4, 0.05);
+                }
+            }
+        }
         if (home != null && tickCount % 40 == 0 && level.isLoaded(home)
                 && !(level.getBlockEntity(home) instanceof RobotDockBlockEntity dock && getUUID().equals(dock.robot()))) {
             home = null; // zijn dock is weg, of er woont een andere robot
@@ -491,19 +529,19 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         }
         boolean walking = getDeltaMovement().horizontalDistanceSqr() > 1.0E-4 || !getNavigation().isDone()
                 || getMoveControl().hasWanted();
-        if (battery > 0 && (active || walking)) {
+        if (battery > 0 && (active || walking) && downUntil == 0) {
             battery = Math.max(0, battery - (active ? StarkConfig.Robots.DRAIN_ON : 0)
                     - (walking ? StarkConfig.Robots.DRAIN_WALKING : 0));
         }
         if (battery <= 0) {
             getNavigation().stop();
         }
-        if ((!active || brain.wantsDock()) && home != null && closeToHome() && flatDistance(home) > 0.001) {
+        if ((!active || brain.wantsDock()) && downUntil == 0 && home != null && closeToHome() && flatDistance(home) > 0.001) {
             settleInDock(level);
         }
-        // Zijn programma (hoofdstuk 23): alleen als hij aan staat en stroom heeft. Anders stopt het, en de volgende
-        // keer begint het weer bij when started.
-        if (active && battery > 0 && brain.hasProgram()) {
+        // Zijn programma (hoofdstuk 23): alleen als hij aan staat, stroom heeft en niet neerligt. Anders stopt het, en
+        // de volgende keer begint het weer bij when started.
+        if (active && battery > 0 && downUntil == 0 && brain.hasProgram()) {
             brain.tick(level);
         } else {
             brain.stop();
@@ -583,7 +621,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     /** Hetzelfde; {@code sounds} = false bij het laden en neerzetten (dan geen opstartgeluid). */
     private void updateState(boolean sounds) {
-        RobotState state = battery <= 0 ? RobotState.NO_POWER : active ? RobotState.ACTIVE : RobotState.STANDBY;
+        RobotState state = battery <= 0 ? RobotState.NO_POWER : downUntil > 0 ? RobotState.DOWN
+                : active ? RobotState.ACTIVE : RobotState.STANDBY;
         if (state() != state) {
             // Aan (opstarten) of niet meer aan (uitgezet of de batterij is leeg): dat hoor je.
             if (sounds && (state == RobotState.ACTIVE || state() == RobotState.ACTIVE)) {
@@ -631,12 +670,12 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
         @Override
         public boolean canUse() {
-            return (!active || brain.wantsDock()) && home != null && battery > 0 && !closeToHome() && onGround();
+            return (!active || brain.wantsDock()) && downUntil == 0 && home != null && battery > 0 && !closeToHome() && onGround();
         }
 
         @Override
         public boolean canContinueToUse() {
-            return (!active || brain.wantsDock()) && home != null && battery > 0 && !closeToHome();
+            return (!active || brain.wantsDock()) && downUntil == 0 && home != null && battery > 0 && !closeToHome();
         }
 
         @Override
@@ -676,12 +715,12 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
         @Override
         public boolean canUse() {
-            return active && stepOut != null && battery > 0 && onGround();
+            return active && stepOut != null && battery > 0 && downUntil == 0 && onGround();
         }
 
         @Override
         public boolean canContinueToUse() {
-            return active && stepOut != null && battery > 0 && ticks < 80 && flatDistance(stepOut) > 0.25;
+            return active && stepOut != null && battery > 0 && downUntil == 0 && ticks < 80 && flatDistance(stepOut) > 0.25;
         }
 
         @Override
@@ -771,6 +810,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         }
         tag.putByte("Facing", (byte) brain.body().facing().get2DDataValue());
         tag.putInt("Ammo", ammo());
+        if (downUntil > 0) {
+            tag.putLong("DownTicks", Math.max(1, downUntil - level().getGameTime()));
+        }
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
@@ -793,6 +835,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         brain.setProgram(tag.contains("Program") ? LogicProgram.load(tag.getCompound("Program")) : null);
         brain.body().setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);
         setAmmo(tag.getInt("Ammo"));
+        downUntil = tag.contains("DownTicks") ? level().getGameTime() + tag.getLong("DownTicks") : 0;
         updateState(false);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");

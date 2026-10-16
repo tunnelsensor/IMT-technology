@@ -34,7 +34,9 @@ public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements Custom
         /** De Laser-module van een guard robot (hoofdstuk 24): een oranjerode straal met vonkjes. */
         ROBOT_LASER,
         /** De Gun-module van een guard robot: een dun geel spoortje en een rookwolkje waar hij raakt. */
-        ROBOT_BULLET
+        ROBOT_BULLET,
+        /** De Ion Blaster: een dikke blauwe straal met elektrische vonken. */
+        ION_BEAM
     }
 
     public static final StreamCodec<ByteBuf, BeamEffectPayload> STREAM_CODEC = StreamCodec.composite(

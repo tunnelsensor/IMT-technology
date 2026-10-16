@@ -1,6 +1,7 @@
 package com.senne.starktech.client.robot;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotState;
@@ -14,7 +15,8 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * Tekent een guard robot (hoofdstuk 21): het model met de gekozen stijl van elk onderdeel (zie RobotModel)
  * en daarover zijn lichtjes, die ook in het donker gloeien (het rode oog van de Commando, het blauw van de
- * Trainer). Staat hij uit of is zijn batterij leeg, dan zijn ze uit.
+ * Trainer). Staat hij uit of is zijn batterij leeg, dan zijn ze uit. Ligt hij neer (na de Ion Blaster, hoofdstuk
+ * 24), dan ligt hij op zijn rug.
  */
 public class GuardRobotRenderer extends MobRenderer<GuardRobotEntity, RobotModel> {
     private static final ResourceLocation TEXTURE = texture("guard_robot");
@@ -48,5 +50,15 @@ public class GuardRobotRenderer extends MobRenderer<GuardRobotEntity, RobotModel
     @Override
     public ResourceLocation getTextureLocation(GuardRobotEntity robot) {
         return TEXTURE;
+    }
+
+    /** Neergelegd door de Ion Blaster: achterover, plat op zijn rug (net boven de grond). */
+    @Override
+    protected void setupRotations(GuardRobotEntity robot, PoseStack pose, float bob, float yBodyRot, float partialTick, float scale) {
+        super.setupRotations(robot, pose, bob, yBodyRot, partialTick, scale);
+        if (robot.state() == RobotState.DOWN && robot.deathTime == 0) {
+            pose.translate(0.0, 0.25, 0.0);
+            pose.mulPose(Axis.XP.rotationDegrees(-90.0f));
+        }
     }
 }

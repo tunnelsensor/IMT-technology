@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "L": {
+      "tag": "c:gems/lapis"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "starktech:stark_chip"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "  L",
+    "ICR",
+    "I  "
+  ],
+  "result": {
+    "id": "starktech:ion_blaster",
+    "count": 1
+  }
+}

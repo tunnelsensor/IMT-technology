@@ -1429,5 +1429,9 @@
   "death.attack.starktech.robot_gun": "%1$s was shot by %2$s",
   "death.attack.starktech.robot_gun.player": "%1$s was shot by %2$s",
   "message.starktech.robot.loaded": "%s now has %s Robot Ammo",
-  "message.starktech.robot.full": "%s is full (%s Robot Ammo)"
+  "message.starktech.robot.full": "%s is full (%s Robot Ammo)",
+  "item.starktech.ion_blaster": "Ion Blaster",
+  "tooltip.starktech.ion_blaster": "Knocks guard robots down for a while without breaking them",
+  "tooltip.starktech.ion_blaster.harmless": "Does nothing to people or animals",
+  "subtitles.starktech.ion_blaster.fire": "Ion Blaster fires"
 }

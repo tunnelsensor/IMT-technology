@@ -9,13 +9,16 @@ import com.senne.starktech.registry.ModBlocks;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.robot.GuardRobotEntity;
+import com.senne.starktech.robot.IonBlasterItem;
 import com.senne.starktech.robot.RobotParts;
+import com.senne.starktech.robot.RobotState;
 import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.robot.Robots;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.os.StarkOs;
 import com.senne.starktech.shield.DomeGeneratorBlockEntity;
 import com.senne.starktech.station.ChargerBlockEntity;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -25,6 +28,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.item.ItemStack;
@@ -337,6 +341,48 @@ public final class BotSenseGameTests {
         });
         helper.runAfterDelay(30, () -> {
             check(Boolean.TRUE.equals(watcher.brain().global("watched")), "read(cameraPin) zag niet dat iemand meekeek");
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Stap 6: de Ion Blaster
+
+    /**
+     * De Ion Blaster legt een robot neer (DOWN) zonder hem te verwonden: zijn programma stopt, en na de tijd (hier 2
+     * seconden) staat hij weer op en begint zijn programma opnieuw bij when started. Een koe en een speler raakt de
+     * straal wel, maar er gebeurt niets mee.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_ion")
+    public static void ion_blaster_downs_robots_only(GameTestHelper helper) {
+        ServerPlayer shooter = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 2), "ion-shooter");
+        GuardRobotEntity robot = robot(helper, new BlockPos(6, 2, 8), RobotStyle.COMMANDO, BotBoard.EMPTY,
+                "boots = 0\nwhen started:\n    boots = boots + 1\n");
+        Cow cow = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(12, 2, 8));
+        ServerPlayer victim = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(18, 2, 8), "ion-victim");
+        helper.runAfterDelay(5, () -> {
+            check(Double.valueOf(1).equals(robot.brain().global("boots")), "Zijn programma begon niet");
+            float before = StarkConfig.Robots.ION_DOWN_SECONDS;
+            StarkConfig.Robots.ION_DOWN_SECONDS = 2;
+            Entity hit;
+            try {
+                shooter.lookAt(EntityAnchorArgument.Anchor.EYES, robot.getBoundingBox().getCenter());
+                hit = IonBlasterItem.fire(helper.getLevel(), shooter);
+            } finally {
+                StarkConfig.Robots.ION_DOWN_SECONDS = before;
+            }
+            check(hit == robot && robot.state() == RobotState.DOWN, "De robot ging niet neer: " + hit + ", " + robot.state());
+            check(!robot.brain().started(), "Neer liep zijn programma door");
+            check(robot.getHealth() == robot.getMaxHealth(), "De Ion Blaster verwondde de robot");
+            shooter.lookAt(EntityAnchorArgument.Anchor.EYES, cow.getBoundingBox().getCenter());
+            check(IonBlasterItem.fire(helper.getLevel(), shooter) == cow && cow.getHealth() == cow.getMaxHealth(),
+                    "De straal deed de koe iets (of raakte hem niet)");
+            shooter.lookAt(EntityAnchorArgument.Anchor.EYES, victim.getBoundingBox().getCenter());
+            check(IonBlasterItem.fire(helper.getLevel(), shooter) == victim && victim.getHealth() == victim.getMaxHealth(),
+                    "De straal deed een speler iets (of raakte hem niet)");
+        });
+        helper.runAfterDelay(5 + 40 + 10, () -> {
+            check(robot.state() == RobotState.ACTIVE && robot.brain().started(), "Na 2 seconden stond hij niet weer op: " + robot.state());
+            check(Double.valueOf(1).equals(robot.brain().global("boots")), "Opgestaan begon zijn programma niet opnieuw (vers)");
             helper.succeed();
         });
     }

@@ -320,6 +320,11 @@ public final class ModItems {
     public static final DeferredItem<com.senne.starktech.bot.RobotAmmoItem> ROBOT_AMMO = ITEMS.registerItem(
             "robot_ammo", com.senne.starktech.bot.RobotAmmoItem::new, new Item.Properties());
 
+    /** Hoofdstuk 24: de Ion Blaster legt robots neer zonder ze kapot te maken (slijt). */
+    public static final DeferredItem<com.senne.starktech.robot.IonBlasterItem> ION_BLASTER = ITEMS.registerItem(
+            "ion_blaster", com.senne.starktech.robot.IonBlasterItem::new,
+            new Item.Properties().durability(com.senne.starktech.robot.IonBlasterItem.USES));
+
     /** Het item van deze module. */
     public static com.senne.starktech.bot.BotModuleItem robotModule(com.senne.starktech.bot.BotModule module) {
         return ROBOT_MODULES.get(module).get();

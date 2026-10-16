@@ -1290,6 +1290,16 @@ public final class VisualCheck {
                 t.shot(2, weapon == com.senne.starktech.bot.BotShot.Weapon.LASER ? "rb20_robot_laser" : "rb21_robot_gun");
                 t.step(20, () -> { });
             }
+            // De Ion Blaster: jij schiet de robot neer (blauwe straal), en dan ligt hij op zijn rug.
+            t.onServer(0, player -> {
+                for (com.senne.starktech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                        com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(shooter).inflate(0.5))) {
+                    player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, robot.getBoundingBox().getCenter());
+                    com.senne.starktech.robot.IonBlasterItem.fire(player.serverLevel(), player);
+                }
+            });
+            t.shot(2, "rb24_ion_blaster");
+            t.shot(30, "rb25_robot_down");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 

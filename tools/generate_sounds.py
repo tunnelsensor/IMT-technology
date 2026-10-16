@@ -747,6 +747,19 @@ def robot_gun():
     return finish(total, peak=0.6)
 
 
+def ion_blaster():
+    """De Ion Blaster: een knetterende, wiebelende "fzzzt" die snel wegzakt, met een hoge elektrische sis erover."""
+    duration = 0.45
+    t = seconds(duration)
+    wobble = np.sin(2 * np.pi * 34 * t) * 0.35
+    phase = sweep(1400, 260, duration, curve=0.7) + wobble
+    buzz = signal.sawtooth(phase) * 0.5 + np.sin(phase) * 0.5
+    hiss = bandpass(noise(duration), 4000, 11000) * 0.35
+    crackle_burst = crackle(duration, 30) * 0.6
+    total = (buzz + hiss + crackle_burst) * decay(duration, 7)
+    return finish(fade(total, 0.002, 0.08), peak=0.55)
+
+
 SOUNDS = {
     "edith_boot": edith_boot,
     "edith_blip": edith_blip,
@@ -789,6 +802,7 @@ SOUNDS = {
     "robot_charge_hum": robot_charge_hum,
     "robot_laser": robot_laser,
     "robot_gun": robot_gun,
+    "ion_blaster": ion_blaster,
 }
 
 

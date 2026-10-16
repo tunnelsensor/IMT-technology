@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 269 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 270 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2711,7 +2711,15 @@ dieren werkt hij niet.
       true; `write(cameraPin, false)` zet de camera uit (NO SIGNAL), `true` weer aan. Binnenin herkent de app
       een camera nu aan een sleutel (plek van een camerablok, of nummer van een robot), want een robot loopt.
       Eén nieuwe test (`robot_camera_in_the_cameras_app`).
-- [ ] **6. Ion Blaster** — de robot valt neer (DOWN); buiten een training staat hij na 60 s weer op.
+- [x] **6. Ion Blaster** — een nieuw wapen (lapis, twee ijzer, een Stark Chip en redstone; slijt na 200
+      schoten, 1,5 s tussen twee schoten). Rechtsklik: een dikke blauwe ionenstraal tot 24 blokken (screenshot
+      `rb24`; muren en schildkoepels houden hem tegen). Een guard robot die hij raakt, valt neer: de nieuwe
+      toestand **DOWN**, hij ligt op zijn rug (screenshot `rb25`), af en toe een vonkje, zijn programma staat
+      stil, hij loopt niet en gebruikt geen stroom, en zijn leven blijft vol. Na 60 seconden (`ionDownSeconds`)
+      staat hij weer op (het opstartgeluid) en begint zijn programma opnieuw bij `when started:`. Op spelers en
+      dieren doet de straal niets. Een nieuw geluid (`ion_blaster`). In een training (hoofdstuk 26) blijft hij
+      liggen tot de training voorbij is; drones (hoofdstuk 25) komen er dan ook bij. Eén nieuwe test
+      (`ion_blaster_downs_robots_only`).
 
 Tests: de scan ziet een speler in zicht en niet door een muur; het filter "strangers" ziet een vreemde en
 niet de eigenaar; zonder verbinding ziet hij niemand; een koepel houdt de laser tegen; zon laadt overdag; de

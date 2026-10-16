@@ -31,6 +31,8 @@ public final class BeamEffects {
     private static final DustParticleOptions HYDRA = new DustParticleOptions(color(0xFF2A1A), 0.7f);
     /** De laser van een guard robot: oranjerood, iets dikker dan die van een Hydra-soldaat. */
     private static final DustParticleOptions ROBOT_LASER = new DustParticleOptions(color(0xFF5A1E), 0.85f);
+    /** De straal van de Ion Blaster: dik en lichtblauw. */
+    private static final DustParticleOptions ION = new DustParticleOptions(color(0x7FD8FF), 1.1f);
     /** Het spoortje van een kogel: dun en lichtgeel. */
     private static final DustParticleOptions BULLET = new DustParticleOptions(color(0xFFE9A0), 0.55f);
 
@@ -54,6 +56,7 @@ public final class BeamEffects {
             case HYDRA_LASER -> hydraLaser(level, payload.from(), payload.to());
             case ROBOT_LASER -> robotLaser(level, payload.from(), payload.to());
             case ROBOT_BULLET -> robotBullet(level, payload.from(), payload.to());
+            case ION_BEAM -> ionBeam(level, payload.from(), payload.to());
             case SATELLITE_SWEEP -> {
                 satelliteSweep(level, payload.from(), payload.to());
                 shakeNear(payload.to(), 0.6f, 300);
@@ -108,6 +111,16 @@ public final class BeamEffects {
                     (random.nextDouble() - 0.5) * 0.2, random.nextDouble() * 0.15, (random.nextDouble() - 0.5) * 0.2);
         }
         level.addParticle(ParticleTypes.SMOKE, to.x, to.y, to.z, 0, 0.04, 0);
+    }
+
+    /** De Ion Blaster (hoofdstuk 24): een dikke blauwe straal, en een bos elektrische vonken waar hij raakt. */
+    private static void ionBeam(ClientLevel level, Vec3 from, Vec3 to) {
+        line(level, from, to, 0.18, ION, false);
+        RandomSource random = level.getRandom();
+        for (int i = 0; i < 14; i++) {
+            level.addParticle(ParticleTypes.ELECTRIC_SPARK, to.x, to.y, to.z,
+                    (random.nextDouble() - 0.5) * 0.6, random.nextDouble() * 0.4, (random.nextDouble() - 0.5) * 0.6);
+        }
     }
 
     /** Dunne blauwe straal met vonkjes waar hij raakt. */

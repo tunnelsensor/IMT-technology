@@ -1532,6 +1532,16 @@ public final class StarkConfig {
         /** Zoveel Robot Ammo past er in een robot. */
         @Tunable(value = "How much Robot Ammo fits in a robot", min = 1, max = 1_000)
         public static float MAX_AMMO = 64.0f;
+        // De Ion Blaster (hoofdstuk 24): robots neerleggen zonder ze kapot te maken.
+        /** Zolang (seconden) ligt een robot neer na een treffer van de Ion Blaster. */
+        @Tunable(value = "Seconds a robot stays down after an Ion Blaster hit", min = 1, max = 600)
+        public static float ION_DOWN_SECONDS = 60.0f;
+        /** Hoe ver de Ion Blaster reikt (blokken). */
+        @Tunable(value = "How far the Ion Blaster reaches (blocks)", min = 1, max = 64)
+        public static float ION_RANGE = 24.0f;
+        /** Zoveel ticks tussen twee schoten van de Ion Blaster. */
+        @Tunable(value = "Ticks between two Ion Blaster shots", min = 1, max = 1_200)
+        public static float ION_COOLDOWN = 30.0f;
         /** Zoveel stroom per tick stopt de Solar Panel-module in zijn batterij, in de volle middagzon. */
         @Tunable(value = "Energy per tick the Solar Panel module puts into a robot's battery in full midday sun", max = 100)
         public static float SOLAR_CHARGE = 0.5f;
