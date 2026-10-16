@@ -1144,6 +1144,11 @@ public final class StarkConfig {
                 + "Two cores must stand at least twice this far apart.", min = 1, max = 1_000)
         public static float ZONE_REACH = 200.0f;
 
+        // ------------------------------------------------------------------------- Tony's drones (hoofdstuk 25)
+        /** Zoveel geprogrammeerde security drones zette Tony in een Stark Tower (op de docks in de hangar). */
+        @Tunable(value = "How many programmed security drones Tony left in a Stark Tower (on the drone docks of its hangar)", max = 16)
+        public static float TOWER_DRONES = 4.0f;
+
         // ------------------------------------------------------------------------- De oude drones van de kern
         // Tot hoofdstuk 25 maakte een kern zelf drones; die maakt hij niet meer, maar oude drones uit een bestaande
         // wereld vliegen nog (zie SecurityDroneEntity). Een security drone die je zelf bouwt, staat onder [robots].

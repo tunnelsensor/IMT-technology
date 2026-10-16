@@ -25,7 +25,8 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *   <li>Een muur houdt het schot tegen, en een schildkoepel ook (zoals bij de Hydra-soldaat; de koepels van zijn
  *       eigenaar niet).</li>
- *   <li>Spelers raakt hij alleen als PvP aan staat, en niet in creative of als toeschouwer (net als torentjes).</li>
+ *   <li>Spelers raakt hij alleen als PvP aan staat, en niet in creative of als toeschouwer (net als torentjes). Een bot
+ *       van niemand (Tony's drones in een Stark Tower) raakt ze ook zonder PvP: dan schiet de toren, geen speler.</li>
  *   <li>De laser komt uit zijn rechterarm, het geweer uit zijn linker (daar zitten ze op het model).</li>
  * </ul>
  */
@@ -72,17 +73,17 @@ public final class BotShot {
         bot.playSound(laser ? ModSounds.ROBOT_LASER.get() : ModSounds.ROBOT_GUN.get(), 1.0f, 0.95f + bot.getRandom().nextFloat() * 0.1f);
         ModNetwork.sendNear(level, bot.position(), 64, new BeamEffectPayload(from, to,
                 laser ? BeamEffectPayload.Kind.ROBOT_LASER : BeamEffectPayload.Kind.ROBOT_BULLET));
-        if (hit == null || !mayHurt(level, hit)) {
+        if (hit == null || !mayHurt(level, bot, hit)) {
             return null;
         }
         float damage = laser ? StarkConfig.Robots.LASER_DAMAGE : StarkConfig.Robots.GUN_DAMAGE;
         return hit.hurt(ModDamageTypes.robotShot(level, bot.entity(), laser), damage) ? hit : null;
     }
 
-    /** Spelers alleen met PvP aan, en niet in creative of als toeschouwer; de rest altijd. */
-    private static boolean mayHurt(ServerLevel level, Entity entity) {
+    /** Spelers alleen met PvP aan (of als de bot van niemand is), en niet in creative of als toeschouwer; de rest altijd. */
+    private static boolean mayHurt(ServerLevel level, Bot bot, Entity entity) {
         if (entity instanceof Player player) {
-            return !player.isCreative() && !player.isSpectator() && level.getServer().isPvpAllowed();
+            return !player.isCreative() && !player.isSpectator() && (bot.owner() == null || level.getServer().isPvpAllowed());
         }
         return true;
     }

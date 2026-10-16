@@ -70,6 +70,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private com.senne.starktech.logic.Datacenter datacenter = new com.senne.starktech.logic.Datacenter();
     /** Had de kern bij de laatste telling stroom? */
     private boolean online = true;
+    /** Zette deze kern (van een Stark Tower) Tony's drones al op zijn docks (hoofdstuk 25)? Dat doet hij maar één keer. */
+    private boolean towerDrones;
 
     // ---------------------------------------------------------------- Toegang (de desktop regelt dit)
     /**
@@ -629,6 +631,12 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
         }
+        // Een Stark Tower van niemand (Tony's systeem): één keer Tony's drones op de docks in de hangar (zie TowerDrones).
+        if (ownerId == null && !towerDrones && SystemDefaults.TONY_HOST.equals(hostname)) {
+            towerDrones = true;
+            setChanged();
+            com.senne.starktech.robot.TowerDrones.fill(level, this);
+        }
         // Stroom voor de kern en zijn zone (zie powerTick).
         powerTick(level);
     }
@@ -644,6 +652,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         saveConfig(tag);
+        tag.putBoolean("TowerDrones", towerDrones);
     }
 
     /** Alles wat de kern onthoudt: dit gaat ook mee als je hem weghakt (zie pack). */
@@ -685,6 +694,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         loadConfig(tag);
+        towerDrones = tag.getBoolean("TowerDrones");
     }
 
     /** Terug uit {@link #saveConfig}. */

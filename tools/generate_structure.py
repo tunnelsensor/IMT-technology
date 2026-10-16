@@ -14,7 +14,7 @@ blijft de vloer eronder liggen als terras met een reling en lampjes. Van onder n
     1-11    de lobby: receptie met logowand, werkhoek, laadstation, zithoeken, vitrines
    12-22    het lab: watertanks, een pakstelling, een teslaspoel, werkbanken
    23-33    het archief: boekenkasten, leestafels, kaartentafel, betoveringstafel
-   34-44    de hangar: landingscirkel, drone-docks voor je arsenaal, een hangardeur, generatoren
+   34-44    de hangar: landingscirkel, drone-docks (Tony's security drones), een hangardeur, generatoren
    45-55    de woonverdieping: keuken, eettafel, tv-hoek, slaapkamer
    56-66    de beveiliging: schermenwand, serverkasten, een holotafel, de verborgen krachtcentrale
    67-76    de lasergang: negen rayshields en de omweg met drie deuren
@@ -773,13 +773,13 @@ def build_archive():
 
 def build_hangar():
     """
-    De hangar: een landingscirkel met waarschuwingsstrepen in de vloer, zes drone-docks voor
-    je arsenaal, werkbanken, generatoren met lava-ketels en een grote open hangardeur naar het
-    oosten.
+    De hangar: een landingscirkel met waarschuwingsstrepen in de vloer, zes drone-docks,
+    werkbanken, generatoren met lava-ketels en een grote open hangardeur naar het oosten.
 
-    De drone-docks staan langs de noordmuur. Na het hacken van de toren staan daar je eigen
-    drones op, en worden ze gerepareerd: een kabel langs de muur brengt stroom van een
-    warmtegenerator in de hoek (met een ketel lava ernaast).
+    De drone-docks staan langs de noordmuur. Sinds hoofdstuk 25 zet de kern van de toren op de
+    eerste vier Tony's security drones (zie TowerDrones in de Java-code); na het hacken zijn ze van
+    jou. Ze laden er: een kabel langs de muur brengt stroom van een warmtegenerator in de hoek (met
+    een ketel lava ernaast).
     """
     terrace(HANGAR_Y - 1, ARCHIVE_IN, HANGAR_IN)
     curtain_wall(HANGAR_Y, LIVING_Y - 1, HANGAR_IN, DARK_GLASS)
@@ -955,8 +955,8 @@ def build_security():
     chest(x1 - 2, y, z1 - 2, "north")
 
     # De beveiligingskern: de "hoofdserver" in het gat midden in de rij serverkasten. Hij
-    # beschermt de hele toren en houdt de beveiligingsdrones in de lucht; met een laptop kun je
-    # hem hacken, en dan werkt de beveiliging voor jou.
+    # beschermt de hele toren (en zet Tony's drones in de hangar); met een laptop kun je hem
+    # hacken, en dan werkt de beveiliging voor jou.
     put(x0 + 2, y, MID, "starktech:security_core", {"facing": "east", "claimed": "false"})
     security_turret(x0 + 2, y, z0 + 2)
     security_turret(x1 - 2, y, z0 + 2)

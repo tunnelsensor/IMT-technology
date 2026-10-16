@@ -17,6 +17,8 @@ import com.senne.starktech.robot.GuardDroneEntity;
 import com.senne.starktech.robot.GuardDroneItem;
 import com.senne.starktech.robot.IonBlasterItem;
 import com.senne.starktech.robot.RobotState;
+import com.senne.starktech.robot.TowerDrones;
+import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityDevices;
 import com.senne.starktech.security.os.StarkOs;
@@ -325,6 +327,71 @@ public final class DroneGameTests {
         expectProblem("when started:\n    activate(\"Drone 1\")\n", ProgramKind.DRONE,
                 "activate() only works in a server diagram, not in a drone program");
         helper.succeed();
+    }
+
+    /**
+     * Tony's drones (hoofdstuk 25): een Stark Tower van niemand zet op vier van zijn zes hangar-docks een security drone,
+     * aan, met Scan, Face Recognition, Laser en Pathfinding, en het programma "Tower patrol".
+     */
+    @GameTest(template = "stark_tower", timeoutTicks = 140, batch = "tower_drones")
+    public static void stark_tower_has_tony_drones(GameTestHelper helper) {
+        helper.runAfterDelay(80, () -> {
+            List<GuardDroneEntity> drones = helper.getLevel().getEntitiesOfClass(GuardDroneEntity.class, helper.getBounds());
+            check(drones.size() == Math.round(StarkConfig.Security.TOWER_DRONES),
+                    "In de toren zijn er " + drones.size() + " drones in plaats van " + Math.round(StarkConfig.Security.TOWER_DRONES));
+            for (GuardDroneEntity drone : drones) {
+                String name = drone.getName().getString();
+                check(drone.owner() == null && drone.isActive(), name + " is van iemand, of staat uit");
+                check(drone.program() != null && drone.program().name().equals(TowerDrones.PROGRAM_NAME), name + " heeft Tony's programma niet");
+                check(drone.board().has(BotModule.SCAN) && drone.board().has(BotModule.LASER) && drone.board().has(BotModule.PATHFINDING),
+                        name + " mist modules: " + drone.board());
+                check(drone.home() != null && helper.getLevel().getBlockState(drone.home()).is(ModBlocks.DRONE_DOCK.get()),
+                        name + " heeft geen Drone Dock als thuis");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een drone van Tony schiet op een vreemde, ook zonder PvP (het is de toren die schiet). Het alarm (iemand hackt de
+     * kern) stuurt hem naar de indringer. Na de hack is hij van de hacker, en dan gelden diens regels: zonder PvP
+     * schiet hij niet meer op spelers.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 500, batch = "tower_drones")
+    public static void tony_drone_shoots_strangers_until_hacked(GameTestHelper helper) {
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        ServerPlayer stranger = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 13), "tony-stranger");
+        GuardDroneEntity drone = drone(helper, new BlockPos(6, 3, 6), "when started:\n    pass\n");
+        drone.setBoard(TowerDrones.board());
+        drone.setProgram(TowerDrones.program());
+        drone.setActive(true);
+        boolean[] alarmed = new boolean[1];
+        boolean[] came = new boolean[1];
+        helper.onEachTick(() -> {
+            if (alarmed[0] && drone.position().distanceTo(stranger.position().add(0, 2, 0)) < 1.5) {
+                came[0] = true;
+            }
+        });
+        helper.runAfterDelay(80, () -> {
+            check(stranger.getHealth() < stranger.getMaxHealth(), "Tony's drone schoot niet op een vreemde (zonder PvP)");
+            stranger.setHealth(stranger.getMaxHealth());
+            TowerDrones.alarm(helper.getLevel(), core, stranger);
+            alarmed[0] = true;
+        });
+        helper.runAfterDelay(260, () -> {
+            check(came[0], "Na het alarm kwam hij niet naar de indringer (hij hangt op " + drone.position() + ")");
+            ServerPlayer hacker = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 3), "tony-hacker");
+            core.setOwner(hacker);
+            TowerDrones.handOver(helper.getLevel(), core, hacker);
+            check(hacker.getUUID().equals(drone.owner()), "Na de hack is de drone niet van de hacker");
+            BotNetwork.Entry entry = BotNetwork.get(helper.getLevel()).get(drone.getUUID());
+            check(entry != null && hacker.getUUID().equals(entry.owner()), "BotNetwork weet niet dat hij van de hacker is");
+            stranger.setHealth(stranger.getMaxHealth());
+        });
+        helper.runAfterDelay(380, () -> {
+            check(stranger.getHealth() == stranger.getMaxHealth(), "Na de hack schoot hij toch op een speler (zonder PvP)");
+            helper.succeed();
+        });
     }
 
     /** Geeft deze code (van deze soort) een fout met deze tekst, bij het lezen of bij de controle? */

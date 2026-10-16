@@ -97,6 +97,8 @@ public final class TowerHack {
                     drone -> corePos.equals(drone.home()))) {
                 drone.setTarget(player);
             }
+            // Tony's security drones (hoofdstuk 25) krijgen de opdracht "alarm": ze komen kijken.
+            com.senne.starktech.robot.TowerDrones.alarm(level, core, player);
         }
         player.displayClientMessage(Component.translatable("security.starktech.msg.hack_started")
                 .withStyle(ChatFormatting.RED), true);
@@ -151,6 +153,8 @@ public final class TowerHack {
             return;
         }
         core.setOwner(player);
+        // Tony's drones (hoofdstuk 25) zijn nu van jou.
+        com.senne.starktech.robot.TowerDrones.handOver(level, core, player);
         level.playSound(null, corePos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 1.4f);
         player.displayClientMessage(Component.translatable("security.starktech.msg.hack_done")
                 .withStyle(ChatFormatting.GREEN), true);

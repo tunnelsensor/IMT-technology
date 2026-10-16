@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 275 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 277 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 93 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2784,8 +2784,17 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       oude drones van vroeger heten daar nu "Patrol drone 1", "Patrol drone 2"... en blijven werken tot ze
       neergeschoten worden. Tests: `security_core_launches_no_drones` (in plaats van `security_core_launches_drones`:
       de kern maakt er geen meer, en een oude drone patrouilleert nog) en `core_drones_switch_sends_drones_home`.
-- [ ] **5. De Stark Tower** — vier docks bij de kern met Tony's drones (programma "Tower patrol"). Wie de
-      toren hackt, krijgt ze.
+- [x] **5. De Stark Tower** — de hangar van de toren had al zes Drone Docks met stroom. De kern van een toren van
+      niemand zet nu één keer op de eerste vier een **drone van Tony** ("Tower drone 1" tot "Tower drone 4"; hoeveel:
+      `towerDrones` in `[security]`): aan, met Scan, Face Recognition, Laser en Pathfinding, en het programma
+      **Tower patrol** (filter "strangers", omhoog, rondjes van 3 blokken door de hangar, elke seconde schieten op wie
+      hij ziet, laden onder 25%). Ze zijn van niemand, dus voor hen is iedereen een vreemde, en ze schieten ook zonder
+      PvP (het is de toren die schiet, geen speler). Gaat het alarm (iemand begint de kern te hacken), dan krijgen ze
+      de opdracht "alarm" met de plek van de indringer en vliegen ze erheen, als ze er kunnen komen. Wie de toren
+      hackt, krijgt ze: dan zijn ze van hem (heeft hij al een drone met die naam, dan krijgt die een nieuwe). Een
+      drone die kapot gaat, komt niet terug. Een toren uit een bestaande wereld die nog van niemand is, krijgt ze ook
+      (één keer). Het structuurbestand zelf veranderde niet. Twee nieuwe tests (`stark_tower_has_tony_drones`,
+      `tony_drone_shoots_strangers_until_hacked`).
 
 Tests: bouwen en laden op een dock; `up(3)` stijgt; de core spawnt zelf geen drones meer; een dock pakt geen
 arsenal-drone meer; de toren heeft vier gewapende drones; een oude drone patrouilleert nog.

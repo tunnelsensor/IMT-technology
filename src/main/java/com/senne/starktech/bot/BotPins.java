@@ -178,11 +178,17 @@ public final class BotPins {
         return targets;
     }
 
-    /** Komt deze speler door het filter? (Vriend of niet vraagt hij aan zijn server: zonder verbinding niemand.) */
+    /**
+     * Komt deze speler door het filter? (Vriend of niet vraagt hij aan zijn server: zonder verbinding niemand.) Een
+     * bot van niemand (Tony's drones in een Stark Tower, hoofdstuk 25) vertrouwt niemand: voor hem is iedereen een
+     * vreemde, ook zonder verbinding.
+     */
     private boolean matches(Player player, @Nullable SecurityCoreBlockEntity core) {
         return switch (filter) {
-            case STRANGERS -> core != null && bot.level() instanceof ServerLevel level && !SecurityCores.isFriend(level, core, player);
-            case TRUSTED -> core != null && bot.level() instanceof ServerLevel level && SecurityCores.isFriend(level, core, player);
+            case STRANGERS -> bot.owner() == null
+                    || core != null && bot.level() instanceof ServerLevel level && !SecurityCores.isFriend(level, core, player);
+            case TRUSTED -> bot.owner() != null
+                    && core != null && bot.level() instanceof ServerLevel level && SecurityCores.isFriend(level, core, player);
             case TRAINEE -> false; // een training komt in hoofdstuk 26
             default -> player.getGameProfile().getName().equalsIgnoreCase(filter);
         };
