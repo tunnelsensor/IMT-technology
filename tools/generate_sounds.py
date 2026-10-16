@@ -647,6 +647,82 @@ def detonator_click():
     return finish(total, peak=0.6)
 
 
+# ---------------------------------------------------------------- Guard robots (hoofdstuk 21)
+
+def servo(duration, start_hz, end_hz):
+    """Een servomotortje: een zoemende zaagtand die van toon verandert, met de hoge tonen eraf (mechanisch)."""
+    phase = sweep(start_hz, end_hz, duration)
+    tone = signal.sawtooth(phase) * 0.6 + np.sin(phase * 2) * 0.3
+    return lowpass(tone, 2200)
+
+
+def metal_tap(duration, freqs, speed):
+    """Een tikje op metaal: een paar ongelijke tonen die snel uitsterven, met een randje ruis."""
+    t = seconds(duration)
+    ring = sum(np.sin(2 * np.pi * f * t) / (i + 1) for i, f in enumerate(freqs))
+    hit = bandpass(noise(duration), 1500, 7000) * decay(duration, speed * 3)
+    return (ring * 0.6 + hit) * decay(duration, speed)
+
+
+def robot_step():
+    """Een stap: een kort servo-ritje (het been zwaait naar voren) en een licht metalen tikje (de voet)."""
+    total = np.zeros(int(RATE * 0.3))
+    swing = servo(0.16, 260, 340) * np.sin(np.linspace(0, np.pi, int(RATE * 0.16)))
+    place(total, fade(swing * 0.35, 0.01, 0.03), 0.0)
+    place(total, metal_tap(0.14, [1350, 2210, 3170], 38) * 0.9, 0.15)
+    return finish(total, peak=0.5)
+
+
+def robot_power_on():
+    """Aanzetten: de servo's lopen op (een stijgende zoem) en twee oplopende piepjes: "klaar"."""
+    total = np.zeros(int(RATE * 0.85))
+    rise = servo(0.5, 160, 720) * np.minimum(1, seconds(0.5) / 0.08)
+    place(total, fade(rise * 0.5, 0.01, 0.06), 0.0)
+    place(total, fade(np.sin(2 * np.pi * 880 * seconds(0.08)) * 0.35, 0.003, 0.02), 0.5)
+    place(total, fade(np.sin(2 * np.pi * 1320 * seconds(0.12)) * 0.35, 0.003, 0.04), 0.62)
+    return finish(total, peak=0.55)
+
+
+def robot_power_off():
+    """Uitzetten: de zoem zakt weg naar beneden, en een doffe klonk (hij zakt in zijn stand)."""
+    total = np.zeros(int(RATE * 0.8))
+    fall = servo(0.55, 720, 110) * decay(0.55, 2.5)
+    place(total, fade(fall * 0.5, 0.005, 0.08), 0.0)
+    clunk = np.sin(sweep(140, 60, 0.2)) * decay(0.2, 18)
+    place(total, clunk * 0.9 + metal_tap(0.2, [420, 980], 25)[: len(clunk)] * 0.4, 0.52)
+    return finish(total, peak=0.55)
+
+
+def robot_hurt():
+    """Geraakt: een harde metalen klang en een paar vonkjes."""
+    total = np.zeros(int(RATE * 0.5))
+    place(total, metal_tap(0.4, [520, 1310, 2470, 3610], 12) * 1.2, 0.0)
+    place(total, crackle(0.35, 8) * decay(0.35, 9) * 3, 0.02)
+    return finish(total, peak=0.6)
+
+
+def robot_charge_hum():
+    """
+    Een robot die op zijn dock laadt: een heel zachte, rustige brom (100 en 200 Hz, die één keer per
+    twee seconden aanzwelt) met een dun hoog toontje van de lader. Een lus zonder naad, net als
+    rayshield_hum; in het spel speelt hij heel stil (zie RobotChargeHum).
+    """
+    length, overlap = 2.0, 0.4
+    total = length + overlap
+    t = seconds(total)
+    hum = np.sin(2 * np.pi * 100 * t) + 0.45 * np.sin(2 * np.pi * 200 * t + 0.5) + 0.25 * signal.sawtooth(2 * np.pi * 50 * t)
+    swell = 1.0 + 0.15 * np.sin(2 * np.pi * 0.5 * t)
+    whine_tone = 0.05 * np.sin(2 * np.pi * 3000 * t)
+    sound = lowpass(hum * swell, 900, order=2) + whine_tone
+
+    n, m = int(RATE * length), int(RATE * overlap)
+    loop = sound[:n].copy()
+    ramp = np.linspace(0.0, 1.0, m)
+    loop[:m] = sound[n:n + m] * (1.0 - ramp) + loop[:m] * ramp
+    loop = np.tanh(loop * 0.9)
+    return (loop / np.max(np.abs(loop)) * 0.4).astype(np.float32)
+
+
 SOUNDS = {
     "edith_boot": edith_boot,
     "edith_blip": edith_blip,
@@ -682,6 +758,11 @@ SOUNDS = {
     "c4_arm": c4_arm,
     "c4_defuse": c4_defuse,
     "detonator_click": detonator_click,
+    "robot_step": robot_step,
+    "robot_power_on": robot_power_on,
+    "robot_power_off": robot_power_off,
+    "robot_hurt": robot_hurt,
+    "robot_charge_hum": robot_charge_hum,
 }
 
 

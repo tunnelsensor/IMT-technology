@@ -71,6 +71,18 @@ public final class ModSounds {
     /** De knop van de detonator (een klik en een radiotoontje). */
     public static final DeferredHolder<SoundEvent, SoundEvent> DETONATOR = register("c4.detonator");
 
+    // ---------------------------------------------------------------- Guard robots (hoofdstuk 21)
+    /** Een stap: een servo-ritje en een metalen tikje. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_STEP = register("robot.step");
+    /** Aanzetten: de servo's lopen op, twee piepjes. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_POWER_ON = register("robot.power_on");
+    /** Uitzetten (of een lege batterij): de zoem zakt weg, een doffe klonk. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_POWER_OFF = register("robot.power_off");
+    /** Geraakt: een metalen klang en vonkjes. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_HURT = register("robot.hurt");
+    /** Laden op zijn dock: een heel zachte lus (zie client/robot/RobotChargeHum). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_CHARGE_HUM = register("robot.charge_hum");
+
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, name)));
     }

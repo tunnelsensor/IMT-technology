@@ -117,6 +117,12 @@ public final class EdithClientConfig {
             .comment("How loud the quiet hum of laser walls and domes is (1 = normal, 2 = twice as loud, 0 = off)")
             .defineInRange("rayshieldHumVolume", 1.0, 0.0, 3.0);
 
+    // ---------------------------------------------------------------- Guard robots
+    /** Hoe hard het (stille) zoemen van een robot die op zijn dock laadt is (1 = zoals bedoeld, 0 = uit). */
+    public static final ModConfigSpec.DoubleValue ROBOT_HUM_VOLUME = BUILDER
+            .comment("How loud the quiet hum of a guard robot charging on its dock is (1 = normal, 2 = twice as loud, 0 = off)")
+            .defineInRange("robotHumVolume", 1.0, 0.0, 3.0);
+
     // ---------------------------------------------------------------- Stroom laten zien
     /** In welke tijd de schermen stroom laten zien (de knop /tick, /sec, /min, /hour in de stroomschermen). */
     public static final ModConfigSpec.EnumValue<PowerUnit> POWER_UNIT = BUILDER
@@ -141,6 +147,11 @@ public final class EdithClientConfig {
     /** Hoe hard het zoemen van de rayshields is (zolang de instellingen nog niet geladen zijn: gewoon). */
     public static double rayshieldHumVolume() {
         return SPEC.isLoaded() ? RAYSHIELD_HUM_VOLUME.get() : 1.0;
+    }
+
+    /** Hoe hard het laadzoemen van de guard robots is (zolang de instellingen nog niet geladen zijn: gewoon). */
+    public static double robotHumVolume() {
+        return SPEC.isLoaded() ? ROBOT_HUM_VOLUME.get() : 1.0;
     }
 
 

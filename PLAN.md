@@ -16,7 +16,7 @@ Afspraken die overal gelden:
 
 **Stand van zaken:** 243 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 90 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2457,11 +2457,23 @@ hij loopt terug en laadt.
       Devices. De desktop bedient alleen robots in het gebied van zijn eigen kern. "Verbinding" komt in
       hoofdstuk 23 (dan pas praat een robot met de server). Eén nieuwe test (de lijst; aanzetten en
       hernoemen van de desktop; een rare id doet niets). Screenshot `rb13`. Vorige stap: `1f9c408`.
-- [ ] **9. Geluid, showcase, LEESMIJ** — servogeluiden, opstarten en uitzetten, zacht zoemen op het dock
-      (met een volumeknop).
+- [x] **9. Geluid, showcase, LEESMIJ** — vijf nieuwe geluiden uit `tools/generate_sounds.py`: een **stap** (een
+      servo-ritje en een metalen tikje, in plaats van de zware ijzergolem), **opstarten** (de servo's lopen
+      op, twee piepjes), **uitschakelen** (de zoem zakt weg, een doffe klonk; ook als de batterij leeg is,
+      en als hij kapot gaat), **geraakt** (een metalen klang met vonkjes) en het **laadzoemen** op het dock:
+      een rustige lus, heel stil (0,08), alleen in je spel en alleen als hij echt laadt, met een eigen
+      volumeknop `robotHumVolume` in `starktech-client.toml` (zoals de rayshields). In de showcase de nieuwe
+      functie **"Guard robots"** (nummer 82, na "Hacking and pickpocketing"): de assembler, een gemengde
+      robot op een dock, een halflege Commando die laadt, aanzetten, het robotscherm, uitzetten, de app
+      Robots. LEESMIJ.md: een nieuw stuk "Guard robots: bouwen, laden, aan en uit". Vorige stap: `0f75652`.
 
 Tests: samenstellen en uit elkaar halen; een robot op een dock laadt via de kabel en niet zonder stroom;
 aan = eruit, uit = terug; een vreemde kan hem niet bewerken; opslaan en laden klopt.
+
+- [x] **Afronding** — 243 tests: 240 groen, de 3 rode van hoofdstuk 14 stap 2 (jouw stroomwaarden); 15 nieuwe in
+      `RobotGameTests`. Screenshots `-Ponly=robots` (`rb01`-`rb13`: de vier stijlen, gemengd, 's nachts, de
+      assembler half en vol, het blok, de docks, het robotscherm, de app Robots), de showcase-functie 82
+      afgespeeld (screenshot: het robotscherm van Guard 1). Het jar gebouwd.
 
 ### 22. De printplaat: solderen (14 oktober)
 
@@ -2696,6 +2708,12 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Guard robots (16 oktober)**: gezien op screenshots (`rb01`-`rb13`) en in de showcase (82), getest met 15
+      nieuwe tests. Niet gehoord: luister zelf naar de servo-stapjes, opstarten en uitschakelen, de klang als je
+      hem slaat, en het laadzoemen op het dock (is het stil genoeg? `robotHumVolume`). Probeer zelf: slepen in de
+      Robot Assembler (shift-klik zet een onderdeel in zijn eigen vakje), het draaiende voorbeeld, een robot op
+      een dock zetten, aan (stapt hij mooi uit?) en uit (loopt hij terug en gaat hij er netjes in staan, ook
+      als je hem eerst ver weg zet?), het robotscherm (Enter in het naamvak), en de app Robots.
 - [ ] **De taal groeit (15 oktober)**: gezien op screenshots (`l12`-`l15`), getest met 8 nieuwe tests. Probeer
       zelf met de muis: het palet scrollen met het muiswiel, een SET-blokje met zijn vak Value, een lus-blokje
       met "do" en "after" verbinden, en of de fouten in begrijpelijk Engels staan als je iets verkeerd typt

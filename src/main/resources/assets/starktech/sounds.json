@@ -270,5 +270,45 @@
         "name": "starktech:detonator_click"
       }
     ]
+  },
+  "robot.step": {
+    "subtitle": "subtitles.starktech.robot.step",
+    "sounds": [
+      {
+        "name": "starktech:robot_step"
+      }
+    ]
+  },
+  "robot.power_on": {
+    "subtitle": "subtitles.starktech.robot.power_on",
+    "sounds": [
+      {
+        "name": "starktech:robot_power_on"
+      }
+    ]
+  },
+  "robot.power_off": {
+    "subtitle": "subtitles.starktech.robot.power_off",
+    "sounds": [
+      {
+        "name": "starktech:robot_power_off"
+      }
+    ]
+  },
+  "robot.hurt": {
+    "subtitle": "subtitles.starktech.robot.hurt",
+    "sounds": [
+      {
+        "name": "starktech:robot_hurt"
+      }
+    ]
+  },
+  "robot.charge_hum": {
+    "subtitle": "subtitles.starktech.robot.charge_hum",
+    "sounds": [
+      {
+        "name": "starktech:robot_charge_hum"
+      }
+    ]
   }
 }

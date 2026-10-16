@@ -5,6 +5,7 @@ import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
 import com.senne.starktech.registry.ModItems;
+import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.security.BaseTrust;
 import java.util.EnumSet;
 import java.util.UUID;
@@ -20,7 +21,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -71,6 +71,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BYTE);
     /** Staat hij aan (ook met een lege batterij), voor de knop in zijn scherm. */
     private static final EntityDataAccessor<Boolean> SWITCHED_ON =
+            SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Laadt hij nu op zijn dock? Dan zoemt hij zachtjes in je spel (zie client/robot/RobotChargeHum). */
+    private static final EntityDataAccessor<Boolean> CHARGING =
             SynchedEntityData.defineId(GuardRobotEntity.class, EntityDataSerializers.BOOLEAN);
     /** Hoe vol zijn batterij is (0 tot 1), voor de schermen. */
     private static final EntityDataAccessor<Float> BATTERY =
@@ -125,6 +128,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         builder.define(STATE, (byte) RobotState.STANDBY.ordinal());
         builder.define(BATTERY, 1.0f);
         builder.define(SWITCHED_ON, false);
+        builder.define(CHARGING, false);
     }
 
     @Override
@@ -211,7 +215,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         board = data.board();
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
-        updateState();
+        updateState(false);
     }
 
     /** Wat er in zijn item komt als je hem oppakt. */
@@ -246,6 +250,11 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     public void setBattery(double energy) {
         battery = Math.max(0, Math.min(maxBattery(), energy));
         updateState();
+    }
+
+    /** Laadt hij nu op zijn dock? (Ook in je spel: dan zoemt hij.) */
+    public boolean isCharging() {
+        return entityData.get(CHARGING);
     }
 
     /** Staat hij aan? (Ook in je spel.) */
@@ -300,11 +309,16 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             home = null; // zijn dock is weg, of er woont een andere robot
         }
         double max = maxBattery();
+        boolean charging = false;
         if (isOnDock() && battery < max) {
             double charge = Math.min(StarkConfig.Robots.DOCK_CHARGE_RATE, max - battery);
             if (StarkGrid.pay(level, home, charge)) {
                 battery += charge;
+                charging = true;
             }
+        }
+        if (entityData.get(CHARGING) != charging) {
+            entityData.set(CHARGING, charging);
         }
         boolean walking = getDeltaMovement().horizontalDistanceSqr() > 1.0E-4 || !getNavigation().isDone()
                 || getMoveControl().hasWanted();
@@ -378,8 +392,17 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
     /** Zet wat je spel moet weten (toestand en batterij) klaar om mee te sturen, als het veranderd is. */
     private void updateState() {
+        updateState(true);
+    }
+
+    /** Hetzelfde; {@code sounds} = false bij het laden en neerzetten (dan geen opstartgeluid). */
+    private void updateState(boolean sounds) {
         RobotState state = battery <= 0 ? RobotState.NO_POWER : active ? RobotState.ACTIVE : RobotState.STANDBY;
         if (state() != state) {
+            // Aan (opstarten) of niet meer aan (uitgezet of de batterij is leeg): dat hoor je.
+            if (sounds && (state == RobotState.ACTIVE || state() == RobotState.ACTIVE)) {
+                playSound(state == RobotState.ACTIVE ? ModSounds.ROBOT_POWER_ON.get() : ModSounds.ROBOT_POWER_OFF.get(), 0.8f, 1.0f);
+            }
             entityData.set(STATE, (byte) state.ordinal());
         }
         if (entityData.get(SWITCHED_ON) != active) {
@@ -573,7 +596,7 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         active = tag.getBoolean("Active");
         battery = tag.contains("Battery") ? Math.min(tag.getDouble("Battery"), maxBattery()) : maxBattery();
         home = tag.contains("Home") ? BlockPos.of(tag.getLong("Home")) : null;
-        updateState();
+        updateState(false);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");
     }
@@ -597,19 +620,21 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         return null;
     }
 
+    /** Geraakt: een metalen klang en vonkjes. */
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.IRON_GOLEM_HURT;
+        return ModSounds.ROBOT_HURT.get();
     }
 
+    /** Kapot: hij zakt uit (de zoem zakt weg, een doffe klonk). */
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.IRON_GOLEM_DEATH;
+        return ModSounds.ROBOT_POWER_OFF.get();
     }
 
-    /** Lichte metalen stapjes (niet zo zwaar als een ijzergolem). */
+    /** Een stap: een servo-ritje en een licht metalen tikje (niet zo zwaar als een ijzergolem). */
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        playSound(SoundEvents.IRON_GOLEM_STEP, 0.25f, 1.6f);
+        playSound(ModSounds.ROBOT_STEP.get(), 0.35f, 0.95f + random.nextFloat() * 0.1f);
     }
 }

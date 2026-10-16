@@ -1606,6 +1606,69 @@ final class ShowcaseFeatures {
                     .onServer(40, player -> turnHappy(player, 180));
         });
 
+        add("Guard robots", "Hoofdstuk 21: een guard robot bouwen. Een kleine robotwerkplaats: links de Robot Assembler, "
+                + "rechts twee Robot Docks (laadstations) met een warmtegenerator ertussen, achteraan een "
+                + "beveiligingskern. Eerst het scherm van de assembler: links vier onderdelen (een Commando-hoofd, "
+                + "een Super Battle-lijf, Trainer-armen en Battle-benen), in het midden draait de robot zoals hij "
+                + "wordt, rechts de printplaat; dan Assemble: de robot ligt rechts als item. Die zet je op het "
+                + "linker dock (een gemengde robot, hij heet Guard 1); op het rechter staat een Commando met een "
+                + "halflege batterij, die laadt: luister naar het heel zachte zoemen. Dan gaat Guard 1 aan: het "
+                + "opstartgeluid (servo's en twee piepjes), zijn lichtjes gaan aan (het oranje oog) en hij stapt "
+                + "twee blokken uit zijn dock (luister naar de servo-stapjes). Dan sneak + rechtsklik: zijn scherm "
+                + "(naam, toestand, onderdelen, batterij, dock, Rename, Switch off, Pick up). Uit: hij loopt "
+                + "terug, gaat precies in zijn dock staan en zijn lichtjes gaan uit. Tot slot de app Robots op de "
+                + "desktop: beide robots met hun toestand en batterij.",
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(5, 0, 9)), 180, 12, s -> {
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .pause(30)
+                    // De assembler, vol: eerst kijken, dan Assemble.
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ROBOT_BAY.offset(2, 0, 2))
+                                instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+                            player.openMenu(be, ROBOT_BAY.offset(2, 0, 2));
+                        }
+                    })
+                    .pause(90)
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ROBOT_BAY.offset(2, 0, 2))
+                                instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+                            be.assemble();
+                        }
+                    })
+                    .pause(60)
+                    .close(10)
+                    // Guard 1 op het linker dock, de Commando (halfvol) op het rechter.
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ROBOT_BAY.offset(2, 0, 2))
+                                instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+                            ItemStack built = be.items().getItem(com.senne.starktech.robot.RobotAssemblerBlockEntity.ROBOT).copy();
+                            be.items().setItem(com.senne.starktech.robot.RobotAssemblerBlockEntity.ROBOT, ItemStack.EMPTY);
+                            placeRobot(player, ROBOT_BAY.offset(6, 0, 2), built);
+                        }
+                        com.senne.starktech.robot.RobotStyle c = com.senne.starktech.robot.RobotStyle.COMMANDO;
+                        placeRobot(player, ROBOT_BAY.offset(8, 0, 2), com.senne.starktech.robot.GuardRobotItem.create(
+                                new com.senne.starktech.robot.RobotData(new com.senne.starktech.robot.RobotParts(c, c, c, c).pack(),
+                                        com.senne.starktech.bot.BotBoard.EMPTY, "", 0.4f)));
+                    })
+                    .pause(80)
+                    // Aan: hij stapt uit zijn dock.
+                    .onServer(0, player -> robotAt(player, ROBOT_BAY.offset(6, 0, 2), robot -> robot.setActive(true)))
+                    .pause(80)
+                    .onServer(0, player -> robotNear(player, ROBOT_BAY.offset(6, 0, 4),
+                            robot -> com.senne.starktech.robot.Robots.open(player, robot)))
+                    .pause(110)
+                    .close(10)
+                    // Uit: hij loopt terug en gaat in zijn dock staan.
+                    .onServer(0, player -> robotNear(player, ROBOT_BAY.offset(6, 0, 4), robot -> robot.setActive(false)))
+                    .pause(100)
+                    // De app Robots.
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, ROBOT_BAY.offset(10, 0, 6)))
+                    .step(10, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ROBOTS)))
+                    .pause(100)
+                    .close(20);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "
@@ -2407,6 +2470,95 @@ final class ShowcaseFeatures {
     }
 
     /** Iets doen met de Stark OS-desktop die nu openstaat (als hij openstaat). */
+    // ================================================================ Hoofdstuk 21: de robotwerkplaats
+
+    static final BlockPos ROBOT_BAY = new BlockPos(-220, -60, 140);
+
+    /**
+     * De robotwerkplaats: een vloer, links een Robot Assembler (vol: vier onderdelen en een printplaat),
+     * rechts twee Robot Docks met een volle warmtegenerator ertussen, en achteraan een beveiligingskern (met
+     * een generator eronder) voor de app Robots. Robots van een vorige keer gaan eerst weg.
+     */
+    private static void buildRobotBay(net.minecraft.server.level.ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (com.senne.starktech.robot.GuardRobotEntity old : level.getEntitiesOfClass(com.senne.starktech.robot.GuardRobotEntity.class,
+                new net.minecraft.world.phys.AABB(ROBOT_BAY).inflate(24))) {
+            old.discard();
+        }
+        for (int x = -1; x <= 13; x++) {
+            for (int z = -1; z <= 10; z++) {
+                level.setBlockAndUpdate(ROBOT_BAY.offset(x, -1, z), Blocks.POLISHED_ANDESITE.defaultBlockState());
+                for (int y = 0; y <= 3; y++) {
+                    level.setBlockAndUpdate(ROBOT_BAY.offset(x, y, z), Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        BlockPos assembler = ROBOT_BAY.offset(2, 0, 2);
+        level.setBlockAndUpdate(assembler, com.senne.starktech.registry.ModBlocks.ROBOT_ASSEMBLER.get().defaultBlockState()
+                .setValue(com.senne.starktech.robot.RobotAssemblerBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        if (level.getBlockEntity(assembler) instanceof com.senne.starktech.robot.RobotAssemblerBlockEntity be) {
+            com.senne.starktech.robot.RobotStyle[] styles = {com.senne.starktech.robot.RobotStyle.COMMANDO,
+                    com.senne.starktech.robot.RobotStyle.SUPER_BATTLE, com.senne.starktech.robot.RobotStyle.TRAINER,
+                    com.senne.starktech.robot.RobotStyle.BATTLE};
+            for (com.senne.starktech.robot.RobotSlot slot : com.senne.starktech.robot.RobotSlot.values()) {
+                be.items().setItem(slot.ordinal(), new ItemStack(ModItems.robotPart(slot, styles[slot.ordinal()])));
+            }
+            be.items().setItem(com.senne.starktech.robot.RobotAssemblerBlockEntity.BOARD, new ItemStack(ModItems.ROBOT_CIRCUIT_BOARD.get()));
+            be.items().setItem(com.senne.starktech.robot.RobotAssemblerBlockEntity.ROBOT, ItemStack.EMPTY);
+        }
+        net.minecraft.world.level.block.state.BlockState dock = com.senne.starktech.registry.ModBlocks.ROBOT_DOCK.get().defaultBlockState()
+                .setValue(com.senne.starktech.robot.RobotDockBlock.FACING, net.minecraft.core.Direction.SOUTH);
+        level.setBlockAndUpdate(ROBOT_BAY.offset(6, 0, 2), dock);
+        level.setBlockAndUpdate(ROBOT_BAY.offset(8, 0, 2), dock);
+        for (BlockPos generator : new BlockPos[] {ROBOT_BAY.offset(7, 0, 2), ROBOT_BAY.offset(10, -1, 6)}) {
+            level.setBlockAndUpdate(generator, com.senne.starktech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+        BlockPos core = ROBOT_BAY.offset(10, 0, 6);
+        level.setBlockAndUpdate(core, com.senne.starktech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        if (level.getBlockEntity(core) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+            be.setOwner(player);
+            be.ensureSystem(level);
+        }
+    }
+
+    /** Zet een robot-item neer op dit dock, zoals een speler dat doet (met de rechtermuisknop). */
+    private static void placeRobot(net.minecraft.server.level.ServerPlayer player, BlockPos dock, ItemStack robot) {
+        ItemStack before = player.getMainHandItem();
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, robot);
+        net.minecraft.world.phys.BlockHitResult hit = new net.minecraft.world.phys.BlockHitResult(
+                Vec3.atCenterOf(dock).add(0, 0.5, 0), net.minecraft.core.Direction.UP, dock, false);
+        robot.useOn(new net.minecraft.world.item.context.UseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit));
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, before);
+    }
+
+    /** Doe iets met de robot die op deze plek staat. */
+    private static void robotAt(net.minecraft.server.level.ServerPlayer player, BlockPos pos,
+                                Consumer<com.senne.starktech.robot.GuardRobotEntity> action) {
+        for (com.senne.starktech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(pos))) {
+            action.accept(robot);
+            return;
+        }
+    }
+
+    /** Doe iets met de robot die het dichtst bij deze plek staat (binnen 4 blokken). */
+    private static void robotNear(net.minecraft.server.level.ServerPlayer player, BlockPos pos,
+                                  Consumer<com.senne.starktech.robot.GuardRobotEntity> action) {
+        com.senne.starktech.robot.GuardRobotEntity best = null;
+        for (com.senne.starktech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                com.senne.starktech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(pos).inflate(4))) {
+            if (best == null || robot.distanceToSqr(Vec3.atCenterOf(pos)) < best.distanceToSqr(Vec3.atCenterOf(pos))) {
+                best = robot;
+            }
+        }
+        if (best != null) {
+            action.accept(best);
+        }
+    }
+
     private static void desktop(Consumer<com.senne.starktech.client.os.StarkOsScreen> action) {
         if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
             action.accept(os);

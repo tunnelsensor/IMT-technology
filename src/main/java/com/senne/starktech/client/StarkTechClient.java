@@ -83,6 +83,7 @@ public class StarkTechClient {
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onRenderLiving);
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.shield.RayshieldHum::onClientTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.starktech.client.robot.RobotChargeHum::onClientTick);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
         // De repulsor aan? Dan is de aanvalsknop de repulsor.

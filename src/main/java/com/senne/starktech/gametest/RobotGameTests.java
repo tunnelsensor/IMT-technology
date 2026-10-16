@@ -352,6 +352,7 @@ public final class RobotGameTests {
                     "Op een dock met stroom laadde hij maar tot " + charging.battery());
             check(charging.state() == RobotState.STANDBY, "Geladen is hij niet weer STANDBY maar " + charging.state());
             check(waiting.battery() == 0 && waiting.state() == RobotState.NO_POWER, "Zonder stroom laadde hij toch");
+            check(charging.isCharging() && !waiting.isCharging(), "Laadt hij nu (dan zoemt hij)? Klopt niet");
             helper.succeed();
         });
     }

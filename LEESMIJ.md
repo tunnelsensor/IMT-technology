@@ -807,6 +807,55 @@ gestolen kaart blokkeert de eigenaar in de app Keycards. Op een server kan zakke
 `rules.pickpocketAllowed = false` in `config/starktech.toml`. De tijden en het bereik staan in
 hetzelfde bestand onder `[bypass]`.
 
+### Guard robots: bouwen, laden, aan en uit
+Een **guard robot** stel je zelf samen uit een **hoofd**, een **lijf**, **armen** en **benen**, elk in
+een van vier stijlen (in de sfeer van Star Wars, maar zonder "droid", dat is een merk):
+
+| Stijl | Hoe hij eruitziet |
+|---|---|
+| **Commando** | donkergrijs en gepantserd, een rond hoofd met één oranjerood oog |
+| **Trainer** | wit en rond, met een lichtblauw vizier en lichtblauwe lampjes |
+| **Battle** | mager en zandkleurig, een smalle schedel met een lange snuit, een rugzak |
+| **Super Battle** | donker blauwgrijs, een enorme borst met het hoofd erin, dikke onderarmen met een blaster |
+
+Je mag ze mengen: een Commando-hoofd op een Super Battle-lijf kan gewoon. Elk onderdeel doet een beetje
+iets anders (beweeg over het item, dan zie je de getallen): **het lijf** geeft leven, pantser en de
+grootte van de batterij (Super Battle het meest), **de benen** de snelheid (Commando het snelst),
+**de armen** hoe snel hij straks schiet, en **het hoofd** hoe ver en hoe breed hij straks kijkt
+(Trainer rondom). Alle getallen staan in `config/starktech.toml` onder `[robots]`.
+
+**Bouwen.** Je hebt de 16 onderdelen (recepten: ijzer plus de stof van de stijl: grijze kleurstof voor
+Commando, witte voor Trainer, koper voor Battle, een ijzerblok voor Super Battle; een hoofd heeft ook
+een Stark Chip en een glasruit), een **Robot Circuit Board** (het brein, met 8 pinnen voor modules die
+je later soldeert) en een **Robot Assembler**. Leg in het scherm van de assembler links de vier
+onderdelen (elk vakje neemt alleen zijn eigen soort) en rechts de printplaat: in het midden draait de
+robot zoals hij wordt. **Assemble** maakt er een **Guard Robot**-item van. **Take apart** (met de robot
+in het robotvakje en de andere vakjes leeg) geeft alles terug, ook de printplaat met wat erop zit.
+
+**Neerzetten en laden.** Rechtsklik met het robot-item op een blok: de robot staat erop, met zijn
+gezicht naar jou, en jij bent zijn eigenaar. Hij krijgt een naam ("Guard 1", "Guard 2"...); in je code
+noem je hem straks zo, daarom heeft elke robot van jou een andere naam. Beter: zet hem op een **Robot
+Dock** (een laadplaat met een paal; recept: een kabel, ijzer en een redstoneblok). Dat dock is dan zijn
+thuis. Hangt het dock aan het stroomnet (een kabel of een generator ernaast), dan laadt hij daar zijn
+batterij; je hoort dan een heel zacht zoemen (`robotHumVolume` in `starktech-client.toml`). Een nieuwe
+robot staat **uit**.
+
+**Aan en uit.** Sneak + rechtsklik met een lege hand op de robot opent zijn scherm (als jij hem
+neerzette, of als je vertrouwd bent in die basis, zoals bij de laserzender): naam en toestand
+(**Active**, **Standby** of **No power**), zijn onderdelen, de batterij, zijn dock, **Rename**,
+**Switch on/off** en **Pick up** (hij wordt weer een item, met alles erop, ook de batterij). Aan in
+zijn dock: hij hoort je (twee piepjes), zijn lichtjes gaan aan en hij stapt twee blokken naar voren.
+Uit: hij loopt terug naar zijn dock, gaat er precies in staan en laadt. Aan gebruikt hij stroom (lopend
+meer); is de batterij leeg, dan valt hij stil tot hij weer op zijn dock staat. Zolang hij nog geen
+programma heeft, staat hij gewoon en kijkt hij rond; programma's, modules en schieten komen later.
+
+**De app Robots.** Op de desktop van je beveiligingskern zie je de robots in het gebied van die kern,
+met hun toestand, batterij en dock; ook daar zet je ze aan en uit en geef je ze een andere naam (ook
+op afstand). Een robot in een stuk wereld dat niet geladen is, staat er grijs bij ("far away").
+
+Gaat een robot echt kapot (zijn leven is op), dan blijft elk onderdeel met een kans heel
+(`partSurviveChance`, standaard de helft) en valt het op de grond. Je torentjes laten robots met rust.
+
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
@@ -1006,8 +1055,8 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/starktech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, Hydra, raids... |
-| `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), de rand van zones (`zoneBorder`) |
+| `config/starktech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, guard robots, Hydra, raids... |
+| `config/starktech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/starktech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/starktech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../config/StarkConfig.java` | De standaardwaarden van al die getallen, met uitleg in het Nederlands, plus een paar vaste getallen die niet in het `.toml`-bestand kunnen |
