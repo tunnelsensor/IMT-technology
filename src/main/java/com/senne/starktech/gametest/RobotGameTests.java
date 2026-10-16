@@ -1,7 +1,10 @@
 package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
+import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.CircuitBoardItem;
 import com.senne.starktech.config.StarkConfig;
+import com.senne.starktech.registry.ModDataComponents;
 import com.senne.starktech.registry.ModEntities;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.robot.GuardRobotEntity;
@@ -10,12 +13,15 @@ import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
 import com.senne.starktech.robot.RobotStyle;
 import com.senne.starktech.security.BaseTrust;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
@@ -187,6 +193,35 @@ public final class RobotGameTests {
         } finally {
             StarkConfig.Robots.PART_SURVIVE_CHANCE = before;
         }
+        helper.succeed();
+    }
+
+    /**
+     * Een printplaat heeft altijd 8 pinnen (een nieuwe is leeg), wordt goed bewaard (met wat erop zit en de
+     * soldeerbruggen), en heeft een recept.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_circuit_board_has_8_pins(GameTestHelper helper) {
+        ItemStack fresh = new ItemStack(ModItems.ROBOT_CIRCUIT_BOARD.get());
+        BotBoard empty = CircuitBoardItem.board(fresh);
+        check(empty.pins().size() == BotBoard.PINS && empty.used() == 0 && empty.bridges() == 0, "Een nieuwe printplaat is niet leeg");
+        check(empty.pin(1).isEmpty() && empty.pin(8).isEmpty() && empty.pin(9).isEmpty() && empty.pin(0).isEmpty(),
+                "Pinnen buiten 1-8 geven iets");
+
+        BotBoard soldered = new BotBoard(List.of("scan", "", "laser"), 0b10);
+        check(soldered.pins().size() == BotBoard.PINS, "Een korte lijst werd geen 8 pinnen");
+        check(soldered.pin(1).equals("scan") && soldered.pin(3).equals("laser") && soldered.used() == 2, "Pinnen kloppen niet");
+        Tag saved = BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, soldered).getOrThrow();
+        BotBoard loaded = BotBoard.CODEC.parse(NbtOps.INSTANCE, saved).getOrThrow();
+        check(loaded.equals(soldered), "Na bewaren en laden: " + loaded);
+        fresh.set(ModDataComponents.BOT_BOARD.get(), soldered);
+        check(CircuitBoardItem.board(fresh).equals(soldered), "De printplaat op het item is niet wat we erop zetten");
+
+        ItemStack made = helper.getLevel().getRecipeManager()
+                .byKey(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "robot_circuit_board"))
+                .map(recipe -> recipe.value().getResultItem(helper.getLevel().registryAccess()))
+                .orElse(ItemStack.EMPTY);
+        check(made.is(ModItems.ROBOT_CIRCUIT_BOARD.get()), "Geen recept voor de printplaat");
         helper.succeed();
     }
 

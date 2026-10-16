@@ -117,4 +117,14 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("upgrades", builder -> builder
                     .persistent(EdithUpgrades.CODEC)
                     .networkSynchronized(EdithUpgrades.STREAM_CODEC));
+
+    /**
+     * Hoofdstuk 21: de printplaat van een robot of drone, met zijn 8 pinnen (zie BotBoard). Een nieuwe printplaat
+     * heeft dit nog niet: die is leeg.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.bot.BotBoard>> BOT_BOARD =
+            COMPONENTS.registerComponentType("bot_board", builder -> builder
+                    .persistent(com.senne.starktech.bot.BotBoard.CODEC)
+                    .networkSynchronized(com.senne.starktech.bot.BotBoard.STREAM_CODEC));
+
 }

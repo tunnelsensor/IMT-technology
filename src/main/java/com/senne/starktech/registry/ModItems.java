@@ -276,6 +276,11 @@ public final class ModItems {
         return parts;
     }
 
+    /** Hoofdstuk 21: de printplaat met 8 pinnen, het brein van een robot. */
+    public static final DeferredItem<com.senne.starktech.bot.CircuitBoardItem> ROBOT_CIRCUIT_BOARD = ITEMS.registerItem(
+            "robot_circuit_board", com.senne.starktech.bot.CircuitBoardItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
     /** Het onderdeel-item van deze soort in deze stijl. */
     public static RobotPartItem robotPart(RobotSlot slot, RobotStyle style) {
         return ROBOT_PARTS.get(slot).get(style.ordinal()).get();

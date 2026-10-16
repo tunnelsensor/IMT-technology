@@ -3130,6 +3130,37 @@ def robot_part_items():
             save(im, f"item/robot/{name}_{slot}.png")
 
 
+def robot_circuit_board():
+    """
+    De Robot Circuit Board: een groene printplaat met koperen sporen, een zwarte chip in het midden met een
+    blauw lampje, en 8 gouden pinnen (vier boven, vier onder) waar de modules op komen.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    board = (34, 110, 58, 255)
+    board_dark = (22, 74, 40, 255)
+    trace = (190, 120, 60, 255)
+    gold = (236, 196, 70, 255)
+    gold_dark = (170, 128, 34, 255)
+    d.rectangle([1, 2, 14, 13], fill=board, outline=board_dark)
+    # Koperen sporen van de pinnen naar de chip.
+    for x in (3, 6, 9, 12):
+        d.line([x, 4, x, 5], fill=trace)
+        d.line([x, 10, x, 11], fill=trace)
+    d.line([3, 5, 12, 5], fill=trace)
+    d.line([3, 10, 12, 10], fill=trace)
+    # De chip.
+    d.rectangle([5, 6, 10, 9], fill=(26, 28, 32, 255), outline=(60, 64, 72, 255))
+    px(im, [(9, 7)], CYAN)
+    # De 8 pinnen: gouden plaatjes boven en onder.
+    for x in (3, 6, 9, 12):
+        for y in (2, 13):
+            px(im, [(x, y)], gold)
+        px(im, [(x, 3)], gold_dark)
+        px(im, [(x, 12)], gold_dark)
+    save(im, "item/robot_circuit_board.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3189,3 +3220,4 @@ if __name__ == "__main__":
     bypass_kit_item()
     robot_textures()
     robot_part_items()
+    robot_circuit_board()
