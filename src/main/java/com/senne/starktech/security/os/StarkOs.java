@@ -234,6 +234,8 @@ public final class StarkOs {
                 }
             }
             case "cam_watch" -> com.senne.starktech.robot.Robots.watched(player.serverLevel(), core, args.getInt("robot"));
+            // De app Training (hoofdstuk 26): de training stoppen.
+            case "training_stop" -> notify(player, core, session, com.senne.starktech.training.Trainings.stop(player, core), false);
             case "robot_switch", "robot_rename", "robot_program", "robot_squad" -> {
                 // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23), zie robot/Robots.
                 com.senne.starktech.robot.Robots.Desktop result = com.senne.starktech.robot.Robots.desktop(
@@ -790,6 +792,7 @@ public final class StarkOs {
         data.put("cameras", cameras);
         // De guard robots in het gebied van de kern (de app Robots, hoofdstuk 21).
         data.put("robots", com.senne.starktech.robot.Robots.snapshot(level, core));
+        data.put("training", com.senne.starktech.training.Trainings.snapshot(level, core));
         data.put("robotPrograms", com.senne.starktech.robot.Robots.programNames(core, com.senne.starktech.logic.program.ProgramKind.ROBOT));
         data.put("dronePrograms", com.senne.starktech.robot.Robots.programNames(core, com.senne.starktech.logic.program.ProgramKind.DRONE));
         // De server (serverracks) waar de redstone-diagrammen op draaien.

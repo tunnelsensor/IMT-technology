@@ -189,9 +189,17 @@ public final class BotPins {
                     || core != null && bot.level() instanceof ServerLevel level && !SecurityCores.isFriend(level, core, player);
             case TRUSTED -> bot.owner() != null
                     && core != null && bot.level() instanceof ServerLevel level && SecurityCores.isFriend(level, core, player);
-            case TRAINEE -> false; // een training komt in hoofdstuk 26
+            // De trainee van de training bij zijn kern (hoofdstuk 26): dat vraagt hij aan de server.
+            case TRAINEE -> core != null && isTrainee(player, core);
             default -> player.getGameProfile().getName().equalsIgnoreCase(filter);
         };
+    }
+
+    /** Is deze speler de trainee van de training die nu bij deze kern bezig is? */
+    private static boolean isTrainee(Player player, SecurityCoreBlockEntity core) {
+        com.senne.starktech.training.Training.Session session = com.senne.starktech.training.Training.of(player.getUUID());
+        return session != null && session.running() && session.core().pos().equals(core.getBlockPos())
+                && core.getLevel() != null && session.core().dimension() == core.getLevel().dimension();
     }
 
     /** Wie hij nu ziet, de dichtste eerst (één keer per tick uitgerekend). */

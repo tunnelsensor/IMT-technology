@@ -37,6 +37,8 @@ public class StarkOsScreen extends Screen {
         GROUPS("Groups", "G", 340, 186),
         /** De guard robots in het gebied van de kern: aan/uit en hernoemen (hoofdstuk 21). */
         ROBOTS("Robots", "R", 340, 190),
+        /** De training die nu bezig is, en de rapporten van de laatste (hoofdstuk 26). */
+        TRAINING("Training", "T", 340, 196),
         ACCESS("Access", "A", 280, 190),
         KEYCARDS("Keycards", "K", 300, 190),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
@@ -124,6 +126,7 @@ public class StarkOsScreen extends Screen {
     private final DevicesApp devices = new DevicesApp(this);
     private final GroupsApp groups = new GroupsApp(this);
     private final RobotsApp robots = new RobotsApp(this);
+    private final TrainingApp training = new TrainingApp(this);
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
@@ -529,6 +532,7 @@ public class StarkOsScreen extends Screen {
             case DEVICES -> devices.mouseClicked(font, contentArea(win), mx, my);
             case GROUPS -> groups.mouseClicked(font, contentArea(win), mx, my);
             case ROBOTS -> robots.mouseClicked(font, contentArea(win), mx, my);
+            case TRAINING -> training.mouseClicked(font, contentArea(win), mx, my);
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
@@ -610,6 +614,7 @@ public class StarkOsScreen extends Screen {
             case DEVICES -> devices.mouseScrolled(scrollY);
             case GROUPS -> groups.mouseScrolled(scrollY);
             case ROBOTS -> robots.mouseScrolled(scrollY);
+            case TRAINING -> training.mouseScrolled(scrollY);
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(scrollY);
@@ -781,6 +786,7 @@ public class StarkOsScreen extends Screen {
             case DEVICES -> devices.render(g, font, area, mouseX, mouseY, partialTick);
             case GROUPS -> groups.render(g, font, area, mouseX, mouseY, partialTick);
             case ROBOTS -> robots.render(g, font, area, mouseX, mouseY, partialTick);
+            case TRAINING -> training.render(g, font, area, mouseX, mouseY);
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);

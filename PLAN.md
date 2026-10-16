@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 284 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 285 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2870,8 +2870,13 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       gouden staaf). Stapt de trainee erop (in het gebied van zijn training), dan is hij geslaagd. Staat er een in de
       basis, dan is "de tijd is om" mislukt: hij moest het doel halen. Twee nieuwe tests
       (`training_start_block_only_for_trusted`, `training_goal_ends_with_success`).
-- [ ] **7. Einde en rapport** — robots die down zijn, staan weer op en lopen naar hun dock; rapport van
-      E.D.I.T.H.; app Training.
+- [x] **7. Einde en rapport** — met het filter **"trainee"** (`write(facePin, "trainee")`) ziet een robot of drone
+      alleen de trainee van de training bij zijn kern, en alleen zolang die bezig is (dat vraagt hij aan de server).
+      Gaat er een neer tijdens de training (de Ion Blaster), dan blijft hij liggen tot de training voorbij is; dan
+      staat hij op en gaat hij uit (naar zijn dock), en telt het rapport hem mee. Nieuwe app **Training** op de
+      desktop: de training die nu bezig is (wie, trainingsschoten of lethal, levens, treffers, hoe lang al en de
+      limiet), met een knop **Stop**, en daaronder de rapporten van de laatste trainingen (PASSED, FAILED of
+      STOPPED, hoe, hoe lang, en wie raakte). Eén nieuwe test (`robots_in_a_training`).
 
 Tests: een non-lethal treffer doet geen schade maar telt; lethal doet schade; levens op beëindigt de training;
 het End-blok geeft een puls en deactiveert een squad; een inbreker kan geen training starten; het Goal-blok

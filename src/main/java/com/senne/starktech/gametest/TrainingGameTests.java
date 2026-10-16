@@ -283,6 +283,44 @@ public final class TrainingGameTests {
     }
 
     /**
+     * Robots in een training: met het filter "trainee" ziet een robot alleen de trainee, en alleen zolang de training
+     * bezig is. Gaat er een neer (de Ion Blaster), dan blijft hij liggen tot de training voorbij is; dan staat hij op,
+     * gaat hij uit (naar zijn dock), en zegt het rapport dat er een robot neerging.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "training_robots")
+    public static void robots_in_a_training(GameTestHelper helper) {
+        ServerPlayer trainee = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 2, 7), "robot-trainee");
+        StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(10, 2, 6), "robot-bystander");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), trainee);
+        BlockPos rack = new BlockPos(12, 3, 2);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        var board = com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition");
+        var watcher = BotSenseGameTests.robot(helper, new BlockPos(6, 2, 12), com.senne.starktech.robot.RobotStyle.COMMANDO, board,
+                "who = \"\"\nwhen started:\n    write(pin(2), \"trainee\")\n    forever:\n        who = read(pin(2))\n        wait(0.1)\n");
+        var downed = BotSenseGameTests.robot(helper, new BlockPos(12, 2, 12), com.senne.starktech.robot.RobotStyle.COMMANDO,
+                com.senne.starktech.bot.BotBoard.EMPTY, "when started:\n    pass\n");
+        watcher.setOwner(trainee);
+        downed.setOwner(trainee);
+        helper.runAfterDelay(2, () -> StarkTechGameTests.startServer(helper, rack, core));
+        helper.runAfterDelay(20, () -> {
+            check("".equals(watcher.brain().global("who")), "Zonder training zag hij met \"trainee\" toch " + watcher.brain().global("who"));
+            check(Training.start(helper.getLevel(), core, trainee,
+                    new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 3, 0), null) == null, "De training begon niet");
+        });
+        helper.runAfterDelay(20 + afterCountdown() + 10, () -> {
+            check("robot-trainee".equals(watcher.brain().global("who")), "Met \"trainee\" zag hij " + watcher.brain().global("who"));
+            downed.knockDown(20);
+        });
+        helper.runAfterDelay(20 + afterCountdown() + 50, () -> {
+            check(downed.isDown(), "Na zijn gewone tijd stond hij op, terwijl de training nog bezig is");
+            Training.end(helper.getLevel(), Training.of(trainee.getUUID()), Training.Result.STOPPED);
+            check(!downed.isDown() && !downed.isActive(), "Na de training stond hij niet op (of ging hij niet uit)");
+            check(core.trainingReports().getLast().downed() == 1, "Het rapport telde de robot die neerging niet");
+            helper.succeed();
+        });
+    }
+
+    /**
      * Een tijdslimiet zonder Goal-blok: wie het volhoudt, is geslaagd. Een tweede training bij dezelfde kern kan niet
      * tegelijk, en de trainee kan niet in twee trainingen tegelijk.
      */

@@ -746,7 +746,7 @@ final class LogicApp {
             lines.add(new HelpLine("Distance: read(distancePin)", "if read(distancePin) < 3:\n    turn_right()",
                     "blocks to what stands in front of it (99 = nothing)", HudStyle.WHITE, null));
             lines.add(new HelpLine("Face: write(facePin, ...)", "write(facePin, \"strangers\")",
-                    "who it looks for: \"everyone\", \"strangers\", \"trusted\" or a name; read(facePin) = who it sees",
+                    "who it looks for: \"everyone\", \"strangers\", \"trusted\", \"trainee\" or a name; read(facePin) = who it sees",
                     0x9ED8FF, null));
             lines.add(new HelpLine("Laser: write(laserPin, true)", "if read(scanPin) and read(laserPin):\n    write(laserPin, true)",
                     "one shot at whom the scan sees (else straight ahead); read = ready to fire", 0x9ED8FF, null));
