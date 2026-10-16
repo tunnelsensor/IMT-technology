@@ -320,6 +320,42 @@ public final class TrainingGameTests {
         });
     }
 
+    /** Een schutter: hij zoekt de trainee, en schiet met zijn laser zodra hij hem ziet en klaar is. */
+    private static final String SHOOTER = """
+            when started:
+                write(pin(2), "trainee")
+                forever:
+                    if read(pin(1)) and read(pin(3)):
+                        write(pin(3), true)
+                    wait(0.25)
+            """;
+
+    /**
+     * Van begin tot eind: een robot met Scan, Face Recognition ("trainee") en Laser schiet op de trainee, ook zonder PvP
+     * (in de testwereld staat PvP uit: de trainee koos er zelf voor). Met trainingsschoten doet dat geen schade, maar
+     * het kost levens: na twee treffers is de training voorbij, en het rapport zegt wie er schoot.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "training_shoot")
+    public static void robot_shoots_the_trainee_with_training_shots(GameTestHelper helper) {
+        ServerPlayer trainee = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 2, 7), "shot-trainee");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), trainee);
+        BlockPos rack = new BlockPos(12, 3, 2);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        var board = com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition").with(3, "laser");
+        var robot = BotSenseGameTests.robot(helper, new BlockPos(8, 2, 12), com.senne.starktech.robot.RobotStyle.COMMANDO, board, SHOOTER);
+        robot.setOwner(trainee);
+        helper.runAfterDelay(2, () -> StarkTechGameTests.startServer(helper, rack, core));
+        helper.runAfterDelay(20, () -> check(Training.start(helper.getLevel(), core, trainee,
+                new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 2, 0), null) == null, "De training begon niet"));
+        helper.runAfterDelay(25, () -> helper.succeedWhen(() -> {
+            check(Training.of(trainee.getUUID()) == null, "De training is nog niet voorbij");
+            TrainingReport report = core.trainingReports().getLast();
+            check(report.result() == Training.Result.OUT_OF_LIVES && report.hitsBy().contains(robot.getName().getString()),
+                    "Het rapport klopt niet: " + report.line());
+            check(trainee.getHealth() == trainee.getMaxHealth(), "Trainingsschoten deden toch schade");
+        }));
+    }
+
     /**
      * Een tijdslimiet zonder Goal-blok: wie het volhoudt, is geslaagd. Een tweede training bij dezelfde kern kan niet
      * tegelijk, en de trainee kan niet in twee trainingen tegelijk.

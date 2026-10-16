@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 285 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 94 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2876,7 +2876,9 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       staat hij op en gaat hij uit (naar zijn dock), en telt het rapport hem mee. Nieuwe app **Training** op de
       desktop: de training die nu bezig is (wie, trainingsschoten of lethal, levens, treffers, hoe lang al en de
       limiet), met een knop **Stop**, en daaronder de rapporten van de laatste trainingen (PASSED, FAILED of
-      STOPPED, hoe, hoe lang, en wie raakte). Eén nieuwe test (`robots_in_a_training`).
+      STOPPED, hoe, hoe lang, en wie raakte). De trainee kan altijd geraakt worden door de robots en drones van de
+      training, ook als PvP uit staat (hij koos er zelf voor). Twee nieuwe tests (`robots_in_a_training`, en van
+      begin tot eind `robot_shoots_the_trainee_with_training_shots`).
 
 Tests: een non-lethal treffer doet geen schade maar telt; lethal doet schade; levens op beëindigt de training;
 het End-blok geeft een puls en deactiveert een squad; een inbreker kan geen training starten; het Goal-blok

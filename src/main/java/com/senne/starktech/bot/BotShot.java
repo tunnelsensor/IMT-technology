@@ -82,10 +82,14 @@ public final class BotShot {
                 bot.getName().getString()) ? hit : null;
     }
 
-    /** Spelers alleen met PvP aan (of als de bot van niemand is), en niet in creative of als toeschouwer; de rest altijd. */
+    /**
+     * Spelers alleen met PvP aan (of als de bot van niemand is, of als de speler de trainee van een training is: die
+     * koos er zelf voor, hoofdstuk 26), en niet in creative of als toeschouwer; de rest altijd.
+     */
     private static boolean mayHurt(ServerLevel level, Bot bot, Entity entity) {
         if (entity instanceof Player player) {
-            return !player.isCreative() && !player.isSpectator() && (bot.owner() == null || level.getServer().isPvpAllowed());
+            return !player.isCreative() && !player.isSpectator()
+                    && (bot.owner() == null || level.getServer().isPvpAllowed() || com.senne.starktech.training.Training.isTrainee(player));
         }
         return true;
     }
