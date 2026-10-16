@@ -19,6 +19,8 @@ public final class ExprCache {
     /** Zoveel voorwaarden onthouden we hooguit; daarna beginnen we opnieuw. */
     private static final int MAX = 512;
     private static final Map<String, Optional<Expr>> CACHE = new HashMap<>();
+    /** Rijtjes waarden (hoofdstuk 23: goto(x, y, z)), apart onthouden. */
+    private static final Map<String, Optional<java.util.List<Expr>>> LISTS = new HashMap<>();
 
     /** De voorwaarde (een if), gelezen voor een diagram dat met deze trigger begint; null als hij niet klopt. */
     public static @Nullable Expr get(String text, @Nullable Op trigger) {
@@ -46,6 +48,23 @@ public final class ExprCache {
         return cached.orElse(null);
     }
 
+    /** Een rijtje waarden met komma's ertussen (zoals bij goto), of null als het niet klopt. */
+    public static java.util.@Nullable List<Expr> values(String text) {
+        Optional<java.util.List<Expr>> cached = LISTS.get(text);
+        if (cached == null) {
+            if (LISTS.size() >= MAX) {
+                LISTS.clear();
+            }
+            try {
+                cached = Optional.of(Expr.parseLenientList(text));
+            } catch (LogicException e) {
+                cached = Optional.empty();
+            }
+            LISTS.put(text, cached);
+        }
+        return cached.orElse(null);
+    }
+
     /** Is de voorwaarde waar, met deze gegevens? */
     public static boolean test(Expr expr, Expr.Facts facts) {
         return Expr.test(expr, facts);
@@ -58,5 +77,6 @@ public final class ExprCache {
 
     public static void clear() {
         CACHE.clear();
+        LISTS.clear();
     }
 }

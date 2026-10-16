@@ -63,6 +63,16 @@ public record BotBoard(List<String> pins, int bridges) {
         return used;
     }
 
+    /** Zit deze module op een van de pinnen? */
+    public boolean has(BotModule module) {
+        for (int number = 1; number <= PINS; number++) {
+            if (module(number) == module) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** De module op pin {@code number}, of null als hij leeg is (of als er iets onbekends op staat). */
     public @Nullable BotModule module(int number) {
         return BotModule.byId(pin(number));

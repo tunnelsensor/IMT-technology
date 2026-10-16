@@ -36,7 +36,10 @@ public final class Interpreter {
         /** Is de voorwaarde van dit IF-blokje nu waar? */
         boolean test(Interpreter run, LogicGraph.Node node);
 
-        /** Doe deze actie. (Een if, wait, eigen blok of naam = waarde doet de tolk zelf; die komen hier niet.) */
+        /**
+         * Doe deze actie. (Een if, wait, eigen blok of naam = waarde doet de tolk zelf; die komen hier niet.)
+         * Moet de run wachten tot de actie klaar is (een robot die loopt), dan roept de host {@link #pause()} aan.
+         */
         void act(Interpreter run, LogicGraph.Node node);
 
         /** De gegevens van nu (card.level, is_night...), om een waarde uit te rekenen. */
@@ -160,6 +163,9 @@ public final class Interpreter {
                 continue;
             }
             host.act(this, node);
+            if (wakeAt > now) {
+                return false; // de host laat de run wachten (een robot die eerst moet lopen, zie BotBrain)
+            }
         }
         return false;
     }
@@ -318,6 +324,14 @@ public final class Interpreter {
     /** Laat de run (opnieuw) beginnen op deze speltijd. */
     public void wakeAt(long time) {
         wakeAt = time;
+    }
+
+    /**
+     * Laat de run wachten tot iemand hem weer wekt met {@link #wakeAt(long)}: een robot doet {@code forward(3)}
+     * en zijn programma gaat pas verder als hij er is (hoofdstuk 23).
+     */
+    public void pause() {
+        wakeAt = Long.MAX_VALUE;
     }
 
     /** Hoeveel blokjes de tolk afliep sinds de vorige keer dat je het vroeg (voor de CPU-meter), en begint weer bij 0. */

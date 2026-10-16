@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 251 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 258 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2578,8 +2578,26 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       Help kennen alles per soort (screenshot `l18`), en een oude def die nu `forward`, `stop`, `send`,
       `read`... heet, krijgt bij het laden een andere naam. Twee nieuwe tests (`logic_robot_words`,
       `logic_robot_values`).
-- [ ] **3. Het brein van de robot** — dezelfde tolk, met een stappenbudget per tick; bewegen stap voor stap;
-      `blocked` als er iets in de weg staat; `charge()` loopt naar zijn dock en terug.
+- [x] **3. Het brein van de robot** — een robot voert zijn programma nu zelf uit (`bot/BotBrain`, met
+      dezelfde tolk als de server). Aan, met stroom en een programma: elke `when started:` begint (stapt hij net
+      uit zijn dock, dan pas als hij eruit is), en `every(...)` gaat af, ook terwijl een andere when nog bezig
+      is. Elke when doet hooguit 32 blokjes per tick (`STEPS_PER_TICK`), dus `forever:` zonder `wait` laat de
+      wereld niet hangen; hooguit 8 whens tegelijk (`MAX_RUNS`). Uit, een lege batterij of een nieuw programma:
+      alles stopt, en de volgende keer begint hij opnieuw bij `when started:` met verse namen. Zijn lijf
+      (`bot/BotMove`) doet één beweging tegelijk (wie het eerst vroeg, is eerst): `forward(n)`/`back(n)` blok
+      voor blok, precies van midden naar midden, één blok op of af; tegen een muur, boven een gat, of als iets
+      hem 2 seconden tegenhoudt (`STUCK_SECONDS`) is `robot.blocked` waar en gaat hij terug naar het midden van
+      zijn blok. Achteruit blijft hij vooruit kijken; `turn_left()`/`turn_right()` is een kwartslag in 0,25 s.
+      `goto(x, y, z)` loopt met de padzoeker (alleen met de Pathfinding-module, anders `robot.blocked` en een
+      regel in het logboek), `charge(60)` loopt naar zijn dock, laadt tot 60%, stapt eruit en loopt terug naar
+      waar hij was (geen stroom op het dock: na 10 s geeft hij het op). `stop()` zet hem uit. Met een programma
+      kijkt hij recht voor zich uit (niet meer rond). Zijn programma en zijn windrichting worden bewaard. Nieuwe
+      config: `STEPS_PER_TICK`, `MAX_RUNS`, `WALK_FACTOR` (0,45 x de snelheid van zijn benen = 2,25 blokken
+      per seconde), `STUCK_SECONDS`, `TURN_SECONDS`, `GOTO_SECONDS`. Onderweg gevonden: de padzoeker van
+      Minecraft vindt "een blok ernaast" al aangekomen, waardoor een robot die precies een blok vóór het
+      blok voor zijn dock stond, niet meer thuiskwam (nu loopt hij dat stukje zelf). Zeven nieuwe tests
+      (`BotProgramGameTests`: vierkantje, muur, goto met en zonder module, eindeloze lus, laden en terug,
+      stop, opnieuw opstarten).
 - [ ] **4. Programma's naar de robot** — kiezen in de app Robots; uploaden via de verbinding; de robot bewaart
       zijn eigen kopie.
 - [ ] **5. Robot naar server** — alleen met verbinding (in het gebied van de core, met stroom en een werkende

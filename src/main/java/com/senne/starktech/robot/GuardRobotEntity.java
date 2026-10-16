@@ -1,10 +1,12 @@
 package com.senne.starktech.robot;
 
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotBrain;
 import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.energy.StarkGrid;
+import com.senne.starktech.logic.program.LogicProgram;
 import com.senne.starktech.registry.ModItems;
 import com.senne.starktech.registry.ModSounds;
 import com.senne.starktech.security.BaseTrust;
@@ -54,8 +56,9 @@ import org.jetbrains.annotations.Nullable;
  * benen, elk in een van vier stijlen (zie RobotParts). De onderdelen bepalen hoe hij eruitziet en een
  * beetje wat hij kan: het lijf zijn leven en pantser, de benen hoe snel hij loopt.
  *
- * Hij is geen monster (dus je torentjes laten hem met rust) en verdwijnt nooit vanzelf. Zolang hij nog
- * geen programma heeft (hoofdstuk 23) staat hij stil en kijkt hij rond.
+ * Hij is geen monster (dus je torentjes laten hem met rust) en verdwijnt nooit vanzelf. Zolang hij geen
+ * programma heeft staat hij stil en kijkt hij rond; met een programma (hoofdstuk 23) doet hij wat dat zegt
+ * (zie BotBrain), en kijkt hij recht voor zich uit.
  *
  * Hij heeft een batterij (hoe groot: zijn lijf). Staat hij aan, dan gebruikt hij stroom (meer als hij loopt);
  * is de batterij leeg, dan valt hij stil ({@link RobotState#NO_POWER}). Zijn thuis is een Robot Dock: daar
@@ -105,6 +108,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     private @Nullable BlockPos home;
     /** Waar hij naartoe stapt als hij in zijn dock aangezet wordt (daarna null). */
     private @Nullable BlockPos stepOut;
+    /** Zijn brein (hoofdstuk 23): hier draait zijn programma, alleen op de server. */
+    private final BotBrain brain = new BotBrain(this);
 
     public GuardRobotEntity(EntityType<? extends GuardRobotEntity> type, Level level) {
         super(type, level);
@@ -143,27 +148,28 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     protected void registerGoals() {
         goalSelector.addGoal(1, new ReturnToDockGoal());
         goalSelector.addGoal(1, new StepOutGoal());
-        // Nog geen programma: als hij aan staat, blijft hij staan en kijkt hij wie er langskomt.
+        // Geen programma: als hij aan staat, blijft hij staan en kijkt hij wie er langskomt. (Met een programma
+        // kijkt hij recht voor zich uit: dat is de kant waar forward() heen gaat.)
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f) {
             @Override
             public boolean canUse() {
-                return state() == RobotState.ACTIVE && super.canUse();
+                return state() == RobotState.ACTIVE && !brain.hasProgram() && super.canUse();
             }
 
             @Override
             public boolean canContinueToUse() {
-                return state() == RobotState.ACTIVE && super.canContinueToUse();
+                return state() == RobotState.ACTIVE && !brain.hasProgram() && super.canContinueToUse();
             }
         });
         goalSelector.addGoal(7, new RandomLookAroundGoal(this) {
             @Override
             public boolean canUse() {
-                return state() == RobotState.ACTIVE && super.canUse();
+                return state() == RobotState.ACTIVE && !brain.hasProgram() && super.canUse();
             }
 
             @Override
             public boolean canContinueToUse() {
-                return state() == RobotState.ACTIVE && super.canContinueToUse();
+                return state() == RobotState.ACTIVE && !brain.hasProgram() && super.canContinueToUse();
             }
         });
     }
@@ -297,12 +303,41 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         active = on;
         getNavigation().stop();
         stepOut = null;
-        if (on && isOnDock() && level().getBlockState(home).getBlock() instanceof RobotDockBlock) {
-            Direction front = level().getBlockState(home).getValue(RobotDockBlock.FACING);
-            stepOut = home.relative(front, Math.max(1, Math.round(StarkConfig.Robots.STEP_OUT)));
+        if (on) {
+            stepOutOfDock();
         }
         updateState();
         return true;
+    }
+
+    /** Staat hij in zijn dock, dan stapt hij er naar voren uit (als hij aangezet wordt, of klaar is met laden). */
+    public void stepOutOfDock() {
+        if (isOnDock() && level().getBlockState(home).getBlock() instanceof RobotDockBlock) {
+            Direction front = level().getBlockState(home).getValue(RobotDockBlock.FACING);
+            stepOut = home.relative(front, Math.max(1, Math.round(StarkConfig.Robots.STEP_OUT)));
+        }
+    }
+
+    /** Is hij nog uit zijn dock aan het stappen? */
+    public boolean isSteppingOut() {
+        return stepOut != null;
+    }
+
+    // ================================================================ Zijn programma (hoofdstuk 23)
+
+    /** Zijn brein: het programma dat hij draait (zie BotBrain). Alleen op de server bezig. */
+    public BotBrain brain() {
+        return brain;
+    }
+
+    /** Het programma dat hij draait, of null. */
+    public @Nullable LogicProgram program() {
+        return brain.program();
+    }
+
+    /** Een ander programma (of geen). Staat hij aan, dan begint het meteen bij when started. */
+    public void setProgram(@Nullable LogicProgram program) {
+        brain.setProgram(program);
     }
 
     /**
@@ -368,6 +403,11 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         return home != null && blockPosition().equals(home);
     }
 
+    /** Staat hij precies in het midden van zijn dock (na het netjes gaan staan)? */
+    public boolean isSettled() {
+        return isOnDock() && flatDistance(home) <= 0.001;
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -403,8 +443,15 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         if (battery <= 0) {
             getNavigation().stop();
         }
-        if (!active && home != null && closeToHome() && flatDistance(home) > 0.001) {
+        if ((!active || brain.wantsDock()) && home != null && closeToHome() && flatDistance(home) > 0.001) {
             settleInDock(level);
+        }
+        // Zijn programma (hoofdstuk 23): alleen als hij aan staat en stroom heeft. Anders stopt het, en de volgende
+        // keer begint het weer bij when started.
+        if (active && battery > 0 && brain.hasProgram()) {
+            brain.tick(level);
+        } else {
+            brain.stop();
         }
         updateState();
         // Om de seconde melden bij BotNetwork (de app Robots leest daaruit). Nog geen naam? Dan krijgt hij er een.
@@ -508,9 +555,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
     }
 
     /**
-     * Uitgezet: loop terug naar je dock (geen dock of lege batterij: blijf staan). Eerst met de gewone padzoeker
-     * naar het blok vóór het dock, dan het laatste stukje rechtdoor erin: van en naar een plek op de lage plaat
-     * van het dock vindt de padzoeker geen weg.
+     * Uitgezet (of zijn programma zegt {@code charge()}): loop terug naar je dock (geen dock of lege batterij: blijf
+     * staan). Eerst met de gewone padzoeker naar het blok vóór het dock, dan het laatste stukje rechtdoor erin: van
+     * en naar een plek op de lage plaat van het dock vindt de padzoeker geen weg.
      */
     private class ReturnToDockGoal extends Goal {
         ReturnToDockGoal() {
@@ -519,12 +566,12 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
 
         @Override
         public boolean canUse() {
-            return !active && home != null && battery > 0 && !closeToHome() && onGround();
+            return (!active || brain.wantsDock()) && home != null && battery > 0 && !closeToHome() && onGround();
         }
 
         @Override
         public boolean canContinueToUse() {
-            return !active && home != null && battery > 0 && !closeToHome();
+            return (!active || brain.wantsDock()) && home != null && battery > 0 && !closeToHome();
         }
 
         @Override
@@ -540,6 +587,9 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
                 // Het laatste stukje: rechtdoor het dock in.
                 getNavigation().stop();
                 getMoveControl().setWantedPosition(home.getX() + 0.5, home.getY() + DOCK_FLOOR, home.getZ() + 0.5, 0.7);
+            } else if (level && flatDistance(front) < 2.5 && getNavigation().isDone()) {
+                // Vlakbij: voor de padzoeker is een blok ernaast al "aangekomen". Dan zelf naar het blok vóór het dock.
+                getMoveControl().setWantedPosition(front.getX() + 0.5, front.getY(), front.getZ() + 0.5, 1.0);
             } else if (getNavigation().isDone() && tickCount % 20 == 0) {
                 walkToFront(); // de weg was op of werd niet gevonden: opnieuw proberen
             }
@@ -651,6 +701,10 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
             tag.putLong("Home", home.asLong());
         }
         tag.put("Board", BotBoard.CODEC.encodeStart(NbtOps.INSTANCE, board()).getOrThrow());
+        if (brain.program() != null) {
+            tag.put("Program", brain.program().save());
+        }
+        tag.putByte("Facing", (byte) brain.body().facing().get2DDataValue());
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
@@ -670,6 +724,8 @@ public class GuardRobotEntity extends PathfinderMob implements BaseTrust.Placed 
         active = tag.getBoolean("Active");
         battery = tag.contains("Battery") ? Math.min(tag.getDouble("Battery"), maxBattery()) : maxBattery();
         home = tag.contains("Home") ? BlockPos.of(tag.getLong("Home")) : null;
+        brain.setProgram(tag.contains("Program") ? LogicProgram.load(tag.getCompound("Program")) : null);
+        brain.body().setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);
         updateState(false);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");

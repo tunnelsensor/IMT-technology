@@ -1494,6 +1494,28 @@ public final class StarkConfig {
         @Tunable(value = "How many blocks a robot walks out of its dock when you switch it on", max = 16)
         public static float STEP_OUT = 2.0f;
 
+        // Programma's (hoofdstuk 23): het brein en het lijf van een robot.
+        /** Zoveel blokjes doet één when van een robotprogramma hooguit per tick (de rest de volgende tick). */
+        @Tunable(value = "Robot program: blocks one when may do per tick (the rest waits for the next tick)", min = 1, max = 1_000)
+        public static float STEPS_PER_TICK = 32.0f;
+        /** Zoveel whens mogen er tegelijk bezig zijn op één robot. */
+        @Tunable(value = "Robot program: how many whens may run at the same time on one robot", min = 1, max = 64)
+        public static float MAX_RUNS = 8.0f;
+        /** Hoe snel zijn programma hem laat lopen: keer de snelheid van zijn benen (0,45 x 0,25 = 2,25 blokken per seconde). */
+        @Tunable(value = "How fast a robot walks for its program, times the speed of its legs (0.45 x 0.25 = 2.25 blocks a second)",
+                min = 0.05, max = 4)
+        public static float WALK_FACTOR = 0.45f;
+        /** Zolang (seconden) probeert hij een stap voor hij geblokkeerd is. */
+        @Tunable(value = "Seconds a robot keeps trying one step before it counts as blocked", min = 0.25, max = 60)
+        public static float STUCK_SECONDS = 2.0f;
+        /** Zolang duurt een kwartslag. */
+        @Tunable(value = "Seconds a quarter turn of a robot takes", max = 5)
+        public static float TURN_SECONDS = 0.25f;
+        /** Zolang mag goto() (of de weg naar het dock en terug bij charge()) duren voor hij het opgeeft. */
+        @Tunable(value = "Seconds goto() (or the walk to the dock and back for charge()) may take before the robot gives up",
+                min = 1, max = 600)
+        public static float GOTO_SECONDS = 60.0f;
+
         // Solderen (hoofdstuk 22): de hittebalk en wat er misgaat.
         /** Zoveel ticks duurt het tot de hittebalk vol is. */
         @Tunable(value = "Soldering: ticks the heat bar takes to fill up", min = 5, max = 400)
