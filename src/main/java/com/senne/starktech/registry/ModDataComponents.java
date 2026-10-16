@@ -132,4 +132,10 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("robot_data", builder -> builder
                     .persistent(com.senne.starktech.robot.RobotData.CODEC)
                     .networkSynchronized(com.senne.starktech.robot.RobotData.STREAM_CODEC));
+
+    /** Hoofdstuk 25: wat er in een Security Drone-item zit (printplaat, naam, programma; zie DroneData). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.starktech.robot.DroneData>> DRONE_DATA =
+            COMPONENTS.registerComponentType("drone_data", builder -> builder
+                    .persistent(com.senne.starktech.robot.DroneData.CODEC)
+                    .networkSynchronized(com.senne.starktech.robot.DroneData.STREAM_CODEC));
 }

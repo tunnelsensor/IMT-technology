@@ -126,7 +126,7 @@ public final class ScriptParser {
                 throw new LogicException(line.number(), hint);
             }
             if (!trigger.allowedIn(kind)) {
-                throw new LogicException(line.number(), ScriptChecker.wrongKind(ScriptChecker.triggerWord(trigger), kind));
+                throw new LogicException(line.number(), ScriptChecker.wrongKind(ScriptChecker.triggerWord(trigger), kind, trigger::allowedIn));
             }
             expectColon(line, call.end());
             Values values = values(line, trigger, call);
@@ -271,7 +271,7 @@ public final class ScriptParser {
                     + call.name() + "(...):");
         }
         if (!op.allowedIn(kind)) {
-            throw new LogicException(line.number(), ScriptChecker.wrongKind(op.code() + "()", kind));
+            throw new LogicException(line.number(), ScriptChecker.wrongKind(op.code() + "()", kind, op::allowedIn));
         }
         if (op.textArg() == Op.Arg.VALUES) {
             // goto(x, y, z), write(pin, true), order("Guard 1", "attack"): een rijtje waarden, als code bewaard.
@@ -544,7 +544,7 @@ public final class ScriptParser {
 
     /** Hoe een when in deze soort programma begint, voor de foutmeldingen. */
     private String exampleWhen() {
-        return kind == ProgramKind.ROBOT ? "when started:" : "when keycard(\"Lab door\"):";
+        return kind.onBot() ? "when started:" : "when keycard(\"Lab door\"):";
     }
 
     /** De triggers die in deze soort programma bestaan: "keycard, codepanel, turned_on, turned_off, every, message". */

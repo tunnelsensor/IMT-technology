@@ -310,6 +310,11 @@ public final class BotBrain {
                 move(run, new BotMove.Walk(node.op == Op.FORWARD ? blocks : -blocks));
             }
             case TURN_LEFT, TURN_RIGHT -> move(run, new BotMove.Turn(node.op == Op.TURN_RIGHT));
+            case UP, DOWN -> {
+                // Alleen een drone (hoofdstuk 25); de controle laat het in een robotprogramma niet toe.
+                int blocks = (int) Math.round(Math.max(node.op.minNumber(), Math.min(node.op.maxNumber(), number(run, node))));
+                move(run, new BotMove.Climb(node.op == Op.UP ? blocks : -blocks));
+            }
             case GOTO -> {
                 List<Object> values = values(run, node);
                 if (!bot.board().has(BotModule.PATHFINDING)) {
@@ -322,7 +327,7 @@ public final class BotBrain {
             }
             case CHARGE -> {
                 if (bot.home() == null) {
-                    report("charge(): it has no Robot Dock to charge on");
+                    report("charge(): it has no dock to charge on");
                     body.markBlocked();
                 } else {
                     move(run, new BotMove.Charge(Math.max(1, Math.min(100, number(run, node)))));
@@ -408,23 +413,45 @@ public final class BotBrain {
         return value instanceof Double number ? number : 0;
     }
 
+    /** Hoeveel blokken lucht er onder hem zijn tot er iets staat ({@code drone.height}; hooguit 64). */
+    private int heightAboveGround(BlockPos pos) {
+        for (int air = 0; air < 64; air++) {
+            BlockPos below = pos.below(air + 1);
+            if (!bot.level().getBlockState(below).getCollisionShape(bot.level(), below).isEmpty()) {
+                return air;
+            }
+        }
+        return 64;
+    }
+
     // ================================================================ Wat hij weet
 
-    /** {@code robot.battery}, {@code robot.x}, is_night... en de namen van deze when. */
+    /**
+     * {@code robot.battery}, {@code robot.x}, is_night... en de namen van deze when. Een drone (hoofdstuk 25) zegt
+     * {@code drone.battery}: hetzelfde, en {@code drone.height} erbij.
+     */
     private Expr.Facts facts(@Nullable Run run) {
         return new Expr.Facts() {
             @Override
             public Object value(String variable) {
                 BlockPos pos = bot.blockPosition();
+                // robot.x en drone.x zijn hetzelfde: zijn eigen x.
+                String self = variable.startsWith("robot.") || variable.startsWith("drone.") ? variable.substring(6) : null;
+                if (self != null) {
+                    return switch (self) {
+                        case "battery" -> Math.floor(bot.battery() / Math.max(1.0, bot.maxBattery()) * 100);
+                        case "x" -> (double) pos.getX();
+                        case "y" -> (double) pos.getY();
+                        case "z" -> (double) pos.getZ();
+                        case "height" -> (double) heightAboveGround(pos);
+                        case "facing" -> body.facing().getName();
+                        case "name" -> bot.getName().getString();
+                        case "blocked" -> body.blocked();
+                        case "connected" -> BotLink.connected(bot);
+                        default -> false;
+                    };
+                }
                 return switch (variable) {
-                    case "robot.battery" -> Math.floor(bot.battery() / Math.max(1.0, bot.maxBattery()) * 100);
-                    case "robot.x" -> (double) pos.getX();
-                    case "robot.y" -> (double) pos.getY();
-                    case "robot.z" -> (double) pos.getZ();
-                    case "robot.facing" -> body.facing().getName();
-                    case "robot.name" -> bot.getName().getString();
-                    case "robot.blocked" -> body.blocked();
-                    case "robot.connected" -> BotLink.connected(bot);
                     case "is_night" -> bot.level().isNight();
                     case "is_day" -> !bot.level().isNight();
                     // Na when ordered(...): de opdracht van de server (zonder plek: 0).

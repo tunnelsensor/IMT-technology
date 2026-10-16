@@ -27,11 +27,11 @@ public enum Op {
     TURNED_OFF(Kind.TRIGGER, "turned_off", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched off"),
     EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.NUMBER, "Every so many seconds"),
     /** {@code when started:} (hoofdstuk 23): een robotprogramma begint. Zonder haakjes: er hoort niets bij. */
-    STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot is switched on (or gets this program)"),
+    STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot (or drone) is switched on (or gets this program)"),
     /** {@code when ordered("attack"):} (hoofdstuk 23): de server geeft deze robot een opdracht met order(...). */
-    ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot an order with order(...)"),
+    ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...)"),
     /** {@code when message("intruder"):} (hoofdstuk 23): een robot stuurt de server een bericht met send(...). */
-    MESSAGE(Kind.TRIGGER, "message", Arg.TEXT, Arg.NONE, "One of your robots sends this message with send(...)"),
+    MESSAGE(Kind.TRIGGER, "message", Arg.TEXT, Arg.NONE, "One of your robots or drones sends this message with send(...)"),
 
     // ---------------------------------------------------------------- Je eigen blokjes (functies)
     /** Een eigen blok: in de code {@code def open_lab():} met de acties eronder. De tekst is de naam. */
@@ -54,19 +54,23 @@ public enum Op {
     ALARM(Kind.ACTION, "alarm", Arg.TEXT, Arg.NONE, "Alarm: E.D.I.T.H. warns the owner and the security hunts the player"),
     LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log"),
 
-    // ---------------------------------------------------------------- Een robot (hoofdstuk 23)
+    // ---------------------------------------------------------------- Een robot (hoofdstuk 23) of drone (hoofdstuk 25)
     /** {@code forward(3)}: zoveel blokken vooruit, blok voor blok. */
-    FORWARD(Kind.ACTION, "forward", Arg.NONE, Arg.NUMBER, "Walk this many blocks forward"),
+    FORWARD(Kind.ACTION, "forward", Arg.NONE, Arg.NUMBER, "Walk (a drone: fly) this many blocks forward"),
     /** {@code back(1)}: zoveel blokken achteruit (hij blijft dezelfde kant op kijken). */
-    BACK(Kind.ACTION, "back", Arg.NONE, Arg.NUMBER, "Walk this many blocks backwards (still looking the same way)"),
+    BACK(Kind.ACTION, "back", Arg.NONE, Arg.NUMBER, "Walk (or fly) this many blocks backwards (still looking the same way)"),
     TURN_LEFT(Kind.ACTION, "turn_left", Arg.NONE, Arg.NONE, "Turn a quarter to the left"),
     TURN_RIGHT(Kind.ACTION, "turn_right", Arg.NONE, Arg.NONE, "Turn a quarter to the right"),
+    /** {@code up(3)} (hoofdstuk 25): een drone vliegt zoveel blokken omhoog. */
+    UP(Kind.ACTION, "up", Arg.NONE, Arg.NUMBER, "Fly this many blocks up (only a drone can)"),
+    /** {@code down(1)}: zoveel blokken omlaag, niet door de grond. */
+    DOWN(Kind.ACTION, "down", Arg.NONE, Arg.NUMBER, "Fly this many blocks down (not through the ground)"),
     /** {@code goto(x, y, z)}: naar een plek lopen (alleen met de Pathfinding-module). De waarden staan in expr. */
-    GOTO(Kind.ACTION, "goto", Arg.VALUES, Arg.NONE, "Walk to a place: goto(x, y, z). Needs the Pathfinding module"),
-    /** {@code charge()} of {@code charge(80)}: naar het dock lopen, laden tot zoveel procent, en terug. */
-    CHARGE(Kind.ACTION, "charge", Arg.NONE, Arg.OPTIONAL_NUMBER, "Walk to the dock, charge (to 100%, or charge(80)) and walk back"),
-    /** {@code stop()}: zichzelf uitzetten; hij loopt naar zijn dock en blijft daar. */
-    STOP(Kind.ACTION, "stop", Arg.NONE, Arg.NONE, "Switch yourself off: walk to the dock and stay there"),
+    GOTO(Kind.ACTION, "goto", Arg.VALUES, Arg.NONE, "Walk (or fly) to a place: goto(x, y, z). Needs the Pathfinding module"),
+    /** {@code charge()} of {@code charge(80)}: naar het dock, laden tot zoveel procent, en terug. */
+    CHARGE(Kind.ACTION, "charge", Arg.NONE, Arg.OPTIONAL_NUMBER, "Go to the dock, charge (to 100%, or charge(80)) and come back"),
+    /** {@code stop()}: zichzelf uitzetten; hij gaat naar zijn dock en blijft daar. */
+    STOP(Kind.ACTION, "stop", Arg.NONE, Arg.NONE, "Switch yourself off: go back to the dock and stay there"),
     /** {@code write(laserPin, true)}: een pin iets laten doen. De waarden (pin, waarde) staan in expr. */
     WRITE(Kind.ACTION, "write", Arg.VALUES, Arg.NONE, "Tell the module on a pin what to do: write(laserPin, true)"),
     /** {@code send("intruder")}: een bericht naar de server; daar begint {@code when message("intruder"):}. */
@@ -77,9 +81,9 @@ public enum Op {
      * {@code order("Guard 1", "attack")} of {@code order("Guard 1", "attack", x, y, z)}: de robot begint zijn
      * {@code when ordered("attack"):}. De waarden staan in expr.
      */
-    ORDER(Kind.ACTION, "order", Arg.VALUES, Arg.NONE, "Give a robot an order: its when ordered(...) starts"),
-    ACTIVATE(Kind.ACTION, "activate", Arg.ROBOT, Arg.NONE, "Switch a robot on: it walks out of its dock"),
-    DEACTIVATE(Kind.ACTION, "deactivate", Arg.ROBOT, Arg.NONE, "Switch a robot off: it walks back to its dock"),
+    ORDER(Kind.ACTION, "order", Arg.VALUES, Arg.NONE, "Give a robot (or drone) an order: its when ordered(...) starts"),
+    ACTIVATE(Kind.ACTION, "activate", Arg.ROBOT, Arg.NONE, "Switch a robot (or drone) on: it leaves its dock"),
+    DEACTIVATE(Kind.ACTION, "deactivate", Arg.ROBOT, Arg.NONE, "Switch a robot (or drone) off: it goes back to its dock"),
 
     // ---------------------------------------------------------------- Namen (variabelen, hoofdstuk 20)
     /**
@@ -186,10 +190,10 @@ public enum Op {
         }
     }
 
-    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back) of "percent" (charge). */
+    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back, up, down) of "percent" (charge). */
     public String unit() {
         return switch (this) {
-            case FORWARD, BACK -> "blocks";
+            case FORWARD, BACK, UP, DOWN -> "blocks";
             case CHARGE -> "percent";
             default -> "seconds";
         };
@@ -198,7 +202,7 @@ public enum Op {
     /** Het kleinste en grootste getal dat dit blokje aanneemt. */
     public double minNumber() {
         return switch (this) {
-            case EVERY, FORWARD, BACK, CHARGE -> 1;
+            case EVERY, FORWARD, BACK, UP, DOWN, CHARGE -> 1;
             default -> 0.05;
         };
     }
@@ -207,7 +211,7 @@ public enum Op {
         return switch (this) {
             case EVERY -> 3600;
             case WAIT -> 600;
-            case FORWARD, BACK -> 64;
+            case FORWARD, BACK, UP, DOWN -> 64;
             case CHARGE -> 100;
             default -> 60;
         };
@@ -224,6 +228,7 @@ public enum Op {
             case EVERY -> 10;
             case WAIT -> 2;
             case PULSE, FORWARD -> 3;
+            case UP -> 2;
             case CHARGE -> 80;
             default -> 1;
         };
@@ -314,15 +319,16 @@ public enum Op {
 
     /**
      * Mag dit blokje in deze soort programma (hoofdstuk 23)? Wat met lezers, panelen, relais-triggers en het
-     * besturen van robots te maken heeft, hoort bij de server; lopen, pinnen en berichten sturen bij een robot.
-     * De rest werkt overal (een robot schakelt relais via de server).
+     * besturen van robots te maken heeft, hoort bij de server; lopen, pinnen en berichten sturen bij een robot
+     * of een drone; omhoog en omlaag alleen bij een drone (hoofdstuk 25). De rest werkt overal (een robot schakelt
+     * relais via de server).
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
             case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE, ORDER, ACTIVATE, DEACTIVATE ->
                     kind == ProgramKind.SERVER;
-            case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND ->
-                    kind == ProgramKind.ROBOT;
+            case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND -> kind.onBot();
+            case UP, DOWN -> kind == ProgramKind.DRONE;
             default -> true;
         };
     }

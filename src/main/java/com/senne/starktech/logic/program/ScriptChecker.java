@@ -37,7 +37,7 @@ public final class ScriptChecker {
     private static void checkKind(Script script, ProgramKind kind, List<Problem> problems) {
         for (Script.Top item : script.items()) {
             if (item instanceof Script.Handler handler && !handler.trigger().allowedIn(kind)) {
-                problems.add(new Problem(handler.ref(), wrongKind(triggerWord(handler.trigger()), kind)));
+                problems.add(new Problem(handler.ref(), wrongKind(triggerWord(handler.trigger()), kind, handler.trigger()::allowedIn)));
             }
             if (item instanceof Script.Global global) {
                 checkKind(global.value(), false, global.ref(), kind, problems);
@@ -61,7 +61,7 @@ public final class ScriptChecker {
                 case Script.Assign assign -> checkKind(assign.value(), false, assign.ref(), kind, problems);
                 case Script.Action action -> {
                     if (!action.op().allowedIn(kind)) {
-                        problems.add(new Problem(action.ref(), wrongKind(action.op().code() + "()", kind)));
+                        problems.add(new Problem(action.ref(), wrongKind(action.op().code() + "()", kind, action.op()::allowedIn)));
                     }
                     checkKind(action.expr(), false, action.ref(), kind, problems);
                 }
@@ -80,13 +80,13 @@ public final class ScriptChecker {
             for (String name : Expr.builtins(expr)) {
                 Expr.Variable variable = Expr.Variable.byName(name);
                 if (variable != null && !variable.allowedIn(kind)) {
-                    problems.add(new Problem(ref, wrongKind(name, kind)));
+                    problems.add(new Problem(ref, wrongKind(name, kind, variable::allowedIn)));
                     return;
                 }
             }
             for (Expr.Function function : Expr.functions(expr)) {
                 if (!function.allowedIn(kind)) {
-                    problems.add(new Problem(ref, wrongKind(function.code() + "(...)", kind)));
+                    problems.add(new Problem(ref, wrongKind(function.code() + "(...)", kind, function::allowedIn)));
                     return;
                 }
             }
@@ -113,10 +113,19 @@ public final class ScriptChecker {
         return trigger.withoutBrackets() ? "when " + trigger.code() + ":" : trigger.code() + "(...)";
     }
 
-    /** "keycard(...) only works in a server diagram, not in a robot program". */
-    static String wrongKind(String what, ProgramKind kind) {
-        ProgramKind other = kind == ProgramKind.SERVER ? ProgramKind.ROBOT : ProgramKind.SERVER;
-        return what + " only works in a " + other.noun() + ", not in a " + kind.noun();
+    /**
+     * "keycard(...) only works in a server diagram, not in a robot program", of (hoofdstuk 25) "forward() only works
+     * in a robot program or a drone program, not in a server diagram". {@code allowed} zegt in welke soorten het wel werkt.
+     */
+    static String wrongKind(String what, ProgramKind kind, java.util.function.Predicate<ProgramKind> allowed) {
+        List<String> where = new ArrayList<>();
+        for (ProgramKind other : ProgramKind.values()) {
+            if (other != kind && allowed.test(other)) {
+                where.add("a " + other.noun());
+            }
+        }
+        return what + " only works in " + (where.isEmpty() ? "another kind of program" : String.join(" or ", where))
+                + ", not in a " + kind.noun();
     }
 
     /** Iets dat een def gebruikt maar niet overal werkt: wat het is, en waar het wel werkt. */

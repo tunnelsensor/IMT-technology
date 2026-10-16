@@ -90,6 +90,16 @@ public sealed interface Expr {
         ROBOT_NAME("robot.name", Type.TEXT, "the name of the robot", null),
         ROBOT_BLOCKED("robot.blocked", Type.BOOL, "true if something stood in the way at its last step", null),
         ROBOT_CONNECTED("robot.connected", Type.BOOL, "true if the robot can talk to the server (in the area of the core, with power)", null),
+        // Een drone (hoofdstuk 25): hetzelfde, en hoe hoog hij vliegt.
+        DRONE_BATTERY("drone.battery", Type.NUMBER, "how full the battery of the drone is (0-100)", null),
+        DRONE_X("drone.x", Type.NUMBER, "where the drone flies: x", null),
+        DRONE_Y("drone.y", Type.NUMBER, "where the drone flies: y (the height)", null),
+        DRONE_Z("drone.z", Type.NUMBER, "where the drone flies: z", null),
+        DRONE_HEIGHT("drone.height", Type.NUMBER, "how many blocks above the ground the drone flies (0 = it stands on something)", null),
+        DRONE_FACING("drone.facing", Type.TEXT, "where the drone looks: \"north\", \"east\", \"south\" or \"west\"", null),
+        DRONE_NAME("drone.name", Type.TEXT, "the name of the drone", null),
+        DRONE_BLOCKED("drone.blocked", Type.BOOL, "true if something stood in the way at its last move", null),
+        DRONE_CONNECTED("drone.connected", Type.BOOL, "true if the drone can talk to the server (in the area of the core, with power)", null),
         // Na when ordered(...): de opdracht van de server.
         ORDER_NAME("order.name", Type.TEXT, "the order the server gave, like \"attack\"", Op.ORDERED),
         ORDER_X("order.x", Type.NUMBER, "the place the server gave with the order: x", Op.ORDERED),
@@ -123,11 +133,18 @@ public sealed interface Expr {
 
         /**
          * Mag dit gegeven in deze soort programma (hoofdstuk 23)? Kaarten, codes, spelers en wie een bericht stuurde
-         * kent alleen de server; {@code robot.*} en {@code order.*} alleen een robot. is_night en is_day kent iedereen.
+         * kent alleen de server; {@code robot.*} alleen een robot, {@code drone.*} alleen een drone (hoofdstuk 25), en
+         * {@code order.*} allebei. is_night en is_day kent iedereen.
          */
         public boolean allowedIn(ProgramKind kind) {
-            if (name.startsWith("robot.") || name.startsWith("order.")) {
+            if (name.startsWith("robot.")) {
                 return kind == ProgramKind.ROBOT;
+            }
+            if (name.startsWith("drone.")) {
+                return kind == ProgramKind.DRONE;
+            }
+            if (name.startsWith("order.")) {
+                return kind.onBot();
             }
             return switch (this) {
                 case IS_NIGHT, IS_DAY -> true;
@@ -187,9 +204,9 @@ public sealed interface Expr {
             return help;
         }
 
-        /** Pinnen heeft alleen een robot. */
+        /** Pinnen heeft alleen een robot of een drone. */
         public boolean allowedIn(ProgramKind kind) {
-            return kind == ProgramKind.ROBOT;
+            return kind.onBot();
         }
 
         public static @Nullable Function byName(String name) {

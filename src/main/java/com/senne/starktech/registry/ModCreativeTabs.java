@@ -90,6 +90,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ROBOT_ASSEMBLER.get());
                 output.accept(ModItems.GUARD_ROBOT.get());
                 output.accept(ModItems.ROBOT_DOCK.get());
+                output.accept(ModItems.GUARD_DRONE.get());
                 output.accept(ModItems.ROBOT_CIRCUIT_BOARD.get());
                 output.accept(ModItems.SOLDERING_IRON.get());
                 output.accept(ModItems.ROBOT_AMMO.get());

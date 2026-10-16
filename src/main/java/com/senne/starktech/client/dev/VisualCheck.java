@@ -1303,6 +1303,137 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- Hoofdstuk 25: security drones. Twee Drone Docks: op de linker staat een drone (uit, met Scan, Face
+        // Recognition en Laser), boven de rechter hangt er een die aan staat, met alle modules. Dan hun scherm, hun
+        // bord, de app Logic (een droneprogramma), de apps Robots en Cameras, en de Ion Blaster.
+        if (want("secdrones")) {
+            BlockPos dockA = new BlockPos(60, -60, 72);
+            BlockPos dockB = new BlockPos(63, -60, 72);
+            BlockPos droneCore = new BlockPos(72, -60, 68);
+            t.onServer(20, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockState dock = ModBlocks.DRONE_DOCK.get().defaultBlockState()
+                        .setValue(com.senne.starktech.arsenal.DroneDockBlock.FACING, net.minecraft.core.Direction.SOUTH);
+                level.setBlockAndUpdate(dockA, dock);
+                level.setBlockAndUpdate(dockB, dock);
+                com.senne.starktech.bot.BotBoard all = com.senne.starktech.bot.BotBoard.EMPTY;
+                String[] ids = {"scan", "distance", "face_recognition", "pathfinding", "laser", "gun", "solar_panel", "camera"};
+                for (int i = 0; i < ids.length; i++) {
+                    all = all.with(i + 1, ids[i]);
+                }
+                com.senne.starktech.robot.GuardDroneEntity parked = securityDrone(level, player, dockA, true);
+                parked.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition").with(3, "laser"));
+                com.senne.starktech.robot.GuardDroneEntity flying = securityDrone(level, player, dockB.above(2), false);
+                flying.setBoard(all);
+                flying.setActive(true);
+                // Een kern met stroom en een serverrack (zoals bij de robots): dan hebben de drones verbinding.
+                if (!(level.getBlockEntity(droneCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity)) {
+                    level.setBlockAndUpdate(droneCore, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                    if (level.getBlockEntity(droneCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                        be.setOwner(player);
+                        be.ensureSystem(level);
+                    }
+                    level.setBlockAndUpdate(droneCore.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(droneCore.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                    BlockPos rack = droneCore.east(2);
+                    level.setBlockAndUpdate(rack.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(rack.below()) instanceof com.senne.starktech.station.ChargerBlockEntity charger) {
+                        charger.fill(20_000);
+                    }
+                    level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
+                    if (level.getBlockEntity(rack) instanceof com.senne.starktech.logic.ServerRackBlockEntity be) {
+                        be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                        be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                        be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                        be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+                    }
+                }
+                if (level.getBlockEntity(droneCore) instanceof com.senne.starktech.security.SecurityCoreBlockEntity be) {
+                    be.logic().put(null, robotProgram("Hover patrol", "when started:\n    up(2)\n    forever:\n        forward(3)\n        turn_right()\n",
+                            com.senne.starktech.logic.program.ProgramKind.DRONE));
+                    parked.setProgram(be.logic().program("Hover patrol")); // hij staat uit: de app laat zijn programma zien
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(0, 61.5, -59, 76.5, 180, 12);
+            t.shot(30, "sd01_drone_docks");
+            t.view(0, 63.5, -58.3, 74.2, 180, 18);
+            t.shot(20, "sd02_drone_modules_front");
+            t.view(0, 65.3, -58.2, 70.5, 60, 20);
+            t.shot(20, "sd03_drone_modules_side");
+            t.command(0, "time set midnight");
+            t.view(0, 63.5, -58.3, 74.2, 180, 18);
+            t.shot(40, "sd04_drone_night");
+            t.command(0, "time set noon");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // Het scherm van de drone op het dock (halfvolle batterij), en zijn bord.
+            t.onServer(0, player -> {
+                for (com.senne.starktech.robot.GuardDroneEntity drone : player.serverLevel().getEntitiesOfClass(
+                        com.senne.starktech.robot.GuardDroneEntity.class, new net.minecraft.world.phys.AABB(dockA).inflate(0.5))) {
+                    drone.setBattery(drone.maxBattery() * 0.56);
+                    com.senne.starktech.robot.Robots.open(player, drone);
+                }
+            });
+            t.shot(30, "sd05_drone_screen");
+            t.step(0, () -> {
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.level != null) {
+                    for (com.senne.starktech.robot.GuardDroneEntity drone : mc.level.getEntitiesOfClass(
+                            com.senne.starktech.robot.GuardDroneEntity.class, new net.minecraft.world.phys.AABB(dockA).inflate(0.5))) {
+                        mc.setScreen(new com.senne.starktech.client.robot.BoardScreen(drone.getId(), null));
+                    }
+                }
+            });
+            t.shot(15, "sd06_drone_board");
+            t.close(0);
+            // De desktop: Logic (na + de keuze, met Drone program), een nieuw droneprogramma met zijn Help, de app
+            // Robots (met de drones), en Cameras (de drone met een camera).
+            t.view(0, 67.5, -60, 68.5, 180, 15);
+            t.onServer(40, player -> com.senne.starktech.security.os.StarkOs.open(player, droneCore));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicChooseKind();
+                }
+            });
+            t.shot(10, "sd07_logic_choose_kind");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourLogicNew(com.senne.starktech.logic.program.ProgramKind.DRONE);
+                    os.tourLogicHelpAt("MOVE");
+                }
+            });
+            t.shot(10, "sd08_logic_drone_help");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.ROBOTS);
+                }
+            });
+            t.shot(15, "sd09_os_robots_drones");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.starktech.client.os.StarkOsScreen os) {
+                    os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.CAMERAS);
+                }
+            });
+            t.shot(30, "sd10_os_drone_cameras");
+            t.close(10);
+            // De Ion Blaster: de drone die aan staat valt neer, en ligt scheef op de grond.
+            t.onServer(0, player -> {
+                for (com.senne.starktech.robot.GuardDroneEntity drone : player.serverLevel().getEntitiesOfClass(
+                        com.senne.starktech.robot.GuardDroneEntity.class, new net.minecraft.world.phys.AABB(dockB).inflate(0.5, 4, 0.5))) {
+                    if (drone.isActive()) {
+                        player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, drone.getBoundingBox().getCenter());
+                        com.senne.starktech.robot.IonBlasterItem.fire(player.serverLevel(), player);
+                    }
+                }
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(0, 63.5, -59, 76.0, 180, 25);
+            t.shot(40, "sd11_drone_down");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde
         // doelwitten en een salvo, gevolgd van achter de speler.
         if (want("rockets")) {
@@ -2621,9 +2752,34 @@ public final class VisualCheck {
 }
 
     /** Waar de C4-muur van de rondleiding staat (zie buildC4Wall). */
+    /**
+     * Een security drone (hoofdstuk 25) van deze speler: op het Drone Dock op {@code pos} (zijn thuis, uit), of hangend
+     * in dat blok.
+     */
+    private static com.senne.starktech.robot.GuardDroneEntity securityDrone(ServerLevel level, net.minecraft.server.level.ServerPlayer player,
+                                                                         BlockPos pos, boolean onDock) {
+        com.senne.starktech.robot.GuardDroneEntity drone = com.senne.starktech.registry.ModEntities.GUARD_DRONE.get().create(level);
+        double y = onDock ? pos.getY() + 4.0 / 16.0 : pos.getY() + com.senne.starktech.robot.GuardDroneEntity.HOVER;
+        drone.moveTo(pos.getX() + 0.5, y, pos.getZ() + 0.5, 0, 0);
+        drone.setYaw(0);
+        drone.brain().body().setFacing(net.minecraft.core.Direction.SOUTH);
+        drone.setOwner(player);
+        if (onDock && level.getBlockEntity(pos) instanceof com.senne.starktech.arsenal.DroneDockBlockEntity dock) {
+            drone.setHome(pos);
+            dock.setBot(drone.getUUID());
+        }
+        level.addFreshEntity(drone);
+        return drone;
+    }
+
     /** Een robotprogramma uit deze code (hoofdstuk 23), zoals de app Logic hem bewaart. */
     private static com.senne.starktech.logic.program.LogicProgram robotProgram(String name, String code) {
-        var kind = com.senne.starktech.logic.program.ProgramKind.ROBOT;
+        return robotProgram(name, code, com.senne.starktech.logic.program.ProgramKind.ROBOT);
+    }
+
+    /** Een programma van deze soort (een robot- of droneprogramma) uit deze code. */
+    private static com.senne.starktech.logic.program.LogicProgram robotProgram(String name, String code,
+                                                                                com.senne.starktech.logic.program.ProgramKind kind) {
         return new com.senne.starktech.logic.program.LogicProgram(name, true,
                 com.senne.starktech.logic.program.GraphConverter.toGraph(com.senne.starktech.logic.program.ScriptParser.parse(code, kind), null),
                 code, kind);

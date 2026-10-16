@@ -14,7 +14,8 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De app Robots van de Stark OS-desktop (hoofdstuk 21): de guard robots in het gebied van deze kern, elk met
+ * De app Robots van de Stark OS-desktop (hoofdstuk 21): de guard robots (en sinds hoofdstuk 25 de security drones,
+ * met "drone" achter hun naam) in het gebied van deze kern, elk met
  * zijn naam, waar hij staat, hoe het met hem gaat, zijn batterij en of hij een dock heeft. Per robot een knop
  * Switch on/off en Rename (typ de naam, Enter bewaart, Esc laat het zoals het was), en (hoofdstuk 23) welk
  * programma hij draait, met de knop Program om hem een robotprogramma van deze server te sturen.
@@ -75,10 +76,12 @@ final class RobotsApp {
         return robot.getString("id").equals(renaming) ? "Save" : "Rename";
     }
 
-    /** De robotprogramma's op deze server, en "" = geen programma. */
+    /** De robotprogramma's op deze server (of de droneprogramma's, voor een drone), en "" = geen programma. */
     private List<String> programOptions() {
+        CompoundTag robot = robot(choosing);
+        boolean drone = robot != null && robot.getBoolean("drone");
         List<String> options = new ArrayList<>();
-        for (Tag tag : screen.data().getList("robotPrograms", Tag.TAG_STRING)) {
+        for (Tag tag : screen.data().getList(drone ? "dronePrograms" : "robotPrograms", Tag.TAG_STRING)) {
             options.add(tag.getAsString());
         }
         options.add("");
@@ -106,8 +109,10 @@ final class RobotsApp {
             choosing = null;
         }
         if (robots.isEmpty()) {
-            g.drawString(font, "No guard robots in this network's area yet.", a.x() + 5, a.y() + 5, HudStyle.argb(255, OsDraw.GREY), false);
-            g.drawString(font, "Build one in a Robot Assembler and put it here.", a.x() + 5, a.y() + 15, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, "No guard robots or drones in this network's area yet.", a.x() + 5, a.y() + 5, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, "Build a robot in a Robot Assembler, or put a Security Drone", a.x() + 5, a.y() + 15,
+                    HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, "on a Drone Dock here.", a.x() + 5, a.y() + 25, HudStyle.argb(255, OsDraw.GREY), false);
             return;
         }
         scroll = Math.max(0, Math.min(scroll, robots.size() - 1));
@@ -142,8 +147,9 @@ final class RobotsApp {
         int oy = y + 16;
         List<String> options = programOptions();
         if (options.size() == 1) {
-            g.drawString(font, OsDraw.fitLeft(font, "No robot programs yet: make one in Logic (+)", box[2] - 8), x + 4, oy,
-                    HudStyle.argb(255, OsDraw.GREY), false);
+            boolean drone = robot != null && robot.getBoolean("drone");
+            g.drawString(font, OsDraw.fitLeft(font, (drone ? "No drone programs" : "No robot programs") + " yet: make one in Logic (+)",
+                    box[2] - 8), x + 4, oy, HudStyle.argb(255, OsDraw.GREY), false);
             oy += OPTION_H;
         }
         String current = robot == null ? "" : robot.getString("prog");
@@ -186,8 +192,14 @@ final class RobotsApp {
         }
         String name = robot.getString("n");
         g.drawString(font, name, a.x() + 6, y + 1, HudStyle.argb(255, loaded ? HudStyle.WHITE : OsDraw.GREY), false);
+        int wx = a.x() + 10 + font.width(name);
+        if (robot.getBoolean("drone")) {
+            // Een security drone (hoofdstuk 25): dat staat achter zijn naam.
+            g.drawString(font, "drone", wx, y + 1, HudStyle.argb(255, 0x8FE3FF), false);
+            wx += font.width("drone ") + 2;
+        }
         String where = robot.getInt("x") + " " + robot.getInt("y") + " " + robot.getInt("z");
-        g.drawString(font, where, a.x() + 10 + font.width(name), y + 1, HudStyle.argb(255, OsDraw.GREY), false);
+        g.drawString(font, where, wx, y + 1, HudStyle.argb(255, OsDraw.GREY), false);
         String state = loaded ? robot.getString("st") : "far away";
         int colour = !loaded ? OsDraw.GREY : switch (state) {
             case "active" -> HudStyle.GREEN;

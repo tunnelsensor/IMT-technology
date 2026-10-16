@@ -52,6 +52,9 @@ public class DroneDockBlockEntity extends BlockEntity {
     private boolean present;
     private boolean repairing;
 
+    /** De security drone (hoofdstuk 25) die hier thuis is, of null. Hij laadt zelf, via dit dock (zie GuardDroneEntity). */
+    private @Nullable UUID bot;
+
     /** Alleen in jouw spel: wanneer (speltijd) de drone vertrok of aankwam, voor het animeren. */
     private long movedAt = Long.MIN_VALUE;
     private boolean synced;
@@ -63,6 +66,16 @@ public class DroneDockBlockEntity extends BlockEntity {
     /** Neergezet door een speler: dan is hij van hem. */
     public void setOwner(UUID owner) {
         this.owner = owner;
+        setChanged();
+    }
+
+    /** De security drone die hier thuis is (hoofdstuk 25), of null. */
+    public @Nullable UUID bot() {
+        return bot;
+    }
+
+    public void setBot(@Nullable UUID bot) {
+        this.bot = bot;
         setChanged();
     }
 
@@ -281,6 +294,9 @@ public class DroneDockBlockEntity extends BlockEntity {
         if (droneOwner != null) {
             tag.putUUID("DroneOwner", droneOwner);
         }
+        if (bot != null) {
+            tag.putUUID("Bot", bot);
+        }
         tag.putFloat("Health", health);
         tag.putBoolean("Present", present);
         tag.putBoolean("Repairing", repairing);
@@ -294,6 +310,7 @@ public class DroneDockBlockEntity extends BlockEntity {
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         drone = tag.hasUUID("Drone") ? tag.getUUID("Drone") : null;
         droneOwner = tag.hasUUID("DroneOwner") ? tag.getUUID("DroneOwner") : null;
+        bot = tag.hasUUID("Bot") ? tag.getUUID("Bot") : null;
         health = tag.contains("Health") ? tag.getFloat("Health") : 1.0f;
         present = tag.getBoolean("Present");
         repairing = tag.getBoolean("Repairing");

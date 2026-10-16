@@ -55,6 +55,9 @@ final class CamerasApp {
     private static final float DRAG = 0.4f;
     /** Waar de knop Rename staat, onder de pijltjes (ten opzichte van de bovenkant van het beeld). */
     private static final int RENAME_DY = 106;
+    /** Zoveel graden kijkt de camera van een drone naar beneden. */
+    private static final float DRONE_PITCH = 20.0f;
+
     /** Zo vaak (ms) zegt de app tegen de server dat je naar een robot kijkt. */
     private static final long WATCH_EVERY = 1000;
 
@@ -174,7 +177,7 @@ final class CamerasApp {
             box.render(g, mx, my, partialTick);
         } else {
             BlockPos pos = robot ? robotPos(camera) : posOf(camera);
-            g.drawString(font, camera.getString("name") + (robot ? "  ROBOT" : "") + "   " + pos.getX() + " " + pos.getY() + " "
+            g.drawString(font, camera.getString("name") + (robot ? camera.getBoolean("drone") ? "  DRONE" : "  ROBOT" : "") + "   " + pos.getX() + " " + pos.getY() + " "
                     + pos.getZ(), a.x(), a.y(), HudStyle.argb(255, HudStyle.CYAN), false);
         }
         renderFeed(g, font, camera, a.x(), fy, fw, fh, true, false, partialTick);
@@ -249,7 +252,8 @@ final class CamerasApp {
                     ? net.minecraft.util.Mth.rotLerp(partialTick, living.yHeadRotO, living.yHeadRot) : entity.getYRot();
             eye = entity.getEyePosition(partialTick).add(Vec3.directionFromRotation(0, headYaw).scale(0.35));
             yaw = headYaw;
-            pitch = entity.getXRot();
+            // Een drone (hoofdstuk 25) kijkt een beetje naar beneden: zo zie je wat er onder hem gebeurt.
+            pitch = entity.getXRot() + (camera.getBoolean("drone") ? DRONE_PITCH : 0);
         } else {
             eye = new Vec3(camera.getDouble("ex"), camera.getDouble("ey"), camera.getDouble("ez"));
             yaw = camera.getFloat("yaw");
@@ -295,7 +299,7 @@ final class CamerasApp {
         g.drawString(font, name, x + 3, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
         if (robot) {
             // "ROBOT" linksonder: dit beeld loopt mee met een robot.
-            String tag = "ROBOT";
+            String tag = camera.getBoolean("drone") ? "DRONE" : "ROBOT";
             g.fill(x + 1, y + h - 11, x + 6 + font.width(tag), y + h - 1, HudStyle.argb(170, 0x000000));
             g.drawString(font, tag, x + 3, y + h - 10, HudStyle.argb(255, 0xF1E87C), false);
         }

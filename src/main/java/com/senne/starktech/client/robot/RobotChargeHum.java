@@ -2,7 +2,7 @@ package com.senne.starktech.client.robot;
 
 import com.senne.starktech.client.EdithClientConfig;
 import com.senne.starktech.registry.ModSounds;
-import com.senne.starktech.robot.GuardRobotEntity;
+import com.senne.starktech.bot.BotEntity;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -20,7 +20,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * heel stil, net hoorbaar als je erbij staat. Hoe hard, stel je in in config/starktech-client.toml
  * (robotHumVolume: 1 = zo, 0 = uit). Is hij vol of stapt hij uit zijn dock, dan sterft het weg.
  *
- * Alleen in jouw spel: de server stuurt per robot mee of hij nu laadt (zie GuardRobotEntity.isCharging).
+ * Alleen in jouw spel: de server stuurt per robot mee of hij nu laadt (zie BotEntity.isCharging).
  */
 public final class RobotChargeHum {
     private RobotChargeHum() {}
@@ -48,8 +48,8 @@ public final class RobotChargeHum {
             clear();
             return;
         }
-        for (GuardRobotEntity robot : level.getEntitiesOfClass(GuardRobotEntity.class, new AABB(player.blockPosition()).inflate(RANGE),
-                GuardRobotEntity::isCharging)) {
+        for (BotEntity robot : level.getEntitiesOfClass(BotEntity.class, new AABB(player.blockPosition()).inflate(RANGE),
+                BotEntity::isCharging)) {
             if (HUMS.size() >= MAX_HUMS) {
                 return;
             }
@@ -71,10 +71,10 @@ public final class RobotChargeHum {
 
     /** Het zoemen van één robot: het loopt met hem mee, en sterft weg als hij niet meer laadt. */
     private static final class Hum extends AbstractTickableSoundInstance {
-        private final GuardRobotEntity robot;
+        private final BotEntity robot;
         private boolean started;
 
-        Hum(GuardRobotEntity robot) {
+        Hum(BotEntity robot) {
             super(ModSounds.ROBOT_CHARGE_HUM.get(), SoundSource.NEUTRAL, SoundInstance.createUnseededRandom());
             this.robot = robot;
             this.looping = true;

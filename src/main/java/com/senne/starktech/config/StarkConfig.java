@@ -1565,6 +1565,39 @@ public final class StarkConfig {
         /** De kans dat een kortsluiting de hele robot laat afbranden (anders alleen de modules). */
         @Tunable(value = "Chance that a short circuit burns down the whole robot (otherwise only the modules on those pins)", max = 1)
         public static float BURN_CHANCE = 0.25f;
+
+        // Security drones (hoofdstuk 25): solderen, schieten, de Ion Blaster en hun programma werken zoals bij een
+        // robot (de getallen hierboven); dit zijn de getallen van de drone zelf.
+        /** Zoveel leven heeft een security drone. */
+        @Tunable(value = "Health of a security drone", min = 1, max = 1_000)
+        public static float DRONE_HEALTH = 16.0f;
+        /** Zoveel stroom past er in zijn batterij. */
+        @Tunable(value = "Battery of a security drone (energy)", min = 1, max = 1_000_000)
+        public static float DRONE_BATTERY = 3000.0f;
+        /** Zoveel stroom per tick haalt een Drone Dock uit het net, voor de drone die erop staat. */
+        @Tunable(value = "Energy per tick a drone dock takes from the grid and puts into the security drone on it", max = 1_000)
+        public static float DRONE_DOCK_CHARGE_RATE = 5.0f;
+        /** Zoveel batterij per tick als hij aan staat. */
+        @Tunable(value = "Battery a security drone uses per tick while it is switched on", max = 100)
+        public static float DRONE_DRAIN_ON = 0.25f;
+        /** Zoveel extra per tick als hij vliegt. */
+        @Tunable(value = "Extra battery a security drone uses per tick while it flies", max = 100)
+        public static float DRONE_DRAIN_FLYING = 0.6f;
+        /** Zo snel vliegt hij (blokken per tick). */
+        @Tunable(value = "How fast a security drone flies (blocks per tick; 0.15 = 3 blocks a second)", min = 0.01, max = 2)
+        public static float DRONE_SPEED = 0.15f;
+        /** Zo ver kijkt zijn Scan-module. */
+        @Tunable(value = "How far a security drone sees (blocks)", min = 1, max = 64)
+        public static float DRONE_SCAN_RANGE = 16.0f;
+        /** Zo breed kijkt hij (graden; 360 = rondom, een drone heeft camera's aan alle kanten). */
+        @Tunable(value = "How wide a security drone looks (degrees, 360 = all around)", min = 10, max = 360)
+        public static float DRONE_SCAN_ANGLE = 360.0f;
+        /** Zoveel ticks tussen twee schoten. */
+        @Tunable(value = "Ticks between two shots of a security drone", min = 1, max = 1_200)
+        public static float DRONE_FIRE_INTERVAL = 30.0f;
+        /** Zo hoog stijgt hij op van zijn dock als hij aangezet wordt. */
+        @Tunable(value = "How many blocks a security drone rises from its dock when you switch it on", min = 1, max = 16)
+        public static float DRONE_TAKE_OFF = 1.0f;
     }
 
     // =============================================================================================== Hydra

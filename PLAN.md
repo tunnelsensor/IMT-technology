@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 270 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 275 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 93 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2744,8 +2744,30 @@ geprogrammeerd heeft.
 drones aan of uit. Arsenal-drones herstellen zich in hun baan, even snel als vroeger op een dock, zodat je
 niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergeschoten worden.
 
-- [ ] **1. Vliegende beweging** — `up(n)` en `down(n)`, in drie assen.
-- [ ] **2. De drone bouwen** — item met printplaat en modules; plaatsen op een dock.
+- [x] **1. Vliegende beweging** — de nieuwe **Security Drone** is een vliegende guard robot: dezelfde printplaat,
+      modules, batterij, aan/uit en Ion Blaster. Hij vliegt blok voor blok: `forward(n)` en `back(n)` op dezelfde
+      hoogte, `up(n)` en `down(n)` recht omhoog en omlaag (niet door een plafond of de grond: dan is
+      `drone.blocked` waar), `turn_left()`/`turn_right()`, `goto(x, y, z)` met de padzoeker voor vliegers (om muren
+      heen; Pathfinding-module), en `charge()` (terugvliegen, landen op zijn Drone Dock, laden, opstijgen en terug
+      naar waar hij was). In de app Logic kies je na **+** nu ook **Drone program** (een lichtblauwe D in de lijst;
+      een nieuw heet "Flight 1"). Daarin mogen `up`/`down` en `drone.battery`, `drone.x/y/z`, `drone.height`
+      (hoeveel blokken lucht onder hem), `drone.facing`, `drone.name`, `drone.blocked` en `drone.connected`; de Help
+      toont je drones en het voorbeeld "Patrol a square". Een fout zegt nu ook waar iets wel werkt ("forward() only
+      works in a robot program or a drone program, not in a server diagram"). Zonder stroom, of geraakt door de Ion
+      Blaster, valt hij naar de grond (zonder schade). Zijn Scan kijkt rondom (16 blokken), zijn laser en geweer
+      hangen onder zijn buik. Nieuw in de config `[robots]`: `droneHealth` (16), `droneBattery` (3000),
+      `droneDockChargeRate`, `droneDrainOn`, `droneDrainFlying`, `droneSpeed` (3 blokken per seconde),
+      `droneScanRange`, `droneScanAngle` (360), `droneFireInterval` en `droneTakeOff`. Binnenin: wat robots en
+      drones delen staat nu in `bot/BotEntity`, vliegen in `bot/DroneMove`. Vijf nieuwe tests (`DroneGameTests`).
+- [x] **2. De drone bouwen** — recept: ijzer, een amethist, redstone, een Robot Circuit Board en een Stark Chip.
+      Rechtsklik op een Drone Dock en hij staat erop (zijn thuis en zijn lader); op een ander blok hangt hij erboven,
+      zonder thuis. Hij heet "Drone 1", "Drone 2"... Sneak + rechtsklik met een lege hand: hetzelfde scherm als een
+      robot (zonder onderdelen), met Board (solderen) en Pick up (alles gaat mee in het item). Zijn model: een
+      grafietgrijze romp met een wit dakje, vier rotors en twee ski's, en per module een stukje (radarkoepel,
+      lensstrook, sensoroogje, antenne, laserloop, geweerloop, zonnevleugels, camera); zijn lichtjes branden alleen
+      als hij aan staat. In de app Robots staat "drone" achter zijn naam (en Program toont je droneprogramma's), in
+      de app Cameras "DRONE" (zijn camera kijkt een beetje naar beneden). Screenshots `sd01`-`sd11`
+      (`gradlew runVisualCheck -Ponly=secdrones`).
 - [ ] **3. De Drone Dock opnieuw** — laadt zijn eigen drone; arsenal-drones komen er niet meer op; herstel in
       de baan.
 - [ ] **4. De core** — geen gratis drones meer; schakelaar "Drones" in Devices.

@@ -8,7 +8,7 @@ import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.config.StarkConfig;
 import com.senne.starktech.network.SolderPayload;
 import com.senne.starktech.registry.ModItems;
-import com.senne.starktech.robot.GuardRobotEntity;
+import com.senne.starktech.bot.BotEntity;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -77,9 +77,9 @@ public class BoardScreen extends Screen {
         return false;
     }
 
-    private @Nullable GuardRobotEntity robot() {
+    private @Nullable BotEntity robot() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.level.getEntity(entityId) instanceof GuardRobotEntity robot && robot.isAlive()) {
+        if (mc.level != null && mc.level.getEntity(entityId) instanceof BotEntity robot && robot.isAlive()) {
             return robot;
         }
         return null;
@@ -180,7 +180,7 @@ public class BoardScreen extends Screen {
         if (super.mouseClicked(mx, my, button)) {
             return true;
         }
-        GuardRobotEntity robot = robot();
+        BotEntity robot = robot();
         if (robot == null || robot.isActive()) {
             return false;
         }
@@ -226,7 +226,7 @@ public class BoardScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        GuardRobotEntity robot = robot();
+        BotEntity robot = robot();
         if (robot == null) {
             onClose();
             return;
@@ -259,12 +259,12 @@ public class BoardScreen extends Screen {
     public void render(GuiGraphics g, int mx, int my, float partialTick) {
         mouseX = mx;
         mouseY = my;
-        GuardRobotEntity robot = robot();
+        BotEntity robot = robot();
         if (robot == null) {
             return;
         }
         super.render(g, mx, my, partialTick);
-        String name = robot.hasCustomName() ? robot.getCustomName().getString() : "Guard Robot";
+        String name = robot.displayName();
         g.drawString(font, name + " - circuit board", left + MARGIN, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         BotBoard board = robot.board();
         renderBoard(g, board);
@@ -292,7 +292,7 @@ public class BoardScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         ItemStack iron = mc.player == null ? null : SolderingIronItem.find(mc.player);
         if (robot.isActive()) {
-            g.drawString(font, "Switch the robot off before you solder.", left + MARGIN, y, HudStyle.argb(255, HudStyle.RED), false);
+            g.drawString(font, "Switch it off before you solder.", left + MARGIN, y, HudStyle.argb(255, HudStyle.RED), false);
         } else if (iron == null) {
             g.drawString(font, "You need a Soldering Iron in your inventory.", left + MARGIN, y, HudStyle.argb(255, HudStyle.RED), false);
         } else {

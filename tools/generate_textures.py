@@ -3375,6 +3375,111 @@ def ion_blaster():
     save(im, "item/ion_blaster.png")
 
 
+def guard_drone_textures():
+    """
+    De security drone (hoofdstuk 25, zie GuardDroneModel): een grafietgrijze romp met een wit dakje, grijze armen en
+    rotors, donkere ski's, en per module een eigen stukje (laserloop, geweerloop, zonnevleugels, radarkoepel, lens,
+    sensor, antenne, camera). Plus de lichtlaag (alleen de lampjes: cyaan, en rood bij laser, sensor en camera) en het
+    icoon in je rugzak.
+    """
+    graphite, graphite_light, graphite_dark = (58, 64, 74, 255), (78, 86, 98, 255), (34, 38, 44, 255)
+    white, white_shade = (214, 220, 228, 255), (170, 178, 188, 255)
+    grey, blade = (120, 128, 140, 255), (178, 188, 198, 255)
+    red, red_dim = (255, 70, 55, 255), (150, 34, 26, 255)
+    glass = (18, 20, 26, 255)
+    solar, solar_line = (36, 64, 128, 255), (70, 110, 180, 255)
+    tex = img(64, 64)
+    glow = img(64, 64)
+
+    def paint(regions, color, top=None, bottom=None):
+        for region in regions.values():
+            fill_region(tex, region, color)
+        if top is not None:
+            fill_region(tex, regions["top"], top)
+        if bottom is not None:
+            fill_region(tex, regions["bottom"], bottom)
+
+    # Romp en dakje
+    body = box_regions(0, 0, 8, 4, 8)
+    paint(body, graphite, top=graphite_light, bottom=graphite_dark)
+    for name in ("east", "front", "west", "back"):
+        x, y, w, h = body[name]
+        for i in range(w):
+            tex.putpixel((x + i, y), graphite_light)          # lichte bovenrand
+            tex.putpixel((x + i, y + h - 1), graphite_dark)   # donkere onderrand
+            glow.putpixel((x + i, y + 1), CYAN if name == "front" and 0 < i < w - 1 else (0, 0, 0, 0))
+        if name != "front":
+            for i in range(1, w - 1):
+                glow.putpixel((x + i, y + 1), CYAN_DIM)       # een zwakke lichtstreep rondom
+    canopy = box_regions(0, 12, 6, 1, 6)
+    paint(canopy, white, top=white, bottom=white_shade)
+    x, y, w, h = canopy["top"]
+    d = ImageDraw.Draw(tex)
+    d.rectangle([x, y, x + w - 1, y + h - 1], outline=white_shade)
+    px(glow, [(x + 2, y + 2), (x + 3, y + 2), (x + 2, y + 3), (x + 3, y + 3)], CYAN)   # lampje midden op het dak
+
+    # Armen, naven, bladen, ski's
+    for v in (20, 22):
+        paint(box_regions(0, v, 16, 1, 1), grey)
+    hub = box_regions(36, 20, 2, 2, 2)
+    paint(hub, graphite_light)
+    hx, hy, hw, hh = hub["top"]
+    px(glow, [(hx, hy)], CYAN_DIM)
+    paint(box_regions(36, 24, 7, 1, 1), blade)
+    paint(box_regions(36, 26, 1, 1, 7), blade)
+    paint(box_regions(0, 26, 1, 2, 7), graphite_dark)
+
+    # Modules
+    scan = box_regions(40, 36, 3, 2, 3)                       # radarkoepel: wit met een cyaan punt
+    paint(scan, white, top=white, bottom=white_shade)
+    sx, sy, sw, sh = scan["top"]
+    px(glow, [(sx + 1, sy + 1)], CYAN)
+    face = box_regions(0, 36, 6, 1, 1)                        # lensstrook: cyaan
+    paint(face, CYAN_DARK)
+    for name in ("front", "top", "bottom"):
+        fill_region(glow, face[name], CYAN if name == "front" else CYAN_DIM)
+    distance = box_regions(16, 36, 2, 1, 1)                   # sensor: donker met een rood oogje
+    paint(distance, glass)
+    fill_region(glow, distance["front"], red)
+    paint(box_regions(24, 36, 1, 4, 1), white)                # antenne
+    laser = box_regions(0, 40, 1, 1, 6)                       # laserloop: grijs, rode punt
+    paint(laser, white_shade)
+    fill_region(tex, laser["front"], red_dim)
+    fill_region(glow, laser["front"], red)
+    gun = box_regions(16, 40, 2, 1, 6)                        # geweerloop: donker metaal
+    paint(gun, graphite_dark)
+    fill_region(tex, gun["front"], glass)
+    camera = box_regions(32, 40, 2, 2, 2)                     # camera: donker glas, rood opnamelampje
+    paint(camera, graphite_dark)
+    fill_region(tex, camera["front"], glass)
+    cx, cy, cw, ch = camera["front"]
+    px(glow, [(cx + 1, cy)], red)
+    for u in (0, 20):                                         # zonnevleugels: blauwe cellen met lijntjes
+        wing = box_regions(u, 48, 4, 1, 6)
+        paint(wing, graphite_light)
+        for name in ("top", "bottom"):
+            x, y, w, h = wing[name]
+            fill_region(tex, wing[name], solar)
+            for yy in range(y + 1, y + h, 2):
+                for xx in range(x, x + w):
+                    tex.putpixel((xx, yy), solar_line)
+    save(tex, "entity/robot/guard_drone.png")
+    save(glow, "entity/robot/guard_drone_glow.png")
+
+    # Het icoon: de drone van bovenaf, met zijn armen en rotors, een wit dakje en een cyaan lampje.
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    for x0, y0, x1, y1 in [(3, 3, 6, 6), (12, 3, 9, 6), (3, 12, 6, 9), (12, 12, 9, 9)]:
+        d.line([x0, y0, x1, y1], fill=grey)
+    for cx, cy in [(3, 3), (12, 3), (3, 12), (12, 12)]:
+        d.ellipse([cx - 2, cy - 1, cx + 2, cy + 1], outline=blade)
+    d.rectangle([5, 5, 10, 10], fill=graphite, outline=graphite_dark)
+    d.rectangle([6, 6, 9, 9], fill=white)
+    px(im, [(7, 7), (8, 7), (7, 8), (8, 8)], CYAN)
+    d.line([6, 10, 9, 10], fill=CYAN_DIM)
+    save(im, "item/guard_drone.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3440,3 +3545,6 @@ if __name__ == "__main__":
     robot_dock_textures()
     robot_module_items()
     soldering_iron()
+    robot_ammo()
+    ion_blaster()
+    guard_drone_textures()

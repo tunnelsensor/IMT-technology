@@ -18,7 +18,7 @@ import net.minecraft.world.phys.Vec3;
  *       scanAngle; een Trainer-hoofd kijkt rondom), met niets ertussen: niet door muren. Spelers in creative of
  *       die alleen toekijken (spectator) ziet hij niet, net als monsters en torentjes.</li>
  *   <li><b>Distance</b>: hoeveel blokken het is tot wat recht voor hem staat (een blok, een speler, een dier),
- *       op heuphoogte. Een muur in het blok vlak voor hem is 1; niets binnen {@link #MAX_DISTANCE} blokken is
+ *       op de hoogte van zijn sensor (een robot: heuphoogte). Een muur in het blok vlak voor hem is 1; niets binnen {@link #MAX_DISTANCE} blokken is
  *       {@link #NOTHING}.</li>
  * </ul>
  */
@@ -70,7 +70,7 @@ public final class BotSense {
 
     /** Hoeveel blokken tot wat recht voor hem staat (1 = het blok vlak voor hem), of {@link #NOTHING}. */
     public static double distance(Bot bot) {
-        Vec3 from = bot.position().add(0, 0.9, 0);
+        Vec3 from = bot.position().add(0, bot.sensorHeight(), 0);
         Vec3 way = Vec3.directionFromRotation(0, bot.getYRot());
         Vec3 to = from.add(way.scale(MAX_DISTANCE));
         double nearest = Double.MAX_VALUE;

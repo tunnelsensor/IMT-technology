@@ -393,15 +393,17 @@ final class LogicApp {
     }
 
     /**
-     * Een nieuw programma van deze soort: een diagram op de server, of (hoofdstuk 23) een robotprogramma. Het
-     * krijgt een vrije naam ("Diagram 2", "Robot 1") en een begin dat al klopt.
+     * Een nieuw programma van deze soort: een diagram op de server, of (hoofdstuk 23) een robotprogramma, of
+     * (hoofdstuk 25) een droneprogramma. Het krijgt een vrije naam ("Diagram 2", "Robot 1", "Flight 1") en een begin
+     * dat al klopt.
      */
     private void newDiagram(ProgramKind newKind) {
         choosingKind = false;
         if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
             return;
         }
-        String base = newKind == ProgramKind.ROBOT ? "Robot " : "Diagram ";
+        // Een droneprogramma heet "Flight 1": "Drone 1" is al de naam van je eerste drone.
+        String base = newKind == ProgramKind.ROBOT ? "Robot " : newKind == ProgramKind.DRONE ? "Flight " : "Diagram ";
         int number = 1;
         while (find(base + number) != null) {
             number++;
@@ -415,6 +417,8 @@ final class LogicApp {
         String reader = firstInput(false);
         String code = newKind == ProgramKind.ROBOT
                 ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen started:\n    pass\n"
+                : newKind == ProgramKind.DRONE
+                ? "# A drone program: it runs on the drone itself. Press Help to see what a drone can do.\nwhen started:\n    up(2)\n"
                 : reader != null
                 ? "when keycard(\"" + reader + "\"):\n    if card.valid and card.level >= 1:\n        accept()\n    else:\n        deny()\n"
                 : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
@@ -601,7 +605,8 @@ final class LogicApp {
             g.drawString(font, "New:", x + 4, top + 4, HudStyle.argb(255, HudStyle.WHITE), false);
             OsDraw.button(g, font, x + 4, top + 15, "Server diagram", true, HudStyle.CYAN);
             OsDraw.button(g, font, x + 4, top + 15 + OsDraw.BUTTON_H + 3, "Robot program", true, 0xF1E87C);
-            OsDraw.button(g, font, x + 4, top + 15 + 2 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
+            OsDraw.button(g, font, x + 4, top + 15 + 2 * (OsDraw.BUTTON_H + 3), "Drone program", true, DRONE_COLOUR);
+            OsDraw.button(g, font, x + 4, top + 15 + 3 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
             return;
         }
         int y = top + 3;
@@ -615,12 +620,14 @@ final class LogicApp {
             }
             g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
             String name = (selected && dirty() ? "*" : "") + entry.name();
-            boolean robot = entry.kind() == ProgramKind.ROBOT;
-            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (robot ? 24 : 14)), x + 10, y,
-                    HudStyle.argb(255, entry.on() || robot ? HudStyle.WHITE : OsDraw.GREY), false);
-            if (robot) {
-                // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server).
-                g.drawString(font, "R", x + SIDE - 10, y, HudStyle.argb(255, 0xF1E87C), false);
+            boolean bot = entry.kind().onBot();
+            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (bot ? 24 : 14)), x + 10, y,
+                    HudStyle.argb(255, entry.on() || bot ? HudStyle.WHITE : OsDraw.GREY), false);
+            if (bot) {
+                // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server); een
+                // droneprogramma (hoofdstuk 25): een lichtblauwe D.
+                boolean drone = entry.kind() == ProgramKind.DRONE;
+                g.drawString(font, drone ? "D" : "R", x + SIDE - 10, y, HudStyle.argb(255, drone ? DRONE_COLOUR : 0xF1E87C), false);
             }
             y += ROW;
         }
@@ -674,7 +681,9 @@ final class LogicApp {
         lines.add(item("turned_off(...)", "when turned_off(\"" + device + "\"):\n    pass\n", Op.TURNED_OFF));
         lines.add(item("message(...)", "when message(\"intruder\"):\n    alarm(\"Intruder seen by \" + sender.name)\n", Op.MESSAGE));
         } else {
-            lines.add(item("started", "when started:\n    forever:\n        forward(3)\n        turn_right()\n", Op.STARTED));
+            lines.add(item("started", kind == ProgramKind.DRONE
+                    ? "when started:\n    up(2)\n    forever:\n        forward(3)\n        turn_right()\n"
+                    : "when started:\n    forever:\n        forward(3)\n        turn_right()\n", Op.STARTED));
             lines.add(item("ordered(...)", "when ordered(\"attack\"):\n    goto(order.x, order.y, order.z)\n", Op.ORDERED));
         }
         lines.add(item("every(10)", "when every(10):\n    pass\n", Op.EVERY));
@@ -695,24 +704,30 @@ final class LogicApp {
             lines.add(item("activate(...)", "activate(\"Guard 1\")", Op.ACTIVATE));
             lines.add(item("deactivate(...)", "deactivate(\"Guard 1\")", Op.DEACTIVATE));
         } else {
-            // Wat een robot zelf kan (hoofdstuk 23).
+            // Wat een robot (of een drone, hoofdstuk 25) zelf kan (hoofdstuk 23).
+            String self = kind == ProgramKind.DRONE ? "drone" : "robot";
             lines.add(header("MOVE"));
             lines.add(item("forward(3) / back(1)", "forward(3)", Op.FORWARD));
             lines.add(item("turn_left() / turn_right()", "turn_right()", Op.TURN_RIGHT));
-            lines.add(item("goto(x, y, z)", "goto(robot.x + 5, robot.y, robot.z)", Op.GOTO));
-            lines.add(item("charge() / charge(80)", "if robot.battery < 10:\n    charge()", Op.CHARGE));
+            if (kind == ProgramKind.DRONE) {
+                lines.add(item("up(2) / down(1)", "up(2)", Op.UP));
+            }
+            lines.add(item("goto(x, y, z)", "goto(" + self + ".x + 5, " + self + ".y, " + self + ".z)", Op.GOTO));
+            lines.add(item("charge() / charge(80)", "if " + self + ".battery < 10:\n    charge()", Op.CHARGE));
             lines.add(item("stop()", "stop()", Op.STOP));
             lines.add(header("PINS AND THE SERVER"));
             lines.add(new HelpLine("scanPin = pin(1)", "scanPin = pin(1)\n", Expr.Function.PIN.help(), 0xF1E87C, null));
             lines.add(new HelpLine("if read(scanPin):", "if read(scanPin):\n    pass", Expr.Function.READ.help(), HudStyle.WHITE, null));
             lines.add(item("write(laserPin, true)", "write(laserPin, true)", Op.WRITE));
             lines.add(item("send(...)", "send(\"intruder\")", Op.SEND));
-            lines.add(new HelpLine("if robot.battery < 10:", "if robot.battery < 10:\n    charge()",
-                    "also: robot.x, robot.y, robot.z, robot.facing, robot.name, robot.blocked, robot.connected",
+            lines.add(new HelpLine("if " + self + ".battery < 10:", "if " + self + ".battery < 10:\n    charge()",
+                    kind == ProgramKind.DRONE
+                            ? "also: drone.x, drone.y, drone.z, drone.height, drone.facing, drone.name, drone.blocked, drone.connected"
+                            : "also: robot.x, robot.y, robot.z, robot.facing, robot.name, robot.blocked, robot.connected",
                     HudStyle.WHITE, null));
             // Wat elke module zegt (read) en doet (write) (hoofdstuk 24).
             lines.add(header("MODULES (read / write)"));
-            lines.add(new HelpLine("Scan: if read(scanPin):", "if read(scanPin):\n    alarm(\"Intruder near \" + robot.name)",
+            lines.add(new HelpLine("Scan: if read(scanPin):", "if read(scanPin):\n    alarm(\"Intruder near \" + " + self + ".name)",
                     "true if it sees a player (not through walls; not in creative)", HudStyle.WHITE, null));
             lines.add(new HelpLine("Distance: read(distancePin)", "if read(distancePin) < 3:\n    turn_right()",
                     "blocks to what stands in front of it (99 = nothing)", HudStyle.WHITE, null));
@@ -722,7 +737,7 @@ final class LogicApp {
             lines.add(new HelpLine("Laser: write(laserPin, true)", "if read(scanPin) and read(laserPin):\n    write(laserPin, true)",
                     "one shot at whom the scan sees (else straight ahead); read = ready to fire", 0x9ED8FF, null));
             lines.add(new HelpLine("Gun: write(gunPin, true)", "if read(gunPin) > 0:\n    write(gunPin, true)",
-                    "one bullet (Robot Ammo: right-click the robot to load); read = bullets left", 0x9ED8FF, null));
+                    "one bullet (Robot Ammo: right-click the " + self + " to load); read = bullets left", 0x9ED8FF, null));
             lines.add(new HelpLine("Solar: read(solarPin)", "if read(solarPin) > 50:\n    pass",
                     "how much sun it catches, 0-100 (it charges by itself)", HudStyle.WHITE, null));
             lines.add(new HelpLine("Camera: read(cameraPin)", "if read(cameraPin):\n    say(\"Someone is watching\")",
@@ -812,6 +827,21 @@ final class LogicApp {
                 send("arrived")
             """;
 
+    /** Een drone die een vierkant vliegt, en laadt als zijn batterij bijna leeg is (voorbeeld in Help, hoofdstuk 25). */
+    private static final String DRONE_PATROL_EXAMPLE = """
+            when started:
+                up(2)
+                forever:
+                    if drone.battery < 20:
+                        charge()
+                        up(2)
+                    forward(4)
+                    turn_right()
+            """;
+
+    /** De kleur van een droneprogramma (de D in de lijst, de knop na +). */
+    private static final int DRONE_COLOUR = 0x8FE3FF;
+
     /** Een serverdiagram dat een robot roept (voorbeeld in Help). */
     private static final String CALL_EXAMPLE = """
             when message("help"):
@@ -821,20 +851,28 @@ final class LogicApp {
     /**
      * Je robots in de Help (hoofdstuk 23). In een robotprogramma: wat er op hun pinnen zit (klik = de pinnen met een
      * naam in je code, zoals {@code scanPin = pin(1)}) en voorbeeldprogramma's. In een serverdiagram: hun namen (voor
-     * order, activate en deactivate) en een voorbeeld.
+     * order, activate en deactivate) en een voorbeeld. Een droneprogramma (hoofdstuk 25) toont je drones, een
+     * serverdiagram je robots en je drones.
      */
     private void robotHelp(List<HelpLine> lines, boolean server) {
-        lines.add(header("YOUR ROBOTS"));
-        net.minecraft.nbt.ListTag robots = info().getList("robots", Tag.TAG_COMPOUND);
-        if (robots.isEmpty()) {
-            lines.add(new HelpLine("(none in this network's area)", null, "Build one in a Robot Assembler and put it here",
-                    OsDraw.GREY, null));
-        }
-        for (Tag element : robots) {
+        boolean drones = kind == ProgramKind.DRONE;
+        lines.add(header(server ? "YOUR ROBOTS AND DRONES" : drones ? "YOUR DRONES" : "YOUR ROBOTS"));
+        List<CompoundTag> robots = new ArrayList<>();
+        for (Tag element : info().getList("robots", Tag.TAG_COMPOUND)) {
             CompoundTag robot = (CompoundTag) element;
+            if (server || robot.getBoolean("drone") == drones) {
+                robots.add(robot);
+            }
+        }
+        if (robots.isEmpty()) {
+            lines.add(new HelpLine("(none in this network's area)", null, drones ? "Craft a Security Drone and put it on a Drone Dock here"
+                    : "Build one in a Robot Assembler and put it here", OsDraw.GREY, null));
+        }
+        for (CompoundTag robot : robots) {
             String name = robot.getString("n");
             if (server) {
-                lines.add(new HelpLine(name, quoted(name), "a guard robot: use its name in order, activate and deactivate", 0x9ED8FF, null));
+                lines.add(new HelpLine(name, quoted(name), (robot.getBoolean("drone") ? "a security drone" : "a guard robot")
+                        + ": use its name in order, activate and deactivate", 0x9ED8FF, null));
                 continue;
             }
             if (!robot.contains("pins")) {
@@ -872,7 +910,8 @@ final class LogicApp {
         if (server) {
             lines.add(new HelpLine("Call a robot", CALL_EXAMPLE, "a robot says send(\"help\"): Guard 1 comes to it", 0xC9A0FF, null));
         } else {
-            lines.add(new HelpLine("Patrol a square", PATROL_EXAMPLE, "walks a square, and charges when its battery is low", 0xC9A0FF, null));
+            lines.add(drones ? new HelpLine("Patrol a square", DRONE_PATROL_EXAMPLE, "flies a square, and charges when its battery is low", 0xC9A0FF, null)
+                    : new HelpLine("Patrol a square", PATROL_EXAMPLE, "walks a square, and charges when its battery is low", 0xC9A0FF, null));
             lines.add(new HelpLine("Come when called", COME_EXAMPLE, "goes where the server says (needs the Pathfinding module)",
                     0xC9A0FF, null));
         }
@@ -946,7 +985,9 @@ final class LogicApp {
                 newDiagram(ProgramKind.SERVER);
             } else if (OsDraw.inside(mx, my, bx, top + 15 + OsDraw.BUTTON_H + 3, OsDraw.buttonWidth(font, "Robot program"), OsDraw.BUTTON_H)) {
                 newDiagram(ProgramKind.ROBOT);
-            } else if (OsDraw.inside(mx, my, bx, top + 15 + 2 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 2 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Drone program"), OsDraw.BUTTON_H)) {
+                newDiagram(ProgramKind.DRONE);
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 3 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
                 choosingKind = false;
             }
             if (mx >= a.x() && mx < a.x() + SIDE) {
@@ -1180,7 +1221,7 @@ final class LogicApp {
         save();
     }
 
-    /** Alleen voor de screenshot-rondleiding: na + de keuze tussen een diagram op de server en een robotprogramma. */
+    /** Alleen voor de screenshot-rondleiding: na + de keuze tussen een diagram op de server, een robot- en een droneprogramma. */
     void tourChooseKind() {
         choosingKind = true;
     }

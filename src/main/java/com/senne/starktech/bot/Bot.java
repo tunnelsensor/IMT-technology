@@ -133,4 +133,9 @@ public interface Bot {
      * drone), als hij kijkt in de richting {@code forward}.
      */
     Vec3 muzzle(boolean laser, Vec3 forward);
+
+    /** Hoe hoog (boven zijn voeten) zijn afstandssensor zit: bij een robot op heuphoogte. */
+    default double sensorHeight() {
+        return 0.9;
+    }
 }

@@ -70,6 +70,19 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("guard_robot"));
 
+    /**
+     * Hoofdstuk 25: een security drone die je zelf bouwt en programmeert (een vliegende guard robot). Zo klein dat
+     * hij in één blok past: hij vliegt blok voor blok.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.starktech.robot.GuardDroneEntity>> GUARD_DRONE =
+            ENTITIES.register("guard_drone", () -> EntityType.Builder
+                    .<com.senne.starktech.robot.GuardDroneEntity>of(com.senne.starktech.robot.GuardDroneEntity::new, MobCategory.MISC)
+                    .sized(0.8f, 0.5f)
+                    .eyeHeight(0.25f)
+                    .clientTrackingRange(10)
+                    .fireImmune()
+                    .build("guard_drone"));
+
     /** Een mini-raket uit het raketpakket van het harnas. */
     public static final DeferredHolder<EntityType<?>, EntityType<MiniRocketEntity>> MINI_ROCKET = ENTITIES.register(
             "mini_rocket", () -> EntityType.Builder.<MiniRocketEntity>of(MiniRocketEntity::new, MobCategory.MISC)
@@ -97,5 +110,6 @@ public final class ModEntities {
         event.put(HYDRA_SOLDIER.get(), HydraSoldierEntity.createAttributes().build());
         event.put(SECURITY_DRONE.get(), com.senne.starktech.security.SecurityDroneEntity.createAttributes().build());
         event.put(GUARD_ROBOT.get(), GuardRobotEntity.createAttributes().build());
+        event.put(GUARD_DRONE.get(), com.senne.starktech.robot.GuardDroneEntity.createAttributes().build());
     }
 }

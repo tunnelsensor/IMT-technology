@@ -294,6 +294,11 @@ public final class ModItems {
             "guard_robot", com.senne.starktech.robot.GuardRobotItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
+    /** Hoofdstuk 25: een security drone die je zelf bouwt (met een printplaat), om op een Drone Dock te zetten. */
+    public static final DeferredItem<com.senne.starktech.robot.GuardDroneItem> GUARD_DRONE = ITEMS.registerItem(
+            "guard_drone", com.senne.starktech.robot.GuardDroneItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
     /**
      * Hoofdstuk 22: de modules die je op de printplaat soldeert ("scan_module" tot "camera_module"), en de
      * verbrande module die overblijft na een kortsluiting ("burnt_module").

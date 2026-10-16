@@ -1,8 +1,10 @@
 package com.senne.starktech.client.robot;
 
+import com.senne.starktech.bot.BotEntity;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.client.hud.HudStyle;
 import com.senne.starktech.network.RobotActionPayload;
+import com.senne.starktech.robot.GuardDroneEntity;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.robot.RobotParts;
 import com.senne.starktech.robot.RobotSlot;
@@ -33,7 +35,8 @@ import org.jetbrains.annotations.Nullable;
  *  [Switch off] [Pick up] [Board]           [Done]
  * </pre>
  * Wat er nu is (naam, toestand, batterij) leest het scherm gewoon van de robot: dat kent jouw spel al, dus je
- * ziet het veranderen zodra de server iets gedaan heeft.
+ * ziet het veranderen zodra de server iets gedaan heeft. Een security drone (hoofdstuk 25) heeft hetzelfde scherm,
+ * zonder onderdelen (een drone ziet er altijd hetzelfde uit).
  */
 public class RobotScreen extends Screen {
     private static final int PANEL_W = 300;
@@ -61,10 +64,10 @@ public class RobotScreen extends Screen {
         return false;
     }
 
-    /** De robot zoals jouw spel hem kent, of null als hij weg is. */
-    private @Nullable GuardRobotEntity robot() {
+    /** De robot (of drone) zoals jouw spel hem kent, of null als hij weg is. */
+    private @Nullable BotEntity robot() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.level.getEntity(entityId) instanceof GuardRobotEntity robot && robot.isAlive()) {
+        if (mc.level != null && mc.level.getEntity(entityId) instanceof BotEntity robot && robot.isAlive()) {
             return robot;
         }
         return null;
@@ -76,7 +79,7 @@ public class RobotScreen extends Screen {
 
     @Override
     protected void init() {
-        GuardRobotEntity robot = robot();
+        BotEntity robot = robot();
         if (robot == null) {
             onClose();
             return;
@@ -92,7 +95,7 @@ public class RobotScreen extends Screen {
             }
         }).bounds(left + VALUE_X + 126, top + 107, PANEL_W - VALUE_X - 126 - MARGIN, 20).build());
         switchButton = addRenderableWidget(Button.builder(Component.empty(), b -> {
-            GuardRobotEntity now = robot();
+            BotEntity now = robot();
             if (now != null) {
                 send(now.isActive() ? RobotActionPayload.Op.TURN_OFF : RobotActionPayload.Op.TURN_ON, "");
             }
@@ -113,7 +116,7 @@ public class RobotScreen extends Screen {
         PacketDistributor.sendToServer(new RobotActionPayload(entityId, op, text));
     }
 
-    private void refresh(GuardRobotEntity robot) {
+    private void refresh(BotEntity robot) {
         if (switchButton != null) {
             switchButton.setMessage(Component.literal(robot.isActive() ? "Switch off" : "Switch on"));
         }
@@ -123,7 +126,7 @@ public class RobotScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        GuardRobotEntity robot = robot();
+        BotEntity robot = robot();
         if (robot == null) {
             onClose();
             return;
@@ -152,12 +155,13 @@ public class RobotScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
-        GuardRobotEntity robot = robot();
+        BotEntity robot = robot();
         if (robot == null) {
             return;
         }
         super.render(g, mouseX, mouseY, a);
-        String name = robot.hasCustomName() ? robot.getCustomName().getString() : "Guard Robot";
+        boolean drone = robot instanceof GuardDroneEntity;
+        String name = robot.hasCustomName() ? robot.getCustomName().getString() : drone ? "Security Drone" : "Guard Robot";
         g.drawString(font, name, left + MARGIN, top + 7, HudStyle.argb(255, HudStyle.CYAN), true);
         RobotState state = robot.state();
         String stateText = state.title().toUpperCase(Locale.ROOT);
@@ -167,18 +171,23 @@ public class RobotScreen extends Screen {
                 HudStyle.argb(150, 0x9FC9D6), false);
         // Met een Gun-module (hoofdstuk 24): hoeveel kogels hij nog heeft.
         if (robot.board().has(com.senne.starktech.bot.BotModule.GUN)) {
-            String ammo = "Ammo " + robot.ammo() + "/" + GuardRobotEntity.maxAmmo();
+            String ammo = "Ammo " + robot.ammo() + "/" + BotEntity.maxAmmo();
             g.drawString(font, ammo, left + PANEL_W - MARGIN - font.width(ammo), top + 20,
                     HudStyle.argb(220, robot.ammo() == 0 ? HudStyle.RED : HudStyle.ORANGE), false);
         }
 
-        // De onderdelen, twee per regel.
-        RobotParts parts = robot.parts();
-        for (RobotSlot slot : RobotSlot.values()) {
-            int x = left + MARGIN + (slot.ordinal() % 2) * (PANEL_W / 2);
-            int y = top + 36 + (slot.ordinal() / 2) * 12;
-            g.drawString(font, slot.title(), x, y, HudStyle.argb(170, HudStyle.ORANGE), false);
-            g.drawString(font, parts.get(slot).title(), x + 34, y, HudStyle.argb(230, HudStyle.WHITE), false);
+        // De onderdelen, twee per regel (een drone heeft er geen: die vliegt).
+        if (robot instanceof GuardRobotEntity guard) {
+            RobotParts parts = guard.parts();
+            for (RobotSlot slot : RobotSlot.values()) {
+                int x = left + MARGIN + (slot.ordinal() % 2) * (PANEL_W / 2);
+                int y = top + 36 + (slot.ordinal() / 2) * 12;
+                g.drawString(font, slot.title(), x, y, HudStyle.argb(170, HudStyle.ORANGE), false);
+                g.drawString(font, parts.get(slot).title(), x + 34, y, HudStyle.argb(230, HudStyle.WHITE), false);
+            }
+        } else {
+            g.drawString(font, "Security Drone", left + MARGIN, top + 36, HudStyle.argb(170, HudStyle.ORANGE), false);
+            g.drawString(font, "it flies: up(n) and down(n) in its program", left + MARGIN, top + 48, HudStyle.argb(200, 0x9FC9D6), false);
         }
 
         // De batterij: een balk, groen, oranje onder 30%, rood onder 10%.
@@ -195,7 +204,7 @@ public class RobotScreen extends Screen {
 
         // Zijn dock.
         label(g, "Dock", top + 86);
-        String dock = home == null ? "None (put it on a Robot Dock)"
+        String dock = home == null ? drone ? "None (put it on a Drone Dock)" : "None (put it on a Robot Dock)"
                 : home.getX() + ", " + home.getY() + ", " + home.getZ();
         g.drawString(font, dock, left + VALUE_X, top + 86, HudStyle.argb(home == null ? 170 : 230, HudStyle.WHITE), false);
 

@@ -284,7 +284,7 @@ public final class Robots {
             tag.putDouble("ey", eye.y);
             tag.putDouble("ez", eye.z);
             tag.putFloat("yaw", robot.getYHeadRot());
-            tag.putFloat("pitch", robot.getXRot());
+            tag.putFloat("pitch", robot.getXRot() + (entry.drone() ? 20.0f : 0.0f)); // een drone kijkt een beetje naar beneden
             list.add(tag);
         }
         return list;
