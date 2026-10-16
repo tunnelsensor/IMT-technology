@@ -131,6 +131,7 @@ public class StarkTechClient {
         event.registerEntityRenderer(ModEntities.MINI_ROCKET.get(), com.senne.starktech.client.suit.MiniRocketRenderer::new);
         event.registerEntityRenderer(ModEntities.ORBITAL_MISSILE.get(), com.senne.starktech.client.satellite.OrbitalMissileRenderer::new);
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.starktech.client.drone.SecurityDroneRenderer::new);
+        event.registerEntityRenderer(ModEntities.GUARD_ROBOT.get(), com.senne.starktech.client.robot.GuardRobotRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         // C4 (hoofdstuk 10): het schermpje dat aftelt en het knipperende lampje.
@@ -152,6 +153,8 @@ public class StarkTechClient {
                 com.senne.starktech.client.satellite.OrbitalMissileRenderer::createLayer);
         event.registerLayerDefinition(com.senne.starktech.client.turret.TurretRenderer.LAYER,
                 com.senne.starktech.client.turret.TurretRenderer::createLayer);
+        event.registerLayerDefinition(com.senne.starktech.client.robot.RobotModel.LAYER,
+                com.senne.starktech.client.robot.RobotModel::createLayer);
         event.registerLayerDefinition(StarkSuitModel.OUTER, StarkSuitModel::createOuter);
         event.registerLayerDefinition(StarkSuitModel.INNER, StarkSuitModel::createInner);
     }

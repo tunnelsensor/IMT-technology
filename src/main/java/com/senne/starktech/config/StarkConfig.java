@@ -82,6 +82,7 @@ package com.senne.starktech.config;
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
  *   Bypass ....... inbreken met de Bypass Kit, en zakkenrollen
  *   Lights ....... de Arc Lamp
+ *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
  *   Hydra ........ Hydra-soldaten
  *   Raids ........ vijandige raiddrones
  */
@@ -1446,6 +1447,37 @@ public final class StarkConfig {
         @Tunable(value = "The highest light level you can set an Arc Lamp to (new lamps start here). Normal lamps stop at 15. "
                 + "Full light up to this minus 15 blocks away, then it fades out like normal light.", min = 15, max = 128)
         public static float ARC_LAMP_MAX_LEVEL = 100.0f;
+    }
+
+    // =============================================================================================== Robots
+
+    @Section("Guard robots (chapter 21): what each part does. Every list has 4 numbers, one per style, in this "
+            + "order: Commando, Trainer, Battle, Super Battle")
+    public static final class Robots {
+        private Robots() {}
+
+        /** Levenspunten, naar de stijl van het lijf (20 = 10 hartjes). */
+        @Tunable(value = "Health of a robot, by the style of its body (Commando, Trainer, Battle, Super Battle)",
+                min = 1, max = 1_000)
+        public static float[] BODY_HEALTH = {30.0f, 24.0f, 20.0f, 44.0f};
+        /** Pantser, naar de stijl van het lijf. */
+        @Tunable(value = "Armor of a robot, by the style of its body", max = 30)
+        public static float[] BODY_ARMOR = {6.0f, 4.0f, 2.0f, 10.0f};
+        /** Hoeveel energie de batterij hoogstens heeft, naar de stijl van het lijf. */
+        @Tunable(value = "Battery of a robot (energy), by the style of its body", min = 1, max = 1_000_000)
+        public static float[] BODY_BATTERY = {4000.0f, 6000.0f, 3000.0f, 8000.0f};
+        /** Hoe snel hij loopt (0,25 is zo snel als een zombie), naar de stijl van de benen. */
+        @Tunable(value = "Walking speed of a robot (0.25 = a zombie), by the style of its legs", max = 1)
+        public static float[] LEGS_SPEED = {0.30f, 0.27f, 0.25f, 0.20f};
+        /** Ticks tussen twee schoten, naar de stijl van de armen (hoofdstuk 24). */
+        @Tunable(value = "Ticks between two shots of a robot, by the style of its arms", min = 1, max = 1_200)
+        public static float[] ARMS_FIRE_INTERVAL = {24.0f, 30.0f, 36.0f, 18.0f};
+        /** Hoe ver hij ziet (blokken), naar de stijl van het hoofd (hoofdstuk 24). */
+        @Tunable(value = "How far a robot sees (blocks), by the style of its head", min = 1, max = 64)
+        public static float[] HEAD_SCAN_RANGE = {14.0f, 12.0f, 10.0f, 12.0f};
+        /** Hoe breed hij kijkt (graden; 360 = rondom), naar de stijl van het hoofd (hoofdstuk 24). */
+        @Tunable(value = "How wide a robot looks (degrees, 360 = all around), by the style of its head", min = 10, max = 360)
+        public static float[] HEAD_SCAN_ANGLE = {120.0f, 360.0f, 90.0f, 70.0f};
     }
 
     // =============================================================================================== Hydra

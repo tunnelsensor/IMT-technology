@@ -4,6 +4,7 @@ import com.senne.starktech.StarkTech;
 import com.senne.starktech.drone.StarkDroneEntity;
 import com.senne.starktech.hydra.HydraSoldierEntity;
 import com.senne.starktech.raid.RaidDroneEntity;
+import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.suit.MiniRocketEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -58,6 +59,17 @@ public final class ModEntities {
                     .fireImmune()
                     .build("security_drone"));
 
+    /**
+     * Hoofdstuk 21: een guard robot die je zelf samenstelt. MISC en geen MONSTER: je torentjes laten hem
+     * met rust, en hij verdwijnt nooit vanzelf.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<GuardRobotEntity>> GUARD_ROBOT = ENTITIES.register(
+            "guard_robot", () -> EntityType.Builder.<GuardRobotEntity>of(GuardRobotEntity::new, MobCategory.MISC)
+                    .sized(0.6f, 1.9f)
+                    .eyeHeight(1.6f)
+                    .clientTrackingRange(10)
+                    .build("guard_robot"));
+
     /** Een mini-raket uit het raketpakket van het harnas. */
     public static final DeferredHolder<EntityType<?>, EntityType<MiniRocketEntity>> MINI_ROCKET = ENTITIES.register(
             "mini_rocket", () -> EntityType.Builder.<MiniRocketEntity>of(MiniRocketEntity::new, MobCategory.MISC)
@@ -84,5 +96,6 @@ public final class ModEntities {
         event.put(RAID_DRONE.get(), RaidDroneEntity.createAttributes().build());
         event.put(HYDRA_SOLDIER.get(), HydraSoldierEntity.createAttributes().build());
         event.put(SECURITY_DRONE.get(), com.senne.starktech.security.SecurityDroneEntity.createAttributes().build());
+        event.put(GUARD_ROBOT.get(), GuardRobotEntity.createAttributes().build());
     }
 }

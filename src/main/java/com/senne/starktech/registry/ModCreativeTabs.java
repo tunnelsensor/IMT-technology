@@ -86,6 +86,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.BYPASS_KIT.get());
                 output.accept(ModItems.STARK_LAPTOP.get());
                 output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
+                output.accept(ModItems.GUARD_ROBOT_SPAWN_EGG.get());
             })
             .build());
 }

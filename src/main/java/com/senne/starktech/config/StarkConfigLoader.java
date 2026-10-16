@@ -65,6 +65,7 @@ public final class StarkConfigLoader {
             StarkConfig.Repair.class,
             StarkConfig.Bypass.class,
             StarkConfig.Lights.class,
+            StarkConfig.Robots.class,
             StarkConfig.Hydra.class,
             StarkConfig.Raids.class);
 

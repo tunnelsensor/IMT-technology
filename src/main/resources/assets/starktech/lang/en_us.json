@@ -7,6 +7,8 @@
   "item.starktech.hydra_circuit": "Hydra Circuit",
   "item.starktech.hydra_rifle": "Hydra Laser Rifle",
   "item.starktech.hydra_soldier_spawn_egg": "Hydra Soldier Spawn Egg",
+  "item.starktech.guard_robot_spawn_egg": "Guard Robot Spawn Egg",
+  "entity.starktech.guard_robot": "Guard Robot",
   "item.starktech.emp.hit": "E.M.P.! %s illusions down.",
   "item.starktech.emp.empty": "E.M.P. fired: no illusions nearby.",
   "item.starktech.battery_upgrade": "E.D.I.T.H. Battery Upgrade",

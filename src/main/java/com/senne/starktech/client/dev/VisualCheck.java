@@ -1033,6 +1033,41 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- Hoofdstuk 21: guard robots. Vooraan de vier stijlen (Commando, Trainer, Battle, Super Battle),
+        // daarachter twee gemengde; van voren, opzij, van achter en 's nachts (de lichtjes).
+        if (want("robots")) {
+            t.view(0, 60.5, -60, 62.5, 180, 8);
+            t.onServer(20, player -> {
+                ServerLevel level = player.serverLevel();
+                com.senne.starktech.robot.RobotStyle[] styles = com.senne.starktech.robot.RobotStyle.values();
+                for (int i = 0; i < styles.length; i++) {
+                    robotStill(level, new BlockPos(57 + i * 2, -60, 57), new com.senne.starktech.robot.RobotParts(
+                            styles[i], styles[i], styles[i], styles[i]));
+                }
+                robotStill(level, new BlockPos(59, -60, 53), new com.senne.starktech.robot.RobotParts(
+                        com.senne.starktech.robot.RobotStyle.COMMANDO, com.senne.starktech.robot.RobotStyle.SUPER_BATTLE,
+                        com.senne.starktech.robot.RobotStyle.TRAINER, com.senne.starktech.robot.RobotStyle.BATTLE));
+                robotStill(level, new BlockPos(62, -60, 53), new com.senne.starktech.robot.RobotParts(
+                        com.senne.starktech.robot.RobotStyle.BATTLE, com.senne.starktech.robot.RobotStyle.TRAINER,
+                        com.senne.starktech.robot.RobotStyle.SUPER_BATTLE, com.senne.starktech.robot.RobotStyle.COMMANDO));
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.shot(20, "rb01_robot_styles_front");
+            t.view(0, 60.5, -59, 59.5, 180, 12);
+            t.shot(20, "rb02_robot_styles_close");
+            t.view(0, 67.5, -60, 57.5, 90, 5);
+            t.shot(20, "rb03_robot_styles_side");
+            t.view(0, 60.5, -60, 49.5, 0, 5);
+            t.shot(20, "rb04_robot_mixed_back");
+            t.view(0, 60.5, -59.5, 57.5, 180, 15);
+            t.shot(20, "rb05_robot_mixed_front");
+            t.command(0, "time set midnight");
+            t.view(0, 60.5, -60, 62.5, 180, 8);
+            t.shot(40, "rb06_robot_styles_night");
+            t.command(0, "time set noon");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        }
+
         // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde
         // doelwitten en een salvo, gevolgd van achter de speler.
         if (want("rockets")) {
@@ -2976,6 +3011,14 @@ public final class VisualCheck {
         }
         com.senne.starktech.energy.StarkCables.add(level, new BlockPos(20, -60, -18));
         com.senne.starktech.energy.StarkCables.add(level, new BlockPos(20, -60, -19));
+    }
+
+    /** Een guard robot die stil staat en naar het zuiden kijkt (naar de camera). */
+    private static void robotStill(ServerLevel level, BlockPos pos, com.senne.starktech.robot.RobotParts parts) {
+        if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), pos, 0)
+                instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
+            robot.setParts(parts);
+        }
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */

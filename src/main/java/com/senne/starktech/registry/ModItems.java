@@ -245,6 +245,11 @@ public final class ModItems {
             "hydra_soldier_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.HYDRA_SOLDIER, 0x18191C, 0xCD2020,
                     new Item.Properties()));
 
+    /** Hoofdstuk 21: een guard robot met willekeurige onderdelen (creative). */
+    public static final DeferredItem<DeferredSpawnEggItem> GUARD_ROBOT_SPAWN_EGG = ITEMS.register(
+            "guard_robot_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.GUARD_ROBOT, 0x464A50, 0xCDBA8C,
+                    new Item.Properties()));
+
     /** Fase 15: een gebouwde drone. Gebruik hem en hij vliegt naar je arsenaal in een baan. */
     public static final DeferredItem<StarkDroneItem> STARK_DRONE = ITEMS.registerItem("stark_drone",
             StarkDroneItem::new, new Item.Properties().rarity(Rarity.UNCOMMON));

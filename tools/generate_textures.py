@@ -3007,6 +3007,68 @@ def bypass_kit_item():
     save(im, "item/bypass_kit.png")
 
 
+# --------------------------------------------------------------------- Guard robots (hoofdstuk 21)
+
+# Per stijl vier verven: hoofdkleur, donker (gewrichten), lichtjes, details (ogen, sleuven). Volgorde en
+# plekken zoals in RobotModel.java: Commando linksboven, Trainer rechtsboven, Battle linksonder, Super
+# Battle rechtsonder; in elk vierkant van 64 x 64 de hoofdkleur bovenaan (64 x 32), donker eronder
+# (64 x 16), en onderaan lichtjes (links, 32 x 16) en details (rechts, 32 x 16).
+ROBOT_STYLES = [
+    # naam,          hoofdkleur,       donker,           lichtjes,         details,       gloeien?
+    ("commando",     (70, 74, 80),     (38, 40, 45),     (255, 90, 50),    (14, 14, 16),  True),
+    ("trainer",      (226, 232, 238),  (150, 160, 172),  (110, 215, 255),  (40, 52, 64),  True),
+    ("battle",       (206, 186, 138),  (138, 116, 78),   (170, 120, 60),   (52, 42, 30),  False),
+    ("super_battle", (78, 88, 104),    (44, 50, 60),     (110, 122, 140),  (18, 20, 24),  False),
+]
+
+
+def robot_textures():
+    """
+    De guard robot (128 x 128) en zijn lichtjes die in het donker gloeien (zelfde indeling). Elk blokje van
+    het model kiest een verf en alle blokjes met die verf delen dezelfde plek, dus elke verf is een effen
+    vlak metaal met een beetje ruis en hier en daar een kras of een klinknagel.
+    """
+    import random
+    rng = random.Random(21)
+    base = img(128, 128)
+    glow = img(128, 128)
+
+    def metal(im, x0, y0, w, h, colour, spread, scratches):
+        r, g, b = colour
+        for x in range(x0, x0 + w):
+            for y in range(y0, y0 + h):
+                n = rng.randint(-spread, spread)
+                im.putpixel((x, y), (max(0, min(255, r + n)), max(0, min(255, g + n)), max(0, min(255, b + n)), 255))
+        # Krasjes (iets lichter) en klinknagels (iets donkerder), op vaste plekken door de vaste seed.
+        for _ in range(scratches):
+            x = rng.randrange(x0, x0 + w)
+            y = rng.randrange(y0, y0 + h)
+            light = (min(255, r + 26), min(255, g + 26), min(255, b + 26), 255)
+            im.putpixel((x, y), light)
+            if x + 1 < x0 + w:
+                im.putpixel((x + 1, y), light)
+        for _ in range(scratches // 2):
+            x = rng.randrange(x0, x0 + w)
+            y = rng.randrange(y0, y0 + h)
+            im.putpixel((x, y), (max(0, r - 30), max(0, g - 30), max(0, b - 30), 255))
+
+    for i, (name, main, dark, light, detail, glows) in enumerate(ROBOT_STYLES):
+        qx = i % 2 * 64
+        qy = i // 2 * 64
+        metal(base, qx, qy, 64, 32, main, 5, 40)
+        metal(base, qx, qy + 32, 64, 16, dark, 4, 12)
+        metal(base, qx, qy + 48, 32, 16, light, 2, 0)
+        metal(base, qx + 32, qy + 48, 32, 16, detail, 2, 0)
+        if glows:
+            # De lichtjes gloeien in hun eigen kleur; de rest van de gloeilaag blijft doorzichtig.
+            lr, lg, lb = light
+            for x in range(qx, qx + 32):
+                for y in range(qy + 48, qy + 64):
+                    glow.putpixel((x, y), (lr, lg, lb, 255))
+    save(base, "entity/robot/guard_robot.png")
+    save(glow, "entity/robot/guard_robot_glow.png")
+
+
 if __name__ == "__main__":
     edith_glasses_item()
     stark_chip()
@@ -3064,3 +3126,4 @@ if __name__ == "__main__":
     keycard_reader_textures()
     code_panel_textures()
     bypass_kit_item()
+    robot_textures()

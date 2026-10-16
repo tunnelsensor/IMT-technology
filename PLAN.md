@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 228 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 232 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 89 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2378,11 +2378,28 @@ leven en batterij, armen = schieten, hoofd = kijkhoek. De robot hoort bij de cor
 Een robot opent een deur door een relais aan te sturen (jouw wens). Aan = hij stapt uit zijn laadblok; uit =
 hij loopt terug en laadt.
 
-- [ ] **1. Config en de robot** — `[robots]` in `StarkConfig`, `GuardRobotEntity` (geen Monster, zodat je
-      eigen torentjes hem met rust laten), gesynchroniseerde onderdelen, toestand en batterij.
+- [x] **1. Config en de robot** — `[robots]` in `StarkConfig` (7 lijstjes met elk 4 getallen, één per stijl:
+      leven, pantser en batterij van het lijf, snelheid van de benen, schiettempo van de armen, kijkafstand en
+      kijkhoek van het hoofd), `RobotStyle`, `RobotSlot` en `RobotParts` (de vier onderdelen in één getal),
+      `GuardRobotEntity` (geen Monster, zodat je eigen torentjes hem met rust laten; verdwijnt nooit vanzelf;
+      stapt een blok op zonder te springen; verdrinkt niet; geen touw). Zijn onderdelen zet de server in zijn
+      leven, pantser en snelheid, ook na het laden (dan geldt de config van nu). Wie hem neerzet is eigenaar
+      (`BaseTrust.Placed`, dezelfde regel als de laserzender). Een spawn-ei (creative) geeft willekeurige
+      onderdelen. Zonder programma staat hij stil en kijkt hij rond. Toestand en batterij komen in stap 6.
+      Nieuwe testklasse `RobotGameTests` (4 tests).
 - [ ] **2. Onderdelen** — 16 onderdelen (4 soorten × 4 stijlen), recepten, taal.
-- [ ] **3. Het model** — één humanoid model met per stijl eigen afmetingen en textuur (4 texturen uit
-      `tools/generate_textures.py`).
+- [x] **3. Het model** — *samen met stap 1 gedaan* (anders kon je de robot niet zien). `client/robot/RobotModel`:
+      de botten van een mens (dus lopen en armzwaaien gratis), en aan elk bot vier versies, één per stijl;
+      per robot staat alleen de gekozen stijl aan. De armen hangen aan de schouders van het gekozen lijf
+      (een Super Battle-lijf is veel breder), het hoofd op zijn nek (bij de Super Battle half in de borst),
+      de benen bepalen zelf hun breedte. *Battle*: mager en zandkleurig, smalle schedel met een lange snuit,
+      rugzak, dunne ruggengraat. *Super Battle*: donker blauwgrijs, enorme borst met een bult, klein hoofd met
+      kijksleuf, dikke onderarmen met een blaster in de pols. *Commando*: donkergrijs gepantserd, rond hoofd
+      met één oranjerood oog. *Trainer*: wit en rond, lichtblauw vizier, borstlampje, polsringen en
+      knielichtjes. Eén textuur van 128 x 128 (`robot_textures()` in `tools/generate_textures.py`): per stijl
+      vier "verven" (hoofdkleur, donker, lichtjes, details) die de blokjes delen, plus een gloeilaag.
+      Screenshots `-Ponly=robots` (`rb01`-`rb06`: de vier stijlen, van dichtbij, opzij, twee gemengde van
+      achter en voor, en 's nachts met de lichtjes).
 - [ ] **4. Printplaat** — de **Robot Circuit Board** (leeg, 8 pinnen).
 - [ ] **5. Robot Assembler** — blok met vier vakjes en de printplaat, 3D-voorbeeld, **Assemble** (maakt het
       robotitem) en **Take apart**.
