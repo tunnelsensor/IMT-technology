@@ -861,8 +861,8 @@ Wat een robot kan, soldeer je op zijn **printplaat**: 8 genummerde pinnen. Er zi
 **Scan** (ziet hij iemand?), **Distance** (hoe ver tot wat voor hem staat), **Face Recognition** (wie
 hij ziet), **Pathfinding** (naar een plek lopen), **Laser**, **Gun**, **Solar Panel** (laden in de zon)
 en **Camera** (door zijn ogen kijken). Elk recept: een Stark Chip, twee redstone en iets dat erbij past.
-Hoe je ze in je code noemt (`scanPin = pin(1)`) staat hieronder bij "Robots programmeren"; wat ze precies
-doen, komt in hoofdstuk 24. Je ziet ze wel al op de robot (een schoteltje op zijn hoofd, een laser op zijn
+Hoe je ze in je code noemt (`scanPin = pin(1)`) staat hieronder bij "Robots programmeren", wat ze doen bij
+"Zien en schieten". Je ziet ze wel al op de robot (een schoteltje op zijn hoofd, een laser op zijn
 arm...).
 
 **Solderen.** Je hebt een **Soldering Iron** nodig (ijzer, blazepoeder en een stok; ergens in je rugzak
@@ -914,8 +914,8 @@ when ordered("attack"):
   was. Daarna gaat zijn programma verder.
 - `stop()`: hij zet zichzelf uit en loopt naar zijn dock.
 - `scanPin = pin(1)` geeft pin 1 een naam (zoals in C++); `read(scanPin)` en `write(laserPin, true)` gebruiken
-  straks de modules op zijn pinnen (hoofdstuk 24). In de Help van de app Logic staat bij **YOUR ROBOTS** wat er
-  op de pinnen van je robots zit: klik erop en de regels met `pin(...)` staan in je code.
+  de modules op zijn pinnen (zie hieronder, "Zien en schieten"). In de Help van de app Logic staat bij **YOUR
+  ROBOTS** wat er op de pinnen van je robots zit: klik erop en de regels met `pin(...)` staan in je code.
 - Gegevens: `robot.battery` (0-100), `robot.x`, `robot.y`, `robot.z`, `robot.facing`, `robot.name`,
   `robot.blocked` en `robot.connected`.
 
@@ -938,6 +938,63 @@ logboek). Een robot die ver weg is, krijgt zijn opdracht als hij terug is.
 
 Hoe snel hij loopt en hoeveel hij per tick doet, staat in `config/starktech.toml` onder `[robots]`
 (`stepsPerTick`, `maxRuns`, `walkFactor`, `stuckSeconds`, `turnSeconds`, `gotoSeconds`).
+
+### Zien en schieten: de modules in je programma
+Wat er op de pinnen van een robot gesoldeerd zit, gebruik je in zijn programma met `read(pin)` (wat zegt de
+module?) en `write(pin, ...)` (doe iets). Geef de pin eerst een naam: `scanPin = pin(1)`. In de Help van de app
+Logic staat bij **YOUR ROBOTS** wat er op de pinnen van je robots zit (klik erop) en bij **MODULES** een voorbeeld
+per module.
+
+| Module | `read(pin)` | `write(pin, ...)` |
+|---|---|---|
+| **Scan** | `true` als hij een speler ziet: binnen het bereik en de kijkhoek van zijn hoofd, niet door muren | — |
+| **Distance** | hoeveel blokken tot wat recht voor hem staat (een muur vlak voor hem = 1, niets = 99) | — |
+| **Face Recognition** | de naam van wie hij ziet (`""` = niemand) | wie hij zoekt: `"everyone"`, `"strangers"`, `"trusted"` of een naam |
+| **Pathfinding** | `true` zolang hij met `goto` onderweg is | — (zonder deze module werkt `goto` niet) |
+| **Laser** | `true` als hij kan schieten | `true` = één schot (kost batterij) |
+| **Gun** | hoeveel kogels hij nog heeft | `true` = één schot (kost één Robot Ammo) |
+| **Solar Panel** | hoeveel zon hij vangt (0-100); hij laadt er zelf mee, ook als hij uit staat | — |
+| **Camera** | `true` als iemand door zijn ogen kijkt | `false` = camera uit, `true` = weer aan |
+
+Een voorbeeld van een bewaker:
+
+```
+scanPin = pin(1)
+facePin = pin(2)
+laserPin = pin(3)
+
+when started:
+    write(facePin, "strangers")
+    forever:
+        if read(scanPin) and read(laserPin):
+            alarm("Intruder near " + robot.name)
+            write(laserPin, true)
+        wait(0.5)
+```
+
+**Wie ziet hij?** Spelers in creative of die alleen toekijken ziet hij niet (net als monsters en torentjes).
+Met "strangers" ziet hij alleen wie niet bij je basis hoort, met "trusted" juist jou, je team en vertrouwde
+spelers. Dat vraagt hij aan de server: **zonder verbinding** ziet hij met die twee niemand (zo schiet hij nooit
+op een vriend omdat hij het niet weet). Een naam herkent hij altijd.
+
+**Schieten.** De laser en het geweer richten op wie zijn Scan ziet (door het filter); zonder Scan-module, of als
+hij niemand ziet, schiet hij recht vooruit en raakt hij wat daar staat (tot 24 blokken). De laser zit aan zijn
+rechterarm, het geweer aan zijn linker. Hoe snel hij opnieuw kan schieten, hangt aan zijn armen (Super Battle
+het snelst, Battle het traagst). Een muur en een schildkoepel houden een schot tegen; spelers raakt hij alleen
+als PvP aan staat. **Robot Ammo** maak je van buskruit, een koperstaaf en twee ijzerklompjes (16 kogels);
+rechtsklik je robot ermee om hem te laden (tot 64), en zijn scherm zegt hoeveel hij er nog heeft.
+
+**Door zijn ogen kijken.** Een robot met een Camera-module en verbinding staat in de app **Cameras** tussen je
+camera's, met ROBOT erbij. Het beeld loopt met hem mee; draaien doet zijn programma.
+
+**De Ion Blaster.** Een wapen voor jou (lapis, twee ijzer, een Stark Chip en redstone). Rechtsklik: een blauwe
+straal die een robot laat neervallen. Hij ligt dan op zijn rug, zijn programma staat stil en zijn camera geeft
+geen beeld, maar kapot is hij niet: na 60 seconden staat hij weer op en begint zijn programma opnieuw. Op
+spelers en dieren doet de straal niets. Wil je een robot echt kapot, gebruik dan een gewoon wapen.
+
+De getallen staan in `config/starktech.toml` onder `[robots]` (`laserDamage`, `laserEnergy`, `gunDamage`,
+`shotRange`, `maxAmmo`, `solarCharge`, `ionDownSeconds`, `ionRange`, `ionCooldown`, en per stijl
+`armsFireInterval`, `headScanRange`, `headScanAngle`).
 
 ### De Hydra-bunker
 Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je

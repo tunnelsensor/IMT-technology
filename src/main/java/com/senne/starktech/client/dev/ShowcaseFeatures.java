@@ -1794,6 +1794,57 @@ final class ShowcaseFeatures {
                     .pause(160);
         });
 
+        add("Robot senses and weapons", "Hoofdstuk 24: zien en schieten. In de werkplaats staan twee Commando-robots naar "
+                + "het noorden te kijken, met elk een husk vijf blokken voor zich. De linker heeft een Laser (pin 3), de rechter "
+                + "een Gun (pin 4) met 6 Robot Ammo; hun programma: zodra het wapen klaar is, schieten. Kijk naar de "
+                + "oranjerode laserstraal uit de rechterarm en het gele kogelspoortje uit de linkerarm (luister naar de "
+                + "'pew' en de knal); de husks vallen om. Dan schiet jij met de Ion Blaster op de linker robot: een dikke "
+                + "blauwe straal, en hij valt neer op zijn rug (zonder schade: na 60 seconden staat hij weer op). Tot slot de "
+                + "app Cameras op de desktop: beide robots hebben een Camera-module, dus ze staan ertussen met ROBOT erbij "
+                + "(de neergeschoten robot geeft NO SIGNAL); het grote beeld kijkt door de ogen van de rechter robot.",
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(5, 0, 11)), 180, 10, s -> {
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .onServer(0, player -> {
+                        buildBayServer(player);
+                        ServerLevel level = player.serverLevel();
+                        String[] weapons = {"laser", "gun"};
+                        for (int i = 0; i < weapons.length; i++) {
+                            BlockPos pos = ROBOT_BAY.offset(4 + i * 3, 0, 9);
+                            DevWorld.spawnStill(level, net.minecraft.world.entity.EntityType.HUSK, pos.north(5), 0);
+                            if (DevWorld.spawnStill(level, com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), pos, 180)
+                                    instanceof com.senne.starktech.robot.GuardRobotEntity robot) {
+                                com.senne.starktech.robot.RobotStyle c = com.senne.starktech.robot.RobotStyle.COMMANDO;
+                                robot.setParts(new com.senne.starktech.robot.RobotParts(c, c, c, c));
+                                robot.setOwner(player);
+                                robot.setCustomName(net.minecraft.network.chat.Component.literal(i == 0 ? "Laser guard" : "Gun guard"));
+                                int pin = i == 0 ? 3 : 4;
+                                robot.setBoard(com.senne.starktech.bot.BotBoard.EMPTY.with(pin, weapons[i]).with(6, "camera"));
+                                robot.setAmmo(6);
+                                robot.setProgram(program("Shoot", "when started:\n    forever:\n        if read(pin(" + pin + ")):\n"
+                                        + "            write(pin(" + pin + "), true)\n        wait(0.5)\n",
+                                        com.senne.starktech.logic.program.ProgramKind.ROBOT));
+                                robot.setActive(true);
+                            }
+                        }
+                    })
+                    .pause(120)
+                    // De Ion Blaster: jij schiet de linker robot neer.
+                    .onServer(0, player -> robotNear(player, ROBOT_BAY.offset(4, 0, 9), robot -> {
+                        player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, robot.getBoundingBox().getCenter());
+                        com.senne.starktech.robot.IonBlasterItem.fire(player.serverLevel(), player);
+                    }))
+                    .pause(100)
+                    // De app Cameras: de robots met een camera, en het grote beeld van de rechter. (Even wachten: een
+                    // nieuwe kern opent eerst zelf Settings, voor een wachtwoord.)
+                    .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(5, player -> com.senne.starktech.security.os.StarkOs.open(player, ROBOT_BAY.offset(10, 0, 6)))
+                    .step(30, () -> desktop(os -> os.tourOpen(com.senne.starktech.client.os.StarkOsScreen.App.CAMERAS)))
+                    .pause(40)
+                    .step(0, () -> desktop(os -> os.tourRobotCamera("Gun guard")))
+                    .pause(240)
+                    .close(20);
+        });
+
         add("Stark Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes "
                 + "drone-docks langs de muur, en op elke dock staat een drone uit je arsenaal; ze worden daar met "
                 + "stroom gerepareerd. Twee drones gaan op pad: ze stijgen op met een wolkje, en op hun dock blijft "

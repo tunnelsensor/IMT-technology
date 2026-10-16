@@ -531,10 +531,10 @@ final class CamerasApp {
         renaming = false;
     }
 
-    /** Alleen voor de screenshot-rondleiding: het grote beeld van de eerste robot met een camera. */
-    void tourBigRobot() {
+    /** Alleen voor de screenshot-rondleiding: het grote beeld van de robot met deze naam (null: de eerste). */
+    void tourBigRobot(@Nullable String name) {
         for (CompoundTag camera : cameras()) {
-            if (isRobot(camera)) {
+            if (isRobot(camera) && (name == null || camera.getString("name").equals(name))) {
                 big = key(camera);
                 renaming = false;
                 return;

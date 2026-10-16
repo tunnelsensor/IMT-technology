@@ -710,6 +710,25 @@ final class LogicApp {
             lines.add(new HelpLine("if robot.battery < 10:", "if robot.battery < 10:\n    charge()",
                     "also: robot.x, robot.y, robot.z, robot.facing, robot.name, robot.blocked, robot.connected",
                     HudStyle.WHITE, null));
+            // Wat elke module zegt (read) en doet (write) (hoofdstuk 24).
+            lines.add(header("MODULES (read / write)"));
+            lines.add(new HelpLine("Scan: if read(scanPin):", "if read(scanPin):\n    alarm(\"Intruder near \" + robot.name)",
+                    "true if it sees a player (not through walls; not in creative)", HudStyle.WHITE, null));
+            lines.add(new HelpLine("Distance: read(distancePin)", "if read(distancePin) < 3:\n    turn_right()",
+                    "blocks to what stands in front of it (99 = nothing)", HudStyle.WHITE, null));
+            lines.add(new HelpLine("Face: write(facePin, ...)", "write(facePin, \"strangers\")",
+                    "who it looks for: \"everyone\", \"strangers\", \"trusted\" or a name; read(facePin) = who it sees",
+                    0x9ED8FF, null));
+            lines.add(new HelpLine("Laser: write(laserPin, true)", "if read(scanPin) and read(laserPin):\n    write(laserPin, true)",
+                    "one shot at whom the scan sees (else straight ahead); read = ready to fire", 0x9ED8FF, null));
+            lines.add(new HelpLine("Gun: write(gunPin, true)", "if read(gunPin) > 0:\n    write(gunPin, true)",
+                    "one bullet (Robot Ammo: right-click the robot to load); read = bullets left", 0x9ED8FF, null));
+            lines.add(new HelpLine("Solar: read(solarPin)", "if read(solarPin) > 50:\n    pass",
+                    "how much sun it catches, 0-100 (it charges by itself)", HudStyle.WHITE, null));
+            lines.add(new HelpLine("Camera: read(cameraPin)", "if read(cameraPin):\n    say(\"Someone is watching\")",
+                    "true while someone looks through its eyes (Cameras app); write(cameraPin, false) = off", HudStyle.WHITE, null));
+            lines.add(new HelpLine("Path: read(pathPin)", "goto(10, 64, -20)",
+                    "lets goto(x, y, z) work; read = true while it is on its way", HudStyle.WHITE, null));
         }
         lines.add(header("CHECK (if)"));
         if (server) {

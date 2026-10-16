@@ -16,7 +16,7 @@ Afspraken die overal gelden:
 
 **Stand van zaken:** 270 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 92 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 93 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2725,6 +2725,14 @@ Tests: de scan ziet een speler in zicht en niet door een muur; het filter "stran
 niet de eigenaar; zonder verbinding ziet hij niemand; een koepel houdt de laser tegen; zon laadt overdag; de
 Ion Blaster zet een robot DOWN en een speler blijft ongeschonden.
 
+- [x] **Afronding** — 270 tests: 267 groen, de 3 rode van hoofdstuk 14 stap 2. Zeven nieuwe in hoofdstuk 24
+      (`BotSenseGameTests`: scan en afstand, gezichtsherkenning, laser en geweer, muren/koepels/PvP, zonnepaneel,
+      camera, Ion Blaster). De Help van een robotprogramma heeft nu **MODULES (read / write)** met een voorbeeld
+      per module. In de showcase de nieuwe functie **"Robot senses and weapons"** (85, na "Robot programs"): twee
+      Commando's schieten op husks (laser en geweer), jij legt er een neer met de Ion Blaster, en de app Cameras
+      kijkt door de ogen van de andere (een neergeschoten robot geeft NO SIGNAL). LEESMIJ.md: een nieuw stuk "Zien
+      en schieten". Het jar gebouwd.
+
 ### 25. Programmeerbare security drones (14 oktober)
 
 Jouw antwoorden: de security drones krijgen dezelfde programmeerbaarheid, plus **omhoog en omlaag**. Hun
@@ -2871,6 +2879,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Zien en schieten (16 oktober)**: gezien op screenshots (`rb20`-`rb25`) en in de showcase (85), getest met 7
+      nieuwe tests. Probeer zelf: of de laser en het geweer goed voelen (schade, hoe snel, de geluiden "pew" en de
+      knal: die heb ik niet gehoord), of een robot je echt niet door een muur ziet, de Ion Blaster op een robot die
+      loopt (valt hij mooi neer? staat hij na een minuut weer op?), en het beeld van een robotcamera als hij loopt.
 - [ ] **Robots programmeren (16 oktober)**: gezien op screenshots (`l16`-`l19`, `rb13`, `rb18`, `rb19`) en in de
       showcase (84), getest met 16 nieuwe tests. Probeer zelf: hoe het lopen eruitziet (blok voor blok, met een
       klein rukje als hij precies in het midden gaat staan: te snel of te traag? zie `walkFactor`), of
