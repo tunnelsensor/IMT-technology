@@ -14,7 +14,7 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 
-**Stand van zaken:** 260 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
+**Stand van zaken:** 262 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 91 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
@@ -2616,8 +2616,17 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       het aan de server, en `send("intruder")` laat elke `when message("intruder"):` op de server beginnen, met
       `sender.name` en `sender.x/y/z` (waar de robot stond). Zonder verbinding gebeurt dat gewoon niet, maar loopt
       zijn programma door. Eén nieuwe test (`robot_talks_to_the_server`).
-- [ ] **6. Server naar robot** — order, activate, deactivate; een opdracht aan een robot die niet geladen is,
-      wacht tot die weer geladen wordt.
+- [x] **6. Server naar robot** — in een serverdiagram: `order("Guard 1", "attack")` of met een plek erbij
+      (`order("Guard 1", "attack", x, y, z)`), `activate("Guard 1")` en `deactivate("Guard 1")` (de naam van een
+      robot in het gebied van de kern; hoofdletters tellen niet). Een opdracht onderbreekt wat hij doet: elke
+      `when ordered("attack"):` begint (met `order.name` en `order.x/y/z`), zijn andere whens wachten zolang, en
+      daarna gaan ze verder waar ze waren (een half gelopen `forward(5)` loopt de rest nog; een draai is meteen
+      af). Een nieuwe opdracht vervangt de vorige. Heeft hij geen `when ordered` met die naam, staat hij uit of
+      heeft hij geen programma, dan negeert hij hem en staat dat in het logboek ("Scout: it has no when
+      ordered("dance"), so it ignored that order"); een robot die niet bestaat ook ("there is no robot called
+      ..."). Een robot die niet geladen is, krijgt zijn aan/uit en zijn laatste opdracht als hij terug is en
+      verbinding heeft (ze wachten in `BotNetwork`). Ook: `charge(80)` als hij al vol genoeg is, loopt niet meer
+      naar zijn dock. Twee nieuwe tests (`robot_obeys_orders_from_the_server`, `robot_orders_wait_for_a_far_robot`).
 - [ ] **7. De app Logic** — Help en Ctrl+Spatie met de pinnen van de gekozen robot, voorbeeldprogramma's,
       screenshots, LEESMIJ en de showcase.
 

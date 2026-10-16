@@ -40,6 +40,12 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Zijn lijf ({@link BotMove}) doet één beweging tegelijk. Wil een when lopen terwijl een andere loopt, dan
  *       wacht hij zijn beurt af: wie het eerst vroeg, is eerst.</li>
  * </ul>
+ * Een opdracht van de server ({@code order("Guard 1", "attack", x, y, z)}) onderbreekt wat hij doet: elke
+ * {@code when ordered("attack"):} begint (met {@code order.name} en {@code order.x/y/z}), de andere whens wachten
+ * zolang, en daarna gaan ze verder waar ze waren (ook een half gelopen {@code forward(5)}). Een nieuwe opdracht
+ * vervangt de vorige. Heeft hij geen {@code when ordered} met die naam, dan negeert hij hem (en zegt dat in het
+ * logboek).
+ *
  * Met verbinding (zie BotLink) praat hij met zijn server: {@code say}, {@code log}, {@code alarm}, de relais
  * ({@code on}, {@code off}, {@code toggle}, {@code pulse}, {@code is_on}) en {@code send("intruder")}, waarop
  * {@code when message("intruder"):} van de server begint. Zonder verbinding gebeurt dat gewoon niet, maar loopt
@@ -61,6 +67,11 @@ public final class BotBrain {
     private boolean started;
     /** {@code stop()}: na deze tick zet hij zichzelf uit. */
     private boolean stopRequested;
+    /** Een opdracht die net binnenkwam en de volgende tick begint (na when started, als hij net opstart). */
+    private @Nullable Order incoming;
+
+    /** Een opdracht van de server: wat ({@code order.name}), en eventueel een plek ({@code order.x/y/z}). */
+    public record Order(String name, @Nullable BlockPos place) {}
     /** Meldingen die al in het logboek staan (niet elke tick dezelfde fout), en wanneer we dat vergeten. */
     private final Set<String> reported = new HashSet<>();
     private long reportedReset;
@@ -74,12 +85,15 @@ public final class BotBrain {
     private final class Run implements Interpreter.Host {
         final Op trigger;
         final Interpreter machine;
+        /** De opdracht als dit een {@code when ordered(...)} is, anders null. */
+        final @Nullable Order order;
         /** De beweging waar hij op wacht (zolang hij in de rij staat). */
         @Nullable BotMove.Plan plan;
 
-        Run(LogicProgram program, Op trigger, int first) {
+        Run(LogicProgram program, Op trigger, int first, @Nullable Order order) {
             this.trigger = trigger;
             this.machine = new Interpreter(program.graph(), first, globals);
+            this.order = order;
         }
 
         @Override
@@ -155,16 +169,22 @@ public final class BotBrain {
             }
         }
         timers(now);
+        if (incoming != null) {
+            startOrder(incoming, now);
+            incoming = null;
+        }
         // Is de beweging klaar, dan gaat die when (nog deze tick) verder.
         if (body.tick(level) && moving != null) {
             moving.machine.wakeAt(now);
             moving = null;
         }
+        // Zolang er een opdracht bezig is, wachten de andere whens.
+        boolean ordering = runs.stream().anyMatch(run -> run.order != null);
         int budget = Math.max(1, Math.round(StarkConfig.Robots.STEPS_PER_TICK));
         Iterator<Run> it = runs.iterator();
         while (it.hasNext() && !stopRequested) {
             Run run = it.next();
-            if (run.machine.wakeAt() <= now && run.machine.step(run, now, budget)) {
+            if ((!ordering || run.order != null) && run.machine.wakeAt() <= now && run.machine.step(run, now, budget)) {
                 it.remove();
             }
         }
@@ -173,11 +193,61 @@ public final class BotBrain {
             robot.setActive(false); // stop(): hij zet zichzelf uit, en dit brein stopt de volgende tick
             return;
         }
-        // Wie het eerst vroeg, mag nu bewegen.
+        // Wie het eerst vroeg, mag nu bewegen (een opdracht gaat voor).
         if (moving == null && !queue.isEmpty()) {
-            moving = queue.poll();
-            body.start(moving.plan);
-            moving.plan = null;
+            Run next = queue.stream().filter(run -> run.order != null).findFirst().orElse(ordering ? null : queue.peek());
+            if (next != null) {
+                queue.remove(next);
+                moving = next;
+                body.start(next.plan);
+                next.plan = null;
+            }
+        }
+    }
+
+    // ================================================================ Opdrachten van de server
+
+    /**
+     * De server geeft hem een opdracht (zie BotLink.order). Hij moet aan staan, een programma hebben en een
+     * {@code when ordered(...)} met die naam; anders negeert hij hem, en dat staat in het logboek.
+     */
+    public void order(String name, @Nullable BlockPos place) {
+        if (program == null || !robot.isActive() || robot.battery() <= 0) {
+            report(program == null ? "it has no program, so it ignored the order \"" + name + "\""
+                    : "it is switched off, so it ignored the order \"" + name + "\"");
+            return;
+        }
+        boolean known = program.graph().nodes().stream().anyMatch(node -> node.op == Op.ORDERED && node.text.equalsIgnoreCase(name));
+        if (!known) {
+            report("it has no when ordered(\"" + name + "\"), so it ignored that order");
+            return;
+        }
+        incoming = new Order(name, place == null ? null : place.immutable());
+    }
+
+    /**
+     * Een opdracht begint: vorige opdrachten stoppen, en wat zijn lijf voor een gewone when deed, wordt onderbroken
+     * (wat er nog over is, doet hij daarna). Elke {@code when ordered(...)} met deze naam begint.
+     */
+    private void startOrder(Order order, long now) {
+        runs.removeIf(run -> run.order != null);
+        queue.removeIf(run -> run.order != null);
+        if (moving != null) {
+            BotMove.Plan rest = body.interrupt();
+            if (moving.order == null) {
+                if (rest != null) {
+                    moving.plan = rest;
+                    queue.addFirst(moving);
+                } else {
+                    moving.machine.wakeAt(now); // zijn beweging is af: hij gaat verder na de opdracht
+                }
+            }
+            moving = null;
+        }
+        for (LogicGraph.Node node : program.graph().nodes()) {
+            if (node.op == Op.ORDERED && node.text.equalsIgnoreCase(order.name())) {
+                runs.add(new Run(program, Op.ORDERED, node.next, order));
+            }
         }
     }
 
@@ -204,7 +274,7 @@ public final class BotBrain {
             report("too many whens at once: when " + trigger.code() + " had to be skipped");
             return;
         }
-        runs.add(new Run(program, trigger, first));
+        runs.add(new Run(program, trigger, first, null));
     }
 
     /** Alles stopt (uit, lege batterij, nieuw programma). De volgende keer begint hij weer bij when started. */
@@ -218,6 +288,7 @@ public final class BotBrain {
         timers.clear();
         started = false;
         stopRequested = false;
+        incoming = null;
         body.stop();
     }
 
@@ -342,7 +413,11 @@ public final class BotBrain {
                     case "robot.connected" -> BotLink.connected(robot);
                     case "is_night" -> robot.level().isNight();
                     case "is_day" -> !robot.level().isNight();
-                    // order.* (stap 6): nog niets.
+                    // Na when ordered(...): de opdracht van de server (zonder plek: 0).
+                    case "order.name" -> run == null || run.order == null ? "" : run.order.name();
+                    case "order.x" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getX();
+                    case "order.y" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getY();
+                    case "order.z" -> run == null || run.order == null || run.order.place() == null ? 0.0 : (double) run.order.place().getZ();
                     default -> false;
                 };
             }

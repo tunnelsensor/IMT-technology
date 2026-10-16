@@ -2,6 +2,7 @@ package com.senne.starktech.gametest;
 
 import com.senne.starktech.StarkTech;
 import com.senne.starktech.bot.BotBoard;
+import com.senne.starktech.bot.BotLink;
 import com.senne.starktech.bot.BotModule;
 import com.senne.starktech.bot.BotNetwork;
 import com.senne.starktech.config.StarkConfig;
@@ -32,6 +33,7 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -473,6 +475,124 @@ public final class BotProgramGameTests {
                 check(core.log().entries().stream().skip(before)
                         .noneMatch(entry -> entry.text().contains("lonely") || entry.text().contains("message from")),
                         "Zonder verbinding kwam er toch iets aan: " + lastLog(core));
+                helper.succeed();
+            });
+        });
+    }
+
+    // ================================================================ Stap 6: de server geeft opdrachten
+
+    /**
+     * Een serverdiagram geeft een robot opdrachten. "attack" onderbreekt zijn rondjes: {@code when ordered("attack"):}
+     * loopt (met order.x), en daarna gaan zijn rondjes verder waar ze waren. Een opdracht zonder when ordered met die
+     * naam negeert hij (dat staat in het logboek), en een robot die niet bestaat ook.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "robot_orders")
+    public static void robot_obeys_orders_from_the_server(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "order-owner");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos rack = new BlockPos(12, 3, 12);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        BlockPos start = new BlockPos(8, 2, 10);
+        GuardRobotEntity robot = robot(helper, start, """
+                laps = 0
+                attacked = false
+                ax = 0
+                lapsAtOrder = -1
+                when started:
+                    forever:
+                        forward(2)
+                        back(2)
+                        laps = laps + 1
+                when ordered("attack"):
+                    ax = order.x
+                    lapsAtOrder = laps
+                    turn_left()
+                    turn_right()
+                    attacked = true
+                """);
+        robot.setOwner(owner);
+        robot.setCustomName(net.minecraft.network.chat.Component.literal("Scout"));
+        helper.runAfterDelay(2, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            StarkOs.open(owner, coreAbs);
+            robot.setActive(true);
+        });
+        // Even laten lopen (en wachten tot hij zich bij de kern meldde), dan de opdrachten.
+        helper.runAfterDelay(50, () -> saveProgram(owner, coreAbs, "", "Orders", """
+                go = 0
+                when every(1):
+                    if go == 0:
+                        go = 1
+                        order("Scout", "dance")
+                        order("Nobody", "attack")
+                        order("scout", "attack", 7, 64, -20)
+                """, ProgramKind.SERVER));
+        helper.runAfterDelay(80, () -> helper.succeedWhen(() -> {
+            check(Boolean.TRUE.equals(robot.brain().global("attacked")), "De opdracht attack liep niet");
+            check(Double.valueOf(7).equals(robot.brain().global("ax")), "order.x was niet 7 maar " + robot.brain().global("ax"));
+            double atOrder = (Double) robot.brain().global("lapsAtOrder");
+            check((Double) robot.brain().global("laps") >= atOrder + 2, "Na de opdracht gingen zijn rondjes niet verder");
+            check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(
+                    "Scout: it has no when ordered(\"dance\"), so it ignored that order")), "Een onbekende opdracht stond niet in het logboek");
+            check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(
+                    "\"Orders\": there is no robot called \"Nobody\" in this network's area")), "Een onbekende robot stond niet in het logboek");
+            BlockPos abs = helper.absolutePos(start);
+            check(Math.abs(robot.getX() - (abs.getX() + 0.5)) < 0.3 && Math.abs(robot.getZ() - (abs.getZ() + 0.5)) < 2.3,
+                    "Hij liep van zijn rondje af: " + robot.position());
+        }));
+    }
+
+    /**
+     * {@code activate} en {@code deactivate} vanuit een diagram, en een robot die niet geladen is: aan en een opdracht
+     * wachten in BotNetwork, en zodra hij terug is (met verbinding) gaat hij aan en doet hij zijn opdracht.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "robot_orders")
+    public static void robot_orders_wait_for_a_far_robot(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "switch-owner");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos rack = new BlockPos(12, 3, 12);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        GuardRobotEntity robot = robot(helper, new BlockPos(8, 2, 8), """
+                attacked = false
+                when started:
+                    pass
+                when ordered("attack"):
+                    attacked = true
+                """);
+        robot.setOwner(owner);
+        robot.setCustomName(net.minecraft.network.chat.Component.literal("Sleeper"));
+        helper.runAfterDelay(25, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            StarkOs.open(owner, coreAbs);
+            saveProgram(owner, coreAbs, "", "Wake", "when every(1):\n    activate(\"Sleeper\")\n", ProgramKind.SERVER);
+        });
+        helper.runAfterDelay(60, () -> {
+            check(robot.isActive(), "activate(\"Sleeper\") zette hem niet aan");
+            CompoundTag args = new CompoundTag();
+            args.putString("name", "Wake");
+            StarkOs.handleAction(owner, new OsActionPayload(coreAbs, "logic_delete", args));
+            ServerLevel level = helper.getLevel();
+            check(BotLink.switchOn(level, core, "Sleeper", false) == BotLink.Result.DONE && !robot.isActive(), "deactivate lukte niet");
+
+            // Ver weg: aan en de opdracht wachten.
+            CompoundTag saved = new CompoundTag();
+            robot.saveWithoutId(saved);
+            robot.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK);
+            check(BotLink.order(level, core, "Sleeper", "attack", null) == BotLink.Result.WAITING, "De opdracht wachtte niet");
+            check(BotLink.switchOn(level, core, "Sleeper", true) == BotLink.Result.WAITING, "Aanzetten wachtte niet");
+            check("attack".equals(BotNetwork.get(level).pendingOrder(robot.getUUID())), "BotNetwork onthield de opdracht niet");
+            GuardRobotEntity back = ModEntities.GUARD_ROBOT.get().create(level);
+            back.load(saved);
+            level.addFreshEntity(back);
+            helper.runAfterDelay(30, () -> {
+                check(back.isActive(), "Terug ging hij niet aan");
+                check(Boolean.TRUE.equals(back.brain().global("attacked")), "Terug deed hij zijn opdracht niet");
+                check(BotNetwork.get(level).pendingOrder(back.getUUID()) == null, "De opdracht bleef wachten");
                 helper.succeed();
             });
         });

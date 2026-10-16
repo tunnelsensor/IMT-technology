@@ -140,10 +140,32 @@ public final class BotMove {
                 returnFacing = facing();
                 lastBattery = robot.battery();
                 stallTicks = 0;
-                wantsDock = true;
                 phase = Phase.TO_DOCK;
+                // Al vol genoeg? Dan hoeft hij niet te lopen.
+                wantsDock = robot.battery() < robot.maxBattery() * charge.percent() / 100.0 - 1.0e-6;
+                finished = !wantsDock;
             }
         }
+    }
+
+    /**
+     * Een opdracht van de server onderbreekt deze beweging (hoofdstuk 23). Geeft terug wat er nog over is, om na de
+     * opdracht verder te doen (of null): bij lopen de blokken die nog over zijn, bij goto en charge dezelfde
+     * opdracht opnieuw. Een draai is meteen af.
+     */
+    public @Nullable Plan interrupt() {
+        Plan rest = switch (plan) {
+            case null -> null;
+            case Walk walk -> retreating || finished || stepsLeft <= 0 ? null : new Walk(walk.blocks() < 0 ? -stepsLeft : stepsLeft);
+            case Turn turn -> null;
+            case GoTo goTo -> finished ? null : goTo;
+            case Charge charge -> finished ? null : charge;
+        };
+        if (plan instanceof Turn) {
+            setYaw(facing().toYRot()); // de draai meteen af
+        }
+        stop();
+        return rest;
     }
 
     /** Stop meteen met wat hij deed (uitgezet, of een nieuwe beweging). */

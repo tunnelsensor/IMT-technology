@@ -62,6 +62,10 @@ public final class BotNetwork extends SavedData {
      * programma meer"). Hij krijgt het als hij terug is en verbinding heeft.
      */
     private final Map<UUID, CompoundTag> pending = new LinkedHashMap<>();
+    /** Een opdracht van de server die wacht op een robot die niet geladen is (alleen de laatste telt). */
+    private final Map<UUID, CompoundTag> pendingOrders = new LinkedHashMap<>();
+    /** Aan of uit (activate/deactivate) voor een robot die niet geladen is. */
+    private final Map<UUID, Boolean> pendingSwitch = new LinkedHashMap<>();
 
     public static BotNetwork get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -80,9 +84,24 @@ public final class BotNetwork extends SavedData {
             return;
         }
         CompoundTag waiting = pending.get(robot.getUUID());
-        if (waiting != null && BotLink.connected(robot)) {
+        boolean connected = (waiting != null || pendingSwitch.containsKey(robot.getUUID()) || pendingOrders.containsKey(robot.getUUID()))
+                && BotLink.connected(robot);
+        if (waiting != null && connected) {
             robot.setProgram(waiting.isEmpty() ? null : LogicProgram.load(waiting));
             pending.remove(robot.getUUID());
+            setDirty();
+        }
+        // Wat de server hem opdroeg terwijl hij weg was: eerst aan of uit, dan de opdracht.
+        Boolean on = pendingSwitch.get(robot.getUUID());
+        if (on != null && connected) {
+            robot.setActive(on);
+            pendingSwitch.remove(robot.getUUID());
+            setDirty();
+        }
+        CompoundTag order = pendingOrders.get(robot.getUUID());
+        if (order != null && connected) {
+            robot.brain().order(order.getString("Order"), order.contains("Place") ? BlockPos.of(order.getLong("Place")) : null);
+            pendingOrders.remove(robot.getUUID());
             setDirty();
         }
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, robot.blockPosition());
@@ -105,7 +124,8 @@ public final class BotNetwork extends SavedData {
 
     /** Een robot is weg (kapot of opgepakt). */
     public void remove(UUID id) {
-        if (robots.remove(id) != null | pending.remove(id) != null) {
+        if (robots.remove(id) != null | pending.remove(id) != null | pendingOrders.remove(id) != null
+                | pendingSwitch.remove(id) != null) {
             setDirty();
         }
     }
@@ -121,6 +141,34 @@ public final class BotNetwork extends SavedData {
     /** Wat er op deze robot wacht (leeg = "geen programma meer"), of null als er niets wacht. */
     public @Nullable CompoundTag pending(UUID id) {
         return pending.get(id);
+    }
+
+    /** Deze opdracht (en eventueel een plek) wacht op deze robot; een vorige wachtende opdracht vervalt. */
+    public void setPendingOrder(UUID id, String order, @Nullable BlockPos place) {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("Order", order);
+        if (place != null) {
+            tag.putLong("Place", place.asLong());
+        }
+        pendingOrders.put(id, tag);
+        setDirty();
+    }
+
+    /** De opdracht die op deze robot wacht, of null. */
+    public @Nullable String pendingOrder(UUID id) {
+        CompoundTag tag = pendingOrders.get(id);
+        return tag == null ? null : tag.getString("Order");
+    }
+
+    /** Aan (true) of uit (false) wacht op deze robot. */
+    public void setPendingSwitch(UUID id, boolean on) {
+        pendingSwitch.put(id, on);
+        setDirty();
+    }
+
+    /** Wacht er aan (true) of uit (false) op deze robot, of null. */
+    public @Nullable Boolean pendingSwitch(UUID id) {
+        return pendingSwitch.get(id);
     }
 
     public @Nullable Entry get(UUID id) {
@@ -222,6 +270,21 @@ public final class BotNetwork extends SavedData {
             waiting.add(item);
         }
         tag.put("Pending", waiting);
+        ListTag orders = new ListTag();
+        for (Map.Entry<UUID, CompoundTag> entry : pendingOrders.entrySet()) {
+            CompoundTag item = entry.getValue().copy();
+            item.putUUID("Id", entry.getKey());
+            orders.add(item);
+        }
+        tag.put("PendingOrders", orders);
+        ListTag switches = new ListTag();
+        for (Map.Entry<UUID, Boolean> entry : pendingSwitch.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("Id", entry.getKey());
+            item.putBoolean("On", entry.getValue());
+            switches.add(item);
+        }
+        tag.put("PendingSwitch", switches);
         return tag;
     }
 
@@ -247,6 +310,20 @@ public final class BotNetwork extends SavedData {
             CompoundTag item = (CompoundTag) element;
             if (item.hasUUID("Id")) {
                 data.pending.put(item.getUUID("Id"), item.getCompound("Program"));
+            }
+        }
+        for (Tag element : tag.getList("PendingOrders", Tag.TAG_COMPOUND)) {
+            CompoundTag item = ((CompoundTag) element).copy();
+            if (item.hasUUID("Id")) {
+                UUID id = item.getUUID("Id");
+                item.remove("Id");
+                data.pendingOrders.put(id, item);
+            }
+        }
+        for (Tag element : tag.getList("PendingSwitch", Tag.TAG_COMPOUND)) {
+            CompoundTag item = (CompoundTag) element;
+            if (item.hasUUID("Id")) {
+                data.pendingSwitch.put(item.getUUID("Id"), item.getBoolean("On"));
             }
         }
         return data;

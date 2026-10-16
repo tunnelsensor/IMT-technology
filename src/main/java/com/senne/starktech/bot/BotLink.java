@@ -4,7 +4,10 @@ import com.senne.starktech.logic.LogicServer;
 import com.senne.starktech.robot.GuardRobotEntity;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
+import java.util.Locale;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,8 +18,10 @@ import org.jetbrains.annotations.Nullable;
  *   <li>hij bij die basis hoort: zijn eigenaar is daar de eigenaar, of vertrouwd;</li>
  *   <li>en die kern stroom heeft en de server (de serverracks) draait.</li>
  * </ul>
- * Alleen met verbinding krijgt hij een nieuw programma, en praat hij met de server (alarm, relais, berichten).
- * Zijn eigen code (lopen, laden) werkt ook zonder: die draait op de robot zelf.
+ * Alleen met verbinding krijgt hij een nieuw programma, praat hij met de server (alarm, relais, berichten), en
+ * krijgt hij opdrachten van de server ({@code order}, {@code activate}, {@code deactivate}). Zijn eigen code
+ * (lopen, laden) werkt ook zonder: die draait op de robot zelf. Een robot die niet geladen is, krijgt zijn
+ * opdracht als hij terug is en verbinding heeft (hij wacht in BotNetwork).
  */
 public final class BotLink {
     private BotLink() {}
@@ -41,5 +46,56 @@ public final class BotLink {
     /** Hoort een robot van deze eigenaar bij deze basis? */
     private static boolean belongs(SecurityCoreBlockEntity core, UUID owner) {
         return owner.equals(core.ownerId()) || core.isTrusted(owner);
+    }
+
+    // ================================================================ De server stuurt een robot aan (hoofdstuk 23)
+
+    /** Hoe het ging: gedaan, wacht tot hij terug is, geen robot met die naam, of hij hoort hier niet (geen verbinding). */
+    public enum Result { DONE, WAITING, UNKNOWN, NOT_CONNECTED }
+
+    /** De robot met deze naam (hoofdletters tellen niet) in het gebied van deze kern, of null. */
+    public static BotNetwork.@Nullable Entry find(ServerLevel level, SecurityCoreBlockEntity core, String name) {
+        GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
+        for (BotNetwork.Entry entry : BotNetwork.get(level).atCore(here)) {
+            if (entry.name().toLowerCase(Locale.ROOT).equals(name.toLowerCase(Locale.ROOT))) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /** {@code order("Guard 1", "attack", x, y, z)}: de robot begint zijn {@code when ordered("attack"):}. */
+    public static Result order(ServerLevel level, SecurityCoreBlockEntity core, String name, String order, @Nullable BlockPos place) {
+        BotNetwork.Entry entry = find(level, core, name);
+        if (entry == null) {
+            return Result.UNKNOWN;
+        }
+        if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+            BotNetwork.get(level).setPendingOrder(entry.id(), order, place);
+            return Result.WAITING;
+        }
+        if (core(robot) != core) {
+            return Result.NOT_CONNECTED;
+        }
+        robot.brain().order(order, place);
+        return Result.DONE;
+    }
+
+    /** {@code activate("Guard 1")} of {@code deactivate("Guard 1")}: zet de robot aan of uit. */
+    public static Result switchOn(ServerLevel level, SecurityCoreBlockEntity core, String name, boolean on) {
+        BotNetwork.Entry entry = find(level, core, name);
+        if (entry == null) {
+            return Result.UNKNOWN;
+        }
+        if (!(level.getEntity(entry.id()) instanceof GuardRobotEntity robot) || !robot.isAlive()) {
+            BotNetwork.get(level).setPendingSwitch(entry.id(), on);
+            return Result.WAITING;
+        }
+        if (core(robot) != core) {
+            return Result.NOT_CONNECTED;
+        }
+        robot.setActive(on);
+        BotNetwork.get(level).update(robot);
+        return Result.DONE;
     }
 }

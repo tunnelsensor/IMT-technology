@@ -1,5 +1,6 @@
 package com.senne.starktech.logic;
 
+import com.senne.starktech.bot.BotLink;
 import com.senne.starktech.edith.EdithServer;
 import com.senne.starktech.logic.program.Expr;
 import com.senne.starktech.logic.program.ExprCache;
@@ -439,7 +440,50 @@ public final class LogicRunner {
             }
             case LOG -> core.logEvent(EventLog.Type.LOGIC, message(level, core, run, node));
             case ALARM -> alarm(level, core, context, message(level, core, run, node));
+            case ORDER -> order(level, core, runtime, run, node);
+            case ACTIVATE, DEACTIVATE -> {
+                BotLink.Result result = BotLink.switchOn(level, core, node.text, node.op == Op.ACTIVATE);
+                robotProblem(level, core, runtime, run, node.text, result);
+            }
             default -> { }
+        }
+    }
+
+    /**
+     * {@code order("Guard 1", "attack")} of met een plek erbij: de robot begint zijn {@code when ordered("attack"):}
+     * (hoofdstuk 23). Een robot die niet geladen is, krijgt hem als hij terug is.
+     */
+    private static void order(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, LogicGraph.Node node) {
+        List<Expr> exprs = ExprCache.values(node.expr);
+        if (exprs == null || exprs.size() < 2) {
+            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": the order " + node.expr + " is not valid");
+            return;
+        }
+        Expr.Facts facts = facts(level, core, run);
+        List<Object> values = new ArrayList<>();
+        for (Expr expr : exprs) {
+            values.add(ExprCache.eval(expr, facts));
+        }
+        String robot = Expr.text(values.get(0));
+        BlockPos place = values.size() >= 5 ? BlockPos.containing(toNumber(values.get(2)), toNumber(values.get(3)), toNumber(values.get(4)))
+                : null;
+        robotProblem(level, core, runtime, run, robot, BotLink.order(level, core, robot, Expr.text(values.get(1)), place));
+    }
+
+    private static double toNumber(Object value) {
+        return value instanceof Double number ? number : 0;
+    }
+
+    /** Lukte het niet om een robot aan te sturen? Dan een regel in het logboek. */
+    private static void robotProblem(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, String robot,
+                                     BotLink.Result result) {
+        String problem = switch (result) {
+            case UNKNOWN -> "there is no robot called \"" + robot + "\" in this network's area";
+            case NOT_CONNECTED -> robot + " has no connection with this server (it belongs to someone else)";
+            default -> null;
+        };
+        if (problem != null) {
+            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": " + problem);
         }
     }
 
