@@ -703,6 +703,10 @@ final class LogicApp {
             lines.add(item("order(..., \"attack\")", "order(\"Guard 1\", \"attack\", sender.x, sender.y, sender.z)", Op.ORDER));
             lines.add(item("activate(...)", "activate(\"Guard 1\")", Op.ACTIVATE));
             lines.add(item("deactivate(...)", "deactivate(\"Guard 1\")", Op.DEACTIVATE));
+            // Squads (hoofdstuk 26): een naam mag een squad zijn.
+            lines.add(item("squad_down(...)", "when squad_down(\"Wave 1\"):\n    activate(\"Wave 2\")\n", Op.SQUAD_DOWN));
+            lines.add(new HelpLine("if active(\"Wave 1\") == 0:", "if active(\"Wave 1\") == 0:\n    pass",
+                    Expr.Function.ACTIVE.help(), HudStyle.WHITE, null));
             // Trainingen (hoofdstuk 26).
             lines.add(header("TRAINING"));
             lines.add(item("training_started(...)", "when training_started(\"Kamino\"):\n    say(\"Good luck, \" + trainee)\n",
@@ -877,6 +881,20 @@ final class LogicApp {
         if (robots.isEmpty()) {
             lines.add(new HelpLine("(none in this network's area)", null, drones ? "Craft a Security Drone and put it on a Drone Dock here"
                     : "Build one in a Robot Assembler and put it here", OsDraw.GREY, null));
+        }
+        if (server) {
+            // Je squads (hoofdstuk 26): één naam voor een hele groep.
+            java.util.Map<String, List<String>> squads = new java.util.LinkedHashMap<>();
+            for (CompoundTag robot : robots) {
+                if (!robot.getString("sq").isEmpty()) {
+                    squads.computeIfAbsent(robot.getString("sq"), key -> new ArrayList<>()).add(robot.getString("n"));
+                }
+            }
+            for (java.util.Map.Entry<String, List<String>> squad : squads.entrySet()) {
+                lines.add(new HelpLine("[squad] " + squad.getKey(), quoted(squad.getKey()),
+                        "a squad: " + String.join(", ", squad.getValue()) + " (activate, deactivate, order, squad_down)",
+                        0xF1E87C, null));
+            }
         }
         for (CompoundTag robot : robots) {
             String name = robot.getString("n");

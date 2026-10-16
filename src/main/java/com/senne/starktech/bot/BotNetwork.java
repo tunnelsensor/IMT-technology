@@ -54,10 +54,11 @@ public final class BotNetwork extends SavedData {
      * @param program de naam van het programma dat hij draait ("" = geen)
      * @param seen    wanneer hij zich het laatst meldde (speltijd in ticks)
      * @param kind    een robot (ROBOT) of een drone (DRONE): welke programma's hij draait
+     * @param squad   zijn squad (hoofdstuk 26, "" = geen)
      */
     public record Entry(UUID id, String name, @Nullable UUID owner, String ownerName, GlobalPos pos,
                         @Nullable BlockPos home, @Nullable GlobalPos core, int parts, RobotState state,
-                        float battery, String program, long seen, ProgramKind kind) {
+                        float battery, String program, long seen, ProgramKind kind, String squad) {
         /** Is het een drone? */
         public boolean drone() {
             return kind == ProgramKind.DRONE;
@@ -117,8 +118,13 @@ public final class BotNetwork extends SavedData {
                 bot.owner(), bot.ownerName(), GlobalPos.of(level.dimension(), bot.blockPosition()), bot.home(),
                 core == null ? null : GlobalPos.of(level.dimension(), core.getBlockPos()), bot instanceof GuardRobotEntity robot ? robot.parts().pack() : 0,
                 bot.state(), bot.batteryFraction(), bot.program() == null ? "" : bot.program().name(), level.getGameTime(),
-                bot.programKind());
+                bot.programKind(), bot.squad());
         Entry old = robots.put(bot.getUUID(), entry);
+        // Een squad (hoofdstuk 26): is hij nu helemaal neer? (En de oude squad, als hij van squad wisselde.)
+        checkSquad(level, entry.core(), entry.squad());
+        if (old != null && !old.squad().equalsIgnoreCase(entry.squad())) {
+            checkSquad(level, old.core(), old.squad());
+        }
         // Alleen "veranderd" als er echt iets anders is (de tijd alleen telt niet), zodat we niet elke seconde opslaan.
         if (old == null || !same(old, entry)) {
             setDirty();
@@ -129,14 +135,64 @@ public final class BotNetwork extends SavedData {
         return a.name().equals(b.name()) && Objects.equals(a.owner(), b.owner()) && a.pos().equals(b.pos())
                 && Objects.equals(a.home(), b.home()) && Objects.equals(a.core(), b.core()) && a.parts() == b.parts()
                 && a.state() == b.state() && Math.abs(a.battery() - b.battery()) < 0.01f && a.program().equals(b.program())
-                && a.kind() == b.kind();
+                && a.kind() == b.kind() && a.squad().equals(b.squad());
     }
 
     /** Een robot is weg (kapot of opgepakt). */
     public void remove(UUID id) {
-        if (robots.remove(id) != null | pending.remove(id) != null | pendingOrders.remove(id) != null
+        remove(id, null);
+    }
+
+    /** Hetzelfde; met een wereld erbij kan zijn squad nu helemaal neer zijn (squad_down, hoofdstuk 26). */
+    public void remove(UUID id, @Nullable ServerLevel level) {
+        Entry gone = robots.remove(id);
+        if (gone != null | pending.remove(id) != null | pendingOrders.remove(id) != null
                 | pendingSwitch.remove(id) != null) {
             setDirty();
+        }
+        if (gone != null && level != null) {
+            checkSquad(level, gone.core(), gone.squad());
+        }
+    }
+
+    // ================================================================ Squads (hoofdstuk 26)
+
+    /** Per kern en squad: stond er sinds de vorige keer iemand aan? (Alleen in het geheugen.) */
+    private final Map<String, Boolean> squadUp = new java.util.HashMap<>();
+
+    /** De robots en drones van deze squad bij deze kern (hoofdletters tellen niet). */
+    public List<Entry> squad(GlobalPos core, String squad) {
+        List<Entry> list = new ArrayList<>();
+        for (Entry entry : robots.values()) {
+            if (core.equals(entry.core()) && !squad.isEmpty() && entry.squad().equalsIgnoreCase(squad)) {
+                list.add(entry);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Is deze squad nu helemaal neer? Dat is: er stond er sinds de vorige keer een aan, en nu ligt elk lid neer (de
+     * Ion Blaster), heeft het geen stroom meer, of is het kapot. Dan horen je diagrammen
+     * {@code when squad_down("Wave 1"):}. (Uitgezet telt niet als neer.)
+     */
+    private void checkSquad(ServerLevel level, @Nullable GlobalPos core, String squad) {
+        if (core == null || squad.isEmpty()) {
+            return;
+        }
+        List<Entry> members = squad(core, squad);
+        String key = core + "#" + squad.toLowerCase(Locale.ROOT);
+        boolean active = members.stream().anyMatch(entry -> entry.state() == RobotState.ACTIVE);
+        boolean standing = members.stream().anyMatch(entry -> entry.state() == RobotState.ACTIVE || entry.state() == RobotState.STANDBY);
+        if (active) {
+            squadUp.put(key, true);
+        } else if (!standing && Boolean.TRUE.equals(squadUp.get(key))) {
+            squadUp.put(key, false);
+            ServerLevel coreLevel = level.getServer().getLevel(core.dimension());
+            if (coreLevel != null && coreLevel.isLoaded(core.pos())
+                    && coreLevel.getBlockEntity(core.pos()) instanceof SecurityCoreBlockEntity coreEntity) {
+                com.senne.starktech.logic.LogicRunner.squadDown(coreLevel, coreEntity, squad);
+            }
         }
     }
 
@@ -272,6 +328,9 @@ public final class BotNetwork extends SavedData {
             }
             item.putInt("Parts", entry.parts());
             item.putString("Kind", entry.kind().name());
+            if (!entry.squad().isEmpty()) {
+                item.putString("Squad", entry.squad());
+            }
             item.putString("State", entry.state().name());
             item.putFloat("Battery", entry.battery());
             item.putString("Program", entry.program());
@@ -322,7 +381,7 @@ public final class BotNetwork extends SavedData {
                     item.contains("Home") ? BlockPos.of(item.getLong("Home")) : null,
                     item.contains("Core") ? getPos(item, "Core") : null, item.getInt("Parts"), state,
                     item.getFloat("Battery"), item.getString("Program"), item.getLong("Seen"),
-                    item.contains("Kind") ? ProgramKind.byName(item.getString("Kind")) : ProgramKind.ROBOT));
+                    item.contains("Kind") ? ProgramKind.byName(item.getString("Kind")) : ProgramKind.ROBOT, item.getString("Squad")));
         }
         for (Tag element : tag.getList("Pending", Tag.TAG_COMPOUND)) {
             CompoundTag item = (CompoundTag) element;

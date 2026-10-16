@@ -41,6 +41,8 @@ final class RobotsApp {
     private int scroll;
     /** Welke robot je een andere naam aan het geven bent (zijn nummer), of null. */
     private @Nullable String renaming;
+    /** Typ je een squad (hoofdstuk 26) in plaats van een naam? */
+    private boolean squadMode;
     private @Nullable EditBox nameBox;
     /** Voor welke robot je een programma kiest (zijn nummer), of null. */
     private @Nullable String choosing;
@@ -74,6 +76,10 @@ final class RobotsApp {
 
     private String renameLabel(CompoundTag robot) {
         return robot.getString("id").equals(renaming) ? "Save" : "Rename";
+    }
+
+    private String squadLabel(CompoundTag robot) {
+        return "Squad";
     }
 
     /** De robotprogramma's op deze server (of de droneprogramma's, voor een drone), en "" = geen programma. */
@@ -187,7 +193,8 @@ final class RobotsApp {
             box.setY(y + 1);
             box.setWidth(right - a.x() - 14);
             box.render(g, mx, my, partialTick);
-            g.drawString(font, "Enter = save   Esc = cancel", a.x() + 10, y + 11, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, squadMode ? "Squad (like Wave 1; empty = none): Enter = save   Esc = cancel"
+                    : "Enter = save   Esc = cancel", a.x() + 10, y + 11, HudStyle.argb(255, OsDraw.GREY), false);
             return;
         }
         String name = robot.getString("n");
@@ -206,13 +213,19 @@ final class RobotsApp {
             case "standby" -> HudStyle.ORANGE;
             default -> HudStyle.RED;
         };
-        String details = "  battery " + robot.getInt("bat") + "%" + (robot.getBoolean("dock") ? "  dock" : "  no dock");
+        String details = "  battery " + robot.getInt("bat") + "%" + (robot.getBoolean("dock") ? "  dock" : "  no dock")
+                + (robot.getString("sq").isEmpty() ? "" : "  squad " + robot.getString("sq"));
         g.drawString(font, state, a.x() + 10, y + 10, HudStyle.argb(255, colour), false);
         g.drawString(font, details, a.x() + 10 + font.width(state), y + 10, HudStyle.argb(255, OsDraw.GREY), false);
         // Zijn programma (hoofdstuk 23), en de knop om hem een ander te sturen.
         String program = robot.getString("prog");
         int programRight = a.x() + a.w() - 4 - OsDraw.buttonWidth(font, "Program");
         OsDraw.button(g, font, programRight, y + 17, "Program", true, 0x9ED8FF);
+        if (loaded) {
+            // De squad (hoofdstuk 26): "Wave 1".
+            programRight -= OsDraw.buttonWidth(font, squadLabel(robot)) + 4;
+            OsDraw.button(g, font, programRight, y + 17, squadLabel(robot), true, 0xF1E87C);
+        }
         int px = a.x() + 10;
         String line = program.isEmpty() ? "no program" : "program " + program;
         g.drawString(font, line, px, y + 19, HudStyle.argb(255, program.isEmpty() ? OsDraw.GREY : 0x9ED8FF), false);
@@ -243,6 +256,12 @@ final class RobotsApp {
             if (OsDraw.inside(mx, my, a.x() + a.w() - 4 - programW, y + 17, programW, OsDraw.BUTTON_H)) {
                 choosing = robot.getString("id");
                 renaming = null;
+                return;
+            }
+            int squadW = OsDraw.buttonWidth(font, squadLabel(robot));
+            if (robot.getBoolean("loaded")
+                    && OsDraw.inside(mx, my, a.x() + a.w() - 4 - programW - 4 - squadW, y + 17, squadW, OsDraw.BUTTON_H)) {
+                startSquad(robot);
                 return;
             }
             if (robot.getBoolean("loaded")) {
@@ -307,7 +326,17 @@ final class RobotsApp {
 
     // ================================================================ Een andere naam
 
+    /** De squad van deze robot typen (hoofdstuk 26). */
+    private void startSquad(CompoundTag robot) {
+        startRename(robot);
+        squadMode = true;
+        nameBox().setValue(robot.getString("sq"));
+        nameBox().moveCursorToEnd(false);
+        nameBox().setHighlightPos(0);
+    }
+
     private void startRename(CompoundTag robot) {
+        squadMode = false;
         EditBox box = nameBox();
         box.setValue(robot.getString("n"));
         box.moveCursorToEnd(false);
@@ -324,6 +353,11 @@ final class RobotsApp {
         }
         CompoundTag args = new CompoundTag();
         args.putString("id", id);
+        if (squadMode) {
+            args.putString("squad", nameBox().getValue());
+            screen.send("robot_squad", args);
+            return;
+        }
         args.putString("name", nameBox().getValue());
         screen.send("robot_rename", args);
     }

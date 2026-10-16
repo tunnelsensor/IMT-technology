@@ -227,6 +227,11 @@ public final class LogicRunner {
                 false, false, null, false, "", info));
     }
 
+    /** Elke robot en drone van deze squad ligt neer (hoofdstuk 26): start {@code when squad_down("Wave 1"):}. */
+    public static int squadDown(ServerLevel level, SecurityCoreBlockEntity core, String squad) {
+        return fire(level, core, Op.SQUAD_DOWN, squad, Context.plain(Op.SQUAD_DOWN, squad));
+    }
+
     /** Een relais (of laser, koepel, torentje) ging aan of uit: start "when turned_on/turned_off". */
     public static void switched(ServerLevel level, BlockPos pos, int channel, boolean on) {
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
@@ -420,6 +425,12 @@ public final class LogicRunner {
             public @Nullable Object variable(String name) {
                 return run.machine.variable(name);
             }
+
+            /** {@code active("Wave 1")} (hoofdstuk 26): hoeveel robots en drones van die squad nu aan staan. */
+            @Override
+            public Object active(String name) {
+                return (double) BotLink.active(level, core, name);
+            }
         };
     }
 
@@ -501,7 +512,7 @@ public final class LogicRunner {
     private static void robotProblem(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, String robot,
                                      BotLink.Result result) {
         String problem = switch (result) {
-            case UNKNOWN -> "there is no robot called \"" + robot + "\" in this network's area";
+            case UNKNOWN -> "there is no robot, drone or squad called \"" + robot + "\" in this network's area";
             case NOT_CONNECTED -> robot + " has no connection with this server (it belongs to someone else)";
             default -> null;
         };

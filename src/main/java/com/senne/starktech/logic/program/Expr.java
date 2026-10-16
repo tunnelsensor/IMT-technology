@@ -200,7 +200,9 @@ public sealed interface Expr {
      */
     enum Function {
         PIN("pin", Type.NUMBER, "the number of a pin (1-8), so you can give it a name: scanPin = pin(1)"),
-        READ("read", Type.ANY, "what the module on that pin says right now, like read(scanPin)");
+        READ("read", Type.ANY, "what the module on that pin says right now, like read(scanPin)"),
+        /** {@code active("Wave 1")} (hoofdstuk 26): hoeveel robots en drones van die squad (of met die naam) aan staan. */
+        ACTIVE("active", Type.NUMBER, "how many robots and drones of this squad (or with this name) are on and standing, like active(\"Wave 1\")");
 
         /** Zoveel pinnen heeft de printplaat van een robot (zoals BotBoard.PINS). */
         public static final int PINS = 8;
@@ -223,9 +225,9 @@ public sealed interface Expr {
             return help;
         }
 
-        /** Pinnen heeft alleen een robot of een drone. */
+        /** Pinnen heeft alleen een robot of een drone; active() kent de server (die weet wie er staat). */
         public boolean allowedIn(ProgramKind kind) {
-            return kind.onBot();
+            return this == ACTIVE ? kind == ProgramKind.SERVER : kind.onBot();
         }
 
         public static @Nullable Function byName(String name) {
@@ -585,6 +587,13 @@ public sealed interface Expr {
             if (!next().is(")")) {
                 throw new LogicException(function.name + "( is missing its closing )");
             }
+            if (function == Function.ACTIVE) {
+                // active("Wave 1"): één naam (tekst) tussen de haakjes.
+                if (args.size() != 1 || typeOf(args.getFirst()) != Type.TEXT && typeOf(args.getFirst()) != Type.ANY) {
+                    throw new LogicException("active needs the name of a squad or robot between the brackets, like active(\"Wave 1\")");
+                }
+                return new Call(function, List.copyOf(args));
+            }
             String example = function == Function.PIN ? "pin(1)" : "read(scanPin)";
             if (args.size() != 1) {
                 throw new LogicException(function.name + " needs one pin between the brackets, like " + example);
@@ -814,6 +823,11 @@ public sealed interface Expr {
         default Object read(int pin) {
             return false;
         }
+
+        /** Wat {@code active("Wave 1")} nu geeft (hoofdstuk 26: dat weet de server). Standaard: 0. */
+        default Object active(String name) {
+            return 0.0;
+        }
     }
 
     /** De ingebouwde gegevens ({@code card.level}, {@code robot.battery}...) die in deze uitdrukking staan. */
@@ -913,6 +927,9 @@ public sealed interface Expr {
                 yield value != null ? value : r.type() == Type.TEXT ? "" : r.type() == Type.BOOL ? (Object) false : (Object) 0.0;
             }
             case Call c -> {
+                if (c.function() == Function.ACTIVE) {
+                    yield facts.active(text(eval(c.args().getFirst(), facts)));
+                }
                 // pin(1) is gewoon het getal; read(pin) vraagt het aan de robot.
                 double pin = Math.rint(toNumber(eval(c.args().getFirst(), facts)));
                 yield c.function() == Function.PIN ? (Object) pin : facts.read((int) pin);

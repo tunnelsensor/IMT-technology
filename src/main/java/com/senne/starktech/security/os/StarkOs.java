@@ -234,7 +234,7 @@ public final class StarkOs {
                 }
             }
             case "cam_watch" -> com.senne.starktech.robot.Robots.watched(player.serverLevel(), core, args.getInt("robot"));
-            case "robot_switch", "robot_rename", "robot_program" -> {
+            case "robot_switch", "robot_rename", "robot_program", "robot_squad" -> {
                 // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23), zie robot/Robots.
                 com.senne.starktech.robot.Robots.Desktop result = com.senne.starktech.robot.Robots.desktop(
                         player, core, payload.op(), args);

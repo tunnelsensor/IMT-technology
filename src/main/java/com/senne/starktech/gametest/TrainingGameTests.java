@@ -187,6 +187,43 @@ public final class TrainingGameTests {
     }
 
     /**
+     * Squads: twee robots in "Wave 1" gaan samen aan met activate("Wave 1"), en als ze allebei neer liggen hoort je
+     * diagram {@code when squad_down("Wave 1"):}, waar {@code active("Wave 1")} dan 0 is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "training_squad")
+    public static void squads_switch_together_and_report_down(GameTestHelper helper) {
+        ServerPlayer owner = StarkTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "squad-owner");
+        SecurityCoreBlockEntity core = StarkTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos rack = new BlockPos(14, 3, 3);
+        StarkTechGameTests.placeServer(helper, rack, core);
+        java.util.List<com.senne.starktech.robot.GuardRobotEntity> wave = new java.util.ArrayList<>();
+        for (BlockPos pos : new BlockPos[] {new BlockPos(6, 2, 8), new BlockPos(9, 2, 8)}) {
+            com.senne.starktech.robot.GuardRobotEntity robot = helper.spawn(com.senne.starktech.registry.ModEntities.GUARD_ROBOT.get(), pos);
+            robot.setOwner(owner);
+            robot.setSquad("Wave 1");
+            wave.add(robot);
+        }
+        helper.runAfterDelay(25, () -> {
+            StarkTechGameTests.startServer(helper, rack, core);
+            core.logic().put(null, diagram("Waves", """
+                    when squad_down("Wave 1"):
+                        log("wave down " + active("Wave 1"))
+                    """));
+        });
+        helper.runAfterDelay(50, () -> {
+            var result = com.senne.starktech.bot.BotLink.switchOn(helper.getLevel(), core, "Wave 1", true);
+            check(result == com.senne.starktech.bot.BotLink.Result.DONE, "activate(\"Wave 1\") lukte niet: " + result);
+            check(wave.stream().allMatch(com.senne.starktech.robot.GuardRobotEntity::isActive), "Niet de hele squad ging aan");
+        });
+        helper.runAfterDelay(90, () -> {
+            check(com.senne.starktech.bot.BotLink.active(helper.getLevel(), core, "Wave 1") == 2, "active(\"Wave 1\") is niet 2");
+            wave.forEach(robot -> robot.knockDown(400));
+        });
+        helper.succeedWhen(() -> check(logged(core, EventLog.Type.LOGIC, "wave down 0"),
+                "when squad_down(\"Wave 1\") liep niet (of active() was niet 0)"));
+    }
+
+    /**
      * Een tijdslimiet zonder Goal-blok: wie het volhoudt, is geslaagd. Een tweede training bij dezelfde kern kan niet
      * tegelijk, en de trainee kan niet in twee trainingen tegelijk.
      */

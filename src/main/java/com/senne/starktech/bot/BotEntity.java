@@ -79,6 +79,8 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
     protected final BotBrain brain;
     /** Tot wanneer (speltijd) hij neerligt na een treffer van de Ion Blaster (hoofdstuk 24); 0 = hij staat. */
     protected long downUntil;
+    /** Zijn squad (hoofdstuk 26), "" = geen. */
+    private String squad = "";
 
     protected BotEntity(EntityType<? extends BotEntity> type, Level level) {
         super(type, level);
@@ -359,6 +361,17 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
 
     // ================================================================ Zijn dock
 
+    /** Zijn squad (hoofdstuk 26), "" = geen. */
+    @Override
+    public String squad() {
+        return squad;
+    }
+
+    /** Een andere squad ("" = geen). Een naam die je zelf typt, maakt BotNetwork.cleanName eerst netjes. */
+    public void setSquad(String squad) {
+        this.squad = squad == null ? "" : squad;
+    }
+
     /** Zijn dock, of null. */
     @Override
     public @Nullable BlockPos home() {
@@ -469,7 +482,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
     public void die(DamageSource source) {
         super.die(source);
         if (level() instanceof ServerLevel level && isDeadOrDying()) {
-            BotNetwork.get(level).remove(getUUID());
+            BotNetwork.get(level).remove(getUUID(), level);
         }
     }
 
@@ -477,7 +490,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
     @Override
     public void remove(RemovalReason reason) {
         if (level() instanceof ServerLevel level && reason.shouldDestroy()) {
-            BotNetwork.get(level).remove(getUUID());
+            BotNetwork.get(level).remove(getUUID(), level);
         }
         super.remove(reason);
     }
@@ -585,6 +598,9 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
             tag.putUUID("Owner", owner);
         }
         tag.putString("OwnerName", ownerName);
+        if (!squad.isEmpty()) {
+            tag.putString("Squad", squad);
+        }
     }
 
     @Override
@@ -604,6 +620,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         updateState(false);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");
+        squad = tag.getString("Squad");
     }
 
     /** Wat zijn eigen soort bewaart en eerst terug moet zijn (bij een robot: zijn onderdelen). */

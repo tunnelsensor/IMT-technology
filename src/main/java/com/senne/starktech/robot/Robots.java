@@ -214,6 +214,7 @@ public final class Robots {
             row.putString("id", entry.id().toString());
             row.putString("n", entry.name());
             row.putBoolean("drone", entry.drone());
+            row.putString("sq", entry.squad());
             row.putString("st", entry.state().title().toLowerCase(Locale.ROOT));
             row.putBoolean("on", robot != null ? robot.isActive() : entry.state() == RobotState.ACTIVE);
             row.putInt("bat", Math.round(entry.battery() * 100));
@@ -247,6 +248,7 @@ public final class Robots {
             CompoundTag row = new CompoundTag();
             row.putString("n", entry.name());
             row.putBoolean("drone", entry.drone());
+            row.putString("sq", entry.squad());
             if (level.getEntity(entry.id()) instanceof BotEntity robot && robot.isAlive()) {
                 ListTag pins = new ListTag();
                 for (int pin = 1; pin <= BotBoard.PINS; pin++) {
@@ -312,9 +314,9 @@ public final class Robots {
     }
 
     /**
-     * Een knop uit de app Robots: aan/uit ("robot_switch"), een andere naam ("robot_rename") of (hoofdstuk 23) een
-     * programma ("robot_program"). Alleen voor robots in het gebied van deze kern; aan/uit en hernoemen alleen als
-     * ze nu geladen zijn. Geeft de melding voor de taakbalk terug.
+     * Een knop uit de app Robots: aan/uit ("robot_switch"), een andere naam ("robot_rename"), (hoofdstuk 23) een
+     * programma ("robot_program") of (hoofdstuk 26) een squad ("robot_squad"). Alleen voor robots in het gebied van
+     * deze kern; aan/uit, hernoemen en de squad alleen als ze nu geladen zijn. Geeft de melding voor de taakbalk terug.
      */
     public static Desktop desktop(ServerPlayer player, SecurityCoreBlockEntity core, String op, CompoundTag args) {
         ServerLevel level = player.serverLevel();
@@ -341,6 +343,16 @@ public final class Robots {
             boolean on = args.getBoolean("on");
             result = robot.setActive(on) ? new Desktop(name + (on ? " switched on" : " switched off"), false)
                     : new Desktop("Short circuit in " + name + "! Check its circuit board", true);
+        } else if (op.equals("robot_squad")) {
+            // Een squad (hoofdstuk 26): "Wave 1", of leeg = geen squad.
+            String typed = args.getString("squad").strip();
+            String squad = typed.isEmpty() ? "" : BotNetwork.cleanName(typed);
+            if (squad == null) {
+                result = new Desktop("That squad name is not allowed", true);
+            } else {
+                robot.setSquad(squad);
+                result = new Desktop(squad.isEmpty() ? name + " is in no squad now" : name + " is in squad " + squad, false);
+            }
         } else {
             result = rename(player, robot, args.getString("name"))
                     ? new Desktop("Renamed to " + robot.getCustomName().getString(), false)

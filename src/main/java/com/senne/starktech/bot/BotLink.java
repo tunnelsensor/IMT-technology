@@ -3,6 +3,7 @@ package com.senne.starktech.bot;
 import com.senne.starktech.logic.LogicServer;
 import com.senne.starktech.security.SecurityCoreBlockEntity;
 import com.senne.starktech.security.SecurityCores;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -63,12 +64,52 @@ public final class BotLink {
         return null;
     }
 
-    /** {@code order("Guard 1", "attack", x, y, z)}: de robot begint zijn {@code when ordered("attack"):}. */
+    /**
+     * De robots en drones met deze naam, of (hoofdstuk 26) van de squad met deze naam, in het gebied van deze kern.
+     * Een robot met die naam gaat voor.
+     */
+    public static List<BotNetwork.Entry> named(ServerLevel level, SecurityCoreBlockEntity core, String name) {
+        BotNetwork.Entry one = find(level, core, name);
+        if (one != null) {
+            return List.of(one);
+        }
+        return BotNetwork.get(level).squad(GlobalPos.of(level.dimension(), core.getBlockPos()), name);
+    }
+
+    /** Hoeveel robots en drones met deze naam (of van deze squad) staan nu aan en recht ({@code active("Wave 1")}). */
+    public static int active(ServerLevel level, SecurityCoreBlockEntity core, String name) {
+        int count = 0;
+        for (BotNetwork.Entry entry : named(level, core, name)) {
+            if (entry.state() == com.senne.starktech.robot.RobotState.ACTIVE) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * {@code order("Guard 1", "attack", x, y, z)}: de robot begint zijn {@code when ordered("attack"):}. Is "Guard 1"
+     * een squad (hoofdstuk 26), dan krijgen ze hem allemaal.
+     */
     public static Result order(ServerLevel level, SecurityCoreBlockEntity core, String name, String order, @Nullable BlockPos place) {
-        BotNetwork.Entry entry = find(level, core, name);
-        if (entry == null) {
+        List<BotNetwork.Entry> entries = named(level, core, name);
+        if (entries.isEmpty()) {
             return Result.UNKNOWN;
         }
+        Result result = Result.NOT_CONNECTED;
+        for (BotNetwork.Entry entry : entries) {
+            result = best(result, order(level, core, entry, order, place));
+        }
+        return result;
+    }
+
+    /** De beste uitkomst van twee (voor een squad: gelukt bij één is gelukt). */
+    private static Result best(Result a, Result b) {
+        return a == Result.DONE || b == Result.DONE ? Result.DONE : a == Result.WAITING || b == Result.WAITING ? Result.WAITING : b;
+    }
+
+    private static Result order(ServerLevel level, SecurityCoreBlockEntity core, BotNetwork.Entry entry, String order,
+                                @Nullable BlockPos place) {
         if (!(level.getEntity(entry.id()) instanceof Bot bot) || !bot.isAlive()) {
             BotNetwork.get(level).setPendingOrder(entry.id(), order, place);
             return Result.WAITING;
@@ -80,10 +121,20 @@ public final class BotLink {
         return Result.DONE;
     }
 
-    /** {@code activate("Guard 1")} of {@code deactivate("Guard 1")}: zet de robot aan of uit. */
+    /**
+     * {@code activate("Guard 1")} of {@code deactivate("Guard 1")}: zet de robot aan of uit. Is "Guard 1" een squad
+     * (hoofdstuk 26, "Wave 1"), dan allemaal tegelijk.
+     */
     public static Result switchOn(ServerLevel level, SecurityCoreBlockEntity core, String name, boolean on) {
-        BotNetwork.Entry entry = find(level, core, name);
-        return entry == null ? Result.UNKNOWN : switchOn(level, core, entry, on);
+        List<BotNetwork.Entry> entries = named(level, core, name);
+        if (entries.isEmpty()) {
+            return Result.UNKNOWN;
+        }
+        Result result = Result.NOT_CONNECTED;
+        for (BotNetwork.Entry entry : entries) {
+            result = best(result, switchOn(level, core, entry, on));
+        }
+        return result;
     }
 
     /** Hetzelfde, voor deze robot of drone uit BotNetwork (hoofdstuk 25: de schakelaar "Drones" van de kern). */

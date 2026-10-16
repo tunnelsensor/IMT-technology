@@ -38,6 +38,8 @@ public enum Op {
     TRAINING_HIT(Kind.TRIGGER, "training_hit", Arg.TEXT, Arg.NONE, "The trainee of this training is hit"),
     /** {@code when training_ended("Kamino"):}: de training is voorbij (passed zegt of hij geslaagd is). */
     TRAINING_ENDED(Kind.TRIGGER, "training_ended", Arg.TEXT, Arg.NONE, "This training is over (passed or not)"),
+    /** {@code when squad_down("Wave 1"):} (hoofdstuk 26): elke robot en drone van die squad ligt neer (of is kapot). */
+    SQUAD_DOWN(Kind.TRIGGER, "squad_down", Arg.TEXT, Arg.NONE, "Every robot and drone of this squad is down, out of power or destroyed"),
 
     // ---------------------------------------------------------------- Je eigen blokjes (functies)
     /** Een eigen blok: in de code {@code def open_lab():} met de acties eronder. De tekst is de naam. */
@@ -88,8 +90,8 @@ public enum Op {
      * {@code when ordered("attack"):}. De waarden staan in expr.
      */
     ORDER(Kind.ACTION, "order", Arg.VALUES, Arg.NONE, "Give a robot (or drone) an order: its when ordered(...) starts"),
-    ACTIVATE(Kind.ACTION, "activate", Arg.ROBOT, Arg.NONE, "Switch a robot (or drone) on: it leaves its dock"),
-    DEACTIVATE(Kind.ACTION, "deactivate", Arg.ROBOT, Arg.NONE, "Switch a robot (or drone) off: it goes back to its dock"),
+    ACTIVATE(Kind.ACTION, "activate", Arg.ROBOT, Arg.NONE, "Switch a robot, drone or squad on: it leaves its dock"),
+    DEACTIVATE(Kind.ACTION, "deactivate", Arg.ROBOT, Arg.NONE, "Switch a robot, drone or squad off: it goes back to its dock"),
 
     // ---------------------------------------------------------------- Namen (variabelen, hoofdstuk 20)
     /**
@@ -248,6 +250,7 @@ public enum Op {
             case ORDERED -> "attack";
             case MESSAGE, SEND -> "intruder";
             case TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> "Kamino";
+            case SQUAD_DOWN -> "Wave 1";
             case ACTIVATE, DEACTIVATE -> "Guard 1";
             default -> "Someone is at the door";
         };
@@ -333,7 +336,7 @@ public enum Op {
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
             case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE, ORDER, ACTIVATE, DEACTIVATE,
-                 TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> kind == ProgramKind.SERVER;
+                 TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED, SQUAD_DOWN -> kind == ProgramKind.SERVER;
             case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
             default -> true;

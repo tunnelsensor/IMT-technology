@@ -110,6 +110,9 @@ public interface Bot {
         brain().setProgram(program);
     }
 
+    /** Zijn squad (hoofdstuk 26: "Wave 1"; leeg = geen): activate("Wave 1") zet ze allemaal tegelijk aan. */
+    String squad();
+
     /** Is hij nog uit zijn dock aan het stappen (of opstijgen)? Dan begint zijn programma pas daarna. */
     boolean isLeavingDock();
 

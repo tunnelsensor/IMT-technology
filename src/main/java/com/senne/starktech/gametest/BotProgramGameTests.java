@@ -538,7 +538,7 @@ public final class BotProgramGameTests {
             check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(
                     "Scout: it has no when ordered(\"dance\"), so it ignored that order")), "Een onbekende opdracht stond niet in het logboek");
             check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(
-                    "\"Orders\": there is no robot called \"Nobody\" in this network's area")), "Een onbekende robot stond niet in het logboek");
+                    "\"Orders\": there is no robot, drone or squad called \"Nobody\" in this network's area")), "Een onbekende robot stond niet in het logboek");
             BlockPos abs = helper.absolutePos(start);
             check(Math.abs(robot.getX() - (abs.getX() + 0.5)) < 0.3 && Math.abs(robot.getZ() - (abs.getZ() + 0.5)) < 2.3,
                     "Hij liep van zijn rondje af: " + robot.position());
