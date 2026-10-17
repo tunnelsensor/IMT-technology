@@ -1,10 +1,10 @@
 """
-Bouwt de Stark Tower als Minecraft-structuurbestand (.nbt).
+Bouwt de Bibie's Industries Tower als Minecraft-structuurbestand (.nbt).
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_structure.py
 
-Het resultaat komt in src/main/resources/data/starktech/structure/stark_tower.nbt.
+Het resultaat komt in src/main/resources/data/imttech/structure/bibie_tower.nbt.
 
 De toren is 41 x 110 x 41 blokken (met het voorplein erbij 41 x 110 x 55) en loopt
 trapsgewijs naar boven toe smaller: elke keer dat de gevel een stukje naar binnen springt,
@@ -14,7 +14,7 @@ blijft de vloer eronder liggen als terras met een reling en lampjes. Van onder n
     1-11    de lobby: receptie met logowand, werkhoek, laadstation, zithoeken, vitrines
    12-22    het lab: watertanks, een pakstelling, een teslaspoel, werkbanken
    23-33    het archief: boekenkasten, leestafels, kaartentafel, betoveringstafel
-   34-44    de hangar: landingscirkel, drone-docks (Tony's security drones), een hangardeur, generatoren
+   34-44    de hangar: landingscirkel, drone-docks (Bibie's security drones), een hangardeur, generatoren
    45-55    de woonverdieping: keuken, eettafel, tv-hoek, slaapkamer
    56-66    de beveiliging: schermenwand, serverkasten, een holotafel, de verborgen krachtcentrale
    67-76    de lasergang: negen rayshields en de omweg met drie deuren
@@ -25,21 +25,21 @@ blijft de vloer eronder liggen als terras met een reling en lampjes. Van onder n
   106-109   de antennes
 
 Buiten heeft hij koperen ribben over de volle hoogte, verlichte randen per verdieping en
-een verlicht STARK-logo op de zuidgevel.
+een verlicht BIBIE-logo op de zuidgevel.
 
 De route naar boven: een glazen liftkoker (met ladder) van de lobby tot in de lasergang,
 dan langs of om de lasers heen naar de ladder naar de kluis, en vanuit de kluis een ladder
 langs de oostmuur door het penthouse tot op het dak.
 
 Tip: je kunt de toren ook in het spel verbouwen met een structuurblok (Structure Block),
-opslaan als "starktech:stark_tower" en het .nbt-bestand uit je wereldmap (generated/)
+opslaan als "imttech:bibie_tower" en het .nbt-bestand uit je wereldmap (generated/)
 hierheen kopiëren. Draai dit script dan niet meer, anders overschrijf je je eigen versie.
 """
 import gzip
 import struct
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "starktech" / "structure" / "stark_tower.nbt"
+OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "bibie_tower.nbt"
 
 # Minecraft 1.21.1 "world_version" (zie version.json in de Minecraft-jar).
 DATA_VERSION = 3955
@@ -176,14 +176,14 @@ DARK_FLOOR = "minecraft:polished_deepslate"
 STRIPE = "minecraft:light_blue_concrete"
 TRIM = "minecraft:smooth_quartz"
 LIGHT = "minecraft:sea_lantern"
-# Gewaxt koper: dat blijft glanzend en wordt niet groen (het Stark-rood-goud blijft).
+# Gewaxt koper: dat blijft glanzend en wordt niet groen (het rood-goud blijft).
 COPPER = "minecraft:waxed_copper_block"
 RAIL = "minecraft:iron_bars"
 DARK_WOOD = "minecraft:dark_oak_stairs"
 QUARTZ_STAIRS = "minecraft:quartz_stairs"
 
-LOOT = "starktech:chests/stark_tower"
-VAULT_LOOT = "starktech:chests/stark_vault"
+LOOT = "imttech:chests/bibie_tower"
+VAULT_LOOT = "imttech:chests/bibie_vault"
 
 BARS = {"north": "false", "south": "false", "east": "false", "west": "false", "waterlogged": "false"}
 
@@ -195,7 +195,7 @@ def chest(x, y, z, facing, loot=LOOT):
 
 def security_turret(x, y, z):
     """Een beveiligingstorentje: schiet op indringers, tot iemand de toren hackt."""
-    put(x, y, z, "starktech:security_turret", {"enabled": "true", "powered": "false"})
+    put(x, y, z, "imttech:security_turret", {"enabled": "true", "powered": "false"})
 
 
 def security_camera(x, y, z, face, facing, name, pan=0, tilt=0):
@@ -205,8 +205,8 @@ def security_camera(x, y, z, face, facing, name, pan=0, tilt=0):
     bewakingsmuur. pan draait hem naar rechts (+) of links (-), tilt omlaag (+) of omhoog (-), in
     graden. Stroom krijgt hij van een kabel ernaast (zie wire_cameras).
     """
-    put(x, y, z, "starktech:security_camera", {"face": face, "facing": facing, "online": "false"},
-        {"id": "starktech:security_camera", "Name": name, "Pan": Int(pan), "Tilt": Int(tilt)})
+    put(x, y, z, "imttech:security_camera", {"face": face, "facing": facing, "online": "false"},
+        {"id": "imttech:security_camera", "Name": name, "Pan": Int(pan), "Tilt": Int(tilt)})
 
 
 def spawner(x, y, z, mob):
@@ -388,31 +388,31 @@ def floor_slab(y, inset, material=FLOOR, light_step=7):
 
 # --------------------------------------------------------------------- Het logo
 
-# Vijf letters van 5 hoog en 4 breed: S T A R K.
+# De letters van BIBIE (Bibie's Industries), 5 hoog. De B en de E zijn 4 breed, de I maar 3
+# (anders staat hij scheef): daarom heeft elke letter zijn eigen breedte.
 LOGO = {
-    "S": ["####", "#...", "####", "...#", "####"],
-    "T": ["####", ".#..", ".#..", ".#..", ".#.."],
-    "A": [".##.", "#..#", "####", "#..#", "#..#"],
-    "R": ["###.", "#..#", "###.", "#.#.", "#..#"],
-    "K": ["#..#", "#.#.", "##..", "#.#.", "#..#"],
+    "B": ["###.", "#..#", "###.", "#..#", "###."],
+    "I": ["###", ".#.", ".#.", ".#.", "###"],
+    "E": ["####", "#...", "###.", "#...", "####"],
 }
 
 
-def stark_logo(y, z):
+def bibie_logo(y, z):
     """
-    Het STARK-logo in de gevel, van koperen lampen: overdag koper, 's nachts verlicht.
+    Het BIBIE-logo in de gevel, van koperen lampen: overdag koper, 's nachts verlicht.
     y is de onderste rij. (Het zat eerst op de lobby, waar het terras erboven de bovenste rij
-    van elke letter wegvaagde.)
+    van elke letter wegvaagde.) Tussen twee letters zit één lege kolom.
     """
-    text = "STARK"
-    width = len(text) * 5 - 1
-    x0 = MID - width // 2
-    for index, letter in enumerate(text):
+    text = "BIBIE"
+    width = sum(len(LOGO[letter][0]) for letter in text) + len(text) - 1
+    x = MID - width // 2
+    for letter in text:
         rows = LOGO[letter]
         for row in range(5):
-            for col in range(4):
+            for col in range(len(rows[row])):
                 if rows[row][col] == "#":
-                    bulb(x0 + index * 5 + col, y + (4 - row), z)
+                    bulb(x + col, y + (4 - row), z)
+        x += len(rows[0]) + 1
 
 
 # --------------------------------------------------------------------- Het plein en de lobby
@@ -591,7 +591,7 @@ def build_lobby():
     put(x0 + 4, y, z0 + 3, "minecraft:smithing_table")
     put(x0 + 5, y, z0 + 3, "minecraft:anvil", {"facing": "south"})
     put(x0 + 6, y, z0 + 3, "minecraft:grindstone", {"face": "floor", "facing": "south"})
-    put(MID, y, z0 + 3, "starktech:charging_station", {"facing": "south"})
+    put(MID, y, z0 + 3, "imttech:charging_station", {"facing": "south"})
     put(x1 - 3, y, z0 + 3, "minecraft:blast_furnace", {"facing": "south", "lit": "false"})
     put(x1 - 4, y, z0 + 3, "minecraft:furnace", {"facing": "south", "lit": "false"})
     for x in range(x0 + 3, x1 - 2):
@@ -653,8 +653,8 @@ def build_lab():
     x0, z0, x1, z1 = bounds(LAB_IN)
     y = LAB_Y
 
-    # Het STARK-logo op de zuidgevel, midden op de verdieping.
-    stark_logo(y + 3, z1)
+    # Het BIBIE-logo op de zuidgevel, midden op de verdieping.
+    bibie_logo(y + 3, z1)
 
     for x in (x0 + 2, x1 - 2):
         put(x, y, z0 + 3, "minecraft:brewing_stand",
@@ -699,8 +699,8 @@ def build_lab():
 
     # De harnas-werkbank voor de pakstelling: hier bouw je het harnas en zet je er upgrades in.
     # Stroom komt van een warmtegenerator ernaast, op een gloeiend magmablok in de vloer.
-    put(x1 - 8, y, MID, "starktech:suit_workbench", {"facing": "west"})
-    put(x1 - 8, y, MID + 1, "starktech:heat_generator", {"facing": "west"})
+    put(x1 - 8, y, MID, "imttech:suit_workbench", {"facing": "west"})
+    put(x1 - 8, y, MID + 1, "imttech:heat_generator", {"facing": "west"})
     put(x1 - 8, y - 1, MID + 1, "minecraft:magma_block")
 
     # Een teslaspoel in de hoek.
@@ -716,7 +716,7 @@ def build_lab():
     plant(x0 + 2, y, z0 + 2)
     plant(x1 - 2, y, z0 + 2, "potted_bamboo")
     # Op het terras een zonnepaneel: die ziet hier de lucht.
-    put(MID + 3, y, bounds(LOBBY_IN)[3] - 1, "starktech:solar_panel")
+    put(MID + 3, y, bounds(LOBBY_IN)[3] - 1, "imttech:solar_panel")
     floor_slab(ARCHIVE_Y - 1, LAB_IN)
 
 
@@ -777,7 +777,7 @@ def build_hangar():
     werkbanken, generatoren met lava-ketels en een grote open hangardeur naar het oosten.
 
     De drone-docks staan langs de noordmuur. Sinds hoofdstuk 25 zet de kern van de toren op de
-    eerste vier Tony's security drones (zie TowerDrones in de Java-code); na het hacken zijn ze van
+    eerste vier Bibie's security drones (zie TowerDrones in de Java-code); na het hacken zijn ze van
     jou. Ze laden er: een kabel langs de muur brengt stroom van een warmtegenerator in de hoek (met
     een ketel lava ernaast).
     """
@@ -805,12 +805,12 @@ def build_hangar():
     docks = list(range(x0 + 4, x1 - 2, 4))
     for x in range(x0 + 2, docks[-1] + 1):
         if x in docks:
-            put(x, y, z0 + 1, "starktech:drone_dock", {"facing": "south"})
+            put(x, y, z0 + 1, "imttech:drone_dock", {"facing": "south"})
             bulb(x, LIVING_Y - 2, z0 + 1)
             put(x, LIVING_Y - 3, z0 + 1, "minecraft:lightning_rod", {"facing": "down", "powered": "false", "waterlogged": "false"})
         else:
             cable(x, y, z0 + 1)
-    put(x0 + 1, y, z0 + 1, "starktech:heat_generator", {"facing": "south"})
+    put(x0 + 1, y, z0 + 1, "imttech:heat_generator", {"facing": "south"})
     put(x0 + 1, y, z0 + 2, "minecraft:lava_cauldron")
 
     # Gereedschapsrekken langs de westmuur (niet voor de hangardeur).
@@ -824,9 +824,9 @@ def build_hangar():
     put(x0 + 7, y, z1 - 1, "minecraft:smithing_table")
     put(x0 + 8, y, z1 - 1, "minecraft:crafting_table")
     # Generatoren met een ketel lava ernaast (die is heet, dus ze werken ook).
-    put(x0 + 2, y, z1 - 2, "starktech:heat_generator", {"facing": "north"})
+    put(x0 + 2, y, z1 - 2, "imttech:heat_generator", {"facing": "north"})
     put(x0 + 3, y, z1 - 2, "minecraft:lava_cauldron")
-    put(x1 - 2, y, z1 - 2, "starktech:heat_generator", {"facing": "north"})
+    put(x1 - 2, y, z1 - 2, "imttech:heat_generator", {"facing": "north"})
     put(x1 - 3, y, z1 - 2, "minecraft:lava_cauldron")
     chest(x0 + 2, y, z0 + 2, "south")
     # Kettingen met haken aan het plafond.
@@ -940,10 +940,10 @@ def build_security():
 
     # De holotafel in het midden, op een generator onder de vloer.
     put(MID, SECURITY_Y - 1, MID, "minecraft:magma_block")
-    put(MID, SECURITY_Y, MID, "starktech:heat_generator", {"facing": "north"})
-    put(MID, y, MID, "starktech:holo_table")
+    put(MID, SECURITY_Y, MID, "imttech:heat_generator", {"facing": "north"})
+    put(MID, y, MID, "imttech:holo_table")
     rug(MID - 2, MID - 2, MID + 2, MID + 2, y, "cyan")
-    put(MID, y, MID, "starktech:holo_table")
+    put(MID, y, MID, "imttech:holo_table")
 
     # Bewakingscamera's in drie hoeken, aan het plafond. Elk kijkt langs een muur en is 45 graden
     # naar links gedraaid: zo kijkt hij schuin de kamer in.
@@ -955,9 +955,9 @@ def build_security():
     chest(x1 - 2, y, z1 - 2, "north")
 
     # De beveiligingskern: de "hoofdserver" in het gat midden in de rij serverkasten. Hij
-    # beschermt de hele toren (en zet Tony's drones in de hangar); met een laptop kun je hem
+    # beschermt de hele toren (en zet Bibie's drones in de hangar); met een laptop kun je hem
     # hacken, en dan werkt de beveiliging voor jou.
-    put(x0 + 2, y, MID, "starktech:security_core", {"facing": "east", "claimed": "false"})
+    put(x0 + 2, y, MID, "imttech:security_core", {"facing": "east", "claimed": "false"})
     security_turret(x0 + 2, y, z0 + 2)
     security_turret(x1 - 2, y, z0 + 2)
     floor_slab(LASERS_Y - 1, SECURITY_IN, DARK_FLOOR, light_step=9)
@@ -985,7 +985,7 @@ def build_power_plant():
         for dx in (-1, 0, 1):
             for dz in (-1, 0, 1):
                 put(POWER_X + dx, gy, POWER_Z + dz, "minecraft:lava", {"level": "0"})
-        put(POWER_X, gy, POWER_Z, "starktech:heat_generator")
+        put(POWER_X, gy, POWER_Z, "imttech:heat_generator")
     # De kabel omhoog, tussen en boven de generatoren, tot in het plafond.
     for y in range(SECURITY_Y + 3, LASERS_Y):
         if y != SECURITY_Y + 5:
@@ -1027,9 +1027,9 @@ def build_laser_gauntlet():
     for i, z in enumerate(laser_rows):
         colour = colours[i % len(colours)]
         # Nog uit: ze gaan zelf aan zodra ze redstone en stroom hebben.
-        put(MID - 2, LASERS_Y + 1, z, "starktech:laser_emitter",
+        put(MID - 2, LASERS_Y + 1, z, "imttech:laser_emitter",
             {"facing": "east", "powered": "false", "color": colour})
-        put(MID + 2, LASERS_Y + 1, z, "starktech:laser_emitter",
+        put(MID + 2, LASERS_Y + 1, z, "imttech:laser_emitter",
             {"facing": "west", "powered": "false", "color": colour})
         # Redstone in de muur achter de zender, stroom via een kabel eronder.
         put(MID - 3, LASERS_Y + 1, z, "minecraft:redstone_block")
@@ -1135,7 +1135,7 @@ def build_vault():
     plate_z = MID + 3
     put(MID, y, plate_z, "minecraft:heavy_weighted_pressure_plate", {"power": "0"})
     for (dx, dz) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-        put(MID + dx, VAULT_Y, plate_z + dz, "starktech:laser_emitter",
+        put(MID + dx, VAULT_Y, plate_z + dz, "imttech:laser_emitter",
             {"facing": "up", "powered": "false", "color": "red"})
         cable(MID + dx, VAULT_Y - 1, plate_z + dz)
     cable(MID, VAULT_Y - 1, plate_z)
@@ -1170,7 +1170,7 @@ def build_penthouse():
     fill(x0 + 1, PENTHOUSE_Y, z0 + 1, x1 - 1, PENTHOUSE_Y, z1 - 1, FLOOR)
     y = PENTHOUSE_Y + 1   # de witte vloer ligt een blok hoger
 
-    put(MID, y, MID, "starktech:charging_station", {"facing": "south"})
+    put(MID, y, MID, "imttech:charging_station", {"facing": "south"})
     desk(MID - 7, y, z0 + 2, 6, chairs=(1, 4))
 
     # De bar in de noordoosthoek, met krukken en een rek erachter.
@@ -1211,8 +1211,8 @@ def build_penthouse():
     # de kluis: een gloeiende tegel daar).
     hx, hz = x0 + 5, z0 + 6
     put(hx, PENTHOUSE_Y - 1, hz, "minecraft:magma_block")
-    put(hx, PENTHOUSE_Y, hz, "starktech:heat_generator", {"facing": "north"})
-    put(hx, y, hz, "starktech:holo_table")
+    put(hx, PENTHOUSE_Y, hz, "imttech:heat_generator", {"facing": "north"})
+    put(hx, y, hz, "imttech:holo_table")
 
     for (x, z) in ((x0 + 1, z0 + 1), (x0 + 1, z1 - 1)):
         planter(x, y, z)
@@ -1252,7 +1252,7 @@ def build_roof():
 
     # Zonnepanelen aan de zuidkant, en een schotel in de noordwesthoek.
     for x in list(range(x0 + 2, x0 + 7)) + list(range(x1 - 6, x1 - 1)):
-        put(x, ROOF_Y + 1, z1 - 2, "starktech:solar_panel")
+        put(x, ROOF_Y + 1, z1 - 2, "imttech:solar_panel")
     dx, dz = x0 + 3, z0 + 4
     put(dx, ROOF_Y + 1, dz, RAIL, BARS)
     put(dx, ROOF_Y + 2, dz, RAIL, BARS)
@@ -1316,7 +1316,7 @@ def build_landing_platform(roof_x1):
             else:
                 block = "minecraft:gray_concrete"
             put(x, y, z, block)
-    put(cx, y, cz, "starktech:landing_pad")
+    put(cx, y, cz, "imttech:landing_pad")
     # Landingslichten op de vier hoeken.
     for (x, z) in ((x0, z0), (x0, z1), (x1, z0), (x1, z1)):
         put(x, y, z, LIGHT)
@@ -1330,7 +1330,7 @@ def build_landing_platform(roof_x1):
         put(x, y - 1, z1, TRIM)
     for z in range(z0, z1 + 1):
         put(x1, y - 1, z, TRIM)
-    put(cx, y - 1, cz, "starktech:heat_generator", {"facing": "east"})
+    put(cx, y - 1, cz, "imttech:heat_generator", {"facing": "east"})
     put(cx, y - 2, cz, "minecraft:magma_block")
     put(cx - 1, y - 1, cz, "minecraft:magma_block")
     put(cx + 1, y - 1, cz, "minecraft:magma_block")
@@ -1363,7 +1363,7 @@ SUITS = {
 
 def suit_capsule(cx, y, cz, mark):
     """
-    Een vitrine van 3 x 3 met een harnas erin (Tony's Hall of Armor): een voet en een dak van
+    Een vitrine van 3 x 3 met een harnas erin (Bibie's Hall of Armor): een voet en een dak van
     quartz met een lamp, koperen hoeken achter, glas opzij, en vooraan (zuid) open met helder glas
     op de hoeken, zodat je het harnas goed ziet. Voor de voet een bordje met de naam.
     """
@@ -1598,7 +1598,7 @@ def wire_security():
     """
     cabinet = (POWER_X, LASERS_Y - 4, POWER_Z)                    # (29, 63, 12)
     cables.discard(cabinet)
-    put(*cabinet, "starktech:power_cabinet", {"facing": "west"})
+    put(*cabinet, "imttech:power_cabinet", {"facing": "west"})
     cx, cy, cz = cabinet
     # Generator A (onderaan) via de oostmantel naar de rechterkant van de kast.
     route((cx + 1, cy, cz), (cx + 2, cy, cz), (cx + 2, SECURITY_Y + 3, cz), (cx, SECURITY_Y + 3, cz))
@@ -1677,23 +1677,23 @@ def build():
     wire_cameras()
 
 
-# Blokken waar een Stark-kabel op aansluit (zie PowerConnectable in de mod).
-POWER_BLOCKS = {"starktech:cable", "starktech:laser_emitter", "starktech:heat_generator", "starktech:solar_panel",
-                "starktech:charging_station", "starktech:dome_generator", "starktech:holo_table",
-                "starktech:suit_workbench", "starktech:drone_dock"}
+# Blokken waar een stroomkabel op aansluit (zie PowerConnectable in de mod).
+POWER_BLOCKS = {"imttech:cable", "imttech:laser_emitter", "imttech:heat_generator", "imttech:solar_panel",
+                "imttech:charging_station", "imttech:dome_generator", "imttech:holo_table",
+                "imttech:suit_workbench", "imttech:drone_dock"}
 
 
-# De plekken met een Stark-kabel (zie cable() en cable_markers()).
+# De plekken met een stroomkabel (zie cable() en cable_markers()).
 cables = set()
 
 
 def cable(x, y, z):
     """
-    Een Stark-kabel. In de mod is een kabel geen blok maar een getekende lijn die bij de chunk
+    Een stroomkabel. In de mod is een kabel geen blok maar een getekende lijn die bij de chunk
     hoort; het blok dat hier staat (een muur, vloer, plafond, of lucht) blijft dus gewoon staan.
     We zetten er een onzichtbare "marker" neer (een gewone Minecraft-entity met een labeltje);
     zodra die in de wereld komt, maakt de mod er een kabel van en haalt hij de marker weg
-    (zie StarkCables.onEntityJoin).
+    (zie PowerCables.onEntityJoin).
     """
     if 0 <= x < SIZE_X and 0 <= y < SIZE_Y and 0 <= z < SIZE_Z:
         cables.add((x, y, z))
@@ -1704,7 +1704,7 @@ def cable_markers():
     return [{
         "blockPos": [Int(x), Int(y), Int(z)],
         "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
-        "nbt": {"id": "minecraft:marker", "data": {"starktech_cable": Int(1)}},
+        "nbt": {"id": "minecraft:marker", "data": {"imttech_cable": Int(1)}},
     } for (x, y, z) in sorted(cables)]
 
 

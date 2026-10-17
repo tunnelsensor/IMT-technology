@@ -1,0 +1,7 @@
+{
+  "parent": "imttech:block/code_panel_base",
+  "textures": {
+    "front": "imttech:block/code_panel_off",
+    "side": "imttech:block/code_panel_side"
+  }
+}

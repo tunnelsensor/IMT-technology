@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "front": "starktech:block/compactor_front_on",
-    "side": "starktech:block/crack_machine_side",
-    "top": "starktech:block/crack_machine_top"
-  }
-}

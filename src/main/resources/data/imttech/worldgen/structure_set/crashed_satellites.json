@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 740261853,
+    "separation": 14,
+    "spacing": 44
+  },
+  "structures": [
+    {
+      "structure": "imttech:crashed_satellite",
+      "weight": 1
+    }
+  ]
+}

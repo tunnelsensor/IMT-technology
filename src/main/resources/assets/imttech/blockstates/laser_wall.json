@@ -1,0 +1,1252 @@
+{
+  "variants": {
+    "facing=north,color=blue,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=blue,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=blue,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_blue"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=west,color=blue,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_blue"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=up,color=blue,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_blue"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=down,color=blue,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_blue"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4"
+      }
+    ],
+    "facing=north,color=blue,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=south,color=blue,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=east,color=blue,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "x": 90
+      }
+    ],
+    "facing=west,color=blue,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "x": 90
+      }
+    ],
+    "facing=up,color=blue,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "y": 90
+      }
+    ],
+    "facing=down,color=blue,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_blue",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_blue_4",
+        "y": 90
+      }
+    ],
+    "facing=north,color=cyan,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=cyan,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=cyan,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_cyan"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=west,color=cyan,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_cyan"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=up,color=cyan,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_cyan"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=down,color=cyan,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_cyan"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4"
+      }
+    ],
+    "facing=north,color=cyan,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=south,color=cyan,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=east,color=cyan,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "x": 90
+      }
+    ],
+    "facing=west,color=cyan,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "x": 90
+      }
+    ],
+    "facing=up,color=cyan,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "y": 90
+      }
+    ],
+    "facing=down,color=cyan,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_cyan",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_cyan_4",
+        "y": 90
+      }
+    ],
+    "facing=north,color=green,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=green,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=green,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_green"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=west,color=green,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_green"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=up,color=green,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_green"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=down,color=green,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_green"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4"
+      }
+    ],
+    "facing=north,color=green,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=south,color=green,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=east,color=green,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "x": 90
+      }
+    ],
+    "facing=west,color=green,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "x": 90
+      }
+    ],
+    "facing=up,color=green,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "y": 90
+      }
+    ],
+    "facing=down,color=green,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_green",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_green_4",
+        "y": 90
+      }
+    ],
+    "facing=north,color=yellow,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=yellow,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=yellow,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_yellow"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=west,color=yellow,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_yellow"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=up,color=yellow,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_yellow"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=down,color=yellow,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_yellow"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4"
+      }
+    ],
+    "facing=north,color=yellow,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=south,color=yellow,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=east,color=yellow,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "x": 90
+      }
+    ],
+    "facing=west,color=yellow,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "x": 90
+      }
+    ],
+    "facing=up,color=yellow,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "y": 90
+      }
+    ],
+    "facing=down,color=yellow,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_yellow",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_yellow_4",
+        "y": 90
+      }
+    ],
+    "facing=north,color=red,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=red,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=red,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_red"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=west,color=red,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_red"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=up,color=red,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_red"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=down,color=red,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_red"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4"
+      }
+    ],
+    "facing=north,color=red,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=south,color=red,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=east,color=red,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "x": 90
+      }
+    ],
+    "facing=west,color=red,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "x": 90
+      }
+    ],
+    "facing=up,color=red,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "y": 90
+      }
+    ],
+    "facing=down,color=red,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_red",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_red_4",
+        "y": 90
+      }
+    ],
+    "facing=north,color=purple,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "y": 90
+      }
+    ],
+    "facing=south,color=purple,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "y": 90
+      }
+    ],
+    "facing=east,color=purple,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_purple"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=west,color=purple,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_purple"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=up,color=purple,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_purple"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=down,color=purple,turned=false": [
+      {
+        "model": "imttech:block/laser_wall_purple"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3"
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4"
+      }
+    ],
+    "facing=north,color=purple,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=south,color=purple,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "x": 90,
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "x": 90,
+        "y": 90
+      }
+    ],
+    "facing=east,color=purple,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "x": 90
+      }
+    ],
+    "facing=west,color=purple,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "x": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "x": 90
+      }
+    ],
+    "facing=up,color=purple,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "y": 90
+      }
+    ],
+    "facing=down,color=purple,turned=true": [
+      {
+        "model": "imttech:block/laser_wall_purple",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_2",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_3",
+        "y": 90
+      },
+      {
+        "model": "imttech:block/laser_wall_purple_4",
+        "y": 90
+      }
+    ]
+  }
+}

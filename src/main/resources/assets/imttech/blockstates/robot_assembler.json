@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/robot_assembler"
+    },
+    "facing=east": {
+      "model": "imttech:block/robot_assembler",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/robot_assembler",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/robot_assembler",
+      "y": 270
+    }
+  }
+}

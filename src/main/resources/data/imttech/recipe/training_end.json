@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "item": "minecraft:red_dye"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "pattern": [
+    "IDI",
+    "RCR",
+    "III"
+  ],
+  "result": {
+    "id": "imttech:training_end",
+    "count": 1
+  }
+}

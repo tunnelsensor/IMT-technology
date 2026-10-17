@@ -1,0 +1,338 @@
+{
+  "imt.boot": {
+    "subtitle": "subtitles.imttech.imt.boot",
+    "sounds": [
+      {
+        "name": "imttech:imt_boot"
+      }
+    ]
+  },
+  "imt.notify": {
+    "subtitle": "subtitles.imttech.imt.notify",
+    "sounds": [
+      {
+        "name": "imttech:imt_notify"
+      }
+    ]
+  },
+  "imt.alert": {
+    "subtitle": "subtitles.imttech.imt.alert",
+    "sounds": [
+      {
+        "name": "imttech:imt_alert"
+      }
+    ]
+  },
+  "imt.denied": {
+    "subtitle": "subtitles.imttech.imt.denied",
+    "sounds": [
+      {
+        "name": "imttech:imt_denied"
+      }
+    ]
+  },
+  "imt.scan": {
+    "subtitle": "subtitles.imttech.imt.scan",
+    "sounds": [
+      {
+        "name": "imttech:imt_scan"
+      }
+    ]
+  },
+  "imt.menu_open": {
+    "subtitle": "subtitles.imttech.imt.menu_open",
+    "sounds": [
+      {
+        "name": "imttech:imt_menu_open"
+      }
+    ]
+  },
+  "imt.select": {
+    "subtitle": "subtitles.imttech.imt.select",
+    "sounds": [
+      {
+        "name": "imttech:imt_select"
+      }
+    ]
+  },
+  "station.upgrade": {
+    "subtitle": "subtitles.imttech.station.upgrade",
+    "sounds": [
+      {
+        "name": "imttech:station_upgrade"
+      }
+    ]
+  },
+  "drone.deploy": {
+    "subtitle": "subtitles.imttech.drone.deploy",
+    "sounds": [
+      {
+        "name": "imttech:drone_deploy"
+      }
+    ]
+  },
+  "drone.laser": {
+    "subtitle": "subtitles.imttech.drone.laser",
+    "sounds": [
+      {
+        "name": "imttech:drone_laser"
+      }
+    ]
+  },
+  "drone.recall": {
+    "subtitle": "subtitles.imttech.drone.recall",
+    "sounds": [
+      {
+        "name": "imttech:drone_recall"
+      }
+    ]
+  },
+  "drone.hurt": {
+    "subtitle": "subtitles.imttech.drone.hurt",
+    "sounds": [
+      {
+        "name": "imttech:drone_hurt"
+      }
+    ]
+  },
+  "drone.destroyed": {
+    "subtitle": "subtitles.imttech.drone.destroyed",
+    "sounds": [
+      {
+        "name": "imttech:drone_destroyed"
+      }
+    ]
+  },
+  "satellite.lock": {
+    "subtitle": "subtitles.imttech.satellite.lock",
+    "sounds": [
+      {
+        "name": "imttech:satellite_lock"
+      }
+    ]
+  },
+  "satellite.charge": {
+    "subtitle": "subtitles.imttech.satellite.charge",
+    "sounds": [
+      {
+        "name": "imttech:satellite_charge"
+      }
+    ]
+  },
+  "satellite.fire": {
+    "subtitle": "subtitles.imttech.satellite.fire",
+    "sounds": [
+      {
+        "name": "imttech:satellite_fire"
+      }
+    ]
+  },
+  "satellite.missile": {
+    "subtitle": "subtitles.imttech.satellite.missile",
+    "sounds": [
+      {
+        "name": "imttech:satellite_missile"
+      }
+    ]
+  },
+  "satellite.impact": {
+    "subtitle": "subtitles.imttech.satellite.impact",
+    "sounds": [
+      {
+        "name": "imttech:satellite_impact"
+      }
+    ]
+  },
+  "comms.message": {
+    "subtitle": "subtitles.imttech.comms.message",
+    "sounds": [
+      {
+        "name": "imttech:comms_message"
+      }
+    ]
+  },
+  "comms.ping": {
+    "subtitle": "subtitles.imttech.comms.ping",
+    "sounds": [
+      {
+        "name": "imttech:comms_ping"
+      }
+    ]
+  },
+  "suit.repulsor_arm": {
+    "subtitle": "subtitles.imttech.suit.repulsor_arm",
+    "sounds": [
+      {
+        "name": "imttech:repulsor_arm"
+      }
+    ]
+  },
+  "suit.repulsor_disarm": {
+    "subtitle": "subtitles.imttech.suit.repulsor_disarm",
+    "sounds": [
+      {
+        "name": "imttech:repulsor_disarm"
+      }
+    ]
+  },
+  "suit.repulsor_fire": {
+    "subtitle": "subtitles.imttech.suit.repulsor_fire",
+    "sounds": [
+      {
+        "name": "imttech:repulsor_fire"
+      }
+    ]
+  },
+  "suit.thruster": {
+    "subtitle": "subtitles.imttech.suit.thruster",
+    "sounds": [
+      {
+        "name": "imttech:suit_thruster"
+      }
+    ]
+  },
+  "imt.blip": {
+    "subtitle": "subtitles.imttech.imt.blip",
+    "sounds": [
+      {
+        "name": "imttech:imt_blip"
+      }
+    ]
+  },
+  "imt.confirm": {
+    "subtitle": "subtitles.imttech.imt.confirm",
+    "sounds": [
+      {
+        "name": "imttech:imt_confirm"
+      }
+    ]
+  },
+  "shield.rayshield_hum": {
+    "subtitle": "subtitles.imttech.shield.rayshield_hum",
+    "sounds": [
+      {
+        "name": "imttech:rayshield_hum"
+      }
+    ]
+  },
+  "shield.rayshield_on": {
+    "subtitle": "subtitles.imttech.shield.rayshield_on",
+    "sounds": [
+      {
+        "name": "imttech:rayshield_on"
+      }
+    ]
+  },
+  "shield.rayshield_off": {
+    "subtitle": "subtitles.imttech.shield.rayshield_off",
+    "sounds": [
+      {
+        "name": "imttech:rayshield_off"
+      }
+    ]
+  },
+  "shield.rayshield_hit": {
+    "subtitle": "subtitles.imttech.shield.rayshield_hit",
+    "sounds": [
+      {
+        "name": "imttech:rayshield_hit"
+      }
+    ]
+  },
+  "c4.beep": {
+    "subtitle": "subtitles.imttech.c4.beep",
+    "sounds": [
+      {
+        "name": "imttech:c4_beep"
+      }
+    ]
+  },
+  "c4.arm": {
+    "subtitle": "subtitles.imttech.c4.arm",
+    "sounds": [
+      {
+        "name": "imttech:c4_arm"
+      }
+    ]
+  },
+  "c4.defuse": {
+    "subtitle": "subtitles.imttech.c4.defuse",
+    "sounds": [
+      {
+        "name": "imttech:c4_defuse"
+      }
+    ]
+  },
+  "c4.detonator": {
+    "subtitle": "subtitles.imttech.c4.detonator",
+    "sounds": [
+      {
+        "name": "imttech:detonator_click"
+      }
+    ]
+  },
+  "robot.step": {
+    "subtitle": "subtitles.imttech.robot.step",
+    "sounds": [
+      {
+        "name": "imttech:robot_step"
+      }
+    ]
+  },
+  "robot.power_on": {
+    "subtitle": "subtitles.imttech.robot.power_on",
+    "sounds": [
+      {
+        "name": "imttech:robot_power_on"
+      }
+    ]
+  },
+  "robot.power_off": {
+    "subtitle": "subtitles.imttech.robot.power_off",
+    "sounds": [
+      {
+        "name": "imttech:robot_power_off"
+      }
+    ]
+  },
+  "robot.hurt": {
+    "subtitle": "subtitles.imttech.robot.hurt",
+    "sounds": [
+      {
+        "name": "imttech:robot_hurt"
+      }
+    ]
+  },
+  "robot.charge_hum": {
+    "subtitle": "subtitles.imttech.robot.charge_hum",
+    "sounds": [
+      {
+        "name": "imttech:robot_charge_hum"
+      }
+    ]
+  },
+  "robot.laser": {
+    "subtitle": "subtitles.imttech.robot.laser",
+    "sounds": [
+      {
+        "name": "imttech:robot_laser"
+      }
+    ]
+  },
+  "robot.gun": {
+    "subtitle": "subtitles.imttech.robot.gun",
+    "sounds": [
+      {
+        "name": "imttech:robot_gun"
+      }
+    ]
+  },
+  "ion_blaster.fire": {
+    "subtitle": "subtitles.imttech.ion_blaster.fire",
+    "sounds": [
+      {
+        "name": "imttech:ion_blaster"
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "item": "minecraft:grindstone"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "ICI",
+    "IPI"
+  ],
+  "result": {
+    "id": "imttech:crusher",
+    "count": 1
+  }
+}

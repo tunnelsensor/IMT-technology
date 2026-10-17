@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "tag": "c:ingots/copper"
+    },
+    "R": {
+      "tag": "c:storage_blocks/redstone"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "pattern": [
+    "KRK",
+    "RCR",
+    "KRK"
+  ],
+  "result": {
+    "id": "imttech:battery_upgrade"
+  }
+}

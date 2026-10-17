@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "imttech:block/landing_pad_top",
+    "side": "imttech:block/landing_pad_side",
+    "bottom": "imttech:block/landing_pad_side"
+  }
+}

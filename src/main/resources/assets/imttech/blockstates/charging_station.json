@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "imttech:block/charging_station" },
+    "facing=east": { "model": "imttech:block/charging_station", "y": 90 },
+    "facing=south": { "model": "imttech:block/charging_station", "y": 180 },
+    "facing=west": { "model": "imttech:block/charging_station", "y": 270 }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "inverted=false,powered=false": {
+      "model": "imttech:block/relay"
+    },
+    "inverted=false,powered=true": {
+      "model": "imttech:block/relay_on"
+    },
+    "inverted=true,powered=false": {
+      "model": "imttech:block/relay_inverted"
+    },
+    "inverted=true,powered=true": {
+      "model": "imttech:block/relay_on_inverted"
+    }
+  }
+}

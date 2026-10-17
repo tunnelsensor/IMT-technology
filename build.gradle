@@ -78,22 +78,22 @@ neoForge {
         visualCheck {
             client()
             gameDirectory = project.file('run-visual')
-            systemProperty 'starktech.visualcheck', 'true'
+            systemProperty 'imttech.visualcheck', 'true'
             // Alleen een stuk van de rondleiding: gradlew runVisualCheck -Ponly=satellite
-            systemProperty 'starktech.visualcheck.only', (project.findProperty('only') ?: '').toString()
+            systemProperty 'imttech.visualcheck.only', (project.findProperty('only') ?: '').toString()
             // Ook op een ander formaat: gradlew runVisualCheck -Psize=1600x900 (zoals de showcase)
             def size = (project.findProperty('size') ?: '1280x720').toString().split('x')
             programArguments.addAll '--width', size[0], '--height', size[1]
         }
 
         // Komen onze structuren echt in een gewone wereld? Start een server, zoekt de
-        // dichtstbijzijnde Stark Tower en het dichtstbijzijnde satellietwrak, schrijft in het log
+        // dichtstbijzijnde Bibie's Industries Tower en het dichtstbijzijnde satellietwrak, schrijft in het log
         // waar ze liggen, en stopt weer (zie gametest/StructureCheck.java).
         structureCheck {
             server()
             gameDirectory = project.file('run-structures')
             programArgument '--nogui'
-            systemProperty 'starktech.structurecheck', 'true'
+            systemProperty 'imttech.structurecheck', 'true'
         }
 
         // De showcase: alle functies één voor één, gestuurd vanuit tools/showcase.py
@@ -101,7 +101,7 @@ neoForge {
         showcase {
             client()
             gameDirectory = project.file('run-showcase')
-            systemProperty 'starktech.showcase', 'true'
+            systemProperty 'imttech.showcase', 'true'
             programArguments.addAll '--width', '1600', '--height', '900'
         }
 
@@ -149,7 +149,7 @@ configurations {
 }
 
 dependencies {
-    // De officiële Claude-SDK van Anthropic, voor de AI-stem van E.D.I.T.H. (G > Systemen > AI Brain).
+    // De officiële Claude-SDK van Anthropic, voor de AI-stem van I.M.T (G > Systemen > AI Brain).
     // jarJar stopt hem (met de bibliotheken die hij nodig heeft) mee in de mod-jar;
     // additionalRuntimeClasspath zet hem klaar als je het spel vanuit de ontwikkelomgeving start.
     // Wat Minecraft zelf al heeft (slf4j, jsr305) en losse annotaties laten we weg.
@@ -269,9 +269,9 @@ abstract class AddAutomaticModuleName implements org.gradle.api.artifacts.transf
             outputs.file(getInputArtifact())
             return
         }
-        // "anthropic-java-core-2.34.0.jar" wordt de module "starktech.lib.anthropic.java.core".
+        // "anthropic-java-core-2.34.0.jar" wordt de module "imttech.lib.anthropic.java.core".
         String base = input.name.replaceAll(/-\d.*\.jar$/, '').replaceAll(/\.jar$/, '')
-        String module = 'starktech.lib.' + base.replaceAll(/[^A-Za-z0-9]+/, '.')
+        String module = 'imttech.lib.' + base.replaceAll(/[^A-Za-z0-9]+/, '.')
         File output = outputs.file(input.name.replace('.jar', '-named.jar'))
         new java.util.jar.JarFile(input).withCloseable { jar ->
             java.util.jar.Manifest manifest = jar.manifest ?: new java.util.jar.Manifest()
@@ -290,7 +290,7 @@ abstract class AddAutomaticModuleName implements org.gradle.api.artifacts.transf
     }
 }
 
-def moduleNamed = Attribute.of('starktech.moduleNamed', Boolean)
+def moduleNamed = Attribute.of('imttech.moduleNamed', Boolean)
 dependencies {
     attributesSchema { attribute(moduleNamed) }
     artifactTypes.getByName('jar') { attributes.attribute(moduleNamed, false) }

@@ -4,7 +4,7 @@ Maakt de lege "arena" waarin de automatische tests draaien.
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_test_structure.py
 
-Het resultaat komt in src/main/resources/data/starktech/structure/empty.nbt.
+Het resultaat komt in src/main/resources/data/imttech/structure/empty.nbt.
 
 Waarom? Een gametest draait altijd IN een structuur. Onze drone-tests hebben gewoon een
 groot, leeg stuk wereld nodig met een vloer eronder, en dat maakt dit script.
@@ -13,7 +13,7 @@ from pathlib import Path
 
 from generate_structure import DATA_VERSION, Int, write_nbt
 
-OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "starktech" / "structure" / "empty.nbt"
+OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "empty.nbt"
 
 # Afmetingen van de arena: breed en hoog genoeg om drones in te laten vliegen.
 SIZE_X, SIZE_Y, SIZE_Z = 24, 16, 24

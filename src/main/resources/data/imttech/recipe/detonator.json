@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "tools",
+  "key": {
+    "L": {
+      "item": "minecraft:lightning_rod"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "B": {
+      "item": "minecraft:stone_button"
+    }
+  },
+  "pattern": [
+    " L ",
+    "ICI",
+    " B "
+  ],
+  "result": {
+    "id": "imttech:detonator",
+    "count": 1
+  }
+}

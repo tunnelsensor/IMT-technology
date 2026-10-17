@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "tag": "c:gems/amethyst"
+    },
+    "S": {
+      "item": "minecraft:spyglass"
+    },
+    "E": {
+      "tag": "c:ender_pearls"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "pattern": [
+    "ASA",
+    "ECE",
+    "AAA"
+  ],
+  "result": {
+    "id": "imttech:scanner_upgrade"
+  }
+}

@@ -1,11 +1,11 @@
 """
-Maakt alle textures (plaatjes) van de Stark Tech-mod.
+Maakt alle textures (plaatjes) van de I.M.T Technology-mod.
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_textures.py
 
 Nodig: Python 3 met Pillow (pip install pillow).
-De plaatjes komen in src/main/resources/assets/starktech/textures/.
+De plaatjes komen in src/main/resources/assets/imttech/textures/.
 Wil je een texture liever zelf tekenen (bv. in Blockbench of Paint.NET)? Teken dan over
 het gegenereerde bestand heen en draai dit script daarna niet meer voor dat bestand.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "assets" / "starktech" / "textures"
+ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "assets" / "imttech" / "textures"
 
 # Kleurenpalet (R, G, B, A)
 CLEAR = (0, 0, 0, 0)
@@ -65,7 +65,7 @@ def save(im, rel):
 
 # --------------------------------------------------------------------- Items
 
-def edith_glasses_item():
+def imt_glasses_item():
     """De bril als item-icoon: zwart montuur met rood-getinte glazen."""
     im = img(16, 16)
     d = ImageDraw.Draw(im)
@@ -85,12 +85,12 @@ def edith_glasses_item():
     d.line([1, 5, 14, 5], fill=FRAME_HI)
     # Pootjes
     px(im, [(0, 6), (15, 6), (0, 7), (15, 7)], FRAME)
-    # Klein blauw lichtje (E.D.I.T.H. staat aan)
+    # Klein blauw lichtje (I.M.T staat aan)
     px(im, [(13, 5)], CYAN)
-    save(im, "item/edith_glasses.png")
+    save(im, "item/imt_glasses.png")
 
 
-def stark_chip():
+def computer_chip():
     im = img(16, 16)
     d = ImageDraw.Draw(im)
     # Pootjes
@@ -107,7 +107,7 @@ def stark_chip():
     d.rectangle([6, 6, 9, 9], fill=CYAN_DIM)
     px(im, [(7, 7), (8, 7), (7, 8), (8, 8)], CYAN)
     px(im, [(6, 6)], (200, 245, 255, 255))
-    save(im, "item/stark_chip.png")
+    save(im, "item/computer_chip.png")
 
 
 def battery_upgrade():
@@ -141,7 +141,7 @@ def scanner_upgrade():
 
 # --------------------------------------------------------------------- Bril op je hoofd
 
-def edith_equipment():
+def imt_equipment():
     """
     De bril zoals hij op je hoofd getekend wordt (64x32, zelfde indeling als een helm).
     Het hoofd-vlak van voren staat op x=8..15, y=8..15.
@@ -172,7 +172,7 @@ def edith_equipment():
         im.putpixel((x, fy + row + 1), FRAME)
     # In Minecraft 1.21.1 is de bril een stuk armor; de texture hoort daarom in
     # textures/models/armor/ en heet <naam>_layer_1.png (zie ModArmorMaterials).
-    save(im, "models/armor/edith_layer_1.png")
+    save(im, "models/armor/imt_layer_1.png")
 
 
 # --------------------------------------------------------------------- Laadstation (blok)
@@ -363,7 +363,7 @@ def drone_textures():
             fill_region(base, region, (175, 185, 195, 255))
     for region in hub.values():
         fill_region(base, region, METAL_3)
-    save(base, "entity/drone/stark_drone.png")
+    save(base, "entity/drone/drone.png")
 
     # Lichtlagen: alleen de lampjes, de rest doorzichtig.
     for name, color, dim in (("attack", (255, 70, 55, 255), (150, 30, 25, 255)),
@@ -383,7 +383,7 @@ def drone_textures():
         # Stipje op elke naaf
         x, y, w, h = hub["top"]
         px(lights, [(x, y), (x + 1, y + 1)], dim)
-        save(lights, f"entity/drone/stark_drone_lights_{name}.png")
+        save(lights, f"entity/drone/drone_lights_{name}.png")
 
     # --- De vijandige raiddrone: dezelfde machine, maar donkerder en met oranje lampjes.
     raid = base.copy()
@@ -458,7 +458,7 @@ def planet_texture():
 
 def satellite_textures():
     """
-    De Stark-satelliet in het arsenaal- en satellietscherm (128 x 64): een romp met gouden
+    De Bibie's Industries-satelliet in het arsenaal- en satellietscherm (128 x 64): een romp met gouden
     strepen, twee blauwe zonnepanelen, een schotel, een antenne en een motor. Plus een lichtlaag
     met de reactor en de lampjes, die ook in het donker gloeien.
 
@@ -911,7 +911,7 @@ def repair_paste_item():
     paste = (204, 198, 184, 255)
     paste_dark = (170, 164, 150, 255)
     paste_light = (232, 228, 216, 255)
-    # Het blikje, met een licht randje links en een etiket met een blauwe streep (de Stark-kleur).
+    # Het blikje, met een licht randje links en een etiket met een blauwe streep (de I.M.T-kleur).
     d.rectangle([2, 9, 12, 15], fill=tin, outline=tin_dark)
     d.line([3, 10, 3, 14], fill=tin_light)
     d.rectangle([5, 11, 10, 13], fill=(228, 230, 236, 255))
@@ -1134,7 +1134,7 @@ def block_powder_item():
 
 def cable_textures():
     """
-    De Stark-kabel. Het verbindingsstukje ('cable') is donker rubber met koperen randjes en een
+    De stroomkabel. Het verbindingsstukje ('cable') is donker rubber met koperen randjes en een
     blauwe energiestreep in het midden. De streep loopt zowel horizontaal als verticaal (een
     kruis): elke kant van een kabelstuk laat maar één van de twee zien, precies in de lengte.
     De kern ('cable_core') is een metalen knooppunt met een blauw lampje.
@@ -1654,8 +1654,8 @@ def emp_item():
     save(im, "item/emp.png")
 
 
-def stark_suit():
-    """Het Stark-harnas: rood en goud, met een blauwe reactor op de borst.
+def tech_suit():
+    """Het tech-harnas: rood en goud, met een blauwe reactor op de borst.
 
     Minecraft tekent een harnas in twee lagen van 64x32. Elk lichaamsdeel is een doosje, en
     elk doosje heeft zijn zes vlakken op een vaste plek in het plaatje:
@@ -1782,10 +1782,10 @@ def stark_suit():
     layer1.putpixel((x + 2, y + 2), glow)
 
     # ---------------------------------------------------------------- De 3D-stukken
-    # Het harnas heeft een eigen model (client/suit/StarkSuitModel.java) met extra doosjes bovenop
+    # Het harnas heeft een eigen model (client/suit/TechSuitModel.java) met extra doosjes bovenop
     # het gewone harnas. Die hebben ook een plekje in het plaatje nodig, dus het plaatje wordt
     # 128x64: links boven het oude harnas, de rest voor de extra stukken. De getallen (u, v) en
-    # maten (breedte, hoogte, diepte) moeten precies kloppen met StarkSuitModel.
+    # maten (breedte, hoogte, diepte) moeten precies kloppen met TechSuitModel.
     def part(im, u, v, w, h, d, side, top=None, bottom=None, front=None):
         f = faces(u, v, w, h, d)
         for n in ("right", "left", "back", "front"):
@@ -1876,7 +1876,7 @@ def stark_suit():
     for dx, dy in ((0, 0), (2, 0), (0, 2), (2, 2)):
         big1.putpixel((x + dx, y + dy), RED)
     big1.putpixel((x + 1, y + 1), gold_hi)
-    save(big1, "models/armor/stark_layer_1.png")
+    save(big1, "models/armor/tech_layer_1.png")
 
     # ================================================================ Laag 2: de broek
     layer2 = img(64, 32)
@@ -1920,7 +1920,7 @@ def stark_suit():
     f = part(big2, 88, 0, 3, 2, 1, gold_dark, top=gold_hi, front=gold)
     x, y, w, h = f["front"]
     big2.putpixel((x + 1, y), CYAN)
-    save(big2, "models/armor/stark_layer_2.png")
+    save(big2, "models/armor/tech_layer_2.png")
 
     # ================================================================ Iconen in je rugzak
     # Borstplaat
@@ -1936,7 +1936,7 @@ def stark_suit():
     d.line([3, 3, 12, 3], fill=red_hi)
     d.ellipse([6, 4, 9, 7], fill=seam)                          # de reactor
     px(chest, [(7, 5), (8, 5), (7, 6), (8, 6)], glow)
-    save(chest, "item/stark_chestplate.png")
+    save(chest, "item/tech_chestplate.png")
 
     # Broek
     legs = img(16, 16)
@@ -1950,7 +1950,7 @@ def stark_suit():
     px(legs, [(4, 9), (10, 9)], gold_hi)
     d.line([4, 5, 4, 7], fill=red_hi)                           # licht op de dijen
     d.line([10, 5, 10, 7], fill=red_hi)
-    save(legs, "item/stark_leggings.png")
+    save(legs, "item/tech_leggings.png")
 
     # Laarzen
     boots = img(16, 16)
@@ -1962,7 +1962,7 @@ def stark_suit():
     d.line([3, 5, 5, 5], fill=red_hi)
     d.line([10, 5, 12, 5], fill=red_hi)
     px(boots, [(3, 13), (4, 13), (5, 13), (10, 13), (11, 13), (12, 13)], glow)  # repulsors
-    save(boots, "item/stark_boots.png")
+    save(boots, "item/tech_boots.png")
 
 
 def holo_table_textures():
@@ -1996,7 +1996,7 @@ def holo_table_textures():
         save(top, "block/holo_table_top_%s.png" % name)
 
 
-def stark_drone_item():
+def drone_item():
     """Een gebouwde drone in je hand: een romp met vier rotorarmen en een cyaan oog."""
     im = img(16, 16)
     d = ImageDraw.Draw(im)
@@ -2011,7 +2011,7 @@ def stark_drone_item():
     # Het oog: hier komt de laser uit.
     d.rectangle([7, 7, 8, 8], fill=CYAN)
     px(im, [(6, 6), (9, 9)], CYAN_DIM)
-    save(im, "item/stark_drone.png")
+    save(im, "item/drone.png")
 
 
 HYDRA_RED = (205, 32, 32, 255)
@@ -2179,16 +2179,16 @@ def rocket_pack():
 
 def turret_textures():
     """
-    De torentjes: Stark (grijs metaal, gouden streep, blauwe lens) en Hydra (zwart, rode streep,
+    De torentjes: Raket (grijs metaal, gouden streep, blauwe lens) en Hydra (zwart, rode streep,
     rode lens). Per soort een voet (zijkant en bovenkant, 16x16, voor het blokmodel) en een kop
     (64x32, voor TurretRenderer; de loop wijst naar +Z, dat is het "back"-vlak in box_regions).
     """
     looks = {
-        "stark": dict(body=(150, 158, 168, 255), dark=(84, 90, 100, 255), light=(196, 202, 210, 255),
+        "rocket": dict(body=(150, 158, 168, 255), dark=(84, 90, 100, 255), light=(196, 202, 210, 255),
                       stripe=GOLD, lens=CYAN, lens_dim=CYAN_DIM),
         "hydra": dict(body=HYDRA_BLACK, dark=(14, 14, 16, 255), light=HYDRA_GREY,
                       stripe=HYDRA_RED_DIM, lens=HYDRA_RED, lens_dim=HYDRA_RED_DIM),
-        # De beveiliging van de Stark Tower: Stark-wit met een rode streep en een rood oog.
+        # De beveiliging van de Bibie's Industries Tower: I.M.T-wit met een rode streep en een rood oog.
         "security": dict(body=(196, 200, 208, 255), dark=(110, 116, 126, 255), light=(232, 235, 240, 255),
                          stripe=(170, 30, 32, 255), lens=(255, 60, 50, 255), lens_dim=(150, 30, 25, 255)),
     }
@@ -2267,8 +2267,8 @@ def turret_textures():
 
 def security_textures():
     """
-    De beveiliging van de Stark Tower: de kern (een serverkast met een statuslampje, rood als de
-    toren van niemand is, groen als hij van jou is) en de beveiligingsdrone (Stark-wit met een
+    De beveiliging van de Bibie's Industries Tower: de kern (een serverkast met een statuslampje, rood als de
+    toren van niemand is, groen als hij van jou is) en de beveiligingsdrone (I.M.T-wit met een
     rode streep, en rode alarmlampjes).
     """
     rack = (34, 36, 42, 255)
@@ -2283,7 +2283,7 @@ def security_textures():
             d.rectangle([2, y, 13, y + 1], fill=rack_dark)
             for x in range(3, 13, 3):
                 px(im, [(x, y)], CYAN_DIM if (x + row) % 2 else (40, 160, 60, 255))
-        # Het grote statuslampje onderaan, met het Stark-rood eromheen.
+        # Het grote statuslampje onderaan, met het I.M.T-rood eromheen.
         d.rectangle([5, 12, 10, 14], fill=(90, 20, 20, 255))
         d.rectangle([6, 12, 9, 13], fill=status)
         save(im, f"block/{name}.png")
@@ -2299,7 +2299,7 @@ def security_textures():
     d.rectangle([4, 4, 11, 11], outline=(170, 30, 32, 255))
     save(top, "block/security_core_top.png")
 
-    # De drone: het model van de Stark-drone, maar wit met een rode streep.
+    # De drone: het model van de drone, maar wit met een rode streep.
     body = box_regions(0, 0, 6, 3, 6)
     camera = box_regions(0, 10, 2, 2, 2)
     arm_a = box_regions(0, 16, 12, 1, 1)
@@ -2384,8 +2384,8 @@ def security_camera_textures():
         save(lens, f"block/{name}.png")
 
 
-def stark_laptop():
-    """De Stark-laptop: open, met een blauw scherm vol code en een rood lampje."""
+def hacking_laptop():
+    """De hacklaptop: open, met een blauw scherm vol code en een rood lampje."""
     im = img(16, 16)
     d = ImageDraw.Draw(im)
     # Het scherm (achterkant van het deksel en het beeld).
@@ -2398,12 +2398,12 @@ def stark_laptop():
     d.polygon([(1, 11), (14, 11), (15, 14), (0, 14)], fill=METAL_2, outline=METAL_1)
     for x in range(2, 14, 2):
         px(im, [(x, 12), (x + 1, 13)], METAL_3)
-    save(im, "item/stark_laptop.png")
+    save(im, "item/hacking_laptop.png")
 
 
-def stark_laptop_block():
+def hacking_laptop_block():
     """
-    De Stark-laptop als blok (opengeklapt op een beveiligingskern): de kast, het toetsenbord en
+    De hacklaptop als blok (opengeklapt op een beveiligingskern): de kast, het toetsenbord en
     het scherm met de terminal (groene tekst op zwart, een kopregel en een knipperend blokje).
     """
     case = img(16, 16, METAL_1)
@@ -2411,7 +2411,7 @@ def stark_laptop_block():
     d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
     d.line([1, 1, 14, 1], fill=METAL_3)
     px(case, [(13, 13)], (255, 60, 50, 255))          # een rood lampje
-    save(case, "block/stark_laptop_case.png")
+    save(case, "block/hacking_laptop_case.png")
 
     keys = img(16, 16, METAL_2)
     d = ImageDraw.Draw(keys)
@@ -2422,7 +2422,7 @@ def stark_laptop_block():
             y = 3 + row * 2
             px(keys, [(x, y)], METAL_3)
     d.rectangle([5, 12, 10, 14], fill=METAL_1, outline=METAL_3)   # het touchpad
-    save(keys, "block/stark_laptop_keyboard.png")
+    save(keys, "block/hacking_laptop_keyboard.png")
 
     green = (70, 240, 130, 255)
     green_dim = (30, 120, 70, 255)
@@ -2433,16 +2433,16 @@ def stark_laptop_block():
     for y, length, colour in ((4, 9, green), (6, 6, green_dim), (8, 10, green), (10, 4, green_dim)):
         d.line([2, y, 2 + length, y], fill=colour)
     d.rectangle([2, 12, 3, 13], fill=green)            # de cursor
-    save(screen, "block/stark_laptop_screen.png")
+    save(screen, "block/hacking_laptop_screen.png")
 
 
 def workbench_textures():
     """
-    De harnas-werkbank (Tony's lab) en de drie upgrades die je er inbouwt.
+    De harnas-werkbank (Bibie's lab) en de drie upgrades die je er inbouwt.
 
     - bovenkant: een blauwdruk-mat met raster, en de omtrek van een borstplaat met reactor;
     - zijkant: grijze laden met handgrepen;
-    - voorkant: een gereedschapswand met een rode Stark-streep;
+    - voorkant: een gereedschapswand met een rode I.M.T-streep;
     - upgrades: een straalbuis met een blauwe vlam, een rood-gouden pantserplaat en een
       gloeiende condensator.
     """
@@ -2735,10 +2735,10 @@ def suit_hologram():
     Het harnas als hologram (boven de harnas-werkbank): dezelfde plaatjes als het harnas, maar
     in grijstinten, want het spel kleurt ze zelf blauw. Donkere stukken blijven een beetje
     zichtbaar (anders valt het hologram uit elkaar), en om de rij is het iets donkerder: de
-    lijntjes van een hologram. Maak eerst het harnas (stark_suit), want deze leest dat plaatje.
+    lijntjes van een hologram. Maak eerst het harnas (tech_suit), want deze leest dat plaatje.
     """
     for n in (1, 2):
-        src = Image.open(ROOT / f"models/armor/stark_layer_{n}.png").convert("RGBA")
+        src = Image.open(ROOT / f"models/armor/tech_layer_{n}.png").convert("RGBA")
         out = img(src.width, src.height)
         for y in range(src.height):
             for x in range(src.width):
@@ -2787,7 +2787,7 @@ def server_rack_textures():
             d.line([x + 1, y + 1, x + 2, y + 1], fill=shell_dark)  # de greep van de bay
             for j, lx in enumerate((x + 3, x + 4)):
                 px(im, [(lx, y + 1)], lights[i][j])
-        # Onderaan een cyaan statusstreepje (het Stark-randje).
+        # Onderaan een cyaan statusstreepje (het I.M.T-randje).
         d.line([3, 14, 12, 14], fill=CYAN_DIM if lights[0][0] != off else CYAN_DARK)
         return im
 
@@ -2914,7 +2914,7 @@ def keycard_items():
             d.rectangle([2, 5, 13, 6], fill=band)
         d.rectangle([3, 8, 5, 10], fill=GOLD, outline=GOLD_DARK)
         d.line([7, 11, 13, 11], fill=(40, 42, 48, 255))   # magneetstrip
-        px(im, [(12, 8)], CYAN)                              # het Stark-lampje
+        px(im, [(12, 8)], CYAN)                              # het I.M.T-lampje
         return im
 
     save(card(None), "item/keycard.png")
@@ -2977,7 +2977,7 @@ def code_panel_textures():
 def bypass_kit_item():
     """
     De Bypass Kit (hoofdstuk 12): een open zwart etui met een schroevendraaier met een gele steel, een
-    potje oplichtend poeder voor vingerafdrukken, een rood en een blauw draadje, en een Stark-chip.
+    potje oplichtend poeder voor vingerafdrukken, een rood en een blauw draadje, en een computerchip.
     """
     im = img(16, 16)
     d = ImageDraw.Draw(im)
@@ -2999,7 +2999,7 @@ def bypass_kit_item():
     d.rectangle([12, 9, 12, 11], fill=(255, 232, 120, 255))
     px(im, [(12, 8)], (255, 248, 200, 255))
     px(im, [(11, 6), (12, 6), (13, 6)], (140, 96, 60, 255))
-    # Twee draadjes die eruit hangen, en de Stark-chip (blauw lampje).
+    # Twee draadjes die eruit hangen, en de computerchip (blauw lampje).
     d.line([5, 13, 7, 12, 9, 13], fill=(220, 50, 40, 255))
     d.line([7, 14, 9, 13, 11, 14], fill=(60, 140, 255, 255))
     px(im, [(8, 9), (9, 9), (8, 10), (9, 10)], (40, 44, 52, 255))
@@ -3553,11 +3553,11 @@ def training_block_textures():
 
 
 if __name__ == "__main__":
-    edith_glasses_item()
-    stark_chip()
+    imt_glasses_item()
+    computer_chip()
     battery_upgrade()
     scanner_upgrade()
-    edith_equipment()
+    imt_equipment()
     station_textures()
     gui()
     drone_upgrade()
@@ -3584,9 +3584,9 @@ if __name__ == "__main__":
     rayshield_walls()
     charger_textures()
     emp_item()
-    stark_drone_item()
+    drone_item()
     holo_table_textures()
-    stark_suit()
+    tech_suit()
     suit_hologram()
     hydra_circuit()
     hydra_rifle()
@@ -3597,8 +3597,8 @@ if __name__ == "__main__":
     turret_textures()
     rocket_ammo()
     security_textures()
-    stark_laptop()
-    stark_laptop_block()
+    hacking_laptop()
+    hacking_laptop_block()
     workbench_textures()
     drone_dock_textures()
     landing_pad_textures()

@@ -1,11 +1,11 @@
 {
   "values": [
-    "starktech:charging_station",
-    "starktech:relay",
-    "starktech:dome_generator",
-    "starktech:stark_turret",
-    "starktech:hydra_turret",
-    "starktech:security_turret",
-    "starktech:suit_workbench"
+    "imttech:charging_station",
+    "imttech:relay",
+    "imttech:dome_generator",
+    "imttech:rocket_turret",
+    "imttech:hydra_turret",
+    "imttech:security_turret",
+    "imttech:suit_workbench"
   ]
 }

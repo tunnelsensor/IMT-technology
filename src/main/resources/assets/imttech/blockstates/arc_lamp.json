@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "imttech:block/arc_lamp"
+    },
+    "lit=true": {
+      "model": "imttech:block/arc_lamp_on"
+    }
+  }
+}

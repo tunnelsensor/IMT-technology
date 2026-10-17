@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "M": {
+      "tag": "c:dyes/gray"
+    }
+  },
+  "pattern": [
+    "IMI",
+    "P P",
+    "I I"
+  ],
+  "result": {
+    "id": "imttech:commando_legs",
+    "count": 1
+  }
+}

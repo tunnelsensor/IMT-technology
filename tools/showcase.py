@@ -1,5 +1,5 @@
 """
-Stark Tech showcase: start het spel en laat de functies één voor één zien.
+I.M.T Technology showcase: start het spel en laat de functies één voor één zien.
 
 Gebruik (vanuit de projectmap):
     python tools/showcase.py
@@ -40,7 +40,7 @@ Let op: de terminal moet dan actief zijn (klik er eerst op), anders krijgt het s
 Hoe het werkt: het script start "gradlew runShowcase". Het spel maakt een testwereld en
 luistert op 127.0.0.1:25599 (alleen je eigen computer). Het script vraagt het spel via die
 verbinding om een functie te tonen, en het spel zegt wanneer die klaar is. Zie
-src/main/java/com/senne/starktech/client/dev/Showcase.java voor de kant van het spel.
+src/main/java/com/senne/imttech/client/dev/Showcase.java voor de kant van het spel.
 De inhoud leest het script zelf uit ShowcaseFeatures.java (de titels en de kopjes
 "// ----- Naam"), zodat je hem al ziet voordat het spel klaar is.
 
@@ -72,7 +72,7 @@ PORT = 25599
 LOG = ROOT / "run-showcase" / "showcase-gradle.log"
 NOTES = ROOT / "showcase-notities.md"
 SEEN = ROOT / "showcase-gezien.json"
-FEATURES_JAVA = ROOT / "src" / "main" / "java" / "com" / "senne" / "starktech" / "client" / "dev" / "ShowcaseFeatures.java"
+FEATURES_JAVA = ROOT / "src" / "main" / "java" / "com" / "senne" / "imttech" / "client" / "dev" / "ShowcaseFeatures.java"
 # Zo lang (seconden) moet een functie gespeeld hebben om als bekeken te tellen, als je hem stopt.
 SEEN_AFTER = 8
 
@@ -385,7 +385,7 @@ def choose(answer, total):
 def say_text(parts):
     level, text = (parts[1], parts[2]) if len(parts) >= 3 else ("INFO", parts[-1])
     colour = ORANGE if level in ("WARNING", "ALERT") else GREY
-    return f"      {colour}E.D.I.T.H.: {text}{RESET}"
+    return f"      {colour}I.M.T: {text}{RESET}"
 
 
 def wait_for_ready(link):
@@ -446,7 +446,7 @@ def save_note(number, title, note, session):
     new_file = not NOTES.exists()
     with open(NOTES, "a", encoding="utf-8") as f:
         if new_file:
-            f.write("# Notities bij de Stark Tech showcase\n")
+            f.write("# Notities bij de I.M.T Technology showcase\n")
         if not session["header"]:
             stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             f.write(f"\n## Showcase van {stamp}\n")
@@ -458,7 +458,7 @@ def save_note(number, title, note, session):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Laat de functies van Stark Tech zien.")
+    parser = argparse.ArgumentParser(description="Laat de functies van I.M.T Technology zien.")
     parser.add_argument("--vanaf", type=int, default=0, help="begin bij deze functie (nummer); zonder: kies uit de inhoud")
     parser.add_argument("--tot", type=int, default=0, help="stop na deze functie (nummer); 0 = tot het einde")
     parser.add_argument("--test", action="store_true",
@@ -469,7 +469,7 @@ def main():
         # line_buffering: elke regel meteen tonen, ook als de uitvoer naar een bestand gaat.
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
 
-    print(f"{BOLD}Stark Tech showcase{RESET}")
+    print(f"{BOLD}I.M.T Technology showcase{RESET}")
     # Het spel start meteen op; ondertussen lees jij de inhoud en kies je.
     game = start_game()
     contents = read_contents()

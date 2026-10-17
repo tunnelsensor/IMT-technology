@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/hacking_laptop"
+    },
+    "facing=east": {
+      "model": "imttech:block/hacking_laptop",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/hacking_laptop",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/hacking_laptop",
+      "y": 270
+    }
+  }
+}

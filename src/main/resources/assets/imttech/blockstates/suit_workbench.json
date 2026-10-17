@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/suit_workbench"
+    },
+    "facing=east": {
+      "model": "imttech:block/suit_workbench",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/suit_workbench",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/suit_workbench",
+      "y": 270
+    }
+  }
+}

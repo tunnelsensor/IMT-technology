@@ -1,0 +1,198 @@
+package com.senne.imttech.client;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
+
+/**
+ * Instellingen die alleen voor jouw eigen spel gelden (niet voor de server).
+ * Ze staan in het bestand config/imttech-client.toml.
+ */
+public final class ImtClientConfig {
+    private ImtClientConfig() {}
+
+    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+
+    /** Op welk tabblad het G-menu opent: het tabblad dat je het laatst open had. */
+    public static final ModConfigSpec.EnumValue<MenuTab> MENU_TAB = BUILDER
+            .comment("Which tab of the round I.M.T menu (G) was open last")
+            .defineEnum("menuTab", MenuTab.COMBAT);
+
+    /** Spreekt I.M.T haar meldingen uit? (Alleen als haar stem geïnstalleerd is.) */
+    public static final ModConfigSpec.BooleanValue VOICE = BUILDER
+            .comment("I.M.T speaks her messages out loud (if her voice is installed via G > Systems)")
+            .define("voice", true);
+
+    /** Luistert I.M.T naar spraakcommando's? (Alleen als spraakbesturing geïnstalleerd is.) */
+    public static final ModConfigSpec.BooleanValue VOICE_COMMANDS = BUILDER
+            .comment("Voice commands with the push-to-talk key (if voice control is installed via G > Systems)")
+            .define("voiceCommands", true);
+
+    /** Extra volumeknop voor de stem, bovenop de schuif "Stem/Spraak" van Minecraft. */
+    public static final ModConfigSpec.DoubleValue VOICE_VOLUME = BUILDER
+            .comment("Volume of I.M.T's voice (0.0 - 1.0), on top of Minecraft's Voice/Speech slider")
+            .defineInRange("voiceVolume", 1.0, 0.0, 1.0);
+
+    /** Laat de AI (oor en brein) op de videokaart rekenen: veel sneller. */
+    public static final ModConfigSpec.BooleanValue AI_GPU = BUILDER
+            .comment("Run I.M.T's AI on your graphics card (much faster). Set to false if it makes your game stutter.")
+            .define("aiGpu", true);
+
+    /**
+     * Staat de tekst van I.M.T in de HUD (wat ze zegt, en wat jij tegen haar zei)? Uit = ze
+     * praat alleen, er verschijnt geen tekst.
+     */
+    public static final ModConfigSpec.BooleanValue VOICE_TEXT_IN_HUD = BUILDER
+            .comment("Show I.M.T's messages as text in the HUD (turn off if you only want to hear her voice)")
+            .define("voiceTextInHud", true);
+
+    /**
+     * Zie je verborgen stroomkabels (in een muur of vloer) blauw door de muur heen als je de bril
+     * draagt? Aan/uit via G > Information > Cable X-ray (of een eigen toets).
+     */
+    public static final ModConfigSpec.BooleanValue CABLE_XRAY = BUILDER
+            .comment("With the I.M.T glasses on, see hidden power cables glow through walls (G > Information > Cable X-ray)")
+            .define("cableXray", true);
+
+    /**
+     * Zie je de rand van je zones (en die van wie jou vertrouwt)? Aan/uit via G > Information > Zone
+     * border, of een eigen toets. Alleen met je eigen bril op (hoofdstuk 10; jouw wens van 9 oktober).
+     */
+    public static final ModConfigSpec.BooleanValue ZONE_BORDER = BUILDER
+            .comment("See the border of your protected zones and your friends' zones (G > Information > Zone border, or its own key)")
+            .define("zoneBorder", true);
+
+    /**
+     * Het Client ID van JOUW gratis Spotify-app (zie het muziekscherm). Leeg = niet ingesteld.
+     * Dit is geen wachtwoord; je logt zelf in op de site van Spotify.
+     */
+    public static final ModConfigSpec.ConfigValue<String> SPOTIFY_CLIENT_ID = BUILDER
+            .comment("The Client ID of your own Spotify app (developer.spotify.com/dashboard).",
+                    "Redirect URI in that app: http://127.0.0.1:8899/imttech")
+            .define("spotifyClientId", "");
+
+    /** Hoe I.M.T begrijpt wat je zegt (G > Systemen > AI Brain). */
+    public static final ModConfigSpec.EnumValue<com.senne.imttech.client.voice.BrainMode> BRAIN = BUILDER
+            .comment("How I.M.T understands what you say: DICTIONARY (fixed phrases), LOCAL (a language model on this PC)"
+                    + " or CLAUDE (the Claude API with your own key). Choose it in G > Systems > AI Brain.")
+            .defineEnum("brain", com.senne.imttech.client.voice.BrainMode.DICTIONARY);
+
+    /** Welk lokaal model (auto = de mod kiest bij je pc, zie BrainModel). */
+    public static final ModConfigSpec.ConfigValue<String> BRAIN_MODEL = BUILDER
+            .comment("Local brain size: auto (chosen for your PC the first time), small (2B), medium (4B) or large (9B)")
+            .define("brainModel", "auto");
+
+    /** Welk Claude-model het brein gebruikt. */
+    public static final ModConfigSpec.ConfigValue<String> CLAUDE_MODEL = BUILDER
+            .comment("The Claude model for the CLAUDE brain (it must support structured outputs and effort)")
+            .define("claudeModel", "claude-opus-5");
+
+    /** Mag ze uit zichzelf praten (zie ImtInitiative)? */
+    public static final ModConfigSpec.BooleanValue PROACTIVE = BUILDER
+            .comment("Let I.M.T speak up on her own at important moments (needs the LOCAL or CLAUDE brain)")
+            .define("speaksOnHerOwn", false);
+
+    // ---------------------------------------------------------------- Bewakingscamera's (Security OS)
+    /** Zo vaak per seconde wordt elk camerabeeld op de bewakingsmuur ververst (het grote beeld 2x zo vaak). */
+    public static final ModConfigSpec.IntValue CAMERA_FPS = BUILDER
+            .comment("Security camera wall: how often each camera image is refreshed per second (the big view twice as often)")
+            .defineInRange("cameraFeedFps", 5, 1, 30);
+
+    /** Zakt je spel onder de 60 fps, dan worden de beelden minder vaak ververst, maar nooit minder dan dit. */
+    public static final ModConfigSpec.IntValue CAMERA_MIN_FPS = BUILDER
+            .comment("Security camera wall: the slowest refresh per second when your game runs below 60 fps")
+            .defineInRange("cameraFeedMinFps", 2, 1, 30);
+
+    /** Zoveel milliseconden per frame mogen alle camerabeelden samen kosten (er komt altijd minstens één beeld). */
+    public static final ModConfigSpec.DoubleValue CAMERA_BUDGET_MS = BUILDER
+            .comment("Security camera wall: milliseconds per frame all camera images together may take")
+            .defineInRange("cameraFeedBudgetMs", 3.0, 0.5, 20.0);
+
+    /** Zover (blokken) kijkt een camera; daarachter vervaagt het beeld. */
+    public static final ModConfigSpec.IntValue CAMERA_DISTANCE = BUILDER
+            .comment("Security camera wall: how far a camera sees (blocks)")
+            .defineInRange("cameraFeedDistance", 48, 16, 96);
+
+    // ---------------------------------------------------------------- Rayshields
+    /** Hoe hard het (stille) zoemen van een laserwand of koepel is (1 = zoals bedoeld, 0 = uit). */
+    public static final ModConfigSpec.DoubleValue RAYSHIELD_HUM_VOLUME = BUILDER
+            .comment("How loud the quiet hum of laser walls and domes is (1 = normal, 2 = twice as loud, 0 = off)")
+            .defineInRange("rayshieldHumVolume", 1.0, 0.0, 3.0);
+
+    // ---------------------------------------------------------------- Guard robots
+    /** Hoe hard het (stille) zoemen van een robot die op zijn dock laadt is (1 = zoals bedoeld, 0 = uit). */
+    public static final ModConfigSpec.DoubleValue ROBOT_HUM_VOLUME = BUILDER
+            .comment("How loud the quiet hum of a guard robot charging on its dock is (1 = normal, 2 = twice as loud, 0 = off)")
+            .defineInRange("robotHumVolume", 1.0, 0.0, 3.0);
+
+    // ---------------------------------------------------------------- Stroom laten zien
+    /** In welke tijd de schermen stroom laten zien (de knop /tick, /sec, /min, /hour in de stroomschermen). */
+    public static final ModConfigSpec.EnumValue<PowerUnit> POWER_UNIT = BUILDER
+            .comment("How screens show power: per TICK, SECOND, MINUTE or HOUR (the /tick button in the power screens)")
+            .defineEnum("powerUnit", PowerUnit.TICK);
+
+    public static final ModConfigSpec SPEC = BUILDER.build();
+
+    /** In welke tijd de schermen stroom laten zien (zolang de instellingen nog niet geladen zijn: per tick). */
+    public static PowerUnit powerUnit() {
+        return SPEC.isLoaded() ? POWER_UNIT.get() : PowerUnit.TICK;
+    }
+
+    /** Kiest een andere tijd voor stroom in de schermen en bewaart de keuze. */
+    public static void setPowerUnit(PowerUnit unit) {
+        if (SPEC.isLoaded()) {
+            POWER_UNIT.set(unit);
+            SPEC.save();
+        }
+    }
+
+    /** Hoe hard het zoemen van de rayshields is (zolang de instellingen nog niet geladen zijn: gewoon). */
+    public static double rayshieldHumVolume() {
+        return SPEC.isLoaded() ? RAYSHIELD_HUM_VOLUME.get() : 1.0;
+    }
+
+    /** Hoe hard het laadzoemen van de guard robots is (zolang de instellingen nog niet geladen zijn: gewoon). */
+    public static double robotHumVolume() {
+        return SPEC.isLoaded() ? ROBOT_HUM_VOLUME.get() : 1.0;
+    }
+
+
+    /** Mag de spraaktekst in de HUD? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean voiceTextInHud() {
+        return !SPEC.isLoaded() || VOICE_TEXT_IN_HUD.get();
+    }
+
+    /** Zet de spraaktekst in de HUD aan of uit en bewaart de keuze. */
+    public static void toggleVoiceTextInHud() {
+        if (SPEC.isLoaded()) {
+            VOICE_TEXT_IN_HUD.set(!VOICE_TEXT_IN_HUD.get());
+            SPEC.save();
+        }
+    }
+
+    /** Staat de kabel-xray aan? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean cableXray() {
+        return !SPEC.isLoaded() || CABLE_XRAY.get();
+    }
+
+    /** Zet de kabel-xray aan of uit, bewaart de keuze, en geeft terug of hij nu aan staat. */
+    public static boolean toggleCableXray() {
+        if (SPEC.isLoaded()) {
+            CABLE_XRAY.set(!CABLE_XRAY.get());
+            SPEC.save();
+        }
+        return cableXray();
+    }
+
+    /** Zie je de rand van zones? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean zoneBorder() {
+        return !SPEC.isLoaded() || ZONE_BORDER.get();
+    }
+
+    /** Zet de rand van zones aan of uit, bewaart de keuze, en geeft terug of hij nu aan staat. */
+    public static boolean toggleZoneBorder() {
+        if (SPEC.isLoaded()) {
+            ZONE_BORDER.set(!ZONE_BORDER.get());
+            SPEC.save();
+        }
+        return zoneBorder();
+    }
+}

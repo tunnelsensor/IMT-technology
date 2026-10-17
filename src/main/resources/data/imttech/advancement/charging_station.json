@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:charging_station"
+    },
+    "title": {
+      "translate": "advancements.imttech.charging_station.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.charging_station.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "imttech:charging_station"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "imttech:root",
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

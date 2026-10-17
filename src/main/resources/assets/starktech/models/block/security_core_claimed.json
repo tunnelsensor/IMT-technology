@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "front": "starktech:block/security_core_front_claimed",
-    "side": "starktech:block/security_core_side",
-    "top": "starktech:block/security_core_top"
-  }
-}

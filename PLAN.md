@@ -1,4 +1,4 @@
-# Stark Tech — plan en voortgang
+# I.M.T Technology — plan en voortgang
 
 Alles wat we besproken hebben, op één plek: wat af is, waar ik mee bezig ben, wat er nog komt,
 en wat er nog open staat. Bijwerken zodra er iets verandert.
@@ -12,7 +12,11 @@ Afspraken die overal gelden:
 - Moet vooral **werken**, maar uitleg mag altijd.
 - Je speelt zelf, maar het moet **met vrienden op een server** kunnen: iedereen heeft zijn
   eigen bril, arsenaal en spraakcommando's.
-- E.D.I.T.H. mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
+- I.M.T mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
+- **Eigen namen** (17 oktober): de mod heet **I.M.T Technology** (mod-id `imttech`), de bril
+  **I.M.T** ("I Am Tunnelsensor"); de toren, de bunker en de satelliet zijn van **Bibie's
+  Industries**, en spullen heten naar wat ze zijn (Computer Chip, Power Cable, Drone, Hacking
+  Laptop, Rocket Turret, Tech Chestplate, Security OS). Niets meer van Stark of E.D.I.T.H.
 
 **Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
@@ -33,18 +37,18 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 
 - [x] **Al het werk van vóór deze ronde vastgelegd** — `053dd5a`
       Zonnepaneel, warmtegenerator en de lader met zijn scherm; rayshields in zes kleuren met
-      een schuif-animatie; de grote Stark Tower met kluis; waypoints bewerken.
+      een schuif-animatie; de grote Bibie's Industries Tower met kluis; waypoints bewerken.
 
 - [x] **Alles Engels in het spel** — `47a7d4b`
       Er lekte nog Nederlands door via het spraakwoordenboek, de Spotify-pagina in je browser,
       foutmeldingen in de HUD en het installatiescherm, en de muziekzoeker verstond "van".
-      Twee bugs onderweg: een opgeslagen `starktech-voice.json` werd eeuwig hergebruikt, en
+      Twee bugs onderweg: een opgeslagen `imttech-voice.json` werd eeuwig hergebruikt, en
       `split("\s+")` was geen regex maar de escape voor een spatie.
 
 - [x] **HUD opgesplitst** — `b1f8260`
       1084 regels in één klasse → 124 regels plus 16 losse widgets in `client/hud/`.
 
-- [x] **Bril alleen nog uit de Stark Tower** — `4bcffc6`
+- [x] **Bril alleen nog uit de Bibie's Industries Tower** — `4bcffc6`
       Geen recept meer; de ingrediënten blijven bestaan voor al het andere.
 
 - [x] **Redstone geeft minder energie** — `4bcffc6`
@@ -53,7 +57,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 ### Fase 15
 
 - [x] **Drone-arsenaal in een baan om de planeet** — `8fedd02`
-      Je bouwt drones (Stark-chip, 5 ijzer, 2 redstone, amethist) en ze vliegen naar hun baan.
+      Je bouwt drones (computerchip, 5 ijzer, 2 redstone, amethist) en ze vliegen naar hun baan.
       Eén arsenaal, één soort drone, oneindig groot, van jou persoonlijk. Alles wat drones
       gebruikt haalt ze daaruit; leeg arsenaal = er vertrekt niets. Schade blijft bewaard,
       neergehaald is weg (~10% terug als schroot). Scherm op **G > Drones > Arsenaal**.
@@ -84,13 +88,13 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
       Uiterlijk na jouw feedback: rood en goud met een blauwe reactor. De oude texturen stonden
       op de verkeerde plekken, waardoor de laarzen onzichtbaar waren.
       Aannames die ik zelf heb ingevuld: wat het kan, dat het craftbaar is (netherite +
-      Stark-chips), en de getallen in `SuitBalance.java`.
+      computerchips), en de getallen in `SuitBalance.java`.
 
 - [x] **Vijanden: raiddrones** — `66fae68`
       Een vijandige drone (donker, oranje lampjes) die uit de lucht duikt, om je heen cirkelt
       en schiet. Verstop je je, dan komt hij dichterbij en breekt hij zich naar binnen.
       Komt vanzelf als je de bril draagt (standaard elke 20–45 minuten) en meteen als je te veel
-      sloopt in een Stark Tower. Gamerule `starktechRaidGriefing` zet het slopen uit (standaard
+      sloopt in een Bibie's Industries Tower. Gamerule `imttechRaidGriefing` zet het slopen uit (standaard
       aan); frequentie en grootte van een golf staan in de serverconfig.
 
 - [x] **Holotafel-scherm werkt echt** — `bbdf1ab`
@@ -111,7 +115,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
       `gradlew runVisualCheck`, zie bovenaan.
 
 - [x] **Advancements** — `1e3604d`
-      16 prestaties onder "Stark Industries", van je eerste Stark-chip tot vliegen met het
+      16 prestaties onder "Bibie's Industries", van je eerste computerchip tot vliegen met het
       harnas. Wat de mod zelf toekent (eerste drone, satelliet, drone verloren, vliegen,
       repulsor) gebeurt op het moment dat het echt gebeurt.
 
@@ -145,7 +149,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
       camera, op het laatst twee rotors weg en een wiebelende romp. Rook, vonken, brandende
       brokjes en haperende lampjes. Ook bij raiddrones.
 - [x] **Arsenaal in 3D** — `1935f14`
-      De aarde met de Stark-satelliet en al je drones in hun baan, als echte modellen met hun
+      De aarde met de Bibie's Industries-satelliet en al je drones in hun baan, als echte modellen met hun
       schade. Slepen = rondkijken, scrollen = zoomen, klikken = kiezen; de gekozen drone draait
       groot in een vakje.
 - [x] **Opstartanimatie van de bril** — `3c5dcec`
@@ -186,7 +190,7 @@ kleine dingen, dan de grote.
 - [x] Laserpoort: geen relais-functies meer, een volledig blok, en het glas in de goede
       richting (één lijn `---`, niet naast elkaar `| | |`) — `a6ef7d4`
       Een metalen blok met de lens in een frame; aan met redstone, rechtsklik = kleur. Wil je
-      hem toch met E.D.I.T.H. schakelen: zet er een relais naast. Oude laserpoorten verdwijnen
+      hem toch met I.M.T schakelen: zet er een relais naast. Oude laserpoorten verdwijnen
       vanzelf uit je relaislijst. Nagekeken op screenshots (`-Ponly=laser`), ook van boven.
 - [x] De illusie "wereld kopiëren" weghalen ("cloak" blijft) — `ab4ab2d`
 - [x] Repulsor: niet bij elk schot "hit 1" zeggen of tonen; alleen geluid — `c7c7e7a`
@@ -200,14 +204,14 @@ kleine dingen, dan de grote.
 
 **Geluid en opstarten**
 - [x] De bevestigingsgeluiden (zoals "aangekomen op bestemming") klinken lelijk: eigen
-      E.D.I.T.H.-tonen, en meteen ook de andere geleende Minecraft-geluiden vervangen — `270ae6b`
+      I.M.T-tonen, en meteen ook de andere geleende Minecraft-geluiden vervangen — `270ae6b`
       Alle 17 geleende geluiden zijn nu eigen geluiden (`tools/generate_sounds.py`). Door jou
       beluisterd: "voorlopig goed".
-- [x] Opstartanimatie: een laadbalk, duidelijk "E.D.I.T.H." in beeld, de bril zegt iets, en
+- [x] Opstartanimatie: een laadbalk, duidelijk "I.M.T" in beeld, de bril zegt iets, en
       je identiteit wordt gecontroleerd — `6761fd5`, geluid `668fabb`
       Groot logo in reactorringen, een laadbalk met wat er geladen wordt (je echte drones en
       batterij), dan scant hij je eigen gezicht terwijl de balk op 90% wacht. Bevestigd: groen,
-      je naam, en E.D.I.T.H. zegt haar welkomstzin (die werd vroeger ongezien meteen gezegd).
+      je naam, en I.M.T zegt haar welkomstzin (die werd vroeger ongezien meteen gezegd).
       Geluid: stijl "D, arc reactor", door jou gekozen uit vier voorbeelden.
 - [x] Showcase: geluid standaard op 100% (ook de stem) — `49f1931`
 
@@ -227,11 +231,11 @@ kleine dingen, dan de grote.
 - [x] Een kabelblok: zonnepanelen en warmtegeneratoren sturen stroom naar alles wat stroom
       gebruikt (koepel, laadstation, laserpoort, holotafel). Laserpoort en holotafel doen
       zonder stroom niets meer. — kabels `4ed89b7`, lasers/holotafel/toren `413c0c3`
-      De Stark-kabel (koper, redstone, koper = 8 kabels) sluit vanzelf aan op kabels en
+      De stroomkabel (koper, redstone, koper = 8 kabels) sluit vanzelf aan op kabels en
       apparaten; een apparaat dat direct tegen een generator staat, doet ook mee. Het
       laadstation haalt alleen stroom voor een bril die nog niet vol is (anders zoog het het
       net leeg). Een holotafel zonder stroom toont alleen een knipperend rood ringetje.
-      De **Stark Tower** heeft nu een verborgen krachtcentrale: een dichtgemetseld blok op de
+      De **Bibie's Industries Tower** heeft nu een verborgen krachtcentrale: een dichtgemetseld blok op de
       beveiligingsverdieping met twee warmtegeneratoren in lava, en kabels door het plafond naar
       alle laserzenders. Knip ze door en de lasers gaan uit. Onderweg gevonden: de lasers in de
       toren stonden als "aan" opgeslagen zonder wand, dus de gang had waarschijnlijk nooit echt
@@ -268,7 +272,7 @@ kleine dingen, dan de grote.
       spelers in de buurt wie er vliegt en hoe hard, dus iedereen ziet ze. Screenshots:
       `-Ponly=suit,flight`.
 - [x] Het harnas meer 3D-vorm geven — `76900f5`
-      Een eigen model bovenop het gewone harnas (`client/suit/StarkSuitModel.java`), met de
+      Een eigen model bovenop het gewone harnas (`client/suit/TechSuitModel.java`), met de
       plaatjes nu 128x64 zodat de extra stukken een plek hebben: een uitstekende reactor die
       blauw gloeit (ook in het donker), borstplaten, drie gouden buikplaten, een rugplaat met
       twee straalopeningen, schouderplaten die iets naar buiten kantelen, onderarmbeschermers
@@ -291,8 +295,8 @@ kleine dingen, dan de grote.
       Hij heeft nu een voorkant (naar je toe bij plaatsen) en gloeit alleen als hij warmte
       opwekt (dan ook licht); de test van de generator controleert dat. De modellen maakt
       `tools/generate_block_models.py`; screenshots met `-Ponly=models`.
-- [x] Stark Tower mooier, overal meer detail — `23d7f84`
-      Onderweg gevonden en gerepareerd: het STARK-logo miste de bovenste rij van elke letter
+- [x] Bibie's Industries Tower mooier, overal meer detail — `23d7f84`
+      Onderweg gevonden en gerepareerd: het BIBIE-logo miste de bovenste rij van elke letter
       (het terras erboven overschreef hem), en er hing nergens een plafondlamp (de vloer erboven
       overschreef ze), dus binnen was het donker. De ladder liep buiten langs de gevel en vanaf
       het archief kwam je nergens meer binnen; de ladder van de kluis eindigde tegen het glas.
@@ -321,7 +325,7 @@ wilt. Eerst de kleine dingen, dan de grote.
       Negen nieuwe functies (nu 66): "Transfer glasses" (bril doorgeven), "Edit a waypoint",
       "Relay: name and group", "Dome under attack" (raiddrones tegen de koepel), "Repair a
       drone", "Glasses upgrades" (in het laadstation), "Raid drones: breaking in" (ze schieten
-      zich een hut in), "Stark Tech items" (het creative-tabblad) en het persoonlijke schild
+      zich een hut in), "I.M.T Technology items" (het creative-tabblad) en het persoonlijke schild
       vangt nu echt pijlen op. De sweep kiest een begin en eind, het leger valt Happy aan.
       Onderweg gevonden: Happy ging dood door raiddrones (en was daarna niet meer te hacken of af
       te leiden); hij is nu onkwetsbaar in de showcase.
@@ -417,14 +421,14 @@ wilt. Eerst de kleine dingen, dan de grote.
 
 ### 4. Meer in de wereld
 
-- [x] Meer structuren (het satellietwrak en de Hydra-bunker)
-  - [x] **Neergestorte Stark-satelliet** — `2510e03`, controle `4629359`
-        Een oude Stark-satelliet uit zijn baan gevallen: een krater van zo'n 25 blokken met
+- [x] Meer structuren (het satellietwrak en de Bibie's Industries-bunker)
+  - [x] **Neergestorte Bibie's Industries-satelliet** — `2510e03`, controle `4629359`
+        Een oude Bibie's Industries-satelliet uit zijn baan gevallen: een krater van zo'n 25 blokken met
         verschroeide grond, opgeworpen aarde en de voor waar hij binnenkwam; in het midden de
         opengescheurde romp (de reactor gloeit nog), een zonnepaneel dat schuin omhoog steekt,
         een afgebroken paneel, de schotel op de helling en rookende brokstukken. In de romp de
         **zwarte doos** met wat de satelliet-upgrades nodig hebben (netherite, diamanten, goud,
-        Stark-chips, soms een upgrade of drone), eromheen kratten met schroot. In vlaktes,
+        computerchips, soms een upgrade of drone), eromheen kratten met schroot. In vlaktes,
         woestijnen, savannes, badlands, bossen, taiga's en sneeuwvlaktes; hij ligt 8 blokken in
         de grond, zodat de krater echt is uitgegraven. **Bewaakt**: kom je er met de bril, dan
         duiken er raiddrones op je af (hooguit eens per 10 minuten). Bouwscript
@@ -433,8 +437,8 @@ wilt. Eerst de kleine dingen, dan de grote.
         (beide gevonden, met al hun kisten, in een savanne en een berkenbos).
         Aannames (zeg het als je het anders wilt): de buit, hoe vaak hij voorkomt (ongeveer even
         vaak als de toren) en de raiddrones als bewaking.
-  - [x] **Hydra-bunker, in een berg** (Winter Soldier-stijl) — `163771b`
-        Een eigen structuursoort (HydraBunkerStructure) zoekt in bergbiomen een rotswand: voor de
+  - [x] **Bibie's Industries-bunker, in een berg** (Winter Soldier-stijl) — `163771b`
+        Een eigen structuursoort (BibieBunkerStructure) zoekt in bergbiomen een rotswand: voor de
         deur vlak en open (16 blokken uitzicht, dus geen kuil of grot), achter de deur over de
         hele bunker minstens 9 blokken berg. De bunker draait mee zodat de ingang naar buiten
         kijkt. Binnen (tools/generate_bunker.py): gevel met embleem en twee torentjes, gang met
@@ -446,9 +450,9 @@ wilt. Eerst de kleine dingen, dan de grote.
         testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, en dat soldaten niet terugkomen.
-- [x] **De Stark Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
+- [x] **De Bibie's Industries Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
   - [x] **Beveiliging die leeft** — `af0d24f`
-        Een Stark Security Core op de beveiligingsverdieping (in de rij serverkasten) beschermt
+        Een Security Core op de beveiligingsverdieping (in de rij serverkasten) beschermt
         de hele toren. Beveiligingstorentjes (wit met rood) bij de lift, op de
         beveiligingsverdieping en in de kluis (in plaats van de vier spawners), en vier
         beveiligingsdrones die rond de kern patrouilleren; een neergeschoten drone vervangt de
@@ -457,15 +461,15 @@ wilt. Eerst de kleine dingen, dan de grote.
         rust. De drones zijn geen "monsters", zodat je eigen torentjes en escorte ze na de hack
         niet neerschieten. Drie nieuwe tests.
   - [x] **De toren overnemen met een laptop** (jouw idee) — `9cbf5ab`
-        Stark Laptop (zwart glas, redstone, Stark-chip, ijzer; geen bril nodig): klik op de kern,
+        Hacking Laptop (zwart glas, redstone, computerchip, ijzer; geen bril nodig): klik op de kern,
         het alarm gaat af en alle drones komen op je af. De minigame heeft drie lagen (Firewall,
         Encryption, Override; 3, 4 en 5 treffers): spatie of klik als de heen-en-weer schuivende
         cursor in het groene vak staat, elke laag sneller met een kleiner vak; mis = een treffer
         kwijt. Het spel loopt door, dus je wordt beschoten. Weglopen (> 6 blokken), doodgaan of
         Esc breekt de hack af; de server keurt een onmogelijk snelle hack af. Daarna is de toren
-        van jou. Showcase: "Stark Tower: security and hack". Drie nieuwe tests.
+        van jou. Showcase: "Bibie's Industries Tower: security and hack". Drie nieuwe tests.
         (mijn invulling) De vorm van de minigame (timing met een balk).
-  - [x] **Tony's lab** met een harnas-werkbank — `61fde87`
+  - [x] **Bibie's lab** met een harnas-werkbank — `61fde87`
         De Suit Workbench (op stroom van het net): negen vakken voor materialen, knoppen om een
         borstplaat, broek of laarzen te bouwen (zelfde materialen als het oude recept; de muis op
         de knop laat zien wat het kost), en een vak voor een stuk harnas plus een upgrade. Upgrades:
@@ -487,9 +491,9 @@ wilt. Eerst de kleine dingen, dan de grote.
         oostkant uit het dak steekt (zoals in The Avengers), met eronder een gloeiende
         warmtegenerator als stroombron. Tijdens het vliegen wijst de HUD je dichtstbijzijnde
         platform aan (groen ruitje met afstand, dichtbij ook het landingsvak van 5 x 5). Land je
-        erop met de stuwraketten aan, dan zegt E.D.I.T.H. "Welcome home"; zolang je erop staat,
+        erop met de stuwraketten aan, dan zegt I.M.T "Welcome home"; zolang je erop staat,
         laadt je bril op en wordt je harnas gerepareerd. Je platforms worden per speler onthouden,
-        dus de weg naar huis werkt ook van ver. Showcase: "Stark Tower: hangar and landing pad".
+        dus de weg naar huis werkt ook van ver. Showcase: "Bibie's Industries Tower: hangar and landing pad".
         Vijf nieuwe tests.
         Onderweg gevonden: de server kon crashen als een rayshield aanging naast een wand die nog
         aan het schuiven was — opgelost (`3fa38d1`).
@@ -530,15 +534,15 @@ wilt. Eerst de kleine dingen, dan de grote.
         verdeeld over je gemarkeerde doelwitten (anders wat je aankijkt, anders de plek waar je
         kijkt). Ze vliegen eerst omhoog, sturen dan bij (dichtbij steeds scherper) en ontploffen
         zonder blokken te slopen; jou en je team raken ze nooit. Hele harnas nodig, 900 energie,
-        12 s herladen. Het **raketpakket** (Hydra-onderdeel, Stark-chip, buskruit, ijzer) klik je
+        12 s herladen. Het **raketpakket** (Hydra-onderdeel, computerchip, buskruit, ijzer) klik je
         met de borstplaat aan op die borstplaat; dan zie je de buizen op je rug. Twee nieuwe tests.
   - [x] **Automatische torentjes** — `53ff0b9`
-        Stark Turret (Hydra-onderdeel, 2 Stark-chips, dispenser, observer, ijzer): een draaiende
+        Rocket Turret (Hydra-onderdeel, 2 computerchips, dispenser, observer, ijzer): een draaiende
         kop die op monsters, raiddrones en Hydra-soldaten richt (spelers alleen met PvP, nooit
         jij of je team) en op hetzelfde doelwit blijft tot het neer is. Laser: 16 blokken, 4
         schade per seconde, 60 stroom per schot van het net. Raketten: Rocket Ammo (rechtsklik of
         trechter), om de 2,5 s, tot 24 blokken. Redstone zet hem uit (de loop hangt omlaag), en
-        hij staat in de redstone-lijst van E.D.I.T.H. onder Turrets. Rechtsklik = status, shift =
+        hij staat in de redstone-lijst van I.M.T onder Turrets. Rechtsklik = status, shift =
         raketten eruit. Hydra Turret: zwart/rood, geen stroom nodig, schiet op spelers en drones;
         gesloopt geeft hij ijzer en soms een Hydra-onderdeel. Vier nieuwe tests.
   - [x] Daarna de bunker (zie hierboven), met de soldaten en torentjes erin
@@ -551,22 +555,22 @@ visuele check (`runVisualCheck -Ponly=brain`) die zinnen naar het echte lokale m
 - [x] **Drie standen om uit te kiezen** in **G > Systems > AI Brain**: Phrase book (het
       woordenboek), Local model, of Claude
 - [x] Ze **praat én doet dingen**: gewone taal wordt een antwoord en/of acties. Beide breinen
-      krijgen dezelfde instructies (assets/starktech/edith/brain_prompt.txt), je toestand (leven,
+      krijgen dezelfde instructies (assets/imttech/imt/brain_prompt.txt), je toestand (leven,
       batterij, tijd, weer, plek, vijanden, waar je naar kijkt, route, waypoints, relais) en wat ze
       onthouden heeft, en moeten één vast JSON-antwoord geven (het model kán niets anders
       schrijven). Lukt het brein niet (geen internet, geen sleutel, model start niet), dan zegt ze
       dat en gebruikt ze het woordenboek.
 - [x] De API-sleutel vul je **in het spel** in (sterretjes; bewaard in
-      .minecraft/starktech/ai/claude-key.txt, gaat alleen naar Anthropic). Claude loopt via de
-      officiële Anthropic-SDK, model claude-opus-5 (te veranderen in config/starktech-client.toml),
+      .minecraft/imttech/ai/claude-key.txt, gaat alleen naar Anthropic). Claude loopt via de
+      officiële Anthropic-SDK, model claude-opus-5 (te veranderen in config/imttech-client.toml),
       met "effort low" (snel), prompt caching en een automatische fallback als Claude een vraag
       weigert. Getest tot en met het inloggen (een verkeerde sleutel geeft netjes "Claude did not
       accept the API key"); met een echte sleutel nog niet, want dat kost geld: probeer jij het.
 - [x] De mod kiest aan de hand van je pc welk lokaal model hij downloadt: Qwen3.5 2B, 4B of 9B,
       naar het geheugen van je videokaart (jouw pc: 4B, 2,7 GB; ± 1 seconde per zin). De vorige
       keer (19 september) vond je 2B "nog niet zo slim"; 4B deed het in de test goed.
-- [x] Ze **onthoudt dingen permanent** ("onthoud dat mijn basis Stark Hoeve heet" → later "hoe
-      heet mijn basis?" → "Je basis heet Stark Hoeve"), in .minecraft/starktech/ai/memory.json;
+- [x] Ze **onthoudt dingen permanent** ("onthoud dat mijn basis Bibie Hoeve heet" → later "hoe
+      heet mijn basis?" → "Je basis heet Bibie Hoeve"), in .minecraft/imttech/ai/memory.json;
       "Forget everything" in het scherm wist het. Ze **leert van jouw manier van praten**: begrijpt
       het brein een nieuwe zin, dan zet ze die in het woordenboek (commando's "Learned: ...").
 - [x] Weet ze niet wat je bedoelt, dan vraagt ze het ("Wil je een drone sturen of ...?"); zeg je
@@ -595,7 +599,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       droeg (het laadscherm stond er nog). Dan zei ze hem meteen, en daarna nog eens in de
       opstartanimatie. Nu wacht de animatie tot het laadscherm weg is, en bewaart ze de zin tot
       het goede moment.
-- [x] Staat "Voice text" uit, dan toont E.D.I.T.H. **geen enkele** tekst meer (ook niet "Target 1
+- [x] Staat "Voice text" uit, dan toont I.M.T **geen enkele** tekst meer (ook niet "Target 1
       marked", drones, escorte, formaties...): ze zegt het alleen — `7ab75f1`
       Ook de welkomstzin in de opstartanimatie niet (alleen het golfje dat laat zien dat ze
       praat). (mijn invulling) Is haar stem niet geïnstalleerd, dan komt de tekst er toch:
@@ -645,7 +649,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
 - [x] Mini-raketten upgraden: sterkere raketten en meer raketten per salvo — `c6fbe64`
       Twee nieuwe upgrades voor de borstplaat (alleen met een raketpakket erop), elk tot 3 keer:
       **Rocket Magazine** (2 raketten meer per salvo, tot 12) en **Rocket Warhead** (40% meer
-      schade, ook de splash). Inbouwen aan de werkbank; recepten met Stark-chips, ijzer en buskruit
+      schade, ook de splash). Inbouwen aan de werkbank; recepten met computerchips, ijzer en buskruit
       of TNT. Een ouder harnas leest gewoon 0 upgrades. Nieuwe test.
       (mijn invulling) Welke upgrades, hoeveel ze doen, de recepten, en dat de energie per salvo
       gelijk blijft.
@@ -700,7 +704,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       screenshots `-Ponly=power`.
       (mijn invulling) Ingedrukt houden in plaats van twee klikken (dat voelt meer als tekenen).
 - [x] Alle torentjes en beveiliging hebben stroom nodig; zonder stroom doen ze niets — `744a668`
-      Stark-, Hydra- en beveiligingstorentjes: zonder stroom hangt de loop omlaag en valt er geen
+      Raket-, Hydra- en beveiligingstorentjes: zonder stroom hangt de loop omlaag en valt er geen
       schot; elk laserschot (60) en elke raket (20) kost stroom. De beveiligingskern van de toren
       ook: zonder stroom geen drones, en de drones zakken met gedoofde lampjes naar de grond.
 - [x] Een elektriciteitskast waar kabels samenkomen, met schakelaars om stroomgroepen aan en uit te
@@ -709,7 +713,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       bewaakte, dichte kamer. Een kabel doorknippen zet een deel van de stroom uit. Jouw keuze.
       — `744a668`
       De **Power Cabinet**: een schakelaar per kant (voor, achter, links, rechts, boven, onder);
-      het net loopt alleen door kanten die aan staan. Rechtsklik = het scherm; "Link to E.D.I.T.H."
+      het net loopt alleen door kanten die aan staan. Rechtsklik = het scherm; "Link to I.M.T."
       (alleen de eigenaar) zet de zes schakelaars in het redstone-tabblad, ook met je stem.
       *Toren:* de krachtcentrale kreeg een mantel van obsidiaan met de kast erin: één kant voor
       de lasers en de kluis (met de vier kluistorentjes), één voor de kern en alle andere
@@ -770,7 +774,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       (mijn invulling) Dat de waakhond eerst uit moet, en de teksten van de console.
 - [x] De README iets minder "straight to the point"; je laptop moet je neerzetten op het
       beveiligingsblok; en je voortgang niet kwijt als je Esc doet (27 september). **Gedaan**: de
-      README is een briefje van Tony met aanwijzingen (config in /etc, nep-namen in `ps`, override
+      README is een briefje van Bibie met aanwijzingen (config in /etc, nep-namen in `ps`, override
       op nummer, eerst de waakhond stil, dan jezelf eigenaar) in plaats van letterlijke commando's.
       De laptop klik je op de kern: hij staat dan opengeklapt bovenop (nieuw blok met model), en
       rechtsklik opent de terminal. De laptop onthoudt het getal van de puzzel en elk commando;
@@ -810,8 +814,8 @@ verstoppen, valstrikken; bij een overname alarm, je bestanden blijven, nieuw wac
 Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eich.md`.
 
 - [x] **1. Fundament**: elke kern is een klein systeem — `0f43f59`
-      IP (10.x.y.z, uniek in de wereld; een nieuw bestand `starktech_network.dat` onthoudt welk
-      IP bij welke kern hoort), SSH-poort, naam (`stark-sec-core` in de toren), het wachtwoord
+      IP (10.x.y.z, uniek in de wereld; een nieuw bestand `imttech_network.dat` onthoudt welk
+      IP bij welke kern hoort), SSH-poort, naam (`bibie-sec-core` in de toren), het wachtwoord
       (alleen als hash, nooit leesbaar), mappen en bestanden met systeembestanden en
       valstrikken, en een logboek. Een kern uit een oude wereld krijgt het bij de eerste tick.
       Drie nieuwe tests.
@@ -822,7 +826,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       `chapter7-wip/` (SystemShell.java, DumpPuzzle.java, TermLine.java).
 - [~] **3. Een wachtwoord kraken** (raden, woordenlijst, bruteforce) — om dezelfde reden niet
       gebouwd. Een wachtwoord *zetten* en met het goede wachtwoord *inloggen* kan wél (stap 4 en 9).
-- [x] **4. De Stark OS-desktop** — `78916d6` (met de toegang/gegevens eronder: `20d2b34`)
+- [x] **4. De Security OS-desktop** — `78916d6` (met de toegang/gegevens eronder: `20d2b34`)
       Rechtsklik met lege hand op de kern opent voor de eigenaar een desktop met sleepbare vensters,
       een taakbalk en icoontjes. Drie apps nu: **Status** (naam, IP, SSH-poort, stroom, wachtwoord
       ja/nee), **Logs** (het logboek van de kern) en **Settings** (een a-z0-9-wachtwoord van 4-8
@@ -838,7 +842,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       een teksteditor (het tekstvak van Minecraft zelf: selecteren, Ctrl+C/V, Ctrl+S, woordomslag;
       hoogstens 4096 tekens); sluiten met wijzigingen bewaart vanzelf. Een **valstrik** gaat af als
       iemand anders dan de eigenaar hem opent (straks via SSH met het wachtwoord, of de terminal):
-      een regel in het logboek, een E.D.I.T.H.-alarm voor de eigenaar, de lezer vliegt eruit en is
+      een regel in het logboek, een I.M.T-alarm voor de eigenaar, de lezer vliegt eruit en is
       30 s buitengesloten (`TRAP_LOCKOUT` in de config), en de beveiliging jaagt dan op hem, ook
       als "attack players" uit staat. Alleen de eigenaar ziet welk bestand een valstrik is. Fouten
       en meldingen staan nu rechts in de taakbalk (het actiebalk-bericht zag je niet achter de
@@ -846,19 +850,19 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       De terminal-commando's (`mkdir`, `mv`, `rm`, `nano`) horen bij de geparkeerde terminal (stap 2). Commit: `eb241c4`.
 - [x] **6. Apparaten en toegang, en de kern zelf bouwen** (de gegevens eronder: `20d2b34`)
       Twee nieuwe apps. **Devices** toont wat bij de kern hoort: de beveiligingstorentjes in het
-      gebied en de Stark-torentjes van de eigenaar (aan/uit per torentje, stroom, raketten, doelwit),
+      gebied en de Bibie's Industries-torentjes van de eigenaar (aan/uit per torentje, stroom, raketten, doelwit),
       de drones (levens, wat ze doen) en de laserpoorten; bovenaan "Drones" (uit = ze landen naast
       de kern en er komen er geen nieuwe) en "Lasers" (uit = alle laserpoorten in het gebied gaan
       open, ook al staat er redstone op). **Access**: "Attack monsters", "Attack other players" en
-      de vertrouwde spelers (toevoegen op naam, weghalen). Een Stark-torentje van de eigenaar in zijn
+      de vertrouwde spelers (toevoegen op naam, weghalen). Een Bibie's Industries-torentje van de eigenaar in zijn
       eigen gebied volgt nu ook die regels. **Zelf bouwen**: een recept voor de Security Core
-      (ijzerblokken, Stark-chip, observers, Hydra-circuit, redstoneblok); neerzetten maakt hem van
+      (ijzerblokken, computerchip, observers, Hydra-circuit, redstoneblok); neerzetten maakt hem van
       jou met een IP, en de desktop opent dan meteen Settings om een wachtwoord te zetten. Een kern
       waarvan het gebied een ander netwerk overlapt (binnen 60 blokken) lukt niet: "too close to
       another security network", en je houdt het item. Afbreken geeft de kern terug.
       Screenshots: `-Ponly=os`. Twee nieuwe tests. Commit: `0cdbeca`.
 - [x] **7. Security Camera en de bewakingsmuur** (in de buurt)
-      Een nieuw blok: de **Security Camera** (recept: ijzer, glas, observer, Stark-chip; 2 stuks), aan
+      Een nieuw blok: de **Security Camera** (recept: ijzer, glas, observer, computerchip; 2 stuks), aan
       de muur, het plafond of de vloer. Hij heeft een beetje stroom nodig (`CAMERA_UPKEEP`), hoort bij
       de kern in wiens gebied hij hangt, en een naam uit een aambeeld komt bij zijn beeld te staan.
       Rechtsklik zegt hoe hij ervoor staat. Nieuwe app **Cameras**: de bewakingsmuur met een live
@@ -870,7 +874,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       is, dus een camera in een dichte kamer op een andere verdieping ziet zijn kamer wel. Tegen lag
       (zoals Vista, `FeedPlanner`): alleen beelden die op het scherm staan, 5 per seconde (groot 10),
       minder onder de 60 fps (nooit minder dan 2), om de beurt, samen hooguit 3 ms per frame, en na
-      5 s weggegooid; instelbaar in `config/starktech-client.toml`. Devices kreeg de schakelaar
+      5 s weggegooid; instelbaar in `config/imttech-client.toml`. Devices kreeg de schakelaar
       "Cameras". Nieuw: een access transformer (`META-INF/accesstransformer.cfg`). Met
       "Fabulous!"-graphics zie je geen water/glas in het beeld (dat tekent Minecraft dan apart).
       Screenshots: `-Ponly=cameras`. Twee nieuwe tests. Commit: `33883fe`.
@@ -880,7 +884,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       logowand, met zicht op de receptie en de ingang), "Laser hall" (aan het plafond van de
       lasergang) en "Vault" (boven het luik, met zicht op de sokkel). Elk hangt met een verborgen
       kabel aan het net van de toren (de lobby aan de beveiliging, de rest aan de lasers: knip je
-      die door, dan geven ook de camera's NO SIGNAL). Tony's kern heeft nog steeds geen wachtwoord.
+      die door, dan geven ook de camera's NO SIGNAL). Bibie's kern heeft nog steeds geen wachtwoord.
       Het NBT-bestand is opnieuw gemaakt (gecontroleerd: verder niets veranderd). Screenshots:
       `-Ponly=towercams`. Eén nieuwe test. Commit: `38c744e`.
 - [~] **9. SSH van overal** — opzijgezet, net als stap 2 en 3.
@@ -897,7 +901,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       De server maakt de naam netjes (geen kleurcodes, hooguit 32 tekens) en zet het in het
       logboek. Breek je een camera met een naam af, dan houdt het item die naam (ook een naam uit
       een aambeeld). Screenshots: `-Ponly=cameras` (`c03b`, `c03c`). Eén nieuwe test.
-- [x] **Showcase**: twee nieuwe functies na "Stark Tower: security and hack": "Stark OS desktop"
+- [x] **Showcase**: twee nieuwe functies na "Bibie's Industries Tower: security and hack": "Security OS desktop"
       (Files met security.conf, het rechtsklik-menu, Notes, Devices, Access, Logs) en "Security
       cameras" (de bewakingsmuur van de toren, het grote beeld, draaien, NO SIGNAL, een camera van
       dichtbij). Ze staan in de showcase als NIEUW.
@@ -909,7 +913,7 @@ relais aan; met if/else); een keycardlezer of codepaneel start iets, en een cent
 kijkt wat er moet gebeuren. Dat systeem draait op een **server**: een multiblok van
 **serverracks** die je naast of op elkaar zet. In de racks steek je **CPU, RAM en opslag**, zodat
 je meer kunt programmeren en je redstone sneller reageert. De server hangt aan je eigen
-beveiliging (Stark OS). En de rayshields krijgen **Star Wars-geluiden**.
+beveiliging (Security OS). En de rayshields krijgen **Star Wars-geluiden**.
 
 Jouw antwoorden: het diagram kan **allebei**: blokjes met draadjes, én regels code (sneller, maar
 moeilijker), en je wisselt heen en weer (blokjes worden code, code wordt blokjes); keycards met
@@ -953,7 +957,7 @@ De stappen, één per commit:
       Ik kan zelf niet luisteren: zeg het als ze te hard, te zacht of te raar klinken (opnieuw maken:
       `py -3.12 tools/generate_sounds.py rayshield_hum`). Commit: `e565efe`.
 - [x] **2. Serverracks**
-      Een nieuw blok, de **Server Rack** (recept: ijzer, ijzeren tralies, Stark-chip, redstone), met
+      Een nieuw blok, de **Server Rack** (recept: ijzer, ijzeren tralies, computerchip, redstone), met
       4 vakjes. Racks die elkaar raken (naast of op elkaar) zijn samen de server van de kern in wiens
       gebied ze staan; staan er losse groepjes, dan telt de grootste ("NOT CONNECTED" voor de rest).
       Elk rack heeft stroom nodig (`RACK_UPKEEP`) en geeft die door aan het rack ernaast, dus een
@@ -965,18 +969,18 @@ De stappen, één per commit:
       Alle getallen staan in de config onder `[logic]`. Screenshots: `-Ponly=racks`. Twee nieuwe tests.
       Commit: `926edbd`.
 - [x] **3. Keycards en de keycardlezer**
-      **Keycard** (recept: Stark-chip, 2 papier, ijzer = 4 lege kaarten). Nieuwe app **Keycards** op de
+      **Keycard** (recept: computerchip, 2 papier, ijzer = 4 lege kaarten). Nieuwe app **Keycards** op de
       desktop: naam en niveau (1-5) invullen, "Write card" schrijft de eerste lege kaart in je
       rugzak; hij krijgt het volgende nummer (#1001, #1002...) en de kleur van zijn niveau (wit,
       groen, blauw, paars, goud). Daaronder alle kaarten van dit netwerk met **Block/Unblock**. Een
       kaart is alleen geldig in het netwerk dat hem schreef, als hij niet geblokkeerd is. De kaarten
       staan in de kern (dus wie je kern overneemt, krijgt de lijst ook). De **Keycard Reader**
-      (recept: ijzer, glas, redstone, Stark-chip = 2 stuks) hangt aan de muur, krijgt een naam
+      (recept: ijzer, glas, redstone, computerchip = 2 stuks) hangt aan de muur, krijgt een naam
       ("Reader 1", of uit een aambeeld) en heeft een lampje: oranje = gelezen, groen = goed, rood =
       geweigerd of de server draait niet. Elke gelezen kaart komt in het logboek. Screenshots:
       `-Ponly=keycards`. Eén nieuwe test. Commit: `68de29b`.
 - [x] **4. Het codepaneel**
-      De **Code Panel** (recept: ijzer, stenen knoppen, redstone, Stark-chip = 2 stuks) hangt aan de
+      De **Code Panel** (recept: ijzer, stenen knoppen, redstone, computerchip = 2 stuks) hangt aan de
       muur, met een naam ("Panel 1") en hetzelfde lampje als de lezer. Rechtsklik opent de toetsen:
       0-9, C (wissen) en OK, met de muis of je toetsenbord (Backspace, Enter); op het schermpje zie je
       sterretjes. OK stuurt de code naar de server en sluit het scherm. Welke code goed is, staat in
@@ -1035,7 +1039,7 @@ De stappen, één per commit:
       Nieuwe functie **72, "Server racks and Logic"** (staat als NIEUW): een klein lab op (-50, -50)
       met een eigen kern, drie racks, een muur met een ijzeren deur, een lezer, een paneel en een
       lamp. Een kaart van niveau 3 opent de deur 3 seconden (groen), een geblokkeerde kaart geeft
-      rood en E.D.I.T.H. zegt "Someone tried the lab door", de code 4321 zet de lamp aan; daarna de
+      rood en I.M.T zegt "Someone tried the lab door", de code 4321 zet de lamp aan; daarna de
       app Logic met de code en als blokjes. Screenshots: `-Ponly=racks`, `keycards`, `logic` en `lab`
       (het lab stap voor stap). LEESMIJ.md heeft een nieuw stuk "De server: je redstone
       programmeren". Commit: `8b35100`.
@@ -1094,7 +1098,7 @@ De stappen, één per commit:
 Jouw wensen: het datacenter (je serverracks) moet meer gebruikt worden. Je moet kunnen **aflezen
 hoeveel CPU, RAM en SSD** er gebruikt wordt. Er komt een **fan**: heb je er te weinig, dan
 **brandt je datacenter af of gaat je hardware kapot**. Daarom kun je **backups** maken naar een
-ander datacenter, anders ben je bij een brand je hele config kwijt. En het **brein van E.D.I.T.H.**
+ander datacenter, anders ben je bij een brand je hele config kwijt. En het **brein van I.M.T**
 draait op de server: een **GPU** in plaats van een CPU is dubbel zo snel voor het brein, maar half
 zo snel voor je redstone (Logic). Zo moet je goed nadenken over wat je in je racks steekt, of een
 heel groot datacenter bouwen. Het brein zelf werkt zoals nu; het datacenter zet er alleen een
@@ -1104,7 +1108,7 @@ Jouw antwoorden:
 
 - **Fans** gaan in de gewone vakjes, maar een rack krijgt er **6 in plaats van 4**: twee kolommen
   van drie.
-- **Te warm** gaat stap voor stap: vanaf **70°** trager en E.D.I.T.H. waarschuwt; vanaf **90°**
+- **Te warm** gaat stap voor stap: vanaf **70°** trager en I.M.T waarschuwt; vanaf **90°**
   slijten onderdelen en gaan ze één voor één kapot; vanaf **110°** vat een rack vlam en brandt
   het af met alles erin.
 - **Backups**: automatisch (om de zoveel minuten) én met de hand, naar een ander datacenter van
@@ -1142,10 +1146,10 @@ De stappen, één per commit:
 - [x] **1. Zes vakjes, de GPU en de fan**
       Een rack heeft nu 6 vakjes: twee kolommen van drie, op het scherm en op de voorkant van het
       blok (je oude racks houden wat erin zat). Twee nieuwe onderdelen: de **Server GPU** (recept:
-      goud, redstone, 2 Stark-chips en een diamant) en de **Server Fan** (ijzer, ijzeren tralies en
+      goud, redstone, 2 computerchips en een diamant) en de **Server Fan** (ijzer, ijzeren tralies en
       redstone = 2 fans; koelen doet hij vanaf stap 2). De tooltip zegt hoeveel een CPU of GPU telt
       voor Logic en voor het brein. Een server draait nu met een CPU **of** een GPU. Het rackscherm
-      is wat hoger en toont ook GPU's, fans en "E.D.I.T.H. +2.0 s" (hoe lang het brein op dit
+      is wat hoger en toont ook GPU's, fans en "I.M.T +2.0 s" (hoe lang het brein op dit
       datacenter extra zou nadenken; dat gebruiken we pas in stap 6). Let op: reageren gaat nu
       anders dan eerst (eerst 0,15 s sneller per extra CPU, nu 0,5 s gedeeld door de kracht), dus
       4 CPU's reageren in 0,15 s in plaats van meteen. In de config (`[logic]`): `gpuLogicPower`,
@@ -1158,7 +1162,7 @@ De stappen, één per commit:
       trekt de koeling eraf (fans 6 W, elk rack zelf 2 W) en schuift de temperatuur 8% op naar waar
       hij heen gaat (25° + 8° per watt te veel). Vanaf **70°** werkt alles op halve snelheid: je
       diagrammen reageren twee keer zo traag (en straks denkt het brein twee keer zo lang).
-      E.D.I.T.H. waarschuwt de eigenaar één keer (bij 70°, bij 90°, en als het weer koel is,
+      I.M.T waarschuwt de eigenaar één keer (bij 70°, bij 90°, en als het weer koel is,
       onder 65°), en het staat in het logboek (een nieuwe oranje soort regel, HEAT). Het rackscherm
       toont **TEMP** (nu, en waar hij naartoe gaat), **HEAT/COOL**, en zegt hoeveel fans er nog bij
       moeten zodat het ook koel blijft als alles zo hard mogelijk werkt ("Add 3 fans"). De tooltip
@@ -1169,13 +1173,13 @@ De stappen, één per commit:
       Vanaf **90°** slijten de onderdelen (niet de fans): om de twee seconden krijgt de helft ervan
       wat slijtage (1, vanaf 100° 2, vanaf 110° 3...). Je ziet een balkje onder het icoon, zoals bij
       gereedschap, en de tooltip zegt "Worn out: 45%". Bij 20 is een onderdeel kapot: rook, een knak,
-      weg, en E.D.I.T.H. zegt welk. Blijft het **10 seconden boven 110°**, dan vat het heetste rack
+      weg, en I.M.T zegt welk. Blijft het **10 seconden boven 110°**, dan vat het heetste rack
       vlam (het rack dat de meeste warmte maakt): vuur erop en ernaast, vlammen en rook, en het scherm
       van het rack knippert "ON FIRE! Take your parts out: gone in 18 s." Na **10 seconden** is het
       weg, met alles wat er nog in zit (er valt niets uit; op zijn plek brandt nog wat vuur). Is het
       daarna nog steeds te heet, dan is het volgende rack aan de beurt. Gaat er een **SSD** kapot of
       verbrandt hij, dan zijn alle diagrammen en keycards van de server weg (alarm in het logboek en
-      van E.D.I.T.H.); kaartnummers komen ook dan nooit terug. Een rack afbreken of een SSD eruit
+      van I.M.T); kaartnummers komen ook dan nooit terug. Een rack afbreken of een SSD eruit
       halen kan altijd (dan ben je niets kwijt). Een warm datacenter vat geen vlam als je op tijd
       fans bijsteekt. In de config: `maxWear`, `fireTemperature`, `fireDelayTicks`, `burnTicks`.
       Screenshots: `-Ponly=racks` (`r06_rack_fire`, `r07_rack_fire_screen`). Twee nieuwe tests.
@@ -1201,7 +1205,7 @@ De stappen, één per commit:
       Een backup is een kopie van je diagrammen en keycards; hij neemt op het andere datacenter
       zoveel blokjes in als je diagrammen, plus één per 10 kaarten, en daar blijven van elk netwerk
       de laatste 3 staan. Past hij niet, draait het andere datacenter niet, of draait je eigen server
-      niet, dan zegt hij waarom (automatisch: één keer, ook door E.D.I.T.H., en over een minuut
+      niet, dan zegt hij waarom (automatisch: één keer, ook door I.M.T, en over een minuut
       opnieuw proberen). Onderaan **YOUR BACKUPS**: alle backups van de eigenaar, met **Restore**
       en **Delete** (allebei eerst "Sure?"). Restore vervangt je diagrammen; de keycards alleen als
       de backup van dit netwerk is (een kaart hoort bij het IP dat hem schreef), en kaartnummers
@@ -1216,13 +1220,13 @@ De stappen, één per commit:
       Het brein draait op het sterkste datacenter van jezelf dat draait (de kortste vertraging),
       waar het ook staat (`logic/DatacenterBrain`). De server stuurt twee keer per seconde mee met
       de status van je bril hoeveel vertraging dat is, en waar. **Zonder datacenter** (en niet in
-      creative) werkt er geen enkel brein: druk je op de spraaktoets, dan zegt E.D.I.T.H. "I can't
+      creative) werkt er geen enkel brein: druk je op de spraaktoets, dan zegt I.M.T "I can't
       think without a datacenter..." en luistert ze niet; ze zegt ook uit zichzelf niets meer. Met
       een datacenter: de tijd van het model + de vertraging van je datacenter (1 CPU +8 s, 1 GPU
       +4 s, warm twee keer zo lang; vanaf 8 GPU's niets), ook bij het woordenboek; in de HUD staat
       zolang "THINKING...". **In creative** heb je geen datacenter nodig en is er geen vertraging.
       Terwijl ze nadenkt, zegt je spel dat tegen de server: dan werken de CPU's en GPU's van dat
-      datacenter op vol (BRAIN 100% in de Monitor, met "E.D.I.T.H. thinking (naam)", en het wordt
+      datacenter op vol (BRAIN 100% in de Monitor, met "I.M.T thinking (naam)", en het wordt
       warmer). Het scherm **AI Brain** zegt rechtsboven "Datacenter: dev-lab (+2.0 s)", "Creative: no
       datacenter needed" of "No datacenter: no brain". Let op: in de screenshot-rondleiding zegt ze
       bij `b08b_brain_speaks_up` (survival, geen datacenter) nu terecht niets meer. Screenshots:
@@ -1251,7 +1255,7 @@ De stappen, één per commit:
       temperatuur (ook na opslaan) en vat zelf vlam als **het** te heet is; slijten gebeurt alleen in
       dat rack. **Mijn keuze**: is één rack warm (70°), dan werkt de **hele** server op halve
       snelheid (alles werkt samen, dus het warme rack remt de rest af); zeg het als je liever wil dat
-      alleen de CPU's en GPU's in dat rack trager worden. E.D.I.T.H. en het logboek zeggen nu ook
+      alleen de CPU's en GPU's in dat rack trager worden. I.M.T en het logboek zeggen nu ook
       **waar** het warme rack staat. Het rackscherm toont **RACK TEMP** van dat rack ("rising" zonder
       fan), HEAT/COOL van dat rack, en "No fan: it keeps getting warmer. Add 1 fan!" of "Another rack
       is too hot: half speed." De Monitor toont bij elk rack zijn temperatuur en "+1 fan", rechts
@@ -1284,7 +1288,7 @@ Jouw antwoorden:
 - **Sterke muren kosten meer C4**: hout, glas en aarde vliegen er meteen uit, steen en baksteen
   breken met 1 C4, obsidiaan en andere sterke blokken krijgen barsten en breken pas na 3 C4.
 - **Ontmantelen kan**: iedereen knipt met een **schaar** de draad door. Plakt iemand C4 op of in je
-  zone, dan zegt **E.D.I.T.H.** waar (aan jou en je vertrouwde spelers). De timer piept steeds
+  zone, dan zegt **I.M.T** waar (aan jou en je vertrouwde spelers). De timer piept steeds
   sneller.
 - **Alleen plaatsen en breken** is beveiligd: "zo realistisch mogelijk: in het echt kun je moeilijk
   inbreken, maar als je binnen bent kun je alles opendoen en stelen." Kisten, deuren, knoppen, item
@@ -1294,7 +1298,7 @@ Jouw antwoorden:
   weeping vines) en fakkels en lantaarns. C4 kan altijd.
 - **De rand zien alleen de eigenaar en zijn vrienden** (team en vertrouwde spelers). Anderen zien
   niets; ze merken het pas als een blok niet breekt.
-- **C4 werkt altijd**, ook als de eigenaar offline is. Logt hij weer in, dan vertelt E.D.I.T.H. wat
+- **C4 werkt altijd**, ook als de eigenaar offline is. Logt hij weer in, dan vertelt I.M.T wat
   er gebeurd is.
 
 Mijn invulling (zeg het als je iets anders wil):
@@ -1305,18 +1309,18 @@ Mijn invulling (zeg het als je iets anders wil):
 - **Hoe groot**: hooguit 16 kubussen; wat buiten het gebied van je kern steekt, valt eraf. Hoe groter
   de zone, hoe meer stroom: bovenop de 20 van de kern 1 per 2000 blokken (om de twee seconden). Een
   basis van 30 × 20 × 30 kost zo 9 extra, het hele gebied 216 (ongeveer één zonnepaneel in de volle
-  zon). Valt de stroom uit, dan staat de zone uit en waarschuwt E.D.I.T.H. je één keer. Zet je
+  zon). Valt de stroom uit, dan staat de zone uit en waarschuwt I.M.T je één keer. Zet je
   generatoren en kabels dus **in** je zone!
 - **De kern zelf** hoort altijd bij zijn zone (anders hak je de kern weg en is de zone weg).
 - **Wat ook als plaatsen of breken telt** voor wie geen toestemming heeft: een emmer leeggieten
   (water, lava, poedersneeuw), iets aansteken, met een bijl, schep of schoffel een blok veranderen,
-  beendermeel, en Stark-kabels leggen of doorknippen (anders knip je de stroom van de zone eruit).
+  beendermeel, en stroomkabels leggen of doorknippen (anders knip je de stroom van de zone eruit).
 - **Alleen C4 komt erdoor**: andere explosies (TNT, creepers, vuurballen, de satelliet) breken geen
   blokken in een zone (ze doen wel pijn), behalve als iemand met toestemming ze aanstak; vuur brandt
   geen blokken van een zone weg en lava steekt ze niet aan; een zuiger buiten de zone duwt of trekt
   geen blokken in of uit de zone; endermen, withers, ravagers en zombies (deuren) breken geen
   blokken in een zone. Anders kon je met een aansteker of TNT om de zone heen.
-- **De Stark Tower en de Hydra-bunker** hebben geen zone (je moet er nog steeds in kunnen hakken);
+- **De Bibie's Industries Tower en de Bibie's Industries-bunker** hebben geen zone (je moet er nog steeds in kunnen hakken);
   na het overnemen van de toren kun je er zelf een tekenen.
 - **De rand**: doorzichtige blauwe wanden met een fijn raster aan de buitenkant van de zone, van
   binnen en van buiten te zien tot ongeveer 48 blokken ver. Aan/uit voor jezelf: **G > Information >
@@ -1325,7 +1329,7 @@ Mijn invulling (zeg het als je iets anders wil):
   probeert, ziet onderaan "Protected zone" en hoort een kort piepje.
 - **Zone Marker**: linksklik op een blok = hoek 1, rechtsklik = hoek 2 (je ziet een oranje doos en
   "12 × 6 × 20"); sluipen + rechtsklik = deze kubus aan je zone toevoegen; sluipen + linksklik in een
-  kubus = die kubus weghalen (twee keer klikken). Recept: een redstonefakkel, een Stark-chip en een
+  kubus = die kubus weghalen (twee keer klikken). Recept: een redstonefakkel, een computerchip en een
   stok onder elkaar.
 - **App Zone** (icoon Z): links een kaart van bovenaf van het gebied van je kern met je kubussen;
   rechts de gekozen kubus met zijn hoeken (x, y, z, ook te typen) en per kant een − en + (west/oost,
@@ -1340,7 +1344,7 @@ Mijn invulling (zeg het als je iets anders wil):
   detonator = al zijn C4 binnen 128 blokken gaan af, kort na elkaar; sluipen + rechtsklik = hoeveel
   er gekoppeld en in bereik zijn. Met de detonator in je hand zie je je C4 als rode markering.
   Recepten: remote C4 = TNT, twee klei, een slijmbal, redstone en een bliksemafleider (de antenne);
-  detonator = een bliksemafleider, een Stark-chip, ijzer en een knop.
+  detonator = een bliksemafleider, een computerchip, ijzer en een knop.
 - **Hoe hard**: één C4 doet 10 "breekpunten" vlak bij de lading, aflopend tot 0 op 3,5 blokken. Een
   zwak blok (hout, glas, aarde, wol, zand...) kan er 2 hebben, een gewoon blok (steen, baksteen,
   deepslate, ijzer...) 6, een sterk blok (obsidiaan, netheriet, de laserzender...) 20, en de
@@ -1352,8 +1356,8 @@ Mijn invulling (zeg het als je iets anders wil):
   TNT wordt aangestoken.
 - **Ontmantelen** kan alleen met een schaar (met je hand gaat hij er niet af, ook niet voor wie hem
   plakte); de C4 valt eruit als item, dus de verdediger krijgt hem. Wie hem plakte, hoort het van
-  E.D.I.T.H.
-- **Het alarm** gaat af als er C4 in een zone geplakt wordt of binnen 3 blokken ervan: E.D.I.T.H.
+  I.M.T
+- **Het alarm** gaat af als er C4 in een zone geplakt wordt of binnen 3 blokken ervan: I.M.T
   zegt waar (zonder naam: in het echt weet je ook niet wie het was), en je ziet een rode markering
   tot hij weg is. Ontploft hij, dan staat in het logboek hoeveel blokken er weg zijn. Was je
   offline, dan hoor je bij het inloggen: "While you were away: 3 C4 blasts at your zone (12
@@ -1368,13 +1372,13 @@ De stappen, één per commit:
       vertelt dat meteen als er iets verandert (eigenaar, Access, overname) en om de twee seconden.
       Wie geen toestemming heeft, kan in een actieve zone niets breken (hakken begint niet eens) en
       niets plaatsen, ook geen deur of bed die half in de zone zou komen; ook vuur, een bijl of
-      schoffel op een blok, beendermeel, een emmer leeggieten of vullen, en Stark-kabels leggen,
+      schoffel op een blok, beendermeel, een emmer leeggieten of vullen, en stroomkabels leggen,
       oprapen of knippen niet. Onderaan staat dan "Protected zone: you can't build or break here. Only
       C4 gets through." met een kort piepje. Ladders, scaffolding, klimplanten, fakkels en lantaarns
-      mag iedereen plaatsen en weghalen (de tag `starktech:zone_free`, ook zelf aan te vullen). De kern
+      mag iedereen plaatsen en weghalen (de tag `imttech:zone_free`, ook zelf aan te vullen). De kern
       zelf hoort altijd bij zijn zone. Stroom: de zone kost bovenop de kern 1 per 2000 blokken (om de
       twee seconden, `zoneBlocksPerPower` in de config onder `[security]`); is er te weinig, dan staat alleen de zone uit,
-      met een regel in het logboek (nieuwe blauwe soort, ZONE) en een waarschuwing van E.D.I.T.H. aan
+      met een regel in het logboek (nieuwe blauwe soort, ZONE) en een waarschuwing van I.M.T aan
       de eigenaar, en weer een bericht als hij terug is. Kubussen die buiten het gebied van de kern
       steken worden afgeknipt; hooguit 16; kubussen die over elkaar liggen tellen één keer. Zes nieuwe
       tests (in een eigen bestand, `gametest/ZoneGameTests.java`): wie mag bouwen (eigenaar,
@@ -1395,7 +1399,7 @@ De stappen, één per commit:
       torentje, van buiten en binnen, zonder stroom, en met de rand uit). Twee nieuwe tests: de
       buitenkant van een L en van kubussen over elkaar, en wie de zone krijgt.
 - [x] **3. De Zone Marker en de app Zone**
-      Nieuw item **Zone Marker** (recept: een redstonefakkel, een Stark-chip en een stok onder
+      Nieuw item **Zone Marker** (recept: een redstonefakkel, een computerchip en een stok onder
       elkaar). Linksklik op een blok = hoek 1, rechtsklik = hoek 2 (ook op een kist: de marker gaat
       voor); onderaan staat hoe groot de doos is ("12 × 6 × 20 (1440 blocks)"). **Sluipen + rechtsklik**
       voegt hem toe aan de zone van de kern in wiens gebied hij ligt (die moet van jou zijn; wat buiten
@@ -1418,7 +1422,7 @@ De stappen, één per commit:
       een actieve zone meer; wezens krijgen de klap wel. Stak iemand die er mag bouwen hem zelf aan
       (je eigen TNT in je eigen basis), dan wel. **Vuur** brandt geen blokken van een zone weg: daar
       heeft NeoForge geen event voor, dus is dit de eerste **mixin** van de mod (`mixin/FireBlockMixin`,
-      aangemeld in `neoforge.mods.toml` en `starktech.mixins.json`): vlak voordat vuur een buurblok
+      aangemeld in `neoforge.mods.toml` en `imttech.mixins.json`): vlak voordat vuur een buurblok
       wegbrandt, kijkt hij of dat in een zone ligt. **Lava** steekt in een zone niets aan. Een
       **zuiger** duwt of trekt geen blokken in, uit of door een zone, behalve een zuiger die zelf in
       diezelfde zone staat (je eigen machines). **Monsters** (endermen, withers, ravagers, zombies bij
@@ -1450,7 +1454,7 @@ De stappen, één per commit:
       timer.
 - [x] **6. C4 met afstandsbediening**
       Nieuw: **C4 (Remote)** (TNT, twee klei, een slijmbal, redstone en een bliksemafleider als antenne)
-      en de **Detonator** (een bliksemafleider boven, ijzer, een Stark-chip, ijzer, en een knop eronder).
+      en de **Detonator** (een bliksemafleider boven, ijzer, een computerchip, ijzer, en een knop eronder).
       Plak je een remote C4 terwijl je een detonator bij je hebt (in je hand of rugzak), dan hoort hij
       meteen bij die detonator ("Remote C4 linked to your detonator (3 charges)"); een losse remote C4
       koppel je met een rechtsklik met de detonator, maar een lading van een andere detonator neem je
@@ -1466,9 +1470,9 @@ De stappen, één per commit:
       **Ontmantelen**: rechtsklik met een **schaar** op C4 (iedereen, ook wie hem plakte): een knip en
       een dalend toontje, "You cut the wire: the C4 is harmless now", en de C4 valt eruit als item (de
       verdediger krijgt hem). De schaar slijt een beetje. Met je hand gaat het niet: dan zegt hij "cut
-      the wire with shears". Wie hem plakte, hoort van E.D.I.T.H. "Your C4 at ... was defused".
+      the wire with shears". Wie hem plakte, hoort van I.M.T "Your C4 at ... was defused".
       **Alarm** (`c4/C4Alarm`): plakt iemand die er niet mag bouwen C4 in een zone of tot 3 blokken
-      ervan, dan zegt E.D.I.T.H. tegen de eigenaar en zijn vrienden die online zijn "C4 planted at your
+      ervan, dan zegt I.M.T tegen de eigenaar en zijn vrienden die online zijn "C4 planted at your
       zone: x y z (timer 0:40)" of "(remote)", zonder naam, en ze zien boven de lading een knipperend
       rood bordje "C4!  8 m" (door muren heen) tot hij ontploft of onschadelijk is. Je eigen C4 in je
       eigen zone geeft geen alarm. Ontploft er C4 op een zone, dan zegt ze hoeveel blokken er weg zijn;
@@ -1494,7 +1498,7 @@ De stappen, één per commit:
 - [x] **9. De rand alleen met de bril** (jouw wens, 9 oktober: "zorg dat je de border enkel met bril
       kunt zien")
       De blauwe rand en de bordjes "Box 1" boven je kubussen zie je nu alleen met je eigen
-      E.D.I.T.H.-bril op (met energie), net als de kabel-xray. Ook het aan/uit-knopje (G > Information >
+      I.M.T-bril op (met energie), net als de kabel-xray. Ook het aan/uit-knopje (G > Information >
       Zone border, of de eigen toets) werkt alleen met de bril. **Mijn keuze**: de oranje doos van de
       Zone Marker (wat je aanklikt) zie je ook zonder bril, anders kon je zonder bril geen zone tekenen;
       zeg het als die ook alleen met de bril moet. Screenshots: `-Ponly=zones` (`z05b_zone_with_glasses`,
@@ -1506,7 +1510,7 @@ De stappen, één per commit:
       satellietraket 6 (C4 doet 10), aflopend tot 0 op 3 blokken. Zo breekt TNT naast een houten muur
       alleen een plank vlakbij, en heeft een stenen muur pas na drie TNT op dezelfde plek een gat (de
       barsten tellen op, ook met die van C4). Na twee satellietraketten is een stenen blok weg. Wat het
-      doet, staat in het logboek ("TNT blast at ...", "Satellite strike blast at ...") en E.D.I.T.H. zegt
+      doet, staat in het logboek ("TNT blast at ...", "Satellite strike blast at ...") en I.M.T zegt
       het als er iets kapot is. Creepers, vuurballen en andere explosies blijven niets breken in een
       zone, en je eigen TNT in je eigen zone werkt gewoon. De satelliet zegt zelf dat hij het is
       (`Zones.satelliteExplosion`). In de config onder `[c4]`: `tntBreach`, `satelliteBreach`. Eén
@@ -1517,7 +1521,7 @@ De stappen, één per commit:
       Een vreemde mag in een zone nu: een **emmer leeggieten of vullen** als hij naar de bovenkant van
       een blok kijkt (op de grond), niet tegen de zijkant of onderkant (geen waterlift tegen je muur op);
       **vuur aansteken** (vuur, of een kampvuur of kaars die aangaat); een **bijl** (schillen, koper
-      schrapen) of **schoffel** op een blok; en **Stark-kabels leggen, oprapen en knippen**. We kijken
+      schrapen) of **schoffel** op een blok; en **stroomkabels leggen, oprapen en knippen**. We kijken
       naar wat er echt verandert, niet naar wat je vasthoudt: met een aansteker in je andere hand zet je
       dus nog steeds geen steen neer. **Mijn keuze**: een pad met een schep en beendermeel noemde je niet,
       die mogen nog steeds niet; zeg het als die er ook bij moeten. Kabels die gewoon op de vloer van je
@@ -1538,15 +1542,15 @@ De stappen, één per commit:
       ..."). **Waarom niet alles op het item zelf?** Wat op een item staat, gaat ook naar het spel van
       wie het vasthoudt, en het wachtwoord mag nooit naar iemands spel (zie `SystemPassword`). Het item
       krijgt dus alleen een etiket met een nummer (`security/PackedCore`, de data component
-      `starktech:packed_core`); de server bewaart de rest (`security/PackedCores`, in
-      `data/starktech_packed_cores.dat`). Eén kern, één keer neerzetten: daarna is het etiket eraf.
+      `imttech:packed_core`); de server bewaart de rest (`security/PackedCores`, in
+      `data/imttech_packed_cores.dat`). Eén kern, één keer neerzetten: daarna is het etiket eraf.
       **Mijn keuzes** (zeg het als je iets anders wil): (1) **de eigenaar blijft de eigenaar**, ook als een
       ander de kern wegneemt en neerzet. Met de kern gaan zijn wachtwoord en bestanden mee, dus een
       gestolen kern moet je nog steeds hacken; anders was weghakken en neerzetten een makkelijke manier
       om het hacken over te slaan. Wie hem neerzet krijgt "This security core still belongs to ...", en
       in het logboek staat wie hem waar neerzette (de eigenaar kan dat via SSH lezen). (2) In
       **creative** valt een kern met instellingen er toch uit (zoals een volle shulkerdoos), anders was
-      alles met één klik weg. (3) Een kern **van niemand** (de Stark Tower, nog niet gehackt) valt als
+      alles met één klik weg. (3) Een kern **van niemand** (de Bibie's Industries Tower, nog niet gehackt) valt als
       een nieuwe kern, zoals altijd. (4) Niet mee: de drones (die komen vanzelf terug) en wie de
       beveiliging even opjaagt na een valstrik. Vier nieuwe tests (`gametest/CoreConfigGameTests.java`):
       weghakken en terugzetten (alles is er weer, en zolang hij als item rondgaat zijn zone, IP en
@@ -1580,7 +1584,7 @@ De stappen, één per commit:
       serverkast noemt het ook. Een apparaat hoort bij de kern als het in zijn gebied ligt en geen
       andere kern dichterbij staat (`SecurityCores.ownedBy`). **Gevolg** (zeg het als je dit anders
       wil): twee kernen mogen nog steeds niet in elkaars gebied staan, dus met 200 moet een nieuwe kern
-      meer dan 400 blokken van een andere kern staan (ook van een Stark Tower); met een kleiner getal
+      meer dan 400 blokken van een andere kern staan (ook van een Bibie's Industries Tower); met een kleiner getal
       mogen ze weer dichter bij elkaar. **Mijn keuze**: maak je het getal kleiner, dan beschermt een
       zone meteen alleen nog tot daar, maar de getekende kubussen blijven bewaard (weer groter: alles
       terug). De zone-test is vervangen door "zone en apparaten volgen de config", en de tests die een
@@ -1614,8 +1618,8 @@ Mijn invulling (zeg het als je iets anders wil):
   gebarsten steen, geen keien). Wat C4 of TNT kapotmaakt, valt eruit zoals altijd.
 - **1 gebarsten blok = 1 poeder = 1 nieuw blok**. Elke machine doet er 5 seconden over en gebruikt
   dan 4 stroom per tick (via kabels, zoals de lader). Trechters kunnen erin doen en eruit halen.
-- Recepten: **Crusher** = ijzer, een slijpsteen, een Stark-chip en een zuiger; **Compactor** = ijzer,
-  twee zuigers, een Stark-chip en een aambeeld.
+- Recepten: **Crusher** = ijzer, een slijpsteen, een computerchip en een zuiger; **Compactor** = ijzer,
+  twee zuigers, een computerchip en een aambeeld.
 
 De stappen, één per commit:
 
@@ -1643,16 +1647,16 @@ De stappen, één per commit:
       zelf; valt er niets (verkeerd gereedschap, glas zonder zijdezacht), dan ook niets. Wat C4 of TNT
       kapotmaakt valt eruit zoals altijd, en blokken met iets erin (kisten, shulkerdozen...) en de vrije
       blokken van een zone (ladders, fakkels...) ook. Het gebarsten blok en het poeder onthouden van welk
-      blok ze komen (de data component `starktech:from_block`) en heten daarnaar ("Cracked Stone Bricks",
+      blok ze komen (de data component `imttech:from_block`) en heten daarnaar ("Cracked Stone Bricks",
       "Obsidian Powder"). Een gebarsten blok ziet eruit als het blok zelf met de barsten erover die je
       ook ziet als je aan een blok hakt (`client/repair/CrackedBlockRenderer`), in je hand, op de grond
       en in je inventaris; het poeder is een hoopje in de kleur van het blok (zoals op een kaart; heel
       donker wordt wat lichter, anders zie je het niet). **De Crusher** (ijzer, een slijpsteen, een
-      Stark-chip en een zuiger): een metalen kast met twee maalwielen achter een venster, die op stroom
+      computerchip en een zuiger): een metalen kast met twee maalwielen achter een venster, die op stroom
       (via kabels of direct tegen een generator) van een gebarsten blok poeder maakt: 5 seconden per
       blok, 4 stroom per tick (`machineTicks` en `machinePower` in de config onder `[repair]`). Rechtsklik
       opent zijn scherm: het vakje erin (leeg: een vaag voorbeeld van wat erin hoort), een blauwe pijl die
-      vol loopt, het vakje eruit, en onderaan wat hij doet ("Crushing...", "No power: connect it with Stark
+      vol loopt, het vakje eruit, en onderaan wat hij doet ("Crushing...", "No power: connect it with power
       cables.", "Output full: take it out.", "Put a cracked block in."). Valt de stroom weg of zit het
       vakje eruit vol, dan wacht hij (hij vergeet niet hoe ver hij was). **Mijn keuzes**: trechters doen
       er van boven en opzij iets in en halen het er van onder uit (zoals bij een oven, ook voor buizen van
@@ -1664,7 +1668,7 @@ De stappen, één per commit:
       `-Ponly=repair` (`r01_crusher_working`, `r02_crusher_screen`, `r03_cracked_in_hand`). Op obsidiaan
       zie je de barsten ook op het voorwerp bijna niet (net als in de wereld).
 - [x] **3. De Compactor**
-      **De Compactor** (ijzer, een aambeeld, twee zuigers en een Stark-chip): dezelfde kast als de Crusher,
+      **De Compactor** (ijzer, een aambeeld, twee zuigers en een computerchip): dezelfde kast als de Crusher,
       met in zijn venster een hydraulische pers. Hij perst poeder tot een **volledig nieuw blok** van
       hetzelfde soort: een gewoon blok, zonder barsten en nooit geplamuurd, dus weer helemaal sterk.
       Ook 5 seconden en 4 stroom per tick, met hetzelfde soort scherm ("Pressing...", "Put powder in."),
@@ -1708,7 +1712,7 @@ Jouw antwoorden:
 
 Mijn invulling (zeg het als je iets anders wil):
 
-- **Het gereedschap: de Bypass Kit** (een inbraakset; recept zonder vaste vorm: Stark-chip, schaar,
+- **Het gereedschap: de Bypass Kit** (een inbraakset; recept zonder vaste vorm: computerchip, schaar,
   glowstonestof als poeder voor vingerafdrukken, redstone en ijzer). Rechtsklik ermee op een lezer of
   paneel en de minigame begint. Hij gaat 16 keer mee: elke hack die je begint kost er één, ook als je
   stopt. Zakkenrollen doe je met je blote hand.
@@ -1719,7 +1723,7 @@ Mijn invulling (zeg het als je iets anders wil):
   6 blokken) of doodgaan stopt de hack zonder alarm. Op elk scherm staat in één zin waarom het werkt.
 - **Mislukt** (de tijd is om, ALARM langer dan 1 seconde geraakt, of geen pogingen meer): rood lampje,
   een alarm in het logboek ("Someone is tampering with Lab door", met je naam erachter zoals bij elk
-  alarm), E.D.I.T.H. waarschuwt de eigenaar, de beveiliging jaagt op je, en dat apparaat laat jou 60
+  alarm), I.M.T waarschuwt de eigenaar, de beveiliging jaagt op je, en dat apparaat laat jou 60
   seconden niet meer proberen.
 - **Het stroomcircuit**: linksklik draait een stukje rechtsom, rechtsklik linksom. Stukjes die aan CARD
   vastzitten lichten blauw op. Raakt het signaal ALARM, dan knippert die rood en piept hij: draai het
@@ -1753,7 +1757,7 @@ Mijn invulling (zeg het als je iets anders wil):
   (verder dan 3,5 blokken), dan houdt het gewoon op. Betrapt: hij krijgt "... tried to pick your
   pocket!" en jij licht 10 seconden op, zodat hij je terugvindt. Lukt het, dan merkt hij niets (tot hij
   in zijn rugzak kijkt). Bij dezelfde speler kun je het pas na 30 seconden weer proberen, wat er ook
-  gebeurde. Een server kan het uitzetten met `pickpocket.allowed` in `starktech-server.toml`, net als
+  gebeurde. Een server kan het uitzetten met `pickpocket.allowed` in `imttech-server.toml`, net als
   "hack player".
 - Alle getallen staan in de config onder `[bypass]`: de tijden, hoe lang ALARM mag, de wachttijd na
   een mislukte hack, de extra pogingen, en het bereik en de wachttijd van zakkenrollen.
@@ -1761,7 +1765,7 @@ Mijn invulling (zeg het als je iets anders wil):
 De stappen, één per commit:
 
 - [x] **1. De Bypass Kit en een keycardlezer hacken**
-      De **Bypass Kit** (zonder vaste vorm: Stark-chip, schaar, glowstonestof, redstone en ijzer; gaat 16
+      De **Bypass Kit** (zonder vaste vorm: computerchip, schaar, glowstonestof, redstone en ijzer; gaat 16
       keer mee). Rechtsklik ermee op een keycardlezer: eerst kies je welke kaart je namaakt (niveau 1 tot
       5, met per niveau de grootte, de tijd en het aantal ALARM-punten), dan het **stroomcircuit**:
       linksklik draait een stukje rechtsom, rechtsklik linksom, en wat aan CARD vastzit licht blauw op.
@@ -1824,7 +1828,7 @@ De stappen, één per commit:
       to pick your pocket!" met een piep, en jij licht 10 seconden op. Loopt hij weg (verder dan 3,5
       blokken), dan houdt het op, zonder betrapt. Bij dezelfde speler mag je het pas na 30 seconden weer
       proberen, wat er ook gebeurde. Spelers in creative of spectator kun je niet zakkenrollen. Een
-      server zet het uit met `pickpocket.allowed = false` in `starktech-server.toml`; het bereik, de
+      server zet het uit met `pickpocket.allowed = false` in `imttech-server.toml`; het bereik, de
       wachttijd en hoe lang je oplicht staan onder `[bypass]`. Screenshots: `-Ponly=bypass`
       (`bp16`-`bp20`, alleen het scherm: in de testwereld is er geen tweede speler). Drie nieuwe tests:
       van voren mag niet en van achteren pik je een kaart (hij is hem kwijt, jij hebt hem, de kaart in zijn
@@ -1859,16 +1863,16 @@ verder** (vol licht tot 85 blokken in plaats van een paar), plus een gloed om de
 
 Mijn invulling (zeg het als je iets anders wil):
 
-- **Arc Lamp** (ijzer, vier glazen ruiten, gloeisteen en een Stark-chip): een stalen blok met aan vier
+- **Arc Lamp** (ijzer, vier glazen ruiten, gloeisteen en een computerchip): een stalen blok met aan vier
   kanten glas. **2 stroom per tick** zolang hij brandt (een volle warmtegenerator: ruim acht minuten).
   Een lamp die uit is, gaat pas aan als het net stroom heeft voor 5 seconden, zodat hij aan een te
   zwakke generator niet elke tick knippert. Alle drie de getallen staan onder `[lights]` in de config
   (`arcLampMaxLevel`, het hoogste lichtniveau, tussen 15 en 128).
-- **Lichtschakelaar** (een hendel, een ijzeren klompje en een Stark-kabel = 2): een plaatje met een
+- **Lichtschakelaar** (een hendel, een ijzeren klompje en een stroomkabel = 2): een plaatje met een
   wipschakelaar, aan de muur, op de vloer of aan het plafond. Rechtsklik zet hem om. Aan: blauw lampje,
   de stroom gaat erdoor alsof het kabel is. Uit: rood lampje, daar houdt de stroom op (ook als er een
   getekende kabel door de schakelaar loopt). Hij geldt voor álles achter hem, niet alleen lampen.
-- **Ook via E.D.I.T.H.**: wie een schakelaar neerzet, krijgt hem in de redstone-lijst ("Light switch 1"),
+- **Ook via I.M.T**: wie een schakelaar neerzet, krijgt hem in de redstone-lijst ("Light switch 1"),
   net als een torentje of de koepel.
 
 De stappen:
@@ -1893,7 +1897,7 @@ De stappen:
       gebied ziet, zodra het klaar is. Een stralenkrans om de brandende lamp (`client/light/ArcLampRenderer`)
       laat zien dat hij feller is dan een gewone lamp; je ziet hem tot 256 blokken ver.
 - [x] **2. De lichtschakelaar**
-      `light/LightSwitchBlock`, met een uitzondering in `energy/StarkGrid`: een schakelaar die aan staat
+      `light/LightSwitchBlock`, met een uitzondering in `energy/PowerGrid`: een schakelaar die aan staat
       geleidt zoals een kabel, een die uit staat houdt alles tegen.
 - [x] **3. Tests, screenshots, showcase en LEESMIJ**
       Drie nieuwe tests (`gametest/LightGameTests.java`): de schakelaar knipt de stroom (ook met een kabel
@@ -1950,14 +1954,14 @@ Jouw wens: "een centraal config bestand waar **echt alles** in staat: **powerpro
 oude configbestanden erven ervan **of** de code haalt de waarde **meteen uit het hoofdbestand**. Ik
 koos het tweede: er is nu één plek, en geen tussenbestanden meer.
 
-- **`config/StarkConfig.java`**: alle getallen van de mod, in 27 hoofdstukken (Rules, Glasses,
+- **`config/ImtConfig.java`**: alle getallen van de mod, in 27 hoofdstukken (Rules, Glasses,
   Scanner, **Power**, Drones, **Satellite**, ... Raids), met een inhoudsopgave en uitleg over de
   eenheden bovenaan, en bij elk getal een regel Nederlands. De code leest overal rechtstreeks hieruit,
-  bijvoorbeeld `StarkConfig.Satellite.COOLDOWN`.
-- **`config/starktech.toml`**: wordt daar vanzelf uit gemaakt (`config/StarkConfigLoader`), met
+  bijvoorbeeld `ImtConfig.Satellite.COOLDOWN`.
+- **`config/imttech.toml`**: wordt daar vanzelf uit gemaakt (`config/ImtConfigLoader`), met
   dezelfde hoofdstukken en Engelse uitleg. **344 instelbare getallen** (eerst 204 in het ene bestand en 14 in het andere). Het vervangt
-  `starktech-balance.toml` en `starktech-server.toml`; de oude namen `drones.orbitHeight`,
-  `drones.swarmMax` enzovoort zijn gebleven. Weg: `EdithBalance`, `EdithConfig`, `BalanceConfig` en
+  `imttech-balance.toml` en `imttech-server.toml`; de oude namen `drones.orbitHeight`,
+  `drones.swarmMax` enzovoort zijn gebleven. Weg: `ImtBalance`, `ImtConfig`, `BalanceConfig` en
   de 13 andere `...Balance`-klassen.
 - **`[power]`**: alles van het stroomnet bij elkaar, per blok: wat het opwekt (zonnepaneel, nu ook bij
   regen en onweer; warmtegenerator; redstone), wat het opslaat, en wat het gebruikt (laserwand, koepel
@@ -1972,19 +1976,19 @@ koos het tweede: er is nu één plek, en geen tussenbestanden meer.
   waren (vliegen met het harnas, raketten, de duik van drones, raiddrones, ...), en losse getallen van
   elders: wachtwoordpogingen bij inbreken, hoeveel backups een datacenter bewaart, de afstanden van
   de holotafel, hoe lang de satelliet-levering duurt, de seconden stroom voor een laserwand.
-- **Vast gebleven** (staan wél in `StarkConfig`, met `final` en "VAST" erbij): wat het spel bij het
+- **Vast gebleven** (staan wél in `ImtConfig`, met `final` en "VAST" erbij): wat het spel bij het
   opstarten al nodig heeft (levens van drones en vijanden, het pantser van het harnas, hoe vaak een
   Bypass Kit meegaat, hoeveel kubussen een zone mag hebben) en hoe schermen eruitzien (vakjes in een
   serverkast of vrachtdrone).
 - **Mijn invulling**: je persoonlijke instellingen (stem, volume, Spotify, zone-rand) blijven in
-  `starktech-client.toml`: die kiest elke speler zelf, en het wereldbestand komt op een server van de
+  `imttech-client.toml`: die kiest elke speler zelf, en het wereldbestand komt op een server van de
   server. Eén piepklein verschil: een bombardement op niveau 0 (dat op slot zit) rekent nu met de
   explosie van niveau 1.
 
 De stappen:
 
-- [x] **1. StarkConfig, de lader en alles omzetten**
-      118 bestanden lezen nu uit `StarkConfig`; `logic/LogicStats` en `CircuitPuzzle` kregen de kleine
+- [x] **1. ImtConfig, de lader en alles omzetten**
+      118 bestanden lezen nu uit `ImtConfig`; `logic/LogicStats` en `CircuitPuzzle` kregen de kleine
       rekenhulpjes uit de oude bestanden. De bestaande configtest kijkt nu ook of een rijtje per niveau
       telt (de satelliet wacht dan echt korter), of een aan/uit-regel telt, en of een rijtje met het
       verkeerde aantal getallen terugvalt op de standaard. Alle 203 tests groen. LEESMIJ.md hoofdstuk 6
@@ -1992,16 +1996,16 @@ De stappen:
 - [x] **2. Kommagetallen voor stroom** (11 oktober: "ik heb bij power ints naar floats veranderd ... dit
       werkt niet ... zorg dat alles in floats staat zodat ik makkelijk heel kleine getallen kan gebruiken")
       Er gingen twee dingen mis. Het net rekende in hele getallen, dus 0.3 per tick werd 0. En een
-      nieuwe standaardwaarde in `StarkConfig` verandert een bestaand `starktech.toml` niet: daar stond
+      nieuwe standaardwaarde in `ImtConfig` verandert een bestaand `imttech.toml` niet: daar stond
       nog 6. Nu zijn **alle energiegetallen in `[power]` kommagetallen** (float; aantallen zoals "hete
       blokken" en tijden in ticks blijven hele getallen). Generatoren bewaren hun stroom als kommagetal;
-      apparaten betalen met `StarkGrid.pay`, dat per apparaat onthoudt wat nog geen hele stroom was
+      apparaten betalen met `PowerGrid.pay`, dat per apparaat onthoudt wat nog geen hele stroom was
       (0.25 per tick = elke vierde tick 1); snelheden zoals "zoveel per tick in de bril" gaan via
       `energy/EnergyCarry`. Het scherm van een generator toont nu ook "0.3 per tick". Jouw vijf nieuwe
-      waarden staan nu ook in `run/config/starktech.toml`, en `StarkConfig` waarschuwt bovenaan voor die
+      waarden staan nu ook in `run/config/imttech.toml`, en `ImtConfig` waarschuwt bovenaan voor die
       valkuil. Een nieuwe test (`power_works_with_fractions`). Met de oude waarden (6 en 14 per tick)
       zijn alle 204 tests groen. **Met jouw nieuwe waarden** (0.3 en 0.7) zijn er 3 rood:
-      `hydra_bunker_lasers_need_the_reactor`, `stark_tower_vault_trap` en `stark_tower_lasers_have_power`.
+      `bibie_bunker_lasers_need_the_reactor`, `bibie_tower_vault_trap` en `bibie_tower_lasers_have_power`.
       De warmtegenerator naast de lava in de bunker en de toren maakt nu te weinig voor hun laserwanden
       (elke zender gebruikt nog 1 per tick). Jouw keuze: zo laten, je kijkt zelf naar de getallen.
 - [x] **3. Alle getallen kommagetallen** (11 oktober: "zorg dat alle getallen in de mod met komma getallen
@@ -2018,7 +2022,7 @@ De stappen:
       tick per sec per min per uur"). `client/PowerUnit`: een knopje in het scherm van de generator
       (rechtsboven), de koepel (boven Done) en de Arc Lamp (naast Done). Elke klik: tick, seconde, minuut,
       uur, en weer tick. De keuze geldt meteen voor alle schermen, ook het verbruik in het G-menu en wat een
-      zone kost in de app Zones, en blijft bewaard in `starktech-client.toml` (`powerUnit`). **Mijn
+      zone kost in de app Zones, en blijft bewaard in `imttech-client.toml` (`powerUnit`). **Mijn
       invulling**: één keuze voor alles in plaats van per scherm. Screenshots: `-Ponly=power` (`pw01`-`pw05`:
       het generatorscherm, vier keer echt op de knop geklikt), en de knop staat ook op `99_dome_screen` en
       `lt05_lamp_screen`.
@@ -2030,7 +2034,7 @@ De stappen:
       kreeg zijn stroom niet). Alles in de tijd van de knop /tick. Hoe: elke generator meet steeds 6
       seconden (`ChargerBlockEntity.GRID_WINDOW`, zodat ook apparaten die om de 2 seconden betalen
       eerlijk meetellen) wat hij kon maken, wat het net eruit haalde en wat apparaten tekortkwamen
-      (`StarkGrid.missed`: ook een laserwand of Arc Lamp die niet aan kan, een kern zonder stroom, een
+      (`PowerGrid.missed`: ook een laserwand of Arc Lamp die niet aan kan, een kern zonder stroom, een
       torentje zonder stroom voor een raket); elke seconde telt hij alle generatoren op zijn net op.
       **Mijn invulling**: een generator die vol zit, maakt even niets; dan zegt het overzicht "the generators
       are full" in plaats van "te weinig". Het overzicht staat waar het meeste plek is (rechts of links) en
@@ -2050,7 +2054,7 @@ Toggle of Pulse; hij werkt altijd, gratis, ook als je offline bent; een relais m
 tags in tags zet je in een apart tag-scherm.
 
 - [x] **1. Tags in plaats van groepen.** Een relais heeft nu een lijst tags (`Relay.tags`), en je lijst
-      onthoudt welke tag in welke tag zit (`EdithRelays.tagParents`). Een tag mag in meerdere tags zitten,
+      onthoudt welke tag in welke tag zit (`ImtRelays.tagParents`). Een tag mag in meerdere tags zitten,
       nooit (via een omweg) in zichzelf (`wouldLoop`). Schakelen op een tag pakt alles eronder mee
       (`inTag`): je stem, de knoppen in het redstone-scherm, en ook de diagrammen op een server
       (`on("base")`, `LogicDevices`). In het scherm van een relais typ je de tags met komma's
@@ -2086,7 +2090,7 @@ tags in tags zet je in een apart tag-scherm.
       kan bewerken"). Er zat een lek in: vroeger kon iedereen met een bril op jouw relais rechtsklikken, het
       zo in zijn eigen lijst zetten en het daarna van overal schakelen. Nu onthoudt een relais wie het neerzette
       (`RelayBlockEntity`), en alleen die kan het openen, in zijn lijst zetten, hernoemen, omkeren en schakelen
-      (`EdithRedstone.otherOwner`). Een ander hoort "This relay belongs to ...". Stond jouw relais van vroeger
+      (`ImtRedstone.otherOwner`). Een ander hoort "This relay belongs to ...". Stond jouw relais van vroeger
       nog in de lijst van een ander, dan gaat het eruit zodra hij het probeert te gebruiken, of bij het
       opruimen (elke 5 seconden, `pruneGhosts`). Een emitter schakelt nooit het relais van een ander, ook niet
       uit zijn oude kopie. **Mijn invulling**: een relais van vóór vandaag heeft nog geen eigenaar; dat wordt
@@ -2116,7 +2120,7 @@ zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI 
       én de rest van het gebied van de kern, net als bij de laserwand zelf (daar lopen die spelers al
       doorheen). Een zender van vóór vandaag heeft nog geen eigenaar: die wordt van wie hem als eerste
       opent, net als een oud relais. Behalve in iemands basis (dan alleen de vertrouwde spelers daar) en
-      in een gebouw van deze mod (de Stark Tower, de Hydra-bunker): anders kon een indringer de lasers van
+      in een gebouw van deze mod (de Bibie's Industries Tower, de Bibie's Industries-bunker): anders kon een indringer de lasers van
       de bunker overnemen en uitzetten. Geen uitzondering voor creative. Een zuiger duwt een zender nu
       niet meer weg (zoals een kist), omdat hij een blok-entiteit heeft.
 - [x] **3. Het scherm** (`client/shield/LaserEmitterScreen`, Engels in het spel): **Color** (zes vakjes,
@@ -2136,7 +2140,7 @@ zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI 
       over; omgekeerd (aan zonder redstone, uit met) en liggend (een plat vloertje); vertrouwde spelers in
       een zone wel, een vreemde niet (ook niet een zender zonder eigenaar overnemen); en een oude zender
       wordt van wie hem als eerste opent. 216 tests: 213 groen, de 3 rode van hoofdstuk 14 stap 2.
-      Onderweg werd `stark_tower_has_powered_cameras` rood: met de nieuwe batches lopen de tests in een andere
+      Onderweg werd `bibie_tower_has_powered_cameras` rood: met de nieuwe batches lopen de tests in een andere
       volgorde, en de toren van de kluistest stond er nu vlak naast. Zijn kern stond dichter bij de lobbycamera
       en pikte die in. De test ruimt zo'n kern van een andere test nu eerst op. Screenshots: `-Ponly=laser`
       (`73_laser_flat`, `74_laser_flat_angle`, `75_laser_screen`: een cyaan poort van drie hoog, omgekeerd
@@ -2219,7 +2223,7 @@ duidelijkheid **tags zijn volledig weg**, je kunt enkel relay namen in groepen s
 (zorg dat **base niet in temp** kan en temp in base waardoor je een **loop** krijgt)".
 
 - [x] **1. Groepen in plaats van tags.** Een relais zit in hooguit één groep (`Relay.group`, leeg = geen
-      groep), en een groep in hooguit één andere groep (`EdithRelays.groupParents`, leeg = bovenaan). Zo is
+      groep), en een groep in hooguit één andere groep (`ImtRelays.groupParents`, leeg = bovenaan). Zo is
       het een echte boom. Een groep kan nooit (via een omweg) in zichzelf (`wouldLoop`): zit `temp` in
       `base`, dan weigert de server `base` in `temp` ("that would make a loop"), en in de schermen staat die
       keuze grijs (of rood bij slepen). Schakelen op een groep pakt alles eronder mee: je stem, de knoppen in
@@ -2236,7 +2240,7 @@ duidelijkheid **tags zijn volledig weg**, je kunt enkel relay namen in groepen s
       je gekozen hebt**, zodat je jouw voorbeeld zo intikt: kies `base`, typ `visitors`; kies `visitors`, typ
       `cafe`. Rechts: in welke groep de gekozen groep zit (een vinkje; **(top level)** = nergens in; wat een
       rondje zou maken staat grijs), **Rename** en **Delete group**.
-- [x] **4. Op de desktop: de app Groups** (`GroupsApp`, icoon **G** op de Stark OS-desktop). Dezelfde boom,
+- [x] **4. Op de desktop: de app Groups** (`GroupsApp`, icoon **G** op de Security OS-desktop). Dezelfde boom,
       met je relais erin (lampje groen = aan, rechts waar het staat) en per groep hoeveel apparaten hij
       schakelt. **Sleep** een relais of groep op een groep om hem erin te zetten (groen = mag, rood = rondje),
       of op de bovenste regel "Your relays (top level)" om hem uit elke groep te halen. Bovenaan **New group**
@@ -2302,7 +2306,7 @@ ene run.
       (in een rij) en **AT START** (een naam helemaal links, zonder draadjes), met een vak voor de naam en
       een vak voor de waarde. Ctrl+Spatie stelt `count = 0` voor en kent je eigen namen; de Help heeft een
       stuk NAMES. Fouten: "count has no value yet: give it one first, like count = 0", "count holds a
-      number, so you cannot give it text", "card.level is information from E.D.I.T.H.: you can read it,
+      number, so you cannot give it text", "card.level is information from I.M.T: you can read it,
       but not give it a value", "Did you mean is_night?". **Mijn invulling**: helemaal links mag je alleen
       getallen, tekst en andere namen van links gebruiken (geen `card.level`: er is dan nog geen kaart).
       Twee nieuwe tests (`logic_variables`, `logic_variables_run`: een timer telt tot 3, dan pas gaat de
@@ -2322,7 +2326,7 @@ ene run.
 - [x] **5. De tolk apart** (vóór stap 3 gedaan: variabelen hebben hem nodig) — het aflopen van de blokjes
       (if met yes, no en after, eigen blokken, `wait`, hooguit 64 blokjes per tick) zit nu in
       `logic/program/Interpreter`, zonder Minecraft erin. Wat een blokje echt doet, vraagt hij aan een
-      `Host`: op de server is dat `LogicRunner.ServerHost` (relais, lampjes, E.D.I.T.H., het logboek), straks
+      `Host`: op de server is dat `LogicRunner.ServerHost` (relais, lampjes, I.M.T, het logboek), straks
       ook een robot, een drone en het Training End-blok. Geen gedragsverandering: 221 tests, 218 groen.
       Commit: `9685b84`.
 - [x] **6. Meerdere waarden en berekeningen als argument** — wat tussen de haakjes staat, is nu een
@@ -2357,7 +2361,7 @@ de server niet plat, een oud diagram laadt nog).
       (`break` viel eraf): het palet **scrolt** nu met het muiswiel (met ▲/▼ als er meer is), en het
       AT START-blokje heet in het palet "at start" in plaats van "var". In de showcase de nieuwe functie
       **"Logic: names, sums and loops"** na "Server racks and Logic" (het lab met een tweede diagram "Blink":
-      code 4321, E.D.I.T.H. telt mee, de deur gaat drie keer open, en dan de code en de blokjes). LEESMIJ.md,
+      code 4321, I.M.T telt mee, de deur gaat drie keer open, en dan de code en de blokjes). LEESMIJ.md,
       "De server": rekenen, namen en lussen, met voorbeelden.
 
 ### 21. De guard robot bouwen (14 oktober)
@@ -2377,7 +2381,7 @@ leven en batterij, armen = schieten, hoofd = kijkhoek. De robot hoort bij de cor
 Een robot opent een deur door een relais aan te sturen (jouw wens). Aan = hij stapt uit zijn laadblok; uit =
 hij loopt terug en laadt.
 
-- [x] **1. Config en de robot** — `[robots]` in `StarkConfig` (7 lijstjes met elk 4 getallen, één per stijl:
+- [x] **1. Config en de robot** — `[robots]` in `ImtConfig` (7 lijstjes met elk 4 getallen, één per stijl:
       leven, pantser en batterij van het lijf, snelheid van de benen, schiettempo van de armen, kijkafstand en
       kijkhoek van het hoofd), `RobotStyle`, `RobotSlot` en `RobotParts` (de vier onderdelen in één getal),
       `GuardRobotEntity` (geen Monster, zodat je eigen torentjes hem met rust laten; verdwijnt nooit vanzelf;
@@ -2389,7 +2393,7 @@ hij loopt terug en laadt.
 - [x] **2. Onderdelen** — 16 onderdelen als item (`commando_head` tot `super_battle_legs`, "Commando Head" tot
       "Super Battle Legs"), elk met een icoontje (`robot_part_items()` in `tools/generate_textures.py`) en een
       recept: ijzer plus de stof van de stijl (Commando grijze kleurstof, Trainer witte, Battle koper, Super
-      Battle een ijzerblok: het zwaarst); een hoofd heeft een Stark Chip en een glasruit, een lijf een
+      Battle een ijzerblok: het zwaarst); een hoofd heeft een Computer Chip en een glasruit, een lijf een
       redstoneblok, armen en benen zuigers. Als je erover beweegt zegt het item wat het doet, met de getallen
       uit de config ("Body: 44 health, 10 armor, battery 8000"). Gaat een robot echt kapot, dan blijft elk
       onderdeel met een kans heel (`partSurviveChance`, standaard 0,5) en valt het op de grond. Twee nieuwe
@@ -2407,11 +2411,11 @@ hij loopt terug en laadt.
       Screenshots `-Ponly=robots` (`rb01`-`rb06`: de vier stijlen, van dichtbij, opzij, twee gemengde van
       achter en voor, en 's nachts met de lichtjes).
 - [x] **4. Printplaat** — de **Robot Circuit Board** (`CircuitBoardItem`, recept: koper, redstone, goudklompjes
-      en een Stark Chip; icoon: een groene printplaat met 8 gouden pinnen). Wat erop zit staat in het item
+      en een Computer Chip; icoon: een groene printplaat met 8 gouden pinnen). Wat erop zit staat in het item
       (`BotBoard` in de nieuwe map `bot/`, die robots en later drones delen): 8 pinnen met elk de naam van
       een module of leeg, en de soldeerbruggen tussen naburige pinnen (voor hoofdstuk 22). Een nieuwe
       printplaat is leeg. Eén nieuwe test (8 pinnen, bewaren en laden, recept). Vorige stap: `ca743d5`.
-- [x] **5. Robot Assembler** — een stalen werkbank (recept: ijzer, Stark Chip, zuigers en een werkbank; voorop
+- [x] **5. Robot Assembler** — een stalen werkbank (recept: ijzer, Computer Chip, zuigers en een werkbank; voorop
       een scherm met een cyaan robot, bovenop een werkblad met klemmen). Zijn scherm: links vier vakjes
       (hoofd, lijf, armen, benen; elk neemt alleen zijn eigen soort), in het midden een **draaiend
       3D-voorbeeld** dat meegroeit (wat nog niet ligt, zie je niet), rechts de printplaat en het robotvakje,
@@ -2438,7 +2442,7 @@ hij loopt terug en laadt.
       en zonder stroom; aan = eruit, uit = terug in het midden; batterij leeg = stil). Screenshot `rb11`.
       Vorige stap: `ed39e6e`.
 - [x] **7. Robotscherm en opslag** — **`BotNetwork`** (in `bot/`, bewaard in de wereld als
-      `starktech_bots`): elke robot met naam, eigenaar, laatste plek, dock, onderdelen, toestand, batterij en
+      `imttech_bots`): elke robot met naam, eigenaar, laatste plek, dock, onderdelen, toestand, batterij en
       de kern in wiens gebied hij staat. Een robot meldt zich om de seconde; kapot of opgepakt gaat hij eruit
       (een stuk wereld dat niet geladen is, telt niet). Elke robot krijgt een **naam** die bij zijn eigenaar
       nog niet bestaat ("Guard 1", "Guard 2"...): in je code noem je hem straks zo, dus een naam mag maar
@@ -2449,7 +2453,7 @@ hij loopt terug en laadt.
       vrij). Nieuwe berichten `RobotOpenPayload` en `RobotActionPayload`; netwerkversie 19 → 20. Twee nieuwe
       tests (namen, opslaan en laden, oppakken, kapot; een vreemde kan niets, een dubbele naam mag niet).
       Screenshot `rb12`. Vorige stap: `9b7896e`.
-- [x] **8. App Robots** — een nieuwe app op de Stark OS-desktop (icoon "R", na Groups): de robots in het gebied
+- [x] **8. App Robots** — een nieuwe app op de Security OS-desktop (icoon "R", na Groups): de robots in het gebied
       van de kern (uit `BotNetwork`), elk met naam, plek, toestand, batterij en of hij een dock heeft, en de
       knoppen **Rename** (Enter bewaart, Esc niet) en **Switch on/off**. Een robot in een stuk wereld dat
       niet geladen is, staat er grijs bij ("far away") zonder knoppen. Werkt ook op afstand (SSH), zoals
@@ -2461,7 +2465,7 @@ hij loopt terug en laadt.
       op, twee piepjes), **uitschakelen** (de zoem zakt weg, een doffe klonk; ook als de batterij leeg is,
       en als hij kapot gaat), **geraakt** (een metalen klang met vonkjes) en het **laadzoemen** op het dock:
       een rustige lus, heel stil (0,08), alleen in je spel en alleen als hij echt laadt, met een eigen
-      volumeknop `robotHumVolume` in `starktech-client.toml` (zoals de rayshields). In de showcase de nieuwe
+      volumeknop `robotHumVolume` in `imttech-client.toml` (zoals de rayshields). In de showcase de nieuwe
       functie **"Guard robots"** (nummer 82, na "Hacking and pickpocketing"): de assembler, een gemengde
       robot op een dock, een halflege Commando die laadt, aanzetten, het robotscherm, uitzetten, de app
       Robots. LEESMIJ.md: een nieuw stuk "Guard robots: bouwen, laden, aan en uit". Vorige stap: `0f75652`.
@@ -2488,7 +2492,7 @@ brand staat in de config.
 
 - [x] **1. Modules** — `BotModule` (in `bot/`) en negen items: **Scan**, **Distance**, **Face Recognition**,
       **Pathfinding**, **Laser**, **Gun**, **Solar Panel**, **Camera** en de **Burnt Module** (wat overblijft na
-      een kortsluiting; geen recept). Elk recept: een Stark Chip, twee redstone en iets dat bij de module past
+      een kortsluiting; geen recept). Elk recept: een Computer Chip, twee redstone en iets dat bij de module past
       (een glasruit, een observer, een verrekijker, een kompas, een diamant met een blazestaaf, een dispenser
       met ijzer, een daglichtsensor, getint glas). Icoontjes: een groen printplaatje met twee gouden pootjes
       en een tekentje (`robot_module_items()`). Tooltip: wat hij doet en "Solder it onto a pin...". Eén
@@ -2517,7 +2521,7 @@ brand staat in de config.
       een module, dan blijft hij uit; vonken, rook, een knal; de modules op die pinnen worden **Burnt Modules**
       (lossolderen geeft je de verbrande module) en de brug is weggebrand. Met de kans `burnChance` (0,25)
       brandt de hele robot af (echt kapot: zijn onderdelen vallen met hun kans). De eigenaar krijgt een rode
-      E.D.I.T.H.-melding ("Short circuit in Guard 1: pin 3 burnt out"), het logboek van de kern een regel, en wie
+      I.M.T-melding ("Short circuit in Guard 1: pin 3 burnt out"), het logboek van de kern een regel, en wie
       hem aanzette (robotscherm of app Robots) hoort "Short circuit!". Een brug tussen twee lege pinnen doet
       niets; daarna gaat hij gewoon aan. Eén nieuwe test. Vorige stap: `4f1b9ec`.
 - [x] **5. Zichtbaar op de robot** — wat er op het bord zit, zie je op de robot (in elke stijl op een eigen
@@ -2610,7 +2614,7 @@ stuurt het via de verbinding naar de robot, die zijn eigen kopie bewaart.
       ook. Onderweg gevonden: sinds hoofdstuk 22 stond de camera van de screenshots te ver van de kern, waardoor
       `rb13` de wereld liet zien in plaats van de app (de desktop opent alleen vlakbij); hersteld. Eén nieuwe
       test (`robot_program_upload_from_the_desktop`).
-- [x] **5. Robot naar server** — met verbinding gaat wat een robot zegt via zijn server: `say(...)` (E.D.I.T.H.
+- [x] **5. Robot naar server** — met verbinding gaat wat een robot zegt via zijn server: `say(...)` (I.M.T
       vertelt het de eigenaar), `log(...)` en `alarm(...)` komen in het logboek met zijn naam ervoor ("Scout:
       Intruder!"), `on`/`off`/`toggle`/`pulse("Door")` schakelen een apparaat van de basis, `is_on("Door")` vraagt
       het aan de server, en `send("intruder")` laat elke `when message("intruder"):` op de server beginnen, met
@@ -2711,7 +2715,7 @@ dieren werkt hij niet.
       true; `write(cameraPin, false)` zet de camera uit (NO SIGNAL), `true` weer aan. Binnenin herkent de app
       een camera nu aan een sleutel (plek van een camerablok, of nummer van een robot), want een robot loopt.
       Eén nieuwe test (`robot_camera_in_the_cameras_app`).
-- [x] **6. Ion Blaster** — een nieuw wapen (lapis, twee ijzer, een Stark Chip en redstone; slijt na 200
+- [x] **6. Ion Blaster** — een nieuw wapen (lapis, twee ijzer, een Computer Chip en redstone; slijt na 200
       schoten, 1,5 s tussen twee schoten). Rechtsklik: een dikke blauwe ionenstraal tot 24 blokken (screenshot
       `rb24`; muren en schildkoepels houden hem tegen). Een guard robot die hij raakt, valt neer: de nieuwe
       toestand **DOWN**, hij ligt op zijn rug (screenshot `rb25`), af en toe een vonkje, zijn programma staat
@@ -2737,7 +2741,7 @@ Ion Blaster zet een robot DOWN en een speler blijft ongeschonden.
 
 Jouw antwoorden: de security drones krijgen dezelfde programmeerbaarheid, plus **omhoog en omlaag**. Hun
 laadstation wordt de **Drone Dock**. De **arsenal-drones** laden daar niet meer, die blijven in hun baan.
-Drones bouw je zelf, met een eigen printplaat. De Stark Tower krijgt docks met drones die Tony al
+Drones bouw je zelf, met een eigen printplaat. De Bibie's Industries Tower krijgt docks met drones die Bibie al
 geprogrammeerd heeft.
 
 **Mijn invulling**: de core maakt geen gratis drones meer; de schakelaar "Drones" in de app Devices zet al je
@@ -2759,7 +2763,7 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       `droneDockChargeRate`, `droneDrainOn`, `droneDrainFlying`, `droneSpeed` (3 blokken per seconde),
       `droneScanRange`, `droneScanAngle` (360), `droneFireInterval` en `droneTakeOff`. Binnenin: wat robots en
       drones delen staat nu in `bot/BotEntity`, vliegen in `bot/DroneMove`. Vijf nieuwe tests (`DroneGameTests`).
-- [x] **2. De drone bouwen** — recept: ijzer, een amethist, redstone, een Robot Circuit Board en een Stark Chip.
+- [x] **2. De drone bouwen** — recept: ijzer, een amethist, redstone, een Robot Circuit Board en een Computer Chip.
       Rechtsklik op een Drone Dock en hij staat erop (zijn thuis en zijn lader); op een ander blok hangt hij erboven,
       zonder thuis. Hij heet "Drone 1", "Drone 2"... Sneak + rechtsklik met een lege hand: hetzelfde scherm als een
       robot (zonder onderdelen), met Board (solderen) en Pick up (alles gaat mee in het item). Zijn model: een
@@ -2784,8 +2788,8 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       oude drones van vroeger heten daar nu "Patrol drone 1", "Patrol drone 2"... en blijven werken tot ze
       neergeschoten worden. Tests: `security_core_launches_no_drones` (in plaats van `security_core_launches_drones`:
       de kern maakt er geen meer, en een oude drone patrouilleert nog) en `core_drones_switch_sends_drones_home`.
-- [x] **5. De Stark Tower** — de hangar van de toren had al zes Drone Docks met stroom. De kern van een toren van
-      niemand zet nu één keer op de eerste vier een **drone van Tony** ("Tower drone 1" tot "Tower drone 4"; hoeveel:
+- [x] **5. De Bibie's Industries Tower** — de hangar van de toren had al zes Drone Docks met stroom. De kern van een toren van
+      niemand zet nu één keer op de eerste vier een **drone van Bibie** ("Tower drone 1" tot "Tower drone 4"; hoeveel:
       `towerDrones` in `[security]`): aan, met Scan, Face Recognition, Laser en Pathfinding, en het programma
       **Tower patrol** (filter "strangers", omhoog, rondjes van 3 blokken door de hangar, elke seconde schieten op wie
       hij ziet, laden onder 25%). Ze zijn van niemand, dus voor hen is iedereen een vreemde, en ze schieten ook zonder
@@ -2793,22 +2797,22 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       de opdracht "alarm" met de plek van de indringer en vliegen ze erheen, als ze er kunnen komen. Wie de toren
       hackt, krijgt ze: dan zijn ze van hem (heeft hij al een drone met die naam, dan krijgt die een nieuwe). Een
       drone die kapot gaat, komt niet terug. Een toren uit een bestaande wereld die nog van niemand is, krijgt ze ook
-      (één keer). Het structuurbestand zelf veranderde niet. Twee nieuwe tests (`stark_tower_has_tony_drones`,
-      `tony_drone_shoots_strangers_until_hacked`).
+      (één keer). Het structuurbestand zelf veranderde niet. Twee nieuwe tests (`bibie_tower_has_bibie_drones`,
+      `bibie_drone_shoots_strangers_until_hacked`).
 
 Tests: bouwen en laden op een dock; `up(3)` stijgt; de core spawnt zelf geen drones meer; een dock pakt geen
 arsenal-drone meer; de toren heeft vier gewapende drones; een oude drone patrouilleert nog.
 
 - [x] **Afronding** — 277 tests: 274 groen, de 3 rode van hoofdstuk 14 stap 2. Acht nieuwe in `DroneGameTests`
       (vliegen met up/back/turn, plafond en grond, laden op het dock, neer en zonder stroom, de taal, de
-      schakelaar Drones, Tony's drones in de toren en hoe ze schieten, het alarm en de hack), en twee herschreven
+      schakelaar Drones, Bibie's drones in de toren en hoe ze schieten, het alarm en de hack), en twee herschreven
       (`arsenal_drones_repair_in_orbit`, `security_core_launches_no_drones`). Screenshots `sd01`-`sd11`
-      (`-Ponly=secdrones`) en `t25_hangar_tony_drones` (`-Ponly=tower`). In de showcase de nieuwe functie
+      (`-Ponly=secdrones`) en `t25_hangar_bibie_drones` (`-Ponly=tower`). In de showcase de nieuwe functie
       **"Security drones"** (86, na "Robot senses and weapons"): twee drones op hun dock, hun scherm en bord, de app
       Logic met Drone program, opstijgen en vierkantjes vliegen, een drone die gaat laden, de camera van een drone,
-      de Ion Blaster en de schakelaar Drones. "Stark Tower: hangar and landing pad" (nu 87) toont Tony's drones in de
+      de Ion Blaster en de schakelaar Drones. "Bibie's Industries Tower: hangar and landing pad" (nu 87) toont Bibie's drones in de
       hangar in plaats van arsenaal-drones op de docks. LEESMIJ.md: een nieuw stuk "Security drones", en het stuk
-      over de Stark Tower en het arsenaal bijgewerkt. Het jar gebouwd.
+      over de Bibie's Industries Tower en het arsenaal bijgewerkt. Het jar gebouwd.
 
 ### 26. Training zoals Domino squad (14 oktober)
 
@@ -2823,7 +2827,7 @@ diagram hoort `when training_started("Kamino"):`.
 **Mijn invulling**: standaard 1 leven (één treffer en je ligt eruit). Non-lethal = geen schade, een blauwe
 flits en 1 seconde trager. Alleen de eigenaar, zijn team en vertrouwde spelers starten een training. Golven
 via squads: `activate("Wave 1")`, `when squad_down("Wave 1"):`. Een **Training Goal**-blok: erop komen is
-geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
+geslaagd. Na afloop een rapport van I.M.T en de app Training.
 
 - [x] **1. Centraal schot** — elk schot van je beveiliging komt nu op één plek uit (`training/Shots`): torentjes,
       laserwanden, de oude patrouilledrones, robots en security drones. Is wie geraakt wordt de trainee van een
@@ -2833,10 +2837,10 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       kostte een laserwand elke tick een leven). Met trainingsschoten schieten torentjes alleen hun laser, geen
       raketten.
 - [x] **2. Training-sessie** — één training tegelijk per kern (alleen in het geheugen van de server), met een naam,
-      trainingsschoten of lethal, 1-10 levens en eventueel een tijdslimiet. E.D.I.T.H. telt af (`countdownSeconds`,
+      trainingsschoten of lethal, 1-10 levens en eventueel een tijdslimiet. I.M.T telt af (`countdownSeconds`,
       3) en zegt "go!". Hij stopt als de levens op zijn, de tijd om is (zonder Training Goal-blok in de basis ben je
       dan geslaagd, met zo'n blok niet: je moest het doel halen), de trainee doodgaat, uitlogt of het gebied van de
-      kern verlaat, of als hij gestopt wordt. Dan zegt E.D.I.T.H. het rapport tegen de trainee en de eigenaar
+      kern verlaat, of als hij gestopt wordt. Dan zegt I.M.T het rapport tegen de trainee en de eigenaar
       ("Training Kamino: Senne ran out of lives after 1:12 (3 hits: Guard 2 x2, Guard 1 x1; 2 robots down)"), de
       kern bewaart het (de laatste 10, `maxReports`) en het logboek krijgt een regel (TRAINING). Je diagrammen
       horen `when training_started("Kamino"):`, `when training_hit("Kamino"):` en `when training_ended("Kamino"):`,
@@ -2848,7 +2852,7 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       trainingsschoten zetten). Loopt hij al, dan stopt een klik van de trainee of een vertrouwde speler hem. Sneak +
       klik met een lege hand: de instellingen (Name, Training shots of Lethal, Lives 1-10, Time: geen limiet tot een
       uur). Het moet in het gebied van een beveiligingskern staan. In creative zegt hij erbij dat niemand op je
-      schiet. Recept: ijzer, een limoengroene kleurstof, redstone en een Stark Chip. Netwerkversie 23.
+      schiet. Recept: ijzer, een limoengroene kleurstof, redstone en een Computer Chip. Netwerkversie 23.
 - [x] **4. Squads** — in de app Robots heeft elke robot en drone een knop **Squad**: typ een naam ("Wave 1"; leeg =
       geen squad); de rij zegt dan "squad Wave 1". In een diagram mag waar een robotnaam staat ook een squad staan:
       `activate("Wave 1")`, `deactivate("Wave 1")` en `order("Wave 1", "attack", x, y, z)` gaan naar ze allemaal
@@ -2864,7 +2868,7 @@ geslaagd. Na afloop een rapport van E.D.I.T.H. en de app Training.
       squads, Check). Zo'n "Training End program" kent alleen `when trainee_hit:` (niet gewoon "hit": dat woord
       gebruik je misschien al als naam), met `trainee`, `lives` en `hits`, en mag robots en squads aansturen:
       `if lives == 0: deactivate("Wave 1")`. Hij bewaart een programma alleen als het klopt. Recept: ijzer, een rode
-      kleurstof, redstone en een Stark Chip. Een oud diagram dat zelf al een naam `lives` of `hits` had, houdt die
+      kleurstof, redstone en een Computer Chip. Een oud diagram dat zelf al een naam `lives` of `hits` had, houdt die
       buiten een training gewoon. Eén nieuwe test (`training_end_block_pulses_and_runs_its_program`).
 - [x] **6. Training Goal-blok** — een geblokte finishvlag met een gouden rand (recept: witte en zwarte wol en een
       gouden staaf). Stapt de trainee erop (in het gebied van zijn training), dan is hij geslaagd. Staat er een in de
@@ -2895,7 +2899,7 @@ beëindigt met succes; down-robots staan na afloop weer op.
       treffer zat in de eerste persoon vlak voor je ogen, zodat je een seconde bijna niets zag (nu kleiner en rond je
       lijf). In de showcase de nieuwe functie **"Training"** (87, na "Security drones", in survival): het
       instelscherm, de mini-editor, aftellen, twee Trainers (Wave 1) die op je schieten, de lamp op het End-blok, jij
-      met de Ion Blaster, Wave 2 die aangaat, het doel, het rapport en de app Training. "Stark Tower: hangar and
+      met de Ion Blaster, Wave 2 die aangaat, het doel, het rapport en de app Training. "Bibie's Industries Tower: hangar and
       landing pad" is nu 88. LEESMIJ.md: een nieuw stuk "Training zoals Domino squad". Het jar gebouwd.
 
 ### 27. Inbraak- en uitbraakoefening (14 oktober)
@@ -2908,7 +2912,7 @@ teruggezet**. Wat kapot gaat, blijft kapot; robots staan weer op, tenzij ze echt
 behandelt je hele basis de trainee als indringer, ook de eigenaar zelf: torentjes, drones, robots (filter
 "strangers"), laserwanden, de zone (niets bouwen of slopen, behalve vrije blokken en C4), de desktop (niet te
 openen) en de bril (niet op afstand schakelen). Kaarten die hij bij het begin had, werken niet. Een geslaagde
-hack (de Stark Laptop-minigame) telt als rapport; de core blijft van jou. Break-out is geslaagd als hij het
+hack (de Hacking Laptop-minigame) telt als rapport; de core blijft van jou. Break-out is geslaagd als hij het
 Goal-blok buiten de cel haalt. Het rapport zegt hoe dicht hij bij de core kwam en wie hem raakte.
 
 - [ ] **1. Soorten en sessie** — Break-in en Break-out, alleen in survival, één sessie per core.
@@ -2946,13 +2950,13 @@ raiddrones eruitzien.
       (laserwand 0,07 in plaats van 0,45, koepel 0,12 in plaats van 1,0); zenders tot 8 blokken uit
       elkaar zoemen samen (een poort zoemt niet dubbel); en het geluid zelf is rustiger (bijna geen
       knetter, een tragere "wom", de hoge tonen eraf). Zelf bijstellen: `rayshieldHumVolume` in
-      `config/starktech-client.toml` (1 = zo, 2 = dubbel, 0 = uit).
+      `config/imttech-client.toml` (1 = zo, 2 = dubbel, 0 = uit).
 - [ ] **De blokjes-editor met de muis**: slepen, draadjes trekken en zoomen heb ik alleen
       nagerekend en op screenshots gezien, niet zelf met een muis gedaan.
 - [ ] **Het datacenter (8 oktober)**: de knoppen van de apps Backup en Monitor heb ik alleen via de
       server getest en op screenshots gezien, niet met de muis aangeklikt. En speel zelf of de
       getallen goed voelen: hoeveel fans je nodig hebt, hoe snel het warm wordt (ongeveer een
-      minuut), hoe lang E.D.I.T.H. erbij nadenkt (1 CPU +8 s), en of vuur van een brandend rack niet
+      minuut), hoe lang I.M.T erbij nadenkt (1 CPU +8 s), en of vuur van een brandend rack niet
       te makkelijk een houten basis afbrandt. Alles staat in de config onder `[logic]`.
 - [ ] **Zones en C4 (8-9 oktober)**: gezien op screenshots, niet zelf gespeeld. Kijk zelf of de rand
       niet te fel of te zwak is (vooral dichtbij, tegen je eigen muur), of de muisklikken in de app
@@ -2981,8 +2985,8 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       raakte je de zijkant van een muur, dan kwam de drone ín de muur en stikte hij. Nu komt het
       veld bij het wezen waar je naar kijkt, of op de vrije plek voor de muur, en stikken drones
       niet meer. Twee nieuwe tests.
-- [ ] Raiddrones die komen omdat je in een Stark Tower sloopt. Dat kan de test niet nadoen:
-      een testwereld weet niet dat een geplaatst gebouw een "Stark Tower" is.
+- [ ] Raiddrones die komen omdat je in een Bibie's Industries Tower sloopt. Dat kan de test niet nadoen:
+      een testwereld weet niet dat een geplaatst gebouw een "Bibie's Industries Tower" is.
 - [ ] **De Arc Lamp (9 oktober)**: gezien op screenshots en in de showcase, op een vlak veld. Kijk zelf
       in je eigen wereld (heuvels, grotten, een huis) of het licht er goed uitziet, of het opnieuw meten
       na bouwen snel genoeg gaat, en of je spel niet hapert als je de lamp aan- of uitzet. (De gloed: "mag
@@ -3002,7 +3006,7 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       de robot voor opstarten en uitschakelen) en het zachte laadzoemen op het dock. Probeer zelf: hoe het vliegen
       eruitziet (3 blokken per seconde, `droneSpeed`; blok voor blok met een klein stopje in elk midden), opstijgen
       en landen op het dock (ook als je hem uitzet terwijl hij ver weg is), `goto` rond een muur, een drone met
-      lege batterij die valt, en of Tony's drones in de hangar van een echte toren lastig genoeg (of te lastig)
+      lege batterij die valt, en of Bibie's drones in de hangar van een echte toren lastig genoeg (of te lastig)
       zijn. Ook: een drone op een dock van een vriend zetten (in zijn basis, als hij je vertrouwt).
 - [ ] **Zien en schieten (16 oktober)**: gezien op screenshots (`rb20`-`rb25`) en in de showcase (85), getest met 7
       nieuwe tests. Probeer zelf: of de laser en het geweer goed voelen (schade, hoe snel, de geluiden "pew" en de
@@ -3040,9 +3044,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 
 ## Open vragen
 
-- [x] **Moeten de getallen uit `EdithBalance.java` naar een configbestand?** Ja, per wereld
+- [x] **Moeten de getallen uit `ImtBalance.java` naar een configbestand?** Ja, per wereld
       (jouw keuze op 26 september) — `d26a25e`
-      120 getallen staan nu in `config/starktech-balance.toml` (kosten, schade, bereik,
+      120 getallen staan nu in `config/imttech-balance.toml` (kosten, schade, bereik,
       wachttijden, verbruik; per kopje: bril, drones, satelliet, harnas, torentjes, Hydra...).
       Het bestand geldt voor al je werelden; een kopie in `<wereld>/serverconfig/` geldt alleen
       voor die wereld (zo werkt NeoForge 21.1; ook de raid-instellingen staan zo). Niet erin:
@@ -3053,6 +3057,13 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       drone)
 - [x] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? (mijn invulling: nee, die
       zie je alleen tijdens het ontwikkelen, en Nederlands leest voor jou makkelijker)
+- [ ] **Nieuwe namen voor wat nog van Marvel of Star Wars komt** (17 oktober; Stark en E.D.I.T.H.
+      zijn al weg, zie bovenaan). Nog te kiezen: Hydra (soldaten, torentje, printplaat, geweer,
+      kisten; de bunker zelf heet al Bibie's Industries Bunker), de repulsor, de rayshields, de
+      robotstijlen Commando, Battle en Super Battle (namen én uiterlijk), de Ion Blaster, "Domino
+      squad" in de config, het rood-gouden harnas, de prestatie "You shall not pass", en in de
+      hackterminal en de showcase JARVIS, FRIDAY, KAREN, MALIBU, SHIELD, Happy, Pepper (Potts) en
+      Rhodey.
 
 ---
 
@@ -3069,18 +3080,18 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 
 **Basis en techniek**
 - ~~Een werkbank die harnasdelen maakt~~ (gebouwd: de Suit Workbench, `61fde87`)
-- Een Stark-AI-kern die passief onderzoek doet
+- Een I.M.T-AI-kern die passief onderzoek doet
 - ~~Automatische torentjes die aan je relais-groepen hangen~~ (gebouwd: `53ff0b9`, ze staan in je redstone-lijst)
-- ~~Energie-netwerk: kabels of een draadloos Stark-net~~ (gebouwd: de Stark-kabels)
+- ~~Energie-netwerk: kabels of een draadloos I.M.T-net~~ (gebouwd: de stroomkabels)
 - ~~Holotafel: een stand die de ertsen in de buurt laat zien~~ (gebouwd: `6cd20ed`)
 
 **Sfeer**
 - Eigen geluiden. Alle 18 geluiden in `sounds.json` zijn nu vanilla-geluiden onder een andere
-  naam (`beacon.activate`, `note_block.pling`). Echte E.D.I.T.H.-tonen zouden veel schelen.
+  naam (`beacon.activate`, `note_block.pling`). Echte I.M.T-tonen zouden veel schelen.
 - Betere foutmeldingen bij Spotify en de stem-installatie
 
 **Wereld**
-- ~~Een tweede soort structuur met de onderdelen voor de volgende fase~~ (gebouwd: de Hydra-bunker, `163771b`)
+- ~~Een tweede soort structuur met de onderdelen voor de volgende fase~~ (gebouwd: de Bibie's Industries-bunker, `163771b`)
 
 ---
 

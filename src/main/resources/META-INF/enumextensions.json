@@ -2,10 +2,10 @@
   "entries": [
     {
       "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
-      "name": "STARKTECH_REPULSOR",
+      "name": "IMTTECH_REPULSOR",
       "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
       "parameters": {
-        "class": "com/senne/starktech/client/suit/RepulsorArmPose",
+        "class": "com/senne/imttech/client/suit/RepulsorArmPose",
         "field": "POSE"
       }
     }

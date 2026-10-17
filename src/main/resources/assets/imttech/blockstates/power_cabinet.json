@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/power_cabinet"
+    },
+    "facing=east": {
+      "model": "imttech:block/power_cabinet",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/power_cabinet",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/power_cabinet",
+      "y": 270
+    }
+  }
+}

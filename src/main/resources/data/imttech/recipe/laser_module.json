@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "X": {
+      "tag": "c:gems/diamond"
+    },
+    "B": {
+      "tag": "c:rods/blaze"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "pattern": [
+    " X ",
+    "RCR",
+    " B "
+  ],
+  "result": {
+    "id": "imttech:laser_module",
+    "count": 1
+  }
+}

@@ -1,6 +1,6 @@
 {
   "values": [
-    "starktech:security_core",
-    "starktech:laser_emitter"
+    "imttech:security_core",
+    "imttech:laser_emitter"
   ]
 }

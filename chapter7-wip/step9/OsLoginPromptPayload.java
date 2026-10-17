@@ -1,6 +1,6 @@
-package com.senne.starktech.network;
+package com.senne.imttech.network;
 
-import com.senne.starktech.StarkTech;
+import com.senne.imttech.ImtTech;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public record OsLoginPromptPayload(String ip, String host, String message, boolean open) implements CustomPacketPayload {
     public static final Type<OsLoginPromptPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(StarkTech.MODID, "os_login_prompt"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "os_login_prompt"));
 
     public static final StreamCodec<ByteBuf, OsLoginPromptPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.stringUtf8(32), OsLoginPromptPayload::ip,

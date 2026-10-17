@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:laser_emitter"
+    },
+    "title": {
+      "translate": "advancements.imttech.rayshield.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.rayshield.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "imttech:laser_emitter"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "imttech:glasses",
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

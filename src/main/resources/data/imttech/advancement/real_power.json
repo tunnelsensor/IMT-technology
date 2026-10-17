@@ -1,0 +1,46 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:solar_panel"
+    },
+    "title": {
+      "translate": "advancements.imttech.real_power.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.real_power.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "solar": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "imttech:solar_panel"
+          }
+        ]
+      }
+    },
+    "heat": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "imttech:heat_generator"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "imttech:charging_station",
+  "requirements": [
+    [
+      "solar",
+      "heat"
+    ]
+  ]
+}

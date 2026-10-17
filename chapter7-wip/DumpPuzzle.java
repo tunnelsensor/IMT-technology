@@ -1,6 +1,6 @@
-package com.senne.starktech.security.os;
+package com.senne.imttech.security.os;
 
-import com.senne.starktech.security.HackTerminal;
+import com.senne.imttech.security.HackTerminal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Random;
 
 /**
- * De geheugendump: de inlogpuzzel van een systeem ZONDER wachtwoord (de oude firmware van Tony
+ * De geheugendump: de inlogpuzzel van een systeem ZONDER wachtwoord (de oude firmware van Bibie
  * lekt geheugen bij een mislukte handshake). Acht woorden die op elkaar lijken; één is het
  * wachtwoord. Een fout woord laat zien welke letters goed staan, en streept door wat niet meer kan.
  *

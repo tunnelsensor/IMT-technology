@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/robot_dock"
+    },
+    "facing=east": {
+      "model": "imttech:block/robot_dock",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/robot_dock",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/robot_dock",
+      "y": 270
+    }
+  }
+}

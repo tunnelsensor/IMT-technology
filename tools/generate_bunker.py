@@ -1,14 +1,14 @@
 """
-Bouwt de Hydra-bunker als Minecraft-structuurbestand (.nbt).
+Bouwt de Bibie's Industries-bunker als Minecraft-structuurbestand (.nbt).
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_bunker.py
 
-Het resultaat komt in src/main/resources/data/starktech/structure/hydra_bunker.nbt.
+Het resultaat komt in src/main/resources/data/imttech/structure/bibie_bunker.nbt.
 
 Een geheime Hydra-basis, uitgehakt in een berg (zoals in The Winter Soldier). De mod zoekt
 zelf een steile berghelling en zet hem daar zo neer dat de ingang in de rotswand zit en de
-rest ín de berg (zie HydraBunkerStructure). Wat je vindt, van voor naar achter:
+rest ín de berg (zie BibieBunkerStructure). Wat je vindt, van voor naar achter:
 
 - de INGANG: een uitsparing in de rots, een betonnen gevel met het rode Hydra-embleem, en
   links en rechts van de deur een Hydra-torentje op een zuil;
@@ -25,7 +25,7 @@ rest ín de berg (zie HydraBunkerStructure). Wat je vindt, van voor naar achter:
 
 Soldaten staan er niet als blokken in, maar als "data-markeringen" (een structuurblok met de
 tekst hydra_soldier). Bij het bouwen van de wereld zet de mod daar een Hydra-soldaat neer die
-nooit verdwijnt (zie HydraBunkerPiece).
+nooit verdwijnt (zie BibieBunkerPiece).
 
 De voorkant (de ingang) ligt aan de kant z = 0 en kijkt naar -z (noord); de bunker loopt naar
 +z de berg in. Laag y = 0 is de vloer, y = 1 de eerste laag lucht. Blokken die we hier niet
@@ -35,21 +35,21 @@ from pathlib import Path
 
 from generate_structure import DATA_VERSION, Double, Int, write_nbt
 
-OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "starktech" / "structure" / "hydra_bunker.nbt"
+OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "bibie_bunker.nbt"
 
 SIZE_X, SIZE_Y, SIZE_Z = 35, 8, 44
 MID = 17
 
-LOOT_VAULT = "starktech:chests/hydra_vault"
-LOOT_BARRACKS = "starktech:chests/hydra_barracks"
-LOOT_SUPPLIES = "starktech:chests/hydra_supplies"
+LOOT_VAULT = "imttech:chests/hydra_vault"
+LOOT_BARRACKS = "imttech:chests/hydra_barracks"
+LOOT_SUPPLIES = "imttech:chests/hydra_supplies"
 
 # Waar dingen staan die de gametest nakijkt.
 VAULT_CHESTS = [(13, 1, 42), (21, 1, 42)]
 LASER_ROWS = [32, 35]
 SOLDIER = "hydra_soldier"
 
-POWER_BLOCKS = {"starktech:cable", "starktech:laser_emitter", "starktech:heat_generator"}
+POWER_BLOCKS = {"imttech:cable", "imttech:laser_emitter", "imttech:heat_generator"}
 
 # Materialen
 WALL = "minecraft:deepslate_tiles"
@@ -91,13 +91,13 @@ def air(x0, y0, z0, x1, y1, z1):
 
 
 def soldier(x, y, z):
-    """Hier komt bij het bouwen van de wereld een Hydra-soldaat (zie HydraBunkerPiece)."""
+    """Hier komt bij het bouwen van de wereld een Hydra-soldaat (zie BibieBunkerPiece)."""
     put(x, y, z, "minecraft:structure_block", {"mode": "data"},
         {"id": "minecraft:structure_block", "mode": "DATA", "metadata": SOLDIER})
 
 
 def turret(x, y, z):
-    put(x, y, z, "starktech:hydra_turret", {"enabled": "true", "powered": "false"})
+    put(x, y, z, "imttech:hydra_turret", {"enabled": "true", "powered": "false"})
 
 
 def chest(x, y, z, facing, loot):
@@ -119,13 +119,13 @@ def banner(x, y, z, facing):
         ]})
 
 
-# De plekken met een Stark-kabel (zie cable()).
+# De plekken met een stroomkabel (zie cable()).
 cables = set()
 
 
 def cable(x, y, z):
     """
-    Een Stark-kabel: een onzichtbare marker die de mod in de wereld omzet in een getekende kabel
+    Een stroomkabel: een onzichtbare marker die de mod in de wereld omzet in een getekende kabel
     (zie cable() in generate_structure.py). Het blok op die plek blijft gewoon staan.
     """
     if 0 <= x < SIZE_X and 0 <= y < SIZE_Y and 0 <= z < SIZE_Z:
@@ -242,7 +242,7 @@ def build_reactor():
     fill(29, 1, 19, 31, 1, 23, "minecraft:lava", {"level": "0"})
     fill(29, 2, 19, 31, 2, 23, "minecraft:air")
     for z in (20, 22):
-        put(30, 1, z, "starktech:heat_generator")
+        put(30, 1, z, "imttech:heat_generator")
         # De kabel gaat omhoog, niet onder de lava door (lava zou hem opeten).
         for y in range(2, 6):
             cable(30, y, z)
@@ -280,7 +280,7 @@ def build_vault_corridor():
     for z in LASER_ROWS:
         for y in (1, 2, 3):
             # Een zender in de linkermuur die naar rechts kijkt; de wand loopt tot de rechtermuur.
-            put(MID - 2, y, z, "starktech:laser_emitter", {"facing": "east", "powered": "false", "color": "red"})
+            put(MID - 2, y, z, "imttech:laser_emitter", {"facing": "east", "powered": "false", "color": "red"})
             # Redstone in de rots erachter: hij staat altijd "aan"...
             put(MID - 3, y, z, "minecraft:redstone_block")
             # ...en stroom via een kabel in de muur ernaast.
@@ -347,7 +347,7 @@ def wire_reactor():
     - onder: de vijf Hydra-torentjes (en die in de reactorkamer), in de vloer door de hele bunker.
     """
     cabinet = (33, 1, 26)
-    put(*cabinet, "starktech:power_cabinet", {"facing": "west"})
+    put(*cabinet, "imttech:power_cabinet", {"facing": "west"})
     # De stroom: de kabel van de generatoren liep meteen de hal in; nu eerst naar de kast.
     cables.discard((29, 5, 21))
     route((31, 5, 21), (33, 5, 21), (33, 1, 21), (33, 1, 25))
@@ -395,7 +395,7 @@ def to_nbt():
         "entities": [{
             "blockPos": [Int(x), Int(y), Int(z)],
             "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
-            "nbt": {"id": "minecraft:marker", "data": {"starktech_cable": Int(1)}},
+            "nbt": {"id": "minecraft:marker", "data": {"imttech_cable": Int(1)}},
         } for (x, y, z) in sorted(cables)],
         "blocks": block_list,
         "palette": palette,

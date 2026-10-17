@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:tech_boots"
+    },
+    "title": {
+      "translate": "advancements.imttech.fly.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.fly.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trigger": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "imttech:suit",
+  "requirements": [
+    [
+      "trigger"
+    ]
+  ]
+}

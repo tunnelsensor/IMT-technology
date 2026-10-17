@@ -1,0 +1,123 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/light_switch_plate",
+    "plate": "imttech:block/light_switch_plate",
+    "rocker": "imttech:block/light_switch_rocker_on",
+    "led": "imttech:block/light_switch_led_on"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        3,
+        15
+      ],
+      "to": [
+        11,
+        13,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#plate"
+        },
+        "south": {
+          "texture": "#plate",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#plate"
+        },
+        "west": {
+          "texture": "#plate"
+        },
+        "up": {
+          "texture": "#plate"
+        },
+        "down": {
+          "texture": "#plate"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        5,
+        14
+      ],
+      "to": [
+        10,
+        11,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#rocker"
+        },
+        "south": {
+          "texture": "#rocker"
+        },
+        "east": {
+          "texture": "#rocker"
+        },
+        "west": {
+          "texture": "#rocker"
+        },
+        "up": {
+          "texture": "#rocker"
+        },
+        "down": {
+          "texture": "#rocker"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          15
+        ],
+        "axis": "x",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        7.5,
+        11.5,
+        14.75
+      ],
+      "to": [
+        8.5,
+        12.5,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#led"
+        },
+        "south": {
+          "texture": "#led"
+        },
+        "east": {
+          "texture": "#led"
+        },
+        "west": {
+          "texture": "#led"
+        },
+        "up": {
+          "texture": "#led"
+        },
+        "down": {
+          "texture": "#led"
+        }
+      },
+      "shade": false,
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15,
+        "ambient_occlusion": false
+      }
+    }
+  ]
+}

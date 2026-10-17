@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "imttech:block/training_end"
+    },
+    "powered=true": {
+      "model": "imttech:block/training_end_on"
+    }
+  }
+}

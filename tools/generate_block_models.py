@@ -12,7 +12,7 @@ Draaien: python tools/generate_block_models.py
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "assets" / "starktech"
+ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "assets" / "imttech"
 SIDES = ("north", "south", "east", "west", "up", "down")
 
 
@@ -87,11 +87,11 @@ def solar_panel():
             {"up": "#top", "down": "#under", "rest": "#frame"}, rotation=tilt),
     ]
     save("solar_panel", {
-        "particle": "starktech:block/solar_panel_side",
-        "top": "starktech:block/solar_panel_top",
-        "frame": "starktech:block/solar_panel_frame",
-        "under": "starktech:block/solar_panel_under",
-        "side": "starktech:block/solar_panel_side",
+        "particle": "imttech:block/solar_panel_side",
+        "top": "imttech:block/solar_panel_top",
+        "frame": "imttech:block/solar_panel_frame",
+        "under": "imttech:block/solar_panel_under",
+        "side": "imttech:block/solar_panel_side",
     }, elements)
 
 
@@ -122,17 +122,17 @@ def heat_generator(lit):
     for x in (3, 11):
         elements.append(box([x, 2, 15], [x + 2, 13, 16], "#pipe", skip=("north",)))
     save("heat_generator_on" if lit else "heat_generator", {
-        "particle": "starktech:block/heat_generator_side",
-        "front": "starktech:block/heat_generator_front",
-        "side": "starktech:block/heat_generator_side",
-        "back": "starktech:block/heat_generator_back",
-        "top": "starktech:block/heat_generator_top",
-        "vent": "starktech:block/heat_generator_vent",
-        "base": "starktech:block/heat_generator_base",
-        "fin": "starktech:block/heat_generator_fin",
-        "pipe": "starktech:block/heat_generator_pipe",
-        "grill": "starktech:block/heat_generator_grill",
-        "grill_on": "starktech:block/heat_generator_grill_on",
+        "particle": "imttech:block/heat_generator_side",
+        "front": "imttech:block/heat_generator_front",
+        "side": "imttech:block/heat_generator_side",
+        "back": "imttech:block/heat_generator_back",
+        "top": "imttech:block/heat_generator_top",
+        "vent": "imttech:block/heat_generator_vent",
+        "base": "imttech:block/heat_generator_base",
+        "fin": "imttech:block/heat_generator_fin",
+        "pipe": "imttech:block/heat_generator_pipe",
+        "grill": "imttech:block/heat_generator_grill",
+        "grill_on": "imttech:block/heat_generator_grill_on",
     }, elements)
 
 
@@ -142,7 +142,7 @@ def heat_generator_states():
     variants = {}
     for facing, y in turn.items():
         for lit in (False, True):
-            model = {"model": "starktech:block/heat_generator" + ("_on" if lit else "")}
+            model = {"model": "imttech:block/heat_generator" + ("_on" if lit else "")}
             if y:
                 model["y"] = y
             variants["facing=%s,lit=%s" % (facing, str(lit).lower())] = model
@@ -196,9 +196,9 @@ def laser_wall_models():
     for color in RAYSHIELD_COLORS:
         for variant in range(RAYSHIELD_VARIANTS):
             name = rayshield_variant_name(color, variant)
-            texture = "starktech:block/" + name
+            texture = "imttech:block/" + name
             write(ROOT / "models" / "block" / (name + ".json"), {
-                "parent": "starktech:block/laser_wall_field",
+                "parent": "imttech:block/laser_wall_field",
                 "render_type": "minecraft:translucent",
                 "textures": {"particle": texture, "field": texture},
             })
@@ -217,7 +217,7 @@ def laser_wall_models():
             for facing, (x, y) in facings.items():
                 options = []
                 for variant in range(RAYSHIELD_VARIANTS):
-                    option = {"model": "starktech:block/" + rayshield_variant_name(color, variant)}
+                    option = {"model": "imttech:block/" + rayshield_variant_name(color, variant)}
                     if x:
                         option["x"] = x
                     if y:
@@ -239,8 +239,8 @@ def security_camera():
     zit, staat ook in CameraBlockEntity.eye (daar begint het camerabeeld): verander je hier de
     vorm, pas dat daar dan ook aan.
     """
-    textures = {"particle": "starktech:block/security_camera_body", "body": "starktech:block/security_camera_body",
-                "mount": "starktech:block/security_camera_mount"}
+    textures = {"particle": "imttech:block/security_camera_body", "body": "imttech:block/security_camera_body",
+                "mount": "imttech:block/security_camera_mount"}
     tilt = -22.5
     shapes = {
         # soort: (montage, arm, behuizing, lens, draaipunt of None)
@@ -254,7 +254,7 @@ def security_camera():
     for kind, (mount, arm, housing, lens, pivot) in shapes.items():
         rotation = ("x", tilt, pivot) if pivot else None
         for on in (False, True):
-            lens_texture = "starktech:block/security_camera_lens" + ("_on" if on else "")
+            lens_texture = "imttech:block/security_camera_lens" + ("_on" if on else "")
             elements = [
                 box(mount[0], mount[1], "#mount"),
                 box(arm[0], arm[1], "#mount"),
@@ -267,7 +267,7 @@ def security_camera():
     for kind in shapes:
         for facing, y in turn.items():
             for on in (False, True):
-                option = {"model": "starktech:block/security_camera_" + kind + ("_on" if on else "")}
+                option = {"model": "imttech:block/security_camera_" + kind + ("_on" if on else "")}
                 if y:
                     option["y"] = y
                 variants["face=%s,facing=%s,online=%s" % (kind, facing, "true" if on else "false")] = option
@@ -280,8 +280,8 @@ def c4_blocks():
     schermpje erop. Het model ligt op de vloer; de blockstate draait het naar de muur (x 90) of het
     plafond (x 180), net als een knop in Minecraft. De tijd tekent de mod er zelf voor (C4Renderer).
     """
-    textures = {"particle": "starktech:block/c4_putty", "putty": "starktech:block/c4_putty",
-                "device": "starktech:block/c4_device", "screen": "starktech:block/c4_screen"}
+    textures = {"particle": "imttech:block/c4_putty", "putty": "imttech:block/c4_putty",
+                "device": "imttech:block/c4_device", "screen": "imttech:block/c4_screen"}
     elements = [
         box([3, 0, 3], [13, 3, 13], "#putty"),
         box([5, 3, 5], [11, 4.5, 10], {"up": "#screen", "rest": "#device"}, skip=("down",)),
@@ -296,7 +296,7 @@ def c4_blocks():
         for face, x in (("floor", 0), ("wall", 90), ("ceiling", 180)):
             for facing in ("north", "east", "south", "west"):
                 y = ceiling[facing] if face == "ceiling" else floor[facing]
-                option = {"model": "starktech:block/" + name}
+                option = {"model": "imttech:block/" + name}
                 if x:
                     option["x"] = x
                 if y:
@@ -312,12 +312,12 @@ def arc_lamp():
     """
     for lit in (False, True):
         name = "arc_lamp_on" if lit else "arc_lamp"
-        textures = {"particle": "starktech:block/arc_lamp_side",
-                    "side": "starktech:block/arc_lamp_side" + ("_on" if lit else ""),
-                    "top": "starktech:block/arc_lamp_top"}
+        textures = {"particle": "imttech:block/arc_lamp_side",
+                    "side": "imttech:block/arc_lamp_side" + ("_on" if lit else ""),
+                    "top": "imttech:block/arc_lamp_top"}
         save(name, textures, [box([0, 0, 0], [16, 16, 16], {"up": "#top", "down": "#top", "rest": "#side"}, glow=lit)])
-    blockstate("arc_lamp", {"lit=false": {"model": "starktech:block/arc_lamp"},
-                            "lit=true": {"model": "starktech:block/arc_lamp_on"}})
+    blockstate("arc_lamp", {"lit=false": {"model": "imttech:block/arc_lamp"},
+                            "lit=true": {"model": "imttech:block/arc_lamp_on"}})
 
 
 def light_switch():
@@ -338,10 +338,10 @@ def light_switch():
     }
     for kind, (plate, rocker, pivot, led) in shapes.items():
         for on in (False, True):
-            textures = {"particle": "starktech:block/light_switch_plate",
-                        "plate": "starktech:block/light_switch_plate",
-                        "rocker": "starktech:block/light_switch_rocker_" + ("on" if on else "off"),
-                        "led": "starktech:block/light_switch_led_" + ("on" if on else "off")}
+            textures = {"particle": "imttech:block/light_switch_plate",
+                        "plate": "imttech:block/light_switch_plate",
+                        "rocker": "imttech:block/light_switch_rocker_" + ("on" if on else "off"),
+                        "led": "imttech:block/light_switch_led_" + ("on" if on else "off")}
             tilt = -22.5 if on else 22.5
             if kind == "ceiling":
                 tilt = -tilt
@@ -356,7 +356,7 @@ def light_switch():
     for kind in shapes:
         for facing, y in turn.items():
             for on in (False, True):
-                option = {"model": "starktech:block/light_switch_" + kind + ("_on" if on else "")}
+                option = {"model": "imttech:block/light_switch_" + kind + ("_on" if on else "")}
                 if y:
                     option["y"] = y
                 variants["face=%s,facing=%s,on=%s" % (kind, facing, "true" if on else "false")] = option
@@ -369,11 +369,11 @@ def robot_dock():
     stekker die in zijn rug past en een cyaan lampje. Het model kijkt naar het noorden (de open kant); de
     paal staat dus aan de zuidkant. De blockstate draait het.
     """
-    textures = {"particle": "starktech:block/robot_dock_side",
-                "pad": "starktech:block/robot_dock_pad",
-                "side": "starktech:block/robot_dock_side",
-                "pole": "starktech:block/robot_dock_pole",
-                "light": "starktech:block/robot_dock_light"}
+    textures = {"particle": "imttech:block/robot_dock_side",
+                "pad": "imttech:block/robot_dock_pad",
+                "side": "imttech:block/robot_dock_side",
+                "pole": "imttech:block/robot_dock_pole",
+                "light": "imttech:block/robot_dock_light"}
     elements = [
         box([0, 0, 0], [16, 3, 16], {"up": "#pad", "rest": "#side"}),
         box([5, 3, 13], [11, 16, 16], "#pole", skip=("down",)),
@@ -384,7 +384,7 @@ def robot_dock():
     turn = {"north": 0, "east": 90, "south": 180, "west": 270}
     variants = {}
     for facing, y in turn.items():
-        option = {"model": "starktech:block/robot_dock"}
+        option = {"model": "imttech:block/robot_dock"}
         if y:
             option["y"] = y
         variants["facing=" + facing] = option

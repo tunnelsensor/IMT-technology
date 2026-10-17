@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "starktech:block/charging_station" },
-    "facing=east": { "model": "starktech:block/charging_station", "y": 90 },
-    "facing=south": { "model": "starktech:block/charging_station", "y": 180 },
-    "facing=west": { "model": "starktech:block/charging_station", "y": 270 }
-  }
-}

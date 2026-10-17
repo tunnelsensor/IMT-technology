@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "front": "starktech:block/server_rack_front",
-    "side": "starktech:block/server_rack_side",
-    "top": "starktech:block/server_rack_top"
-  }
-}

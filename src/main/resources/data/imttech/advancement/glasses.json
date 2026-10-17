@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:imt_glasses"
+    },
+    "title": {
+      "translate": "advancements.imttech.glasses.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.glasses.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trigger": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "imttech:find_tower",
+  "requirements": [
+    [
+      "trigger"
+    ]
+  ]
+}

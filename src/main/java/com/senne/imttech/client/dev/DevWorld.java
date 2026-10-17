@@ -1,0 +1,273 @@
+package com.senne.imttech.client.dev;
+
+import com.mojang.authlib.GameProfile;
+import com.senne.imttech.ImtTech;
+import com.senne.imttech.arsenal.ArsenalServer;
+import com.senne.imttech.arsenal.ImtArsenal;
+import com.senne.imttech.client.ImtClientConfig;
+import com.senne.imttech.imt.ImtData;
+import com.senne.imttech.imt.ImtOwner;
+import com.senne.imttech.registry.ModAttachments;
+import com.senne.imttech.registry.ModBlocks;
+import com.senne.imttech.registry.ModItems;
+import com.senne.imttech.station.ChargerBlockEntity;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.client.tutorial.TutorialSteps;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.ChatVisiblity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Hulpjes voor de testwereld van de screenshot-rondleiding en de showcase: een platte wereld
+ * maken, iets op de server uitvoeren, wezens neerzetten, de bril opzetten...
+ */
+public final class DevWorld {
+    private DevWorld() {}
+
+    /** Gooit de testwereld van vorige keer weg en maakt een nieuwe, platte wereld. */
+    public static void createFlatWorld(Minecraft mc, String name) {
+        Path folder = mc.gameDirectory.toPath().resolve("saves").resolve(name);
+        if (Files.exists(folder)) {
+            try (Stream<Path> files = Files.walk(folder)) {
+                files.sorted(Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+            } catch (IOException e) {
+                ImtTech.LOGGER.warn("[dev] oude wereld niet weg te krijgen", e);
+            }
+        }
+        LevelSettings settings = new LevelSettings(name, GameType.CREATIVE, false, Difficulty.EASY, true,
+                new GameRules(), WorldDataConfiguration.DEFAULT);
+        mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(1L, false, false),
+                registries -> registries.registryOrThrow(Registries.WORLD_PRESET)
+                        .getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
+                new TitleScreen());
+    }
+
+    /** Geen tutorial, niet pauzeren als het venster de focus kwijt is, eventueel zonder geluid. */
+    public static void quietOptions(Minecraft mc, boolean mute) {
+        mc.options.pauseOnLostFocus = false;
+        mc.options.onboardAccessibility = false;
+        // Anders staat de uitleg "Move with W, A, S and D" over de helft van het beeld.
+        mc.options.tutorialStep = TutorialSteps.NONE;
+        mc.getTutorial().setStep(TutorialSteps.NONE);
+        // Geen chat in beeld: die stond over de voeten (en straalvlammen) van het harnas.
+        mc.options.chatVisibility().set(ChatVisiblity.HIDDEN);
+        if (mute) {
+            mc.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0);
+        } else {
+            // De showcase: alle geluid op 100%, ook als het bij een vorige keer lager stond,
+            // en de stem van I.M.T ook.
+            for (SoundSource source : SoundSource.values()) {
+                mc.options.getSoundSourceOptionInstance(source).set(1.0);
+            }
+            ImtClientConfig.VOICE_VOLUME.set(1.0);
+        }
+        mc.options.save();
+    }
+
+    /**
+     * Een warmtegenerator op magma, meteen vol: stroom voor een apparaat ernaast (een
+     * laserzender, holotafel of koepel doet zonder stroom niets).
+     */
+    public static void powerNextTo(ServerLevel level, BlockPos pos) {
+        level.setBlockAndUpdate(pos.below(), Blocks.MAGMA_BLOCK.defaultBlockState());
+        level.setBlockAndUpdate(pos, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        fillGenerator(level, pos);
+    }
+
+    /** Een zonnepaneel of warmtegenerator helemaal vol stroom zetten. */
+    public static void fillGenerator(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof ChargerBlockEntity generator) {
+            generator.fill(generator.capacity());
+        }
+    }
+
+    /** Voert iets uit op de server (in hetzelfde spel), met de echte speler daar. */
+    public static void onServer(Consumer<ServerPlayer> action) {
+        Minecraft mc = Minecraft.getInstance();
+        IntegratedServer server = mc.getSingleplayerServer();
+        if (server == null || mc.player == null) {
+            return;
+        }
+        UUID id = mc.player.getUUID();
+        server.execute(() -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player != null) {
+                action.accept(player);
+            }
+        });
+    }
+
+    public static void command(String command) {
+        IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
+        if (server != null) {
+            server.execute(() -> server.getCommands().performPrefixedCommand(
+                    server.createCommandSourceStack().withSuppressedOutput(), command));
+        }
+    }
+
+    /** Een wezen dat stil blijft staan waar je het neerzet (geen eigen wil). */
+    public static @Nullable Entity spawnStill(ServerLevel level, EntityType<? extends Entity> type, BlockPos pos, float yaw) {
+        Entity entity = type.create(level);
+        if (entity == null) {
+            return null;
+        }
+        entity.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, yaw, 0);
+        entity.setYHeadRot(yaw);
+        if (entity instanceof Mob mob) {
+            mob.setNoAi(true);
+            mob.setPersistenceRequired();
+            mob.yBodyRot = yaw;
+        }
+        level.addFreshEntity(entity);
+        return entity;
+    }
+
+    /**
+     * Een rij stilstaande drones, van heel tot bijna kapot, zodat je de schade naast elkaar ziet:
+     * 100%, 70%, 45% en 15% leven, en achteraan een gehavende raiddrone.
+     */
+    public static void damagedDroneRow(ServerLevel level, BlockPos leftmost, float yaw) {
+        float[] health = {1.0f, 0.7f, 0.45f, 0.15f};
+        for (int i = 0; i < health.length; i++) {
+            Entity drone = spawnStill(level, com.senne.imttech.registry.ModEntities.DRONE.get(),
+                    leftmost.offset(i * 2, 0, 0), yaw);
+            if (drone instanceof net.minecraft.world.entity.LivingEntity living) {
+                living.setHealth(living.getMaxHealth() * health[i]);
+            }
+        }
+        Entity raid = spawnStill(level, com.senne.imttech.registry.ModEntities.RAID_DRONE.get(),
+                leftmost.offset(health.length * 2, 0, 0), yaw);
+        if (raid instanceof net.minecraft.world.entity.LivingEntity living) {
+            living.setHealth(living.getMaxHealth() * 0.2f);
+        }
+    }
+
+    /**
+     * Het wrak van een neergestorte satelliet neerzetten, met {@code centre} als midden op het
+     * gras (y = het grasblok). De testwereld is plat en maar 3 blokken diep, te ondiep voor de
+     * krater: daarom eerst een heuvel van 5 blokken hoog met schuine randen, en de krater daarin.
+     * (In een echte wereld ligt het wrak 8 blokken in de grond, zie crashed_satellite.json.)
+     */
+    public static void placeCrashSite(ServerLevel level, BlockPos centre) {
+        int raise = 5;
+        for (int dx = -28; dx <= 28; dx++) {
+            for (int dz = -28; dz <= 28; dz++) {
+                double r = Math.sqrt(dx * dx + dz * dz);
+                int height = r <= 20 ? raise : (int) Math.round(raise * Math.max(0, 28 - r) / 8.0);
+                for (int dy = 0; dy < height; dy++) {
+                    level.setBlock(centre.offset(dx, dy, dz), Blocks.DIRT.defaultBlockState(), 2);
+                }
+                level.setBlock(centre.offset(dx, height, dz), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
+            }
+        }
+        // Laag 7 van de structuur is het gras: dat ligt nu op centre.y + raise.
+        BlockPos origin = centre.offset(-16, raise - 7, -16);
+        command("place template imttech:crashed_satellite " + origin.getX() + " " + origin.getY() + " " + origin.getZ());
+    }
+
+    /**
+     * De Bibie's Industries-bunker in een zelfgebouwde berg (de testwereld is plat). De ingang komt op
+     * {@code entrance} en kijkt naar het noorden; de berg loopt daarachter (naar het zuiden)
+     * omhoog. We zetten de bunker neer zoals de echte wereld dat doet (BibieBunkerPiece), dus
+     * met soldaten, en de laserwanden gaan vanzelf aan.
+     */
+    public static void placeBibieBunker(ServerLevel level, BlockPos entrance) {
+        // entrance = waar je voor de deur staat; de grond (en de vloer van de bunker) ligt eronder.
+        int ground = entrance.getY() - 1;
+        for (int dx = -30; dx <= 30; dx++) {
+            for (int dz = -4; dz <= 52; dz++) {
+                // Een helling die na 12 blokken op volle hoogte is, en naar de zijkanten afloopt.
+                int rise = Math.min(22, Math.max(0, dz * 2));
+                int side = Math.max(0, Math.abs(dx) - 20) * 2;
+                int top = ground + Math.max(0, rise - side);
+                for (int y = ground - 2; y < top; y++) {
+                    level.setBlock(new BlockPos(entrance.getX() + dx, y, entrance.getZ() + dz), Blocks.STONE.defaultBlockState(), 2);
+                }
+                level.setBlock(new BlockPos(entrance.getX() + dx, top, entrance.getZ() + dz),
+                        (top - ground > 14 ? Blocks.SNOW_BLOCK : Blocks.GRASS_BLOCK).defaultBlockState(), 2);
+            }
+        }
+        net.minecraft.world.level.block.Rotation rotation = net.minecraft.world.level.block.Rotation.NONE;
+        BlockPos origin = com.senne.imttech.hydra.BibieBunkerStructure.originFor(entrance.below(), rotation);
+        com.senne.imttech.hydra.BibieBunkerPiece piece = new com.senne.imttech.hydra.BibieBunkerPiece(
+                level.getStructureManager(), origin, rotation);
+        piece.postProcess(level, level.structureManager(), level.getChunkSource().getGenerator(), level.random,
+                piece.getBoundingBox(), new net.minecraft.world.level.ChunkPos(origin), origin);
+    }
+
+    /** Een nieuwe, volle bril die van deze speler is. */
+    public static ItemStack ownGlasses(ServerPlayer player) {
+        ItemStack glasses = new ItemStack(ModItems.IMT_GLASSES.get());
+        ImtData.setEnergy(glasses, ImtData.getMaxEnergy(glasses));
+        ImtData.setOwner(glasses, new ImtOwner(player.getUUID(), player.getGameProfile().getName(), false));
+        return glasses;
+    }
+
+    /** Zet de speler een eigen, volle bril op. */
+    public static void wearGlasses(ServerPlayer player) {
+        player.setItemSlot(EquipmentSlot.HEAD, ownGlasses(player));
+    }
+
+    /** Vult de bril die de speler op heeft weer helemaal op. */
+    public static void refill(ServerPlayer player) {
+        ItemStack glasses = ImtData.getWornGlasses(player);
+        if (!glasses.isEmpty()) {
+            ImtData.setEnergy(glasses, ImtData.getMaxEnergy(glasses));
+        }
+    }
+
+    /** Maakt het arsenaal leeg en zet er {@code count} nieuwe drones in. */
+    public static void freshArsenal(ServerPlayer player, int count) {
+        player.setData(ModAttachments.ARSENAL, ImtArsenal.EMPTY);
+        for (int i = 0; i < count; i++) {
+            ArsenalServer.add(player);
+        }
+    }
+
+    /**
+     * Een tweede speler zonder echt spel erachter (zoals de automatische tests er een maken).
+     * Hij staat stil, maar voor de mod is hij een gewone speler: je kunt hem hacken,
+     * bespioneren en berichten sturen.
+     */
+    public static ServerPlayer fakePlayer(ServerLevel level, String name, BlockPos pos) {
+        CommonListenerCookie cookie = CommonListenerCookie.createInitial(
+                new GameProfile(UUID.nameUUIDFromBytes(("dev-" + name).getBytes()), name), false);
+        ServerPlayer player = new ServerPlayer(level.getServer(), level, cookie.gameProfile(), cookie.clientInformation());
+        Connection connection = new Connection(PacketFlow.SERVERBOUND);
+        new EmbeddedChannel(connection);
+        level.getServer().getPlayerList().placeNewPlayer(connection, player, cookie);
+        player.setGameMode(GameType.SURVIVAL);
+        player.teleportTo(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 180, 0);
+        return player;
+    }
+}

@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:computer_chip"
+    },
+    "title": {
+      "translate": "advancements.imttech.root.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/block/deepslate_tiles.png"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "imttech:computer_chip"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

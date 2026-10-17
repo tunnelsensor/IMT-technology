@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "front": "starktech:block/suit_workbench_front",
-    "side": "starktech:block/suit_workbench_side",
-    "top": "starktech:block/suit_workbench_top"
-  }
-}

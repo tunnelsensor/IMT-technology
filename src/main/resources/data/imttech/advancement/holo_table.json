@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:holo_table"
+    },
+    "title": {
+      "translate": "advancements.imttech.holo_table.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.holo_table.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "imttech:holo_table"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "imttech:glasses",
+  "requirements": [
+    [
+      "has"
+    ]
+  ]
+}

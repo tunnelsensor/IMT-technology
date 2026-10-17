@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "imttech:block/relay_emitter"
+    },
+    "powered=true": {
+      "model": "imttech:block/relay_emitter_on"
+    }
+  }
+}

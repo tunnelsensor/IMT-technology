@@ -1,4 +1,4 @@
-package com.senne.starktech.security.os;
+package com.senne.imttech.security.os;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;

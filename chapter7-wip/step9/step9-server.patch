@@ -1,7 +1,7 @@
-diff --git a/src/main/java/com/senne/starktech/security/StarkLaptopItem.java b/src/main/java/com/senne/starktech/security/StarkLaptopItem.java
+diff --git a/src/main/java/com/senne/imttech/security/HackingLaptopItem.java b/src/main/java/com/senne/imttech/security/HackingLaptopItem.java
 index af6f478..1b6a12b 100644
---- a/src/main/java/com/senne/starktech/security/StarkLaptopItem.java
-+++ b/src/main/java/com/senne/starktech/security/StarkLaptopItem.java
+--- a/src/main/java/com/senne/imttech/security/HackingLaptopItem.java
++++ b/src/main/java/com/senne/imttech/security/HackingLaptopItem.java
 @@ -5,6 +5,7 @@ import net.minecraft.ChatFormatting;
  import net.minecraft.network.chat.Component;
  import net.minecraft.server.level.ServerPlayer;
@@ -10,7 +10,7 @@ index af6f478..1b6a12b 100644
  import net.minecraft.world.item.Item;
  import net.minecraft.world.item.ItemStack;
  import net.minecraft.world.item.TooltipFlag;
-@@ -31,9 +32,23 @@ public class StarkLaptopItem extends Item {
+@@ -31,9 +32,23 @@ public class HackingLaptopItem extends Item {
          return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
      }
  
@@ -22,34 +22,34 @@ index af6f478..1b6a12b 100644
 +    public net.minecraft.world.InteractionResultHolder<ItemStack> use(net.minecraft.world.level.Level level, Player player,
 +                                                                      net.minecraft.world.InteractionHand hand) {
 +        if (player instanceof ServerPlayer serverPlayer) {
-+            com.senne.starktech.security.os.StarkOs.promptLogin(serverPlayer);
++            com.senne.imttech.security.os.SecurityOs.promptLogin(serverPlayer);
 +        }
 +        return net.minecraft.world.InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
 +    }
 +
      @Override
      public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-         tooltip.add(Component.translatable("tooltip.starktech.stark_laptop").withStyle(ChatFormatting.GRAY));
-         tooltip.add(Component.translatable("tooltip.starktech.stark_laptop.use").withStyle(ChatFormatting.DARK_AQUA));
-+        tooltip.add(Component.translatable("tooltip.starktech.stark_laptop.ssh").withStyle(ChatFormatting.DARK_AQUA));
+         tooltip.add(Component.translatable("tooltip.imttech.hacking_laptop").withStyle(ChatFormatting.GRAY));
+         tooltip.add(Component.translatable("tooltip.imttech.hacking_laptop.use").withStyle(ChatFormatting.DARK_AQUA));
++        tooltip.add(Component.translatable("tooltip.imttech.hacking_laptop.ssh").withStyle(ChatFormatting.DARK_AQUA));
      }
  }
-diff --git a/src/main/java/com/senne/starktech/security/os/StarkOs.java b/src/main/java/com/senne/starktech/security/os/StarkOs.java
+diff --git a/src/main/java/com/senne/imttech/security/os/SecurityOs.java b/src/main/java/com/senne/imttech/security/os/SecurityOs.java
 index 671a95c..a58145e 100644
---- a/src/main/java/com/senne/starktech/security/os/StarkOs.java
-+++ b/src/main/java/com/senne/starktech/security/os/StarkOs.java
-@@ -4,24 +4,34 @@ import com.senne.starktech.edith.EdithServer;
- import com.senne.starktech.network.EdithMessagePayload;
- import com.senne.starktech.network.ModNetwork;
- import com.senne.starktech.network.OsActionPayload;
-+import com.senne.starktech.network.OsLoginPromptPayload;
- import com.senne.starktech.network.OsOpenPayload;
- import com.senne.starktech.network.OsSnapshotPayload;
- import com.senne.starktech.security.SecurityBalance;
- import com.senne.starktech.security.SecurityCoreBlockEntity;
- import com.senne.starktech.security.SecurityCores;
- import com.senne.starktech.security.SecurityDroneEntity;
-+import com.senne.starktech.security.net.StarkNetworkData;
+--- a/src/main/java/com/senne/imttech/security/os/SecurityOs.java
++++ b/src/main/java/com/senne/imttech/security/os/SecurityOs.java
+@@ -4,24 +4,34 @@ import com.senne.imttech.imt.ImtServer;
+ import com.senne.imttech.network.ImtMessagePayload;
+ import com.senne.imttech.network.ModNetwork;
+ import com.senne.imttech.network.OsActionPayload;
++import com.senne.imttech.network.OsLoginPromptPayload;
+ import com.senne.imttech.network.OsOpenPayload;
+ import com.senne.imttech.network.OsSnapshotPayload;
+ import com.senne.imttech.security.SecurityBalance;
+ import com.senne.imttech.security.SecurityCoreBlockEntity;
+ import com.senne.imttech.security.SecurityCores;
+ import com.senne.imttech.security.SecurityDroneEntity;
++import com.senne.imttech.security.net.CoreNetworkData;
 +import java.util.Comparator;
  import java.util.HashMap;
  import java.util.Map;
@@ -80,13 +80,13 @@ index 671a95c..a58145e 100644
 + *
 + * Sinds stap 9 kun je ook INLOGGEN met IP en wachtwoord (zoals SSH, zie {@link #login}): bij de
 + * kern (wie niet de eigenaar is, krijgt dan het inlogvenster) of van overal in de wereld met een
-+ * Stark Laptop. Op afstand blijft het stuk wereld met de kern geladen zolang de sessie loopt, en
++ * Hacking Laptop. Op afstand blijft het stuk wereld met de kern geladen zolang de sessie loopt, en
 + * na 30 seconden niets doen ben je eruit. Een systeem zonder wachtwoord laat niemand inloggen:
 + * dat neem je alleen ter plekke over, met de laptop.
   */
- public final class StarkOs {
-     private StarkOs() {}
-@@ -52,6 +68,18 @@ public final class StarkOs {
+ public final class SecurityOs {
+     private SecurityOs() {}
+@@ -52,6 +68,18 @@ public final class SecurityOs {
      public static final double REACH = 8.0;
      /** Zo vaak (ticks) stuurt de server een nieuwe momentopname naar wie ingelogd is. */
      private static final int SNAPSHOT_INTERVAL = 10;
@@ -101,11 +101,11 @@ index 671a95c..a58145e 100644
 +     * verloopt vanzelf na 5 seconden; zolang de sessie loopt, vernieuwen we het elke seconde.
 +     */
 +    private static final TicketType<ChunkPos> SSH_TICKET =
-+            TicketType.create("starktech_ssh", Comparator.comparingLong(ChunkPos::toLong), 100);
++            TicketType.create("imttech_ssh", Comparator.comparingLong(ChunkPos::toLong), 100);
  
      /**
       * Eén open desktop: op welke kern, of het via SSH op afstand is, en wat er nog naar het scherm
-@@ -60,7 +88,11 @@ public final class StarkOs {
+@@ -60,7 +88,11 @@ public final class SecurityOs {
       */
      public static final class Session {
          private final BlockPos core;
@@ -117,7 +117,7 @@ index 671a95c..a58145e 100644
          /** Het bestand dat net geopend is en nog (één keer) naar het scherm moet. */
          private @Nullable String fileToSend;
          /** Een melding die nog naar het scherm moet (het actiebalk-bericht zie je niet achter de desktop). */
-@@ -70,9 +102,11 @@ public final class StarkOs {
+@@ -70,9 +102,11 @@ public final class SecurityOs {
          private @Nullable VirtualFs sentFs;
          private int sentRevision = -1;
  
@@ -130,7 +130,7 @@ index 671a95c..a58145e 100644
          }
  
          public BlockPos core() {
-@@ -89,12 +123,17 @@ public final class StarkOs {
+@@ -89,12 +123,17 @@ public final class SecurityOs {
  
      private static final Map<UUID, Session> SESSIONS = new HashMap<>();
      private static final Map<UUID, Lockout> LOCKOUTS = new HashMap<>();
@@ -150,7 +150,7 @@ index 671a95c..a58145e 100644
       */
      public static void open(ServerPlayer player, BlockPos corePos) {
          ServerLevel level = player.serverLevel();
-@@ -109,6 +148,10 @@ public final class StarkOs {
+@@ -109,6 +148,10 @@ public final class SecurityOs {
              return;
          }
          if (!isOwner(player, core)) {
@@ -158,10 +158,10 @@ index 671a95c..a58145e 100644
 +                ModNetwork.sendTo(player, new OsLoginPromptPayload(core.ip(), core.hostname(), "", true));
 +                return;
 +            }
-             player.displayClientMessage(Component.translatable("os.starktech.msg.access_denied")
+             player.displayClientMessage(Component.translatable("os.imttech.msg.access_denied")
                      .withStyle(ChatFormatting.RED), true);
              return;
-@@ -129,8 +172,12 @@ public final class StarkOs {
+@@ -129,8 +172,12 @@ public final class SecurityOs {
                      .withStyle(ChatFormatting.RED), true);
              return false;
          }
@@ -175,7 +175,7 @@ index 671a95c..a58145e 100644
          ModNetwork.sendTo(player, new OsOpenPayload(core.getBlockPos(), true, remote));
          sendSnapshot(player, core, session);
          return true;
-@@ -175,14 +222,16 @@ public final class StarkOs {
+@@ -175,14 +222,16 @@ public final class SecurityOs {
          if (session == null || !session.core().equals(payload.pos())) {
              return;
          }
@@ -194,39 +194,39 @@ index 671a95c..a58145e 100644
              case "passwd" -> passwd(player, core, session, args.getString("pw"));
              case "fs_open" -> openFile(player, core, session, path(args, "path"));
              case "fs_mkdir" -> fileResult(player, core, session, core.fs().mkdir(path(args, "path")));
-@@ -227,11 +276,11 @@ public final class StarkOs {
+@@ -227,11 +276,11 @@ public final class SecurityOs {
                  text = on ? "Drones on" : "Drones landing";
              }
              case "lasers" -> {
--                com.senne.starktech.security.SecurityDevices.setLasers(player.serverLevel(), core, on);
-+                com.senne.starktech.security.SecurityDevices.setLasers(levelOf(core), core, on);
+-                com.senne.imttech.security.SecurityDevices.setLasers(player.serverLevel(), core, on);
++                com.senne.imttech.security.SecurityDevices.setLasers(levelOf(core), core, on);
                  text = on ? "Laser walls on" : "Laser walls off";
              }
              case "cameras" -> {
--                com.senne.starktech.security.SecurityDevices.setCameras(player.serverLevel(), core, on);
-+                com.senne.starktech.security.SecurityDevices.setCameras(levelOf(core), core, on);
+-                com.senne.imttech.security.SecurityDevices.setCameras(player.serverLevel(), core, on);
++                com.senne.imttech.security.SecurityDevices.setCameras(levelOf(core), core, on);
                  text = on ? "Cameras on" : "Cameras off";
              }
              default -> {
-@@ -245,7 +294,7 @@ public final class StarkOs {
+@@ -245,7 +294,7 @@ public final class SecurityOs {
      /** Een camera een stukje draaien of kantelen (de pijltjes bij het grote camerabeeld). */
      private static void aimCamera(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos,
                                    float dPan, float dTilt) {
--        String error = com.senne.starktech.security.SecurityDevices.aimCamera(player.serverLevel(), core, pos, dPan, dTilt);
-+        String error = com.senne.starktech.security.SecurityDevices.aimCamera(levelOf(core), core, pos, dPan, dTilt);
+-        String error = com.senne.imttech.security.SecurityDevices.aimCamera(player.serverLevel(), core, pos, dPan, dTilt);
++        String error = com.senne.imttech.security.SecurityDevices.aimCamera(levelOf(core), core, pos, dPan, dTilt);
          if (error != null) {
              notify(player, core, session, error, true);
              return;
-@@ -255,7 +304,7 @@ public final class StarkOs {
+@@ -255,7 +304,7 @@ public final class SecurityOs {
  
      /** Eén torentje aan of uit. */
      private static void toggleTurret(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, boolean on) {
--        String error = com.senne.starktech.security.SecurityDevices.switchTurret(player.serverLevel(), core, pos, on);
-+        String error = com.senne.starktech.security.SecurityDevices.switchTurret(levelOf(core), core, pos, on);
+-        String error = com.senne.imttech.security.SecurityDevices.switchTurret(player.serverLevel(), core, pos, on);
++        String error = com.senne.imttech.security.SecurityDevices.switchTurret(levelOf(core), core, pos, on);
          if (error != null) {
              notify(player, core, session, error, true);
              return;
-@@ -334,7 +383,7 @@ public final class StarkOs {
+@@ -334,7 +383,7 @@ public final class SecurityOs {
              notify(player, core, session, "Password rejected: " + problem, true);
              return;
          }
@@ -235,7 +235,7 @@ index 671a95c..a58145e 100644
          core.logEvent(EventLog.Type.SYSTEM, player.getGameProfile().getName() + " changed the password");
          // Een nieuw wachtwoord verbreekt elke andere sessie op deze kern.
          kickOthers(player, core.getBlockPos());
-@@ -432,7 +481,7 @@ public final class StarkOs {
+@@ -432,7 +481,7 @@ public final class SecurityOs {
       * Publiek, zodat straks ook de terminal (cat, grep) hem kan laten afgaan.
       */
      public static void springTrap(ServerPlayer reader, SecurityCoreBlockEntity core, String path) {
@@ -244,7 +244,7 @@ index 671a95c..a58145e 100644
          String name = reader.getGameProfile().getName();
          long until = level.getGameTime() + SecurityBalance.TRAP_LOCKOUT;
          core.logEvent(EventLog.Type.TRAP, name + " opened the trap file " + path);
-@@ -450,7 +499,7 @@ public final class StarkOs {
+@@ -450,7 +499,7 @@ public final class SecurityOs {
          }
          // De beveiliging jaagt op hem.
          core.hunt(reader.getUUID(), until);
@@ -253,7 +253,7 @@ index 671a95c..a58145e 100644
                  && SecurityCores.isIntruder(level, core, reader)) {
              for (SecurityDroneEntity drone : level.getEntitiesOfClass(SecurityDroneEntity.class, core.area(),
                      drone -> core.getBlockPos().equals(drone.home()))) {
-@@ -470,7 +519,7 @@ public final class StarkOs {
+@@ -470,7 +519,7 @@ public final class SecurityOs {
  
      private static void sendSnapshot(ServerPlayer player, SecurityCoreBlockEntity core, Session session) {
          ModNetwork.sendTo(player, new OsSnapshotPayload(core.getBlockPos(),
@@ -262,7 +262,7 @@ index 671a95c..a58145e 100644
      }
  
      /**
-@@ -571,7 +620,10 @@ public final class StarkOs {
+@@ -571,7 +620,10 @@ public final class SecurityOs {
  
      // ================================================================ Elke tick en opruimen
  
@@ -274,7 +274,7 @@ index 671a95c..a58145e 100644
      public static void onPlayerTick(PlayerTickEvent.Post event) {
          if (!(event.getEntity() instanceof ServerPlayer player)) {
              return;
-@@ -580,10 +632,25 @@ public final class StarkOs {
+@@ -580,10 +632,25 @@ public final class SecurityOs {
          if (session == null) {
              return;
          }
@@ -293,7 +293,7 @@ index 671a95c..a58145e 100644
 +            }
 +            if (level.getGameTime() - session.lastActivity > IDLE_TICKS) {
 +                close(player);
-+                player.displayClientMessage(Component.translatable("os.starktech.msg.idle").withStyle(ChatFormatting.YELLOW), true);
++                player.displayClientMessage(Component.translatable("os.imttech.msg.idle").withStyle(ChatFormatting.YELLOW), true);
 +                return;
 +            }
 +        } else if (player.level() != level || player.distanceToSqr(session.core().getCenter()) > REACH * REACH) {
@@ -304,7 +304,7 @@ index 671a95c..a58145e 100644
              close(player);
              return;
          }
-@@ -592,6 +659,121 @@ public final class StarkOs {
+@@ -592,6 +659,121 @@ public final class SecurityOs {
          }
      }
  
@@ -334,9 +334,9 @@ index 671a95c..a58145e 100644
 +    /**
 +     * Inloggen met een IP en een wachtwoord (het inlogvenster). Zo gaat het:
 +     * <ul>
-+     *   <li>we zoeken het systeem met dat IP in het netwerk van de wereld (StarkNetworkData); het
++     *   <li>we zoeken het systeem met dat IP in het netwerk van de wereld (CoreNetworkData); het
 +     *       stuk wereld met de kern laden we zo nodig;</li>
-+     *   <li>ben je niet bij de kern, dan heb je een Stark Laptop nodig (dat is je SSH);</li>
++     *   <li>ben je niet bij de kern, dan heb je een Hacking Laptop nodig (dat is je SSH);</li>
 +     *   <li>een systeem zonder wachtwoord laat niemand inloggen: dat neem je alleen ter plekke
 +     *       over (hacken met de laptop). Ook de eigenaar niet, van ver: die zet eerst een
 +     *       wachtwoord;</li>
@@ -358,7 +358,7 @@ index 671a95c..a58145e 100644
 +            reply(player, "Too many tries: wait a moment.");
 +            return;
 +        }
-+        GlobalPos where = StarkNetworkData.get(server).find(address);
++        GlobalPos where = CoreNetworkData.get(server).find(address);
 +        ServerLevel level = where == null ? null : server.getLevel(where.dimension());
 +        if (level == null) {
 +            reply(player, "ssh: no system answers at " + address);
@@ -373,13 +373,13 @@ index 671a95c..a58145e 100644
 +        }
 +        boolean near = player.level() == level && player.distanceToSqr(pos.getCenter()) <= REACH * REACH;
 +        boolean owner = isOwner(player, core);
-+        if (!near && !player.getInventory().contains(stack -> stack.is(com.senne.starktech.registry.ModItems.STARK_LAPTOP.get()))) {
-+            reply(player, "You need a Stark Laptop to connect from a distance.");
++        if (!near && !player.getInventory().contains(stack -> stack.is(com.senne.imttech.registry.ModItems.HACKING_LAPTOP.get()))) {
++            reply(player, "You need a Hacking Laptop to connect from a distance.");
 +            return;
 +        }
 +        if (!core.hasPassword()) {
 +            reply(player, owner ? "Set a password on your core first (Settings): without one, nobody can log in."
-+                    : "This system has no password, so it takes no logins. Take it over on site with a Stark Laptop.");
++                    : "This system has no password, so it takes no logins. Take it over on site with a Hacking Laptop.");
 +            return;
 +        }
 +        int locked = lockedSeconds(player, core);
@@ -394,7 +394,7 @@ index 671a95c..a58145e 100644
 +            Long lastAlert = LAST_FAIL_ALERT.get(player.getUUID());
 +            if (!owner && (lastAlert == null || now - lastAlert > FAIL_ALERT_EVERY)) {
 +                LAST_FAIL_ALERT.put(player.getUUID(), now);
-+                alertOwner(level, core, player, "os.starktech.msg.login_fail_alert");
++                alertOwner(level, core, player, "os.imttech.msg.login_fail_alert");
 +            }
 +            reply(player, "Permission denied, please try again.");
 +            return;
@@ -402,7 +402,7 @@ index 671a95c..a58145e 100644
 +        NEXT_TRY.remove(player.getUUID());
 +        core.logEvent(EventLog.Type.LOGIN, name + " logged in" + (near ? "" : " remotely"));
 +        if (!owner) {
-+            alertOwner(level, core, player, "os.starktech.msg.login_alert");
++            alertOwner(level, core, player, "os.imttech.msg.login_alert");
 +        }
 +        if (openFor(player, core, !near) && near) {
 +            level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.4f, 1.8f);
@@ -414,46 +414,46 @@ index 671a95c..a58145e 100644
 +        ModNetwork.sendTo(player, OsLoginPromptPayload.reply(message));
 +    }
 +
-+    /** Een alarm van E.D.I.T.H. voor de eigenaar (als hij online is, waar hij ook is). */
++    /** Een alarm van I.M.T voor de eigenaar (als hij online is, waar hij ook is). */
 +    private static void alertOwner(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer who, String key) {
 +        ServerPlayer owner = core.ownerId() == null ? null : level.getServer().getPlayerList().getPlayer(core.ownerId());
 +        if (owner != null && owner != who) {
-+            EdithServer.send(owner, Component.translatable(key, who.getGameProfile().getName(), core.hostname()),
-+                    EdithMessagePayload.Level.ALERT);
++            ImtServer.send(owner, Component.translatable(key, who.getGameProfile().getName(), core.hostname()),
++                    ImtMessagePayload.Level.ALERT);
 +        }
 +    }
 +
      /** De sessie van deze speler (of null). Voor de tests. */
      public static @Nullable Session session(ServerPlayer player) {
          return SESSIONS.get(player.getUUID());
-@@ -604,6 +786,8 @@ public final class StarkOs {
+@@ -604,6 +786,8 @@ public final class SecurityOs {
      public static void onServerStopped(ServerStoppedEvent event) {
          SESSIONS.clear();
          LOCKOUTS.clear();
 +        NEXT_TRY.clear();
 +        LAST_FAIL_ALERT.clear();
-         com.senne.starktech.security.SecurityDevices.clear();
+         com.senne.imttech.security.SecurityDevices.clear();
      }
  }
-diff --git a/src/main/resources/assets/starktech/lang/en_us.json b/src/main/resources/assets/starktech/lang/en_us.json
+diff --git a/src/main/resources/assets/imttech/lang/en_us.json b/src/main/resources/assets/imttech/lang/en_us.json
 index c0f9307..bf0d645 100644
---- a/src/main/resources/assets/starktech/lang/en_us.json
-+++ b/src/main/resources/assets/starktech/lang/en_us.json
+--- a/src/main/resources/assets/imttech/lang/en_us.json
++++ b/src/main/resources/assets/imttech/lang/en_us.json
 @@ -1025,6 +1025,7 @@
-   "item.starktech.stark_laptop": "Stark Laptop",
-   "tooltip.starktech.stark_laptop": "Hacks the security of a Stark Tower",
-   "tooltip.starktech.stark_laptop.use": "Right-click a Stark Security Core to set it up on top and start hacking",
-+  "tooltip.starktech.stark_laptop.ssh": "Right-click in the air to log in to any system by its IP and password (SSH)",
-   "block.starktech.stark_laptop": "Stark Laptop",
-   "screen.starktech.hack": "Security override",
-   "screen.starktech.hack.title": "STARK SECURITY OVERRIDE",
+   "item.imttech.hacking_laptop": "Hacking Laptop",
+   "tooltip.imttech.hacking_laptop": "Hacks the security of a Bibie's Industries Tower",
+   "tooltip.imttech.hacking_laptop.use": "Right-click a Security Core to set it up on top and start hacking",
++  "tooltip.imttech.hacking_laptop.ssh": "Right-click in the air to log in to any system by its IP and password (SSH)",
+   "block.imttech.hacking_laptop": "Hacking Laptop",
+   "screen.imttech.hack": "Security override",
+   "screen.imttech.hack.title": "SECURITY OVERRIDE",
 @@ -1052,6 +1053,9 @@
-   "os.starktech.msg.locked_out": "ACCESS DENIED. You are locked out of this system for %s s.",
-   "os.starktech.msg.trap_sprung": "TRAP! %s was a trap file. Session terminated, locked out for %s s.",
-   "os.starktech.msg.trap_alert": "Security alert: %s opened the trap file %s on %s.",
-+  "os.starktech.msg.idle": "Remote session closed: nothing happened for 30 seconds.",
-+  "os.starktech.msg.login_alert": "Security alert: %s logged in to %s.",
-+  "os.starktech.msg.login_fail_alert": "Security alert: %s tried to log in to %s with a wrong password.",
-   "entity.starktech.security_drone": "Security Drone",
-   "turret.starktech.status.security": "Security Turret: %s | %s",
-   "turret.starktech.status.unclaimed": "tower security: nobody's (you are an intruder)",
+   "os.imttech.msg.locked_out": "ACCESS DENIED. You are locked out of this system for %s s.",
+   "os.imttech.msg.trap_sprung": "TRAP! %s was a trap file. Session terminated, locked out for %s s.",
+   "os.imttech.msg.trap_alert": "Security alert: %s opened the trap file %s on %s.",
++  "os.imttech.msg.idle": "Remote session closed: nothing happened for 30 seconds.",
++  "os.imttech.msg.login_alert": "Security alert: %s logged in to %s.",
++  "os.imttech.msg.login_fail_alert": "Security alert: %s tried to log in to %s with a wrong password.",
+   "entity.imttech.security_drone": "Security Drone",
+   "turret.imttech.status.security": "Security Turret: %s | %s",
+   "turret.imttech.status.unclaimed": "tower security: nobody's (you are an intruder)",

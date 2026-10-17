@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "color=blue": {
+      "model": "imttech:block/holo_table_blue"
+    },
+    "color=cyan": {
+      "model": "imttech:block/holo_table_cyan"
+    },
+    "color=green": {
+      "model": "imttech:block/holo_table_green"
+    },
+    "color=yellow": {
+      "model": "imttech:block/holo_table_yellow"
+    },
+    "color=red": {
+      "model": "imttech:block/holo_table_red"
+    },
+    "color=purple": {
+      "model": "imttech:block/holo_table_purple"
+    }
+  }
+}

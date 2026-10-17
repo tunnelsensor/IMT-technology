@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "imttech:block/crusher_front_on",
+    "side": "imttech:block/crack_machine_side",
+    "top": "imttech:block/crack_machine_top"
+  }
+}

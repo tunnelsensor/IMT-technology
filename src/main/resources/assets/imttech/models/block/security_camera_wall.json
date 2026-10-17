@@ -1,0 +1,158 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/security_camera_body",
+    "body": "imttech:block/security_camera_body",
+    "mount": "imttech:block/security_camera_mount",
+    "lens": "imttech:block/security_camera_lens"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        9,
+        15
+      ],
+      "to": [
+        11,
+        15,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mount"
+        },
+        "south": {
+          "texture": "#mount",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#mount"
+        },
+        "west": {
+          "texture": "#mount"
+        },
+        "up": {
+          "texture": "#mount"
+        },
+        "down": {
+          "texture": "#mount"
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        11,
+        12
+      ],
+      "to": [
+        9,
+        13,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#mount"
+        },
+        "south": {
+          "texture": "#mount"
+        },
+        "east": {
+          "texture": "#mount"
+        },
+        "west": {
+          "texture": "#mount"
+        },
+        "up": {
+          "texture": "#mount"
+        },
+        "down": {
+          "texture": "#mount"
+        }
+      }
+    },
+    {
+      "from": [
+        5.5,
+        9,
+        4
+      ],
+      "to": [
+        10.5,
+        13,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          11,
+          12
+        ],
+        "axis": "x",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        6.5,
+        9.5,
+        3
+      ],
+      "to": [
+        9.5,
+        12.5,
+        4
+      ],
+      "faces": {
+        "north": {
+          "texture": "#lens"
+        },
+        "south": {
+          "texture": "#mount"
+        },
+        "east": {
+          "texture": "#mount"
+        },
+        "west": {
+          "texture": "#mount"
+        },
+        "up": {
+          "texture": "#mount"
+        },
+        "down": {
+          "texture": "#mount"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          11,
+          12
+        ],
+        "axis": "x",
+        "angle": -22.5
+      }
+    }
+  ]
+}

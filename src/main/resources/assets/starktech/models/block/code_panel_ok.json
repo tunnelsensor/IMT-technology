@@ -1,7 +1,0 @@
-{
-  "parent": "starktech:block/code_panel_base",
-  "textures": {
-    "front": "starktech:block/code_panel_ok",
-    "side": "starktech:block/code_panel_side"
-  }
-}

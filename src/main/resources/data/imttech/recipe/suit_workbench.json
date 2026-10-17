@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "T": {
+      "item": "minecraft:crafting_table"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "CRC",
+    "ITI",
+    "IAI"
+  ],
+  "result": {
+    "id": "imttech:suit_workbench"
+  }
+}

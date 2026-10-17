@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:emp"
+    },
+    "title": {
+      "translate": "advancements.imttech.illusion.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.illusion.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trigger": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "imttech:glasses",
+  "requirements": [
+    [
+      "trigger"
+    ]
+  ]
+}

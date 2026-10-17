@@ -1,0 +1,7 @@
+{
+  "parent": "imttech:block/keycard_reader_base",
+  "textures": {
+    "front": "imttech:block/keycard_reader_ok",
+    "side": "imttech:block/keycard_reader_side"
+  }
+}

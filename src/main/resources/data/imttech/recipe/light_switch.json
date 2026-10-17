@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "N": {
+      "tag": "c:nuggets/iron"
+    },
+    "L": {
+      "item": "minecraft:lever"
+    },
+    "K": {
+      "item": "imttech:cable"
+    }
+  },
+  "pattern": [
+    "N",
+    "L",
+    "K"
+  ],
+  "result": {
+    "id": "imttech:light_switch",
+    "count": 2
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "claimed=false,facing=north": {
+      "model": "imttech:block/security_core"
+    },
+    "claimed=true,facing=north": {
+      "model": "imttech:block/security_core_claimed"
+    },
+    "claimed=false,facing=east": {
+      "model": "imttech:block/security_core",
+      "y": 90
+    },
+    "claimed=true,facing=east": {
+      "model": "imttech:block/security_core_claimed",
+      "y": 90
+    },
+    "claimed=false,facing=south": {
+      "model": "imttech:block/security_core",
+      "y": 180
+    },
+    "claimed=true,facing=south": {
+      "model": "imttech:block/security_core_claimed",
+      "y": 180
+    },
+    "claimed=false,facing=west": {
+      "model": "imttech:block/security_core",
+      "y": 270
+    },
+    "claimed=true,facing=west": {
+      "model": "imttech:block/security_core_claimed",
+      "y": 270
+    }
+  }
+}

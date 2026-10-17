@@ -1,0 +1,7 @@
+{
+  "type": "imttech:bibie_bunker",
+  "biomes": "#imttech:has_structure/bibie_bunker",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "none"
+}

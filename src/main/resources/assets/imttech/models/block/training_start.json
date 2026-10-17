@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "imttech:block/training_start_top",
+    "bottom": "imttech:block/training_bottom",
+    "side": "imttech:block/training_start_side"
+  }
+}

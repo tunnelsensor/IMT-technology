@@ -1,12 +1,12 @@
 """
-Bouwt de neergestorte Stark-satelliet als Minecraft-structuurbestand (.nbt).
+Bouwt de neergestorte Bibie's Industries-satelliet als Minecraft-structuurbestand (.nbt).
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_crash_site.py
 
-Het resultaat komt in src/main/resources/data/starktech/structure/crashed_satellite.nbt.
+Het resultaat komt in src/main/resources/data/imttech/structure/crashed_satellite.nbt.
 
-Een oude Stark-satelliet is uit zijn baan gevallen. Hij kwam schuin uit het oosten, trok een
+Een oude Bibie's Industries-satelliet is uit zijn baan gevallen. Hij kwam schuin uit het oosten, trok een
 voor door de grond en sloeg een krater. Wat je vindt:
 
 - een krater van zo'n 25 blokken breed en 6 diep, met een verschroeide bodem (basalt,
@@ -17,10 +17,10 @@ voor door de grond en sloeg een krater. Wat je vindt:
   de helling, de schotel die ondersteboven op de noordhelling ligt, en een verbogen antenne;
 - rook: kampvuurtjes in de romp (blauw, van de reactor) en in de voor;
 - de ZWARTE DOOS in de romp: een kist met onderdelen voor de satelliet-upgrades (netherite,
-  diamant, Stark-chips); en losse kratten met brokstukken.
+  diamant, computerchips); en losse kratten met brokstukken.
 
 Het wrak wordt bewaakt: kom je er met de bril op, dan duiken er raiddrones op je af (zie
-EdithRaids in de mod).
+ImtRaids in de mod).
 
 Hoe hoog hij komt: de structuur ligt 8 blokken "in" de grond (zie start_height in
 worldgen/structure/crashed_satellite.json). Laag y = 8 hier is dus de eerste laag lucht boven
@@ -33,7 +33,7 @@ from pathlib import Path
 
 from generate_structure import DATA_VERSION, Int, write_nbt
 
-OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "starktech" / "structure" / "crashed_satellite.nbt"
+OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "crashed_satellite.nbt"
 
 SIZE_X, SIZE_Y, SIZE_Z = 33, 18, 33
 CX, CZ = 16, 16
@@ -46,8 +46,8 @@ TOP = SIZE_Y - 1
 RADIUS = 12.5
 DEPTH = 6
 
-LOOT_BLACK_BOX = "starktech:chests/crashed_satellite"
-LOOT_DEBRIS = "starktech:chests/satellite_debris"
+LOOT_BLACK_BOX = "imttech:chests/crashed_satellite"
+LOOT_DEBRIS = "imttech:chests/satellite_debris"
 
 # De zwarte doos, in de romp. De gametest kijkt of hij hier staat.
 BLACK_BOX = (15, 2, 16)
@@ -186,7 +186,7 @@ def build_body():
             put(x1, y, z, mc("air"))
     for x, z in [(16, 15), (16, 16), (15, 17), (17, 14)]:
         put(x, y1, z, mc("air"))
-    # De Stark-band op de zuidkant: rood en goud.
+    # De Bibie's Industries-band op de zuidkant: rood en goud.
     for x in range(x0, x1 + 1):
         put(x, 3, z1, mc("gold_block") if x % 2 else mc("red_concrete"))
     # Binnen: de reactor, blote draden, de zwarte doos en een blauw vuurtje van de reactor.

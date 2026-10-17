@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "L": {
+      "item": "minecraft:lever"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "K": {
+      "item": "imttech:cable"
+    }
+  },
+  "pattern": [
+    "IKI",
+    "LCL",
+    "IKI"
+  ],
+  "result": {
+    "id": "imttech:power_cabinet"
+  }
+}

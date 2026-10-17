@@ -1,8 +1,8 @@
-package com.senne.starktech.security.os;
+package com.senne.imttech.security.os;
 
-import com.senne.starktech.security.SecurityBalance;
-import com.senne.starktech.security.SecurityCoreBlockEntity;
-import com.senne.starktech.security.SecurityCores;
+import com.senne.imttech.security.SecurityBalance;
+import com.senne.imttech.security.SecurityCoreBlockEntity;
+import com.senne.imttech.security.SecurityCores;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De terminal van de Stark-laptop, maar dan op de SERVER (jouw wens, 28 september: de hack
+ * De terminal van de hacklaptop, maar dan op de SERVER (jouw wens, 28 september: de hack
  * logischer, en het echte wachtwoord/de mappen van iemand mogen niet in het spel van een hacker
  * belanden). De laptop in je spel tekent alleen de regels die deze klasse maakt.
  *
@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>LOCAL</b> (de laptop zelf): {@code netscan} toont de systemen in de buurt met hun IP,
  *       {@code curl <ip>} toont hun statuspagina (met het firewall-logboek dat de open poort
  *       verraadt), en {@code ssh admin@<ip> -p <poort>} verbindt.</li>
- *   <li><b>LOGIN</b>: een systeem zónder wachtwoord (de oude firmware van Tony) lekt een
+ *   <li><b>LOGIN</b>: een systeem zónder wachtwoord (de oude firmware van Bibie) lekt een
  *       geheugendump; een systeem mét wachtwoord vraagt gewoon het wachtwoord.</li>
  *   <li><b>SHELL</b>: zoek in de ECHTE mappen van de eigenaar ({@code ls}, {@code cd}, {@code cat},
  *       {@code find}, {@code grep}) naar de naam van het beveiligingsprogramma, en {@code ps} voor
@@ -61,7 +61,7 @@ public final class SystemShell {
     private String daemon = "";
 
     public SystemShell() {
-        output.add(TermLine.header("STARK PORTABLE TERMINAL"));
+        output.add(TermLine.header("PORTABLE TERMINAL"));
         output.add(TermLine.hint("Type 'help' for commands. 'netscan' finds systems near you."));
     }
 
@@ -208,7 +208,7 @@ public final class SystemShell {
         List<SecurityCoreBlockEntity> found = SecurityCores.scannable(level, player.blockPosition());
         if (found.isEmpty()) {
             normal("No systems responded. A security node only answers on its own local network.");
-            hint("Get closer to a security core (a Stark Tower, or someone's base).");
+            hint("Get closer to a security core (a Bibie's Industries Tower, or someone's base).");
             return;
         }
         header("HOSTS UP  (local network)");
@@ -227,7 +227,7 @@ public final class SystemShell {
             return;
         }
         header("http://" + be.ip() + "/status  --  " + be.hostname());
-        normal("Stark Security Node. Firewall active. See /var/log/firewall.log below.");
+        normal("Security Node. Firewall active. See /var/log/firewall.log below.");
         Random random = new Random(be.systemSeed() ^ 0x0C0FFEEL);
         List<String> lines = new ArrayList<>();
         String[] ips = {"10.4.0.77", "10.4.0.23", "192.168.1.4", "10.4.0.12", "172.16.0.9"};
@@ -237,15 +237,15 @@ public final class SystemShell {
                 lines.add("DENY   tcp " + ips[random.nextInt(ips.length)] + " -> :" + junkPort);
             }
         }
-        // De open poort (de SSH-poort). Bij Tony's systeem ook een tweede die weer dicht ging.
-        boolean tony = be.ownerName().isEmpty();
+        // De open poort (de SSH-poort). Bij Bibie's systeem ook een tweede die weer dicht ging.
+        boolean bibie = be.ownerName().isEmpty();
         int revoked = 1024 + random.nextInt(60000);
-        if (tony) {
+        if (bibie) {
             lines.add("ALLOW  tcp 10.4.0.12 -> :" + revoked + "  (maintenance window)");
         }
         lines.add("ALLOW  tcp 10.4.0.12 -> :" + be.sshPort() + "  (maintenance window)");
         Collections.shuffle(lines, random);
-        if (tony) {
+        if (bibie) {
             lines.add("RULE   ALLOW :" + revoked + " removed by admin");
         }
         int minute = 12;
@@ -388,7 +388,7 @@ public final class SystemShell {
         phase = Phase.SHELL;
         cwd = "/";
         good("Welcome to " + be.hostname() + ".");
-        hint("Look around with ls. Tony left a README.txt.");
+        hint("Look around with ls. Bibie left a README.txt.");
     }
 
     // ---------------------------------------------------------------- SHELL
@@ -590,7 +590,7 @@ public final class SystemShell {
     }
 
     private String ownerLabel(SecurityCoreBlockEntity be) {
-        return be.ownerName().isEmpty() ? "stark-industries" : be.ownerName();
+        return be.ownerName().isEmpty() ? "bibie-industries" : be.ownerName();
     }
 
     // ================================================================ Hulp

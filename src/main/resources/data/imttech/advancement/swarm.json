@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "imttech:drone_upgrade"
+    },
+    "title": {
+      "translate": "advancements.imttech.swarm.title"
+    },
+    "description": {
+      "translate": "advancements.imttech.swarm.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trigger": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "imttech:first_drone",
+  "requirements": [
+    [
+      "trigger"
+    ]
+  ]
+}

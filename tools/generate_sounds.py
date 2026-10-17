@@ -1,11 +1,11 @@
 """
-Maakt de eigen geluiden van Stark Tech (.ogg) uit golven en ruis, zonder opnames.
+Maakt de eigen geluiden van I.M.T Technology (.ogg) uit golven en ruis, zonder opnames.
 
 Gebruik (eenmalig: pip install numpy scipy soundfile):
     python tools/generate_sounds.py               # alle geluiden
-    python tools/generate_sounds.py edith_boot    # alleen deze
+    python tools/generate_sounds.py imt_boot    # alleen deze
 
-De bestanden komen in src/main/resources/assets/starktech/sounds/. Minecraft wil mono
+De bestanden komen in src/main/resources/assets/imttech/sounds/. Minecraft wil mono
 Ogg Vorbis: alleen mono-geluiden klinken van een plek in de wereld (links/rechts, ver/dichtbij).
 
 Elk geluid is een functie die een numpy-array teruggeeft met waarden tussen -1 en 1.
@@ -17,7 +17,7 @@ import soundfile as sf
 from scipy import signal
 
 RATE = 44100
-OUT = Path(__file__).resolve().parent.parent / "src/main/resources/assets/starktech/sounds"
+OUT = Path(__file__).resolve().parent.parent / "src/main/resources/assets/imttech/sounds"
 rng = np.random.default_rng(1234)  # vaste "toevalsgenerator": elke keer hetzelfde geluid
 
 
@@ -203,7 +203,7 @@ def chime(freq, duration, decay_speed=5.0):
     return tone * shimmer * decay(duration, decay_speed)
 
 
-def edith_boot():
+def imt_boot():
     """
     De bril gaat aan, als een arc reactor: een elektrisch gejank dat oplaadt zoals een
     condensator (steeds hoger en luider, met geknetter), dan een diepe klap als de reactor
@@ -222,14 +222,14 @@ def edith_boot():
     return finish(total, peak=0.7)
 
 
-def edith_blip():
+def imt_blip():
     """Een klein elektrisch zapje: bij elke stap van de laadbalk."""
     t = seconds(0.05)
     zap = np.sin(sweep(3000, 1200, 0.05)) * decay(0.05, 50) + bandpass(noise(0.05), 4000, 10000) * decay(0.05, 90) * 0.4
     return finish(fade(zap, 0.001, 0.01), peak=0.35)
 
 
-def edith_confirm():
+def imt_confirm():
     """Identiteit bevestigd: een diepe dreun, een ping die omhoog schiet en een heldere nagalm."""
     total = np.zeros(int(RATE * 1.3))
     place(total, fade(np.sin(sweep(120, 50, 0.35)) * decay(0.35, 9) * 1.1, 0.001, 0.05), 0.0)
@@ -241,7 +241,7 @@ def edith_confirm():
 
 # ---------------------------------------------------------------- meldingen en menu
 # Alles in dezelfde toonsoort als het opstartgeluid (C, E, G, B), met zachte, glazige tonen:
-# E.D.I.T.H. mag je niet laten schrikken, behalve als er echt iets mis is.
+# I.M.T mag je niet laten schrikken, behalve als er echt iets mis is.
 
 def glass(freq, duration, decay_speed=8.0, bright=0.25):
     """Een zachte, glazige toon: een sinus met een vleugje FM, zodat hij niet "piept"."""
@@ -251,7 +251,7 @@ def glass(freq, duration, decay_speed=8.0, bright=0.25):
     return tone * decay(duration, decay_speed)
 
 
-def edith_notify():
+def imt_notify():
     """
     Een gewone melding (bijvoorbeeld "aangekomen op je bestemming"): twee zachte tonen omhoog,
     de tweede met een nagalmpje. Kort en rustig, want dit hoor je vaak.
@@ -264,7 +264,7 @@ def edith_notify():
     return finish(total, peak=0.5)
 
 
-def edith_alert():
+def imt_alert():
     """Een waarschuwing: twee korte, iets scherpere tonen op dezelfde hoogte."""
     total = np.zeros(int(RATE * 0.45))
     for i in range(2):
@@ -274,7 +274,7 @@ def edith_alert():
     return finish(total, peak=0.5)
 
 
-def edith_denied():
+def imt_denied():
     """Geweigerd of mislukt: twee tonen omlaag, laag en wat brommerig."""
     total = np.zeros(int(RATE * 0.5))
     for i, freq in enumerate((392.0, 261.63)):
@@ -285,7 +285,7 @@ def edith_denied():
     return finish(total, peak=0.5)
 
 
-def edith_scan():
+def imt_scan():
     """
     De ertsen-scan: een zachte "zoef" omhoog (de scan gaat de grond in), dan een sonar-ping
     die twee keer zachter terugkaatst.
@@ -300,7 +300,7 @@ def edith_scan():
     return finish(total, peak=0.5)
 
 
-def edith_menu_open():
+def imt_menu_open():
     """Het G-menu gaat open: een korte, luchtige zoef omhoog met een glinstertje."""
     total = np.zeros(int(RATE * 0.35))
     air = bandpass(noise(0.2), 2000, 9000, order=2) * np.sin(np.linspace(0, np.pi, int(RATE * 0.2))) * 0.25
@@ -310,7 +310,7 @@ def edith_menu_open():
     return finish(total, peak=0.4)
 
 
-def edith_select():
+def imt_select():
     """Een optie kiezen: een heel kort, zacht tikje, zoals een aanraakscherm."""
     t = seconds(0.045)
     tick = np.sin(2 * np.pi * 2600 * t) * decay(0.045, 110)
@@ -323,7 +323,7 @@ def edith_select():
 def station_upgrade():
     """
     Een upgrade wordt ingebouwd: een servo die zoemt, een klik als het onderdeel vastzit, en
-    dan het "klaar"-akkoord van E.D.I.T.H.
+    dan het "klaar"-akkoord van I.M.T
     """
     total = np.zeros(int(RATE * 1.2))
     servo = whine(180, 420, 0.35, curve=0.8, wobble=0.25) * np.sin(np.linspace(0, np.pi, int(RATE * 0.35)))
@@ -492,7 +492,7 @@ def satellite_impact():
 # ---------------------------------------------------------------- comms
 
 def comms_message():
-    """Een bericht van een andere E.D.I.T.H.-drager: drie snelle, heldere tonen omlaag en weer op."""
+    """Een bericht van een andere I.M.T-drager: drie snelle, heldere tonen omlaag en weer op."""
     total = np.zeros(int(RATE * 0.6))
     for i, freq in enumerate((1318.5, 1046.5, 1567.98)):
         place(total, fade(glass(freq, 0.25, 12) * 0.4, 0.003, 0.05), i * 0.09)
@@ -761,15 +761,15 @@ def ion_blaster():
 
 
 SOUNDS = {
-    "edith_boot": edith_boot,
-    "edith_blip": edith_blip,
-    "edith_confirm": edith_confirm,
-    "edith_notify": edith_notify,
-    "edith_alert": edith_alert,
-    "edith_denied": edith_denied,
-    "edith_scan": edith_scan,
-    "edith_menu_open": edith_menu_open,
-    "edith_select": edith_select,
+    "imt_boot": imt_boot,
+    "imt_blip": imt_blip,
+    "imt_confirm": imt_confirm,
+    "imt_notify": imt_notify,
+    "imt_alert": imt_alert,
+    "imt_denied": imt_denied,
+    "imt_scan": imt_scan,
+    "imt_menu_open": imt_menu_open,
+    "imt_select": imt_select,
     "station_upgrade": station_upgrade,
     "drone_deploy": drone_deploy,
     "drone_laser": drone_laser,
@@ -808,7 +808,7 @@ SOUNDS = {
 
 def main():
     """
-    Zonder namen: alle geluiden. Met namen (python tools/generate_sounds.py edith_boot) alleen
+    Zonder namen: alle geluiden. Met namen (python tools/generate_sounds.py imt_boot) alleen
     die. Handig, want een .ogg komt er elke keer net iets anders uit, en dan lijkt het in git
     alsof ook de geluiden die je niet aanraakte veranderd zijn.
     """
