@@ -18,6 +18,9 @@ run-showcase/
 run-structures/
 showcase-notities.md
 showcase-gezien.json
+# De jar om te uploaden en de screenshots voor CurseForge (zie publish/HOE-PUBLICEREN.md)
+publish/release/
+publish/screenshots/
 
 ### Eclipse ###
 .apt_generated

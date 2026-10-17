@@ -422,7 +422,7 @@ public final class ArcLampLight {
         }
         lamp.measuring = false;
         if (survey.error() != null || survey.region() == null) {
-            ImtTech.LOGGER.warn("[arc lamp] Meting bij {} mislukt; zo meteen opnieuw", survey.pos(), survey.error());
+            ImtTech.LOGGER.warn("[arc lamp] Survey at {} failed; trying again shortly", survey.pos(), survey.error());
             dirty(lamp, level.getGameTime());
             return;
         }

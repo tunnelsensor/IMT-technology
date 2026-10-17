@@ -22,8 +22,12 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
-allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
+**Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
+per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
+(jouw keuze, 17 oktober).
+**Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
+changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 95 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).

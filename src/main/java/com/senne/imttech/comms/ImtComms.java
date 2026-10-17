@@ -75,7 +75,7 @@ public final class ImtComms {
             // Wie gehackt wordt, verraadt ook zijn I.M.T-berichten (fase 10).
             ImtHack.relay(sender, recipients, text);
             ImtServer.send(sender, Component.translatable("imt.imttech.comms.sent_all", recipients.size(), body), ImtMessagePayload.Level.COMMS);
-            ImtTech.LOGGER.info("[I.M.T comms] {} -> iedereen ({}): {}", senderName, recipients.size(), text);
+            ImtTech.LOGGER.info("[I.M.T comms] {} -> everyone ({}): {}", senderName, recipients.size(), text);
         } else {
             // Aan één speler.
             ServerPlayer target = sender.level().getServer().getPlayerList().getPlayerByName(payload.recipient());

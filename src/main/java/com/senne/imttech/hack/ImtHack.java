@@ -84,7 +84,7 @@ public final class ImtHack {
         targets.add(target.getUUID());
         ImtServer.send(hacker, Component.translatable("imt.imttech.msg.hack_started", target.getDisplayName()),
                 ImtMessagePayload.Level.INFO);
-        ImtTech.LOGGER.info("[I.M.T] {} hackt nu {}", hacker.getGameProfile().getName(),
+        ImtTech.LOGGER.info("[I.M.T] {} is now hacking {}", hacker.getGameProfile().getName(),
                 target.getGameProfile().getName());
         return true;
     }

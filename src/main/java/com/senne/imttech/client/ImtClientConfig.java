@@ -80,10 +80,13 @@ public final class ImtClientConfig {
             .comment("Local brain size: auto (chosen for your PC the first time), small (2B), medium (4B) or large (9B)")
             .define("brainModel", "auto");
 
-    /** Welk Claude-model het brein gebruikt. */
+    /**
+     * Welk Claude-model het brein gebruikt. Standaard Claude Opus 5.5: nieuwer en goedkoper dan Opus 5
+     * (dat je hier nog altijd kunt invullen). Een bestaand imttech-client.toml houdt zijn eigen keuze.
+     */
     public static final ModConfigSpec.ConfigValue<String> CLAUDE_MODEL = BUILDER
             .comment("The Claude model for the CLAUDE brain (it must support structured outputs and effort)")
-            .define("claudeModel", "claude-opus-5");
+            .define("claudeModel", "claude-opus-5-5");
 
     /** Mag ze uit zichzelf praten (zie ImtInitiative)? */
     public static final ModConfigSpec.BooleanValue PROACTIVE = BUILDER

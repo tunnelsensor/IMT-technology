@@ -1352,14 +1352,15 @@ def sign(x, y, z, facing, text):
         {"id": "minecraft:sign", "front_text": {"messages": ['"%s"' % text, '""', '""', '""']}})
 
 
-# Harnassen voor de vitrines: benen, romp en hoofd (van onderen naar boven).
+# Harnassen voor de vitrines: benen, romp en hoofd (van onderen naar boven). Eigen namen (17 oktober,
+# jouw keuze voor het publiceren): vroeger stonden hier de nummers van de Iron Man-harnassen.
 SUITS = {
-    "MARK I": ("minecraft:iron_block", "minecraft:iron_block", "minecraft:iron_block"),
-    "MARK II": ("minecraft:light_gray_concrete", "minecraft:light_gray_concrete", "minecraft:iron_block"),
-    "MARK III": ("minecraft:red_concrete", "minecraft:red_concrete", "minecraft:gold_block"),
-    "MARK VII": ("minecraft:gold_block", "minecraft:red_concrete", "minecraft:gold_block"),
-    "MARK XLII": ("minecraft:gold_block", "minecraft:gold_block", "minecraft:red_concrete"),
-    "MARK L": ("minecraft:red_concrete", "minecraft:red_concrete", "minecraft:gold_block"),
+    "TECH SUIT V1": ("minecraft:iron_block", "minecraft:iron_block", "minecraft:iron_block"),
+    "TECH SUIT V2": ("minecraft:light_gray_concrete", "minecraft:light_gray_concrete", "minecraft:iron_block"),
+    "TECH SUIT V3": ("minecraft:red_concrete", "minecraft:red_concrete", "minecraft:gold_block"),
+    "TECH SUIT V4": ("minecraft:gold_block", "minecraft:red_concrete", "minecraft:gold_block"),
+    "TECH SUIT V5": ("minecraft:gold_block", "minecraft:gold_block", "minecraft:red_concrete"),
+    "TECH SUIT V6": ("minecraft:red_concrete", "minecraft:red_concrete", "minecraft:gold_block"),
 }
 
 
@@ -1469,7 +1470,8 @@ def furnish():
 
     # --- Lab: Hall of Armor, en werkplekken
     y = LAB_Y
-    for cx, mark in zip((12, 16, 20, 24, 28), ("MARK I", "MARK II", "MARK III", "MARK VII", "MARK XLII")):
+    for cx, mark in zip((12, 16, 20, 24, 28), ("TECH SUIT V1", "TECH SUIT V2", "TECH SUIT V3", "TECH SUIT V4",
+                                                "TECH SUIT V5")):
         suit_capsule(cx, y, 12, mark)
     for x in range(11, 30):
         put(x, y - 1, 15, STRIPE)   # een blauwe loper ervoor, in de vloer
@@ -1523,7 +1525,7 @@ def furnish():
         stairs(x, y, 15, "north", "minecraft:quartz_stairs")
         stairs(x, y, 19, "south", "minecraft:quartz_stairs")
     top_slab(24, y, 17)
-    suit_capsule(21, y, 24, "MARK L")
+    suit_capsule(21, y, 24, "TECH SUIT V6")
 
     # --- Plantjes langs de ramen
     window_plants(LOBBY_Y, LOBBY_IN, skip={(MID + dx, 37) for dx in range(-4, 5)})

@@ -201,8 +201,8 @@ public final class ImtConfigLoader {
             // Wereld dicht: terug naar de standaard, zodat een volgende wereld schoon begint.
             apply(entry, unloading ? entry.fallback() : entry.value().get());
         }
-        ImtTech.LOGGER.info("[config] {} getallen uit {} {}", ENTRIES.size(), FILE_NAME,
-                unloading ? "terug naar standaard" : "geladen");
+        ImtTech.LOGGER.info("[config] {} numbers from {} {}", ENTRIES.size(), FILE_NAME,
+                unloading ? "reset to the defaults" : "loaded");
     }
 
     /** Zet de waarden uit het bestand nog eens in de getallen (voor de tests). */
@@ -244,7 +244,7 @@ public final class ImtConfigLoader {
         int size = java.lang.reflect.Array.getLength(entry.fallback());
         if (!(value instanceof List<?> list) || list.size() != size || !list.stream().allMatch(o -> o instanceof Number)) {
             if (value instanceof List<?>) {
-                ImtTech.LOGGER.warn("[config] {} moet {} getallen hebben; de standaard wordt gebruikt",
+                ImtTech.LOGGER.warn("[config] {} must have {} numbers; using the default",
                         entry.field().getName(), size);
             }
             return copy(entry.fallback());

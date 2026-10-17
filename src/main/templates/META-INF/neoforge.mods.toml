@@ -14,6 +14,8 @@ loaderVersion="${loader_version_range}" #mandatory
 license="${mod_license}"
 
 # A URL to refer people to when problems occur with this mod
+# Waar spelers fouten melden. Vul dit in zodra je projectpagina bestaat (bv. de Issues van een
+# openbare GitHub-repo); een link naar een privé-repo werkt voor niemand anders.
 #issueTrackerURL="https://change.me.to.your.issue.tracker.example.invalid/" #optional
 
 # A list of mods - how many allowed here is determined by the individual mod loader
@@ -35,25 +37,30 @@ enumExtensions="META-INF/enumextensions.json"
 #updateJSONURL="https://change.me.example.invalid/updates.json" #optional
 
 # A URL for the "homepage" for this mod, displayed in the mod UI
+# De link naar je projectpagina (bv. op CurseForge). Vul hem in zodra die pagina bestaat.
 #displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
 
 # A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="examplemod.png" #optional
+# Het logo in de modlijst (gemaakt met tools/generate_logo.py).
+logoFile="${mod_id}_logo.png" #optional
 
 # A text field displayed in the mod UI
-#credits="" #optional
+# Wie we bedanken: de programma's en modellen die de mod meelevert of (alleen als jij erom vraagt) downloadt.
+credits="Optional voice and AI parts, downloaded only when you ask for them: Piper (rhasspy), llama.cpp (ggml-org) and the Qwen models (Alibaba Qwen). Optional Claude brain: the Anthropic Java SDK, with OkHttp, Jackson and Kotlin. Optional music control: the Spotify Web API." #optional
 
 # The authors of the mod, displayed in the mod UI (optional)
-#authors=""
+# Wie de mod maakte (mod_authors in gradle.properties).
+authors="${mod_authors}"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-I.M.T - I Am Tunnelsensor. AR glasses by Biebia's Industries: HUD, scanners, drones and a satellite.
+I.M.T (I Am Tunnelsensor) is a pair of AR glasses with a HUD, scanners, drones, an orbital satellite, rayshields, holograms and remote redstone. Find the only pair in the vault of a Biebia's Industries Tower, hack its security core, and build your own secured base with power grids, security cameras, turrets, guard robots, programmable drones and server racks.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
 # I.M.T Technology: kleine ingrepen in Minecraft zelf, waar NeoForge geen event voor heeft (zie het
-# pakket com.senne.imttech.mixin). Eerst alleen het vuur: dat brandt geen blokken van een zone weg.
+# pakket com.senne.imttech.mixin): vuur brandt geen blokken van een zone weg, barsten verdwijnen als er een
+# ander blok komt, en het licht van de Arc Lamp.
 [[mixins]]
 config="${mod_id}.mixins.json"
 

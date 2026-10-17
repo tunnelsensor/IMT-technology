@@ -3,7 +3,7 @@
 Een mod die je een I.M.T-bril geeft (**I.M.T** = "I Am Tunnelsensor"): een HUD, drones, een
 satelliet, schilden, illusies, redstone op afstand, en zelfs muziek. De gebouwen in je wereld
 (de toren, de bunker en de satelliet) zijn van **Biebia's Industries**. Alles werkt met
-**Minecraft 1.21.1** en **NeoForge 21.1.251**.
+**Minecraft 1.21.1** en **NeoForge 21.1.251** (of nieuwer).
 
 ---
 
@@ -11,7 +11,7 @@ satelliet, schilden, illusies, redstone op afstand, en zelfs muziek. De gebouwen
 
 1. Bouw de mod: `gradlew build`
    De jar komt in `build/libs/imttech-2.0.0.jar`.
-2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 voor 1.21.1).
+2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 of nieuwer voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 
 **Had je de mod al toen hij nog Stark Tech heette** (`starktech-2.0.0.jar`)? Haal die oude jar
@@ -20,7 +20,7 @@ Spotify-koppeling, spraakcommando's en instellingen verhuizen bij de eerste star
 (de map `starktech` wordt `imttech`). Oude werelden niet: blokken en items van de mod verdwijnen
 daaruit, want ze heetten nog `starktech:...`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (286 automatische tests).
 
 ---
 
@@ -1476,10 +1476,14 @@ showcase en staat hij bij NIEUW.
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.
-- **Tests**: `gradlew runGameTestServer` — 74 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 286 tests over de toren en zijn kluis, het
   satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
-  mini-raketten, de Raven-soldaten, de torentjes en de spraakcommando's.
+  mini-raketten, de Raven-soldaten, de torentjes, de spraakcommando's, en alles wat erna kwam
+  (beveiliging, zones, C4, barsten, servers, robots, security drones en trainingen).
+  Let op: ze draaien in `run/` met jouw `run/config/imttech.toml`. Staan daar andere getallen
+  dan de standaard (zoals tragere generatoren), dan kunnen tests over de toren en de bunker
+  falen. Gooi dat bestand weg om terug de standaard te krijgen.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
@@ -1488,6 +1492,21 @@ showcase en staat hij bij NIEUW.
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
   `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
+- **Logo**: `python tools/generate_logo.py` maakt het logo in de modlijst
+  (`src/main/resources/imttech_logo.png`) en het projectplaatje voor CurseForge
+  (`publish/avatar-400.png`) opnieuw, met de bril uit de textures.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (laser cannon,
   stuwraketten, rayshields) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile` (op deze
   pc heeft `py -3.12` ze al: `py -3.12 tools/generate_sounds.py rayshield_hum`).
+
+---
+
+## 9. Publiceren en licentie
+
+- **Publiceren op CurseForge**: alles wat je nodig hebt (beschrijving, samenvatting, changelog,
+  projectplaatje en een stappenplan) staat in de map `publish/`. Begin bij
+  `publish/HOE-PUBLICEREN.md`.
+- **Licentie**: de mod valt onder de MIT-licentie (zie `LICENSE`): iedereen mag hem gebruiken,
+  aanpassen en verspreiden, zolang jouw naam en de licentie erbij blijven. De bibliotheken van
+  anderen die in de jar zitten (voor het Claude-brein) houden hun eigen licentie: zie
+  `THIRD-PARTY-LICENSES.txt`. Beide bestanden gaan vanzelf mee in de jar.

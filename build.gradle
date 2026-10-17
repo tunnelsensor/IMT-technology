@@ -201,6 +201,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
+            mod_authors            : mod_authors,
             mod_license            : mod_license,
             mod_version            : mod_version,
     ]
@@ -212,6 +213,18 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 // Include the output of "generateModMetadata" as an input directory for the build
 // this works with both building through Gradle and the IDE.
 sourceSets.main.resources.srcDir generateModMetadata
+
+// De licentie van de mod (MIT) en die van de meegeleverde bibliotheken gaan mee in de jar: de MIT- en
+// Apache-licenties vragen dat hun tekst bij elke kopie zit. Met de mod-id in de naam, zodat je ziet van wie ze zijn.
+tasks.named('jar', Jar).configure {
+    def suffix = "_${mod_id}".toString()
+    from('LICENSE') {
+        rename { it + suffix }
+    }
+    from('THIRD-PARTY-LICENSES.txt') {
+        rename { 'THIRD-PARTY-LICENSES' + suffix + '.txt' }
+    }
+}
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask generateModMetadata
 

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Het brein in de cloud: Claude van Anthropic, via de officiële Java-SDK en jouw eigen
  * API-sleutel (in te vullen in G > Systemen > AI Brain).
  *
- * Per zin één vraag aan Claude (claude-opus-5, tenzij je in config/imttech-client.toml iets
+ * Per zin één vraag aan Claude (claude-opus-5-5, tenzij je in config/imttech-client.toml iets
  * anders kiest), met:
  * - "effort: low": een spraakcommando moet snel gaan, diep nadenken hoeft niet;
  * - "structured outputs": het antwoord volgt gegarandeerd het JSON-schema van BrainPrompt;

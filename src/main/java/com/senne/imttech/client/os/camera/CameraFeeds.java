@@ -156,7 +156,7 @@ public final class CameraFeeds {
                 feed.ready = true;
             } catch (RuntimeException e) {
                 feed.broken = true;
-                ImtTech.LOGGER.warn("[cameras] een camerabeeld kon niet getekend worden", e);
+                ImtTech.LOGGER.warn("[cameras] could not draw a camera image", e);
             }
             PLANNER.rendered(key, now);
             rendered++;

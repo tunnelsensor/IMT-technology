@@ -117,12 +117,22 @@ public final class ImtClientEvents {
      * je een werkende bril en zit het bombardement op dezelfde toets, dan is P van I.M.T:
      * dan slikken we de klik van Minecraft in, vóór Minecraft hem zelf verwerkt (deze "Pre"-tick
      * komt eerder dan de toetsen van Minecraft).
+     *
+     * Hetzelfde voor L: in gewoon Minecraft de Advancements, bij ons standaard één drone sturen. Zonder
+     * dit opende L allebei tegelijk (NeoForge laat elke binding op een toets afgaan).
      */
     public static void onClientTickPre(ClientTickEvent.Pre event) {
         Minecraft mc = Minecraft.getInstance();
-        if (ImtClientState.operational && mc.screen == null
-                && ImtKeys.SATELLITE_BOMBARDMENT.getKey().equals(mc.options.keySocialInteractions.getKey())) {
-            while (mc.options.keySocialInteractions.consumeClick()) {
+        if (ImtClientState.operational && mc.screen == null) {
+            swallowVanilla(ImtKeys.SATELLITE_BOMBARDMENT, mc.options.keySocialInteractions);
+            swallowVanilla(ImtKeys.DRONE_STRIKE, mc.options.keyAdvancements);
+        }
+    }
+
+    /** Zit onze toets op dezelfde toets als die van Minecraft, dan gooien we de klik van Minecraft weg. */
+    private static void swallowVanilla(net.minecraft.client.KeyMapping ours, net.minecraft.client.KeyMapping vanilla) {
+        if (ours.getKey().equals(vanilla.getKey())) {
+            while (vanilla.consumeClick()) {
                 // de klik weggooien
             }
         }
