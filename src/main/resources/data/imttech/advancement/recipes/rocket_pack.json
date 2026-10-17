@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "imttech:hydra_circuit"
+            "items": "imttech:raven_circuit"
           }
         ]
       },

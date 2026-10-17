@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Het arsenaal-scherm: je drones in hun baan om de aarde, in 3D.
  *
- * Links de ruimte: de aarde, de Bibie's Industries-satelliet en elke drone die klaar hangt, als echt model
+ * Links de ruimte: de aarde, de Biebia's Industries-satelliet en elke drone die klaar hangt, als echt model
  * met zijn schade eraan. Sleep met de muis om rond te kijken, scroll om in te zoomen, klik op
  * een drone om hem te kiezen. Rechts de lijst van al je drones; klik op een regel om hem te
  * kiezen. De gekozen drone draait groot in het vakje rechtsonder in de ruimte.

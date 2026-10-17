@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  * Wie hem neerzet, is de eigenaar. De kleur, het omkeren en liggend/staand zitten in het blok zelf (zie
  * LaserEmitterBlock), want die moet iedereen zien; alleen de eigenaar staat hier.
  *
- * Een zender van vóór 13 oktober, of een die in een gebouw stond (de Bibie's Industries Tower, de Bibie's Industries-bunker), heeft
+ * Een zender van vóór 13 oktober, of een die in een gebouw stond (de Biebia's Industries Tower, de Biebia's Industries-bunker), heeft
  * nog geen eigenaar. Wie dan mag, staat in security/BaseTrust (dezelfde regel als bij de keycardlezer).
  *
  * Omdat de zender nu een blok-entiteit heeft, kan een zuiger hem niet meer wegduwen (zoals een kist).

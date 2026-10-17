@@ -14,7 +14,7 @@ import com.senne.imttech.client.hud.NoPowerWidget;
 import com.senne.imttech.client.hud.NotificationWidget;
 import com.senne.imttech.client.hud.OreMarkerWidget;
 import com.senne.imttech.client.hud.PingWidget;
-import com.senne.imttech.client.hud.RepulsorWidget;
+import com.senne.imttech.client.hud.LaserCannonWidget;
 import com.senne.imttech.client.hud.SatelliteStrikeWidget;
 import com.senne.imttech.client.hud.SpyTargetWidget;
 import com.senne.imttech.client.hud.StatusPanelWidget;
@@ -66,7 +66,7 @@ public class ImtHud implements LayeredDraw.Layer {
             new CompassWidget(),
             new DroneFeedWidget(),
             new ZoomWidget(),
-            new RepulsorWidget(),
+            new LaserCannonWidget(),
             new FlightWidget(),
             new com.senne.imttech.client.hud.LandingPadWidget(),
             new NoPowerWidget(),

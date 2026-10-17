@@ -16,7 +16,7 @@ import net.minecraft.world.item.TooltipFlag;
  * Er is geen helm - die plek is van de bril, en dat is precies de bedoeling: **zonder de bril
  * doet het harnas niets bijzonders**. Het is dan gewoon een goed pak metaal. Met de bril op
  * (en energie erin) haalt het het grootste deel van elke klap weg, kun je vliegen, land je
- * zonder schade en schiet je repulsorstoten. De bril levert de stroom; het harnas heeft geen
+ * zonder schade en schiet je laserkanonschoten. De bril levert de stroom; het harnas heeft geen
  * eigen batterij.
  *
  * Wat het harnas kan zit niet in dit item maar in {@link ImtSuit}: dat is één plek waar het

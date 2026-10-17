@@ -95,7 +95,7 @@ public final class ZoneData extends SavedData {
 
         /**
          * Beschermt de zone nu? Dat kan alleen als de kern van iemand is, er kubussen zijn, en de kern
-         * genoeg stroom heeft. (De Bibie's Industries Tower is van niemand tot je hem hackt: die heeft dus nooit een zone.)
+         * genoeg stroom heeft. (De Biebia's Industries Tower is van niemand tot je hem hackt: die heeft dus nooit een zone.)
          */
         public boolean active() {
             return owner != null && powered && hasBoxes();

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * hoort (de Devices-app op de desktop, jouw wens van 28 september: status, aan/uit en wie ze
  * aanvallen).
  * <ul>
- *   <li><b>Torentjes:</b> de beveiligingstorentjes in het gebied, en de Bibie's Industries-torentjes van de
+ *   <li><b>Torentjes:</b> de beveiligingstorentjes in het gebied, en de Biebia's Industries-torentjes van de
  *       eigenaar van de kern. Elk torentje kun je los aan- en uitzetten (dezelfde schakelaar als
  *       I.M.T gebruikt).</li>
  *   <li><b>Laserpoorten:</b> zenders die aan elkaar vastzitten. Ze gaan met redstone; de kern kan
@@ -147,7 +147,7 @@ public final class SecurityDevices {
         return found;
     }
 
-    /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Bibie's Industries-torentje als het van de eigenaar is. */
+    /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */
     public static boolean belongs(SecurityCoreBlockEntity core, TurretBlockEntity turret) {
         return turret.kind() == TurretKind.SECURITY
                 || turret.kind() == TurretKind.ROCKET && core.ownerId() != null && core.ownerId().equals(turret.ownerId());

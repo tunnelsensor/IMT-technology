@@ -180,7 +180,7 @@ public final class BotPins {
 
     /**
      * Komt deze speler door het filter? (Vriend of niet vraagt hij aan zijn server: zonder verbinding niemand.) Een
-     * bot van niemand (Bibie's drones in een Bibie's Industries Tower, hoofdstuk 25) vertrouwt niemand: voor hem is iedereen een
+     * bot van niemand (Biebia's drones in een Biebia's Industries Tower, hoofdstuk 25) vertrouwt niemand: voor hem is iedereen een
      * vreemde, ook zonder verbinding.
      */
     private boolean matches(Player player, @Nullable SecurityCoreBlockEntity core) {

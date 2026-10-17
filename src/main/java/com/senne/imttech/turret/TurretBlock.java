@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * (een hendel, of een I.M.T-relais ernaast), en I.M.T kan het zelf ook aan en uit
  * zetten (het staat in je redstone-lijst).
  *
- * Het HYDRA-torentje staat in de Bibie's Industries-bunker. Het heeft geen eigenaar en geen stroom nodig,
+ * Het RAVEN-torentje staat in de Biebia's Industries-bunker. Het heeft geen eigenaar en geen stroom nodig,
  * en schiet op spelers en I.M.T-drones. Ook dat gaat uit met redstone: zoek de hendel!
  *
  * Het blok zelf is alleen de voet; de draaiende kop tekent TurretRenderer.
@@ -85,8 +85,8 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
         return kind;
     }
 
-    public boolean isHydra() {
-        return kind == TurretKind.HYDRA;
+    public boolean isRaven() {
+        return kind == TurretKind.RAVEN;
     }
 
     @Override
@@ -160,7 +160,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
 
     // ================================================================ Neerzetten en gebruiken
 
-    /** Een Bibie's Industries-torentje is van wie het neerzet, en I.M.T kan het schakelen. */
+    /** Een Biebia's Industries-torentje is van wie het neerzet, en I.M.T kan het schakelen. */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
@@ -212,8 +212,8 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
                 : Component.translatable(state.getValue(POWERED) ? "turret.imttech.status.off_redstone"
                         : !state.getValue(ENABLED) ? "turret.imttech.status.off_imt"
                         : "turret.imttech.status.off_power").withStyle(ChatFormatting.RED);
-        if (kind == TurretKind.HYDRA) {
-            player.displayClientMessage(Component.translatable("turret.imttech.status.hydra", onOff), true);
+        if (kind == TurretKind.RAVEN) {
+            player.displayClientMessage(Component.translatable("turret.imttech.status.raven", onOff), true);
             return;
         }
         if (kind == TurretKind.SECURITY) {

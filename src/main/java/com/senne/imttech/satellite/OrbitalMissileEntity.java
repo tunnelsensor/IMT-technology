@@ -23,7 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Een raket van de Bibie's Industries-satelliet (in plaats van de bliksemschicht van vroeger).
+ * Een raket van de Biebia's Industries-satelliet (in plaats van de bliksemschicht van vroeger).
  *
  * Als de satelliet klaar is met richten, laat hij de raket hoog boven het doel los. Die komt
  * schuin binnen (van een willekeurige kant, zo zie je hem beter), gaat steeds sneller en buigt

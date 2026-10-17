@@ -54,7 +54,7 @@ public final class ModArmorMaterials {
      * Het harnas: borstplaat, broek en laarzen.
      *
      * De bescherming die hier staat is wat het pak zonder stroom doet. Alles wat het pak
-     * bijzonder maakt (schade wegnemen, vliegen, repulsors) zit in ImtSuit en werkt alleen
+     * bijzonder maakt (schade wegnemen, vliegen, laser cannons) zit in ImtSuit en werkt alleen
      * met de bril op.
      */
     public static final DeferredHolder<ArmorMaterial, ArmorMaterial> TECH = MATERIALS.register("tech", () -> {

@@ -5,7 +5,7 @@ package com.senne.imttech.security.os;
  *
  * Twee soorten systemen:
  * <ul>
- *   <li>Het systeem van Bibie (de kern in een Bibie's Industries Tower): een briefje van Bibie aan Happy
+ *   <li>Het systeem van Biebia (de kern in een Biebia's Industries Tower): een briefje van Biebia aan Seppe
  *       (README.txt) met aanwijzingen, en wat rommel die het echt laat lijken.</li>
  *   <li>Een systeem dat een speler zelf neerzette: een lege thuismap en een kort welkom.</li>
  * </ul>
@@ -20,22 +20,22 @@ public final class SystemDefaults {
     /** De namen die het beveiligingsprogramma kan hebben (in de proceslijst staan er ook nep-versies). */
     public static final String[] DAEMONS = {"sentinel", "aegis", "warden", "argus", "vigil", "bastion", "citadel"};
 
-    /** De hostnaam van de kern in een Bibie's Industries Tower. */
-    public static final String BIBIE_HOST = "bibie-sec-core";
+    /** De hostnaam van de kern in een Biebia's Industries Tower. */
+    public static final String BIEBIA_HOST = "biebia-sec-core";
 
     /** Het systeembestand: zegt hoe het beveiligingsprogramma echt heet. */
     public static String securityConf(String daemon) {
-        return "# Bibie's Industries security network\ndaemon = " + daemon
+        return "# Biebia's Industries security network\ndaemon = " + daemon
                 + "\nwatchdog = on\nrestart_on_kill = true\noverride_requires = pid";
     }
 
-    /** De bestanden van Bibie's systeem (de kern in een Bibie's Industries Tower). */
-    public static void bibieFiles(VirtualFs fs, String daemon) {
-        // De README staat bovenaan in de map waar je binnenkomt. Een briefje van Bibie aan Happy:
+    /** De bestanden van Biebia's systeem (de kern in een Biebia's Industries Tower). */
+    public static void biebiaFiles(VirtualFs fs, String daemon) {
+        // De README staat bovenaan in de map waar je binnenkomt. Een briefje van Biebia aan Seppe:
         // geen kant-en-klare commando's, wel alle aanwijzingen.
-        fs.write("/README.txt", "Happy,\n"
+        fs.write("/README.txt", "Seppe,\n"
                 + "Yes, this is the maintenance shell. No, you can't break anything. Probably.\n"
-                + "The tower security is a daemon. I rename it every week, because Rhodey keeps\n"
+                + "The tower security is a daemon. I rename it every week, because Jens keeps\n"
                 + "killing it by name. Its current name is written in the security config\n"
                 + "somewhere in /etc. You know how to read a file. You cat it.\n"
                 + "Don't trust the process list blindly: a few daemons there only SOUND like\n"
@@ -45,19 +45,19 @@ public final class SystemDefaults {
                 + "watchdog keeps putting the owner back, so shut that thing up first. Then make\n"
                 + "yourself the owner. Type 'help' in there if you get lost.\n"
                 + "And do NOT kill it. It just comes back angrier.\n"
-                + "- Bibie");
-        fs.mkdirs("/home/bibie");
-        fs.write("/home/bibie/notes.txt", "TODO: rename the security daemon (again).\n"
-                + "Rhodey keeps killing it by name. New name is in /etc/security.conf.\n"
+                + "- Biebia");
+        fs.mkdirs("/home/biebia");
+        fs.write("/home/biebia/notes.txt", "TODO: rename the security daemon (again).\n"
+                + "Jens keeps killing it by name. New name is in /etc/security.conf.\n"
                 + "Also: stop leaving the maintenance port open. - T");
         fs.putSystemFile("/etc/security.conf", securityConf(daemon));
-        fs.write("/etc/hostname", BIBIE_HOST);
+        fs.write("/etc/hostname", BIEBIA_HOST);
         fs.mkdirs("/var/log");
         fs.write("/var/log/boot.log", "[ ok ] turret-ctl online\n[ ok ] cam-feed online\n[ ok ] " + daemon
                 + " online (watchdog)\n[warn] coffee-maker: low on beans");
-        fs.mkdirs("/opt/jarvis");
-        fs.write("/opt/jarvis/warning.txt", "JARVIS maintenance shell. Unauthorized access will be reported to\n"
-                + "Bibie, Miss Potts and Happy. Mostly Happy.");
+        fs.mkdirs("/opt/bitech");
+        fs.write("/opt/bitech/warning.txt", "BiTech maintenance shell. Unauthorized access will be reported to\n"
+                + "Biebia, Lotte and Seppe. Mostly Seppe.");
     }
 
     /** De bestanden van een systeem dat een speler zelf neerzette. */

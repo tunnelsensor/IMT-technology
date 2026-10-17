@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  *       net als bij de laserwand zelf (daar lopen die spelers gewoon doorheen).</li>
  *   <li>Een zender van niemand (van vóór 13 oktober) wordt van wie hem als eerste opent, net als een oud
  *       relais. Behalve in iemands basis (dan alleen de vertrouwde spelers daar) en in een gebouw van deze
- *       mod (de Bibie's Industries Tower, de Bibie's Industries-bunker): die lasers kun je niet zomaar overnemen en uitzetten.</li>
+ *       mod (de Biebia's Industries Tower, de Biebia's Industries-bunker): die lasers kun je niet zomaar overnemen en uitzetten.</li>
  * </ul>
  *
  * Wat je kiest, geldt voor de hele laserpoort: alle zenders die eraan vastzitten (die gaan ook samen aan

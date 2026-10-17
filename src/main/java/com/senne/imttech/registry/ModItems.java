@@ -88,7 +88,7 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> POWER_CABINET = ITEMS.registerSimpleBlockItem("power_cabinet",
             ModBlocks.POWER_CABINET, new Item.Properties().rarity(Rarity.UNCOMMON));
     // ---------------------------------------------------------------- Fase 15: het harnas
-    /** De borstplaat: hier zit de reactor, dus hier komt de repulsor vandaan. */
+    /** De borstplaat: hier zit de reactor, dus hier komt de laser cannon vandaan. */
     // stacksTo(1): het harnas heeft geen duurzaamheid, en dan laat Minecraft het anders tot 64
     // op elkaar stapelen.
     public static final DeferredItem<TechSuitItem> TECH_CHESTPLATE = ITEMS.registerItem("tech_chestplate",
@@ -118,8 +118,8 @@ public final class ModItems {
             "armor_plating", properties -> new com.senne.imttech.workbench.SuitModuleItem(
                     com.senne.imttech.workbench.SuitModuleItem.Kind.PLATING, properties),
             new Item.Properties().rarity(Rarity.UNCOMMON));
-    public static final DeferredItem<com.senne.imttech.workbench.SuitModuleItem> REPULSOR_CAPACITOR = ITEMS.registerItem(
-            "repulsor_capacitor", properties -> new com.senne.imttech.workbench.SuitModuleItem(
+    public static final DeferredItem<com.senne.imttech.workbench.SuitModuleItem> LASER_CANNON_CAPACITOR = ITEMS.registerItem(
+            "laser_cannon_capacitor", properties -> new com.senne.imttech.workbench.SuitModuleItem(
                     com.senne.imttech.workbench.SuitModuleItem.Kind.CAPACITOR, properties),
             new Item.Properties().rarity(Rarity.UNCOMMON));
     /** Sterkere mini-raketten (raketkop) en meer per salvo (magazijn); alleen met een raketpakket. */
@@ -132,7 +132,7 @@ public final class ModItems {
                     com.senne.imttech.workbench.SuitModuleItem.Kind.MAGAZINE, properties),
             new Item.Properties().rarity(Rarity.RARE));
 
-    /** Mini-raketten voor op de borstplaat (te maken met een Hydra-onderdeel). */
+    /** Mini-raketten voor op de borstplaat (te maken met een Raven-onderdeel). */
     public static final DeferredItem<RocketPackItem> ROCKET_PACK = ITEMS.registerItem("rocket_pack",
             RocketPackItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
 
@@ -143,8 +143,8 @@ public final class ModItems {
     /** Het automatische torentje, en de raketten die je erin stopt. */
     public static final DeferredItem<BlockItem> ROCKET_TURRET = ITEMS.registerSimpleBlockItem("rocket_turret",
             ModBlocks.ROCKET_TURRET, new Item.Properties().rarity(Rarity.EPIC));
-    public static final DeferredItem<BlockItem> HYDRA_TURRET = ITEMS.registerSimpleBlockItem("hydra_turret",
-            ModBlocks.HYDRA_TURRET, new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<BlockItem> RAVEN_TURRET = ITEMS.registerSimpleBlockItem("raven_turret",
+            ModBlocks.RAVEN_TURRET, new Item.Properties().rarity(Rarity.RARE));
     public static final DeferredItem<BlockItem> SECURITY_TURRET = ITEMS.registerSimpleBlockItem("security_turret",
             ModBlocks.SECURITY_TURRET, new Item.Properties().rarity(Rarity.RARE));
     public static final DeferredItem<BlockItem> SECURITY_CAMERA = ITEMS.registerSimpleBlockItem("security_camera",
@@ -230,26 +230,26 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> LIGHT_SWITCH = ITEMS.registerSimpleBlockItem("light_switch",
             ModBlocks.LIGHT_SWITCH, new Item.Properties());
 
-    /** De laptop waarmee je de beveiliging van een Bibie's Industries Tower hackt. */
+    /** De laptop waarmee je de beveiliging van een Biebia's Industries Tower hackt. */
     public static final DeferredItem<com.senne.imttech.security.HackingLaptopItem> HACKING_LAPTOP = ITEMS.registerItem(
             "hacking_laptop", com.senne.imttech.security.HackingLaptopItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
     public static final DeferredItem<Item> ROCKET_AMMO = ITEMS.registerSimpleItem("rocket_ammo",
             new Item.Properties());
 
-    // ---------------------------------------------------------------- Hydra
+    // ---------------------------------------------------------------- Raven
 
-    /** Hydra-tech uit de bunker: nodig voor het raketpakket en de torentjes. */
-    public static final DeferredItem<Item> HYDRA_CIRCUIT = ITEMS.registerSimpleItem("hydra_circuit",
+    /** Raven-tech uit de bunker: nodig voor het raketpakket en de torentjes. */
+    public static final DeferredItem<Item> RAVEN_CIRCUIT = ITEMS.registerSimpleItem("raven_circuit",
             new Item.Properties().rarity(Rarity.RARE));
 
-    /** Het geweer van de Hydra-soldaten. Alleen zij hebben het; het valt nooit. */
-    public static final DeferredItem<Item> HYDRA_RIFLE = ITEMS.registerSimpleItem("hydra_rifle",
+    /** Het geweer van de Raven-soldaten. Alleen zij hebben het; het valt nooit. */
+    public static final DeferredItem<Item> RAVEN_RIFLE = ITEMS.registerSimpleItem("raven_rifle",
             new Item.Properties().stacksTo(1));
 
-    /** Om een Hydra-soldaat neer te zetten (creative). */
-    public static final DeferredItem<DeferredSpawnEggItem> HYDRA_SOLDIER_SPAWN_EGG = ITEMS.register(
-            "hydra_soldier_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.HYDRA_SOLDIER, 0x18191C, 0xCD2020,
+    /** Om een Raven-soldaat neer te zetten (creative). */
+    public static final DeferredItem<DeferredSpawnEggItem> RAVEN_SOLDIER_SPAWN_EGG = ITEMS.register(
+            "raven_soldier_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.RAVEN_SOLDIER, 0x18191C, 0xCD2020,
                     new Item.Properties()));
 
     /** Hoofdstuk 21: een guard robot met willekeurige onderdelen (creative). */

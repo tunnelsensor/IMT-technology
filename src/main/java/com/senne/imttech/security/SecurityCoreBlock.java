@@ -36,7 +36,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De beveiligingskern van de Bibie's Industries Tower: een serverkast op de beveiligingsverdieping.
+ * De beveiligingskern van de Biebia's Industries Tower: een serverkast op de beveiligingsverdieping.
  *
  * Hij beschermt de hele toren (zie SecurityCores): de beveiligingstorentjes en -drones vragen hem
  * wie een indringer is, en hij houdt de drones in de lucht. Zolang niemand hem gehackt heeft,

@@ -1,10 +1,10 @@
 """
-Bouwt de Bibie's Industries Tower als Minecraft-structuurbestand (.nbt).
+Bouwt de Biebia's Industries Tower als Minecraft-structuurbestand (.nbt).
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_structure.py
 
-Het resultaat komt in src/main/resources/data/imttech/structure/bibie_tower.nbt.
+Het resultaat komt in src/main/resources/data/imttech/structure/biebia_tower.nbt.
 
 De toren is 41 x 110 x 41 blokken (met het voorplein erbij 41 x 110 x 55) en loopt
 trapsgewijs naar boven toe smaller: elke keer dat de gevel een stukje naar binnen springt,
@@ -14,7 +14,7 @@ blijft de vloer eronder liggen als terras met een reling en lampjes. Van onder n
     1-11    de lobby: receptie met logowand, werkhoek, laadstation, zithoeken, vitrines
    12-22    het lab: watertanks, een pakstelling, een teslaspoel, werkbanken
    23-33    het archief: boekenkasten, leestafels, kaartentafel, betoveringstafel
-   34-44    de hangar: landingscirkel, drone-docks (Bibie's security drones), een hangardeur, generatoren
+   34-44    de hangar: landingscirkel, drone-docks (Biebia's security drones), een hangardeur, generatoren
    45-55    de woonverdieping: keuken, eettafel, tv-hoek, slaapkamer
    56-66    de beveiliging: schermenwand, serverkasten, een holotafel, de verborgen krachtcentrale
    67-76    de lasergang: negen rayshields en de omweg met drie deuren
@@ -25,21 +25,21 @@ blijft de vloer eronder liggen als terras met een reling en lampjes. Van onder n
   106-109   de antennes
 
 Buiten heeft hij koperen ribben over de volle hoogte, verlichte randen per verdieping en
-een verlicht BIBIE-logo op de zuidgevel.
+een verlicht BIEBIA-logo op de zuidgevel.
 
 De route naar boven: een glazen liftkoker (met ladder) van de lobby tot in de lasergang,
 dan langs of om de lasers heen naar de ladder naar de kluis, en vanuit de kluis een ladder
 langs de oostmuur door het penthouse tot op het dak.
 
 Tip: je kunt de toren ook in het spel verbouwen met een structuurblok (Structure Block),
-opslaan als "imttech:bibie_tower" en het .nbt-bestand uit je wereldmap (generated/)
+opslaan als "imttech:biebia_tower" en het .nbt-bestand uit je wereldmap (generated/)
 hierheen kopiëren. Draai dit script dan niet meer, anders overschrijf je je eigen versie.
 """
 import gzip
 import struct
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "bibie_tower.nbt"
+OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "biebia_tower.nbt"
 
 # Minecraft 1.21.1 "world_version" (zie version.json in de Minecraft-jar).
 DATA_VERSION = 3955
@@ -182,8 +182,8 @@ RAIL = "minecraft:iron_bars"
 DARK_WOOD = "minecraft:dark_oak_stairs"
 QUARTZ_STAIRS = "minecraft:quartz_stairs"
 
-LOOT = "imttech:chests/bibie_tower"
-VAULT_LOOT = "imttech:chests/bibie_vault"
+LOOT = "imttech:chests/biebia_tower"
+VAULT_LOOT = "imttech:chests/biebia_vault"
 
 BARS = {"north": "false", "south": "false", "east": "false", "west": "false", "waterlogged": "false"}
 
@@ -388,22 +388,24 @@ def floor_slab(y, inset, material=FLOOR, light_step=7):
 
 # --------------------------------------------------------------------- Het logo
 
-# De letters van BIBIE (Bibie's Industries), 5 hoog. De B en de E zijn 4 breed, de I maar 3
-# (anders staat hij scheef): daarom heeft elke letter zijn eigen breedte.
+# De letters van BIEBIA (Biebia's Industries), 5 hoog. De B, de E en de A zijn 4 breed, de I
+# maar 3 (anders staat hij scheef): daarom heeft elke letter zijn eigen breedte. Samen 27
+# breed: dat past ruim tussen de koperen hoeken van het lab (33 breed).
 LOGO = {
     "B": ["###.", "#..#", "###.", "#..#", "###."],
     "I": ["###", ".#.", ".#.", ".#.", "###"],
     "E": ["####", "#...", "###.", "#...", "####"],
+    "A": [".##.", "#..#", "####", "#..#", "#..#"],
 }
 
 
-def bibie_logo(y, z):
+def biebia_logo(y, z):
     """
-    Het BIBIE-logo in de gevel, van koperen lampen: overdag koper, 's nachts verlicht.
+    Het BIEBIA-logo in de gevel, van koperen lampen: overdag koper, 's nachts verlicht.
     y is de onderste rij. (Het zat eerst op de lobby, waar het terras erboven de bovenste rij
     van elke letter wegvaagde.) Tussen twee letters zit één lege kolom.
     """
-    text = "BIBIE"
+    text = "BIEBIA"
     width = sum(len(LOGO[letter][0]) for letter in text) + len(text) - 1
     x = MID - width // 2
     for letter in text:
@@ -653,8 +655,8 @@ def build_lab():
     x0, z0, x1, z1 = bounds(LAB_IN)
     y = LAB_Y
 
-    # Het BIBIE-logo op de zuidgevel, midden op de verdieping.
-    bibie_logo(y + 3, z1)
+    # Het BIEBIA-logo op de zuidgevel, midden op de verdieping.
+    biebia_logo(y + 3, z1)
 
     for x in (x0 + 2, x1 - 2):
         put(x, y, z0 + 3, "minecraft:brewing_stand",
@@ -777,7 +779,7 @@ def build_hangar():
     werkbanken, generatoren met lava-ketels en een grote open hangardeur naar het oosten.
 
     De drone-docks staan langs de noordmuur. Sinds hoofdstuk 25 zet de kern van de toren op de
-    eerste vier Bibie's security drones (zie TowerDrones in de Java-code); na het hacken zijn ze van
+    eerste vier Biebia's security drones (zie TowerDrones in de Java-code); na het hacken zijn ze van
     jou. Ze laden er: een kabel langs de muur brengt stroom van een warmtegenerator in de hoek (met
     een ketel lava ernaast).
     """
@@ -955,7 +957,7 @@ def build_security():
     chest(x1 - 2, y, z1 - 2, "north")
 
     # De beveiligingskern: de "hoofdserver" in het gat midden in de rij serverkasten. Hij
-    # beschermt de hele toren (en zet Bibie's drones in de hangar); met een laptop kun je hem
+    # beschermt de hele toren (en zet Biebia's drones in de hangar); met een laptop kun je hem
     # hacken, en dan werkt de beveiliging voor jou.
     put(x0 + 2, y, MID, "imttech:security_core", {"facing": "east", "claimed": "false"})
     security_turret(x0 + 2, y, z0 + 2)
@@ -1363,7 +1365,7 @@ SUITS = {
 
 def suit_capsule(cx, y, cz, mark):
     """
-    Een vitrine van 3 x 3 met een harnas erin (Bibie's Hall of Armor): een voet en een dak van
+    Een vitrine van 3 x 3 met een harnas erin (Biebia's Hall of Armor): een voet en een dak van
     quartz met een lamp, koperen hoeken achter, glas opzij, en vooraan (zuid) open met helder glas
     op de hoeken, zodat je het harnas goed ziet. Voor de voet een bordje met de naam.
     """

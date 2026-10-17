@@ -230,7 +230,7 @@ public final class ImtSuit {
             return;
         }
         if (event.getDistance() > ImtConfig.Suit.SAFE_FALL) {
-            return; // van zo hoog helpt zelfs een repulsor niet meer
+            return; // van zo hoog helpt zelfs een laser cannon niet meer
         }
         ItemStack glasses = ImtData.getWornGlasses(player);
         if (glasses.isEmpty() || !ImtData.tryUseEnergy(glasses, ImtConfig.Suit.LANDING_COST)) {
@@ -247,17 +247,17 @@ public final class ImtSuit {
         return player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET).getItem() instanceof TechSuitItem;
     }
 
-    // ================================================================ Repulsor
+    // ================================================================ Laser cannon
 
     /**
-     * Een repulsorstoot uit je handpalm: een rechte straal die alles op zijn weg raakt en
+     * Een laserkanonschot uit je handpalm: een rechte straal die alles op zijn weg raakt en
      * wegduwt.
      *
      * Je hebt de borstplaat nodig (daar zit de reactor) en energie in je bril. Je eigen
      * drones en huisdieren raakt hij niet; daarvoor kijken we net als de drones naar
      * ImtTargeting.
      */
-    public static void repulsor(ServerPlayer player) {
+    public static void laserCannon(ServerPlayer player) {
         if (!(player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST)
                 .getItem() instanceof TechSuitItem)) {
             ImtServer.send(player, Component.translatable("suit.imttech.msg.no_chest"),
@@ -269,55 +269,55 @@ public final class ImtSuit {
             return;
         }
         // Je houdt de aanvalsknop ingedrukt, dus dit komt vaak binnen: stil negeren tot de
-        // repulsor weer geladen is. (Je eigen spel wacht ook al, maar de server beslist.)
-        if (!ImtServer.isReady(player, ImtCooldown.REPULSOR)) {
+        // laser cannon weer geladen is. (Je eigen spel wacht ook al, maar de server beslist.)
+        if (!ImtServer.isReady(player, ImtCooldown.LASER_CANNON)) {
             return;
         }
-        if (!ImtData.tryUseEnergy(glasses, ImtConfig.Suit.REPULSOR_COST)) {
+        if (!ImtData.tryUseEnergy(glasses, ImtConfig.Suit.LASER_CANNON_COST)) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    com.senne.imttech.config.Numbers.text(ImtConfig.Suit.REPULSOR_COST)), ImtMessagePayload.Level.WARNING);
+                    com.senne.imttech.config.Numbers.text(ImtConfig.Suit.LASER_CANNON_COST)), ImtMessagePayload.Level.WARNING);
             return;
         }
 
         ServerLevel level = player.serverLevel();
         Vec3 from = player.getEyePosition().subtract(0, 0.2, 0);
-        Vec3 to = from.add(player.getViewVector(1.0f).scale(ImtConfig.Suit.REPULSOR_RANGE));
+        Vec3 to = from.add(player.getViewVector(1.0f).scale(ImtConfig.Suit.LASER_CANNON_RANGE));
 
         int hits = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
-                new AABB(from, to).inflate(ImtConfig.Suit.REPULSOR_WIDTH),
+                new AABB(from, to).inflate(ImtConfig.Suit.LASER_CANNON_WIDTH),
                 entity -> entity != player && entity.isAlive() && ImtTargeting.canTarget(player, entity))) {
             // Alleen wat echt dicht bij de straal staat, niet alles in het blok eromheen.
-            if (target.getBoundingBox().inflate(ImtConfig.Suit.REPULSOR_WIDTH).clip(from, to).isEmpty()) {
+            if (target.getBoundingBox().inflate(ImtConfig.Suit.LASER_CANNON_WIDTH).clip(from, to).isEmpty()) {
                 continue;
             }
-            target.hurt(ModDamageTypes.droneLaser(level, player, player), repulsorDamage(player));
+            target.hurt(ModDamageTypes.droneLaser(level, player, player), laserCannonDamage(player));
             Vec3 push = target.position().subtract(player.position()).normalize()
-                    .scale(ImtConfig.Suit.REPULSOR_KNOCKBACK);
+                    .scale(ImtConfig.Suit.LASER_CANNON_KNOCKBACK);
             target.push(push.x, 0.15, push.z);
             target.hurtMarked = true;
             hits++;
         }
 
-        ImtServer.startCooldown(player, ImtCooldown.REPULSOR, Math.round(ImtConfig.Suit.REPULSOR_COOLDOWN));
+        ImtServer.startCooldown(player, ImtCooldown.LASER_CANNON, Math.round(ImtConfig.Suit.LASER_CANNON_COOLDOWN));
         ModNetwork.sendNear(level, player.position(), 64,
-                new BeamEffectPayload(from, to, BeamEffectPayload.Kind.REPULSOR));
+                new BeamEffectPayload(from, to, BeamEffectPayload.Kind.LASER_CANNON));
         // Iedereen in de buurt hoort het schot, een beetje anders van toon elke keer.
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.REPULSOR_FIRE.get(),
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.LASER_CANNON_FIRE.get(),
                 SoundSource.PLAYERS, 1.0f, 0.95f + level.random.nextFloat() * 0.1f);
-        // Een klein zetje naar achteren: een repulsor duwt jou ook een beetje.
-        Vec3 back = player.getViewVector(1.0f).scale(-ImtConfig.Suit.REPULSOR_RECOIL);
+        // Een klein zetje naar achteren: een laser cannon duwt jou ook een beetje.
+        Vec3 back = player.getViewVector(1.0f).scale(-ImtConfig.Suit.LASER_CANNON_RECOIL);
         player.push(back.x, 0.0, back.z);
         player.hurtMarked = true;
         // Geen melding of stem bij een treffer: het schot zelf (geluid en straal) zegt genoeg.
         if (hits > 0) {
-            ImtAdvancements.award(player, ImtAdvancements.REPULSOR);
+            ImtAdvancements.award(player, ImtAdvancements.LASER_CANNON);
         }
     }
 
-    /** De schade van een repulsorstoot: meer met condensatoren in de borstplaat (werkbank). */
-    public static float repulsorDamage(ServerPlayer player) {
-        return (float) (ImtConfig.Suit.REPULSOR_DAMAGE * (1 + ImtConfig.Workbench.CAPACITOR_DAMAGE
+    /** De schade van een laserkanonschot: meer met condensatoren in de borstplaat (werkbank). */
+    public static float laserCannonDamage(ServerPlayer player) {
+        return (float) (ImtConfig.Suit.LASER_CANNON_DAMAGE * (1 + ImtConfig.Workbench.CAPACITOR_DAMAGE
                 * com.senne.imttech.workbench.SuitUpgrades.capacitorsOf(player)));
     }
 

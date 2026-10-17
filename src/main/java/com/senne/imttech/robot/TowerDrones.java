@@ -26,8 +26,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 /**
- * De drones van Bibie in een Bibie's Industries Tower (hoofdstuk 25, jouw antwoord van 14 oktober: "de Bibie's Industries Tower krijgt docks
- * met drones die Bibie al geprogrammeerd heeft"). Een kern van niemand (Bibie's systeem) zet één keer een security
+ * De drones van Biebia in een Biebia's Industries Tower (hoofdstuk 25, jouw antwoord van 14 oktober: "de Biebia's Industries Tower krijgt docks
+ * met drones die Biebia al geprogrammeerd heeft"). Een kern van niemand (Biebia's systeem) zet één keer een security
  * drone op de eerste {@code TOWER_DRONES} Drone Docks van de toren (die staan in de hangar): met Scan, Face
  * Recognition, Laser en Pathfinding gesoldeerd, en het programma "Tower patrol" (hieronder).
  * <ul>
@@ -42,12 +42,12 @@ import net.minecraft.world.level.chunk.LevelChunk;
 public final class TowerDrones {
     private TowerDrones() {}
 
-    /** Hoe Bibie zijn programma noemde (zo staat het in de app Robots). */
+    /** Hoe Biebia zijn programma noemde (zo staat het in de app Robots). */
     public static final String PROGRAM_NAME = "Tower patrol";
 
-    /** Bibie's programma: de hangar rondvliegen, op vreemden schieten, en komen kijken als het alarm gaat. */
+    /** Biebia's programma: de hangar rondvliegen, op vreemden schieten, en komen kijken als het alarm gaat. */
     public static final String PROGRAM = """
-            # Bibie's drones: patrol the hangar, shoot strangers, and come when the alarm goes off.
+            # Biebia's drones: patrol the hangar, shoot strangers, and come when the alarm goes off.
             scanPin = pin(1)
             facePin = pin(2)
             laserPin = pin(3)
@@ -74,20 +74,20 @@ public final class TowerDrones {
     private static final int REACH_DOWN = 40;
     private static final int REACH_UP = 16;
 
-    /** Wat Bibie op hun printplaat soldeerde: Scan op pin 1, Face Recognition op 2, Laser op 3, Pathfinding op 4. */
+    /** Wat Biebia op hun printplaat soldeerde: Scan op pin 1, Face Recognition op 2, Laser op 3, Pathfinding op 4. */
     public static BotBoard board() {
         return BotBoard.EMPTY.with(1, BotModule.SCAN.id()).with(2, BotModule.FACE_RECOGNITION.id())
                 .with(3, BotModule.LASER.id()).with(4, BotModule.PATHFINDING.id());
     }
 
-    /** Bibie's programma, als droneprogramma. */
+    /** Biebia's programma, als droneprogramma. */
     public static LogicProgram program() {
         return new LogicProgram(PROGRAM_NAME, true, GraphConverter.toGraph(ScriptParser.parse(PROGRAM, ProgramKind.DRONE), null),
                 PROGRAM, ProgramKind.DRONE);
     }
 
     /**
-     * Zet Bibie's drones op de lege Drone Docks rond deze kern (van west naar oost, van noord naar zuid), hooguit
+     * Zet Biebia's drones op de lege Drone Docks rond deze kern (van west naar oost, van noord naar zuid), hooguit
      * {@code TOWER_DRONES}. De kern doet dit één keer (zie SecurityCoreBlockEntity). Alleen docks in een stuk wereld
      * dat nu geladen is. Geeft hoeveel drones er kwamen.
      */
@@ -126,7 +126,7 @@ public final class TowerDrones {
         return placed;
     }
 
-    /** Eén drone van Bibie op dit dock: aan, met een volle batterij, zijn printplaat en zijn programma. */
+    /** Eén drone van Biebia op dit dock: aan, met een volle batterij, zijn printplaat en zijn programma. */
     private static GuardDroneEntity place(ServerLevel level, DroneDockBlockEntity dock) {
         GuardDroneEntity drone = ModEntities.GUARD_DRONE.get().create(level);
         if (drone == null) {
@@ -154,13 +154,13 @@ public final class TowerDrones {
         return drone;
     }
 
-    /** Bibie's drones in het gebied van deze kern (die van niemand zijn). */
+    /** Biebia's drones in het gebied van deze kern (die van niemand zijn). */
     private static List<GuardDroneEntity> of(ServerLevel level, SecurityCoreBlockEntity core) {
         return level.getEntitiesOfClass(GuardDroneEntity.class, core.area(),
                 drone -> drone.isAlive() && drone.owner() == null && SecurityCores.coreAt(level, drone.blockPosition()) == core);
     }
 
-    /** Het alarm: iemand begint de kern te hacken. Bibie's drones krijgen de opdracht "alarm", met zijn plek. */
+    /** Het alarm: iemand begint de kern te hacken. Biebia's drones krijgen de opdracht "alarm", met zijn plek. */
     public static void alarm(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer intruder) {
         for (GuardDroneEntity drone : of(level, core)) {
             drone.brain().order("alarm", intruder.blockPosition());
@@ -168,7 +168,7 @@ public final class TowerDrones {
     }
 
     /**
-     * De toren is gehackt: Bibie's drones zijn nu van de hacker (en volgen zijn regels voor vrienden). Heeft hij al
+     * De toren is gehackt: Biebia's drones zijn nu van de hacker (en volgen zijn regels voor vrienden). Heeft hij al
      * een robot of drone met dezelfde naam, dan krijgt de drone een nieuwe ("Drone 3").
      */
     public static void handOver(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer player) {

@@ -32,18 +32,18 @@ import org.joml.Vector3f;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Een training zoals Domino squad (hoofdstuk 26, jouw wens: "programma's die gecoördineerde golven op de speler
+ * Een training zoals Rookie squad (hoofdstuk 26, jouw wens: "programma's die gecoördineerde golven op de speler
  * sturen, die non-lethal of lethal schieten"). Eén training tegelijk per beveiligingskern, met één trainee: wie op
  * het Training Start-blok klikte.
  * <ul>
  *   <li>I.M.T telt af ({@code countdownSeconds}), dan begint hij: je diagrammen horen
- *       {@code when training_started("Kamino"):}.</li>
+ *       {@code when training_started("Bootcamp"):}.</li>
  *   <li>Elk schot van je beveiliging dat de trainee raakt, loopt via Shots. Met <b>trainingsschoten</b> doet het geen
  *       schade: een blauwe flits, een seconde trager, en een leven eraf. <b>Lethal</b> doet echte schade (en telt
  *       ook). Na een treffer telt een tweede even niet mee ({@code hitCooldown}): één schot is één leven.</li>
  *   <li>Hij stopt als de levens op zijn, de tijd om is, de trainee het doel haalt (het Training Goal-blok), dood gaat,
  *       uitlogt of het gebied van de kern verlaat, of als iemand op Stop drukt. Je diagrammen horen
- *       {@code when training_ended("Kamino"):}, en I.M.T geeft een rapport (dat de kern ook bewaart, voor de app
+ *       {@code when training_ended("Bootcamp"):}, en I.M.T geeft een rapport (dat de kern ook bewaart, voor de app
  *       Training).</li>
  * </ul>
  * Een training leeft alleen in het geheugen van de server: stopt de server, dan is hij weg.
@@ -80,14 +80,14 @@ public final class Training {
     /**
      * Wat je instelt in het Training Start-blok.
      *
-     * @param name    de naam van de training (zo heet hij in je diagrammen: {@code when training_started("Kamino"):})
+     * @param name    de naam van de training (zo heet hij in je diagrammen: {@code when training_started("Bootcamp"):})
      * @param mode    trainingsschoten of echt
      * @param lives   hoeveel treffers de trainee mag krijgen (1-10)
      * @param seconds hoe lang hij hooguit duurt (0 = geen limiet)
      */
     public record Settings(String name, Mode mode, int lives, int seconds) {
         /** Zo staat een nieuw Training Start-blok. */
-        public static final Settings DEFAULT = new Settings("Kamino", Mode.TRAINING_SHOTS, 1, 0);
+        public static final Settings DEFAULT = new Settings("Bootcamp", Mode.TRAINING_SHOTS, 1, 0);
         /** Zo lang mag de naam zijn. */
         public static final int MAX_NAME = 24;
         public static final int MAX_LIVES = 10;
@@ -421,7 +421,7 @@ public final class Training {
     // ================================================================ Einde
 
     /**
-     * De training is voorbij. Je diagrammen horen {@code when training_ended("Kamino"):}, robots en drones die neergingen
+     * De training is voorbij. Je diagrammen horen {@code when training_ended("Bootcamp"):}, robots en drones die neergingen
      * staan op (en gaan naar hun dock), en I.M.T geeft het rapport aan de trainee (en de eigenaar), dat de kern
      * ook bewaart.
      */

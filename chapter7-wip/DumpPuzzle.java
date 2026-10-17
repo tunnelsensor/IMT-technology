@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Random;
 
 /**
- * De geheugendump: de inlogpuzzel van een systeem ZONDER wachtwoord (de oude firmware van Bibie
+ * De geheugendump: de inlogpuzzel van een systeem ZONDER wachtwoord (de oude firmware van Biebia
  * lekt geheugen bij een mislukte handshake). Acht woorden die op elkaar lijken; één is het
  * wachtwoord. Een fout woord laat zien welke letters goed staan, en streept door wat niet meer kan.
  *
@@ -27,7 +27,7 @@ public final class DumpPuzzle {
             "CANNON", "BEACON", "PISTON", "PROTON", "PHOTON", "CARBON", "BUTTON", "LEGION", "FUSION", "VISION",
             "MOTION", "OPTION",
             "SIGNAL", "PORTAL", "NEURAL", "VECTOR", "SENSOR", "DOCTOR", "MIRROR",
-            "JARVIS", "FRIDAY", "PEPPER", "MALIBU", "SHIELD", "STRIKE", "ORBITS", "CIPHER", "SYSTEM", "MATRIX",
+            "BITECH", "BIEBIA", "COFFEE", "TUNNEL", "BUNKER", "STRIKE", "ORBITS", "CIPHER", "SYSTEM", "MATRIX",
             "TITANS", "DRONES", "SECURE", "ACCESS", "BREACH", "KERNEL", "BINARY", "ARMORS", "VAULTS", "LAUNCH"};
     private static final int DUMP_WORDS = 8;
     private static final int CLOSEST = 12;

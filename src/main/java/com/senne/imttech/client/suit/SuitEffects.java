@@ -25,7 +25,7 @@ import org.joml.Matrix4f;
 
 /**
  * De effecten van het harnas, zelf getekend (geen Minecraft-deeltjes):
- * - het REPULSORSCHOT: een felle kern met een gloed eromheen, drukgolfringen bij de hand, een
+ * - het LASERKANONSCHOT: een felle kern met een gloed eromheen, drukgolfringen bij de hand, een
  *   lichtbol die naar het doel schiet, en bij de inslag een flits met een uitdijende ring;
  * - de STRAALVLAMMEN onder de laarzen als je vliegt: ze zitten vast aan je voeten (dus geen
  *   spoor achter je aan) en worden langer en feller naarmate je harder gaat.
@@ -64,7 +64,7 @@ public final class SuitEffects {
                     .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
                     .createCompositeState(false));
 
-    // ================================================================ Repulsorschot
+    // ================================================================ Laserkanonschot
 
     /** Hoe lang een schot te zien is (ticks). */
     private static final float SHOT_TICKS = 10;
@@ -77,7 +77,7 @@ public final class SuitEffects {
     private static final Map<Integer, Long> FIRED = new HashMap<>();
 
     /**
-     * Een repulsorschot van {@code from} (bij de hand) naar {@code to} (waar het inslaat).
+     * Een laserkanonschot van {@code from} (bij de hand) naar {@code to} (waar het inslaat).
      * {@code eye} zijn de ogen van de schutter: zo weten we wiens hand er moet oplichten.
      */
     public static void addShot(Vec3 eye, Vec3 from, Vec3 to) {
@@ -170,7 +170,7 @@ public final class SuitEffects {
             }
         }
 
-        // De repulsorschoten.
+        // De laserkanonschoten.
         for (Iterator<Shot> it = SHOTS.iterator(); it.hasNext(); ) {
             Shot shot = it.next();
             float age = (time - shot.start()) / SHOT_TICKS;

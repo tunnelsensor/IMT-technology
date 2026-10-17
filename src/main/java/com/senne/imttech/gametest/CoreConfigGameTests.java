@@ -65,7 +65,7 @@ public final class CoreConfigGameTests {
         }
     }
 
-    /** Een kern op {@code pos}, van {@code owner} (of van niemand, zoals de Bibie's Industries Tower), met een systeem. */
+    /** Een kern op {@code pos}, van {@code owner} (of van niemand, zoals de Biebia's Industries Tower), met een systeem. */
     private static SecurityCoreBlockEntity core(GameTestHelper helper, BlockPos pos, @Nullable ServerPlayer owner) {
         helper.setBlock(pos, ModBlocks.SECURITY_CORE.get());
         SecurityCoreBlockEntity core = (SecurityCoreBlockEntity) helper.getBlockEntity(pos);
@@ -137,8 +137,8 @@ public final class CoreConfigGameTests {
         core.setPassword("abc123", level.random);
         core.setHostname("vault");
         check(core.fs().write("/notes.txt", "the cake is a lie") == null, "Een notitie schrijven lukte niet");
-        UUID pepper = UUID.randomUUID();
-        core.addTrusted(pepper, "Pepper");
+        UUID lotte = UUID.randomUUID();
+        core.addTrusted(lotte, "Lotte");
         core.setAttackPlayers(true);
         core.setLasersEnabled(false);
         LogicStore.Card card = core.logic().issue("Front door", 3, "test-core-owner");
@@ -176,7 +176,7 @@ public final class CoreConfigGameTests {
         check(note != null && note.content().equals("the cake is a lie"), "De notitie is weg");
         check(back.log().entries().stream().anyMatch(entry -> entry.text().contains("re-installed by test-core-owner")),
                 "Het logboek zegt niet dat de kern opnieuw geïnstalleerd is");
-        check(back.isTrusted(pepper) && back.attackPlayers() && !back.lasersEnabled(), "De toegang is weg");
+        check(back.isTrusted(lotte) && back.attackPlayers() && !back.lasersEnabled(), "De toegang is weg");
         check(back.logic().card(card.number()) != null, "De keycard is weg");
         check(back.zoneBoxes().equals(zone), "De zone is weg: " + back.zoneBoxes());
         List<Datacenters.Backup> backups = datacenters.backupsOf(owner.getUUID());
@@ -196,7 +196,7 @@ public final class CoreConfigGameTests {
         ServerPlayer owner = player(helper, "test-core-owner");
         ServerPlayer thief = player(helper, "test-core-thief");
         SecurityCoreBlockEntity core = core(helper, CORE, owner);
-        core.setPassword("bibie42", level.random);
+        core.setPassword("biebia42", level.random);
 
         ItemStack stack = mine(helper, thief, CORE);
         check(stack.has(ModDataComponents.PACKED_CORE.get()), "Een gestolen kern viel leeg uit");
@@ -206,7 +206,7 @@ public final class CoreConfigGameTests {
         check(owner.getUUID().equals(stolen.ownerId()) && !thief.getUUID().equals(stolen.ownerId()),
                 "De dief kreeg de kern door hem weg te hakken en neer te zetten");
         helper.assertBlockProperty(away, SecurityCoreBlock.CLAIMED, true);
-        check(stolen.checkPassword("bibie42"), "Het wachtwoord van de eigenaar ging niet mee");
+        check(stolen.checkPassword("biebia42"), "Het wachtwoord van de eigenaar ging niet mee");
         check(stolen.log().entries().stream().anyMatch(entry -> entry.text().contains("re-installed by test-core-thief")),
                 "Het logboek zegt niet wie de kern neerzette");
         finish(helper, away);
@@ -215,7 +215,7 @@ public final class CoreConfigGameTests {
     /**
      * Opgeblazen (C4 breekt de kern zoals {@code destroyBlock}: eerst valt het item, dan is de kern
      * weg, andersom dan bij hakken): ook dan gaan de zone en de rest mee. Een kern van niemand (de
-     * Bibie's Industries Tower van Bibie, nog niet gehackt) valt als een nieuwe kern, zoals altijd: wie die neerzet,
+     * Biebia's Industries Tower van Biebia, nog niet gehackt) valt als een nieuwe kern, zoals altijd: wie die neerzet,
      * is de eigenaar.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "core_config_blast")

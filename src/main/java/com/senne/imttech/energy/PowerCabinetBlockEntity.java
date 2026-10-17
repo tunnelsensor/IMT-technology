@@ -16,8 +16,8 @@ import org.jetbrains.annotations.Nullable;
  * Van wie een stroomkast is. Dat telt alleen voor schakelen op afstand (het redstone-tabblad):
  * wie voor de kast staat, kan altijd schakelen.
  *
- * Een kast die je zelf neerzet, is van jou. Een kast in een Bibie's Industries Tower (neergezet door de toren)
- * is van wie de toren gehackt heeft; die in de Bibie's Industries-bunker is van niemand.
+ * Een kast die je zelf neerzet, is van jou. Een kast in een Biebia's Industries Tower (neergezet door de toren)
+ * is van wie de toren gehackt heeft; die in de Biebia's Industries-bunker is van niemand.
  */
 public class PowerCabinetBlockEntity extends BlockEntity {
     private @Nullable UUID owner;

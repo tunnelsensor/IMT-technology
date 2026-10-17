@@ -113,7 +113,7 @@ public class LaserWallBlock extends Block {
     }
 
     /**
-     * Staat deze wand in een Bibie's Industries Tower die van jou is (of van je team)? Dan loop je er gewoon
+     * Staat deze wand in een Biebia's Industries Tower die van jou is (of van je team)? Dan loop je er gewoon
      * doorheen. Een toren van niemand, of een wand buiten een toren: dan brand je.
      */
     private static boolean friendOfTheTower(ServerLevel level, BlockPos pos, LivingEntity entity) {

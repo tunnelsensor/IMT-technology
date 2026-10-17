@@ -1,31 +1,31 @@
 """
-Bouwt de Bibie's Industries-bunker als Minecraft-structuurbestand (.nbt).
+Bouwt de Biebia's Industries-bunker als Minecraft-structuurbestand (.nbt).
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_bunker.py
 
-Het resultaat komt in src/main/resources/data/imttech/structure/bibie_bunker.nbt.
+Het resultaat komt in src/main/resources/data/imttech/structure/biebia_bunker.nbt.
 
-Een geheime Hydra-basis, uitgehakt in een berg (zoals in The Winter Soldier). De mod zoekt
+Een geheime Raven-basis, uitgehakt in een berg (zoals in The Winter Soldier). De mod zoekt
 zelf een steile berghelling en zet hem daar zo neer dat de ingang in de rotswand zit en de
-rest ín de berg (zie BibieBunkerStructure). Wat je vindt, van voor naar achter:
+rest ín de berg (zie BiebiaBunkerStructure). Wat je vindt, van voor naar achter:
 
-- de INGANG: een uitsparing in de rots, een betonnen gevel met het rode Hydra-embleem, en
-  links en rechts van de deur een Hydra-torentje op een zuil;
+- de INGANG: een uitsparing in de rots, een betonnen gevel met het rode Raven-embleem, en
+  links en rechts van de deur een Raven-torentje op een zuil;
 - de GANG met een controlepost (een bureau en een soldaat);
-- de GROTE HAL: zuilen, kratten met voorraden, Hydra-vaandels, een kaartentafel, soldaten en
+- de GROTE HAL: zuilen, kratten met voorraden, Raven-vaandels, een kaartentafel, soldaten en
   een torentje op een verhoging achterin;
 - links de SLAAPZAAL (bedden, kisten), rechts de REACTORKAMER: twee warmtegeneratoren in een
   bak lava achter glas. Hun kabels lopen zichtbaar over het plafond van de hal en verdwijnen
   achterin in de muur, naar...
 - ...de KLUISGANG, met twee rode laserwanden (drie rijen hoog). Die staan aan zolang de
   reactor stroom geeft: knip de kabels door of sloop de generatoren, en ze gaan uit;
-- de KLUIS: twee kisten met Hydra-onderdelen (altijd een paar), een cryo-cel (Winter Soldier)
+- de KLUIS: twee kisten met Raven-onderdelen (altijd een paar), een cryo-cel (Winter Soldier)
   en twee torentjes.
 
 Soldaten staan er niet als blokken in, maar als "data-markeringen" (een structuurblok met de
-tekst hydra_soldier). Bij het bouwen van de wereld zet de mod daar een Hydra-soldaat neer die
-nooit verdwijnt (zie BibieBunkerPiece).
+tekst raven_soldier). Bij het bouwen van de wereld zet de mod daar een Raven-soldaat neer die
+nooit verdwijnt (zie BiebiaBunkerPiece).
 
 De voorkant (de ingang) ligt aan de kant z = 0 en kijkt naar -z (noord); de bunker loopt naar
 +z de berg in. Laag y = 0 is de vloer, y = 1 de eerste laag lucht. Blokken die we hier niet
@@ -35,19 +35,19 @@ from pathlib import Path
 
 from generate_structure import DATA_VERSION, Double, Int, write_nbt
 
-OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "bibie_bunker.nbt"
+OUT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "data" / "imttech" / "structure" / "biebia_bunker.nbt"
 
 SIZE_X, SIZE_Y, SIZE_Z = 35, 8, 44
 MID = 17
 
-LOOT_VAULT = "imttech:chests/hydra_vault"
-LOOT_BARRACKS = "imttech:chests/hydra_barracks"
-LOOT_SUPPLIES = "imttech:chests/hydra_supplies"
+LOOT_VAULT = "imttech:chests/raven_vault"
+LOOT_BARRACKS = "imttech:chests/raven_barracks"
+LOOT_SUPPLIES = "imttech:chests/raven_supplies"
 
 # Waar dingen staan die de gametest nakijkt.
 VAULT_CHESTS = [(13, 1, 42), (21, 1, 42)]
 LASER_ROWS = [32, 35]
-SOLDIER = "hydra_soldier"
+SOLDIER = "raven_soldier"
 
 POWER_BLOCKS = {"imttech:cable", "imttech:laser_emitter", "imttech:heat_generator"}
 
@@ -91,13 +91,13 @@ def air(x0, y0, z0, x1, y1, z1):
 
 
 def soldier(x, y, z):
-    """Hier komt bij het bouwen van de wereld een Hydra-soldaat (zie BibieBunkerPiece)."""
+    """Hier komt bij het bouwen van de wereld een Raven-soldaat (zie BiebiaBunkerPiece)."""
     put(x, y, z, "minecraft:structure_block", {"mode": "data"},
         {"id": "minecraft:structure_block", "mode": "DATA", "metadata": SOLDIER})
 
 
 def turret(x, y, z):
-    put(x, y, z, "imttech:hydra_turret", {"enabled": "true", "powered": "false"})
+    put(x, y, z, "imttech:raven_turret", {"enabled": "true", "powered": "false"})
 
 
 def chest(x, y, z, facing, loot):
@@ -111,7 +111,7 @@ def barrel(x, y, z):
 
 
 def banner(x, y, z, facing):
-    """Een rood Hydra-vaandel met een zwarte schedel en rand, aan de muur."""
+    """Een rood Raven-vaandel met een zwarte schedel en rand, aan de muur."""
     put(x, y, z, "minecraft:red_wall_banner", {"facing": facing},
         {"id": "minecraft:banner", "patterns": [
             {"color": "black", "pattern": "minecraft:skull"},
@@ -149,7 +149,7 @@ def build_entrance():
     # De deuropening met een zwarte omlijsting.
     fill(MID - 2, 1, 3, MID + 2, 5, 3, TRIM)
     air(MID - 1, 1, 3, MID + 1, 4, 3)
-    # Het Hydra-embleem boven de deur: een schedel met tentakels, rood op zwart.
+    # Het Raven-embleem boven de deur: een schedel met tentakels, rood op zwart.
     fill(MID - 2, 6, 3, MID + 2, 6, 3, BLACK)
     for x in (MID - 2, MID, MID + 2):
         put(x, 6, 3, RED)
@@ -203,7 +203,7 @@ def build_hall():
     put(MID - 1, 1, 20, "minecraft:cartography_table")
     put(MID + 1, 1, 20, "minecraft:cartography_table")
     put(MID, 1, 20, "minecraft:lectern", {"facing": "north", "has_book": "false", "powered": "false"})
-    # Hydra-vaandels aan de voor- en achtermuur.
+    # Raven-vaandels aan de voor- en achtermuur.
     for x in (MID - 5, MID + 5):
         banner(x, 4, z1, "north")
         banner(x, 4, z0, "south")
@@ -306,7 +306,7 @@ def build_vault():
     put(MID, 1, 41, "minecraft:light_blue_stained_glass")
     put(MID, 2, 41, "minecraft:light_blue_stained_glass")
     put(MID, 3, 41, "minecraft:iron_block")
-    # Wat Hydra nog meer weggestopt heeft.
+    # Wat Raven nog meer weggestopt heeft.
     put(x0, 1, 42, "minecraft:gold_block")
     put(x1, 1, 42, "minecraft:gold_block")
     for x in (x0 + 2, x1 - 2):
@@ -339,12 +339,12 @@ def route(*points):
 def wire_reactor():
     """
     De stroomkast in de hoek van de reactorkamer (jouw wens, 27 september: alle torentjes op
-    stroom, en een kast met schakelaars op een goed bewaakte plek). Een Hydra-torentje en een
+    stroom, en een kast met schakelaars op een goed bewaakte plek). Een Raven-torentje en een
     soldaat staan ernaast.
 
     - noordkant (de kant van de lavabak): de stroom van de twee generatoren, langs de oostmuur;
     - boven: de laserwanden in de kluisgang (de kabel onder het plafond door de hal);
-    - onder: de vijf Hydra-torentjes (en die in de reactorkamer), in de vloer door de hele bunker.
+    - onder: de vijf Raven-torentjes (en die in de reactorkamer), in de vloer door de hele bunker.
     """
     cabinet = (33, 1, 26)
     put(*cabinet, "imttech:power_cabinet", {"facing": "west"})
@@ -353,7 +353,7 @@ def wire_reactor():
     route((31, 5, 21), (33, 5, 21), (33, 1, 21), (33, 1, 25))
     # Van de kast omhoog en onder het plafond naar de lijn naar de lasers.
     route((33, 2, 26), (33, 5, 26), (28, 5, 26), (28, 5, 21))
-    # Een Hydra-torentje bij de kast.
+    # Een Raven-torentje bij de kast.
     turret(30, 1, 26)
     # De torentjes: in de vloer, via een lijn door het midden van de bunker.
     route((33, 0, 26), (MID - 6, 0, 26), (MID - 6, 0, 39), (MID + 5, 0, 39))

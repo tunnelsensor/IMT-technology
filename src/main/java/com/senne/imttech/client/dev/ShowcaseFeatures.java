@@ -10,7 +10,7 @@ import static com.senne.imttech.client.dev.ShowcaseScene.FAR_TARGET;
 import static com.senne.imttech.client.dev.ShowcaseScene.FRIEND_SPOT;
 import static com.senne.imttech.client.dev.ShowcaseScene.GRID_CUT;
 import static com.senne.imttech.client.dev.ShowcaseScene.HEAT_GENERATOR;
-import static com.senne.imttech.client.dev.ShowcaseScene.BIBIE_BUNKER;
+import static com.senne.imttech.client.dev.ShowcaseScene.BIEBIA_BUNKER;
 import static com.senne.imttech.client.dev.ShowcaseScene.HOLO_TABLE;
 import static com.senne.imttech.client.dev.ShowcaseScene.HOME;
 import static com.senne.imttech.client.dev.ShowcaseScene.HUT;
@@ -19,7 +19,7 @@ import static com.senne.imttech.client.dev.ShowcaseScene.LASER_A;
 import static com.senne.imttech.client.dev.ShowcaseScene.LASER_POWER;
 import static com.senne.imttech.client.dev.ShowcaseScene.PYRAMID;
 import static com.senne.imttech.client.dev.ShowcaseScene.SOLAR_PANEL;
-import static com.senne.imttech.client.dev.ShowcaseScene.BIBIE_TOWER;
+import static com.senne.imttech.client.dev.ShowcaseScene.BIEBIA_TOWER;
 import static com.senne.imttech.client.dev.ShowcaseScene.TARGETS;
 
 import com.mojang.blaze3d.platform.InputConstants;
@@ -37,7 +37,7 @@ import com.senne.imttech.client.MusicScreen;
 import com.senne.imttech.client.NavigationScreen;
 import com.senne.imttech.client.RelayEditScreen;
 import com.senne.imttech.client.RelayListScreen;
-import com.senne.imttech.client.RepulsorControl;
+import com.senne.imttech.client.LaserCannonControl;
 import com.senne.imttech.client.SatelliteScreen;
 import com.senne.imttech.client.SuitFlight;
 import com.senne.imttech.client.WaypointEditScreen;
@@ -47,7 +47,7 @@ import com.senne.imttech.drone.DroneEntity;
 import com.senne.imttech.imt.ImtAction;
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.imt.ImtOwner;
-import com.senne.imttech.hydra.HydraSoldierEntity;
+import com.senne.imttech.raven.RavenSoldierEntity;
 import com.senne.imttech.holo.HoloMode;
 import com.senne.imttech.network.CommsPayload;
 import com.senne.imttech.network.HoloActionPayload;
@@ -163,10 +163,10 @@ final class ShowcaseFeatures {
 
         add("I.M.T sounds", "Alle eigen geluiden van I.M.T, één voor één, met hun naam in beeld: "
                 + "meldingen (info zoals 'aangekomen', waarschuwing, geweigerd), scan, menu, laadstation, "
-                + "drones, satelliet, comms, repulsor en het opstarten. Zeg bij een nummer welke je anders wilt.",
+                + "drones, satelliet, comms, laser cannon en het opstarten. Zeg bij een nummer welke je anders wilt.",
                 start, 180, 0, ShowcaseFeatures::soundTour);
 
-        add("Owner lock", "Een bril van iemand anders (Happy): 'Access denied'. Alleen de eigenaar "
+        add("Owner lock", "Een bril van iemand anders (Seppe): 'Access denied'. Alleen de eigenaar "
                 + "kan hem gebruiken. Daarna weer je eigen bril.", start, 180, 0, s -> s
                 .onServer(0, player -> {
                     ServerPlayer friend = ShowcaseScene.friend(player);
@@ -180,7 +180,7 @@ final class ShowcaseFeatures {
 
         add("Transfer glasses", "Een bril doorgeven. Eerst geef jij je eigen bril vrij (G > Systems > "
                 + "'Transfer ownership'): I.M.T meldt dat de volgende die hem opzet de nieuwe eigenaar "
-                + "wordt; nog eens drukken = annuleren. Daarna heeft Happy zíjn bril vrijgegeven en zet jij "
+                + "wordt; nog eens drukken = annuleren. Daarna heeft Seppe zíjn bril vrijgegeven en zet jij "
                 + "hem op: geen 'Access denied' zoals bij 'Owner lock', maar de opstart met jouw naam, want "
                 + "nu is hij van jou.", start, 180, 0, s -> s
                 .action(10, ImtAction.AUTHORIZE_TRANSFER)
@@ -225,7 +225,7 @@ final class ShowcaseFeatures {
                 .action(0, ImtAction.TOGGLE_NIGHT_VISION)
                 .command(10, "time set noon"));
 
-        add("Zoom (V)", "Inzoomen op de Bibie's Industries Tower in de verte, met een afstandsmeter naast het vizier.",
+        add("Zoom (V)", "Inzoomen op de Biebia's Industries Tower in de verte, met een afstandsmeter naast het vizier.",
                 start, -90, 0, s -> s
                 .lookAt(5, towerCentre().add(0, 10, 0))
                 .pause(30)
@@ -240,7 +240,7 @@ final class ShowcaseFeatures {
                 .pause(160));
 
         add("I.M.T menu (G)", "Het ronde menu met alle functies, tabblad voor tabblad: Combat "
-                + "(repulsor, raketten, rayshield), Satellite & Arsenal (de drie satellietaanvallen apart, "
+                + "(laser cannon, raketten, rayshield), Satellite & Arsenal (de drie satellietaanvallen apart, "
                 + "het satellietscherm en het arsenaal), Drones, Recon drones (camera en spion), Transport, "
                 + "Tech, Illusion, Information (ertsen, dreigingen, doelanalyse), Navigation en Systems "
                 + "(nu met nachtzicht). Bij een stand die je nog niet vrijspeelde staat LOCKED.", start, 180, 0, s -> {
@@ -378,7 +378,7 @@ final class ShowcaseFeatures {
                 .action(0, ImtAction.DRONE_CAMERA)
                 .pause(60));
 
-        add("Spy drone (.)", "Een spionagedrone volgt Happy in het geheim. Links zie je waar hij is; "
+        add("Spy drone (.)", "Een spionagedrone volgt Seppe in het geheim. Links zie je waar hij is; "
                 + "daarna kijk je even live mee en krijg je het rapport.", new Vec3(0.5, -60, -2.5), 180, 0, s -> s
                 .lookAt(10, eyes(FRIEND_SPOT))
                 .action(10, ImtAction.SPY_DRONE)
@@ -392,7 +392,7 @@ final class ShowcaseFeatures {
                 .action(10, ImtAction.SPY_DRONE)
                 .pause(40));
 
-        add("Hack a player (;)", "Hack Happy: zijn privéberichten (en de antwoorden) verschijnen "
+        add("Hack a player (;)", "Hack Seppe: zijn privéberichten (en de antwoorden) verschijnen "
                 + "boven zijn hoofd, zolang jij naar hem kijkt.", new Vec3(2.5, -60, -3.5), 180, 0, s -> s
                 .lookAt(10, eyes(FRIEND_SPOT))
                 .action(10, ImtAction.HACK_PLAYER)
@@ -406,7 +406,7 @@ final class ShowcaseFeatures {
                 .action(0, ImtAction.HACK_STOP)
                 .pause(20));
 
-        add("Comms and pings (O, U)", "Het comms-scherm, dan een I.M.T-bericht van Happy, en "
+        add("Comms and pings (O, U)", "Het comms-scherm, dan een I.M.T-bericht van Seppe, en "
                 + "een ping op de grond die iedereen met een bril ziet.", start, 180, 0, s -> s
                 .open(10, CommsScreen::new)
                 .close(70)
@@ -646,7 +646,7 @@ final class ShowcaseFeatures {
 
         add("Illusion: army", "Een nep-leger (zombies, of wat er in het spawn-ei in je hand zit). Ook "
                 + "richten met de drone: kijk naar de piramide, dan staan de zombies op de treden (niet "
-                + "in de grond). Dan gaan ze op Happy af: ze lopen de piramide af, gaan in een kring om hem "
+                + "in de grond). Dan gaan ze op Seppe af: ze lopen de piramide af, gaan in een kring om hem "
                 + "heen staan en slaan (armen vooruit, een tik), maar zonder schade: het is alleen beeld. Zo "
                 + "leid je iemand af.", start, -90, 5, s -> s
                 .action(10, ImtAction.ILLUSION_ARMY)
@@ -660,7 +660,7 @@ final class ShowcaseFeatures {
                 .pause(180)
                 .action(0, ImtAction.ILLUSION_STOP));
 
-        add("Illusion: cloak", "Alles in het veld verdwijnt uit beeld: kijk naar de koe en Happy.",
+        add("Illusion: cloak", "Alles in het veld verdwijnt uit beeld: kijk naar de koe en Seppe.",
                 start, 180, 5, s -> s
                 .lookAt(5, mob(COW))
                 .action(10, ImtAction.ILLUSION_CLOAK)
@@ -690,7 +690,7 @@ final class ShowcaseFeatures {
                 .pause(40)
                 .camera(0, CameraType.FIRST_PERSON));
 
-        add("Repulsor (I, then attack)", "Toets I zet de repulsor aan (geluid + ring rond het vizier): "
+        add("Laser cannon (I, then attack)", "Toets I zet de laser cannon aan (geluid + ring rond het vizier): "
                 + "je arm gaat omhoog, de hand geknikt met een zacht gloeiende handpalm. Linkermuisknop "
                 + "vuurt: de palm flitst, je arm slaat terug, en er schiet een zelf getekende straal (witte "
                 + "kern, blauwe gloed, drukgolfringen bij de hand, flits en ring bij de inslag). Na elk schot "
@@ -698,7 +698,7 @@ final class ShowcaseFeatures {
                 range, 180, 0, s -> s
                 .onServer(0, ShowcaseFeatures::wearSuit)
                 .lookAt(20, mob(TARGETS.get(1)))
-                .step(5, RepulsorControl::toggle)
+                .step(5, LaserCannonControl::toggle)
                 .tap(40, () -> Minecraft.getInstance().options.keyAttack)
                 .lookAt(30, mob(TARGETS.get(0)))
                 .tap(5, () -> Minecraft.getInstance().options.keyAttack)
@@ -709,7 +709,7 @@ final class ShowcaseFeatures {
                 .tap(0, () -> Minecraft.getInstance().options.keyAttack)
                 .pause(40)
                 .camera(0, CameraType.FIRST_PERSON)
-                .step(10, RepulsorControl::toggle)
+                .step(10, LaserCannonControl::toggle)
                 .pause(30));
 
         add("Mini rockets (X)", "Eerst het raketpakket inbouwen: met de borstplaat aan klik je rechts met "
@@ -734,7 +734,7 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON)
                 .pause(30));
 
-        add("Suit workbench hologram", "Bibie's lab: boven de harnas-werkbank zweeft het harnas als hologram "
+        add("Suit workbench hologram", "Biebia's lab: boven de harnas-werkbank zweeft het harnas als hologram "
                 + "(de werkbank heeft stroom van de warmtegenerator ernaast). Er is geen scherm meer. Kijk naar een "
                 + "stuk: het licht op, en naast je vizier staat wat een klik doet en wat het kost (groen = genoeg bij "
                 + "je, rood = te weinig). Rechtsklik op de borstplaat: de materialen gaan uit je rugzak, de borstplaat "
@@ -1000,26 +1000,26 @@ final class ShowcaseFeatures {
                 .look(0, 0, -10)
                 .pause(160));
 
-        add("Hydra soldiers", "Nieuwe vijanden: Hydra-soldaten, die straks de Bibie's Industries-bunker bewaken. Zwart tactisch "
+        add("Raven soldiers", "Nieuwe vijanden: Raven-soldaten, die straks de Biebia's Industries-bunker bewaken. Zwart tactisch "
                 + "pak, rode bril, het rode embleem op borst en helm. Zien ze je, dan leggen ze hun lasergeweer aan "
                 + "(twee handen) en schieten ze rode laserstralen. Ze schieten ook op je drones, en raak je er "
-                + "één, dan komen de anderen ook. Soms laten ze een Hydra-onderdeel vallen.",
+                + "één, dan komen de anderen ook. Soms laten ze een Raven-onderdeel vallen.",
                 GameType.SURVIVAL, start, 180, 0, s -> s
-                .onServer(10, ShowcaseFeatures::spawnHydraSquad)
+                .onServer(10, ShowcaseFeatures::spawnRavenSquad)
                 .pause(80)
                 .camera(0, CameraType.THIRD_PERSON_BACK)
                 .pause(80)
                 .camera(0, CameraType.FIRST_PERSON)
                 .pause(60));
 
-        add("Automatic turrets", "Een Bibie's Industries-torentje (gemaakt met een Hydra-onderdeel) met een warmtegenerator "
+        add("Automatic turrets", "Een Biebia's Industries-torentje (gemaakt met een Raven-onderdeel) met een warmtegenerator "
                 + "ernaast: de kop kijkt rustig rond tot er monsters komen (eerst misschien een slijmpje), "
                 + "draait dan naar het dichtstbijzijnde en blijft daarop schieten tot het neer is: een blauwe "
                 + "laser (60 stroom per schot). Er zitten 16 raketten in (Rocket Ammo, met "
                 + "rechtsklik of een trechter), dus om de paar seconden gaat er ook een raket in een boogje op "
                 + "af. Jou raakt hij nooit. Dan komt er een redstoneblok naast: het torentje staat uit en de "
                 + "loop hangt omlaag (I.M.T kan hem ook uitzetten, hij staat in je redstone-lijst onder "
-                + "Turrets). Rechts een Hydra-torentje uit de bunker: dat schiet rode lasers op jou.",
+                + "Turrets). Rechts een Raven-torentje uit de bunker: dat schiet rode lasers op jou.",
                 GameType.SURVIVAL, at(ShowcaseScene.TURRET.offset(-4, 0, 3)), 200, 10, s -> s
                 .onServer(0, ShowcaseScene::buildTurrets)
                 .pause(40)
@@ -1046,15 +1046,15 @@ final class ShowcaseFeatures {
                 .pause(110)
                 .command(0, "gamerule imttechRaidGriefing false"));
 
-        add("Bibie's Industries Tower", "Het gebouw waar je de bril vindt: rondvliegen om de Bibie's Industries Tower. Let op het "
-                + "BIBIE-logo van koperen lampen op de gevel, de lampjes langs elk terras, de kluis bovenin "
+        add("Biebia's Industries Tower", "Het gebouw waar je de bril vindt: rondvliegen om de Biebia's Industries Tower. Let op het "
+                + "BIEBIA-logo van koperen lampen op de gevel, de lampjes langs elk terras, de kluis bovenin "
                 + "(donker, maar met hetzelfde ritme als de rest) en de blauwe lichtstraal uit de kroon.",
-                new Vec3(BIBIE_TOWER.getX() - 30, -20, BIBIE_TOWER.getZ() + 20), -90, 10, s -> {
+                new Vec3(BIEBIA_TOWER.getX() - 30, -20, BIEBIA_TOWER.getZ() + 20), -90, 10, s -> {
             Vec3 centre = towerCentre();
             double[][] around = {{-30, 20}, {20, -45}, {70, 20}, {20, 85}};
             for (double[] spot : around) {
-                double x = BIBIE_TOWER.getX() + spot[0];
-                double z = BIBIE_TOWER.getZ() + spot[1];
+                double x = BIEBIA_TOWER.getX() + spot[0];
+                double z = BIEBIA_TOWER.getZ() + spot[1];
                 double y = -10;
                 float yaw = (float) Math.toDegrees(Math.atan2(-(centre.x - x), centre.z - z));
                 s.view(0, x, y, z, yaw, 5).pause(80);
@@ -1062,18 +1062,18 @@ final class ShowcaseFeatures {
             s.view(0, centre.x, 60, centre.z - 60, 0, 30).pause(80);
         });
 
-        add("Bibie's Industries Tower: laser corridor", "Binnen in de toren: de lasergang naar de kluis (acht rijen "
+        add("Biebia's Industries Tower: laser corridor", "Binnen in de toren: de lasergang naar de kluis (acht rijen "
                 + "rayshields). Ze draaien op stroom van een verborgen krachtcentrale een verdieping lager: "
                 + "daarna zie je het dichtgemetselde blok in de hoek en de kabels in het plafond. Knip je "
                 + "die door, dan gaan de lasers uit.", towerPoint(20.5, 68, 30.2), 180, 0, s -> s
                 .pause(120)
-                .view(0, BIBIE_TOWER.getX() + 22.5, BIBIE_TOWER.getY() + 57, BIBIE_TOWER.getZ() + 18.5, 180, 0)
+                .view(0, BIEBIA_TOWER.getX() + 22.5, BIEBIA_TOWER.getY() + 57, BIEBIA_TOWER.getZ() + 18.5, 180, 0)
                 .lookAt(10, towerPoint(27.5, 62, 12.5))
                 .pause(80)
                 .lookAt(10, towerPoint(21, 66.5, 14))
                 .pause(80));
 
-        add("Bibie's Industries Tower: floors", "Elke verdieping van binnen, van onder naar boven: lobby (receptie met "
+        add("Biebia's Industries Tower: floors", "Elke verdieping van binnen, van onder naar boven: lobby (receptie met "
                 + "logowand, vitrines, zithoeken, de glazen liftkoker), lab (watertanks, pakstelling, "
                 + "teslaspoel, werkbanken), archief, hangar (landingscirkel, dockingstations, hangardeur), "
                 + "woonverdieping, beveiliging (serverkasten, schermenwand, holotafel), lasergang, kluis, "
@@ -1085,34 +1085,34 @@ final class ShowcaseFeatures {
             int[] insets = {2, 4, 5, 6, 7, 8, 9, 9, 10, 10};
             for (int i = 0; i < floors.length; i++) {
                 double corner = 41 - 1 - insets[i] - 1.5;
-                s.title(0, names[i], "").view(0, BIBIE_TOWER.getX() + corner, BIBIE_TOWER.getY() + floors[i] + 1,
-                        BIBIE_TOWER.getZ() + corner, 135, 12).pause(70);
+                s.title(0, names[i], "").view(0, BIEBIA_TOWER.getX() + corner, BIEBIA_TOWER.getY() + floors[i] + 1,
+                        BIEBIA_TOWER.getZ() + corner, 135, 12).pause(70);
             }
         });
 
-        add("Bibie's Industries Tower: vault trap", "De val in de kluis: voor de kluiskist ligt een drukplaat, met in de "
+        add("Biebia's Industries Tower: vault trap", "De val in de kluis: voor de kluiskist ligt een drukplaat, met in de "
                 + "vloer eromheen vier laserzenders die omhoog kijken. Stap je erop, dan schieten er vier rode "
                 + "laserzuilen tot aan het plafond: je staat in een kooi. Eruit door een zender uit de vloer "
                 + "te hakken, of door de stroom af te snijden (ze hangen aan de krachtcentrale).",
                 towerPoint(20.5, 79, 13.5), 0, 15, s -> s
                 .pause(60)
-                .stand(0, BIBIE_TOWER.getX() + 20.5, BIBIE_TOWER.getY() + 79.1, BIBIE_TOWER.getZ() + 23.5, 0, 10)
+                .stand(0, BIEBIA_TOWER.getX() + 20.5, BIEBIA_TOWER.getY() + 79.1, BIEBIA_TOWER.getZ() + 23.5, 0, 10)
                 .pause(60)
                 .look(30, 0, -55)
                 .pause(60)
-                .view(20, BIBIE_TOWER.getX() + 20.5, BIBIE_TOWER.getY() + 80, BIBIE_TOWER.getZ() + 15.5, 0, 25)
+                .view(20, BIEBIA_TOWER.getX() + 20.5, BIEBIA_TOWER.getY() + 80, BIEBIA_TOWER.getZ() + 15.5, 0, 25)
                 .pause(80));
 
-        add("Bibie's Industries Tower: security and hack", "De beveiliging van de toren, in survival. Je staat op de "
+        add("Biebia's Industries Tower: security and hack", "De beveiliging van de toren, in survival. Je staat op de "
                 + "beveiligingsverdieping naast de Security Core (de serverkast met het rode lampje, in de rij "
                 + "serverkasten). De kern stuurt vier beveiligingsdrones met rode lampjes de lucht in, en die en de "
                 + "beveiligingstorentjes schieten op je (hier ben je onkwetsbaar). Dan klik je met de Hacking Laptop op "
                 + "de kern: de laptop staat opengeklapt bovenop de kern, het alarm gaat af en de terminal gaat open "
-                + "(hier speelt hij zichzelf): de open poort zoeken, het wachtwoord raden, Bibie's README lezen, en in "
+                + "(hier speelt hij zichzelf): de open poort zoeken, het wachtwoord raden, Biebia's README lezen, en in "
                 + "de console van het beveiligingsprogramma de waakhond uit en jezelf eigenaar. Halverwege gaat het "
                 + "scherm even dicht (Esc) en weer open: je gaat verder waar je was. Daarna is de toren van jou: het "
                 + "lampje wordt groen, de drones worden blauw en laten je met rust, en je krijgt de laptop terug.", GameType.SURVIVAL, towerPoint(12.5, 57, 20.5), 90, 12, s -> {
-            BlockPos core = BIBIE_TOWER.offset(10, 57, 20);
+            BlockPos core = BIEBIA_TOWER.offset(10, 57, 20);
             s.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.clearOwner();
@@ -1137,12 +1137,12 @@ final class ShowcaseFeatures {
         add("Security OS desktop", "De Security OS-desktop op de beveiligingskern (hier is de toren van jou). "
                 + "Rechtsklik met een lege hand op de kern opent hem: sleepbare vensters, icoontjes links en een "
                 + "taakbalk. Achter elkaar: Files met de map /etc (security.conf is een systeembestand: SYS, "
-                + "verplaatsen en hernoemen mag, weggooien niet), Bibie's map met het rechtsklik-menu (Open, "
+                + "verplaatsen en hernoemen mag, weggooien niet), Biebia's map met het rechtsklik-menu (Open, "
                 + "Rename, Delete, Mark as trap), zijn notitie in Notes, dan Devices (de torentjes, drones, "
                 + "laserpoorten en camera's van de toren, met hun status en schakelaars), Access (monsters en "
                 + "spelers aanvallen, vertrouwde spelers) en Logs (wat er op het systeem gebeurde).",
                 towerPoint(12.5, 57, 20.5), 90, 12, s -> {
-            BlockPos core = BIBIE_TOWER.offset(10, 57, 20);
+            BlockPos core = BIEBIA_TOWER.offset(10, 57, 20);
             s.onServer(0, player -> {
                 claimTowerCore(player, core);
                 com.senne.imttech.security.os.SecurityOs.open(player, core);
@@ -1150,11 +1150,11 @@ final class ShowcaseFeatures {
                     .pause(60)
                     .step(0, () -> desktop(os -> os.tourFiles("/etc", "/etc/security.conf", false)))
                     .pause(90)
-                    .step(0, () -> desktop(os -> os.tourFiles("/home/bibie", "/home/bibie/notes.txt", true)))
+                    .step(0, () -> desktop(os -> os.tourFiles("/home/biebia", "/home/biebia/notes.txt", true)))
                     .pause(80)
                     .onServer(0, player -> {
                         net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
-                        args.putString("path", "/home/bibie/notes.txt");
+                        args.putString("path", "/home/biebia/notes.txt");
                         com.senne.imttech.security.os.SecurityOs.handleAction(player,
                                 new com.senne.imttech.network.OsActionPayload(core, "fs_open", args));
                     })
@@ -1175,9 +1175,9 @@ final class ShowcaseFeatures {
                 + "terug (dat kan met de pijltjes of door het beeld te slepen). Daarna gaan de camera's uit "
                 + "(Devices > Cameras): overal NO SIGNAL. Tot slot een camera van dichtbij, aan het plafond: een wit "
                 + "huisje met een rode streep.", towerPoint(12.5, 57, 20.5), 90, 12, s -> {
-            BlockPos core = BIBIE_TOWER.offset(10, 57, 20);
-            BlockPos lobby = BIBIE_TOWER.offset(25, 7, 14);
-            BlockPos vault = BIBIE_TOWER.offset(20, 82, 10);
+            BlockPos core = BIEBIA_TOWER.offset(10, 57, 20);
+            BlockPos lobby = BIEBIA_TOWER.offset(25, 7, 14);
+            BlockPos vault = BIEBIA_TOWER.offset(20, 82, 10);
             s.onServer(0, player -> {
                 claimTowerCore(player, core);
                 networkSwitch(player, core, "cameras", true);
@@ -1363,7 +1363,7 @@ final class ShowcaseFeatures {
                 + "raster op elke blokrand. Dan de Zone Marker in je hand: een oranje doos (een schuurtje aan de "
                 + "oostkant) en boven elke kubus zijn nummer; die doos wordt kubus 3. Daarna de app Zone op de desktop "
                 + "(de kaart van bovenaf, de getallen, per kant - en +). De stroom valt uit: de rand wordt rood "
-                + "(niemand beschermt nu), en weer blauw. Dan is de basis van iemand anders (Pepper): jij ziet de rand "
+                + "(niemand beschermt nu), en weer blauw. Dan is de basis van iemand anders (Lotte): jij ziet de rand "
                 + "niet meer. Je slaat op de muur: onderaan 'Protected zone' en een piepje, het blok breekt niet. Een "
                 + "steen neerzetten: lukt niet. Een ladder: lukt wel (klimmen mag altijd, net als in het echt).",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(-6, 0, -5)), -40, 8, s -> {
@@ -1403,8 +1403,8 @@ final class ShowcaseFeatures {
                     .pause(90)
                     .onServer(0, ShowcaseFeatures::powerZoneBase)
                     .pause(70)
-                    // De basis is van Pepper: jij bent hier een vreemde.
-                    .onServer(0, ShowcaseFeatures::giveZoneBaseToPepper)
+                    // De basis is van Lotte: jij bent hier een vreemde.
+                    .onServer(0, ShowcaseFeatures::giveZoneBaseToLotte)
                     .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 180, 0)
                     .pause(50)
                     .tap(0, () -> Minecraft.getInstance().options.keyAttack)
@@ -1423,7 +1423,7 @@ final class ShowcaseFeatures {
         add("C4", "Hoofdstuk 10: C4 (in survival). Eerst ben jij de eigenaar van de basis: iemand plakt C4 op je muur. "
                 + "I.M.T zegt waar ('C4 planted at your zone', zonder naam) en je ziet een knipperend rood bordje "
                 + "'C4!'. Met een schaar knip je de draad door: hij valt eruit, jij hebt hem nu. Dan ben je de inbreker "
-                + "(de basis is van Pepper). Je zet de timer op 0:05 (rechtsklik in de lucht), plakt hem op de muur: hij "
+                + "(de basis is van Lotte). Je zet de timer op 0:05 (rechtsklik in de lucht), plakt hem op de muur: hij "
                 + "piept steeds sneller, telt af op zijn schermpje, en blaast een gat van drie hoog in de stenen muur, "
                 + "met barsten eromheen. Daarna de obsidiaan muur aan de westkant: met remote C4 en de detonator (rode "
                 + "bordjes boven je ladingen). Na de eerste en tweede klap staat het obsidiaan er nog (barsten zie je "
@@ -1451,8 +1451,8 @@ final class ShowcaseFeatures {
                     .pause(30)
                     .tap(0, () -> Minecraft.getInstance().options.keyUse)
                     .pause(60)
-                    // Nu ben jij de inbreker: de basis is van Pepper.
-                    .onServer(0, ShowcaseFeatures::giveZoneBaseToPepper)
+                    // Nu ben jij de inbreker: de basis is van Lotte.
+                    .onServer(0, ShowcaseFeatures::giveZoneBaseToLotte)
                     .onServer(0, player -> {
                         ItemStack c4 = new ItemStack(ModItems.TIMED_C4.get());
                         c4.set(com.senne.imttech.registry.ModDataComponents.C4_TIMER.get(), 5);
@@ -1550,10 +1550,10 @@ final class ShowcaseFeatures {
                 + "alles rood). Het pad wordt groen, de lezer leest een nagemaakte kaart, en de deur gaat 3 seconden "
                 + "open. Dan het codepaneel: je veegt poeder over de toetsen (lichtgele afdrukken op 1, 2, 3 en 4) en "
                 + "raadt de volgorde; rechts zie je hoeveel er goed stonden en hoeveel volgordes er nog kunnen. Bij "
-                + "de vierde poging: CODE CRACKED 4321, en de lamp gaat aan. Dan zakkenrollen bij Happy: je sluipt "
+                + "de vierde poging: CODE CRACKED 4321, en de lamp gaat aan. Dan zakkenrollen bij Seppe: je sluipt "
                 + "achter hem, en in zijn zak liggen drie kaarten tussen rommel. Je schuift de rommel opzij en trekt "
                 + "een kaart naar boven (de meter NOTICED loopt wat op): hij draait om en je ziet welke het is, en hij "
-                + "zit in je hotbar. De tweede keer draait Happy zich om terwijl jij in zijn zak zit: CAUGHT!, en jij "
+                + "zit in je hotbar. De tweede keer draait Seppe zich om terwijl jij in zijn zak zit: CAUGHT!, en jij "
                 + "licht op.",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
             BlockPos reader = LOGIC_LAB.offset(1, 1, 7);
@@ -1583,7 +1583,7 @@ final class ShowcaseFeatures {
                     .step(0, () -> com.senne.imttech.client.bypass.FingerprintScreen.autoPlay = false)
                     .close(0)
                     .pause(40)
-                    // Zakkenrollen bij Happy: sluipend achter hem, rommel opzij, een kaart eruit.
+                    // Zakkenrollen bij Seppe: sluipend achter hem, rommel opzij, een kaart eruit.
                     .onServer(0, ShowcaseFeatures::fillHappysPockets)
                     .stand(0, FRIEND_SPOT.getX() + 0.5, FRIEND_SPOT.getY(), FRIEND_SPOT.getZ() + 1.9, 180, 25)
                     .key(10, () -> Minecraft.getInstance().options.keyShift, true)
@@ -1593,7 +1593,7 @@ final class ShowcaseFeatures {
                     .pause(200)
                     .step(0, () -> com.senne.imttech.client.pickpocket.PocketScreen.autoPlay = false)
                     .close(0)
-                    // Nog een keer, maar nu draait Happy zich om: betrapt.
+                    // Nog een keer, maar nu draait Seppe zich om: betrapt.
                     .onServer(30, player -> {
                         com.senne.imttech.pickpocket.Pickpocket.clear();
                         pickHappysPocket(player);
@@ -1938,11 +1938,11 @@ final class ShowcaseFeatures {
                     .pause(160);
         });
 
-        add("Training", "Hoofdstuk 26: training zoals de clones op Kamino. In de werkplaats staat nu vooraan links een Training "
+        add("Training", "Hoofdstuk 26: training zoals in een trainingskamp. In de werkplaats staat nu vooraan links een Training "
                 + "Start-blok, en achteraan een Training Goal-blok (een geblokte finishvlag) met links een Training End-blok (met "
                 + "een redstonelamp erop) en rechts een donkere Super Battle-robot (squad Wave 2). Links en rechts in het midden "
                 + "staan twee witte Trainer-robots (squad Wave 1). Alle robots staan uit. Eerst het instelscherm van Start (sneak + "
-                + "klik): naam Kamino, Training shots, 5 lives, geen tijdslimiet. Dan de mini-editor van End: when trainee_hit: "
+                + "klik): naam Bootcamp, Training shots, 5 lives, geen tijdslimiet. Dan de mini-editor van End: when trainee_hit: "
                 + "say(\"You're hit, cadet\"). Dan klik jij op Start (in survival): I.M.T telt af (3, 2, 1, go!; met Voice "
                 + "text uit hoor je het alleen) en je diagram Waves zegt 'Good luck' en zet Wave 1 aan. De Trainers schieten alleen "
                 + "op de trainee: geen schade, maar een blauwe flits rond je lijf, een 'zap', je bent even trager en een leven eraf "
@@ -1997,8 +1997,8 @@ final class ShowcaseFeatures {
                     .close(10);
         });
 
-        add("Bibie's Industries Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes Drone Docks "
-                + "langs de muur; op vier staan de security drones die Bibie programmeerde (hoofdstuk 25: Tower drone 1 tot 4, "
+        add("Biebia's Industries Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes Drone Docks "
+                + "langs de muur; op vier staan de security drones die Biebia programmeerde (hoofdstuk 25: Tower drone 1 tot 4, "
                 + "programma Tower patrol, met Scan, Face Recognition, Laser en Pathfinding). Na de hack zijn ze van jou: ze "
                 + "stijgen op en vliegen hun rondjes door de hangar, en op jou schieten ze niet. (Zonder eigen server in de "
                 + "toren hebben ze geen verbinding, en dan schieten ze op niemand.) Dan het dak: in het harnas stijg je op, en de "
@@ -2006,7 +2006,7 @@ final class ShowcaseFeatures {
                 + "gestippeld vierkant). Je daalt op het platform: I.M.T zegt 'Welcome home', en je bril "
                 + "laadt op (kijk naar het percentage linksboven).", GameType.SURVIVAL,
                 towerPoint(20.5, 34, 17.5), 180, 8, s -> {
-            BlockPos core = BIBIE_TOWER.offset(10, 57, 20);
+            BlockPos core = BIEBIA_TOWER.offset(10, 57, 20);
             Vec3 pad = towerPoint(35.5, 100, 20.5);
             s.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
@@ -2021,7 +2021,7 @@ final class ShowcaseFeatures {
                         ImtData.setEnergy(ImtData.getWornGlasses(player),
                                 ImtData.getMaxEnergy(ImtData.getWornGlasses(player)) / 3);
                     })
-                    .stand(0, BIBIE_TOWER.getX() + 24.5, BIBIE_TOWER.getY() + 100, BIBIE_TOWER.getZ() + 12.5, 90, 0)
+                    .stand(0, BIEBIA_TOWER.getX() + 24.5, BIEBIA_TOWER.getY() + 100, BIEBIA_TOWER.getZ() + 12.5, 90, 0)
                     .key(30, () -> Minecraft.getInstance().options.keyJump, true)
                     .key(2, () -> Minecraft.getInstance().options.keyJump, false)
                     .key(2, () -> Minecraft.getInstance().options.keyJump, true)
@@ -2035,7 +2035,7 @@ final class ShowcaseFeatures {
                     .pause(80);
         });
 
-        add("Crashed satellite", "Een nieuwe structuur: het wrak van een oude Bibie's Industries-satelliet in een krater. "
+        add("Crashed satellite", "Een nieuwe structuur: het wrak van een oude Biebia's Industries-satelliet in een krater. "
                 + "Eerst van boven: de rook (blauw uit de romp, van de reactor), de voor aan de oostkant waar hij "
                 + "binnenkwam, het zonnepaneel dat nog schuin omhoog steekt, het afgebroken paneel op de helling, "
                 + "de schotel op de noordhelling en overal brokstukken. Dan open je de zwarte doos in de romp: "
@@ -2061,18 +2061,18 @@ final class ShowcaseFeatures {
                     .close(0);
         });
 
-        add("Bibie's Industries bunker", "De geheime Hydra-basis, uitgehakt in een berg (Winter Soldier). In een echte "
+        add("Biebia's Industries bunker", "De geheime Raven-basis, uitgehakt in een berg (Winter Soldier). In een echte "
                 + "wereld zoekt de mod een steile helling in de bergen; hier staat hij in een zelfgebouwde berg. "
-                + "Buiten: de betonnen gevel met het rode embleem en twee Hydra-torentjes. Binnen: de gang met "
+                + "Buiten: de betonnen gevel met het rode embleem en twee Raven-torentjes. Binnen: de gang met "
                 + "een controlepost, de grote hal (zuilen, kratten, vaandels, soldaten, een torentje achterin), "
                 + "de reactorkamer (twee warmtegeneratoren in lava; hun kabel loopt over het plafond van de hal "
-                + "naar achteren), de kluisgang met twee rode laserwanden, en de kluis met Hydra-onderdelen en "
+                + "naar achteren), de kluisgang met twee rode laserwanden, en de kluis met Raven-onderdelen en "
                 + "een cryo-cel. De laserwanden gaan uit als je de generatoren sloopt of de kabel doorknipt. "
                 + "Hier in creative laten de soldaten en torentjes je met rust. Vinden doe je hem door te "
                 + "zoeken in de bergen (er ligt geen kaart meer in het satellietwrak).",
-                new Vec3(BIBIE_BUNKER.getX() + 0.5, -52, BIBIE_BUNKER.getZ() - 22), 0, 12, s -> {
-            BlockPos b = BIBIE_BUNKER;
-            s.onServer(0, player -> DevWorld.placeBibieBunker(player.serverLevel(), b))
+                new Vec3(BIEBIA_BUNKER.getX() + 0.5, -52, BIEBIA_BUNKER.getZ() - 22), 0, 12, s -> {
+            BlockPos b = BIEBIA_BUNKER;
+            s.onServer(0, player -> DevWorld.placeBiebiaBunker(player.serverLevel(), b))
                     .pause(70)
                     .view(0, b.getX() + 0.5, b.getY() + 1, b.getZ() - 3.5, 0, 8)
                     .pause(60)
@@ -2115,7 +2115,7 @@ final class ShowcaseFeatures {
                 }
             });
             for (String said : new String[] {"hoeveel energie heb ik nog", "zet nachtzicht aan en scan naar ertsen",
-                    "onthoud dat mijn basis Bibie Hoeve heet", "hoe heet mijn basis?", "doe iets met de ding",
+                    "onthoud dat mijn basis Biebia Hoeve heet", "hoe heet mijn basis?", "doe iets met de ding",
                     "what time is it and is it going to rain"}) {
                 s.step(0, () -> {
                     if (com.senne.imttech.client.voice.ImtBrain.mode() == com.senne.imttech.client.voice.BrainMode.LOCAL) {
@@ -2135,7 +2135,7 @@ final class ShowcaseFeatures {
                 .pause(120)
                 .close(0));
 
-        add("Advancements", "De prestaties onder 'Bibie's Industries': de rode draad door de mod.",
+        add("Advancements", "De prestaties onder 'Biebia's Industries': de rode draad door de mod.",
                 start, 180, 0, s -> s
                 .step(10, ShowcaseFeatures::openAdvancements)
                 .pause(140)
@@ -2263,9 +2263,9 @@ final class ShowcaseFeatures {
         return new Vec3(pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5);
     }
 
-    /** Een punt in de Bibie's Industries Tower, gemeten vanaf de hoek van het gebouw (zoals in generate_structure.py). */
+    /** Een punt in de Biebia's Industries Tower, gemeten vanaf de hoek van het gebouw (zoals in generate_structure.py). */
     private static Vec3 towerPoint(double x, double y, double z) {
-        return new Vec3(BIBIE_TOWER.getX() + x, BIBIE_TOWER.getY() + y, BIBIE_TOWER.getZ() + z);
+        return new Vec3(BIEBIA_TOWER.getX() + x, BIEBIA_TOWER.getY() + y, BIEBIA_TOWER.getZ() + z);
     }
 
     /**
@@ -2276,7 +2276,7 @@ final class ShowcaseFeatures {
         if (player.serverLevel().getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
             be.setOwner(player);
             be.ensureSystem(player.serverLevel());
-            be.setPassword("jarvis1", player.serverLevel().random);
+            be.setPassword("bitech1", player.serverLevel().random);
         }
     }
 
@@ -2430,46 +2430,46 @@ final class ShowcaseFeatures {
     }
 
     /**
-     * Happy kijkt naar het noorden en heeft keycards in zijn zakken: twee beschreven kaarten en twee lege, en
+     * Seppe kijkt naar het noorden en heeft keycards in zijn zakken: twee beschreven kaarten en twee lege, en
      * in zijn hand een koekje (dat zit niet in een zak). Jij hebt een lege hand.
      */
     static void fillHappysPockets(net.minecraft.server.level.ServerPlayer player) {
-        net.minecraft.server.level.ServerPlayer happy = ShowcaseScene.friend(player);
+        net.minecraft.server.level.ServerPlayer seppe = ShowcaseScene.friend(player);
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-        if (happy == null) {
+        if (seppe == null) {
             return;
         }
-        var inventory = happy.getInventory();
+        var inventory = seppe.getInventory();
         inventory.selected = 0;
         inventory.setItem(0, new ItemStack(Items.COOKIE));
-        String[][] cards = {{"9", "Bibie's Industries Tower", "5"}, {"10", "Garage", "2"}};
+        String[][] cards = {{"9", "Biebia's Industries Tower", "5"}, {"10", "Garage", "2"}};
         for (String[] card : cards) {
             ItemStack stack = new ItemStack(ModItems.KEYCARD.get());
             com.senne.imttech.logic.KeycardItem.write(stack, new com.senne.imttech.logic.KeycardData(
-                    "10.0.0.7", "happy-net", 1000 + Integer.parseInt(card[0]), Integer.parseInt(card[2]), card[1]));
+                    "10.0.0.7", "seppe-net", 1000 + Integer.parseInt(card[0]), Integer.parseInt(card[2]), card[1]));
             inventory.setItem(Integer.parseInt(card[0]), stack);
         }
         inventory.setItem(11, new ItemStack(ModItems.KEYCARD.get(), 2));
         turnHappy(player, 180);
     }
 
-    /** Opent de zak van Happy (jij staat achter hem). */
+    /** Opent de zak van Seppe (jij staat achter hem). */
     static void pickHappysPocket(net.minecraft.server.level.ServerPlayer player) {
-        net.minecraft.server.level.ServerPlayer happy = ShowcaseScene.friend(player);
-        if (happy != null) {
-            com.senne.imttech.pickpocket.Pickpocket.tryStart(player, happy);
+        net.minecraft.server.level.ServerPlayer seppe = ShowcaseScene.friend(player);
+        if (seppe != null) {
+            com.senne.imttech.pickpocket.Pickpocket.tryStart(player, seppe);
         }
     }
 
-    /** Laat Happy deze kant op kijken (0 = zuid, naar jou toe; 180 = noord), ook met zijn hoofd. */
+    /** Laat Seppe deze kant op kijken (0 = zuid, naar jou toe; 180 = noord), ook met zijn hoofd. */
     static void turnHappy(net.minecraft.server.level.ServerPlayer player, float yaw) {
-        net.minecraft.server.level.ServerPlayer happy = ShowcaseScene.friend(player);
-        if (happy != null) {
-            happy.setYRot(yaw);
-            happy.setYHeadRot(yaw);
-            happy.yHeadRotO = yaw;
-            happy.yRotO = yaw;
-            happy.setXRot(0);
+        net.minecraft.server.level.ServerPlayer seppe = ShowcaseScene.friend(player);
+        if (seppe != null) {
+            seppe.setYRot(yaw);
+            seppe.setYHeadRot(yaw);
+            seppe.yHeadRotO = yaw;
+            seppe.yRotO = yaw;
+            seppe.setXRot(0);
         }
     }
 
@@ -2547,14 +2547,14 @@ final class ShowcaseFeatures {
     }
 
     /**
-     * De basis is nu van Pepper (een speler die niet online is): jij bent er een vreemde. De zone blijft
+     * De basis is nu van Lotte (een speler die niet online is): jij bent er een vreemde. De zone blijft
      * werken, ook als de eigenaar offline is. (Geen nep-speler die inlogt: een tweede keer inloggen met
      * dezelfde naam laat NeoForge struikelen.)
      */
-    static void giveZoneBaseToPepper(ServerPlayer player) {
+    static void giveZoneBaseToLotte(ServerPlayer player) {
         com.senne.imttech.security.SecurityCoreBlockEntity core = zoneCore(player);
         if (core != null) {
-            core.setOwner(java.util.UUID.nameUUIDFromBytes("dev-Pepper".getBytes()), "Pepper");
+            core.setOwner(java.util.UUID.nameUUIDFromBytes("dev-Lotte".getBytes()), "Lotte");
             core.resetAccessForNewOwner();
         }
     }
@@ -2876,18 +2876,18 @@ final class ShowcaseFeatures {
     }
 
     /**
-     * Bibie's drones in de hangar van de toren (hoofdstuk 25), van deze speler: weg met die van een vorige keer, de docks
+     * Biebia's drones in de hangar van de toren (hoofdstuk 25), van deze speler: weg met die van een vorige keer, de docks
      * weer vrij, de kern zet er nieuwe op, en ze zijn van jou (alsof je de toren net gehackt hebt).
      */
     private static void towerDrones(net.minecraft.server.level.ServerPlayer player,
                                     com.senne.imttech.security.SecurityCoreBlockEntity core) {
         ServerLevel level = player.serverLevel();
-        net.minecraft.world.phys.AABB tower = new net.minecraft.world.phys.AABB(BIBIE_TOWER).expandTowards(41, 110, 55);
+        net.minecraft.world.phys.AABB tower = new net.minecraft.world.phys.AABB(BIEBIA_TOWER).expandTowards(41, 110, 55);
         for (com.senne.imttech.robot.GuardDroneEntity old : level.getEntitiesOfClass(com.senne.imttech.robot.GuardDroneEntity.class, tower)) {
             old.discard();
         }
         for (int x = 10; x <= 30; x += 4) {
-            if (level.getBlockEntity(BIBIE_TOWER.offset(x, 34, 7)) instanceof com.senne.imttech.arsenal.DroneDockBlockEntity dock) {
+            if (level.getBlockEntity(BIEBIA_TOWER.offset(x, 34, 7)) instanceof com.senne.imttech.arsenal.DroneDockBlockEntity dock) {
                 dock.setBot(null);
             }
         }
@@ -2909,7 +2909,7 @@ final class ShowcaseFeatures {
             """;
 
     /**
-     * Voor "Training" (hoofdstuk 26), in de werkplaats: vooraan links een Training Start-blok (Kamino, trainingsschoten, 5
+     * Voor "Training" (hoofdstuk 26), in de werkplaats: vooraan links een Training Start-blok (Bootcamp, trainingsschoten, 5
      * levens); achteraan een Training Goal-blok, links ervan een Training End-blok met een redstonelamp erop en rechts een
      * Super Battle in squad "Wave 2"; in het midden links en rechts twee Trainer-robots in squad "Wave 1" (alle drie uit,
      * met Scan, Face Recognition en Laser); en het diagram Waves.
@@ -2924,7 +2924,7 @@ final class ShowcaseFeatures {
         level.setBlockAndUpdate(start, ModBlocks.TRAINING_START.get().defaultBlockState());
         if (level.getBlockEntity(start) instanceof com.senne.imttech.training.TrainingStartBlockEntity be) {
             be.setOwner(player);
-            be.setSettings(new com.senne.imttech.training.Training.Settings("Kamino",
+            be.setSettings(new com.senne.imttech.training.Training.Settings("Bootcamp",
                     com.senne.imttech.training.Training.Mode.TRAINING_SHOTS, 5, 0));
         }
         BlockPos end = ROBOT_BAY.offset(3, 0, 0);
@@ -2957,7 +2957,7 @@ final class ShowcaseFeatures {
         }
         if (level.getBlockEntity(ROBOT_BAY.offset(10, 0, 6)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
             core.logic().put(null, program("Waves", """
-                    when training_started("Kamino"):
+                    when training_started("Bootcamp"):
                         say("Good luck, " + trainee)
                         activate("Wave 1")
 
@@ -3185,9 +3185,9 @@ final class ShowcaseFeatures {
                 {"Satellite strike", "", ModSounds.SATELLITE_FIRE},
                 {"Message", "comms", ModSounds.COMMS_MESSAGE},
                 {"Ping", "comms", ModSounds.COMMS_PING},
-                {"Repulsor on", "", ModSounds.REPULSOR_ARM},
-                {"Repulsor shot", "", ModSounds.REPULSOR_FIRE},
-                {"Repulsor off", "", ModSounds.REPULSOR_DISARM},
+                {"Laser cannon on", "", ModSounds.LASER_CANNON_ARM},
+                {"Laser cannon shot", "", ModSounds.LASER_CANNON_FIRE},
+                {"Laser cannon off", "", ModSounds.LASER_CANNON_DISARM},
                 {"Boot", "putting the glasses on", ModSounds.IMT_BOOT},
                 {"Boot step", "loading bar", ModSounds.IMT_BLIP},
                 {"Identity confirmed", "", ModSounds.IMT_CONFIRM},
@@ -3205,7 +3205,7 @@ final class ShowcaseFeatures {
     }
 
     private static Vec3 towerCentre() {
-        return new Vec3(BIBIE_TOWER.getX() + 20.5, BIBIE_TOWER.getY() + 20, BIBIE_TOWER.getZ() + 20.5);
+        return new Vec3(BIEBIA_TOWER.getX() + 20.5, BIEBIA_TOWER.getY() + 20, BIEBIA_TOWER.getZ() + 20.5);
     }
 
     private static Supplier<KeyMapping> key(Supplier<KeyMapping> key) {
@@ -3299,7 +3299,7 @@ final class ShowcaseFeatures {
     }
 
     /**
-     * Happy heeft zijn bril vrijgegeven ("Transfer ownership") en jij zet hem op. Wie hem als
+     * Seppe heeft zijn bril vrijgegeven ("Transfer ownership") en jij zet hem op. Wie hem als
      * eerste opzet, wordt de nieuwe eigenaar.
      */
     private static void wearFriendsReleasedGlasses(ServerPlayer player) {
@@ -3347,11 +3347,11 @@ final class ShowcaseFeatures {
         }
     }
 
-    /** Twee Hydra-soldaten een eind voor je, met hun geweer, die jou als doelwit hebben. */
-    private static void spawnHydraSquad(ServerPlayer player) {
+    /** Twee Raven-soldaten een eind voor je, met hun geweer, die jou als doelwit hebben. */
+    private static void spawnRavenSquad(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         for (int side = -1; side <= 1; side += 2) {
-            HydraSoldierEntity soldier = com.senne.imttech.registry.ModEntities.HYDRA_SOLDIER.get().create(level);
+            RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
             if (soldier == null) {
                 continue;
             }
@@ -3440,7 +3440,7 @@ final class ShowcaseFeatures {
                 mc.options.operatorItemsTab().get()));
     }
 
-    /** Happy typt een commando (bijvoorbeeld een privébericht). */
+    /** Seppe typt een commando (bijvoorbeeld een privébericht). */
     private static void friendSays(ServerPlayer player, String command) {
         ServerPlayer friend = ShowcaseScene.friend(player);
         if (friend != null && player.getServer() != null) {
@@ -3472,7 +3472,7 @@ final class ShowcaseFeatures {
         mc.setScreen(null);
         KeyMapping.releaseAll();
         ImtKeys.ZOOM.setDown(false);
-        RepulsorControl.reset();
+        LaserCannonControl.reset();
         SuitFlight.reset();
         DroneCamera.exit();
         mc.options.setCameraType(CameraType.FIRST_PERSON);

@@ -159,27 +159,27 @@
       }
     ]
   },
-  "suit.repulsor_arm": {
-    "subtitle": "subtitles.imttech.suit.repulsor_arm",
+  "suit.laser_cannon_arm": {
+    "subtitle": "subtitles.imttech.suit.laser_cannon_arm",
     "sounds": [
       {
-        "name": "imttech:repulsor_arm"
+        "name": "imttech:laser_cannon_arm"
       }
     ]
   },
-  "suit.repulsor_disarm": {
-    "subtitle": "subtitles.imttech.suit.repulsor_disarm",
+  "suit.laser_cannon_disarm": {
+    "subtitle": "subtitles.imttech.suit.laser_cannon_disarm",
     "sounds": [
       {
-        "name": "imttech:repulsor_disarm"
+        "name": "imttech:laser_cannon_disarm"
       }
     ]
   },
-  "suit.repulsor_fire": {
-    "subtitle": "subtitles.imttech.suit.repulsor_fire",
+  "suit.laser_cannon_fire": {
+    "subtitle": "subtitles.imttech.suit.laser_cannon_fire",
     "sounds": [
       {
-        "name": "imttech:repulsor_fire"
+        "name": "imttech:laser_cannon_fire"
       }
     ]
   },

@@ -31,9 +31,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  *
  * 1. **Vanzelf.** Draag je de I.M.T-bril, dan ben je een doelwit. Om de zoveel tijd komt
  *    er een golf; hoe vaak precies staat in de serverconfig.
- * 2. **Omdat je erom vroeg.** Sloop je in een Bibie's Industries Tower, dan trek je aandacht. Genoeg
+ * 2. **Omdat je erom vroeg.** Sloop je in een Biebia's Industries Tower, dan trek je aandacht. Genoeg
  *    aandacht en ze komen meteen, zonder te wachten op de klok.
- * 3. **Omdat je bij het wrak komt.** Een neergestorte Bibie's Industries-satelliet zendt nog; zij luisteren
+ * 3. **Omdat je bij het wrak komt.** Een neergestorte Biebia's Industries-satelliet zendt nog; zij luisteren
  *    mee. Kom je er met de bril, dan duiken ze meteen naar beneden (hooguit eens per
  *    CRASH_SITE_COOLDOWN).
  *
@@ -43,10 +43,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class ImtRaids {
     private ImtRaids() {}
 
-    /** De Bibie's Industries Tower, om te herkennen dat je in hun gebouw staat te slopen. */
-    private static final ResourceKey<Structure> BIBIE_TOWER = ResourceKey.create(Registries.STRUCTURE,
-            ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "bibie_tower"));
-    /** Het wrak van een Bibie's Industries-satelliet (zie tools/generate_crash_site.py). */
+    /** De Biebia's Industries Tower, om te herkennen dat je in hun gebouw staat te slopen. */
+    private static final ResourceKey<Structure> BIEBIA_TOWER = ResourceKey.create(Registries.STRUCTURE,
+            ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "biebia_tower"));
+    /** Het wrak van een Biebia's Industries-satelliet (zie tools/generate_crash_site.py). */
     private static final ResourceKey<Structure> CRASHED_SATELLITE = ResourceKey.create(Registries.STRUCTURE,
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "crashed_satellite"));
 
@@ -135,10 +135,10 @@ public final class ImtRaids {
         watch.lastCooled = now;
     }
 
-    // ================================================================ Slopen in een Bibie's Industries Tower
+    // ================================================================ Slopen in een Biebia's Industries Tower
 
     /**
-     * Haal je een blok weg in een Bibie's Industries Tower, dan valt dat op. Doe je het vaak genoeg, dan
+     * Haal je een blok weg in een Biebia's Industries Tower, dan valt dat op. Doe je het vaak genoeg, dan
      * komen ze kijken.
      */
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
@@ -148,9 +148,9 @@ public final class ImtRaids {
         if (player.isCreative() || !(player.level() instanceof ServerLevel level)) {
             return;
         }
-        // Er is geen opzoeking op naam, dus vragen we het per structuur: is dit de Bibie's Industries Tower?
+        // Er is geen opzoeking op naam, dus vragen we het per structuur: is dit de Biebia's Industries Tower?
         if (!level.structureManager()
-                .getStructureWithPieceAt(event.getPos(), holder -> holder.is(BIBIE_TOWER)).isValid()) {
+                .getStructureWithPieceAt(event.getPos(), holder -> holder.is(BIEBIA_TOWER)).isValid()) {
             return;
         }
         long now = level.getGameTime();

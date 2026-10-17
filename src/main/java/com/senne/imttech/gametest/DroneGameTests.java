@@ -330,11 +330,11 @@ public final class DroneGameTests {
     }
 
     /**
-     * Bibie's drones (hoofdstuk 25): een Bibie's Industries Tower van niemand zet op vier van zijn zes hangar-docks een security drone,
+     * Biebia's drones (hoofdstuk 25): een Biebia's Industries Tower van niemand zet op vier van zijn zes hangar-docks een security drone,
      * aan, met Scan, Face Recognition, Laser en Pathfinding, en het programma "Tower patrol".
      */
-    @GameTest(template = "bibie_tower", timeoutTicks = 400, batch = "tower_drones")
-    public static void bibie_tower_has_bibie_drones(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 400, batch = "tower_drones")
+    public static void biebia_tower_has_biebia_drones(GameTestHelper helper) {
         // Welke drones al eens 2 blokken (plat gemeten) van hun dock vlogen: dan patrouilleren ze echt.
         java.util.Set<java.util.UUID> patrolled = new java.util.HashSet<>();
         helper.onEachTick(() -> {
@@ -355,7 +355,7 @@ public final class DroneGameTests {
             for (GuardDroneEntity drone : drones) {
                 String name = drone.getName().getString();
                 check(drone.owner() == null && drone.isActive(), name + " is van iemand, of staat uit");
-                check(drone.program() != null && drone.program().name().equals(TowerDrones.PROGRAM_NAME), name + " heeft Bibie's programma niet");
+                check(drone.program() != null && drone.program().name().equals(TowerDrones.PROGRAM_NAME), name + " heeft Biebia's programma niet");
                 check(drone.board().has(BotModule.SCAN) && drone.board().has(BotModule.LASER) && drone.board().has(BotModule.PATHFINDING),
                         name + " mist modules: " + drone.board());
                 check(drone.home() != null && helper.getLevel().getBlockState(drone.home()).is(ModBlocks.DRONE_DOCK.get()),
@@ -365,14 +365,14 @@ public final class DroneGameTests {
     }
 
     /**
-     * Een drone van Bibie schiet op een vreemde, ook zonder PvP (het is de toren die schiet). Het alarm (iemand hackt de
+     * Een drone van Biebia schiet op een vreemde, ook zonder PvP (het is de toren die schiet). Het alarm (iemand hackt de
      * kern) stuurt hem naar de indringer. Na de hack is hij van de hacker, en dan gelden diens regels: zonder PvP
      * schiet hij niet meer op spelers.
      */
     @GameTest(template = ARENA, timeoutTicks = 500, batch = "tower_drones")
-    public static void bibie_drone_shoots_strangers_until_hacked(GameTestHelper helper) {
+    public static void biebia_drone_shoots_strangers_until_hacked(GameTestHelper helper) {
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
-        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 13), "bibie-stranger");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 13), "biebia-stranger");
         GuardDroneEntity drone = drone(helper, new BlockPos(6, 3, 6), "when started:\n    pass\n");
         drone.setBoard(TowerDrones.board());
         drone.setProgram(TowerDrones.program());
@@ -385,14 +385,14 @@ public final class DroneGameTests {
             }
         });
         helper.runAfterDelay(80, () -> {
-            check(stranger.getHealth() < stranger.getMaxHealth(), "Bibie's drone schoot niet op een vreemde (zonder PvP)");
+            check(stranger.getHealth() < stranger.getMaxHealth(), "Biebia's drone schoot niet op een vreemde (zonder PvP)");
             stranger.setHealth(stranger.getMaxHealth());
             TowerDrones.alarm(helper.getLevel(), core, stranger);
             alarmed[0] = true;
         });
         helper.runAfterDelay(260, () -> {
             check(came[0], "Na het alarm kwam hij niet naar de indringer (hij hangt op " + drone.position() + ")");
-            ServerPlayer hacker = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 3), "bibie-hacker");
+            ServerPlayer hacker = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 3), "biebia-hacker");
             core.setOwner(hacker);
             TowerDrones.handOver(helper.getLevel(), core, hacker);
             check(hacker.getUUID().equals(drone.owner()), "Na de hack is de drone niet van de hacker");

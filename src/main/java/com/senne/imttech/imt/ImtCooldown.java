@@ -31,8 +31,8 @@ public enum ImtCooldown {
     REDSTONE,
     /** Muziek (Spotify). */
     MUSIC,
-    /** Een repulsorstoot uit het harnas. */
-    REPULSOR,
+    /** Een laserkanonschot uit het harnas. */
+    LASER_CANNON,
     /** Een salvo mini-raketten uit het harnas. */
     ROCKETS;
 

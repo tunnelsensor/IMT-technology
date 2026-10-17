@@ -45,9 +45,9 @@ public final class ModSounds {
     // Fase 3
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_MESSAGE = register("comms.message");
     // Het harnas: eigen geluiden (zie tools/generate_sounds.py)
-    public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_ARM = register("suit.repulsor_arm");
-    public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_DISARM = register("suit.repulsor_disarm");
-    public static final DeferredHolder<SoundEvent, SoundEvent> REPULSOR_FIRE = register("suit.repulsor_fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_CANNON_ARM = register("suit.laser_cannon_arm");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_CANNON_DISARM = register("suit.laser_cannon_disarm");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_CANNON_FIRE = register("suit.laser_cannon_fire");
     /** De stuwraketten, als lus zolang je vliegt. */
     public static final DeferredHolder<SoundEvent, SoundEvent> SUIT_THRUSTER = register("suit.thruster");
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_PING = register("comms.ping");

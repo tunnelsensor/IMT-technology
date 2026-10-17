@@ -12,8 +12,8 @@ import net.minecraft.util.StringRepresentable;
  *
  * - ROCKET:    jouw torentje. Raketten als munitie. Schiet op monsters (en spelers alleen met
  *             PvP, nooit jou of je team).
- * - HYDRA:    in de Bibie's Industries-bunker (stroom van de reactor). Schiet op spelers en drones.
- * - SECURITY: in de Bibie's Industries Tower (stroom van de krachtcentrale). Schiet op indringers, en wie
+ * - RAVEN:    in de Biebia's Industries-bunker (stroom van de reactor). Schiet op spelers en drones.
+ * - SECURITY: in de Biebia's Industries Tower (stroom van de krachtcentrale). Schiet op indringers, en wie
  *             dat is, zegt de beveiligingskern van de toren (zie SecurityCores).
  *
  * ALLE torentjes hebben stroom van het net nodig (jouw wens, 27 september): zonder stroom
@@ -22,7 +22,7 @@ import net.minecraft.util.StringRepresentable;
  */
 public enum TurretKind implements StringRepresentable {
     ROCKET,
-    HYDRA,
+    RAVEN,
     SECURITY;
 
     public static final Codec<TurretKind> CODEC = StringRepresentable.fromEnum(TurretKind::values);
@@ -40,7 +40,7 @@ public enum TurretKind implements StringRepresentable {
     public double range() {
         return switch (this) {
             case ROCKET -> ImtConfig.Turrets.RANGE;
-            case HYDRA -> ImtConfig.Turrets.HYDRA_RANGE;
+            case RAVEN -> ImtConfig.Turrets.RAVEN_RANGE;
             case SECURITY -> ImtConfig.Turrets.SECURITY_RANGE;
         };
     }
@@ -48,7 +48,7 @@ public enum TurretKind implements StringRepresentable {
     public float laserDamage() {
         return switch (this) {
             case ROCKET -> ImtConfig.Turrets.LASER_DAMAGE;
-            case HYDRA -> ImtConfig.Turrets.HYDRA_LASER_DAMAGE;
+            case RAVEN -> ImtConfig.Turrets.RAVEN_LASER_DAMAGE;
             case SECURITY -> ImtConfig.Turrets.SECURITY_LASER_DAMAGE;
         };
     }
@@ -56,18 +56,18 @@ public enum TurretKind implements StringRepresentable {
     public int laserInterval() {
         return switch (this) {
             case ROCKET -> Math.round(ImtConfig.Turrets.LASER_INTERVAL);
-            case HYDRA -> Math.round(ImtConfig.Turrets.HYDRA_LASER_INTERVAL);
+            case RAVEN -> Math.round(ImtConfig.Turrets.RAVEN_LASER_INTERVAL);
             case SECURITY -> Math.round(ImtConfig.Turrets.SECURITY_LASER_INTERVAL);
         };
     }
 
-    /** Blauw voor I.M.T-tech, rood voor Hydra. */
+    /** Blauw voor I.M.T-tech, rood voor Raven. */
     public BeamEffectPayload.Kind beam() {
-        return this == HYDRA ? BeamEffectPayload.Kind.HYDRA_LASER : BeamEffectPayload.Kind.DRONE_LASER;
+        return this == RAVEN ? BeamEffectPayload.Kind.RAVEN_LASER : BeamEffectPayload.Kind.DRONE_LASER;
     }
 
-    /** Hoe hoog het schot klinkt (Hydra lager en grommiger). */
+    /** Hoe hoog het schot klinkt (Raven lager en grommiger). */
     public float pitch() {
-        return this == HYDRA ? 0.7f : 1.2f;
+        return this == RAVEN ? 0.7f : 1.2f;
     }
 }

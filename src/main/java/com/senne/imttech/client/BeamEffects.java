@@ -28,8 +28,8 @@ public final class BeamEffects {
     private static final DustParticleOptions LASER = new DustParticleOptions(color(0x7FE8FF), 0.6f);
     private static final DustParticleOptions TARGETING = new DustParticleOptions(color(0xFF3030), 1.0f);
     private static final DustParticleOptions SWEEP = new DustParticleOptions(color(0xFF7A1F), 2.0f);
-    private static final DustParticleOptions HYDRA = new DustParticleOptions(color(0xFF2A1A), 0.7f);
-    /** De laser van een guard robot: oranjerood, iets dikker dan die van een Hydra-soldaat. */
+    private static final DustParticleOptions RAVEN = new DustParticleOptions(color(0xFF2A1A), 0.7f);
+    /** De laser van een guard robot: oranjerood, iets dikker dan die van een Raven-soldaat. */
     private static final DustParticleOptions ROBOT_LASER = new DustParticleOptions(color(0xFF5A1E), 0.85f);
     /** De straal van de Ion Blaster: dik en lichtblauw. */
     private static final DustParticleOptions ION = new DustParticleOptions(color(0x7FD8FF), 1.1f);
@@ -52,8 +52,8 @@ public final class BeamEffects {
                 satellitePrecision(level, payload.from(), payload.to());
                 shakeNear(payload.to(), 1.5f, 500);
             }
-            case REPULSOR -> repulsor(level, payload.from(), payload.to());
-            case HYDRA_LASER -> hydraLaser(level, payload.from(), payload.to());
+            case LASER_CANNON -> laserCannon(level, payload.from(), payload.to());
+            case RAVEN_LASER -> ravenLaser(level, payload.from(), payload.to());
             case ROBOT_LASER -> robotLaser(level, payload.from(), payload.to());
             case ROBOT_BULLET -> robotBullet(level, payload.from(), payload.to());
             case ION_BEAM -> ionBeam(level, payload.from(), payload.to());
@@ -65,12 +65,12 @@ public final class BeamEffects {
     }
 
     /**
-     * Een repulsorstoot: zelf getekend licht (zie SuitEffects), geen deeltjes.
+     * Een laserkanonschot: zelf getekend licht (zie SuitEffects), geen deeltjes.
      *
      * De stoot begint bij de rechterhand van de schutter: een armlengte vooruit, iets naar rechts
      * en iets omlaag. Vanaf zijn ogen getekend zag de schutter zelf alleen nog licht voor zijn neus.
      */
-    private static void repulsor(ClientLevel level, Vec3 eye, Vec3 to) {
+    private static void laserCannon(ClientLevel level, Vec3 eye, Vec3 to) {
         Vec3 dir = to.subtract(eye).normalize();
         Vec3 right = dir.cross(new Vec3(0, 1, 0));
         right = right.lengthSqr() < 1.0E-6 ? new Vec3(1, 0, 0) : right.normalize();
@@ -79,9 +79,9 @@ public final class BeamEffects {
         SuitEffects.addShot(eye, hand, to);
     }
 
-    /** Het lasergeweer van een Hydra-soldaat: een rode straal met vonkjes en een rookje waar hij raakt. */
-    private static void hydraLaser(ClientLevel level, Vec3 from, Vec3 to) {
-        line(level, from, to, 0.22, HYDRA, false);
+    /** Het lasergeweer van een Raven-soldaat: een rode straal met vonkjes en een rookje waar hij raakt. */
+    private static void ravenLaser(ClientLevel level, Vec3 from, Vec3 to) {
+        line(level, from, to, 0.22, RAVEN, false);
         RandomSource random = level.getRandom();
         for (int i = 0; i < 4; i++) {
             level.addParticle(ParticleTypes.SMALL_FLAME, to.x, to.y, to.z,

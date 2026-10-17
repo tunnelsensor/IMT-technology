@@ -71,7 +71,7 @@ public final class Showcase {
         switch (stage) {
             case START -> {
                 if (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen) {
-                    // Met geluid: je wilt de repulsor en de stuwraketten horen.
+                    // Met geluid: je wilt de laser cannon en de stuwraketten horen.
                     DevWorld.quietOptions(mc, false);
                     DevWorld.createFlatWorld(mc, WORLD);
                     stage = Stage.LOADING;
@@ -100,7 +100,7 @@ public final class Showcase {
         }
     }
 
-    /** De wereld inrichten; de Bibie's Industries Tower pas als de stukken wereld daar geladen zijn. */
+    /** De wereld inrichten; de Biebia's Industries Tower pas als de stukken wereld daar geladen zijn. */
     private static void buildSetup() {
         SETUP.command(0, "time set noon")
                 .command(0, "weather clear")

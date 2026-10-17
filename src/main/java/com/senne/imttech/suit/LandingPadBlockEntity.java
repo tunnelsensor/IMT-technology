@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * De "binnenkant" van een landingsplatform: van wie hij is, en wat hij doet voor wie erop staat.
  *
- * - Van wie? Van wie hem neerzet. Het platform op het dak van een Bibie's Industries Tower (neergezet door
+ * - Van wie? Van wie hem neerzet. Het platform op het dak van een Biebia's Industries Tower (neergezet door
  *   de toren zelf) is van wie de toren gehackt heeft.
  * - Hij zet zichzelf op de lijst van zijn eigenaar (zie LandingPads): zo wijst de HUD je
  *   tijdens het vliegen de weg ernaartoe.

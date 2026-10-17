@@ -95,7 +95,7 @@ def finish(sound, peak=0.8):
 
 def whine(start_hz, end_hz, duration, curve=1.0, wobble=0.0):
     """
-    Het typische "gezoem" van een repulsor: een toon met een paar boventonen erbij, en
+    Het typische "gezoem" van een laser cannon: een toon met een paar boventonen erbij, en
     eventueel een snelle trilling (wobble) zodat het elektrisch klinkt.
     """
     phase = sweep(start_hz, end_hz, duration, curve)
@@ -108,9 +108,9 @@ def whine(start_hz, end_hz, duration, curve=1.0, wobble=0.0):
 
 # ---------------------------------------------------------------- de geluiden
 
-def repulsor_arm():
+def laser_cannon_arm():
     """
-    De repulsor gaat aan: een klik in de handschoen, dan een gezoem dat omhoog loopt tot een
+    De laser cannon gaat aan: een klik in de handschoen, dan een gezoem dat omhoog loopt tot een
     hoge, trillende toon ("klaar om te vuren").
     """
     total = np.zeros(int(RATE * 0.9))
@@ -125,8 +125,8 @@ def repulsor_arm():
     return finish(total)
 
 
-def repulsor_disarm():
-    """De repulsor gaat uit: het gezoem zakt weg en de handschoen klikt dicht."""
+def laser_cannon_disarm():
+    """De laser cannon gaat uit: het gezoem zakt weg en de handschoen klikt dicht."""
     total = np.zeros(int(RATE * 0.6))
     fall = whine(2100, 260, 0.5, curve=0.6, wobble=0.12) * decay(0.5, 4.5)
     click = bandpass(noise(0.025), 1200, 6000) * decay(0.025, 180) * 0.7
@@ -135,9 +135,9 @@ def repulsor_disarm():
     return finish(total, peak=0.75)
 
 
-def repulsor_fire():
+def laser_cannon_fire():
     """
-    Een repulsorschot zoals in de films: een heel kort gezoem dat omhoog schiet, en dan de
+    Een laserkanonschot zoals in de films: een heel kort gezoem dat omhoog schiet, en dan de
     knal - een felle laser-"zap", een dreun die je in je buik voelt en een naklank.
     """
     total = np.zeros(int(RATE * 1.2))
@@ -783,9 +783,9 @@ SOUNDS = {
     "satellite_impact": satellite_impact,
     "comms_message": comms_message,
     "comms_ping": comms_ping,
-    "repulsor_arm": repulsor_arm,
-    "repulsor_disarm": repulsor_disarm,
-    "repulsor_fire": repulsor_fire,
+    "laser_cannon_arm": laser_cannon_arm,
+    "laser_cannon_disarm": laser_cannon_disarm,
+    "laser_cannon_fire": laser_cannon_fire,
     "suit_thruster": suit_thruster,
     "rayshield_hum": rayshield_hum,
     "rayshield_on": rayshield_on,

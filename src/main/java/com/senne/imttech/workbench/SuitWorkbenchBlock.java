@@ -26,7 +26,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De harnas-werkbank (Bibie's lab): hier bouw je het tech-harnas en bouw je er upgrades in.
+ * De harnas-werkbank (Biebia's lab): hier bouw je het tech-harnas en bouw je er upgrades in.
  * Dat gaat niet met een scherm, maar met het hologram dat erboven zweeft (zie
  * SuitWorkbenchBlockEntity). Hij heeft stroom nodig van het net.
  */

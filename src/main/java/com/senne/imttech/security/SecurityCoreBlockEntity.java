@@ -60,7 +60,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private String daemon = "";
     /** Het getal waar de rest uit komt (procesnummers, het logboek van de statuspagina). */
     private long systemSeed;
-    /** Null = geen wachtwoord: dan heeft het systeem nog het oude geheugenlek van Bibie's firmware. */
+    /** Null = geen wachtwoord: dan heeft het systeem nog het oude geheugenlek van Biebia's firmware. */
     private @Nullable SystemPassword password;
     private VirtualFs fs = new VirtualFs();
     private EventLog log = new EventLog();
@@ -70,7 +70,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private com.senne.imttech.logic.Datacenter datacenter = new com.senne.imttech.logic.Datacenter();
     /** Had de kern bij de laatste telling stroom? */
     private boolean online = true;
-    /** Zette deze kern (van een Bibie's Industries Tower) Bibie's drones al op zijn docks (hoofdstuk 25)? Dat doet hij maar één keer. */
+    /** Zette deze kern (van een Biebia's Industries Tower) Biebia's drones al op zijn docks (hoofdstuk 25)? Dat doet hij maar één keer. */
     private boolean towerDrones;
     /** De rapporten van de laatste trainingen (hoofdstuk 26), de oudste eerst. */
     private final java.util.List<com.senne.imttech.training.TrainingReport> trainingReports = new java.util.ArrayList<>();
@@ -114,7 +114,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         setOwner(player.getUUID(), player.getGameProfile().getName());
     }
 
-    /** Van deze speler, ook als hij nu niet online is (de showcase geeft zo een basis aan "Pepper"). */
+    /** Van deze speler, ook als hij nu niet online is (de showcase geeft zo een basis aan "Lotte"). */
     public void setOwner(UUID id, String name) {
         ownerId = id;
         ownerName = name;
@@ -184,9 +184,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         sshPort = 1024 + level.random.nextInt(8976);
         fs = new VirtualFs();
         if (ownerId == null) {
-            // Van niemand: dit is de kern van een Bibie's Industries Tower (het systeem van Bibie).
-            hostname = SystemDefaults.BIBIE_HOST;
-            SystemDefaults.bibieFiles(fs, daemon);
+            // Van niemand: dit is de kern van een Biebia's Industries Tower (het systeem van Biebia).
+            hostname = SystemDefaults.BIEBIA_HOST;
+            SystemDefaults.biebiaFiles(fs, daemon);
         } else {
             hostname = SystemDefaults.hostFor(ownerName);
             SystemDefaults.playerFiles(fs, ownerName, daemon);
@@ -421,7 +421,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private @Nullable CompoundTag worldSnapshot;
 
     /**
-     * Valt er iets in te pakken? Een kern van niemand (de Bibie's Industries Tower van Bibie, nog niet gehackt) niet:
+     * Valt er iets in te pakken? Een kern van niemand (de Biebia's Industries Tower van Biebia, nog niet gehackt) niet:
      * die valt als een nieuwe kern, zoals altijd.
      */
     public boolean canPack() {
@@ -647,8 +647,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
         }
-        // Een Bibie's Industries Tower van niemand (Bibie's systeem): één keer Bibie's drones op de docks in de hangar (zie TowerDrones).
-        if (ownerId == null && !towerDrones && SystemDefaults.BIBIE_HOST.equals(hostname)) {
+        // Een Biebia's Industries Tower van niemand (Biebia's systeem): één keer Biebia's drones op de docks in de hangar (zie TowerDrones).
+        if (ownerId == null && !towerDrones && SystemDefaults.BIEBIA_HOST.equals(hostname)) {
             towerDrones = true;
             setChanged();
             com.senne.imttech.robot.TowerDrones.fill(level, this);

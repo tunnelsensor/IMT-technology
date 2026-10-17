@@ -47,17 +47,17 @@ import org.jetbrains.annotations.Nullable;
  * <pre>
  *            noord (-z)
  *   bunker      husks (doelwitten)      verre husk (satelliet)
- *        cow        kist    Happy
+ *        cow        kist    Seppe
  *   toren          JIJ (0,0)          piramide
  *      laadstation, zonnepaneel, holotafel, relais+lamp    laserpoort
- *   koepel                                          Bibie's Industries Tower (ver naar het oosten)
+ *   koepel                                          Biebia's Industries Tower (ver naar het oosten)
  *            zuid (+z)
  * </pre>
  */
 final class ShowcaseScene {
     private ShowcaseScene() {}
 
-    static final String FRIEND = "Happy";
+    static final String FRIEND = "Seppe";
 
     // ---------------------------------------------------------------- Waar alles staat
     static final BlockPos START = new BlockPos(0, -60, 0);
@@ -87,8 +87,8 @@ final class ShowcaseScene {
     static final BlockPos DOME_POWER = new BlockPos(-22, -60, 19);
     static final BlockPos PYRAMID = new BlockPos(24, -60, -8);
     static final BlockPos IRON_TOWER = new BlockPos(-16, -60, -2);
-    /** De Bibie's Industries Tower: een hoek van het gebouw (41 x 110 x 41 blokken). */
-    static final BlockPos BIBIE_TOWER = new BlockPos(90, -61, -20);
+    /** De Biebia's Industries Tower: een hoek van het gebouw (41 x 110 x 41 blokken). */
+    static final BlockPos BIEBIA_TOWER = new BlockPos(90, -61, -20);
     static final BlockPos HOME = new BlockPos(34, -60, 30);
     static final BlockPos MINE = new BlockPos(-34, -60, 26);
     /** Het midden van een dichte hut waar je je verstopt voor raiddrones (ze breken erin). */
@@ -98,12 +98,12 @@ final class ShowcaseScene {
     /** De zwarte doos in de romp van het wrak (plek 15, 2, 16 in generate_crash_site.py). */
     static final BlockPos BLACK_BOX = CRASH_SITE.offset(-1, 0, 0);
     /**
-     * Waar je voor de deur van de Bibie's Industries-bunker staat (de ingang kijkt naar het noorden, de bunker
+     * Waar je voor de deur van de Biebia's Industries-bunker staat (de ingang kijkt naar het noorden, de bunker
      * loopt de berg in naar het zuiden). Een plek (x, y, z) uit tools/generate_bunker.py ligt in
      * de wereld op (23 + x, -61 + y, 80 + z).
      */
-    static final BlockPos BIBIE_BUNKER = new BlockPos(40, -60, 80);
-    /** Het Bibie's Industries-torentje van de demo (de warmtegenerator staat ernaast, het Hydra-torentje rechts). */
+    static final BlockPos BIEBIA_BUNKER = new BlockPos(40, -60, 80);
+    /** Het Biebia's Industries-torentje van de demo (de warmtegenerator staat ernaast, het Raven-torentje rechts). */
     static final BlockPos TURRET = new BlockPos(0, -60, 40);
 
     // ================================================================ Eén keer: de wereld bouwen
@@ -174,7 +174,7 @@ final class ShowcaseScene {
         level.setBlockAndUpdate(HOME.north(2), Blocks.CHEST.defaultBlockState());
 
         // De vriend: een tweede speler met een eigen bril, om te hacken en te bespioneren.
-        // Onkwetsbaar: raiddrones kiezen de dichtstbijzijnde speler, en een dode Happy kun je
+        // Onkwetsbaar: raiddrones kiezen de dichtstbijzijnde speler, en een dode Seppe kun je
         // niet meer hacken, bespioneren of met een nep-leger afleiden.
         ServerPlayer friend = DevWorld.fakePlayer(level, FRIEND, FRIEND_SPOT);
         DevWorld.wearGlasses(friend);
@@ -182,10 +182,10 @@ final class ShowcaseScene {
         friend.onUpdateAbilities();
     }
 
-    /** De Bibie's Industries Tower komt later: dan zijn de stukken wereld waar hij komt al geladen. */
+    /** De Biebia's Industries Tower komt later: dan zijn de stukken wereld waar hij komt al geladen. */
     static void placeTower() {
-        DevWorld.command("place template imttech:bibie_tower " + BIBIE_TOWER.getX() + " "
-                + BIBIE_TOWER.getY() + " " + BIBIE_TOWER.getZ());
+        DevWorld.command("place template imttech:biebia_tower " + BIEBIA_TOWER.getX() + " "
+                + BIEBIA_TOWER.getY() + " " + BIEBIA_TOWER.getZ());
     }
 
     // ================================================================ Voor elke functie: opruimen
@@ -214,12 +214,12 @@ final class ShowcaseScene {
                         || e instanceof com.senne.imttech.raid.RaidDroneEntity
                         || e instanceof net.minecraft.world.entity.item.ItemEntity
                         || e instanceof net.minecraft.world.entity.projectile.AbstractArrow
-                        || e instanceof com.senne.imttech.hydra.HydraSoldierEntity
+                        || e instanceof com.senne.imttech.raven.RavenSoldierEntity
                         || e instanceof com.senne.imttech.suit.MiniRocketEntity)) {
             entity.discard();
         }
         ImtServer.resetForShowcase(player);
-        // De torentjes van de demo weg, anders schiet het Hydra-torentje ook in andere functies.
+        // De torentjes van de demo weg, anders schiet het Raven-torentje ook in andere functies.
         fill(level, TURRET.offset(-2, 0, -4), TURRET.offset(9, 1, 1), Blocks.AIR.defaultBlockState());
         level.getEntitiesOfClass(Husk.class, new AABB(TURRET).inflate(24)).forEach(Entity::discard);
 
@@ -353,8 +353,8 @@ final class ShowcaseScene {
     }
 
     /**
-     * De torentjes-demo: een Bibie's Industries-torentje met een volle warmtegenerator ernaast en 16 raketten
-     * erin (van jou), en rechts daarvan een Hydra-torentje.
+     * De torentjes-demo: een Biebia's Industries-torentje met een volle warmtegenerator ernaast en 16 raketten
+     * erin (van jou), en rechts daarvan een Raven-torentje.
      */
     static void buildTurrets(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -367,7 +367,7 @@ final class ShowcaseScene {
         if (level.getBlockEntity(TURRET.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
             generator.fill(10_000);
         }
-        level.setBlockAndUpdate(TURRET.offset(7, 0, -2), ModBlocks.HYDRA_TURRET.get().defaultBlockState());
+        level.setBlockAndUpdate(TURRET.offset(7, 0, -2), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
     }
 
     /** Twee husks ver voor het torentje, die op je af komen. */

@@ -316,7 +316,7 @@ public final class PowerCables {
     }
 
     /**
-     * De gebouwen (Bibie's Industries Tower, Bibie's Industries-bunker) hebben een onzichtbare "marker" op elke plek waar
+     * De gebouwen (Biebia's Industries Tower, Biebia's Industries-bunker) hebben een onzichtbare "marker" op elke plek waar
      * een kabel hoort (zie cable() in tools/generate_structure.py). Komt zo'n marker in de wereld,
      * dan leggen we daar een kabel en laten we de marker zelf niet toe. Zo blijft het blok op die
      * plek (een koperen zuil, een vloer, een plafond) gewoon staan, met de kabel erin.

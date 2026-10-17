@@ -1,12 +1,12 @@
 """
-Bouwt de neergestorte Bibie's Industries-satelliet als Minecraft-structuurbestand (.nbt).
+Bouwt de neergestorte Biebia's Industries-satelliet als Minecraft-structuurbestand (.nbt).
 
 Gebruik (vanuit de hoofdmap van het project):
     python tools/generate_crash_site.py
 
 Het resultaat komt in src/main/resources/data/imttech/structure/crashed_satellite.nbt.
 
-Een oude Bibie's Industries-satelliet is uit zijn baan gevallen. Hij kwam schuin uit het oosten, trok een
+Een oude Biebia's Industries-satelliet is uit zijn baan gevallen. Hij kwam schuin uit het oosten, trok een
 voor door de grond en sloeg een krater. Wat je vindt:
 
 - een krater van zo'n 25 blokken breed en 6 diep, met een verschroeide bodem (basalt,
@@ -186,7 +186,7 @@ def build_body():
             put(x1, y, z, mc("air"))
     for x, z in [(16, 15), (16, 16), (15, 17), (17, 14)]:
         put(x, y1, z, mc("air"))
-    # De Bibie's Industries-band op de zuidkant: rood en goud.
+    # De Biebia's Industries-band op de zuidkant: rood en goud.
     for x in range(x0, x1 + 1):
         put(x, 3, z1, mc("gold_block") if x % 2 else mc("red_concrete"))
     # Binnen: de reactor, blote draden, de zwarte doos en een blauw vuurtje van de reactor.

@@ -14,15 +14,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Op wie een torentje schiet.
  *
- * ROCKET-torentje: monsters (ook raiddrones en Hydra-soldaten, dat zijn allemaal "vijanden").
+ * ROCKET-torentje: monsters (ook raiddrones en Raven-soldaten, dat zijn allemaal "vijanden").
  * Spelers alleen als PvP aan staat op de server, en nooit de eigenaar of iemand uit zijn team.
  * Dieren, dorpelingen, je eigen huisdieren en I.M.T-drones laat hij met rust.
  *
- * HYDRA-torentje (in de bunker): spelers (niet in creative) en I.M.T-drones.
+ * RAVEN-torentje (in de bunker): spelers (niet in creative) en I.M.T-drones.
  *
- * BEVEILIGINGSTORENTJE (in de Bibie's Industries Tower): wat de beveiligingskern een indringer noemt.
+ * BEVEILIGINGSTORENTJE (in de Biebia's Industries Tower): wat de beveiligingskern een indringer noemt.
  *
- * Staat een Bibie's Industries-torentje in het gebied van een beveiligingskern van ZIJN eigenaar, dan volgt
+ * Staat een Biebia's Industries-torentje in het gebied van een beveiligingskern van ZIJN eigenaar, dan volgt
  * het de regels van die kern (de Access-app op de desktop): vertrouwde spelers niet, monsters en
  * andere spelers alleen als dat aan staat.
  *
@@ -42,7 +42,7 @@ public final class TurretTargeting {
             return com.senne.imttech.security.SecurityCores.isIntruder(level,
                     com.senne.imttech.security.SecurityCores.coreAt(level, turretPos), entity);
         }
-        if (kind == TurretKind.HYDRA) {
+        if (kind == TurretKind.RAVEN) {
             return entity instanceof DroneEntity || entity instanceof Player player && canHurt(player);
         }
         if (ownerId != null && entity instanceof OwnableEntity pet && ownerId.equals(pet.getOwnerUUID())) {

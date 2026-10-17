@@ -11,7 +11,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 
 /**
- * De hacklaptop: klik ermee op de beveiligingskern van een Bibie's Industries Tower, dan zet je hem
+ * De hacklaptop: klik ermee op de beveiligingskern van een Biebia's Industries Tower, dan zet je hem
  * opengeklapt bovenop de kern en begint de hack (zie TowerHack). Je hebt er geen bril voor nodig.
  * Is de toren van jou, dan krijg je hem terug.
  */

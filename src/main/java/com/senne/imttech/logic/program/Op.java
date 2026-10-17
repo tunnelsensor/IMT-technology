@@ -32,11 +32,11 @@ public enum Op {
     ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...)"),
     /** {@code when message("intruder"):} (hoofdstuk 23): een robot stuurt de server een bericht met send(...). */
     MESSAGE(Kind.TRIGGER, "message", Arg.TEXT, Arg.NONE, "One of your robots or drones sends this message with send(...)"),
-    /** {@code when training_started("Kamino"):} (hoofdstuk 26): een training begint (na het aftellen). */
+    /** {@code when training_started("Bootcamp"):} (hoofdstuk 26): een training begint (na het aftellen). */
     TRAINING_STARTED(Kind.TRIGGER, "training_started", Arg.TEXT, Arg.NONE, "This training starts (after the countdown)"),
-    /** {@code when training_hit("Kamino"):}: de trainee is geraakt (lives is nu een minder). */
+    /** {@code when training_hit("Bootcamp"):}: de trainee is geraakt (lives is nu een minder). */
     TRAINING_HIT(Kind.TRIGGER, "training_hit", Arg.TEXT, Arg.NONE, "The trainee of this training is hit"),
-    /** {@code when training_ended("Kamino"):}: de training is voorbij (passed zegt of hij geslaagd is). */
+    /** {@code when training_ended("Bootcamp"):}: de training is voorbij (passed zegt of hij geslaagd is). */
     TRAINING_ENDED(Kind.TRIGGER, "training_ended", Arg.TEXT, Arg.NONE, "This training is over (passed or not)"),
     /**
      * {@code when trainee_hit:} (hoofdstuk 26): in een Training End-blok, de trainee is geraakt. (Niet gewoon "hit": dat
@@ -254,7 +254,7 @@ public enum Op {
             case LOG -> "Door opened";
             case ORDERED -> "attack";
             case MESSAGE, SEND -> "intruder";
-            case TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> "Kamino";
+            case TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> "Bootcamp";
             case SQUAD_DOWN -> "Wave 1";
             case ACTIVATE, DEACTIVATE -> "Guard 1";
             default -> "Someone is at the door";

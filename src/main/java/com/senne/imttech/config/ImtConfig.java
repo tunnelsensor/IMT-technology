@@ -73,9 +73,9 @@ package com.senne.imttech.config;
  *   Comms ........ berichten en pings
  *   Navigation ... waypoints
  *   Holo ......... de holotafel
- *   Suit ......... het harnas: bescherming, vliegen, repulsor, raketten
+ *   Suit ......... het harnas: bescherming, vliegen, laser cannon, raketten
  *   Workbench .... de harnas-werkbank en de upgrades van het harnas
- *   Turrets ...... torentjes (raket, Hydra, beveiliging)
+ *   Turrets ...... torentjes (raket, Raven, beveiliging)
  *   Security ..... de beveiligingskern: zone, drones, systeem
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
  *   C4 ........... C4, en TNT en de satelliet tegen een beschermde zone
@@ -83,7 +83,7 @@ package com.senne.imttech.config;
  *   Bypass ....... inbreken met de Bypass Kit, en zakkenrollen
  *   Lights ....... de Arc Lamp
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
- *   Hydra ........ Hydra-soldaten
+ *   Raven ........ Raven-soldaten
  *   Raids ........ vijandige raiddrones
  */
 public final class ImtConfig {
@@ -298,10 +298,10 @@ public final class ImtConfig {
         @Tunable(value = "Energy per tick a shield dome uses PER STRENGTH LEVEL, for each of its 5 sizes (see dome.radii). "
                 + "A 16-block dome on strength 2 uses 4 x 2 = 8 per tick", max = 10_000)
         public static float[] DOME_UPKEEP = {2.0f, 3.0f, 4.0f, 6.0f, 8.0f};
-        /** Stroom die één laserschot van een Bibie's Industries-torentje van het net haalt. */
+        /** Stroom die één laserschot van een Biebia's Industries-torentje van het net haalt. */
         @Tunable("Grid energy one rocket turret laser shot uses")
         public static float TURRET_LASER_SHOT = 60.0f;
-        /** Stroom per raket die een Bibie's Industries-torentje afvuurt. */
+        /** Stroom per raket die een Biebia's Industries-torentje afvuurt. */
         @Tunable("Grid energy per rocket a rocket turret fires")
         public static float TURRET_ROCKET = 20.0f;
         /** Stroom die de beveiligingskern elke twee seconden van het net haalt (zonder staan hij en zijn drones uit). */
@@ -874,7 +874,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Suit
 
-    @Section("The suit: protection, flying, landing, repulsor and mini rockets. Everything it does is paid by the glasses")
+    @Section("The suit: protection, flying, landing, laser cannon and mini rockets. Everything it does is paid by the glasses")
     public static final class Suit {
         private Suit() {}
 
@@ -944,28 +944,28 @@ public final class ImtConfig {
         @Tunable("Energy cost of catching a fall")
         public static float LANDING_COST = 200.0f;
 
-        // ------------------------------------------------------------------------- Repulsor
-        /** Schade van één repulsorstoot (7 = 3,5 hartje). */
-        @Tunable("Damage of one repulsor blast")
-        public static float REPULSOR_DAMAGE = 7.0f;
+        // ------------------------------------------------------------------------- Laser cannon
+        /** Schade van één laserkanonschot (7 = 3,5 hartje). */
+        @Tunable("Damage of one laser cannon blast")
+        public static float LASER_CANNON_DAMAGE = 7.0f;
         /** Wat één stoot kost. */
-        @Tunable("Energy cost of one repulsor blast")
-        public static float REPULSOR_COST = 200.0f;
+        @Tunable("Energy cost of one laser cannon blast")
+        public static float LASER_CANNON_COST = 200.0f;
         /** Wachttijd tussen twee stoten (20 = 1 seconde). */
-        @Tunable(value = "Ticks between two repulsor blasts", min = 1)
-        public static float REPULSOR_COOLDOWN = 20.0f;
+        @Tunable(value = "Ticks between two laser cannon blasts", min = 1)
+        public static float LASER_CANNON_COOLDOWN = 20.0f;
         /** Hoe ver de stoot reikt. */
-        @Tunable("How far a repulsor blast reaches (blocks)")
-        public static double REPULSOR_RANGE = 24.0;
+        @Tunable("How far a laser cannon blast reaches (blocks)")
+        public static double LASER_CANNON_RANGE = 24.0;
         /** Hoe ver naast de straal je nog geraakt wordt. */
         @Tunable("How far next to the beam you still get hit (blocks)")
-        public static double REPULSOR_WIDTH = 1.2;
+        public static double LASER_CANNON_WIDTH = 1.2;
         /** Hoe hard hij wegduwt wat hij raakt. */
-        @Tunable("How hard a repulsor blast pushes away what it hits")
-        public static double REPULSOR_KNOCKBACK = 0.7;
+        @Tunable("How hard a laser cannon blast pushes away what it hits")
+        public static double LASER_CANNON_KNOCKBACK = 0.7;
         /** Hoe hard de stoot jou zelf naar achteren duwt (klein houden, anders schiet je jezelf weg). */
-        @Tunable("How hard a repulsor blast pushes yourself back")
-        public static double REPULSOR_RECOIL = 0.04;
+        @Tunable("How hard a laser cannon blast pushes yourself back")
+        public static double LASER_CANNON_RECOIL = 0.04;
 
         // ------------------------------------------------------------------------- Mini-raketten
         /** Hoeveel raketten er in één salvo zitten. */
@@ -1049,8 +1049,8 @@ public final class ImtConfig {
         /** Extra deel van de schade dat het harnas met stroom tegenhoudt, per pantserplaat. */
         @Tunable(value = "Extra share of damage the powered suit stops per armor plating", max = 1)
         public static double PLATING_REDUCTION = 0.05;
-        /** Extra repulsorschade per condensator (0.35 = 35%). */
-        @Tunable("Extra repulsor damage per capacitor (0.35 = 35%)")
+        /** Extra laserkanonschade per condensator (0.35 = 35%). */
+        @Tunable("Extra laser cannon damage per capacitor (0.35 = 35%)")
         public static double CAPACITOR_DAMAGE = 0.35;
         /** Extra raketschade (raak en ernaast) per kernkop (0.4 = 40%). */
         @Tunable("Extra mini rocket damage (direct hit and splash) per warhead (0.4 = 40%)")
@@ -1074,12 +1074,12 @@ public final class ImtConfig {
 
     // =============================================================================================== Turrets
 
-    @Section("Turrets: the rocket turret you build, the Hydra turret (bunker) and the security turret (Bibie's Industries Tower). "
+    @Section("Turrets: the rocket turret you build, the Raven turret (bunker) and the security turret (Biebia's Industries Tower). "
             + "The rocket turret's power use is under [power]")
     public static final class Turrets {
         private Turrets() {}
 
-        // ------------------------------------------------------------------------- Bibie's Industries-torentje
+        // ------------------------------------------------------------------------- Biebia's Industries-torentje
         /** Tot hoe ver hij doelwitten ziet en met de laser raakt. */
         @Tunable("How far a rocket turret's laser reaches (blocks)")
         public static double RANGE = 16.0;
@@ -1099,16 +1099,16 @@ public final class ImtConfig {
         @Tunable(value = "How many rockets fit in a rocket turret", min = 1, max = 64)
         public static float MAX_AMMO = 64.0f;
 
-        // ------------------------------------------------------------------------- Hydra-torentje (geen stroom nodig)
-        @Tunable("Damage of one Hydra turret laser shot")
-        public static float HYDRA_LASER_DAMAGE = 3.0f;
-        @Tunable("Ticks between two Hydra turret laser shots")
-        public static float HYDRA_LASER_INTERVAL = 25.0f;
-        @Tunable("How far a Hydra turret reaches (blocks)")
-        public static double HYDRA_RANGE = 14.0;
+        // ------------------------------------------------------------------------- Raven-torentje (geen stroom nodig)
+        @Tunable("Damage of one Raven turret laser shot")
+        public static float RAVEN_LASER_DAMAGE = 3.0f;
+        @Tunable("Ticks between two Raven turret laser shots")
+        public static float RAVEN_LASER_INTERVAL = 25.0f;
+        @Tunable("How far a Raven turret reaches (blocks)")
+        public static double RAVEN_RANGE = 14.0;
 
-        // ------------------------------------------------------------------------- Beveiligingstorentje (Bibie's Industries Tower)
-        @Tunable("Damage of one Bibie's Industries Tower security turret shot")
+        // ------------------------------------------------------------------------- Beveiligingstorentje (Biebia's Industries Tower)
+        @Tunable("Damage of one Biebia's Industries Tower security turret shot")
         public static float SECURITY_LASER_DAMAGE = 3.0f;
         @Tunable("Ticks between two security turret shots")
         public static float SECURITY_LASER_INTERVAL = 20.0f;
@@ -1129,7 +1129,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Security
 
-    @Section("The security core (Bibie's Industries Tower or your own): its reach and zone, its drones and its computer system. "
+    @Section("The security core (Biebia's Industries Tower or your own): its reach and zone, its drones and its computer system. "
             + "Its power use is under [power]")
     public static final class Security {
         private Security() {}
@@ -1144,9 +1144,9 @@ public final class ImtConfig {
                 + "Two cores must stand at least twice this far apart.", min = 1, max = 1_000)
         public static float ZONE_REACH = 200.0f;
 
-        // ------------------------------------------------------------------------- Bibie's drones (hoofdstuk 25)
-        /** Zoveel geprogrammeerde security drones zette Bibie in een Bibie's Industries Tower (op de docks in de hangar). */
-        @Tunable(value = "How many programmed security drones Bibie left in a Bibie's Industries Tower (on the drone docks of its hangar)", max = 16)
+        // ------------------------------------------------------------------------- Biebia's drones (hoofdstuk 25)
+        /** Zoveel geprogrammeerde security drones zette Biebia in een Biebia's Industries Tower (op de docks in de hangar). */
+        @Tunable(value = "How many programmed security drones Biebia left in a Biebia's Industries Tower (on the drone docks of its hangar)", max = 16)
         public static float TOWER_DRONES = 4.0f;
 
         // ------------------------------------------------------------------------- De oude drones van de kern
@@ -1601,7 +1601,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Training
 
-    @Section("Training like Domino squad (chapter 26): the countdown, what a hit does, and the reports")
+    @Section("Training like Rookie squad (chapter 26): the countdown, what a hit does, and the reports")
     public static final class Training {
         private Training() {}
 
@@ -1622,23 +1622,23 @@ public final class ImtConfig {
         public static float END_PULSE = 10.0f;
     }
 
-    // =============================================================================================== Hydra
+    // =============================================================================================== Raven
 
-    @Section("Hydra soldiers (in the bunker)")
-    public static final class Hydra {
-        private Hydra() {}
+    @Section("Raven soldiers (in the bunker)")
+    public static final class Raven {
+        private Raven() {}
 
         /** Schade van één laserschot (4 = 2 hartjes). */
-        @Tunable("Damage of one Hydra soldier rifle shot")
+        @Tunable("Damage of one Raven soldier rifle shot")
         public static float LASER_DAMAGE = 4.0f;
         /** Ticks tussen twee schoten (35 = bijna 2 seconden). */
-        @Tunable("Ticks between two Hydra soldier shots")
+        @Tunable("Ticks between two Raven soldier shots")
         public static float FIRE_INTERVAL = 35.0f;
         /** Tot hoe ver hij schiet. */
-        @Tunable("How far a Hydra soldier shoots (blocks)")
+        @Tunable("How far a Raven soldier shoots (blocks)")
         public static float ATTACK_RANGE = 18.0f;
         /** Hoeveel ervaring hij laat vallen. */
-        @Tunable("Experience a Hydra soldier drops")
+        @Tunable("Experience a Raven soldier drops")
         public static float XP_REWARD = 10.0f;
 
         // VAST: het spel heeft deze nodig bij het opstarten.
@@ -1666,8 +1666,8 @@ public final class ImtConfig {
         /** Hoeveel drones er in één raid komen. */
         @Tunable(value = "How many drones come in one raid", min = 1, max = 32)
         public static float SIZE = 4.0f;
-        /** Hoeveel "aandacht" je trekt door een blok weg te halen in een Bibie's Industries Tower... */
-        @Tunable("Attention you draw by breaking one block of a Bibie's Industries Tower")
+        /** Hoeveel "aandacht" je trekt door een blok weg te halen in een Biebia's Industries Tower... */
+        @Tunable("Attention you draw by breaking one block of a Biebia's Industries Tower")
         public static float HEAT_PER_TOWER_BLOCK = 4.0f;
         /** ...bij zoveel aandacht komen ze meteen... */
         @Tunable(value = "How much attention it takes before a raid comes at once", min = 1)

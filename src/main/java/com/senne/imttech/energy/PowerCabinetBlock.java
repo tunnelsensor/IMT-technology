@@ -87,7 +87,7 @@ public class PowerCabinetBlock extends BaseEntityBlock implements PowerConnectab
         return state.getValue(SWITCHES.get(side));
     }
 
-    /** Wie hem neerzet, is de eigenaar (in een Bibie's Industries Tower: wie de toren gehackt heeft). */
+    /** Wie hem neerzet, is de eigenaar (in een Biebia's Industries Tower: wie de toren gehackt heeft). */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);

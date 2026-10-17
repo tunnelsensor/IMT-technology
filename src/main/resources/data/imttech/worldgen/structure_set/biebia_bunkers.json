@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 518246937,
+    "separation": 6,
+    "spacing": 16
+  },
+  "structures": [
+    {
+      "structure": "imttech:biebia_bunker",
+      "weight": 1
+    }
+  ]
+}

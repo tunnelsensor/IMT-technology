@@ -14,10 +14,10 @@ import net.minecraft.nbt.Tag;
  * hoe lang al), met een knop Stop, en daaronder de rapporten van de laatste trainingen (de nieuwste eerst).
  *
  * <pre>
- *  NOW  Kamino: Senne                                   [Stop]
+ *  NOW  Bootcamp: Senne                                   [Stop]
  *       training shots   2/3 lives   1 hit   1:12 / 2:00
  *  REPORTS
- *  Kamino  Senne  PASSED  reached the goal          2:14
+ *  Bootcamp  Senne  PASSED  reached the goal          2:14
  *     3 hits: Guard 2 x2, Guard 1 x1; 2 robots down
  * </pre>
  * Alles komt van de server (zie training/Trainings.snapshot), om de seconde opnieuw.

@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 /**
- * Het 3D-beeld van je arsenaal: de aarde, de Bibie's Industries-satelliet en je drones in hun baan.
+ * Het 3D-beeld van je arsenaal: de aarde, de Biebia's Industries-satelliet en je drones in hun baan.
  *
  * Elke drone wordt als echt model getekend, met zijn schade eraan (kromme of ontbrekende
  * rotors, roet, haperende lampjes), precies zoals hij er in de wereld uit zou zien.

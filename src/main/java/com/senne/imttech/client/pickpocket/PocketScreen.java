@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * De zak van een andere speler (hoofdstuk 12, jouw keuze: een zak-minigame).
  * <pre>
- *  POCKET &gt; PEPPER                               NOTICED
+ *  POCKET &gt; LOTTE                               NOTICED
  *  + - - - - - - - - - - - - - - - - +          [   ]
  *  |   pull a card up here           |          [   ]
  *  + - - - - - - - - - - - - - - - - +          [###]

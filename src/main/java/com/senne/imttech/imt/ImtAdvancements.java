@@ -29,7 +29,7 @@ public final class ImtAdvancements {
     public static final String ILLUSION = "illusion";
     public static final String SUIT = "suit";
     public static final String FLY = "fly";
-    public static final String REPULSOR = "repulsor";
+    public static final String LASER_CANNON = "laser_cannon";
 
     /**
      * Kent een prestatie toe, als de speler hem nog niet had.

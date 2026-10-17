@@ -69,11 +69,11 @@ public class ImtMenuScreen extends Screen {
     /** Tabblad Combat: wat je zelf doet, met het harnas en het schild. */
     private static final List<Option> COMBAT = List.of(
             // Aan/uit: vuren doe je daarna met de aanvalsknop.
-            new Option(Component.translatable(ImtAction.REPULSOR.translationKey()),
-                    glasses -> RepulsorControl.isArmed()
+            new Option(Component.translatable(ImtAction.LASER_CANNON.translationKey()),
+                    glasses -> LaserCannonControl.isArmed()
                             ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
-                            : new Status(Component.translatable("screen.imttech.cost", Numbers.text(ImtConfig.Suit.REPULSOR_COST)), GREY),
-                    RepulsorControl::toggle),
+                            : new Status(Component.translatable("screen.imttech.cost", Numbers.text(ImtConfig.Suit.LASER_CANNON_COST)), GREY),
+                    LaserCannonControl::toggle),
             action(ImtAction.ROCKETS),
             action(ImtAction.TOGGLE_SHIELD));
 

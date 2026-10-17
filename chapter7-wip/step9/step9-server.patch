@@ -441,7 +441,7 @@ index c0f9307..bf0d645 100644
 +++ b/src/main/resources/assets/imttech/lang/en_us.json
 @@ -1025,6 +1025,7 @@
    "item.imttech.hacking_laptop": "Hacking Laptop",
-   "tooltip.imttech.hacking_laptop": "Hacks the security of a Bibie's Industries Tower",
+   "tooltip.imttech.hacking_laptop": "Hacks the security of a Biebia's Industries Tower",
    "tooltip.imttech.hacking_laptop.use": "Right-click a Security Core to set it up on top and start hacking",
 +  "tooltip.imttech.hacking_laptop.ssh": "Right-click in the air to log in to any system by its IP and password (SSH)",
    "block.imttech.hacking_laptop": "Hacking Laptop",

@@ -25,7 +25,7 @@ import com.senne.imttech.client.HoloTableScreen;
 import com.senne.imttech.client.MusicScreen;
 import com.senne.imttech.client.NavigationScreen;
 import com.senne.imttech.client.RelayListScreen;
-import com.senne.imttech.client.RepulsorControl;
+import com.senne.imttech.client.LaserCannonControl;
 import com.senne.imttech.client.SpyReportScreen;
 import com.senne.imttech.client.WaypointEditScreen;
 import com.senne.imttech.client.voice.VoiceCommandsScreen;
@@ -257,11 +257,11 @@ public final class VisualCheck {
             t.onServer(0, DevWorld::wearGlasses);
         }
 
-        // --- De Bibie's Industries-bunker in een (zelfgebouwde) berg: van buiten, en dan kamer voor kamer.
+        // --- De Biebia's Industries-bunker in een (zelfgebouwde) berg: van buiten, en dan kamer voor kamer.
         // De ingang staat op (20, -60, 100) en kijkt naar het noorden; de bunker loopt naar het
         // zuiden. Een plek in het bestand (x, y, z) ligt in de wereld op (3 + x, -61 + y, 100 + z).
         if (want("bunker")) {
-            t.onServer(0, player -> DevWorld.placeBibieBunker(player.serverLevel(), new BlockPos(20, -60, 100)));
+            t.onServer(0, player -> DevWorld.placeBiebiaBunker(player.serverLevel(), new BlockPos(20, -60, 100)));
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.view(40, 20.5, -52, 76, 0, 12);
             t.shot(20, "b01_bunker_outside");
@@ -284,7 +284,7 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
-        // --- De beveiliging van de Bibie's Industries Tower: een kern met twee torentjes, en de drones die hij
+        // --- De beveiliging van de Biebia's Industries Tower: een kern met twee torentjes, en de drones die hij
         // de lucht in stuurt. Eerst van niemand (rood), dan "gehackt" door jou (groen en blauw).
         if (want("security")) {
             BlockPos core = new BlockPos(-40, -60, 60);
@@ -339,7 +339,7 @@ public final class VisualCheck {
             t.shot(15, "k026_hack_restored");
             t.waitUntil(600, () -> said.test("Still possible"));
             t.shot(5, "k03_hack_login");
-            t.waitUntil(600, () -> said.test("- Bibie"));
+            t.waitUntil(600, () -> said.test("- Biebia"));
             t.shot(5, "k035_hack_readme");
             t.shot(70, "k04_hack_shell");
             t.waitUntil(900, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.HackScreen hack
@@ -368,10 +368,10 @@ public final class VisualCheck {
                     fs.write(dir + "/secret/passwords.txt", "nice try");
                     fs.setTrap(dir + "/secret/passwords.txt", true);
                     fs.move("/etc/security.conf", dir + "/secret/recipes.txt");
-                    fs.write(dir + "/todo.txt", "- buy more turrets\n- ask Happy about the coffee machine\n"
+                    fs.write(dir + "/todo.txt", "- buy more turrets\n- ask Seppe about the coffee machine\n"
                             + "- hide security.conf (done: it's a recipe now)\n- set a trap for whoever reads this");
-                    be.addTrusted(UUID.randomUUID(), "Pepper");
-                    be.addTrusted(UUID.randomUUID(), "Happy");
+                    be.addTrusted(UUID.randomUUID(), "Lotte");
+                    be.addTrusted(UUID.randomUUID(), "Seppe");
                 }
                 // Stroom voor de kern (dan stuurt hij drones), en twee torentjes in zijn gebied.
                 level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -475,7 +475,7 @@ public final class VisualCheck {
                 if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
-                    be.setPassword("jarvis1", level.random);
+                    be.setPassword("bitech1", level.random);
                 }
             });
             // Jij staat er, met je rug naar de kamer (die ligt in het zuiden; jij kijkt naar het noorden).
@@ -629,7 +629,7 @@ public final class VisualCheck {
             String[] said = {
                     "hoeveel energie heb ik nog",
                     "zet nachtzicht aan en scan naar ertsen",
-                    "onthoud dat mijn basis Bibie Hoeve heet",
+                    "onthoud dat mijn basis Biebia Hoeve heet",
                     "hoe heet mijn basis?",
                     "doe iets met de ding",
                     "send the drones after that zombie",
@@ -683,14 +683,14 @@ public final class VisualCheck {
             t.close(0);
         }
 
-        // --- Het landingsplatform op de Bibie's Industries Tower: van buiten, van onderen, en de HUD tijdens het vliegen.
+        // --- Het landingsplatform op de Biebia's Industries Tower: van buiten, van onderen, en de HUD tijdens het vliegen.
         if (want("pad")) {
-            int x = BIBIE_TOWER.getX();
-            int y = BIBIE_TOWER.getY();
-            int z = BIBIE_TOWER.getZ();
+            int x = BIEBIA_TOWER.getX();
+            int y = BIEBIA_TOWER.getY();
+            int z = BIEBIA_TOWER.getZ();
             Vec3 pad = new Vec3(x + 35.5, y + 100, z + 20.5);
             t.view(0, x + 20.5, y + 40, z - 40, 0, 0);
-            t.command(60, "place template imttech:bibie_tower " + x + " " + y + " " + z);
+            t.command(60, "place template imttech:biebia_tower " + x + " " + y + " " + z);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.view(40, x + 62, y + 108, z + 2, 0, 0);
             t.lookAt(2, pad);
@@ -788,21 +788,21 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.camera(0, CameraType.FIRST_PERSON);
 
-            // --- De repulsor: aanzetten, dan de aanvalsknop "indrukken" zoals een speler dat doet
+            // --- De laser cannon: aanzetten, dan de aanvalsknop "indrukken" zoals een speler dat doet
             t.view(0, 6.5, -60, -4.5, 180, 8);
-            t.step(10, RepulsorControl::toggle);
-            t.shot(30, "42_repulsor_armed");
+            t.step(10, LaserCannonControl::toggle);
+            t.shot(30, "42_laser_cannon_armed");
             t.tap(0, () -> Minecraft.getInstance().options.keyAttack);
-            t.shot(1, "43_repulsor_fired");
-            t.shot(3, "43b_repulsor_impact");
+            t.shot(1, "43_laser_cannon_fired");
+            t.shot(3, "43b_laser_cannon_impact");
             // Hoe zien anderen het? De arm vooruit en een gloeiende handpalm.
             t.camera(0, CameraType.THIRD_PERSON_FRONT);
-            t.shot(20, "43c_repulsor_front");
+            t.shot(20, "43c_laser_cannon_front");
             t.camera(0, CameraType.THIRD_PERSON_BACK);
             t.tap(0, () -> Minecraft.getInstance().options.keyAttack);
-            t.shot(2, "43d_repulsor_back_fire");
+            t.shot(2, "43d_laser_cannon_back_fire");
             t.camera(0, CameraType.FIRST_PERSON);
-            t.step(30, RepulsorControl::toggle);
+            t.step(30, LaserCannonControl::toggle);
         }
 
         // --- Vliegen met het harnas. In creative vlieg je gewoon zoals altijd, dus even survival.
@@ -911,27 +911,27 @@ public final class VisualCheck {
             t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
         }
 
-        // --- De Bibie's Industries Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
+        // --- De Biebia's Industries Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
         if (want("tower")) {
             tower(t);
         }
 
-        // --- De zes bewakingscamera's van de Bibie's Industries Tower op de bewakingsmuur (jij neemt de kern even
+        // --- De zes bewakingscamera's van de Biebia's Industries Tower op de bewakingsmuur (jij neemt de kern even
         // over), en het grote beeld van de lobby en de kluis.
         if (want("towercams")) {
-            int x = BIBIE_TOWER.getX();
-            int y = BIBIE_TOWER.getY();
-            int z = BIBIE_TOWER.getZ();
+            int x = BIEBIA_TOWER.getX();
+            int y = BIEBIA_TOWER.getY();
+            int z = BIEBIA_TOWER.getZ();
             BlockPos core = new BlockPos(x + 10, y + 57, z + 20);
             t.view(0, x + 20.5, y + 40, z - 40, 0, 0);
-            t.command(60, "place template imttech:bibie_tower " + x + " " + y + " " + z);
+            t.command(60, "place template imttech:biebia_tower " + x + " " + y + " " + z);
             t.view(20, x + 12.5, y + 57, z + 20.5, 270, 0);
             t.onServer(100, player -> {
                 ServerLevel level = player.serverLevel();
                 if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
-                    be.setPassword("jarvis1", level.random);
+                    be.setPassword("bitech1", level.random);
                 }
                 com.senne.imttech.security.os.SecurityOs.open(player, core);
             });
@@ -958,19 +958,19 @@ public final class VisualCheck {
             crashSite(t);
         }
 
-        // --- Een Hydra-soldaat van dichtbij: in rust en met zijn geweer in de aanslag.
-        if (want("hydra")) {
+        // --- Een Raven-soldaat van dichtbij: in rust en met zijn geweer in de aanslag.
+        if (want("raven")) {
             t.view(0, 60.5, -60, 60.5, 180, 5);
             t.onServer(20, player -> {
                 ServerLevel level = player.serverLevel();
-                Entity calm = DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.HYDRA_SOLDIER.get(),
+                Entity calm = DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(),
                         new BlockPos(59, -60, 57), 0);
-                Entity aiming = DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.HYDRA_SOLDIER.get(),
+                Entity aiming = DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(),
                         new BlockPos(62, -60, 57), 0);
                 for (Entity soldier : new Entity[] {calm, aiming}) {
                     if (soldier instanceof net.minecraft.world.entity.Mob mob) {
                         mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
-                                new ItemStack(ModItems.HYDRA_RIFLE.get()));
+                                new ItemStack(ModItems.RAVEN_RIFLE.get()));
                     }
                 }
                 if (aiming instanceof net.minecraft.world.entity.Mob mob) {
@@ -978,11 +978,11 @@ public final class VisualCheck {
                 }
             });
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
-            t.shot(20, "h01_hydra_front");
+            t.shot(20, "h01_raven_front");
             t.view(0, 66.5, -60, 58.5, 90, 5);
-            t.shot(20, "h02_hydra_side");
+            t.shot(20, "h02_raven_side");
             t.view(0, 60.5, -60, 53.5, 0, 5);
-            t.shot(20, "h03_hydra_back");
+            t.shot(20, "h03_raven_back");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
@@ -1403,12 +1403,12 @@ public final class VisualCheck {
                 if (level.getBlockEntity(trainingCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     com.senne.imttech.training.Training.Mode shots = com.senne.imttech.training.Training.Mode.TRAINING_SHOTS;
                     long now = level.getGameTime();
-                    be.addTrainingReport(new com.senne.imttech.training.TrainingReport("Kamino", player.getGameProfile().getName(), shots,
+                    be.addTrainingReport(new com.senne.imttech.training.TrainingReport("Bootcamp", player.getGameProfile().getName(), shots,
                             com.senne.imttech.training.Training.Result.OUT_OF_LIVES, 1440, 3, 0, "Guard 2 x2, Guard 1 x1", 1, now - 4000));
-                    be.addTrainingReport(new com.senne.imttech.training.TrainingReport("Kamino", player.getGameProfile().getName(), shots,
+                    be.addTrainingReport(new com.senne.imttech.training.TrainingReport("Bootcamp", player.getGameProfile().getName(), shots,
                             com.senne.imttech.training.Training.Result.GOAL, 2680, 1, 2, "Guard 1 x1", 2, now - 1200));
                     be.logic().put(null, robotProgram("Waves", """
-                            when training_started("Kamino"):
+                            when training_started("Bootcamp"):
                                 say("Good luck, " + trainee)
                                 activate("Wave 1")
 
@@ -1512,8 +1512,8 @@ public final class VisualCheck {
             t.shot(40, "r06_rockets_hud");
         }
 
-        // --- Torentjes: een Bibie's Industries-torentje op stroom dat op twee monsters richt, een Hydra-torentje
-        // (dat jou in creative negeert en rondkijkt) en een Bibie's Industries-torentje dat uit staat (redstone).
+        // --- Torentjes: een Biebia's Industries-torentje op stroom dat op twee monsters richt, een Raven-torentje
+        // (dat jou in creative negeert en rondkijkt) en een Biebia's Industries-torentje dat uit staat (redstone).
         if (want("turrets")) {
             t.onServer(0, VisualCheck::buildTurrets);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
@@ -1942,7 +1942,7 @@ public final class VisualCheck {
                 if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
-                    be.setPassword("jarvis1", level.random);
+                    be.setPassword("bitech1", level.random);
                 }
                 for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -2015,7 +2015,7 @@ public final class VisualCheck {
             });
             t.shot(10, "y05_keycards_app");
             t.onServer(0, player -> {
-                for (String[] card : new String[][] {{"Lab access", "3"}, {"Guest", "1"}, {"Pepper", "5"}}) {
+                for (String[] card : new String[][] {{"Lab access", "3"}, {"Guest", "1"}, {"Lotte", "5"}}) {
                     net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
                     args.putString("label", card[0]);
                     args.putInt("level", Integer.parseInt(card[1]));
@@ -2054,7 +2054,7 @@ public final class VisualCheck {
                 if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
-                    be.setPassword("jarvis1", level.random);
+                    be.setPassword("bitech1", level.random);
                 }
                 for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -2184,7 +2184,7 @@ public final class VisualCheck {
                 if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
                     be.ensureSystem(level);
-                    be.setPassword("jarvis1", level.random);
+                    be.setPassword("bitech1", level.random);
                 }
                 for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -2681,8 +2681,8 @@ public final class VisualCheck {
             t.close(0);
             t.shot(4, "bp15_panel_green");
             // Zakkenrollen: alleen het scherm (in deze wereld is er geen tweede speler). De zak van
-            // "Pepper": dicht, de rommel opzij, de meter bijna vol, een kaart eruit, en een keer betrapt.
-            t.open(5, () -> new com.senne.imttech.client.pickpocket.PocketScreen(-1, "Pepper", 3, 7L));
+            // "Lotte": dicht, de rommel opzij, de meter bijna vol, een kaart eruit, en een keer betrapt.
+            t.open(5, () -> new com.senne.imttech.client.pickpocket.PocketScreen(-1, "Lotte", 3, 7L));
             t.shot(10, "bp16_pocket");
             t.step(0, () -> pocket(com.senne.imttech.client.pickpocket.PocketScreen::tourUncover));
             t.shot(5, "bp17_pocket_uncovered");
@@ -2699,7 +2699,7 @@ public final class VisualCheck {
             }));
             t.shot(5, "bp19_pocket_taken");
             t.close(0);
-            t.open(5, () -> new com.senne.imttech.client.pickpocket.PocketScreen(-1, "Pepper", 2, 11L));
+            t.open(5, () -> new com.senne.imttech.client.pickpocket.PocketScreen(-1, "Lotte", 2, 11L));
             t.step(5, () -> pocket(screen -> {
                 net.minecraft.nbt.CompoundTag caught = new net.minecraft.nbt.CompoundTag();
                 caught.putString("result", "caught");
@@ -3037,7 +3037,7 @@ public final class VisualCheck {
         if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
             be.setOwner(player);
             be.ensureSystem(level);
-            be.setPassword("jarvis1", level.random);
+            be.setPassword("bitech1", level.random);
         }
         BlockPos emitter = y.offset(6, 0, 2);
         level.setBlockAndUpdate(emitter, ModBlocks.RELAY_EMITTER.get().defaultBlockState());
@@ -3331,8 +3331,8 @@ public final class VisualCheck {
         level.addFreshEntity(arrow);
     }
 
-    /** Waar de rondleiding de Bibie's Industries Tower neerzet (ver van de rest, op de vlakte). */
-    private static final BlockPos BIBIE_TOWER = new BlockPos(200, -61, 200);
+    /** Waar de rondleiding de Biebia's Industries Tower neerzet (ver van de rest, op de vlakte). */
+    private static final BlockPos BIEBIA_TOWER = new BlockPos(200, -61, 200);
     /** Waar het wrak van de satelliet komt (het midden, op het gras). */
     private static final BlockPos CRASH_SITE = new BlockPos(-150, -61, 150);
 
@@ -3379,14 +3379,14 @@ public final class VisualCheck {
     }
 
     /**
-     * De Bibie's Industries Tower: neerzetten, dan foto's van buiten en van elke verdieping van binnen. Binnen
+     * De Biebia's Industries Tower: neerzetten, dan foto's van buiten en van elke verdieping van binnen. Binnen
      * staan we in de zuidoosthoek (met een wijde blik) en kijken we schuin naar het midden.
      */
-    /** Waar de camera met deze naam in de neergezette Bibie's Industries Tower hangt (zie tools/generate_structure.py). */
+    /** Waar de camera met deze naam in de neergezette Biebia's Industries Tower hangt (zie tools/generate_structure.py). */
     private static @org.jetbrains.annotations.Nullable BlockPos towerCamera(String name) {
-        int x = BIBIE_TOWER.getX();
-        int y = BIBIE_TOWER.getY();
-        int z = BIBIE_TOWER.getZ();
+        int x = BIEBIA_TOWER.getX();
+        int y = BIEBIA_TOWER.getY();
+        int z = BIEBIA_TOWER.getZ();
         return switch (name) {
             case "Lobby" -> new BlockPos(x + 25, y + 7, z + 14);
             case "Laser hall" -> new BlockPos(x + 20, y + 75, z + 29);
@@ -3396,12 +3396,12 @@ public final class VisualCheck {
     }
 
     private static void tower(DevScript t) {
-        int x = BIBIE_TOWER.getX();
-        int y = BIBIE_TOWER.getY();
-        int z = BIBIE_TOWER.getZ();
+        int x = BIEBIA_TOWER.getX();
+        int y = BIEBIA_TOWER.getY();
+        int z = BIEBIA_TOWER.getZ();
         // Eerst ernaartoe, zodat dat stuk wereld geladen is, dan pas neerzetten.
         t.view(0, x + 20.5, y + 40, z - 40, 0, 0);
-        t.command(60, "place template imttech:bibie_tower " + x + " " + y + " " + z);
+        t.command(60, "place template imttech:biebia_tower " + x + " " + y + " " + z);
         t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
         t.view(40, x + 20.5, y + 45, z + 90, 180, 8);
         t.shot(40, "t01_outside_south");
@@ -3438,9 +3438,9 @@ public final class VisualCheck {
         t.shot(30, "t23_aquarium");
         t.view(0, x + 12.5, y + 25, z + 22.5, 0, -10);
         t.shot(30, "t24_globe");
-        // Hoofdstuk 25: de hangar, met Bibie's security drones die rondvliegen (de kern zette ze op de docks).
+        // Hoofdstuk 25: de hangar, met Biebia's security drones die rondvliegen (de kern zette ze op de docks).
         t.view(0, x + 20.5, y + 36, z + 22.5, 180, 12);
-        t.shot(40, "t25_hangar_bibie_drones");
+        t.shot(40, "t25_hangar_biebia_drones");
         t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
     }
@@ -3550,7 +3550,7 @@ public final class VisualCheck {
         if (level.getBlockEntity(rocket.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
             generator.fill(10_000);
         }
-        level.setBlockAndUpdate(new BlockPos(83, -60, 60), ModBlocks.HYDRA_TURRET.get().defaultBlockState());
+        level.setBlockAndUpdate(new BlockPos(83, -60, 60), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
         BlockPos off = new BlockPos(87, -60, 60);
         level.setBlockAndUpdate(off, ModBlocks.ROCKET_TURRET.get().defaultBlockState());
         level.setBlockAndUpdate(off.east(), net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());

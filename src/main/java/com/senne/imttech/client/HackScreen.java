@@ -18,7 +18,7 @@ import net.minecraft.util.RandomSource;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Het hack-scherm van de hacklaptop: een terminal waarin je commando's typt om een Bibie's Industries Tower
+ * Het hack-scherm van de hacklaptop: een terminal waarin je commando's typt om een Biebia's Industries Tower
  * over te nemen. De puzzel zelf (poorten, wachtwoord, bestanden, processen) zit in HackTerminal;
  * dit scherm tekent hem en laat je typen:
  *

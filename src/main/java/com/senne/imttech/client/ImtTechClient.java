@@ -9,7 +9,7 @@ import com.senne.imttech.client.drone.DroneRenderer;
 import com.senne.imttech.client.drone.RaidDroneRenderer;
 import com.senne.imttech.client.holo.HoloTableRenderer;
 import com.senne.imttech.client.shield.DomeRenderer;
-import com.senne.imttech.client.suit.RepulsorHand;
+import com.senne.imttech.client.suit.LaserCannonHand;
 import com.senne.imttech.client.suit.TechSuitModel;
 import com.senne.imttech.client.suit.SuitEffects;
 import com.senne.imttech.registry.ModBlockEntities;
@@ -47,7 +47,7 @@ public class ImtTechClient {
         modEventBus.addListener(ImtTechClient::registerEntityRenderers);
         modEventBus.addListener(ImtTechClient::registerLayerDefinitions);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
-        modEventBus.addListener(RepulsorHand::addLayers);
+        modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
         // Een gebarsten blok ziet eruit als zijn blok met barsten; poeder krijgt de kleur van zijn blok.
         modEventBus.addListener(com.senne.imttech.client.repair.CrackedBlockRenderer::registerExtensions);
@@ -86,16 +86,16 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.robot.RobotChargeHum::onClientTick);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
-        // De repulsor aan? Dan is de aanvalsknop de repulsor.
-        NeoForge.EVENT_BUS.addListener(RepulsorControl::onInteraction);
+        // De laser cannon aan? Dan is de aanvalsknop de laser cannon.
+        NeoForge.EVENT_BUS.addListener(LaserCannonControl::onInteraction);
         // Vliegen met het harnas: de natuurkunde, en het beeld dat overhelt in de bochten.
         NeoForge.EVENT_BUS.addListener(SuitFlight::onPlayerTickPre);
         NeoForge.EVENT_BUS.addListener(SuitFlight::onPlayerTickPost);
         NeoForge.EVENT_BUS.addListener(SuitFlight::onCameraAngles);
-        // Het harnas in beeld: repulsorschoten, straalvlammen en de repulsorhand.
+        // Het harnas in beeld: laserkanonschoten, straalvlammen en de laserkanonhand.
         NeoForge.EVENT_BUS.addListener(SuitEffects::onRenderLevel);
-        NeoForge.EVENT_BUS.addListener(RepulsorHand::onRenderHand);
-        NeoForge.EVENT_BUS.addListener(RepulsorHand::onRenderPlayer);
+        NeoForge.EVENT_BUS.addListener(LaserCannonHand::onRenderHand);
+        NeoForge.EVENT_BUS.addListener(LaserCannonHand::onRenderPlayer);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.suit.FlightPose::onRenderPlayerPre);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.suit.FlightPose::onRenderPlayerPost);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.suit.FlightPose::onClientTick);
@@ -129,7 +129,7 @@ public class ImtTechClient {
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.DRONE.get(), DroneRenderer::new);
         event.registerEntityRenderer(ModEntities.RAID_DRONE.get(), RaidDroneRenderer::new);
-        event.registerEntityRenderer(ModEntities.HYDRA_SOLDIER.get(), com.senne.imttech.client.hydra.HydraSoldierRenderer::new);
+        event.registerEntityRenderer(ModEntities.RAVEN_SOLDIER.get(), com.senne.imttech.client.raven.RavenSoldierRenderer::new);
         event.registerEntityRenderer(ModEntities.MINI_ROCKET.get(), com.senne.imttech.client.suit.MiniRocketRenderer::new);
         event.registerEntityRenderer(ModEntities.ORBITAL_MISSILE.get(), com.senne.imttech.client.satellite.OrbitalMissileRenderer::new);
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.imttech.client.drone.SecurityDroneRenderer::new);
@@ -149,8 +149,8 @@ public class ImtTechClient {
         event.registerLayerDefinition(DroneModel.LAYER, DroneModel::createBodyLayer);
         event.registerLayerDefinition(com.senne.imttech.client.robot.GuardDroneModel.LAYER,
                 com.senne.imttech.client.robot.GuardDroneModel::createBodyLayer);
-        event.registerLayerDefinition(com.senne.imttech.client.hydra.HydraSoldierRenderer.LAYER,
-                com.senne.imttech.client.hydra.HydraSoldierRenderer::createLayer);
+        event.registerLayerDefinition(com.senne.imttech.client.raven.RavenSoldierRenderer.LAYER,
+                com.senne.imttech.client.raven.RavenSoldierRenderer::createLayer);
         event.registerLayerDefinition(com.senne.imttech.client.suit.MiniRocketRenderer.LAYER,
                 com.senne.imttech.client.suit.MiniRocketRenderer::createLayer);
         event.registerLayerDefinition(com.senne.imttech.client.satellite.OrbitalMissileRenderer.LAYER,

@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Op de SERVER zoekt hij om de halve seconde het dichtstbijzijnde doelwit dat hij kan zien
  * (zie TurretTargeting), houdt dat vast tot het neer is of uit zicht, en schiet hij: een laser (kost stroom van het net) en, als er munitie
- * in zit, af en toe een raket. Het Hydra-torentje heeft geen stroom nodig en geen raketten.
+ * in zit, af en toe een raket. Het Raven-torentje heeft geen stroom nodig en geen raketten.
  *
  * In JOUW SPEL draait de kop naar dat doelwit (zie clientTick en TurretRenderer). De server
  * vertelt alleen WIE het doelwit is; het draaien zelf rekent je spel uit, zo loopt het soepel.
@@ -90,8 +90,8 @@ public class TurretBlockEntity extends BlockEntity {
         return getBlockState().getBlock() instanceof TurretBlock turret ? turret.kind() : TurretKind.ROCKET;
     }
 
-    public boolean isHydra() {
-        return kind() == TurretKind.HYDRA;
+    public boolean isRaven() {
+        return kind() == TurretKind.RAVEN;
     }
 
     public ItemStackHandler ammo() {

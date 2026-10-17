@@ -28,7 +28,7 @@ version="${mod_version}" #mandatory
 # A display name for the mod
 displayName="${mod_name}" #mandatory
 
-# Nieuwe waarden voor vaste lijsten van Minecraft (bij ons: de armhouding van de repulsor)
+# Nieuwe waarden voor vaste lijsten van Minecraft (bij ons: de armhouding van de laser cannon)
 enumExtensions="META-INF/enumextensions.json"
 
 # A URL to query for updates for this mod. See the JSON update specification https://docs.neoforged.net/docs/misc/updatechecker/
@@ -48,7 +48,7 @@ enumExtensions="META-INF/enumextensions.json"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-I.M.T - I Am Tunnelsensor. AR glasses by Bibie's Industries: HUD, scanners, drones and a satellite.
+I.M.T - I Am Tunnelsensor. AR glasses by Biebia's Industries: HUD, scanners, drones and a satellite.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.

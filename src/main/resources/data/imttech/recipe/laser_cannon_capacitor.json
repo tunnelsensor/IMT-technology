@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:ingots/gold"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "pattern": [
+    "GRG",
+    "RCR",
+    "GRG"
+  ],
+  "result": {
+    "id": "imttech:laser_cannon_capacitor"
+  }
+}

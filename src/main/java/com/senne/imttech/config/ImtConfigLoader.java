@@ -67,7 +67,7 @@ public final class ImtConfigLoader {
             ImtConfig.Lights.class,
             ImtConfig.Robots.class,
             ImtConfig.Training.class,
-            ImtConfig.Hydra.class,
+            ImtConfig.Raven.class,
             ImtConfig.Raids.class);
 
     /** Eén instelbaar getal: waar het staat, de regel in het bestand, en de standaardwaarde. */

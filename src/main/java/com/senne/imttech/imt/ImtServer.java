@@ -396,7 +396,7 @@ public final class ImtServer {
             case ILLUSION_CLOAK -> ImtIllusions.start(player, glasses, IllusionScene.Kind.CLOAK);
             case ILLUSION_STOP -> ImtIllusions.stopAll(player);
             // Fase 15
-            case REPULSOR -> ImtSuit.repulsor(player);
+            case LASER_CANNON -> ImtSuit.laserCannon(player);
             case ROCKETS -> com.senne.imttech.suit.SuitRockets.fire(player);
             case STRIKE_PRECISION -> satelliteStrike(player, glasses, SatelliteMode.PRECISION);
             case STRIKE_BOMBARDMENT -> satelliteStrike(player, glasses, SatelliteMode.BOMBARDMENT);
@@ -1011,7 +1011,7 @@ public final class ImtServer {
 
     /**
      * Is deze functie weer beschikbaar? Zonder melding: voor dingen die je ingedrukt houdt,
-     * zoals de repulsor, zou je anders elke tick "nog 1 seconde" in beeld krijgen.
+     * zoals de laser cannon, zou je anders elke tick "nog 1 seconde" in beeld krijgen.
      */
     public static boolean isReady(ServerPlayer player, ImtCooldown cooldown) {
         return player.level().getGameTime() >= state(player).readyAt[cooldown.ordinal()];

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * De puzzel achter de hack van een Bibie's Industries Tower: een nep-terminal waar je commando's in typt
+ * De puzzel achter de hack van een Biebia's Industries Tower: een nep-terminal waar je commando's in typt
  * (jouw wens, 27 september: typen, zoeken naar de open poort, inbreken, het beveiligingsprogramma
  * vinden en overnemen, met verschillende soorten puzzels).
  *
@@ -65,14 +65,14 @@ public final class HackTerminal {
             "CANNON", "BEACON", "PISTON", "PROTON", "PHOTON", "CARBON", "BUTTON", "LEGION", "FUSION", "VISION",
             "MOTION", "OPTION",
             "SIGNAL", "PORTAL", "NEURAL", "VECTOR", "SENSOR", "DOCTOR", "MIRROR",
-            "JARVIS", "FRIDAY", "PEPPER", "MALIBU", "SHIELD", "STRIKE", "ORBITS", "CIPHER", "SYSTEM", "MATRIX",
+            "BITECH", "BIEBIA", "COFFEE", "TUNNEL", "BUNKER", "STRIKE", "ORBITS", "CIPHER", "SYSTEM", "MATRIX",
             "TITANS", "DRONES", "SECURE", "ACCESS", "BREACH", "KERNEL", "BINARY", "ARMORS", "VAULTS", "LAUNCH"};
     /** Zoveel woorden staan er in een dump (het wachtwoord meegeteld). */
     private static final int DUMP_WORDS = 8;
     /** Uit zoveel woorden die het meest op het wachtwoord lijken, kiest hij de andere woorden. */
     private static final int CLOSEST = 12;
     private static final String[] GUARDS = {"sentinel", "aegis", "warden", "argus", "vigil", "bastion", "citadel"};
-    private static final String[] NAMED_PORTS = {"jarvis-sync", "friday-link", "karen-api", "holo-stream",
+    private static final String[] NAMED_PORTS = {"bitech-sync", "bitech-link", "bitech-api", "holo-stream",
             "vault-mon", "suit-telemetry"};
     private static final String JUNK = "!@#$%^&*()[]{}<>?/\\|+=-_;:'\",.";
     /** Zoveel poorten scant hij per seconde. */
@@ -104,7 +104,7 @@ public final class HackTerminal {
     /** Hoe de speler heet: dat moet de nieuwe eigenaar worden. */
     private final String playerName;
     private boolean watchdog = true;
-    private String owner = "bibie-industries";
+    private String owner = "biebia-industries";
 
     // SHELL
     private final String guard;
@@ -149,7 +149,7 @@ public final class HackTerminal {
 
         // Het beveiligingsprogramma en de andere processen.
         guard = GUARDS[random.nextInt(GUARDS.length)];
-        List<String> procs = new ArrayList<>(List.of("init", "jarvis-backup", "holo-render", "elevator-ctl", "hvac",
+        List<String> procs = new ArrayList<>(List.of("init", "bitech-backup", "holo-render", "elevator-ctl", "hvac",
                 "coffee-maker", "turret-ctl", "cam-feed"));
         for (String decoy : GUARDS) {
             if (!decoy.equals(guard) && procs.size() < 12 && random.nextInt(2) == 0) {
@@ -166,10 +166,10 @@ public final class HackTerminal {
             processes.put(proc, pid);
         }
         // De README staat bovenaan in de map waar je binnenkomt: stap voor stap wat je moet doen.
-        // Een briefje van Bibie aan Happy: geen kant-en-klare commando's, wel alle aanwijzingen.
-        files.put("/README.txt", "Happy,\n"
+        // Een briefje van Biebia aan Seppe: geen kant-en-klare commando's, wel alle aanwijzingen.
+        files.put("/README.txt", "Seppe,\n"
                 + "Yes, this is the maintenance shell. No, you can't break anything. Probably.\n"
-                + "The tower security is a daemon. I rename it every week, because Rhodey keeps\n"
+                + "The tower security is a daemon. I rename it every week, because Jens keeps\n"
                 + "killing it by name. Its current name is written in the security config\n"
                 + "somewhere in /etc. You know how to read a file. You cat it.\n"
                 + "Don't trust the process list blindly: a few daemons there only SOUND like\n"
@@ -179,18 +179,18 @@ public final class HackTerminal {
                 + "watchdog keeps putting the owner back, so shut that thing up first. Then make\n"
                 + "yourself the owner. Type 'help' in there if you get lost.\n"
                 + "And do NOT kill it. It just comes back angrier.\n"
-                + "- Bibie");
-        files.put("/home/bibie/notes.txt", "TODO: rename the security daemon (again).\n"
-                + "Rhodey keeps killing it by name. New name is in /etc/security.conf.\n"
+                + "- Biebia");
+        files.put("/home/biebia/notes.txt", "TODO: rename the security daemon (again).\n"
+                + "Jens keeps killing it by name. New name is in /etc/security.conf.\n"
                 + "Also: stop leaving the maintenance port open. - T");
-        files.put("/etc/security.conf", "# Bibie's Industries tower security\ndaemon = " + guard
+        files.put("/etc/security.conf", "# Biebia's Industries tower security\ndaemon = " + guard
                 + "\nwatchdog = on\nrestart_on_kill = true\noverride_requires = pid");
-        files.put("/etc/hostname", "bibie-sec-core");
+        files.put("/etc/hostname", "biebia-sec-core");
         files.put("/var/log/boot.log", "[ ok ] turret-ctl online\n[ ok ] cam-feed online\n[ ok ] " + guard
                 + " online (watchdog)\n[warn] coffee-maker: low on beans");
-        files.put("/opt/jarvis/warning.txt", "JARVIS maintenance shell. Unauthorized access will be reported to\n"
-                + "Bibie, Miss Potts and Happy. Mostly Happy.");
-        header("BIBIE'S INDUSTRIES // TOWER SECURITY NODE 10.4.0.1");
+        files.put("/opt/bitech/warning.txt", "BiTech maintenance shell. Unauthorized access will be reported to\n"
+                + "Biebia, Lotte and Seppe. Mostly Seppe.");
+        header("BIEBIA'S INDUSTRIES // TOWER SECURITY NODE 10.4.0.1");
         hint("Type 'help' for commands. Tab completes, arrow up repeats.");
     }
 
@@ -209,7 +209,7 @@ public final class HackTerminal {
         return switch (stage) {
             case RECON -> "kali@laptop:~$ ";
             case LOGIN -> "password: ";
-            case SHELL -> "root@bibie-sec-core:" + cwd + "# ";
+            case SHELL -> "root@biebia-sec-core:" + cwd + "# ";
             case OVERRIDE, DONE -> guard + "> ";
         };
     }
@@ -413,7 +413,7 @@ public final class HackTerminal {
                     return;
                 }
                 good("Connected to 10.4.0.1:" + port + " (" + ports.get(port) + ")");
-                header("JARVIS MAINTENANCE SHELL - AUTHENTICATION REQUIRED");
+                header("BITECH MAINTENANCE SHELL - AUTHENTICATION REQUIRED");
                 stage = Stage.LOGIN;
                 newDump();
             }
@@ -501,9 +501,9 @@ public final class HackTerminal {
             return;
         }
         if (word.equals(password)) {
-            good("ACCESS GRANTED. Welcome back, Bibie.");
+            good("ACCESS GRANTED. Welcome back, Biebia.");
             stage = Stage.SHELL;
-            hint("You are in. Bibie left a note in README.txt (read a file with: cat <file>)");
+            hint("You are in. Biebia left a note in README.txt (read a file with: cat <file>)");
             return;
         }
         if (!candidates.contains(word)) {
@@ -630,7 +630,7 @@ public final class HackTerminal {
                 hint("You're inside " + guard + ". Type 'help' to see what you can change.");
             }
             case "pwd" -> normal(cwd);
-            case "whoami" -> normal("root (probably not Bibie)");
+            case "whoami" -> normal("root (probably not Biebia)");
             default -> error(command + ": command not found (try 'help')");
         }
     }

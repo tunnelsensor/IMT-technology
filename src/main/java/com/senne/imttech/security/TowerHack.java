@@ -24,7 +24,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
- * De Bibie's Industries Tower overnemen met een laptop.
+ * De Biebia's Industries Tower overnemen met een laptop.
  *
  * 1. Je klikt met de laptop op de beveiligingskern: je zet hem opengeklapt bovenop de kern
  *    (HackingLaptopBlock) en de hack begint. Het alarm gaat af, en alle beveiligingsdrones van de
@@ -97,7 +97,7 @@ public final class TowerHack {
                     drone -> corePos.equals(drone.home()))) {
                 drone.setTarget(player);
             }
-            // Bibie's security drones (hoofdstuk 25) krijgen de opdracht "alarm": ze komen kijken.
+            // Biebia's security drones (hoofdstuk 25) krijgen de opdracht "alarm": ze komen kijken.
             com.senne.imttech.robot.TowerDrones.alarm(level, core, player);
         }
         player.displayClientMessage(Component.translatable("security.imttech.msg.hack_started")
@@ -153,7 +153,7 @@ public final class TowerHack {
             return;
         }
         core.setOwner(player);
-        // Bibie's drones (hoofdstuk 25) zijn nu van jou.
+        // Biebia's drones (hoofdstuk 25) zijn nu van jou.
         com.senne.imttech.robot.TowerDrones.handOver(level, core, player);
         level.playSound(null, corePos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 1.4f);
         player.displayClientMessage(Component.translatable("security.imttech.msg.hack_done")

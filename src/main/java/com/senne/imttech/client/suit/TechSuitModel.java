@@ -27,7 +27,7 @@ import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsE
  * lichaamsdeel zelf. Dit model is dat ook, maar met extra doosjes erop die meebewegen:
  * - borst: een reactor die uitsteekt, twee borstplaten, drie buikplaten, een rugplaat met
  *   twee straalopeningen;
- * - armen: schouderplaten, onderarmbeschermers, en een repulsor in de handpalm;
+ * - armen: schouderplaten, onderarmbeschermers, en een laser cannon in de handpalm;
  * - laarzen: een dikkere schaal, een gouden neus en een zool met een straalbuis;
  * - broek: kniestukken, dijplaten aan de buitenkant en een gesp aan de riem;
  * - met een raketpakket: twee raketbuizen op de rug, die alleen zichtbaar zijn als de
@@ -137,7 +137,7 @@ public final class TechSuitModel {
                 .addBox(centreX - 3.5f, -3.8f, -3.5f, 7, 3, 7), PartPose.rotation(0, 0, centreX * 0.12f));
         arm.addOrReplaceChild("gauntlet", mirrored(CubeListBuilder.create().texOffs(92, 16), mirror)
                 .addBox(centreX - 3.5f, 6.5f, -3.5f, 7, 3, 7), PartPose.ZERO);
-        arm.addOrReplaceChild("repulsor", mirrored(CubeListBuilder.create().texOffs(64, 28), mirror)
+        arm.addOrReplaceChild("laser_cannon", mirrored(CubeListBuilder.create().texOffs(64, 28), mirror)
                 .addBox(centreX - 1.5f, 10.5f, -1.5f, 3, 1, 3), PartPose.ZERO);
     }
 

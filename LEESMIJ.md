@@ -2,7 +2,7 @@
 
 Een mod die je een I.M.T-bril geeft (**I.M.T** = "I Am Tunnelsensor"): een HUD, drones, een
 satelliet, schilden, illusies, redstone op afstand, en zelfs muziek. De gebouwen in je wereld
-(de toren, de bunker en de satelliet) zijn van **Bibie's Industries**. Alles werkt met
+(de toren, de bunker en de satelliet) zijn van **Biebia's Industries**. Alles werkt met
 **Minecraft 1.21.1** en **NeoForge 21.1.251**.
 
 ---
@@ -27,7 +27,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
 ## 2. Beginnen in het spel
 
 - **De bril kun je niet maken.** Er bestaat geen recept voor: de enige I.M.T-bril in je
-  wereld ligt in de kluis van een Bibie's Industries Tower. Zoek er dus eerst een (zie hieronder).
+  wereld ligt in de kluis van een Biebia's Industries Tower. Zoek er dus eerst een (zie hieronder).
 - Craft een **computerchip** (koper, goud, redstone, diamant) — die heb je nodig voor bijna al het
   andere: het laadstation, de relais, de laserzenders en de upgrades.
 - Zet de bril op je hoofd (helm-slot). De eerste die hem opzet is de eigenaar; anderen krijgen
@@ -36,8 +36,8 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   (50 per stuk): dat is je noodvoorraad. Voor echte stroom zet je een **zonnepaneel** of een
   **warmtegenerator** neer en verbind je die met **stroomkabels** (zie "Stroom en kabels").
   In het station bouw je ook upgrades in (batterij, scanner, drones).
-- Zoek een **Bibie's Industries Tower** in je wereld: een wolkenkrabber van 41 x 110 blokken met een
-  verlicht BIBIE-logo en een blauwe lichtstraal uit de kroon (die zie je van ver). Binnen: een
+- Zoek een **Biebia's Industries Tower** in je wereld: een wolkenkrabber van 41 x 110 blokken met een
+  verlicht BIEBIA-logo en een blauwe lichtstraal uit de kroon (die zie je van ver). Binnen: een
   lobby met receptie, een lab, een archief, een hangar, een woonverdieping, de beveiliging,
   een penthouse en een landingsdek op het dak. Naar boven ga je met de glazen liftkoker
   (een ladder) in de lobby. In de gewone kisten vind je materiaal en upgrades — maar
@@ -52,11 +52,11 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
   blokken om zich heen, dus de hele toren (zie "Het bereik van een kern" hieronder):
   - **beveiligingstorentjes** (wit met rood) bij de lift in de lobby, op de
     beveiligingsverdieping en in de kluis schieten op iedereen die binnenkomt (niet in creative);
-  - in de **hangar** vliegen vier **security drones** die Bibie zelf programmeerde (zie "Security
+  - in de **hangar** vliegen vier **security drones** die Biebia zelf programmeerde (zie "Security
     drones" hieronder). Ze schieten op iedereen die ze zien (niet in creative), ook zonder PvP.
     Wat je neerschiet, komt niet terug: de kern maakt geen nieuwe.
   De kern is heel sterk (slopen kan met diamant, maar duurt lang). Wie hem **hackt**, krijgt de
-  toren: dan brandt het lampje groen, zijn Bibie's drones van jou, laten torentjes en laserwanden
+  toren: dan brandt het lampje groen, zijn Biebia's drones van jou, laten torentjes en laserwanden
   jou en je team met rust, en bewaken ze de toren voor jou. Andere spelers vallen ze dan alleen
   aan als PvP aan staat.
 - Alle beveiliging draait op **stroom** van de verborgen krachtcentrale op de
@@ -69,7 +69,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
 - **Hacken** doe je met een **Hacking Laptop** (drie zwarte glasruiten, redstone met een
   computerchip ertussen, drie ijzer; een bril heb je er niet voor nodig). Klik ermee op de kern:
   je zet de laptop **opengeklapt bovenop de kern** (er moet daar dus plek zijn), het alarm gaat
-  af en Bibie's drones komen kijken (als ze bij je kunnen komen). Op je scherm opent de **terminal** van de laptop, waarin je
+  af en Biebia's drones komen kijken (als ze bij je kunnen komen). Op je scherm opent de **terminal** van de laptop, waarin je
   commando's typt (Enter = uitvoeren, **Tab** = aanvullen, pijltje omhoog = vorige commando,
   scrollwiel = terug, `help` = wat je hier kunt):
   1. **Recon**: `scan` laat de poorten zien, maar ze staan allemaal op "filtered". Lees het
@@ -81,7 +81,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
      woorden door die daardoor niet meer kunnen, en zegt hij welke er nog over zijn ("Still
      possible"). Meestal heb je het in 2 of 3 keer. Na vijf fouten is hij even geblokkeerd en
      krijg je een nieuwe dump.
-  3. **Search**: nu ben je binnen, en Bibie heeft een briefje achtergelaten: `README.txt` (lees het
+  3. **Search**: nu ben je binnen, en Biebia heeft een briefje achtergelaten: `README.txt` (lees het
      met `cat README.txt`). Er staan geen kant-en-klare commando's in, wel alle aanwijzingen: de
      geheime naam van het beveiligingsprogramma staat in de security-config in `/etc`, een paar
      programma's in `ps` klinken alleen maar als beveiliging (nep), en je neemt het over met zijn
@@ -124,7 +124,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (74 automatis
 | **U** | Ping plaatsen |
 | **O** | Comms (berichten naar andere I.M.T-dragers) |
 | **Z** | Spraaktoets: ingedrukt houden en praten |
-| **I** | Repulsor aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
+| **I** | Laser cannon aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
 | **X** | Salvo mini-raketten (hele harnas + raketpakket) |
 
 Alle toetsen kun je aanpassen: **Opties > Besturing > I.M.T** Daar staan ook "Cable X-ray
@@ -137,7 +137,7 @@ allebei standaard zonder toets.
 
 | Tabblad | Wat erin zit |
 |---------|--------------|
-| **Combat** | Repulsor, mini-raketten, rayshield |
+| **Combat** | Laser cannon, mini-raketten, rayshield |
 | **Satellite & Arsenal** | Precisieraket, bombardement, schuivende laser (kiezen = meteen vuren), satellietscherm (upgrades), arsenaal |
 | **Drones** | Zwerm, één drone, escorte, escortevorm, stand down, markeringen wissen |
 | **Recon drones** | Drone-camera, spionagedrone, meekijken, rapport |
@@ -310,7 +310,7 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   Opties > Besturing > I.M.T: "Cable X-ray on/off").
 - **Shift + rechtsklik** met kabel in je hand op een kabel: oprapen. Een **schaar** (rechtsklik)
   knipt een kabel door; er valt een stukje uit. Een kabel in een muur moet je eerst vrijhakken.
-- Oude kabelblokken (uit een oudere versie, en in de Bibie's Industries Tower en de Bibie's Industries-bunker) worden
+- Oude kabelblokken (uit een oudere versie, en in de Biebia's Industries Tower en de Biebia's Industries-bunker) worden
   vanzelf zo'n getekende kabel.
 - Een **zonnepaneel** werkt alleen overdag onder open hemel. Het is een schuin paneel op een
   paaltje (je loopt er gewoon overheen).
@@ -344,7 +344,7 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 
   Wat je kiest, geldt meteen voor de **hele laserpoort** (alle zenders die eraan vastzitten), en
   een zender die je ertegen zet, neemt die instellingen over. Een zender van vóór 13 oktober wordt
-  van wie hem als eerste opent; in iemands basis, de Bibie's Industries Tower of de Bibie's Industries-bunker kan dat niet.
+  van wie hem als eerste opent; in iemands basis, de Biebia's Industries Tower of de Biebia's Industries-bunker kan dat niet.
   Aan met redstone, en hij heeft **stroom** nodig (een beetje per seconde zolang de wand
   staat; om aan te gaan moet het net stroom hebben voor minstens 5 seconden). Zonder stroom
   blijft hij gewoon uit: je hoort één zacht klikje als je de redstone aanzet, en daarna wacht
@@ -389,13 +389,13 @@ schieten. Verstop je je achter een muur, dan komen ze dichterbij en breken ze zi
 binnen.
 
 - **Vanzelf**: standaard elke 20 tot 45 minuten, zolang je de bril op hebt.
-- **Omdat je erom vroeg**: sloop je in een Bibie's Industries Tower, dan trek je aandacht. Doe je dat te
+- **Omdat je erom vroeg**: sloop je in een Biebia's Industries Tower, dan trek je aandacht. Doe je dat te
   vaak, dan komen ze meteen (bij het eerste blok krijg je een waarschuwing).
 - **Bij een wrak**: het wrak van een neergestorte satelliet zendt nog, en zij luisteren mee.
   Kom je er met de bril, dan duiken ze meteen naar beneden (hooguit eens per 10 minuten).
 
 ### Neergestorte satellieten
-Hier en daar is een oude Bibie's Industries-satelliet uit zijn baan gevallen: een krater van zo'n 25
+Hier en daar is een oude Biebia's Industries-satelliet uit zijn baan gevallen: een krater van zo'n 25
 blokken breed met verschroeide grond, opgeworpen aarde op de rand en aan één kant de voor
 waar hij binnenkwam. Je vindt ze in vlaktes, woestijnen, savannes, badlands, bossen, taiga's
 en sneeuwvlaktes; de rook van de smeulende brokstukken zie je van ver. In het midden ligt de
@@ -408,11 +408,11 @@ een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaa
 - **Instellen** in `config/imttech.toml`: aan/uit met `rules.raidsEnabled`, en onder `[raids]`
   `minMinutes`, `maxMinutes` en `size` (hoeveel drones per golf, standaard 4). Zie ook hoofdstuk 6.
 
-### Hydra-soldaten
-Hydra wil I.M.T-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
+### Raven-soldaten
+Raven wil I.M.T-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
 embleem op borst en helm. Zien ze je, dan leggen ze hun **lasergeweer** aan en schieten ze rode
 laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones.
-Ze bewaken de Bibie's Industries-bunker (zie hieronder).
+Ze bewaken de Biebia's Industries-bunker (zie hieronder).
 
 Ze vechten als **ploeg**: ziet één soldaat je, dan weten de soldaten in de buurt het ook. Ze
 verdelen zich rondom je (omsingelen), stappen tijdens het schieten opzij en lopen achteruit als
@@ -420,15 +420,15 @@ je te dichtbij komt. Verstop je je achter een muur, dan zoeken ze een plek om de
 waaruit ze je wel zien; zit je binnen, dan zoeken ze een weg naar binnen, en **deuren doen ze
 gewoon open**.
 
-- Versla je er een, dan laat hij soms een **Hydra-onderdeel** vallen. Dat heb je nodig voor
+- Versla je er een, dan laat hij soms een **Raven-onderdeel** vallen. Dat heb je nodig voor
   de nieuwste tech: het raketpakket (zie Het harnas) en de torentjes (zie Torentjes).
-- Zelf oproepen om te oefenen: het **Hydra Soldier Spawn Egg** in de I.M.T Technology-tab.
+- Zelf oproepen om te oefenen: het **Raven Soldier Spawn Egg** in de I.M.T Technology-tab.
 
 ### Torentjes
-Een **Rocket Turret** verdedigt je basis. Craft hem met een **Hydra-onderdeel** in het midden,
+Een **Rocket Turret** verdedigt je basis. Craft hem met een **Raven-onderdeel** in het midden,
 twee computerchips ernaast, een dispenser erboven, een observer eronder en ijzer in de hoeken.
 Zet hem neer: hij is van jou. De kop kijkt rustig rond; komt er een monster (ook raiddrones en
-Hydra-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten tot het neer is.
+Raven-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten tot het neer is.
 
 - **Stroom**: elk torentje heeft stroom van het net nodig. Sluit hem aan met een stroomkabel op
   een zonnepaneel of warmtegenerator (of zet die er direct tegenaan). Zonder stroom doet hij
@@ -447,9 +447,9 @@ Hydra-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten 
 - **Hoe staat hij ervoor?** Klik rechts met een lege hand: aan/uit, stroom en raketten. Met
   shift haal je de raketten eruit.
 
-In de Bibie's Industries-bunker staan **Hydra Turrets** (zwart met rood): die schieten op jou en je drones,
+In de Biebia's Industries-bunker staan **Raven Turrets** (zwart met rood): die schieten op jou en je drones,
 en ook zij draaien op stroom (van de reactor). Ook die gaan uit met redstone. Sloop je er een,
-dan krijg je ijzer en soms een Hydra-onderdeel.
+dan krijg je ijzer en soms een Raven-onderdeel.
 
 ### De stroomkast
 Een **Power Cabinet** (ijzer, twee hendels, een computerchip en twee stroomkabel) is een punt waar
@@ -459,10 +459,10 @@ vast; zet je een kant uit, dan krijgt wat daar aan hangt geen stroom meer uit de
 Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 - **Rechtsklik** opent het deurtje (iedereen die ervoor staat, kan schakelen). Per kant zie je
   een lampje, of er iets aan hangt ("wired"), en de schakelaar.
-- **Link to I.M.T** (alleen de eigenaar: wie hem neerzette, of in een Bibie's Industries Tower wie de
+- **Link to I.M.T** (alleen de eigenaar: wie hem neerzette, of in een Biebia's Industries Tower wie de
   toren hackte) zet de zes schakelaars in je redstone-lijst (toets **'**), onder **Power
   cabinets**, zodat je ze op afstand of met je stem schakelt ("turn off cabinet 1 left").
-- In de Bibie's Industries Tower en de Bibie's Industries-bunker staat er een op een goed bewaakte plek.
+- In de Biebia's Industries Tower en de Biebia's Industries-bunker staat er een op een goed bewaakte plek.
 
 ### Licht: de Arc Lamp en de lichtschakelaar
 De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een computerchip) is een lamp met **lichtniveau
@@ -723,7 +723,7 @@ de knoppen van de desktop, zijn zone en de backups die op dit datacenter stonden
 je welke kern het is. Zet hem terug en alles is er weer, met hetzelfde IP (dus je keycards werken nog)
 als dat nog vrij is. Op een andere plek blijft van de zone over wat in het nieuwe gebied past. Ook in
 creative valt hij eruit. Een kern die een ander weghaalt of opblaast, blijft van jou en houdt jouw
-wachtwoord: de dief moet hem nog steeds hacken. De Bibie's Industries Tower die nog van niemand is, valt als een
+wachtwoord: de dief moet hem nog steeds hacken. De Biebia's Industries Tower die nog van niemand is, valt als een
 nieuwe kern.
 
 **C4.** Je plakt C4 op een vloer, muur of plafond, ook in de zone van een ander.
@@ -1063,7 +1063,7 @@ Devices zet al je security drones in zijn gebied aan of uit (uit: ze vliegen naa
 **Devices** staan ze bij DRONES, met hun batterij. Oude drones uit een bestaande wereld ("Patrol drone 1")
 blijven werken tot ze neergeschoten worden.
 
-**Bibie's drones.** In de hangar van een Bibie's Industries Tower staan zes Drone Docks; op vier zette Bibie een security drone
+**Biebia's drones.** In de hangar van een Biebia's Industries Tower staan zes Drone Docks; op vier zette Biebia een security drone
 ("Tower drone 1" tot 4) met Scan, Face Recognition, Laser en Pathfinding, en zijn programma **Tower patrol**: ze
 vliegen rondjes door de hangar en schieten op iedereen die ze zien (voor een drone van niemand is iedereen een
 vreemde, en het is de toren die schiet, dus ook zonder PvP). Gaat het alarm (iemand begint de kern te hacken), dan
@@ -1075,13 +1075,13 @@ De getallen staan in `config/imttech.toml` onder `[robots]` (`droneHealth`, `dro
 `droneDockChargeRate`, `droneDrainOn`, `droneDrainFlying`, `droneSpeed`, `droneScanRange`, `droneScanAngle`,
 `droneFireInterval`, `droneTakeOff`) en `[security]` (`towerDrones`).
 
-### Training zoals Domino squad
-Zoals de clones op Kamino: je laat je eigen beveiliging op jezelf (of een vriend) schieten, met
+### Training zoals Rookie squad
+Zoals in een trainingskamp: je laat je eigen beveiliging op jezelf (of een vriend) schieten, met
 **trainingsschoten** die geen schade doen. Daarvoor zijn er drie blokken:
 
 - **Training Start** (ijzer, een limoengroene kleurstof, redstone en een Computer Chip). Zet hem in het gebied van je
   beveiligingskern. **Sneak + klik** met een lege hand: de instellingen. **Name** is hoe de training heet in je
-  diagrammen (bijvoorbeeld Kamino), **Shots** is *Training shots* (geen schade) of *Lethal* (echte schade),
+  diagrammen (bijvoorbeeld Bootcamp), **Shots** is *Training shots* (geen schade) of *Lethal* (echte schade),
   **Lives** 1 tot 10, en **Time** geen limiet tot een uur. Gewoon **klikken**: de training begint, en jij bent de
   **trainee**. I.M.T telt af (3, 2, 1) en zegt "go!". Nog een klik stopt hem.
 - **Training Goal** (witte en zwarte wol en een gouden staaf): een geblokte finishvlag. Stapt de trainee erop, dan
@@ -1110,19 +1110,19 @@ bezig is. Een robot of drone die tijdens de training neergaat, blijft liggen tot
 Je diagram stuurt de golven:
 
 ```
-when training_started("Kamino"):
+when training_started("Bootcamp"):
     say("Good luck, " + trainee)
     activate("Wave 1")
 
 when squad_down("Wave 1"):
     activate("Wave 2")
 
-when training_ended("Kamino"):
+when training_ended("Bootcamp"):
     if passed:
         say(trainee + " passed")
 ```
 
-Ook `when training_hit("Kamino"):` bestaat. Daarin, en in de andere twee, ken je `trainee` (zijn naam), `lives`,
+Ook `when training_hit("Bootcamp"):` bestaat. Daarin, en in de andere twee, ken je `trainee` (zijn naam), `lives`,
 `hits` en (na het einde) `passed`. In de Help van de app Logic staan ze onder **TRAINING**.
 
 **Het programma van het End-blok.** Sneak + klik met een lege hand (wie hem neerzette of vertrouwd is): een kleine
@@ -1148,7 +1148,7 @@ Hij bewaart het alleen als het klopt, en het draait op je server (met de grenzen
 - iemand hem stopt (het Start-blok of de app Training).
 
 Dan staan de robots die neer lagen op en gaan ze uit (naar hun dock), en geeft I.M.T het rapport aan de
-trainee en de eigenaar: "Training Kamino: Senne reached the goal after 2:14 (1 hit: Guard 1 x1; 2 robots down)".
+trainee en de eigenaar: "Training Bootcamp: Senne reached the goal after 2:14 (1 hit: Guard 1 x1; 2 robots down)".
 **Er wordt niets teruggezet**: wat kapot ging, blijft kapot.
 
 **De app Training** op de desktop: bovenaan de training die nu bezig is (wie, trainingsschoten of lethal, levens,
@@ -1158,25 +1158,25 @@ of STOPPED, hoe lang, en wie er raakte).
 De getallen staan in `config/imttech.toml` onder `[training]` (`countdownSeconds`, `hitCooldown`, `slowTicks`,
 `maxReports`, `endPulse`).
 
-### De Bibie's Industries-bunker
-Ergens in de bergen heeft Hydra een geheime basis uitgehakt, zoals in The Winter Soldier. Je
+### De Biebia's Industries-bunker
+Ergens in de bergen heeft Raven een geheime basis uitgehakt. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):
-een uitsparing in een rotswand met een betonnen gevel en het rode Hydra-embleem. Er is geen
+een uitsparing in een rotswand met een betonnen gevel en het rode Raven-embleem. Er is geen
 kaart naartoe: je moet hem zelf vinden.
 
 Wat je binnen tegenkomt:
-- **Bij de deur** twee Hydra-torentjes; daarna een gang met een controlepost.
+- **Bij de deur** twee Raven-torentjes; daarna een gang met een controlepost.
 - **De grote hal**: zuilen, kratten met voorraden (buskruit, ijzer, redstone, soms raketten),
-  Hydra-vaandels, soldaten en een torentje op een verhoging.
+  Raven-vaandels, soldaten en een torentje op een verhoging.
 - **Links de slaapzaal** (bedden, kisten met wat soldaten bij zich hebben, soms een
-  Hydra-onderdeel), **rechts de reactorkamer**: twee warmtegeneratoren in een bak lava, en in de
+  Raven-onderdeel), **rechts de reactorkamer**: twee warmtegeneratoren in een bak lava, en in de
   hoek de **stroomkast**, bewaakt door een soldaat en een torentje. De kast heeft een schakelaar
-  voor de laserwanden (boven) en een voor alle Hydra-torentjes (onder; hun kabels lopen door de
+  voor de laserwanden (boven) en een voor alle Raven-torentjes (onder; hun kabels lopen door de
   vloer van de hele bunker).
 - **De kluisgang** met twee rode laserwanden. Die krijgen hun stroom van de reactor, via de
   kabel onder het plafond van de hal. **Zet ze uit in de stroomkast, sloop de generatoren of
   knip de kabel door**, en ze gaan uit. (Of graaf je eromheen: het is een berg.)
-- **De kluis**: twee kisten met altijd 2 à 3 **Hydra-onderdelen**, en verder diamanten, goud,
+- **De kluis**: twee kisten met altijd 2 à 3 **Raven-onderdelen**, en verder diamanten, goud,
   raketmunitie, computerchips en soms een raketpakket. Plus twee torentjes en een cryo-cel.
 
 Er staan acht soldaten en vijf torentjes; zonder harnas is dat pittig. Soldaten komen niet
@@ -1184,7 +1184,7 @@ terug als je ze verslagen hebt, dus de onderdelen zijn niet eindeloos te halen.
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot
-vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Bibie's Industries**.
+vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Biebia's Industries**.
 
 Sommige krijg je vanzelf als je iets maakt; andere kent de mod zelf toe op het moment dat het
 gebeurt — je eerste drone de ruimte in sturen, een satellietaanval, een drone verliezen, met het
@@ -1217,8 +1217,8 @@ Met de bril op en energie erin:
   buitenaf zie je geen loopbeweging: wie vooruit vliegt, helt voorover tot bijna liggend, met
   de benen recht, en de vlammen wijzen dan langs je lichaam naar achteren.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
-- **Repulsor** (toets **I**, of G > Combat): zet de repulsor **aan of uit**. Staat hij aan,
-  dan is je aanvalsknop (linkermuisknop) de repulsor: klikken vuurt, ingedrukt houden vuurt
+- **Laser cannon** (toets **I**, of G > Combat): zet de laser cannon **aan of uit**. Staat hij aan,
+  dan is je aanvalsknop (linkermuisknop) de laser cannon: klikken vuurt, ingedrukt houden vuurt
   elke seconde. Slaan en blokken breken gaat dan niet; zet hem uit om weer te hakken. Rond je
   vizier staat een ring die na elk schot weer volloopt. Een stoot raakt alles op zijn weg en
   duwt het een stukje weg, tot 24 blokken ver. Je hebt de borstplaat nodig (daar zit de
@@ -1227,7 +1227,7 @@ Met de bril op en energie erin:
   terug. Anderen zien je arm vooruit wijzen en je handpalm oplichten als je schiet.
 - **Mini-raketten** (toets **X**, G > Combat, of zeg "fire rockets"): een salvo van zes
   raketten uit twee buizen op je rug. Daarvoor heb je een **raketpakket** nodig: craft het met
-  een **Hydra-onderdeel** in het midden, een computerchip eronder, buskruit en ijzer. Trek de
+  een **Raven-onderdeel** in het midden, een computerchip eronder, buskruit en ijzer. Trek de
   borstplaat aan en klik rechts met het pakket in je hand; dan zit het vast op DIE borstplaat
   (de tooltip zegt "Rocket pack installed") en zie je de buizen op je rug. De raketten gaan
   om de beurt links en rechts weg, waaieren uit en draaien dan naar hun doel: je
@@ -1237,9 +1237,9 @@ Met de bril op en energie erin:
   pakket 12 seconden herladen (links in de HUD: ROCKETS). Munitie is er niet. Meer raketten of
   sterkere raketten? Bouw een **Rocket Magazine** of **Rocket Warhead** in (zie de werkbank).
 
-### De harnas-werkbank (Bibie's lab)
+### De harnas-werkbank (Biebia's lab)
 Craft een **Suit Workbench** (computerchips, een redstoneblok, een crafting table, een aambeeld en
-ijzer), of gebruik die in het lab van een Bibie's Industries Tower. Hij heeft **stroom** nodig: een stroomkabel
+ijzer), of gebruik die in het lab van een Biebia's Industries Tower. Hij heeft **stroom** nodig: een stroomkabel
 naar een zonnepaneel of warmtegenerator, of er direct tegenaan.
 
 Er is **geen scherm**: boven de werkbank zweeft het harnas als een blauw **hologram** dat langzaam
@@ -1260,10 +1260,10 @@ ingedrukt doet rechtsklikken weer het gewone.
   laat zien welke upgrades erin zitten.
 - **Upgraden**: houd een upgrade vast en klik op het stuk (dat moet erop liggen). Het kaartje zegt
   of hij past. Het item draait om het stuk en krimpt erin weg, en een ring loopt vol. De upgrades
-  (te craften met computerchips, en soms te vinden in de kisten van een Bibie's Industries Tower):
+  (te craften met computerchips, en soms te vinden in de kisten van een Biebia's Industries Tower):
   - **Thruster Upgrade** (in de laarzen, tot 3): sneller vliegen en minder energie.
   - **Armor Plating** (in elk stuk, tot 2 per stuk): het harnas houdt meer schade tegen.
-  - **Repulsor Capacitor** (in de borstplaat, tot 2): een sterkere repulsor.
+  - **Laser Cannon Capacitor** (in de borstplaat, tot 2): een sterkere laser cannon.
   - Het **raketpakket** kan hier ook in de borstplaat (of met een rechtsklik, zie boven).
   - **Rocket Magazine** (borstplaat met raketpakket, tot 3): 2 raketten meer per salvo (tot 12).
     Craft: ijzer, buskruit, computerchips en een trechter.
@@ -1276,7 +1276,7 @@ ingedrukt doet rechtsklikken weer het gewone.
   en laat de rest van zijn spullen eruit vallen.
 
 ### Landingsplatform
-Een **Landing Pad** zet je neer en is van jou (het platform op het dak van een Bibie's Industries Tower is van
+Een **Landing Pad** zet je neer en is van jou (het platform op het dak van een Biebia's Industries Tower is van
 wie de toren gehackt heeft). Tijdens het vliegen wijst de HUD je dichtstbijzijnde platform aan;
 land je erop met de stuwraketten aan, dan zegt I.M.T "Welcome home". Zolang je erop staat
 (5 x 5 blokken), laadt je bril op en wordt je harnas gerepareerd.
@@ -1357,7 +1357,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/imttech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, guard robots, Hydra, raids... |
+| `config/imttech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, guard robots, Raven, raids... |
 | `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |
@@ -1466,28 +1466,28 @@ showcase en staat hij bij NIEUW.
 - **Blokmodellen**: `python tools/generate_block_models.py` maakt de 3D-modellen van het
   zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
-  structuurblok en sla hem op als `imttech:bibie_tower`.
+  structuurblok en sla hem op als `imttech:biebia_tower`.
 - **Het satellietwrak verbouwen**: `python tools/generate_crash_site.py` (of in het spel opslaan
   als `imttech:crashed_satellite`).
 - **Komen de structuren echt in de wereld?** `gradlew runStructureCheck` start een server met
-  een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Bibie's Industries Tower, het
-  dichtstbijzijnde satellietwrak en de dichtstbijzijnde Bibie's Industries-bunker, en schrijft in het log
+  een gewone wereld (in `run-structures`), zoekt de dichtstbijzijnde Biebia's Industries Tower, het
+  dichtstbijzijnde satellietwrak en de dichtstbijzijnde Biebia's Industries-bunker, en schrijft in het log
   (`[structures]`) waar ze liggen, waar de kisten staan,
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.
 - **Tests**: `gradlew runGameTestServer` — 74 tests over de toren en zijn kluis, het
-  satellietwrak, de Bibie's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
+  satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
-  mini-raketten, de Hydra-soldaten, de torentjes en de spraakcommando's.
+  mini-raketten, de Raven-soldaten, de torentjes en de spraakcommando's.
 - **Screenshots van alles**: `gradlew runVisualCheck` maakt vanzelf een testwereld, fotografeert
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
-  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `hydra`,
+  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
   `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
-- **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (repulsor,
+- **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (laser cannon,
   stuwraketten, rayshields) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile` (op deze
   pc heeft `py -3.12` ze al: `py -3.12 tools/generate_sounds.py rayshield_hum`).

@@ -196,12 +196,12 @@ public final class DevWorld {
     }
 
     /**
-     * De Bibie's Industries-bunker in een zelfgebouwde berg (de testwereld is plat). De ingang komt op
+     * De Biebia's Industries-bunker in een zelfgebouwde berg (de testwereld is plat). De ingang komt op
      * {@code entrance} en kijkt naar het noorden; de berg loopt daarachter (naar het zuiden)
-     * omhoog. We zetten de bunker neer zoals de echte wereld dat doet (BibieBunkerPiece), dus
+     * omhoog. We zetten de bunker neer zoals de echte wereld dat doet (BiebiaBunkerPiece), dus
      * met soldaten, en de laserwanden gaan vanzelf aan.
      */
-    public static void placeBibieBunker(ServerLevel level, BlockPos entrance) {
+    public static void placeBiebiaBunker(ServerLevel level, BlockPos entrance) {
         // entrance = waar je voor de deur staat; de grond (en de vloer van de bunker) ligt eronder.
         int ground = entrance.getY() - 1;
         for (int dx = -30; dx <= 30; dx++) {
@@ -218,8 +218,8 @@ public final class DevWorld {
             }
         }
         net.minecraft.world.level.block.Rotation rotation = net.minecraft.world.level.block.Rotation.NONE;
-        BlockPos origin = com.senne.imttech.hydra.BibieBunkerStructure.originFor(entrance.below(), rotation);
-        com.senne.imttech.hydra.BibieBunkerPiece piece = new com.senne.imttech.hydra.BibieBunkerPiece(
+        BlockPos origin = com.senne.imttech.raven.BiebiaBunkerStructure.originFor(entrance.below(), rotation);
+        com.senne.imttech.raven.BiebiaBunkerPiece piece = new com.senne.imttech.raven.BiebiaBunkerPiece(
                 level.getStructureManager(), origin, rotation);
         piece.postProcess(level, level.structureManager(), level.getChunkSource().getGenerator(), level.random,
                 piece.getBoundingBox(), new net.minecraft.world.level.ChunkPos(origin), origin);

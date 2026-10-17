@@ -55,7 +55,7 @@ public final class HoloRecipe {
 
     /**
      * Zoekt het recept dat dit voorwerp maakt. Geeft null als er geen (gewoon) recept voor is,
-     * bijvoorbeeld bij de I.M.T-bril, die je alleen in een Bibie's Industries Tower vindt.
+     * bijvoorbeeld bij de I.M.T-bril, die je alleen in een Biebia's Industries Tower vindt.
      */
     public static @Nullable HoloRecipe of(Level level, ItemStack wanted) {
         long now = level.getGameTime();

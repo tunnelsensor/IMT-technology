@@ -83,7 +83,7 @@ public final class ImtClientEvents {
             DroneCamera.sendControls(mc, player);
         }
         handleKeys(mc);
-        RepulsorControl.tick(mc);
+        LaserCannonControl.tick(mc);
         VoiceControl.tick(mc);
         ImtClientState.pings.removeIf(ping -> Util.getMillis() > ping.endMillis());
 
@@ -185,9 +185,9 @@ public final class ImtClientEvents {
         while (ImtKeys.HACK.consumeClick()) {
             sendAction(ImtAction.HACK_PLAYER);
         }
-        while (ImtKeys.REPULSOR.consumeClick()) {
-            // Aan of uit; vuren doe je daarna met de aanvalsknop (zie RepulsorControl).
-            RepulsorControl.toggle();
+        while (ImtKeys.LASER_CANNON.consumeClick()) {
+            // Aan of uit; vuren doe je daarna met de aanvalsknop (zie LaserCannonControl).
+            LaserCannonControl.toggle();
         }
         while (ImtKeys.ROCKETS.consumeClick()) {
             sendAction(ImtAction.ROCKETS);
@@ -356,10 +356,10 @@ public final class ImtClientEvents {
 
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         DroneCamera.exit();
-        RepulsorControl.reset();
+        LaserCannonControl.reset();
         SuitFlight.reset();
         com.senne.imttech.client.suit.SuitEffects.clear();
-        com.senne.imttech.client.suit.RepulsorHand.reset();
+        com.senne.imttech.client.suit.LaserCannonHand.reset();
         com.senne.imttech.client.illusion.IllusionRenderer.clear();
         com.senne.imttech.client.shield.RayshieldHum.clear();
         com.senne.imttech.client.robot.RobotChargeHum.clear();

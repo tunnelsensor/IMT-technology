@@ -458,7 +458,7 @@ def planet_texture():
 
 def satellite_textures():
     """
-    De Bibie's Industries-satelliet in het arsenaal- en satellietscherm (128 x 64): een romp met gouden
+    De Biebia's Industries-satelliet in het arsenaal- en satellietscherm (128 x 64): een romp met gouden
     strepen, twee blauwe zonnepanelen, een schotel, een antenne en een motor. Plus een lichtlaag
     met de reactor en de lampjes, die ook in het donker gloeien.
 
@@ -1753,7 +1753,7 @@ def tech_suit():
     fill(layer1, body["left"], red_dark)
     fill(layer1, body["right"], red_dark)
 
-    # --- Armen: rode bovenarm, gouden elleboog, rode onderarm, blauwe repulsor in de hand.
+    # --- Armen: rode bovenarm, gouden elleboog, rode onderarm, blauwe laser cannon in de hand.
     for name, box in arm.items():
         fill(layer1, box, red)
     fill(layer1, arm["top"], red_hi)
@@ -1844,7 +1844,7 @@ def tech_suit():
         fill(big1, f[n], gold, rows=(0, 1))
     shade(big1, f["front"])
     shade(big1, f["back"])
-    # repulsor in de handpalm (3x1x3): de onderkant gloeit
+    # laser cannon in de handpalm (3x1x3): de onderkant gloeit
     f = part(big1, 64, 28, 3, 1, 3, seam, bottom=CYAN)
     x, y, w, h = f["bottom"]
     big1.putpixel((x + 1, y + 1), glow)
@@ -1961,7 +1961,7 @@ def tech_suit():
     d.rectangle([9, 10, 14, 12], fill=gold, outline=gold_dark)  # neus rechts
     d.line([3, 5, 5, 5], fill=red_hi)
     d.line([10, 5, 12, 5], fill=red_hi)
-    px(boots, [(3, 13), (4, 13), (5, 13), (10, 13), (11, 13), (12, 13)], glow)  # repulsors
+    px(boots, [(3, 13), (4, 13), (5, 13), (10, 13), (11, 13), (12, 13)], glow)  # stuwraketten
     save(boots, "item/tech_boots.png")
 
 
@@ -2014,50 +2014,50 @@ def drone_item():
     save(im, "item/drone.png")
 
 
-HYDRA_RED = (205, 32, 32, 255)
-HYDRA_RED_DIM = (120, 20, 20, 255)
-HYDRA_BLACK = (24, 25, 28, 255)
-HYDRA_GREY = (48, 50, 55, 255)
+RAVEN_RED = (205, 32, 32, 255)
+RAVEN_RED_DIM = (120, 20, 20, 255)
+RAVEN_BLACK = (24, 25, 28, 255)
+RAVEN_GREY = (48, 50, 55, 255)
 
 
-def hydra_circuit():
-    """Het Hydra-onderdeel: een zwart printplaatje met rode sporen en het rode embleem."""
+def raven_circuit():
+    """Het Raven-onderdeel: een zwart printplaatje met rode sporen en het rode embleem."""
     im = img(16, 16)
     d = ImageDraw.Draw(im)
-    d.rectangle([2, 3, 13, 12], fill=HYDRA_BLACK, outline=(12, 12, 14, 255))
+    d.rectangle([2, 3, 13, 12], fill=RAVEN_BLACK, outline=(12, 12, 14, 255))
     # Pootjes onder en boven.
     for x in range(4, 12, 2):
         px(im, [(x, 2), (x, 13)], GOLD_DARK)
     # Rode sporen.
-    d.line([3, 5, 6, 5], fill=HYDRA_RED_DIM)
-    d.line([9, 10, 12, 10], fill=HYDRA_RED_DIM)
-    d.line([3, 10, 5, 8], fill=HYDRA_RED_DIM)
-    d.line([12, 5, 10, 7], fill=HYDRA_RED_DIM)
+    d.line([3, 5, 6, 5], fill=RAVEN_RED_DIM)
+    d.line([9, 10, 12, 10], fill=RAVEN_RED_DIM)
+    d.line([3, 10, 5, 8], fill=RAVEN_RED_DIM)
+    d.line([12, 5, 10, 7], fill=RAVEN_RED_DIM)
     # Het embleem in het midden: een schedel met tentakels, heel klein.
-    d.rectangle([7, 6, 8, 7], fill=HYDRA_RED)
-    px(im, [(6, 8), (9, 8), (7, 9), (8, 9), (6, 9), (9, 9)], HYDRA_RED)
+    d.rectangle([7, 6, 8, 7], fill=RAVEN_RED)
+    px(im, [(6, 8), (9, 8), (7, 9), (8, 9), (6, 9), (9, 9)], RAVEN_RED)
     px(im, [(7, 6)], (255, 110, 100, 255))
-    save(im, "item/hydra_circuit.png")
+    save(im, "item/raven_circuit.png")
 
 
-def hydra_rifle():
-    """Het lasergeweer van de Hydra-soldaten: schuin (zoals een zwaard), met een rode energiecel."""
+def raven_rifle():
+    """Het lasergeweer van de Raven-soldaten: schuin (zoals een zwaard), met een rode energiecel."""
     im = img(16, 16)
     d = ImageDraw.Draw(im)
     # Kolf linksonder, loop rechtsboven.
-    d.line([2, 14, 13, 3], fill=HYDRA_GREY, width=2)
-    d.line([3, 14, 13, 4], fill=HYDRA_BLACK)
-    d.rectangle([1, 12, 4, 14], fill=HYDRA_BLACK)
+    d.line([2, 14, 13, 3], fill=RAVEN_GREY, width=2)
+    d.line([3, 14, 13, 4], fill=RAVEN_BLACK)
+    d.rectangle([1, 12, 4, 14], fill=RAVEN_BLACK)
     # De loop: dunner en lichter aan het eind, met een rood mondje.
     d.line([10, 5, 14, 1], fill=METAL_3)
-    px(im, [(14, 1)], HYDRA_RED)
+    px(im, [(14, 1)], RAVEN_RED)
     # Energiecel en richtkijker.
-    d.rectangle([6, 8, 7, 9], fill=HYDRA_RED)
+    d.rectangle([6, 8, 7, 9], fill=RAVEN_RED)
     px(im, [(6, 8)], (255, 120, 110, 255))
     d.line([8, 5, 10, 3], fill=METAL_2)
     # Handgreep.
-    d.line([5, 11, 5, 13], fill=HYDRA_BLACK)
-    save(im, "item/hydra_rifle.png")
+    d.line([5, 11, 5, 13], fill=RAVEN_BLACK)
+    save(im, "item/raven_rifle.png")
 
 
 def mini_rocket():
@@ -2179,16 +2179,16 @@ def rocket_pack():
 
 def turret_textures():
     """
-    De torentjes: Raket (grijs metaal, gouden streep, blauwe lens) en Hydra (zwart, rode streep,
+    De torentjes: Raket (grijs metaal, gouden streep, blauwe lens) en Raven (zwart, rode streep,
     rode lens). Per soort een voet (zijkant en bovenkant, 16x16, voor het blokmodel) en een kop
     (64x32, voor TurretRenderer; de loop wijst naar +Z, dat is het "back"-vlak in box_regions).
     """
     looks = {
         "rocket": dict(body=(150, 158, 168, 255), dark=(84, 90, 100, 255), light=(196, 202, 210, 255),
                       stripe=GOLD, lens=CYAN, lens_dim=CYAN_DIM),
-        "hydra": dict(body=HYDRA_BLACK, dark=(14, 14, 16, 255), light=HYDRA_GREY,
-                      stripe=HYDRA_RED_DIM, lens=HYDRA_RED, lens_dim=HYDRA_RED_DIM),
-        # De beveiliging van de Bibie's Industries Tower: I.M.T-wit met een rode streep en een rood oog.
+        "raven": dict(body=RAVEN_BLACK, dark=(14, 14, 16, 255), light=RAVEN_GREY,
+                      stripe=RAVEN_RED_DIM, lens=RAVEN_RED, lens_dim=RAVEN_RED_DIM),
+        # De beveiliging van de Biebia's Industries Tower: I.M.T-wit met een rode streep en een rood oog.
         "security": dict(body=(196, 200, 208, 255), dark=(110, 116, 126, 255), light=(232, 235, 240, 255),
                          stripe=(170, 30, 32, 255), lens=(255, 60, 50, 255), lens_dim=(150, 30, 25, 255)),
     }
@@ -2267,7 +2267,7 @@ def turret_textures():
 
 def security_textures():
     """
-    De beveiliging van de Bibie's Industries Tower: de kern (een serverkast met een statuslampje, rood als de
+    De beveiliging van de Biebia's Industries Tower: de kern (een serverkast met een statuslampje, rood als de
     toren van niemand is, groen als hij van jou is) en de beveiligingsdrone (I.M.T-wit met een
     rode streep, en rode alarmlampjes).
     """
@@ -2438,7 +2438,7 @@ def hacking_laptop_block():
 
 def workbench_textures():
     """
-    De harnas-werkbank (Bibie's lab) en de drie upgrades die je er inbouwt.
+    De harnas-werkbank (Biebia's lab) en de drie upgrades die je er inbouwt.
 
     - bovenkant: een blauwdruk-mat met raster, en de omtrek van een borstplaat met reactor;
     - zijkant: grijze laden met handgrepen;
@@ -2510,7 +2510,7 @@ def workbench_textures():
     d.ellipse([4, 4, 11, 11], fill=CYAN_DIM)
     d.ellipse([6, 6, 9, 9], fill=CYAN)
     px(capacitor, [(7, 7)], (235, 250, 255, 255))
-    save(capacitor, "item/repulsor_capacitor.png")
+    save(capacitor, "item/laser_cannon_capacitor.png")
 
     # Raketkop: een rode neuskegel met een gouden band en een geel-oranje ontploffingsteken.
     warhead = img(16, 16)
@@ -2673,26 +2673,26 @@ def rocket_ammo():
     save(im, "item/rocket_ammo.png")
 
 
-def hydra_soldier():
+def raven_soldier():
     """
-    Het pak van een Hydra-soldaat (64 x 64, de indeling van mensachtige wezens; de linker arm
+    Het pak van een Raven-soldaat (64 x 64, de indeling van mensachtige wezens; de linker arm
     en het linker been gebruiken gespiegeld dezelfde plek als de rechter).
 
     Een zwart tactisch pak met een grijs vest, een bivakmuts met een rode bril, een helm, het
-    rode Hydra-embleem op de borst en op de helm, rode banden om de armen, handschoenen,
+    rode Raven-embleem op de borst en op de helm, rode banden om de armen, handschoenen,
     kniestukken en laarzen.
     """
     im = img(64, 64)
     d = ImageDraw.Draw(im)
-    suit = HYDRA_BLACK
+    suit = RAVEN_BLACK
     dark = (16, 16, 18, 255)
 
     # Hoofd (0,0; 8x8x8): een bivakmuts, met een rode bril over de ogen.
     d.rectangle([0, 0, 31, 15], fill=(34, 34, 38, 255))
     d.rectangle([8, 8, 15, 15], fill=(34, 34, 38, 255))
     d.rectangle([8, 11, 15, 12], fill=dark)                      # brilband
-    d.rectangle([9, 11, 10, 12], fill=HYDRA_RED)                  # glazen
-    d.rectangle([13, 11, 14, 12], fill=HYDRA_RED)
+    d.rectangle([9, 11, 10, 12], fill=RAVEN_RED)                  # glazen
+    d.rectangle([13, 11, 14, 12], fill=RAVEN_RED)
     px(im, [(9, 11), (13, 11)], (255, 110, 100, 255))
     d.line([0, 11, 7, 11], fill=dark)                             # band om de zijkant
     d.line([16, 11, 31, 11], fill=dark)
@@ -2702,32 +2702,32 @@ def hydra_soldier():
     d.rectangle([40, 0, 55, 7], fill=(40, 42, 38, 255))           # boven en onder
     for x0 in (32, 40, 48, 56):
         d.rectangle([x0, 8, x0 + 7, 10], fill=(40, 42, 38, 255))
-    px(im, [(43, 9), (44, 9)], HYDRA_RED)                          # embleempje voorop
+    px(im, [(43, 9), (44, 9)], RAVEN_RED)                          # embleempje voorop
 
     # Lijf (16,16; 8x12x4).
     d.rectangle([16, 16, 39, 31], fill=suit)
-    d.rectangle([20, 20, 27, 28], fill=HYDRA_GREY)                  # vest voor
-    d.rectangle([32, 20, 39, 28], fill=HYDRA_GREY)                  # vest achter
+    d.rectangle([20, 20, 27, 28], fill=RAVEN_GREY)                  # vest voor
+    d.rectangle([32, 20, 39, 28], fill=RAVEN_GREY)                  # vest achter
     d.rectangle([20, 29, 27, 30], fill=(40, 30, 24, 255))           # riem
     px(im, [(23, 29), (24, 29)], METAL_3)                           # gesp
     # Het embleem op de borst: een schedel met tentakels.
-    d.rectangle([23, 21, 24, 22], fill=HYDRA_RED)
-    px(im, [(22, 22), (25, 22)], HYDRA_RED)
-    px(im, [(21, 23), (22, 24), (23, 23), (24, 23), (25, 24), (26, 23), (22, 23), (25, 23)], HYDRA_RED)
+    d.rectangle([23, 21, 24, 22], fill=RAVEN_RED)
+    px(im, [(22, 22), (25, 22)], RAVEN_RED)
+    px(im, [(21, 23), (22, 24), (23, 23), (24, 23), (25, 24), (26, 23), (22, 23), (25, 23)], RAVEN_RED)
     px(im, [(23, 21)], (255, 110, 100, 255))
 
     # Arm (40,16; 4x12x4): zwarte mouw, rode band, grijze handschoen.
     d.rectangle([40, 16, 55, 31], fill=suit)
-    d.line([40, 23, 55, 23], fill=HYDRA_RED)
-    d.rectangle([40, 28, 55, 31], fill=HYDRA_GREY)
-    d.rectangle([44, 16, 51, 19], fill=HYDRA_GREY)                  # schouderstuk boven
+    d.line([40, 23, 55, 23], fill=RAVEN_RED)
+    d.rectangle([40, 28, 55, 31], fill=RAVEN_GREY)
+    d.rectangle([44, 16, 51, 19], fill=RAVEN_GREY)                  # schouderstuk boven
 
     # Been (0,16; 4x12x4): broek, kniestuk, laars.
     d.rectangle([0, 16, 15, 31], fill=(22, 23, 26, 255))
-    d.rectangle([4, 23, 7, 24], fill=HYDRA_GREY)                    # kniestuk voor
+    d.rectangle([4, 23, 7, 24], fill=RAVEN_GREY)                    # kniestuk voor
     d.rectangle([0, 27, 15, 31], fill=dark)                          # laars
     d.line([0, 31, 15, 31], fill=(58, 50, 44, 255))                  # zool
-    save(im, "entity/hydra_soldier.png")
+    save(im, "entity/raven_soldier.png")
 
 
 def suit_hologram():
@@ -3588,9 +3588,9 @@ if __name__ == "__main__":
     holo_table_textures()
     tech_suit()
     suit_hologram()
-    hydra_circuit()
-    hydra_rifle()
-    hydra_soldier()
+    raven_circuit()
+    raven_rifle()
+    raven_soldier()
     mini_rocket()
     orbital_missile()
     rocket_pack()

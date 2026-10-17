@@ -20,7 +20,7 @@ import net.minecraft.nbt.CompoundTag;
 public record TrainingReport(String name, String trainee, Training.Mode mode, Training.Result result, long ticks, int hits,
                              int lives, String hitsBy, int downed, long when) {
 
-    /** In één zin (Engels): "Training Kamino: Senne reached the goal in 2:14 (3 hits: Guard 2 x3; 4 robots down)". */
+    /** In één zin (Engels): "Training Bootcamp: Senne reached the goal in 2:14 (3 hits: Guard 2 x3; 4 robots down)". */
     public String line() {
         StringBuilder text = new StringBuilder("Training ").append(name).append(": ").append(trainee).append(' ')
                 .append(result.text()).append(" after ").append(time(ticks)).append(" (")

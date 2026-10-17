@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * een dock, ze blijven in hun baan". Die herstellen zich nu daar (zie ArsenalServer.orbitRepair). Wat een oud dock
  * nog over zo'n drone bewaarde, lezen we niet meer.
  *
- * Van wie is een dock? Van wie hem neerzet. Een dock in een Bibie's Industries Tower (neergezet door de toren zelf, zonder
+ * Van wie is een dock? Van wie hem neerzet. Een dock in een Biebia's Industries Tower (neergezet door de toren zelf, zonder
  * eigenaar) is van wie de toren gehackt heeft.
  */
 public class DroneDockBlockEntity extends BlockEntity {

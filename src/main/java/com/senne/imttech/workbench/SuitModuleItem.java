@@ -16,7 +16,7 @@ import net.minecraft.world.item.TooltipFlag;
  *
  * - STUWRAKETTEN: in de laarzen, tot 3 keer: sneller en zuiniger vliegen.
  * - BEPANTSERING: in elk stuk, tot 2 keer per stuk: het harnas houdt meer schade tegen.
- * - CONDENSATOR:  in de borstplaat, tot 2 keer: een sterkere repulsor.
+ * - CONDENSATOR:  in de borstplaat, tot 2 keer: een sterkere laser cannon.
  * - RAKETKOP:     in de borstplaat met raketpakket, tot 3 keer: sterkere mini-raketten.
  * - MAGAZIJN:     in de borstplaat met raketpakket, tot 3 keer: meer raketten per salvo.
  *

@@ -83,7 +83,7 @@ public class ImtTech {
         ModCreativeTabs.TABS.register(modEventBus);
 
         modEventBus.addListener(ModEntities::registerAttributes);
-        // Een trechter kan raketten in een Bibie's Industries-torentje doen.
+        // Een trechter kan raketten in een Biebia's Industries-torentje doen.
         modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
                 event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                         ModBlockEntities.TURRET.get(), (turret, side) -> turret.kind().usesAmmo() ? turret.ammo() : null));

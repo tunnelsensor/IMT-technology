@@ -709,11 +709,11 @@ final class LogicApp {
                     Expr.Function.ACTIVE.help(), HudStyle.WHITE, null));
             // Trainingen (hoofdstuk 26).
             lines.add(header("TRAINING"));
-            lines.add(item("training_started(...)", "when training_started(\"Kamino\"):\n    say(\"Good luck, \" + trainee)\n",
+            lines.add(item("training_started(...)", "when training_started(\"Bootcamp\"):\n    say(\"Good luck, \" + trainee)\n",
                     Op.TRAINING_STARTED));
-            lines.add(item("training_hit(...)", "when training_hit(\"Kamino\"):\n    say(trainee + \" has \" + lives + \" lives left\")\n",
+            lines.add(item("training_hit(...)", "when training_hit(\"Bootcamp\"):\n    say(trainee + \" has \" + lives + \" lives left\")\n",
                     Op.TRAINING_HIT));
-            lines.add(item("training_ended(...)", "when training_ended(\"Kamino\"):\n    if passed:\n        say(\"Well done, \" + trainee)\n",
+            lines.add(item("training_ended(...)", "when training_ended(\"Bootcamp\"):\n    if passed:\n        say(\"Well done, \" + trainee)\n",
                     Op.TRAINING_ENDED));
             lines.add(new HelpLine("trainee, lives, hits, passed", "trainee",
                     "who trains, lives left, how often hit, and (when ended) if they passed", HudStyle.WHITE, null));

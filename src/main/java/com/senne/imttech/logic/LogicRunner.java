@@ -218,7 +218,7 @@ public final class LogicRunner {
 
     /**
      * Een training (hoofdstuk 26) begon, de trainee werd geraakt, of hij is voorbij: start {@code when
-     * training_started("Kamino"):} (of training_hit, training_ended), met {@code trainee}, {@code lives}, {@code hits}
+     * training_started("Bootcamp"):} (of training_hit, training_ended), met {@code trainee}, {@code lives}, {@code hits}
      * en {@code passed}.
      */
     public static int training(ServerLevel level, SecurityCoreBlockEntity core, Op trigger,

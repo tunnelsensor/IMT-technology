@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>LOCAL</b> (de laptop zelf): {@code netscan} toont de systemen in de buurt met hun IP,
  *       {@code curl <ip>} toont hun statuspagina (met het firewall-logboek dat de open poort
  *       verraadt), en {@code ssh admin@<ip> -p <poort>} verbindt.</li>
- *   <li><b>LOGIN</b>: een systeem zónder wachtwoord (de oude firmware van Bibie) lekt een
+ *   <li><b>LOGIN</b>: een systeem zónder wachtwoord (de oude firmware van Biebia) lekt een
  *       geheugendump; een systeem mét wachtwoord vraagt gewoon het wachtwoord.</li>
  *   <li><b>SHELL</b>: zoek in de ECHTE mappen van de eigenaar ({@code ls}, {@code cd}, {@code cat},
  *       {@code find}, {@code grep}) naar de naam van het beveiligingsprogramma, en {@code ps} voor
@@ -208,7 +208,7 @@ public final class SystemShell {
         List<SecurityCoreBlockEntity> found = SecurityCores.scannable(level, player.blockPosition());
         if (found.isEmpty()) {
             normal("No systems responded. A security node only answers on its own local network.");
-            hint("Get closer to a security core (a Bibie's Industries Tower, or someone's base).");
+            hint("Get closer to a security core (a Biebia's Industries Tower, or someone's base).");
             return;
         }
         header("HOSTS UP  (local network)");
@@ -237,15 +237,15 @@ public final class SystemShell {
                 lines.add("DENY   tcp " + ips[random.nextInt(ips.length)] + " -> :" + junkPort);
             }
         }
-        // De open poort (de SSH-poort). Bij Bibie's systeem ook een tweede die weer dicht ging.
-        boolean bibie = be.ownerName().isEmpty();
+        // De open poort (de SSH-poort). Bij Biebia's systeem ook een tweede die weer dicht ging.
+        boolean biebia = be.ownerName().isEmpty();
         int revoked = 1024 + random.nextInt(60000);
-        if (bibie) {
+        if (biebia) {
             lines.add("ALLOW  tcp 10.4.0.12 -> :" + revoked + "  (maintenance window)");
         }
         lines.add("ALLOW  tcp 10.4.0.12 -> :" + be.sshPort() + "  (maintenance window)");
         Collections.shuffle(lines, random);
-        if (bibie) {
+        if (biebia) {
             lines.add("RULE   ALLOW :" + revoked + " removed by admin");
         }
         int minute = 12;
@@ -324,7 +324,7 @@ public final class SystemShell {
 
     private void beginLogin(SecurityCoreBlockEntity be) {
         phase = Phase.LOGIN;
-        header("JARVIS MAINTENANCE SHELL - AUTHENTICATION REQUIRED");
+        header("BITECH MAINTENANCE SHELL - AUTHENTICATION REQUIRED");
         if (be.hasPassword()) {
             dump = null;
             normal("Password required.");
@@ -388,7 +388,7 @@ public final class SystemShell {
         phase = Phase.SHELL;
         cwd = "/";
         good("Welcome to " + be.hostname() + ".");
-        hint("Look around with ls. Bibie left a README.txt.");
+        hint("Look around with ls. Biebia left a README.txt.");
     }
 
     // ---------------------------------------------------------------- SHELL
@@ -590,7 +590,7 @@ public final class SystemShell {
     }
 
     private String ownerLabel(SecurityCoreBlockEntity be) {
-        return be.ownerName().isEmpty() ? "bibie-industries" : be.ownerName();
+        return be.ownerName().isEmpty() ? "biebia-industries" : be.ownerName();
     }
 
     // ================================================================ Hulp
@@ -626,7 +626,7 @@ public final class SystemShell {
     private void buildProcesses(SecurityCoreBlockEntity be) {
         processes.clear();
         Random random = new Random(be.systemSeed() ^ 0xDEADBEEFL);
-        List<String> procs = new ArrayList<>(List.of("init", "jarvis-backup", "holo-render", "elevator-ctl",
+        List<String> procs = new ArrayList<>(List.of("init", "bitech-backup", "holo-render", "elevator-ctl",
                 "hvac", "coffee-maker", "turret-ctl", "cam-feed"));
         for (String decoy : SystemDefaults.DAEMONS) {
             if (!decoy.equals(be.daemon()) && procs.size() < 12 && random.nextInt(2) == 0) {

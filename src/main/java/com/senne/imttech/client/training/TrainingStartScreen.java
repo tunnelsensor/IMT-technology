@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>
  *  Training Start
- *  Name   [Kamino            ]
+ *  Name   [Bootcamp            ]
  *  Shots  [Training shots]        geen schade: een leven eraf
  *  Lives  [-]  1  [+]
  *  Time   [-]  no limit  [+]

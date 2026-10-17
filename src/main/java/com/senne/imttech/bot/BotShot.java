@@ -23,10 +23,10 @@ import org.jetbrains.annotations.Nullable;
  * Robot Ammo). Wie BotPins aanwijst (wie de robot ziet, door het filter van zijn Face Recognition) wordt het
  * doelwit; ziet hij niemand, dan schiet hij recht vooruit en raakt hij wat daar staat.
  * <ul>
- *   <li>Een muur houdt het schot tegen, en een schildkoepel ook (zoals bij de Hydra-soldaat; de koepels van zijn
+ *   <li>Een muur houdt het schot tegen, en een schildkoepel ook (zoals bij de Raven-soldaat; de koepels van zijn
  *       eigenaar niet).</li>
  *   <li>Spelers raakt hij alleen als PvP aan staat, en niet in creative of als toeschouwer (net als torentjes). Een bot
- *       van niemand (Bibie's drones in een Bibie's Industries Tower) raakt ze ook zonder PvP: dan schiet de toren, geen speler.</li>
+ *       van niemand (Biebia's drones in een Biebia's Industries Tower) raakt ze ook zonder PvP: dan schiet de toren, geen speler.</li>
  *   <li>De laser komt uit zijn rechterarm, het geweer uit zijn linker (daar zitten ze op het model).</li>
  * </ul>
  */

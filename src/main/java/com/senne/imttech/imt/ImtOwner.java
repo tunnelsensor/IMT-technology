@@ -14,7 +14,7 @@ import net.minecraft.network.codec.StreamCodec;
  * @param id              het unieke Minecraft-ID van de speler (verandert nooit, ook niet als de naam verandert)
  * @param name            de naam van de speler, om in de HUD en tooltip te tonen
  * @param transferPending true als de eigenaar de bril heeft vrijgegeven: de volgende andere speler
- *                        die hem opzet wordt dan de nieuwe eigenaar (zoals Bibie die I.M.T aan Peter geeft)
+ *                        die hem opzet wordt dan de nieuwe eigenaar (zoals Biebia die I.M.T aan Peter geeft)
  */
 public record ImtOwner(UUID id, String name, boolean transferPending) {
     /** Hoe dit wordt opgeslagen in de wereld (savegame). */

@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
  * Met het scrollwiel draai je van het ene tabblad naar het volgende; de cijfers 1-9 en 0
  * springen er meteen heen.
  *
- * - COMBAT:      repulsor, raketten, rayshield (wat je zelf doet)
+ * - COMBAT:      laser cannon, raketten, rayshield (wat je zelf doet)
  * - SATELLITE:   de drie satellietaanvallen, het satellietscherm en het arsenaal
  * - DRONES:      zwerm, één drone, escorte en hun vorm, stand down, markeringen wissen
  * - RECON:       drone-camera, spionagedrone, meekijken, rapport

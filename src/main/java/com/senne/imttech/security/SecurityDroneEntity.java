@@ -29,7 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Een beveiligingsdrone van de Bibie's Industries Tower.
+ * Een beveiligingsdrone van de Biebia's Industries Tower.
  *
  * Hij hoort bij een beveiligingskern (zijn "thuis") en patrouilleert daaromheen. Ziet hij een
  * indringer (zie SecurityCores), dan gaat hij erop af en schiet hij lasers, net als een

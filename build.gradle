@@ -87,7 +87,7 @@ neoForge {
         }
 
         // Komen onze structuren echt in een gewone wereld? Start een server, zoekt de
-        // dichtstbijzijnde Bibie's Industries Tower en het dichtstbijzijnde satellietwrak, schrijft in het log
+        // dichtstbijzijnde Biebia's Industries Tower en het dichtstbijzijnde satellietwrak, schrijft in het log
         // waar ze liggen, en stopt weer (zie gametest/StructureCheck.java).
         structureCheck {
             server()

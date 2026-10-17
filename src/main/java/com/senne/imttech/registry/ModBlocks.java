@@ -158,7 +158,7 @@ public final class ModBlocks {
                     .lightLevel(state -> state.getValue(DomeGeneratorBlock.POWERED) ? 12 : 3)
                     .noOcclusion());
 
-    /** Het automatische torentje voor je basis (te maken met een Hydra-onderdeel). */
+    /** Het automatische torentje voor je basis (te maken met een Raven-onderdeel). */
     public static final DeferredBlock<com.senne.imttech.turret.TurretBlock> ROCKET_TURRET = BLOCKS.registerBlock(
             "rocket_turret", properties -> new com.senne.imttech.turret.TurretBlock(com.senne.imttech.turret.TurretKind.ROCKET, properties),
             BlockBehaviour.Properties.of()
@@ -168,9 +168,9 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion());
 
-    /** Het vijandige torentje uit de Bibie's Industries-bunker. */
-    public static final DeferredBlock<com.senne.imttech.turret.TurretBlock> HYDRA_TURRET = BLOCKS.registerBlock(
-            "hydra_turret", properties -> new com.senne.imttech.turret.TurretBlock(com.senne.imttech.turret.TurretKind.HYDRA, properties),
+    /** Het vijandige torentje uit de Biebia's Industries-bunker. */
+    public static final DeferredBlock<com.senne.imttech.turret.TurretBlock> RAVEN_TURRET = BLOCKS.registerBlock(
+            "raven_turret", properties -> new com.senne.imttech.turret.TurretBlock(com.senne.imttech.turret.TurretKind.RAVEN, properties),
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(5.0f, 9.0f)
@@ -178,7 +178,7 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion());
 
-    /** Het beveiligingstorentje van de Bibie's Industries Tower (luistert naar de beveiligingskern). */
+    /** Het beveiligingstorentje van de Biebia's Industries Tower (luistert naar de beveiligingskern). */
     public static final DeferredBlock<com.senne.imttech.turret.TurretBlock> SECURITY_TURRET = BLOCKS.registerBlock(
             "security_turret", properties -> new com.senne.imttech.turret.TurretBlock(
                     com.senne.imttech.turret.TurretKind.SECURITY, properties),
@@ -280,7 +280,7 @@ public final class ModBlocks {
                     .lightLevel(state -> state.getValue(com.senne.imttech.logic.InputDeviceBlock.LIGHT)
                             == com.senne.imttech.logic.InputLight.OFF ? 0 : 4));
 
-    /** De beveiligingskern van de Bibie's Industries Tower: heel sterk, zodat hacken de weg is. */
+    /** De beveiligingskern van de Biebia's Industries Tower: heel sterk, zodat hacken de weg is. */
     public static final DeferredBlock<com.senne.imttech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
             "security_core", com.senne.imttech.security.SecurityCoreBlock::new,
             BlockBehaviour.Properties.of()
@@ -304,7 +304,7 @@ public final class ModBlocks {
                     .lightLevel(state -> 5)
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
 
-    /** De harnas-werkbank: het harnas bouwen en er upgrades in zetten (Bibie's lab). */
+    /** De harnas-werkbank: het harnas bouwen en er upgrades in zetten (Biebia's lab). */
     public static final DeferredBlock<com.senne.imttech.workbench.SuitWorkbenchBlock> SUIT_WORKBENCH = BLOCKS.registerBlock(
             "suit_workbench", com.senne.imttech.workbench.SuitWorkbenchBlock::new,
             BlockBehaviour.Properties.of()

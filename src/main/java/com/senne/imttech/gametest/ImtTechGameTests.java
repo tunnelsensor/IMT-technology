@@ -13,7 +13,7 @@ import com.senne.imttech.arsenal.ImtArsenal;
 import com.senne.imttech.drone.DroneFormation;
 import com.senne.imttech.drone.ImtDrones;
 import com.senne.imttech.drone.DroneEntity;
-import com.senne.imttech.hydra.HydraSoldierEntity;
+import com.senne.imttech.raven.RavenSoldierEntity;
 import com.senne.imttech.imt.ImtAction;
 import com.senne.imttech.holo.HoloMode;
 import com.senne.imttech.holo.HoloTables;
@@ -127,7 +127,7 @@ import org.jetbrains.annotations.Nullable;
  * Dat is belangrijk, want de explosies van de satelliettest mogen de drones van een andere
  * test niet raken.
  *
- * - bibie_tower: bouwt de Bibie's Industries Tower na, controleert de kist en kijkt of het laadstation
+ * - biebia_tower: bouwt de Biebia's Industries Tower na, controleert de kist en kijkt of het laadstation
  *   een bril echt oplaadt en een upgrade inbouwt.
  * - drone_swarm: een zwerm drones schakelt een vijand uit.
  * - satellite_strike: de satelliet wacht eerst en slaat dan in.
@@ -141,9 +141,9 @@ import org.jetbrains.annotations.Nullable;
 public final class ImtTechGameTests {
     private ImtTechGameTests() {}
 
-    // Posities in de Bibie's Industries Tower (zie tools/generate_structure.py). In een gametest ligt de
+    // Posities in de Biebia's Industries Tower (zie tools/generate_structure.py). In een gametest ligt de
     // structuur één blok boven het "structuurblok", dus tellen we bij y altijd 1 op.
-    // Plekken in de Bibie's Industries Tower (zie tools/generate_structure.py; in de test ligt alles
+    // Plekken in de Biebia's Industries Tower (zie tools/generate_structure.py; in de test ligt alles
     // één blok hoger dan in het bouwscript, want de structuur staat op de testvloer).
     private static final BlockPos STATION_POS = new BlockPos(20, 2, 5);
     private static final BlockPos CHEST_POS = new BlockPos(5, 2, 32);
@@ -155,8 +155,8 @@ public final class ImtTechGameTests {
 
     // ================================================================ De tests
 
-    @GameTest(template = "bibie_tower", timeoutTicks = 200, batch = "station")
-    public static void bibie_tower(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 200, batch = "station")
+    public static void biebia_tower(GameTestHelper helper) {
         towerAndStation(helper);
     }
 
@@ -279,7 +279,7 @@ public final class ImtTechGameTests {
                     + ImtConfigLoader.size() + " met @Tunable");
         }
         net.neoforged.neoforge.common.ModConfigSpec.DoubleValue cost = spec.getValues().get("scanner.oreScanCost");
-        net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.repulsorDamage");
+        net.neoforged.neoforge.common.ModConfigSpec.DoubleValue damage = spec.getValues().get("suit.laserCannonDamage");
         net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<java.util.List<? extends Number>> cooldown =
                 spec.getValues().get("satellite.cooldown");
         net.neoforged.neoforge.common.ModConfigSpec.BooleanValue hack = spec.getValues().get("rules.hackAllowed");
@@ -293,9 +293,9 @@ public final class ImtTechGameTests {
             cooldown.set(java.util.List.of(1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 50));
             hack.set(!oldHack);
             ImtConfigLoader.reapply();
-            if (ImtConfig.Scanner.ORE_SCAN_COST != 123.5f || ImtConfig.Suit.REPULSOR_DAMAGE != 9.5f) {
+            if (ImtConfig.Scanner.ORE_SCAN_COST != 123.5f || ImtConfig.Suit.LASER_CANNON_DAMAGE != 9.5f) {
                 throw new GameTestAssertException("De nieuwe getallen tellen niet: ertsen-scan kost "
-                        + ImtConfig.Scanner.ORE_SCAN_COST + ", repulsor doet " + ImtConfig.Suit.REPULSOR_DAMAGE);
+                        + ImtConfig.Scanner.ORE_SCAN_COST + ", laser cannon doet " + ImtConfig.Suit.LASER_CANNON_DAMAGE);
             }
             if (com.senne.imttech.satellite.SatelliteStats.cooldownTicks(0) != 1000
                     || com.senne.imttech.satellite.SatelliteStats.cooldownTicks(10) != 50) {
@@ -426,7 +426,7 @@ public final class ImtTechGameTests {
         });
     }
 
-    // ================================================================ De beveiliging van de Bibie's Industries Tower
+    // ================================================================ De beveiliging van de Biebia's Industries Tower
 
     /** Zet een beveiligingskern neer (zonder eigenaar, of met de gegeven eigenaar). */
     static com.senne.imttech.security.SecurityCoreBlockEntity placeCore(GameTestHelper helper, BlockPos pos,
@@ -624,7 +624,7 @@ public final class ImtTechGameTests {
 
     /**
      * Elke kern is een klein systeem: twee kernen krijgen elk een eigen IP, een kern van niemand is
-     * Bibie's systeem (met zijn README en het systeembestand security.conf), en breek je een kern
+     * Biebia's systeem (met zijn README en het systeembestand security.conf), en breek je een kern
      * af, dan is zijn IP weer vrij.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
@@ -641,8 +641,8 @@ public final class ImtTechGameTests {
         if (!helper.absolutePos(new BlockPos(4, 3, 4)).equals(network.find(first.ip()).pos())) {
             throw new GameTestAssertException("Het netwerk vindt de kern niet terug op zijn IP");
         }
-        if (!first.hostname().equals("bibie-sec-core") || !first.fs().isFile("/README.txt")) {
-            throw new GameTestAssertException("Een kern van niemand is niet het systeem van Bibie");
+        if (!first.hostname().equals("biebia-sec-core") || !first.fs().isFile("/README.txt")) {
+            throw new GameTestAssertException("Een kern van niemand is niet het systeem van Biebia");
         }
         var conf = first.fs().get("/etc/security.conf");
         if (conf == null || !conf.isSystem() || !conf.content().contains("daemon = " + first.daemon())) {
@@ -675,7 +675,7 @@ public final class ImtTechGameTests {
         ServerLevel level = helper.getLevel();
         core.ensureSystem(level);
         String home = "/home/" + com.senne.imttech.security.os.SystemDefaults.homeName(owner.getGameProfile().getName());
-        if (!core.fs().isDir(home) || core.hostname().equals("bibie-sec-core")) {
+        if (!core.fs().isDir(home) || core.hostname().equals("biebia-sec-core")) {
             throw new GameTestAssertException("Een kern van een speler kreeg geen thuismap of eigen naam");
         }
         core.setPassword("senne123", level.random);
@@ -724,18 +724,18 @@ public final class ImtTechGameTests {
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "security")
     public static void virtual_fs_rules(GameTestHelper helper) {
         var fs = new com.senne.imttech.security.os.VirtualFs();
-        com.senne.imttech.security.os.SystemDefaults.bibieFiles(fs, "aegis");
+        com.senne.imttech.security.os.SystemDefaults.biebiaFiles(fs, "aegis");
         if (fs.delete("/etc/security.conf") == null || fs.delete("/etc") == null || !fs.isFile("/etc/security.conf")) {
             throw new GameTestAssertException("security.conf (of de map erom) kon weg");
         }
         if (fs.write("/etc/security.conf", "daemon = nope") == null) {
             throw new GameTestAssertException("security.conf kon overschreven worden");
         }
-        if (fs.mkdir("/home/bibie/deep") != null || fs.move("/etc/security.conf", "/home/bibie/deep/cake.txt") != null
-                || !"/home/bibie/deep/cake.txt".equals(fs.systemFile())) {
+        if (fs.mkdir("/home/biebia/deep") != null || fs.move("/etc/security.conf", "/home/biebia/deep/cake.txt") != null
+                || !"/home/biebia/deep/cake.txt".equals(fs.systemFile())) {
             throw new GameTestAssertException("security.conf verstoppen lukte niet");
         }
-        if (fs.move("/home", "/home/bibie/deep") == null) {
+        if (fs.move("/home", "/home/biebia/deep") == null) {
             throw new GameTestAssertException("Een map ging in zichzelf");
         }
         if (fs.mkdir("/bad name") == null || fs.mkdir("/..") == null || fs.mkdir("/notes") != null) {
@@ -744,11 +744,11 @@ public final class ImtTechGameTests {
         if (fs.write("/big.txt", "x".repeat(com.senne.imttech.security.os.VirtualFs.MAX_FILE_LENGTH + 1)) == null) {
             throw new GameTestAssertException("Een te groot bestand paste toch");
         }
-        if (fs.setTrap("/home/bibie/deep/cake.txt", true) == null || fs.setTrap("/README.txt", true) != null
+        if (fs.setTrap("/home/biebia/deep/cake.txt", true) == null || fs.setTrap("/README.txt", true) != null
                 || fs.delete("/README.txt") != null || fs.isFile("/README.txt")) {
             throw new GameTestAssertException("Valstrik zetten of een gewoon bestand weggooien liep fout");
         }
-        if (!com.senne.imttech.security.os.VirtualFs.resolve("/home/bibie", "../../etc/./x").equals("/etc/x")) {
+        if (!com.senne.imttech.security.os.VirtualFs.resolve("/home/biebia", "../../etc/./x").equals("/etc/x")) {
             throw new GameTestAssertException("Paden met .. en . kloppen niet");
         }
         helper.succeed();
@@ -839,7 +839,7 @@ public final class ImtTechGameTests {
     /**
      * De Devices- en Access-apps: een torentje dat je op de desktop uitzet schiet niet meer, met de
      * drones uit vliegen er geen, met de lasers uit gaat een laserpoort niet aan (en weer aan als
-     * je ze aanzet), en een Bibie's Industries-torentje van de eigenaar volgt "attack mobs" van zijn kern. Een
+     * je ze aanzet), en een Biebia's Industries-torentje van de eigenaar volgt "attack mobs" van zijn kern. Een
      * onbekende naam vertrouwen lukt niet.
      */
     @GameTest(template = ARENA, timeoutTicks = 240, batch = "security_devices")
@@ -889,17 +889,17 @@ public final class ImtTechGameTests {
             throw new GameTestAssertException("Een onbekende naam kwam toch op de vertrouwde lijst");
         }
         helper.runAfterDelay(80, () -> {
-            // Een Bibie's Industries-torentje van de eigenaar in zijn eigen gebied volgt de kern. (Pas nu: een
+            // Een Biebia's Industries-torentje van de eigenaar in zijn eigen gebied volgt de kern. (Pas nu: een
             // kern meldt zich een tick na het neerzetten aan.)
             var rocketKind = com.senne.imttech.turret.TurretKind.ROCKET;
             String ownerName = owner.getGameProfile().getName();
             if (!com.senne.imttech.turret.TurretTargeting.isTarget(level, rocketKind, owner.getUUID(), ownerName, monster, turretAbs)) {
-                throw new GameTestAssertException("Het Bibie's Industries-torentje van de eigenaar ziet het monster niet als doelwit");
+                throw new GameTestAssertException("Het Biebia's Industries-torentje van de eigenaar ziet het monster niet als doelwit");
             }
             osAction(owner, coreAbs, "flag", "name", "mobs", "on", "false");
             if (core.attackMobs() || com.senne.imttech.turret.TurretTargeting.isTarget(level, rocketKind, owner.getUUID(),
                     ownerName, monster, turretAbs)) {
-                throw new GameTestAssertException("Met 'attack mobs' uit schiet het Bibie's Industries-torentje van de eigenaar toch");
+                throw new GameTestAssertException("Met 'attack mobs' uit schiet het Biebia's Industries-torentje van de eigenaar toch");
             }
             if (monster.getHealth() < monster.getMaxHealth()) {
                 throw new GameTestAssertException("Het uitgezette torentje (of een drone) raakte het monster toch");
@@ -928,7 +928,7 @@ public final class ImtTechGameTests {
      *
      * De kernen staan 210 blokken boven de testvloer, in de lucht, met het bereik even op 30 (zie
      * {@link #withReach}): de testwereld wordt hergebruikt, en de kernen van andere tests (ook uit
-     * eerdere rondes, en een Bibie's Industries Tower uit de gebouwtest) blijven staan. Met het echte bereik (200,
+     * eerdere rondes, en een Biebia's Industries Tower uit de gebouwtest) blijven staan. Met het echte bereik (200,
      * ook omhoog en omlaag) zou ook de eerste kern terecht geweigerd worden; met 30 valt 210 blokken
      * hoog buiten elk ander gebied.
      */
@@ -1547,9 +1547,9 @@ public final class ImtTechGameTests {
                 || !bench.laid(boots).is(ModItems.TECH_BOOTS.get())) {
             throw new GameTestAssertException("De laarzen gingen niet op het hologram");
         }
-        player.setItemInHand(hand, new ItemStack(ModItems.REPULSOR_CAPACITOR.get()));
+        player.setItemInHand(hand, new ItemStack(ModItems.LASER_CANNON_CAPACITOR.get()));
         if (bench.interact(player, boots) || player.getMainHandItem().getCount() != 1) {
-            throw new GameTestAssertException("Een repulsor-condensator ging in laarzen");
+            throw new GameTestAssertException("Een laserkanon-condensator ging in laarzen");
         }
         player.setItemInHand(hand, new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
         if (!bench.interact(player, boots)) {
@@ -1689,11 +1689,11 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * De hangar van de Bibie's Industries Tower: zes drone-docks langs de noordmuur, en ze krijgen stroom van
+     * De hangar van de Biebia's Industries Tower: zes drone-docks langs de noordmuur, en ze krijgen stroom van
      * de warmtegenerator in de hoek (via de kabel langs de muur).
      */
-    @GameTest(template = "bibie_tower", timeoutTicks = 100, batch = "tower_hangar")
-    public static void bibie_tower_hangar_has_powered_docks(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 100, batch = "tower_hangar")
+    public static void biebia_tower_hangar_has_powered_docks(GameTestHelper helper) {
         helper.runAfterDelay(40, () -> {
             List<BlockPos> docks = new java.util.ArrayList<>();
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -1915,11 +1915,11 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Het dak van de Bibie's Industries Tower: één landingsplatform, en het heeft stroom van de generator
+     * Het dak van de Biebia's Industries Tower: één landingsplatform, en het heeft stroom van de generator
      * eronder.
      */
-    @GameTest(template = "bibie_tower", timeoutTicks = 100, batch = "tower_pad")
-    public static void bibie_tower_has_a_powered_landing_pad(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 100, batch = "tower_pad")
+    public static void biebia_tower_has_a_powered_landing_pad(GameTestHelper helper) {
         helper.runAfterDelay(40, () -> {
             List<BlockPos> pads = new java.util.ArrayList<>();
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -1942,7 +1942,7 @@ public final class ImtTechGameTests {
         });
     }
 
-    // ================================================================ De Bibie's Industries-bunker
+    // ================================================================ De Biebia's Industries-bunker
     // In de test ligt alles één blok hoger dan in tools/generate_bunker.py (y + 1).
 
     /** Telt in de hele bunker de blokken waarvoor {@code test} klopt. */
@@ -1962,25 +1962,25 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * De kluis heeft twee kisten met Hydra-buit, er staan vijf Hydra-torentjes, en op acht plekken
+     * De kluis heeft twee kisten met Raven-buit, er staan vijf Raven-torentjes, en op acht plekken
      * een markering waar bij het maken van de wereld een soldaat komt.
      */
-    @GameTest(template = "bibie_bunker", timeoutTicks = 60, batch = "bunker")
-    public static void bibie_bunker_vault_and_guards(GameTestHelper helper) {
+    @GameTest(template = "biebia_bunker", timeoutTicks = 60, batch = "bunker")
+    public static void biebia_bunker_vault_and_guards(GameTestHelper helper) {
         for (BlockPos pos : List.of(new BlockPos(13, 2, 42), new BlockPos(21, 2, 42))) {
             helper.assertBlockPresent(Blocks.CHEST, pos);
             ChestBlockEntity chest = (ChestBlockEntity) helper.getBlockEntity(pos);
-            if (chest.getLootTable() == null || !chest.getLootTable().location().getPath().endsWith("hydra_vault")) {
+            if (chest.getLootTable() == null || !chest.getLootTable().location().getPath().endsWith("raven_vault")) {
                 throw new GameTestAssertException("Een kluiskist heeft niet de goede buit: " + chest.getLootTable());
             }
         }
-        int turrets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.HYDRA_TURRET.get()));
+        int turrets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.RAVEN_TURRET.get()));
         if (turrets != 6) {
-            throw new GameTestAssertException("Er staan " + turrets + " Hydra-torentjes in plaats van 6");
+            throw new GameTestAssertException("Er staan " + turrets + " Raven-torentjes in plaats van 6");
         }
         int soldiers = countInBunker(helper, pos -> helper.getLevel().getBlockEntity(helper.absolutePos(pos))
                 instanceof net.minecraft.world.level.block.entity.StructureBlockEntity marker
-                && com.senne.imttech.hydra.BibieBunkerPiece.SOLDIER.equals(marker.getMetaData()));
+                && com.senne.imttech.raven.BiebiaBunkerPiece.SOLDIER.equals(marker.getMetaData()));
         if (soldiers != 8) {
             throw new GameTestAssertException("Er zijn " + soldiers + " plekken voor een soldaat in plaats van 8");
         }
@@ -1988,11 +1988,11 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Alle Hydra-torentjes hangen via verborgen kabels aan de stroomkast in de reactorkamer, en
+     * Alle Raven-torentjes hangen via verborgen kabels aan de stroomkast in de reactorkamer, en
      * hebben dus stroom.
      */
-    @GameTest(template = "bibie_bunker", timeoutTicks = 100, batch = "bunker")
-    public static void bibie_bunker_turrets_have_power(GameTestHelper helper) {
+    @GameTest(template = "biebia_bunker", timeoutTicks = 100, batch = "bunker")
+    public static void biebia_bunker_turrets_have_power(GameTestHelper helper) {
         helper.runAfterDelay(40, () -> {
             int cabinets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.POWER_CABINET.get()));
             if (cabinets != 1) {
@@ -2000,7 +2000,7 @@ public final class ImtTechGameTests {
             }
             List<BlockPos> dark = new java.util.ArrayList<>();
             countInBunker(helper, pos -> {
-                if (helper.getBlockState(pos).is(ModBlocks.HYDRA_TURRET.get())
+                if (helper.getBlockState(pos).is(ModBlocks.RAVEN_TURRET.get())
                         && com.senne.imttech.energy.PowerGrid.available(helper.getLevel(), helper.absolutePos(pos))
                         < ImtConfig.Power.TURRET_LASER_SHOT) {
                     dark.add(pos.immutable());
@@ -2008,7 +2008,7 @@ public final class ImtTechGameTests {
                 return false;
             });
             if (!dark.isEmpty()) {
-                throw new GameTestAssertException("Deze Hydra-torentjes hebben geen stroom: " + dark);
+                throw new GameTestAssertException("Deze Raven-torentjes hebben geen stroom: " + dark);
             }
             helper.succeed();
         });
@@ -2018,8 +2018,8 @@ public final class ImtTechGameTests {
      * De laserwanden in de kluisgang (twee wanden van 3 x 3) gaan aan met stroom uit de reactor.
      * Sloop je de twee warmtegeneratoren, dan valt de stroom weg en gaan ze uit: zo kom je erdoor.
      */
-    @GameTest(template = "bibie_bunker", timeoutTicks = 400, batch = "bunker")
-    public static void bibie_bunker_lasers_need_the_reactor(GameTestHelper helper) {
+    @GameTest(template = "biebia_bunker", timeoutTicks = 400, batch = "bunker")
+    public static void biebia_bunker_lasers_need_the_reactor(GameTestHelper helper) {
         java.util.function.IntSupplier walls = () -> countInBunker(helper,
                 pos -> helper.getBlockState(pos).is(ModBlocks.LASER_WALL.get()));
         // Net als in de wereld: de zenders gaan aan bij een willekeurige tik; die doen we na.
@@ -2049,11 +2049,11 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * De lasergang in de Bibie's Industries Tower gaat aan met stroom uit de verborgen krachtcentrale: na het
+     * De lasergang in de Biebia's Industries Tower gaat aan met stroom uit de verborgen krachtcentrale: na het
      * neerzetten van de toren moeten er laserwanden in de gang staan (acht rijen van drie).
      */
-    @GameTest(template = "bibie_tower", timeoutTicks = 100, batch = "tower_power")
-    public static void bibie_tower_security_has_power(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 100, batch = "tower_power")
+    public static void biebia_tower_security_has_power(GameTestHelper helper) {
         helper.runAfterDelay(40, () -> {
             var level = helper.getLevel();
             List<BlockPos> security = new java.util.ArrayList<>();
@@ -2094,12 +2094,12 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * De bewakingscamera's van de Bibie's Industries Tower: zes stuks (drie op de beveiligingsverdieping, de
+     * De bewakingscamera's van de Biebia's Industries Tower: zes stuks (drie op de beveiligingsverdieping, de
      * lobby, de lasergang en de kluis), elk met stroom en een naam, en de kern van de toren (met
-     * een IP, maar zonder wachtwoord: Bibie's oude systeem) ziet ze alle zes.
+     * een IP, maar zonder wachtwoord: Biebia's oude systeem) ziet ze alle zes.
      */
-    @GameTest(template = "bibie_tower", timeoutTicks = 100, batch = "tower_cameras")
-    public static void bibie_tower_has_powered_cameras(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 100, batch = "tower_cameras")
+    public static void biebia_tower_has_powered_cameras(GameTestHelper helper) {
         helper.runAfterDelay(40, () -> {
             var level = helper.getLevel();
             List<BlockPos> cameras = new java.util.ArrayList<>();
@@ -2128,7 +2128,7 @@ public final class ImtTechGameTests {
             }
             var coreEntity = (com.senne.imttech.security.SecurityCoreBlockEntity) helper.getBlockEntity(core);
             coreEntity.ensureSystem(level);
-            if (coreEntity.ip().isEmpty() || coreEntity.hasPassword() || !coreEntity.hostname().equals("bibie-sec-core")) {
+            if (coreEntity.ip().isEmpty() || coreEntity.hasPassword() || !coreEntity.hostname().equals("biebia-sec-core")) {
                 throw new GameTestAssertException("De kern van de toren heeft geen IP, of al een wachtwoord");
             }
             // De kern van een andere test (zoals de toren van de batch hiervoor, die er vlak naast kan staan)
@@ -2152,8 +2152,8 @@ public final class ImtTechGameTests {
         });
     }
 
-    @GameTest(template = "bibie_tower", timeoutTicks = 300, batch = "tower_power")
-    public static void bibie_tower_lasers_have_power(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 300, batch = "tower_power")
+    public static void biebia_tower_lasers_have_power(GameTestHelper helper) {
         // Een toren uit de wereldgeneratie krijgt geen "je bent geplaatst"-seintje: de zenders
         // gaan aan bij een willekeurige tik (gemiddeld om de minuut). Die doen we hier na, zodra
         // de krachtcentrale een beetje stroom heeft.
@@ -2193,8 +2193,8 @@ public final class ImtTechGameTests {
      * schieten er uit de vloer eromheen vier laserzuilen omhoog: een kooi. Ze draaien op stroom
      * van de krachtcentrale, via een kabel door de muur van de lasergang.
      */
-    @GameTest(template = "bibie_tower", timeoutTicks = 200, batch = "tower_trap")
-    public static void bibie_tower_vault_trap(GameTestHelper helper) {
+    @GameTest(template = "biebia_tower", timeoutTicks = 200, batch = "tower_trap")
+    public static void biebia_tower_vault_trap(GameTestHelper helper) {
         // De krachtcentrale eerst even laten opwarmen, dan de staaf op de plaat.
         helper.runAfterDelay(20, () -> helper.spawnItem(Items.IRON_INGOT, 20.5f, 79.1f, 23.5f));
         helper.succeedWhen(() -> {
@@ -2703,7 +2703,7 @@ public final class ImtTechGameTests {
     private static final String[] ADVANCEMENTS = {
         "root", "charging_station", "real_power", "find_tower", "glasses",
         "first_drone", "swarm", "drone_down", "satellite", "relay",
-        "rayshield", "illusion", "holo_table", "suit", "fly", "repulsor"
+        "rayshield", "illusion", "holo_table", "suit", "fly", "laser_cannon"
     };
 
     /**
@@ -2927,9 +2927,9 @@ public final class ImtTechGameTests {
         return player.getMaxHealth() - player.getHealth();
     }
 
-    /** De repulsor raakt wat voor je staat, duwt het weg en kost energie. */
+    /** De laser cannon raakt wat voor je staat, duwt het weg en kost energie. */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
-    public static void repulsor_hits_what_you_look_at(GameTestHelper helper) {
+    public static void laser_cannon_hits_what_you_look_at(GameTestHelper helper) {
         ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
         wearSuit(owner);
         Husk target = spawnDummyEnemy(helper, new BlockPos(1, 3, 6));
@@ -2940,41 +2940,41 @@ public final class ImtTechGameTests {
         int before = ImtData.getEnergy(glasses);
         float health = target.getHealth();
 
-        ImtSuit.repulsor(owner);
+        ImtSuit.laserCannon(owner);
 
         if (target.getHealth() >= health) {
-            throw new GameTestAssertException("De repulsor deed geen schade");
+            throw new GameTestAssertException("De laser cannon deed geen schade");
         }
-        if (ImtData.getEnergy(glasses) != before - ImtConfig.Suit.REPULSOR_COST) {
-            throw new GameTestAssertException("De repulsor kostte niet " + ImtConfig.Suit.REPULSOR_COST
+        if (ImtData.getEnergy(glasses) != before - ImtConfig.Suit.LASER_CANNON_COST) {
+            throw new GameTestAssertException("De laser cannon kostte niet " + ImtConfig.Suit.LASER_CANNON_COST
                     + " maar " + (before - ImtData.getEnergy(glasses)));
         }
         helper.succeed();
     }
 
     /**
-     * De repulsor vuur je door de aanvalsknop vast te houden, dus er komt elke tick een "vuur"
+     * De laser cannon vuur je door de aanvalsknop vast te houden, dus er komt elke tick een "vuur"
      * binnen. De server laat er maar één per wachttijd door: de tweede kost niets.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "suit")
-    public static void repulsor_waits_for_its_cooldown(GameTestHelper helper) {
+    public static void laser_cannon_waits_for_its_cooldown(GameTestHelper helper) {
         ServerPlayer owner = makeSuitOwner(helper, new BlockPos(1, 3, 1));
         wearSuit(owner);
         ItemStack glasses = ImtData.getWornGlasses(owner);
         int full = ImtData.getEnergy(glasses);
 
-        ImtSuit.repulsor(owner);
-        ImtSuit.repulsor(owner);
+        ImtSuit.laserCannon(owner);
+        ImtSuit.laserCannon(owner);
         int afterTwo = ImtData.getEnergy(glasses);
-        if (afterTwo != full - ImtConfig.Suit.REPULSOR_COST) {
+        if (afterTwo != full - ImtConfig.Suit.LASER_CANNON_COST) {
             throw new GameTestAssertException("Twee stoten in dezelfde tick kostten " + (full - afterTwo)
-                    + " in plaats van " + ImtConfig.Suit.REPULSOR_COST);
+                    + " in plaats van " + ImtConfig.Suit.LASER_CANNON_COST);
         }
         // Na de wachttijd mag hij weer.
-        helper.runAfterDelay(Math.round(ImtConfig.Suit.REPULSOR_COOLDOWN) + 1, () -> {
-            ImtSuit.repulsor(owner);
-            if (ImtData.getEnergy(glasses) != afterTwo - ImtConfig.Suit.REPULSOR_COST) {
-                throw new GameTestAssertException("Na de wachttijd vuurde de repulsor niet opnieuw");
+        helper.runAfterDelay(Math.round(ImtConfig.Suit.LASER_CANNON_COOLDOWN) + 1, () -> {
+            ImtSuit.laserCannon(owner);
+            if (ImtData.getEnergy(glasses) != afterTwo - ImtConfig.Suit.LASER_CANNON_COST) {
+                throw new GameTestAssertException("Na de wachttijd vuurde de laser cannon niet opnieuw");
             }
             helper.succeed();
         });
@@ -3095,10 +3095,10 @@ public final class ImtTechGameTests {
 
     // ================================================================ Torentjes
 
-    /** Zet een torentje neer, met (voor een Bibie's Industries-torentje) een eigenaar. */
-    private static TurretBlockEntity placeTurret(GameTestHelper helper, BlockPos pos, boolean hydra,
+    /** Zet een torentje neer, met (voor een Biebia's Industries-torentje) een eigenaar. */
+    private static TurretBlockEntity placeTurret(GameTestHelper helper, BlockPos pos, boolean raven,
                                                  @Nullable ServerPlayer owner) {
-        helper.setBlock(pos, (hydra ? ModBlocks.HYDRA_TURRET : ModBlocks.ROCKET_TURRET).get());
+        helper.setBlock(pos, (raven ? ModBlocks.RAVEN_TURRET : ModBlocks.ROCKET_TURRET).get());
         TurretBlockEntity turret = (TurretBlockEntity) helper.getBlockEntity(pos);
         if (owner != null) {
             turret.setOwner(owner);
@@ -3113,7 +3113,7 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Een Bibie's Industries-torentje op stroom schiet het monster neer, maar niet de koe die dichterbij
+     * Een Biebia's Industries-torentje op stroom schiet het monster neer, maar niet de koe die dichterbij
      * staat, en ook niet zijn eigenaar.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "turret")
@@ -3181,22 +3181,22 @@ public final class ImtTechGameTests {
         });
     }
 
-    /** Het Hydra-torentje (uit de bunker) heeft geen stroom nodig en schiet op spelers. */
+    /** Het Raven-torentje (uit de bunker) heeft geen stroom nodig en schiet op spelers. */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "turret")
-    public static void hydra_turret_shoots_players(GameTestHelper helper) {
+    public static void raven_turret_shoots_players(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         placeTurret(helper, pos, true, null);
         powerTurret(helper, pos.east());
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
         helper.succeedWhen(() -> {
             if (player.getHealth() >= player.getMaxHealth()) {
-                throw new GameTestAssertException("Het Hydra-torentje heeft de speler nog niet geraakt");
+                throw new GameTestAssertException("Het Raven-torentje heeft de speler nog niet geraakt");
             }
         });
     }
 
     /**
-     * Zonder stroom doet geen enkel torentje iets (ook Hydra's niet): de loop hangt omlaag en er
+     * Zonder stroom doet geen enkel torentje iets (ook Raven's niet): de loop hangt omlaag en er
      * valt geen schot. En een beveiligingskern zonder stroom stuurt geen drones.
      */
     @GameTest(template = ARENA, timeoutTicks = 120, batch = "turrets")
@@ -3551,7 +3551,7 @@ public final class ImtTechGameTests {
             throw new GameTestAssertException("Tab vulde de console niet aan");
         }
         terminal.run("disable watchdog", now);
-        terminal.run("set owner Rhodey", now);
+        terminal.run("set owner Jens", now);
         if (terminal.stage() != com.senne.imttech.security.HackTerminal.Stage.OVERRIDE) {
             throw new GameTestAssertException("Een andere naam dan de jouwe werd toch eigenaar");
         }
@@ -4253,16 +4253,16 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Een Hydra-soldaat met zijn lasergeweer: hij legt aan op een speler in survival en raakt
+     * Een Raven-soldaat met zijn lasergeweer: hij legt aan op een speler in survival en raakt
      * hem. Zijn geweer laat hij nooit vallen.
      */
-    @GameTest(template = ARENA, timeoutTicks = 200, batch = "hydra")
-    public static void hydra_soldier_shoots(GameTestHelper helper) {
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "raven")
+    public static void raven_soldier_shoots(GameTestHelper helper) {
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(4, 3, 4));
-        HydraSoldierEntity soldier = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), new BlockPos(14, 3, 12));
+        RavenSoldierEntity soldier = helper.spawn(ModEntities.RAVEN_SOLDIER.get(), new BlockPos(14, 3, 12));
         soldier.finalizeSpawn(helper.getLevel(), helper.getLevel().getCurrentDifficultyAt(soldier.blockPosition()),
                 net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
-        if (!soldier.getMainHandItem().is(ModItems.HYDRA_RIFLE.get())) {
+        if (!soldier.getMainHandItem().is(ModItems.RAVEN_RIFLE.get())) {
             throw new GameTestAssertException("De soldaat heeft geen lasergeweer");
         }
         soldier.setTarget(player);
@@ -4275,11 +4275,11 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Verstop je je achter een muur, dan blijft een Hydra-soldaat daar niet staan wachten: hij
+     * Verstop je je achter een muur, dan blijft een Raven-soldaat daar niet staan wachten: hij
      * zoekt een plek om de muur heen van waaruit hij je wél ziet, en schiet dan.
      */
-    @GameTest(template = ARENA, timeoutTicks = 500, batch = "hydra")
-    public static void hydra_soldier_flanks_around_a_wall(GameTestHelper helper) {
+    @GameTest(template = ARENA, timeoutTicks = 500, batch = "raven")
+    public static void raven_soldier_flanks_around_a_wall(GameTestHelper helper) {
         // Een muur van drie hoog midden in de arena, met aan beide kanten een doorgang.
         for (int z = 5; z <= 19; z++) {
             for (int y = 2; y <= 4; y++) {
@@ -4287,7 +4287,7 @@ public final class ImtTechGameTests {
             }
         }
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(19, 2, 12));
-        HydraSoldierEntity soldier = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), new BlockPos(5, 2, 12));
+        RavenSoldierEntity soldier = helper.spawn(ModEntities.RAVEN_SOLDIER.get(), new BlockPos(5, 2, 12));
         soldier.finalizeSpawn(helper.getLevel(), helper.getLevel().getCurrentDifficultyAt(soldier.blockPosition()),
                 net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
         if (soldier.hasLineOfSight(player)) {
@@ -4307,8 +4307,8 @@ public final class ImtTechGameTests {
      * Ziet één soldaat je, dan weten zijn maten in de buurt het ook, zelfs een maat die je zelf
      * niet kan zien (hier: in een dicht hokje).
      */
-    @GameTest(template = ARENA, timeoutTicks = 60, batch = "hydra")
-    public static void hydra_soldiers_alert_each_other(GameTestHelper helper) {
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "raven")
+    public static void raven_soldiers_alert_each_other(GameTestHelper helper) {
         BlockPos hut = new BlockPos(18, 2, 18);
         for (BlockPos pos : BlockPos.betweenClosed(hut.offset(-1, 0, -1), hut.offset(1, 2, 1))) {
             if (!(pos.getX() == hut.getX() && pos.getZ() == hut.getZ() && pos.getY() < hut.getY() + 2)) {
@@ -4316,8 +4316,8 @@ public final class ImtTechGameTests {
             }
         }
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(4, 2, 4));
-        HydraSoldierEntity first = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), new BlockPos(8, 2, 6));
-        HydraSoldierEntity mate = helper.spawn(ModEntities.HYDRA_SOLDIER.get(), hut);
+        RavenSoldierEntity first = helper.spawn(ModEntities.RAVEN_SOLDIER.get(), new BlockPos(8, 2, 6));
+        RavenSoldierEntity mate = helper.spawn(ModEntities.RAVEN_SOLDIER.get(), hut);
         if (mate.hasLineOfSight(player)) {
             throw new GameTestAssertException("De soldaat in het hokje ziet de speler toch (test klopt niet)");
         }
@@ -4440,7 +4440,7 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * De bril hoort alleen uit de kluis van een Bibie's Industries Tower te komen. Zolang er geen recept
+     * De bril hoort alleen uit de kluis van een Biebia's Industries Tower te komen. Zolang er geen recept
      * voor bestaat, kun je hem in survival nergens anders vandaan halen.
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")

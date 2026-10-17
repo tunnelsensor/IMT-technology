@@ -2,7 +2,7 @@ package com.senne.imttech.registry;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.drone.DroneEntity;
-import com.senne.imttech.hydra.HydraSoldierEntity;
+import com.senne.imttech.raven.RavenSoldierEntity;
 import com.senne.imttech.raid.RaidDroneEntity;
 import com.senne.imttech.robot.GuardRobotEntity;
 import com.senne.imttech.suit.MiniRocketEntity;
@@ -41,15 +41,15 @@ public final class ModEntities {
                     .fireImmune()
                     .build("raid_drone"));
 
-    /** De soldaten van Hydra, die de bunker bewaken. */
-    public static final DeferredHolder<EntityType<?>, EntityType<HydraSoldierEntity>> HYDRA_SOLDIER = ENTITIES.register(
-            "hydra_soldier", () -> EntityType.Builder.of(HydraSoldierEntity::new, MobCategory.MONSTER)
+    /** De soldaten van Raven, die de bunker bewaken. */
+    public static final DeferredHolder<EntityType<?>, EntityType<RavenSoldierEntity>> RAVEN_SOLDIER = ENTITIES.register(
+            "raven_soldier", () -> EntityType.Builder.of(RavenSoldierEntity::new, MobCategory.MONSTER)
                     .sized(0.6f, 1.95f)        // zo groot als een speler
                     .eyeHeight(1.62f)
                     .clientTrackingRange(8)
-                    .build("hydra_soldier"));
+                    .build("raven_soldier"));
 
-    /** Een beveiligingsdrone van de Bibie's Industries Tower (hoort bij een beveiligingskern). */
+    /** Een beveiligingsdrone van de Biebia's Industries Tower (hoort bij een beveiligingskern). */
     public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.security.SecurityDroneEntity>> SECURITY_DRONE =
             ENTITIES.register("security_drone", () -> EntityType.Builder
                     .of(com.senne.imttech.security.SecurityDroneEntity::new, MobCategory.MISC)
@@ -107,7 +107,7 @@ public final class ModEntities {
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(DRONE.get(), DroneEntity.createAttributes().build());
         event.put(RAID_DRONE.get(), RaidDroneEntity.createAttributes().build());
-        event.put(HYDRA_SOLDIER.get(), HydraSoldierEntity.createAttributes().build());
+        event.put(RAVEN_SOLDIER.get(), RavenSoldierEntity.createAttributes().build());
         event.put(SECURITY_DRONE.get(), com.senne.imttech.security.SecurityDroneEntity.createAttributes().build());
         event.put(GUARD_ROBOT.get(), GuardRobotEntity.createAttributes().build());
         event.put(GUARD_DRONE.get(), com.senne.imttech.robot.GuardDroneEntity.createAttributes().build());

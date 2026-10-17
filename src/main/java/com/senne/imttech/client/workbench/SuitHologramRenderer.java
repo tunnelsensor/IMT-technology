@@ -37,7 +37,7 @@ import org.joml.Matrix4f;
  * Tekent het harnas-hologram boven de werkbank.
  *
  * Het is het echte 3D-model van het tech-harnas (TechSuitModel), op ware grootte en langzaam
- * ronddraaiend, zoals het harnas in Bibie's lab:
+ * ronddraaiend, zoals het harnas in Biebia's lab:
  * - een stuk dat er nog niet is: doorschijnend blauw, met het plaatje van het harnas erin;
  * - een echt stuk dat je erop legde: gewoon zoals het is, in de kleuren van het harnas;
  * - een stuk in aanbouw: plaatje voor plaatje verschijnt het (eerst de romp, dan de

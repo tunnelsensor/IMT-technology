@@ -63,8 +63,8 @@ public final class ImtKeys {
     /** De speler waar je naar kijkt hacken (of de hack stoppen). */
     public static final KeyMapping HACK = key("hack", InputConstants.KEY_SEMICOLON);
 
-    /** Fase 15: een repulsorstoot uit je handpalm (je moet de borstplaat dragen). */
-    public static final KeyMapping REPULSOR = key("repulsor", InputConstants.KEY_I);
+    /** Fase 15: een laserkanonschot uit je handpalm (je moet de borstplaat dragen). */
+    public static final KeyMapping LASER_CANNON = key("laser_cannon", InputConstants.KEY_I);
     /** Een salvo mini-raketten (hele harnas + raketpakket op de borstplaat). */
     public static final KeyMapping ROCKETS = key("rockets", InputConstants.KEY_X);
     // Fase 4
@@ -107,7 +107,7 @@ public final class ImtKeys {
         event.register(STAND_DOWN);
         event.register(REDSTONE);
         event.register(HACK);
-        event.register(REPULSOR);
+        event.register(LASER_CANNON);
         event.register(ROCKETS);
         event.register(CABLE_XRAY);
         event.register(ZONE_BORDER);

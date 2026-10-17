@@ -216,7 +216,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     }
 
     /**
-     * In de wereld gezet (ook door een gebouw, zoals de Bibie's Industries Tower): over een seconde kijken
+     * In de wereld gezet (ook door een gebouw, zoals de Biebia's Industries Tower): over een seconde kijken
      * of hij aan moet (redstone en stroom), of, als hij al aan stond, zijn stroom betalen.
      */
     @Override
@@ -310,7 +310,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
 
     /**
      * Vangnet: een zender die bij het maken van de wereld in een gebouw is gezet (zoals in de
-     * Bibie's Industries Tower), of die aan stond in een oude wereld, heeft nog geen geplande tik. Af en toe
+     * Biebia's Industries Tower), of die aan stond in een oude wereld, heeft nog geen geplande tik. Af en toe
      * (willekeurig, gemiddeld om de minuut) kijken we of hij er een heeft.
      */
     @Override

@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
  *
  * @param thrusters stuwraket-upgrades (alleen in de laarzen): sneller en zuiniger vliegen
  * @param plating   bepantsering (elk stuk): het harnas houdt meer schade tegen
- * @param capacitor repulsor-condensatoren (alleen in de borstplaat): een sterkere repulsor
+ * @param capacitor laserkanon-condensatoren (alleen in de borstplaat): een sterkere laser cannon
  * @param warheads  raketkoppen (borstplaat met raketpakket): sterkere mini-raketten
  * @param magazines raketmagazijnen (borstplaat met raketpakket): meer raketten per salvo
  */
@@ -57,7 +57,7 @@ public record SuitUpgrades(int thrusters, int plating, int capacitor, int warhea
         return of(player.getItemBySlot(EquipmentSlot.FEET)).thrusters();
     }
 
-    /** Hoeveel repulsor-condensatoren er in de borstplaat van deze speler zitten. */
+    /** Hoeveel laserkanon-condensatoren er in de borstplaat van deze speler zitten. */
     public static int capacitorsOf(Player player) {
         return of(player.getItemBySlot(EquipmentSlot.CHEST)).capacitor();
     }

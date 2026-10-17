@@ -29,7 +29,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het satellietscherm: je Bibie's Industries-satelliet in 3D, wat hij kan, en per onderdeel hoe ver hij
+ * Het satellietscherm: je Biebia's Industries-satelliet in 3D, wat hij kan, en per onderdeel hoe ver hij
  * opgewaardeerd is.
  *
  * Indeling:

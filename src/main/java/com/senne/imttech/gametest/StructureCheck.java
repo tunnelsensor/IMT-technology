@@ -24,7 +24,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  *
  * Starten met {@code gradlew runStructureCheck}. Dat start een server met een gewone wereld (in
  * de map run-structures), en dan:
- * 1. zoeken we het dichtstbijzijnde satellietwrak en de dichtstbijzijnde Bibie's Industries Tower;
+ * 1. zoeken we het dichtstbijzijnde satellietwrak en de dichtstbijzijnde Biebia's Industries Tower;
  * 2. laten we die stukken wereld helemaal aanmaken (dan wordt de structuur neergezet);
  * 3. schrijven we in het log waar de kisten liggen, en hoe hoog dat is ten opzichte van de grond
  *    in het midden ("[structures]"-regels);
@@ -45,7 +45,7 @@ public final class StructureCheck {
 
     private static void onServerStarted(ServerStartedEvent event) {
         ServerLevel level = event.getServer().overworld();
-        for (String name : List.of("crashed_satellite", "bibie_tower", "bibie_bunker")) {
+        for (String name : List.of("crashed_satellite", "biebia_tower", "biebia_bunker")) {
             check(level, name);
         }
         ImtTech.LOGGER.info("[structures] klaar, server stopt");
@@ -95,7 +95,7 @@ public final class StructureCheck {
                 }
             }
         }
-        if (name.equals("bibie_bunker")) {
+        if (name.equals("biebia_bunker")) {
             bunkerDetails(level, box);
         }
         ImtTech.LOGGER.info("[structures] {}: teleporteer ernaartoe met /tp {} {} {}", name,
@@ -105,13 +105,13 @@ public final class StructureCheck {
     /** Van de bunker ook: hoeveel soldaten, torentjes en laserzenders er echt staan, en waar de ingang is. */
     private static void bunkerDetails(ServerLevel level, BoundingBox box) {
         net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.of(box).inflate(2);
-        int soldiers = level.getEntitiesOfClass(com.senne.imttech.hydra.HydraSoldierEntity.class, area).size();
+        int soldiers = level.getEntitiesOfClass(com.senne.imttech.raven.RavenSoldierEntity.class, area).size();
         int turrets = 0;
         int emitters = 0;
         int markers = 0;
         for (BlockPos pos : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
             var state = level.getBlockState(pos);
-            if (state.is(com.senne.imttech.registry.ModBlocks.HYDRA_TURRET.get())) {
+            if (state.is(com.senne.imttech.registry.ModBlocks.RAVEN_TURRET.get())) {
                 turrets++;
             } else if (state.is(com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get())) {
                 emitters++;
@@ -119,7 +119,7 @@ public final class StructureCheck {
                 markers++;
             }
         }
-        ImtTech.LOGGER.info("[structures] bibie_bunker:   {} soldaten, {} Hydra-torentjes, {} laserzenders, "
+        ImtTech.LOGGER.info("[structures] biebia_bunker:   {} soldaten, {} Raven-torentjes, {} laserzenders, "
                 + "{} overgebleven structuurblokken", soldiers, turrets, emitters, markers);
     }
 }

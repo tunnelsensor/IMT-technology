@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "imttech:item/repulsor_capacitor"
-  }
-}

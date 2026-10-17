@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  *  1 blank keycard in your inventory
  *  CARDS (2 active, 1 blocked)                       [Delete blocked (1)]
  *  #1001  Lab access      L3  by Senne                        [Block]
- *  #1003  Pepper          L5  by Senne                        [Block]
+ *  #1003  Lotte          L5  by Senne                        [Block]
  *  #1002  Guest           L1  BLOCKED               [Delete] [Unblock]
  * </pre>
  * "Write card" schrijft de eerste lege keycard in je rugzak: hij krijgt de naam, het niveau en het

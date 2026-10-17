@@ -27,10 +27,10 @@ public record BeamEffectPayload(Vec3 from, Vec3 to, Kind kind) implements Custom
         SATELLITE_PRECISION,
         /** De schuivende laser: een brede streep die over de grond kruipt. */
         SATELLITE_SWEEP,
-        /** Fase 15: een repulsorstoot uit je handpalm. */
-        REPULSOR,
-        /** Het lasergeweer van een Hydra-soldaat: een rode straal. */
-        HYDRA_LASER,
+        /** Fase 15: een laserkanonschot uit je handpalm. */
+        LASER_CANNON,
+        /** Het lasergeweer van een Raven-soldaat: een rode straal. */
+        RAVEN_LASER,
         /** De Laser-module van een guard robot (hoofdstuk 24): een oranjerode straal met vonkjes. */
         ROBOT_LASER,
         /** De Gun-module van een guard robot: een dun geel spoortje en een rookwolkje waar hij raakt. */

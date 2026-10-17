@@ -14,9 +14,13 @@ Afspraken die overal gelden:
   eigen bril, arsenaal en spraakcommando's.
 - I.M.T mag **overpowered** zijn; de moeilijkheid zit in het verkrijgen ervan.
 - **Eigen namen** (17 oktober): de mod heet **I.M.T Technology** (mod-id `imttech`), de bril
-  **I.M.T** ("I Am Tunnelsensor"); de toren, de bunker en de satelliet zijn van **Bibie's
+  **I.M.T** ("I Am Tunnelsensor"); de toren, de bunker en de satelliet zijn van **Biebia's
   Industries**, en spullen heten naar wat ze zijn (Computer Chip, Power Cable, Drone, Hacking
   Laptop, Rocket Turret, Tech Chestplate, Security OS). Niets meer van Stark of E.D.I.T.H.
+  Ronde 2 (17 oktober): de vijanden heten **Raven** (was Hydra), de repulsor is de **laser
+  cannon**, de AI van de toren heet **BiTech** (Biebia Technologie), en de training heet
+  **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
+  Blaster blijven zo (jouw keuze).
 
 **Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de oude stroomwaarden
 allemaal groen; met jouw nieuwe (zonnepaneel 0.3, warmte 0.7 per tick) 3 rood (zie hoofdstuk 14, stap 2).
@@ -37,7 +41,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 
 - [x] **Al het werk van vóór deze ronde vastgelegd** — `053dd5a`
       Zonnepaneel, warmtegenerator en de lader met zijn scherm; rayshields in zes kleuren met
-      een schuif-animatie; de grote Bibie's Industries Tower met kluis; waypoints bewerken.
+      een schuif-animatie; de grote Biebia's Industries Tower met kluis; waypoints bewerken.
 
 - [x] **Alles Engels in het spel** — `47a7d4b`
       Er lekte nog Nederlands door via het spraakwoordenboek, de Spotify-pagina in je browser,
@@ -48,7 +52,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 - [x] **HUD opgesplitst** — `b1f8260`
       1084 regels in één klasse → 124 regels plus 16 losse widgets in `client/hud/`.
 
-- [x] **Bril alleen nog uit de Bibie's Industries Tower** — `4bcffc6`
+- [x] **Bril alleen nog uit de Biebia's Industries Tower** — `4bcffc6`
       Geen recept meer; de ingrediënten blijven bestaan voor al het andere.
 
 - [x] **Redstone geeft minder energie** — `4bcffc6`
@@ -82,8 +86,8 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 - [x] **Het harnas** — `710d7ab`, afgezwakt `f78aba3`, nieuw uiterlijk `e96a9df`
       Borstplaat, broek en laarzen; geen helm, want die plek is van de bril. Zonder bril doet
       het niets bijzonders. Met bril: 20% schade eraf per stuk, vliegen met het hele pak, elke
-      val tot 40 blokken opgevangen, repulsor op toets **I**.
-      Repulsor na jouw feedback: 7 schade (was 12), 200 energie (was 500), minder wegduwen en
+      val tot 40 blokken opgevangen, laser cannon op toets **I**.
+      Laser cannon na jouw feedback: 7 schade (was 12), 200 energie (was 500), minder wegduwen en
       bijna geen terugslag meer.
       Uiterlijk na jouw feedback: rood en goud met een blauwe reactor. De oude texturen stonden
       op de verkeerde plekken, waardoor de laarzen onzichtbaar waren.
@@ -94,7 +98,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
       Een vijandige drone (donker, oranje lampjes) die uit de lucht duikt, om je heen cirkelt
       en schiet. Verstop je je, dan komt hij dichterbij en breekt hij zich naar binnen.
       Komt vanzelf als je de bril draagt (standaard elke 20–45 minuten) en meteen als je te veel
-      sloopt in een Bibie's Industries Tower. Gamerule `imttechRaidGriefing` zet het slopen uit (standaard
+      sloopt in een Biebia's Industries Tower. Gamerule `imttechRaidGriefing` zet het slopen uit (standaard
       aan); frequentie en grootte van een golf staan in de serverconfig.
 
 - [x] **Holotafel-scherm werkt echt** — `bbdf1ab`
@@ -115,9 +119,9 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
       `gradlew runVisualCheck`, zie bovenaan.
 
 - [x] **Advancements** — `1e3604d`
-      16 prestaties onder "Bibie's Industries", van je eerste computerchip tot vliegen met het
+      16 prestaties onder "Biebia's Industries", van je eerste computerchip tot vliegen met het
       harnas. Wat de mod zelf toekent (eerste drone, satelliet, drone verloren, vliegen,
-      repulsor) gebeurt op het moment dat het echt gebeurt.
+      laser cannon) gebeurt op het moment dat het echt gebeurt.
 
 ---
 
@@ -125,7 +129,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
 
 ### 1. Jouw nieuwe wensen (23 september)
 
-- [x] **Repulsor als aan/uit-knop** — `bdaa237`
+- [x] **Laser cannon als aan/uit-knop** — `bdaa237`
       Toets I (of G > Combat) zet hem aan of uit; staat hij aan, dan vuur je met de aanvalsknop,
       ingedrukt houden vuurt elke seconde. Een ring rond het vizier laat zien wanneer hij weer
       geladen is. Drie eigen geluiden, gemaakt door `tools/generate_sounds.py`: opladen bij
@@ -149,7 +153,7 @@ Alleen een stuk fotograferen kan ook: `gradlew runVisualCheck -Ponly=satellite` 
       camera, op het laatst twee rotors weg en een wiebelende romp. Rook, vonken, brandende
       brokjes en haperende lampjes. Ook bij raiddrones.
 - [x] **Arsenaal in 3D** — `1935f14`
-      De aarde met de Bibie's Industries-satelliet en al je drones in hun baan, als echte modellen met hun
+      De aarde met de Biebia's Industries-satelliet en al je drones in hun baan, als echte modellen met hun
       schade. Slepen = rondkijken, scrollen = zoomen, klikken = kiezen; de gekozen drone draait
       groot in een vakje.
 - [x] **Opstartanimatie van de bril** — `3c5dcec`
@@ -193,7 +197,7 @@ kleine dingen, dan de grote.
       hem toch met I.M.T schakelen: zet er een relais naast. Oude laserpoorten verdwijnen
       vanzelf uit je relaislijst. Nagekeken op screenshots (`-Ponly=laser`), ook van boven.
 - [x] De illusie "wereld kopiëren" weghalen ("cloak" blijft) — `ab4ab2d`
-- [x] Repulsor: niet bij elk schot "hit 1" zeggen of tonen; alleen geluid — `c7c7e7a`
+- [x] Laser cannon: niet bij elk schot "hit 1" zeggen of tonen; alleen geluid — `c7c7e7a`
 - [x] Raiddrones iets minder sterk: minder schade, minder leven en trager schieten — `bc46a61`
       3 schade (was 5), 10 leven (was 16), om de 2 seconden (was 1,25).
 - [x] G > Systems > Commands: bij een nieuw commando staan de acties over elkaar of buiten
@@ -235,7 +239,7 @@ kleine dingen, dan de grote.
       apparaten; een apparaat dat direct tegen een generator staat, doet ook mee. Het
       laadstation haalt alleen stroom voor een bril die nog niet vol is (anders zoog het het
       net leeg). Een holotafel zonder stroom toont alleen een knipperend rood ringetje.
-      De **Bibie's Industries Tower** heeft nu een verborgen krachtcentrale: een dichtgemetseld blok op de
+      De **Biebia's Industries Tower** heeft nu een verborgen krachtcentrale: een dichtgemetseld blok op de
       beveiligingsverdieping met twee warmtegeneratoren in lava, en kabels door het plafond naar
       alle laserzenders. Knip ze door en de lasers gaan uit. Onderweg gevonden: de lasers in de
       toren stonden als "aan" opgeslagen zonder wand, dus de gang had waarschijnlijk nooit echt
@@ -257,7 +261,7 @@ kleine dingen, dan de grote.
       seconden weg. De getallen staan in `DomeSettings.java`. Vier nieuwe tests.
 
 **Harnas**
-- [x] Repulsor: de hand beweegt en gloeit bij een schot, en het schot is een eigen, gedetailleerd
+- [x] Laser cannon: de hand beweegt en gloeit bij een schot, en het schot is een eigen, gedetailleerd
       effect in plaats van Minecraft-deeltjes — `da56f6c`
       In je eigen beeld gaat je arm omhoog (onderarm vooruit, hand omhoog geknikt, palm naar
       voren) met een zacht kloppende blauwe gloed; bij een schot flitst de palm en slaat je arm
@@ -276,8 +280,8 @@ kleine dingen, dan de grote.
       plaatjes nu 128x64 zodat de extra stukken een plek hebben: een uitstekende reactor die
       blauw gloeit (ook in het donker), borstplaten, drie gouden buikplaten, een rugplaat met
       twee straalopeningen, schouderplaten die iets naar buiten kantelen, onderarmbeschermers
-      met een repulsor in de handpalm, laarzen met een schaal, gouden neus en zool, en aan de
-      broek kniestukken, dijplaten en een gesp. Je eigen arm (repulsor) toont de harnasmouw
+      met een laser cannon in de handpalm, laarzen met een schaal, gouden neus en zool, en aan de
+      broek kniestukken, dijplaten en een gesp. Je eigen arm (laser cannon) toont de harnasmouw
       ook. Close-ups: `-Ponly=suit` (`41b` t/m `41d`).
 
 **Modellen en gebouwen**
@@ -295,8 +299,8 @@ kleine dingen, dan de grote.
       Hij heeft nu een voorkant (naar je toe bij plaatsen) en gloeit alleen als hij warmte
       opwekt (dan ook licht); de test van de generator controleert dat. De modellen maakt
       `tools/generate_block_models.py`; screenshots met `-Ponly=models`.
-- [x] Bibie's Industries Tower mooier, overal meer detail — `23d7f84`
-      Onderweg gevonden en gerepareerd: het BIBIE-logo miste de bovenste rij van elke letter
+- [x] Biebia's Industries Tower mooier, overal meer detail — `23d7f84`
+      Onderweg gevonden en gerepareerd: het BIEBIA-logo miste de bovenste rij van elke letter
       (het terras erboven overschreef hem), en er hing nergens een plafondlamp (de vloer erboven
       overschreef ze), dus binnen was het donker. De ladder liep buiten langs de gevel en vanaf
       het archief kwam je nergens meer binnen; de ladder van de kluis eindigde tegen het glas.
@@ -326,8 +330,8 @@ wilt. Eerst de kleine dingen, dan de grote.
       "Relay: name and group", "Dome under attack" (raiddrones tegen de koepel), "Repair a
       drone", "Glasses upgrades" (in het laadstation), "Raid drones: breaking in" (ze schieten
       zich een hut in), "I.M.T Technology items" (het creative-tabblad) en het persoonlijke schild
-      vangt nu echt pijlen op. De sweep kiest een begin en eind, het leger valt Happy aan.
-      Onderweg gevonden: Happy ging dood door raiddrones (en was daarna niet meer te hacken of af
+      vangt nu echt pijlen op. De sweep kiest een begin en eind, het leger valt Seppe aan.
+      Onderweg gevonden: Seppe ging dood door raiddrones (en was daarna niet meer te hacken of af
       te leiden); hij is nu onkwetsbaar in de showcase.
 - [x] Eerst een inhoudstafel, en een kopje NIEUW — `09ed998`
       Terwijl het spel opstart zie je alle functies per deel, met bovenaan NIEUW (wat je nog
@@ -409,7 +413,7 @@ wilt. Eerst de kleine dingen, dan de grote.
 
 **Het G-menu opnieuw ingedeeld** (26 september)
 - [x] Tien tabbladen — `1bca747`
-      COMBAT (repulsor, raketten, rayshield) · SATELLITE & ARSENAL (precisie-straal,
+      COMBAT (laser cannon, raketten, rayshield) · SATELLITE & ARSENAL (precisie-straal,
       bombardement en schuivende laser elk apart: kiezen = die stand en meteen vuren, LOCKED
       als hij nog op slot zit, PICK END als de laser op zijn eindpunt wacht; plus het
       satellietscherm en het arsenaal) · DRONES (zwerm, één drone, escorte, vorm, stand down,
@@ -421,9 +425,9 @@ wilt. Eerst de kleine dingen, dan de grote.
 
 ### 4. Meer in de wereld
 
-- [x] Meer structuren (het satellietwrak en de Bibie's Industries-bunker)
-  - [x] **Neergestorte Bibie's Industries-satelliet** — `2510e03`, controle `4629359`
-        Een oude Bibie's Industries-satelliet uit zijn baan gevallen: een krater van zo'n 25 blokken met
+- [x] Meer structuren (het satellietwrak en de Biebia's Industries-bunker)
+  - [x] **Neergestorte Biebia's Industries-satelliet** — `2510e03`, controle `4629359`
+        Een oude Biebia's Industries-satelliet uit zijn baan gevallen: een krater van zo'n 25 blokken met
         verschroeide grond, opgeworpen aarde en de voor waar hij binnenkwam; in het midden de
         opengescheurde romp (de reactor gloeit nog), een zonnepaneel dat schuin omhoog steekt,
         een afgebroken paneel, de schotel op de helling en rookende brokstukken. In de romp de
@@ -437,20 +441,20 @@ wilt. Eerst de kleine dingen, dan de grote.
         (beide gevonden, met al hun kisten, in een savanne en een berkenbos).
         Aannames (zeg het als je het anders wilt): de buit, hoe vaak hij voorkomt (ongeveer even
         vaak als de toren) en de raiddrones als bewaking.
-  - [x] **Bibie's Industries-bunker, in een berg** (Winter Soldier-stijl) — `163771b`
-        Een eigen structuursoort (BibieBunkerStructure) zoekt in bergbiomen een rotswand: voor de
+  - [x] **Biebia's Industries-bunker, in een berg** (Winter Soldier-stijl) — `163771b`
+        Een eigen structuursoort (BiebiaBunkerStructure) zoekt in bergbiomen een rotswand: voor de
         deur vlak en open (16 blokken uitzicht, dus geen kuil of grot), achter de deur over de
         hele bunker minstens 9 blokken berg. De bunker draait mee zodat de ingang naar buiten
         kijkt. Binnen (tools/generate_bunker.py): gevel met embleem en twee torentjes, gang met
         controlepost, grote hal, slaapzaal, reactorkamer (generatoren in lava, kabel over het
         plafond), kluisgang met twee laserwanden van 3 x 3 die uitgaan zonder reactor, en de
-        kluis (altijd 2-3 Hydra-onderdelen, cryo-cel). Acht soldaten (geen spawner, dus niet te
-        farmen) en vijf Hydra-torentjes. Vinden: eerst lag er een kaart "Hydra Intel" in de zwarte
+        kluis (altijd 2-3 Raven-onderdelen, cryo-cel). Acht soldaten (geen spawner, dus niet te
+        farmen) en vijf Raven-torentjes. Vinden: eerst lag er een kaart "Raven Intel" in de zwarte
         doos van een satellietwrak; die heb jij er op 26 september uitgehaald (`29a674c`). In drie
         testwerelden lag de dichtstbijzijnde bunker op 0,7 tot 3 km. Drie nieuwe tests
         (kluis en bewakers, lasers en reactor, alle buittabellen laden).
         (mijn invulling) De indeling, en dat soldaten niet terugkomen.
-- [x] **De Bibie's Industries Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
+- [x] **De Biebia's Industries Tower verder uitbreiden** (jouw keuzes op 26 september), in deze volgorde:
   - [x] **Beveiliging die leeft** — `af0d24f`
         Een Security Core op de beveiligingsverdieping (in de rij serverkasten) beschermt
         de hele toren. Beveiligingstorentjes (wit met rood) bij de lift, op de
@@ -467,14 +471,14 @@ wilt. Eerst de kleine dingen, dan de grote.
         cursor in het groene vak staat, elke laag sneller met een kleiner vak; mis = een treffer
         kwijt. Het spel loopt door, dus je wordt beschoten. Weglopen (> 6 blokken), doodgaan of
         Esc breekt de hack af; de server keurt een onmogelijk snelle hack af. Daarna is de toren
-        van jou. Showcase: "Bibie's Industries Tower: security and hack". Drie nieuwe tests.
+        van jou. Showcase: "Biebia's Industries Tower: security and hack". Drie nieuwe tests.
         (mijn invulling) De vorm van de minigame (timing met een balk).
-  - [x] **Bibie's lab** met een harnas-werkbank — `61fde87`
+  - [x] **Biebia's lab** met een harnas-werkbank — `61fde87`
         De Suit Workbench (op stroom van het net): negen vakken voor materialen, knoppen om een
         borstplaat, broek of laarzen te bouwen (zelfde materialen als het oude recept; de muis op
         de knop laat zien wat het kost), en een vak voor een stuk harnas plus een upgrade. Upgrades:
         Thruster Upgrade (laarzen, tot 3: sneller en zuiniger vliegen), Armor Plating (elk stuk, tot
-        2: meer schade weg), Repulsor Capacitor (borstplaat, tot 2: sterkere repulsor), en het
+        2: meer schade weg), Laser Cannon Capacitor (borstplaat, tot 2: sterkere laser cannon), en het
         raketpakket. Het harnas staat niet meer in de crafting table. In het lab van de toren staat
         een werkbank met stroom, en in de kisten zit soms een upgrade. Vier nieuwe tests.
         (mijn invulling) Welke upgrades, hoeveel ze doen, en de recepten.
@@ -493,7 +497,7 @@ wilt. Eerst de kleine dingen, dan de grote.
         platform aan (groen ruitje met afstand, dichtbij ook het landingsvak van 5 x 5). Land je
         erop met de stuwraketten aan, dan zegt I.M.T "Welcome home"; zolang je erop staat,
         laadt je bril op en wordt je harnas gerepareerd. Je platforms worden per speler onthouden,
-        dus de weg naar huis werkt ook van ver. Showcase: "Bibie's Industries Tower: hangar and landing pad".
+        dus de weg naar huis werkt ook van ver. Showcase: "Biebia's Industries Tower: hangar and landing pad".
         Vijf nieuwe tests.
         Onderweg gevonden: de server kon crashen als een rayshield aanging naast een wand die nog
         aan het schuiven was — opgelost (`3fa38d1`).
@@ -514,7 +518,7 @@ wilt. Eerst de kleine dingen, dan de grote.
         Onderweg: de rand van de fontein was eerst van halve platen, en die maakt Minecraft bij
         het neerzetten "nat", waarna het water het plein over stroomde. Nu volle blokken.
         (mijn invulling) Alles hierboven.
-- [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Hydra-tech):
+- [x] **Meer high tech**, in deze volgorde (eerst wat meteen kan, dan de Raven-tech):
   - [x] **Holotafel: ertsen** — een vijfde stand die de ertsen onder de tafel laat zien — `6cd20ed`
         Tot 16 blokken opzij en 48 diep, als gekleurde blokjes in een doorzichtig blok aarde,
         in de kleuren van de ertsscanner (diamant en smaragd knipperen, kolen en koper zwakker).
@@ -523,28 +527,28 @@ wilt. Eerst de kleine dingen, dan de grote.
         G > Drones > Formation wisselt tussen Orbit (zoals altijd), Shield (snel draaiende ring
         dicht om je heen), Arrow (een V schuin achter je die meedraait) en Circle (wijde ring).
         In Shield en Arrow blijven ze in formatie als ze schieten; de bril onthoudt de keuze.
-  - [x] **Hydra-onderdeel** (het item uit de bunker) en **Hydra-soldaten** — `f4888be`
+  - [x] **Raven-onderdeel** (het item uit de bunker) en **Raven-soldaten** — `f4888be`
         Een nieuw vijandig wezen: zwart tactisch pak, rode bril en het rode embleem. Ziet hij
         je, dan legt hij zijn lasergeweer aan en schiet hij rode laserstralen (4 schade, om de
         ~2 seconden, tot 18 blokken; een rayshield houdt ze tegen). Hij schiet ook op je drones
-        en roept zijn maten als je hem raakt. Het **Hydra-onderdeel** valt soms (7%) als jij er
+        en roept zijn maten als je hem raakt. Het **Raven-onderdeel** valt soms (7%) als jij er
         een verslaat; in de bunker ligt het zeker. Er is een spawn-ei. Eén nieuwe test.
   - [x] **Mini-raketten** uit het harnas — `c030a4a`
         Toets X (of G > Gevecht, of "fire rockets"): zes raketten uit twee buizen op je rug,
         verdeeld over je gemarkeerde doelwitten (anders wat je aankijkt, anders de plek waar je
         kijkt). Ze vliegen eerst omhoog, sturen dan bij (dichtbij steeds scherper) en ontploffen
         zonder blokken te slopen; jou en je team raken ze nooit. Hele harnas nodig, 900 energie,
-        12 s herladen. Het **raketpakket** (Hydra-onderdeel, computerchip, buskruit, ijzer) klik je
+        12 s herladen. Het **raketpakket** (Raven-onderdeel, computerchip, buskruit, ijzer) klik je
         met de borstplaat aan op die borstplaat; dan zie je de buizen op je rug. Twee nieuwe tests.
   - [x] **Automatische torentjes** — `53ff0b9`
-        Rocket Turret (Hydra-onderdeel, 2 computerchips, dispenser, observer, ijzer): een draaiende
-        kop die op monsters, raiddrones en Hydra-soldaten richt (spelers alleen met PvP, nooit
+        Rocket Turret (Raven-onderdeel, 2 computerchips, dispenser, observer, ijzer): een draaiende
+        kop die op monsters, raiddrones en Raven-soldaten richt (spelers alleen met PvP, nooit
         jij of je team) en op hetzelfde doelwit blijft tot het neer is. Laser: 16 blokken, 4
         schade per seconde, 60 stroom per schot van het net. Raketten: Rocket Ammo (rechtsklik of
         trechter), om de 2,5 s, tot 24 blokken. Redstone zet hem uit (de loop hangt omlaag), en
         hij staat in de redstone-lijst van I.M.T onder Turrets. Rechtsklik = status, shift =
-        raketten eruit. Hydra Turret: zwart/rood, geen stroom nodig, schiet op spelers en drones;
-        gesloopt geeft hij ijzer en soms een Hydra-onderdeel. Vier nieuwe tests.
+        raketten eruit. Raven Turret: zwart/rood, geen stroom nodig, schiet op spelers en drones;
+        gesloopt geeft hij ijzer en soms een Raven-onderdeel. Vier nieuwe tests.
   - [x] Daarna de bunker (zie hierboven), met de soldaten en torentjes erin
 
 ### 5. De AI-stem (als laatste)
@@ -569,8 +573,8 @@ visuele check (`runVisualCheck -Ponly=brain`) die zinnen naar het echte lokale m
 - [x] De mod kiest aan de hand van je pc welk lokaal model hij downloadt: Qwen3.5 2B, 4B of 9B,
       naar het geheugen van je videokaart (jouw pc: 4B, 2,7 GB; ± 1 seconde per zin). De vorige
       keer (19 september) vond je 2B "nog niet zo slim"; 4B deed het in de test goed.
-- [x] Ze **onthoudt dingen permanent** ("onthoud dat mijn basis Bibie Hoeve heet" → later "hoe
-      heet mijn basis?" → "Je basis heet Bibie Hoeve"), in .minecraft/imttech/ai/memory.json;
+- [x] Ze **onthoudt dingen permanent** ("onthoud dat mijn basis Biebia Hoeve heet" → later "hoe
+      heet mijn basis?" → "Je basis heet Biebia Hoeve"), in .minecraft/imttech/ai/memory.json;
       "Forget everything" in het scherm wist het. Ze **leert van jouw manier van praten**: begrijpt
       het brein een nieuwe zin, dan zet ze die in het woordenboek (commando's "Learned: ...").
 - [x] Weet ze niet wat je bedoelt, dan vraagt ze het ("Wil je een drone sturen of ...?"); zeg je
@@ -680,9 +684,9 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       schuift. Screenshots: `-Ponly=laser`.
 
 **Vijanden**
-- [x] Hydra-soldaten slimmer: samen aanvallen (niet allemaal recht op je af), en zit je achter een
+- [x] Raven-soldaten slimmer: samen aanvallen (niet allemaal recht op je af), en zit je achter een
       muur, dan zoeken ze een weg naar je toe in plaats van te blijven staan — `7ac5399`
-      Een eigen gevechts-AI (`HydraCombatGoal`): soldaten met hetzelfde doelwit vormen een ploeg.
+      Een eigen gevechts-AI (`RavenCombatGoal`): soldaten met hetzelfde doelwit vormen een ploeg.
       Ziet één je, dan weten de anderen in de buurt het ook. Ze verdelen zich rondom je; zie je
       ze niet (muur), dan zoekt elk aan zijn eigen kant een plek waar hij kan komen en van waaruit
       hij je ziet; zit je binnen, dan zoeken ze een weg naar binnen en doen ze deuren open. Tijdens
@@ -704,7 +708,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       screenshots `-Ponly=power`.
       (mijn invulling) Ingedrukt houden in plaats van twee klikken (dat voelt meer als tekenen).
 - [x] Alle torentjes en beveiliging hebben stroom nodig; zonder stroom doen ze niets — `744a668`
-      Raket-, Hydra- en beveiligingstorentjes: zonder stroom hangt de loop omlaag en valt er geen
+      Raket-, Raven- en beveiligingstorentjes: zonder stroom hangt de loop omlaag en valt er geen
       schot; elk laserschot (60) en elke raket (20) kost stroom. De beveiligingskern van de toren
       ook: zonder stroom geen drones, en de drones zakken met gedoofde lampjes naar de grond.
 - [x] Een elektriciteitskast waar kabels samenkomen, met schakelaars om stroomgroepen aan en uit te
@@ -721,7 +725,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       beveiligingsverdieping (één bij de krachtcentrale, één bij de lift; er stond er een ín
       de krachtcentrale, die was al die tijd weg). *Bunker:* de kast in de hoek van de
       reactorkamer, met een torentje en een soldaat ernaast; de lasers aan de ene kant, alle
-      zes Hydra-torentjes (door de vloer) aan de andere.
+      zes Raven-torentjes (door de vloer) aan de andere.
       Kabels in de gebouwen zijn nu onzichtbare markers die bij het bouwen een getekende kabel
       worden, zodat het blok op die plek (koperen zuil, vloer) blijft staan. Zes nieuwe tests;
       screenshots `-Ponly=cabinet`.
@@ -774,7 +778,7 @@ weggegooid. Jouw antwoorden op mijn vragen staan erbij. Eerst de kleine dingen, 
       (mijn invulling) Dat de waakhond eerst uit moet, en de teksten van de console.
 - [x] De README iets minder "straight to the point"; je laptop moet je neerzetten op het
       beveiligingsblok; en je voortgang niet kwijt als je Esc doet (27 september). **Gedaan**: de
-      README is een briefje van Bibie met aanwijzingen (config in /etc, nep-namen in `ps`, override
+      README is een briefje van Biebia met aanwijzingen (config in /etc, nep-namen in `ps`, override
       op nummer, eerst de waakhond stil, dan jezelf eigenaar) in plaats van letterlijke commando's.
       De laptop klik je op de kern: hij staat dan opengeklapt bovenop (nieuw blok met model), en
       rechtsklik opent de terminal. De laptop onthoudt het getal van de puzzel en elk commando;
@@ -815,7 +819,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
 
 - [x] **1. Fundament**: elke kern is een klein systeem — `0f43f59`
       IP (10.x.y.z, uniek in de wereld; een nieuw bestand `imttech_network.dat` onthoudt welk
-      IP bij welke kern hoort), SSH-poort, naam (`bibie-sec-core` in de toren), het wachtwoord
+      IP bij welke kern hoort), SSH-poort, naam (`biebia-sec-core` in de toren), het wachtwoord
       (alleen als hash, nooit leesbaar), mappen en bestanden met systeembestanden en
       valstrikken, en een logboek. Een kern uit een oude wereld krijgt het bij de eerste tick.
       Drie nieuwe tests.
@@ -850,13 +854,13 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       De terminal-commando's (`mkdir`, `mv`, `rm`, `nano`) horen bij de geparkeerde terminal (stap 2). Commit: `eb241c4`.
 - [x] **6. Apparaten en toegang, en de kern zelf bouwen** (de gegevens eronder: `20d2b34`)
       Twee nieuwe apps. **Devices** toont wat bij de kern hoort: de beveiligingstorentjes in het
-      gebied en de Bibie's Industries-torentjes van de eigenaar (aan/uit per torentje, stroom, raketten, doelwit),
+      gebied en de Biebia's Industries-torentjes van de eigenaar (aan/uit per torentje, stroom, raketten, doelwit),
       de drones (levens, wat ze doen) en de laserpoorten; bovenaan "Drones" (uit = ze landen naast
       de kern en er komen er geen nieuwe) en "Lasers" (uit = alle laserpoorten in het gebied gaan
       open, ook al staat er redstone op). **Access**: "Attack monsters", "Attack other players" en
-      de vertrouwde spelers (toevoegen op naam, weghalen). Een Bibie's Industries-torentje van de eigenaar in zijn
+      de vertrouwde spelers (toevoegen op naam, weghalen). Een Biebia's Industries-torentje van de eigenaar in zijn
       eigen gebied volgt nu ook die regels. **Zelf bouwen**: een recept voor de Security Core
-      (ijzerblokken, computerchip, observers, Hydra-circuit, redstoneblok); neerzetten maakt hem van
+      (ijzerblokken, computerchip, observers, Raven-circuit, redstoneblok); neerzetten maakt hem van
       jou met een IP, en de desktop opent dan meteen Settings om een wachtwoord te zetten. Een kern
       waarvan het gebied een ander netwerk overlapt (binnen 60 blokken) lukt niet: "too close to
       another security network", en je houdt het item. Afbreken geeft de kern terug.
@@ -884,7 +888,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       logowand, met zicht op de receptie en de ingang), "Laser hall" (aan het plafond van de
       lasergang) en "Vault" (boven het luik, met zicht op de sokkel). Elk hangt met een verborgen
       kabel aan het net van de toren (de lobby aan de beveiliging, de rest aan de lasers: knip je
-      die door, dan geven ook de camera's NO SIGNAL). Bibie's kern heeft nog steeds geen wachtwoord.
+      die door, dan geven ook de camera's NO SIGNAL). Biebia's kern heeft nog steeds geen wachtwoord.
       Het NBT-bestand is opnieuw gemaakt (gecontroleerd: verder niets veranderd). Screenshots:
       `-Ponly=towercams`. Eén nieuwe test. Commit: `38c744e`.
 - [~] **9. SSH van overal** — opzijgezet, net als stap 2 en 3.
@@ -901,7 +905,7 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       De server maakt de naam netjes (geen kleurcodes, hooguit 32 tekens) en zet het in het
       logboek. Breek je een camera met een naam af, dan houdt het item die naam (ook een naam uit
       een aambeeld). Screenshots: `-Ponly=cameras` (`c03b`, `c03c`). Eén nieuwe test.
-- [x] **Showcase**: twee nieuwe functies na "Bibie's Industries Tower: security and hack": "Security OS desktop"
+- [x] **Showcase**: twee nieuwe functies na "Biebia's Industries Tower: security and hack": "Security OS desktop"
       (Files met security.conf, het rechtsklik-menu, Notes, Devices, Access, Logs) en "Security
       cameras" (de bewakingsmuur van de toren, het grote beeld, draaien, NO SIGNAL, een camera van
       dichtbij). Ze staan in de showcase als NIEUW.
@@ -1320,7 +1324,7 @@ Mijn invulling (zeg het als je iets anders wil):
   geen blokken van een zone weg en lava steekt ze niet aan; een zuiger buiten de zone duwt of trekt
   geen blokken in of uit de zone; endermen, withers, ravagers en zombies (deuren) breken geen
   blokken in een zone. Anders kon je met een aansteker of TNT om de zone heen.
-- **De Bibie's Industries Tower en de Bibie's Industries-bunker** hebben geen zone (je moet er nog steeds in kunnen hakken);
+- **De Biebia's Industries Tower en de Biebia's Industries-bunker** hebben geen zone (je moet er nog steeds in kunnen hakken);
   na het overnemen van de toren kun je er zelf een tekenen.
 - **De rand**: doorzichtige blauwe wanden met een fijn raster aan de buitenkant van de zone, van
   binnen en van buiten te zien tot ongeveer 48 blokken ver. Aan/uit voor jezelf: **G > Information >
@@ -1485,14 +1489,14 @@ De stappen, één per commit:
       Twee nieuwe functies na "The datacenter" (staan als NIEUW; de functies erna schuiven op, nu 83
       in totaal), allebei in survival, bij een L-vormige basis met een torentje en een stuk obsidiaan
       (op -130 -60 60). **74, "Protected zones"**: de blauwe rand, de Zone Marker (oranje doos, nummers,
-      een derde kubus erbij), de app Zone, zonder stroom rood; dan is de basis van "Pepper" en ben jij
+      een derde kubus erbij), de app Zone, zonder stroom rood; dan is de basis van "Lotte" en ben jij
       een vreemde: slaan geeft "Protected zone", een steen neerzetten lukt niet, een ladder wel. **75,
       "C4"**: eerst het alarm ("C4 planted at your zone" en het rode bordje) en ontmantelen met een
       schaar; dan ben jij de inbreker: de timer op 0:05, plakken, piepen en een gat in de stenen muur;
       daarna drie keer een remote C4 met de detonator tegen het obsidiaan, en na de derde een gat. Ik
       heb ze afgespeeld met `--test` (en de stappen apart gefotografeerd). Onderweg gevonden: een
       nep-speler die voor de tweede keer inlogt laat NeoForge struikelen; de showcase geeft de basis
-      daarom gewoon op naam aan Pepper (`setOwner(id, naam)` op de kern). LEESMIJ.md heeft een nieuw
+      daarom gewoon op naam aan Lotte (`setOwner(id, naam)` op de kern). LEESMIJ.md heeft een nieuw
       stuk "Je basis beveiligen: zones en C4", en de toetsen, het G-menu en de instellingen noemen de
       zonerand.
 - [x] **9. De rand alleen met de bril** (jouw wens, 9 oktober: "zorg dat je de border enkel met bril
@@ -1550,7 +1554,7 @@ De stappen, één per commit:
       om het hacken over te slaan. Wie hem neerzet krijgt "This security core still belongs to ...", en
       in het logboek staat wie hem waar neerzette (de eigenaar kan dat via SSH lezen). (2) In
       **creative** valt een kern met instellingen er toch uit (zoals een volle shulkerdoos), anders was
-      alles met één klik weg. (3) Een kern **van niemand** (de Bibie's Industries Tower, nog niet gehackt) valt als
+      alles met één klik weg. (3) Een kern **van niemand** (de Biebia's Industries Tower, nog niet gehackt) valt als
       een nieuwe kern, zoals altijd. (4) Niet mee: de drones (die komen vanzelf terug) en wie de
       beveiliging even opjaagt na een valstrik. Vier nieuwe tests (`gametest/CoreConfigGameTests.java`):
       weghakken en terugzetten (alles is er weer, en zolang hij als item rondgaat zijn zone, IP en
@@ -1584,7 +1588,7 @@ De stappen, één per commit:
       serverkast noemt het ook. Een apparaat hoort bij de kern als het in zijn gebied ligt en geen
       andere kern dichterbij staat (`SecurityCores.ownedBy`). **Gevolg** (zeg het als je dit anders
       wil): twee kernen mogen nog steeds niet in elkaars gebied staan, dus met 200 moet een nieuwe kern
-      meer dan 400 blokken van een andere kern staan (ook van een Bibie's Industries Tower); met een kleiner getal
+      meer dan 400 blokken van een andere kern staan (ook van een Biebia's Industries Tower); met een kleiner getal
       mogen ze weer dichter bij elkaar. **Mijn keuze**: maak je het getal kleiner, dan beschermt een
       zone meteen alleen nog tot daar, maar de getekende kubussen blijven bewaard (weer groter: alles
       terug). De zone-test is vervangen door "zone en apparaten volgen de config", en de tests die een
@@ -1840,9 +1844,9 @@ De stappen, één per commit:
       zichzelf (een kaart van niveau 3, stukje voor stukje vanaf CARD; soms raakt het even een ALARM en
       knippert alles rood), het pad wordt groen, en de deur gaat 3 seconden open. Het codepaneel: stoffen
       (afdrukken op 1, 2, 3 en 4), raden ("1 2 3 4: 0 right", "2 1 4 3: 0 right", "3 4 1 2: 0 right") en bij
-      de vierde poging CODE CRACKED 4321: de lamp gaat aan. Dan zakkenrollen bij Happy (die in de
+      de vierde poging CODE CRACKED 4321: de lamp gaat aan. Dan zakkenrollen bij Seppe (die in de
       showcase-wereld echt een speler is): je sluipt achter hem, schuift de rommel opzij en trekt een
-      kaart uit zijn zak, en die zit daarna echt in je hotbar. De tweede keer draait Happy zich om:
+      kaart uit zijn zak, en die zit daarna echt in je hotbar. De tweede keer draait Seppe zich om:
       CAUGHT!, en jij licht op. Ik heb hem in testmodus afgespeeld en op zes momenten bekeken. De showcase
       heeft nu 85 functies. Screenshots: `-Ponly=bypass` (`bp01`-`bp20`). LEESMIJ.md heeft een eigen stuk
       "Inbreken: lezers en panelen hacken, en zakkenrollen" (na "Barsten herstellen"), en de lijsten van de
@@ -2005,7 +2009,7 @@ De stappen:
       waarden staan nu ook in `run/config/imttech.toml`, en `ImtConfig` waarschuwt bovenaan voor die
       valkuil. Een nieuwe test (`power_works_with_fractions`). Met de oude waarden (6 en 14 per tick)
       zijn alle 204 tests groen. **Met jouw nieuwe waarden** (0.3 en 0.7) zijn er 3 rood:
-      `bibie_bunker_lasers_need_the_reactor`, `bibie_tower_vault_trap` en `bibie_tower_lasers_have_power`.
+      `biebia_bunker_lasers_need_the_reactor`, `biebia_tower_vault_trap` en `biebia_tower_lasers_have_power`.
       De warmtegenerator naast de lava in de bunker en de toren maakt nu te weinig voor hun laserwanden
       (elke zender gebruikt nog 1 per tick). Jouw keuze: zo laten, je kijkt zelf naar de getallen.
 - [x] **3. Alle getallen kommagetallen** (11 oktober: "zorg dat alle getallen in de mod met komma getallen
@@ -2120,7 +2124,7 @@ zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI 
       én de rest van het gebied van de kern, net als bij de laserwand zelf (daar lopen die spelers al
       doorheen). Een zender van vóór vandaag heeft nog geen eigenaar: die wordt van wie hem als eerste
       opent, net als een oud relais. Behalve in iemands basis (dan alleen de vertrouwde spelers daar) en
-      in een gebouw van deze mod (de Bibie's Industries Tower, de Bibie's Industries-bunker): anders kon een indringer de lasers van
+      in een gebouw van deze mod (de Biebia's Industries Tower, de Biebia's Industries-bunker): anders kon een indringer de lasers van
       de bunker overnemen en uitzetten. Geen uitzondering voor creative. Een zuiger duwt een zender nu
       niet meer weg (zoals een kist), omdat hij een blok-entiteit heeft.
 - [x] **3. Het scherm** (`client/shield/LaserEmitterScreen`, Engels in het spel): **Color** (zes vakjes,
@@ -2140,7 +2144,7 @@ zone)** kunnen hier op **sneak klikken** en dan een **GUI** openen. In deze GUI 
       over; omgekeerd (aan zonder redstone, uit met) en liggend (een plat vloertje); vertrouwde spelers in
       een zone wel, een vreemde niet (ook niet een zender zonder eigenaar overnemen); en een oude zender
       wordt van wie hem als eerste opent. 216 tests: 213 groen, de 3 rode van hoofdstuk 14 stap 2.
-      Onderweg werd `bibie_tower_has_powered_cameras` rood: met de nieuwe batches lopen de tests in een andere
+      Onderweg werd `biebia_tower_has_powered_cameras` rood: met de nieuwe batches lopen de tests in een andere
       volgorde, en de toren van de kluistest stond er nu vlak naast. Zijn kern stond dichter bij de lobbycamera
       en pikte die in. De test ruimt zo'n kern van een andere test nu eerst op. Screenshots: `-Ponly=laser`
       (`73_laser_flat`, `74_laser_flat_angle`, `75_laser_screen`: een cyaan poort van drie hoog, omgekeerd
@@ -2268,7 +2272,7 @@ duidelijkheid **tags zijn volledig weg**, je kunt enkel relay namen in groepen s
 ### 20. De taal groeit (14 oktober)
 
 Hoofdstukken 20 tot en met 27 komen uit één verzoek van 14 oktober: guard robots, programmeerbare
-security drones, training zoals Domino squad, en een inbraak- of uitbraakoefening. Ze bouwen op elkaar:
+security drones, training zoals Rookie squad, en een inbraak- of uitbraakoefening. Ze bouwen op elkaar:
 eerst de taal, dan de robot, dan de upgrades, en pas daarna de training.
 
 Jouw wens: een pin die je een naam geeft "zoals bij C++" (`scanPin = pinNumber(1)`), en een robot die
@@ -2741,7 +2745,7 @@ Ion Blaster zet een robot DOWN en een speler blijft ongeschonden.
 
 Jouw antwoorden: de security drones krijgen dezelfde programmeerbaarheid, plus **omhoog en omlaag**. Hun
 laadstation wordt de **Drone Dock**. De **arsenal-drones** laden daar niet meer, die blijven in hun baan.
-Drones bouw je zelf, met een eigen printplaat. De Bibie's Industries Tower krijgt docks met drones die Bibie al
+Drones bouw je zelf, met een eigen printplaat. De Biebia's Industries Tower krijgt docks met drones die Biebia al
 geprogrammeerd heeft.
 
 **Mijn invulling**: de core maakt geen gratis drones meer; de schakelaar "Drones" in de app Devices zet al je
@@ -2788,8 +2792,8 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       oude drones van vroeger heten daar nu "Patrol drone 1", "Patrol drone 2"... en blijven werken tot ze
       neergeschoten worden. Tests: `security_core_launches_no_drones` (in plaats van `security_core_launches_drones`:
       de kern maakt er geen meer, en een oude drone patrouilleert nog) en `core_drones_switch_sends_drones_home`.
-- [x] **5. De Bibie's Industries Tower** — de hangar van de toren had al zes Drone Docks met stroom. De kern van een toren van
-      niemand zet nu één keer op de eerste vier een **drone van Bibie** ("Tower drone 1" tot "Tower drone 4"; hoeveel:
+- [x] **5. De Biebia's Industries Tower** — de hangar van de toren had al zes Drone Docks met stroom. De kern van een toren van
+      niemand zet nu één keer op de eerste vier een **drone van Biebia** ("Tower drone 1" tot "Tower drone 4"; hoeveel:
       `towerDrones` in `[security]`): aan, met Scan, Face Recognition, Laser en Pathfinding, en het programma
       **Tower patrol** (filter "strangers", omhoog, rondjes van 3 blokken door de hangar, elke seconde schieten op wie
       hij ziet, laden onder 25%). Ze zijn van niemand, dus voor hen is iedereen een vreemde, en ze schieten ook zonder
@@ -2797,24 +2801,24 @@ niets kwijtraakt. Oude drones (zonder printplaat) blijven werken tot ze neergesc
       de opdracht "alarm" met de plek van de indringer en vliegen ze erheen, als ze er kunnen komen. Wie de toren
       hackt, krijgt ze: dan zijn ze van hem (heeft hij al een drone met die naam, dan krijgt die een nieuwe). Een
       drone die kapot gaat, komt niet terug. Een toren uit een bestaande wereld die nog van niemand is, krijgt ze ook
-      (één keer). Het structuurbestand zelf veranderde niet. Twee nieuwe tests (`bibie_tower_has_bibie_drones`,
-      `bibie_drone_shoots_strangers_until_hacked`).
+      (één keer). Het structuurbestand zelf veranderde niet. Twee nieuwe tests (`biebia_tower_has_biebia_drones`,
+      `biebia_drone_shoots_strangers_until_hacked`).
 
 Tests: bouwen en laden op een dock; `up(3)` stijgt; de core spawnt zelf geen drones meer; een dock pakt geen
 arsenal-drone meer; de toren heeft vier gewapende drones; een oude drone patrouilleert nog.
 
 - [x] **Afronding** — 277 tests: 274 groen, de 3 rode van hoofdstuk 14 stap 2. Acht nieuwe in `DroneGameTests`
       (vliegen met up/back/turn, plafond en grond, laden op het dock, neer en zonder stroom, de taal, de
-      schakelaar Drones, Bibie's drones in de toren en hoe ze schieten, het alarm en de hack), en twee herschreven
+      schakelaar Drones, Biebia's drones in de toren en hoe ze schieten, het alarm en de hack), en twee herschreven
       (`arsenal_drones_repair_in_orbit`, `security_core_launches_no_drones`). Screenshots `sd01`-`sd11`
-      (`-Ponly=secdrones`) en `t25_hangar_bibie_drones` (`-Ponly=tower`). In de showcase de nieuwe functie
+      (`-Ponly=secdrones`) en `t25_hangar_biebia_drones` (`-Ponly=tower`). In de showcase de nieuwe functie
       **"Security drones"** (86, na "Robot senses and weapons"): twee drones op hun dock, hun scherm en bord, de app
       Logic met Drone program, opstijgen en vierkantjes vliegen, een drone die gaat laden, de camera van een drone,
-      de Ion Blaster en de schakelaar Drones. "Bibie's Industries Tower: hangar and landing pad" (nu 87) toont Bibie's drones in de
+      de Ion Blaster en de schakelaar Drones. "Biebia's Industries Tower: hangar and landing pad" (nu 87) toont Biebia's drones in de
       hangar in plaats van arsenaal-drones op de docks. LEESMIJ.md: een nieuw stuk "Security drones", en het stuk
-      over de Bibie's Industries Tower en het arsenaal bijgewerkt. Het jar gebouwd.
+      over de Biebia's Industries Tower en het arsenaal bijgewerkt. Het jar gebouwd.
 
-### 26. Training zoals Domino squad (14 oktober)
+### 26. Training zoals Rookie squad (14 oktober)
 
 Jouw wens: programma's die gecoördineerde golven op de speler sturen, die non-lethal of lethal schieten (jouw
 keuze). Een **Training End**-blok geeft redstone als de trainee geraakt wordt, en daarin programmeer je wat
@@ -2822,7 +2826,7 @@ er dan gebeurt (robots aan of uit).
 
 Jouw antwoorden: een **Training Start**-blok; wie erop klikt, is de trainee; daar kies je de training en
 lethal of non-lethal. Het Training End-blok heeft een **mini-code-editor** in het blok, dezelfde taal. Je
-diagram hoort `when training_started("Kamino"):`.
+diagram hoort `when training_started("Bootcamp"):`.
 
 **Mijn invulling**: standaard 1 leven (één treffer en je ligt eruit). Non-lethal = geen schade, een blauwe
 flits en 1 seconde trager. Alleen de eigenaar, zijn team en vertrouwde spelers starten een training. Golven
@@ -2841,9 +2845,9 @@ geslaagd. Na afloop een rapport van I.M.T en de app Training.
       3) en zegt "go!". Hij stopt als de levens op zijn, de tijd om is (zonder Training Goal-blok in de basis ben je
       dan geslaagd, met zo'n blok niet: je moest het doel halen), de trainee doodgaat, uitlogt of het gebied van de
       kern verlaat, of als hij gestopt wordt. Dan zegt I.M.T het rapport tegen de trainee en de eigenaar
-      ("Training Kamino: Senne ran out of lives after 1:12 (3 hits: Guard 2 x2, Guard 1 x1; 2 robots down)"), de
+      ("Training Bootcamp: Senne ran out of lives after 1:12 (3 hits: Guard 2 x2, Guard 1 x1; 2 robots down)"), de
       kern bewaart het (de laatste 10, `maxReports`) en het logboek krijgt een regel (TRAINING). Je diagrammen
-      horen `when training_started("Kamino"):`, `when training_hit("Kamino"):` en `when training_ended("Kamino"):`,
+      horen `when training_started("Bootcamp"):`, `when training_hit("Bootcamp"):` en `when training_ended("Bootcamp"):`,
       met `trainee`, `lives`, `hits` en (na het einde) `passed`; in de Help onder TRAINING. Een robot of drone die
       tijdens een training neergaat (de Ion Blaster), blijft liggen tot hij voorbij is; dan staat hij op en gaat hij
       naar zijn dock. Nieuw in de config: `[training]`. Drie nieuwe tests (`TrainingGameTests`).
@@ -2899,8 +2903,8 @@ beëindigt met succes; down-robots staan na afloop weer op.
       treffer zat in de eerste persoon vlak voor je ogen, zodat je een seconde bijna niets zag (nu kleiner en rond je
       lijf). In de showcase de nieuwe functie **"Training"** (87, na "Security drones", in survival): het
       instelscherm, de mini-editor, aftellen, twee Trainers (Wave 1) die op je schieten, de lamp op het End-blok, jij
-      met de Ion Blaster, Wave 2 die aangaat, het doel, het rapport en de app Training. "Bibie's Industries Tower: hangar and
-      landing pad" is nu 88. LEESMIJ.md: een nieuw stuk "Training zoals Domino squad". Het jar gebouwd.
+      met de Ion Blaster, Wave 2 die aangaat, het doel, het rapport en de app Training. "Biebia's Industries Tower: hangar and
+      landing pad" is nu 88. LEESMIJ.md: een nieuw stuk "Training zoals Rookie squad". Het jar gebouwd.
 
 ### 27. Inbraak- en uitbraakoefening (14 oktober)
 
@@ -2985,8 +2989,8 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       raakte je de zijkant van een muur, dan kwam de drone ín de muur en stikte hij. Nu komt het
       veld bij het wezen waar je naar kijkt, of op de vrije plek voor de muur, en stikken drones
       niet meer. Twee nieuwe tests.
-- [ ] Raiddrones die komen omdat je in een Bibie's Industries Tower sloopt. Dat kan de test niet nadoen:
-      een testwereld weet niet dat een geplaatst gebouw een "Bibie's Industries Tower" is.
+- [ ] Raiddrones die komen omdat je in een Biebia's Industries Tower sloopt. Dat kan de test niet nadoen:
+      een testwereld weet niet dat een geplaatst gebouw een "Biebia's Industries Tower" is.
 - [ ] **De Arc Lamp (9 oktober)**: gezien op screenshots en in de showcase, op een vlak veld. Kijk zelf
       in je eigen wereld (heuvels, grotten, een huis) of het licht er goed uitziet, of het opnieuw meten
       na bouwen snel genoeg gaat, en of je spel niet hapert als je de lamp aan- of uitzet. (De gloed: "mag
@@ -3006,7 +3010,7 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       de robot voor opstarten en uitschakelen) en het zachte laadzoemen op het dock. Probeer zelf: hoe het vliegen
       eruitziet (3 blokken per seconde, `droneSpeed`; blok voor blok met een klein stopje in elk midden), opstijgen
       en landen op het dock (ook als je hem uitzet terwijl hij ver weg is), `goto` rond een muur, een drone met
-      lege batterij die valt, en of Bibie's drones in de hangar van een echte toren lastig genoeg (of te lastig)
+      lege batterij die valt, en of Biebia's drones in de hangar van een echte toren lastig genoeg (of te lastig)
       zijn. Ook: een drone op een dock van een vriend zetten (in zijn basis, als hij je vertrouwt).
 - [ ] **Zien en schieten (16 oktober)**: gezien op screenshots (`rb20`-`rb25`) en in de showcase (85), getest met 7
       nieuwe tests. Probeer zelf: of de laser en het geweer goed voelen (schade, hoe snel, de geluiden "pew" en de
@@ -3047,7 +3051,7 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [x] **Moeten de getallen uit `ImtBalance.java` naar een configbestand?** Ja, per wereld
       (jouw keuze op 26 september) — `d26a25e`
       120 getallen staan nu in `config/imttech-balance.toml` (kosten, schade, bereik,
-      wachttijden, verbruik; per kopje: bril, drones, satelliet, harnas, torentjes, Hydra...).
+      wachttijden, verbruik; per kopje: bril, drones, satelliet, harnas, torentjes, Raven...).
       Het bestand geldt voor al je werelden; een kopie in `<wereld>/serverconfig/` geldt alleen
       voor die wereld (zo werkt NeoForge 21.1; ook de raid-instellingen staan zo). Niet erin:
       wat bij het opstarten vastligt (bescherming van het harnas, levens van wezens) en de
@@ -3057,13 +3061,14 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       drone)
 - [x] Moeten de Nederlandse foutmeldingen in de gametests ook Engels? (mijn invulling: nee, die
       zie je alleen tijdens het ontwikkelen, en Nederlands leest voor jou makkelijker)
-- [ ] **Nieuwe namen voor wat nog van Marvel of Star Wars komt** (17 oktober; Stark en E.D.I.T.H.
-      zijn al weg, zie bovenaan). Nog te kiezen: Hydra (soldaten, torentje, printplaat, geweer,
-      kisten; de bunker zelf heet al Bibie's Industries Bunker), de repulsor, de rayshields, de
-      robotstijlen Commando, Battle en Super Battle (namen én uiterlijk), de Ion Blaster, "Domino
-      squad" in de config, het rood-gouden harnas, de prestatie "You shall not pass", en in de
-      hackterminal en de showcase JARVIS, FRIDAY, KAREN, MALIBU, SHIELD, Happy, Pepper (Potts) en
-      Rhodey.
+- [x] **Nieuwe namen voor wat nog van Marvel of Star Wars komt?** (17 oktober) Jouw keuzes:
+      Bibie wordt Biebia; Hydra wordt Raven (mijn keuze: zwart met rood, zoals een raaf); de
+      repulsor wordt de laser cannon; JARVIS, FRIDAY en KAREN in de hackterminal worden BiTech
+      (Biebia Technologie); Happy, Pepper (Potts) en Rhodey worden Seppe, Lotte en Jens (mijn
+      keuze); Domino squad wordt Rookie squad en Kamino Bootcamp (mijn keuze); de prestatie
+      "You shall not pass" heet nu "No trespassing". MALIBU en SHIELD in de wachtwoordlijst werden
+      TUNNEL en BUNKER. Rayshield, de robotstijlen en de Ion Blaster blijven zo.
+- [ ] **Het harnas is rood en goud, de kleuren van Iron Man.** Andere kleuren? (nog niet gevraagd)
 
 ---
 
@@ -3072,7 +3077,7 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 
 **Gevecht**
-- Repulsor-handschoen als los item (nu zit de repulsor in de borstplaat)
+- Laserkanon-handschoen als los item (nu zit de laser cannon in de borstplaat)
 - ~~Mini-raketten die hun doel volgen~~ (gebouwd: `c030a4a`)
 - "Veronica": onderdelen van een harnas die naar je toe vliegen
 - ~~Drone-formaties (schild, pijl, cirkel)~~ (gebouwd: `065664e`)
@@ -3091,7 +3096,7 @@ Wel besproken, maar niet ingepland. Hier zodat ze niet verdwijnen.
 - Betere foutmeldingen bij Spotify en de stem-installatie
 
 **Wereld**
-- ~~Een tweede soort structuur met de onderdelen voor de volgende fase~~ (gebouwd: de Bibie's Industries-bunker, `163771b`)
+- ~~Een tweede soort structuur met de onderdelen voor de volgende fase~~ (gebouwd: de Biebia's Industries-bunker, `163771b`)
 
 ---
 

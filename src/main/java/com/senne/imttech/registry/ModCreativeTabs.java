@@ -41,7 +41,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.LANDING_PAD.get());
                 output.accept(ModItems.THRUSTER_UPGRADE.get());
                 output.accept(ModItems.ARMOR_PLATING.get());
-                output.accept(ModItems.REPULSOR_CAPACITOR.get());
+                output.accept(ModItems.LASER_CANNON_CAPACITOR.get());
                 output.accept(ModItems.ROCKET_WARHEAD.get());
                 output.accept(ModItems.ROCKET_MAGAZINE.get());
                 output.accept(ModItems.BATTERY_UPGRADE.get());
@@ -60,8 +60,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.HOLO_TABLE.get());
                 output.accept(ModItems.ROCKET_TURRET.get());
                 output.accept(ModItems.ROCKET_AMMO.get());
-                output.accept(ModItems.HYDRA_CIRCUIT.get());
-                output.accept(ModItems.HYDRA_TURRET.get());
+                output.accept(ModItems.RAVEN_CIRCUIT.get());
+                output.accept(ModItems.RAVEN_TURRET.get());
                 output.accept(ModItems.SECURITY_TURRET.get());
                 output.accept(ModItems.SECURITY_CORE.get());
                 output.accept(ModItems.ZONE_MARKER.get());
@@ -85,7 +85,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CODE_PANEL.get());
                 output.accept(ModItems.BYPASS_KIT.get());
                 output.accept(ModItems.HACKING_LAPTOP.get());
-                output.accept(ModItems.HYDRA_SOLDIER_SPAWN_EGG.get());
+                output.accept(ModItems.RAVEN_SOLDIER_SPAWN_EGG.get());
                 output.accept(ModItems.GUARD_ROBOT_SPAWN_EGG.get());
                 output.accept(ModItems.ROBOT_ASSEMBLER.get());
                 output.accept(ModItems.GUARD_ROBOT.get());

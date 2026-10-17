@@ -61,8 +61,8 @@ public enum ImtAction {
     /** Alle illusies stoppen. */
     ILLUSION_STOP("illusion_stop", null),
     // Fase 15: het harnas
-    /** Een repulsorstoot uit je handpalm. */
-    REPULSOR("repulsor", null),
+    /** Een laserkanonschot uit je handpalm. */
+    LASER_CANNON("laser_cannon", null),
     // Meer tech
     /** De volgende vorm voor je escortedrones (zie DroneFormation). */
     DRONE_FORMATION("drone_formation", null),

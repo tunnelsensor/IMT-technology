@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
  *       gebied van de kern (daar lopen die spelers ook gewoon door een laserwand).</li>
  *   <li>Een apparaat van niemand (neergezet vóór 13 oktober) wordt van wie het als eerste opent, net als
  *       een oud relais. Behalve in iemands basis (dan alleen de vertrouwde spelers daar) en in een gebouw
- *       van deze mod (de Bibie's Industries Tower, de Bibie's Industries-bunker): dat kun je niet zomaar overnemen.</li>
+ *       van deze mod (de Biebia's Industries Tower, de Biebia's Industries-bunker): dat kun je niet zomaar overnemen.</li>
  * </ul>
  * Geen uitzondering voor creative.
  */
@@ -92,7 +92,7 @@ public final class BaseTrust {
         return null;
     }
 
-    /** Ligt deze plek in een gebouw van deze mod (de Bibie's Industries Tower, de Bibie's Industries-bunker...)? */
+    /** Ligt deze plek in een gebouw van deze mod (de Biebia's Industries Tower, de Biebia's Industries-bunker...)? */
     public static boolean inBuilding(ServerLevel level, BlockPos pos) {
         return level.structureManager().getStructureWithPieceAt(pos, holder -> holder.unwrapKey()
                 .map(key -> key.location().getNamespace().equals(ImtTech.MODID)).orElse(false)).isValid();

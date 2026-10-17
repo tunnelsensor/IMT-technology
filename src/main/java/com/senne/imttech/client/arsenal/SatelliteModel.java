@@ -9,7 +9,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 
 /**
- * De Bibie's Industries-satelliet: het ruimtestation waar je drones op wachten, en waar de satelliet-aanval
+ * De Biebia's Industries-satelliet: het ruimtestation waar je drones op wachten, en waar de satelliet-aanval
  * vandaan komt. Een romp met een reactor voorop, twee zonnepanelen, een schotel met antenne
  * bovenop en een motor achteraan.
  *

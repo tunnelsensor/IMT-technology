@@ -20,7 +20,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tests voor trainingen zoals Domino squad (hoofdstuk 26): wat een treffer doet (trainingsschoten of echt), wanneer
+ * Tests voor trainingen zoals Rookie squad (hoofdstuk 26): wat een treffer doet (trainingsschoten of echt), wanneer
  * een training stopt, het rapport, en de diagrammen die {@code when training_started/training_ended} horen.
  */
 @GameTestHolder(ImtTech.MODID)
@@ -60,7 +60,7 @@ public final class TrainingGameTests {
         ServerPlayer trainee = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 6), "trainee-shots");
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), trainee);
         helper.runAfterDelay(5, () -> check(Training.start(helper.getLevel(), core, trainee,
-                new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 3, 0), null) == null, "De training begon niet"));
+                new Training.Settings("Bootcamp", Training.Mode.TRAINING_SHOTS, 3, 0), null) == null, "De training begon niet"));
         helper.runAfterDelay(5 + afterCountdown(), () -> {
             Training.Session session = Training.of(trainee.getUUID());
             check(session != null && session.running(), "Na het aftellen is de training niet bezig");
@@ -95,15 +95,15 @@ public final class TrainingGameTests {
         helper.runAfterDelay(25, () -> {
             ImtTechGameTests.startServer(helper, rack, core);
             core.logic().put(null, diagram("Watch", """
-                    when training_started("Kamino"):
+                    when training_started("Bootcamp"):
                         log("start " + trainee)
 
-                    when training_ended("Kamino"):
+                    when training_ended("Bootcamp"):
                         if not passed:
                             log("ended " + trainee + " " + hits + " " + lives)
                     """));
             check(Training.start(helper.getLevel(), core, trainee,
-                    new Training.Settings("Kamino", Training.Mode.LETHAL, 1, 0), null) == null, "De training begon niet");
+                    new Training.Settings("Bootcamp", Training.Mode.LETHAL, 1, 0), null) == null, "De training begon niet");
         });
         helper.runAfterDelay(25 + afterCountdown() + 10, () -> {
             check(logged(core, EventLog.Type.LOGIC, "start " + name), "when training_started liep niet");
@@ -265,7 +265,7 @@ public final class TrainingGameTests {
             check(com.senne.imttech.bot.BotLink.switchOn(helper.getLevel(), core, "Wave 1", true)
                     == com.senne.imttech.bot.BotLink.Result.DONE, "Wave 1 ging niet aan");
             check(Training.start(helper.getLevel(), core, owner,
-                    new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 1, 0), null) == null, "De training begon niet");
+                    new Training.Settings("Bootcamp", Training.Mode.TRAINING_SHOTS, 1, 0), null) == null, "De training begon niet");
         });
         helper.runAfterDelay(45 + afterCountdown(), () -> {
             check(!helper.getBlockState(block).getValue(com.senne.imttech.training.TrainingEndBlock.POWERED), "Het End-blok gaf al redstone");
@@ -305,7 +305,7 @@ public final class TrainingGameTests {
         helper.runAfterDelay(20, () -> {
             check("".equals(watcher.brain().global("who")), "Zonder training zag hij met \"trainee\" toch " + watcher.brain().global("who"));
             check(Training.start(helper.getLevel(), core, trainee,
-                    new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 3, 0), null) == null, "De training begon niet");
+                    new Training.Settings("Bootcamp", Training.Mode.TRAINING_SHOTS, 3, 0), null) == null, "De training begon niet");
         });
         helper.runAfterDelay(20 + afterCountdown() + 10, () -> {
             check("robot-trainee".equals(watcher.brain().global("who")), "Met \"trainee\" zag hij " + watcher.brain().global("who"));
@@ -346,7 +346,7 @@ public final class TrainingGameTests {
         robot.setOwner(trainee);
         helper.runAfterDelay(2, () -> ImtTechGameTests.startServer(helper, rack, core));
         helper.runAfterDelay(20, () -> check(Training.start(helper.getLevel(), core, trainee,
-                new Training.Settings("Kamino", Training.Mode.TRAINING_SHOTS, 2, 0), null) == null, "De training begon niet"));
+                new Training.Settings("Bootcamp", Training.Mode.TRAINING_SHOTS, 2, 0), null) == null, "De training begon niet"));
         helper.runAfterDelay(25, () -> helper.succeedWhen(() -> {
             check(Training.of(trainee.getUUID()) == null, "De training is nog niet voorbij");
             TrainingReport report = core.trainingReports().getLast();

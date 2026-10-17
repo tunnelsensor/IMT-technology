@@ -38,8 +38,8 @@ public class TurretRenderer implements BlockEntityRenderer<TurretBlockEntity> {
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "turret"), "main");
     private static final ResourceLocation ROCKET_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/entity/rocket_turret.png");
-    private static final ResourceLocation HYDRA_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/entity/hydra_turret.png");
+    private static final ResourceLocation RAVEN_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/entity/raven_turret.png");
     private static final ResourceLocation SECURITY_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/entity/security_turret.png");
     /** Hoe hoog het draaipunt van de kop zit (in pixels boven de onderkant van het blok). */
@@ -77,7 +77,7 @@ public class TurretRenderer implements BlockEntityRenderer<TurretBlockEntity> {
                        int packedLight, int packedOverlay) {
         ResourceLocation texture = switch (turret.kind()) {
             case ROCKET -> ROCKET_TEXTURE;
-            case HYDRA -> HYDRA_TEXTURE;
+            case RAVEN -> RAVEN_TEXTURE;
             case SECURITY -> SECURITY_TEXTURE;
         };
         VertexConsumer buffer = buffers.getBuffer(RenderType.entityCutoutNoCull(texture));

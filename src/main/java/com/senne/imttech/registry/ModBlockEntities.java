@@ -52,11 +52,11 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(HeatGeneratorBlockEntity::new,
                             java.util.Set.of(ModBlocks.HEAT_GENERATOR.get()), null));
 
-    /** Beide torentjes (raket en Hydra) gebruiken dezelfde binnenkant. */
+    /** Beide torentjes (raket en Raven) gebruiken dezelfde binnenkant. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.turret.TurretBlockEntity>> TURRET =
             BLOCK_ENTITIES.register("turret",
                     () -> new BlockEntityType<>(com.senne.imttech.turret.TurretBlockEntity::new,
-                            java.util.Set.of(ModBlocks.ROCKET_TURRET.get(), ModBlocks.HYDRA_TURRET.get(),
+                            java.util.Set.of(ModBlocks.ROCKET_TURRET.get(), ModBlocks.RAVEN_TURRET.get(),
                                     ModBlocks.SECURITY_TURRET.get()), null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.security.SecurityCoreBlockEntity>> SECURITY_CORE =
