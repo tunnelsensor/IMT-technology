@@ -12,6 +12,7 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -89,9 +90,51 @@ public final class PowerCables {
             chunk.setData(ModAttachments.CABLES, cells);
         }
         chunk.setUnsaved(true);
-        // Naar iedereen die deze chunk ziet, zodat ze de kabel zien verschijnen of verdwijnen.
-        chunk.syncData(ModAttachments.CABLES);
+        // Naar iedereen die deze chunk ziet, zodat ze de kabel zien verschijnen of verdwijnen. Dat
+        // doen we aan het eind van de servertik, één keer per chunk: een gebouw legt honderden
+        // kabels tegelijk, en anders ging de hele kabellijst per stukje kabel opnieuw de lijn over.
+        synchronized (TO_CONVERT) {
+            TO_SYNC.add(chunk);
+        }
         PowerGrid.changed();
+    }
+
+    /** Chunks waarvan de kabels deze tik veranderd zijn (zie store). */
+    private static final Set<LevelChunk> TO_SYNC = new HashSet<>();
+
+    /** De chunks met nieuwe of weggehaalde kabels doorsturen. */
+    private static void syncChanged() {
+        List<LevelChunk> chunks;
+        synchronized (TO_CONVERT) {
+            if (TO_SYNC.isEmpty()) {
+                return;
+            }
+            chunks = new ArrayList<>(TO_SYNC);
+            TO_SYNC.clear();
+        }
+        for (LevelChunk chunk : chunks) {
+            if (chunk.getLevel() instanceof ServerLevel level && anyoneHas(level, chunk)) {
+                chunk.syncData(ModAttachments.CABLES);
+            }
+        }
+    }
+
+    /**
+     * Heeft een speler deze chunk al binnen? Een chunk die net gemaakt is (met een gebouw erin)
+     * staat meestal nog in de wachtrij om verstuurd te worden: die krijgt de kabels vanzelf mee
+     * als hij aankomt. Stuur je ze eerder, dan gooit de speler ze weg ("unknown chunk").
+     */
+    private static boolean anyoneHas(ServerLevel level, LevelChunk chunk) {
+        ChunkPos pos = chunk.getPos();
+        if (level.getChunkSource().getChunkNow(pos.x, pos.z) != chunk) {
+            return false; // al weer uit het geheugen
+        }
+        for (ServerPlayer player : level.getChunkSource().chunkMap.getPlayers(pos, false)) {
+            if (player.connection != null && !player.connection.chunkSender.isPending(pos.toLong())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ================================================================ Tekenen
@@ -267,8 +310,14 @@ public final class PowerCables {
         }
     }
 
-    /** Na elke servertik: de chunks uit de wachtrij omzetten (niet tijdens het laden zelf). */
+    /** Na elke servertik: oude kabelblokken omzetten, dan de veranderde kabels doorsturen. */
     public static void onServerTick(ServerTickEvent.Post event) {
+        convertQueued();
+        syncChanged();
+    }
+
+    /** De chunks uit de wachtrij omzetten (niet tijdens het laden zelf). */
+    private static void convertQueued() {
         List<Map.Entry<Level, ChunkPos>> work = new ArrayList<>();
         List<Map.Entry<Level, BlockPos>> single = new ArrayList<>();
         synchronized (TO_CONVERT) {
@@ -338,6 +387,7 @@ public final class PowerCables {
         synchronized (TO_CONVERT) {
             TO_CONVERT.clear();
             PLACED.clear();
+            TO_SYNC.clear();
         }
     }
 
