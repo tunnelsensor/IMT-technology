@@ -58,10 +58,15 @@ public final class Interpreter {
      *   <li>AFTER: na een tak van een if verder bij blokje {@code node};</li>
      *   <li>DEF: na een eigen blok verder bij {@code node}, met de namen van wie hem gebruikte
      *       ({@code locals}), die we dan terugzetten;</li>
-     *   <li>LOOP: de lus {@code node} is bezig; {@code remaining} rondjes over (repeat), of -1.</li>
+     *   <li>LOOP: de lus {@code node} is bezig; bij een for {@code remaining} rondjes over en {@code value} het getal
+     *       van deze ronde (zo telt hij door, ook als je de naam in de lus verandert, zoals in Python); een while -1.</li>
      * </ul>
      */
-    private record Frame(FrameKind kind, int node, @Nullable Map<String, Object> locals, long remaining) {}
+    private record Frame(FrameKind kind, int node, @Nullable Map<String, Object> locals, long remaining, long value) {
+        Frame(FrameKind kind, int node, @Nullable Map<String, Object> locals, long remaining) {
+            this(kind, node, locals, remaining, 0);
+        }
+    }
 
     private final LogicGraph graph;
     private final Map<String, Object> globals;
@@ -174,27 +179,25 @@ public final class Interpreter {
 
     /**
      * Een lus begint: de eerste ronde (de stappen aan "do"), of meteen verder na de lus als er niets te
-     * doen is ({@code repeat(0)}, of een while die meteen niet klopt). Geeft het volgende blokje.
+     * doen is ({@code range(0)}, of een while die meteen niet klopt). Geeft het volgende blokje.
      * Een lus zonder wachten loopt niet eindeloos in één tick: elke run doet hooguit zijn budget aan
      * blokjes per tick (zie {@link #step}), de rest volgt de volgende tick.
      */
     private int enter(Host host, LogicGraph.Node loop) {
-        switch (loop.op) {
-            case REPEAT -> {
-                long times = Math.round(number(host, loop.text));
-                if (times <= 0) {
-                    return loop.next;
-                }
-                frames.push(new Frame(FrameKind.LOOP, loop.id, null, times - 1));
+        if (loop.op == Op.FOR) {
+            // for i in range(3): i is 0, dan 1, dan 2. range(1, 4): 1, 2, 3. Het bereik rekenen we één keer uit.
+            long[] range = range(host, loop.expr);
+            if (range[0] >= range[1]) {
+                return loop.next;
             }
-            case WHILE -> {
-                if (!host.test(this, loop)) {
-                    return loop.next;
-                }
-                frames.push(new Frame(FrameKind.LOOP, loop.id, null, -1));
-            }
-            default -> frames.push(new Frame(FrameKind.LOOP, loop.id, null, -1)); // forever
+            set(loop.text, (double) range[0]);
+            frames.push(new Frame(FrameKind.LOOP, loop.id, null, range[1] - range[0] - 1, range[0]));
+            return loop.yes;
         }
+        if (!host.test(this, loop)) {
+            return loop.next; // een while die meteen niet klopt
+        }
+        frames.push(new Frame(FrameKind.LOOP, loop.id, null, -1));
         return loop.yes;
     }
 
@@ -204,23 +207,44 @@ public final class Interpreter {
         if (loop == null) {
             return -1;
         }
-        switch (loop.op) {
-            case REPEAT -> {
-                if (frame.remaining() <= 0) {
-                    return loop.next;
-                }
-                frames.push(new Frame(FrameKind.LOOP, loop.id, null, frame.remaining() - 1));
+        if (loop.op == Op.FOR) {
+            if (frame.remaining() <= 0) {
+                return loop.next;
             }
-            case WHILE -> {
-                if (!host.test(this, loop)) {
-                    return loop.next;
-                }
-                frames.push(frame);
-            }
-            default -> frames.push(frame); // forever
+            long value = frame.value() + 1;
+            set(loop.text, (double) value);
+            frames.push(new Frame(FrameKind.LOOP, loop.id, null, frame.remaining() - 1, value));
+            return loop.yes;
         }
+        if (!host.test(this, loop)) {
+            return loop.next;
+        }
+        frames.push(frame);
         return loop.yes;
     }
+
+    /**
+     * Het bereik van een for: {begin, einde}, waarbij het einde niet meer meetelt (zoals in Python). {@code range(3)} is
+     * {0, 3}, {@code range(1, 4)} is {1, 4}. Een getal met een komma wordt afgerond.
+     */
+    private long[] range(Host host, String text) {
+        List<Expr> bounds = ExprCache.values(text);
+        if (bounds == null || bounds.isEmpty() || bounds.size() > 2) {
+            host.report("the range \"" + text + "\" is not valid, so the for loop does nothing");
+            return new long[] {0, 0};
+        }
+        long first = bound(host, bounds.getFirst());
+        return bounds.size() == 1 ? new long[] {0, first} : new long[] {first, bound(host, bounds.get(1))};
+    }
+
+    /** Eén getal van een bereik, afgerond en binnen een miljard (dan rekent het aftrekken nooit verkeerd). */
+    private long bound(Host host, Expr expr) {
+        double value = ExprCache.eval(expr, host.facts(this)) instanceof Double number ? number : 0;
+        return Math.max(-MAX_BOUND, Math.min(MAX_BOUND, Math.round(value)));
+    }
+
+    /** Zo groot mag een getal van {@code range} hooguit zijn: een miljard rondjes duurt toch al dagen. */
+    private static final long MAX_BOUND = 1_000_000_000L;
 
     /**
      * {@code break}: alles op de stapel weg tot en met de binnenste lus (ook de ifs erin), en verder na die
@@ -241,7 +265,7 @@ public final class Interpreter {
         return -1;
     }
 
-    /** Een getal uitrekenen (het aantal van repeat); 0 als het geen getal is. */
+    /** Een getal uitrekenen (de seconden van wait); 0 als het geen getal is. */
     private double number(Host host, String text) {
         Expr expr = ExprCache.value(text);
         if (expr == null) {

@@ -70,7 +70,7 @@ public final class BotSenseGameTests {
             seen = false
             far = 0
             when started:
-                forever:
+                while true:
                     seen = read(pin(1))
                     far = read(pin(2))
                     wait(0.1)
@@ -113,7 +113,7 @@ public final class BotSenseGameTests {
 
     /** Kijkt met een filter op zijn Face Recognition (pin 2): ziet zijn Scan (pin 1) iemand, en wie? */
     private static String faceProgram(String filter) {
-        return "seen = false\nwho = \"\"\nwhen started:\n    write(pin(2), \"" + filter + "\")\n    forever:\n"
+        return "seen = false\nwho = \"\"\nwhen started:\n    write(pin(2), \"" + filter + "\")\n    while true:\n"
                 + "        seen = read(pin(1))\n        who = read(pin(2))\n        wait(0.1)\n";
     }
 
@@ -162,7 +162,7 @@ public final class BotSenseGameTests {
             shots = 0
             readyAfter = true
             when started:
-                forever:
+                while true:
                     if read(pin(3)):
                         write(pin(3), true)
                         shots = shots + 1
@@ -174,7 +174,7 @@ public final class BotSenseGameTests {
     private static final String GUN = """
             shots = 0
             when started:
-                forever:
+                while true:
                     before = read(pin(4))
                     if before > 0:
                         write(pin(4), true)
@@ -313,7 +313,7 @@ public final class BotSenseGameTests {
         ImtTechGameTests.placeServer(helper, rack, core);
         BotBoard camera = BotBoard.EMPTY.with(6, "camera");
         GuardRobotEntity watcher = robot(helper, new BlockPos(6, 2, 12), RobotStyle.COMMANDO, camera,
-                "watched = false\nwhen started:\n    forever:\n        watched = read(pin(6))\n        wait(0.1)\n");
+                "watched = false\nwhen started:\n    while true:\n        watched = read(pin(6))\n        wait(0.1)\n");
         GuardRobotEntity shy = robot(helper, new BlockPos(9, 2, 12), RobotStyle.COMMANDO, camera,
                 "when started:\n    write(pin(6), false)\n");
         GuardRobotEntity blind = robot(helper, new BlockPos(12, 2, 12), RobotStyle.COMMANDO, BotBoard.EMPTY, "when started:\n    pass\n");

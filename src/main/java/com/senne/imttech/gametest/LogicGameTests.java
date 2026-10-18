@@ -339,24 +339,32 @@ public final class LogicGameTests {
         });
     }
 
-    /** Lussen (hoofdstuk 20, stap 4): repeat, while, forever en break, in code en als blokjes. */
+    /**
+     * Lussen (hoofdstuk 20, stap 4; de for-lus van 16 oktober): for, while (ook while true) en break, in code en als
+     * blokjes. De naam van een for gebruik je als elke andere naam; repeat en forever bestaan niet meer, en dat zegt de
+     * code ook.
+     */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
     public static void logic_loops(GameTestHelper helper) {
         String code = """
                 when every(10):
-                    repeat(3):
+                    for i in range(3):
                         pulse("Lamp", 0.5)
                         wait(1)
+                    total = 0
+                    for round in range(1, total + 4):
+                        total = total + round
+                        say("Round " + round)
                     count = 0
                     while count < 5:
                         count = count + 1
                         if count == 4:
                             break
-                    forever:
+                    while true:
                         wait(1)
                         if is_night:
                             break
-                    log("done")
+                    log("done after " + i)
                 """;
         String printed = ScriptPrinter.print(ScriptParser.parse(code));
         check(printed.equals(code), "Lussen terugschrijven gaf andere code:\n" + printed);
@@ -364,25 +372,116 @@ public final class LogicGameTests {
         check(graph.problems().isEmpty(), "De blokjes met lussen hebben fouten: " + graph.problems());
         String back = ScriptPrinter.print(GraphConverter.toScript(graph));
         check(back.equals(code), "Van blokjes terug naar code ging mis:\n" + back);
-        // Een lus-blokje heeft de uitgangen "do" (YES, de stappen erin) en "after" (NEXT).
-        LogicGraph.Node repeat = graph.nodes().stream().filter(node -> node.op == Op.REPEAT).findFirst().orElseThrow();
-        check(repeat.ports().equals(List.of(LogicGraph.Port.YES, LogicGraph.Port.NEXT)) && repeat.yes >= 0 && repeat.next >= 0,
-                "Het REPEAT-blokje heeft niet de uitgangen do en after");
+        // Een lus-blokje heeft de uitgangen "do" (YES, de stappen erin) en "after" (NEXT); een FOR bewaart zijn naam en
+        // zijn bereik.
+        LogicGraph.Node loop = graph.nodes().stream().filter(node -> node.op == Op.FOR).findFirst().orElseThrow();
+        check(loop.ports().equals(List.of(LogicGraph.Port.YES, LogicGraph.Port.NEXT)) && loop.yes >= 0 && loop.next >= 0,
+                "Het FOR-blokje heeft niet de uitgangen do en after");
+        check(loop.text.equals("i") && loop.expr.equals("3"), "Het FOR-blokje bewaart " + loop.text + " / " + loop.expr);
         // Fouten.
-        expectError("when every(5):\n    break", 2, "only works inside forever, repeat or while");
-        expectError("when every(5):\n    repeat(\"x\"):\n        pass", 2, "repeat needs a number");
+        expectError("when every(5):\n    break", 2, "only works inside for or while");
+        expectError("when every(5):\n    for i in range(\"x\"):\n        pass", 2, "range needs numbers");
+        expectError("when every(5):\n    for i in range(1, 2, 3):\n        pass", 2, "one or two numbers");
+        expectError("when every(5):\n    for i in range(3)\n        pass", 2, "must end with a :");
+        expectError("when every(5):\n    for i range(3):\n        pass", 2, "After the name comes in");
+        expectError("when every(5):\n    for i in doors:\n        pass", 2, "counts with range");
+        expectError("when every(5):\n    for in range(3):\n        pass", 2, "needs a name that counts");
+        expectError("when every(5):\n    for card.level in range(3):\n        pass", 2, "built-in information");
+        expectError("when every(5):\n    name = \"Ann\"\n    for name in range(3):\n        pass", 3, "holds text, so it cannot count");
+        expectError("when every(5):\n    for i in range(j):\n        pass", 2, "j has no value yet");
         expectError("when every(5):\n    while 3:\n        pass", 2, "must be true or false");
-        expectError("forever:\n    pass", 1, "must be inside a when");
-        expectError("when every(5):\n    repeat(3)\n        pass", 2, "must end with a :");
+        expectError("for i in range(3):\n    pass", 1, "must be inside a when");
         expectError("when every(5):\n    while:\n        pass", 2, "while needs a check");
-        expectError("def go():\n    break\nwhen every(5):\n    repeat(2):\n        go()", 2, "only works inside");
+        expectError("def go():\n    break\nwhen every(5):\n    for i in range(2):\n        go()", 2, "only works inside");
+        expectError("when every(5):\n    repeat(3):\n        pass", 2, "for i in range(3)");
+        expectError("when every(5):\n    forever:\n        pass", 2, "while true");
         helper.succeed();
     }
 
     /**
-     * Lussen tijdens het uitvoeren: repeat, while en break zetten samen een lamp aan; en een forever-lus
-     * zonder wachten loopt over meerdere ticks (hooguit 64 blokjes per tick) zonder de server te laten
-     * hangen.
+     * Oude lussen (16 oktober): een diagram van vroeger met {@code repeat(3):} en {@code forever:} laadt als een for en een
+     * while true. Een repeat in een repeat krijgt j (i was al van de buitenste), en een naam die het programma al gebruikt
+     * (hier i) wordt overgeslagen. De bewaarde code wordt mee omgezet en houdt zijn commentaar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_old_loops(GameTestHelper helper) {
+        // Zoals een diagram van vóór 16 oktober bewaard werd: het blokje REPEAT (met zijn aantal als tekst) en FOREVER.
+        CompoundTag graph = new CompoundTag();
+        net.minecraft.nbt.ListTag nodes = new net.minecraft.nbt.ListTag();
+        nodes.add(oldNode(1, "EVERY", "", 5, -1, -1, 2));
+        CompoundTag set = oldNode(2, "SET", "i", 0, -1, -1, 3); // i = 2: de naam i is al van het programma
+        set.putString("e", "2");
+        nodes.add(set);
+        nodes.add(oldNode(3, "REPEAT", "3", 0, 4, -1, 6));
+        nodes.add(oldNode(4, "REPEAT", "i", 0, 5, -1, -1));
+        nodes.add(oldNode(5, "LOG", "hi", 0, -1, -1, -1));
+        nodes.add(oldNode(6, "FOREVER", "", 0, 7, -1, -1));
+        nodes.add(oldNode(7, "WAIT", "", 1, -1, -1, -1));
+        graph.put("Nodes", nodes);
+        CompoundTag tag = new CompoundTag();
+        tag.putString("Name", "Old loops");
+        tag.putBoolean("On", true);
+        tag.put("Graph", graph);
+        tag.putString("Source", """
+                # an old diagram
+                when every(5):
+                    i = 2
+                    repeat(3):  # three times
+                        repeat(i):
+                            log("hi")
+                    forever:
+                        wait(1)
+                """);
+        var program = com.senne.imttech.logic.program.LogicProgram.load(tag);
+        String expected = """
+                # an old diagram
+                when every(5):
+                    i = 2
+                    for j in range(3):  # three times
+                        for k in range(i):
+                            log("hi")
+                    while true:
+                        wait(1)
+                """;
+        check(program.source().equals(expected), "De oude code werd niet goed omgezet:\n" + program.source());
+        check(program.graph().problems().isEmpty(), "Het omgezette diagram heeft fouten: " + program.graph().problems());
+        LogicGraph.Node outer = program.graph().node(3);
+        LogicGraph.Node inner = program.graph().node(4);
+        LogicGraph.Node forever = program.graph().node(6);
+        check(outer.op == Op.FOR && outer.text.equals("j") && outer.expr.equals("3")
+                        && inner.op == Op.FOR && inner.text.equals("k") && inner.expr.equals("i")
+                        && forever.op == Op.WHILE && forever.text.equals("true"),
+                "De omgezette blokjes: " + outer.op + " " + outer.text + "/" + outer.expr + ", " + inner.op + " " + inner.text
+                        + "/" + inner.expr + ", " + forever.op + " " + forever.text);
+        // Code die niet bij de blokjes past (hier: leeg), wordt gewoon opnieuw uit de blokjes geschreven.
+        tag.putString("Source", "");
+        String printed = com.senne.imttech.logic.program.LogicProgram.load(tag).source();
+        check(printed.contains("for j in range(3):") && printed.contains("while true:"), "Zonder code: " + printed);
+        helper.succeed();
+    }
+
+    /** Eén blokje zoals LogicGraph.save het bewaart, met de naam van zijn soort zoals vroeger. */
+    private static CompoundTag oldNode(int id, String op, String text, double number, int yes, int no, int next) {
+        CompoundTag entry = new CompoundTag();
+        entry.putInt("i", id);
+        entry.putString("o", op);
+        if (!text.isEmpty()) {
+            entry.putString("t", text);
+        }
+        if (number != 0) {
+            entry.putDouble("n", number);
+        }
+        entry.putInt("x", id * 100);
+        entry.putInt("y", 0);
+        entry.putInt("nx", next);
+        entry.putInt("ys", yes);
+        entry.putInt("no", no);
+        return entry;
+    }
+
+    /**
+     * Lussen tijdens het uitvoeren: for, while en break zetten samen een lamp aan (de naam van de for telt mee); en een
+     * while true zonder wachten loopt over meerdere ticks (hooguit 64 blokjes per tick) zonder de server te laten hangen.
      */
     @GameTest(template = ARENA, timeoutTicks = 240, batch = "logic_runner_loops")
     public static void logic_loops_run(GameTestHelper helper) {
@@ -393,24 +492,28 @@ public final class LogicGameTests {
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
             SecurityOs.open(setup.owner(), setup.coreAbs());
+            // 0 + 1 + 2 = 3 (range(3)), dan 3 + 4 = 7 (range(4, 5)), dan de while: niet meer (break bij 7).
             save(setup, "Loops", """
                     count = 0
 
                     when every(1):
-                        repeat(3):
-                            count = count + 1
+                        for i in range(3):
+                            count = count + i
+                        for i in range(4, 5):
+                            count = count + i
+                            i = 100
                         while count < 10:
-                            count = count + 1
                             if count == 7:
                                 break
-                        if count == 7:
+                            count = count + 1
+                        if count == 7 and i == 100:
                             on("Lamp")
                     """);
             save(setup, "Spinner", """
                     n = 0
 
                     when every(1):
-                        forever:
+                        while true:
                             n = n + 1
                             if n == 1000:
                                 on("Fan")
@@ -418,15 +521,16 @@ public final class LogicGameTests {
             check(setup.core().logic().program("Loops") != null && setup.core().logic().program("Spinner") != null,
                     "De diagrammen werden niet bewaard: " + lastLog(setup.core()));
         });
-        // De forever-lus loopt hooguit 64 blokjes per tick: na een paar ticks is hij nog lang niet op 1000.
+        // De while true loopt hooguit 64 blokjes per tick: na een paar ticks is hij nog lang niet op 1000.
         helper.runAfterDelay(40, () -> check(!level.getBlockState(fan).getValue(RelayBlock.POWERED),
-                "De forever-lus was te snel: hij liep niet over meerdere ticks"));
-        // De eerste run: 3 rondjes repeat, dan de while tot 7 en break: de lamp aan.
+                "De while true was te snel: hij liep niet over meerdere ticks"));
+        // De eerste run: de for telt 0 + 1 + 2 en dan 4, de while stopt met break bij 7: de lamp aan. (En i = 100 in de
+        // lus veranderde niet hoe hij telde: dat was zijn laatste ronde.)
         helper.runAfterDelay(60, () -> check(level.getBlockState(lamp).getValue(RelayBlock.POWERED),
-                "repeat, while en break kwamen niet op 7. Logboek: " + lastLog(setup.core())));
+                "for, while en break kwamen niet op 7. Logboek: " + lastLog(setup.core())));
         helper.runAfterDelay(200, () -> {
             check(level.getBlockState(fan).getValue(RelayBlock.POWERED),
-                    "De forever-lus kwam niet op 1000. Logboek: " + lastLog(setup.core()));
+                    "De while true kwam niet op 1000. Logboek: " + lastLog(setup.core()));
             helper.succeed();
         });
     }
@@ -874,7 +978,7 @@ public final class LogicGameTests {
 
             when started:
                 write(facePin, "strangers")
-                forever:
+                while true:
                     if robot.battery < 10:
                         charge()
                     forward(5)

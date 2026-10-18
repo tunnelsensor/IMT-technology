@@ -110,13 +110,19 @@ public enum Op {
      */
     GLOBAL(Kind.SET, "var", Arg.VARIABLE, Arg.NONE, "A name for the whole program, at the left edge, like count = 0"),
 
-    // ---------------------------------------------------------------- Lussen (hoofdstuk 20)
-    /** {@code forever:} de stappen erin steeds opnieuw (tot een break). Uitgang YES = "do", NEXT = "after". */
-    FOREVER(Kind.LOOP, "forever", Arg.NONE, Arg.NONE, "Do the steps inside again and again (until break)"),
-    /** {@code repeat(3):} de stappen erin zo vaak. De tekst is het aantal, als code (mag een naam zijn). */
-    REPEAT(Kind.LOOP, "repeat", Arg.NONE, Arg.NONE, "Do the steps inside so many times, like repeat(3):"),
-    /** {@code while count < 3:} de stappen erin zolang de voorwaarde klopt. De tekst is de voorwaarde. */
-    WHILE(Kind.LOOP, "while", Arg.NONE, Arg.NONE, "Do the steps inside as long as the check is true"),
+    // ---------------------------------------------------------------- Lussen (hoofdstuk 20, de for-lus: 16 oktober)
+    /**
+     * {@code for i in range(3):} (jouw wens van 16 oktober: "zoals een for loop, zodat je je variable i ook kunt
+     * gebruiken"): de stappen erin één keer voor elk getal van het bereik, met dat getal in de naam. De tekst is de
+     * naam ({@code i}), {@code expr} het bereik als code: {@code 3} (0, 1, 2) of {@code 1, 4} (1, 2, 3). Uitgang YES =
+     * "do", NEXT = "after". Hij kwam in de plaats van {@code repeat(3):}.
+     */
+    FOR(Kind.LOOP, "for", Arg.NONE, Arg.NONE, "Count: do the steps inside once for every number, like for i in range(3):"),
+    /**
+     * {@code while count < 3:} de stappen erin zolang de voorwaarde klopt. De tekst is de voorwaarde. {@code while true:}
+     * gaat door tot een break (dat was vroeger {@code forever:}).
+     */
+    WHILE(Kind.LOOP, "while", Arg.NONE, Arg.NONE, "Do the steps inside as long as the check is true (while true: until break)"),
     /** {@code break}: meteen uit de binnenste lus, en verder met wat na die lus komt. */
     BREAK(Kind.ACTION, "break", Arg.NONE, Arg.NONE, "Stop the loop you are in, and go on after it");
 

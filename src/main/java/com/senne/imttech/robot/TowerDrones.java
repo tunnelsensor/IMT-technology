@@ -55,7 +55,7 @@ public final class TowerDrones {
             when started:
                 write(facePin, "strangers")
                 up(2)
-                forever:
+                while true:
                     if drone.battery < 25:
                         charge()
                     forward(3)

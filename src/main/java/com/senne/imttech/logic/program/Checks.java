@@ -153,9 +153,31 @@ public final class Checks {
     /** Zo lang mag de naam van een def hooguit zijn. */
     public static final int MAX_NAME = 24;
 
-    /** Woorden die de taal zelf al gebruikt (een def mag niet zo heten). */
+    /**
+     * Woorden die de taal zelf al gebruikt (een def mag niet zo heten). Sinds 16 oktober ook {@code in} en {@code range}
+     * (van {@code for i in range(3):}), en {@code repeat} en {@code forever}: die bestaan niet meer, maar zo zegt de code
+     * wat je nu schrijft in plaats van "I don't know repeat".
+     */
     private static final java.util.Set<String> RESERVED = java.util.Set.of("when", "if", "elif", "else", "pass", "and",
-            "or", "not", "def", "true", "false", "True", "False", "return", "is_on", "code", "is_night", "is_day", "call");
+            "or", "not", "def", "true", "false", "True", "False", "return", "is_on", "code", "is_night", "is_day", "call",
+            "in", "range", "repeat", "forever");
+
+    /**
+     * Klopt het bereik van een for-lus (16 oktober)? Eén of twee getallen: {@code range(3)} telt 0, 1, 2 en
+     * {@code range(1, 4)} telt 1, 2, 3. Een naam waarvan we de soort nog niet weten (ANY) mag. Geeft de fout, of null.
+     */
+    public static @Nullable String rangeProblem(java.util.List<Expr> bounds) {
+        if (bounds.isEmpty() || bounds.size() > 2) {
+            return "range takes one or two numbers: range(3) counts 0, 1, 2 and range(1, 4) counts 1, 2, 3";
+        }
+        for (Expr bound : bounds) {
+            Expr.Type type = Expr.typeOf(bound);
+            if (type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
+                return "range needs numbers, like range(3) or range(1, count + 1)";
+            }
+        }
+        return null;
+    }
 
     /**
      * Mag een def zo heten? Net als in Python: letters, cijfers en _ (niet met een cijfer beginnen),

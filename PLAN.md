@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 289 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 290 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -2972,9 +2972,27 @@ Ik doe dit vóór hoofdstuk 27.
       Screenshots `rl03` en `rl043` (`-Ponly=relays`); `rl04`, `rl041` en `rl042` (het oude groepen-scherm) bestaan
       niet meer. In de showcase ("Relay: name and group" en "Relay groups, invert and emitter") het groepen-scherm
       eruit. LEESMIJ.md: "Redstone-relais".
-- [ ] **3. De for-lus** — in de code, de controle en de tolk; `forever` en `repeat` weg; oude programma's omzetten.
-- [ ] **4. De for-lus in de blokjes** — het blok FOR, de Help, Ctrl+Spatie, de voorbeelden; tests, screenshots,
-      LEESMIJ en de showcase.
+- [x] **3. De for-lus** — `for i in range(3):` (i is 0, 1, 2) en `for i in range(1, 4):` (1, 2, 3); het bereik mag
+      een naam of een som zijn, en `i` gebruik je zoals elke naam (`say("Round " + i)`). Zoals in Python rekent hij het
+      bereik één keer uit, telt hij door ook als je `i` in de lus verandert, en houdt `i` na de lus zijn laatste waarde.
+      Een getal met een komma wordt afgerond, en een bereik groter dan een miljard wordt een miljard. `while true:` gaat
+      door tot een break. `repeat` en `forever` zijn weg; typ je ze toch, dan zegt de code "repeat is now a for loop:
+      write for i in range(3):" of "forever is now written while true:". Nieuwe fouten: "range takes one or two
+      numbers", "range needs numbers", "After the name comes in", "A for loop counts with range", "for needs a name that
+      counts", "name holds text, so it cannot count". `in`, `range`, `repeat` en `forever` mogen geen naam zijn. Oude
+      programma's (op je server, in je robots en drones, in hun items, in backups) worden bij het laden omgezet:
+      `repeat(3):` wordt een for met de eerste naam uit i, j, k... die het programma nog niet gebruikt en die geen lus
+      eromheen al heeft (een lus in een lus krijgt dus j), en `forever:` wordt `while true:`. De bewaarde code gaat mee,
+      met je commentaar erin; past hij daarna niet precies bij de blokjes, dan schrijven we hem opnieuw uit de blokjes.
+      De drones van Biebia vliegen nu met `while true:`. Twee tests herschreven (`logic_loops`, `logic_loops_run`), één
+      nieuwe (`logic_old_loops`), en de programma's in de andere tests, de showcase en de screenshots omgezet.
+- [x] **4. De for-lus in de blokjes** — het blokje **FOR** (roze, in plaats van REPEAT en FOREVER) met de vakken
+      **Name (counts, like i)** en **Range (3, or 1, 4)**; op het blokje staat "i in range(3)". De Help heeft onder LOOPS
+      `for i in range(3):`, `for i in range(1, 4):`, `while ...:` en `while true:`; Ctrl+Spatie stelt `for i in
+      range(3):` voor (met de 3 geselecteerd) en `while true:`, en kent de naam van een for als een van je eigen namen.
+      De voorbeelden "Patrol a square" (robot en drone) gebruiken `while true:`. De editor kleurt `for`, `in` en
+      `range`. LEESMIJ.md: "Lussen". In de showcase ("Logic: names, sums and loops") telt Blink met
+      `for i in range(1, 4):` en zet hij "Blink 1 of 3" in het logboek. Screenshots `l12`-`l14` (`-Ponly=logic`).
 
 ### 29. Robots die niet meer bestaan (18 oktober)
 

@@ -223,8 +223,15 @@ public final class ScriptParser {
             index++;
             return null;
         }
-        if (first.is("forever") || first.is("repeat") || first.is("while")) {
+        if (first.is("for") || first.is("while")) {
             return loop(line, trigger);
+        }
+        // Sinds 16 oktober weg (jouw notitie: "een for en while is voldoende"): zeg hoe het nu heet.
+        if (first.is("repeat") && !functionNames.contains("repeat")) {
+            throw new LogicException(line.number(), "repeat is now a for loop: write for i in range(3): (i counts 0, 1, 2)");
+        }
+        if (first.is("forever") && !functionNames.contains("forever")) {
+            throw new LogicException(line.number(), "forever is now written while true: (it goes on until break)");
         }
         if (first.is("break")) {
             // Of hij in een lus staat, kijkt ScriptChecker na (die ziet ook de blokjes).
@@ -323,53 +330,82 @@ public final class ScriptParser {
     // ================================================================ Lussen
 
     /**
-     * Een lus (hoofdstuk 20) met de stappen eronder: {@code forever:}, {@code repeat(3):} (het aantal mag
-     * een berekening of een naam zijn) of {@code while count < 3:}.
+     * Een lus (hoofdstuk 20) met de stappen eronder: {@code for i in range(3):} (16 oktober, zoals in Python; het bereik
+     * mag een naam of een som zijn, en {@code range(1, 4)} telt 1, 2, 3) of {@code while count < 3:} (ook
+     * {@code while true:}, tot een break).
      */
     private Script.Loop loop(Line line, @Nullable Op trigger) {
         List<Lexer.Token> tokens = line.tokens();
-        Op op;
-        String expr = "";
-        int colon;
-        int[] end = new int[1];
-        if (line.first().is("forever")) {
-            op = Op.FOREVER;
-            colon = 1;
-        } else if (line.first().is("repeat")) {
-            op = Op.REPEAT;
-            if (!tokens.get(1).is("(") || tokens.get(2).is(")")) {
-                throw new LogicException(line.number(), "repeat needs a number between brackets, like repeat(3):");
-            }
-            Expr count;
-            try {
-                count = Expr.parseValue(tokens, 2, end);
-            } catch (LogicException e) {
-                throw e.atLine(line.number());
-            }
-            if (!tokens.get(end[0]).is(")")) {
-                throw new LogicException(line.number(), "repeat( is missing its closing )");
-            }
-            Expr.Type type = Expr.typeOf(count);
-            if (type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
-                throw new LogicException(line.number(), "repeat needs a number, like repeat(3):");
-            }
-            expr = Expr.print(count);
-            colon = end[0] + 1;
-        } else {
-            op = Op.WHILE;
-            if (tokens.get(1).type() == Lexer.Type.END || tokens.get(1).is(":")) {
-                throw new LogicException(line.number(), "while needs a check, like: while count < 3:");
-            }
-            try {
-                expr = Expr.print(Expr.parse(tokens, 1, trigger, end));
-            } catch (LogicException e) {
-                throw e.atLine(line.number());
-            }
-            colon = end[0];
+        if (line.first().is("for")) {
+            return forLoop(line, trigger);
         }
-        expectColon(line, colon);
+        if (tokens.get(1).type() == Lexer.Type.END || tokens.get(1).is(":")) {
+            throw new LogicException(line.number(), "while needs a check, like: while count < 3: (or while true:)");
+        }
+        int[] end = new int[1];
+        String expr;
+        try {
+            expr = Expr.print(Expr.parse(tokens, 1, trigger, end));
+        } catch (LogicException e) {
+            throw e.atLine(line.number());
+        }
+        expectColon(line, end[0]);
         index++;
-        return new Script.Loop(op, expr, block(line, trigger), line.number());
+        return new Script.Loop(Op.WHILE, "", expr, block(line, trigger), line.number());
+    }
+
+    /**
+     * {@code for i in range(3):} of {@code for i in range(1, 4):}. De naam telt mee: hij is eerst het begin, en elke
+     * ronde één meer, tot vlak voor het einde (zoals in Python). Of de naam al een andere soort waarde had, kijkt
+     * ScriptChecker na.
+     */
+    private Script.Loop forLoop(Line line, @Nullable Op trigger) {
+        List<Lexer.Token> tokens = line.tokens();
+        String example = "like for i in range(3):";
+        if (tokens.get(1).type() != Lexer.Type.NAME || tokens.get(1).is("in")) {
+            throw new LogicException(line.number(), "for needs a name that counts, " + example);
+        }
+        String name = tokens.get(1).text();
+        String problem = Checks.variableProblem(name, functionNames);
+        if (problem != null) {
+            throw new LogicException(line.number(), problem);
+        }
+        if (!tokens.get(2).is("in")) {
+            throw new LogicException(line.number(), "After the name comes in, like for " + name + " in range(3):");
+        }
+        if (!tokens.get(3).is("range")) {
+            throw new LogicException(line.number(), "A for loop counts with range, like for " + name + " in range(3):");
+        }
+        if (!tokens.get(4).is("(") || tokens.get(5).is(")")) {
+            throw new LogicException(line.number(), "range needs a number between brackets, like for " + name + " in range(3):");
+        }
+        List<Expr> bounds = new ArrayList<>();
+        int i = 5;
+        while (true) {
+            int[] end = new int[1];
+            try {
+                bounds.add(Expr.parseValue(tokens, i, end));
+            } catch (LogicException e) {
+                throw e.atLine(line.number());
+            }
+            i = end[0];
+            if (tokens.get(i).is(",")) {
+                i++;
+                continue;
+            }
+            if (!tokens.get(i).is(")")) {
+                throw new LogicException(line.number(), tokens.get(i).type() == Lexer.Type.END ? "range( is missing its closing )"
+                        : "Separate the numbers of range with a comma, like range(1, 4)");
+            }
+            break;
+        }
+        problem = Checks.rangeProblem(bounds);
+        if (problem != null) {
+            throw new LogicException(line.number(), problem);
+        }
+        expectColon(line, i + 1);
+        index++;
+        return new Script.Loop(Op.FOR, name, Expr.printList(bounds), block(line, trigger), line.number());
     }
 
     // ================================================================ naam = waarde

@@ -55,11 +55,11 @@ public record Script(List<Top> items) {
     public record Assign(String name, String value, int ref) implements Stmt {}
 
     /**
-     * Een lus (hoofdstuk 20): {@code forever:}, {@code repeat(3):} of {@code while count < 3:}, met de
-     * stappen erin. {@code expr} is het aantal (repeat) of de voorwaarde (while) als nette code; leeg bij
-     * forever.
+     * Een lus (hoofdstuk 20): {@code for i in range(3):} of {@code while count < 3:}, met de stappen erin. Bij een
+     * for is {@code var} de naam die telt ({@code i}) en {@code expr} het bereik als nette code ({@code 3} of
+     * {@code 1, 4}); bij een while is {@code var} leeg en {@code expr} de voorwaarde.
      */
-    public record Loop(Op op, String expr, List<Stmt> body, int ref) implements Stmt {}
+    public record Loop(Op op, String var, String expr, List<Stmt> body, int ref) implements Stmt {}
 
     /**
      * Een actie, zoals {@code pulse("Vault door", 3)}. {@code text} is leeg en {@code number} 0 als hij

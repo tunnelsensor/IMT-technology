@@ -296,7 +296,7 @@ public final class TrainingGameTests {
         ImtTechGameTests.placeServer(helper, rack, core);
         var board = com.senne.imttech.bot.BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition");
         var watcher = BotSenseGameTests.robot(helper, new BlockPos(6, 2, 12), com.senne.imttech.robot.RobotStyle.COMMANDO, board,
-                "who = \"\"\nwhen started:\n    write(pin(2), \"trainee\")\n    forever:\n        who = read(pin(2))\n        wait(0.1)\n");
+                "who = \"\"\nwhen started:\n    write(pin(2), \"trainee\")\n    while true:\n        who = read(pin(2))\n        wait(0.1)\n");
         var downed = BotSenseGameTests.robot(helper, new BlockPos(12, 2, 12), com.senne.imttech.robot.RobotStyle.COMMANDO,
                 com.senne.imttech.bot.BotBoard.EMPTY, "when started:\n    pass\n");
         watcher.setOwner(trainee);
@@ -324,7 +324,7 @@ public final class TrainingGameTests {
     private static final String SHOOTER = """
             when started:
                 write(pin(2), "trainee")
-                forever:
+                while true:
                     if read(pin(1)) and read(pin(3)):
                         write(pin(3), true)
                     wait(0.25)

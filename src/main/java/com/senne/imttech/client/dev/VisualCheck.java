@@ -1146,7 +1146,7 @@ public final class VisualCheck {
                     be.ensureSystem(level);
                     // Hoofdstuk 23: twee robotprogramma's op deze server. De eerste robot heeft een oudere kopie van
                     // Patrol, de tweede Door guard; de rest niets.
-                    be.logic().put(null, robotProgram("Patrol", "when started:\n    forever:\n        forward(4)\n        turn_right()\n"));
+                    be.logic().put(null, robotProgram("Patrol", "when started:\n    while true:\n        forward(4)\n        turn_right()\n"));
                     be.logic().put(null, robotProgram("Door guard", "when started:\n    pass\n"));
                     java.util.List<com.senne.imttech.robot.GuardRobotEntity> robots = level.getEntitiesOfClass(
                             com.senne.imttech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(56, -60, 57, 65, -58, 58));
@@ -1308,7 +1308,7 @@ public final class VisualCheck {
                 // Een kern met stroom en een serverrack (zoals bij de robots): dan hebben de drones verbinding.
                 ensureBotCore(level, player, droneCore);
                 if (level.getBlockEntity(droneCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
-                    be.logic().put(null, robotProgram("Hover patrol", "when started:\n    up(2)\n    forever:\n        forward(3)\n        turn_right()\n",
+                    be.logic().put(null, robotProgram("Hover patrol", "when started:\n    up(2)\n    while true:\n        forward(3)\n        turn_right()\n",
                             com.senne.imttech.logic.program.ProgramKind.DRONE));
                     parked.setProgram(be.logic().program("Hover patrol")); // hij staat uit: de app laat zijn programma zien
                 }
@@ -2323,7 +2323,8 @@ public final class VisualCheck {
                         count = count + 1
                         say("Card " + count + ": " + card.name)
                         if count >= 3:
-                            repeat(3):
+                            for i in range(1, 4):
+                                say("Blink " + i)
                                 pulse("Lab lights", 0.5)
                                 wait(1)
                             count = 0
@@ -2342,10 +2343,10 @@ public final class VisualCheck {
             t.shot(10, "l13_logic_loop_blocks");
             t.step(0, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
-                    os.tourLogicBlocks(com.senne.imttech.logic.program.Op.REPEAT);
+                    os.tourLogicBlocks(com.senne.imttech.logic.program.Op.FOR);
                 }
             });
-            t.shot(10, "l14_logic_block_repeat");
+            t.shot(10, "l14_logic_block_for");
             t.step(0, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
                     os.tourLogicBlocks(com.senne.imttech.logic.program.Op.SET);
@@ -2373,7 +2374,7 @@ public final class VisualCheck {
                             laserPin = pin(3)
 
                             when started:
-                                forever:
+                                while true:
                                     if robot.battery < 10:
                                         charge()
                                     forward(5)

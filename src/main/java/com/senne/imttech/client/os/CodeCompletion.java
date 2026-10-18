@@ -75,6 +75,8 @@ public final class CodeCompletion {
     private static final Pattern WHEN = Pattern.compile("^when\\s+([A-Za-z_]+)\\s*[(:]");
     /** {@code count = ...} (één =, geen ==): een naam die een waarde krijgt. */
     private static final Pattern ASSIGN = Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*=(?!=)");
+    /** {@code for i in range(...)} (16 oktober): de naam die telt, is ook een van je eigen namen. */
+    private static final Pattern FOR = Pattern.compile("^\\s*for\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+in\\b");
 
     public static Result complete(List<String> lines, int line, int col, Data data) {
         String text = lines.get(line);
@@ -181,10 +183,11 @@ public final class CodeCompletion {
         }
         items.add(new Item("name = value", "count = count + 1", 0, 5, Op.SET.help(), VARIABLE));
         items.add(new Item("if ...:", "if :", 3, Op.IF.help(), KEYWORD));
-        // De lussen (het aantal van repeat is meteen geselecteerd: typen vervangt het).
-        items.add(new Item("repeat(3):", "repeat(3):", 7, 1, Op.REPEAT.help(), KEYWORD));
+        // De lussen (16 oktober: for en while). Het bereik van for is meteen geselecteerd: typen vervangt het.
+        items.add(new Item("for i in range(3):", "for i in range(3):", 15, 1,
+                Op.FOR.help() + ". i is 0, 1, 2; range(1, 4) counts 1, 2, 3", KEYWORD));
         items.add(new Item("while ...:", "while :", 6, Op.WHILE.help(), KEYWORD));
-        items.add(new Item("forever:", "forever:", -1, Op.FOREVER.help(), KEYWORD));
+        items.add(new Item("while true:", "while true:", -1, "Do the steps inside again and again, until break", KEYWORD));
         items.add(new Item("break", "break", -1, Op.BREAK.help(), KEYWORD));
         items.add(new Item("elif ...:", "elif :", 5, "Another check, when the if above was not true", KEYWORD));
         items.add(new Item("else:", "else:", -1, "What happens when the if above is not true", KEYWORD));
@@ -226,7 +229,7 @@ public final class CodeCompletion {
     private static boolean isConditionContext(String head) {
         String lower = head.toLowerCase(Locale.ROOT);
         if (lower.startsWith("if ") || lower.equals("if") || lower.startsWith("elif ") || lower.equals("elif")
-                || lower.startsWith("while ") || lower.equals("while") || lower.startsWith("repeat(")) {
+                || lower.startsWith("while ") || lower.equals("while") || lower.startsWith("for ") && lower.contains("range(")) {
             return true;
         }
         for (String end : List.of(" and", " or", " not", "(", "==", "!=", "<", ">", "<=", ">=", "+", "-", "*", "/")) {
@@ -261,6 +264,10 @@ public final class CodeCompletion {
             Matcher name = ASSIGN.matcher(text);
             if (name.find() && Op.byCode(name.group(1)) == null) {
                 names.add(name.group(1));
+            }
+            Matcher counter = FOR.matcher(text);
+            if (counter.find()) {
+                names.add(counter.group(1));
             }
         }
         return names;

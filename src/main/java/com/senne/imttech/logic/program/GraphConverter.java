@@ -72,8 +72,10 @@ public final class GraphConverter {
             } else if (node.op == Op.SET) {
                 statements.add(new Script.Assign(node.text, cleanValue(node.expr), node.id));
             } else if (node.op.kind() == Op.Kind.LOOP) {
-                String expr = node.op == Op.REPEAT ? cleanValue(node.text) : node.op == Op.WHILE ? cleanCondition(node.text) : "";
-                statements.add(new Script.Loop(node.op, expr, chain(graph, node.yes, seen), node.id));
+                // Een for: de naam staat in text en het bereik in expr; een while: de voorwaarde in text.
+                boolean counting = node.op == Op.FOR;
+                statements.add(new Script.Loop(node.op, counting ? node.text : "",
+                        counting ? cleanValue(node.expr) : cleanCondition(node.text), chain(graph, node.yes, seen), node.id));
             } else {
                 statements.add(new Script.Action(node.op, node.op.textArg() == Op.Arg.NONE ? "" : node.text,
                         node.op.numberArg() == Op.Arg.NONE ? 0 : node.number,
@@ -228,9 +230,15 @@ public final class GraphConverter {
                     rows = Math.max(rows, Math.max(1, yes[2]) + Math.max(1, no[2]));
                     c += 1 + Math.max(1, Math.max(yes[1], no[1]));
                 } else if (statement instanceof Script.Loop loop) {
-                    // Een lus: de stappen erin rechts ernaast (aan "do"), wat erna komt rechts daarvan.
+                    // Een lus: de stappen erin rechts ernaast (aan "do"), wat erna komt rechts daarvan. Een for
+                    // bewaart zijn naam in text en zijn bereik in expr; een while zijn voorwaarde in text.
                     node = graph.add(loop.op(), 0, 0);
-                    node.text = loop.expr();
+                    if (loop.op() == Op.FOR) {
+                        node.text = loop.var();
+                        node.expr = loop.expr();
+                    } else {
+                        node.text = loop.expr();
+                    }
                     cells.put(node, new int[] {c, row});
                     int[] body = statements(loop.body(), path + ".y", c + 1, row);
                     node.yes = body[0];

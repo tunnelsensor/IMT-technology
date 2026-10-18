@@ -1258,12 +1258,12 @@ final class ShowcaseFeatures {
         add("Logic: names, sums and loops", "Hoofdstuk 20: de taal groeit. Hetzelfde lab, met een tweede diagram "
                 + "'Blink': count = 0 helemaal links (een naam voor het hele programma), en als de lamp aangaat telt "
                 + "het één op, zegt I.M.T 'The lights went on 1 times' (een berekend bericht: tekst + een getal), "
-                + "en gaat de deur drie keer even open (repeat(3) met pulse en wait). Eerst de code 4321 op het "
-                + "paneel: de lamp gaat aan, I.M.T zegt het, en de deur gaat drie keer open en dicht. Dan de app "
-                + "Logic: de code (de nieuwe woorden roze, = en + ook), en als blokjes: AT START en een geel "
-                + "SET-blokje, en het roze REPEAT-blokje met zijn uitgangen do (rechtsboven, de stappen erin) en "
-                + "after (onderaan); daarna het REPEAT-blokje gekozen (rechts: Times). Het palet rechts scrolt nu "
-                + "met het muiswiel (pijltje onderaan).",
+                + "en gaat de deur drie keer even open (16 oktober: for i in range(1, 4), met i in het logboek: "
+                + "'Blink 1 of 3'...). Eerst de code 4321 op het paneel: de lamp gaat aan, I.M.T zegt het, en de deur "
+                + "gaat drie keer open en dicht. Dan de app Logic: de code (de nieuwe woorden roze, = en + ook), en "
+                + "als blokjes: AT START en een geel SET-blokje, en het roze FOR-blokje met zijn uitgangen do "
+                + "(rechtsboven, de stappen erin) en after (onderaan); daarna het FOR-blokje gekozen (rechts: de "
+                + "naam die telt, en het bereik). Het palet rechts scrolt met het muiswiel (pijltje onderaan).",
                 Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
             s.onServer(0, ShowcaseFeatures::buildLogicLab)
                     .onServer(0, ShowcaseFeatures::addBlinkProgram)
@@ -1282,7 +1282,7 @@ final class ShowcaseFeatures {
                     .pause(120)
                     .step(0, () -> desktop(os -> os.tourLogicBlocks(null)))
                     .pause(100)
-                    .step(0, () -> desktop(os -> os.tourLogicBlocks(com.senne.imttech.logic.program.Op.REPEAT)))
+                    .step(0, () -> desktop(os -> os.tourLogicBlocks(com.senne.imttech.logic.program.Op.FOR)))
                     .pause(80)
                     .close(20);
         });
@@ -1824,7 +1824,7 @@ final class ShowcaseFeatures {
                                 int pin = i == 0 ? 3 : 4;
                                 robot.setBoard(com.senne.imttech.bot.BotBoard.EMPTY.with(pin, weapons[i]).with(6, "camera"));
                                 robot.setAmmo(6);
-                                robot.setProgram(program("Shoot", "when started:\n    forever:\n        if read(pin(" + pin + ")):\n"
+                                robot.setProgram(program("Shoot", "when started:\n    while true:\n        if read(pin(" + pin + ")):\n"
                                         + "            write(pin(" + pin + "), true)\n        wait(0.5)\n",
                                         com.senne.imttech.logic.program.ProgramKind.ROBOT));
                                 robot.setActive(true);
@@ -2324,7 +2324,8 @@ final class ShowcaseFeatures {
             when turned_on("Lab lights"):
                 count = count + 1
                 say("The lights went on " + count + " times")
-                repeat(3):
+                for i in range(1, 4):
+                    log("Blink " + i + " of 3")
                     pulse("Lab door lock", 0.5)
                     wait(1)
             """;
@@ -2797,7 +2798,7 @@ final class ShowcaseFeatures {
     private static final String HOVER_PATROL = """
             when started:
                 up(2)
-                forever:
+                while true:
                     forward(3)
                     turn_right()
                     if drone.battery < 30:
@@ -2905,7 +2906,7 @@ final class ShowcaseFeatures {
     private static final String TRAINEE_HUNTER = """
             when started:
                 write(pin(2), "trainee")
-                forever:
+                while true:
                     if read(pin(1)) and read(pin(3)):
                         write(pin(3), true)
                         wait(2)
@@ -3037,13 +3038,13 @@ final class ShowcaseFeatures {
     /** Het robotprogramma van de showcase "Robot programs": een vierkantje, en zwaaien als de server dat zegt. */
     private static final String BAY_PATROL = """
             when started:
-                forever:
+                while true:
                     forward(3)
                     turn_right()
                     send("corner")
 
             when ordered("wave"):
-                repeat(2):
+                for i in range(2):
                     turn_left()
                     turn_right()
             """;

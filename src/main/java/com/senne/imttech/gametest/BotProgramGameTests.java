@@ -113,7 +113,7 @@ public final class BotProgramGameTests {
                     firstZ = robot.z
                     turn_right()
                     turned = robot.facing
-                    repeat(3):
+                    for i in range(3):
                         forward(2)
                         turn_right()
                     done = true
@@ -197,7 +197,7 @@ public final class BotProgramGameTests {
                 count = 0
                 ticks = 0
                 when started:
-                    forever:
+                    while true:
                         count = count + 1
                 when every(1):
                     ticks = ticks + 1
@@ -502,7 +502,7 @@ public final class BotProgramGameTests {
                 ax = 0
                 lapsAtOrder = -1
                 when started:
-                    forever:
+                    while true:
                         forward(2)
                         back(2)
                         laps = laps + 1

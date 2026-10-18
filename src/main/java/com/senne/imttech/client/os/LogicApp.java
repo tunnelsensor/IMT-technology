@@ -682,8 +682,8 @@ final class LogicApp {
         lines.add(item("message(...)", "when message(\"intruder\"):\n    alarm(\"Intruder seen by \" + sender.name)\n", Op.MESSAGE));
         } else {
             lines.add(item("started", kind == ProgramKind.DRONE
-                    ? "when started:\n    up(2)\n    forever:\n        forward(3)\n        turn_right()\n"
-                    : "when started:\n    forever:\n        forward(3)\n        turn_right()\n", Op.STARTED));
+                    ? "when started:\n    up(2)\n    while true:\n        forward(3)\n        turn_right()\n"
+                    : "when started:\n    while true:\n        forward(3)\n        turn_right()\n", Op.STARTED));
             lines.add(item("ordered(...)", "when ordered(\"attack\"):\n    goto(order.x, order.y, order.z)\n", Op.ORDERED));
         }
         lines.add(item("every(10)", "when every(10):\n    pass\n", Op.EVERY));
@@ -784,12 +784,15 @@ final class LogicApp {
                 "A message (say, log, alarm) or the seconds (wait, pulse) may be calculated: wait(delay * 2)",
                 0x9ED8FF, null));
         lines.add(header("LOOPS (again and again)"));
-        lines.add(new HelpLine("repeat(3):", "repeat(3):\n    pulse(\"" + device + "\", 0.5)\n    wait(1)",
-                "Do the steps inside 3 times. The number may be a name or a sum: repeat(count + 1):", 0xFF79C6, null));
+        lines.add(new HelpLine("for i in range(3):", "for i in range(3):\n    pulse(\"" + device + "\", 0.5)\n    wait(1)",
+                "Do the steps inside 3 times; i is 0, then 1, then 2. The range may be a name or a sum: range(count + 1)",
+                0xFF79C6, null));
+        lines.add(new HelpLine("for i in range(1, 4):", "for i in range(1, 4):\n    say(\"Round \" + i)",
+                "Count from 1 up to 4 (without 4): i is 1, 2, 3. Use i like any name: say(\"Round \" + i)", 0xFF79C6, null));
         lines.add(new HelpLine("while count < 3:", "while count < 3:\n    count = count + 1",
                 "As long as the check is true. Change something inside, or it never stops.", 0xFF79C6, null));
-        lines.add(new HelpLine("forever:", "forever:\n    wait(1)",
-                "Again and again. Put a wait inside: a loop without waiting keeps your CPU busy.", 0xFF79C6, null));
+        lines.add(new HelpLine("while true:", "while true:\n    wait(1)",
+                "Again and again, until break. Put a wait inside: a loop without waiting keeps your CPU busy.", 0xFF79C6, null));
         lines.add(new HelpLine("break", "break", Op.BREAK.help(), 0xFF79C6, null));
         robotHelp(lines, server);
         lines.add(header("YOUR OWN BLOCKS (def)"));
@@ -827,7 +830,7 @@ final class LogicApp {
     /** Een robot die een vierkant loopt, en laadt als zijn batterij bijna leeg is (voorbeeld in Help). */
     private static final String PATROL_EXAMPLE = """
             when started:
-                forever:
+                while true:
                     if robot.battery < 20:
                         charge()
                     forward(4)
@@ -845,7 +848,7 @@ final class LogicApp {
     private static final String DRONE_PATROL_EXAMPLE = """
             when started:
                 up(2)
-                forever:
+                while true:
                     if drone.battery < 20:
                         charge()
                         up(2)

@@ -598,20 +598,31 @@ when keycard("Lab door"):
           alarm("Three cards at the lab: " + card.name)
           count = 0
   ```
-- **Lussen**: `repeat(3):` doet de stappen eronder 3 keer (het aantal mag een naam of een berekening
-  zijn), `while count < 3:` zolang de voorwaarde klopt, en `forever:` steeds opnieuw. `break` springt uit
-  de binnenste lus. Een lus laat de server nooit hangen: een run doet hooguit 64 blokjes per tick en gaat
-  de volgende tick verder. Maar een `forever` zonder `wait` houdt wel een stukje RAM bezet en laat je
-  CPU's hard werken (je datacenter wordt warm): zet er een `wait` in.
+- **Lussen** (zoals in Python, sinds 16 oktober): `for i in range(3):` doet de stappen eronder 3 keer,
+  en `i` telt mee: eerst 0, dan 1, dan 2. `for i in range(1, 4):` telt 1, 2, 3 (tot de 4, die telt niet
+  meer mee). Het bereik mag een naam of een berekening zijn (`range(count)`, `range(1, n + 1)`), en `i`
+  gebruik je zoals elke naam (`say("Round " + i)`); na de lus houdt hij zijn laatste waarde.
+  `while count < 3:` herhaalt zolang de voorwaarde klopt, en `while true:` steeds opnieuw. `break`
+  springt uit de binnenste lus. Een lus laat de server nooit hangen: een run doet hooguit 64 blokjes per
+  tick en gaat de volgende tick verder. Maar een `while true` zonder `wait` houdt wel een stukje RAM bezet
+  en laat je CPU's hard werken (je datacenter wordt warm): zet er een `wait` in.
   ```
   when turned_on("Alarm button"):
-      repeat(5):
+      for i in range(1, 6):
+          log("Siren " + i)
           pulse("Siren lamp", 0.5)
           wait(1)
   ```
   In de blokjes is een lus een roze blokje met twee uitgangen: **do** (rechtsboven: de stappen erin) en
-  **after** (onderaan: wat erna komt). Een naam een waarde geven is een geel **SET**-blokje, een naam
-  helemaal links een **AT START**-blokje (met een vak voor de naam en een vak voor de waarde).
+  **after** (onderaan: wat erna komt). Een **FOR**-blokje heeft een vak voor de naam die telt (`i`) en een
+  vak voor het bereik (`3`, of `1, 4`); een **WHILE**-blokje een vak voor de voorwaarde. Een naam een
+  waarde geven is een geel **SET**-blokje, een naam helemaal links een **AT START**-blokje (met een vak
+  voor de naam en een vak voor de waarde).
+- `repeat(3):` en `forever:` bestaan niet meer (jouw notitie van 16 oktober: "een for en while is
+  voldoende"). Een diagram dat ze nog had, zet de server bij het laden om: `repeat(3):` wordt
+  `for i in range(3):` (een lus in een lus krijgt `j`, dan `k`; gebruikte je zelf al een naam `i`, dan
+  begint hij bij `j`), en `forever:` wordt `while true:`. Je commentaar blijft staan. Typ je ze toch, dan
+  zegt de code wat je nu schrijft.
 - Had een diagram van vóór 15 oktober een def die nu een woord van de taal is (`repeat`, `while`,
   `forever`, `break`, `set` of `var`), dan heet die def nu `repeat_1` (ook waar hij gebruikt wordt).
 
@@ -907,7 +918,7 @@ robot zelf. Een voorbeeld:
 scanPin = pin(1)
 
 when started:
-    forever:
+    while true:
         if robot.battery < 20:
             charge()
         forward(4)
@@ -980,7 +991,7 @@ laserPin = pin(3)
 
 when started:
     write(facePin, "strangers")
-    forever:
+    while true:
         if read(scanPin) and read(laserPin):
             alarm("Intruder near " + robot.name)
             write(laserPin, true)
@@ -1039,7 +1050,7 @@ laserPin = pin(3)
 
 when started:
     up(2)
-    forever:
+    while true:
         if drone.battery < 30:
             charge(50)
         forward(3)

@@ -253,10 +253,10 @@ public final class ScriptChecker {
                 try {
                     if (loop.op() == Op.WHILE) {
                         Expr.parseCondition(loop.expr(), trigger, scope(globals, locals), kind);
-                    } else if (loop.op() == Op.REPEAT) {
-                        Expr.Type type = Expr.typeOf(Expr.parseValue(loop.expr(), trigger, scope(globals, locals), kind));
-                        if (type != Expr.Type.NUMBER && type != Expr.Type.ANY) {
-                            throw new LogicException("repeat needs a number, like repeat(3):");
+                    } else if (loop.op() == Op.FOR) {
+                        String problem = forProblem(loop, trigger, globals, locals, defNames, kind);
+                        if (problem != null) {
+                            throw new LogicException(problem);
                         }
                     }
                 } catch (LogicException e) {
@@ -305,6 +305,34 @@ public final class ScriptChecker {
         }
     }
 
+    /**
+     * Wat er mis is met {@code for i in range(...):} op deze plek (16 oktober): het bereik streng gelezen (één of twee
+     * getallen), en de naam die telt. Die krijgt een getal, dus een naam die al tekst of waar/onwaar is, kan het niet.
+     * Anders bestaat de naam vanaf hier (ook na de lus, zoals in Python).
+     */
+    private static @Nullable String forProblem(Script.Loop loop, @Nullable Op trigger, Map<String, Expr.Type> globals,
+                                               Map<String, Expr.Type> locals, Set<String> defNames, ProgramKind kind) {
+        String problem = Checks.variableProblem(loop.var(), defNames);
+        if (problem != null) {
+            return problem;
+        }
+        try {
+            problem = Checks.rangeProblem(Expr.parseValues(loop.expr(), trigger, scope(globals, locals), kind));
+        } catch (LogicException e) {
+            return e.getMessage();
+        }
+        if (problem != null) {
+            return problem;
+        }
+        Expr.Type old = globals.containsKey(loop.var()) ? globals.get(loop.var()) : locals.get(loop.var());
+        if (old == null) {
+            locals.put(loop.var(), Expr.Type.NUMBER);
+        } else if (old != Expr.Type.NUMBER && old != Expr.Type.ANY) {
+            return loop.var() + " holds " + Expr.describe(old) + ", so it cannot count: pick another name, like for i in range(3):";
+        }
+        return null;
+    }
+
     /** Wat er mis is met {@code naam = waarde} op deze plek (en anders: de naam bestaat vanaf nu). */
     private static @Nullable String assignProblem(Script.Assign assign, @Nullable Op trigger, Map<String, Expr.Type> globals,
                                                   Map<String, Expr.Type> locals, Set<String> defNames, ProgramKind kind) {
@@ -339,7 +367,7 @@ public final class ScriptChecker {
     private static void checkBreaks(List<Script.Stmt> statements, boolean inLoop, List<Problem> problems) {
         for (Script.Stmt statement : statements) {
             if (statement instanceof Script.Action action && action.op() == Op.BREAK && !inLoop) {
-                problems.add(new Problem(action.ref(), "break only works inside forever, repeat or while"));
+                problems.add(new Problem(action.ref(), "break only works inside for or while"));
             } else if (statement instanceof Script.If branch) {
                 checkBreaks(branch.yes(), inLoop, problems);
                 checkBreaks(branch.no(), inLoop, problems);

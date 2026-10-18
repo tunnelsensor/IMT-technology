@@ -410,7 +410,7 @@ final class BlockCanvas {
                 : op == Op.DEF || op == Op.CALL ? FUNCTION : op.kind() == Op.Kind.SET ? VARIABLE : ACTION;
     }
 
-    /** De titel bovenop een blokje: "WHEN keycard", "IF", "REPEAT", "DEF", "use def", "SET", "AT START", "pulse". */
+    /** De titel bovenop een blokje: "WHEN keycard", "IF", "FOR", "WHILE", "DEF", "use def", "SET", "AT START", "pulse". */
     private static String title(Op op) {
         return op.isTrigger() ? "WHEN " + op.code() : op == Op.IF ? "IF" : op == Op.DEF ? "DEF"
                 : op == Op.CALL ? "use def" : op == Op.SET ? "SET" : op == Op.GLOBAL ? "AT START"
@@ -437,11 +437,8 @@ final class BlockCanvas {
         if (node.op.kind() == Op.Kind.SET) {
             return node.text + " = " + node.expr;
         }
-        if (node.op == Op.REPEAT) {
-            return node.text + " times";
-        }
-        if (node.op == Op.FOREVER) {
-            return "again and again";
+        if (node.op == Op.FOR) {
+            return node.text + " in range(" + node.expr + ")"; // de for-lus (16 oktober): i in range(3)
         }
         if (node.op == Op.BREAK) {
             return "out of the loop";
@@ -494,7 +491,8 @@ final class BlockCanvas {
             return node.text + " = " + node.expr;
         }
         if (node.op.kind() == Op.Kind.LOOP) {
-            return com.senne.imttech.logic.program.ScriptPrinter.loopLine(node.op, node.text);
+            return node.op == Op.FOR ? com.senne.imttech.logic.program.ScriptPrinter.loopLine(node.op, node.text, node.expr)
+                    : com.senne.imttech.logic.program.ScriptPrinter.loopLine(node.op, "", node.text);
         }
         String call = com.senne.imttech.logic.program.ScriptPrinter.call(node.op, node.text, node.number, node.expr);
         return node.op.isTrigger() ? "when " + call + ":" : node.op == Op.DEF ? call + ":" : call;
@@ -652,8 +650,10 @@ final class BlockCanvas {
         } else if (op.kind() == Op.Kind.SET) {
             node.text = "count";
             node.expr = op == Op.SET ? "count + 1" : "0";
-        } else if (op == Op.REPEAT) {
-            node.text = "3";
+        } else if (op == Op.FOR) {
+            // for i in range(3): de naam die telt, en het bereik.
+            node.text = "i";
+            node.expr = "3";
         } else if (op == Op.WHILE) {
             node.text = "true";
         }
@@ -757,7 +757,7 @@ final class BlockCanvas {
      * het bericht of de seconden een berekening zijn ({@code say("Count: " + count)}, {@code wait(delay)}).
      */
     private static boolean showsExpr(LogicGraph.Node node) {
-        return node.op.kind() == Op.Kind.SET || node.op.textArg() == Op.Arg.VALUES || !node.expr.isEmpty();
+        return node.op.kind() == Op.Kind.SET || node.op.textArg() == Op.Arg.VALUES || node.op == Op.FOR || !node.expr.isEmpty();
     }
 
     /** Het gewone tekstvak, behalve als het bericht een berekening is (dan staat het in het code-vak). */
@@ -781,6 +781,9 @@ final class BlockCanvas {
             }
             return label;
         }
+        if (node.op == Op.FOR) {
+            return "Range (3, or 1, 4)";
+        }
         return node.op.kind() == Op.Kind.SET ? "Value" : Checks.exprIsText(node.op) ? "Message (code)"
                 : unitLabel(node.op) + " (code)";
     }
@@ -796,8 +799,8 @@ final class BlockCanvas {
         if (op == Op.IF || op == Op.WHILE) {
             return "Check";
         }
-        if (op == Op.REPEAT) {
-            return "Times (a number)";
+        if (op == Op.FOR) {
+            return "Name (counts, like i)";
         }
         return switch (op.textArg()) {
             case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";

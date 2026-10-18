@@ -48,7 +48,7 @@ public final class ScriptPrinter {
             } else if (statement instanceof Script.Assign assign) {
                 out.append(INDENT.repeat(depth)).append(assign.name()).append(" = ").append(assign.value()).append('\n');
             } else if (statement instanceof Script.Loop loop) {
-                out.append(INDENT.repeat(depth)).append(loopLine(loop.op(), loop.expr())).append('\n');
+                out.append(INDENT.repeat(depth)).append(loopLine(loop.op(), loop.var(), loop.expr())).append('\n');
                 block(out, loop.body(), depth + 1);
             }
         }
@@ -81,13 +81,9 @@ public final class ScriptPrinter {
         return call.append(expr).append(')').toString();
     }
 
-    /** De eerste regel van een lus: {@code forever:}, {@code repeat(3):} of {@code while count < 3:}. */
-    public static String loopLine(Op op, String expr) {
-        return switch (op) {
-            case FOREVER -> "forever:";
-            case REPEAT -> "repeat(" + expr + "):";
-            default -> "while " + expr + ":";
-        };
+    /** De eerste regel van een lus: {@code for i in range(3):} of {@code while count < 3:}. */
+    public static String loopLine(Op op, String var, String expr) {
+        return op == Op.FOR ? "for " + var + " in range(" + expr + "):" : "while " + expr + ":";
     }
 
     /**

@@ -328,9 +328,10 @@ public final class LogicGraph {
 
     /**
      * Een def uit een ouder diagram die nu een woord van de taal heet ({@code repeat}, {@code while},
-     * {@code forever}, {@code break}, {@code set}, {@code var}, en sinds hoofdstuk 23 ook {@code forward},
-     * {@code stop}, {@code send}, {@code read}...), krijgt een andere naam ({@code repeat_1}); de blokjes die hem
-     * gebruiken gaan mee. Geeft true als er iets veranderde.
+     * {@code forever}, {@code break}, {@code set}, {@code var}, sinds hoofdstuk 23 ook {@code forward},
+     * {@code stop}, {@code send}, {@code read}..., en sinds 16 oktober {@code for}, {@code in} en {@code range}),
+     * krijgt een andere naam ({@code repeat_1}); de blokjes die hem gebruiken gaan mee. Geeft true als er iets
+     * veranderde.
      */
     public boolean renameReservedDefs() {
         Set<String> used = new HashSet<>();
@@ -361,15 +362,18 @@ public final class LogicGraph {
         return changed;
     }
 
-    /** Kan de lus zijn aantal (repeat) of voorwaarde (while) lezen? Null als het klopt. */
+    /** Kan de lus zijn naam en bereik (for) of zijn voorwaarde (while) lezen? Null als het klopt. */
     public static @Nullable String loopProblem(Node node) {
         try {
-            if (node.op == Op.REPEAT) {
-                if (node.text.isBlank()) {
-                    return "repeat needs a number, like 3";
+            if (node.op == Op.FOR) {
+                String problem = Checks.variableProblem(node.text, Set.of());
+                if (problem != null) {
+                    return node.text.isBlank() ? "for needs a name that counts, like i" : problem;
                 }
-                Expr.Type type = Expr.typeOf(Expr.parseLenient(node.text, false));
-                return type == Expr.Type.NUMBER || type == Expr.Type.ANY ? null : "repeat needs a number, like 3";
+                if (node.expr.isBlank()) {
+                    return "for needs a range, like 3 (0, 1, 2) or 1, 4 (1, 2, 3)";
+                }
+                return Checks.rangeProblem(Expr.parseLenientList(node.expr));
             }
             if (node.op == Op.WHILE) {
                 Expr.parseLenient(node.text, true);
@@ -377,6 +381,105 @@ public final class LogicGraph {
             return null;
         } catch (LogicException e) {
             return e.getMessage();
+        }
+    }
+
+    // ================================================================ Oude lussen omzetten (16 oktober)
+
+    /** Kwamen er bij het laden oude lussen in voor (repeat of forever), die nu een for of while true zijn? */
+    private boolean convertedLoops;
+
+    /**
+     * Had dit diagram bij het laden nog een {@code repeat(3):} of {@code forever:}? Die zijn omgezet (zie
+     * {@link #load}), dus de bewaarde code past niet meer: LogicProgram schrijft hem opnieuw uit de blokjes.
+     */
+    public boolean convertedLoops() {
+        return convertedLoops;
+    }
+
+    /**
+     * Een {@code repeat(3):} van vroeger is nu {@code for i in range(3):}. Elke omgezette lus krijgt de eerste naam
+     * uit i, j, k, ... die het programma nog nergens gebruikt en die geen lus eromheen al heeft; een lus in een lus
+     * krijgt zo j, dan k (jouw notitie van 16 oktober). Zo verandert er niets aan wat het programma doet.
+     */
+    private void nameConvertedLoops(List<Node> converted) {
+        if (converted.isEmpty()) {
+            return;
+        }
+        Set<String> used = namesInUse();
+        // Eerst de buitenste lussen: dan weet een lus erin welke namen er om hem heen al tellen.
+        List<Node> order = new ArrayList<>(converted);
+        order.sort(java.util.Comparator.comparingInt(node -> enclosingLoops(node).size()));
+        for (Node loop : order) {
+            Set<String> taken = new HashSet<>(used);
+            for (Node outer : enclosingLoops(loop)) {
+                if (outer.op == Op.FOR) {
+                    taken.add(outer.text);
+                }
+            }
+            loop.text = freeLoopName(taken);
+        }
+    }
+
+    /** De eerste naam uit i, j, k, l, m, n (en dan i2, j2...) die niet in {@code taken} zit. */
+    private static String freeLoopName(Set<String> taken) {
+        for (int round = 1; ; round++) {
+            for (String letter : List.of("i", "j", "k", "l", "m", "n")) {
+                String name = round == 1 ? letter : letter + round;
+                if (!taken.contains(name)) {
+                    return name;
+                }
+            }
+        }
+    }
+
+    /** De lussen waar dit blokje in zit (via hun uitgang "do"), van binnen naar buiten. */
+    private List<Node> enclosingLoops(Node node) {
+        List<Node> loops = new ArrayList<>();
+        Set<Integer> seen = new HashSet<>();
+        Node child = node;
+        Node parent = parentOf(child.id);
+        while (parent != null && seen.add(parent.id)) {
+            if (parent.op.kind() == Op.Kind.LOOP && parent.yes == child.id) {
+                loops.add(parent);
+            }
+            child = parent;
+            parent = parentOf(child.id);
+        }
+        return loops;
+    }
+
+    /**
+     * Alle namen die het programma al gebruikt: die een waarde krijgen (SET, links, een for) en elk woord in een
+     * voorwaarde, waarde of rijtje waarden. (Te veel is niet erg: dan kiezen we gewoon een andere letter.)
+     */
+    private Set<String> namesInUse() {
+        Set<String> names = new HashSet<>();
+        for (Node node : nodes.values()) {
+            if (node.op.kind() == Op.Kind.SET || node.op == Op.FOR) {
+                names.add(node.text);
+            }
+            if (node.op == Op.IF || node.op == Op.WHILE) {
+                words(node.text, names);
+            }
+            words(node.expr, names);
+        }
+        return names;
+    }
+
+    /** De woorden (namen) in een stuk code, zoals de code ze leest. */
+    private static void words(String text, Set<String> out) {
+        if (text.isBlank()) {
+            return;
+        }
+        try {
+            for (Lexer.Token token : Lexer.tokens(text)) {
+                if (token.type() == Lexer.Type.NAME) {
+                    out.add(token.text());
+                }
+            }
+        } catch (LogicException e) {
+            // Niet te lezen: dan staan er ook geen namen in die we kunnen raken.
         }
     }
 
@@ -424,12 +527,17 @@ public final class LogicGraph {
      */
     public static LogicGraph load(CompoundTag tag) {
         LogicGraph graph = new LogicGraph();
+        List<Node> repeats = new ArrayList<>();
         for (Tag element : tag.getList("Nodes", Tag.TAG_COMPOUND)) {
             if (graph.nodes.size() >= MAX_NODES) {
                 break;
             }
             CompoundTag entry = (CompoundTag) element;
-            Op op = Op.byName(entry.getString("o"));
+            String opName = entry.getString("o");
+            // Lussen van vóór 16 oktober: repeat(3) wordt een for (zijn naam komt hieronder), forever een while true.
+            boolean repeat = opName.equals("REPEAT");
+            boolean forever = opName.equals("FOREVER");
+            Op op = repeat ? Op.FOR : forever ? Op.WHILE : Op.byName(opName);
             int id = entry.getInt("i");
             if (op == null || id <= 0 || graph.nodes.containsKey(id)) {
                 continue;
@@ -443,6 +551,14 @@ public final class LogicGraph {
             }
             String expr = entry.getString("e"); // een diagram van vóór hoofdstuk 20 heeft hem niet: leeg
             node.expr = expr.length() > Op.MAX_TEXT * 3 ? expr.substring(0, Op.MAX_TEXT * 3) : expr;
+            if (repeat) {
+                node.expr = node.text.isBlank() ? "0" : node.text; // het aantal wordt het bereik
+                node.text = "";
+                repeats.add(node);
+            } else if (forever) {
+                node.text = "true";
+            }
+            graph.convertedLoops |= repeat || forever;
             node.x = entry.getInt("x");
             node.y = entry.getInt("y");
             node.next = entry.getInt("nx");
@@ -452,6 +568,7 @@ public final class LogicGraph {
             graph.nextId = Math.max(graph.nextId, id + 1);
         }
         graph.repair();
+        graph.nameConvertedLoops(repeats);
         return graph;
     }
 
