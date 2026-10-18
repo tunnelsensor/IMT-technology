@@ -241,10 +241,9 @@ In creative zet de knop **Max all** alles in één keer op 10.
 
 ### Redstone-relais (')
 Craft een **I.M.T-relais**, zet het naast een deur, lamp, zuiger of trechter en klik er
-rechts op (daar heb je je bril niet voor nodig) om het een **naam** te geven en eventueel in een
-**groep** te zetten (de knop **Group**). Daarna kan I.M.T het overal in dezelfde wereld
-aan- of uitzetten, omschakelen of een korte puls geven — per relais of per hele groep. Met je stem:
-*"zet de voordeur aan"*, *"doe de val uit"*, *"geef de poort een puls"*.
+rechts op (daar heb je je bril niet voor nodig) om het een **naam** te geven. Daarna kan I.M.T het
+overal in dezelfde wereld aan- of uitzetten, omschakelen of een korte puls geven — per relais of per
+hele **groep**. Met je stem: *"zet de voordeur aan"*, *"doe de val uit"*, *"geef de poort een puls"*.
 
 - **Van jou**: een relais is van wie het neerzet. Alleen jij kunt het openen, in je lijst zetten,
   hernoemen, omkeren en schakelen; een ander hoort van wie het is.
@@ -262,19 +261,16 @@ aan- of uitzetten, omschakelen of een korte puls geven — per relais of per hel
   ```
 
   Zet je `base` aan, dan gaat alles eronder mee. Een groep kan nooit (via een omweg) in zichzelf:
-  zit `temp` in `base`, dan kan `base` niet in `temp`. Groepen maak je op drie plekken:
-  - in het **groepen-scherm**: de knop **Groups** onderaan het redstone-scherm (toets **'**), of
-    de knop **Group** in het scherm van een relais (dan kies je er meteen een met **Choose**).
-    Links staat de boom; kies een groep en typ links onderaan een naam (**+**): de nieuwe groep
-    komt in de gekozen groep. Rechts klik je in welke groep de gekozen groep hoort (of
-    **(top level)**), geef je hem een andere naam of gooi je hem weg (wat erin zat, schuift een
-    laag omhoog);
-  - op de **Security OS-desktop**, in de app **Groups**: dezelfde boom, met je relais erin. Sleep een
-    relais of groep op een groep om hem erin te zetten, of op de bovenste regel om hem uit elke
-    groep te halen. Met **New group**, **Rename** en **Delete** bovenaan doe je de rest.
+  zit `temp` in `base`, dan kan `base` niet in `temp`. Groepen stel je alleen in op de **Security
+  OS-desktop**, in de app **Groups** (jouw wens van 16 oktober): dezelfde boom, met je relais erin.
+  Sleep een relais of groep op een groep om hem erin te zetten, of op de bovenste regel om hem uit
+  elke groep te halen. Met **New group**, **Rename** en **Delete** bovenaan doe je de rest (een
+  groep weggooien laat wat erin zat een laag omhoog schuiven).
 
-  Het redstone-scherm toont alles als een boom. (Tot 14 oktober waren dit tags; een oude wereld
-  houdt van elk relais de eerste tag als groep.)
+  Het redstone-scherm (toets **'**) toont alles als een boom, met per groep **ON**, **OFF** en
+  **PULSE**; onderaan staat waar je groepen instelt. In het scherm van een relais zie je onder
+  **Group** in welke groep het zit. (Tot 14 oktober waren dit tags; een oude wereld houdt van elk
+  relais de eerste tag als groep.)
 - **Invert**: in het scherm van een relais zet de knop **Invert** het om: dan geeft het redstone
   als het **uit** staat. Je ziet het aan een rode rand om het lampje. Zonder bril moet je ernaast
   staan.

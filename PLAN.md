@@ -2964,7 +2964,14 @@ Ik doe dit vóór hoofdstuk 27.
 
 - [x] **1. Robotonderdelen stapelen niet** — de 16 onderdelen stapelen tot 1 (de modules nog tot 16); de test
       `robot_parts_are_items_with_recipes` kijkt het na.
-- [ ] **2. Groepen alleen op de desktop**
+- [x] **2. Groepen alleen op de desktop** — in het redstone-scherm (toets ') is de knop **Groups** weg; onderaan staat
+      "Set up groups in the Groups app on your Security OS desktop." Je groepen staan er nog als boom met **ON**, **OFF**
+      en **PULSE**. In het scherm van een relais zie je onder **Group** zijn groep (alleen te lezen), met eronder
+      "Change it in the Groups app on your Security OS desktop."; Save bewaart alleen de naam. Het oude groepen-scherm
+      van het G-menu (`RelayGroupsScreen`) en zijn teksten zijn weg; de server en de app Groups veranderden niet.
+      Screenshots `rl03` en `rl043` (`-Ponly=relays`); `rl04`, `rl041` en `rl042` (het oude groepen-scherm) bestaan
+      niet meer. In de showcase ("Relay: name and group" en "Relay groups, invert and emitter") het groepen-scherm
+      eruit. LEESMIJ.md: "Redstone-relais".
 - [ ] **3. De for-lus** — in de code, de controle en de tolk; `forever` en `repeat` weg; oude programma's omzetten.
 - [ ] **4. De for-lus in de blokjes** — het blok FOR, de Help, Ctrl+Spatie, de voorbeelden; tests, screenshots,
       LEESMIJ en de showcase.
@@ -3118,8 +3125,8 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       met "do" en "after" verbinden, en of de fouten in begrijpelijk Engels staan als je iets verkeerd typt
       (`count has no value yet`, `break only works inside ...`).
 - [ ] **Relaisgroepen (14 oktober)**: gezien op screenshots (`rl03`-`rl061`) en in de showcase. Probeer zelf
-      of slepen in de app Groups op de desktop fijn werkt (ook met veel relais, als je moet scrollen), en of
-      het groepen-scherm duidelijk is: een nieuwe groep komt in de groep die je gekozen hebt.
+      of slepen in de app Groups op de desktop fijn werkt (ook met veel relais, als je moet scrollen). Sinds
+      16 oktober stel je groepen alleen daar in.
 - [ ] **Het naamscherm van de keycardlezer en het codepaneel (13 oktober)**: gezien op screenshots
       (`dr4`-`dr7`) en in de showcase. Probeer zelf of sluipen + rechtsklik met een lege hand fijn werkt, ook
       met een vriend in je Access en met een vreemde (die hoort bij een lezer "This keycard reader belongs to

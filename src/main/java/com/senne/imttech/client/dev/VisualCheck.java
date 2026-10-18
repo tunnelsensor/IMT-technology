@@ -2548,8 +2548,8 @@ public final class VisualCheck {
 
         // --- Relais (13 en 14 oktober): twee deuren in de groep "security room" (in "restricted", in "base"), een
         // omgekeerde tuinlamp, en een relay emitter met een hendel die "base" schakelt. Eerst de hendel uit, dan
-        // aan (de deurlampen gaan aan), dan de schermen: de boom van groepen, het groepen-scherm, de groepskiezer
-        // van een relais, een relais, de emitter, en de app Groups op de Security OS-desktop.
+        // aan (de deurlampen gaan aan), dan de schermen: de boom van groepen (met onderaan waar je groepen instelt),
+        // een relais met zijn groep (alleen te lezen sinds 16 oktober), de emitter, en de app Groups op de desktop.
         if (want("relays")) {
             BlockPos y = RELAY_YARD;
             t.onServer(0, VisualCheck::buildRelayYard);
@@ -2565,25 +2565,6 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.open(0, RelayListScreen::new);
             t.shot(20, "rl03_relay_tree");
-            t.open(0, com.senne.imttech.client.RelayGroupsScreen::new);
-            t.step(5, () -> {
-                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.RelayGroupsScreen screen) {
-                    screen.tourSelect("security room");
-                }
-            });
-            t.shot(10, "rl04_relay_groups");
-            t.step(0, () -> {
-                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.RelayGroupsScreen screen) {
-                    screen.tourSelect("base"); // "base" kan nergens in die erin zit: die staan grijs
-                }
-            });
-            t.shot(10, "rl041_relay_groups_base");
-            t.open(0, () -> {
-                var data = Minecraft.getInstance().player.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
-                var door = new com.senne.imttech.client.RelayEditScreen(data.indexAt(Minecraft.getInstance().level.dimension(), y.offset(1, 0, 0)));
-                return new com.senne.imttech.client.RelayGroupsScreen(door, "security room");
-            });
-            t.shot(20, "rl042_relay_group_picker");
             t.open(0, () -> {
                 var data = Minecraft.getInstance().player.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
                 return new com.senne.imttech.client.RelayEditScreen(data.indexAt(Minecraft.getInstance().level.dimension(), y.offset(1, 0, 0)));

@@ -485,10 +485,11 @@ final class ShowcaseFeatures {
                 .pause(60)
                 .step(0, () -> relay(ImtRedstone.Op.OFF)));
 
-        add("Relay: name and group", "Een relais een naam en een groep geven (rechtsklik op het relais, ook zonder "
-                + "bril, of 'rename' in het relaisscherm). De knop 'Group' toont waar het in zit ('No group' als het "
-                + "nergens in zit); klik erop om een groep te kiezen. Alles in dezelfde groep zet je met één commando "
-                + "tegelijk aan of uit.", new Vec3(3.5, -60, 2.5), 0, 20, s -> s
+        add("Relay: name and group", "Een relais een naam geven (rechtsklik op het relais, ook zonder bril, of "
+                + "'rename' in het relaisscherm). Onder 'Group' staat waar het in zit ('No group' als het nergens in "
+                + "zit); een groep kiezen doe je sinds 16 oktober in de app Groups op de desktop (dat zegt de regel "
+                + "eronder). Alles in dezelfde groep zet je met één commando tegelijk aan of uit.",
+                new Vec3(3.5, -60, 2.5), 0, 20, s -> s
                 .open(10, () -> new RelayEditScreen(0))
                 .pause(150)
                 .close(0));
@@ -498,10 +499,10 @@ final class ShowcaseFeatures {
                 + "'Garden light' in 'garden', omgekeerd (Invert, rode rand om zijn lampje): zijn lamp brandt terwijl "
                 + "het relais UIT staat. Rechts een relay emitter met een hendel. De hendel gaat aan: de emitter (op "
                 + "'base', Follow) zet beide deuren aan, en weer uit. Dan het redstone-scherm als boom (base > "
-                + "restricted > security room > deuren), het groepen-scherm (links de boom, rechts het vinkje bij "
-                + "'restricted'; 'base' is grijs, want 'restricted' zit al in 'base'), het scherm van deur 1 met de "
-                + "groepskiezer, het scherm van de tuinlamp (Invert: ON), het scherm van de emitter, en tot slot de "
-                + "Security OS-desktop met de app Groups (dezelfde boom, met de relais erin; slepen zet iets in een groep).",
+                + "restricted > security room > deuren; onderaan: groepen stel je in op de desktop, 16 oktober), het "
+                + "scherm van deur 1 (zijn groep, alleen te lezen), het scherm van de tuinlamp (Invert: ON), het scherm "
+                + "van de emitter, en tot slot de Security OS-desktop met de app Groups (dezelfde boom, met de relais "
+                + "erin; slepen zet iets in een groep, en daar maak, hernoem en verwijder je groepen).",
                 at(RELAY_YARD.offset(3, 0, 6)), 180, 30, s -> s
                 .onServer(0, ShowcaseFeatures::buildRelayYard)
                 .pause(60)
@@ -511,19 +512,8 @@ final class ShowcaseFeatures {
                 .pause(50)
                 .open(0, RelayListScreen::new)
                 .pause(100)
-                .open(0, com.senne.imttech.client.RelayGroupsScreen::new)
-                .step(5, () -> {
-                    if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.RelayGroupsScreen screen) {
-                        screen.tourSelect("security room");
-                    }
-                })
-                .pause(110)
-                .close(0)
-                .open(0, () -> {
-                    RelayEditScreen door = new RelayEditScreen(Minecraft.getInstance().player.getData(ModAttachments.RELAYS)
-                            .indexAt(Minecraft.getInstance().level.dimension(), RELAY_YARD.offset(1, 0, 0)));
-                    return new com.senne.imttech.client.RelayGroupsScreen(door, "security room");
-                })
+                .open(0, () -> new RelayEditScreen(Minecraft.getInstance().player.getData(ModAttachments.RELAYS)
+                        .indexAt(Minecraft.getInstance().level.dimension(), RELAY_YARD.offset(1, 0, 0))))
                 .pause(90)
                 .close(0)
                 .open(0, () -> new RelayEditScreen(Minecraft.getInstance().player.getData(ModAttachments.RELAYS)

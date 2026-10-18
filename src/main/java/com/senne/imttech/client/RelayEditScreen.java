@@ -22,15 +22,15 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Eén relais een naam en een groep geven, en het eventueel omkeren.
+ * Eén relais een naam geven, en het eventueel omkeren.
  *
  * Dit scherm opent als je rechtsklikt op een I.M.T-relais (ook zonder bril, sinds 13 oktober), of
  * via "rename" in het redstone-scherm.
  *
  * <ul>
- *   <li><b>Group</b> (14 oktober, in plaats van tags): de knop toont waar het relais nu in zit ("base ›
- *       restricted › security room", of "No group"). Klik erop en je kiest een groep in het groepen-scherm
- *       (daar maak je ook nieuwe groepen en zet je groepen in groepen). Bewaren doe je hier met Save.</li>
+ *   <li><b>Group</b> (14 oktober, in plaats van tags): waar het relais nu in zit ("base › restricted ›
+ *       security room", of "No group"). Alleen om te lezen: een groep kiezen doe je sinds 16 oktober in de app
+ *       Groups op de Security OS-desktop (jouw notitie: "dit kan enkel nog op de desktop").</li>
  *   <li><b>Invert</b>: het relais geeft redstone als het UIT staat (alleen bij een echt relais; een koepel
  *       of torentje geeft geen redstone).</li>
  * </ul>
@@ -41,10 +41,6 @@ public class RelayEditScreen extends Screen {
 
     private final int index;
     private EditBox nameBox;
-    /** Wat je in het naamvak typte (blijft staan terwijl je in het groepen-scherm een groep kiest). */
-    private @Nullable String typedName;
-    /** De gekozen groep ("" = geen groep), nog niet bewaard; null = nog zoals het relais hem heeft. */
-    private @Nullable String group;
     private @Nullable Button invertButton;
     private int left;
     private int top;
@@ -82,21 +78,12 @@ public class RelayEditScreen extends Screen {
         top = Math.max(8, (height - PANEL_H) / 2);
         Relay relay = data().get(index);
 
+        String typed = nameBox == null ? null : nameBox.getValue(); // blijft staan als het venster van grootte verandert
         nameBox = new EditBox(font, left + 10, top + 34, PANEL_W - 20, 18, Component.translatable("screen.imttech.relay_edit.name"));
         nameBox.setMaxLength(Math.round(ImtConfig.Relays.MAX_NAME));
-        nameBox.setValue(typedName != null ? typedName : relay == null ? "" : relay.name());
+        nameBox.setValue(typed != null ? typed : relay == null ? "" : relay.name());
         nameBox.setHint(Component.translatable("screen.imttech.relay_edit.name_hint"));
-        nameBox.setResponder(text -> typedName = text);
         addRenderableWidget(nameBox);
-
-        // De groep: een knop die het groepen-scherm opent om er een te kiezen.
-        if (group == null) {
-            group = relay == null ? "" : relay.group();
-        }
-        addRenderableWidget(Button.builder(groupLabel(), button -> Minecraft.getInstance().setScreen(new RelayGroupsScreen(this, group)))
-                .bounds(left + 10, top + 68, PANEL_W - 20, 20)
-                .tooltip(Tooltip.create(Component.translatable("screen.imttech.relay_edit.group.tip")))
-                .build());
 
         // Omkeren: alleen bij een echt relais dat jouw spel kan zien.
         invertButton = null;
@@ -121,26 +108,15 @@ public class RelayEditScreen extends Screen {
         setInitialFocus(nameBox);
     }
 
-    /** De knop van de groep: "base › restricted › security room", of "No group". */
-    private Component groupLabel() {
-        String chosen = group == null ? "" : group;
-        if (chosen.isEmpty()) {
-            return Component.translatable("screen.imttech.relay_edit.no_group");
-        }
-        List<String> path = data().pathOf(chosen);
-        String text = path.isEmpty() ? chosen : String.join(" › ", path);
-        return Component.literal(font.plainSubstrByWidth(text, PANEL_W - 30));
-    }
-
-    /** Het groepen-scherm koos een groep ("" = geen groep). Bewaard wordt pas met Save. */
-    public void chooseGroup(String chosen) {
-        group = chosen;
-    }
-
-    /** De naam van dit relais (zoals je hem nu typt), voor de kop van het groepen-scherm. */
-    public String relayName() {
+    /** De groep van dit relais: "base › restricted › security room", of "No group". */
+    private String groupText() {
         Relay relay = data().get(index);
-        return typedName != null && !typedName.isBlank() ? typedName : relay == null ? "" : relay.name();
+        String group = relay == null ? "" : relay.group();
+        if (group.isEmpty()) {
+            return Component.translatable("screen.imttech.relay_edit.no_group").getString();
+        }
+        List<String> path = data().pathOf(group);
+        return path.isEmpty() ? group : String.join(" › ", path);
     }
 
     /** "Invert: OFF" of "Invert: ON", zoals het blok nu staat. */
@@ -159,8 +135,10 @@ public class RelayEditScreen extends Screen {
         }
     }
 
+    /** Bewaren: de nieuwe naam, en de groep zoals hij was (die verander je in de app Groups). */
     private void save() {
-        PacketDistributor.sendToServer(RelayActionPayload.rename(index, nameBox.getValue(), group == null ? "" : group));
+        Relay relay = data().get(index);
+        PacketDistributor.sendToServer(RelayActionPayload.rename(index, nameBox.getValue(), relay == null ? "" : relay.group()));
         onClose();
     }
 
@@ -195,5 +173,10 @@ public class RelayEditScreen extends Screen {
                 HudStyle.argb(200, HudStyle.WHITE), false);
         g.drawString(font, Component.translatable("screen.imttech.relay_edit.group"), left + 10, top + 58,
                 HudStyle.argb(200, HudStyle.WHITE), false);
+        // De groep alleen lezen; kiezen doe je op de desktop (16 oktober).
+        g.drawString(font, font.plainSubstrByWidth(groupText(), PANEL_W - 20), left + 10, top + 71,
+                HudStyle.argb(255, HudStyle.CYAN), true);
+        HudStyle.wrappedCentered(g, font, Component.translatable("screen.imttech.relay_edit.group_hint"), left + PANEL_W / 2,
+                top + 84, PANEL_W - 20, HudStyle.argb(140, HudStyle.WHITE));
     }
 }

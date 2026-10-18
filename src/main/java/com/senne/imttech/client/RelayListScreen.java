@@ -31,8 +31,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * </pre>
  * Een relais zit in hooguit één groep, dus het staat er één keer in. Relais zonder groep staan onderaan
  * onder "No group". Per relais kun je AAN, UIT of PULS kiezen, en per groep alles wat erin zit (ook in
- * groepen eronder). Met "rename" geef je een relais een andere naam of groep; met "Groups" onderaan maak
- * je groepen en zet je ze in elkaar.
+ * groepen eronder). Met "rename" geef je een relais een andere naam.
+ *
+ * Groepen maken, hernoemen, in elkaar zetten en een relais in een groep zetten doe je alleen nog in de app
+ * Groups op de Security OS-desktop (jouw notitie van 16 oktober: "dit kan enkel nog op de desktop"); dat
+ * zegt de regel onderaan.
  *
  * Openen: G-menu > tabblad Tech > Redstone (of de sneltoets).
  */
@@ -130,9 +133,6 @@ public class RelayListScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal(">"), button -> changePage(1))
                     .bounds(left + 32, bottom, 20, 20).build());
         }
-        addRenderableWidget(Button.builder(Component.translatable("screen.imttech.relays.groups"),
-                        button -> Minecraft.getInstance().setScreen(new RelayGroupsScreen()))
-                .bounds(left + PANEL_W - 172, bottom, 80, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
                 .bounds(left + PANEL_W - 88, bottom, 80, 20).build());
     }
@@ -224,6 +224,11 @@ public class RelayListScreen extends Screen {
         g.drawString(font, title, left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
         String count = shown.relays().size() + "/" + Math.round(ImtConfig.Relays.MAX_RELAYS);
         g.drawString(font, count, left + PANEL_W - 8 - font.width(count), top + 8, HudStyle.argb(180, HudStyle.WHITE), true);
+        // Waar je groepen instelt (16 oktober: alleen nog op de desktop), onderaan tussen de bladerknoppen en Done.
+        int bottom = top + 28 + ROWS_PER_PAGE * ROW_H + 6;
+        int hintLeft = left + 60;
+        HudStyle.wrappedCentered(g, font, Component.translatable("screen.imttech.relays.groups_hint"),
+                (hintLeft + left + PANEL_W - 94) / 2, bottom + 1, left + PANEL_W - 94 - hintLeft, HudStyle.argb(150, HudStyle.WHITE));
 
         LocalPlayer player = player();
         if (rows.isEmpty()) {
