@@ -1617,7 +1617,10 @@ final class ShowcaseFeatures {
                 + "twee blokken uit zijn dock (luister naar de servo-stapjes). Dan sneak + rechtsklik: zijn scherm "
                 + "(naam, toestand, onderdelen, batterij, dock, Rename, Switch off, Pick up). Uit: hij loopt "
                 + "terug, gaat precies in zijn dock staan en zijn lichtjes gaan uit. Tot slot de app Robots op de "
-                + "desktop: beide robots met hun toestand en batterij.",
+                + "desktop: beide robots met hun toestand en batterij. (18 oktober) Daaronder twee robots die er niet "
+                + "meer zijn, grijs 'far away': Old guard krijgt Delete, dan 'Sure?', en weg is hij ('Old guard "
+                + "deleted'); Lost guard verdwijnt een paar seconden later vanzelf, omdat zijn stuk wereld geladen is "
+                + "en hij er niet staat.",
                 Vec3.atBottomCenterOf(ROBOT_BAY.offset(5, 0, 9)), 180, 12, s -> {
             s.onServer(0, ShowcaseFeatures::buildRobotBay)
                     .pause(30)
@@ -1666,6 +1669,17 @@ final class ShowcaseFeatures {
                     .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, ROBOT_BAY.offset(10, 0, 6)))
                     .step(10, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ROBOTS)))
                     .pause(100)
+                    // 18 oktober: twee robots die er niet meer zijn. Old guard haal je weg met Delete (eerst "Sure?");
+                    // Lost guard ruimt de server zelf op (3 seconden stil terwijl zijn stuk wereld geladen is).
+                    .onServer(0, player -> {
+                        ghostRobot(player, ROBOT_BAY.offset(4, 0, 6), "Old guard");
+                        ghostRobot(player, ROBOT_BAY.offset(3, 0, 7), "Lost guard");
+                    })
+                    .pause(15)
+                    .step(0, () -> desktop(os -> os.tourRobotsAskDelete()))
+                    .pause(25)
+                    .onServer(0, player -> deleteRobot(player, ROBOT_BAY.offset(10, 0, 6), "Old guard"))
+                    .pause(120)
                     .close(20);
         });
 
@@ -3131,6 +3145,34 @@ final class ShowcaseFeatures {
         }
         if (best != null) {
             action.accept(best);
+        }
+    }
+
+    /**
+     * Een robot die er niet meer is (18 oktober): hij staat alleen in de lijst (BotNetwork), niet in de wereld, zoals een
+     * robot die je vóór de fix oppakte. Van deze speler, met deze naam, op deze plek.
+     */
+    private static void ghostRobot(net.minecraft.server.level.ServerPlayer player, BlockPos pos, String name) {
+        com.senne.imttech.robot.GuardRobotEntity ghost = com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get()
+                .create(player.serverLevel());
+        if (ghost != null) {
+            ghost.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+            ghost.setOwner(player);
+            ghost.setCustomName(net.minecraft.network.chat.Component.literal(name));
+            com.senne.imttech.bot.BotNetwork.get(player.serverLevel()).update(ghost);
+        }
+    }
+
+    /** De knop Delete (na "Sure?") in de app Robots, voor de robot van deze speler met deze naam. */
+    private static void deleteRobot(net.minecraft.server.level.ServerPlayer player, BlockPos core, String name) {
+        for (com.senne.imttech.bot.BotNetwork.Entry entry : com.senne.imttech.bot.BotNetwork.get(player.serverLevel())
+                .ownedBy(player.getUUID())) {
+            if (entry.name().equals(name)) {
+                net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                args.putString("id", entry.id().toString());
+                com.senne.imttech.security.os.SecurityOs.handleAction(player,
+                        new com.senne.imttech.network.OsActionPayload(core, "robot_delete", args));
+            }
         }
     }
 

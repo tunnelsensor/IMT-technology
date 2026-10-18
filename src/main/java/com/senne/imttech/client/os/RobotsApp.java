@@ -27,10 +27,14 @@ import org.jetbrains.annotations.Nullable;
  *  Door guard   20 64 -38                   [Rename] [Switch on]
  *    standby  battery 100%  dock
  *    no program                                       [Program]
+ *  Guard 4   90 64 -40                                [Delete]
+ *    far away  battery 40%  dock
+ *    no program                                       [Program]
  * </pre>
  * Een robot in een stuk wereld dat niet geladen is, staat er grijs bij ("far away"): die kun je van hier
- * niet aan- of uitzetten, maar een programma wacht op hem tot hij terug is. De lijst komt van de server (zie
- * robot/Robots.snapshot, uit BotNetwork).
+ * niet aan- of uitzetten, maar een programma wacht op hem tot hij terug is. Zo'n robot heeft de knop Delete
+ * (18 oktober): hij gaat uit de lijst (eerst "Sure?", nog een keer klikken). Bestaat hij toch nog, dan komt hij
+ * vanzelf terug als hij weer geladen is. De lijst komt van de server (zie robot/Robots.snapshot, uit BotNetwork).
  */
 final class RobotsApp {
     private static final int ROW_H = 31;
@@ -46,6 +50,9 @@ final class RobotsApp {
     private @Nullable EditBox nameBox;
     /** Voor welke robot je een programma kiest (zijn nummer), of null. */
     private @Nullable String choosing;
+    /** Delete vraagt eerst "Sure?": voor welke robot (zijn nummer), en tot wanneer die vraag geldt. */
+    private @Nullable String deleting;
+    private long deletingUntil;
 
     RobotsApp(SecurityOsScreen screen) {
         this.screen = screen;
@@ -76,6 +83,11 @@ final class RobotsApp {
 
     private String renameLabel(CompoundTag robot) {
         return robot.getString("id").equals(renaming) ? "Save" : "Rename";
+    }
+
+    /** De knop Delete van een robot ver weg: na de eerste klik staat er "Sure?" (4 seconden lang). */
+    private String deleteLabel(CompoundTag robot) {
+        return robot.getString("id").equals(deleting) && net.minecraft.Util.getMillis() < deletingUntil ? "Sure?" : "Delete";
     }
 
     /** De knop van de squad zegt meteen in welke squad hij zit: "Squad: Wave 1" (of gewoon "Squad"). */
@@ -186,6 +198,11 @@ final class RobotsApp {
             String rename = renameLabel(robot);
             right -= OsDraw.buttonWidth(font, rename) + 4;
             OsDraw.button(g, font, right, y + 2, rename, true, robot.getString("id").equals(renaming) ? HudStyle.GREEN : HudStyle.CYAN);
+        } else {
+            // Ver weg (of weg): uit de lijst halen (18 oktober).
+            String delete = deleteLabel(robot);
+            right -= OsDraw.buttonWidth(font, delete);
+            OsDraw.button(g, font, right, y + 2, delete, true, HudStyle.RED);
         }
         if (robot.getString("id").equals(renaming)) {
             OsDraw.field(g, a.x() + 4, y - 1, right - 6, y + 10, true);
@@ -269,6 +286,22 @@ final class RobotsApp {
                 startSquad(robot);
                 return;
             }
+            String delete = deleteLabel(robot);
+            int deleteW = OsDraw.buttonWidth(font, delete);
+            if (!robot.getBoolean("loaded") && OsDraw.inside(mx, my, a.x() + a.w() - 4 - deleteW, y + 2, deleteW, OsDraw.BUTTON_H)) {
+                // De eerste klik vraagt "Sure?", de tweede haalt hem echt uit de lijst.
+                if (delete.equals("Sure?")) {
+                    CompoundTag args = new CompoundTag();
+                    args.putString("id", robot.getString("id"));
+                    screen.send("robot_delete", args);
+                    deleting = null;
+                } else {
+                    deleting = robot.getString("id");
+                    deletingUntil = net.minecraft.Util.getMillis() + 4000;
+                }
+                renaming = null;
+                return;
+            }
             if (robot.getBoolean("loaded")) {
                 int right = a.x() + a.w() - 4;
                 int toggleW = OsDraw.buttonWidth(font, switchLabel(robot));
@@ -299,6 +332,7 @@ final class RobotsApp {
             y += ROW_H;
         }
         renaming = null;
+        deleting = null; // ergens anders geklikt: de vraag "Sure?" vervalt
     }
 
     /** Een klik in de lijst met programma's: dat programma naar de robot, of Cancel (of ernaast: ook dicht). */
@@ -326,7 +360,25 @@ final class RobotsApp {
     /** Alleen voor de screenshot-rondleiding: de lijst met programma's voor de eerste robot. */
     void tourChooseProgram() {
         List<CompoundTag> robots = robots();
+        scroll = 0;
+        deleting = null;
         choosing = robots.isEmpty() ? null : robots.getFirst().getString("id");
+    }
+
+    /**
+     * Alleen voor de screenshot-rondleiding: de eerste robot ver weg in beeld (twee robots erboven), met "Sure?" op zijn
+     * knop Delete.
+     */
+    void tourAskDelete() {
+        List<CompoundTag> robots = robots();
+        for (int i = 0; i < robots.size(); i++) {
+            if (!robots.get(i).getBoolean("loaded")) {
+                scroll = Math.max(0, i - 2);
+                deleting = robots.get(i).getString("id");
+                deletingUntil = net.minecraft.Util.getMillis() + 60_000;
+                return;
+            }
+        }
     }
 
     // ================================================================ Een andere naam
@@ -395,5 +447,6 @@ final class RobotsApp {
     void blur() {
         renaming = null;
         choosing = null;
+        deleting = null;
     }
 }

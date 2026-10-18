@@ -39,6 +39,11 @@ import org.jetbrains.annotations.Nullable;
  * "Guard 2"... (een drone: "Drone 1"). In je code noem je hem bij die naam, daarom mag een eigenaar een naam
  * maar één keer hebben, voor robots en drones samen.
  *
+ * Robots die er niet meer zijn (18 oktober, jouw wens: "zorg dat je robots die niet meer bestaan verdwijnen"):
+ * staat een robot in een stuk wereld dat geladen is en draait, maar is hij er niet, dan gaat hij vanzelf uit de
+ * lijst (zie {@link #sweep}). Een robot in een stuk wereld dat niet geladen is, kun je zelf weghalen met Delete in
+ * de app Robots (zie Robots.desktop).
+ *
  * Dit is "SavedData": Minecraft bewaart het in de wereld (data/imttech_bots.dat van de overworld).
  */
 public final class BotNetwork extends SavedData {
@@ -89,8 +94,17 @@ public final class BotNetwork extends SavedData {
 
     /** Een robot meldt zich: zet hem erin of werk hem bij (en geef hem zijn wachtende programma, als hij verbinding heeft). */
     public void update(Bot bot) {
-        if (!(bot.level() instanceof ServerLevel level)) {
+        // Wie al weg is (opgepakt of kapot), komt er niet meer in. Vroeger zette de knop Pick up hem hierdoor meteen
+        // terug in de lijst: een "spookrobot" die zijn naam bezet hield (18 oktober).
+        if (!(bot.level() instanceof ServerLevel level) || !bot.isAlive()) {
             return;
+        }
+        // Nieuw in de lijst (of terug na Delete), met een naam die een andere robot van zijn eigenaar al heeft? Dan krijgt
+        // hij een vrije naam: in je code noem je een robot bij zijn naam, dus die mag maar één keer bestaan. (Robots van
+        // niemand, zoals die van Biebia, krijgen hun naam al van TowerDrones.)
+        if (bot.owner() != null && !robots.containsKey(bot.getUUID()) && bot.hasCustomName()
+                && nameTaken(bot.owner(), bot.getName().getString(), bot.getUUID())) {
+            bot.entity().setCustomName(net.minecraft.network.chat.Component.literal(freeName(bot.owner(), bot.programKind())));
         }
         CompoundTag waiting = pending.get(bot.getUUID());
         boolean connected = (waiting != null || pendingSwitch.containsKey(bot.getUUID()) || pendingOrders.containsKey(bot.getUUID()))
@@ -152,6 +166,69 @@ public final class BotNetwork extends SavedData {
         }
         if (gone != null && level != null) {
             checkSquad(level, gone.core(), gone.squad());
+        }
+    }
+
+    // ================================================================ Robots die er niet meer zijn (18 oktober)
+
+    /** Zo lang (ticks) moet een robot stil zijn voor we kijken of hij er nog is: hij meldt zich om de seconde. */
+    private static final int SILENT_TICKS = 60;
+    /** Om de zoveel ticks kijken we dat na (zie onServerTick). */
+    private static final int SWEEP_TICKS = 40;
+
+    /** Na elke servertik: om de twee seconden de robots nakijken die zich niet meer melden. */
+    public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        if (server.getTickCount() % SWEEP_TICKS == 0) {
+            get(server).sweep(server);
+        }
+    }
+
+    /**
+     * Haalt de robots uit de lijst die er niet meer zijn, en geeft ze terug. Een robot meldt zich om de seconde. Deed
+     * hij dat al 3 seconden niet, terwijl het stuk wereld waar hij het laatst stond (en alles eromheen) geladen is en
+     * draait, dan zou hij daar nu moeten staan: is hij er niet, dan bestaat hij niet meer (een robot van voor deze
+     * fix die je had opgepakt, of een die bij een crash verloren ging). Het logboek van zijn kern zegt het. Een robot
+     * in een stuk wereld dat niet geladen is, laten we staan ("far away"): misschien is hij er nog.
+     */
+    public List<Entry> sweep(MinecraftServer server) {
+        List<Entry> gone = new ArrayList<>();
+        long now = server.overworld().getGameTime();
+        for (Entry entry : List.copyOf(robots.values())) {
+            if (now - entry.seen() < SILENT_TICKS) {
+                continue;
+            }
+            ServerLevel level = server.getLevel(entry.pos().dimension());
+            if (level == null || !watched(level, entry.pos().pos())
+                    || level.getEntity(entry.id()) instanceof Bot bot && bot.isAlive()) {
+                continue;
+            }
+            remove(entry.id(), level);
+            gone.add(entry);
+            log(server, entry, entry.name() + " no longer exists, so it was taken off the list");
+        }
+        return gone;
+    }
+
+    /**
+     * Zou een robot op deze plek nu gevonden worden? Dat is zo als dit stuk wereld (chunk) draait en zijn wezens
+     * geladen zijn (wezens laden apart, iets na de blokken). Liep of vloog hij sinds zijn laatste melding nog een paar
+     * blokken verder, de chunk ernaast in, dan vinden we hem daar ook: een chunk naast een draaiende chunk is altijd
+     * geladen (Minecraft laadt rond elke draaiende chunk een rand).
+     */
+    private static boolean watched(ServerLevel level, BlockPos pos) {
+        return level.areEntitiesLoaded(net.minecraft.world.level.ChunkPos.asLong(pos)) && level.isPositionEntityTicking(pos);
+    }
+
+    /** Een regel in het logboek van de kern in wiens gebied deze robot stond (als die kern geladen is). */
+    private static void log(MinecraftServer server, Entry entry, String text) {
+        if (entry.core() == null) {
+            return;
+        }
+        ServerLevel level = server.getLevel(entry.core().dimension());
+        if (level != null && level.isLoaded(entry.core().pos())
+                && level.getBlockEntity(entry.core().pos()) instanceof SecurityCoreBlockEntity core) {
+            core.logEvent(com.senne.imttech.security.os.EventLog.Type.DEVICE, text);
         }
     }
 

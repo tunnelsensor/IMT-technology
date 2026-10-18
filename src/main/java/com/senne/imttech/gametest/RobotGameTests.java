@@ -494,9 +494,10 @@ public final class RobotGameTests {
 
         // De kern meldt zich pas een tick na het neerzetten aan; de robot meldt zich om de seconde opnieuw.
         helper.runAfterDelay(25, () -> {
-            ListTag list = Robots.snapshot(helper.getLevel(), core);
-            check(list.size() == 1, "De app ziet " + list.size() + " robots");
-            CompoundTag row = list.getCompound(0);
+            // Op zijn nummer zoeken: robots van eerdere tests blijven in de testwereld staan, en die horen bij de
+            // dichtstbijzijnde kern (soms deze).
+            CompoundTag row = row(helper, core, robot);
+            check(row != null, "De app ziet de robot niet");
             check("Guard 1".equals(row.getString("n")) && row.getBoolean("loaded") && row.getBoolean("dock")
                     && !row.getBoolean("on") && "standby".equals(row.getString("st")) && row.getInt("bat") == 100,
                     "De rij van de robot klopt niet: " + row);
@@ -512,7 +513,7 @@ public final class RobotGameTests {
             rename.putString("name", "Lab guard");
             SecurityOs.handleAction(owner, new OsActionPayload(coreAbs, "robot_rename", rename));
             check("Lab guard".equals(robot.getCustomName().getString()), "Van de desktop hernoemd heet hij " + robot.getCustomName().getString());
-            check(Robots.snapshot(helper.getLevel(), core).getCompound(0).getBoolean("on"), "De app ziet niet dat hij aan staat");
+            check(row(helper, core, robot).getBoolean("on"), "De app ziet niet dat hij aan staat");
 
             CompoundTag bad = new CompoundTag();
             bad.putString("id", "not-a-robot");
@@ -521,6 +522,144 @@ public final class RobotGameTests {
             check(robot.isActive(), "Een rare id deed toch iets");
             SecurityOs.close(owner);
             helper.succeed();
+        });
+    }
+
+    // ================================================================ 18 oktober: robots die er niet meer zijn
+
+    /**
+     * Oppakken met de knop Pick up van het robotscherm (zoals in het spel): hij is weg uit BotNetwork, en zet je hem
+     * weer neer, dan heet hij weer "Guard 1". Vroeger bleef er een spookrobot "Guard 1" in de lijst staan, en werd de
+     * robot die je weer neerzette "Guard 2". Afbranden (kortsluiting, aangezet met de knop) laat ook niets achter.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "robot_config")
+    public static void robot_pick_up_leaves_no_ghost(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 1, 8), "ghost-owner");
+        owner.getAbilities().instabuild = false;
+        BotNetwork network = BotNetwork.get(helper.getLevel());
+        GuardRobotEntity robot = dockedRobot(helper, owner, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+        check("Guard 1".equals(robot.getCustomName().getString()), "De robot heet " + robot.getCustomName().getString());
+        Robots.handleAction(owner, new RobotActionPayload(robot.getId(), RobotActionPayload.Op.PICK_UP, ""));
+        check(!robot.isAlive(), "Opgepakt staat hij nog in de wereld");
+        check(network.get(robot.getUUID()) == null && network.ownedBy(owner.getUUID()).isEmpty(),
+                "Opgepakt met de knop staat hij nog in BotNetwork: " + network.ownedBy(owner.getUUID()));
+
+        // Weer neerzetten met het item uit de rugzak: hij heet nog steeds Guard 1.
+        ItemStack item = ItemStack.EMPTY;
+        for (ItemStack stack : owner.getInventory().items) {
+            if (stack.is(ModItems.GUARD_ROBOT.get())) {
+                item = stack;
+            }
+        }
+        check(!item.isEmpty(), "Het item zit niet in de rugzak");
+        GuardRobotEntity again = placeOnDock(helper, owner, new BlockPos(4, 1, 4), item);
+        check("Guard 1".equals(again.getCustomName().getString()), "Weer neergezet heet hij " + again.getCustomName().getString());
+
+        float before = ImtConfig.Robots.BURN_CHANCE;
+        try {
+            ImtConfig.Robots.BURN_CHANCE = 1.0f;
+            again.setBoard(BotBoard.EMPTY.with(5, "gun").withBridge(4));
+            Robots.handleAction(owner, new RobotActionPayload(again.getId(), RobotActionPayload.Op.TURN_ON, ""));
+            check(again.isDeadOrDying(), "Met brandkans 1 brandde hij niet af");
+            check(network.get(again.getUUID()) == null, "Afgebrand staat hij nog in BotNetwork");
+        } finally {
+            ImtConfig.Robots.BURN_CHANCE = before;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Een robot die er niet meer is (hier: weg zonder zich af te melden, zoals bij een crash) gaat vanzelf uit
+     * BotNetwork zodra hij 3 seconden stil is terwijl zijn stuk wereld geladen is, en het logboek van de kern zegt het.
+     * Een robot in een stuk wereld dat niet geladen is, blijft staan; een robot die er gewoon is ook.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_sweep")
+    public static void robot_network_forgets_robots_that_are_gone(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "sweep-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        GuardRobotEntity stays = dockedRobot(helper, owner, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+        GuardRobotEntity lost = dockedRobot(helper, owner, new BlockPos(8, 1, 4), RobotParts.DEFAULT);
+        BotNetwork network = BotNetwork.get(helper.getLevel());
+        // Ver weg, in een stuk wereld dat niet geladen is: hij staat alleen in BotNetwork (nooit in de wereld gezet).
+        GuardRobotEntity far = ModEntities.GUARD_ROBOT.get().create(helper.getLevel());
+        BlockPos farPos = helper.absolutePos(new BlockPos(4, 1, 4)).offset(20_000, 0, 20_000);
+        far.moveTo(farPos.getX() + 0.5, farPos.getY(), farPos.getZ() + 0.5);
+        far.setOwner(owner);
+        far.setCustomName(net.minecraft.network.chat.Component.literal("Far guard"));
+        network.update(far);
+        check(network.get(far.getUUID()) != null, "De robot ver weg kwam niet in BotNetwork");
+        helper.runAfterDelay(25, () -> {
+            // Weg zonder af te melden; zijn stuk wereld blijft geladen.
+            lost.remove(net.minecraft.world.entity.Entity.RemovalReason.UNLOADED_TO_CHUNK);
+            check(network.get(lost.getUUID()) != null, "Hij ging meteen al uit BotNetwork");
+        });
+        helper.runAfterDelay(130, () -> {
+            check(network.get(lost.getUUID()) == null, "De verdwenen robot staat na 5 seconden nog in BotNetwork");
+            check(network.get(stays.getUUID()) != null, "De robot die er wel is, ging uit BotNetwork");
+            check(network.get(far.getUUID()) != null, "De robot ver weg (niet geladen) ging uit BotNetwork");
+            check(core.log().entries().stream().anyMatch(entry -> entry.text().equals("Guard 2 no longer exists, so it was taken off the list")),
+                    "Het logboek zegt niet dat Guard 2 weg is");
+            // Opruimen: de testwereld laat robots staan, en die zouden zich bij de kern van een volgende test melden.
+            network.remove(far.getUUID());
+            stays.discard();
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Delete in de app Robots (18 oktober): een robot die de desktop niet kan bereiken, gaat uit de lijst en het logboek
+     * zegt wie dat deed; een robot die er gewoon is niet. Bestaat hij toch nog, dan komt hij terug zodra hij weer in de
+     * wereld is, en heeft een andere robot intussen zijn naam, dan krijgt hij een nieuwe.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "robot_delete")
+    public static void robot_delete_from_the_desktop(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "delete-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
+        GuardRobotEntity here = dockedRobot(helper, owner, new BlockPos(8, 1, 8), RobotParts.DEFAULT);
+        GuardRobotEntity away = dockedRobot(helper, owner, new BlockPos(4, 1, 8), RobotParts.DEFAULT);
+        helper.runAfterDelay(25, () -> {
+            BotNetwork network = BotNetwork.get(helper.getLevel());
+            // "Ver weg": uit de wereld (zoals in een stuk wereld dat niet geladen is), maar nog in de lijst.
+            CompoundTag saved = new CompoundTag();
+            away.saveWithoutId(saved);
+            away.remove(net.minecraft.world.entity.Entity.RemovalReason.UNLOADED_TO_CHUNK);
+            CompoundTag hereRow = row(helper, core, here);
+            CompoundTag awayRow = row(helper, core, away);
+            check(hereRow != null && hereRow.getBoolean("loaded") && awayRow != null && !awayRow.getBoolean("loaded"),
+                    "De app ziet de robots niet goed: " + hereRow + " en " + awayRow);
+
+            SecurityOs.open(owner, coreAbs);
+            CompoundTag deleteHere = new CompoundTag();
+            deleteHere.putString("id", here.getUUID().toString());
+            SecurityOs.handleAction(owner, new OsActionPayload(coreAbs, "robot_delete", deleteHere));
+            check(network.get(here.getUUID()) != null && here.isAlive(), "Delete haalde een robot die er gewoon is weg");
+            CompoundTag deleteAway = new CompoundTag();
+            deleteAway.putString("id", away.getUUID().toString());
+            SecurityOs.handleAction(owner, new OsActionPayload(coreAbs, "robot_delete", deleteAway));
+            check(network.get(away.getUUID()) == null, "Delete haalde de robot ver weg niet uit de lijst");
+            check(row(helper, core, away) == null && row(helper, core, here) != null, "De app ziet de weggehaalde robot nog");
+            check(core.log().entries().stream().anyMatch(entry -> entry.text().equals("delete-owner deleted Guard 2 from the list")),
+                    "Het logboek zegt niet wie Guard 2 weghaalde");
+            SecurityOs.close(owner);
+
+            // Een nieuwe robot krijgt de vrije naam Guard 2. Dan komt de oude toch terug: hij krijgt Guard 3.
+            GuardRobotEntity newer = dockedRobot(helper, owner, new BlockPos(4, 1, 4), RobotParts.DEFAULT);
+            check("Guard 2".equals(newer.getCustomName().getString()), "De nieuwe robot heet " + newer.getCustomName().getString());
+            GuardRobotEntity back = ModEntities.GUARD_ROBOT.get().create(helper.getLevel());
+            back.load(saved);
+            helper.getLevel().addFreshEntity(back);
+            helper.runAfterDelay(25, () -> {
+                BotNetwork.Entry entry = network.get(back.getUUID());
+                check(entry != null, "Terug staat hij niet weer in de lijst");
+                check("Guard 3".equals(entry.name()) && "Guard 3".equals(back.getCustomName().getString()),
+                        "Terug heet hij " + back.getCustomName().getString() + " (in de lijst: " + entry.name() + ")");
+                // Opruimen: de testwereld laat robots staan, en die zouden zich bij de kern van een volgende test melden.
+                here.discard();
+                newer.discard();
+                back.discard();
+                helper.succeed();
+            });
         });
     }
 
@@ -660,10 +799,25 @@ public final class RobotGameTests {
         return count;
     }
 
+    /** De rij van deze robot in de app Robots van deze kern, of null als hij er niet in staat. */
+    private static @org.jetbrains.annotations.Nullable CompoundTag row(GameTestHelper helper, SecurityCoreBlockEntity core,
+                                                                       net.minecraft.world.entity.Entity robot) {
+        for (Tag element : Robots.snapshot(helper.getLevel(), core)) {
+            if (((CompoundTag) element).getString("id").equals(robot.getUUID().toString())) {
+                return (CompoundTag) element;
+            }
+        }
+        return null;
+    }
+
     /** Een robot die je met het item op een dock zet (gekoppeld aan dat dock). */
     private static GuardRobotEntity dockedRobot(GameTestHelper helper, ServerPlayer player, BlockPos dock, RobotParts parts) {
         helper.setBlock(dock, ModBlocks.ROBOT_DOCK.get());
-        ItemStack stack = GuardRobotItem.create(new RobotData(parts, BotBoard.EMPTY, ""));
+        return placeOnDock(helper, player, dock, GuardRobotItem.create(new RobotData(parts, BotBoard.EMPTY, "")));
+    }
+
+    /** Dit robot-item op het dock dat er al staat. */
+    private static GuardRobotEntity placeOnDock(GameTestHelper helper, ServerPlayer player, BlockPos dock, ItemStack stack) {
         player.setItemInHand(InteractionHand.MAIN_HAND, stack);
         BlockPos abs = helper.absolutePos(dock);
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);

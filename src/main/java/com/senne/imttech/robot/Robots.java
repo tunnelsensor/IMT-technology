@@ -315,8 +315,9 @@ public final class Robots {
 
     /**
      * Een knop uit de app Robots: aan/uit ("robot_switch"), een andere naam ("robot_rename"), (hoofdstuk 23) een
-     * programma ("robot_program") of (hoofdstuk 26) een squad ("robot_squad"). Alleen voor robots in het gebied van
-     * deze kern; aan/uit, hernoemen en de squad alleen als ze nu geladen zijn. Geeft de melding voor de taakbalk terug.
+     * programma ("robot_program"), (hoofdstuk 26) een squad ("robot_squad") of (18 oktober) weghalen ("robot_delete").
+     * Alleen voor robots in het gebied van deze kern; aan/uit, hernoemen en de squad alleen als ze nu geladen zijn,
+     * weghalen juist alleen als ze dat niet zijn. Geeft de melding voor de taakbalk terug.
      */
     public static Desktop desktop(ServerPlayer player, SecurityCoreBlockEntity core, String op, CompoundTag args) {
         ServerLevel level = player.serverLevel();
@@ -333,6 +334,9 @@ public final class Robots {
         }
         if (op.equals("robot_program")) {
             return upload(level, core, network, entry, args.getString("program"));
+        }
+        if (op.equals("robot_delete")) {
+            return delete(player, core, network, entry);
         }
         if (!(level.getEntity(id) instanceof BotEntity robot) || !robot.isAlive()) {
             return new Desktop(entry.name() + " is too far away (its chunk is not loaded)", true);
@@ -394,6 +398,23 @@ public final class Robots {
         robot.setProgram(program);
         network.update(robot);
         return new Desktop(program == null ? robotName + " has no program now" : "Uploaded " + what + " to " + robotName, false);
+    }
+
+    /**
+     * Delete in de app Robots (18 oktober, jouw keuze: "alleen voor onbereikbare"): een robot die de desktop niet kan
+     * bereiken (zijn stuk wereld is niet geladen, of hij bestaat niet meer) gaat uit de lijst, met alles wat er op hem
+     * wachtte (een programma, een opdracht). Bestaat hij toch nog, dan komt hij vanzelf terug zodra hij weer geladen
+     * is. Een robot die er gewoon is, haal je weg door hem op te pakken (sneak + rechtsklik, Pick up).
+     */
+    private static Desktop delete(ServerPlayer player, SecurityCoreBlockEntity core, BotNetwork network, BotNetwork.Entry entry) {
+        ServerLevel robotLevel = player.getServer().getLevel(entry.pos().dimension());
+        if (robotLevel != null && robotLevel.getEntity(entry.id()) instanceof BotEntity robot && robot.isAlive()) {
+            return new Desktop(entry.name() + " is here: pick it up (sneak + right-click) to remove it", true);
+        }
+        network.remove(entry.id(), player.serverLevel());
+        core.logEvent(com.senne.imttech.security.os.EventLog.Type.DEVICE,
+                player.getGameProfile().getName() + " deleted " + entry.name() + " from the list");
+        return new Desktop(entry.name() + " deleted", false);
     }
 
     /** Wat de desktop in de taakbalk zegt na een knop van de app Robots. */

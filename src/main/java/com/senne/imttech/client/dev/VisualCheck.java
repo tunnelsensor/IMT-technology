@@ -1182,13 +1182,39 @@ public final class VisualCheck {
             // Even wachten: de robots melden zich om de seconde, nu bij deze kern. (Dichtbij gaan staan: de desktop
             // gaat alleen open als je bij de kern bent.)
             t.view(0, 67.5, -60, 68.5, 180, 15);
-            t.onServer(40, player -> com.senne.imttech.security.os.SecurityOs.open(player, robotCore));
+            // 18 oktober: een robot die er niet meer is ("far away", met de knop Delete). Hij staat alleen in BotNetwork
+            // (nooit in de wereld gezet); na zijn screenshot halen we hem weg zoals de knop dat doet.
+            com.senne.imttech.robot.GuardRobotEntity[] ghost = new com.senne.imttech.robot.GuardRobotEntity[1];
+            t.onServer(40, player -> {
+                ghost[0] = com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get().create(player.serverLevel());
+                if (ghost[0] != null) {
+                    ghost[0].moveTo(robotCore.getX() - 6.5, robotCore.getY(), robotCore.getZ() + 4.5);
+                    ghost[0].setOwner(player);
+                    ghost[0].setCustomName(net.minecraft.network.chat.Component.literal("Old guard"));
+                    com.senne.imttech.bot.BotNetwork.get(player.serverLevel()).update(ghost[0]);
+                }
+                com.senne.imttech.security.os.SecurityOs.open(player, robotCore);
+            });
             t.step(10, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
                     os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ROBOTS);
                 }
             });
             t.shot(15, "rb13_os_robots");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourRobotsAskDelete();
+                }
+            });
+            t.shot(5, "rb26_os_robot_delete");
+            t.onServer(0, player -> {
+                if (ghost[0] != null) {
+                    net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                    args.putString("id", ghost[0].getUUID().toString());
+                    com.senne.imttech.security.os.SecurityOs.handleAction(player,
+                            new com.senne.imttech.network.OsActionPayload(robotCore, "robot_delete", args));
+                }
+            });
             // Hoofdstuk 23: de knop Program van de eerste robot: de robotprogramma's van deze server.
             t.step(0, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {

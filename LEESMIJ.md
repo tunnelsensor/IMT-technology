@@ -863,6 +863,15 @@ programma heeft, staat hij gewoon en kijkt hij rond; programma's, modules en sch
 met hun toestand, batterij en dock; ook daar zet je ze aan en uit en geef je ze een andere naam (ook
 op afstand). Een robot in een stuk wereld dat niet geladen is, staat er grijs bij ("far away").
 
+**Een robot weghalen.** Pak hem op (Pick up) of laat hem kapotgaan: dan is hij meteen uit je lijst. Een
+robot die er niet meer is (bijvoorbeeld een robot die je vóór 18 oktober oppakte: die bleef per ongeluk
+in de lijst staan), verdwijnt vanzelf uit de lijst zodra het stuk wereld waar hij stond geladen is; het
+logboek van je kern zegt dan "Guard 3 no longer exists, so it was taken off the list". Een robot die
+grijs "far away" staat, heeft de knop **Delete**: klik, dan staat er **Sure?**, en klik nog eens. Hij
+gaat uit de lijst (met een programma of opdracht die op hem wachtte). Bestond hij toch nog, dan komt hij
+vanzelf terug zodra hij weer geladen is; heeft intussen een andere robot zijn naam, dan krijgt hij een
+nieuwe ("Guard 3"). Een robot die er gewoon is, kun je niet met Delete weghalen: pak hem dan op.
+
 Gaat een robot echt kapot (zijn leven is op), dan blijft elk onderdeel met een kans heel
 (`partSurviveChance`, standaard de helft) en valt het op de grond. Je torentjes laten robots met rust.
 

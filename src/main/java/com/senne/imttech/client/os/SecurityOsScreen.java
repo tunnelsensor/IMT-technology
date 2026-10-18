@@ -259,6 +259,12 @@ public class SecurityOsScreen extends Screen {
         robots.tourChooseProgram();
     }
 
+    /** Alleen voor de screenshot-rondleiding: in de app Robots "Sure?" op Delete van de eerste robot ver weg (18 oktober). */
+    public void tourRobotsAskDelete() {
+        openApp(App.ROBOTS);
+        robots.tourAskDelete();
+    }
+
     /** Alleen voor de screenshot-rondleiding: in de app Logic de Help scrollen tot dit kopje (hoofdstuk 23). */
     public void tourLogicHelpAt(String header) {
         openApp(App.LOGIC);

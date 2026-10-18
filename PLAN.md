@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 286 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 289 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -2969,6 +2969,47 @@ Ik doe dit vóór hoofdstuk 27.
 - [ ] **4. De for-lus in de blokjes** — het blok FOR, de Help, Ctrl+Spatie, de voorbeelden; tests, screenshots,
       LEESMIJ en de showcase.
 
+### 29. Robots die niet meer bestaan (18 oktober)
+
+Jouw wens: "zorg dat je robots die niet meer bestaan verdwijnen en dat je ze kunt verwijderen en dan niet meer in
+je systeem staan".
+
+**Wat ik vond**: in je wereld Bunker (TechModPack) stonden 9 robots in de lijst, maar er bestaan er maar 3 (Guard 7,
+8 en 9, op drie docks). Guard 1 tot en met 6 waren spookrobots. Oorzaak: de knop **Pick up** van het robotscherm
+pakte de robot op (hij ging uit de lijst), en meldde hem daarna per ongeluk meteen weer aan. Zette je hem weer neer,
+dan was zijn naam nog bezet door zijn eigen spook, dus heette hij "Guard 2", dan "Guard 3"... Hetzelfde gebeurde als
+een robot afbrandde door een kortsluiting terwijl je hem aanzette. De test van toen pakte hem op zonder de knop,
+daarom zag hij het niet.
+
+**Jouw keuze**: Delete alleen voor robots die je systeem niet kan bereiken ("far away"). Een werkende robot haal je
+weg door hem op te pakken.
+
+- [x] **1. Geen spook meer** — een robot die al weg is (opgepakt of kapot), meldt zich niet meer aan bij `BotNetwork`.
+      Een robot die nieuw in de lijst komt met een naam die een andere robot van dezelfde eigenaar al heeft (hij komt
+      terug na Delete, of iemand kopieerde hem met WorldEdit), krijgt een vrije naam ("Guard 3").
+- [x] **2. Spoken ruimen zichzelf op** — om de 2 seconden kijkt de server de robots na die zich al 3 seconden niet
+      meer meldden (een robot meldt zich om de seconde). Is het stuk wereld waar hij het laatst stond geladen en draait
+      het, en is hij er niet, dan bestaat hij niet meer: hij gaat uit de lijst, en het logboek van zijn kern zegt
+      "Guard 3 no longer exists, so it was taken off the list". In je wereld Bunker verdwijnen Guard 1 tot en met 6 zo
+      vanzelf zodra je in je basis bent. Een robot in een stuk wereld dat niet geladen is, laat de server staan.
+- [x] **3. Delete in de app Robots** — een robot die grijs "far away" staat, heeft rechtsboven een rode knop
+      **Delete**; die vraagt eerst **Sure?** (nog een keer klikken, 4 seconden). Hij gaat uit de lijst, met een
+      programma, opdracht of aan/uit dat op hem wachtte, en het logboek zegt wie het deed ("Senne deleted Guard 3 from
+      the list"). Bestaat hij toch nog, dan komt hij vanzelf terug zodra hij weer geladen is. Een robot die er gewoon
+      is, haalt Delete niet weg: "Guard 7 is here: pick it up (sneak + right-click) to remove it".
+
+Tests: oppakken met de knop laat geen spook achter en hij heet daarna weer Guard 1; afbranden ook niet
+(`robot_pick_up_leaves_no_ghost`); een verdwenen robot gaat na een paar seconden uit de lijst, een robot ver weg en
+een robot die er is blijven (`robot_network_forgets_robots_that_are_gone`); Delete werkt alleen voor een robot ver
+weg, en die komt terug als Guard 3 als een nieuwe robot intussen Guard 2 heet (`robot_delete_from_the_desktop`).
+
+- [x] **Afronding** — 289 tests: 286 groen, de 3 rode van hoofdstuk 14 stap 2 (jouw stroomwaarden). Onderweg gevonden:
+      de testwereld ruimt robots van eerdere tests niet op, en die melden zich bij de dichtstbijzijnde kern; daardoor
+      zag `robot_desktop_app` soms 3 robots in plaats van 1. Die test zoekt zijn robot nu op zijn nummer, en de nieuwe
+      tests ruimen hun robots op. Screenshot `rb26_os_robot_delete` (`-Ponly=robots`): een robot "far away" met
+      **Sure?** op zijn knop Delete. In de showcase (82, "Guard robots") komen er aan het eind twee spookrobots bij:
+      Old guard gaat weg met Delete, Lost guard verdwijnt vanzelf. LEESMIJ.md: "Een robot weghalen".
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -3035,6 +3076,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Robots die niet meer bestaan (18 oktober)**: getest met 3 nieuwe tests en gezien op `rb26`. Probeer zelf in je
+      wereld Bunker (met het nieuwe jar): ga naar je basis en open de app Robots. Na een paar seconden zijn Guard 1 tot
+      en met 6 weg (het logboek van je kern zegt het per robot), en Guard 7, 8 en 9 blijven. Pak er een op met Pick up
+      en zet hem terug: hij houdt zijn naam.
 - [ ] **Training (16 oktober)**: gezien op screenshots (`tr01`-`tr07`) en in de showcase (87), getest met 9 nieuwe
       tests. Niet gehoord: de "zap" van een treffer, het aftellen en de "go!" (tikjes van een nootblok). Probeer zelf
       met een vriend als trainee (of jezelf, in survival): of 1 seconde trager en 1 seconde zonder nieuwe treffer goed

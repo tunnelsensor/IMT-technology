@@ -236,8 +236,8 @@ public final class SecurityOs {
             case "cam_watch" -> com.senne.imttech.robot.Robots.watched(player.serverLevel(), core, args.getInt("robot"));
             // De app Training (hoofdstuk 26): de training stoppen.
             case "training_stop" -> notify(player, core, session, com.senne.imttech.training.Trainings.stop(player, core), false);
-            case "robot_switch", "robot_rename", "robot_program", "robot_squad" -> {
-                // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23), zie robot/Robots.
+            case "robot_switch", "robot_rename", "robot_program", "robot_squad", "robot_delete" -> {
+                // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23; weghalen: 18 oktober), zie robot/Robots.
                 com.senne.imttech.robot.Robots.Desktop result = com.senne.imttech.robot.Robots.desktop(
                         player, core, payload.op(), args);
                 notify(player, core, session, result.text(), result.error());
