@@ -2937,6 +2937,38 @@ sterft of uitlogt; creative wordt geweigerd.
 
 Bouwen gaat in volgorde, één stap per commit, met bij elke stap de tests, de screenshots en de showcase.
 
+### 28. Uit je showcase-notities (16 oktober)
+
+Jouw notities in `showcase-notities.md`:
+- bij **34. Relay groups**: "Ik wil dat je de groups niet meer in de redstone tab kunt configureren, dit kan
+  enkel nog op de desktop";
+- bij **76. Logic: names, sums and loops**: "ik wil dat de repeat(3) zoals een for loop is zodat je je variable
+  vb i ook kunt gebruiken" en "de forever loop mag ook weg, een for en while is voldoende";
+- bij **83. Soldering modules**: "maak al de robot part non stackble" en "zorg dat de stark core geen drones
+  vanzelf maakt" (dat tweede deed hoofdstuk 25 al, `225f0ce`).
+
+**Mijn invulling** (zeg het als je het anders wil):
+- De 16 robotonderdelen (hoofd, lijf, armen, benen) stapelen niet meer: één per vakje. De modules wel nog (tot
+  16): die soldeer je op een printplaat, het zijn geen stukken van het lijf.
+- Groepen: in de Redstone-tab van het G-menu kun je geen groepen meer maken, hernoemen, verplaatsen of
+  verwijderen (de knop Groups gaat weg), en in het naamscherm van een relais kies je geen groep meer. Je ziet je
+  groepen daar wel nog, met hun knoppen ON, OFF en PULSE, en onderaan staat waar je ze instelt: in de app
+  **Groups** op de desktop.
+- Lussen zoals in Python: `for i in range(3):` (i is 0, dan 1, dan 2) en `for i in range(1, 4):` (1, 2, 3); het
+  bereik mag ook een naam of een som zijn (`range(count)`, `range(1, n + 1)`). `forever:` is weg: dat schrijf je
+  `while true:`. `repeat(3):` is weg: dat wordt `for i in range(3):`. Oude programma's zet ik bij het laden om
+  (een lus in een lus krijgt `j`, dan `k`...). In de blokjes wordt REPEAT een blok FOR (met de naam en het
+  bereik), en FOREVER gaat weg.
+
+Ik doe dit vóór hoofdstuk 27.
+
+- [x] **1. Robotonderdelen stapelen niet** — de 16 onderdelen stapelen tot 1 (de modules nog tot 16); de test
+      `robot_parts_are_items_with_recipes` kijkt het na.
+- [ ] **2. Groepen alleen op de desktop**
+- [ ] **3. De for-lus** — in de code, de controle en de tolk; `forever` en `repeat` weg; oude programma's omzetten.
+- [ ] **4. De for-lus in de blokjes** — het blok FOR, de Help, Ctrl+Spatie, de voorbeelden; tests, screenshots,
+      LEESMIJ en de showcase.
+
 ---
 
 ## Nog nooit in het spel bekeken

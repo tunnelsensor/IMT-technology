@@ -259,7 +259,8 @@ public final class ModItems {
 
     /**
      * Hoofdstuk 21: de 16 onderdelen van een guard robot, per onderdeel (hoofd, lijf, armen, benen) de vier
-     * stijlen op volgorde van RobotStyle. Ze heten "commando_head" tot "super_battle_legs".
+     * stijlen op volgorde van RobotStyle. Ze heten "commando_head" tot "super_battle_legs". Ze stapelen niet
+     * (16 oktober: "maak al de robot part non stackble"): één onderdeel per vakje.
      */
     public static final Map<RobotSlot, List<DeferredItem<RobotPartItem>>> ROBOT_PARTS = registerRobotParts();
 
@@ -269,7 +270,7 @@ public final class ModItems {
             List<DeferredItem<RobotPartItem>> styles = new ArrayList<>();
             for (RobotStyle style : RobotStyle.values()) {
                 styles.add(ITEMS.registerItem(RobotPartItem.id(slot, style),
-                        properties -> new RobotPartItem(properties, slot, style), new Item.Properties().stacksTo(16)));
+                        properties -> new RobotPartItem(properties, slot, style), new Item.Properties().stacksTo(1)));
             }
             parts.put(slot, List.copyOf(styles));
         }

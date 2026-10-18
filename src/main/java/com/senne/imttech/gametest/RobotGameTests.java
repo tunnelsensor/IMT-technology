@@ -176,7 +176,10 @@ public final class RobotGameTests {
         helper.succeed();
     }
 
-    /** Alle 16 onderdelen bestaan als item ("commando_head" tot "super_battle_legs"), elk met een recept. */
+    /**
+     * Alle 16 onderdelen bestaan als item ("commando_head" tot "super_battle_legs"), elk met een recept. Ze stapelen
+     * niet (16 oktober: "maak al de robot part non stackble").
+     */
     @GameTest(template = ARENA, timeoutTicks = 20)
     public static void robot_parts_are_items_with_recipes(GameTestHelper helper) {
         for (RobotSlot slot : RobotSlot.values()) {
@@ -186,6 +189,7 @@ public final class RobotGameTests {
                 check(BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, id)),
                         "Het onderdeel " + id + " heet " + BuiltInRegistries.ITEM.getKey(item));
                 check(item.slot() == slot && item.style() == style, id + " weet niet wat het is");
+                check(new ItemStack(item).getMaxStackSize() == 1, id + " stapelt tot " + new ItemStack(item).getMaxStackSize());
                 ItemStack made = helper.getLevel().getRecipeManager()
                         .byKey(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, id))
                         .map(recipe -> recipe.value().getResultItem(helper.getLevel().registryAccess()))
@@ -267,7 +271,7 @@ public final class RobotGameTests {
 
         RobotParts parts = new RobotParts(RobotStyle.COMMANDO, RobotStyle.SUPER_BATTLE, RobotStyle.TRAINER, RobotStyle.BATTLE);
         for (RobotSlot slot : RobotSlot.values()) {
-            items.setItem(slot.ordinal(), new ItemStack(ModItems.robotPart(slot, parts.get(slot)), slot == RobotSlot.ARMS ? 2 : 1));
+            items.setItem(slot.ordinal(), new ItemStack(ModItems.robotPart(slot, parts.get(slot))));
         }
         check(RobotAssemblerBlockEntity.missing(items).equals(List.of("board")),
                 "Zonder printplaat ontbreekt: " + RobotAssemblerBlockEntity.missing(items));
@@ -284,10 +288,12 @@ public final class RobotGameTests {
         check(robot.is(ModItems.GUARD_ROBOT.get()), "Er ligt geen robot in het robotvakje");
         check(GuardRobotItem.data(robot).robotParts().equals(parts), "De robot heeft andere onderdelen: " + GuardRobotItem.data(robot));
         check(GuardRobotItem.data(robot).board().equals(soldered), "De robot heeft een andere printplaat");
-        check(items.getItem(RobotSlot.ARMS.ordinal()).getCount() == 1 && items.getItem(RobotSlot.HEAD.ordinal()).isEmpty()
+        check(items.getItem(RobotSlot.ARMS.ordinal()).isEmpty() && items.getItem(RobotSlot.HEAD.ordinal()).isEmpty()
                 && items.getItem(RobotAssemblerBlockEntity.BOARD).isEmpty(), "Er ging niet van elk onderdeel één af");
-        check(!assembler.assemble(), "Een tweede robot terwijl het robotvakje vol is");
 
+        // Onderdelen stapelen niet (16 oktober): een tweede paar armen leg je er los bij.
+        items.setItem(RobotSlot.ARMS.ordinal(), new ItemStack(ModItems.robotPart(RobotSlot.ARMS, RobotStyle.TRAINER)));
+        check(!assembler.assemble(), "Een tweede robot terwijl het robotvakje vol is");
         check(!assembler.takeApart(), "Uit elkaar terwijl er nog armen in hun vakje liggen");
         items.setItem(RobotSlot.ARMS.ordinal(), ItemStack.EMPTY);
         check(assembler.takeApart(), "Take apart lukte niet");
