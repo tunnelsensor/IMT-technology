@@ -54,6 +54,9 @@ public class TrainingStartScreen extends Screen {
     private @Nullable EditBox nameBox;
     private @Nullable Button modeButton;
     private @Nullable Button kindButton;
+    /** De knoppen - en + van Lives: bij Lethal weg (19 oktober: dan zijn er geen levens). */
+    private @Nullable Button livesDown;
+    private @Nullable Button livesUp;
 
     public TrainingStartScreen(BlockPos pos, Training.Settings settings) {
         super(Component.literal("Training Start"));
@@ -88,9 +91,9 @@ public class TrainingStartScreen extends Screen {
             mode = mode == Training.Mode.TRAINING_SHOTS ? Training.Mode.LETHAL : Training.Mode.TRAINING_SHOTS;
             refresh();
         }).bounds(left + VALUE_X, top + ROW_SHOTS - 6, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("-"), b -> lives = Math.max(1, lives - 1))
+        livesDown = addRenderableWidget(Button.builder(Component.literal("-"), b -> lives = Math.max(1, lives - 1))
                 .bounds(left + VALUE_X, top + ROW_LIVES - 6, 20, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("+"), b -> lives = Math.min(Training.Settings.MAX_LIVES, lives + 1))
+        livesUp = addRenderableWidget(Button.builder(Component.literal("+"), b -> lives = Math.min(Training.Settings.MAX_LIVES, lives + 1))
                 .bounds(left + VALUE_X + 70, top + ROW_LIVES - 6, 20, 20).build());
         addRenderableWidget(Button.builder(Component.literal("-"), b -> seconds = step(-1))
                 .bounds(left + VALUE_X, top + ROW_TIME - 6, 20, 20).build());
@@ -120,6 +123,11 @@ public class TrainingStartScreen extends Screen {
         }
         if (kindButton != null) {
             kindButton.setMessage(Component.literal(kind.title()));
+        }
+        // Lethal telt geen levens: dan kun je ze ook niet instellen (wat je koos, blijft bewaard voor Training shots).
+        if (livesDown != null && livesUp != null) {
+            livesDown.visible = mode.usesLives();
+            livesUp.visible = mode.usesLives();
         }
     }
 
@@ -163,7 +171,11 @@ public class TrainingStartScreen extends Screen {
         g.drawString(font, mode == Training.Mode.TRAINING_SHOTS ? "no damage: a hit costs a life" : "real damage",
                 left + VALUE_X + 106, top + ROW_SHOTS, HudStyle.argb(200, mode == Training.Mode.LETHAL ? HudStyle.RED : 0x9FC9D6), false);
         label(g, "Lives", top + ROW_LIVES);
-        centred(g, String.valueOf(lives), left + VALUE_X + 45, top + ROW_LIVES);
+        if (mode.usesLives()) {
+            centred(g, String.valueOf(lives), left + VALUE_X + 45, top + ROW_LIVES);
+        } else {
+            g.drawString(font, "none: it lasts until you die", left + VALUE_X, top + ROW_LIVES, HudStyle.argb(220, HudStyle.RED), false);
+        }
         label(g, "Time", top + ROW_TIME);
         centred(g, seconds == 0 ? "no limit" : seconds / 60 + ":" + String.format("%02d", seconds % 60), left + VALUE_X + 45,
                 top + ROW_TIME);

@@ -3091,6 +3091,73 @@ die het ook moeten krijgen. Bij aan- en uitzetten hoort een drone nog de servo's
       van Drone 2 een tweede keer nadat hij geladen had en weer opsteeg (precies zoals bedoeld; de regel is er weer uit).
       Geen fouten in het spellog.
 
+### 31. Uit je showcase-notities (19 oktober)
+
+Jouw notities in `showcase-notities.md` (showcase van 19 oktober, 08:10):
+- bij **73. Security OS desktop**: "als je de security os opent ... je slaat op wat er vorige keer opstond tenzij de pc
+  wordt uitgezet met de powerknop in de gui"; "bij devices moet er een lijn tussen elke device staan, soort van tabel
+  ... de online status en knop moet naast elkaar staan in plaats van onder"; "de robots gui moet beter, zorg dat het ook
+  meer in tabelvorm is en dat de knoppen naast elkaar staan";
+- bij **74. Security cameras**: "Ik wil fysieke cameraschermen, dit is een multiblock: 1x1 is een normaal scherm, plaats
+  je er 2 naast elkaar wordt het 2x1, ... 2x2 en zo voort. Rechtsklik op de monitor en je komt op een GUI van het hele
+  scherm, hier kies je welke kamer waar en hoe groot staat";
+- bij **76. Logic: names, sums and loops**: "zorg dat string interpolation ook werkt ... `$"dit is de {aantal} test"`";
+- bij **82. Guard robots**: "zorg dat de knoppen mooi naast elkaar staan" en "zorg ook dat je sensoren kunt uitlezen of
+  activeren of dat je de laser kunt laten schieten";
+- bij **85. Robot senses and weapons**: "zorg dat je het schieten ook kunt programmeren";
+- bij **87. Training**: "lethal rounds werken niet, je hebt altijd de lives; als je lethal gebruikt moet je geen levens
+  kunnen instellen".
+
+**Jouw antwoorden** (19 oktober): sensoren en de laser bedien je in je programma: `read(pin)` geeft de info van die pin
+als het kan, en `write(pin, true/false)` zet die pin aan of uit als het kan. En bij het schieten: **richten op wat jij
+kiest**.
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Lethal**: bij Lethal verdwijnt Lives uit het instelscherm ("until you die"). Een treffer doet echte schade en telt mee,
+  maar kost geen leven; de training stopt als je doodgaat (of het doel haalt, de tijd om is, of hij gestopt wordt). In je
+  diagrammen is `lives` bij Lethal 1 zolang je leeft. De app Training toont bij Lethal je gezondheid.
+- **`$"..."`**: tussen `{` en `}` mag een naam of een berekening (`{count + 1}`, `{card.level}`); `{{` en `}}` zijn een
+  gewone `{` en `}`. Alleen `$"..."`, zoals jij het schreef.
+- **Tabellen**: Devices krijgt per apparaat één rij (naam, plek, toestand, knop) met lijntjes ertussen. Robots ook één
+  rij per robot, maar alle knoppen van elke robot passen niet naast elkaar in het venster (op 1280 x 720 is het 340
+  breed): je klikt een robot aan, en zijn knoppen staan onderaan naast elkaar.
+- **De desktop**: zoals een echte pc onthoudt de kern één desktop (welke vensters waar open staan) voor iedereen die hem
+  gebruikt, ook op afstand en na een herstart van de server. De aan/uit-knop zit rechts in de taakbalk; uit = de volgende
+  keer begint hij met alleen Status. Je basis blijft gewoon beveiligd.
+- **Modules aan en uit**: elke module heeft een aan/uit-stand. Sensoren (Scan, Distance, Face Recognition, Pathfinding,
+  Solar Panel, Camera) beginnen aan; wapens (Laser, Gun) uit. Een wapen dat aan staat, schiet zodra het klaar is op zijn
+  doel, tot je het uitzet. Een sensor die uit staat, ziet niets.
+- **Richten**: `aim(x, y, z)` richt de wapens op die plek (bijvoorbeeld `aim(order.x, order.y, order.z)`), `aim()` weer
+  op wie zijn Scan ziet.
+- **De schermmuur**: een nieuw blok **Camera Monitor**; monitoren naast en op elkaar (dezelfde kant op) worden samen één
+  scherm, zolang het een rechthoek is (tot 8 x 6). Rechtsklik (wie hem mag instellen): het hele scherm als rooster, je
+  camera's ernaast (ook robots en drones met een camera); kies een camera en sleep een vak op het rooster. Hij moet in het
+  gebied van je kern staan en heeft stroom nodig, zoals een camera.
+
+Ik bouw het in deze volgorde, één stap per commit:
+
+- [x] **1. Lethal zonder levens** — wat er misging: ook bij Lethal kostte elke treffer een leven, en met 1 leven (zo
+      begint het blok) stopte de training al bij de eerste treffer; je ging dus nooit echt dood. Nu telt alleen
+      *Training shots* levens (`Training.Mode.usesLives`). Bij Lethal doet een treffer echte schade en telt hij mee (in
+      het rapport en voor `when trainee_hit:`), maar kost hij geen leven, ook niet als Lives op 1 staat; de training
+      stopt als je doodgaat ("Senne died after 1:12 (3 hits: Guard 7 x2, Guard 8 x1)"), het doel haalt, de tijd om is of
+      iemand hem stopt. `lives` is bij Lethal 1 zolang je leeft en 0 als je dood bent. Het instelscherm toont bij Lethal
+      "none: it lasts until you die" zonder knoppen - en + (wat je bij Lives koos, blijft bewaard voor Training shots;
+      screenshot `tr10_lethal_start_screen`), de app Training je gezondheid ("health 14/20") in plaats van levens, en het
+      logboek "(lethal, until death)". Op Peaceful doen robots en torentjes geen schade (net als monsters): daar telt een
+      lethal schot dus niet; dat staat in LEESMIJ.md. De test `lethal_training_hurts_and_ends` is nu
+      `lethal_training_lasts_until_death` (twee treffers, de training loopt door; een dodelijk schot, dan voorbij met
+      DIED), en `training_start_block_only_for_trusted` kijkt dat een lethal training met Lives 3 toch 1 leven heeft.
+- [ ] **2. Tekst met namen erin: `$"..."`**
+- [ ] **3. Devices als tabel**
+- [ ] **4. Robots als tabel**
+- [ ] **5. De desktop onthoudt wat open stond, met een aan/uit-knop**
+- [ ] **6. Modules aan en uit met `write(pin, true/false)`**
+- [ ] **7. Richten: `aim(x, y, z)`**, en de showcase laat de code van de schietende robots zien
+- [ ] **8. De Camera Monitor en de schermmuur** (het blok, samenvoegen tot een rechthoek)
+- [ ] **9. Het instelscherm van de schermmuur** (welke camera waar en hoe groot)
+- [ ] **10. Live beelden op de schermmuur**
+
 ---
 
 ## Nog nooit in het spel bekeken

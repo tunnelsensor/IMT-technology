@@ -1103,7 +1103,8 @@ Zoals in een trainingskamp: je laat je eigen beveiliging op jezelf (of een vrien
   beveiligingskern. **Sneak + klik** met een lege hand: de instellingen. **Name** is hoe de training heet in je
   diagrammen (bijvoorbeeld Bootcamp), **Kind** een gewone *Training* of een oefening (zie onderaan),
   **Shots** is *Training shots* (geen schade) of *Lethal* (echte schade),
-  **Lives** 1 tot 10, en **Time** geen limiet tot een uur. Gewoon **klikken**: de training begint, en jij bent de
+  **Lives** 1 tot 10 (alleen bij Training shots: Lethal duurt tot je doodgaat), en **Time** geen limiet tot een uur.
+  Gewoon **klikken**: de training begint, en jij bent de
   **trainee**. I.M.T telt af (3, 2, 1) en zegt "go!". Nog een klik stopt hem.
 - **Training Goal** (witte en zwarte wol en een gouden staaf): een geblokte finishvlag. Stapt de trainee erop, dan
   is hij geslaagd.
@@ -1117,8 +1118,11 @@ tegelijk. In creative schiet er niemand op je.
 **Een treffer.** Elk schot van je beveiliging op de trainee telt: torentjes, laserwanden, robots en security
 drones. Met trainingsschoten doet het geen schade, maar er is een blauwe flits rond je lijf en een zachte "zap",
 je bent een seconde trager en je verliest een leven (onderaan staat "Hit by Trainer 1: 4 lives left"). Torentjes schieten dan alleen hun laser,
-geen raketten. Lethal doet echte schade en telt ook. Eén schot is één leven: vlak na een treffer telt een volgende
-even niet mee. Robots en drones mogen de trainee raken, ook als PvP uit staat (hij koos er zelf voor).
+geen raketten. **Lethal** doet echte schade en telt als treffer, maar kost geen leven: de training duurt tot je
+doodgaat (of het doel haalt, de tijd om is, of iemand hem stopt). In je diagrammen is `lives` dan 1 zolang je leeft.
+Op Peaceful doen robots en torentjes geen schade (net als monsters): kies daar Training shots. Eén schot is één
+treffer: vlak na een treffer telt een volgende even niet mee. Robots en drones mogen de trainee raken, ook als PvP
+uit staat (hij koos er zelf voor).
 
 **Golven: squads.** In de app **Robots** heeft elke robot en drone een knop **Squad**. Typ een naam, bijvoorbeeld
 "Wave 1" (leeg = geen squad); de knop zegt dan "Squad: Wave 1". Overal waar in een diagram een robotnaam mag
@@ -1172,8 +1176,8 @@ Dan staan de robots die neer lagen op en gaan ze uit (naar hun dock), en geeft I
 trainee en de eigenaar: "Training Bootcamp: Senne reached the goal after 2:14 (1 hit: Guard 1 x1; 2 robots down)".
 **Er wordt niets teruggezet**: wat kapot ging, blijft kapot.
 
-**De app Training** op de desktop: bovenaan de training die nu bezig is (wie, trainingsschoten of lethal, levens,
-treffers, hoe lang al), met een knop **Stop**; daaronder de rapporten van de laatste tien trainingen (PASSED, FAILED
+**De app Training** op de desktop: bovenaan de training die nu bezig is (wie, trainingsschoten of lethal, levens of
+bij lethal je gezondheid, treffers, hoe lang al), met een knop **Stop**; daaronder de rapporten van de laatste tien trainingen (PASSED, FAILED
 of STOPPED, hoe lang, en wie er raakte).
 
 De getallen staan in `config/imttech.toml` onder `[training]` (`countdownSeconds`, `hitCooldown`, `slowTicks`,

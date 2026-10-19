@@ -1512,6 +1512,17 @@ public final class VisualCheck {
             });
             t.shot(25, "tr09_os_drill_report");
             t.close(10);
+            // 19 oktober: bij Lethal zijn er geen levens ("none: it lasts until you die"), en dus geen knoppen - en +.
+            t.view(0, 60.5, -59, 82.5, 180, 15);
+            t.onServer(5, player -> {
+                if (player.serverLevel().getBlockEntity(start) instanceof com.senne.imttech.training.TrainingStartBlockEntity be) {
+                    be.setSettings(new com.senne.imttech.training.Training.Settings("Bootcamp",
+                            com.senne.imttech.training.Training.Mode.LETHAL, 3, 0));
+                }
+                com.senne.imttech.training.TrainingBlocks.useStart(player, start, true);
+            });
+            t.shot(20, "tr10_lethal_start_screen");
+            t.close(0);
         }
 
         // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde

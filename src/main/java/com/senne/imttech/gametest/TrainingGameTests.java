@@ -82,11 +82,13 @@ public final class TrainingGameTests {
     }
 
     /**
-     * Lethal: een treffer doet echte schade en kost een leven. Met 1 leven is de training dan voorbij: de diagrammen
-     * horen het (training_started en training_ended, met trainee en hits), en de kern bewaart het rapport.
+     * Lethal (19 oktober: "als je lethal gebruikt moet je geen levens kunnen instellen"): een treffer doet echte schade
+     * en telt mee, maar kost geen leven, ook al staat Lives op 1. De training duurt tot de trainee doodgaat: de
+     * diagrammen horen het (training_started en training_ended, met trainee, hits en lives 0), en de kern bewaart het
+     * rapport ("died").
      */
     @GameTest(template = ARENA, timeoutTicks = 300, batch = "training_lethal")
-    public static void lethal_training_hurts_and_ends(GameTestHelper helper) {
+    public static void lethal_training_lasts_until_death(GameTestHelper helper) {
         ServerPlayer trainee = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 6), "trainee-lethal");
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), trainee);
         BlockPos rack = new BlockPos(12, 3, 3);
@@ -107,17 +109,33 @@ public final class TrainingGameTests {
         });
         helper.runAfterDelay(25 + afterCountdown() + 10, () -> {
             check(logged(core, EventLog.Type.LOGIC, "start " + name), "when training_started liep niet");
+            Training.Session session = Training.of(trainee.getUUID());
+            check(session != null && session.lives() == 1, "Lethal begon niet met zijn ene, echte leven");
             float health = trainee.getHealth();
             check(Shots.hit(helper.getLevel(), trainee, trainee.damageSources().generic(), 4, "Guard 7"), "Het schot raakte niet");
             check(trainee.getHealth() < health, "Een lethal schot deed geen schade");
-            check(Training.of(trainee.getUUID()) == null, "Met 0 levens is de training niet voorbij");
+            check(Training.of(trainee.getUUID()) == session && session.hits() == 1 && session.lives() == 1,
+                    "Na een lethal treffer stopte de training, of kostte hij een leven (Lives stond op 1)");
+        });
+        helper.runAfterDelay(25 + afterCountdown() + 40, () -> {
+            check(Shots.hit(helper.getLevel(), trainee, trainee.damageSources().generic(), 4, "Guard 7"), "Het tweede schot raakte niet");
+            Training.Session session = Training.of(trainee.getUUID());
+            check(session != null && session.hits() == 2, "Na twee lethal treffers is de training niet meer bezig");
+        });
+        // (Na de hitCooldown van een seconde, anders telt het laatste schot niet als treffer.)
+        helper.runAfterDelay(25 + afterCountdown() + 65, () -> {
+            check(Shots.hit(helper.getLevel(), trainee, trainee.damageSources().generic(), 1000, "Guard 8"), "Het laatste schot raakte niet");
+            check(!trainee.isAlive(), "1000 schade doodde de trainee niet");
+        });
+        helper.runAfterDelay(25 + afterCountdown() + 70, () -> {
+            check(Training.of(trainee.getUUID()) == null, "Dood, maar de training is niet voorbij");
             check(!core.trainingReports().isEmpty(), "De kern bewaarde geen rapport");
             TrainingReport report = core.trainingReports().getLast();
-            check(report.result() == Training.Result.OUT_OF_LIVES && report.hits() == 1 && report.hitsBy().equals("Guard 7 x1"),
-                    "Het rapport klopt niet: " + report.line());
+            check(report.result() == Training.Result.DIED && report.hits() == 3 && report.lives() == 0
+                    && report.hitsBy().equals("Guard 7 x2, Guard 8 x1"), "Het rapport klopt niet: " + report.line());
         });
-        helper.runAfterDelay(25 + afterCountdown() + 30, () -> {
-            check(logged(core, EventLog.Type.LOGIC, "ended " + name + " 1 0"), "when training_ended liep niet (of zonder trainee/hits/lives)");
+        helper.runAfterDelay(25 + afterCountdown() + 90, () -> {
+            check(logged(core, EventLog.Type.LOGIC, "ended " + name + " 3 0"), "when training_ended liep niet (of zonder trainee/hits/lives)");
             helper.succeed();
         });
     }
@@ -148,8 +166,9 @@ public final class TrainingGameTests {
             check(Training.at(helper.getLevel(), core.getBlockPos()) == null, "Een vreemde begon een training");
             com.senne.imttech.training.TrainingBlocks.useStart(owner, abs);
             Training.Session session = Training.at(helper.getLevel(), core.getBlockPos());
+            // (Lives staat op 3 en blijft bewaard, maar Lethal telt geen levens: hij heeft alleen zijn echte leven.)
             check(session != null && session.trainee().equals(owner.getUUID()) && session.settings().name().equals("Waves")
-                    && session.lives() == 3, "De eigenaar begon geen training (met zijn instellingen)");
+                    && session.settings().lives() == 3 && session.lives() == 1, "De eigenaar begon geen training (met zijn instellingen)");
             com.senne.imttech.training.TrainingBlocks.useStart(owner, abs);
             check(Training.at(helper.getLevel(), core.getBlockPos()) == null, "Een tweede klik stopte de training niet");
             check(core.trainingReports().getLast().result() == Training.Result.STOPPED, "Het rapport zegt niet dat hij gestopt is");

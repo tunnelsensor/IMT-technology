@@ -60,9 +60,12 @@ final class TrainingApp {
                     + now.getString("trainee");
             g.drawString(font, title, x + 26, y, HudStyle.argb(255, kind.contains("drill") ? HudStyle.ORANGE : HudStyle.WHITE), false);
             OsDraw.button(g, font, a.x() + a.w() - 4 - OsDraw.buttonWidth(font, "Stop"), y - 2, "Stop", true, HudStyle.RED);
+            // Lethal (19 oktober) heeft geen levens: dan de gezondheid van de trainee.
+            String lives = now.contains("health") ? "health " + now.getInt("health") + "/" + now.getInt("maxHealth")
+                    : now.getInt("lives") + "/" + now.getInt("max") + " lives";
             String state = !now.getBoolean("running") ? "counting down..."
-                    : now.getString("mode").toLowerCase(java.util.Locale.ROOT) + "   " + now.getInt("lives") + "/" + now.getInt("max")
-                    + " lives   " + now.getInt("hits") + (now.getInt("hits") == 1 ? " hit   " : " hits   ")
+                    : now.getString("mode").toLowerCase(java.util.Locale.ROOT) + "   " + lives
+                    + "   " + now.getInt("hits") + (now.getInt("hits") == 1 ? " hit   " : " hits   ")
                     + TrainingReport.time(now.getLong("ticks")) + (now.getInt("limit") > 0 ? " / " + TrainingReport.time(now.getInt("limit") * 20L) : "");
             g.drawString(font, state, x + 26, y + 11, HudStyle.argb(255, now.getBoolean("running") ? HudStyle.GREEN : HudStyle.ORANGE), false);
         }

@@ -39,8 +39,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>I.M.T telt af ({@code countdownSeconds}), dan begint hij: je diagrammen horen
  *       {@code when training_started("Bootcamp"):}.</li>
  *   <li>Elk schot van je beveiliging dat de trainee raakt, loopt via Shots. Met <b>trainingsschoten</b> doet het geen
- *       schade: een blauwe flits, een seconde trager, en een leven eraf. <b>Lethal</b> doet echte schade (en telt
- *       ook). Na een treffer telt een tweede even niet mee ({@code hitCooldown}): één schot is één leven.</li>
+ *       schade: een blauwe flits, een seconde trager, en een leven eraf. <b>Lethal</b> doet echte schade en telt als
+ *       treffer, maar kost geen leven: hij duurt tot je doodgaat (19 oktober). Na een treffer telt een tweede even niet
+ *       mee ({@code hitCooldown}): één schot is één treffer.</li>
  *   <li>Hij stopt als de levens op zijn, de tijd om is, de trainee het doel haalt (het Training Goal-blok), dood gaat,
  *       uitlogt of het gebied van de kern verlaat, of als iemand op Stop drukt. Je diagrammen horen
  *       {@code when training_ended("Bootcamp"):}, en I.M.T geeft een rapport (dat de kern ook bewaart, voor de app
@@ -65,6 +66,14 @@ public final class Training {
         /** Zoals in het spel (Engels). */
         public String title() {
             return title;
+        }
+
+        /**
+         * Telt deze soort levens? Alleen trainingsschoten. Bij Lethal (jouw notitie, 19 oktober: "als je lethal gebruikt
+         * moet je geen levens kunnen instellen") doet een treffer echte schade en duurt de training tot je doodgaat.
+         */
+        public boolean usesLives() {
+            return this == TRAINING_SHOTS;
         }
 
         public static Mode byName(String name) {
@@ -233,7 +242,8 @@ public final class Training {
             this.traineeName = traineeName;
             this.startBlock = startBlock;
             this.countdownEnd = countdownEnd;
-            this.lives = settings.lives();
+            // Lethal: geen levens, alleen je echte leven (1 zolang je leeft, 0 als je dood bent).
+            this.lives = settings.mode().usesLives() ? settings.lives() : 1;
         }
 
         public GlobalPos core() {
@@ -422,7 +432,8 @@ public final class Training {
         }
         SESSIONS.put(key, session);
         core.logEvent(EventLog.Type.TRAINING, clean.kind().title() + " " + clean.name() + " for " + session.traineeName + " ("
-                + clean.mode().title().toLowerCase(Locale.ROOT) + ", " + clean.lives() + (clean.lives() == 1 ? " life)" : " lives)"));
+                + (clean.mode().usesLives() ? clean.mode().title().toLowerCase(Locale.ROOT) + ", " + clean.lives()
+                        + (clean.lives() == 1 ? " life)" : " lives)") : "lethal, until death)"));
         if (countdown <= 0) {
             begin(level, core, session);
         }
@@ -459,8 +470,9 @@ public final class Training {
 
     /**
      * De trainee is geraakt door {@code shooter} (een torentje, een laserwand, een robot...). Telt mee als er even geen
-     * andere treffer was: een leven eraf, en met trainingsschoten een blauwe flits en even trager. Bij 0 levens stopt
-     * de training. Geeft true als de treffer meetelde.
+     * andere treffer was: met trainingsschoten een leven eraf, een blauwe flits en even trager, en bij 0 levens stopt de
+     * training. Lethal kost geen leven (de schade is echt; de training stopt als hij doodgaat). Geeft true als de treffer
+     * meetelde.
      */
     public static boolean hit(ServerLevel level, ServerPlayer trainee, String shooter) {
         Session session = of(trainee.getUUID());
@@ -474,7 +486,12 @@ public final class Training {
         }
         session.lastHit = now;
         session.hits++;
-        session.lives = Math.max(0, session.lives - 1);
+        boolean lives = session.settings.mode().usesLives();
+        if (lives) {
+            session.lives = Math.max(0, session.lives - 1);
+        } else if (!trainee.isAlive()) {
+            session.lives = 0; // Lethal: dit schot was zijn dood
+        }
         session.hitsBy.merge(shooter, 1, Integer::sum);
         if (session.settings.mode() == Mode.TRAINING_SHOTS) {
             // Een blauwe flits rond zijn lijf en een zacht "zap", en even trager. (De flits blijft onder zijn ogen: in de
@@ -487,8 +504,8 @@ public final class Training {
                 trainee.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, slow, 1, false, false, true));
             }
         }
-        trainee.displayClientMessage(Component.literal("Hit by " + shooter + ": " + session.lives
-                + (session.lives == 1 ? " life left" : " lives left")), true);
+        trainee.displayClientMessage(Component.literal("Hit by " + shooter + (lives ? ": " + session.lives
+                + (session.lives == 1 ? " life left" : " lives left") : "")), true);
         SecurityCoreBlockEntity core = core(level, session);
         if (core != null) {
             com.senne.imttech.logic.LogicRunner.training(level, core, com.senne.imttech.logic.program.Op.TRAINING_HIT,
@@ -496,7 +513,7 @@ public final class Training {
             // De Training End-blokken van deze basis: een puls, en hun programma (when trainee_hit:).
             TrainingEnds.hit(level, core, session.info(false), session.trainee);
         }
-        if (session.lives <= 0) {
+        if (lives && session.lives <= 0) {
             end(level, session, Result.OUT_OF_LIVES);
         }
         return true;
@@ -529,6 +546,9 @@ public final class Training {
             return;
         }
         if (!trainee.isAlive()) {
+            if (!session.settings.mode().usesLives()) {
+                session.lives = 0; // Lethal: zijn ene, echte leven is op
+            }
             end(level, session, Result.DIED);
             return;
         }

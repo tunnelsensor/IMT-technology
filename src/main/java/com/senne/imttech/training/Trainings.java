@@ -27,6 +27,12 @@ public final class Trainings {
             now.putBoolean("running", session.running());
             now.putInt("lives", session.lives());
             now.putInt("max", session.settings().lives());
+            // Lethal (19 oktober) heeft geen levens: dan toont de app de gezondheid van de trainee.
+            net.minecraft.server.level.ServerPlayer trainee = level.getServer().getPlayerList().getPlayer(session.trainee());
+            if (!session.settings().mode().usesLives() && trainee != null) {
+                now.putInt("health", (int) Math.ceil(trainee.getHealth()));
+                now.putInt("maxHealth", (int) Math.ceil(trainee.getMaxHealth()));
+            }
             now.putInt("hits", session.hits());
             now.putLong("ticks", session.ticks(level.getGameTime()));
             now.putInt("limit", session.settings().seconds());

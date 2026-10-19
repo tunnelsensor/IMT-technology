@@ -716,7 +716,8 @@ final class LogicApp {
             lines.add(item("training_ended(...)", "when training_ended(\"Bootcamp\"):\n    if passed:\n        say(\"Well done, \" + trainee)\n",
                     Op.TRAINING_ENDED));
             lines.add(new HelpLine("trainee, lives, hits, passed", "trainee",
-                    "who trains, lives left, how often hit, and (when ended) if they passed", HudStyle.WHITE, null));
+                    "who trains, lives left (Lethal: 1 until they die), how often hit, and (when ended) if they passed",
+                    HudStyle.WHITE, null));
         } else {
             // Wat een robot (of een drone, hoofdstuk 25) zelf kan (hoofdstuk 23).
             String self = kind == ProgramKind.DRONE ? "drone" : "robot";
