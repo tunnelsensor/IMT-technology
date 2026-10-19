@@ -184,7 +184,8 @@ public final class ZoneData extends SavedData {
 
         /** Hetzelfde, op nummer en naam (ook voor wie nu offline is, zoals wie een C4 plakte). */
         public boolean isBuilder(ServerLevel level, @Nullable UUID id, String name) {
-            if (owner == null || id == null) {
+            // De trainee van een oefening (hoofdstuk 27) bouwt en sloopt hier zoals een indringer, ook als het zijn zone is.
+            if (owner == null || id == null || com.senne.imttech.training.Training.isDrillTrainee(core, id)) {
                 return false;
             }
             if (owner.equals(id) || trusted.contains(id)) {

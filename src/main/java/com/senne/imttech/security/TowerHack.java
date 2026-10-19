@@ -152,6 +152,14 @@ public final class TowerHack {
                     .withStyle(ChatFormatting.RED), true);
             return;
         }
+        if (com.senne.imttech.training.Training.hacked(level, corePos, player)) {
+            // Een inbraakoefening (hoofdstuk 27): geslaagd, en de kern blijft van wie hij was. De oefening gaf de laptop al
+            // terug (en het rapport zegt hoe lang het duurde).
+            VIEWING.remove(player.getUUID());
+            level.playSound(null, corePos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 1.4f);
+            player.displayClientMessage(Component.literal("Core hacked: the drill is passed").withStyle(ChatFormatting.GREEN), true);
+            return;
+        }
         core.setOwner(player);
         // Biebia's drones (hoofdstuk 25) zijn nu van jou.
         com.senne.imttech.robot.TowerDrones.handOver(level, core, player);

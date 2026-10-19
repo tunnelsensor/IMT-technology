@@ -47,6 +47,10 @@ public final class BaseTrust {
     public static boolean mayEdit(ServerPlayer player, Placed device) {
         ServerLevel level = player.serverLevel();
         BlockPos pos = device.getBlockPos();
+        // Tijdens een oefening (hoofdstuk 27) is de trainee een indringer: ook wat hij zelf neerzette, stelt hij niet in.
+        if (com.senne.imttech.training.Training.isDrillTraineeAt(level, pos, player.getUUID())) {
+            return false;
+        }
         if (player.getUUID().equals(device.owner()) || trustedHere(level, pos, player)) {
             return true;
         }

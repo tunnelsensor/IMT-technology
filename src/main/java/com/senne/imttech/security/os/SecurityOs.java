@@ -136,6 +136,12 @@ public final class SecurityOs {
      * Geeft false als deze speler hier nog buitengesloten is (na een valstrik).
      */
     public static boolean openFor(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote) {
+        // Tijdens een oefening (hoofdstuk 27) is de trainee een indringer: zijn eigen desktop gaat niet open (ook niet op afstand).
+        if (com.senne.imttech.training.Training.isDrillTrainee(player.serverLevel(), core.getBlockPos(), player.getUUID())) {
+            player.displayClientMessage(Component.literal("The desktop is locked: you are the intruder in a drill")
+                    .withStyle(ChatFormatting.RED), true);
+            return false;
+        }
         int locked = lockedSeconds(player, core);
         if (locked > 0) {
             player.displayClientMessage(Component.translatable("os.imttech.msg.locked_out", locked)

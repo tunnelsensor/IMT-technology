@@ -21,6 +21,7 @@ public final class Trainings {
         if (session != null) {
             CompoundTag now = new CompoundTag();
             now.putString("name", session.settings().name());
+            now.putString("kind", session.settings().kind().title()); // hoofdstuk 27: "Break-in drill"
             now.putString("trainee", session.traineeName());
             now.putString("mode", session.settings().mode().title());
             now.putBoolean("running", session.running());

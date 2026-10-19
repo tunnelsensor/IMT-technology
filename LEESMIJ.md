@@ -1097,7 +1097,8 @@ Zoals in een trainingskamp: je laat je eigen beveiliging op jezelf (of een vrien
 
 - **Training Start** (ijzer, een limoengroene kleurstof, redstone en een Computer Chip). Zet hem in het gebied van je
   beveiligingskern. **Sneak + klik** met een lege hand: de instellingen. **Name** is hoe de training heet in je
-  diagrammen (bijvoorbeeld Bootcamp), **Shots** is *Training shots* (geen schade) of *Lethal* (echte schade),
+  diagrammen (bijvoorbeeld Bootcamp), **Kind** een gewone *Training* of een oefening (zie onderaan),
+  **Shots** is *Training shots* (geen schade) of *Lethal* (echte schade),
   **Lives** 1 tot 10, en **Time** geen limiet tot een uur. Gewoon **klikken**: de training begint, en jij bent de
   **trainee**. I.M.T telt af (3, 2, 1) en zegt "go!". Nog een klik stopt hem.
 - **Training Goal** (witte en zwarte wol en een gouden staaf): een geblokte finishvlag. Stapt de trainee erop, dan
@@ -1173,6 +1174,27 @@ of STOPPED, hoe lang, en wie er raakte).
 
 De getallen staan in `config/imttech.toml` onder `[training]` (`countdownSeconds`, `hitCooldown`, `slowTicks`,
 `maxReports`, `endPulse`).
+
+**Inbraak- en uitbraakoefening.** Hoe moeilijk is het om tot bij je kern te geraken en hem te hacken, of om uit je
+gevangenis te ontsnappen? In de instellingen van het Training Start-blok kies je bij **Kind** niet *Training* maar
+**Break-in drill** of **Break-out drill**. Dat kan alleen in survival. Na het aftellen behandelt je hele basis jou
+als **indringer**, ook als het je eigen basis is:
+- je torentjes, laserwanden, oude patrouilledrones, robots en security drones schieten op je (met trainingsschoten
+  kost een treffer alleen een leven; ook zonder PvP), en een robot met het filter `"strangers"` ziet je; je eigen
+  I.M.T-drones zijn dan ook indringers, en die krijgen wel echte schade (trainingsschoten gelden alleen voor jou);
+- in je zone bouw of sloop je niets (behalve de vrije klimblokken en C4, zoals elke indringer), en je zone verandert
+  je niet;
+- je apparaten (robots, de laserzender, lezers...) stel je niet in, je desktop gaat niet open (ook niet op afstand),
+  en met je bril schakel je de relais van je basis niet (I.M.T: "Your base does not obey you during the drill");
+- de keycards die je bij het begin bij je had, werken niet ("not valid here"); een kaart die je onderweg vindt of
+  steelt, wel; en in je diagrammen is `player.owner` false en `player.trusted` false.
+
+Een **inbraak** is geslaagd als je de kern hackt: zet de Hacking Laptop op je eigen kern (dat mag nu) en speel de
+terminal uit. De kern blijft van jou, je krijgt de laptop terug, en het rapport zegt hoe lang het duurde: "Break-in
+drill Vault: Senne hacked the core after 4:12 (closest 0 blocks from the core; 1 hit: Guard 1 x1)". Haal je het niet,
+dan zegt het hoe dicht je bij de kern kwam. Een **uitbraak** is geslaagd als je het Training Goal-blok buiten je cel
+haalt (zonder zo'n blok in je basis begint hij niet). De tijd uitzitten is bij een oefening niet genoeg. Naar creative
+gaan stopt de oefening. Daarna is alles meteen weer gewoon: niets wordt teruggezet, wat kapot ging, blijft kapot.
 
 ### De Biebia's Industries-bunker
 Ergens in de bergen heeft Raven een geheime basis uitgehakt. Je

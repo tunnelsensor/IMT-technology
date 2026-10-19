@@ -41,7 +41,11 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
-        read(level, reader, device, core, player, card, core.logic().isValid(core.ip(), card));
+        // Tijdens een oefening (hoofdstuk 27) werken de kaarten die de trainee bij het begin al had niet: een indringer heeft
+        // ze ook niet. Een kaart die hij onderweg vond of stal, wel.
+        boolean fromBefore = card != null && com.senne.imttech.training.Training.isCardFromBefore(level, core.getBlockPos(),
+                player.getUUID(), card.number());
+        read(level, reader, device, core, player, card, core.logic().isValid(core.ip(), card) && !fromBefore);
     }
 
     /**
@@ -72,7 +76,7 @@ public final class LogicEvents {
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " used " + what + " at " + device.name());
         LogicRunner.fire(level, core, Op.KEYCARD, device.name(), new LogicRunner.Context(Op.KEYCARD, device.name(),
                 reader.immutable(), player.getUUID(), player.getGameProfile().getName(),
-                SecurityCores.isFriend(level, core, player), player.getUUID().equals(core.ownerId()), card, valid, ""));
+                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), card, valid, ""));
     }
 
     /** Een kaartnummer dat niet op de lijst van dit netwerk staat (#2000 tot #9999). */
@@ -102,7 +106,7 @@ public final class LogicEvents {
         Op trigger = level.getBlockState(device).getBlock() instanceof CodePanelBlock ? Op.CODEPANEL : Op.KEYCARD;
         LogicRunner.alarm(level, core, new LogicRunner.Context(trigger, name, device.immutable(), player.getUUID(),
                 player.getGameProfile().getName(), SecurityCores.isFriend(level, core, player),
-                player.getUUID().equals(core.ownerId()), null, false, ""), "Someone is tampering with " + name);
+                isOwner(level, core, player), null, false, ""), "Someone is tampering with " + name);
     }
 
     /**
@@ -151,7 +155,7 @@ public final class LogicEvents {
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " entered a code at " + device.name());
         LogicRunner.fire(level, core, Op.CODEPANEL, device.name(), new LogicRunner.Context(Op.CODEPANEL, device.name(),
                 panel.immutable(), player.getUUID(), player.getGameProfile().getName(),
-                SecurityCores.isFriend(level, core, player), player.getUUID().equals(core.ownerId()), null, false, code));
+                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), null, false, code));
     }
 
     /**
@@ -184,5 +188,14 @@ public final class LogicEvents {
 
     public static void clear() {
         LAST_USE.clear();
+    }
+
+    /**
+     * Is deze speler de eigenaar van de kern ({@code player.owner} in je diagram)? Niet als hij de trainee is van een
+     * oefening bij die kern (hoofdstuk 27): dan is hij voor zijn eigen basis een indringer.
+     */
+    private static boolean isOwner(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer player) {
+        return player.getUUID().equals(core.ownerId())
+                && !com.senne.imttech.training.Training.isDrillTrainee(level, core.getBlockPos(), player.getUUID());
     }
 }

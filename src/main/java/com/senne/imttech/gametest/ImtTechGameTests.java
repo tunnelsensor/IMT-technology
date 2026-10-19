@@ -525,7 +525,7 @@ public final class ImtTechGameTests {
      * de open poort, het wachtwoord, override op de beveiligingsdaemon, de waakhond uit en jezelf
      * eigenaar.
      */
-    private static java.util.List<String> hackSolution(com.senne.imttech.security.HackingLaptopBlockEntity laptop) {
+    static java.util.List<String> hackSolution(com.senne.imttech.security.HackingLaptopBlockEntity laptop) {
         var terminal = new com.senne.imttech.security.HackTerminal(laptop.seed(), laptop.ownerName());
         String connect = "connect " + terminal.openPort();
         terminal.run(connect, 0); // pas daarna staat het wachtwoord vast
@@ -533,7 +533,7 @@ public final class ImtTechGameTests {
                 "disable watchdog", "set owner " + laptop.ownerName());
     }
 
-    private static void typeOnLaptop(ServerPlayer hacker, BlockPos laptopAbsolute, java.util.List<String> commands) {
+    static void typeOnLaptop(ServerPlayer hacker, BlockPos laptopAbsolute, java.util.List<String> commands) {
         for (String command : commands) {
             com.senne.imttech.security.TowerHack.handleCommand(hacker,
                     new com.senne.imttech.network.HackCommandPayload(laptopAbsolute, command));
@@ -2134,9 +2134,13 @@ public final class ImtTechGameTests {
             // De kern van een andere test (zoals de toren van de batch hiervoor, die er vlak naast kan staan)
             // die dichter bij een camera staat dan de kern van deze toren, pikt die camera in. Welke batch
             // hiervoor draait, hangt af van de namen van alle batches; die kern ruimen we dus eerst op.
+            // (Soms staan er meer dan één zo dicht bij: dan ruimen we ze een voor een op.)
             for (BlockPos camera : cameras) {
-                var nearest = com.senne.imttech.security.SecurityCores.coreAt(level, helper.absolutePos(camera));
-                if (nearest != null && nearest != coreEntity) {
+                for (int tries = 0; tries < 16; tries++) {
+                    var nearest = com.senne.imttech.security.SecurityCores.coreAt(level, helper.absolutePos(camera));
+                    if (nearest == null || nearest == coreEntity) {
+                        break;
+                    }
                     level.removeBlock(nearest.getBlockPos(), false);
                 }
             }
@@ -4620,6 +4624,15 @@ public final class ImtTechGameTests {
      * spelers op hun naam, dus twee testspelers met dezelfde naam zitten altijd in hetzelfde team.
      */
     static ServerPlayer makeSurvivalOwner(GameTestHelper helper, BlockPos relativePos, String name) {
+        return makeSwitchablePlayer(helper, relativePos, name, () -> false);
+    }
+
+    /**
+     * Hetzelfde, maar {@code creative} zegt of hij nu in creative is (hoofdstuk 27: wie tijdens een oefening naar creative
+     * gaat, stopt ermee). Een testspeler kan dat niet met /gamemode: isCreative() is hier overschreven.
+     */
+    static ServerPlayer makeSwitchablePlayer(GameTestHelper helper, BlockPos relativePos, String name,
+                                             java.util.function.BooleanSupplier creative) {
         CommonListenerCookie cookie = CommonListenerCookie.createInitial(
                 new GameProfile(UUID.randomUUID(), name), false);
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
@@ -4631,7 +4644,7 @@ public final class ImtTechGameTests {
 
             @Override
             public boolean isCreative() {
-                return false;
+                return creative.getAsBoolean();
             }
         };
         Connection connection = new Connection(PacketFlow.SERVERBOUND);

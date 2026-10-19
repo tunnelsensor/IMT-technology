@@ -16,15 +16,29 @@ import net.minecraft.nbt.CompoundTag;
  * @param hitsBy  wie hem raakte: "Guard 2 x3, Security turret x1" (leeg = niemand)
  * @param downed  hoeveel robots en drones er neergingen (de Ion Blaster)
  * @param when    wanneer hij voorbij was (speltijd)
+ * @param kind    een gewone training, of (hoofdstuk 27) een inbraak- of uitbraakoefening
+ * @param closest bij een inbraak: hoe dicht hij bij de kern kwam (blokken); anders -1
  */
 public record TrainingReport(String name, String trainee, Training.Mode mode, Training.Result result, long ticks, int hits,
-                             int lives, String hitsBy, int downed, long when) {
+                             int lives, String hitsBy, int downed, long when, Training.Kind kind, int closest) {
 
-    /** In één zin (Engels): "Training Bootcamp: Senne reached the goal in 2:14 (3 hits: Guard 2 x3; 4 robots down)". */
+    /** Een rapport van een gewone training (zoals vóór hoofdstuk 27). */
+    public TrainingReport(String name, String trainee, Training.Mode mode, Training.Result result, long ticks, int hits,
+                          int lives, String hitsBy, int downed, long when) {
+        this(name, trainee, mode, result, ticks, hits, lives, hitsBy, downed, when, Training.Kind.TRAINING, -1);
+    }
+
+    /**
+     * In één zin (Engels): "Training Bootcamp: Senne reached the goal after 2:14 (3 hits: Guard 2 x3; 4 robots down)", of
+     * (hoofdstuk 27) "Break-in drill Vault: Senne hacked the core after 4:12 (closest 0 blocks from the core; 1 hit: ...)".
+     */
     public String line() {
-        StringBuilder text = new StringBuilder("Training ").append(name).append(": ").append(trainee).append(' ')
-                .append(result.text()).append(" after ").append(time(ticks)).append(" (")
-                .append(hits).append(hits == 1 ? " hit" : " hits");
+        StringBuilder text = new StringBuilder(kind.title()).append(' ').append(name).append(": ").append(trainee).append(' ')
+                .append(result.text()).append(" after ").append(time(ticks)).append(" (");
+        if (closest >= 0) {
+            text.append("closest ").append(closest).append(closest == 1 ? " block" : " blocks").append(" from the core; ");
+        }
+        text.append(hits).append(hits == 1 ? " hit" : " hits");
         if (!hitsBy.isEmpty()) {
             text.append(": ").append(hitsBy);
         }
@@ -52,6 +66,8 @@ public record TrainingReport(String name, String trainee, Training.Mode mode, Tr
         tag.putString("HitsBy", hitsBy);
         tag.putInt("Downed", downed);
         tag.putLong("When", when);
+        tag.putString("Kind", kind.name());
+        tag.putInt("Closest", closest);
         return tag;
     }
 
@@ -62,8 +78,10 @@ public record TrainingReport(String name, String trainee, Training.Mode mode, Tr
         } catch (IllegalArgumentException e) {
             result = Training.Result.STOPPED;
         }
+        // Een rapport van vóór hoofdstuk 27 heeft geen soort (een gewone training) en geen afstand.
         return new TrainingReport(tag.getString("Name"), tag.getString("Trainee"), Training.Mode.byName(tag.getString("Mode")),
                 result, tag.getLong("Ticks"), tag.getInt("Hits"), tag.getInt("Lives"), tag.getString("HitsBy"),
-                tag.getInt("Downed"), tag.getLong("When"));
+                tag.getInt("Downed"), tag.getLong("When"), Training.Kind.byName(tag.getString("Kind")),
+                tag.contains("Closest") ? tag.getInt("Closest") : -1);
     }
 }

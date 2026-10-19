@@ -1485,6 +1485,33 @@ public final class VisualCheck {
                     com.senne.imttech.training.Training.end(player.serverLevel(), session, com.senne.imttech.training.Training.Result.STOPPED);
                 }
             });
+            // Hoofdstuk 27: een inbraakoefening. Het instelscherm met Kind = Break-in drill (eerst weer bij het Start-blok gaan
+            // staan: het scherm opent alleen dichtbij), en in de app Training het rapport van een geslaagde hack (bovenaan).
+            t.view(0, 60.5, -59, 82.5, 180, 15);
+            t.onServer(5, player -> {
+                ServerLevel level = player.serverLevel();
+                if (level.getBlockEntity(start) instanceof com.senne.imttech.training.TrainingStartBlockEntity be) {
+                    be.setSettings(new com.senne.imttech.training.Training.Settings("Vault",
+                            com.senne.imttech.training.Training.Mode.TRAINING_SHOTS, 3, 300, com.senne.imttech.training.Training.Kind.BREAK_IN));
+                }
+                if (level.getBlockEntity(trainingCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
+                    be.addTrainingReport(new com.senne.imttech.training.TrainingReport("Vault", player.getGameProfile().getName(),
+                            com.senne.imttech.training.Training.Mode.TRAINING_SHOTS, com.senne.imttech.training.Training.Result.HACKED,
+                            5040, 1, 2, "Guard 1 x1", 0, level.getGameTime(), com.senne.imttech.training.Training.Kind.BREAK_IN, 0));
+                }
+                com.senne.imttech.training.TrainingBlocks.useStart(player, start, true);
+            });
+            t.shot(20, "tr08_drill_start_screen");
+            t.close(0);
+            t.view(0, 67.5, -60, 68.5, 180, 15);
+            t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, trainingCore));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.TRAINING);
+                }
+            });
+            t.shot(25, "tr09_os_drill_report");
+            t.close(10);
         }
 
         // --- Mini-raketten: eerst de raketbuizen op de rug (van dichtbij), dan twee gemarkeerde

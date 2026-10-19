@@ -46,7 +46,12 @@ public class HackingLaptopBlockEntity extends BlockEntity {
     }
 
     public boolean isOwner(ServerPlayer player) {
-        return player.getUUID().equals(owner);
+        return isOwner(player.getUUID());
+    }
+
+    /** Hetzelfde, op nummer (ook als hij nu offline is). */
+    public boolean isOwner(java.util.UUID player) {
+        return player.equals(owner);
     }
 
     public String ownerName() {

@@ -70,7 +70,10 @@ public final class TrainingBlocks {
             player.displayClientMessage(Component.literal(error), true);
             return;
         }
-        player.displayClientMessage(Component.literal("Training " + start.settings().name() + ": get ready, you are the trainee"
+        Training.Kind kind = start.settings().kind();
+        player.displayClientMessage(Component.literal(kind.drill()
+                ? kind.title() + " " + start.settings().name() + ": get ready, soon your base treats you as an intruder"
+                : "Training " + start.settings().name() + ": get ready, you are the trainee"
                 + (player.isCreative() ? " (in creative nobody shoots at you)" : "")), true);
     }
 

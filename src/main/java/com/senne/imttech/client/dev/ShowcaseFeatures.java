@@ -2001,6 +2001,57 @@ final class ShowcaseFeatures {
                     .close(10);
         });
 
+        add("Break-in drill", "Hoofdstuk 27: hoe moeilijk is het om in je eigen basis in te breken? Dezelfde werkplaats. In het "
+                + "instelscherm van het Start-blok staat Kind nu op Break-in drill (oranje: 'you are the intruder'), met 10 levens. "
+                + "Dan klik jij op Start (in survival): I.M.T telt af en zegt 'go! Your base treats you as an intruder now. Hack the "
+                + "core with a Hacking Laptop'. Een diagram zet Wave 1 aan: de twee Trainers schieten op jou, hun eigenaar "
+                + "(trainingsschoten: een leven eraf). Jij schiet ze neer met de Ion Blaster. Dan loop je naar de kern: je eigen "
+                + "desktop gaat niet open ('The desktop is locked: you are the intruder in a drill'). Dus zet je de Hacking Laptop "
+                + "op de kern: de terminal gaat open. De showcase typt na 8 seconden de oplossing voor je (je ziet ze niet in de "
+                + "terminal): 'Core hacked: the drill is passed'. De kern blijft van jou, je krijgt de laptop terug, en "
+                + "I.M.T geeft het rapport (hoe lang, 'closest 0 blocks from the core', en wie je raakte). Tot slot de app Training "
+                + "met dat rapport bovenaan.", GameType.SURVIVAL,
+                Vec3.atBottomCenterOf(ROBOT_BAY.offset(4, 0, 12)), 180, 15, s -> {
+            BlockPos core = ROBOT_BAY.offset(10, 0, 6);
+            BlockPos startBlock = ROBOT_BAY.offset(2, 0, 9);
+            s.onServer(0, ShowcaseFeatures::buildRobotBay)
+                    .onServer(0, player -> {
+                        buildBayServer(player);
+                        buildTraining(player);
+                        buildDrill(player);
+                    })
+                    .pause(50)
+                    // Het instelscherm: Kind = Break-in drill.
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 11.5, 180, 25)
+                    .onServer(10, player -> com.senne.imttech.training.TrainingBlocks.useStart(player, startBlock, true))
+                    .pause(100)
+                    .close(10)
+                    // Klik op Start, met de Ion Blaster in je hand. Na het aftellen schiet Wave 1 op jou.
+                    .onServer(10, player -> {
+                        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.ION_BLASTER.get()));
+                        com.senne.imttech.training.TrainingBlocks.useStart(player, startBlock, false);
+                    })
+                    .stand(0, ROBOT_BAY.getX() + 4.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 10)
+                    .pause(65)
+                    .onServer(15, player -> ionAt(player, ROBOT_BAY.offset(0, 0, 5)))
+                    .onServer(15, player -> ionAt(player, ROBOT_BAY.offset(8, 0, 5)))
+                    // Naar de kern: je eigen desktop zit op slot.
+                    .stand(20, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
+                    .onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, core))
+                    .pause(60)
+                    // De Hacking Laptop op je eigen kern (dat mag nu), en na 8 seconden de oplossing.
+                    .onServer(0, player -> com.senne.imttech.security.TowerHack.placeLaptop(player, core,
+                            new ItemStack(ModItems.HACKING_LAPTOP.get())))
+                    .pause(com.senne.imttech.security.TowerHack.MIN_TICKS + 10)
+                    .onServer(0, player -> solveHack(player, core.above()))
+                    .pause(120)
+                    // De app Training: het rapport van de oefening bovenaan.
+                    .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, core))
+                    .step(30, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.TRAINING)))
+                    .pause(140)
+                    .close(10);
+        });
+
         add("Biebia's Industries Tower: hangar and landing pad", "De toren is van jou (gehackt). In de hangar staan zes Drone Docks "
                 + "langs de muur; op vier staan de security drones die Biebia programmeerde (hoofdstuk 25: Tower drone 1 tot 4, "
                 + "programma Tower patrol, met Scan, Face Recognition, Laser en Pathfinding). Na de hack zijn ze van jou: ze "
@@ -2970,6 +3021,40 @@ final class ShowcaseFeatures {
                         say("Wave 1 is down. Here comes Wave 2")
                         activate("Wave 2")
                     """, com.senne.imttech.logic.program.ProgramKind.SERVER));
+        }
+    }
+
+    /**
+     * De inbraakoefening (hoofdstuk 27): het Start-blok op Break-in drill "Vault" (10 levens), een diagram dat bij het begin
+     * Wave 1 aanzet, en zonder de Super Battle (anders schoot die je tijdens de hack al je levens af).
+     */
+    private static void buildDrill(net.minecraft.server.level.ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        if (level.getBlockEntity(ROBOT_BAY.offset(2, 0, 9)) instanceof com.senne.imttech.training.TrainingStartBlockEntity be) {
+            be.setSettings(new com.senne.imttech.training.Training.Settings("Vault",
+                    com.senne.imttech.training.Training.Mode.TRAINING_SHOTS, 10, 0, com.senne.imttech.training.Training.Kind.BREAK_IN));
+        }
+        robotAt(player, ROBOT_BAY.offset(5, 0, 0), net.minecraft.world.entity.Entity::discard);
+        if (level.getBlockEntity(ROBOT_BAY.offset(10, 0, 6)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+            core.logic().put(null, program("Drill", """
+                    when training_started("Vault"):
+                        say(trainee + " is breaking in")
+                        activate("Wave 1")
+                    """, com.senne.imttech.logic.program.ProgramKind.SERVER));
+        }
+    }
+
+    /** De showcase speelt de terminal van de laptop uit, zoals een speler die alles in één keer goed doet. */
+    private static void solveHack(net.minecraft.server.level.ServerPlayer player, BlockPos laptopPos) {
+        if (!(player.serverLevel().getBlockEntity(laptopPos) instanceof com.senne.imttech.security.HackingLaptopBlockEntity laptop)) {
+            return;
+        }
+        var terminal = new com.senne.imttech.security.HackTerminal(laptop.seed(), laptop.ownerName());
+        String connect = "connect " + terminal.openPort();
+        terminal.run(connect, 0); // pas daarna staat het wachtwoord vast
+        for (String command : java.util.List.of(connect, "login " + terminal.password(), "override " + terminal.guardPid(),
+                "disable watchdog", "set owner " + laptop.ownerName())) {
+            com.senne.imttech.security.TowerHack.handleCommand(player, new com.senne.imttech.network.HackCommandPayload(laptopPos, command));
         }
     }
 

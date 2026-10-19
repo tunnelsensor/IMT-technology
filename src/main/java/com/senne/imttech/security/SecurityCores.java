@@ -171,7 +171,15 @@ public final class SecurityCores {
         }
         boolean unclaimed = core == null || core.ownerId() == null;
         if (entity instanceof Player player) {
-            if (player.isCreative() || player.isSpectator() || isFriend(level, core, player)) {
+            if (player.isCreative() || player.isSpectator()) {
+                return false;
+            }
+            // De trainee van een oefening (hoofdstuk 27) is een indringer, ook in zijn eigen basis en ook zonder PvP (hij
+            // koos er zelf voor; met trainingsschoten kost een treffer alleen een leven).
+            if (core != null && com.senne.imttech.training.Training.isDrillTrainee(level, core.getBlockPos(), player.getUUID())) {
+                return true;
+            }
+            if (isFriend(level, core, player)) {
                 return false;
             }
             // Van niemand: iedereen is een indringer. Van jou: andere spelers alleen als de
@@ -189,9 +197,13 @@ public final class SecurityCores {
         return entity instanceof Enemy && (unclaimed || core.attackMobs());
     }
 
-    /** Is deze speler de eigenaar van de kern, zit hij in zijn team, of is hij vertrouwd? */
+    /**
+     * Is deze speler de eigenaar van de kern, zit hij in zijn team, of is hij vertrouwd? Niet tijdens een oefening waarin
+     * hij de trainee is (hoofdstuk 27): dan is hij voor zijn eigen basis een vreemde.
+     */
     public static boolean isFriend(ServerLevel level, @Nullable SecurityCoreBlockEntity core, Player player) {
-        if (core == null || core.ownerId() == null) {
+        if (core == null || core.ownerId() == null
+                || com.senne.imttech.training.Training.isDrillTrainee(level, core.getBlockPos(), player.getUUID())) {
             return false;
         }
         if (core.ownerId().equals(player.getUUID()) || core.isTrusted(player.getUUID())) {

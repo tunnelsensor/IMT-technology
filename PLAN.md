@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 290 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 294 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 95 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 96 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -2923,17 +2923,43 @@ openen) en de bril (niet op afstand schakelen). Kaarten die hij bij het begin ha
 hack (de Hacking Laptop-minigame) telt als rapport; de core blijft van jou. Break-out is geslaagd als hij het
 Goal-blok buiten de cel haalt. Het rapport zegt hoe dicht hij bij de core kwam en wie hem raakte.
 
-- [ ] **1. Soorten en sessie** — Break-in en Break-out, alleen in survival, één sessie per core.
-- [ ] **2. Indringer in je eigen basis** — één plek (`Training.isDrillTrainee`) die alle uitzonderingen
-      uitschakelt: torentjes, drones, robots, laserwanden, zones, kaarten, desktop en de bril.
-- [ ] **3. Hack zonder eigenaarswissel** — de laptop-hack van de trainee maakt hem geen eigenaar; het rapport
-      zegt "core hacked in 4:12".
-- [ ] **4. Uitbraak** — geslaagd als hij het Goal-blok buiten de cel bereikt.
-- [ ] **5. Rapport** — dichtste afstand tot de core, en wie hem raakte.
+- [x] **1. Soorten en sessie** — in het instelscherm van het Training Start-blok een knop **Kind**: *Training*,
+      *Break-in drill* of *Break-out drill* (met een uitleg ernaast: "you are the intruder", "escape to the goal"). Het
+      is dezelfde sessie als een training (één per kern, aftellen, levens, trainingsschoten of lethal, tijdslimiet), met
+      een soort erbij (`Training.Kind`). Een oefening begint alleen in survival ("A drill only works in survival"), en
+      wie tijdens de oefening naar creative gaat, stopt ermee. I.M.T zegt bij het begin wat je moet doen ("Hack the core
+      with a Hacking Laptop" of "Reach the goal outside your cell"). De app Training zegt welke soort bezig is.
+- [x] **2. Indringer in je eigen basis** — één plek (`Training.isDrillTrainee`), pas na het aftellen (anders schoten
+      je torentjes al tijdens het aftellen echt). Ernaar vragen: `SecurityCores.isFriend` en `isIntruder` (torentjes,
+      oude patrouilledrones, laserwanden, robots en drones met "strangers"/"trusted", de laptop; een indringer ook zonder
+      PvP), `ZoneData.isBuilder` (je zone: alleen vrije blokken en C4, en je ziet de rand niet), `BaseTrust.mayEdit` (je
+      apparaten, ook wat je zelf neerzette), `SecurityOs.openFor` (de desktop, ook op afstand; een open desktop gaat bij
+      het begin dicht), `ImtRedstone` (je relais, laserzenders, koepels, torentjes en stroomkasten in dat gebied, ook met
+      je bril: "Your base does not obey you during the drill"), `ZoneMarkerItem` (je zone veranderen) en `LogicEvents`
+      (de keycards die je bij het begin bij je had werken niet, en `player.owner` is false). Daarna is alles meteen
+      weer gewoon.
+- [x] **3. Hack zonder eigenaarswissel** — de trainee zet de Hacking Laptop op zijn eigen kern (dat mag nu) en speelt
+      de terminal uit: de oefening is geslaagd (`HACKED`, "hacked the core"), de kern blijft van hem en hij krijgt de
+      laptop terug. Eindigt de oefening anders terwijl de laptop nog op de kern staat, dan krijgt hij hem ook terug.
+- [x] **4. Uitbraak** — geslaagd als hij een Training Goal-blok haalt (dat zet je buiten de cel); zonder zo'n blok in
+      de basis begint een uitbraak niet. Bij een oefening is "de tijd is om" altijd mislukt (uitzitten is niet genoeg).
+- [x] **5. Rapport** — "Break-in drill Vault: Senne hacked the core after 4:12 (closest 0 blocks from the core; 1 hit:
+      Guard 1 x1)": bij een inbraak hoe dicht hij bij de kern kwam, en altijd wie hem raakte. De kern bewaart het (ook de
+      soort en de afstand; een oud rapport is een gewone training), en de app Training laat het zien.
 
 Tests: de eigenaar als trainee wordt geraakt door zijn eigen torentje en robot; hij kan de zone niet slopen;
 een oude kaart opent de lezer niet; een geslaagde hack laat de eigenaar ongemoeid; de oefening eindigt als hij
 sterft of uitlogt; creative wordt geweigerd.
+
+- [x] **Afronding** — 294 tests: 291 groen, de 3 rode van hoofdstuk 14 stap 2 (jouw stroomwaarden). Vier nieuwe in
+      `DrillGameTests`: de basis tegen je (tijdens het aftellen nog vriend, daarna indringer ook zonder PvP, geen zone, geen
+      robot instellen, geen desktop; dood = voorbij met rapport; daarna weer vriend), kaarten (een kaart van het begin
+      "not valid here", een gevonden kaart wel), de hack (geslaagd, de kern blijft van hem, de laptop terug) en de regels
+      (alleen survival, een uitbraak zonder doel begint niet, naar creative = gestopt). Onderweg gevonden: de test van de
+      camera's van de toren ruimde maar één vreemde kern per camera op, en met meer tests in de wereld stonden er soms
+      twee te dichtbij; nu ruimt hij ze allemaal op. Screenshots `tr08_drill_start_screen` (Kind = Break-in drill) en
+      `tr09_os_drill_report` (`-Ponly=training`). In de showcase de nieuwe functie **"Break-in drill"** (88, na "Training";
+      de toren is nu 89). LEESMIJ.md: "Inbraak- en uitbraakoefening" in het stuk over training.
 
 Bouwen gaat in volgorde, één stap per commit, met bij elke stap de tests, de screenshots en de showcase.
 
@@ -3101,6 +3127,11 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Het scherm van de laserzender (13 oktober)**: gezien op screenshots en in de showcase. Probeer zelf
       of sluipen + klikken met een lege hand fijn werkt, of je met een kabelrol nu makkelijk kabels legt,
       en of een liggende wand er goed uitziet (op de screenshots wel: `73_laser_flat`).
+- [ ] **Inbraak- en uitbraakoefening (18 oktober)**: getest met 4 nieuwe tests en gezien op `tr08`-`tr09`. Probeer zelf in
+      survival: zet het Start-blok op Break-in drill en breek in je eigen basis in. Schieten je torentjes, laserwanden en
+      robots echt op je, zie je je zone-rand niet meer, en voelt de hack met de laptop goed? Een uitbraak: bouw een cel,
+      zet het Goal-blok erbuiten en ontsnap (met vrije klimblokken of C4). Zeg het als je een gat vindt waardoor je je
+      basis tijdens de oefening toch nog kunt bedienen.
 - [ ] **Robots die niet meer bestaan (18 oktober)**: getest met 3 nieuwe tests en gezien op `rb26`. Probeer zelf in je
       wereld Bunker (met het nieuwe jar): ga naar je basis en open de app Robots. Na een paar seconden zijn Guard 1 tot
       en met 6 weg (het logboek van je kern zegt het per robot), en Guard 7, 8 en 9 blijven. Pak er een op met Pick up

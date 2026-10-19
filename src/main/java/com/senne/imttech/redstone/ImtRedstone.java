@@ -318,7 +318,7 @@ public final class ImtRedstone {
     private static void invert(ServerPlayer player, @Nullable ItemStack glasses, @Nullable Relay relay) {
         MinecraftServer server = player.getServer();
         ServerLevel level = relay == null || server == null ? null : server.getLevel(relay.dimension());
-        if (level == null || relay.channel() >= 0 || keepOwn(player, List.of(relay)).isEmpty()) {
+        if (level == null || relay.channel() >= 0 || withoutDrillBase(player, keepOwn(player, List.of(relay))).isEmpty()) {
             return;
         }
         if (glasses == null && !nearby(player, relay)) {
@@ -427,9 +427,9 @@ public final class ImtRedstone {
         List<Relay> found = payload.index() >= 0
                 ? (data.get(payload.index()) == null ? List.<Relay>of() : List.of(data.get(payload.index())))
                 : payload.index() == RelayActionPayload.GROUP_ONLY ? data.inGroup(payload.name()) : data.find(payload.name());
-        List<Relay> targets = keepOwn(player, found);
+        List<Relay> targets = withoutDrillBase(player, keepOwn(player, found));
         if (targets.isEmpty() && !found.isEmpty()) {
-            return; // alleen relais van een ander: dat zei keepOwn al
+            return; // alleen relais van een ander, of van je basis tijdens een oefening: dat zeiden we al
         }
         if (targets.isEmpty()) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.relay_unknown", payload.name()),
@@ -479,9 +479,32 @@ public final class ImtRedstone {
             tell(player, Component.translatable("imt.imttech.msg.relay_too_far"), ImtMessagePayload.Level.WARNING);
             return;
         }
-        if (!keepOwn(player, List.of(relay)).isEmpty()) {
+        if (!withoutDrillBase(player, keepOwn(player, List.of(relay))).isEmpty()) {
             apply(server, relay, payload.relayOp());
         }
+    }
+
+    /**
+     * Tijdens een oefening (hoofdstuk 27) luistert je basis niet naar jou: relais (en laserzenders, koepels, torentjes en
+     * stroomkasten) in het gebied van die kern schakel je niet, ook niet op afstand met je bril. Geeft de relais die wel
+     * mogen; zat er een bij die niet mocht, dan zegt I.M.T dat.
+     */
+    private static List<Relay> withoutDrillBase(ServerPlayer player, List<Relay> relays) {
+        MinecraftServer server = player.getServer();
+        List<Relay> allowed = new ArrayList<>();
+        boolean blocked = false;
+        for (Relay relay : relays) {
+            ServerLevel level = server == null ? null : server.getLevel(relay.dimension());
+            if (level != null && com.senne.imttech.training.Training.isDrillTraineeAt(level, relay.pos(), player.getUUID())) {
+                blocked = true;
+            } else {
+                allowed.add(relay);
+            }
+        }
+        if (blocked) {
+            tell(player, Component.literal("Your base does not obey you during the drill"), ImtMessagePayload.Level.WARNING);
+        }
+        return allowed;
     }
 
     /** Zet één relais echt om in de wereld. Geeft false als het blok er niet meer staat. */

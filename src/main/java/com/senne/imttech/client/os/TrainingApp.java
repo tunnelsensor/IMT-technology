@@ -54,7 +54,11 @@ final class TrainingApp {
             g.drawString(font, "No training running. Click a Training Start block to start one.", x + 26, y,
                     HudStyle.argb(255, OsDraw.GREY), false);
         } else {
-            g.drawString(font, now.getString("name") + ": " + now.getString("trainee"), x + 26, y, HudStyle.argb(255, HudStyle.WHITE), false);
+            // Een oefening (hoofdstuk 27) zegt welke: "Break-in drill Vault: Senne".
+            String kind = now.getString("kind");
+            String title = (kind.isEmpty() || kind.equals("Training") ? "" : kind + " ") + now.getString("name") + ": "
+                    + now.getString("trainee");
+            g.drawString(font, title, x + 26, y, HudStyle.argb(255, kind.contains("drill") ? HudStyle.ORANGE : HudStyle.WHITE), false);
             OsDraw.button(g, font, a.x() + a.w() - 4 - OsDraw.buttonWidth(font, "Stop"), y - 2, "Stop", true, HudStyle.RED);
             String state = !now.getBoolean("running") ? "counting down..."
                     : now.getString("mode").toLowerCase(java.util.Locale.ROOT) + "   " + now.getInt("lives") + "/" + now.getInt("max")
@@ -74,7 +78,13 @@ final class TrainingApp {
         for (int i = scroll; i < reports.size() && y + REPORT_H <= a.y() + a.h(); i++) {
             CompoundTag report = reports.get(i);
             boolean passed = report.getBoolean("passed");
-            String head = report.getString("Name") + "  " + report.getString("Trainee");
+            // Een oefening (hoofdstuk 27): "Break-in Vault  Senne".
+            String kind = switch (report.getString("Kind")) {
+                case "BREAK_IN" -> "Break-in ";
+                case "BREAK_OUT" -> "Break-out ";
+                default -> "";
+            };
+            String head = kind + report.getString("Name") + "  " + report.getString("Trainee");
             g.drawString(font, head, x, y, HudStyle.argb(255, HudStyle.WHITE), false);
             int rx = x + font.width(head) + 6;
             String verdict = passed ? "PASSED" : report.getString("Result").equals("STOPPED") ? "STOPPED" : "FAILED";
@@ -86,7 +96,9 @@ final class TrainingApp {
                     HudStyle.argb(255, OsDraw.GREY), false);
             g.drawString(font, time, a.x() + a.w() - 5 - font.width(time), y, HudStyle.argb(255, OsDraw.GREY), false);
             int hits = report.getInt("Hits");
-            String details = hits + (hits == 1 ? " hit" : " hits") + (report.getString("HitsBy").isEmpty() ? "" : ": " + report.getString("HitsBy"))
+            int closest = report.contains("Closest") ? report.getInt("Closest") : -1;
+            String details = (closest >= 0 ? "closest " + closest + (closest == 1 ? " block" : " blocks") + " from the core; " : "")
+                    + hits + (hits == 1 ? " hit" : " hits") + (report.getString("HitsBy").isEmpty() ? "" : ": " + report.getString("HitsBy"))
                     + (report.getInt("Downed") > 0 ? "; " + report.getInt("Downed") + (report.getInt("Downed") == 1 ? " robot down" : " robots down") : "");
             g.drawString(font, OsDraw.fitRight(font, details, a.w() - 18), x + 8, y + 10, HudStyle.argb(255, 0x9FC9D6), false);
             y += REPORT_H;

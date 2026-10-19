@@ -199,6 +199,10 @@ public class ZoneMarkerItem extends Item {
             tell(player, Component.translatable("zone.imttech.marker.not_yours", zone.ownerName()), true);
             return;
         }
+        if (com.senne.imttech.training.Training.isDrillTrainee(zone.core(), player.getUUID())) {
+            tell(player, Component.literal("Not during a drill: you are the intruder here"), true);
+            return;
+        }
         if (!(level.getBlockEntity(zone.core().pos()) instanceof SecurityCoreBlockEntity core)) {
             tell(player, Component.translatable("zone.imttech.marker.not_in_box"), true);
             return;
@@ -248,6 +252,11 @@ public class ZoneMarkerItem extends Item {
         for (BlockPos corePos : mine) {
             // getBlockEntity laadt zijn stuk wereld als dat nodig is.
             if (level.getBlockEntity(corePos) instanceof SecurityCoreBlockEntity core && player.getUUID().equals(core.ownerId())) {
+                if (com.senne.imttech.training.Training.isDrillTrainee(level, corePos, player.getUUID())) {
+                    // Tijdens een oefening (hoofdstuk 27) is hij hier een indringer: zijn zone verandert hij niet.
+                    tell(player, Component.literal("Not during a drill: you are the intruder here"), true);
+                    return null;
+                }
                 return core;
             }
         }
