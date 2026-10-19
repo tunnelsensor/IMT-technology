@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 295 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 297 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3148,7 +3148,18 @@ Ik bouw het in deze volgorde, één stap per commit:
       lethal schot dus niet; dat staat in LEESMIJ.md. De test `lethal_training_hurts_and_ends` is nu
       `lethal_training_lasts_until_death` (twee treffers, de training loopt door; een dodelijk schot, dan voorbij met
       DIED), en `training_start_block_only_for_trusted` kijkt dat een lethal training met Lives 3 toch 1 leven heeft.
-- [ ] **2. Tekst met namen erin: `$"..."`**
+- [x] **2. Tekst met namen erin: `$"..."`** — `say($"This is test {count}")` zegt "This is test 3". Tussen `{` en `}` mag
+      een naam, een gegeven, een berekening of tekst staan (`{count + 1}`, `{card.level}`, `{card.name + "!"}`); een getal
+      zonder overbodige nullen, `true`/`false` als woord; `{{` en `}}` zijn gewone haakjes. Het werkt overal waar een
+      waarde mag (een bericht, `naam = ...`, een `if`), niet als naam van een apparaat. Binnenin: een nieuw stukje
+      `TEMPLATE` in de lexer (hij gaat dicht bij het aanhalingsteken dat niet in de code staat), en `Expr.Template` met de
+      stukjes op volgorde; de code tussen de haakjes wordt streng nagekeken zoals de rest van de regel ("count has no value
+      yet", "card.level only works inside when keycard(...)"). Nieuwe fouten: "A { in $"..." is missing its }", "Something
+      is missing between { and }", "A } in $"..." needs a { before it (write }} for a } in the text)". De editor kleurt de
+      tekst groen, de haakjes roze en de code ertussen in zijn eigen kleuren; Ctrl+Spatie stelt tussen `{` en `}` je
+      namen voor; de Help heeft een regel bij NAMES. In de screenshot `l12` en in de showcase ("Logic: names, sums and
+      loops": `log($"Blink {i} of 3")`). LEESMIJ.md: "Tekst met namen erin". Twee nieuwe tests (`logic_text_with_names`,
+      `logic_text_with_names_run`).
 - [ ] **3. Devices als tabel**
 - [ ] **4. Robots als tabel**
 - [ ] **5. De desktop onthoudt wat open stond, met een aan/uit-knop**

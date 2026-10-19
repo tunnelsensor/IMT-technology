@@ -308,6 +308,101 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /**
+     * Tekst met namen erin (19 oktober, jouw notitie: {@code $"dit is de {aantal} test"}): in een bericht, een naam = waarde
+     * en een if; tussen { en } een naam, een berekening, een gegeven of tekst; {{ en }} zijn gewone haakjes. Terugschrijven,
+     * blokjes, opslaan en laden, uitrekenen, en de fouten.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_text_with_names(GameTestHelper helper) {
+        String code = """
+                count = 0
+
+                when keycard("Lab door"):
+                    count = count + 1
+                    say($"This is test {count}")
+                    label = $"Card {card.name + "!"} level {card.level * 2}"
+                    log($"{{braces}} and {label}")
+                    if $"{count}" == "3":
+                        alarm($"Card {card.number} came {count} times")
+                """;
+        String printed = ScriptPrinter.print(ScriptParser.parse(code));
+        check(printed.equals(code), "Tekst met namen terugschrijven gaf andere code:\n" + printed);
+        LogicGraph graph = GraphConverter.toGraph(ScriptParser.parse(code), null);
+        check(graph.problems().isEmpty(), "De blokjes met $\"...\" hebben fouten: " + graph.problems());
+        check(ScriptPrinter.print(GraphConverter.toScript(LogicGraph.load(graph.save()))).equals(code),
+                "Na blokjes, opslaan en laden was het anders");
+        // Uitrekenen: een getal zonder overbodige nullen, tekst, true/false, {{ en }} als gewone haakjes.
+        Expr.Facts facts = new Expr.Facts() {
+            @Override
+            public Object value(String variable) {
+                return switch (variable) {
+                    case "card.level" -> 3.0;
+                    case "card.name" -> "Boss";
+                    default -> true;
+                };
+            }
+
+            @Override
+            public boolean isOn(String device) {
+                return false;
+            }
+
+            @Override
+            public Object variable(String name) {
+                return name.equals("count") ? 2.0 : null;
+            }
+        };
+        String[][] cases = {
+                {"$\"This is test {count}\"", "This is test 2"},
+                {"$\"Round {count + 1} of {count * 2.5}\"", "Round 3 of 5"},
+                {"$\"Card {card.name + \"!\"} level {card.level}\"", "Card Boss! level 3"},
+                {"$\"{{count}} is {count}\"", "{count} is 2"},
+                {"$\"Night: {is_night}\"", "Night: true"},
+                {"$\"no names\"", "no names"},
+        };
+        for (String[] test : cases) {
+            Expr expr = ExprCache.value(test[0]);
+            check(expr != null, "Dit kon ik niet lezen: " + test[0]);
+            Object value = ExprCache.eval(expr, facts);
+            check(test[1].equals(value), test[0] + " werd \"" + value + "\" in plaats van \"" + test[1] + "\"");
+        }
+        // Fouten die een beginner snapt.
+        expectError("when every(5):\n    say($\"Count {count\")", 2, "missing its }");
+        expectError("when every(5):\n    say($\"Count {}\")", 2, "Something is missing between { and }");
+        expectError("when every(5):\n    say($\"a } b\")", 2, "needs a { before it");
+        expectError("when every(5):\n    say($\"Count {missing}\")", 2, "missing has no value yet");
+        expectError("when every(5):\n    say($\"Level {card.level}\")", 2, "card.level only works inside");
+        expectError("when every(5):\n    on($\"Lamp {1}\")", 2, "needs the name of a device between quotes");
+        expectError("when every(5):\n    say($\"Open)", 2, "missing its closing quote");
+        helper.succeed();
+    }
+
+    /** Tekst met namen erin tijdens het uitvoeren: in het logboek staan de waarden zelf. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_text")
+    public static void logic_text_with_names_run(GameTestHelper helper) {
+        Setup setup = setup(helper);
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
+            SecurityOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Template", """
+                    rounds = 0
+
+                    when every(1):
+                        rounds = rounds + 1
+                        if rounds == 2:
+                            log($"Round {rounds}: {rounds * 3} points, night {is_night}")
+                    """);
+            check(setup.core().logic().program("Template") != null, "Het diagram werd niet bewaard: " + lastLog(setup.core()));
+        });
+        helper.runAfterDelay(80, () -> {
+            // (Dag of nacht hangt af van de tijd in de testwereld: allebei goed, als het maar ingevuld is.)
+            check(logged(setup.core(), "Round 2: 6 points, night true") || logged(setup.core(), "Round 2: 6 points, night false"),
+                    "De ingevulde tekst staat niet in het logboek: " + lastLog(setup.core()));
+            helper.succeed();
+        });
+    }
+
     /** Berekeningen tijdens het uitvoeren: een berekend bericht in het logboek, en berekende seconden wachten. */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_values")
     public static void logic_values_run(GameTestHelper helper) {

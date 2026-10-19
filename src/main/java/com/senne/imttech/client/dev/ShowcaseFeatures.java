@@ -1259,7 +1259,8 @@ final class ShowcaseFeatures {
                 + "'Blink': count = 0 helemaal links (een naam voor het hele programma), en als de lamp aangaat telt "
                 + "het één op, zegt I.M.T 'The lights went on 1 times' (een berekend bericht: tekst + een getal), "
                 + "en gaat de deur drie keer even open (16 oktober: for i in range(1, 4), met i in het logboek: "
-                + "'Blink 1 of 3'...). Eerst de code 4321 op het paneel: de lamp gaat aan, I.M.T zegt het, en de deur "
+                + "'Blink 1 of 3'...; 19 oktober: dat bericht is tekst met een naam erin, log($\"Blink {i} of 3\")). Eerst "
+                + "de code 4321 op het paneel: de lamp gaat aan, I.M.T zegt het, en de deur "
                 + "gaat drie keer open en dicht. Dan de app Logic: de code (de nieuwe woorden roze, = en + ook), en "
                 + "als blokjes: AT START en een geel SET-blokje, en het roze FOR-blokje met zijn uitgangen do "
                 + "(rechtsboven, de stappen erin) en after (onderaan); daarna het FOR-blokje gekozen (rechts: de "
@@ -2378,7 +2379,7 @@ final class ShowcaseFeatures {
                 count = count + 1
                 say("The lights went on " + count + " times")
                 for i in range(1, 4):
-                    log("Blink " + i + " of 3")
+                    log($"Blink {i} of 3")
                     pulse("Lab door lock", 0.5)
                     wait(1)
             """;

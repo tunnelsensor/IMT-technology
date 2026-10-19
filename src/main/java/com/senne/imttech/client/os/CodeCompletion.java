@@ -232,7 +232,8 @@ public final class CodeCompletion {
                 || lower.startsWith("while ") || lower.equals("while") || lower.startsWith("for ") && lower.contains("range(")) {
             return true;
         }
-        for (String end : List.of(" and", " or", " not", "(", "==", "!=", "<", ">", "<=", ">=", "+", "-", "*", "/")) {
+        // ({ is de code in $"Round {i}", 19 oktober: daar staat een naam of een berekening.)
+        for (String end : List.of(" and", " or", " not", "(", "{", "==", "!=", "<", ">", "<=", ">=", "+", "-", "*", "/")) {
             if (lower.endsWith(end)) {
                 return true;
             }
@@ -285,21 +286,54 @@ public final class CodeCompletion {
         return names;
     }
 
-    /** Waar de tekst begint waar de cursor in staat (de " ervoor), of -1 als we niet in een tekst staan. */
+    /**
+     * Waar de tekst begint waar de cursor in staat (de " ervoor), of -1 als we niet in een tekst staan. In de code van
+     * {@code $"Round {i}"} (19 oktober) staan we niet in een tekst: daar stellen we namen voor, zoals overal in code.
+     */
     private static int openQuote(String before) {
         int open = -1;
+        boolean template = false;
+        int depth = 0;
+        char inner = 0;
         for (int i = 0; i < before.length(); i++) {
             char c = before.charAt(i);
-            if (c == '#' && open < 0) {
-                return -1; // commentaar
-            }
-            if (c == '\\' && open >= 0) {
+            if (open < 0) {
+                if (c == '#') {
+                    return -1; // commentaar
+                }
+                if (c == '"' || c == '\'') {
+                    open = i;
+                    template = i > 0 && before.charAt(i - 1) == '$';
+                    depth = 0;
+                }
+            } else if (depth > 0) {
+                // In de code tussen { en } van $"...": tot de } die erbij hoort (tekst erin telt niet mee).
+                if (inner != 0) {
+                    if (c == '\\') {
+                        i++;
+                    } else if (c == inner) {
+                        inner = 0;
+                    }
+                } else if (c == '"' || c == '\'') {
+                    inner = c;
+                } else if (c == '{') {
+                    depth++;
+                } else if (c == '}') {
+                    depth--;
+                }
+            } else if (c == '\\') {
                 i++;
-            } else if (c == '"' || c == '\'') {
-                open = open < 0 ? i : -1;
+            } else if (c == before.charAt(open)) {
+                open = -1;
+            } else if (template && c == '{') {
+                if (i + 1 < before.length() && before.charAt(i + 1) == '{') {
+                    i++; // {{ is een gewone { in de tekst
+                } else {
+                    depth = 1;
+                }
             }
         }
-        return open;
+        return open >= 0 && depth == 0 ? open : -1;
     }
 
     /** Het woord vlak voor de haakjes: in {@code pulse(} is dat "pulse". */

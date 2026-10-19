@@ -476,6 +476,11 @@ public final class LogicGraph {
             for (Lexer.Token token : Lexer.tokens(text)) {
                 if (token.type() == Lexer.Type.NAME) {
                     out.add(token.text());
+                } else if (token.type() == Lexer.Type.TEMPLATE) {
+                    // $"Round {i}": de namen in de code tussen { en } tellen ook (19 oktober).
+                    for (String code : Lexer.templateCode(token.text())) {
+                        words(code, out);
+                    }
                 }
             }
         } catch (LogicException e) {

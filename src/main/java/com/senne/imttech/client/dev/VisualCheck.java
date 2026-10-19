@@ -2362,7 +2362,7 @@ public final class VisualCheck {
                         say("Card " + count + ": " + card.name)
                         if count >= 3:
                             for i in range(1, 4):
-                                say("Blink " + i)
+                                say($"Blink {i} of {count}")
                                 pulse("Lab lights", 0.5)
                                 wait(1)
                             count = 0

@@ -61,6 +61,13 @@ public sealed interface Expr {
     record Call(Function function, List<Expr> args) implements Expr {}
 
     /**
+     * Tekst met namen erin (19 oktober, jouw notitie: {@code $"dit is de {aantal} test"}): {@code $"Round {i} of
+     * {count}"}. De stukjes staan op volgorde: gewone tekst is een {@link Str}, wat tussen { en } stond is de
+     * uitdrukking zelf. Uitgerekend worden ze aan elkaar geplakt, zoals met + ("Round 2 of 3").
+     */
+    record Template(List<Expr> parts) implements Expr {}
+
+    /**
      * De soorten waarden: een getal, tekst, of waar/onwaar. ANY = "pas bij het uitvoeren bekend" (zoals
      * een variabele als we de code soepel lezen): die mag overal, de echte controle komt elders.
      */
@@ -500,6 +507,9 @@ public sealed interface Expr {
                 case STRING -> {
                     return new Str(token.text());
                 }
+                case TEMPLATE -> {
+                    return template(token.text());
+                }
                 case NAME -> {
                     return name(token);
                 }
@@ -515,6 +525,60 @@ public sealed interface Expr {
                 }
                 default -> throw new LogicException("The check stops too early: something is missing at the end");
             }
+        }
+
+        /**
+         * {@code $"Round {i} of {count}"}: de tekst tussen de aanhalingstekens, in stukjes. Tussen { en } staat code (een
+         * naam of een berekening), die we lezen zoals elke waarde, met dezelfde namen en gegevens als de rest van de
+         * regel; {@code {{} en {@code }}} zijn gewone haakjes. Zonder code is het gewoon tekst.
+         */
+        private Expr template(String raw) {
+            List<Expr> parts = new ArrayList<>();
+            StringBuilder text = new StringBuilder();
+            int i = 0;
+            while (i < raw.length()) {
+                char c = raw.charAt(i);
+                if (c == '\\' && i + 1 < raw.length()) {
+                    text.append(raw.charAt(i + 1));
+                    i += 2;
+                } else if ((c == '{' || c == '}') && i + 1 < raw.length() && raw.charAt(i + 1) == c) {
+                    text.append(c);
+                    i += 2;
+                } else if (c == '}') {
+                    throw new LogicException("A } in $\"...\" needs a { before it (write }} for a } in the text)");
+                } else if (c == '{') {
+                    int end = Lexer.closingBrace(raw, i);
+                    String code = raw.substring(i + 1, end);
+                    if (code.isBlank()) {
+                        throw new LogicException("Something is missing between { and } in $\"...\", like {count}");
+                    }
+                    Parser inner = new Parser(Lexer.tokens(code), 0, trigger, scope, kind);
+                    Expr value = inner.parse(false);
+                    if (inner.peek().type() != Lexer.Type.END) {
+                        throw new LogicException("I did not expect " + inner.peek() + " in {" + code.strip() + "}");
+                    }
+                    if (value instanceof Str str) {
+                        text.append(str.value()); // {"x"} is gewoon tekst
+                    } else {
+                        if (!text.isEmpty()) {
+                            parts.add(new Str(text.toString()));
+                            text.setLength(0);
+                        }
+                        parts.add(value);
+                    }
+                    i = end + 1;
+                } else {
+                    text.append(c);
+                    i++;
+                }
+            }
+            if (parts.isEmpty()) {
+                return new Str(text.toString());
+            }
+            if (!text.isEmpty()) {
+                parts.add(new Str(text.toString()));
+            }
+            return new Template(List.copyOf(parts));
         }
 
         private Expr name(Lexer.Token token) {
@@ -714,6 +778,7 @@ public sealed interface Expr {
                 collectVariables(a.right(), names);
             }
             case Call c -> c.args().forEach(arg -> collectVariables(arg, names));
+            case Template t -> t.parts().forEach(part -> collectVariables(part, names));
             default -> { }
         }
     }
@@ -723,6 +788,7 @@ public sealed interface Expr {
         return switch (expr) {
             case Num n -> Type.NUMBER;
             case Str s -> Type.TEXT;
+            case Template t -> Type.TEXT;
             case Var v -> Variable.byName(v.name()) == null ? Type.BOOL : Variable.byName(v.name()).type;
             case Neg n -> Type.NUMBER;
             case Arith a -> arithType(a);
@@ -778,8 +844,22 @@ public sealed interface Expr {
             case Ref r -> r.name();
             case IsOn i -> "is_on(" + quote(i.device()) + ")";
             case Call c -> c.function().name + "(" + printList(c.args()) + ")";
+            case Template t -> template(t);
         };
         return strength(expr) < needed ? "(" + text + ")" : text;
+    }
+
+    /** {@code $"Round {i} of {count}"}: de tekst met { en } eromheen waar code stond (en {{ en }} voor gewone haakjes). */
+    private static String template(Template template) {
+        StringBuilder text = new StringBuilder("$\"");
+        for (Expr part : template.parts()) {
+            if (part instanceof Str str) {
+                text.append(str.value().replace("\\", "\\\\").replace("\"", "\\\"").replace("{", "{{").replace("}", "}}"));
+            } else {
+                text.append('{').append(print(part)).append('}');
+            }
+        }
+        return text.append('"').toString();
     }
 
     /** Een rijtje waarden met komma's ertussen: {@code 10, y + 1, -20}. */
@@ -863,6 +943,7 @@ public sealed interface Expr {
             }
             case Var v -> names.add(v.name());
             case Call c -> c.args().forEach(arg -> collect(arg, names));
+            case Template t -> t.parts().forEach(part -> collect(part, names));
             default -> { }
         }
     }
@@ -898,6 +979,7 @@ public sealed interface Expr {
                 found.add(c.function());
                 c.args().forEach(arg -> collectFunctions(arg, found));
             }
+            case Template t -> t.parts().forEach(part -> collectFunctions(part, found));
             default -> { }
         }
     }
@@ -937,6 +1019,14 @@ public sealed interface Expr {
                 // pin(1) is gewoon het getal; read(pin) vraagt het aan de robot.
                 double pin = Math.rint(toNumber(eval(c.args().getFirst(), facts)));
                 yield c.function() == Function.PIN ? (Object) pin : facts.read((int) pin);
+            }
+            case Template t -> {
+                // Aan elkaar geplakt, zoals met +: een getal zonder overbodige nullen, true of false.
+                StringBuilder text = new StringBuilder();
+                for (Expr part : t.parts()) {
+                    text.append(text(eval(part, facts)));
+                }
+                yield text.toString();
             }
         };
     }

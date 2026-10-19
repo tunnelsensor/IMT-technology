@@ -584,6 +584,12 @@ when keycard("Lab door"):
   je tekst aan elkaar: `if card.level * 2 - 1 >= 5:`, `say("Level " + card.level)`. Een bericht
   (`say`, `log`, `alarm`) en de seconden (`wait`, `pulse`) mogen een berekening zijn: `wait(delay * 2)`.
   Een apparaat blijft gewone tekst tussen aanhalingstekens. Delen door 0 geeft 0.
+- **Tekst met namen erin** (sinds 19 oktober): zet een `$` voor de tekst, en wat tussen `{` en `}` staat,
+  wordt ingevuld: `say($"This is test {count}")` zegt "This is test 3". Tussen de haakjes mag een naam, een
+  gegeven of een berekening staan: `$"Round {i + 1} of {count}"`, `$"Card {card.name} level {card.level}"`.
+  Een getal komt er zonder overbodige nullen in, en `true`/`false` als woord. Wil je een gewoon haakje in de
+  tekst, schrijf dan `{{` of `}}`. Het werkt overal waar tekst mag (een bericht, `naam = ...`, een `if`), niet
+  als naam van een apparaat.
 - **Namen** (variabelen): `count = 0` helemaal links is een naam voor het hele programma; hij houdt
   zijn waarde tussen de runs (tot je het programma opnieuw bewaart). `count = count + 1` in een when of
   def geeft hem een nieuwe waarde. Een naam die je pas in een when maakt, bestaat alleen in die run; een

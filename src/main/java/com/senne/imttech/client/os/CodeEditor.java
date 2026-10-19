@@ -438,7 +438,9 @@ final class CodeEditor {
                 java.util.Arrays.fill(colours, i, line.length(), 0x6E8A96);
                 break;
             }
-            if (c == '"' || c == '\'') {
+            if (c == '$' && i + 1 < line.length() && (line.charAt(i + 1) == '"' || line.charAt(i + 1) == '\'')) {
+                i = templateColours(line, i, colours);
+            } else if (c == '"' || c == '\'') {
                 int end = i + 1;
                 while (end < line.length() && line.charAt(end) != c) {
                     end += line.charAt(end) == '\\' ? 2 : 1;
@@ -486,6 +488,65 @@ final class CodeEditor {
             }
         }
         return colours;
+    }
+
+    /**
+     * De kleuren van {@code $"Round {i} of {count}"} (19 oktober), vanaf de $ op plek {@code start}: de tekst groen zoals
+     * gewone tekst, de { en } roze, en de code ertussen in zijn eigen kleuren. Geeft de plek na het sluitende
+     * aanhalingsteken (of het einde van de regel).
+     */
+    private static int templateColours(String line, int start, int[] colours) {
+        char quote = line.charAt(start + 1);
+        java.util.Arrays.fill(colours, start, start + 2, 0x6BE88B);
+        int i = start + 2;
+        while (i < line.length()) {
+            char c = line.charAt(i);
+            if (c == '\\') {
+                java.util.Arrays.fill(colours, i, Math.min(line.length(), i + 2), 0x6BE88B);
+                i += 2;
+            } else if (c == quote) {
+                colours[i] = 0x6BE88B;
+                return i + 1;
+            } else if (c == '{' && (i + 1 >= line.length() || line.charAt(i + 1) != '{')) {
+                int end = i + 1;
+                int depth = 1;
+                char inner = 0;
+                while (end < line.length() && depth > 0) {
+                    char d = line.charAt(end);
+                    if (inner != 0) {
+                        if (d == '\\') {
+                            end++;
+                        } else if (d == inner) {
+                            inner = 0;
+                        }
+                    } else if (d == '"' || d == '\'') {
+                        inner = d;
+                    } else if (d == '{') {
+                        depth++;
+                    } else if (d == '}') {
+                        depth--;
+                        if (depth == 0) {
+                            break;
+                        }
+                    }
+                    end++;
+                }
+                colours[i] = 0xFF79C6;
+                int codeEnd = Math.min(end, line.length());
+                int[] inside = colours(line.substring(i + 1, codeEnd));
+                System.arraycopy(inside, 0, colours, i + 1, inside.length);
+                if (codeEnd < line.length()) {
+                    colours[codeEnd] = 0xFF79C6;
+                }
+                i = codeEnd + 1;
+            } else {
+                // Gewone tekst (ook {{ en }}: haakjes in de tekst).
+                int step = (c == '{' || c == '}') && i + 1 < line.length() && line.charAt(i + 1) == c ? 2 : 1;
+                java.util.Arrays.fill(colours, i, Math.min(line.length(), i + step), 0x6BE88B);
+                i += step;
+            }
+        }
+        return line.length();
     }
 
     // ================================================================ Muis
