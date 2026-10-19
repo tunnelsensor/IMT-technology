@@ -373,6 +373,7 @@ public final class ImtClientEvents {
         com.senne.imttech.client.illusion.IllusionRenderer.clear();
         com.senne.imttech.client.shield.RayshieldHum.clear();
         com.senne.imttech.client.robot.RobotChargeHum.clear();
+        com.senne.imttech.client.robot.DroneRotorSound.clear();
         ImtClientState.reset();
     }
 }

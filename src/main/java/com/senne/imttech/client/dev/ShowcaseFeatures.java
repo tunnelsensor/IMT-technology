@@ -1857,11 +1857,13 @@ final class ShowcaseFeatures {
                 + "ook Drone program, en het droneprogramma Hover patrol (een lichtblauwe D in de lijst): eerst up(2), dan steeds "
                 + "3 vooruit en een kwartslag rechts, en onder 30% batterij charge(50). De app Robots toont beide drones met "
                 + "'drone' achter hun naam. Dan gaan ze aan: ze stijgen op van hun dock, nog 2 hoger, en vliegen elk hun "
-                + "vierkantje, blok voor blok, met draaiende rotors en cyaan lichtjes. Drone 2 heeft maar 33% batterij: na een "
-                + "paar zijden vliegt hij terug, landt op zijn dock, laadt tot 50% (heel zacht zoemen) en vliegt terug naar waar "
-                + "hij was. Daarna kijk je in de app Cameras door de camera van Drone 1 (een beetje naar beneden), schiet je hem "
-                + "neer met de Ion Blaster (hij valt scheef op de grond), en zet je in de app Devices de schakelaar Drones uit: "
-                + "Drone 2 vliegt naar zijn dock en landt.",
+                + "vierkantje, blok voor blok, met draaiende rotors en cyaan lichtjes. (19 oktober) Luister naar de rotors: een "
+                + "heel zacht 'brrr' dat bij het opstijgen opspint, iets hoger klinkt als ze vliegen, en wegzakt als een drone "
+                + "landt of valt. Drone 2 heeft maar 33% batterij: na een paar zijden vliegt hij terug, landt op zijn dock (zijn "
+                + "rotors stoppen), laadt tot 50% (heel zacht zoemen) en vliegt terug naar waar hij was. Daarna kijk je in de app "
+                + "Cameras door de camera van Drone 1 (een beetje naar beneden), schiet je hem neer met de Ion Blaster (hij valt "
+                + "scheef op de grond), en zet je in de app Devices de schakelaar Drones uit: Drone 2 vliegt naar zijn dock en "
+                + "landt.",
                 Vec3.atBottomCenterOf(ROBOT_BAY.offset(3, 0, 15)), 180, 15, s -> {
             BlockPos core = ROBOT_BAY.offset(10, 0, 6);
             s.onServer(0, ShowcaseFeatures::buildRobotBay)

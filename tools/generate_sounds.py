@@ -723,6 +723,31 @@ def robot_charge_hum():
     return (loop / np.max(np.abs(loop)) * 0.4).astype(np.float32)
 
 
+def drone_rotor():
+    """
+    De rotors van een security drone die vliegt (19 oktober; tot dan vloog hij zonder geluid): een zacht, snel "brrr".
+    Vier rotors die net niet even snel draaien (40 en 41,5 keer per seconde), dus ze zweven traag tegen elkaar, met
+    een lage toon van de bladen eronder. Een lus zonder naad, net als robot_charge_hum: elke toon past een heel aantal
+    keer in 2 seconden, dus het einde loopt precies over in het begin. In het spel speelt hij heel stil, en iets hoger
+    als de drone vliegt of stijgt (zie DroneRotorSound).
+    """
+    length, overlap = 2.0, 0.4
+    total = length + overlap
+    t = seconds(total)
+    chop_a = 0.5 + 0.5 * np.sin(2 * np.pi * 40 * t)
+    chop_b = 0.5 + 0.5 * np.sin(2 * np.pi * 41.5 * t + 1.1)
+    air = bandpass(noise(total), 180, 2200, order=2)
+    blades = 0.25 * np.sin(2 * np.pi * 160 * t) + 0.2 * np.sin(2 * np.pi * 166 * t + 0.4) + 0.15 * np.sin(2 * np.pi * 80 * t)
+    sound = lowpass(air * (0.55 * chop_a + 0.45 * chop_b) + blades, 1400, order=2)
+
+    n, m = int(RATE * length), int(RATE * overlap)
+    loop = sound[:n].copy()
+    ramp = np.linspace(0.0, 1.0, m)
+    loop[:m] = sound[n:n + m] * (1.0 - ramp) + loop[:m] * ramp
+    loop = np.tanh(loop * 0.9)
+    return (loop / np.max(np.abs(loop)) * 0.4).astype(np.float32)
+
+
 def robot_laser():
     """Het laserschot van een robot: een vollere, lagere "pew" dan die van een drone, met een zoemende staart."""
     phase = sweep(1800, 420, 0.24, curve=0.6)
@@ -800,6 +825,7 @@ SOUNDS = {
     "robot_power_off": robot_power_off,
     "robot_hurt": robot_hurt,
     "robot_charge_hum": robot_charge_hum,
+    "drone_rotor": drone_rotor,
     "robot_laser": robot_laser,
     "robot_gun": robot_gun,
     "ion_blaster": ion_blaster,

@@ -84,6 +84,7 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.shield.RayshieldHum::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.robot.RobotChargeHum::onClientTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.robot.DroneRotorSound::onClientTick);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);
         // De laser cannon aan? Dan is de aanvalsknop de laser cannon.

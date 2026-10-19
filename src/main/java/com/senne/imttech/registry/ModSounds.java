@@ -82,6 +82,8 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_HURT = register("robot.hurt");
     /** Laden op zijn dock: een heel zachte lus (zie client/robot/RobotChargeHum). */
     public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_CHARGE_HUM = register("robot.charge_hum");
+    /** De rotors van een security drone die vliegt: een heel zachte lus (zie client/robot/DroneRotorSound). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> DRONE_ROTOR = register("drone.rotor");
     /** Het laserschot van een robot (hoofdstuk 24): een volle "pew" met een zoemende staart. */
     public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_LASER = register("robot.laser");
     /** Het geweer van een robot: een droge knal. */

@@ -1040,6 +1040,10 @@ zonnevleugels en een camera onder zijn neus.
 zijn dock en landt erop. Is zijn batterij leeg, of raakt de Ion Blaster hem, dan valt hij naar de grond (zonder
 schade).
 
+**Zijn rotors.** Zolang zijn rotors draaien, hoor je ze: een heel zacht "brrr" dat opspint als hij opstijgt, iets
+hoger klinkt als hij vliegt of stijgt, en wegzakt als hij landt of valt. Op zijn dock laden doet hij met stilstaande
+rotors. Hoe hard: `droneRotorVolume` in `imttech-client.toml` (1 = normaal, 2 = dubbel zo hard, 0 = uit).
+
 **Zijn programma.** In de app Logic druk je op **+** en kies je **Drone program** (een lichtblauwe **D** in de
 lijst). Het kent alles van een robotprogramma (zie "Robots programmeren" en "Zien en schieten"), maar met
 `drone.` in plaats van `robot.`, en hij kan omhoog en omlaag:
@@ -1396,7 +1400,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 | Bestand | Wat |
 |---------|-----|
 | `config/imttech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, guard robots, Raven, raids... |
-| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rand van zones (`zoneBorder`) |
+| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../config/ImtConfig.java` | De standaardwaarden van al die getallen, met uitleg in het Nederlands, plus een paar vaste getallen die niet in het `.toml`-bestand kunnen |

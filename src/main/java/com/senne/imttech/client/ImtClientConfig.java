@@ -125,6 +125,10 @@ public final class ImtClientConfig {
     public static final ModConfigSpec.DoubleValue ROBOT_HUM_VOLUME = BUILDER
             .comment("How loud the quiet hum of a guard robot charging on its dock is (1 = normal, 2 = twice as loud, 0 = off)")
             .defineInRange("robotHumVolume", 1.0, 0.0, 3.0);
+    /** Hoe hard het (zachte) "brrr" van de rotors van een security drone die vliegt is (1 = zoals bedoeld, 0 = uit). */
+    public static final ModConfigSpec.DoubleValue DRONE_ROTOR_VOLUME = BUILDER
+            .comment("How loud the soft whir of a flying security drone's rotors is (1 = normal, 2 = twice as loud, 0 = off)")
+            .defineInRange("droneRotorVolume", 1.0, 0.0, 3.0);
 
     // ---------------------------------------------------------------- Stroom laten zien
     /** In welke tijd de schermen stroom laten zien (de knop /tick, /sec, /min, /hour in de stroomschermen). */
@@ -155,6 +159,11 @@ public final class ImtClientConfig {
     /** Hoe hard het laadzoemen van de guard robots is (zolang de instellingen nog niet geladen zijn: gewoon). */
     public static double robotHumVolume() {
         return SPEC.isLoaded() ? ROBOT_HUM_VOLUME.get() : 1.0;
+    }
+
+    /** Hoe hard de rotors van de security drones zijn (zolang de instellingen nog niet geladen zijn: gewoon). */
+    public static double droneRotorVolume() {
+        return SPEC.isLoaded() ? DRONE_ROTOR_VOLUME.get() : 1.0;
     }
 
 

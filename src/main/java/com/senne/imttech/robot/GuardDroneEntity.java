@@ -241,6 +241,19 @@ public class GuardDroneEntity extends BotEntity {
         return isOnDock() && flatDistance(home) <= 0.01 && Math.abs(getY() - (home.getY() + DOCK_FLOOR)) <= 0.01;
     }
 
+    /**
+     * Draaien zijn rotors? Als hij aan staat (behalve terwijl hij op zijn dock laadt: dan is hij geland), en als hij uit
+     * staat maar nog naar zijn dock vliegt. Niet als hij valt (geen stroom, of neergeschoten met de Ion Blaster). Het
+     * model ({@code GuardDroneModel}) en het rotorgeluid in je spel ({@code DroneRotorSound}) vragen het allebei hier,
+     * zodat je ze hoort draaien als je ze ziet draaien. Werkt in je spel en op de server (alles hierin wordt
+     * meegestuurd).
+     */
+    public boolean rotorsSpinning() {
+        RobotState state = state();
+        boolean moving = getX() != xo || getY() != yo || getZ() != zo;
+        return state == RobotState.ACTIVE && !isCharging() || state == RobotState.STANDBY && moving;
+    }
+
     /** Is zijn Drone Dock er nog, en is het nog het zijne? */
     @Override
     protected boolean homeIsMine(ServerLevel level) {

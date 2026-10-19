@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 294 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 295 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3061,6 +3061,36 @@ weg, en die komt terug als Guard 3 als een nieuwe robot intussen Guard 2 heet (`
       **Sure?** op zijn knop Delete. In de showcase (82, "Guard robots") komen er aan het eind twee spookrobots bij:
       Old guard gaat weg met Delete, Lost guard verdwijnt vanzelf. LEESMIJ.md: "Een robot weghalen".
 
+### 30. De rotors van de security drone (19 oktober)
+
+Jouw vraag: "kijk hoever je staat met het maken van de robots en ga verder met wat nog niet klaar is". Hoofdstuk 27
+was gebouwd maar nog niet vastgelegd: dat is nu commit `de34f6e`. Daarmee zijn de hoofdstukken 20 tot en met 29 af.
+Eén gat bleef over, dat ik zelf bij "Nog nooit in het spel bekeken" had gezet: een security drone vloog zonder geluid.
+
+- [x] **1. Het rotorgeluid** — een nieuw geluid `drone_rotor` uit `tools/generate_sounds.py`: een zacht, snel "brrr"
+      van vier rotors die net niet even snel draaien (ze zweven traag tegen elkaar), met een lage toon van de bladen;
+      een lus zonder naad. In je spel (`client/robot/DroneRotorSound`) speelt het zolang zijn rotors draaien, heel stil
+      (0,12: ongeveer zo stil als het laadzoemen van een robot; jouw wens van 7 oktober: "het mag altijd geluid maken
+      maar gewoon heel stil/subtiel"), voor hooguit de 4 dichtste drones binnen 20 blokken. Opstijgen: de rotors spinnen
+      op (het geluid begint laag); vliegen of stijgen: iets hoger en voller; landen of vallen: het zakt in ongeveer een
+      seconde weg. Eigen volumeknop `droneRotorVolume` in `imttech-client.toml` (1 = zo, 2 = dubbel, 0 = uit). Wanneer de
+      rotors draaien, staat op één plek (`GuardDroneEntity.rotorsSpinning`), die het model ook gebruikt: als hij aan
+      staat, of uit staat maar nog naar zijn dock vliegt. **Nieuw**: terwijl hij op zijn dock laadt (met `charge()`),
+      staan zijn rotors stil; vroeger draaiden ze daar door. Eén nieuwe test (`drone_rotors_spin_only_when_flying`), en
+      `drone_falls_when_down_or_empty` kijkt nu ook dat de rotors van een neergevallen drone stilstaan. In de showcase
+      (86, "Security drones") staat erbij waar je op moet letten; LEESMIJ.md: "Zijn rotors" bij de security drones.
+
+**Mijn invulling**: alleen de security drones (die horen bij de robothoofdstukken). De drones van je arsenaal en de
+raiddrones hebben al geluid bij vertrekken en terugkeren, maar zoemen niet terwijl ze bij je rondvliegen; zeg het als
+die het ook moeten krijgen. Bij aan- en uitzetten hoort een drone nog de servo's van een robot.
+
+- [x] **Afronding** — 295 tests: 292 groen, de 3 rode van hoofdstuk 14 stap 2 (jouw stroomwaarden). Luisteren kan ik
+      niet, dus ik heb gemeten: de naad van de lus is gladder dan die van het laadzoemen en de rayshields, en in het spel
+      is hij ongeveer even zacht als het laadzoemen. De showcase-functie 86 ("Security drones") heb ik twee keer laten
+      lopen, de tweede keer met een tijdelijke logregel: de geluidsmotor speelde de rotors van Drone 1 en Drone 2, en die
+      van Drone 2 een tweede keer nadat hij geladen had en weer opsteeg (precies zoals bedoeld; de regel is er weer uit).
+      Geen fouten in het spellog.
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -3143,8 +3173,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       lamp aan het End-blok duidelijk is (`endPulse`), en of de golven met `squad_down` lekker lopen. Ook: het
       instelscherm (Enter in het naamvak) en de mini-editor van End met de muis.
 - [ ] **Security drones (16 oktober)**: gezien op screenshots (`sd01`-`sd11`, `t25`) en in de showcase (86 en 87),
-      getest met 8 nieuwe tests. Niet gehoord: de rotors (er is geen eigen vlieggeluid; ik gebruikte de geluiden van
-      de robot voor opstarten en uitschakelen) en het zachte laadzoemen op het dock. Probeer zelf: hoe het vliegen
+      getest met 8 nieuwe tests. Niet gehoord: de rotors (sinds 19 oktober een eigen, heel zacht "brrr": is het stil
+      genoeg, of juist te stil? `droneRotorVolume`; bij aan- en uitzetten nog de servo's van een robot) en het zachte
+      laadzoemen op het dock. Probeer zelf: hoe het vliegen
       eruitziet (3 blokken per seconde, `droneSpeed`; blok voor blok met een klein stopje in elk midden), opstijgen
       en landen op het dock (ook als je hem uitzet terwijl hij ver weg is), `goto` rond een muur, een drone met
       lege batterij die valt, en of Biebia's drones in de hangar van een echte toren lastig genoeg (of te lastig)

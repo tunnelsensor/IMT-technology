@@ -211,6 +211,54 @@ public final class DroneGameTests {
     }
 
     /**
+     * Zijn rotors (19 oktober: het model en het rotorgeluid in je spel vragen het allebei aan rotorsSpinning): stil als
+     * hij uit op zijn dock staat, draaien als hij aan staat en vliegt, stil terwijl hij met {@code charge()} op zijn dock
+     * laadt, draaien als hij uitgezet naar huis vliegt, en weer stil als hij geland is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 1000)
+    public static void drone_rotors_spin_only_when_flying(GameTestHelper helper) {
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 14), "rotor-owner");
+        GuardDroneEntity drone = dockedDrone(helper, player, new BlockPos(6, 2, 9));
+        check(!drone.rotorsSpinning(), "Uit op zijn dock draaiden zijn rotors");
+        drone.setProgram(program("""
+                done = false
+                when started:
+                    forward(2)
+                    charge(60)
+                    done = true
+                """));
+        drone.setBattery(drone.maxBattery() * 0.5);
+        drone.setActive(true);
+        // 0: aan en in de lucht draaiden ze; 1: hij laadde op zijn dock; 2: uitgezet, op weg naar huis, draaiden ze.
+        boolean[] seen = new boolean[3];
+        boolean[] switchedOff = new boolean[1];
+        helper.onEachTick(() -> {
+            if (drone.isActive() && !drone.isOnDock() && drone.rotorsSpinning()) {
+                seen[0] = true;
+            }
+            if (drone.isActive() && drone.isSettled() && drone.isCharging()) {
+                check(!drone.rotorsSpinning(), "Terwijl hij op zijn dock laadde, draaiden zijn rotors");
+                seen[1] = true;
+            }
+            if (switchedOff[0] && !drone.isSettled() && drone.rotorsSpinning()) {
+                seen[2] = true;
+            }
+        });
+        helper.succeedWhen(() -> {
+            if (!switchedOff[0]) {
+                check(Boolean.TRUE.equals(drone.brain().global("done")), "Nog niet klaar met laden");
+                check(seen[0], "Aan en in de lucht draaiden zijn rotors niet");
+                check(seen[1], "Hij laadde niet op zijn dock");
+                drone.setActive(false);
+                switchedOff[0] = true;
+            }
+            check(drone.isSettled(), "Uitgezet landde hij niet op zijn dock");
+            check(seen[2], "Uitgezet, op weg naar zijn dock, draaiden zijn rotors niet");
+            check(!drone.rotorsSpinning(), "Geland draaiden zijn rotors nog");
+        });
+    }
+
+    /**
      * Een drone die je met het item op een nieuw Drone Dock zet (met een volle warmtegenerator ernaast). Het dock is van
      * jou, zoals wanneer je het zelf neerzet (anders is het van de kern in wiens gebied het staat: in de testwereld
      * kan dat de kern van een andere test zijn).
@@ -301,6 +349,7 @@ public final class DroneGameTests {
             check(downed.getY() < helper.absolutePos(new BlockPos(6, 2, 9)).getY() + 0.1, "Neer viel hij niet op de grond: y = " + downed.getY());
             check(empty.state() == RobotState.NO_POWER && empty.getY() < helper.absolutePos(new BlockPos(10, 2, 9)).getY() + 0.1,
                     "Zonder stroom zakte hij niet naar de grond: " + empty.state() + ", y = " + empty.getY());
+            check(!downed.rotorsSpinning() && !empty.rotorsSpinning(), "Neergevallen draaiden de rotors nog");
         });
         helper.runAfterDelay(5 + 60 + 10, () -> {
             check(downed.state() == RobotState.ACTIVE && downed.brain().started(), "Na 3 seconden stond hij niet weer op: " + downed.state());

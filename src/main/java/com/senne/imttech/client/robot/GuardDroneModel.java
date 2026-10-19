@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.bot.BotModule;
 import com.senne.imttech.robot.GuardDroneEntity;
-import com.senne.imttech.robot.RobotState;
 import java.util.EnumMap;
 import java.util.Map;
 import net.minecraft.client.model.EntityModel;
@@ -124,10 +123,9 @@ public class GuardDroneModel extends EntityModel<GuardDroneEntity> {
     public void setupAnim(GuardDroneEntity drone, float limbSwing, float limbSwingAmount, float ageInTicks,
                           float netHeadYaw, float headPitch) {
         root.getAllParts().forEach(ModelPart::resetPose);
-        RobotState state = drone.state();
-        boolean moving = drone.getX() != drone.xo || drone.getY() != drone.yo || drone.getZ() != drone.zo;
-        boolean spinning = state == RobotState.ACTIVE || state == RobotState.STANDBY && moving;
-        if (spinning) {
+        // Dezelfde regel als het rotorgeluid (zie GuardDroneEntity.rotorsSpinning): aan, of onderweg naar zijn dock; stil
+        // als hij op zijn dock laadt of valt.
+        if (drone.rotorsSpinning()) {
             // Een beetje op en neer zweven, en de rotors snel rond (om en om de andere kant op).
             body.y = 19 + Mth.sin(ageInTicks * 0.15f) * 0.4f;
             for (int i = 0; i < rotors.length; i++) {

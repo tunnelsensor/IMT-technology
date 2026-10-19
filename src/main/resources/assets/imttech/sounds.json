@@ -311,6 +311,14 @@
       }
     ]
   },
+  "drone.rotor": {
+    "subtitle": "subtitles.imttech.drone.rotor",
+    "sounds": [
+      {
+        "name": "imttech:drone_rotor"
+      }
+    ]
+  },
   "robot.laser": {
     "subtitle": "subtitles.imttech.robot.laser",
     "sounds": [
