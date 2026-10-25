@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "K": {
+      "tag": "c:ingots/copper"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "pattern": [
+    "IKI",
+    "RCR",
+    "IKI"
+  ],
+  "result": {
+    "id": "imttech:emp_grenade",
+    "count": 2
+  }
+}

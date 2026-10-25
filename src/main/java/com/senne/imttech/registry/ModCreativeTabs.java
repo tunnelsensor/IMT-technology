@@ -96,6 +96,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SOLDERING_IRON.get());
                 output.accept(ModItems.ROBOT_AMMO.get());
                 output.accept(ModItems.ION_BLASTER.get());
+                output.accept(ModItems.EMP_GRENADE.get());
+                output.accept(ModItems.STICKY_EMP_GRENADE.get());
                 output.accept(ModItems.TRAINING_START.get());
                 output.accept(ModItems.TRAINING_END.get());
                 output.accept(ModItems.TRAINING_GOAL.get());

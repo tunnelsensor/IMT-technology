@@ -1454,5 +1454,13 @@
   "subtitles.imttech.emp.power_down": "Device powers down",
   "subtitles.imttech.emp_grenade.beep": "EMP grenade beeps",
   "subtitles.imttech.emp_grenade.stick": "EMP grenade sticks",
-  "subtitles.imttech.emp_grenade.bounce": "EMP grenade bounces"
+  "subtitles.imttech.emp_grenade.bounce": "EMP grenade bounces",
+  "item.imttech.emp_grenade": "EMP Grenade",
+  "item.imttech.sticky_emp_grenade": "Sticky EMP Grenade",
+  "entity.imttech.emp_grenade": "EMP Grenade",
+  "entity.imttech.sticky_emp_grenade": "Sticky EMP Grenade",
+  "tooltip.imttech.emp_grenade": "Bounces and rolls, then goes off",
+  "tooltip.imttech.sticky_emp_grenade": "Sticks to whatever it hits, then goes off",
+  "tooltip.imttech.emp_grenade.what": "Knocks out electronics within %s blocks for %s s",
+  "tooltip.imttech.emp_grenade.toss": "Sneak to toss it underhand"
 }

@@ -343,6 +343,16 @@ public final class ModItems {
             "ion_blaster", com.senne.imttech.robot.IonBlasterItem::new,
             new Item.Properties().durability(com.senne.imttech.robot.IonBlasterItem.USES));
 
+    /** Hoofdstuk 35: de EMP Grenade, een bol die rolt. Schakelt alles in de buurt even uit. */
+    public static final DeferredItem<com.senne.imttech.weapons.EmpGrenadeItem> EMP_GRENADE = ITEMS.registerItem(
+            "emp_grenade", properties -> new com.senne.imttech.weapons.EmpGrenadeItem(properties, false),
+            new Item.Properties());
+
+    /** Hoofdstuk 35: de Sticky EMP Grenade, een halve bol die vastplakt. */
+    public static final DeferredItem<com.senne.imttech.weapons.EmpGrenadeItem> STICKY_EMP_GRENADE = ITEMS.registerItem(
+            "sticky_emp_grenade", properties -> new com.senne.imttech.weapons.EmpGrenadeItem(properties, true),
+            new Item.Properties());
+
     /** Het item van deze module. */
     public static com.senne.imttech.bot.BotModuleItem robotModule(com.senne.imttech.bot.BotModule module) {
         return ROBOT_MODULES.get(module).get();

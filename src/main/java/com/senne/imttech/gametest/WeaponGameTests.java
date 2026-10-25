@@ -18,6 +18,8 @@ import com.senne.imttech.suit.TechSuitItem;
 import com.senne.imttech.turret.TurretBlock;
 import com.senne.imttech.turret.TurretBlockEntity;
 import com.senne.imttech.weapons.Emp;
+import com.senne.imttech.weapons.RollingEmpGrenade;
+import com.senne.imttech.weapons.StickyEmpGrenade;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -25,6 +27,7 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
@@ -247,5 +250,125 @@ public final class WeaponGameTests {
                     helper.assertBlockProperty(inside, TurretBlock.ONLINE, true);
                 })
                 .thenSucceed();
+    }
+
+    // ================================================================ Stap 2: de granaten
+
+    /**
+     * Een Sticky EMP Grenade vliegt tegen een muur, plakt vast met zijn bolle kant naar buiten, en gaat 2 seconden later
+     * af: de turret ernaast valt uit en de granaat is weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
+    public static void sticky_grenade_sticks_to_a_wall_and_goes_off(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (int y = 2; y <= 5; y++) {
+            for (int z = 4; z <= 8; z++) {
+                helper.setBlock(new BlockPos(12, y, z), Blocks.STONE);
+            }
+        }
+        BlockPos turret = new BlockPos(10, 2, 8);
+        helper.setBlock(turret, ModBlocks.ROCKET_TURRET.get());
+        generator(helper, turret.below());
+        ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
+        StickyEmpGrenade grenade = new StickyEmpGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
+        Vec3 start = helper.absoluteVec(new Vec3(4.5, 3.5, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.shoot(1, 0.05, 0, 1.0f, 0);
+        level.addFreshEntity(grenade);
+        double wallX = helper.absoluteVec(new Vec3(12, 0, 0)).x;
+        helper.startSequence()
+                .thenWaitUntil(() -> check(grenade.isStuck(), "De granaat plakte niet vast"))
+                .thenExecute(() -> {
+                    check(grenade.normal().x < -0.9, "De bolle kant wijst niet van de muur af: " + grenade.normal());
+                    check(Math.abs(grenade.getX() - wallX) < 0.1, "De granaat zit niet tegen de muur: x = " + grenade.getX());
+                    check(grenade.isArmed() && grenade.ticksLeft() > 30, "De lont liep niet, of was al bijna op");
+                    helper.assertBlockProperty(turret, TurretBlock.ONLINE, true);
+                })
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De granaat ging niet af"))
+                .thenExecute(() -> helper.assertBlockProperty(turret, TurretBlock.ONLINE, false))
+                .thenSucceed();
+    }
+
+    /**
+     * Een Sticky EMP Grenade op een robot gaat met de robot mee als die verplaatst wordt, en legt hem neer als hij
+     * afgaat.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
+    public static void sticky_grenade_rides_along_on_a_robot(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(10, 2, 6), RobotParts.DEFAULT);
+        StickyEmpGrenade grenade = new StickyEmpGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
+        Vec3 start = helper.absoluteVec(new Vec3(4.5, 3.2, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.shoot(1, 0.05, 0, 1.0f, 0);
+        level.addFreshEntity(grenade);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(grenade.host() == robot, "De granaat plakte niet op de robot"))
+                .thenExecute(() -> robot.teleportTo(robot.getX(), robot.getY(), robot.getZ() + 3))
+                .thenIdle(2)
+                .thenExecute(() -> check(grenade.distanceTo(robot) < 1.2,
+                        "De granaat ging niet mee met de robot (afstand " + grenade.distanceTo(robot) + ")"))
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De granaat ging niet af"))
+                .thenExecute(() -> check(robot.isDown(), "De robot ligt niet neer na de granaat"))
+                .thenSucceed();
+    }
+
+    /**
+     * De EMP Grenade (de bol) stuitert terug tegen een muur, blijft daarna op de vloer liggen (niet erdoor), en gaat 3
+     * seconden na het gooien af, ook als hij stil ligt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
+    public static void rolling_grenade_bounces_and_goes_off(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (int y = 2; y <= 5; y++) {
+            for (int z = 3; z <= 9; z++) {
+                helper.setBlock(new BlockPos(9, y, z), Blocks.STONE);
+            }
+        }
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(5, 2, 9), RobotParts.DEFAULT);
+        RollingEmpGrenade grenade = new RollingEmpGrenade(ModEntities.ROLLING_EMP_GRENADE.get(), level);
+        Vec3 start = helper.absoluteVec(new Vec3(4.5, 2.6, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.arm(60);
+        grenade.shoot(1, 0.1, 0, 0.8f, 0);
+        level.addFreshEntity(grenade);
+        double floor = helper.absoluteVec(new Vec3(0, 2, 0)).y;
+        double wallX = helper.absoluteVec(new Vec3(9, 0, 0)).x;
+        boolean[] bounced = new boolean[1];
+        helper.onEachTick(() -> {
+            if (!grenade.isRemoved()) {
+                check(grenade.getBoundingBox().maxX < wallX + 0.01, "De bol ging door de muur");
+                check(grenade.getY() > floor - 0.01, "De bol zakte door de vloer");
+                if (grenade.getDeltaMovement().x < -0.02) {
+                    bounced[0] = true;
+                }
+            }
+        });
+        helper.startSequence()
+                .thenIdle(45)
+                .thenExecute(() -> {
+                    check(bounced[0], "De bol kaatste niet terug tegen de muur");
+                    check(grenade.onGround() && grenade.getDeltaMovement().horizontalDistance() < 0.05,
+                            "De bol ligt niet stil op de vloer: " + grenade.getDeltaMovement());
+                    check(!grenade.isRemoved(), "De bol ging te vroeg af");
+                })
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De bol ging niet af"))
+                .thenExecute(() -> check(robot.isDown(), "De robot naast de bol ligt niet neer"))
+                .thenSucceed();
+    }
+
+    /** Gooien: rechtsklik maakt een granaat (met jou als gooier), en er gaat er een uit je stapel. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "weapons")
+    public static void throwing_a_grenade_uses_one(GameTestHelper helper) {
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "emp-thrower");
+        player.getAbilities().instabuild = false; // de testspeler mag anders alles gratis (zoals in creative)
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.STICKY_EMP_GRENADE.get(), 3));
+        ModItems.STICKY_EMP_GRENADE.get().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        check(player.getMainHandItem().getCount() == 2, "Er ging geen granaat uit de stapel");
+        java.util.List<StickyEmpGrenade> thrown = helper.getLevel().getEntitiesOfClass(StickyEmpGrenade.class,
+                player.getBoundingBox().inflate(4));
+        check(thrown.size() == 1 && thrown.get(0).getOwner() == player, "Er vloog geen granaat van de speler");
+        check(new ItemStack(ModItems.EMP_GRENADE.get()).getMaxStackSize() == 16, "Granaten stapelen niet tot 16");
+        helper.succeed();
     }
 }

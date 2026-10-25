@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 318 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 322 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3493,7 +3493,19 @@ Zo bouw ik het:
       Jammer**. Config `[weapons]`: `empRadius` (5), `empSeconds` (20), en alvast de getallen van de granaten en
       geweren. Zes nieuwe tests (`WeaponGameTests`): robots en drones, turrets en camera's, open en ingemetselde
       kabels, harnas en bril, lezers en panelen, en de koepel. 318 tests, allemaal groen.
-- [ ] **2. De twee granaten** — gooien, plakken, stuiteren en rollen, piepen, de ontploffing; modellen en geluiden.
+- [x] **2. De twee granaten** — `weapons/EmpGrenadeEntity` (de lont, piepjes die steeds sneller gaan, het knipperende
+      lampje, en de puls), `RollingEmpGrenade` (stuitert tegen muren, de vloer en wezens, rolt verder over de grond en
+      draait mee in je spel; gaat 3 seconden na het gooien af) en `StickyEmpGrenade` (plakt op de kant waar hij tegenaan
+      botst, of op een wezen en gaat dan mee; gaat 2 seconden later af; valt als het blok of wezen weg is). `EmpGrenadeItem`:
+      rechtsklik gooit, met sneak onderhands; stapelt tot 16. **Modellen**: een nieuw script
+      `tools/generate_weapon_models.py` maakt het plaatje met materialen (`textures/item/weapons.png`: rood, goud, donker
+      metaal, rubber, staal, gloeiend cyaan, ...) en alle wapenmodellen van doosjes, ook alvast de geweren en de
+      energiecel. De granaten bestaan uit een lijf en een lampje (`client/weapons/WeaponModels`,
+      `EmpGrenadeRenderer`). Geluiden `emp_grenade_beep`, `_stick` en `_bounce`. **Recepten**: 4 ijzer, 2 koper, 2 redstone
+      en een Computer Chip = 2 EMP Grenades; een EMP Grenade met een slijmbal = een Sticky. **Screenshots**
+      `-Ponly=grenades` (`gr01` tot `gr08`): in je hand, op de muur en de vloer, de bol van licht, alles uit, de robot
+      neer, en de ruis in je bril. Vier nieuwe tests: plakken op een muur, meerijden op een robot, stuiteren en rollen, en
+      gooien. 322 tests, allemaal groen.
 - [ ] **3. Energiecellen en de geweren op de server** — schieten, schade, cellen, herladen, opladen (met tests).
 - [ ] **4. De geweren in je eigen beeld** — modellen, armen, animaties, richten, het vizier, de HUD en geluiden.
 - [ ] **5. Showcase, screenshots en LEESMIJ.**

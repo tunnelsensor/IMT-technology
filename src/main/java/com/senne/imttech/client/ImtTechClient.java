@@ -46,6 +46,8 @@ public class ImtTechClient {
         modEventBus.addListener(ImtTechClient::registerScreens);
         modEventBus.addListener(ImtTechClient::registerEntityRenderers);
         modEventBus.addListener(ImtTechClient::registerLayerDefinitions);
+        // De losse onderdelen van de wapens (hoofdstuk 35): granaten en geweren.
+        modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::register);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
@@ -138,6 +140,8 @@ public class ImtTechClient {
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.imttech.client.drone.SecurityDroneRenderer::new);
         event.registerEntityRenderer(ModEntities.GUARD_ROBOT.get(), com.senne.imttech.client.robot.GuardRobotRenderer::new);
         event.registerEntityRenderer(ModEntities.GUARD_DRONE.get(), com.senne.imttech.client.robot.GuardDroneRenderer::new);
+        event.registerEntityRenderer(ModEntities.ROLLING_EMP_GRENADE.get(), com.senne.imttech.client.weapons.EmpGrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.STICKY_EMP_GRENADE.get(), com.senne.imttech.client.weapons.EmpGrenadeRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         // C4 (hoofdstuk 10): het schermpje dat aftelt en het knipperende lampje.

@@ -1717,6 +1717,61 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- De EMP-granaten (hoofdstuk 35): allebei in je hand, dan op een veldje met een muur, een robot, een turret
+        // en een raiddrone. Een sticky vliegt tegen de muur en plakt, de bol rolt over de vloer. Dan gaat de sticky af
+        // (de bol van licht), daarna ligt alles stil, en tot slot een granaat aan je eigen voeten: ruis in je bril.
+        if (want("grenades")) {
+            t.onServer(0, VisualCheck::buildWeaponYard);
+            t.onServer(0, player -> {
+                player.getInventory().setItem(0, new ItemStack(ModItems.EMP_GRENADE.get(), 16));
+                player.getInventory().setItem(1, new ItemStack(ModItems.STICKY_EMP_GRENADE.get(), 8));
+            });
+            t.step(0, () -> selectSlot(0));
+            t.stand(20, WEAPON_YARD.getX() + 0.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() + 0.5, -90, 15);
+            t.shot(20, "gr01_grenade_in_hand");
+            t.step(0, () -> selectSlot(1));
+            t.shot(15, "gr02_sticky_in_hand");
+            t.step(0, () -> selectSlot(4));
+            // Een sticky tegen de muur en een bol over de vloer; allebei met een lange lont, zodat ze blijven liggen.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                var sticky = new com.senne.imttech.weapons.StickyEmpGrenade(
+                        com.senne.imttech.registry.ModEntities.STICKY_EMP_GRENADE.get(), level);
+                sticky.setPos(WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 2.6, WEAPON_YARD.getZ() + 1.5);
+                sticky.shoot(1, 0.1, 0, 0.9f, 0);
+                level.addFreshEntity(sticky);
+                var ball = new com.senne.imttech.weapons.RollingEmpGrenade(
+                        com.senne.imttech.registry.ModEntities.ROLLING_EMP_GRENADE.get(), level);
+                ball.setPos(WEAPON_YARD.getX() + 2.5, WEAPON_YARD.getY() + 1.5, WEAPON_YARD.getZ() - 1.5);
+                ball.shoot(1, 0.2, 0.15, 0.35f, 0);
+                ball.arm(4000);
+                level.addFreshEntity(ball);
+            });
+            t.onServer(15, player -> player.serverLevel().getEntitiesOfClass(
+                    com.senne.imttech.weapons.EmpGrenadeEntity.class, player.getBoundingBox().inflate(16))
+                    .forEach(grenade -> grenade.arm(4000)));
+            t.view(40, WEAPON_YARD.getX() + 2.5, WEAPON_YARD.getY() + 2.6, WEAPON_YARD.getZ() + 4.5, -120, 20);
+            t.shot(0, "gr03_grenades_lying");
+            t.view(0, WEAPON_YARD.getX() + 5.2, WEAPON_YARD.getY() + 2.3, WEAPON_YARD.getZ() + 1.5, -90, 30);
+            t.shot(15, "gr04_sticky_close");
+            // De sticky gaat af.
+            t.view(0, WEAPON_YARD.getX() - 3.5, WEAPON_YARD.getY() + 3.5, WEAPON_YARD.getZ() + 0.5, -90, 15);
+            t.onServer(20, player -> player.serverLevel().getEntitiesOfClass(
+                            com.senne.imttech.weapons.StickyEmpGrenade.class, player.getBoundingBox().inflate(16))
+                    .forEach(grenade -> grenade.arm(1)));
+            t.shot(4, "gr05_emp_blast");
+            t.shot(40, "gr06_emp_everything_off");
+            t.view(0, WEAPON_YARD.getX() + 2.5, WEAPON_YARD.getY() + 2.5, WEAPON_YARD.getZ() + 0.5, -135, 25);
+            t.shot(15, "gr07_emp_robot_down");
+            // Een granaat aan je eigen voeten, met de bril op: ruis.
+            t.onServer(0, player -> {
+                DevWorld.wearGlasses(player);
+                com.senne.imttech.weapons.Emp.blast(player.serverLevel(), player.position().add(0, 0.5, 0), player);
+            });
+            t.shot(15, "gr08_emp_in_your_glasses");
+            t.onServer(0, player -> player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY));
+        }
+
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
         if (want("satellite")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);
@@ -3492,6 +3547,38 @@ public final class VisualCheck {
             }
         }
         DevWorld.powerNextTo(level, BRIDGE_YARD.below());
+    }
+
+    /** Het veldje voor de wapens (hoofdstuk 35). */
+    private static final BlockPos WEAPON_YARD = new BlockPos(-300, -61, -200);
+
+    /**
+     * De wapens (hoofdstuk 35): een vloer van gladde steen met 7 blokken verder een muur, en ertussen een guard robot en
+     * een raketturret op stroom (allebei in de bol van een granaat tegen de muur). Een raiddrone kan hier niet: in deze
+     * wereld staat het spel op peaceful, en dan verdwijnen monsters.
+     */
+    private static void buildWeaponYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (BlockPos pos : BlockPos.betweenClosed(WEAPON_YARD.offset(-6, 1, -6), WEAPON_YARD.offset(10, 6, 6))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(WEAPON_YARD.offset(-6, 0, -6), WEAPON_YARD.offset(10, 0, 6))) {
+            level.setBlockAndUpdate(pos, Blocks.SMOOTH_STONE.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(WEAPON_YARD.offset(7, 1, -4), WEAPON_YARD.offset(7, 4, 4))) {
+            level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        BlockPos turret = WEAPON_YARD.offset(5, 1, 3);
+        level.setBlockAndUpdate(turret, ModBlocks.ROCKET_TURRET.get().defaultBlockState());
+        DevWorld.powerNextTo(level, turret.below());
+        DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), WEAPON_YARD.offset(5, 1, -2), 90);
+    }
+
+    /** Kiest een vakje in je hotbar (in je eigen spel: de server bepaalt dat niet). */
+    private static void selectSlot(int slot) {
+        if (Minecraft.getInstance().player != null) {
+            Minecraft.getInstance().player.getInventory().selected = slot;
+        }
     }
 
     private static BlockState emitter(Direction facing, ShieldColor colour) {

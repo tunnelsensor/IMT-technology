@@ -1,0 +1,193 @@
+{
+ "textures": {
+  "0": "imttech:item/weapons",
+  "particle": "imttech:item/weapons"
+ },
+ "elements": [
+  {
+   "from": [
+    7.15,
+    1.4,
+    9.9
+   ],
+   "to": [
+    8.85,
+    3.2,
+    12.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.15,
+      12.15,
+      3.85,
+      15.85
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      0.15,
+      12.15,
+      3.85,
+      15.85
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      0.15,
+      12.15,
+      3.85,
+      15.85
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      0.15,
+      12.15,
+      3.85,
+      15.85
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      0.15,
+      12.15,
+      3.85,
+      15.85
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      0.15,
+      12.15,
+      3.85,
+      15.85
+     ],
+     "texture": "#0"
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     8,
+     11
+    ],
+    "axis": "x",
+    "angle": 22.5
+   }
+  },
+  {
+   "from": [
+    7.45,
+    1.25,
+    10.3
+   ],
+   "to": [
+    8.55,
+    1.4,
+    12.1
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.15,
+      8.15,
+      3.85,
+      11.85
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "south": {
+     "uv": [
+      0.15,
+      8.15,
+      3.85,
+      11.85
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "east": {
+     "uv": [
+      0.15,
+      8.15,
+      3.85,
+      11.85
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "west": {
+     "uv": [
+      0.15,
+      8.15,
+      3.85,
+      11.85
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "up": {
+     "uv": [
+      0.15,
+      8.15,
+      3.85,
+      11.85
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "down": {
+     "uv": [
+      0.15,
+      8.15,
+      3.85,
+      11.85
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     8,
+     11
+    ],
+    "axis": "x",
+    "angle": 22.5
+   },
+   "shade": false
+  }
+ ]
+}
