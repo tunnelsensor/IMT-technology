@@ -207,6 +207,81 @@ public final class KeycardGroupGameTests {
         helper.succeed();
     }
 
+    /**
+     * De app Keycards (stap 2): groepen maken, in elkaar steken (geen rondje), hernoemen en weggooien, een kaart schrijven
+     * in de gekozen groep, en een kaart in of uit een groep zetten. Elke opdracht gaat naar de server, die nakijkt of het
+     * mag en het in het logboek zet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "keycard_groups_app")
+    public static void keycard_groups_on_the_desktop(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new net.minecraft.core.BlockPos(5, 3, 5),
+                "keycard-groups");
+        var core = ImtTechGameTests.placeCore(helper, new net.minecraft.core.BlockPos(2, 3, 2), owner);
+        var coreAbs = helper.absolutePos(new net.minecraft.core.BlockPos(2, 3, 2));
+        owner.getInventory().clearContent();
+        owner.getInventory().add(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.KEYCARD.get(), 2));
+        helper.runAfterDelay(2, () -> {
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            var store = core.logic();
+            send(owner, coreAbs, "cgroup_new", "name", "staff", "parent", "");
+            send(owner, coreAbs, "cgroup_new", "name", "security", "parent", "staff");
+            send(owner, coreAbs, "cgroup_new", "name", "night shift", "parent", "Security");
+            send(owner, coreAbs, "cgroup_new", "name", "STAFF", "parent", "");
+            send(owner, coreAbs, "cgroup_new", "name", "bad\"name", "parent", "");
+            check(store.groups().equals(List.of("night shift", "security", "staff")) && store.parentOf("night shift").equals("security"),
+                    "De groepen van de app: " + store.groups());
+            // Een rondje mag niet; een groep bovenaan zetten wel.
+            send(owner, coreAbs, "cgroup_move", "group", "staff", "parent", "night shift");
+            check(store.parentOf("staff").isEmpty() && lastLog(core).contains("made the keycard group 'night shift' in 'security'"),
+                    "Een rondje werd toegelaten (of het logboek klopt niet): " + lastLog(core));
+            send(owner, coreAbs, "cgroup_move", "group", "night shift", "parent", "");
+            check(store.parentOf("night shift").isEmpty(), "Bovenaan zetten lukte niet");
+            send(owner, coreAbs, "cgroup_move", "group", "night shift", "parent", "security");
+            // Een kaart schrijven in de gekozen groep, met een kleur.
+            CompoundTag write = new CompoundTag();
+            write.putString("label", "Night guard");
+            write.putInt("colour", 7);
+            write.putString("group", "night shift");
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "card_write", write));
+            var card = store.cards().getFirst();
+            check(card.colour() == 7 && card.groups().equals(List.of("night shift")) && store.inGroup(card.number(), "staff"),
+                    "De geschreven kaart: " + card);
+            // Een kaart ook in een tweede groep, en er weer uit.
+            send(owner, coreAbs, "cgroup_new", "name", "lab", "parent", "");
+            CompoundTag add = new CompoundTag();
+            add.putInt("n", card.number());
+            add.putString("group", "lab");
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "card_group_add", add));
+            check(store.card(card.number()).groups().equals(List.of("lab", "night shift")), "In een tweede groep zetten lukte niet");
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "card_group_remove", add));
+            check(store.card(card.number()).groups().equals(List.of("night shift")), "Uit een groep halen lukte niet");
+            // Hernoemen en weggooien: de kaart gaat mee, en schuift dan een laag omhoog.
+            send(owner, coreAbs, "cgroup_rename", "group", "night shift", "name", "Night watch");
+            check(store.card(card.number()).groups().equals(List.of("Night watch")), "Na hernoemen: " + store.card(card.number()).groups());
+            send(owner, coreAbs, "cgroup_delete", "group", "night watch", "", "");
+            check(store.card(card.number()).groups().equals(List.of("security")) && !store.hasGroup("night watch"),
+                    "Na weggooien: " + store.card(card.number()).groups());
+            check(lastLog(core).equals("keycard-groups deleted the keycard group 'Night watch'"), "Het logboek: " + lastLog(core));
+            helper.succeed();
+        });
+    }
+
+    /** Een opdracht van de app Keycards met twee tekstjes (een leeg sleutelwoord wordt overgeslagen). */
+    private static void send(net.minecraft.server.level.ServerPlayer player, net.minecraft.core.BlockPos core, String op,
+                             String key1, String value1, String key2, String value2) {
+        CompoundTag args = new CompoundTag();
+        args.putString(key1, value1);
+        if (!key2.isEmpty()) {
+            args.putString(key2, value2);
+        }
+        com.senne.imttech.security.os.SecurityOs.handleAction(player, new com.senne.imttech.network.OsActionPayload(core, op, args));
+    }
+
+    private static String lastLog(com.senne.imttech.security.SecurityCoreBlockEntity core) {
+        var entries = core.log().entries();
+        return entries.isEmpty() ? "" : entries.getLast().text();
+    }
+
     private static void expectError(String code, int line, String part) {
         try {
             ScriptParser.parse(code);

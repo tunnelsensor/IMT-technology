@@ -223,6 +223,13 @@ public final class SecurityOs {
             case "card_block" -> blockCard(player, core, session, args.getInt("n"), args.getBoolean("on"));
             case "card_delete" -> deleteCard(player, core, session, args.getInt("n"));
             case "card_delete_blocked" -> deleteBlockedCards(player, core, session);
+            // Keycard-groepen (25 oktober): in de app Keycards, links.
+            case "cgroup_new" -> newCardGroup(player, core, session, args.getString("name"), args.getString("parent"));
+            case "cgroup_rename" -> renameCardGroup(player, core, session, args.getString("group"), args.getString("name"));
+            case "cgroup_delete" -> deleteCardGroup(player, core, session, args.getString("group"));
+            case "cgroup_move" -> moveCardGroup(player, core, session, args.getString("group"), args.getString("parent"));
+            case "card_group_add" -> cardInGroup(player, core, session, args.getInt("n"), args.getString("group"), true);
+            case "card_group_remove" -> cardInGroup(player, core, session, args.getInt("n"), args.getString("group"), false);
             case "logic_save" -> saveProgram(player, core, session, args.getString("old"), args.getString("name"),
                     args.getCompound("graph"), args.getString("source"), args.getString("kind"));
             case "logic_delete" -> deleteProgram(player, core, session, args.getString("name"));
@@ -583,6 +590,111 @@ public final class SecurityOs {
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " deleted " + removed + " blocked keycard"
                 + (removed == 1 ? "" : "s"));
         notify(player, core, session, "Deleted " + removed + " blocked card" + (removed == 1 ? "" : "s"), false);
+    }
+
+    // ================================================================ Keycard-groepen (25 oktober)
+
+    /** Een nieuwe keycard-groep, in groep {@code parent} ("" = bovenaan). */
+    private static void newCardGroup(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name, String parent) {
+        var store = core.logic();
+        String clean = name.strip();
+        if (!com.senne.imttech.logic.LogicStore.validGroupName(clean)) {
+            notify(player, core, session, "A group name needs 1 to " + com.senne.imttech.logic.LogicStore.MAX_GROUP_NAME
+                    + " letters, without quotes", true);
+            return;
+        }
+        if (store.hasGroup(clean)) {
+            notify(player, core, session, "There is already a group called '" + store.spelling(clean) + "'", true);
+            return;
+        }
+        if (store.groups().size() >= com.senne.imttech.logic.LogicStore.MAX_GROUPS) {
+            notify(player, core, session, "This network cannot have more than " + com.senne.imttech.logic.LogicStore.MAX_GROUPS
+                    + " keycard groups", true);
+            return;
+        }
+        String above = store.hasGroup(parent) ? store.spelling(parent) : "";
+        store.addGroup(clean, above);
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " made the keycard group '" + clean + "'"
+                + (above.isEmpty() ? "" : " in '" + above + "'"));
+        notify(player, core, session, "Group '" + clean + "' made" + (above.isEmpty() ? "" : " in '" + above + "'"), false);
+    }
+
+    /** Een keycard-groep een andere naam geven (de kaarten en groepen erin gaan mee). */
+    private static void renameCardGroup(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String group, String name) {
+        var store = core.logic();
+        String old = store.spelling(group);
+        String clean = name.strip();
+        if (old == null) {
+            notify(player, core, session, "There is no group '" + group + "'", true);
+            return;
+        }
+        if (!com.senne.imttech.logic.LogicStore.validGroupName(clean)) {
+            notify(player, core, session, "A group name needs 1 to " + com.senne.imttech.logic.LogicStore.MAX_GROUP_NAME
+                    + " letters, without quotes", true);
+            return;
+        }
+        if (!store.renameGroup(old, clean)) {
+            notify(player, core, session, "There is already a group called '" + store.spelling(clean) + "'", true);
+            return;
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed the keycard group '" + old + "' to '" + clean + "'");
+        notify(player, core, session, "Renamed '" + old + "' to '" + clean + "'", false);
+    }
+
+    /** Een keycard-groep weggooien: wat erin zat (kaarten en groepen), schuift een laag omhoog. */
+    private static void deleteCardGroup(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String group) {
+        var store = core.logic();
+        String old = store.spelling(group);
+        if (old == null) {
+            notify(player, core, session, "There is no group '" + group + "'", true);
+            return;
+        }
+        String parent = store.parentOf(old);
+        store.removeGroup(old);
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " deleted the keycard group '" + old + "'");
+        notify(player, core, session, "Deleted '" + old + "'" + (parent.isEmpty() ? "" : ": its cards and groups are now in '" + parent + "'"),
+                false);
+    }
+
+    /** Een keycard-groep in een andere groep steken ("" = bovenaan). Een rondje mag niet. */
+    private static void moveCardGroup(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String group, String parent) {
+        var store = core.logic();
+        String own = store.spelling(group);
+        String above = parent.isBlank() ? "" : store.spelling(parent);
+        if (own == null || above == null) {
+            notify(player, core, session, "There is no group '" + (own == null ? group : parent) + "'", true);
+            return;
+        }
+        if (!store.moveGroup(own, above)) {
+            notify(player, core, session, "'" + own + "' can't go inside '" + above + "': that would make a loop", true);
+            return;
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " put the keycard group '" + own + "' in "
+                + (above.isEmpty() ? "no group" : "'" + above + "'"));
+        notify(player, core, session, "'" + own + "' is now in " + (above.isEmpty() ? "no group" : "'" + above + "'"), false);
+    }
+
+    /** Een kaart ook in een groep zetten ({@code in}), of er weer uit halen. Zijn andere groepen blijven. */
+    private static void cardInGroup(ServerPlayer player, SecurityCoreBlockEntity core, Session session, int number, String group, boolean in) {
+        var store = core.logic();
+        String own = store.spelling(group);
+        if (store.card(number) == null || own == null) {
+            notify(player, core, session, store.card(number) == null ? "There is no card #" + number : "There is no group '" + group + "'", true);
+            return;
+        }
+        boolean changed = in ? store.addToGroup(number, own) : store.removeFromGroup(number, own);
+        if (!changed) {
+            notify(player, core, session, "Card #" + number + (in ? " is already in '" : " is not in '") + own + "'", true);
+            return;
+        }
+        core.setChanged();
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + (in ? " put keycard #" : " took keycard #") + number
+                + (in ? " in '" : " out of '") + own + "'");
+        notify(player, core, session, "Card #" + number + (in ? " is now also in '" : " is no longer in '") + own + "'", false);
     }
 
     /** Wie heet zo? Eerst wie nu online is, anders wie hier ooit was (Minecraft onthoudt dat). */

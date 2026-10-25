@@ -2046,7 +2046,7 @@ public final class VisualCheck {
                             "10.0.0.1", "dev-sec", 1000 + colour, colour, labels[colour - 1]));
                     player.getInventory().setItem(colour, card);
                 }
-                player.getInventory().setItem(6, new ItemStack(ModItems.KEYCARD_READER.get()));
+                player.getInventory().setItem(9, new ItemStack(ModItems.KEYCARD_READER.get()));
                 player.getInventory().selected = 3;
             });
             t.stand(10, 103.0, -60, -75.5, 180, 30);
@@ -2070,37 +2070,60 @@ public final class VisualCheck {
             });
             t.shot(10, "y045_code_panel");
             t.close(0);
-            // De app Keycards: een kaart schrijven.
+            // De app Keycards (25 oktober: met groepen links). Eerst de groepen: "security" en "lab" in "staff",
+            // "night shift" in "security", en "guest" bovenaan. Dan een kaart schrijven in "lab".
             t.stand(30, 100.5, -60, -77.5, 180, 20);
-            t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, core));
-            t.step(10, () -> {
-                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
-                    os.tourKeycards("Lab access", 3);
+            t.onServer(5, player -> {
+                com.senne.imttech.security.os.SecurityOs.open(player, core);
+                for (String[] group : new String[][] {{"staff", ""}, {"security", "staff"}, {"night shift", "security"},
+                        {"lab", "staff"}, {"guest", ""}}) {
+                    net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                    args.putString("name", group[0]);
+                    args.putString("parent", group[1]);
+                    com.senne.imttech.security.os.SecurityOs.handleAction(player,
+                            new com.senne.imttech.network.OsActionPayload(core, "cgroup_new", args));
                 }
             });
+            t.step(10, () -> keycards(os -> {
+                os.tourKeycards("Lab access", 3);
+                os.tourKeycardGroup("lab");
+            }));
             t.shot(10, "y05_keycards_app");
+            // Vijf kaarten in hun groepen (Lotte ook in lab), en Guest geblokkeerd.
             t.onServer(0, player -> {
-                for (String[] card : new String[][] {{"Lab access", "3"}, {"Guest", "1"}, {"Lotte", "5"}}) {
+                player.getInventory().add(new ItemStack(ModItems.KEYCARD.get(), 2));
+                for (String[] card : new String[][] {{"Lab access", "3", "lab"}, {"Guest", "1", "guest"}, {"Lotte", "5", "security"},
+                        {"Night guard", "8", "night shift"}, {"Cleaner", "7", ""}}) {
                     net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
                     args.putString("label", card[0]);
                     args.putInt("colour", Integer.parseInt(card[1]));
-                    args.putString("group", "");
+                    args.putString("group", card[2]);
                     com.senne.imttech.security.os.SecurityOs.handleAction(player,
                             new com.senne.imttech.network.OsActionPayload(core, "card_write", args));
                 }
+                net.minecraft.nbt.CompoundTag lotte = new net.minecraft.nbt.CompoundTag();
+                lotte.putInt("n", 1003);
+                lotte.putString("group", "lab");
+                com.senne.imttech.security.os.SecurityOs.handleAction(player,
+                        new com.senne.imttech.network.OsActionPayload(core, "card_group_add", lotte));
                 net.minecraft.nbt.CompoundTag block = new net.minecraft.nbt.CompoundTag();
                 block.putInt("n", 1002);
                 block.putBoolean("on", true);
                 com.senne.imttech.security.os.SecurityOs.handleAction(player,
                         new com.senne.imttech.network.OsActionPayload(core, "card_block", block));
             });
+            t.step(0, () -> keycards(os -> os.tourKeycardGroup(null)));
             t.shot(15, "y06_keycards_list");
+            // Links "security" gekozen: Lotte zit erin, Night guard via "night shift" (+1 inside); elke kaart heeft Remove.
+            t.step(0, () -> keycards(os -> os.tourKeycardGroup("security")));
+            t.shot(5, "y061_keycards_security");
+            // New: het naamvak onderaan (de nieuwe groep komt in "security"), en Rename met de oranje waarschuwing.
+            t.step(0, () -> keycards(os -> os.tourKeycardInput(false, "day shift")));
+            t.shot(5, "y062_keycards_new_group");
+            t.step(0, () -> keycards(os -> os.tourKeycardInput(true, "guards")));
+            t.shot(5, "y063_keycards_rename");
             // Opruimen: de vraag "Sure?", en daarna alle geblokkeerde kaarten weg.
-            t.step(0, () -> {
-                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
-                    os.tourAskDeleteBlocked();
-                }
-            });
+            t.step(0, () -> keycards(com.senne.imttech.client.os.SecurityOsScreen::tourAskDeleteBlocked));
             t.shot(5, "y07_keycards_delete_sure");
             t.onServer(0, player -> com.senne.imttech.security.os.SecurityOs.handleAction(player,
                     new com.senne.imttech.network.OsActionPayload(core, "card_delete_blocked", new net.minecraft.nbt.CompoundTag())));
@@ -2742,7 +2765,8 @@ public final class VisualCheck {
                 net.minecraft.nbt.CompoundTag taken = new net.minecraft.nbt.CompoundTag();
                 taken.putString("result", "taken");
                 taken.putString("name", "Keycard: Lab access");
-                taken.putInt("level", 3);
+                taken.putInt("colour", 3);
+                taken.putInt("number", 1001);
                 screen.onResult(taken);
             }));
             t.shot(5, "bp19_pocket_taken");
@@ -2958,6 +2982,13 @@ public final class VisualCheck {
     /** Doet iets met het stroomcircuit dat nu open is (als het open is). */
     private static void circuit(java.util.function.Consumer<com.senne.imttech.client.bypass.CircuitScreen> action) {
         if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.bypass.CircuitScreen screen) {
+            action.accept(screen);
+        }
+    }
+
+    /** Doet iets met de desktop die nu open is (als hij open is), voor de app Keycards. */
+    private static void keycards(java.util.function.Consumer<com.senne.imttech.client.os.SecurityOsScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen screen) {
             action.accept(screen);
         }
     }

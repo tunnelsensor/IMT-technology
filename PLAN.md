@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 301 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 302 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3239,7 +3239,24 @@ Ik bouw het in deze volgorde, één stap per commit:
       boom, opslaan en backups, oude niveaus, en de taal); `logic_keycard_opens_vault` gebruikt nu groepen in groepen
       ("night shift" in "security" in "staff") en ook een geblokkeerde kaart, en de hacktests kiezen een groep. 301 tests:
       298 groen, de 3 rode van hoofdstuk 14 stap 2.
-- [ ] **2. De app Keycards met groepen links**
+- [x] **2. De app Keycards met groepen links** — het venster is breder (396 x 200, past nog net op 1280 x 720).
+      Bovenaan schrijf je een kaart: **Name**, **Colour** (acht vakjes met een randje, zodat je zwart ook ziet; wijs je
+      er een aan, dan zie je zijn naam) en **Write card**, en eronder "The new card goes into: lab" (de groep die links
+      gekozen is, of "no group"). **Links** staan "All cards", je groepen als een boom met mapjes (een groep in een
+      groep staat eronder, wat naar rechts) en "No group", elk met hoeveel kaarten er zelf in zitten. **Rechts** de
+      kaarten van wat links gekozen is: nummer, kleur, naam, groepen, en de knoppen naast elkaar (**Block**/**Unblock**,
+      bij een geblokkeerde kaart **Delete**, en als links een groep gekozen is **Remove**: uit die groep). Bij een
+      groep zegt de kop ook hoeveel kaarten er via groepen erin meetellen ("IN SECURITY (1, +1 inside)"). **Slepen**:
+      een kaart op een groep (groen = mag, rood = zit er al in), een groep op een groep, of op "All cards" om hem
+      bovenaan te zetten (rood met "Can't: ... that would make a loop" als het een rondje zou maken). Onderaan **New**
+      (in de gekozen groep), **Rename** (met in het oranje "Change it in your diagrams too.") en **Delete** (eerst
+      "Sure?"); New en Rename openen daar een naamvak met OK en Cancel. Wijs je een kaart aan, dan zie je wie hem schreef.
+      "Delete blocked" staat bij All cards. De server kijkt elke opdracht na (naam, bestaat al, 32 groepen, rondje) en
+      zet hem in het logboek ("Senne put keycard #1001 in 'lab'"). Eén nieuwe test (`keycard_groups_on_the_desktop`).
+      Screenshots `-Ponly=keycards`: `y05` (een kaart schrijven in "lab"), `y06` (alle kaarten met hun groepen),
+      `y061` ("security" gekozen), `y062` (New), `y063` (Rename), `y07` en `y08` (Delete blocked). Ook gerepareerd: in
+      de screenshot van het zakkenrollen (`bp19`) was de gestolen kaart grijs met BLANK; nu blauw met "#1001". 302 tests:
+      299 groen, de 3 rode van hoofdstuk 14 stap 2.
 - [ ] **3. Showcase, screenshots en LEESMIJ**
 
 ---

@@ -40,7 +40,8 @@ public class SecurityOsScreen extends Screen {
         /** De training die nu bezig is, en de rapporten van de laatste (hoofdstuk 26). */
         TRAINING("Training", "T", 340, 196),
         ACCESS("Access", "A", 280, 190),
-        KEYCARDS("Keycards", "K", 300, 190),
+        /** Sinds 25 oktober met de groepen links: breder en iets hoger (past nog net op 1280 x 720). */
+        KEYCARDS("Keycards", "K", 396, 200),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
         LOGIC("Logic", "{}", 420, 240),
         /** Hoe hard het datacenter werkt (CPU, brein, RAM, SSD, temperatuur), zoals Taakbeheer (8 oktober). */
@@ -219,10 +220,22 @@ public class SecurityOsScreen extends Screen {
         files.tourShow(contentArea(win), folder, select, menu);
     }
 
-    /** Alleen voor de screenshot-rondleiding: de app Keycards, met een naam en niveau al ingevuld. */
-    public void tourKeycards(String label, int level) {
+    /** Alleen voor de screenshot-rondleiding: de app Keycards, met een naam en kleur al ingevuld. */
+    public void tourKeycards(String label, int colour) {
         openApp(App.KEYCARDS);
-        keycards.tourFill(label, level);
+        keycards.tourFill(label, colour);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: in de app Keycards links deze groep gekozen (null = All cards). */
+    public void tourKeycardGroup(@Nullable String group) {
+        openApp(App.KEYCARDS);
+        keycards.tourSelect(group);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: in de app Keycards het naamvak van een nieuwe groep of een nieuwe naam. */
+    public void tourKeycardInput(boolean rename, String text) {
+        openApp(App.KEYCARDS);
+        keycards.tourInput(rename, text);
     }
 
     /** Alleen voor de screenshot-rondleiding: de app Logic met deze code (en eventueel Help open). */
@@ -582,6 +595,9 @@ public class SecurityOsScreen extends Screen {
         if (pressedIn != null && pressedIn.app == App.GROUPS) {
             return groups.mouseDragged((int) mouseX, (int) mouseY);
         }
+        if (pressedIn != null && pressedIn.app == App.KEYCARDS) {
+            return keycards.mouseDragged((int) mouseX, (int) mouseY);
+        }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
@@ -600,6 +616,8 @@ public class SecurityOsScreen extends Screen {
             logic.mouseReleased((int) mouseX, (int) mouseY);
         } else if (win != null && win.app == App.GROUPS) {
             groups.mouseReleased(contentArea(win), (int) mouseX, (int) mouseY);
+        } else if (win != null && win.app == App.KEYCARDS) {
+            keycards.mouseReleased(contentArea(win), (int) mouseX, (int) mouseY);
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -623,7 +641,7 @@ public class SecurityOsScreen extends Screen {
             case TRAINING -> training.mouseScrolled(scrollY);
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
-            case KEYCARDS -> keycards.mouseScrolled(scrollY);
+            case KEYCARDS -> keycards.mouseScrolled(contentArea(win), (int) mouseX, scrollY);
             case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, (int) mouseY, scrollY);
             case MONITOR -> monitor.mouseScrolled(scrollY);
             case BACKUP -> backup.mouseScrolled(scrollY);

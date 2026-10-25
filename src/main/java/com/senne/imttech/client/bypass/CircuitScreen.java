@@ -175,7 +175,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
         int alarms = Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS);
         String size = Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS) + " x " + Math.round(ImtConfig.Bypass.CIRCUIT_ROWS) + " wires, "
                 + com.senne.imttech.config.Numbers.text(CircuitPuzzle.circuitSeconds()) + " s, " + alarms + (alarms == 1 ? " ALARM" : " ALARMS");
-        g.drawString(font, "Pick a group of this network.  " + size, x + 10, y + 35, HudStyle.argb(255, 0x7F93A0), false);
+        g.drawString(font, "Pick a group: " + size, x + 10, y + 35, HudStyle.argb(255, 0x7F93A0), false);
         scroll = Math.max(0, Math.min(scroll, rowCount() - visibleRows()));
         for (int i = 0; i < visibleRows(); i++) {
             int ry = rowY(i);
