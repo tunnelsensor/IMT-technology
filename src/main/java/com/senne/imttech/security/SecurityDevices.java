@@ -353,7 +353,9 @@ public final class SecurityDevices {
             CompoundTag device = position("laser", gate);
             device.putString("name", "Laser gate (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)"));
             device.putBoolean("on", on);
-            device.putString("st", on ? "active" : core.lasersEnabled() ? "open" : "off (network)");
+            // Doorgeknipt met de Bypass Kit (hoofdstuk 33): zo ziet de eigenaar welke poort hij moet herstellen.
+            device.putString("st", LaserEmitterBlock.isCut(level, members) ? "cut wires"
+                    : on ? "active" : core.lasersEnabled() ? "open" : "off (network)");
             list.add(device);
         }
         int cameraNumber = 1;

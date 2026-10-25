@@ -119,6 +119,24 @@ public final class LogicEvents {
     }
 
     /**
+     * Een mislukte hack van een laserzender (hoofdstuk 33: de verkeerde draad, of te laat). Hoort hij bij een
+     * beveiligingskern, dan gaat het alarm af zoals bij een lezer: "Someone is tampering with a laser gate at 12 64 -30"
+     * (met de naam van de hacker erachter), I.M.T waarschuwt de eigenaar en de beveiliging jaagt op hem. Hoort hij nergens
+     * bij, dan is er niemand om te waarschuwen: alleen het geluid.
+     */
+    public static void tamperedLaser(ServerLevel level, BlockPos emitter, ServerPlayer player) {
+        level.playSound(null, emitter, ModSounds.IMT_DENIED.get(), SoundSource.BLOCKS, 0.8f, 0.8f);
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, emitter);
+        if (core == null) {
+            return;
+        }
+        String name = "a laser gate at " + emitter.getX() + " " + emitter.getY() + " " + emitter.getZ();
+        LogicRunner.alarm(level, core, new LogicRunner.Context(Op.TURNED_OFF, "Laser gate", emitter.immutable(), player.getUUID(),
+                player.getGameProfile().getName(), SecurityCores.isFriend(level, core, player),
+                isOwner(level, core, player), null, false, ""), "Someone is tampering with " + name);
+    }
+
+    /**
      * Iemand typte een code op een codepaneel. We controleren dat het echt een code is (alleen
      * cijfers), dat hij er dichtbij staat, en geven hem door. In het logboek komt NIET welke code:
      * wie je logboek leest (een hacker) moet de code niet zomaar kunnen zien.

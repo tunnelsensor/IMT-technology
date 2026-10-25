@@ -47,6 +47,9 @@ import org.jetbrains.annotations.Nullable;
  * basis vertrouwd is (zie LaserEmitters). Daarin kies je de kleur, of hij omgekeerd werkt (redstone aan =
  * laser uit) en of de wand staat of ligt. Dat geldt voor de hele laserpoort.
  *
+ * Met de Bypass Kit kan een inbreker zijn draden doorknippen (hoofdstuk 33, zie bypass/Bypass): dan blijft de
+ * hele poort uit tot de eigenaar (of een vertrouwde speler) in dat scherm op Repair wires drukt.
+ *
  * Hij heeft STROOM nodig: een stroomkabel naar een zonnepaneel of warmtegenerator (of er
  * direct tegenaan). Zolang de wand aan staat, betaalt hij elke seconde LASER_UPKEEP per tick.
  * Is de stroom op, dan valt de wand weg; komt de stroom terug terwijl de redstone nog aan
@@ -168,22 +171,30 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     }
 
     /**
-     * Moet deze poort aan? Er moet redstone op staan (of juist niet, als hij omgekeerd is), en de
-     * beveiligingskern van dit gebied (als die er is) moet de lasers aan hebben staan (de schakelaar
-     * "Lasers" op de desktop).
+     * Moet deze poort aan? Er moet redstone op staan (of juist niet, als hij omgekeerd is), de draden mogen
+     * niet doorgeknipt zijn (hoofdstuk 33), en de beveiligingskern van dit gebied (als die er is) moet de
+     * lasers aan hebben staan (de schakelaar "Lasers" op de desktop).
      */
     private static boolean wanted(Level level, BlockPos pos, BlockState state) {
-        if (groupHasSignal(level, pos) == state.getValue(INVERTED)) {
+        boolean signal = false;
+        for (BlockPos member : group(level, pos)) {
+            // Is één zender van de poort doorgeknipt, dan blijft de hele poort uit (jouw keuze: tot iemand hem herstelt).
+            if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity emitter && emitter.isCut()) {
+                return false;
+            }
+            signal |= level.hasNeighborSignal(member);
+        }
+        if (signal == state.getValue(INVERTED)) {
             return false;
         }
         var core = com.senne.imttech.security.SecurityCores.coreAt(level, pos);
         return core == null || core.lasersEnabled();
     }
 
-    /** Staat er redstone op een van de zenders van deze laserpoort? */
-    private static boolean groupHasSignal(Level level, BlockPos pos) {
-        for (BlockPos member : group(level, pos)) {
-            if (level.hasNeighborSignal(member)) {
+    /** Zijn de draden van deze laserpoort doorgeknipt (van één zender is genoeg)? */
+    public static boolean isCut(Level level, List<BlockPos> gate) {
+        for (BlockPos member : gate) {
+            if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity emitter && emitter.isCut()) {
                 return true;
             }
         }
@@ -371,6 +382,45 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     /** Liggend of staand: een wand die er al staat, draait meteen mee. */
     public static void applyTurned(ServerLevel level, List<BlockPos> members, boolean turned) {
         apply(level, members, state -> state.setValue(TURNED, turned), false);
+    }
+
+    /**
+     * De draden doorknippen of herstellen (hoofdstuk 33), voor elke zender van de lijst (de hele poort). Daarna kijkt
+     * elke zender of hij aan of uit moet: doorgeknipt schuift de wand terug, hersteld komt hij weer (als er redstone
+     * en stroom is).
+     */
+    public static void applyCut(ServerLevel level, List<BlockPos> members, boolean cut) {
+        for (BlockPos member : members) {
+            if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity emitter) {
+                emitter.setCut(cut);
+            }
+        }
+        for (BlockPos member : members) {
+            BlockState state = level.getBlockState(member);
+            if (state.getBlock() instanceof LaserEmitterBlock emitter) {
+                emitter.update(level, member, state, false);
+            }
+        }
+    }
+
+    /**
+     * Een zender met doorgeknipte draden vonkt af en toe en geeft een rookpluimpje (alleen in jouw spel, zoals bij
+     * een laadstation): zo zie je van buitenaf welke poort kapot is.
+     */
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        if (random.nextInt(4) != 0 || !(level.getBlockEntity(pos) instanceof LaserEmitterBlockEntity emitter) || !emitter.isCut()) {
+            return;
+        }
+        Direction facing = state.getValue(FACING);
+        double x = pos.getX() + 0.5 + facing.getStepX() * 0.55 + (random.nextDouble() - 0.5) * 0.5;
+        double y = pos.getY() + 0.5 + facing.getStepY() * 0.55 + (random.nextDouble() - 0.5) * 0.5;
+        double z = pos.getZ() + 0.5 + facing.getStepZ() * 0.55 + (random.nextDouble() - 0.5) * 0.5;
+        level.addParticle(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK, x, y, z,
+                (random.nextDouble() - 0.5) * 0.1, 0.05, (random.nextDouble() - 0.5) * 0.1);
+        if (random.nextInt(5) == 0) {
+            level.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE, x, y, z, 0, 0.02, 0);
+        }
     }
 
     /**

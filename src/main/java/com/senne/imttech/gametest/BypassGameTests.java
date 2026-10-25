@@ -4,6 +4,7 @@ import com.senne.imttech.ImtTech;
 import com.senne.imttech.bypass.Bypass;
 import com.senne.imttech.bypass.CircuitPuzzle;
 import com.senne.imttech.bypass.PanelOrders;
+import com.senne.imttech.bypass.WireTangle;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.logic.InputDeviceBlock;
 import com.senne.imttech.logic.InputDeviceBlockEntity;
@@ -16,6 +17,7 @@ import com.senne.imttech.logic.program.GraphConverter;
 import com.senne.imttech.logic.program.LogicProgram;
 import com.senne.imttech.logic.program.ScriptParser;
 import com.senne.imttech.network.BypassPayload;
+import com.senne.imttech.network.LaserActionPayload;
 import com.senne.imttech.network.OsActionPayload;
 import com.senne.imttech.network.PocketPayload;
 import com.senne.imttech.pickpocket.Pickpocket;
@@ -27,11 +29,16 @@ import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.os.EventLog;
 import com.senne.imttech.security.os.SecurityOs;
+import com.senne.imttech.shield.LaserEmitterBlock;
+import com.senne.imttech.shield.LaserEmitterBlockEntity;
+import com.senne.imttech.shield.LaserEmitters;
+import com.senne.imttech.station.ChargerBlockEntity;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -41,13 +48,16 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Tests voor inbreken (hoofdstuk 12 van het plan): de Bypass Kit, het stroomcircuit van een
- * keycardlezer, de vingerafdrukken en de volgorde van een codepaneel, en zakkenrollen.
+ * keycardlezer, de vingerafdrukken en de volgorde van een codepaneel, en zakkenrollen. Sinds
+ * hoofdstuk 33 ook de draden van een laserzender doorknippen.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -339,6 +349,244 @@ public final class BypassGameTests {
         });
     }
 
+
+    // ================================================================ Draden knippen in een laserzender (hoofdstuk 33)
+
+    /**
+     * Honderden kluwens per aantal draden (4 tot 8): elke draad komt op een eigen plek uit, precies één draad gaat naar
+     * de LENS, en die loopt niet rechtdoor en kruist minstens een paar andere (je moet hem echt volgen). Hetzelfde
+     * getal geeft dezelfde kluwen (de server maakt hem zelf na). Meer zenders in de poort = meer draden en meer tijd.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "bypass_wires")
+    public static void bypass_laser_tangles_are_fair(GameTestHelper helper) {
+        for (int wires = 4; wires <= 8; wires++) {
+            for (long seed = 0; seed < 400; seed++) {
+                WireTangle tangle = WireTangle.generate(seed * 104729L + 99, wires);
+                String which = wires + " draden, getal " + seed + ": ";
+                check(tangle.wires() == wires && tangle.columns() == wires * 2 + 2, which + "de kluwen is " + tangle.wires()
+                        + " draden en " + tangle.columns() + " kolommen");
+                boolean[] taken = new boolean[wires];
+                int toLens = 0;
+                for (int wire = 0; wire < wires; wire++) {
+                    int end = tangle.endRow(wire);
+                    check(end >= 0 && end < wires && !taken[end], which + "twee draden komen op rij " + end + " uit");
+                    taken[end] = true;
+                    if (tangle.label(end).equals(WireTangle.LENS)) {
+                        toLens++;
+                    }
+                }
+                check(toLens == 1, which + toLens + " draden naar de LENS");
+                check(tangle.label(tangle.lensRow()).equals(WireTangle.LENS) && tangle.endRow(tangle.lensStart()) == tangle.lensRow(),
+                        which + "het antwoord klopt niet met de LENS");
+                check(tangle.lensStart() != tangle.lensRow(), which + "de draad naar de LENS loopt rechtdoor");
+                check(tangle.crossingsOf(tangle.lensStart()) >= WireTangle.MIN_LENS_CROSSINGS,
+                        which + "de draad naar de LENS kruist maar " + tangle.crossingsOf(tangle.lensStart()) + " keer");
+                WireTangle again = WireTangle.generate(seed * 104729L + 99, wires);
+                for (int wire = 0; wire < wires; wire++) {
+                    for (int column = 0; column <= tangle.columns(); column++) {
+                        check(again.rowAt(wire, column) == tangle.rowAt(wire, column), which + "hetzelfde getal gaf een andere kluwen");
+                    }
+                    check(again.label(wire).equals(tangle.label(wire)), which + "hetzelfde getal gaf andere namen");
+                }
+            }
+        }
+        check(WireTangle.wiresFor(1) == 4 && WireTangle.wiresFor(3) == 6 && WireTangle.wiresFor(5) == 8 && WireTangle.wiresFor(40) == 8,
+                "Zoveel draden per poort: " + WireTangle.wiresFor(1) + ", " + WireTangle.wiresFor(3) + ", " + WireTangle.wiresFor(5));
+        check(Math.abs(WireTangle.secondsFor(4) - 40) < 0.01f && Math.abs(WireTangle.secondsFor(6) - 50) < 0.01f
+                && Math.abs(WireTangle.secondsFor(8) - 60) < 0.01f, "De tijd per aantal draden: " + WireTangle.secondsFor(4)
+                + ", " + WireTangle.secondsFor(6) + ", " + WireTangle.secondsFor(8));
+        helper.succeed();
+    }
+
+    /**
+     * Een laserpoort van twee zenders (oostwaarts, op stroom, met redstone), van {@code owner}. Geeft de onderste zender
+     * (relatief).
+     */
+    private static BlockPos laserGate(GameTestHelper helper, ServerPlayer owner, BlockPos bottom) {
+        for (BlockPos pos : List.of(bottom, bottom.above())) {
+            helper.setBlock(pos, ModBlocks.LASER_EMITTER.get().defaultBlockState().setValue(LaserEmitterBlock.FACING, Direction.EAST));
+            ModBlocks.LASER_EMITTER.get().setPlacedBy(helper.getLevel(), helper.absolutePos(pos), helper.getBlockState(pos), owner,
+                    ItemStack.EMPTY);
+        }
+        helper.setBlock(bottom.west(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(bottom.west())).fill(20_000);
+        helper.setBlock(bottom.above().west(), Blocks.REDSTONE_BLOCK);
+        return bottom;
+    }
+
+    /** Hoeveel blokken laserwand er oostelijk van deze zender staan (tot 4 ver). */
+    private static int wall(GameTestHelper helper, BlockPos emitter) {
+        int count = 0;
+        for (int i = 1; i <= 4; i++) {
+            if (helper.getBlockState(emitter.east(i)).is(ModBlocks.LASER_WALL.get())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /** Het scherm van de hacker knipt draad {@code wire} van de zender op {@code emitterAbs} door. */
+    private static void cutWire(ServerPlayer hacker, BlockPos emitterAbs, int wire) {
+        CompoundTag args = new CompoundTag();
+        args.putInt("wire", wire);
+        Bypass.handle(hacker, new BypassPayload(emitterAbs, "cut", args));
+    }
+
+    /** De kluwen die de server voor de hack van deze speler maakte (dezelfde als op zijn scherm). */
+    private static WireTangle tangleOf(ServerPlayer hacker) {
+        Long seed = Bypass.seedOf(hacker);
+        check(seed != null && Bypass.wiresOf(hacker) > 0, "De hacker is geen laserzender aan het hacken");
+        return WireTangle.generate(seed, Bypass.wiresOf(hacker));
+    }
+
+    private static boolean cut(GameTestHelper helper, BlockPos emitter) {
+        return ((LaserEmitterBlockEntity) helper.getBlockEntity(emitter)).isCut();
+    }
+
+    /**
+     * De goede draad: de hele poort valt uit en blijft uit (ook met redstone erop, ook na opslaan en laden, en ook een
+     * zender die je er later tegenaan zet). Stil: geen alarm. Nog een keer hacken kost niets ("al doorgeknipt"). Herstellen
+     * mag een vreemde niet; de eigenaar zonder chip ook niet; met chips kost het er één en komt de wand terug. In creative
+     * is het gratis.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "bypass_laser")
+    public static void bypass_laser_cut_and_repair(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 7), "laser-cut-owner");
+        owner.getAbilities().instabuild = false;
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 7), "laser-cut-stranger");
+        ServerPlayer hacker = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 6), "laser-cut-hacker");
+        hacker.getAbilities().instabuild = false; // anders slijt de kit niet (zoals in creative)
+        hacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
+        Bypass.clear();
+        BlockPos bottom = laserGate(helper, owner, new BlockPos(2, 2, 4));
+        BlockPos top = bottom.above();
+        BlockPos abs = helper.absolutePos(bottom);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(wall(helper, bottom) == 4 && wall(helper, top) == 4, "De poort ging niet aan"))
+                .thenExecute(() -> {
+                    Bypass.start(hacker, abs, InteractionHand.MAIN_HAND);
+                    check(Bypass.isHacking(hacker), "De hack begon niet");
+                    check(Bypass.wiresOf(hacker) == WireTangle.wiresFor(2), "Een poort van twee zenders heeft " + Bypass.wiresOf(hacker) + " draden");
+                    check(hacker.getMainHandItem().getDamageValue() == 1, "De kit werd niet gebruikt");
+                    WireTangle tangle = tangleOf(hacker);
+                    cutWire(hacker, abs, tangle.wires()); // een draad die er niet is: telt niet
+                    check(Bypass.isHacking(hacker), "Een draad die niet bestaat, stopte de hack");
+                    cutWire(hacker, abs, tangle.lensStart());
+                    check(!Bypass.isHacking(hacker), "Na het knippen liep de hack nog");
+                    check(cut(helper, bottom) && cut(helper, top), "De draden van de poort zijn niet doorgeknipt");
+                })
+                .thenWaitUntil(() -> check(wall(helper, bottom) == 0 && wall(helper, top) == 0, "De wand verdween niet"))
+                .thenIdle(30)
+                .thenExecute(() -> {
+                    check(wall(helper, bottom) == 0 && !helper.getBlockState(bottom).getValue(LaserEmitterBlock.POWERED),
+                            "Met redstone erop ging de doorgeknipte poort weer aan");
+                    // Opslaan en laden: nog steeds doorgeknipt.
+                    var registries = level.registryAccess();
+                    var emitter = (LaserEmitterBlockEntity) helper.getBlockEntity(bottom);
+                    var copy = new LaserEmitterBlockEntity(emitter.getBlockPos(), emitter.getBlockState());
+                    copy.loadWithComponents(emitter.saveWithFullMetadata(registries), registries);
+                    check(copy.isCut() && owner.getUUID().equals(copy.owner()), "Na opslaan en laden waren de draden heel (of de eigenaar weg)");
+                    // Nog een keer hacken: al doorgeknipt, dus geen hack en de kit blijft zoals hij was.
+                    Bypass.start(hacker, abs, InteractionHand.MAIN_HAND);
+                    check(!Bypass.isHacking(hacker) && hacker.getMainHandItem().getDamageValue() == 1,
+                            "Een doorgeknipte poort liet zich nog eens hacken");
+                    // Een zender erbij: die hoort bij de poort en blijft dus ook uit.
+                    helper.setBlock(top.above(), ModBlocks.LASER_EMITTER.get().defaultBlockState().setValue(LaserEmitterBlock.FACING, Direction.EAST));
+                })
+                .thenIdle(25)
+                .thenExecute(() -> {
+                    check(wall(helper, top.above()) == 0, "Een zender tegen de doorgeknipte poort ging aan");
+                    // Een vreemde mag niet herstellen; de eigenaar zonder chip ook niet.
+                    LaserEmitters.handleAction(stranger, new LaserActionPayload(abs, LaserActionPayload.Op.REPAIR, 0));
+                    check(cut(helper, bottom), "Een vreemde herstelde de draden");
+                    LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.REPAIR, 0));
+                    check(cut(helper, bottom), "De eigenaar herstelde de draden zonder chip");
+                    owner.getInventory().add(new ItemStack(ModItems.COMPUTER_CHIP.get(), 3));
+                    LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.REPAIR, 0));
+                    check(!cut(helper, bottom) && !cut(helper, top), "De eigenaar met chips kon de draden niet herstellen");
+                    int left = owner.getInventory().countItem(ModItems.COMPUTER_CHIP.get());
+                    check(left == 3 - LaserEmitters.repairChips(), "Herstellen kostte " + (3 - left) + " chips");
+                })
+                .thenWaitUntil(() -> check(wall(helper, bottom) == 4 && wall(helper, top) == 4, "Na het herstellen kwam de wand niet terug"))
+                .thenExecute(() -> {
+                    // In creative is herstellen gratis.
+                    LaserEmitters.cutWires(level, abs);
+                    check(cut(helper, bottom), "Doorknippen lukte niet");
+                    owner.getInventory().clearContent();
+                    owner.getAbilities().instabuild = true;
+                    LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.REPAIR, 0));
+                    check(!cut(helper, bottom), "In creative kon de eigenaar de draden niet gratis herstellen");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * De verkeerde draad: een schok voor de hacker, de poort gaat 5 minuten op slot (ook voor een andere hacker, en dat
+     * kost hem niets), en het alarm gaat af (met zijn naam erbij). Is de tijd om, dan gaat de poort ook op slot met
+     * alarm, maar zonder schok. Weglopen stopt de hack zonder iets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 160, batch = "bypass_laser_alarm")
+    public static void bypass_laser_wrong_wire_shocks_and_locks(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 8), "laser-alarm-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(9, 3, 9), owner);
+        ServerPlayer hacker = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 6), "laser-alarm-hacker");
+        ServerPlayer second = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "laser-alarm-second");
+        for (ServerPlayer player : List.of(hacker, second)) {
+            player.getAbilities().instabuild = false;
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
+        }
+        Bypass.clear();
+        BlockPos first = laserGate(helper, owner, new BlockPos(2, 2, 4));
+        BlockPos other = laserGate(helper, owner, new BlockPos(2, 2, 1));
+        BlockPos firstAbs = helper.absolutePos(first);
+        BlockPos otherAbs = helper.absolutePos(other);
+        // Even wachten: een nieuwe speler kan de eerste drie seconden geen schade krijgen.
+        helper.runAfterDelay(70, () -> {
+            float health = hacker.getHealth();
+            Bypass.start(hacker, firstAbs, InteractionHand.MAIN_HAND);
+            WireTangle tangle = tangleOf(hacker);
+            cutWire(hacker, firstAbs, (tangle.lensStart() + 1) % tangle.wires());
+            check(!Bypass.isHacking(hacker), "Na de verkeerde draad liep de hack nog");
+            check(hacker.getHealth() < health, "De verkeerde draad gaf geen schok");
+            check(!cut(helper, first), "De verkeerde draad knipte de poort toch door");
+            long locked = LaserEmitters.lockedFor(level, LaserEmitterBlock.group(level, firstAbs));
+            check(locked > 20 * (ImtConfig.Bypass.LASER_LOCK_SECONDS - 2), "De poort zit niet op slot: " + locked + " ticks");
+            boolean alarm = core.log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.ALARM
+                    && entry.text().contains("Someone is tampering with a laser gate") && entry.text().contains("laser-alarm-hacker"));
+            check(alarm, "Geen alarm in het logboek: " + lastEntry(core));
+            check(core.isHunted(hacker.getUUID()), "De beveiliging jaagt niet op de hacker");
+            // Een andere hacker: de poort zit op slot, en dat kost hem niets.
+            Bypass.start(second, firstAbs, InteractionHand.MAIN_HAND);
+            check(!Bypass.isHacking(second) && second.getMainHandItem().getDamageValue() == 0,
+                    "Een poort op slot liet zich toch hacken (of kostte een gebruik)");
+
+            // De andere poort: weglopen stopt de hack zonder slot of alarm.
+            long alarms = core.log().entries().stream().filter(entry -> entry.type() == EventLog.Type.ALARM).count();
+            Bypass.start(second, otherAbs, InteractionHand.MAIN_HAND);
+            check(Bypass.isHacking(second), "De hack van de tweede poort begon niet");
+            second.teleportTo(otherAbs.getX() + 0.5, otherAbs.getY(), otherAbs.getZ() + 9.5);
+            second.tickCount = 5;
+            Bypass.onPlayerTick(new PlayerTickEvent.Post(second));
+            check(!Bypass.isHacking(second), "Weglopen stopte de hack niet");
+            check(LaserEmitters.lockedFor(level, LaserEmitterBlock.group(level, otherAbs)) <= 0, "Weglopen zette de poort op slot");
+            check(core.log().entries().stream().filter(entry -> entry.type() == EventLog.Type.ALARM).count() == alarms,
+                    "Weglopen gaf een alarm");
+
+            // Nog eens, en nu is de tijd om: op slot en alarm, maar geen schok.
+            second.teleportTo(otherAbs.getX() + 0.5, otherAbs.getY(), otherAbs.getZ() + 2.5);
+            float secondHealth = second.getHealth();
+            Bypass.start(second, otherAbs, InteractionHand.MAIN_HAND);
+            Bypass.handle(second, BypassPayload.of(otherAbs, "fail"));
+            check(!Bypass.isHacking(second), "Na 'de tijd is om' liep de hack nog");
+            check(LaserEmitters.lockedFor(level, LaserEmitterBlock.group(level, otherAbs)) > 0, "Te laat zette de poort niet op slot");
+            check(core.log().entries().stream().filter(entry -> entry.type() == EventLog.Type.ALARM).count() == alarms + 1,
+                    "Te laat gaf geen alarm");
+            check(second.getHealth() >= secondHealth, "Te laat gaf toch een schok");
+            helper.succeed();
+        });
+    }
 
     // ================================================================ Een codepaneel kraken
 

@@ -1375,12 +1375,12 @@ public final class ImtConfig {
 
     // =============================================================================================== Bypass
 
-    @Section("Breaking in with the Bypass Kit (keycard readers and code panels), and picking pockets")
+    @Section("Breaking in with the Bypass Kit (keycard readers, code panels and laser emitters), and picking pockets")
     public static final class Bypass {
         private Bypass() {}
 
         /** Zo dichtbij moet je blijven tijdens een hack; verder weg = de hack stopt. */
-        @Tunable("How close you must stay to a reader or panel while you hack it (blocks)")
+        @Tunable("How close you must stay to a reader, panel or laser emitter while you hack it (blocks)")
         public static double REACH = 6.0;
 
         // ------------------------------------------------------------------------- Het stroomcircuit (keycard-lezer)
@@ -1411,6 +1411,30 @@ public final class ImtConfig {
         /** Zo lang negeert die lezer of dat paneel de hacker. */
         @Tunable("After a failed hack, that reader or panel ignores the hacker for this long (seconds)")
         public static float LOCKOUT_SECONDS = 60.0f;
+
+        // ------------------------------------------------------------------------- Draden knippen (laserzender, hoofdstuk 33)
+        // Jouw keuze: hoe groter de laserpoort, hoe meer draden (het aantal zenders plus 3) en hoe meer tijd.
+        /** Zoveel draden heeft de kluwen van een poort van één zender... */
+        @Tunable(value = "Wires inside a laser gate of one emitter (a bigger gate has more, up to the most below)", min = 2, max = 8)
+        public static float LASER_WIRES_MIN = 4.0f;
+        /** ...en zoveel hooguit, bij een grote poort. */
+        @Tunable(value = "Most wires inside a laser gate, however big it is", min = 2, max = 8)
+        public static float LASER_WIRES_MAX = 8.0f;
+        /** Zoveel seconden krijg je bij de minste draden... */
+        @Tunable(value = "Seconds you get to cut the wires of a laser gate with the fewest wires", min = 5, max = 600)
+        public static float LASER_SECONDS_MIN = 40.0f;
+        /** ...en zoveel bij de meeste draden (daartussen loopt het gelijk op). */
+        @Tunable(value = "Seconds you get to cut the wires of a laser gate with the most wires", min = 5, max = 600)
+        public static float LASER_SECONDS_MAX = 60.0f;
+        /** Verkeerde draad of te laat: zo lang laat de poort niemand meer knippen. */
+        @Tunable("After a wrong cut (or running out of time), the laser gate can't be hacked by anyone for this long (seconds)")
+        public static float LASER_LOCK_SECONDS = 300.0f;
+        /** De schok van een verkeerde draad (4 = 2 hartjes). */
+        @Tunable(value = "Damage of the shock from cutting the wrong wire (2 = one heart)", max = 100)
+        public static float LASER_SHOCK_DAMAGE = 4.0f;
+        /** Zoveel Computer Chips kost het om de draden van een doorgeknipte poort te herstellen (in creative niets). */
+        @Tunable(value = "Computer Chips it costs to repair the cut wires of a laser gate (free in creative)", max = 64)
+        public static float LASER_REPAIR_CHIPS = 1.0f;
 
         // ------------------------------------------------------------------------- Zakkenrollen
         /** Zo dichtbij moet je zijn. */

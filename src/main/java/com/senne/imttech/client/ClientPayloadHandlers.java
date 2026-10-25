@@ -97,6 +97,9 @@ public final class ClientPayloadHandlers {
             }
             case "panel" -> mc.setScreen(new com.senne.imttech.client.bypass.FingerprintScreen(payload.pos(),
                     args.getString("name"), args.getInt("length"), args.getIntArray("prints"), args.getInt("tries")));
+            // Een laserzender (hoofdstuk 33): de kluwen van draden.
+            case "laser" -> mc.setScreen(new com.senne.imttech.client.bypass.WireScreen(payload.pos(), args.getString("name"),
+                    args.getLong("seed"), args.getInt("wires"), args.getInt("ticks"), args.getInt("lock")));
             case "guess" -> {
                 if (mc.screen instanceof com.senne.imttech.client.bypass.FingerprintScreen panel
                         && panel.device().equals(payload.pos())) {

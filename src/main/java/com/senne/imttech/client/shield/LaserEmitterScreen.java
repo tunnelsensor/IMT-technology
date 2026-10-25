@@ -32,10 +32,16 @@ import org.jetbrains.annotations.Nullable;
  * Alles geldt meteen voor de hele laserpoort (de zenders die eraan vastzitten); er is geen "opslaan". Het
  * scherm leest wat er nu ingesteld is gewoon uit het blok, dus je ziet het veranderen zodra de server het
  * heeft gedaan.
+ *
+ * Heeft iemand de draden doorgeknipt (hoofdstuk 33, met de Bypass Kit), dan staat rechtsboven WIRES CUT en
+ * komt er een knop <b>Repair wires</b> bij: die zet de draden van de hele poort weer vast, en kost een Computer
+ * Chip (zie shield/LaserEmitters). Of de draden doorgeknipt zijn, weet je spel uit de blok-entiteit.
  */
 public class LaserEmitterScreen extends Screen {
     private static final int PANEL_W = 270;
     private static final int PANEL_H = 160;
+    /** Zoveel hoger is het scherm als de draden doorgeknipt zijn (de uitleg en de knop Repair wires). */
+    private static final int CUT_EXTRA = 30;
     private static final int MARGIN = 8;
     /** Waar de knoppen beginnen (de naam van de regel staat links daarvan). */
     private static final int VALUE_X = 64;
@@ -50,6 +56,8 @@ public class LaserEmitterScreen extends Screen {
     private int top;
     private @Nullable Button invertButton;
     private @Nullable Button turnButton;
+    /** Is het scherm opgebouwd met de knop Repair wires (de draden waren doorgeknipt)? */
+    private boolean cutLayout;
 
     public LaserEmitterScreen(BlockPos pos, String owner) {
         super(Component.translatable("screen.imttech.laser"));
@@ -72,6 +80,16 @@ public class LaserEmitterScreen extends Screen {
         return state.getBlock() instanceof LaserEmitterBlock ? state : null;
     }
 
+    /** Zijn de draden van deze poort doorgeknipt (hoofdstuk 33)? Dat zegt de server via de blok-entiteiten. */
+    private boolean gateIsCut() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level != null && LaserEmitterBlock.isCut(mc.level, LaserEmitterBlock.group(mc.level, pos));
+    }
+
+    private int panelHeight() {
+        return PANEL_H + (cutLayout ? CUT_EXTRA : 0);
+    }
+
     // ---------------------------------------------------------------- Waar alles staat
 
     private int colorY() {
@@ -87,7 +105,16 @@ public class LaserEmitterScreen extends Screen {
     }
 
     private int footerY() {
-        return top + PANEL_H - 28;
+        return top + panelHeight() - 28;
+    }
+
+    /** De uitleg dat de draden doorgeknipt zijn, en de knop Repair wires (alleen als ze dat zijn). */
+    private int cutInfoY() {
+        return top + 114;
+    }
+
+    private int repairY() {
+        return top + 138;
     }
 
     // ---------------------------------------------------------------- Opbouw
@@ -99,8 +126,9 @@ public class LaserEmitterScreen extends Screen {
             onClose();
             return;
         }
+        cutLayout = gateIsCut();
         left = (width - PANEL_W) / 2;
-        top = Math.max(6, (height - PANEL_H) / 2);
+        top = Math.max(6, (height - panelHeight()) / 2);
 
         swatches.clear();
         for (ShieldColor colour : ShieldColor.values()) {
@@ -127,6 +155,17 @@ public class LaserEmitterScreen extends Screen {
                     }
                 })
                 .bounds(left + VALUE_X, wallY(), valueW, 20).build());
+        if (cutLayout) {
+            // Repair wires: de server kijkt na of je mag en of je de chips hebt (zie LaserEmitters.repair). In creative is
+            // het gratis.
+            Minecraft mc = Minecraft.getInstance();
+            boolean free = mc.player != null && mc.player.getAbilities().instabuild;
+            int chips = free ? 0 : com.senne.imttech.shield.LaserEmitters.repairChips();
+            Component label = chips == 0 ? Component.translatable("screen.imttech.laser.repair_free")
+                    : Component.translatable(chips == 1 ? "screen.imttech.laser.repair" : "screen.imttech.laser.repair_chips", chips);
+            addRenderableWidget(Button.builder(label, b -> send(LaserActionPayload.Op.REPAIR, 0))
+                    .bounds(left + MARGIN, repairY(), PANEL_W - 2 * MARGIN, 20).build());
+        }
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(left + PANEL_W - MARGIN - DONE_W, footerY(), DONE_W, 20).build());
         refreshLabels(state);
@@ -156,13 +195,20 @@ public class LaserEmitterScreen extends Screen {
         return turned ? "screen.imttech.laser.horizontal" : "screen.imttech.laser.vertical";
     }
 
-    /** Elke tick: de knoppen bijwerken, en dicht als de zender weg is (afgebroken). */
+    /**
+     * Elke tick: de knoppen bijwerken, en dicht als de zender weg is (afgebroken). Zijn de draden net hersteld (of net
+     * doorgeknipt), dan bouwt het scherm zich opnieuw op, met of zonder de knop Repair wires.
+     */
     @Override
     public void tick() {
         super.tick();
         BlockState state = emitter();
         if (state == null) {
             onClose();
+            return;
+        }
+        if (gateIsCut() != cutLayout) {
+            rebuildWidgets();
             return;
         }
         refreshLabels(state);
@@ -174,8 +220,9 @@ public class LaserEmitterScreen extends Screen {
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
         HudStyle.dim(g, width, height);
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, HudStyle.argb(205, 0x08121A));
-        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, 8, HudStyle.argb(220, HudStyle.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelHeight(), HudStyle.argb(205, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelHeight(), 8,
+                HudStyle.argb(220, cutLayout ? HudStyle.RED : HudStyle.CYAN));
     }
 
     @Override
@@ -186,11 +233,12 @@ public class LaserEmitterScreen extends Screen {
         }
         super.render(g, mouseX, mouseY, a);
         g.drawString(font, title, left + MARGIN, top + 7, HudStyle.argb(255, HudStyle.CYAN), true);
-        // Rechtsboven: staat de wand nu aan?
+        // Rechtsboven: staat de wand nu aan? (Of zijn de draden doorgeknipt?)
         boolean on = state.getValue(LaserEmitterBlock.POWERED);
-        Component status = Component.translatable(on ? "screen.imttech.laser.on" : "screen.imttech.laser.off");
+        Component status = Component.translatable(cutLayout ? "screen.imttech.laser.cut"
+                : on ? "screen.imttech.laser.on" : "screen.imttech.laser.off");
         g.drawString(font, status, left + PANEL_W - MARGIN - font.width(status), top + 7,
-                HudStyle.argb(255, on ? HudStyle.GREEN : 0x8095A0), true);
+                HudStyle.argb(255, cutLayout ? HudStyle.RED : on ? HudStyle.GREEN : 0x8095A0), true);
         Component placedBy = owner.isEmpty()
                 ? Component.translatable("screen.imttech.laser.no_owner")
                 : Component.translatable("screen.imttech.laser.owner", owner);
@@ -211,13 +259,23 @@ public class LaserEmitterScreen extends Screen {
         label(g, "screen.imttech.laser.signal", signalY());
         label(g, "screen.imttech.laser.wall", wallY());
 
+        // Doorgeknipt: wat er aan de hand is (boven de knop Repair wires).
+        if (cutLayout) {
+            int y = cutInfoY();
+            for (net.minecraft.util.FormattedCharSequence line : font.split(Component.translatable("screen.imttech.laser.cut_info"),
+                    PANEL_W - 2 * MARGIN)) {
+                g.drawString(font, line, left + MARGIN, y, HudStyle.argb(255, HudStyle.ORANGE), false);
+                y += 11;
+            }
+        }
+
         // Onderaan: voor hoeveel zenders dit geldt.
         Minecraft mc = Minecraft.getInstance();
         int gate = mc.level == null ? 1 : LaserEmitterBlock.group(mc.level, pos).size();
         Component scope = gate > 1
                 ? Component.translatable("screen.imttech.laser.gate", gate)
                 : Component.translatable("screen.imttech.laser.single");
-        int y = top + 114;
+        int y = cutLayout ? footerY() : top + 114;
         for (net.minecraft.util.FormattedCharSequence line : font.split(scope, PANEL_W - 2 * MARGIN - DONE_W - 6)) {
             g.drawString(font, line, left + MARGIN, y, HudStyle.argb(150, HudStyle.WHITE), false);
             y += 11;

@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
  *
  * @param pos   welke zender
  * @param op    wat er anders moet
- * @param value de nieuwe waarde: een kleur (de volgorde van ShieldColor), of 0/1 voor uit/aan
+ * @param value de nieuwe waarde: een kleur (de volgorde van ShieldColor), of 0/1 voor uit/aan (bij REPAIR niets)
  */
 public record LaserActionPayload(BlockPos pos, Op op, int value) implements CustomPacketPayload {
     public static final Type<LaserActionPayload> TYPE =
@@ -26,7 +26,12 @@ public record LaserActionPayload(BlockPos pos, Op op, int value) implements Cust
         /** Omkeren: redstone aan = laser uit. */
         INVERT,
         /** Het veld een kwartslag draaien: liggend in plaats van staand. */
-        TURN
+        TURN,
+        /**
+         * De doorgeknipte draden herstellen (hoofdstuk 33; kost een Computer Chip). Altijd onderaan erbij: de volgorde
+         * is het getal dat over het netwerk gaat.
+         */
+        REPAIR
     }
 
     public static final StreamCodec<ByteBuf, LaserActionPayload> STREAM_CODEC = StreamCodec.composite(

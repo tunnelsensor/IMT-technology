@@ -10,13 +10,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Een hack met de Bypass Kit (hoofdstuk 12), beide kanten op. {@code pos} is de lezer of het paneel,
- * {@code op} wat er gebeurt, {@code args} de gegevens die erbij horen.
+ * Een hack met de Bypass Kit (hoofdstuk 12), beide kanten op. {@code pos} is de lezer, het paneel of de
+ * laserzender, {@code op} wat er gebeurt, {@code args} de gegevens die erbij horen.
  * <ul>
  *   <li>server naar speler: {@code reader} (open het stroomcircuit: naam, het getal voor het raster),
+ *       {@code laser} (open de kluwen van draden: naam, het getal, hoeveel draden en ticks; hoofdstuk 33),
  *       {@code result} (hoe het afliep), {@code close} (het scherm moet dicht: je liep weg);</li>
- *   <li>speler naar server: {@code level} (dit niveau gekozen, de klok loopt), {@code solve} (zo staan
- *       de stukjes: kijk na), {@code fail} (ALARM of de tijd is om), {@code cancel} (Esc).</li>
+ *   <li>speler naar server: {@code group} (deze groep gekozen, de klok loopt), {@code solve} (zo staan
+ *       de stukjes: kijk na), {@code cut} (deze draad doorgeknipt), {@code fail} (ALARM of de tijd is om),
+ *       {@code cancel} (Esc).</li>
  * </ul>
  * De server controleert altijd zelf of het klopt.
  */

@@ -9,8 +9,13 @@ import com.senne.imttech.logic.LogicServer;
 import com.senne.imttech.logic.PanelCodes;
 import com.senne.imttech.network.BypassPayload;
 import com.senne.imttech.network.ModNetwork;
+import com.senne.imttech.registry.ModDamageTypes;
+import com.senne.imttech.registry.ModSounds;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
+import com.senne.imttech.shield.LaserEmitterBlock;
+import com.senne.imttech.shield.LaserEmitterBlockEntity;
+import com.senne.imttech.shield.LaserEmitters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +23,7 @@ import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
@@ -49,6 +55,11 @@ import org.jetbrains.annotations.Nullable;
  *       de vingerafdrukken: welke cijfers erin zitten en hoe vaak, en hoe lang de code is. Elke volgorde
  *       die je probeert, gaat naar de server; die zegt hoeveel cijfers op de goede plek staan. De code
  *       zelf krijg je pas als je hem geraden hebt; dan typt de kit hem ook echt in.</li>
+ *   <li><b>Een laserzender</b> (hoofdstuk 33): de server kiest een getal, en jouw spel en de server maken daaruit
+ *       dezelfde kluwen van draden (WireTangle; meer zenders in de poort = meer draden en meer tijd). De klok loopt
+ *       meteen. Je spel stuurt alleen welke draad je doorknipt; de server kijkt na of dat de draad naar de LENS is.
+ *       Goed: de hele poort valt uit tot iemand de draden herstelt (stil, zonder alarm). Fout: een schok, de poort
+ *       gaat 5 minuten op slot (voor iedereen), en het alarm gaat af. Ook een zender zonder kern mag je hacken.</li>
  * </ul>
  * Mislukt het (ALARM, de tijd is om, of geen pogingen meer), dan gaat het alarm af en laat dat apparaat jou een minuut
  * niet meer proberen. Esc of weglopen stopt de hack zonder alarm.
@@ -57,7 +68,7 @@ public final class Bypass {
     private Bypass() {}
 
     /** Wat er gehackt wordt. */
-    public enum Kind { READER, PANEL }
+    public enum Kind { READER, PANEL, LASER }
 
     /** Zoveel ticks speling op de klok (een bericht onderweg doet er even over). */
     private static final int CLOCK_SLACK = 40;
@@ -80,6 +91,9 @@ public final class Bypass {
         /** De code die de kit moet kraken (paneel), en hoeveel pogingen je nog hebt. */
         String code = "";
         int triesLeft;
+        /** Een laserzender: hoeveel draden de kluwen heeft, en hoeveel ticks je krijgt. */
+        int wires;
+        int ticks;
 
         Session(Kind kind, ResourceKey<Level> dimension, BlockPos pos, long seed, long openedAt) {
             this.kind = kind;
@@ -104,6 +118,10 @@ public final class Bypass {
      */
     public static void start(ServerPlayer player, BlockPos pos, InteractionHand hand) {
         ServerLevel level = player.serverLevel();
+        if (level.getBlockEntity(pos) instanceof LaserEmitterBlockEntity) {
+            startLaser(player, pos, hand);
+            return;
+        }
         if (!(level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device)) {
             return;
         }
@@ -163,6 +181,51 @@ public final class Bypass {
         }
     }
 
+    /**
+     * Rechtsklik met de kit op een laserzender (hoofdstuk 33). Elke zender mag, ook een zonder kern of je eigen (om je
+     * beveiliging te testen). Zijn de draden van de poort al doorgeknipt, of zit hij op slot na een verkeerde knip, dan
+     * gebeurt er niets (en kost het niets). Anders kost het één gebruik van de kit, begint de klok, en opent je spel de
+     * kluwen.
+     */
+    private static void startLaser(ServerPlayer player, BlockPos pos, InteractionHand hand) {
+        ServerLevel level = player.serverLevel();
+        if (player.distanceToSqr(pos.getCenter()) > ImtConfig.Bypass.REACH * ImtConfig.Bypass.REACH) {
+            return;
+        }
+        List<BlockPos> gate = LaserEmitterBlock.group(level, pos);
+        if (LaserEmitterBlock.isCut(level, gate)) {
+            player.displayClientMessage(Component.translatable("bypass.imttech.msg.laser_cut")
+                    .withStyle(ChatFormatting.GRAY), true);
+            return;
+        }
+        long locked = LaserEmitters.lockedFor(level, gate);
+        if (locked > 0) {
+            long seconds = (locked + 19) / 20;
+            player.displayClientMessage(Component.translatable("bypass.imttech.msg.laser_locked",
+                    (seconds / 60) + ":" + String.format(java.util.Locale.ROOT, "%02d", seconds % 60))
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        ItemStack kit = player.getItemInHand(hand);
+        kit.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+        stop(player, false);
+        long now = level.getGameTime();
+        Session session = new Session(Kind.LASER, level.dimension(), pos.immutable(), level.random.nextLong(), now);
+        session.wires = WireTangle.wiresFor(gate.size());
+        session.ticks = WireTangle.ticksFor(session.wires);
+        session.startedAt = now;
+        SESSIONS.put(player.getUUID(), session);
+        // Het geluid van een zender die je openschroeft.
+        level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.4f, 1.8f);
+        CompoundTag args = new CompoundTag();
+        args.putString("name", gate.size() == 1 ? "Laser emitter" : "Laser gate");
+        args.putLong("seed", session.seed);
+        args.putInt("wires", session.wires);
+        args.putInt("ticks", session.ticks);
+        args.putInt("lock", Math.round(ImtConfig.Bypass.LASER_LOCK_SECONDS));
+        ModNetwork.sendTo(player, new BypassPayload(pos, "laser", args));
+    }
+
     // ================================================================ Wat het scherm stuurt
 
     /** Een bericht van het scherm van een speler. */
@@ -210,10 +273,18 @@ public final class Bypass {
                     guess(player, session, payload.args().getString("code"));
                 }
             }
+            case "cut" -> {
+                if (session.kind == Kind.LASER) {
+                    cut(player, session, payload.args().getInt("wire"));
+                }
+            }
             case "fail" -> {
                 if (session.kind == Kind.READER && session.startedAt >= 0) {
                     String why = payload.args().getString("why");
                     fail(player, session, why.equals("alarm") ? "alarm" : "time");
+                } else if (session.kind == Kind.LASER) {
+                    // Bij een laserzender kan je spel alleen "de tijd is om" zeggen; knippen gaat via "cut".
+                    fail(player, session, "time");
                 }
             }
             case "cancel" -> SESSIONS.remove(player.getUUID());
@@ -255,11 +326,57 @@ public final class Bypass {
         ModNetwork.sendTo(player, new BypassPayload(session.pos, "guess", args));
     }
 
-    /** Mislukt: alarm (zoals {@code alarm()} in een diagram), rood lampje, en een minuut niet meer proberen. */
+    /**
+     * Een draad van een laserzender doorgeknipt (hoofdstuk 33). Je kunt maar één keer knippen. Was je te laat, dan
+     * telt het als mislukt (zonder schok: de klok was al om). De draad naar de LENS: de hele poort valt uit, stil.
+     * Een andere draad: een schok, en mislukt (de poort op slot en het alarm).
+     */
+    private static void cut(ServerPlayer player, Session session, int wire) {
+        if (wire < 0 || wire >= session.wires) {
+            return; // geen draad van deze kluwen: telt niet
+        }
+        ServerLevel level = player.serverLevel();
+        if (level.getGameTime() - session.startedAt > session.ticks + CLOCK_SLACK) {
+            fail(player, session, "time");
+            return;
+        }
+        if (wire == WireTangle.generate(session.seed, session.wires).lensStart()) {
+            SESSIONS.remove(player.getUUID());
+            reply(player, session, "ok");
+            LaserEmitters.cutWires(level, session.pos);
+            return;
+        }
+        shock(player, session.pos);
+        fail(player, session, "wrong");
+    }
+
+    /** De verkeerde draad: een schok voor de hacker (schade, vonken en een knetter van de laser). */
+    private static void shock(ServerPlayer player, BlockPos emitter) {
+        ServerLevel level = player.serverLevel();
+        float damage = ImtConfig.Bypass.LASER_SHOCK_DAMAGE;
+        if (damage > 0) {
+            com.senne.imttech.training.Shots.hit(level, player, ModDamageTypes.laserWall(level), damage, "Laser emitter");
+        }
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, emitter.getX() + 0.5, emitter.getY() + 0.5, emitter.getZ() + 0.5,
+                30, 0.5, 0.5, 0.5, 0.25);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, player.getX(), player.getY() + 1.0, player.getZ(),
+                12, 0.3, 0.5, 0.3, 0.1);
+        level.playSound(null, emitter, ModSounds.RAYSHIELD_HIT.get(), SoundSource.BLOCKS, 1.0f, 1.4f);
+    }
+
+    /**
+     * Mislukt: alarm (zoals {@code alarm()} in een diagram), rood lampje, en een minuut niet meer proberen. Bij een
+     * laserzender gaat de hele poort op slot (voor iedereen, 5 minuten), en is er alleen alarm als hij bij een kern hoort.
+     */
     private static void fail(ServerPlayer player, Session session, String why) {
         SESSIONS.remove(player.getUUID());
         reply(player, session, why);
         ServerLevel level = player.serverLevel();
+        if (session.kind == Kind.LASER) {
+            LaserEmitters.lock(level, session.pos, level.getGameTime() + Math.round(ImtConfig.Bypass.LASER_LOCK_SECONDS * 20));
+            LogicEvents.tamperedLaser(level, session.pos, player);
+            return;
+        }
         LOCKOUTS.computeIfAbsent(player.getUUID(), id -> new HashMap<>())
                 .put(GlobalPos.of(session.dimension, session.pos), level.getGameTime() + Math.round(ImtConfig.Bypass.LOCKOUT_SECONDS * 20));
         LogicEvents.tampered(level, session.pos, player);
@@ -284,18 +401,25 @@ public final class Bypass {
         }
         ServerLevel level = player.serverLevel();
         long now = level.getGameTime();
+        boolean deviceThere = session.kind == Kind.LASER ? level.getBlockEntity(session.pos) instanceof LaserEmitterBlockEntity
+                : level.getBlockEntity(session.pos) instanceof InputDeviceBlockEntity;
         boolean gone = !player.isAlive() || session.dimension != level.dimension()
                 || player.distanceToSqr(session.pos.getCenter()) > ImtConfig.Bypass.REACH * ImtConfig.Bypass.REACH
-                || !(level.getBlockEntity(session.pos) instanceof InputDeviceBlockEntity);
+                || !deviceThere;
         boolean tooLong = session.kind == Kind.PANEL ? now - session.openedAt > PANEL_TIMEOUT
                 : session.startedAt < 0 && now - session.openedAt > CHOOSE_TIMEOUT;
         if (gone || tooLong) {
             stop(player, true);
-        } else if (session.startedAt >= 0 && session.kind == Kind.READER
-                && now - session.startedAt > CircuitPuzzle.circuitTicks() + CLOCK_SLACK * 2) {
+        } else if (session.startedAt >= 0 && session.kind != Kind.PANEL
+                && now - session.startedAt > clockTicks(session) + CLOCK_SLACK * 2) {
             // Je spel zei niets meer (te laat): dan is de tijd gewoon om.
             fail(player, session, "time");
         }
+    }
+
+    /** Hoe lang de klok van deze hack loopt (ticks): het stroomcircuit, of de kluwen van een laserzender. */
+    private static int clockTicks(Session session) {
+        return session.kind == Kind.LASER ? session.ticks : CircuitPuzzle.circuitTicks();
     }
 
     /**
@@ -342,6 +466,12 @@ public final class Bypass {
     public static @Nullable Long seedOf(ServerPlayer player) {
         Session session = SESSIONS.get(player.getUUID());
         return session == null ? null : session.seed;
+    }
+
+    /** Hoeveel draden de kluwen heeft van de laserzender die deze speler hackt (voor de tests), of -1. */
+    public static int wiresOf(ServerPlayer player) {
+        Session session = SESSIONS.get(player.getUUID());
+        return session == null || session.kind != Kind.LASER ? -1 : session.wires;
     }
 
     /** Hoeveel pogingen deze speler nog heeft bij het paneel dat hij kraakt (voor de tests), of -1. */

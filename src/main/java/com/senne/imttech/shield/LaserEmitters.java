@@ -1,15 +1,22 @@
 package com.senne.imttech.shield;
 
+import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.network.LaserActionPayload;
 import com.senne.imttech.network.LaserOpenPayload;
 import com.senne.imttech.network.ModNetwork;
+import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.security.BaseTrust;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,6 +40,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * Wat je kiest, geldt voor de hele laserpoort: alle zenders die eraan vastzitten (die gaan ook samen aan
  * en uit, zie LaserEmitterBlock.group). Een zender van iemand anders in dezelfde poort blijft zoals hij is.
+ *
+ * Hoofdstuk 33: een inbreker kan met de Bypass Kit de draden doorknippen (zie bypass/Bypass). Dan blijft de hele
+ * poort uit tot iemand die hem mag instellen op Repair wires drukt; dat kost een Computer Chip. Knipt hij de
+ * verkeerde draad, dan gaat de poort een tijd op slot (voor iedereen).
  */
 public final class LaserEmitters {
     private LaserEmitters() {}
@@ -53,13 +64,17 @@ public final class LaserEmitters {
         ModNetwork.sendTo(player, new LaserOpenPayload(pos, emitter.ownerName()));
     }
 
-    /** Een knop uit het scherm: de kleur, omkeren of liggend/staand, voor de hele poort. */
+    /** Een knop uit het scherm: de kleur, omkeren of liggend/staand, voor de hele poort, of de draden herstellen. */
     public static void handleAction(ServerPlayer player, LaserActionPayload payload) {
         LaserEmitterBlockEntity clicked = emitter(player, payload.pos());
         if (clicked == null || !mayEdit(player, clicked)) {
             return;
         }
         ServerLevel level = player.serverLevel();
+        if (payload.op() == LaserActionPayload.Op.REPAIR) {
+            repair(player, level, payload.pos());
+            return;
+        }
         List<BlockPos> gate = new ArrayList<>();
         for (BlockPos member : LaserEmitterBlock.group(level, payload.pos())) {
             if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity other && mayEdit(player, other)) {
@@ -71,7 +86,91 @@ public final class LaserEmitters {
                     ShieldColor.values()[Math.floorMod(payload.value(), ShieldColor.values().length)]);
             case INVERT -> LaserEmitterBlock.applyInverted(level, gate, payload.value() != 0);
             case TURN -> LaserEmitterBlock.applyTurned(level, gate, payload.value() != 0);
+            case REPAIR -> { } // hierboven al gedaan
         }
+    }
+
+    // ---------------------------------------------------------------- Doorgeknipte draden (hoofdstuk 33)
+
+    /**
+     * De Bypass Kit heeft de goede draad doorgeknipt (zie bypass/Bypass): de hele poort valt uit, en blijft uit tot
+     * iemand de draden herstelt. Stil (jouw keuze): geen alarm, alleen een knip, vonken en de wand die terugschuift.
+     */
+    public static void cutWires(ServerLevel level, BlockPos pos) {
+        List<BlockPos> gate = LaserEmitterBlock.group(level, pos);
+        LaserEmitterBlock.applyCut(level, gate, true);
+        level.playSound(null, pos, SoundEvents.SHEEP_SHEAR, SoundSource.BLOCKS, 1.0f, 0.8f);
+        for (BlockPos member : gate) {
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, member.getX() + 0.5, member.getY() + 0.5, member.getZ() + 0.5,
+                    8, 0.4, 0.4, 0.4, 0.1);
+        }
+    }
+
+    /**
+     * Een verkeerde knip, of de tijd was om: de hele poort gaat op slot, voor iedereen, tot {@code until} (speltijd).
+     * Dat staat in de zenders zelf, dus het blijft ook na een herstart.
+     */
+    public static void lock(ServerLevel level, BlockPos pos, long until) {
+        for (BlockPos member : LaserEmitterBlock.group(level, pos)) {
+            if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity emitter) {
+                emitter.setLockedUntil(until);
+            }
+        }
+    }
+
+    /** Hoe lang (ticks) deze poort nog op slot zit (0 = niet): van de zender die het langst op slot zit. */
+    public static long lockedFor(ServerLevel level, List<BlockPos> gate) {
+        long now = level.getGameTime();
+        long longest = 0;
+        for (BlockPos member : gate) {
+            if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity emitter) {
+                longest = Math.max(longest, emitter.lockedUntil() - now);
+            }
+        }
+        return longest;
+    }
+
+    /**
+     * Repair wires (in het scherm, voor wie de zender mag instellen): de draden van de hele poort weer vast. Het kost
+     * {@code LASER_REPAIR_CHIPS} Computer Chips uit je rugzak (jouw keuze: "knop, maar kost iets"); in creative niets.
+     * Heb je ze niet, dan gebeurt er niets en hoor je wat je nodig hebt.
+     */
+    private static void repair(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        List<BlockPos> gate = LaserEmitterBlock.group(level, pos);
+        if (!LaserEmitterBlock.isCut(level, gate)) {
+            return;
+        }
+        int chips = repairChips();
+        if (chips > 0 && !player.getAbilities().instabuild) {
+            if (player.getInventory().countItem(ModItems.COMPUTER_CHIP.get()) < chips) {
+                player.displayClientMessage(Component.translatable("imt.imttech.msg.laser_repair_needs", chips)
+                        .withStyle(ChatFormatting.RED), true);
+                return;
+            }
+            takeChips(player, chips);
+        }
+        LaserEmitterBlock.applyCut(level, gate, false);
+        level.playSound(null, pos, SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 0.7f, 1.4f);
+        player.displayClientMessage(Component.translatable("imt.imttech.msg.laser_repaired").withStyle(ChatFormatting.GREEN), true);
+    }
+
+    /** Zoveel Computer Chips kost het herstellen (uit de config). */
+    public static int repairChips() {
+        return Math.max(0, Math.round(ImtConfig.Bypass.LASER_REPAIR_CHIPS));
+    }
+
+    /** Haalt zoveel Computer Chips uit de rugzak (we weten al dat ze er zijn). */
+    private static void takeChips(ServerPlayer player, int chips) {
+        var inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize() && chips > 0; slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (stack.is(ModItems.COMPUTER_CHIP.get())) {
+                int taken = Math.min(chips, stack.getCount());
+                stack.shrink(taken);
+                chips -= taken;
+            }
+        }
+        inventory.setChanged();
     }
 
     /**
