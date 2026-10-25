@@ -28,13 +28,27 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * De server zoekt zelf welke apparaten bij de kern horen (zie SecurityDevices) en stuurt de lijst
  * mee met elke momentopname.
+ *
+ * Sinds 19 oktober een tabel (jouw notitie: "er moet een lijn tussen elke device staan, soort van tabel, ... de online
+ * status en knop moet naast elkaar staan"): één regel per apparaat, met lijntjes ertussen.
+ * <pre>
+ *  NAME              WHERE         STATUS
+ *  TURRETS
+ *  Security turret   -104 -60 40   online  12 rockets       [Turn off]
+ *  ─────────────────────────────────────────────────────────────────
+ *  Lab reader        -98 -60 44    online  in 1 diagram       [Rename]
+ * </pre>
  */
 final class DevicesApp {
     /** Een regel in de lijst: een kopje ("TURRETS") of een apparaat. */
     private record Row(@Nullable String header, @Nullable CompoundTag device) {}
 
-    private static final int HEADER_H = 12;
-    private static final int DEVICE_H = 21;
+    private static final int HEADER_H = 13;
+    private static final int DEVICE_H = 14;
+    /** Waar de kolommen beginnen, vanaf de linkerkant van de lijst: naam, plek, toestand. */
+    private static final int COL_NAME = 4;
+    private static final int COL_WHERE = 104;
+    private static final int COL_STATUS = 172;
 
     private final SecurityOsScreen screen;
     private int scroll;
@@ -79,6 +93,26 @@ final class DevicesApp {
 
     private static int listTop(SecurityOsScreen.Area a) {
         return a.y() + OsDraw.BUTTON_H + 5;
+    }
+
+    /** Waar de rijen beginnen: onder de kopjes van de kolommen. */
+    private static int rowsTop(SecurityOsScreen.Area a) {
+        return listTop(a) + 15;
+    }
+
+    /** De knop rechts op de rij van dit apparaat (Turn off, Turn on, Rename, Save), of null als hij er geen heeft. */
+    private @Nullable String buttonLabel(CompoundTag device) {
+        if (device.getString("k").equals("turret")) {
+            return device.getBoolean("on") ? "Turn off" : "Turn on";
+        }
+        return renamable(device) ? renameLabel(device) : null;
+    }
+
+    private int buttonColour(CompoundTag device) {
+        if (device.getString("k").equals("turret")) {
+            return device.getBoolean("on") ? HudStyle.RED : HudStyle.GREEN;
+        }
+        return isRenaming(device) ? HudStyle.GREEN : HudStyle.CYAN;
     }
 
     private static BlockPos posOf(CompoundTag device) {
@@ -134,14 +168,19 @@ final class DevicesApp {
             g.drawString(font, "or code panels in this network's area yet.", a.x() + 5, top + 14, HudStyle.argb(255, OsDraw.GREY), false);
             return;
         }
+        OsDraw.tableHeader(g, font, a.x() + 2, a.x() + a.w() - 2, top + 2,
+                new int[] {a.x() + COL_NAME, a.x() + COL_WHERE, a.x() + COL_STATUS}, new String[] {"NAME", "WHERE", "STATUS"});
         scroll = Math.max(0, Math.min(scroll, rows.size() - 1));
-        int y = top + 2;
+        int y = rowsTop(a);
         for (int i = scroll; i < rows.size() && y + height(rows.get(i)) <= bottom; i++) {
             Row row = rows.get(i);
             if (row.header() != null) {
-                g.drawString(font, row.header(), a.x() + 4, y + 2, HudStyle.argb(255, HudStyle.CYAN), false);
+                // Een kopje (TURRETS): een donkere band over de hele breedte.
+                g.fill(a.x() + 2, y, a.x() + a.w() - 2, y + HEADER_H - 1, HudStyle.argb(255, 0x10222D));
+                g.drawString(font, row.header(), a.x() + COL_NAME, y + 2, HudStyle.argb(255, HudStyle.CYAN), false);
             } else {
                 renderDevice(g, font, a, y, row.device(), mx, my, partialTick);
+                OsDraw.rowLine(g, a.x() + 2, a.x() + a.w() - 2, y + DEVICE_H - 1);
             }
             y += height(row);
         }
@@ -153,32 +192,35 @@ final class DevicesApp {
         return x + OsDraw.button(g, font, x, y, label, true, on ? HudStyle.GREEN : HudStyle.RED);
     }
 
+    /** Eén apparaat op één regel: naam, plek, toestand (met wat erbij hoort) en rechts zijn knop. */
     private void renderDevice(GuiGraphics g, Font font, SecurityOsScreen.Area a, int y, CompoundTag device,
                               int mx, int my, float partialTick) {
         String kind = device.getString("k");
-        // Een lezer of paneel heeft rechts de knop Rename (of Save).
-        if (renamable(device)) {
-            String label = renameLabel(device);
-            OsDraw.button(g, font, a.x() + a.w() - OsDraw.buttonWidth(font, label) - 4, y + 2, label, true,
-                    isRenaming(device) ? HudStyle.GREEN : HudStyle.CYAN);
+        // Rechts de knop: aan/uit van een torentje, Rename (of Save) van een lezer of paneel.
+        String button = buttonLabel(device);
+        int buttonX = a.x() + a.w() - 4 - (button == null ? 0 : OsDraw.buttonWidth(font, button));
+        if (button != null) {
+            OsDraw.button(g, font, buttonX, y + 1, button, true, buttonColour(device));
         }
         if (isRenaming(device)) {
-            // Het vak waar je de nieuwe naam typt (in plaats van de naam), en eronder hoe het werkt.
-            int right = a.x() + a.w() - OsDraw.buttonWidth(font, renameLabel(device)) - 10;
-            OsDraw.field(g, a.x() + 4, y - 1, right, y + 10, true);
+            // Het vak waar je de nieuwe naam typt (over de naam en de plek), en in de kolom ernaast hoe het werkt.
+            int right = a.x() + COL_STATUS - 6;
+            OsDraw.field(g, a.x() + COL_NAME - 1, y, right, y + DEVICE_H - 2, true);
             EditBox box = nameBox();
-            box.setX(a.x() + 7);
-            box.setY(y + 1);
-            box.setWidth(right - a.x() - 10);
+            box.setX(a.x() + COL_NAME + 2);
+            box.setY(y + 2);
+            box.setWidth(right - a.x() - COL_NAME - 4);
             box.render(g, mx, my, partialTick);
-            g.drawString(font, "Enter = save   Esc = cancel", a.x() + 10, y + 11, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, OsDraw.fitRight(font, "Enter: save, Esc: cancel", buttonX - a.x() - COL_STATUS - 4),
+                    a.x() + COL_STATUS, y + 3, HudStyle.argb(255, OsDraw.GREY), false);
             return;
         }
         String where = device.getInt("x") + " " + device.getInt("y") + " " + device.getInt("z");
-        g.drawString(font, device.getString("name"), a.x() + 6, y + 1, HudStyle.argb(255, HudStyle.WHITE), false);
-        g.drawString(font, where, a.x() + 10 + font.width(device.getString("name")), y + 1,
+        g.drawString(font, OsDraw.fitRight(font, device.getString("name"), COL_WHERE - COL_NAME - 6), a.x() + COL_NAME, y + 3,
+                HudStyle.argb(255, HudStyle.WHITE), false);
+        g.drawString(font, OsDraw.fitRight(font, where, COL_STATUS - COL_WHERE - 6), a.x() + COL_WHERE, y + 3,
                 HudStyle.argb(255, OsDraw.GREY), false);
-        // Tweede regel: de status, en wat erbij hoort.
+        // De toestand, en wat erbij hoort (tot aan de knop).
         String status = device.getString("st");
         int colour = switch (status) {
             case "online", "patrolling", "active", "ready" -> HudStyle.GREEN;
@@ -205,16 +247,12 @@ final class DevicesApp {
             int uses = device.getInt("uses");
             details.append(uses == 0 ? "  in no diagram" : uses == 1 ? "  in 1 diagram" : "  in " + uses + " diagrams");
         }
-        g.drawString(font, status, a.x() + 10, y + 10, HudStyle.argb(255, colour), false);
-        g.drawString(font, details.toString(), a.x() + 10 + font.width(status), y + 10,
+        int room = buttonX - a.x() - COL_STATUS - 4;
+        String shownStatus = OsDraw.fitRight(font, status, room);
+        g.drawString(font, shownStatus, a.x() + COL_STATUS, y + 3, HudStyle.argb(255, colour), false);
+        int detailsX = a.x() + COL_STATUS + font.width(shownStatus);
+        g.drawString(font, OsDraw.fitRight(font, details.toString(), Math.max(0, buttonX - detailsX - 4)), detailsX, y + 3,
                 HudStyle.argb(255, OsDraw.GREY), false);
-        // Een torentje heeft zijn eigen aan/uit-knop.
-        if (kind.equals("turret")) {
-            boolean on = device.getBoolean("on");
-            String label = on ? "Turn off" : "Turn on";
-            OsDraw.button(g, font, a.x() + a.w() - OsDraw.buttonWidth(font, label) - 4, y + 2, label, true,
-                    on ? HudStyle.RED : HudStyle.GREEN);
-        }
     }
 
     // ================================================================ Muis
@@ -242,41 +280,36 @@ final class DevicesApp {
             renaming = null;
             return;
         }
-        // De knoppen bij een apparaat: aan/uit van een torentje, Rename of Save van een lezer of paneel.
+        // De knop rechts op de rij van een apparaat: aan/uit van een torentje, Rename of Save van een lezer of paneel.
         List<Row> rows = rows();
-        int y = listTop(a) + 2;
+        int y = rowsTop(a);
         int bottom = a.y() + a.h();
         for (int i = scroll; i < rows.size() && y + height(rows.get(i)) <= bottom; i++) {
             CompoundTag device = rows.get(i).device();
-            if (device != null && device.getString("k").equals("turret")) {
-                boolean on = device.getBoolean("on");
-                String label = on ? "Turn off" : "Turn on";
-                int w = OsDraw.buttonWidth(font, label);
-                if (OsDraw.inside(mx, my, a.x() + a.w() - w - 4, y + 2, w, OsDraw.BUTTON_H)) {
-                    CompoundTag args = new CompoundTag();
-                    args.putInt("x", device.getInt("x"));
-                    args.putInt("y", device.getInt("y"));
-                    args.putInt("z", device.getInt("z"));
-                    args.putBoolean("on", !on);
-                    screen.send("dev_toggle", args);
-                    renaming = null;
-                    return;
-                }
-            }
-            if (device != null && renamable(device)) {
-                int w = OsDraw.buttonWidth(font, renameLabel(device));
-                if (OsDraw.inside(mx, my, a.x() + a.w() - w - 4, y + 2, w, OsDraw.BUTTON_H)) {
-                    if (isRenaming(device)) {
+            String button = device == null ? null : buttonLabel(device);
+            if (button != null) {
+                int w = OsDraw.buttonWidth(font, button);
+                if (OsDraw.inside(mx, my, a.x() + a.w() - 4 - w, y + 1, w, OsDraw.BUTTON_H)) {
+                    if (device.getString("k").equals("turret")) {
+                        CompoundTag args = new CompoundTag();
+                        args.putInt("x", device.getInt("x"));
+                        args.putInt("y", device.getInt("y"));
+                        args.putInt("z", device.getInt("z"));
+                        args.putBoolean("on", !device.getBoolean("on"));
+                        screen.send("dev_toggle", args);
+                        renaming = null;
+                    } else if (isRenaming(device)) {
                         submitName();
                     } else {
                         startRename(device);
                     }
                     return;
                 }
-                if (isRenaming(device) && OsDraw.inside(mx, my, a.x() + 4, y - 1, a.w() - w - 14, 11)) {
-                    nameBox().mouseClicked(mx, my, 0); // de cursor verplaatsen
-                    return;
-                }
+            }
+            if (device != null && isRenaming(device)
+                    && OsDraw.inside(mx, my, a.x() + COL_NAME - 1, y, COL_STATUS - COL_NAME - 5, DEVICE_H - 2)) {
+                nameBox().mouseClicked(mx, my, 0); // de cursor verplaatsen
+                return;
             }
             y += height(rows.get(i));
         }

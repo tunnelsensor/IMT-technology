@@ -14,35 +14,49 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De app Robots van de Security OS-desktop (hoofdstuk 21): de guard robots (en sinds hoofdstuk 25 de security drones,
- * met "drone" achter hun naam) in het gebied van deze kern, elk met
- * zijn naam, waar hij staat, hoe het met hem gaat, zijn batterij en of hij een dock heeft. Per robot een knop
- * Switch on/off en Rename (typ de naam, Enter bewaart, Esc laat het zoals het was), en (hoofdstuk 23) welk
- * programma hij draait, met de knop Program om hem een robotprogramma van deze server te sturen.
+ * De app Robots van de Security OS-desktop (hoofdstuk 21): de guard robots (en sinds hoofdstuk 25 de security drones)
+ * in het gebied van deze kern.
  *
+ * Sinds 19 oktober een tabel (jouw notitie: "de robots gui moet beter, zorg dat het ook meer in tabelvorm is en dat de
+ * knoppen naast elkaar staan"): één regel per robot met lijntjes ertussen. Klik een robot aan; onderaan staat wat er
+ * verder over hem te weten is, en zijn knoppen naast elkaar. (Alle knoppen per rij passen niet in het venster.)
  * <pre>
- *  Guard 1   12 64 -40                      [Rename] [Switch off]
- *    active  battery 86%  dock
- *    program Patrol  (older than on the server)       [Program]
- *  Door guard   20 64 -38                   [Rename] [Switch on]
- *    standby  battery 100%  dock
- *    no program                                       [Program]
- *  Guard 4   90 64 -40                                [Delete]
- *    far away  battery 40%  dock
- *    no program                                       [Program]
+ *  NAME        TYPE   STATE     BATT  PROGRAM       SQUAD
+ *  Guard 1     robot  active    86%   Patrol        Wave 1
+ *  ─────────────────────────────────────────────────────────
+ *  Drone 1     drone  standby   100%  Hover patrol
+ *  ─────────────────────────────────────────────────────────
+ *  Guard 4     robot  far away  40%
+ *
+ *  Guard 1  at 12 64 -40  dock  (older than on the server)
+ *  [Rename] [Switch off] [Squad] [Program]              [Delete]
  * </pre>
- * Een robot in een stuk wereld dat niet geladen is, staat er grijs bij ("far away"): die kun je van hier
- * niet aan- of uitzetten, maar een programma wacht op hem tot hij terug is. Zo'n robot heeft de knop Delete
- * (18 oktober): hij gaat uit de lijst (eerst "Sure?", nog een keer klikken). Bestaat hij toch nog, dan komt hij
- * vanzelf terug als hij weer geladen is. De lijst komt van de server (zie robot/Robots.snapshot, uit BotNetwork).
+ * Switch on/off zet hem aan of uit; Rename en Squad (hoofdstuk 26) laten je onderaan typen (Enter bewaart, Esc laat het
+ * zoals het was); Program (hoofdstuk 23) stuurt hem een robotprogramma van deze server. Een robot in een stuk wereld dat
+ * niet geladen is, staat er grijs bij ("far away"): die kun je van hier niet aan- of uitzetten, maar een programma wacht
+ * op hem tot hij terug is, en Delete (18 oktober) haalt hem uit de lijst (eerst "Sure?", nog een keer klikken). Bestaat
+ * hij toch nog, dan komt hij vanzelf terug als hij weer geladen is. De lijst komt van de server (zie
+ * robot/Robots.snapshot, uit BotNetwork).
  */
 final class RobotsApp {
-    private static final int ROW_H = 31;
+    /** Zo hoog is één regel van de tabel. */
+    private static final int ROW_H = 14;
     /** Zo hoog is één keuze in de lijst van programma's. */
     private static final int OPTION_H = 12;
+    /** De kolommen, vanaf de linkerkant: naam, soort, toestand, batterij, programma, squad. */
+    private static final int COL_NAME = 4;
+    private static final int COL_TYPE = 96;
+    private static final int COL_STATE = 134;
+    private static final int COL_BATT = 192;
+    private static final int COL_PROGRAM = 224;
+    private static final int COL_SQUAD = 304;
+    /** Onderaan: de regel met meer over de gekozen robot, en de knoppen. */
+    private static final int FOOTER_H = 32;
 
     private final SecurityOsScreen screen;
     private int scroll;
+    /** De robot die je aangeklikt hebt (zijn nummer); de knoppen onderaan zijn voor hem. Null = de eerste. */
+    private @Nullable String selected;
     /** Welke robot je een andere naam aan het geven bent (zijn nummer), of null. */
     private @Nullable String renaming;
     /** Typ je een squad (hoofdstuk 26) in plaats van een naam? */
@@ -82,17 +96,16 @@ final class RobotsApp {
     }
 
     private String renameLabel(CompoundTag robot) {
-        return robot.getString("id").equals(renaming) ? "Save" : "Rename";
+        return robot.getString("id").equals(renaming) && !squadMode ? "Save" : "Rename";
+    }
+
+    private String squadLabel(CompoundTag robot) {
+        return robot.getString("id").equals(renaming) && squadMode ? "Save" : "Squad";
     }
 
     /** De knop Delete van een robot ver weg: na de eerste klik staat er "Sure?" (4 seconden lang). */
     private String deleteLabel(CompoundTag robot) {
         return robot.getString("id").equals(deleting) && net.minecraft.Util.getMillis() < deletingUntil ? "Sure?" : "Delete";
-    }
-
-    /** De knop van de squad zegt meteen in welke squad hij zit: "Squad: Wave 1" (of gewoon "Squad"). */
-    private String squadLabel(CompoundTag robot) {
-        return robot.getString("sq").isEmpty() ? "Squad" : "Squad: " + robot.getString("sq");
     }
 
     /** De robotprogramma's op deze server (of de droneprogramma's, voor een drone), en "" = geen programma. */
@@ -116,6 +129,69 @@ final class RobotsApp {
         return null;
     }
 
+    /** De gekozen robot (bestaat hij niet meer, of koos je er nog geen, dan de eerste), of null als er geen zijn. */
+    private @Nullable CompoundTag selectedRobot(List<CompoundTag> robots) {
+        for (CompoundTag robot : robots) {
+            if (robot.getString("id").equals(selected)) {
+                return robot;
+            }
+        }
+        return robots.isEmpty() ? null : robots.getFirst();
+    }
+
+    // ================================================================ Waar alles staat
+
+    private static int rowsTop(SecurityOsScreen.Area a) {
+        return a.y() + 14;
+    }
+
+    private static int rowsBottom(SecurityOsScreen.Area a) {
+        return a.y() + a.h() - FOOTER_H;
+    }
+
+    private static int visibleRows(SecurityOsScreen.Area a) {
+        return Math.max(1, (rowsBottom(a) - rowsTop(a)) / ROW_H);
+    }
+
+    /** De regel met meer over de gekozen robot (of het vak om te typen). */
+    private static int detailY(SecurityOsScreen.Area a) {
+        return a.y() + a.h() - FOOTER_H + 4;
+    }
+
+    /** De knoppen onderaan. */
+    private static int buttonsY(SecurityOsScreen.Area a) {
+        return a.y() + a.h() - OsDraw.BUTTON_H - 3;
+    }
+
+    /** Eén knop onderaan: de tekst, waar hij staat, en of hij nu kan. */
+    private record Button(String action, String label, int x, int w, boolean enabled, int colour) {}
+
+    /** De knoppen onderaan voor deze robot, van links naar rechts (Delete helemaal rechts). */
+    private List<Button> buttons(Font font, SecurityOsScreen.Area a, CompoundTag robot) {
+        boolean loaded = robot.getBoolean("loaded");
+        String id = robot.getString("id");
+        List<Button> buttons = new ArrayList<>();
+        int x = a.x() + 4;
+        String rename = renameLabel(robot);
+        buttons.add(new Button("rename", rename, x, OsDraw.buttonWidth(font, rename), loaded,
+                rename.equals("Save") ? HudStyle.GREEN : HudStyle.CYAN));
+        x += OsDraw.buttonWidth(font, rename) + 4;
+        String toggle = switchLabel(robot);
+        buttons.add(new Button("switch", toggle, x, OsDraw.buttonWidth(font, toggle), loaded,
+                robot.getBoolean("on") ? HudStyle.RED : HudStyle.GREEN));
+        x += OsDraw.buttonWidth(font, toggle) + 4;
+        String squad = squadLabel(robot);
+        buttons.add(new Button("squad", squad, x, OsDraw.buttonWidth(font, squad), loaded,
+                squad.equals("Save") ? HudStyle.GREEN : 0xF1E87C));
+        x += OsDraw.buttonWidth(font, squad) + 4;
+        buttons.add(new Button("program", "Program", x, OsDraw.buttonWidth(font, "Program"), true, 0x9ED8FF));
+        String delete = deleteLabel(robot);
+        int deleteW = OsDraw.buttonWidth(font, delete);
+        // Delete alleen voor een robot ver weg (een robot die er is, haal je weg door hem op te pakken).
+        buttons.add(new Button("delete", delete, a.x() + a.w() - 4 - deleteW, deleteW, !loaded && !id.isEmpty(), HudStyle.RED));
+        return buttons;
+    }
+
     // ================================================================ Tekenen
 
     void render(GuiGraphics g, Font font, SecurityOsScreen.Area a, int mx, int my, float partialTick) {
@@ -134,14 +210,112 @@ final class RobotsApp {
             g.drawString(font, "on a Drone Dock here.", a.x() + 5, a.y() + 25, HudStyle.argb(255, OsDraw.GREY), false);
             return;
         }
-        scroll = Math.max(0, Math.min(scroll, robots.size() - 1));
-        int y = a.y() + 3;
-        for (int i = scroll; i < robots.size() && y + ROW_H <= a.y() + a.h(); i++) {
-            renderRobot(g, font, a, y, robots.get(i), choosing == null ? mx : -1, my, partialTick);
+        CompoundTag chosen = selectedRobot(robots);
+        int[] columns = {a.x() + COL_NAME, a.x() + COL_TYPE, a.x() + COL_STATE, a.x() + COL_BATT, a.x() + COL_PROGRAM,
+                a.x() + COL_SQUAD};
+        OsDraw.tableHeader(g, font, a.x() + 2, a.x() + a.w() - 2, a.y() + 3, columns,
+                new String[] {"NAME", "TYPE", "STATE", "BATT", "PROGRAM", "SQUAD"});
+        scroll = Math.max(0, Math.min(scroll, robots.size() - visibleRows(a)));
+        int y = rowsTop(a);
+        int hoverMx = choosing == null ? mx : -1;
+        for (int i = scroll; i < robots.size() && y + ROW_H <= rowsBottom(a); i++) {
+            CompoundTag robot = robots.get(i);
+            boolean isChosen = robot == chosen;
+            if (isChosen) {
+                g.fill(a.x() + 2, y, a.x() + a.w() - 2, y + ROW_H - 1, HudStyle.argb(255, 0x16303F));
+                g.fill(a.x() + 2, y, a.x() + 4, y + ROW_H - 1, HudStyle.argb(255, HudStyle.CYAN));
+            } else if (OsDraw.inside(hoverMx, my, a.x() + 2, y, a.w() - 4, ROW_H - 1)) {
+                g.fill(a.x() + 2, y, a.x() + a.w() - 2, y + ROW_H - 1, HudStyle.argb(255, 0x0F1E27));
+            }
+            renderRow(g, font, a, y, robot);
+            OsDraw.rowLine(g, a.x() + 2, a.x() + a.w() - 2, y + ROW_H - 1);
             y += ROW_H;
+        }
+        if (scroll > 0 || scroll + visibleRows(a) < robots.size()) {
+            String more = (scroll > 0 ? "▲ " : "") + (scroll + visibleRows(a) < robots.size() ? "▼" : "");
+            g.drawString(font, more, a.x() + a.w() - 4 - font.width(more), a.y() + 3, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+        if (chosen != null) {
+            renderFooter(g, font, a, chosen, choosing == null ? mx : -1, my, partialTick);
         }
         if (choosing != null) {
             renderChooser(g, font, a, mx, my);
+        }
+    }
+
+    /** Eén robot op één regel: naam, soort, toestand, batterij, programma en squad. */
+    private void renderRow(GuiGraphics g, Font font, SecurityOsScreen.Area a, int y, CompoundTag robot) {
+        boolean loaded = robot.getBoolean("loaded");
+        int ty = y + 3;
+        cell(g, font, robot.getString("n"), a.x() + COL_NAME, ty, COL_TYPE - COL_NAME - 4, loaded ? HudStyle.WHITE : OsDraw.GREY);
+        boolean drone = robot.getBoolean("drone");
+        cell(g, font, drone ? "drone" : "robot", a.x() + COL_TYPE, ty, COL_STATE - COL_TYPE - 4, drone ? 0x8FE3FF : 0xB9C7CC);
+        String state = loaded ? robot.getString("st") : "far away";
+        int colour = !loaded ? OsDraw.GREY : switch (state) {
+            case "active" -> HudStyle.GREEN;
+            case "standby" -> HudStyle.ORANGE;
+            default -> HudStyle.RED;
+        };
+        cell(g, font, state, a.x() + COL_STATE, ty, COL_BATT - COL_STATE - 4, colour);
+        int battery = robot.getInt("bat");
+        cell(g, font, battery + "%", a.x() + COL_BATT, ty, COL_PROGRAM - COL_BATT - 4,
+                battery < 20 ? HudStyle.RED : battery < 50 ? HudStyle.ORANGE : OsDraw.GREY);
+        String program = robot.getString("prog");
+        boolean warn = robot.getBoolean("old") || robot.contains("wait") || loaded && !robot.getBoolean("link");
+        cell(g, font, program.isEmpty() ? "-" : program, a.x() + COL_PROGRAM, ty, COL_SQUAD - COL_PROGRAM - 4,
+                program.isEmpty() ? OsDraw.GREY : warn ? HudStyle.ORANGE : 0x9ED8FF);
+        String squad = robot.getString("sq");
+        cell(g, font, squad.isEmpty() ? "-" : squad, a.x() + COL_SQUAD, ty, a.w() - COL_SQUAD - 4,
+                squad.isEmpty() ? OsDraw.GREY : 0xF1E87C);
+    }
+
+    /** Tekst in een vakje van de tabel, afgeknipt als hij te lang is. */
+    private static void cell(GuiGraphics g, Font font, String text, int x, int y, int width, int rgb) {
+        g.drawString(font, OsDraw.fitRight(font, text, width), x, y, HudStyle.argb(255, rgb), false);
+    }
+
+    /** Onderaan: meer over de gekozen robot (of het vak om te typen), en zijn knoppen naast elkaar. */
+    private void renderFooter(GuiGraphics g, Font font, SecurityOsScreen.Area a, CompoundTag robot, int mx, int my,
+                              float partialTick) {
+        g.fill(a.x() + 2, rowsBottom(a), a.x() + a.w() - 2, rowsBottom(a) + 1, HudStyle.argb(255, OsDraw.DIM));
+        int y = detailY(a);
+        if (robot.getString("id").equals(renaming)) {
+            String label = squadMode ? "Squad:" : "Name:";
+            g.drawString(font, label, a.x() + 5, y + 1, HudStyle.argb(255, squadMode ? 0xF1E87C : HudStyle.CYAN), false);
+            int boxX = a.x() + 9 + font.width(label);
+            int boxRight = a.x() + a.w() / 2 + 40;
+            OsDraw.field(g, boxX - 2, y - 1, boxRight, y + 10, true);
+            EditBox box = nameBox();
+            box.setX(boxX + 1);
+            box.setY(y + 1);
+            box.setWidth(boxRight - boxX - 4);
+            box.render(g, mx, my, partialTick);
+            String hint = squadMode ? "like Wave 1, empty = none; Enter = save, Esc = cancel" : "Enter = save, Esc = cancel";
+            g.drawString(font, OsDraw.fitRight(font, hint, a.x() + a.w() - boxRight - 8), boxRight + 4, y + 1,
+                    HudStyle.argb(255, OsDraw.GREY), false);
+        } else {
+            boolean loaded = robot.getBoolean("loaded");
+            StringBuilder info = new StringBuilder();
+            info.append("at ").append(robot.getInt("x")).append(' ').append(robot.getInt("y")).append(' ').append(robot.getInt("z"));
+            info.append(robot.getBoolean("dock") ? "   dock" : "   no dock");
+            g.drawString(font, robot.getString("n"), a.x() + 5, y + 1, HudStyle.argb(255, loaded ? HudStyle.WHITE : OsDraw.GREY), false);
+            int x = a.x() + 11 + font.width(robot.getString("n"));
+            g.drawString(font, info.toString(), x, y + 1, HudStyle.argb(255, OsDraw.GREY), false);
+            x += font.width(info.toString());
+            // Wat er met zijn programma is (hoofdstuk 23): wacht het op hem, is het ouder dan op de server, of praat hij
+            // niet met de server?
+            String note = robot.contains("wait") ? "   waiting: " + ("-".equals(robot.getString("wait")) ? "no program" : robot.getString("wait"))
+                    : robot.getBoolean("old") ? "   (older than on the server)"
+                    : loaded && !robot.getBoolean("link") ? "   no connection" : "";
+            if (!note.isEmpty()) {
+                int noteColour = loaded && !robot.getBoolean("link") && !robot.contains("wait") && !robot.getBoolean("old")
+                        ? HudStyle.RED : HudStyle.ORANGE;
+                g.drawString(font, OsDraw.fitRight(font, note, Math.max(0, a.x() + a.w() - x - 4)), x, y + 1,
+                        HudStyle.argb(255, noteColour), false);
+            }
+        }
+        for (Button button : buttons(font, a, robot)) {
+            OsDraw.button(g, font, button.x(), buttonsY(a), button.label(), button.enabled(), button.colour());
         }
     }
 
@@ -186,83 +360,6 @@ final class RobotsApp {
                 HudStyle.CYAN);
     }
 
-    private void renderRobot(GuiGraphics g, Font font, SecurityOsScreen.Area a, int y, CompoundTag robot,
-                             int mx, int my, float partialTick) {
-        boolean loaded = robot.getBoolean("loaded");
-        // Rechts de knoppen (alleen als de desktop hem kan bereiken).
-        int right = a.x() + a.w() - 4;
-        if (loaded) {
-            String toggle = switchLabel(robot);
-            right -= OsDraw.buttonWidth(font, toggle);
-            OsDraw.button(g, font, right, y + 2, toggle, true, robot.getBoolean("on") ? HudStyle.RED : HudStyle.GREEN);
-            String rename = renameLabel(robot);
-            right -= OsDraw.buttonWidth(font, rename) + 4;
-            OsDraw.button(g, font, right, y + 2, rename, true, robot.getString("id").equals(renaming) ? HudStyle.GREEN : HudStyle.CYAN);
-        } else {
-            // Ver weg (of weg): uit de lijst halen (18 oktober).
-            String delete = deleteLabel(robot);
-            right -= OsDraw.buttonWidth(font, delete);
-            OsDraw.button(g, font, right, y + 2, delete, true, HudStyle.RED);
-        }
-        if (robot.getString("id").equals(renaming)) {
-            OsDraw.field(g, a.x() + 4, y - 1, right - 6, y + 10, true);
-            EditBox box = nameBox();
-            box.setX(a.x() + 7);
-            box.setY(y + 1);
-            box.setWidth(right - a.x() - 14);
-            box.render(g, mx, my, partialTick);
-            g.drawString(font, squadMode ? "Squad (like Wave 1; empty = none): Enter = save   Esc = cancel"
-                    : "Enter = save   Esc = cancel", a.x() + 10, y + 11, HudStyle.argb(255, OsDraw.GREY), false);
-            return;
-        }
-        String name = robot.getString("n");
-        g.drawString(font, name, a.x() + 6, y + 1, HudStyle.argb(255, loaded ? HudStyle.WHITE : OsDraw.GREY), false);
-        int wx = a.x() + 10 + font.width(name);
-        if (robot.getBoolean("drone")) {
-            // Een security drone (hoofdstuk 25): dat staat achter zijn naam.
-            g.drawString(font, "drone", wx, y + 1, HudStyle.argb(255, 0x8FE3FF), false);
-            wx += font.width("drone ") + 2;
-        }
-        String where = robot.getInt("x") + " " + robot.getInt("y") + " " + robot.getInt("z");
-        g.drawString(font, where, wx, y + 1, HudStyle.argb(255, OsDraw.GREY), false);
-        String state = loaded ? robot.getString("st") : "far away";
-        int colour = !loaded ? OsDraw.GREY : switch (state) {
-            case "active" -> HudStyle.GREEN;
-            case "standby" -> HudStyle.ORANGE;
-            default -> HudStyle.RED;
-        };
-        // Zijn programma (hoofdstuk 23), en de knop om hem een ander te sturen.
-        String program = robot.getString("prog");
-        int programRight = a.x() + a.w() - 4 - OsDraw.buttonWidth(font, "Program");
-        OsDraw.button(g, font, programRight, y + 17, "Program", true, 0x9ED8FF);
-        if (loaded) {
-            // De squad (hoofdstuk 26): "Wave 1".
-            programRight -= OsDraw.buttonWidth(font, squadLabel(robot)) + 4;
-            OsDraw.button(g, font, programRight, y + 17, squadLabel(robot), true, 0xF1E87C);
-        }
-        // De regel met zijn toestand staat tussen de twee rijen knoppen: hij stopt voor de knop die het meest links staat.
-        // Zijn squad staat op zijn knop; alleen een robot ver weg (zonder knoppen) zegt hem hier.
-        String details = "  battery " + robot.getInt("bat") + "%" + (robot.getBoolean("dock") ? "  dock" : "  no dock")
-                + (loaded || robot.getString("sq").isEmpty() ? "" : "  squad " + robot.getString("sq"));
-        int detailsX = a.x() + 10 + font.width(state);
-        g.drawString(font, state, a.x() + 10, y + 10, HudStyle.argb(255, colour), false);
-        g.drawString(font, OsDraw.fitRight(font, details, Math.max(0, Math.min(right, programRight) - detailsX - 4)), detailsX, y + 10,
-                HudStyle.argb(255, OsDraw.GREY), false);
-        int px = a.x() + 10;
-        String line = program.isEmpty() ? "no program" : "program " + program;
-        g.drawString(font, line, px, y + 19, HudStyle.argb(255, program.isEmpty() ? OsDraw.GREY : 0x9ED8FF), false);
-        px += font.width(line);
-        String note = robot.contains("wait") ? "  waiting: " + ("-".equals(robot.getString("wait")) ? "no program" : robot.getString("wait"))
-                : robot.getBoolean("old") ? "  (older than on the server)"
-                : loaded && !robot.getBoolean("link") ? "  no connection" : "";
-        if (!note.isEmpty()) {
-            int noteColour = loaded && !robot.getBoolean("link") && !robot.contains("wait") && !robot.getBoolean("old")
-                    ? HudStyle.RED : HudStyle.ORANGE;
-            g.drawString(font, OsDraw.fitLeft(font, note, Math.max(0, programRight - px - 4)), px, y + 19,
-                    HudStyle.argb(255, noteColour), false);
-        }
-    }
-
     // ================================================================ Muis
 
     void mouseClicked(Font font, SecurityOsScreen.Area a, int mx, int my) {
@@ -271,68 +368,84 @@ final class RobotsApp {
             return;
         }
         List<CompoundTag> robots = robots();
-        int y = a.y() + 3;
-        for (int i = scroll; i < robots.size() && y + ROW_H <= a.y() + a.h(); i++) {
-            CompoundTag robot = robots.get(i);
-            int programW = OsDraw.buttonWidth(font, "Program");
-            if (OsDraw.inside(mx, my, a.x() + a.w() - 4 - programW, y + 17, programW, OsDraw.BUTTON_H)) {
-                choosing = robot.getString("id");
-                renaming = null;
-                return;
-            }
-            int squadW = OsDraw.buttonWidth(font, squadLabel(robot));
-            if (robot.getBoolean("loaded")
-                    && OsDraw.inside(mx, my, a.x() + a.w() - 4 - programW - 4 - squadW, y + 17, squadW, OsDraw.BUTTON_H)) {
-                startSquad(robot);
-                return;
-            }
-            String delete = deleteLabel(robot);
-            int deleteW = OsDraw.buttonWidth(font, delete);
-            if (!robot.getBoolean("loaded") && OsDraw.inside(mx, my, a.x() + a.w() - 4 - deleteW, y + 2, deleteW, OsDraw.BUTTON_H)) {
-                // De eerste klik vraagt "Sure?", de tweede haalt hem echt uit de lijst.
-                if (delete.equals("Sure?")) {
-                    CompoundTag args = new CompoundTag();
-                    args.putString("id", robot.getString("id"));
-                    screen.send("robot_delete", args);
-                    deleting = null;
-                } else {
-                    deleting = robot.getString("id");
-                    deletingUntil = net.minecraft.Util.getMillis() + 4000;
-                }
-                renaming = null;
-                return;
-            }
-            if (robot.getBoolean("loaded")) {
-                int right = a.x() + a.w() - 4;
-                int toggleW = OsDraw.buttonWidth(font, switchLabel(robot));
-                right -= toggleW;
-                if (OsDraw.inside(mx, my, right, y + 2, toggleW, OsDraw.BUTTON_H)) {
-                    CompoundTag args = new CompoundTag();
-                    args.putString("id", robot.getString("id"));
-                    args.putBoolean("on", !robot.getBoolean("on"));
-                    screen.send("robot_switch", args);
-                    renaming = null;
-                    return;
-                }
-                int renameW = OsDraw.buttonWidth(font, renameLabel(robot));
-                right -= renameW + 4;
-                if (OsDraw.inside(mx, my, right, y + 2, renameW, OsDraw.BUTTON_H)) {
-                    if (robot.getString("id").equals(renaming)) {
-                        submitName();
-                    } else {
-                        startRename(robot);
+        CompoundTag chosen = selectedRobot(robots);
+        // De knoppen onderaan (voor de gekozen robot).
+        if (chosen != null) {
+            for (Button button : buttons(font, a, chosen)) {
+                if (OsDraw.inside(mx, my, button.x(), buttonsY(a), button.w(), OsDraw.BUTTON_H)) {
+                    if (button.enabled()) {
+                        press(button.action(), chosen);
                     }
                     return;
                 }
-                if (robot.getString("id").equals(renaming) && OsDraw.inside(mx, my, a.x() + 4, y - 1, right - a.x() - 10, 11)) {
-                    nameBox().mouseClicked(mx, my, 0);
-                    return;
+            }
+            if (chosen.getString("id").equals(renaming) && my >= detailY(a) - 1 && my < detailY(a) + 10) {
+                nameBox().mouseClicked(mx, my, 0); // de cursor verplaatsen
+                return;
+            }
+        }
+        // Een regel van de tabel: die robot kiezen.
+        int y = rowsTop(a);
+        for (int i = scroll; i < robots.size() && y + ROW_H <= rowsBottom(a); i++) {
+            if (OsDraw.inside(mx, my, a.x() + 2, y, a.w() - 4, ROW_H)) {
+                String id = robots.get(i).getString("id");
+                if (!id.equals(selected)) {
+                    renaming = null;
+                    deleting = null;
                 }
+                selected = id;
+                return;
             }
             y += ROW_H;
         }
         renaming = null;
         deleting = null; // ergens anders geklikt: de vraag "Sure?" vervalt
+    }
+
+    /** Een knop onderaan, voor deze robot. */
+    private void press(String action, CompoundTag robot) {
+        String id = robot.getString("id");
+        switch (action) {
+            case "rename" -> {
+                if (id.equals(renaming) && !squadMode) {
+                    submitName();
+                } else {
+                    startRename(robot);
+                }
+            }
+            case "squad" -> {
+                if (id.equals(renaming) && squadMode) {
+                    submitName();
+                } else {
+                    startSquad(robot);
+                }
+            }
+            case "switch" -> {
+                CompoundTag args = new CompoundTag();
+                args.putString("id", id);
+                args.putBoolean("on", !robot.getBoolean("on"));
+                screen.send("robot_switch", args);
+                renaming = null;
+            }
+            case "program" -> {
+                choosing = id;
+                renaming = null;
+            }
+            case "delete" -> {
+                // De eerste klik vraagt "Sure?", de tweede haalt hem echt uit de lijst.
+                if (deleteLabel(robot).equals("Sure?")) {
+                    CompoundTag args = new CompoundTag();
+                    args.putString("id", id);
+                    screen.send("robot_delete", args);
+                    deleting = null;
+                } else {
+                    deleting = id;
+                    deletingUntil = net.minecraft.Util.getMillis() + 4000;
+                }
+                renaming = null;
+            }
+            default -> { }
+        }
     }
 
     /** Een klik in de lijst met programma's: dat programma naar de robot, of Cancel (of ernaast: ook dicht). */
@@ -362,19 +475,33 @@ final class RobotsApp {
         List<CompoundTag> robots = robots();
         scroll = 0;
         deleting = null;
-        choosing = robots.isEmpty() ? null : robots.getFirst().getString("id");
+        selected = robots.isEmpty() ? null : robots.getFirst().getString("id");
+        choosing = selected;
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de eerste robot in een squad gekozen en in beeld (één robot erboven). */
+    void tourSquad() {
+        List<CompoundTag> robots = robots();
+        for (int i = 0; i < robots.size(); i++) {
+            if (!robots.get(i).getString("sq").isEmpty()) {
+                scroll = Math.max(0, i - 1);
+                selected = robots.get(i).getString("id");
+                return;
+            }
+        }
     }
 
     /**
-     * Alleen voor de screenshot-rondleiding: de eerste robot ver weg in beeld (twee robots erboven), met "Sure?" op zijn
-     * knop Delete.
+     * Alleen voor de screenshot-rondleiding: de eerste robot ver weg gekozen en in beeld (twee robots erboven), met
+     * "Sure?" op zijn knop Delete.
      */
     void tourAskDelete() {
         List<CompoundTag> robots = robots();
         for (int i = 0; i < robots.size(); i++) {
             if (!robots.get(i).getBoolean("loaded")) {
                 scroll = Math.max(0, i - 2);
-                deleting = robots.get(i).getString("id");
+                selected = robots.get(i).getString("id");
+                deleting = selected;
                 deletingUntil = net.minecraft.Util.getMillis() + 60_000;
                 return;
             }
@@ -400,6 +527,7 @@ final class RobotsApp {
         box.setHighlightPos(0);
         box.setFocused(true);
         renaming = robot.getString("id");
+        selected = renaming;
     }
 
     private void submitName() {

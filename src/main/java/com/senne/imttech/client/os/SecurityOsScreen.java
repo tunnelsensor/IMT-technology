@@ -32,11 +32,12 @@ public class SecurityOsScreen extends Screen {
     public enum App {
         STATUS("Status", "i", 240, 120),
         CAMERAS("Cameras", "C", 336, 196),
-        DEVICES("Devices", "D", 330, 196),
+        /** Sinds 19 oktober een tabel: wat breder, zodat naam, plek, toestand en knop op één regel passen. */
+        DEVICES("Devices", "D", 360, 196),
         /** Je relais in groepen, en groepen in groepen (14 oktober). */
         GROUPS("Groups", "G", 340, 186),
-        /** De guard robots in het gebied van de kern: aan/uit en hernoemen (hoofdstuk 21). */
-        ROBOTS("Robots", "R", 340, 190),
+        /** De guard robots in het gebied van de kern: aan/uit en hernoemen (hoofdstuk 21). Een tabel sinds 19 oktober. */
+        ROBOTS("Robots", "R", 380, 196),
         /** De training die nu bezig is, en de rapporten van de laatste (hoofdstuk 26). */
         TRAINING("Training", "T", 340, 196),
         ACCESS("Access", "A", 280, 190),
@@ -137,6 +138,11 @@ public class SecurityOsScreen extends Screen {
     private final ZoneApp zone = new ZoneApp(this);
     /** Kwam de eerste momentopname al binnen? (Dan weten we of er al een wachtwoord is.) */
     private boolean gotFirstSnapshot;
+    /**
+     * Ging de desktop uit met de knop Shut down (19 oktober)? Dan onthoudt de kern de vensters niet: de volgende keer
+     * start hij met alleen Status. Anders (Esc) staat alles de volgende keer weer zoals je het liet.
+     */
+    private boolean shuttingDown;
 
     /** Een melding van de server (rechts in de taakbalk) en tot wanneer hij blijft staan. */
     private String notice = "";
@@ -159,9 +165,11 @@ public class SecurityOsScreen extends Screen {
      */
     public void update(CompoundTag snapshot) {
         this.data = snapshot;
-        // Jouw eigen kern, nog zonder wachtwoord: meteen Settings open, klaar om er een te typen.
         if (!gotFirstSnapshot) {
             gotFirstSnapshot = true;
+            // De vensters van de vorige keer weer op hun plek (19 oktober), zoals bij een pc die aan bleef.
+            restoreDesktop(snapshot.getList("desk", Tag.TAG_COMPOUND));
+            // Jouw eigen kern, nog zonder wachtwoord: meteen Settings open, klaar om er een te typen.
             if (snapshot.getBoolean("isOwner") && !snapshot.getBoolean("hasPassword")) {
                 openApp(App.SETTINGS);
                 editingPassword = true;
@@ -183,6 +191,51 @@ public class SecurityOsScreen extends Screen {
             CompoundTag message = snapshot.getCompound("notice");
             showNotice(message.getString("x"), message.getBoolean("err"));
         }
+    }
+
+    /**
+     * Zet de vensters terug die de kern onthield (het onderste eerst), op de plek waar ze stonden (binnen het scherm).
+     * Onthield hij niets (de eerste keer, of na Shut down), dan blijft alleen Status open.
+     */
+    private void restoreDesktop(net.minecraft.nbt.ListTag saved) {
+        List<Win> restored = new ArrayList<>();
+        for (Tag element : saved) {
+            CompoundTag window = (CompoundTag) element;
+            App app;
+            try {
+                app = App.valueOf(window.getString("a"));
+            } catch (IllegalArgumentException e) {
+                continue; // een app die er niet (meer) is
+            }
+            if (restored.stream().anyMatch(win -> win.app == app)) {
+                continue;
+            }
+            Win win = placed(app, restored.size());
+            if (app != App.LOGIC) {
+                win.x = Math.max(0, Math.min(width - 20, window.getInt("x")));
+                win.y = Math.max(0, Math.min(height - TASKBAR_H - 6, window.getInt("y")));
+            }
+            restored.add(win);
+        }
+        if (restored.isEmpty()) {
+            return;
+        }
+        windows.clear();
+        windows.addAll(restored);
+        focus(windows.getLast());
+    }
+
+    /** Wat de kern moet onthouden: elk open venster (het onderste eerst) met de app en waar het staat. */
+    private net.minecraft.nbt.ListTag desktopToSave() {
+        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+        for (Win win : windows) {
+            CompoundTag window = new CompoundTag();
+            window.putString("a", win.app.name());
+            window.putInt("x", win.x);
+            window.putInt("y", win.y);
+            list.add(window);
+        }
+        return list;
     }
 
     /** Een melding rechts in de taakbalk, een paar seconden lang. */
@@ -278,6 +331,12 @@ public class SecurityOsScreen extends Screen {
         robots.tourAskDelete();
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Robots, gescrold tot de eerste robot in een squad (die is gekozen). */
+    public void tourRobotsSquad() {
+        openApp(App.ROBOTS);
+        robots.tourSquad();
+    }
+
     /** Alleen voor de screenshot-rondleiding: in de app Logic de Help scrollen tot dit kopje (hoofdstuk 23). */
     public void tourLogicHelpAt(String header) {
         openApp(App.LOGIC);
@@ -368,8 +427,18 @@ public class SecurityOsScreen extends Screen {
                 return win;
             }
         }
-        // Rechts van de icoontjes, elk nieuw venster een stukje verder; maar altijd helemaal in beeld.
-        int offset = windows.size() * 16;
+        Win win = placed(app, windows.size());
+        windows.add(win);
+        focus(win);
+        return win;
+    }
+
+    /**
+     * Een nieuw venster voor deze app, op zijn gewone plek als er al {@code open} vensters open staan: rechts van de
+     * icoontjes, elk nieuw venster een stukje verder, maar altijd helemaal in beeld.
+     */
+    private Win placed(App app, int open) {
+        int offset = open * 16;
         int left = iconsRight() + 8;
         int x = Math.max(0, Math.min(left + offset, width - app.w - 4));
         int y = Math.min(30 + offset, Math.max(24, height - app.h - TASKBAR_H - 4));
@@ -382,10 +451,7 @@ public class SecurityOsScreen extends Screen {
             w = Math.max(260, width - 8);
             h = Math.max(150, height - TASKBAR_H - 20);
         }
-        Win win = new Win(app, x, y, w, h);
-        windows.add(win);
-        focus(win);
-        return win;
+        return new Win(app, x, y, w, h);
     }
 
     /** Zet een venster bovenop (achteraan in de lijst = als laatste getekend = bovenop). */
@@ -475,6 +541,10 @@ public class SecurityOsScreen extends Screen {
         int my = (int) mouseY;
         // Taakbalk onderaan.
         if (my >= height - TASKBAR_H) {
+            if (mx >= shutDownX() && mx < width - 4) {
+                shutDown();
+                return true;
+            }
             int tx = 4;
             for (Win win : windows) {
                 int chip = 8 + font.width(win.app.label);
@@ -721,8 +791,31 @@ public class SecurityOsScreen extends Screen {
         // sluiten (hij sluit anders vanzelf als je wegloopt).
         notes.save();
         logic.saveIfValid(); // een diagram dat klopt, bewaren we vanzelf (zoals een notitie)
+        if (!shuttingDown) {
+            // De pc blijft aan (19 oktober): de kern onthoudt welke vensters waar open staan.
+            CompoundTag args = new CompoundTag();
+            args.put("w", desktopToSave());
+            send("desk_save", args);
+        }
         send("close", new CompoundTag());
         super.removed();
+    }
+
+    /** De knop Shut down rechts in de taakbalk: de tekst, en waar hij begint. */
+    private static final String SHUT_DOWN = "Shut down";
+
+    private int shutDownX() {
+        return width - 4 - OsDraw.buttonWidth(font, SHUT_DOWN);
+    }
+
+    /**
+     * De knop Shut down (19 oktober, jouw notitie: "tenzij de pc wordt uitgezet met de powerknop in de gui"): de desktop
+     * gaat uit en vergeet zijn vensters; de volgende keer start hij met alleen Status. Je beveiliging blijft gewoon aan.
+     */
+    private void shutDown() {
+        shuttingDown = true;
+        send("desk_off", new CompoundTag());
+        onClose();
     }
 
     // ================================================================ Tekenen
@@ -784,9 +877,10 @@ public class SecurityOsScreen extends Screen {
             g.drawString(font, win.app.label, tx + 4, height - TASKBAR_H + 5, HudStyle.argb(255, active ? HudStyle.CYAN : HudStyle.WHITE), false);
             tx += chip + 4;
         }
-        // Een melding van de server, rechts in de taakbalk.
+        // Helemaal rechts de knop Shut down (19 oktober); een melding van de server staat ervoor.
+        OsDraw.button(g, font, shutDownX(), height - TASKBAR_H + 2, SHUT_DOWN, true, HudStyle.RED);
         if (!notice.isEmpty() && Util.getMillis() < noticeUntil) {
-            g.drawString(font, notice, width - font.width(notice) - 6, height - TASKBAR_H + 5,
+            g.drawString(font, notice, shutDownX() - font.width(notice) - 8, height - TASKBAR_H + 5,
                     HudStyle.argb(255, noticeError ? HudStyle.RED : HudStyle.GREEN), false);
         }
         g.pose().popPose();

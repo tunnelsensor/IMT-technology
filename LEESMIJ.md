@@ -927,8 +927,11 @@ meer); is de batterij leeg, dan valt hij stil tot hij weer op zijn dock staat. Z
 programma heeft, staat hij gewoon en kijkt hij rond; programma's, modules en schieten komen later.
 
 **De app Robots.** Op de desktop van je beveiligingskern zie je de robots in het gebied van die kern,
-met hun toestand, batterij en dock; ook daar zet je ze aan en uit en geef je ze een andere naam (ook
-op afstand). Een robot in een stuk wereld dat niet geladen is, staat er grijs bij ("far away").
+in een tabel (sinds 19 oktober): per robot één regel met zijn naam, robot of drone, toestand, batterij,
+programma en squad. Klik een robot aan: onderaan staat waar hij is en of hij een dock heeft, en zijn
+knoppen staan naast elkaar (Rename, Switch on/off, Squad, Program, en rechts Delete). Zo zet je ze aan en
+uit en geef je ze een andere naam (ook op afstand). Een robot in een stuk wereld dat niet geladen is,
+staat er grijs bij ("far away"); dan werken alleen Program en Delete.
 
 **Een robot weghalen.** Pak hem op (Pick up) of laat hem kapotgaan: dan is hij meteen uit je lijst. Een
 robot die er niet meer is (bijvoorbeeld een robot die je vóór 18 oktober oppakte: die bleef per ongeluk
@@ -1135,7 +1138,7 @@ when every(1):
 - Zijn Scan kijkt rondom (16 blokken); zijn camera in de app **Cameras** (met DRONE erbij) kijkt een beetje naar
   beneden.
 
-In de app **Robots** staat "drone" achter zijn naam, en **Program** toont je droneprogramma's. Je server stuurt hem
+In de app **Robots** staat "drone" in de kolom TYPE, en **Program** toont je droneprogramma's. Je server stuurt hem
 aan zoals een robot: `order("Drone 1", "attack", x, y, z)`, `activate("Drone 1")`, `deactivate("Drone 1")`.
 
 **De schakelaar Drones.** De kern maakt geen gratis drones meer. De schakelaar **Drones** in de apps Access en

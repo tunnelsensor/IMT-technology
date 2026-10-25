@@ -797,6 +797,59 @@ public final class ImtTechGameTests {
     }
 
     /**
+     * De desktop onthoudt zijn vensters (19 oktober, jouw notitie: "je slaat op wat er vorige keer opstond, tenzij de pc
+     * wordt uitgezet met de powerknop"): sluit je hem, dan bewaart de kern welke vensters waar open stonden (netjes
+     * gemaakt: elke app één keer, geen rare namen), ook na opslaan en laden. Shut down vergeet ze en sluit de desktop.
+     */
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void os_desktop_remembers_its_windows(GameTestHelper helper) {
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "desk-owner");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        com.senne.imttech.security.SecurityCoreBlockEntity core = placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        helper.runAfterDelay(5, () -> {
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            if (!com.senne.imttech.security.os.SecurityOs.hasDesktop(owner)) {
+                throw new GameTestAssertException("De desktop ging niet open");
+            }
+            net.minecraft.nbt.ListTag sent = new net.minecraft.nbt.ListTag();
+            String[][] windows = {{"DEVICES", "100", "40"}, {"ROBOTS", "120", "56"}, {"bad name", "1", "1"}, {"DEVICES", "9", "9"},
+                    {"STATUS", "-99999", "30"}};
+            for (String[] window : windows) {
+                net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+                tag.putString("a", window[0]);
+                tag.putInt("x", Integer.parseInt(window[1]));
+                tag.putInt("y", Integer.parseInt(window[2]));
+                sent.add(tag);
+            }
+            net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+            args.put("w", sent);
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                    new com.senne.imttech.network.OsActionPayload(coreAbs, "desk_save", args));
+            osAction(owner, coreAbs, "close");
+            net.minecraft.nbt.ListTag saved = core.desktop();
+            if (saved.size() != 3 || !saved.getCompound(0).getString("a").equals("DEVICES") || saved.getCompound(0).getInt("x") != 100
+                    || !saved.getCompound(1).getString("a").equals("ROBOTS") || saved.getCompound(2).getInt("x") != -1000) {
+                throw new GameTestAssertException("De kern onthield de vensters niet goed: " + saved);
+            }
+            // Opslaan en laden (ook als je de kern weghakt, gaat dit mee).
+            var registries = helper.getLevel().registryAccess();
+            var copy = new com.senne.imttech.security.SecurityCoreBlockEntity(core.getBlockPos(), core.getBlockState());
+            copy.loadWithComponents(core.saveWithFullMetadata(registries), registries);
+            if (!copy.desktop().equals(saved)) {
+                throw new GameTestAssertException("Na opslaan en laden waren de vensters anders: " + copy.desktop());
+            }
+            // Shut down: de vensters zijn vergeten, en de desktop is dicht.
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            osAction(owner, coreAbs, "desk_off");
+            if (!core.desktop().isEmpty() || com.senne.imttech.security.os.SecurityOs.hasDesktop(owner)) {
+                throw new GameTestAssertException("Shut down vergat de vensters niet, of sloot de desktop niet");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
      * De Security OS-desktop: de eigenaar opent hem door op de kern te klikken, een vreemde wordt
      * geweigerd, en vanaf de desktop zet de eigenaar een wachtwoord (een fout wachtwoord telt niet).
      */

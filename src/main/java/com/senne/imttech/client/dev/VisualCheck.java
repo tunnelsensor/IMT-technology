@@ -417,6 +417,11 @@ public final class VisualCheck {
             });
             t.shot(10, "o06_os_access");
             t.close(10);
+            // 19 oktober: de desktop onthoudt zijn vensters. Hij ging net dicht (zoals met Esc); weer open = alles staat er
+            // nog, op dezelfde plek. (Rechts in de taakbalk de knop Shut down, die ze vergeet.)
+            t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, core));
+            t.shot(20, "o07_os_desktop_restored");
+            t.close(10);
         }
 
         // --- De bewakingscamera's en de bewakingsmuur. Een dichte kamer op een "verdieping" boven de
@@ -1467,7 +1472,8 @@ public final class VisualCheck {
             t.shot(25, "tr05_os_training_app");
             t.step(0, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
-                    os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ROBOTS);
+                    // (Sinds de tabel van 19 oktober staan er meer robots in beeld: we scrollen naar de eerste met een squad.)
+                    os.tourRobotsSquad();
                 }
             });
             t.shot(15, "tr06_os_robots_squads");

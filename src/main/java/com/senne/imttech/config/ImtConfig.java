@@ -1425,16 +1425,16 @@ public final class ImtConfig {
         // Jouw keuze: hoe groter de laserpoort, hoe meer draden (het aantal zenders plus 3) en hoe meer tijd.
         /** Zoveel draden heeft de kluwen van een poort van één zender... */
         @Tunable(value = "Wires inside a laser gate of one emitter (a bigger gate has more, up to the most below)", min = 2, max = 8)
-        public static float LASER_WIRES_MIN = 4.0f;
+        public static float LASER_WIRES_MIN = 10.0f;
         /** ...en zoveel hooguit, bij een grote poort. */
         @Tunable(value = "Most wires inside a laser gate, however big it is", min = 2, max = 8)
         public static float LASER_WIRES_MAX = 8.0f;
         /** Zoveel seconden krijg je bij de minste draden... */
         @Tunable(value = "Seconds you get to cut the wires of a laser gate with the fewest wires", min = 5, max = 600)
-        public static float LASER_SECONDS_MIN = 40.0f;
+        public static float LASER_SECONDS_MIN = 10.0f;
         /** ...en zoveel bij de meeste draden (daartussen loopt het gelijk op). */
         @Tunable(value = "Seconds you get to cut the wires of a laser gate with the most wires", min = 5, max = 600)
-        public static float LASER_SECONDS_MAX = 60.0f;
+        public static float LASER_SECONDS_MAX = 30.0f;
         /** Verkeerde draad of te laat: zo lang laat de poort niemand meer knippen. */
         @Tunable("After a wrong cut (or running out of time), the laser gate can't be hacked by anyone for this long (seconds)")
         public static float LASER_LOCK_SECONDS = 300.0f;

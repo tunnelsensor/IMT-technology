@@ -74,6 +74,12 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private boolean towerDrones;
     /** De rapporten van de laatste trainingen (hoofdstuk 26), de oudste eerst. */
     private final java.util.List<com.senne.imttech.training.TrainingReport> trainingReports = new java.util.ArrayList<>();
+    /**
+     * Welke vensters er op de desktop open stonden toen hij dichtging (19 oktober, jouw notitie: "je slaat op wat er
+     * vorige keer opstond, tenzij de pc wordt uitgezet met de powerknop"): per venster de app en waar het stond, het
+     * onderste eerst. Leeg = hij start met alleen Status. Eén desktop voor iedereen, zoals een echte pc.
+     */
+    private net.minecraft.nbt.ListTag desktop = new net.minecraft.nbt.ListTag();
 
     // ---------------------------------------------------------------- Toegang (de desktop regelt dit)
     /**
@@ -395,6 +401,17 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    /** De vensters die op de desktop open stonden (een kopie; leeg = hij start met alleen Status). */
+    public net.minecraft.nbt.ListTag desktop() {
+        return desktop.copy();
+    }
+
+    /** Onthoudt welke vensters er open staan (de desktop ging dicht), of vergeet ze (leeg: hij werd uitgezet). */
+    public void setDesktop(net.minecraft.nbt.ListTag windows) {
+        desktop = windows.copy();
+        setChanged();
+    }
+
     public void logEvent(EventLog.Type type, String text) {
         log.add(level == null ? 0 : level.getGameTime(), type, text);
         setChanged();
@@ -693,6 +710,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             reports.add(report.save());
         }
         tag.put("TrainingReports", reports);
+        tag.put("Desktop", desktop.copy());
         tag.put("Logic", logic.save());
         tag.put("Datacenter", datacenter.save());
         // Toegang
@@ -752,5 +770,6 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         for (net.minecraft.nbt.Tag element : tag.getList("TrainingReports", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             trainingReports.add(com.senne.imttech.training.TrainingReport.load((CompoundTag) element));
         }
+        desktop = tag.getList("Desktop", Tag.TAG_COMPOUND);
     }
 }

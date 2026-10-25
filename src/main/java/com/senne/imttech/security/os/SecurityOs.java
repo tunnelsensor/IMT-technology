@@ -17,6 +17,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -72,6 +73,8 @@ public final class SecurityOs {
         /** Welke diagrammen (en welke versie ervan) het scherm al kreeg. */
         private @Nullable com.senne.imttech.logic.LogicStore sentLogic;
         private int sentLogicRevision = -1;
+        /** Kreeg het scherm al welke vensters er de vorige keer open stonden (19 oktober)? Dat gaat er maar één keer in. */
+        private boolean sentDesktop;
 
         /** Wie deze desktop open heeft (de app Zone toont waar hij staat). */
         private final UUID viewer;
@@ -202,6 +205,14 @@ public final class SecurityOs {
         CompoundTag args = payload.args();
         switch (payload.op()) {
             case "close" -> close(player);
+            // De desktop ging dicht: onthoud welke vensters er open stonden (19 oktober). Uitzetten met de aan/uit-knop
+            // vergeet ze: de volgende keer start hij met alleen Status.
+            case "desk_save" -> core.setDesktop(desktopWindows(args.getList("w", Tag.TAG_COMPOUND)));
+            case "desk_off" -> {
+                core.setDesktop(new ListTag());
+                core.logEvent(EventLog.Type.LOGIN, player.getGameProfile().getName() + " shut down the desktop");
+                close(player);
+            }
             case "passwd" -> passwd(player, core, session, args.getString("pw"));
             case "fs_open" -> openFile(player, core, session, path(args, "path"));
             case "fs_mkdir" -> fileResult(player, core, session, core.fs().mkdir(path(args, "path")));
@@ -262,6 +273,30 @@ public final class SecurityOs {
             }
             default -> { } // onbekende opdracht: later uitgebreid (camera's)
         }
+    }
+
+    /**
+     * De vensters die het scherm stuurt, netjes gemaakt: per venster de naam van de app (hoofdletters en _, zoals
+     * "DEVICES") en waar het stond; hooguit 20, en elke app één keer. Wat er niet uitziet als een venster, laten we weg.
+     */
+    private static ListTag desktopWindows(ListTag sent) {
+        ListTag windows = new ListTag();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Tag element : sent) {
+            if (!(element instanceof CompoundTag window) || windows.size() >= 20) {
+                continue;
+            }
+            String app = window.getString("a");
+            if (app.isEmpty() || app.length() > 16 || !app.matches("[A-Z_]+") || !seen.add(app)) {
+                continue;
+            }
+            CompoundTag clean = new CompoundTag();
+            clean.putString("a", app);
+            clean.putInt("x", Math.max(-1000, Math.min(4000, window.getInt("x"))));
+            clean.putInt("y", Math.max(-1000, Math.min(4000, window.getInt("y"))));
+            windows.add(clean);
+        }
+        return windows;
     }
 
     // ================================================================ Apparaten en toegang
@@ -1007,6 +1042,11 @@ public final class SecurityOs {
                 data.put("file", file);
             }
             session.fileToSend = null;
+        }
+        // Welke vensters er de vorige keer open stonden (één keer, bij het openen; 19 oktober).
+        if (!session.sentDesktop) {
+            data.put("desk", core.desktop());
+            session.sentDesktop = true;
         }
         // Een melding (één keer).
         if (session.notice != null) {

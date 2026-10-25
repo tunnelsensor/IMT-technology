@@ -51,6 +51,25 @@ final class OsDraw {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
+    /** De kleur van de lijntjes tussen de rijen van een tabel (19 oktober: Devices en Robots). */
+    static final int ROW_LINE = 0x1F3846;
+
+    /** Een lijntje onder een rij van een tabel, van {@code x0} tot {@code x1}. */
+    static void rowLine(GuiGraphics g, int x0, int x1, int y) {
+        g.fill(x0, y, x1, y + 1, HudStyle.argb(255, ROW_LINE));
+    }
+
+    /**
+     * De kopjes boven de kolommen van een tabel ("NAME", "STATUS"...): klein en grijs, met een lijntje eronder. {@code
+     * columns} zijn de x-posities, {@code titles} de kopjes.
+     */
+    static void tableHeader(GuiGraphics g, Font font, int x0, int x1, int y, int[] columns, String[] titles) {
+        for (int i = 0; i < columns.length; i++) {
+            g.drawString(font, titles[i], columns[i], y, HudStyle.argb(255, 0x6F8C99), false);
+        }
+        g.fill(x0, y + 10, x1, y + 11, HudStyle.argb(255, DIM));
+    }
+
     /** Knipt tekst af (met ".." erachter) zodat hij in {@code width} pixels past; het begin blijft staan. */
     static String fitRight(Font font, String text, int width) {
         if (font.width(text) <= width) {
