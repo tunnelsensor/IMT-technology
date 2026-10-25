@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 302 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 305 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3267,6 +3267,72 @@ Ik bouw het in deze volgorde, één stap per commit:
       van de taal kijkt nu ook naar Ctrl+Spatie: na `if` staat `card.in_group("...")` (niet onder `every`), en tussen
       de aanhalingstekens je groepen. 302 tests: 299 groen, de 3 rode van hoofdstuk 14 stap 2.
 
+### 33. Een laserzender hacken: draden doorknippen (25 oktober)
+
+Jouw wens: "zorg dat je ook een laseremitter kunt hacken door wires door te knippen, dit is een 3de manier van
+inbreek minigame". Ik deed voorstellen, jij koos.
+
+**Jouw antwoorden** (25 oktober):
+- **De minigame: draden volgen (een kluwen).** Links de stekkers, rechts waar elke draad heen gaat: één draad naar de
+  LENS, de rest naar andere dingen. Volg de draad van de LENS terug en knip hem door.
+- **Gelukt: de hele poort blijft uit tot de eigenaar hem herstelt.** Herstellen is een knop die **iets kost**.
+- **Mislukt: een stroomschok** (schade en vonken), **de poort 5 minuten op slot**, en **het alarm** (alleen bij
+  mislukken, zoals bij de lezer en het paneel; gelukt is stil).
+- **Gereedschap: dezelfde Bypass Kit** (één van de 16 gebruiken per hack).
+- **Elke laserzender** mag, ook een zonder beveiligingskern.
+- **Hoe moeilijk groeit met de poort**: meer zenders = meer draden en meer tijd.
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Herstellen kost 1 Computer Chip** per poort (in creative niets). De knop **Repair wires** staat in het scherm van
+  de zender (sneak + klik, voor wie de zender neerzette of vertrouwd is in de basis, dezelfde regel als altijd).
+- **Draden**: het aantal zenders in de poort + 3, van 4 tot 8. **Tijd**: 40 seconden bij 4 draden, 5 seconden meer per
+  draad, 60 bij 8. De klok loopt meteen.
+- **Het scherm** (`client/bypass/WireScreen`): binnenin de zender is het donker. Alleen waar je muis is, licht het op
+  (een **zaklamp**, koperkleurig). Kiezen doe je **op de stekker links** (klik, of de toetsen 1 tot 8); dat laat niet
+  zien waar de draad heen gaat. Dan **CUT** (of Enter). Je kunt maar één keer knippen. Na het knippen zie je de hele
+  draad: groen (goed) of rood (fout, met waar hij heen ging: "ZAP! That wire went to the LAMP.").
+- **Elke verkeerde draad is fout**; de namen rechts (ALARM, LAMP, FAN, SENSOR, GROUND, BUZZER, CAMERA) zijn sfeer.
+- **Te laat** telt als mislukt (op slot en alarm), maar zonder schok: je knipte niets. Esc, weglopen of doodgaan
+  stopt zonder iets.
+- **Het slot** geldt voor de hele poort en voor iedereen, en staat in de zenders zelf (blijft na een herstart). Een
+  poort die op slot zit of al doorgeknipt is, laat zich niet hacken, en dat kost dan niets.
+- **De schok**: 4 schade (2 hartjes), via dezelfde weg als de laserwand (telt dus ook mee in een training).
+- **Het alarm**: "Someone is tampering with a laser gate at 12 64 -30", met je naam erachter; de beveiliging jaagt op je.
+  Een zender zonder kern heeft niemand om te waarschuwen: dan alleen het geluid.
+- **Van buiten zie je het**: een doorgeknipte zender vonkt af en toe en geeft rook, zijn scherm zegt rood **WIRES CUT**,
+  en de app Devices zegt "cut wires" bij die poort.
+- **Let op**: een zender aan de overkant die terugkijkt, is een eigen laserpoort (alleen zenders die tegen elkaar aan
+  zitten horen bij elkaar). Die houdt de wand dus gewoon aan; een inbreker moet ze allebei doorknippen.
+- Alle getallen staan in de config onder `[bypass]`: `laserWiresMin`/`laserWiresMax`, `laserSecondsMin`/`laserSecondsMax`,
+  `laserLockSeconds`, `laserShockDamage` en `laserRepairChips`.
+
+Ik bouwde het in deze volgorde:
+
+- [x] **1. De kluwen, de doorgeknipte poort, het hacken en herstellen** (de stappen 1 tot 4 van het plan in één keer:
+      ze werken alleen samen). **De kluwen** (`bypass/WireTangle`): een "ladderspel" van kolommen; in elke kolom
+      kruisen een paar draden hun buurdraad (een X). Zo komt elke draad op een eigen plek uit, en gaat er precies één
+      naar de LENS. De server stuurt alleen een getal; je spel en de server maken er dezelfde kluwen van, en je spel
+      stuurt alleen welke stekker je knipt. De draad naar de LENS loopt nooit rechtdoor en kruist minstens 3 keer;
+      vlechten van steeds dezelfde twee draden zijn zeldzaam. **De zender** (`LaserEmitterBlockEntity`) onthoudt of
+      zijn draden doorgeknipt zijn en tot wanneer hij op slot zit; is één zender van de poort doorgeknipt, dan wil de
+      hele poort niet meer aan (`LaserEmitterBlock.wanted`). Je spel krijgt te horen of hij doorgeknipt is (voor de
+      vonken en het scherm). **Hacken** (`bypass/Bypass`, soort LASER): de kit werkt nu ook op een laserzender.
+      **Herstellen**: `LaserActionPayload.Op.REPAIR` (de netwerkversie is nu 24). Drie nieuwe tests
+      (`BypassGameTests`): honderden kluwens per aantal draden (eerlijk en altijd hetzelfde bij hetzelfde getal, en
+      meer zenders = meer draden en tijd); goed knippen (de poort blijft uit, ook met redstone, na opslaan en laden, en
+      met een zender erbij), nog eens hacken kost niets, en herstellen (een vreemde niet, zonder chip niet, met chips
+      kost het er één, in creative gratis); de verkeerde draad (schok, op slot ook voor een ander, alarm met naam),
+      weglopen (niets) en te laat (slot en alarm, geen schok). 305 tests: 302 groen, de 3 rode van hoofdstuk 14 stap 2
+      (met de standaardwaarden uit de code allemaal groen).
+- [x] **2. Showcase, screenshots en LEESMIJ** — **De showcase**: "Hacking and pickpocketing" (geen nieuwe functie, zodat
+      de nummers van je notities blijven kloppen) eindigt nu met een laserpoort van twee zenders in het lab: de zaklamp
+      volgt de draad van de LENS terug, de stekker wordt gekozen en geknipt, de wand verdwijnt en de zenders vonken; dan
+      als eigenaar het scherm (WIRES CUT) en Repair wires, en de wand komt terug. **Screenshots** `-Ponly=bypass`:
+      `bp21` (de poort voor de lezer), `bp22` (de kluwen in het donker), `bp23` (de zaklamp op de draad), `bp24` (de
+      stekker gekozen), `bp25` (geknipt: de hele draad groen), `bp26` (de poort uit), `bp27` (het scherm met WIRES CUT en
+      Repair wires), `bp28` (hersteld) en `bp29` (een verkeerde draad: ZAP, rood). **LEESMIJ.md**: "Inbreken" heeft een
+      stuk over de laserzender, en bij Rayshield staat Repair wires.
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -3313,6 +3379,10 @@ raiddrones eruitzien.
       (60 tot 40 seconden), 1 seconde voor ALARM, de lengte + 2 pogingen bij een paneel, en hoe snel de
       meter NOTICED vol loopt (te makkelijk of te moeilijk?). Alles staat in de config onder `[bypass]`,
       behalve de meter (die staat in `client/pickpocket/PocketScreen`).
+- [ ] **De draden van een laserzender (25 oktober)**: gezien op screenshots en in de showcase, niet zelf met een muis
+      gespeeld. Voelt de zaklamp goed (zijn de draden in het donker te goed of te slecht te zien?), is 40 tot 60
+      seconden goed, en is 1 Computer Chip voor herstellen genoeg? Alles staat in de config onder `[bypass]`; hoe donker
+      de draden zijn, staat in `client/bypass/WireScreen` (`WIRE_DARK`).
 
 Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 

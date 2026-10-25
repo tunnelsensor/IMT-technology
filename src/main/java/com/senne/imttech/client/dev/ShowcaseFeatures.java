@@ -1551,7 +1551,11 @@ final class ShowcaseFeatures {
                 + "achter hem, en in zijn zak liggen drie kaarten tussen rommel. Je schuift de rommel opzij en trekt "
                 + "een kaart naar boven (de meter NOTICED loopt wat op): hij draait om en je ziet welke het is, en hij "
                 + "zit in je hotbar. De tweede keer draait Seppe zich om terwijl jij in zijn zak zit: CAUGHT!, en jij "
-                + "licht op.",
+                + "licht op. Tot slot (hoofdstuk 33) een laserpoort van twee zenders in het lab: de kit opent de zender, "
+                + "en binnenin is het donker met een kluwen van vijf draden. De zaklamp (je muis) volgt de draad van de "
+                + "LENS terug naar zijn stekker, kiest die en knipt (CUT!): de wand schuift terug en de zenders vonken. "
+                + "Dan als eigenaar het scherm van de zender: rood WIRES CUT, en Repair wires (1 chip) zet de draden "
+                + "weer vast: de wand komt terug.",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 11)), 180, 10, s -> {
             BlockPos reader = LOGIC_LAB.offset(1, 1, 7);
             BlockPos panel = LOGIC_LAB.offset(5, 1, 7);
@@ -1603,7 +1607,28 @@ final class ShowcaseFeatures {
                     .pause(90)
                     .close(0)
                     .key(0, () -> Minecraft.getInstance().options.keyShift, false)
-                    .onServer(40, player -> turnHappy(player, 180));
+                    .onServer(40, player -> turnHappy(player, 180))
+                    // Hoofdstuk 33: een laserpoort in het lab. De kit opent de zender: de zaklamp volgt de draad van de
+                    // LENS terug naar zijn stekker en knipt hem door, en de wand verdwijnt.
+                    .onServer(10, ShowcaseFeatures::buildLabLaser)
+                    .stand(0, LAB_LASER.getX() + 3.5, LAB_LASER.getY(), LAB_LASER.getZ() + 2.5, 135, 15)
+                    .lookAt(10, Vec3.atCenterOf(LAB_LASER.above()).add(1.5, 0, 0))
+                    .pause(50)
+                    .step(0, () -> com.senne.imttech.client.bypass.WireScreen.autoPlay = true)
+                    .onServer(0, player -> com.senne.imttech.bypass.Bypass.start(player, LAB_LASER, InteractionHand.MAIN_HAND))
+                    .pause(175)
+                    .step(0, () -> com.senne.imttech.client.bypass.WireScreen.autoPlay = false)
+                    .close(0)
+                    .pause(50)
+                    // Als eigenaar (sneak + klik): het scherm zegt WIRES CUT, en Repair wires kost een Computer Chip.
+                    .onServer(0, player -> com.senne.imttech.shield.LaserEmitters.open(player, LAB_LASER))
+                    .pause(60)
+                    .onServer(0, player -> com.senne.imttech.shield.LaserEmitters.handleAction(player,
+                            new com.senne.imttech.network.LaserActionPayload(LAB_LASER,
+                                    com.senne.imttech.network.LaserActionPayload.Op.REPAIR, 0)))
+                    .pause(40)
+                    .close(0)
+                    .pause(50);
         });
 
         add("Guard robots", "Hoofdstuk 21: een guard robot bouwen. Een kleine robotwerkplaats: links de Robot Assembler, "
@@ -2496,6 +2521,42 @@ final class ShowcaseFeatures {
             if (level.getBlockEntity(rackPos) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
                 rack.update(level, rackPos, level.getBlockState(rackPos));
             }
+        }
+        com.senne.imttech.bypass.Bypass.clear();
+    }
+
+    /** De onderste zender van de laserpoort in het lab (hoofdstuk 33): voor de muur, tussen de lezer en de rand. */
+    static final BlockPos LAB_LASER = LOGIC_LAB.offset(-1, 0, 9);
+
+    /**
+     * Hoofdstuk 33: een laserpoort van twee zenders op elkaar in het lab (oostwaarts, op een volle generator, met een
+     * redstoneblok ernaast), elke keer nieuw, dus met hele draden. De wand loopt tot een pilaartje, zes blokken ver. Jij
+     * zette hem neer (dus jij mag hem herstellen), met de Bypass Kit in je hand en één Computer Chip op zak.
+     */
+    static void buildLabLaser(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos bottom = LAB_LASER;
+        for (BlockPos pos : BlockPos.betweenClosed(bottom.offset(-1, 0, 0), bottom.offset(7, 1, 0))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        level.setBlockAndUpdate(bottom.below(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(bottom.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+            charger.fill(30_000);
+        }
+        net.minecraft.world.level.block.state.BlockState emitter = com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get()
+                .defaultBlockState().setValue(com.senne.imttech.shield.LaserEmitterBlock.FACING, net.minecraft.core.Direction.EAST);
+        for (BlockPos pos : new BlockPos[] {bottom, bottom.above()}) {
+            level.setBlockAndUpdate(pos, emitter);
+            com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get().setPlacedBy(level, pos, level.getBlockState(pos), player,
+                    ItemStack.EMPTY);
+        }
+        for (int dy = 0; dy < 2; dy++) {
+            level.setBlockAndUpdate(bottom.offset(7, dy, 0), Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        level.setBlockAndUpdate(bottom.offset(-1, 1, 0), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
+        if (player.getInventory().countItem(ModItems.COMPUTER_CHIP.get()) == 0) {
+            player.getInventory().add(new ItemStack(ModItems.COMPUTER_CHIP.get()));
         }
         com.senne.imttech.bypass.Bypass.clear();
     }

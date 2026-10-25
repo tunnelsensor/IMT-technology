@@ -2779,6 +2779,44 @@ public final class VisualCheck {
             }));
             t.shot(5, "bp20_pocket_caught");
             t.close(0);
+            // Hoofdstuk 33: de draden van een laserzender doorknippen. Een poort van twee zenders voor de lezer: de
+            // kluwen in het donker, de zaklamp op de draad van de LENS, de goede stekker gekozen en geknipt, de poort uit
+            // (vonken), het scherm van de zender met WIRES CUT en Repair wires, hersteld, en tot slot een verkeerde draad.
+            BlockPos laser = lab.offset(8, 0, 4);
+            t.onServer(0, VisualCheck::buildBypassLaser);
+            t.stand(5, lab.getX() + 4.5, lab.getY(), lab.getZ() + 6.5, 180, 12);
+            t.lookAt(5, new Vec3(laser.getX() - 2.0, laser.getY() + 1.0, laser.getZ() + 0.5));
+            t.shot(60, "bp21_laser_gate");
+            t.onServer(0, player -> com.senne.imttech.bypass.Bypass.start(player, laser,
+                    net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.step(10, () -> wires(com.senne.imttech.client.bypass.WireScreen::tourDark));
+            t.shot(3, "bp22_wires_dark");
+            t.step(0, () -> wires(screen -> screen.tourTrace(0.4f)));
+            t.shot(3, "bp23_wires_flashlight");
+            t.step(0, () -> wires(screen -> {
+                screen.tourTrace(0.97f);
+                screen.tourSelect(-1);
+            }));
+            t.shot(3, "bp24_wires_selected");
+            t.step(0, () -> wires(com.senne.imttech.client.bypass.WireScreen::tourCut));
+            t.shot(8, "bp25_wires_cut");
+            t.close(0);
+            t.shot(25, "bp26_laser_cut");
+            t.onServer(0, player -> com.senne.imttech.shield.LaserEmitters.open(player, laser));
+            t.shot(10, "bp27_laser_screen_cut");
+            t.onServer(0, player -> com.senne.imttech.shield.LaserEmitters.handleAction(player,
+                    new com.senne.imttech.network.LaserActionPayload(laser, com.senne.imttech.network.LaserActionPayload.Op.REPAIR, 0)));
+            t.shot(10, "bp28_laser_screen_repaired");
+            t.close(0);
+            t.onServer(40, player -> com.senne.imttech.bypass.Bypass.start(player, laser,
+                    net.minecraft.world.InteractionHand.MAIN_HAND));
+            t.step(10, () -> wires(screen -> {
+                screen.tourDark();
+                screen.tourSelect(-2);
+                screen.tourCut();
+            }));
+            t.shot(8, "bp29_wires_zap");
+            t.close(0);
         }
 
         // --- Zones (hoofdstuk 10, 8 oktober): een L-vormige basis met een torentje en de blauwe rand
@@ -2984,6 +3022,42 @@ public final class VisualCheck {
         if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.bypass.CircuitScreen screen) {
             action.accept(screen);
         }
+    }
+
+    /** Doet iets met de draden van een laserzender die nu open zijn (als ze open zijn; hoofdstuk 33). */
+    private static void wires(java.util.function.Consumer<com.senne.imttech.client.bypass.WireScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.bypass.WireScreen screen) {
+            action.accept(screen);
+        }
+    }
+
+    /**
+     * Hoofdstuk 33: een laserpoort van twee zenders op elkaar, westwaarts voor de lezer en het paneel (op een volle
+     * generator, met een redstoneblok), tot een steen 5 blokken verder. Elke keer nieuw: hele draden, niet op slot.
+     * Jij zette hem neer. In je hand de Bypass Kit.
+     */
+    private static void buildBypassLaser(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos bottom = BYPASS_LAB.offset(8, 0, 4);
+        for (BlockPos pos : BlockPos.betweenClosed(bottom.offset(-6, 0, 0), bottom.offset(1, 1, 0))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        level.setBlockAndUpdate(bottom.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(bottom.east()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+            charger.fill(20_000);
+        }
+        BlockState emitter = ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                .setValue(com.senne.imttech.shield.LaserEmitterBlock.FACING, Direction.WEST);
+        for (BlockPos pos : new BlockPos[] {bottom, bottom.above()}) {
+            level.setBlockAndUpdate(pos, emitter);
+            ModBlocks.LASER_EMITTER.get().setPlacedBy(level, pos, level.getBlockState(pos), player, ItemStack.EMPTY);
+        }
+        for (int dy = 0; dy < 2; dy++) {
+            level.setBlockAndUpdate(bottom.offset(-6, dy, 0), Blocks.SMOOTH_STONE.defaultBlockState());
+        }
+        level.setBlockAndUpdate(bottom.above().east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
+        com.senne.imttech.bypass.Bypass.clear();
     }
 
     /** Doet iets met de desktop die nu open is (als hij open is), voor de app Keycards. */

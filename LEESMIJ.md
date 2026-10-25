@@ -349,6 +349,9 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   **Zenders die tegen elkaar aan zitten, zijn één laserpoort**: redstone op één ervan zet ze
   allemaal aan, en ze geven de stroom van één kabel aan elkaar door. Zet er bijvoorbeeld drie
   op elkaar voor een wand van drie hoog, met één hendel.
+  Een inbreker kan met de Bypass Kit de **draden doorknippen** (zie "Inbreken"): dan blijft de hele
+  poort uit, en vonkt hij. Zijn instelscherm zegt dan rood **WIRES CUT**, en **Repair wires** zet de
+  draden weer vast; dat kost een Computer Chip (in creative niets). De app Devices zegt dan "cut wires".
 - **Schildkoepel-generator** (blok, op stroom): een koepel om je basis. **Rechtsklik** opent
   zijn scherm: aan/uit, kleur, bereik (8 tot 32 blokken) en sterkte (1 tot 5). Groter en
   sterker kost meer stroom. De koepel houdt alles tegen wat niet van jou of je team komt:
@@ -801,12 +804,12 @@ Allebei doen ze 5 seconden over één blok en gebruiken ze dan 4 stroom per tick
 boven of opzij iets in en halen het er van onder uit, zoals bij een oven. Alle getallen staan in
 `config/imttech.toml` onder `[repair]` (de stroom van de machines onder `[power]`).
 
-### Inbreken: lezers en panelen hacken, en zakkenrollen
-Geen kaart en geen code? Dan kun je een **keycardlezer** of een **codepaneel** van iemand anders
-hacken met de **Bypass Kit** (zonder vaste vorm: een computerchip, een schaar, glowstonestof, redstone
-en ijzer). Rechtsklik ermee op de lezer of het paneel; de kit gaat 16 keer mee. Het spel loopt door
-terwijl je hackt (torentjes schieten gewoon op je); Esc of weglopen stopt zonder alarm. Hangt het
-apparaat niet aan een draaiende server, dan valt er niets te bedotten (en kost het niets).
+### Inbreken: lezers, panelen en laserzenders hacken, en zakkenrollen
+Geen kaart en geen code? Dan kun je een **keycardlezer**, een **codepaneel** of een **laserzender** van
+iemand anders hacken met de **Bypass Kit** (zonder vaste vorm: een computerchip, een schaar, glowstonestof,
+redstone en ijzer). Rechtsklik ermee op de lezer, het paneel of de zender; de kit gaat 16 keer mee. Het
+spel loopt door terwijl je hackt (torentjes schieten gewoon op je); Esc of weglopen stopt zonder alarm.
+Hangt een lezer of paneel niet aan een draaiende server, dan valt er niets te bedotten (en kost het niets).
 
 **Een keycardlezer: het stroomcircuit.** Eerst kies je van welke **groep** van dat netwerk je een
 kaart namaakt: je ziet de groepen van de eigenaar als een boom (heeft hij er geen, dan maak je een kaart
@@ -833,6 +836,21 @@ dan valt er niets te kraken.
 ("Someone is tampering with Lab door", met je naam), I.M.T waarschuwt de eigenaar, de beveiliging
 jaagt op je, en dat apparaat laat jou een minuut niet meer proberen.
 
+**Een laserzender: draden doorknippen.** Je schroeft de zender open, en binnenin is het donker: links
+de stekkers (1, 2, 3...), rechts waar elke draad heen gaat (de **LENS**, en verder dingen als ALARM, LAMP
+of FAN), en daartussen een kluwen van draden die elkaar kruisen. Alleen waar je muis is, licht het op
+(een zaklamp): volg de draad van de LENS terug naar zijn stekker. Kies die stekker (klik erop, of de
+toetsen 1 tot 8) en knip (**CUT**, of Enter). Je kunt maar één keer knippen. Hoe groter de laserpoort,
+hoe moeilijker: een zender alleen heeft 4 draden en 40 seconden, elke zender erbij een draad meer en 5
+seconden meer, tot 8 draden en 60 seconden. Elke laserzender mag, ook een zonder beveiligingskern.
+- **De goede draad**: de **hele laserpoort** (alle zenders die eraan vastzitten) valt uit en blijft uit,
+  ook met redstone erop, tot iemand die hem mag instellen in zijn scherm op **Repair wires** drukt (dat
+  kost een Computer Chip). Het gaat stil: geen alarm. Wel vonkt de zender, en zegt de app Devices "cut
+  wires". Let op: een zender aan de overkant die terugkijkt, is een eigen poort; die moet je ook knippen.
+- **Een verkeerde draad**: een schok (2 hartjes), de poort gaat **5 minuten op slot** (voor iedereen), en
+  hoort hij bij een kern, dan gaat het alarm af ("Someone is tampering with a laser gate at ...", met je
+  naam). Ben je te laat, dan ook (maar zonder schok).
+
 **Zakkenrollen.** Sluip (Shift) met een **lege hand** achter iemand en rechtsklik op hem: zijn zak
 gaat open. Zijn keycards liggen omgekeerd tussen rommel (een touwtje, een papiertje, een muntje...).
 Sleep de rommel opzij en trek een kaart naar boven, uit de zak: hij draait om, je ziet welke het is,
@@ -843,7 +861,8 @@ met je naam, en jij licht 10 seconden op. Loopt hij weg, dan houdt het gewoon op
 hij niets, tot hij in zijn rugzak kijkt. Bij dezelfde speler moet je daarna 30 seconden wachten. Een
 gestolen kaart blokkeert de eigenaar in de app Keycards. Op een server kan zakkenrollen uit:
 `rules.pickpocketAllowed = false` in `config/imttech.toml`. De tijden en het bereik staan in
-hetzelfde bestand onder `[bypass]`.
+hetzelfde bestand onder `[bypass]`, net als het aantal draden en de tijd van een laserzender, hoe lang
+hij op slot gaat, de schok en hoeveel chips herstellen kost.
 
 ### Guard robots: bouwen, laden, aan en uit
 Een **guard robot** stel je zelf samen uit een **hoofd**, een **lijf**, **armen** en **benen**, elk in
