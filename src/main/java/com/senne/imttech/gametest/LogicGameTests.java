@@ -62,11 +62,11 @@ public final class LogicGameTests {
     /** Het voorbeeld uit het plan: alles wat de taal kan, netjes geschreven zoals de printer het doet. */
     private static final String EXAMPLE = """
             when keycard("Lab door"):
-                if card.valid and card.level >= 3:
+                if card.in_group("lab"):
                     accept()
                     pulse("Vault door", 3)
-                elif card.level >= 1:
-                    say("Someone with a low card tried the lab")
+                elif card.valid:
+                    say("Someone without lab access tried the lab")
                 else:
                     deny()
                     alarm("Wrong card at the lab")
@@ -112,8 +112,8 @@ public final class LogicGameTests {
         expectError("when every(0.5):\n    on(\"Lamp\")", 1, "every takes 1 to 3600 seconds");
         expectError("when keycard(\"Lab\"):\n    on(Lamp)", 2, "Put names between quotes");
         expectError("when keycard(\"Lab\"):\n    accept()\n      deny()", 3, "indented more");
-        expectError("when keycard(\"Lab\"):\n    if card.level = 3:\n        accept()", 2, "Use == to compare");
-        expectError("when keycard(\"Lab\"):\n    if card.level >= \"3\":\n        accept()", 2, "cannot compare a number with text");
+        expectError("when keycard(\"Lab\"):\n    if card.number = 3:\n        accept()", 2, "Use == to compare");
+        expectError("when keycard(\"Lab\"):\n    if card.number >= \"3\":\n        accept()", 2, "cannot compare a number with text");
         expectError("when keycard(\"Lab\"):\nwhen every(5):\n    on(\"A\")", 1, "must be lines that are indented");
         expectError("when keycard(\"Lab\"):\n    else:\n        accept()", 2, "no if above it");
         expectError("when keycard(\"Lab\"):\n    pulse(\"Gate\", 99)", 2, "0.05 to 60 seconds");
@@ -142,9 +142,9 @@ public final class LogicGameTests {
     public static void logic_arithmetic(GameTestHelper helper) {
         String code = """
                 when keycard("Lab door"):
-                    if card.level * 2 - 1 >= 5 and card.name + "!" == "Boss!":
+                    if card.number * 2 - 1 >= 5 and card.name + "!" == "Boss!":
                         accept()
-                    elif -card.level < -3 or (card.level + 1) * 2 == 8:
+                    elif -card.number < -3 or (card.number + 1) * 2 == 8:
                         deny()
                 """;
         String printed = ScriptPrinter.print(ScriptParser.parse(code));
@@ -162,7 +162,7 @@ public final class LogicGameTests {
             @Override
             public Object value(String variable) {
                 return switch (variable) {
-                    case "card.level" -> 3.0;
+                    case "card.number" -> 3.0;
                     case "card.name" -> "Boss";
                     default -> false;
                 };
@@ -173,21 +173,21 @@ public final class LogicGameTests {
                 return false;
             }
         };
-        for (String yes : List.of("card.level * 2 - 1 >= 5", "2 + 3 * 4 == 14", "(2 + 3) * 4 == 20", "10 / 4 == 2.5",
-                "1 / 0 == 0", "-card.level == -3", "card.name + \"!\" == \"Boss!\"", "\"Level \" + card.level == \"Level 3\"",
-                "10 - 4 - 3 == 3", "-(card.level + 1) == -4")) {
+        for (String yes : List.of("card.number * 2 - 1 >= 5", "2 + 3 * 4 == 14", "(2 + 3) * 4 == 20", "10 / 4 == 2.5",
+                "1 / 0 == 0", "-card.number == -3", "card.name + \"!\" == \"Boss!\"", "\"Level \" + card.number == \"Level 3\"",
+                "10 - 4 - 3 == 3", "-(card.number + 1) == -4")) {
             Expr expr = ExprCache.get(yes, Op.KEYCARD);
             check(expr != null && ExprCache.test(expr, card), "Dit zou waar moeten zijn: " + yes);
         }
-        Expr no = ExprCache.get("card.level * 2 - 1 >= 6", Op.KEYCARD);
+        Expr no = ExprCache.get("card.number * 2 - 1 >= 6", Op.KEYCARD);
         check(no != null && !ExprCache.test(no, card), "3 * 2 - 1 is 5, niet 6 of meer");
         // Foutmeldingen die een beginner snapt.
         expectError("when keycard(\"Lab\"):\n    if card.name - 1 > 0:\n        pass", 2, "only subtract numbers");
-        expectError("when keycard(\"Lab\"):\n    if card.level * \"2\" > 1:\n        pass", 2, "only multiply numbers");
+        expectError("when keycard(\"Lab\"):\n    if card.number * \"2\" > 1:\n        pass", 2, "only multiply numbers");
         expectError("when keycard(\"Lab\"):\n    if card.valid + 1 > 0:\n        pass", 2, "only add numbers");
         expectError("when keycard(\"Lab\"):\n    if -card.name == \"x\":\n        pass", 2, "only works with a number");
-        expectError("when keycard(\"Lab\"):\n    if card.level + 1:\n        pass", 2, "must be true or false");
-        expectError("when keycard(\"Lab\"):\n    if card.level + :\n        pass", 2, "I did not expect");
+        expectError("when keycard(\"Lab\"):\n    if card.number + 1:\n        pass", 2, "must be true or false");
+        expectError("when keycard(\"Lab\"):\n    if card.number + :\n        pass", 2, "I did not expect");
         helper.succeed();
     }
 
@@ -224,15 +224,15 @@ public final class LogicGameTests {
         expectError("when every(5):\n    if count > 1:\n        pass", 2, "count has no value yet");
         expectError("count = 0\nwhen every(5):\n    count = \"x\"", 3, "count holds a number");
         expectError("when every(5):\n    on = 1", 2, "already a word of the language");
-        expectError("when keycard(\"A\"):\n    card.level = 3", 2, "not give it a value");
+        expectError("when keycard(\"A\"):\n    card.number = 3", 2, "not give it a value");
         expectError("def go():\n    pass\nwhen every(5):\n    go = 1", 4, "one of your own blocks");
-        expectError("x = card.level\nwhen every(5):\n    pass", 1, "only exists inside a when");
+        expectError("x = card.number\nwhen every(5):\n    pass", 1, "only exists inside a when");
         expectError("when every(5):\n    if is_nigt:\n        pass", 2, "Did you mean is_night?");
         expectError("when every(5):\n    x =", 2, "Give x a value");
         // Een def ziet de namen van de when die hem gebruikt niet (zoals een functie in Python).
         expectError("when every(5):\n    x = 1\n    helper()\ndef helper():\n    if x > 0:\n        pass", 5, "x has no value yet");
         expectError("count = 0\ncount = 1\nwhen every(5):\n    pass", 2, "already is a count");
-        expectError("when keycard(\"Lab\"):\n    if card.level = 3:\n        accept()", 2, "Use == to compare");
+        expectError("when keycard(\"Lab\"):\n    if card.number = 3:\n        accept()", 2, "Use == to compare");
         helper.succeed();
     }
 
@@ -321,7 +321,7 @@ public final class LogicGameTests {
                 when keycard("Lab door"):
                     count = count + 1
                     say($"This is test {count}")
-                    label = $"Card {card.name + "!"} level {card.level * 2}"
+                    label = $"Card {card.name + "!"} level {card.number * 2}"
                     log($"{{braces}} and {label}")
                     if $"{count}" == "3":
                         alarm($"Card {card.number} came {count} times")
@@ -337,7 +337,7 @@ public final class LogicGameTests {
             @Override
             public Object value(String variable) {
                 return switch (variable) {
-                    case "card.level" -> 3.0;
+                    case "card.number" -> 3.0;
                     case "card.name" -> "Boss";
                     default -> true;
                 };
@@ -356,7 +356,7 @@ public final class LogicGameTests {
         String[][] cases = {
                 {"$\"This is test {count}\"", "This is test 2"},
                 {"$\"Round {count + 1} of {count * 2.5}\"", "Round 3 of 5"},
-                {"$\"Card {card.name + \"!\"} level {card.level}\"", "Card Boss! level 3"},
+                {"$\"Card {card.name + \"!\"} level {card.number}\"", "Card Boss! level 3"},
                 {"$\"{{count}} is {count}\"", "{count} is 2"},
                 {"$\"Night: {is_night}\"", "Night: true"},
                 {"$\"no names\"", "no names"},
@@ -372,7 +372,7 @@ public final class LogicGameTests {
         expectError("when every(5):\n    say($\"Count {}\")", 2, "Something is missing between { and }");
         expectError("when every(5):\n    say($\"a } b\")", 2, "needs a { before it");
         expectError("when every(5):\n    say($\"Count {missing}\")", 2, "missing has no value yet");
-        expectError("when every(5):\n    say($\"Level {card.level}\")", 2, "card.level only works inside");
+        expectError("when every(5):\n    say($\"Level {card.number}\")", 2, "card.number only works inside");
         expectError("when every(5):\n    on($\"Lamp {1}\")", 2, "needs the name of a device between quotes");
         expectError("when every(5):\n    say($\"Open)", 2, "missing its closing quote");
         helper.succeed();
@@ -481,7 +481,7 @@ public final class LogicGameTests {
         expectError("when every(5):\n    for i range(3):\n        pass", 2, "After the name comes in");
         expectError("when every(5):\n    for i in doors:\n        pass", 2, "counts with range");
         expectError("when every(5):\n    for in range(3):\n        pass", 2, "needs a name that counts");
-        expectError("when every(5):\n    for card.level in range(3):\n        pass", 2, "built-in information");
+        expectError("when every(5):\n    for card.number in range(3):\n        pass", 2, "built-in information");
         expectError("when every(5):\n    name = \"Ann\"\n    for name in range(3):\n        pass", 3, "holds text, so it cannot count");
         expectError("when every(5):\n    for i in range(j):\n        pass", 2, "j has no value yet");
         expectError("when every(5):\n    while 3:\n        pass", 2, "must be true or false");
@@ -716,7 +716,7 @@ public final class LogicGameTests {
     /** Een diagram met defs, zoals de printer het schrijft (een def mag ook onder de when staan). */
     private static final String WITH_DEFS = """
             when keycard("Lab door"):
-                if card.valid and card.level >= 3:
+                if card.in_group("lab"):
                     open_lab()
                 else:
                     deny()
@@ -779,8 +779,10 @@ public final class LogicGameTests {
         expectError("def open_door():\n    pass\nwhen every(5):\n    opn_door()", 4, "Did you mean open_door?");
         expectError("def greet():\n    accept()\nwhen every(5):\n    greet()", 4,
                 "greet() uses accept(), which only works inside when keycard(...) or when codepanel(...)");
-        expectError("def check():\n    if card.level >= 3:\n        pass\nwhen codepanel(\"P\"):\n    check()", 5,
-                "check() uses card.level, which only works inside when keycard(...)");
+        expectError("def check():\n    if card.valid:\n        pass\nwhen codepanel(\"P\"):\n    check()", 5,
+                "check() uses card.valid, which only works inside when keycard(...)");
+        expectError("def check():\n    if card.in_group(\"lab\"):\n        pass\nwhen codepanel(\"P\"):\n    check()", 5,
+                "check() uses card.in_group(...), which only works inside when keycard(...)");
         expectError("def outer():\n    inner()\ndef inner():\n    if code == \"1\":\n        pass\nwhen keycard(\"R\"):\n    outer()",
                 7, "outer() uses code");
         expectError("def a():\n    pass\ndef a():\n    pass\nwhen every(5):\n    a()", 3, "There already is a def a");
@@ -835,7 +837,7 @@ public final class LogicGameTests {
             if (setup.core().logic().program("Lab") == null) {
                 throw new GameTestAssertException("Het diagram met een def werd niet bewaard: " + lastLog(setup.core()));
             }
-            var card = setup.core().logic().issue("Lab access", 1, "test");
+            var card = setup.core().logic().issue("Lab access", 1, "test", "");
             LogicEvents.clear();
             LogicEvents.keycard(level, readerAbs, setup.owner(),
                     new KeycardData(setup.core().ip(), setup.core().hostname(), card.number(), 1, "Lab access"));
@@ -883,9 +885,9 @@ public final class LogicGameTests {
         helper.runAfterDelay(2, () -> {
             SecurityOs.open(setup.owner(), setup.coreAbs());
             var store = setup.core().logic();
-            var lab = store.issue("Lab access", 3, "test");
-            var guest = store.issue("Guest", 1, "test");
-            var lost = store.issue("Lost card", 2, "test");
+            var lab = store.issue("Lab access", 3, "test", "");
+            var guest = store.issue("Guest", 1, "test", "");
+            var lost = store.issue("Lost card", 2, "test", "");
             KeycardData labData = new KeycardData(setup.core().ip(), "x", lab.number(), 3, "Lab access");
             // Een actieve kaart: eerst blokkeren.
             cardAction(setup, "card_delete", lab.number(), false);
@@ -906,13 +908,13 @@ public final class LogicGameTests {
                 throw new GameTestAssertException("Delete blocked liet kaarten staan: " + store.cards());
             }
             // Een nieuwe kaart krijgt een nieuw nummer, niet een van de weggegooide.
-            var fresh = store.issue("New", 1, "test");
+            var fresh = store.issue("New", 1, "test", "");
             if (fresh.number() <= lost.number()) {
                 throw new GameTestAssertException("Een weggegooid nummer kwam terug: #" + fresh.number());
             }
             // Ook na opslaan en weer laden.
             var loaded = com.senne.imttech.logic.LogicStore.load(store.save());
-            var after = loaded.issue("After load", 1, "test");
+            var after = loaded.issue("After load", 1, "test", "");
             if (after.number() <= fresh.number()) {
                 throw new GameTestAssertException("Na laden kwam een oud nummer terug: #" + after.number());
             }
@@ -1005,7 +1007,7 @@ public final class LogicGameTests {
     // ================================================================ Hoofdstuk 23: soorten programma's
 
     /**
-     * Soorten programma's (hoofdstuk 23): een robot kent geen keycard, accept of card.level (die horen bij de
+     * Soorten programma's (hoofdstuk 23): een robot kent geen keycard, accept of card.valid (die horen bij de
      * server), de server wel. De soort blijft bij bewaren en laden; een oud diagram (zonder soort) is een
      * diagram op de server. De blokjes geven dezelfde fout als de code.
      */
@@ -1015,8 +1017,10 @@ public final class LogicGameTests {
         ScriptParser.parse(reader, ProgramKind.SERVER);
         expectKindError(reader, ProgramKind.ROBOT, 1, "keycard(...) only works in a server diagram, not in a robot program");
         expectKindError("when every(5):\n    accept()\n", ProgramKind.ROBOT, 2, "accept() only works in a server diagram");
-        expectKindError("when every(5):\n    if card.level > 1:\n        log(\"x\")\n", ProgramKind.ROBOT, 2,
-                "card.level only works in a server diagram");
+        expectKindError("when every(5):\n    if card.number > 1:\n        log(\"x\")\n", ProgramKind.ROBOT, 2,
+                "card.number only works in a server diagram");
+        expectKindError("when every(5):\n    if card.in_group(\"lab\"):\n        log(\"x\")\n", ProgramKind.ROBOT, 2,
+                "card.in_group(...) only works in a server diagram");
         // is_night en je eigen namen werken overal.
         ScriptParser.parse("count = 0\n\nwhen every(5):\n    if is_night:\n        count = count + 1\n", ProgramKind.ROBOT);
 
@@ -1195,7 +1199,7 @@ public final class LogicGameTests {
 
     /**
      * Ctrl+Spatie in een robotprogramma (hoofdstuk 23): de woorden van een robot (forward, goto...) en zijn gegevens
-     * (robot.battery, read, pin), geen keycard of card.level. In een serverdiagram staan de namen van je robots tussen
+     * (robot.battery, read, pin), geen keycard of card.valid. In een serverdiagram staan de namen van je robots tussen
      * de aanhalingstekens van activate, deactivate en order.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
@@ -1205,7 +1209,7 @@ public final class LogicGameTests {
                 && statements.contains("write(...)"), "Een robot mist woorden: " + statements);
         check(!statements.contains("accept()") && !statements.contains("order(\"...\", \"attack\")"), "Een robot krijgt woorden van de server: " + statements);
         List<String> checks = complete("when started:\n    if |", ProgramKind.ROBOT);
-        check(checks.contains("robot.battery") && checks.contains("read(...)") && checks.contains("pin(...)") && !checks.contains("card.level"),
+        check(checks.contains("robot.battery") && checks.contains("read(...)") && checks.contains("pin(...)") && !checks.contains("card.valid") && !checks.contains("card.in_group(\"...\")"),
                 "In een if van een robot klopt het niet: " + checks);
         List<String> top = complete("|", ProgramKind.ROBOT);
         check(top.contains("when started:") && top.contains("when ordered(...):") && !top.contains("when keycard(...):"),
@@ -1457,10 +1461,10 @@ public final class LogicGameTests {
         expectSuggestions("when |", List.of("keycard(\"...\"):", "every(10):"), List.of("accept()"));
         expectSuggestions("def open_lab():\n    pass\nwhen every(5):\n    |",
                 List.of("on(\"...\")", "pulse(\"...\", 3)", "if ...:", "open_lab()"), List.of("when keycard(...):"));
-        expectSuggestions("when keycard(\"Lab door\"):\n    if |", List.of("card.level", "card.valid", "player.trusted"),
+        expectSuggestions("when keycard(\"Lab door\"):\n    if |", List.of("card.in_group(\"...\")", "card.valid", "player.trusted"),
                 List.of("code"));
-        expectSuggestions("when codepanel(\"Front door\"):\n    if |", List.of("code", "player.trusted"), List.of("card.level"));
-        expectSuggestions("when every(5):\n    if |", List.of("is_night", "is_on(\"...\")"), List.of("card.level", "player.trusted"));
+        expectSuggestions("when codepanel(\"Front door\"):\n    if |", List.of("code", "player.trusted"), List.of("card.valid", "card.in_group(\"...\")"));
+        expectSuggestions("when every(5):\n    if |", List.of("is_night", "is_on(\"...\")"), List.of("card.valid", "card.in_group(\"...\")", "player.trusted"));
         expectSuggestions("when keycard(\"|", List.of("Lab door"), List.of("Front door", "Vault door"));
         expectSuggestions("when every(5):\n    on(\"|\")", List.of("Vault door", "Lab lights"), List.of("Lab door"));
         // Wat je al typte, maakt de lijst korter (en wat ermee begint, staat bovenaan).
@@ -1473,7 +1477,7 @@ public final class LogicGameTests {
             throw new GameTestAssertException("Na on(\"La zou alleen Lab lights moeten passen: " + va);
         }
         // In een def weten we niet welke when hem gebruikt: dan mag alles.
-        expectSuggestions("def check():\n    if |", List.of("card.level", "code", "is_night"), List.of());
+        expectSuggestions("def check():\n    if |", List.of("card.valid", "card.in_group(\"...\")", "code", "is_night"), List.of());
         helper.succeed();
     }
 
@@ -1517,8 +1521,9 @@ public final class LogicGameTests {
     }
 
     /**
-     * Het hele verhaal met een keycard: een geldige kaart van niveau 3 geeft groen en zet de kluisdeur
-     * even aan (en daarna weer uit); een ongeldige kaart geeft rood en een alarm.
+     * Het hele verhaal met een keycard: een geldige kaart in de groep "night shift", die in "security" zit, die in
+     * "staff" zit, geeft groen bij {@code card.in_group("staff")} en zet de kluisdeur even aan (en daarna weer uit);
+     * een ongeldige kaart geeft rood en een alarm.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner")
     public static void logic_keycard_opens_vault(GameTestHelper helper) {
@@ -1534,7 +1539,7 @@ public final class LogicGameTests {
             SecurityOs.open(setup.owner(), setup.coreAbs());
             save(setup, "Lab", """
                     when keycard("Lab door"):
-                        if card.valid and card.level >= 3:
+                        if card.in_group('Staff'):
                             accept()
                             pulse("Vault door", 2)
                         else:
@@ -1544,7 +1549,10 @@ public final class LogicGameTests {
             if (setup.core().logic().program("Lab") == null) {
                 throw new GameTestAssertException("Het diagram werd niet bewaard: " + lastLog(setup.core()));
             }
-            var card = setup.core().logic().issue("Lab access", 3, "test");
+            var store = setup.core().logic();
+            check(store.addGroup("staff", "") && store.addGroup("security", "staff") && store.addGroup("night shift", "security"),
+                    "De groepen maken lukte niet");
+            var card = store.issue("Lab access", 3, "test", "night shift");
             LogicEvents.clear();
             LogicEvents.keycard(level, readerAbs, setup.owner(),
                     new KeycardData(setup.core().ip(), setup.core().hostname(), card.number(), 3, "Lab access"));
@@ -1570,6 +1578,21 @@ public final class LogicGameTests {
                     .anyMatch(entry -> entry.type() == EventLog.Type.ALARM && entry.text().contains("Wrong card"));
             if (!alarm || level.getBlockState(vault).getValue(RelayBlock.POWERED)) {
                 throw new GameTestAssertException("Een valse kaart gaf geen alarm (of opende de deur). Logboek: " + lastLog(setup.core()));
+            }
+            // De echte kaart geblokkeerd: hij zit nog in zijn groep, maar card.in_group geeft dan false.
+            var card = setup.core().logic().cards().getFirst();
+            setup.core().logic().setBlocked(card.number(), true);
+            LogicEvents.clear();
+            LogicEvents.keycard(level, readerAbs, setup.owner(),
+                    new KeycardData(setup.core().ip(), setup.core().hostname(), card.number(), 3, "Lab access"));
+        });
+        helper.runAfterDelay(110, () -> {
+            helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.DENIED);
+            boolean logged = setup.core().log().entries().stream()
+                    .anyMatch(entry -> entry.text().contains("used card #1001 (not valid here)"));
+            if (!logged || level.getBlockState(vault).getValue(RelayBlock.POWERED)) {
+                throw new GameTestAssertException("Een geblokkeerde kaart van staff opende de deur (of het logboek klopt niet). Logboek: "
+                        + lastLog(setup.core()));
             }
             helper.succeed();
         });

@@ -141,7 +141,8 @@ public final class CoreConfigGameTests {
         core.addTrusted(lotte, "Lotte");
         core.setAttackPlayers(true);
         core.setLasersEnabled(false);
-        LogicStore.Card card = core.logic().issue("Front door", 3, "test-core-owner");
+        core.logic().addGroup("staff", "");
+        LogicStore.Card card = core.logic().issue("Front door", 3, "test-core-owner", "staff");
         check(card != null, "Een keycard maken lukte niet");
         List<ZoneBox> zone = List.of(ZoneBox.of(helper.absolutePos(CORE.offset(-4, -2, -4)), helper.absolutePos(CORE.offset(4, 3, 4))));
         check(core.setZoneBoxes(zone).equals(zone), "De zone paste niet");
@@ -178,6 +179,7 @@ public final class CoreConfigGameTests {
                 "Het logboek zegt niet dat de kern opnieuw geïnstalleerd is");
         check(back.isTrusted(lotte) && back.attackPlayers() && !back.lasersEnabled(), "De toegang is weg");
         check(back.logic().card(card.number()) != null, "De keycard is weg");
+        check(back.logic().hasGroup("staff") && back.logic().inGroup(card.number(), "staff"), "De keycard-groep is weg");
         check(back.zoneBoxes().equals(zone), "De zone is weg: " + back.zoneBoxes());
         List<Datacenters.Backup> backups = datacenters.backupsOf(owner.getUUID());
         check(backups.size() == 1 && backups.getFirst().target().equals(here) && backups.getFirst().sourceHost().equals("other-dc"),

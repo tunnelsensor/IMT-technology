@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 297 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 301 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3168,6 +3168,79 @@ Ik bouw het in deze volgorde, één stap per commit:
 - [ ] **8. De Camera Monitor en de schermmuur** (het blok, samenvoegen tot een rechthoek)
 - [ ] **9. Het instelscherm van de schermmuur** (welke camera waar en hoe groot)
 - [ ] **10. Live beelden op de schermmuur**
+
+### 32. Keycards in groepen in plaats van niveaus (25 oktober)
+
+Jouw wens: "keycards groups ipv levels, je kunt groepen toevoegen en aan die groep keycards adden zodat je in code
+vb kunt doen card.group == 'security' zo kunnen alle kaarten van groep security hier in."
+
+**Jouw antwoorden** (25 oktober):
+- Een kaart kan in **meerdere groepen** zitten, en je kunt **groepen in groepen** steken. In code wordt het daarom
+  `card.in_group('security')` en niet `card.group == 'security'` (een kaart kan in meer dan één groep zitten): true als
+  de kaart in "security" zit, of in een groep die (ergens) in "security" zit.
+- **Hacken**: de hacker kiest een groep. Hoe moeilijk dat is, stel je niet in: het stroomcircuit is voortaan altijd zo
+  moeilijk als niveau 5 nu (8 x 6, 40 seconden, 3 ALARM-punten).
+- **Kleur**: kies je per kaart bij het schrijven, los van de groep.
+- **Scherm**: in de app Keycards. Links je groepen, rechts de kaarten van de gekozen groep, en je sleept een kaart op een
+  groep om hem erin te zetten.
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Niveaus zijn helemaal weg.** Schrijf je toch `card.level` (of `card.group`), dan zegt de controle: "card.level is
+  gone: keycards are in groups now. Use card.in_group("security")".
+- `card.in_group(...)` is alleen true voor een **geldige** kaart (van dit netwerk en niet geblokkeerd). Zo is
+  `if card.in_group("security"): accept()` op zichzelf al veilig; `card.valid` blijft gewoon bestaan. Hoofdletters maken
+  niet uit ("Security" = "security"), net als bij de namen van je apparaten. Het werkt onder `when keycard(...)` (en in
+  een def die je daar gebruikt), zoals de andere card.-gegevens. Tussen de haakjes mag ook een naam of `$"..."`.
+- **De groepen staan in de kern, niet op de kaart.** Zet je een kaart in een andere groep, dan geldt dat meteen, ook als
+  iemand hem al bij zich heeft. Op de kaart zelf staan zijn naam, nummer, kleur en netwerk.
+- **Groepen**: een groep zit in hooguit één andere groep (een boom, zoals bij je relais), zonder rondjes. Hooguit 32
+  groepen per netwerk, een naam van hooguit 24 tekens zonder aanhalingstekens. Gooi je een groep weg, dan schuift wat
+  erin zat (groepen en kaarten) één laag omhoog, net als bij je relais: `card.in_group("staff")` geeft dan voor die
+  kaarten nog hetzelfde antwoord. Hernoemen kan; de app zegt dan in het oranje "Change it in your diagrams too."
+- **Acht kleuren**: wit, groen, blauw, paars en goud (de kleuren van nu), en nieuw rood, oranje en zwart.
+- **Oude werelden**: een kaart met een niveau houdt zijn kleur (niveau 1 = wit ... niveau 5 = goud) en komt in de groep
+  "level 1" tot en met "level 5". Die groepen zitten in elkaar ("level 5" in "level 4" in "level 3" ...), dus
+  `card.in_group("level 3")` doet precies wat `card.level >= 3` deed. Een oud diagram met `card.level` werkt pas weer
+  als je het aanpast: tot dan blijft de deur dicht, en het logboek zegt waarom.
+- **De app Keycards** wordt breder. Bovenaan schrijf je een kaart: naam, kleur (acht vakjes) en Write card; de nieuwe
+  kaart komt in de groep die links gekozen is. Links staan "All cards", je groepen als boom en "No group". Rechts staan
+  de kaarten van wat links gekozen is (bij "All cards" met hun groepen erachter), elk met Block/Unblock, en in een
+  groep ook Remove (uit die groep). Sleep een groep op een groep om hem erin te steken, of op "All cards" om hem
+  bovenaan te zetten. Onder de groepen: New, Rename en Delete (Delete vraagt eerst "Sure?"). Wie een kaart schreef, zie
+  je als je er met de muis op staat.
+- **Het logboek** toont de groepen van een gelezen kaart: "Senne used card #1001 (security, lab) at Lab door".
+- **Hacken**: de hacker ziet de namen van de groepen van dat netwerk. Heeft het netwerk geen groepen, dan maakt hij een
+  kaart zonder groep (`card.valid` is dan true, `card.in_group(...)` false). In de config `[bypass]` wordt elk rijtje
+  van vijf (per niveau) één getal.
+- **Zakkenrollen**: de kaart die je pakt, toont zijn naam en kleur (geen niveau meer).
+- **Een SSD die verbrandt** neemt de groepen mee, net als de kaarten; een backup en een opgepakte kern bewaren ze.
+
+Ik bouw het in deze volgorde, één stap per commit:
+
+- [x] **1. Groepen en kleuren in de kern, `card.in_group(...)` in de taal, en hacken met een groep** (het hacken zat
+      eerst in een aparte stap, maar zonder niveaus kon het niet blijven zoals het was). **De kern** (`LogicStore`): elke
+      kaart heeft een kleur (1-8) en de groepen waar hij zelf in zit; de groepen zijn een boom (per groep: in welke groep
+      hij zit). Groepen maken, in een andere groep steken (geen rondjes), hernoemen (de kaarten en groepen erin gaan mee),
+      weggooien (wat erin zat schuift een laag omhoog), en een kaart in of uit een groep zetten. Opslaan, een backup, een
+      verbrande SSD en een opgepakte kern nemen de groepen mee. **De kaart zelf** (het item) heeft een kleur in plaats van
+      een niveau, en de tooltip zegt "Card #1001". Drie nieuwe plaatjes (rood, oranje, zwart; de vijf oude zijn hetzelfde
+      gebleven). **De taal**: `card.in_group("security")` (ook met `'security'`, een naam of `$"..."` tussen de haakjes)
+      werkt onder `when keycard(...)` in een serverdiagram, en is alleen true voor een geldige kaart. `card.level` en
+      `card.group` geven de foutmelding met `card.in_group`. Ctrl+Spatie stelt `card.in_group("...")` voor, en tussen de
+      aanhalingstekens je groepen; de Help en het voorbeeld van een nieuw diagram (`if card.valid:`) zijn bijgewerkt.
+      **Het logboek**: "Senne used card #1001 (security, lab) at Lab door", of "(no group)", of "(not valid here)". **Oude
+      werelden**: kaarten met een niveau komen in "level 1" tot het hoogste niveau (in elkaar), en houden hun kleur.
+      **Hacken**: de hacker ziet de groepen van dat netwerk als een boom (bij meer dan 7 scrollt hij; toetsen 1-9) en kiest
+      er één; heeft het netwerk geen groepen, dan "A card without a group". De server kijkt na of die groep bestaat. Het
+      raster is altijd 8 x 6 met 40 seconden en 3 ALARM-punten; in `[bypass]` staat nu één getal per instelling. Bovenaan
+      het raster staat "SECURITY CARD", en bij succes "ACCESS: the reader read a card of "security"." **Zakkenrollen**: de
+      kaart die je pakt, toont zijn kleur, naam en nummer. **De app Keycards** kiest in deze stap alleen een kleur
+      (Colour - 3 +) in plaats van een niveau; de groepen komen in stap 2. Vier nieuwe tests (`KeycardGroupGameTests`: de
+      boom, opslaan en backups, oude niveaus, en de taal); `logic_keycard_opens_vault` gebruikt nu groepen in groepen
+      ("night shift" in "security" in "staff") en ook een geblokkeerde kaart, en de hacktests kiezen een groep. 301 tests:
+      298 groen, de 3 rode van hoofdstuk 14 stap 2.
+- [ ] **2. De app Keycards met groepen links**
+- [ ] **3. Showcase, screenshots en LEESMIJ**
 
 ---
 

@@ -2,6 +2,7 @@ package com.senne.imttech.client.pickpocket;
 
 import com.mojang.math.Axis;
 import com.senne.imttech.client.hud.HudStyle;
+import com.senne.imttech.logic.KeycardData;
 import com.senne.imttech.network.PocketPayload;
 import com.senne.imttech.registry.ModSounds;
 import java.util.ArrayList;
@@ -84,9 +85,10 @@ public class PocketScreen extends Screen {
         final int w;
         final int h;
         final float angle;
-        /** Een kaart die je eruit hebt, ligt open: zijn naam en niveau. */
+        /** Een kaart die je eruit hebt, ligt open: zijn naam, kleur (0 = een lege kaart) en nummer. */
         String label = "";
-        int level;
+        int colour;
+        int number;
         boolean open;
 
         Thing(int card, ItemStack junk, float x, float y, int w, int h, float angle) {
@@ -294,30 +296,19 @@ public class PocketScreen extends Screen {
             g.fill(-hw + 1, -hh + 6, hw - 1, -hh + 10, HudStyle.argb(255, 0x3FA9FF));
             g.fill(hw - 12, hh - 9, hw - 4, hh - 4, HudStyle.argb(255, 0xC9A03A));
         } else {
-            // Open, groot in je hand: de kleur van zijn niveau, zijn naam en zijn niveau.
+            // Open, groot in je hand: zijn kleur, zijn naam en zijn nummer.
             int bw = 66;
             int bh = 38;
-            int colour = levelColour(thing.level);
+            int colour = thing.colour > 0 ? KeycardData.rgb(thing.colour) : 0x9AA4AC;
             g.fill(-bw - 1, -bh / 2 - 1, bw + 1, bh / 2 + 1, HudStyle.argb(255, 0x0B1A2C));
             g.fill(-bw, -bh / 2, bw, bh / 2, HudStyle.argb(255, colour));
             g.fill(-bw, -bh / 2 + 7, bw, -bh / 2 + 11, HudStyle.argb(255, 0x0B1A2C));
             String name = font.plainSubstrByWidth(thing.label, bw * 2 - 8);
             g.drawString(font, name, -bw + 4, -1, HudStyle.argb(255, 0x0B1A2C), false);
-            String level = thing.level > 0 ? "LEVEL " + thing.level : "BLANK";
-            g.drawString(font, level, -bw + 4, bh / 2 - 10, HudStyle.argb(255, 0x0B1A2C), false);
+            String bottom = thing.colour > 0 ? "#" + thing.number : "BLANK";
+            g.drawString(font, bottom, -bw + 4, bh / 2 - 10, HudStyle.argb(255, 0x0B1A2C), false);
         }
         g.pose().popPose();
-    }
-
-    private static int levelColour(int level) {
-        return switch (level) {
-            case 1 -> 0xE8EEF2;
-            case 2 -> 0x5CFF9D;
-            case 3 -> 0x3FA9FF;
-            case 4 -> 0xC27BFF;
-            case 5 -> 0xFFD447;
-            default -> 0x9AA4AC;
-        };
     }
 
     /** Een stippellijn rond een vak. */
@@ -468,7 +459,8 @@ public class PocketScreen extends Screen {
         if (how.equals("taken") && pulled != null) {
             pulled.open = true;
             pulled.label = args.getString("name");
-            pulled.level = args.getInt("level");
+            pulled.colour = args.getInt("colour");
+            pulled.number = args.getInt("number");
             pulled.x = POCKET_W / 2f;
             pulled.y = -HAND_H / 2f;
         }

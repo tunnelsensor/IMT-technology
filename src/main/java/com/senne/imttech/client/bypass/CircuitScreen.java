@@ -6,6 +6,7 @@ import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.network.BypassPayload;
 import com.senne.imttech.registry.ModSounds;
+import java.util.List;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,13 +22,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * Het stroomcircuit van een keycardlezer (hoofdstuk 12, jouw keuze): de minigame van de Bypass Kit.
  * <pre>
- *  BYPASS &gt; LAB DOOR          LEVEL 3 CARD          0:42
+ *  BYPASS &gt; LAB DOOR          SECURITY CARD          0:42
  *              !
  *   CARD ==[=+][ | ][+==][ + ]
  *          [ +][==+][ |  ][==+]== ACCEPT
  * </pre>
- * Eerst kies je welk niveau kaart je namaakt (1-5; hoger = groter raster en minder tijd). Dan draai je
- * de stukjes: linksklik = rechtsom, rechtsklik = linksom. Wat aan CARD vastzit licht blauw op. Komt het
+ * Eerst kies je van welke groep van dat netwerk je een kaart namaakt (25 oktober; het raster is altijd
+ * even groot en je hebt altijd even veel tijd, zoals het oude niveau 5). Dan draai je de stukjes: linksklik = rechtsom, rechtsklik = linksom. Wat aan CARD vastzit licht blauw op. Komt het
  * signaal bij ACCEPT zonder ALARM te raken, dan stuurt dit scherm de stand naar de server, die het zelf
  * narekent (zie Bypass). Raakt het signaal ALARM, dan heb je {@link ImtConfig.Bypass#ALARM_GRACE_TICKS}
  * ticks om dat stukje weg te draaien.
@@ -49,15 +50,25 @@ public class CircuitScreen extends Screen implements BypassScreen {
     private static final String HELP_ONE = "Lead the card signal to ACCEPT. Don't let it touch ALARM.";
     private static final String HELP_TWO = "Left click: turn right    Right click: turn left    Esc: stop";
 
-    /** Voor de showcase: het scherm speelt zichzelf (kiest niveau 3 en draait de goede stukjes). */
+    /** Voor de showcase: het scherm speelt zichzelf (kiest {@link #autoGroup} en draait de goede stukjes). */
     public static boolean autoPlay;
+    /** Welke groep het scherm dan kiest (bestaat hij niet, dan de eerste). */
+    public static String autoGroup = "";
+
+    /** Een groep van het netwerk van de lezer, en hoe diep hij in andere groepen zit (0 = bovenaan). */
+    public record Group(String name, int depth) {}
 
     private final BlockPos reader;
     private final String readerName;
     private final long seed;
+    /** De groepen waaruit je kiest; leeg = het netwerk heeft geen groepen (dan een kaart zonder groep). */
+    private final List<Group> groups;
 
     private Phase phase = Phase.CHOOSE;
-    private int level;
+    /** De groep van de kaart die je namaakt ("" = zonder groep). */
+    private String group = "";
+    /** Zoveel groepen staan er boven de eerste die je ziet (bij veel groepen scroll je). */
+    private int scroll;
     private CircuitPuzzle puzzle;
     private int[] rotations;
     private CircuitPuzzle.Signal signal;
@@ -76,11 +87,12 @@ public class CircuitScreen extends Screen implements BypassScreen {
     private boolean finished;
     private int autoTicks;
 
-    public CircuitScreen(BlockPos reader, String readerName, long seed) {
+    public CircuitScreen(BlockPos reader, String readerName, long seed, List<Group> groups) {
         super(Component.literal(readerName));
         this.reader = reader;
         this.readerName = readerName;
         this.seed = seed;
+        this.groups = List.copyOf(groups);
     }
 
     @Override
@@ -98,82 +110,100 @@ public class CircuitScreen extends Screen implements BypassScreen {
         HudStyle.dim(g, width, height);
     }
 
-    // ================================================================ Een niveau kiezen
+    // ================================================================ Een groep kiezen
 
     private static final int CHOOSE_W = 300;
-    private static final int CHOOSE_H = 60 + 5 * 20 + 46;
     private static final int ROW_H = 20;
+    /** Zoveel groepen passen er onder elkaar; zijn er meer, dan scroll je. */
+    private static final int MAX_ROWS = 7;
+
+    /** Zoveel regels staan er in de lijst: de groepen, of één regel "zonder groep". */
+    private int rowCount() {
+        return Math.max(1, groups.size());
+    }
+
+    private int visibleRows() {
+        return Math.min(MAX_ROWS, rowCount());
+    }
+
+    private int chooseHeight() {
+        return 60 + visibleRows() * ROW_H + 46;
+    }
 
     private int chooseLeft() {
         return (width - CHOOSE_W) / 2;
     }
 
     private int chooseTop() {
-        return (height - CHOOSE_H) / 2;
+        return (height - chooseHeight()) / 2;
     }
 
+    /** Waar regel {@code index} van wat je ziet staat (0 = de bovenste die je ziet). */
     private int rowY(int index) {
         return chooseTop() + 50 + index * ROW_H;
     }
 
-    /** Dit niveau gekozen: het raster maken, de klok starten, en de server laten weten dat hij loopt. */
-    private void choose(int chosen) {
-        level = CircuitPuzzle.clampLevel(chosen);
-        puzzle = CircuitPuzzle.generate(seed, level);
+    /** Regel {@code row} van de lijst gekozen: het raster maken, de klok starten, en de server laten weten dat hij loopt. */
+    private void choose(int row) {
+        group = groups.isEmpty() ? "" : groups.get(Math.max(0, Math.min(groups.size() - 1, row))).name();
+        puzzle = CircuitPuzzle.generate(seed);
         rotations = puzzle.start();
         signal = puzzle.signal(rotations);
         turnFrom = new float[puzzle.cells()];
         turnStart = new long[puzzle.cells()];
-        ticksLeft = CircuitPuzzle.circuitTicks(level);
+        ticksLeft = CircuitPuzzle.circuitTicks();
         phase = Phase.PLAY;
         CompoundTag args = new CompoundTag();
-        args.putInt("level", level);
-        PacketDistributor.sendToServer(new BypassPayload(reader, "level", args));
+        args.putString("group", group);
+        PacketDistributor.sendToServer(new BypassPayload(reader, "group", args));
         play(SoundEvents.IRON_TRAPDOOR_OPEN, 1.5f, 0.5f);
+    }
+
+    /** Wat bovenaan het raster staat: "SECURITY CARD", of "CARD WITHOUT A GROUP". */
+    private String cardTitle() {
+        return group.isEmpty() ? "CARD WITHOUT A GROUP" : group.toUpperCase(Locale.ROOT) + " CARD";
     }
 
     private void renderChoose(GuiGraphics g, int mouseX, int mouseY) {
         int x = chooseLeft();
         int y = chooseTop();
-        int h = CHOOSE_H;
+        int h = chooseHeight();
         g.fill(x, y, x + CHOOSE_W, y + h, HudStyle.argb(240, PANEL));
         HudStyle.brackets(g, x, y, x + CHOOSE_W, y + h, 8, HudStyle.argb(255, HudStyle.CYAN));
         g.drawString(font, "BYPASS > " + readerName.toUpperCase(Locale.ROOT), x + 10, y + 9, HudStyle.argb(255, HudStyle.CYAN), false);
         g.drawString(font, "You opened the reader. Which card do you fake?", x + 10, y + 24, HudStyle.argb(255, HudStyle.WHITE), false);
-        g.drawString(font, "Higher = more wires, less time.", x + 10, y + 35, HudStyle.argb(255, 0x7F93A0), false);
-        for (int i = 0; i < 5; i++) {
+        int alarms = Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS);
+        String size = Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS) + " x " + Math.round(ImtConfig.Bypass.CIRCUIT_ROWS) + " wires, "
+                + com.senne.imttech.config.Numbers.text(CircuitPuzzle.circuitSeconds()) + " s, " + alarms + (alarms == 1 ? " ALARM" : " ALARMS");
+        g.drawString(font, "Pick a group of this network.  " + size, x + 10, y + 35, HudStyle.argb(255, 0x7F93A0), false);
+        scroll = Math.max(0, Math.min(scroll, rowCount() - visibleRows()));
+        for (int i = 0; i < visibleRows(); i++) {
             int ry = rowY(i);
             boolean hover = mouseX >= x + 8 && mouseX < x + CHOOSE_W - 8 && mouseY >= ry && mouseY < ry + ROW_H - 2;
             g.fill(x + 8, ry, x + CHOOSE_W - 8, ry + ROW_H - 2, HudStyle.argb(255, hover ? TILE_HOVER : TILE));
-            int lvl = i + 1;
-            int colour = levelColour(lvl);
-            g.fill(x + 8, ry, x + 11, ry + ROW_H - 2, HudStyle.argb(255, colour));
-            g.drawString(font, "LEVEL " + lvl, x + 16, ry + 5, HudStyle.argb(255, colour), false);
-            String size = Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS[i]) + " x " + Math.round(ImtConfig.Bypass.CIRCUIT_ROWS[i]);
-            g.drawString(font, size, x + 80, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
-            g.drawString(font, com.senne.imttech.config.Numbers.text(CircuitPuzzle.circuitSeconds(lvl)) + " s", x + 128, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
-            int alarms = Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS[i]);
-            g.drawString(font, alarms + (alarms == 1 ? " ALARM" : " ALARMS"), x + 168, ry + 5, HudStyle.argb(255, HudStyle.RED), false);
-            for (int pip = 0; pip < 5; pip++) {
-                g.fill(x + 254 + pip * 6, ry + 6, x + 258 + pip * 6, ry + 10,
-                        HudStyle.argb(pip < lvl ? 255 : 70, colour));
+            g.fill(x + 8, ry, x + 11, ry + ROW_H - 2, HudStyle.argb(255, HudStyle.CYAN));
+            int number = scroll + i + 1;
+            if (number <= 9) {
+                g.drawString(font, String.valueOf(number), x + 16, ry + 5, HudStyle.argb(255, 0x7F93A0), false);
+            }
+            if (groups.isEmpty()) {
+                g.drawString(font, "A card without a group", x + 28, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
+                g.drawString(font, "(this network has no groups)", x + 150, ry + 5, HudStyle.argb(255, 0x7F93A0), false);
+            } else {
+                Group row = groups.get(scroll + i);
+                int indent = Math.min(row.depth(), 6) * 10;
+                String name = font.plainSubstrByWidth(row.name(), CHOOSE_W - 50 - indent);
+                g.drawString(font, (row.depth() > 0 ? "> " : "") + name, x + 28 + indent, ry + 5, HudStyle.argb(255, HudStyle.WHITE), false);
             }
         }
-        int fy = rowY(5) + 6;
+        if (rowCount() > visibleRows()) {
+            String more = (scroll + 1) + "-" + (scroll + visibleRows()) + " of " + rowCount() + " (scroll)";
+            g.drawString(font, more, x + CHOOSE_W - 10 - font.width(more), y + 9, HudStyle.argb(255, 0x7F93A0), false);
+        }
+        int fy = rowY(visibleRows()) + 6;
         g.drawString(font, "The reader asks the server: is this card valid?", x + 10, fy, HudStyle.argb(255, 0x7F93A0), false);
         g.drawString(font, "Rewire it so the answer is yes.", x + 10, fy + 11, HudStyle.argb(255, 0x7F93A0), false);
-        g.drawString(font, "1-5 or click: choose     Esc: stop", x + 10, fy + 25, HudStyle.argb(255, HudStyle.WHITE), false);
-    }
-
-    /** De kleur van een kaart van dit niveau (dezelfde als de keycards: wit, groen, blauw, paars, goud). */
-    private static int levelColour(int level) {
-        return switch (level) {
-            case 1 -> 0xE8EEF2;
-            case 2 -> 0x5CFF9D;
-            case 3 -> 0x3FA9FF;
-            case 4 -> 0xC27BFF;
-            default -> 0xFFD447;
-        };
+        g.drawString(font, "1-9 or click: choose     Esc: stop", x + 10, fy + 25, HudStyle.argb(255, HudStyle.WHITE), false);
     }
 
     // ================================================================ Het raster
@@ -243,8 +273,8 @@ public class CircuitScreen extends Screen implements BypassScreen {
 
         // Bovenaan: welke lezer, welke kaart, hoeveel tijd.
         g.drawString(font, "BYPASS > " + readerName.toUpperCase(Locale.ROOT), px0 + 8, py0 + 7, HudStyle.argb(255, HudStyle.CYAN), false);
-        String card = "LEVEL " + level + " CARD";
-        g.drawString(font, card, (px0 + px1 - font.width(card)) / 2, py0 + 7, HudStyle.argb(255, levelColour(level)), false);
+        String card = cardTitle();
+        g.drawString(font, card, (px0 + px1 - font.width(card)) / 2, py0 + 7, HudStyle.argb(255, HudStyle.WHITE), false);
         int seconds = (Math.max(0, ticksLeft) + 19) / 20;
         String clock = (seconds / 60) + ":" + String.format(Locale.ROOT, "%02d", seconds % 60);
         boolean hurry = seconds <= 10 && phase == Phase.PLAY;
@@ -375,7 +405,8 @@ public class CircuitScreen extends Screen implements BypassScreen {
 
     private String[] resultText(String how) {
         return switch (how) {
-            case "ok" -> new String[] {"ACCESS: the reader read a level " + level + " card.",
+            case "ok" -> new String[] {group.isEmpty() ? "ACCESS: the reader read a card without a group."
+                    : "ACCESS: the reader read a card of \"" + group + "\".",
                     "Its server now decides what happens."};
             case "alarm" -> new String[] {"ALARM! The reader caught you.", "The owner is warned, the security hunts you."};
             default -> new String[] {"TOO SLOW: the reader raised the alarm.", "The owner is warned, the security hunts you."};
@@ -397,10 +428,10 @@ public class CircuitScreen extends Screen implements BypassScreen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (phase == Phase.CHOOSE) {
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < visibleRows(); i++) {
                 int ry = rowY(i);
                 if (mouseX >= chooseLeft() + 8 && mouseX < chooseLeft() + CHOOSE_W - 8 && mouseY >= ry && mouseY < ry + ROW_H - 2) {
-                    choose(i + 1);
+                    choose(scroll + i);
                     return true;
                 }
             }
@@ -418,11 +449,30 @@ public class CircuitScreen extends Screen implements BypassScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (phase == Phase.CHOOSE && keyCode >= 49 && keyCode <= 53) { // de toetsen 1 tot 5
-            choose(keyCode - 48);
+        if (phase == Phase.CHOOSE && keyCode >= 49 && keyCode <= 57 && keyCode - 49 < rowCount()) { // de toetsen 1 tot 9
+            choose(keyCode - 49);
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (phase == Phase.CHOOSE) {
+            scroll = Math.max(0, Math.min(rowCount() - visibleRows(), scroll - (int) Math.signum(scrollY)));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    /** De regel van deze groep (hoofdletters maken niet uit), of 0 als hij er niet is. */
+    private int rowOf(String name) {
+        for (int i = 0; i < groups.size(); i++) {
+            if (groups.get(i).name().equalsIgnoreCase(name)) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     /** Draait een stukje een kwart (1 = rechtsom, -1 = linksom) en kijkt waar het signaal nu komt. */
@@ -459,7 +509,7 @@ public class CircuitScreen extends Screen implements BypassScreen {
         switch (phase) {
             case CHOOSE -> {
                 if (autoPlay && ++autoTicks >= 30) {
-                    choose(3);
+                    choose(rowOf(autoGroup));
                     autoTicks = 0;
                 }
             }
@@ -564,10 +614,10 @@ public class CircuitScreen extends Screen implements BypassScreen {
 
     // ================================================================ Voor de screenshot-rondleiding
 
-    /** Kiest meteen dit niveau. */
-    public void tourChoose(int chosen) {
+    /** Kiest meteen deze groep (bestaat hij niet, dan de eerste). */
+    public void tourChoose(String chosen) {
         if (phase == Phase.CHOOSE) {
-            choose(chosen);
+            choose(rowOf(chosen));
         }
     }
 

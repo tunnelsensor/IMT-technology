@@ -1536,7 +1536,7 @@ final class ShowcaseFeatures {
         });
 
         add("Hacking and pickpocketing", "Hoofdstuk 12: inbreken (in survival). In het lab van hiervoor, met de "
-                + "Bypass Kit in je hand. Eerst de keycardlezer: je kiest een kaart van niveau 3, en draait de stukjes "
+                + "Bypass Kit in je hand. Eerst de keycardlezer: je kiest een kaart van de groep lab, en draait de stukjes "
                 + "draad tot het blauwe signaal van CARD naar ACCEPT loopt (raakt het even een ALARM, dan knippert "
                 + "alles rood). Het pad wordt groen, de lezer leest een nagemaakte kaart, en de deur gaat 3 seconden "
                 + "open. Dan het codepaneel: je veegt poeder over de toetsen (lichtgele afdrukken op 1, 2, 3 en 4) en "
@@ -1558,7 +1558,10 @@ final class ShowcaseFeatures {
                     .stand(0, LOGIC_LAB.getX() + 1.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 9.5, 180, 15)
                     .lookAt(10, Vec3.atCenterOf(reader))
                     .pause(30)
-                    .step(0, () -> com.senne.imttech.client.bypass.CircuitScreen.autoPlay = true)
+                    .step(0, () -> {
+                        com.senne.imttech.client.bypass.CircuitScreen.autoGroup = "lab";
+                        com.senne.imttech.client.bypass.CircuitScreen.autoPlay = true;
+                    })
                     .onServer(0, player -> com.senne.imttech.bypass.Bypass.start(player, reader, InteractionHand.MAIN_HAND))
                     .pause(250)
                     .step(0, () -> com.senne.imttech.client.bypass.CircuitScreen.autoPlay = false)
@@ -2345,13 +2348,13 @@ final class ShowcaseFeatures {
 
     /** Het diagram van het lab, zoals je het in de app Logic ziet. */
     private static final String LAB_CODE = """
-            # The lab door: a level 3 card (or the code 7777) opens it for 3 seconds
+            # The lab door: a card of the group lab (or the code 7777) opens it for 3 seconds
             def open_door():
                 accept()
                 pulse("Lab door lock", 3)
 
             when keycard("Lab door"):
-                if card.valid and card.level >= 3:
+                if card.in_group("lab"):
                     open_door()
                 else:
                     deny()
@@ -2462,9 +2465,12 @@ final class ShowcaseFeatures {
         player.setData(com.senne.imttech.registry.ModAttachments.RELAYS, relays);
         placeInput(level, lab.offset(1, 1, 7), com.senne.imttech.registry.ModBlocks.KEYCARD_READER.get().defaultBlockState(), "Lab door");
         placeInput(level, lab.offset(5, 1, 7), com.senne.imttech.registry.ModBlocks.CODE_PANEL.get().defaultBlockState(), "Lights panel");
-        // Het diagram, en een kaart van niveau 3 in je hand.
+        // Het diagram, en de keycard-groepen van het lab (25 oktober): "lab" en "guest" zitten in "staff".
         if (level.getBlockEntity(lab) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
             com.senne.imttech.logic.LogicDevices.refresh(level, core, player);
+            core.logic().addGroup("staff", "");
+            core.logic().addGroup("lab", "staff");
+            core.logic().addGroup("guest", "staff");
             core.logic().remove("Lab");
             var graph = com.senne.imttech.logic.program.GraphConverter.toGraph(
                     com.senne.imttech.logic.program.ScriptParser.parse(LAB_CODE), null);
@@ -2831,7 +2837,10 @@ final class ShowcaseFeatures {
                 rack.update(level, rackPos, level.getBlockState(rackPos));
             }
         }
-        var card = core.logic().issue(good ? "Lab access" : "Lost card", 3, player.getGameProfile().getName());
+        // De groepen van het lab (25 oktober): "lab" zit in "staff". Bestaan ze al, dan gebeurt er niets.
+        core.logic().addGroup("staff", "");
+        core.logic().addGroup("lab", "staff");
+        var card = core.logic().issue(good ? "Lab access" : "Lost card", 3, player.getGameProfile().getName(), "lab");
         if (card == null) {
             return;
         }

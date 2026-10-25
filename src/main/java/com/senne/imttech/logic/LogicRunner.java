@@ -73,7 +73,22 @@ public final class LogicRunner {
      */
     public record Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
                           boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
-                          com.senne.imttech.training.Training.@Nullable Info training) {
+                          com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups) {
+        /**
+         * {@code cardGroups} (25 oktober): de groepen waar de kaart zelf in zit, zoals de kern ze kent toen hij gelezen
+         * werd (een nagemaakte kaart: de groep die de hacker koos). Leeg voor een ongeldige kaart.
+         */
+        public Context {
+            cardGroups = List.copyOf(cardGroups);
+        }
+
+        /** Zonder kaartgroepen. */
+        public Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
+                       boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
+                       com.senne.imttech.training.Training.@Nullable Info training) {
+            this(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training, List.of());
+        }
+
         /** Zonder training (alles behalve de trainingstriggers van hoofdstuk 26). */
         public Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
                        boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code) {
@@ -418,7 +433,6 @@ public final class LogicRunner {
             @Override
             public Object value(String variable) {
                 return switch (variable) {
-                    case "card.level" -> (double) (context.card() == null ? 0 : context.card().level());
                     case "card.number" -> (double) (context.card() == null ? 0 : context.card().number());
                     case "card.valid" -> context.cardValid();
                     case "card.name" -> context.card() == null ? "" : context.card().label();
@@ -457,6 +471,15 @@ public final class LogicRunner {
             @Override
             public Object active(String name) {
                 return (double) BotLink.active(level, core, name);
+            }
+
+            /**
+             * {@code card.in_group("security")} (25 oktober): een geldige kaart die zelf in die groep zit, of in een groep
+             * die (ergens) in die groep zit. Hoofdletters maken niet uit.
+             */
+            @Override
+            public boolean inGroup(String group) {
+                return context.cardValid() && core.logic().isInsideAny(context.cardGroups(), group);
             }
         };
     }

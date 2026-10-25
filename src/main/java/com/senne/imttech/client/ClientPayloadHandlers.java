@@ -85,8 +85,16 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         var args = payload.args();
         switch (payload.op()) {
-            case "reader" -> mc.setScreen(new com.senne.imttech.client.bypass.CircuitScreen(payload.pos(),
-                    args.getString("name"), args.getLong("seed")));
+            case "reader" -> {
+                // De groepen van het netwerk van de lezer (25 oktober), als een boom.
+                java.util.List<com.senne.imttech.client.bypass.CircuitScreen.Group> groups = new java.util.ArrayList<>();
+                for (net.minecraft.nbt.Tag element : args.getList("groups", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                    net.minecraft.nbt.CompoundTag row = (net.minecraft.nbt.CompoundTag) element;
+                    groups.add(new com.senne.imttech.client.bypass.CircuitScreen.Group(row.getString("n"), row.getInt("d")));
+                }
+                mc.setScreen(new com.senne.imttech.client.bypass.CircuitScreen(payload.pos(), args.getString("name"),
+                        args.getLong("seed"), groups));
+            }
             case "panel" -> mc.setScreen(new com.senne.imttech.client.bypass.FingerprintScreen(payload.pos(),
                     args.getString("name"), args.getInt("length"), args.getIntArray("prints"), args.getInt("tries")));
             case "guess" -> {

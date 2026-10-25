@@ -18,11 +18,11 @@ import net.minecraft.world.phys.BlockHitResult;
 
 /**
  * De keycardlezer (jouw wens, 7 oktober): een kastje aan de muur. Rechtsklik met een keycard en de
- * server van je beveiligingskern krijgt "kaart gelezen" (met het niveau, het nummer en of de kaart
- * geldig is). Wat er dan gebeurt (een deur open, een alarm), staat in je diagram:
+ * server van je beveiligingskern krijgt "kaart gelezen" (met het nummer, of de kaart geldig is, en
+ * in welke groepen hij zit). Wat er dan gebeurt (een deur open, een alarm), staat in je diagram:
  * <pre>
  * when keycard("Lab door"):
- *     if card.valid and card.level &gt;= 3:
+ *     if card.in_group("lab"):
  *         accept()
  * </pre>
  * Ook een lege kaart of een kaart van een ander netwerk lees je: dan is {@code card.valid} false, en

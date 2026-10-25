@@ -2036,14 +2036,15 @@ public final class VisualCheck {
                 if (level.getBlockEntity(reader.east()) instanceof com.senne.imttech.logic.InputDeviceBlockEntity be) {
                     be.setName("Front door");
                 }
-                // Een lege kaart en vijf beschreven kaarten (één per niveau) in de hotbar.
+                // Een lege kaart en acht beschreven kaarten (één per kleur) in de hotbar.
                 player.getInventory().clearContent();
                 player.getInventory().setItem(0, new ItemStack(ModItems.KEYCARD.get(), 3));
-                for (int lvl = 1; lvl <= 5; lvl++) {
+                String[] labels = {"Visitor", "Garden", "Lab access", "Night guard", "Boss", "Security", "Workshop", "Vault"};
+                for (int colour = 1; colour <= 8; colour++) {
                     ItemStack card = new ItemStack(ModItems.KEYCARD.get());
                     com.senne.imttech.logic.KeycardItem.write(card, new com.senne.imttech.logic.KeycardData(
-                            "10.0.0.1", "dev-sec", 1000 + lvl, lvl, "Level " + lvl));
-                    player.getInventory().setItem(lvl, card);
+                            "10.0.0.1", "dev-sec", 1000 + colour, colour, labels[colour - 1]));
+                    player.getInventory().setItem(colour, card);
                 }
                 player.getInventory().setItem(6, new ItemStack(ModItems.KEYCARD_READER.get()));
                 player.getInventory().selected = 3;
@@ -2082,7 +2083,8 @@ public final class VisualCheck {
                 for (String[] card : new String[][] {{"Lab access", "3"}, {"Guest", "1"}, {"Lotte", "5"}}) {
                     net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
                     args.putString("label", card[0]);
-                    args.putInt("level", Integer.parseInt(card[1]));
+                    args.putInt("colour", Integer.parseInt(card[1]));
+                    args.putString("group", "");
                     com.senne.imttech.security.os.SecurityOs.handleAction(player,
                             new com.senne.imttech.network.OsActionPayload(core, "card_write", args));
                 }
@@ -2219,13 +2221,13 @@ public final class VisualCheck {
             BlockPos core = new BlockPos(140, -60, -80);
             BlockPos rack = new BlockPos(136, -60, -78);
             String code = """
-                    # The lab: level 3 or higher opens the vault for 3 seconds
+                    # The lab: a card of the group lab opens the vault for 3 seconds
                     def open_vault():
                         accept()
                         pulse("Vault door", 3)
 
                     when keycard("Lab door"):
-                        if card.valid and card.level >= 3:
+                        if card.in_group("lab"):
                             open_vault()
                         else:
                             deny()
@@ -2668,7 +2670,7 @@ public final class VisualCheck {
         }
 
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
-        // stroomcircuit: een niveau kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
+        // stroomcircuit: een groep kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
         // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
         if (want("bypass")) {
             BlockPos lab = BYPASS_LAB;
@@ -2678,8 +2680,8 @@ public final class VisualCheck {
             t.shot(60, "bp01_reader_and_kit");
             t.onServer(0, player -> com.senne.imttech.bypass.Bypass.start(player, reader,
                     net.minecraft.world.InteractionHand.MAIN_HAND));
-            t.shot(10, "bp02_choose_level");
-            t.step(0, () -> circuit(screen -> screen.tourChoose(3)));
+            t.shot(10, "bp02_choose_group");
+            t.step(0, () -> circuit(screen -> screen.tourChoose("security")));
             t.shot(10, "bp03_circuit_start");
             t.step(0, () -> circuit(screen -> screen.tourSolve(-1)));
             t.shot(10, "bp04_circuit_half");
@@ -2688,15 +2690,15 @@ public final class VisualCheck {
             t.close(0);
             t.onServer(5, player -> com.senne.imttech.bypass.Bypass.start(player, reader,
                     net.minecraft.world.InteractionHand.MAIN_HAND));
-            t.step(10, () -> circuit(screen -> screen.tourChoose(5)));
-            t.shot(10, "bp06_circuit_level5");
+            t.step(10, () -> circuit(screen -> screen.tourChoose("staff")));
+            t.shot(10, "bp06_circuit_staff");
             t.step(0, () -> circuit(screen -> screen.tourSolve(1000)));
             t.shot(14, "bp07_circuit_access");
             t.close(2);
             t.shot(2, "bp08_reader_green");
             t.onServer(20, player -> com.senne.imttech.bypass.Bypass.start(player, reader,
                     net.minecraft.world.InteractionHand.MAIN_HAND));
-            t.step(10, () -> circuit(screen -> screen.tourChoose(1)));
+            t.step(10, () -> circuit(screen -> screen.tourChoose("guest")));
             t.step(5, () -> circuit(com.senne.imttech.client.bypass.CircuitScreen::tourTouchAlarm));
             t.shot(30, "bp09_circuit_caught");
             t.close(30);
@@ -3001,9 +3003,13 @@ public final class VisualCheck {
         if (level.getBlockEntity(lab) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
             core.setOwner(player);
             core.ensureSystem(level);
+            // De keycard-groepen (25 oktober): "security" zit in "staff", "guest" niet.
+            core.logic().addGroup("staff", "");
+            core.logic().addGroup("security", "staff");
+            core.logic().addGroup("guest", "");
             String code = """
                     when keycard("Lab door"):
-                        if card.valid and card.level >= 3:
+                        if card.in_group("staff"):
                             accept()
                         else:
                             deny()

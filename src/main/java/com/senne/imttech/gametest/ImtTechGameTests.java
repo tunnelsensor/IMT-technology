@@ -1259,7 +1259,7 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Keycards: op de desktop schrijf je de lege kaart in je rugzak (naam, niveau, nummer 1001). Hij is
+     * Keycards: op de desktop schrijf je de lege kaart in je rugzak (naam, kleur, groep, nummer 1001). Hij is
      * geldig in dit netwerk, niet als hij geblokkeerd is of van een ander netwerk komt. De lezer zegt
      * "kaart gelezen" in het logboek als de server draait, en wordt rood als hij niet draait.
      */
@@ -1278,9 +1278,11 @@ public final class ImtTechGameTests {
         owner.getInventory().add(new ItemStack(ModItems.KEYCARD.get(), 2));
         helper.runAfterDelay(2, () -> {
             com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            core.logic().addGroup("Lab", "");
             net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
             args.putString("label", "Lab access");
-            args.putInt("level", 3);
+            args.putInt("colour", 3);
+            args.putString("group", "lab");
             com.senne.imttech.security.os.SecurityOs.handleAction(owner,
                     new com.senne.imttech.network.OsActionPayload(coreAbs, "card_write", args));
             ItemStack written = ItemStack.EMPTY;
@@ -1294,16 +1296,17 @@ public final class ImtTechGameTests {
                 }
             }
             var data = com.senne.imttech.logic.KeycardItem.data(written);
-            if (data == null || blanks != 1 || data.number() != 1001 || data.level() != 3
-                    || !"Lab access".equals(data.label()) || !core.ip().equals(data.ip())) {
+            if (data == null || blanks != 1 || data.number() != 1001 || data.colour() != 3
+                    || !"Lab access".equals(data.label()) || !core.ip().equals(data.ip())
+                    || !core.logic().card(1001).groups().equals(java.util.List.of("Lab"))) {
                 throw new GameTestAssertException("De kaart werd niet goed geschreven: " + data + " (nog " + blanks + " leeg)");
             }
             if (!core.logic().isValid(core.ip(), data)) {
                 throw new GameTestAssertException("Een net geschreven kaart is niet geldig");
             }
             if (core.logic().isValid("10.0.0.1", data)
-                    || core.logic().isValid(core.ip(), new com.senne.imttech.logic.KeycardData(core.ip(), "x", 1001, 5, "x"))) {
-                throw new GameTestAssertException("Een kaart van een ander netwerk, of met een ander niveau, is geldig");
+                    || core.logic().isValid(core.ip(), new com.senne.imttech.logic.KeycardData(core.ip(), "x", 1002, 5, "x"))) {
+                throw new GameTestAssertException("Een kaart van een ander netwerk, of met een nummer dat niet op de lijst staat, is geldig");
             }
             net.minecraft.nbt.CompoundTag block = new net.minecraft.nbt.CompoundTag();
             block.putInt("n", 1001);

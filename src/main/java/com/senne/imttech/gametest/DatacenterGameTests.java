@@ -219,7 +219,7 @@ public final class DatacenterGameTests {
                     log("tick")
                 """;
         core.logic().put(null, new LogicProgram("Clock", true, GraphConverter.toGraph(ScriptParser.parse(code), null), code));
-        core.logic().issue("Guest", 1, "test");
+        core.logic().issue("Guest", 1, "test", "");
     }
 
     /**
@@ -261,7 +261,7 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("Het logboek zegt niet dat er iets kapot ging: " + core.log().entries());
             }
             // Een nieuwe kaart krijgt nooit het nummer van een verloren kaart.
-            var card = core.logic().issue("New", 1, "test");
+            var card = core.logic().issue("New", 1, "test", "");
             if (card == null || card.number() == 1001) {
                 throw new GameTestAssertException("Kaartnummers mogen niet terugkomen na een brand: " + card);
             }

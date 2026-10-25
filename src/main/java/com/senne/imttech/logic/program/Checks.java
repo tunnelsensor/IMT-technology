@@ -207,7 +207,7 @@ public final class Checks {
     /**
      * Mag een naam (een variabele, hoofdstuk 20) zo heten? Net als een def: letters, cijfers en _ (niet
      * met een cijfer beginnen), geen woord van de taal, geen gegeven van I.M.T (zoals
-     * {@code card.level}), en niet de naam van een van je eigen blokken. Geeft de fout, of null.
+     * {@code card.number}), en niet de naam van een van je eigen blokken. Geeft de fout, of null.
      */
     public static @Nullable String variableProblem(@Nullable String name, java.util.Collection<String> defNames) {
         if (name == null || name.isBlank()) {
@@ -216,7 +216,7 @@ public final class Checks {
         if (name.contains(".")) {
             return Expr.Variable.byName(name) != null
                     ? name + " is built-in information: you can read it, but not give it a value"
-                    : "\"" + name + "\": a name may not have a dot (only built-in information has one, like card.level)";
+                    : "\"" + name + "\": a name may not have a dot (only built-in information has one, like card.number)";
         }
         if (name.length() > MAX_NAME) {
             return "That name is too long (at most " + MAX_NAME + " letters)";

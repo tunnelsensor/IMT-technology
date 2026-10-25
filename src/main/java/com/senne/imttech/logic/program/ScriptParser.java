@@ -8,10 +8,10 @@ import org.jetbrains.annotations.Nullable;
  * Leest de code van een diagram (jouw keuze: "zoals Python") en maakt er een {@link Script} van.
  * <pre>
  * when keycard("Lab door"):
- *     if card.valid and card.level &gt;= 3:
+ *     if card.in_group("lab"):
  *         accept()
  *         pulse("Vault door", 3)
- *     elif card.level &gt;= 1:
+ *     elif card.valid:
  *         say("Someone with a low card tried the lab")
  *     else:
  *         deny()

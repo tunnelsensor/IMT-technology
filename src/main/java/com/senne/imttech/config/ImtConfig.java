@@ -1375,8 +1375,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Bypass
 
-    @Section("Breaking in with the Bypass Kit (keycard readers and code panels), and picking pockets. "
-            + "Lists: the keycard level 1 to 5 you fake")
+    @Section("Breaking in with the Bypass Kit (keycard readers and code panels), and picking pockets")
     public static final class Bypass {
         private Bypass() {}
 
@@ -1384,19 +1383,21 @@ public final class ImtConfig {
         @Tunable("How close you must stay to a reader or panel while you hack it (blocks)")
         public static double REACH = 6.0;
 
-        // ------------------------------------------------------------------------- Het stroomcircuit (keycard-lezer), per kaartniveau 1 t/m 5
-        /** Hoeveel seconden je krijgt, per niveau van de kaart die je namaakt. */
-        @Tunable(value = "Seconds you get to rewire a keycard reader for card level 1 to 5", min = 10, max = 600)
-        public static float[] CIRCUIT_SECONDS = {60.0f, 55.0f, 50.0f, 45.0f, 40.0f};
-        /** Hoe breed het raster is, per niveau... */
-        @Tunable(value = "Circuit width (columns) for card level 1 to 5", min = 2, max = 12)
-        public static float[] CIRCUIT_COLUMNS = {5.0f, 6.0f, 6.0f, 7.0f, 8.0f};
+        // ------------------------------------------------------------------------- Het stroomcircuit (keycard-lezer)
+        // Sinds 25 oktober kiest de hacker een groep in plaats van een niveau, en is het circuit altijd zo moeilijk als
+        // het oude niveau 5 (jouw keuze): daarom één getal per instelling in plaats van een rijtje van vijf.
+        /** Hoeveel seconden je krijgt. */
+        @Tunable(value = "Seconds you get to rewire a keycard reader", min = 10, max = 600)
+        public static float CIRCUIT_SECONDS = 40.0f;
+        /** Hoe breed het raster is... */
+        @Tunable(value = "Circuit width (columns)", min = 2, max = 12)
+        public static float CIRCUIT_COLUMNS = 8.0f;
         /** ...hoe hoog... */
-        @Tunable(value = "Circuit height (rows) for card level 1 to 5", min = 2, max = 12)
-        public static float[] CIRCUIT_ROWS = {4.0f, 4.0f, 5.0f, 5.0f, 6.0f};
+        @Tunable(value = "Circuit height (rows)", min = 2, max = 12)
+        public static float CIRCUIT_ROWS = 6.0f;
         /** ...en hoeveel ALARM-punten erlangs zitten. */
-        @Tunable(value = "ALARM points along the circuit for card level 1 to 5", max = 10)
-        public static float[] CIRCUIT_ALARMS = {1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
+        @Tunable(value = "ALARM points along the circuit", max = 10)
+        public static float CIRCUIT_ALARMS = 3.0f;
         /** Zo lang mag het signaal ALARM raken voordat het alarm afgaat (20 = 1 seconde). */
         @Tunable("How long the signal may touch ALARM before the alarm goes off (ticks)")
         public static float ALARM_GRACE_TICKS = 20.0f;

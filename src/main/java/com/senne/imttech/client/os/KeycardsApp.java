@@ -41,7 +41,8 @@ final class KeycardsApp {
 
     private final SecurityOsScreen screen;
     private @Nullable EditBox labelBox;
-    private int level = 1;
+    /** De kleur van de nieuwe kaart, 1 tot en met 8 (25 oktober: "kleur kies je per kaart"). */
+    private int colour = 1;
     private int scroll;
     /** Weggooien vraagt eerst "Sure?": welke kaart (of ALL_BLOCKED), en tot wanneer de vraag geldt. */
     private int pendingDelete = NONE;
@@ -125,7 +126,7 @@ final class KeycardsApp {
 
     /** Waar de knop "-" staat; het cijfer en de knop "+" komen erachter. */
     private static int minusX(Font font, SecurityOsScreen.Area a) {
-        return levelX(a) + font.width("Level") + 4;
+        return levelX(a) + font.width("Colour") + 4;
     }
 
     private static int numberX(Font font, SecurityOsScreen.Area a) {
@@ -152,10 +153,10 @@ final class KeycardsApp {
         box.render(g, mx, my, partialTick);
         // Het niveau: [-] 3 [+], met de kleur van de kaart.
         int lx = levelX(a);
-        g.drawString(font, "Level", lx, rowY + 2, HudStyle.argb(255, HudStyle.WHITE), false);
-        OsDraw.button(g, font, minusX(font, a), rowY, "-", level > 1, HudStyle.CYAN);
-        g.drawString(font, String.valueOf(level), numberX(font, a), rowY + 2, HudStyle.argb(255, levelColour(level)), false);
-        OsDraw.button(g, font, plusX(font, a), rowY, "+", level < KeycardData.MAX_LEVEL, HudStyle.CYAN);
+        g.drawString(font, "Colour", lx, rowY + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+        OsDraw.button(g, font, minusX(font, a), rowY, "-", colour > 1, HudStyle.CYAN);
+        g.drawString(font, String.valueOf(colour), numberX(font, a), rowY + 2, HudStyle.argb(255, KeycardData.rgb(colour)), false);
+        OsDraw.button(g, font, plusX(font, a), rowY, "+", colour < KeycardData.COLOURS.length, HudStyle.CYAN);
         // De knop, en of je een lege kaart bij je hebt.
         int blanks = blankCards();
         OsDraw.button(g, font, writeX(font, a), rowY, "Write card", blanks > 0, HudStyle.GREEN);
@@ -198,8 +199,7 @@ final class KeycardsApp {
         int text = blocked ? 0x5A6B72 : HudStyle.WHITE;
         g.drawString(font, "#" + card.getInt("n"), a.x() + 4, y + 1, HudStyle.argb(255, blocked ? 0x5A6B72 : HudStyle.CYAN), false);
         g.drawString(font, OsDraw.fitLeft(font, card.getString("l"), 86), a.x() + 42, y + 1, HudStyle.argb(255, text), false);
-        g.drawString(font, "L" + card.getInt("v"), a.x() + 132, y + 1,
-                HudStyle.argb(255, blocked ? 0x5A6B72 : levelColour(card.getInt("v"))), false);
+        g.fill(a.x() + 132, y + 1, a.x() + 140, y + 8, HudStyle.argb(255, blocked ? 0x5A6B72 : KeycardData.rgb(card.getInt("c"))));
         String label = blocked ? "Unblock" : "Block";
         int bw = OsDraw.buttonWidth(font, label);
         OsDraw.button(g, font, a.x() + a.w() - bw - 3, y - 1, label, true, blocked ? HudStyle.GREEN : HudStyle.RED);
@@ -219,17 +219,6 @@ final class KeycardsApp {
         }
     }
 
-    /** De kleur van een kaart van dit niveau: wit, groen, blauw, paars, goud (zoals het item). */
-    static int levelColour(int level) {
-        return switch (level) {
-            case 2 -> 0x5BE37D;
-            case 3 -> 0x4FA8FF;
-            case 4 -> 0xC27BFF;
-            case 5 -> 0xFFC93C;
-            default -> 0xE8EEF2;
-        };
-    }
-
     // ================================================================ Muis en toetsen
 
     void mouseClicked(Font font, SecurityOsScreen.Area a, int mx, int my) {
@@ -244,11 +233,11 @@ final class KeycardsApp {
             return;
         }
         if (OsDraw.inside(mx, my, minusX(font, a), rowY, OsDraw.buttonWidth(font, "-"), OsDraw.BUTTON_H)) {
-            level = Math.max(1, level - 1);
+            colour = Math.max(1, colour - 1);
             return;
         }
         if (OsDraw.inside(mx, my, plusX(font, a), rowY, OsDraw.buttonWidth(font, "+"), OsDraw.BUTTON_H)) {
-            level = Math.min(KeycardData.MAX_LEVEL, level + 1);
+            colour = Math.min(KeycardData.COLOURS.length, colour + 1);
             return;
         }
         if (OsDraw.inside(mx, my, writeX(font, a), rowY, OsDraw.buttonWidth(font, "Write card"), OsDraw.BUTTON_H)) {
@@ -347,7 +336,8 @@ final class KeycardsApp {
     private void write() {
         CompoundTag args = new CompoundTag();
         args.putString("label", labelBox().getValue().strip());
-        args.putInt("level", level);
+        args.putInt("colour", colour);
+        args.putString("group", "");
         screen.send("card_write", args);
         labelBox().setValue("");
         labelBox().setFocused(false);
@@ -358,9 +348,9 @@ final class KeycardsApp {
         confirm(ALL_BLOCKED);
     }
 
-    /** Alleen voor de screenshot-rondleiding: een naam en niveau alvast ingevuld. */
-    void tourFill(String label, int level) {
+    /** Alleen voor de screenshot-rondleiding: een naam en kleur alvast ingevuld. */
+    void tourFill(String label, int colour) {
         labelBox().setValue(label);
-        this.level = level;
+        this.colour = colour;
     }
 }

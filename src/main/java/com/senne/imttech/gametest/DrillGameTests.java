@@ -111,7 +111,7 @@ public final class DrillGameTests {
         KeycardData[] cards = new KeycardData[2];
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, rack, core);
-            var old = core.logic().issue("Old card", 1, "test");
+            var old = core.logic().issue("Old card", 1, "test", "");
             cards[0] = new KeycardData(core.ip(), core.hostname(), old.number(), 1, "Old card");
             ItemStack stack = new ItemStack(ModItems.KEYCARD.get());
             KeycardItem.write(stack, cards[0]);
@@ -119,7 +119,7 @@ public final class DrillGameTests {
             check(Training.start(level, core, owner, drill("Vault", Training.Kind.BREAK_IN), null) == null, "De oefening begon niet");
         });
         helper.runAfterDelay(2 + afterCountdown(), () -> {
-            var found = core.logic().issue("Found card", 1, "test");
+            var found = core.logic().issue("Found card", 1, "test", "");
             cards[1] = new KeycardData(core.ip(), core.hostname(), found.number(), 1, "Found card");
             check(Training.isCardFromBefore(level, core.getBlockPos(), owner.getUUID(), cards[0].number())
                     && !Training.isCardFromBefore(level, core.getBlockPos(), owner.getUUID(), cards[1].number()),
@@ -128,8 +128,8 @@ public final class DrillGameTests {
             LogicEvents.keycard(level, readerAbs, owner, cards[0]);
             LogicEvents.clear();
             LogicEvents.keycard(level, readerAbs, owner, cards[1]);
-            String before = "drill-cards used card #" + cards[0].number() + " (level 1, not valid here) at Vault door";
-            String during = "drill-cards used card #" + cards[1].number() + " (level 1) at Vault door";
+            String before = "drill-cards used card #" + cards[0].number() + " (not valid here) at Vault door";
+            String during = "drill-cards used card #" + cards[1].number() + " (no group) at Vault door";
             check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(before)),
                     "De kaart van het begin werkte toch. Logboek: " + core.log().entries().getLast().text());
             check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(during)),

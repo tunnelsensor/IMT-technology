@@ -86,7 +86,7 @@ public final class GraphConverter {
         return statements;
     }
 
-    /** Een voorwaarde zoals de code hem schrijft ("card.level>=3" wordt "card.level >= 3"), als hij klopt. */
+    /** Een voorwaarde zoals de code hem schrijft ("count>=3" wordt "count >= 3"), als hij klopt. */
     private static String cleanCondition(String text) {
         try {
             return Expr.print(Expr.parseLenient(text, true));

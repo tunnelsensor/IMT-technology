@@ -6,6 +6,7 @@ import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.os.EventLog;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
@@ -45,16 +46,20 @@ public final class LogicEvents {
         // ze ook niet. Een kaart die hij onderweg vond of stal, wel.
         boolean fromBefore = card != null && com.senne.imttech.training.Training.isCardFromBefore(level, core.getBlockPos(),
                 player.getUUID(), card.number());
-        read(level, reader, device, core, player, card, core.logic().isValid(core.ip(), card) && !fromBefore);
+        boolean valid = core.logic().isValid(core.ip(), card) && !fromBefore;
+        // De groepen staan in de kern (25 oktober). Een ongeldige kaart zit nergens in.
+        LogicStore.Card listed = valid ? core.logic().card(card.number()) : null;
+        read(level, reader, device, core, player, card, valid, listed == null ? List.of() : listed.groups());
     }
 
     /**
      * Een gehackte keycardlezer (hoofdstuk 12): de Bypass Kit laat hem een nagemaakte kaart lezen. Die is
-     * geldig, van het niveau dat de hacker koos, met een verzonnen nummer dat niet op jouw lijst staat en
-     * zonder naam. Verder gaat alles zoals bij een echte kaart: het logboek, het lampje en je diagram.
-     * (In het logboek zie je zo een nummer dat je in de app Keycards niet terugvindt.)
+     * geldig, zit in de groep die de hacker koos (25 oktober; "" = in geen groep), heeft een verzonnen
+     * nummer dat niet op jouw lijst staat en geen naam. Verder gaat alles zoals bij een echte kaart: het
+     * logboek, het lampje en je diagram. (In het logboek zie je zo een nummer dat je in de app Keycards
+     * niet terugvindt.)
      */
-    public static void forgedKeycard(ServerLevel level, BlockPos reader, ServerPlayer player, int cardLevel) {
+    public static void forgedKeycard(ServerLevel level, BlockPos reader, ServerPlayer player, String group) {
         if (!(level.getBlockEntity(reader) instanceof InputDeviceBlockEntity device)) {
             return;
         }
@@ -62,21 +67,25 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
-        KeycardData card = new KeycardData(core.ip(), core.hostname(), fakeNumber(level, core), cardLevel, "");
-        read(level, reader, device, core, player, card, true);
+        KeycardData card = new KeycardData(core.ip(), core.hostname(), fakeNumber(level, core), 1, "");
+        String own = core.logic().spelling(group);
+        read(level, reader, device, core, player, card, true, own == null ? List.of() : List.of(own));
     }
 
-    /** De lezer heeft een kaart gelezen: oranje lampje, een regel in het logboek, en de server aan het werk. */
+    /**
+     * De lezer heeft een kaart gelezen: oranje lampje, een regel in het logboek ("Senne used card #1001 (security,
+     * lab) at Lab door"), en de server aan het werk. {@code groups} zijn de groepen waar de kaart zelf in zit.
+     */
     private static void read(ServerLevel level, BlockPos reader, InputDeviceBlockEntity device, SecurityCoreBlockEntity core,
-                             ServerPlayer player, @Nullable KeycardData card, boolean valid) {
+                             ServerPlayer player, @Nullable KeycardData card, boolean valid, List<String> groups) {
         InputDeviceBlock.flash(level, reader, InputLight.BUSY);
         level.playSound(null, reader, ModSounds.IMT_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         String what = card == null ? "a blank card"
-                : "card #" + card.number() + " (level " + card.level() + (valid ? "" : ", not valid here") + ")";
+                : "card #" + card.number() + " (" + (!valid ? "not valid here" : groups.isEmpty() ? "no group" : String.join(", ", groups)) + ")";
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " used " + what + " at " + device.name());
         LogicRunner.fire(level, core, Op.KEYCARD, device.name(), new LogicRunner.Context(Op.KEYCARD, device.name(),
                 reader.immutable(), player.getUUID(), player.getGameProfile().getName(),
-                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), card, valid, ""));
+                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), card, valid, "", null, groups));
     }
 
     /** Een kaartnummer dat niet op de lijst van dit netwerk staat (#2000 tot #9999). */

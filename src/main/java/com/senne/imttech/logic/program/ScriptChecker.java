@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>twee defs met dezelfde naam;</li>
  *   <li>een def gebruiken die niet bestaat ("Did you mean open_lab?");</li>
  *   <li>een def die (via andere defs) zichzelf gebruikt: die zou nooit stoppen;</li>
- *   <li>een def die iets gebruikt dat niet past bij de when die hem gebruikt: {@code card.level}
+ *   <li>een def die iets gebruikt dat niet past bij de when die hem gebruikt: {@code card.valid}
  *       alleen vanuit {@code when keycard(...)}, {@code code} alleen vanuit {@code when codepanel(...)},
  *       {@code player...}, {@code accept()} en {@code deny()} alleen vanuit een lezer of paneel.</li>
  * </ul>
@@ -197,7 +197,7 @@ public final class ScriptChecker {
      * {@code naam = waarde} streng na:
      * <ul>
      *   <li>een naam helemaal links ({@code count = 0}) geldt overal; hij mag alleen getallen, tekst en
-     *       andere namen van links gebruiken (geen {@code card.level}: er is dan nog geen kaart);</li>
+     *       andere namen van links gebruiken (geen {@code card.valid}: er is dan nog geen kaart);</li>
      *   <li>in een when of def bestaat een naam vanaf de regel waar hij zijn waarde krijgt; een def
      *       ziet de namen van de when die hem gebruikt niet (zoals een functie in Python);</li>
      *   <li>een naam houdt zijn soort: wie een getal is, kan geen tekst worden.</li>
@@ -470,7 +470,7 @@ public final class ScriptChecker {
         return null;
     }
 
-    /** Gebruikt deze voorwaarde of waarde iets dat niet werkt onder deze trigger (zoals card.level na every)? */
+    /** Gebruikt deze voorwaarde of waarde iets dat niet werkt onder deze trigger (zoals card.valid na every)? */
     private static @Nullable Need expressionNeed(String text, boolean condition, Op trigger) {
         for (Expr expr : lenient(text, condition)) {
             for (String name : Expr.variables(expr)) {
@@ -478,6 +478,12 @@ public final class ScriptChecker {
                 if (variable != null && !variable.allowedAfter(trigger)) {
                     String where = variable.where() != null ? variable.where() : "when keycard(...) or when codepanel(...)";
                     return new Need(name, where);
+                }
+            }
+            // card.in_group(...) (25 oktober) hoort ook bij when keycard.
+            for (Expr.Function function : Expr.functions(expr)) {
+                if (!function.allowedAfter(trigger)) {
+                    return new Need(function.code() + "(...)", function.where());
                 }
             }
         }

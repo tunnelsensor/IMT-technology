@@ -189,7 +189,8 @@ public final class Pickpocket {
         KeycardData data = KeycardItem.data(taken);
         args.putString("result", "taken");
         args.putString("name", taken.getHoverName().getString());
-        args.putInt("level", data == null ? 0 : data.level());
+        args.putInt("colour", data == null ? 0 : data.colour());
+        args.putInt("number", data == null ? 0 : data.number());
         if (!thief.getInventory().add(taken)) {
             thief.drop(taken, false);
         }

@@ -76,6 +76,16 @@ public final class CircuitPuzzle {
     private final boolean[] path;
     private final List<Terminal> alarms;
 
+    /** Hoeveel seconden je hebt om het circuit om te bouwen: ImtConfig.Bypass.CIRCUIT_SECONDS. */
+    public static float circuitSeconds() {
+        return ImtConfig.Bypass.CIRCUIT_SECONDS;
+    }
+
+    /** Hetzelfde in ticks (20 per seconde). */
+    public static int circuitTicks() {
+        return Math.round(circuitSeconds() * 20);
+    }
+
     private CircuitPuzzle(int columns, int rows, int cardRow, int acceptRow, int[] shapes, int[] start, int[] solution,
                           boolean[] path, List<Terminal> alarms) {
         this.columns = columns;
@@ -92,8 +102,9 @@ public final class CircuitPuzzle {
     // ================================================================ Maken
 
     /**
-     * Maakt het raster voor een kaart van dit niveau (1-5). Hetzelfde getal en niveau geven altijd
-     * hetzelfde raster (java.util.Random rekent overal hetzelfde).
+     * Maakt het raster. Hetzelfde getal geeft altijd hetzelfde raster (java.util.Random rekent overal
+     * hetzelfde). Sinds 25 oktober is het altijd even groot en moeilijk (zoals het oude niveau 5): de
+     * hacker kiest geen niveau meer maar een groep, en dat maakt het niet moeilijker.
      *
      * Hoe: eerst een pad van CARD naar ACCEPT, kolom voor kolom (in elke kolom misschien een stukje
      * omhoog of omlaag). Op dat pad komen precies de rechte stukken en bochten die nodig zijn. De rest
@@ -102,26 +113,10 @@ public final class CircuitPuzzle {
      * het pad aan de rand: draai je daar een stukje de verkeerde kant op, dan raak je ALARM. Tot slot
      * draaien we alle stukjes willekeurig, zodat het niet al klaar is.
      */
-    /** Een kaartniveau tussen 1 en 5. */
-    public static int clampLevel(int level) {
-        return Math.max(1, Math.min(ImtConfig.Bypass.CIRCUIT_COLUMNS.length, level));
-    }
-
-    /** Hoeveel seconden je hebt voor een kaart van dit niveau (1-5): ImtConfig.Bypass.CIRCUIT_SECONDS. */
-    public static float circuitSeconds(int level) {
-        return ImtConfig.Bypass.CIRCUIT_SECONDS[clampLevel(level) - 1];
-    }
-
-    /** Hetzelfde in ticks (20 per seconde). */
-    public static int circuitTicks(int level) {
-        return Math.round(circuitSeconds(level) * 20);
-    }
-
-    public static CircuitPuzzle generate(long seed, int level) {
-        int index = CircuitPuzzle.clampLevel(level) - 1;
-        int columns = Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS[index]);
-        int rows = Math.round(ImtConfig.Bypass.CIRCUIT_ROWS[index]);
-        Random random = new Random(seed * 31L + level);
+    public static CircuitPuzzle generate(long seed) {
+        int columns = Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS);
+        int rows = Math.round(ImtConfig.Bypass.CIRCUIT_ROWS);
+        Random random = new Random(seed * 31L + 5);
         int cardRow = random.nextInt(rows);
         int acceptRow = random.nextInt(rows);
 
@@ -197,7 +192,7 @@ public final class CircuitPuzzle {
             boolean wrongTurn = shapes[cell] == CORNER && terminal.side() != out[cell] && terminal.side() != opposite(in[cell]);
             return wrongTurn ? 0 : 1;
         }));
-        int alarmCount = Math.min(candidates.size(), Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS[index]));
+        int alarmCount = Math.min(candidates.size(), Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS));
         List<Terminal> alarms = new ArrayList<>(candidates.subList(0, alarmCount));
 
         // Alles door elkaar draaien, tot het niet al klaar is en ALARM niet al geraakt wordt.

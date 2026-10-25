@@ -42,7 +42,7 @@ public final class Interpreter {
          */
         void act(Interpreter run, LogicGraph.Node node);
 
-        /** De gegevens van nu (card.level, is_night...), om een waarde uit te rekenen. */
+        /** De gegevens van nu (card.number, is_night...), om een waarde uit te rekenen. */
         Expr.Facts facts(Interpreter run);
 
         /** Er klopt iets niet aan het diagram zelf (een def die er niet is): zeg het. */

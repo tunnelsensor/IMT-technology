@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
  * moeilijker te leren"). Om het makkelijker te maken:
  * <ul>
  *   <li><b>kleuren</b> per soort woord (zoals in VS Code): when/if/else/def roze, triggers cyaan,
- *       acties lichtblauw, je eigen blokken paars, gegevens (card.level) geel, tekst groen, getallen
+ *       acties lichtblauw, je eigen blokken paars, gegevens (card.valid) geel, tekst groen, getallen
  *       oranje, commentaar grijs;</li>
  *   <li><b>regelnummers</b> links, en de regel met een fout in het rood;</li>
  *   <li><b>inspringen</b>: Enter houdt de inspringing van de regel, en springt na een {@code :}

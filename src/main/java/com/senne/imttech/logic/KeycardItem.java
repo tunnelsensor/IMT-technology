@@ -13,11 +13,12 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Een keycard (jouw wens, 7 oktober). Je craft hem leeg; op de desktop van je beveiligingskern (de
- * app Keycards) schrijf je hem: een naam, een niveau van 1 tot 5, en hij krijgt een eigen nummer
- * (zie KeycardData). Daarna houd je hem tegen een keycardlezer.
+ * app Keycards) schrijf je hem: een naam en een kleur, en hij krijgt een eigen nummer (zie
+ * KeycardData). In welke groepen hij zit, onthoudt de kern (25 oktober). Daarna houd je hem tegen
+ * een keycardlezer.
  *
- * De kleur van de kaart hoort bij zijn niveau (wit, groen, blauw, paars, goud). Dat doen we met
- * "custom model data": een getal op het item dat het model kiest (zie models/item/keycard.json).
+ * De kleur kies je zelf (acht kleuren, zie KeycardData.COLOURS). Dat doen we met "custom model
+ * data": een getal op het item dat het model kiest (zie models/item/keycard.json).
  */
 public class KeycardItem extends Item {
     public KeycardItem(Properties properties) {
@@ -34,10 +35,10 @@ public class KeycardItem extends Item {
         return stack.getItem() instanceof KeycardItem && data(stack) == null;
     }
 
-    /** Schrijft de kaart: de gegevens erop, en de kleur van zijn niveau. */
+    /** Schrijft de kaart: de gegevens erop, en zijn kleur. */
     public static void write(ItemStack stack, KeycardData data) {
         stack.set(ModDataComponents.KEYCARD.get(), data);
-        stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(data.level()));
+        stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(data.colour()));
     }
 
     @Override
@@ -50,8 +51,7 @@ public class KeycardItem extends Item {
         if (!data.label().isEmpty()) {
             tooltip.add(Component.literal(data.label()).withStyle(ChatFormatting.WHITE));
         }
-        tooltip.add(Component.translatable("item.imttech.keycard.level", data.level(), data.number())
-                .withStyle(ChatFormatting.AQUA));
+        tooltip.add(Component.translatable("item.imttech.keycard.number", data.number()).withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable("item.imttech.keycard.network", data.host()).withStyle(ChatFormatting.DARK_GRAY));
     }
 

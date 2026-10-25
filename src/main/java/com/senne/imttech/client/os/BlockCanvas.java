@@ -840,7 +840,7 @@ final class BlockCanvas {
             }
         } else if (op == Op.IF || op == Op.WHILE) {
             if (kind == ProgramKind.SERVER) {
-                names.addAll(List.of("card.valid and card.level >= 3", "code == \"1234\"", "player.trusted"));
+                names.addAll(List.of("card.in_group(\"security\")", "card.valid", "code == \"1234\"", "player.trusted"));
             } else {
                 names.addAll(List.of("robot.battery < 10", "robot.blocked", "read(1)"));
             }
@@ -914,7 +914,7 @@ final class BlockCanvas {
             y += OsDraw.BUTTON_H + 3;
         }
         if (showsExpr(node)) {
-            // De waarde, als code: 0, count + 1, "Level " + card.level...
+            // De waarde, als code: 0, count + 1, "Card " + card.number...
             g.drawString(font, exprLabel(node), x, y, HudStyle.argb(255, HudStyle.WHITE), false);
             y += 10;
             EditBox box = exprBox();

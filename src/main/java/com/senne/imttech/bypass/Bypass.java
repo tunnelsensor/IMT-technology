@@ -19,6 +19,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -41,9 +42,9 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *   <li><b>Een keycardlezer</b>: de server kiest een getal ({@code seed}) en stuurt het naar je spel.
  *       Uit dat getal maken jouw spel en de server precies hetzelfde stroomcircuit (CircuitPuzzle). Je
- *       kiest een niveau (dan begint de klok, ook op de server), en als het signaal bij ACCEPT komt,
- *       stuurt je spel hoe alle stukjes staan. De server rekent zelf na of dat klopt en of je op tijd
- *       was; pas dan leest de lezer een nagemaakte kaart van dat niveau.</li>
+ *       kiest een groep van dat netwerk (25 oktober; dan begint de klok, ook op de server), en als het
+ *       signaal bij ACCEPT komt, stuurt je spel hoe alle stukjes staan. De server rekent zelf na of dat
+ *       klopt en of je op tijd was; pas dan leest de lezer een nagemaakte kaart van die groep.</li>
  *   <li><b>Een codepaneel</b>: de server zoekt de code in je diagrammen (PanelCodes) en stuurt alleen
  *       de vingerafdrukken: welke cijfers erin zitten en hoe vaak, en hoe lang de code is. Elke volgorde
  *       die je probeert, gaat naar de server; die zegt hoeveel cijfers op de goede plek staan. De code
@@ -60,7 +61,7 @@ public final class Bypass {
 
     /** Zoveel ticks speling op de klok (een bericht onderweg doet er even over). */
     private static final int CLOCK_SLACK = 40;
-    /** Zo lang mag je over het kiezen van een niveau doen, dan gaat het scherm dicht (zonder alarm). */
+    /** Zo lang mag je over het kiezen van een groep doen, dan gaat het scherm dicht (zonder alarm). */
     private static final int CHOOSE_TIMEOUT = 2400;
     /** Zo lang mag een codepaneel-hack hooguit duren (5 minuten), dan gaat het scherm dicht (zonder alarm). */
     private static final int PANEL_TIMEOUT = 6000;
@@ -72,8 +73,8 @@ public final class Bypass {
         final BlockPos pos;
         final long seed;
         final long openedAt;
-        /** Het niveau van de kaart (lezer); 0 = nog niet gekozen. */
-        int level;
+        /** De groep van de kaart die de hacker namaakt (lezer, 25 oktober); "" = een kaart zonder groep. */
+        String group = "";
         /** Wanneer de klok begon te lopen (game-tijd), of -1. */
         long startedAt = -1;
         /** De code die de kit moet kraken (paneel), en hoeveel pogingen je nog hebt. */
@@ -146,6 +147,9 @@ public final class Bypass {
             // Het geluid van een lezer die je openschroeft.
             level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.4f, 1.6f);
             args.putLong("seed", session.seed);
+            // De groepen van dit netwerk (25 oktober): daaruit kiest de hacker welke kaart hij namaakt. Als een boom:
+            // per groep zijn naam en hoe diep hij zit ("night shift" in "security" in "staff" = 2).
+            args.put("groups", groupTree(core.logic()));
             ModNetwork.sendTo(player, new BypassPayload(pos, "reader", args));
         } else {
             // De eerste code uit je diagrammen. Naar jouw spel gaan alleen de afdrukken en de lengte.
@@ -170,9 +174,15 @@ public final class Bypass {
         ServerLevel level = player.serverLevel();
         long now = level.getGameTime();
         switch (payload.op()) {
-            case "level" -> {
+            case "group" -> {
                 if (session.kind == Kind.READER && session.startedAt < 0) {
-                    session.level = CircuitPuzzle.clampLevel(payload.args().getInt("level"));
+                    // Een groep die bestaat; heeft het netwerk geen groepen, dan een kaart zonder groep.
+                    SecurityCoreBlockEntity core = SecurityCores.coreAt(level, session.pos);
+                    String chosen = core == null ? null : core.logic().spelling(payload.args().getString("group"));
+                    if (chosen == null && core != null && !core.logic().groups().isEmpty()) {
+                        return;
+                    }
+                    session.group = chosen == null ? "" : chosen;
                     session.startedAt = now;
                 }
             }
@@ -180,11 +190,11 @@ public final class Bypass {
                 if (session.kind != Kind.READER || session.startedAt < 0) {
                     return;
                 }
-                if (now - session.startedAt > CircuitPuzzle.circuitTicks(session.level) + CLOCK_SLACK) {
+                if (now - session.startedAt > CircuitPuzzle.circuitTicks() + CLOCK_SLACK) {
                     fail(player, session, "time");
                     return;
                 }
-                CircuitPuzzle puzzle = CircuitPuzzle.generate(session.seed, session.level);
+                CircuitPuzzle puzzle = CircuitPuzzle.generate(session.seed);
                 int[] rotations = puzzle.readRotations(payload.args().getByteArray("rot"));
                 if (rotations == null || !puzzle.signal(rotations).solved()) {
                     // Jouw spel dacht dat het klopte, de server niet: gewoon verder puzzelen.
@@ -193,7 +203,7 @@ public final class Bypass {
                 }
                 SESSIONS.remove(player.getUUID());
                 reply(player, session, "ok");
-                LogicEvents.forgedKeycard(level, session.pos, player, session.level);
+                LogicEvents.forgedKeycard(level, session.pos, player, session.group);
             }
             case "guess" -> {
                 if (session.kind == Kind.PANEL) {
@@ -282,9 +292,29 @@ public final class Bypass {
         if (gone || tooLong) {
             stop(player, true);
         } else if (session.startedAt >= 0 && session.kind == Kind.READER
-                && now - session.startedAt > CircuitPuzzle.circuitTicks(session.level) + CLOCK_SLACK * 2) {
+                && now - session.startedAt > CircuitPuzzle.circuitTicks() + CLOCK_SLACK * 2) {
             // Je spel zei niets meer (te laat): dan is de tijd gewoon om.
             fail(player, session, "time");
+        }
+    }
+
+    /**
+     * De groepen van een netwerk als een boom, van boven naar beneden: eerst een groep, dan wat erin zit (met elk
+     * zijn naam "n" en hoe diep hij zit "d"). Zo ziet de hacker ze zoals de eigenaar in zijn app Keycards.
+     */
+    static ListTag groupTree(com.senne.imttech.logic.LogicStore store) {
+        ListTag rows = new ListTag();
+        addGroups(store, "", 0, rows);
+        return rows;
+    }
+
+    private static void addGroups(com.senne.imttech.logic.LogicStore store, String parent, int depth, ListTag rows) {
+        for (String group : store.childrenOf(parent)) {
+            CompoundTag row = new CompoundTag();
+            row.putString("n", group);
+            row.putInt("d", depth);
+            rows.add(row);
+            addGroups(store, group, depth + 1, rows);
         }
     }
 
@@ -323,6 +353,12 @@ public final class Bypass {
     /** Is deze speler aan het hacken? */
     public static boolean isHacking(ServerPlayer player) {
         return SESSIONS.containsKey(player.getUUID());
+    }
+
+    /** Loopt de klok van de lezer die deze speler hackt al (heeft hij een groep gekozen)? Voor de tests. */
+    public static boolean clockRuns(ServerPlayer player) {
+        Session session = SESSIONS.get(player.getUUID());
+        return session != null && session.kind == Kind.READER && session.startedAt >= 0;
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {

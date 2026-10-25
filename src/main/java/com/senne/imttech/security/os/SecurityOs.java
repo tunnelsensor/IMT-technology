@@ -219,7 +219,7 @@ public final class SecurityOs {
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
             case "trust_add" -> trust(player, core, session, args.getString("name").strip());
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
-            case "card_write" -> writeCard(player, core, session, args.getString("label"), args.getInt("level"));
+            case "card_write" -> writeCard(player, core, session, args.getString("label"), args.getInt("colour"), args.getString("group"));
             case "card_block" -> blockCard(player, core, session, args.getInt("n"), args.getBoolean("on"));
             case "card_delete" -> deleteCard(player, core, session, args.getInt("n"));
             case "card_delete_blocked" -> deleteBlockedCards(player, core, session);
@@ -379,9 +379,11 @@ public final class SecurityOs {
 
     /**
      * Een keycard schrijven (de app Keycards): de eerste lege keycard in je rugzak krijgt een naam,
-     * een niveau en het volgende nummer van dit netwerk. Je krijgt hem terug als aparte kaart.
+     * een kleur en het volgende nummer van dit netwerk, en de kern zet hem in groep {@code group}
+     * ("" = in geen groep). Je krijgt hem terug als aparte kaart.
      */
-    private static void writeCard(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String label, int level) {
+    private static void writeCard(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String label, int colour,
+                                  String group) {
         net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
         int slot = -1;
         if (com.senne.imttech.logic.KeycardItem.isBlank(inventory.getSelected())) {
@@ -401,7 +403,7 @@ public final class SecurityOs {
             clean = "Keycard";
         }
         String writer = player.getGameProfile().getName();
-        com.senne.imttech.logic.LogicStore.Card card = core.logic().issue(clean, level, writer);
+        com.senne.imttech.logic.LogicStore.Card card = core.logic().issue(clean, colour, writer, group);
         if (card == null) {
             notify(player, core, session, "This network cannot write more than "
                     + com.senne.imttech.logic.LogicStore.MAX_CARDS + " cards", true);
@@ -409,16 +411,17 @@ public final class SecurityOs {
         }
         net.minecraft.world.item.ItemStack written = inventory.getItem(slot).split(1);
         com.senne.imttech.logic.KeycardItem.write(written, new com.senne.imttech.logic.KeycardData(
-                core.ip(), core.hostname(), card.number(), card.level(), card.label()));
+                core.ip(), core.hostname(), card.number(), card.colour(), card.label()));
         if (!inventory.add(written)) {
             player.drop(written, false);
         }
         core.setChanged();
+        String where = card.groups().isEmpty() ? "no group" : "group " + card.groups().getFirst();
         core.logEvent(EventLog.Type.DEVICE, writer + " wrote keycard #" + card.number() + " \"" + card.label()
-                + "\" (level " + card.level() + ")");
+                + "\" (" + where + ")");
         player.serverLevel().playSound(null, core.getBlockPos(), com.senne.imttech.registry.ModSounds.IMT_CONFIRM.get(),
                 SoundSource.BLOCKS, 0.5f, 1.2f);
-        notify(player, core, session, "Card #" + card.number() + " written: " + card.label() + " (level " + card.level() + ")", false);
+        notify(player, core, session, "Card #" + card.number() + " written: " + card.label() + " (" + where + ")", false);
     }
 
     /** Een kaart blokkeren (verloren, gestolen) of weer toelaten. */
@@ -808,18 +811,32 @@ public final class SecurityOs {
         // De zone: de kubussen waarin alleen jij en je vrienden bouwen (de app Zone, hoofdstuk 10).
         data.put("zone", com.senne.imttech.security.zone.ZoneApp.snapshot(level, core,
                 level.getServer().getPlayerList().getPlayer(session.viewer()), session.remote()));
-        // De keycards die dit netwerk schreef.
+        // De keycards die dit netwerk schreef, met hun kleur en hun eigen groepen.
         ListTag cards = new ListTag();
         for (com.senne.imttech.logic.LogicStore.Card card : core.logic().cards()) {
             CompoundTag entry = new CompoundTag();
             entry.putInt("n", card.number());
             entry.putString("l", card.label());
-            entry.putInt("v", card.level());
+            entry.putInt("c", card.colour());
             entry.putBoolean("b", card.blocked());
             entry.putString("w", card.writtenBy());
+            ListTag groups = new ListTag();
+            for (String group : card.groups()) {
+                groups.add(net.minecraft.nbt.StringTag.valueOf(group));
+            }
+            entry.put("g", groups);
             cards.add(entry);
         }
         data.put("cards", cards);
+        // De keycard-groepen (25 oktober): per groep in welke groep hij zit ("" = bovenaan).
+        ListTag cardGroups = new ListTag();
+        for (String group : core.logic().groups()) {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("n", group);
+            entry.putString("p", core.logic().parentOf(group));
+            cardGroups.add(entry);
+        }
+        data.put("cardGroups", cardGroups);
         // De app Logic: hoe vol de SSD's zijn, wat er bezig is, en welke apparaten een diagram kan noemen.
         CompoundTag info = new CompoundTag();
         info.putInt("used", core.logic().blocks());

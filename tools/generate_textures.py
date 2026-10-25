@@ -2883,13 +2883,17 @@ def server_part_items():
     save(fan, "item/server_fan.png")
 
 
-# De kleuren van een keycard per niveau (zelfde als KeycardsApp.levelColour in de mod).
-KEYCARD_LEVELS = {
-    1: (232, 238, 242, 255),
-    2: (91, 227, 125, 255),
-    3: (79, 168, 255, 255),
-    4: (194, 123, 255, 255),
-    5: (255, 201, 60, 255),
+# De kleuren van een keycard (zelfde als KeycardData.COLOURS in de mod). Tot 25 oktober waren de eerste
+# vijf de kleuren van de niveaus 1 tot 5; sinds dan kies je de kleur per kaart, en er kwamen er drie bij.
+KEYCARD_COLOURS = {
+    1: (232, 238, 242, 255),   # wit
+    2: (91, 227, 125, 255),    # groen
+    3: (79, 168, 255, 255),    # blauw
+    4: (194, 123, 255, 255),   # paars
+    5: (255, 201, 60, 255),    # goud
+    6: (255, 84, 76, 255),     # rood
+    7: (255, 150, 50, 255),    # oranje
+    8: (48, 52, 60, 255),      # zwart
 }
 # Het lampje van een keycardlezer of codepaneel (zie InputLight in de mod).
 INPUT_LEDS = {
@@ -2903,7 +2907,7 @@ INPUT_LEDS = {
 def keycard_items():
     """
     De keycard: een liggend kaartje met een gouden chip en een magneetstrip. Leeg is hij grijs;
-    beschreven krijgt hij bovenaan een band in de kleur van zijn niveau (keycard_1 t/m keycard_5).
+    beschreven krijgt hij bovenaan een band in de kleur die je koos (keycard_1 t/m keycard_8).
     """
     def card(band):
         im = img(16, 16)
@@ -2918,8 +2922,8 @@ def keycard_items():
         return im
 
     save(card(None), "item/keycard.png")
-    for level, colour in KEYCARD_LEVELS.items():
-        save(card(colour), f"item/keycard_{level}.png")
+    for number, colour in KEYCARD_COLOURS.items():
+        save(card(colour), f"item/keycard_{number}.png")
 
 
 def keycard_reader_textures():

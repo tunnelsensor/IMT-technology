@@ -1273,7 +1273,7 @@
   "item.imttech.keycard": "Keycard",
   "item.imttech.keycard.named": "Keycard: %s",
   "item.imttech.keycard.blank": "Blank: write it in the Keycards app on your Security OS desktop",
-  "item.imttech.keycard.level": "Level %s  #%s",
+  "item.imttech.keycard.number": "Card #%s",
   "item.imttech.keycard.network": "Network: %s",
   "block.imttech.keycard_reader": "Keycard Reader",
   "logic.imttech.reader.hint": "Hold a keycard and right-click the reader.",

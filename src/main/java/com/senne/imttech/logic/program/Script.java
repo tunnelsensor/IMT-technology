@@ -13,7 +13,7 @@ import java.util.List;
  *     pulse("Vault door", 3)         Action(PULSE, "Vault door", 3)
  *
  * when keycard("Lab door"):          Handler(KEYCARD, "Lab door")
- *     if card.level &gt;= 3:            If("card.level &gt;= 3", yes, no)
+ *     if card.in_group("lab"):        If("card.in_group(\"lab\")", yes, no)
  *         open_lab()                 Action(CALL, "open_lab")
  *     else:
  *         deny()                     Action(DENY)

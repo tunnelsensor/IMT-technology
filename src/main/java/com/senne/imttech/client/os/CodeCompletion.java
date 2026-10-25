@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>na {@code when }: de triggers;</li>
  *   <li>een ingesprongen regel: de acties, if/elif/else/pass, en je eigen defs;</li>
  *   <li>na {@code if}, {@code and}, {@code or}, {@code not} of een vergelijking: de gegevens die bij
- *       de trigger van dat blok passen ({@code card.level} alleen onder {@code when keycard});</li>
+ *       de trigger van dat blok passen ({@code card.valid} alleen onder {@code when keycard});</li>
  *   <li>tussen aanhalingstekens: de namen van je lezers, panelen of apparaten, afhankelijk van wat er
  *       voor de haakjes staat ({@code keycard("}, {@code codepanel("}, {@code on("}...).</li>
  * </ul>
@@ -30,8 +30,12 @@ import org.jetbrains.annotations.Nullable;
 public final class CodeCompletion {
     private CodeCompletion() {}
 
-    /** De namen die de server stuurde: je apparaten, lezers, panelen en (hoofdstuk 23) robots. */
-    public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots) {
+    /**
+     * De namen die de server stuurde: je apparaten, lezers, panelen, (hoofdstuk 23) robots en (25 oktober) je
+     * keycard-groepen.
+     */
+    public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots,
+                       List<String> cardGroups) {
         /** Voor een diagram op de server. */
         public Data(List<String> outputs, List<String> readers, List<String> panels) {
             this(outputs, readers, panels, ProgramKind.SERVER, List.of());
@@ -40,6 +44,11 @@ public final class CodeCompletion {
         /** Zonder robots. */
         public Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind) {
             this(outputs, readers, panels, kind, List.of());
+        }
+
+        /** Zonder keycard-groepen. */
+        public Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots) {
+            this(outputs, readers, panels, kind, robots, List.of());
         }
     }
 
@@ -92,10 +101,12 @@ public final class CodeCompletion {
                 case "codepanel" -> data.panels();
                 case "on", "off", "toggle", "pulse", "turned_on", "turned_off", "is_on" -> data.outputs();
                 case "order", "activate", "deactivate" -> data.robots();
+                case "in_group" -> data.cardGroups();
                 default -> List.of();
             };
             String what = function.equals("keycard") ? "a keycard reader" : function.equals("codepanel") ? "a code panel"
                     : data.robots() == source ? "a guard robot in this network's area"
+                    : function.equals("in_group") ? "a keycard group"
                     : "a relay, laser, dome, turret or cabinet switch";
             for (String name : source) {
                 names.add(new Item(name, name, -1, what + " in this network", NAME));
@@ -208,11 +219,17 @@ public final class CodeCompletion {
         for (String name : ownNames(lines)) {
             items.add(new Item(name, name, -1, "One of your own names (it got a value with " + name + " = ...)", VARIABLE));
         }
-        // pin(1) en read(scanPin) (hoofdstuk 23): de cursor komt tussen de haakjes.
+        // pin(1) en read(scanPin) (hoofdstuk 23): de cursor komt tussen de haakjes. card.in_group("") (25 oktober): tussen
+        // de aanhalingstekens, en dan komen meteen je groepen.
         for (Expr.Function function : Expr.Function.values()) {
-            if (function.allowedIn(data.kind())) {
-                items.add(new Item(function.code() + "(...)", function.code() + "()", function.code().length() + 1,
-                        function.help(), VARIABLE));
+            if (function.allowedIn(data.kind()) && function.allowedAfter(trigger)) {
+                if (function == Expr.Function.CARD_IN_GROUP) {
+                    items.add(new Item(function.code() + "(\"...\")", function.code() + "(\"\")", function.code().length() + 2,
+                            function.help(), VARIABLE));
+                } else {
+                    items.add(new Item(function.code() + "(...)", function.code() + "()", function.code().length() + 1,
+                            function.help(), VARIABLE));
+                }
             }
         }
         items.add(new Item("is_on(\"...\")", "is_on(\"\")", 7, "Is that device switched on right now?", VARIABLE));

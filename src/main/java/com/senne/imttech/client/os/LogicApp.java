@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * <pre>
  *  DIAGRAMS  [+]   | Name [Lab______] [Check] [Save] [On] [Delete]      [Help]
  *  * Lab           |  1 when keycard("Lab door"):
- *    Lights        |  2     if card.valid and card.level &gt;= 3:
+ *    Lights        |  2     if card.in_group("lab"):
  *                  |  3         accept()
  *  SSD 14/48       |  ...
  *  running 1       | No problems: 9 blocks
@@ -420,7 +420,7 @@ final class LogicApp {
                 : newKind == ProgramKind.DRONE
                 ? "# A drone program: it runs on the drone itself. Press Help to see what a drone can do.\nwhen started:\n    up(2)\n"
                 : reader != null
-                ? "when keycard(\"" + reader + "\"):\n    if card.valid and card.level >= 1:\n        accept()\n    else:\n        deny()\n"
+                ? "when keycard(\"" + reader + "\"):\n    if card.valid:\n        accept()\n    else:\n        deny()\n"
                 : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
         editor.setText(code);
         loadedCode = "";
@@ -484,7 +484,10 @@ final class LogicApp {
         statusColour = colour;
     }
 
-    /** Wat Ctrl+Spatie aan namen kan voorstellen: je apparaten, je lezers en je panelen (en voor welke soort programma). */
+    /**
+     * Wat Ctrl+Spatie aan namen kan voorstellen: je apparaten, je lezers, je panelen, je robots en je keycard-groepen (en
+     * voor welke soort programma).
+     */
     private CodeCompletion.Data completionData() {
         List<String> outputs = new ArrayList<>();
         for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
@@ -500,7 +503,16 @@ final class LogicApp {
         for (Tag element : info().getList("robots", Tag.TAG_COMPOUND)) {
             robots.add(((CompoundTag) element).getString("n"));
         }
-        return new CodeCompletion.Data(outputs, readers, panels, kind, robots);
+        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups());
+    }
+
+    /** De keycard-groepen van dit netwerk (25 oktober), op alfabet. */
+    private List<String> cardGroups() {
+        List<String> groups = new ArrayList<>();
+        for (Tag element : screen.data().getList("cardGroups", Tag.TAG_COMPOUND)) {
+            groups.add(((CompoundTag) element).getString("n"));
+        }
+        return groups;
     }
 
     private @Nullable String firstInput(boolean panel) {
@@ -762,16 +774,18 @@ final class LogicApp {
         }
         lines.add(header("CHECK (if)"));
         if (server) {
-        lines.add(new HelpLine("if card.level >= 3:", "if card.valid and card.level >= 3:\n    pass", "card.level: 1-5; card.valid: written by this network and not blocked", HudStyle.WHITE, null));
+        String group = cardGroups().isEmpty() ? "security" : cardGroups().getFirst();
+        lines.add(new HelpLine("if card.in_group(...):", "if card.in_group(\"" + group + "\"):\n    pass",
+                "a valid card in that keycard group, or in a group inside it (Keycards app)", HudStyle.WHITE, null));
+        lines.add(new HelpLine("if card.valid:", "if card.valid:\n    pass", "written by this network and not blocked", HudStyle.WHITE, null));
         lines.add(new HelpLine("if code == \"1234\":", "if code == \"1234\":\n    pass", "the code typed on a code panel (between quotes)", HudStyle.WHITE, null));
         lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "the owner, their team, and trusted players (Access)", HudStyle.WHITE, null));
         }
         lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
         lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", server ? "also: is_day, player.owner, player.name, card.number, card.name"
                 : "also: is_day", HudStyle.WHITE, null));
-        lines.add(new HelpLine(server ? "if card.level * 2 - 1 >= 5:" : "if count * 2 - 1 >= 5:",
-                server ? "if card.level * 2 - 1 >= 5:\n    pass" : "if count * 2 - 1 >= 5:\n    pass",
-                "calculate with + - * / and brackets (* and / go first); + also glues text: \"Level \" + card.level",
+        lines.add(new HelpLine("if count * 2 - 1 >= 5:", "if count * 2 - 1 >= 5:\n    pass",
+                "calculate with + - * / and brackets (* and / go first); + also glues text: \"Count \" + count",
                 HudStyle.WHITE, null));
         lines.add(new HelpLine("else: / elif ...:", "else:\n    pass", "what happens when the if is not true", HudStyle.WHITE, null));
         lines.add(header("NAMES (variables)"));
@@ -780,7 +794,7 @@ final class LogicApp {
         lines.add(new HelpLine("count = count + 1", "count = count + 1",
                 "Inside a when or def: give a name a (new) value. A def has its own names.", 0xF1E87C, null));
         lines.add(new HelpLine("if count >= 3:", "if count >= 3:\n    pass",
-                "Use your name like card.level. A number stays a number, text stays text.", HudStyle.WHITE, null));
+                "Use your name like is_night or card.number. A number stays a number, text stays text.", HudStyle.WHITE, null));
         lines.add(new HelpLine("say(\"Count: \" + count)", "say(\"Count: \" + count)",
                 "A message (say, log, alarm) or the seconds (wait, pulse) may be calculated: wait(delay * 2)",
                 0x9ED8FF, null));

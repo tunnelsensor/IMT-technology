@@ -65,27 +65,26 @@ public final class BypassGameTests {
     // ================================================================ Het stroomcircuit zelf
 
     /**
-     * Honderden rasters van elk niveau: altijd op te lossen, nooit al klaar of al op ALARM aan het
-     * begin, even groot als in de config, en hetzelfde getal geeft precies hetzelfde raster (dat moet:
-     * de server maakt het raster zelf na om je oplossing te controleren).
+     * Honderden rasters: altijd op te lossen, nooit al klaar of al op ALARM aan het begin, even groot als
+     * in de config (sinds 25 oktober altijd zoals het oude niveau 5), en hetzelfde getal geeft precies
+     * hetzelfde raster (dat moet: de server maakt het raster zelf na om je oplossing te controleren).
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "bypass_circuit")
     public static void bypass_circuits_always_solvable(GameTestHelper helper) {
-        for (int level = 1; level <= 5; level++) {
-            int index = level - 1;
+        {
             int dangerous = 0;
-            for (long seed = 0; seed < 300; seed++) {
-                CircuitPuzzle puzzle = CircuitPuzzle.generate(seed * 7919L - 12345L, level);
-                String which = "Niveau " + level + ", getal " + seed + ": ";
-                check(puzzle.columns() == Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS[index]) && puzzle.rows() == Math.round(ImtConfig.Bypass.CIRCUIT_ROWS[index]),
+            for (long seed = 0; seed < 1000; seed++) {
+                CircuitPuzzle puzzle = CircuitPuzzle.generate(seed * 7919L - 12345L);
+                String which = "Getal " + seed + ": ";
+                check(puzzle.columns() == Math.round(ImtConfig.Bypass.CIRCUIT_COLUMNS) && puzzle.rows() == Math.round(ImtConfig.Bypass.CIRCUIT_ROWS),
                         which + "het raster is " + puzzle.columns() + " x " + puzzle.rows());
-                check(puzzle.alarms().size() == Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS[index]),
-                        which + puzzle.alarms().size() + " ALARM-punten in plaats van " + Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS[index]));
+                check(puzzle.alarms().size() == Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS),
+                        which + puzzle.alarms().size() + " ALARM-punten in plaats van " + Math.round(ImtConfig.Bypass.CIRCUIT_ALARMS));
                 CircuitPuzzle.Signal begin = puzzle.signal(puzzle.start());
                 check(!begin.accepted() && begin.alarms().isEmpty(), which + "het begint al opgelost of op ALARM");
                 CircuitPuzzle.Signal solved = puzzle.signal(puzzle.solution());
                 check(solved.solved(), which + "de oplossing komt niet bij ACCEPT, of raakt ALARM");
-                CircuitPuzzle again = CircuitPuzzle.generate(seed * 7919L - 12345L, level);
+                CircuitPuzzle again = CircuitPuzzle.generate(seed * 7919L - 12345L);
                 check(Arrays.equals(again.start(), puzzle.start()) && again.cardRow() == puzzle.cardRow()
                         && again.acceptRow() == puzzle.acceptRow() && again.alarms().equals(puzzle.alarms()),
                         which + "hetzelfde getal gaf een ander raster");
@@ -98,11 +97,11 @@ public final class BypassGameTests {
             }
             // ALARM moet echt gevaarlijk zijn: meestal raak je hem met één verkeerde draai van een stukje
             // op het pad (zo staat het in het plan: "draai het stukje binnen 1 seconde weg").
-            check(dangerous >= 300 * 6 / 10, "Niveau " + level + ": maar in " + dangerous
-                    + " van de 300 rasters raak je ALARM met één verkeerde draai op het pad");
+            check(dangerous >= 1000 * 6 / 10, "Maar in " + dangerous
+                    + " van de 1000 rasters raak je ALARM met één verkeerde draai op het pad");
         }
         // Wat een speler terugstuurt moet precies passen: één getal 0-3 per vakje.
-        CircuitPuzzle puzzle = CircuitPuzzle.generate(42, 3);
+        CircuitPuzzle puzzle = CircuitPuzzle.generate(42);
         check(puzzle.readRotations(new byte[puzzle.cells() - 1]) == null, "Een te korte stand werd aangenomen");
         byte[] weird = new byte[puzzle.cells()];
         weird[0] = 7;
@@ -168,15 +167,17 @@ public final class BypassGameTests {
     }
 
     /**
-     * Start de server en zet het diagram van het lab erop: een kaart van niveau 3 of hoger, of de code
-     * 4711 op het voorpaneel, zet de kluis even open.
+     * Start de server en zet het diagram van het lab erop: een kaart van de groep "staff" ("lab" zit daarin, "guest"
+     * niet), of de code 4711 op het voorpaneel, zet de kluis even open.
      */
     private static void startLab(GameTestHelper helper, Setup setup) {
         ImtTechGameTests.startServer(helper, new BlockPos(12, 3, 12), setup.core());
         SecurityOs.open(setup.owner(), setup.coreAbs());
+        var store = setup.core().logic();
+        check(store.addGroup("staff", "") && store.addGroup("lab", "staff") && store.addGroup("guest", ""), "De groepen maken lukte niet");
         String code = """
                 when keycard("Lab door"):
-                    if card.valid and card.level >= 3:
+                    if card.in_group("staff"):
                         accept()
                         pulse("Vault door", 2)
                     else:
@@ -210,10 +211,10 @@ public final class BypassGameTests {
         Bypass.handle(setup.hacker(), new BypassPayload(setup.panelAbs(), "guess", args));
     }
 
-    private static void chooseLevel(Setup setup, int level) {
+    private static void chooseGroup(Setup setup, String group) {
         CompoundTag args = new CompoundTag();
-        args.putInt("level", level);
-        send(setup, "level", args);
+        args.putString("group", group);
+        send(setup, "group", args);
     }
 
     private static void sendRotations(Setup setup, int[] rotations) {
@@ -227,10 +228,10 @@ public final class BypassGameTests {
     }
 
     /** Het raster dat de server voor deze hack maakte (hetzelfde als op het scherm van de hacker). */
-    private static CircuitPuzzle puzzleOf(Setup setup, int level) {
+    private static CircuitPuzzle puzzleOf(Setup setup) {
         Long seed = Bypass.seedOf(setup.hacker());
         check(seed != null, "De hacker is niet aan het hacken");
-        return CircuitPuzzle.generate(seed, level);
+        return CircuitPuzzle.generate(seed);
     }
 
     private static String lastEntry(SecurityCoreBlockEntity core) {
@@ -239,10 +240,10 @@ public final class BypassGameTests {
     }
 
     /**
-     * Een lezer hacken met de kit: een raster dat niet klopt telt niet (je mag verder puzzelen); een
-     * goed opgelost raster van niveau 3 laat de lezer een geldige kaart van niveau 3 lezen, met een
-     * verzonnen nummer dat niet op de lijst staat, en de kluisdeur gaat open. Een nagemaakte kaart van
-     * niveau 2 geeft rood: het diagram beslist. Elke hack kost één gebruik van de kit.
+     * Een lezer hacken met de kit: een groep die niet bestaat, kan hij niet kiezen. Een raster dat niet klopt telt niet
+     * (je mag verder puzzelen); een goed opgelost raster met de groep "lab" laat de lezer een geldige kaart van "lab"
+     * lezen, met een verzonnen nummer dat niet op de lijst staat, en de kluisdeur gaat open ("lab" zit in "staff"). Een
+     * nagemaakte kaart van "guest" geeft rood: het diagram beslist. Elke hack kost één gebruik van de kit.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "bypass_reader")
     public static void bypass_reader_fake_card(GameTestHelper helper) {
@@ -253,8 +254,11 @@ public final class BypassGameTests {
             Bypass.start(setup.hacker(), setup.readerAbs(), InteractionHand.MAIN_HAND);
             check(Bypass.isHacking(setup.hacker()), "De hack begon niet");
             check(setup.hacker().getMainHandItem().getDamageValue() == 1, "De kit werd niet gebruikt");
-            chooseLevel(setup, 3);
-            CircuitPuzzle puzzle = puzzleOf(setup, 3);
+            chooseGroup(setup, "kitchen");
+            check(Bypass.isHacking(setup.hacker()) && !Bypass.clockRuns(setup.hacker()), "Een groep die niet bestaat, werd gekozen");
+            chooseGroup(setup, "Lab");
+            check(Bypass.clockRuns(setup.hacker()), "De groep lab werd niet gekozen");
+            CircuitPuzzle puzzle = puzzleOf(setup);
             sendRotations(setup, puzzle.start());
             check(Bypass.isHacking(setup.hacker()), "Een raster dat niet klopt, stopte de hack");
             check(!lastEntry(setup.core()).contains("used card"), "Een raster dat niet klopt, liet de lezer een kaart lezen");
@@ -267,22 +271,22 @@ public final class BypassGameTests {
                     + lastEntry(setup.core()));
             String read = setup.core().log().entries().stream().map(EventLog.Entry::text)
                     .filter(text -> text.contains("used card")).findFirst().orElse("");
-            Matcher matcher = Pattern.compile("card #(\\d+) \\(level 3\\)").matcher(read);
-            check(matcher.find(), "In het logboek staat geen kaart van niveau 3: " + read);
+            Matcher matcher = Pattern.compile("card #(\\d+) \\(lab\\)").matcher(read);
+            check(matcher.find(), "In het logboek staat geen kaart van de groep lab: " + read);
             int number = Integer.parseInt(matcher.group(1));
             check(number >= 2000 && setup.core().logic().cards().stream().noneMatch(card -> card.number() == number),
                     "De nagemaakte kaart heeft een nummer van de lijst: " + number);
         });
-        // Nog een keer, nu met een kaart van niveau 2: die is te laag voor het diagram.
+        // Nog een keer, nu met een kaart van "guest": die zit niet in "staff".
         helper.runAfterDelay(80, () -> {
             check(!level.getBlockState(setup.vault()).getValue(RelayBlock.POWERED), "De kluisdeur ging niet meer dicht");
             Bypass.start(setup.hacker(), setup.readerAbs(), InteractionHand.MAIN_HAND);
-            chooseLevel(setup, 2);
-            sendRotations(setup, puzzleOf(setup, 2).solution());
+            chooseGroup(setup, "guest");
+            sendRotations(setup, puzzleOf(setup).solution());
         });
         helper.runAfterDelay(100, () -> {
             helper.assertBlockProperty(setup.reader(), InputDeviceBlock.LIGHT, InputLight.DENIED);
-            check(!level.getBlockState(setup.vault()).getValue(RelayBlock.POWERED), "Een kaart van niveau 2 opende de kluis");
+            check(!level.getBlockState(setup.vault()).getValue(RelayBlock.POWERED), "Een kaart van guest opende de kluis");
             check(setup.hacker().getMainHandItem().getDamageValue() == 2, "Twee hacks kostten niet twee gebruiken");
             helper.succeed();
         });
@@ -298,7 +302,7 @@ public final class BypassGameTests {
         helper.runAfterDelay(2, () -> {
             startLab(helper, setup);
             Bypass.start(setup.hacker(), setup.readerAbs(), InteractionHand.MAIN_HAND);
-            chooseLevel(setup, 1);
+            chooseGroup(setup, "guest");
             CompoundTag args = new CompoundTag();
             args.putString("why", "alarm");
             send(setup, "fail", args);
@@ -486,9 +490,9 @@ public final class BypassGameTests {
         return new Pockets(victim, thief);
     }
 
-    private static ItemStack card(int number, int level, String label) {
+    private static ItemStack card(int number, int colour, String label) {
         ItemStack stack = new ItemStack(ModItems.KEYCARD.get());
-        KeycardItem.write(stack, new KeycardData("10.0.0.9", "pocket-net", number, level, label));
+        KeycardItem.write(stack, new KeycardData("10.0.0.9", "pocket-net", number, colour, label));
         return stack;
     }
 

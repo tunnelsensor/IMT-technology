@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Een voorwaarde in een diagram: wat na {@code if} komt, zoals
- * {@code card.valid and card.level >= 3} of {@code code == "4321"} of {@code is_on("Lamp")}.
+ * {@code card.in_group("security")} of {@code code == "4321"} of {@code is_on("Lamp")}.
  *
  * Een voorwaarde is een boompje: {@code a and b} is een And met links a en rechts b. Dat boompje
  * kunnen we:
@@ -34,18 +34,18 @@ public sealed interface Expr {
 
     record Bool(boolean value) implements Expr {}
 
-    /** Een gegeven van wat er gebeurde: {@code card.level}, {@code code}, {@code is_night}... */
+    /** Een gegeven van wat er gebeurde: {@code card.number}, {@code code}, {@code is_night}... */
     record Var(String name) implements Expr {}
 
     /** {@code is_on("Lamp")}: staat dat apparaat nu aan? */
     record IsOn(String device) implements Expr {}
 
-    /** {@code -card.level}: het tegengestelde getal. (Een los getal zoals -20 wordt meteen een Num.) */
+    /** {@code -card.number}: het tegengestelde getal. (Een los getal zoals -20 wordt meteen een Num.) */
     record Neg(Expr inner) implements Expr {}
 
     /**
      * Rekenen (hoofdstuk 20): {@code a + b}, {@code a - b}, {@code a * b}, {@code a / b}. Met
-     * {@code +} plak je ook tekst aan elkaar: {@code "Level " + card.level} wordt "Level 3".
+     * {@code +} plak je ook tekst aan elkaar: {@code "Card " + card.number} wordt "Card 1001".
      */
     record Arith(Expr left, char op, Expr right) implements Expr {}
 
@@ -78,7 +78,6 @@ public sealed interface Expr {
      * horen (null = altijd).
      */
     enum Variable {
-        CARD_LEVEL("card.level", Type.NUMBER, "the level of the card (1-5, or 0 for a blank card)", Op.KEYCARD),
         CARD_NUMBER("card.number", Type.NUMBER, "the number of the card (like 1001)", Op.KEYCARD),
         CARD_VALID("card.valid", Type.BOOL, "true if this network wrote the card and it is not blocked", Op.KEYCARD),
         CARD_NAME("card.name", Type.TEXT, "the name written on the card", Op.KEYCARD),
@@ -210,10 +209,15 @@ public sealed interface Expr {
      * </ul>
      */
     enum Function {
-        PIN("pin", Type.NUMBER, "the number of a pin (1-8), so you can give it a name: scanPin = pin(1)"),
-        READ("read", Type.ANY, "what the module on that pin says right now, like read(scanPin)"),
+        PIN("pin", Type.NUMBER, "the number of a pin (1-8), so you can give it a name: scanPin = pin(1)", null),
+        READ("read", Type.ANY, "what the module on that pin says right now, like read(scanPin)", null),
         /** {@code active("Wave 1")} (hoofdstuk 26): hoeveel robots en drones van die squad (of met die naam) aan staan. */
-        ACTIVE("active", Type.NUMBER, "how many robots and drones of this squad (or with this name) are on and standing, like active(\"Wave 1\")");
+        ACTIVE("active", Type.NUMBER, "how many robots and drones of this squad (or with this name) are on and standing, like active(\"Wave 1\")", null),
+        /**
+         * {@code card.in_group("security")} (25 oktober): zit de kaart in die groep, zelf of via een groep die erin zit?
+         * Alleen een geldige kaart zit in een groep, dus {@code if card.in_group("security"): accept()} is al veilig.
+         */
+        CARD_IN_GROUP("card.in_group", Type.BOOL, "true if the card is valid here and in this group (or in a group inside it), like card.in_group(\"security\")", Op.KEYCARD);
 
         /** Zoveel pinnen heeft de printplaat van een robot (zoals BotBoard.PINS). */
         public static final int PINS = 8;
@@ -221,11 +225,14 @@ public sealed interface Expr {
         final String name;
         final Type type;
         final String help;
+        /** Bij welke trigger hij hoort (zoals de card.-gegevens bij when keycard), of null = overal. */
+        final @Nullable Op only;
 
-        Function(String name, Type type, String help) {
+        Function(String name, Type type, String help, @Nullable Op only) {
             this.name = name;
             this.type = type;
             this.help = help;
+            this.only = only;
         }
 
         public String code() {
@@ -236,9 +243,23 @@ public sealed interface Expr {
             return help;
         }
 
-        /** Pinnen heeft alleen een robot of een drone; active() kent de server (die weet wie er staat). */
+        /** Pinnen heeft alleen een robot of een drone; active() kent de server (die weet wie er staat), kaarten alleen de server. */
         public boolean allowedIn(ProgramKind kind) {
-            return this == ACTIVE ? kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END : kind.onBot();
+            return switch (this) {
+                case ACTIVE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
+                case CARD_IN_GROUP -> kind == ProgramKind.SERVER;
+                default -> kind.onBot();
+            };
+        }
+
+        /** Mag deze functie na deze trigger? (null = in een def: alles.) */
+        public boolean allowedAfter(@Nullable Op trigger) {
+            return only == null || trigger == null || only == trigger;
+        }
+
+        /** Waar deze functie wel werkt, voor de foutmeldingen: "when keycard(...)". Null = overal. */
+        public @Nullable String where() {
+            return only == null ? null : "when " + only.code() + "(...)";
         }
 
         public static @Nullable Function byName(String name) {
@@ -385,12 +406,12 @@ public sealed interface Expr {
         /** Het geheel: een voorwaarde ({@code condition}: waar of onwaar) of een waarde (van elke soort). */
         Expr parse(boolean condition) {
             if (peek().type() == Lexer.Type.END || peek().is(":")) {
-                throw new LogicException(condition ? "The if is missing what to check, like: if card.level >= 3:"
+                throw new LogicException(condition ? "The if is missing what to check, like: if card.valid:"
                         : "Something is missing here: a number, a text or a name, like 0");
             }
             Expr expr = or();
             if (condition) {
-                requireType(expr, Type.BOOL, "The check must be true or false, like card.level >= 3");
+                requireType(expr, Type.BOOL, "The check must be true or false, like count >= 3");
             }
             return expr;
         }
@@ -464,7 +485,7 @@ public sealed interface Expr {
             return left;
         }
 
-        /** Een minteken ervoor: {@code -20}, {@code -card.level}. */
+        /** Een minteken ervoor: {@code -20}, {@code -card.number}. */
         private Expr unary() {
             if (peek().is("-")) {
                 next();
@@ -607,8 +628,17 @@ public sealed interface Expr {
                 default -> {
                 }
             }
+            if (word.equals("card.level") || word.equals("card.group") || word.equals("card.groups")) {
+                // 25 oktober: een kaart heeft geen niveau meer, maar groepen (en kan in meer dan één groep zitten).
+                throw new LogicException(word.equals("card.level")
+                        ? "card.level is gone: keycards are in groups now. Use card.in_group(\"security\")"
+                        : "A card can be in more than one group: use card.in_group(\"security\")");
+            }
             Function function = Function.byName(word);
             if (function != null) {
+                if (scope != null && !function.allowedAfter(trigger)) {
+                    throw new LogicException(word + "(...) only works inside " + function.where());
+                }
                 return call(function);
             }
             Variable variable = Variable.byName(word);
@@ -659,6 +689,13 @@ public sealed interface Expr {
                 // active("Wave 1"): één naam (tekst) tussen de haakjes.
                 if (args.size() != 1 || typeOf(args.getFirst()) != Type.TEXT && typeOf(args.getFirst()) != Type.ANY) {
                     throw new LogicException("active needs the name of a squad or robot between the brackets, like active(\"Wave 1\")");
+                }
+                return new Call(function, List.copyOf(args));
+            }
+            if (function == Function.CARD_IN_GROUP) {
+                // card.in_group("security"): één groep (tekst) tussen de haakjes.
+                if (args.size() != 1 || typeOf(args.getFirst()) != Type.TEXT && typeOf(args.getFirst()) != Type.ANY) {
+                    throw new LogicException("card.in_group needs the name of a keycard group between quotes, like card.in_group(\"security\")");
                 }
                 return new Call(function, List.copyOf(args));
             }
@@ -749,7 +786,7 @@ public sealed interface Expr {
         };
     }
 
-    /** Alle gegevens (card.level, code, player.name...) die in deze voorwaarde voorkomen. */
+    /** Alle gegevens (card.valid, code, player.name...) die in deze voorwaarde voorkomen. */
     static java.util.Set<String> variables(Expr expr) {
         java.util.Set<String> names = new java.util.LinkedHashSet<>();
         collectVariables(expr, names);
@@ -912,9 +949,14 @@ public sealed interface Expr {
         default Object active(String name) {
             return 0.0;
         }
+
+        /** Zit de kaart van deze run in die groep ({@code card.in_group("security")}, 25 oktober)? Standaard: nee. */
+        default boolean inGroup(String group) {
+            return false;
+        }
     }
 
-    /** De ingebouwde gegevens ({@code card.level}, {@code robot.battery}...) die in deze uitdrukking staan. */
+    /** De ingebouwde gegevens ({@code card.number}, {@code robot.battery}...) die in deze uitdrukking staan. */
     static List<String> builtins(Expr expr) {
         List<String> names = new ArrayList<>();
         collect(expr, names);
@@ -1015,6 +1057,9 @@ public sealed interface Expr {
             case Call c -> {
                 if (c.function() == Function.ACTIVE) {
                     yield facts.active(text(eval(c.args().getFirst(), facts)));
+                }
+                if (c.function() == Function.CARD_IN_GROUP) {
+                    yield facts.inGroup(text(eval(c.args().getFirst(), facts)));
                 }
                 // pin(1) is gewoon het getal; read(pin) vraagt het aan de robot.
                 double pin = Math.rint(toNumber(eval(c.args().getFirst(), facts)));

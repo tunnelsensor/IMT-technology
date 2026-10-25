@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Knipt één regel code in stukjes ("tokens"): woorden ({@code keycard}, {@code card.level}),
+ * Knipt één regel code in stukjes ("tokens"): woorden ({@code keycard}, {@code card.valid}),
  * getallen ({@code 3}, {@code 0.5}), tekst tussen aanhalingstekens ({@code "Lab door"}) en tekens
  * ({@code ==}, {@code (}, {@code :}, {@code +}). Een {@code #} begint commentaar: de rest van de
  * regel telt niet. Sinds 19 oktober ook tekst met namen erin ({@code $"Round {i} of {count}"}, jouw
