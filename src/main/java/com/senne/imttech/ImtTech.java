@@ -76,6 +76,7 @@ public class ImtTech {
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
+        com.senne.imttech.registry.ModParticles.PARTICLES.register(modEventBus);
         com.senne.imttech.registry.ModStructures.TYPES.register(modEventBus);
         com.senne.imttech.registry.ModStructures.PIECES.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
@@ -186,6 +187,10 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Emp::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.imttech.weapons.Emp.clear());
+        // De rookwolken van de smokebom: vergeten als ze op zijn.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Smoke::onServerTick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.weapons.Smoke.clear());
         NeoForge.EVENT_BUS.addListener(ImtSuit::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ImtSuit::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ImtSuit::onFall);

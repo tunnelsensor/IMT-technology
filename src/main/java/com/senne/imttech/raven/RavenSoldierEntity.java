@@ -98,6 +98,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
     }
 
     /** Eén laserschot: meteen raak (het is licht), tenzij er een schildkoepel tussen zit. */
+    /** Door de rook van een smokebom (hoofdstuk 35) ziet hij niemand. */
+    @Override
+    public boolean hasLineOfSight(net.minecraft.world.entity.Entity entity) {
+        return super.hasLineOfSight(entity)
+                && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
+    }
+
     @Override
     public void performRangedAttack(LivingEntity target, float power) {
         if (!(level() instanceof ServerLevel level)) {

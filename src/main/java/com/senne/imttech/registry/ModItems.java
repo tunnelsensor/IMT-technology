@@ -344,13 +344,39 @@ public final class ModItems {
             new Item.Properties().durability(com.senne.imttech.robot.IonBlasterItem.USES));
 
     /** Hoofdstuk 35: de EMP Grenade, een bol die rolt. Schakelt alles in de buurt even uit. */
-    public static final DeferredItem<com.senne.imttech.weapons.EmpGrenadeItem> EMP_GRENADE = ITEMS.registerItem(
-            "emp_grenade", properties -> new com.senne.imttech.weapons.EmpGrenadeItem(properties, false),
+    public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> EMP_GRENADE = ITEMS.registerItem(
+            "emp_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
+                    com.senne.imttech.weapons.GrenadeItem.Kind.EMP),
             new Item.Properties());
 
     /** Hoofdstuk 35: de Sticky EMP Grenade, een halve bol die vastplakt. */
-    public static final DeferredItem<com.senne.imttech.weapons.EmpGrenadeItem> STICKY_EMP_GRENADE = ITEMS.registerItem(
-            "sticky_emp_grenade", properties -> new com.senne.imttech.weapons.EmpGrenadeItem(properties, true),
+    public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> STICKY_EMP_GRENADE = ITEMS.registerItem(
+            "sticky_emp_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
+                    com.senne.imttech.weapons.GrenadeItem.Kind.STICKY_EMP),
+            new Item.Properties());
+
+    /** Hoofdstuk 35: de Frag Grenade, de EMP-bol als explosief (zoals C4, iets zwakker; geen EMP). */
+    public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> FRAG_GRENADE = ITEMS.registerItem(
+            "frag_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
+                    com.senne.imttech.weapons.GrenadeItem.Kind.FRAG),
+            new Item.Properties());
+
+    /** Hoofdstuk 35: de Sticky Frag Grenade, de sticky als explosief. */
+    public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> STICKY_FRAG_GRENADE = ITEMS.registerItem(
+            "sticky_frag_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
+                    com.senne.imttech.weapons.GrenadeItem.Kind.STICKY_FRAG),
+            new Item.Properties());
+
+    /** Hoofdstuk 35: de Smoke Grenade, een bol die een wolk rook maakt (grijs, of in de kleur van een kleurstof). */
+    public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> SMOKE_GRENADE = ITEMS.registerItem(
+            "smoke_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
+                    com.senne.imttech.weapons.GrenadeItem.Kind.SMOKE),
+            new Item.Properties());
+
+    /** Hoofdstuk 35: de Flashbang, een bol die fel flitst (alleen spelers merken het). */
+    public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> FLASHBANG = ITEMS.registerItem(
+            "flashbang", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
+                    com.senne.imttech.weapons.GrenadeItem.Kind.FLASH),
             new Item.Properties());
 
     /** Het item van deze module. */

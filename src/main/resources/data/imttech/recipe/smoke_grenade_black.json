@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "group": "imttech:dyed_smoke_grenade",
+  "ingredients": [
+    {
+      "item": "imttech:smoke_grenade"
+    },
+    {
+      "tag": "c:dyes/black"
+    }
+  ],
+  "result": {
+    "id": "imttech:smoke_grenade",
+    "count": 1,
+    "components": {
+      "imttech:smoke_color": "black"
+    }
+  }
+}

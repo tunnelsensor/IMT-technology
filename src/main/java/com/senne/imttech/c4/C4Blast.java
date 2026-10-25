@@ -24,7 +24,7 @@ import net.minecraft.world.phys.Vec3;
  * Een zone houdt C4 niet tegen: dat is juist de bedoeling (zie security/zone/Zones). Ander C4 in de
  * klap gaat ook af (een kettingreactie), TNT wordt aangestoken. Wezens krijgen een klap zoals van TNT.
  *
- * De EMP-granaten (hoofdstuk 35) ontploffen op dezelfde manier, maar iets zwakker (zie {@link #blast}).
+ * De frag-granaten (hoofdstuk 35) ontploffen op dezelfde manier, maar iets zwakker (zie {@link #grenade}).
  */
 public final class C4Blast {
     private C4Blast() {}
@@ -49,10 +49,10 @@ public final class C4Blast {
     }
 
     /**
-     * Een klap zoals van C4 rond {@code centre}, met eigen sterktes: voor C4 zelf, en voor de EMP-granaten (hoofdstuk
+     * Een klap zoals van C4 rond {@code centre}, met eigen sterktes: voor C4 zelf, en voor de frag-granaten (hoofdstuk
      * 35: "zoals de C4 maar net iets minder sterk"). {@code at} is waar de lading lag (voor het logboek van de zone),
      * {@code source} wie de klap veroorzaakte (een granaat: dan telt wie hem gooide als dader), {@code what} de naam in
-     * het logboek ("C4", "EMP grenade"). Geeft hoeveel blokken er kapot gingen.
+     * het logboek ("C4", "Frag grenade"). Geeft hoeveel blokken er kapot gingen.
      */
     public static int blast(ServerLevel level, Vec3 centre, BlockPos at,
                             com.senne.imttech.security.zone.ZoneData.@org.jetbrains.annotations.Nullable Zone zone,
@@ -66,12 +66,12 @@ public final class C4Blast {
         return result.broken();
     }
 
-    /** Een klap van een EMP-granaat (hoofdstuk 35): als C4, maar met de sterktes uit [weapons]. */
+    /** Een klap van een frag-granaat (hoofdstuk 35): als C4, maar met de sterktes uit [weapons]. */
     public static int grenade(ServerLevel level, Vec3 centre, net.minecraft.world.entity.Entity grenade) {
         BlockPos at = BlockPos.containing(centre);
         float radius = ImtConfig.Weapons.GRENADE_BREACH_RADIUS;
         return blast(level, centre, at, com.senne.imttech.security.zone.Zones.activeNear(level, at, radius), grenade,
-                ImtConfig.Weapons.GRENADE_ENTITY_POWER, ImtConfig.Weapons.GRENADE_BREACH, radius, "EMP grenade", false);
+                ImtConfig.Weapons.GRENADE_ENTITY_POWER, ImtConfig.Weapons.GRENADE_BREACH, radius, "Frag grenade", false);
     }
 
     /** Wat een klap deed: zoveel blokken kapot, waarvan zoveel in de zone. */

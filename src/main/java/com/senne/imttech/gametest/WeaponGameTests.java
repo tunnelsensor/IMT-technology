@@ -1,6 +1,7 @@
 package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
+import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.energy.PowerCables;
 import com.senne.imttech.energy.PowerGrid;
 import com.senne.imttech.imt.ImtData;
@@ -18,8 +19,8 @@ import com.senne.imttech.suit.TechSuitItem;
 import com.senne.imttech.turret.TurretBlock;
 import com.senne.imttech.turret.TurretBlockEntity;
 import com.senne.imttech.weapons.Emp;
-import com.senne.imttech.weapons.RollingEmpGrenade;
-import com.senne.imttech.weapons.StickyEmpGrenade;
+import com.senne.imttech.weapons.RollingGrenade;
+import com.senne.imttech.weapons.StickyGrenade;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -256,7 +257,8 @@ public final class WeaponGameTests {
 
     /**
      * Een Sticky EMP Grenade vliegt tegen een muur, plakt vast met zijn bolle kant naar buiten, en gaat 2 seconden later
-     * af: de turret ernaast valt uit en de granaat is weg.
+     * af: de turret ernaast valt uit en de granaat is weg. De muur blijft heel (jouw keuze: de EMP zelf doet geen schade
+     * aan de map).
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
     public static void sticky_grenade_sticks_to_a_wall_and_goes_off(GameTestHelper helper) {
@@ -270,7 +272,7 @@ public final class WeaponGameTests {
         helper.setBlock(turret, ModBlocks.ROCKET_TURRET.get());
         generator(helper, turret.below());
         ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
-        StickyEmpGrenade grenade = new StickyEmpGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
+        StickyGrenade grenade = new StickyGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
         Vec3 start = helper.absoluteVec(new Vec3(4.5, 3.5, 6.5));
         grenade.setPos(start.x, start.y, start.z);
         grenade.shoot(1, 0.05, 0, 1.0f, 0);
@@ -285,19 +287,26 @@ public final class WeaponGameTests {
                     helper.assertBlockProperty(turret, TurretBlock.ONLINE, true);
                 })
                 .thenWaitUntil(() -> check(grenade.isRemoved(), "De granaat ging niet af"))
-                .thenExecute(() -> helper.assertBlockProperty(turret, TurretBlock.ONLINE, false))
+                .thenExecute(() -> {
+                    helper.assertBlockProperty(turret, TurretBlock.ONLINE, false);
+                    for (int y = 2; y <= 5; y++) {
+                        for (int z = 4; z <= 8; z++) {
+                            helper.assertBlockPresent(Blocks.STONE, new BlockPos(12, y, z));
+                        }
+                    }
+                })
                 .thenSucceed();
     }
 
     /**
-     * Een Sticky EMP Grenade op een robot gaat met de robot mee als die verplaatst wordt. Als hij afgaat, ligt de robot
-     * neer of is hij kapot (de granaat ontploft ook, zoals C4).
+     * Een Sticky EMP Grenade op een robot gaat met de robot mee als die verplaatst wordt, en legt hem neer als hij
+     * afgaat (zonder hem kapot te maken).
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
     public static void sticky_grenade_rides_along_on_a_robot(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(10, 2, 6), RobotParts.DEFAULT);
-        StickyEmpGrenade grenade = new StickyEmpGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
+        StickyGrenade grenade = new StickyGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
         Vec3 start = helper.absoluteVec(new Vec3(4.5, 3.2, 6.5));
         grenade.setPos(start.x, start.y, start.z);
         grenade.shoot(1, 0.05, 0, 1.0f, 0);
@@ -309,7 +318,7 @@ public final class WeaponGameTests {
                 .thenExecute(() -> check(grenade.distanceTo(robot) < 1.2,
                         "De granaat ging niet mee met de robot (afstand " + grenade.distanceTo(robot) + ")"))
                 .thenWaitUntil(() -> check(grenade.isRemoved(), "De granaat ging niet af"))
-                .thenExecute(() -> check(!robot.isAlive() || robot.isDown(), "De robot ligt niet neer na de granaat"))
+                .thenExecute(() -> check(robot.isAlive() && robot.isDown(), "De robot ligt niet neer na de granaat"))
                 .thenSucceed();
     }
 
@@ -326,7 +335,7 @@ public final class WeaponGameTests {
             }
         }
         GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(5, 2, 9), RobotParts.DEFAULT);
-        RollingEmpGrenade grenade = new RollingEmpGrenade(ModEntities.ROLLING_EMP_GRENADE.get(), level);
+        RollingGrenade grenade = new RollingGrenade(ModEntities.ROLLING_EMP_GRENADE.get(), level);
         Vec3 start = helper.absoluteVec(new Vec3(4.5, 2.6, 6.5));
         grenade.setPos(start.x, start.y, start.z);
         grenade.arm(60);
@@ -353,7 +362,7 @@ public final class WeaponGameTests {
                     check(!grenade.isRemoved(), "De bol ging te vroeg af");
                 })
                 .thenWaitUntil(() -> check(grenade.isRemoved(), "De bol ging niet af"))
-                .thenExecute(() -> check(!robot.isAlive() || robot.isDown(), "De robot naast de bol ligt niet neer"))
+                .thenExecute(() -> check(robot.isAlive() && robot.isDown(), "De robot naast de bol ligt niet neer"))
                 .thenSucceed();
     }
 
@@ -365,7 +374,7 @@ public final class WeaponGameTests {
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.STICKY_EMP_GRENADE.get(), 3));
         ModItems.STICKY_EMP_GRENADE.get().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
         check(player.getMainHandItem().getCount() == 2, "Er ging geen granaat uit de stapel");
-        java.util.List<StickyEmpGrenade> thrown = helper.getLevel().getEntitiesOfClass(StickyEmpGrenade.class,
+        java.util.List<StickyGrenade> thrown = helper.getLevel().getEntitiesOfClass(StickyGrenade.class,
                 player.getBoundingBox().inflate(4));
         check(thrown.size() == 1 && thrown.get(0).getOwner() == player, "Er vloog geen granaat van de speler");
         check(new ItemStack(ModItems.EMP_GRENADE.get()).getMaxStackSize() == 16, "Granaten stapelen niet tot 16");
@@ -373,12 +382,13 @@ public final class WeaponGameTests {
     }
 
     /**
-     * Jouw wens: "maak de EMP granades ook allebei explosiebaar zoals de C4 maar net iets minder sterk". Een sticky op
-     * een stenen muur blaast het blok waar hij op plakt eruit, maar een stenen blok anderhalf blok verder blijft staan
-     * (C4 haalt dat er wel uit) en obsidiaan ernaast ook. Een koe vlakbij krijgt de klap.
+     * Jouw wens: een kopie van de EMP-granaten als explosief, "zoals de C4 maar net iets minder sterk". Een Sticky Frag
+     * Grenade op een stenen muur blaast het blok waar hij op plakt eruit, maar een stenen blok twee hoger of lager blijft
+     * staan (C4 haalt dat er wel uit) en obsidiaan ernaast ook. Een koe vlakbij krijgt de klap. Het is geen EMP: de
+     * turret ernaast blijft aan.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
-    public static void emp_grenade_blows_a_hole_like_a_weaker_c4(GameTestHelper helper) {
+    public static void frag_grenade_blows_a_hole_like_a_weaker_c4(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         for (int y = 2; y <= 5; y++) {
             for (int z = 4; z <= 8; z++) {
@@ -388,7 +398,12 @@ public final class WeaponGameTests {
         // De koe staat opzij (niet in de weg van de granaat), maar wel dichtbij de plek waar hij ontploft.
         net.minecraft.world.entity.animal.Cow cow = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
                 new BlockPos(10, 2, 9));
-        StickyEmpGrenade grenade = new StickyEmpGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
+        BlockPos turret = new BlockPos(9, 2, 3);
+        helper.setBlock(turret, ModBlocks.ROCKET_TURRET.get());
+        generator(helper, turret.below());
+        ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
+        StickyGrenade grenade = new StickyGrenade(ModEntities.STICKY_FRAG_GRENADE.get(), level);
+        check(grenade.isFrag(), "Een Sticky Frag Grenade weet niet dat hij een frag is");
         Vec3 start = helper.absoluteVec(new Vec3(4.5, 3.4, 6.5));
         grenade.setPos(start.x, start.y, start.z);
         grenade.shoot(1, 0.04, 0, 1.0f, 0);
@@ -404,7 +419,199 @@ public final class WeaponGameTests {
                     check(level.getBlockState(two).is(Blocks.STONE), "Een blok twee hoger of lager ging ook kapot (te sterk)");
                     helper.assertBlockPresent(Blocks.OBSIDIAN, new BlockPos(12, 3, 7));
                     check(!cow.isAlive() || cow.getHealth() < cow.getMaxHealth(), "De koe vlakbij kreeg geen klap");
+                    ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
+                    helper.assertBlockProperty(turret, TurretBlock.ONLINE, true);
                 })
                 .thenSucceed();
+    }
+
+    /** De Frag Grenade (de bol) is een kopie van de EMP-bol: hij stuitert en piept net zo, maar ontploft. */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "weapons")
+    public static void frag_ball_explodes_instead_of_emp(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // De robot staat binnen de straal van een EMP (5 blokken), maar ver genoeg om de klap te overleven.
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(10, 2, 8), RobotParts.DEFAULT);
+        RollingGrenade grenade = new RollingGrenade(ModEntities.FRAG_GRENADE.get(), level);
+        check(grenade.kind() == RollingGrenade.Kind.FRAG && grenade.beeps(), "De frag-bol is geen frag, of piept niet");
+        Vec3 start = helper.absoluteVec(new Vec3(6.5, 2.5, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.arm(20);
+        level.addFreshEntity(grenade);
+        net.minecraft.world.entity.animal.Cow cow = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(8, 2, 6));
+        helper.startSequence()
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De frag-bol ging niet af"))
+                .thenExecute(() -> {
+                    check(!cow.isAlive() || cow.getHealth() < cow.getMaxHealth(), "De koe naast de frag-bol kreeg geen klap");
+                    check(!robot.isAlive() || !Emp.isJammed(robot) && !robot.isDown(), "De frag-bol gaf een EMP");
+                })
+                .thenSucceed();
+    }
+
+    // ================================================================ Stap 2c: de smokebom en de flashbang
+
+    /**
+     * De rekensom van de rook: een lijn dwars door een wolk is geblokkeerd, een lijn ernaast niet, en van heel dichtbij
+     * (minder dan SMOKE_SEE_THROUGH rook ertussen) zie je elkaar nog.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "weapons")
+    public static void smoke_blocks_lines_through_the_cloud(GameTestHelper helper) {
+        Vec3 c = new Vec3(0, 0, 0);
+        check(Math.abs(com.senne.imttech.weapons.Smoke.inside(c, 4, new Vec3(-10, 0, 0), new Vec3(10, 0, 0)) - 8) < 1e-6,
+                "Dwars door het midden gaat niet 8 blokken door de rook");
+        check(com.senne.imttech.weapons.Smoke.inside(c, 4, new Vec3(-10, 5, 0), new Vec3(10, 5, 0)) == 0,
+                "Een lijn boven de wolk gaat toch door de rook");
+        check(Math.abs(com.senne.imttech.weapons.Smoke.inside(c, 4, new Vec3(0, 0, 0), new Vec3(1, 0, 0)) - 1) < 1e-6,
+                "Een stukje binnen de wolk telt niet goed");
+        ServerLevel level = helper.getLevel();
+        Vec3 middle = helper.absoluteVec(new Vec3(10, 3, 10));
+        com.senne.imttech.weapons.Smoke.Cloud cloud = com.senne.imttech.weapons.Smoke.add(level, middle, 200);
+        helper.startSequence()
+                .thenIdle(com.senne.imttech.weapons.Smoke.GROW_TICKS + 1)
+                .thenExecute(() -> {
+                    double r = ImtConfig.Weapons.SMOKE_RADIUS;
+                    check(Math.abs(cloud.radius(level.getGameTime()) - r) < 1e-6, "De wolk groeide niet tot zijn grootte");
+                    check(com.senne.imttech.weapons.Smoke.blocks(level, middle.add(-r - 3, 0, 0), middle.add(r + 3, 0, 0)),
+                            "Dwars door de wolk kijk je er toch doorheen");
+                    check(!com.senne.imttech.weapons.Smoke.blocks(level, middle.add(-r - 3, r + 1, 0),
+                            middle.add(r + 3, r + 1, 0)), "Over de wolk heen kijk je er niet langs");
+                    check(!com.senne.imttech.weapons.Smoke.blocks(level, middle, middle.add(1, 0, 0)),
+                            "Van heel dichtbij in de rook zie je elkaar niet");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Jouw keuze: de rook blokkeert het zicht van alles wat kijkt. Een robot ziet een speler wel, maar niet door een
+     * wolk heen; een turret schiet niet op een monster achter de rook, en wel als de rook weg is.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "weapons")
+    public static void smoke_blinds_robots_and_turrets(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(3, 2, 4), RobotParts.DEFAULT);
+        net.minecraft.world.entity.animal.Cow cow = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(17, 2, 4));
+        BlockPos turret = new BlockPos(3, 2, 14);
+        helper.setBlock(turret, ModBlocks.ROCKET_TURRET.get());
+        generator(helper, turret.below());
+        check(robot.hasLineOfSight(cow), "De robot ziet de koe niet eens zonder rook");
+        // Twee wolken: midden tussen de robot en de koe, en tussen de turret en waar het monster komt. Na 5 seconden
+        // zijn ze weg.
+        com.senne.imttech.weapons.Smoke.add(level, helper.absoluteVec(new Vec3(10, 3, 4.5)), 100);
+        com.senne.imttech.weapons.Smoke.add(level, helper.absoluteVec(new Vec3(8, 3, 14.5)), 100);
+        net.minecraft.world.entity.monster.Husk[] husk = new net.minecraft.world.entity.monster.Husk[1];
+        helper.startSequence()
+                .thenIdle(com.senne.imttech.weapons.Smoke.GROW_TICKS + 2)
+                .thenExecute(() -> {
+                    ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
+                    check(!robot.hasLineOfSight(cow), "De robot kijkt door de rook heen");
+                    // Het monster pas nu (als de rook er hangt): anders schoot de turret al voordat de wolk groot was.
+                    husk[0] = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.HUSK, new BlockPos(13, 2, 14));
+                })
+                .thenIdle(30)
+                .thenExecute(() -> check(husk[0].getHealth() == husk[0].getMaxHealth(), "De turret schoot door de rook heen"))
+                .thenWaitUntil(() -> check(husk[0].getHealth() < husk[0].getMaxHealth() || !husk[0].isAlive(),
+                        "Zonder rook schoot de turret niet"))
+                .thenExecute(() -> check(robot.hasLineOfSight(cow), "Na de rook ziet de robot de koe niet meer"))
+                .thenSucceed();
+    }
+
+    /**
+     * Een Smoke Grenade stuitert, begint na de lont te roken (de wolk blokkeert het zicht), blijft liggen zolang hij
+     * rookt, en is weg als de rook op is. Hij gaat niet af als een bom (geen gat, geen EMP).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "weapons")
+    public static void smoke_grenade_smokes_and_goes_away(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        float before = ImtConfig.Weapons.SMOKE_SECONDS;
+        ImtConfig.Weapons.SMOKE_SECONDS = 4;
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(8, 2, 8), RobotParts.DEFAULT);
+        RollingGrenade grenade = new RollingGrenade(ModEntities.SMOKE_GRENADE.get(), level);
+        Vec3 start = helper.absoluteVec(new Vec3(6.5, 2.5, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.setSmokeColor(net.minecraft.world.item.DyeColor.RED);
+        grenade.arm(10);
+        level.addFreshEntity(grenade);
+        check(grenade.kind() == RollingGrenade.Kind.SMOKE && !grenade.beeps(), "Een smokebom is geen smokebom, of piept");
+        helper.startSequence()
+                .thenWaitUntil(() -> check(grenade.isSmoking(), "De smokebom begon niet te roken"))
+                .thenIdle(com.senne.imttech.weapons.Smoke.GROW_TICKS)
+                .thenExecute(() -> {
+                    Vec3 at = grenade.position().add(0, 0.5, 0);
+                    check(com.senne.imttech.weapons.Smoke.blocks(level, at.add(-6, 0, 0), at.add(6, 0, 0)),
+                            "De rook blokkeert het zicht niet");
+                    check(!grenade.isRemoved(), "De smokebom verdween meteen");
+                    check(!Emp.isJammed(robot) && !robot.isDown(), "Een smokebom gaf toch een EMP");
+                    check(grenade.smokeColor() == net.minecraft.world.item.DyeColor.RED, "De rook is niet rood");
+                })
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De smokebom bleef liggen na de rook"))
+                .thenExecute(() -> ImtConfig.Weapons.SMOKE_SECONDS = before)
+                .thenSucceed();
+    }
+
+    /**
+     * Jouw keuze: de flashbang "zoals in CS". Wie ernaar kijkt is helemaal verblind, wie wegkijkt een beetje, wie achter
+     * een muur staat niets. Een robot merkt niets (alleen spelers).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "weapons")
+    public static void flashbang_blinds_who_looks_at_it(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Vec3 flash = helper.absoluteVec(new Vec3(10.5, 2.5, 10.5));
+        ServerPlayer looking = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 2, 10), "flash-looker");
+        ServerPlayer away = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(13, 2, 10), "flash-away");
+        ServerPlayer hidden = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(10, 2, 16), "flash-hidden");
+        for (int x = 8; x <= 12; x++) {
+            for (int y = 2; y <= 4; y++) {
+                helper.setBlock(new BlockPos(x, y, 14), Blocks.STONE);
+            }
+        }
+        looking.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, flash);
+        away.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, flash.add(20, 0, 0));
+        hidden.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, flash);
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(11, 2, 8), RobotParts.DEFAULT);
+        java.util.Map<ServerPlayer, Float> blinded = com.senne.imttech.weapons.Flashbang.bang(level, flash, null);
+        check(blinded.getOrDefault(looking, 0f) > 0.95f, "Wie ernaar keek is niet helemaal verblind: " + blinded.get(looking));
+        float turned = blinded.getOrDefault(away, 0f);
+        check(turned > 0.05f && turned < 0.5f, "Wie wegkeek is te veel of helemaal niet verblind: " + turned);
+        check(!blinded.containsKey(hidden), "Wie achter een muur stond is toch verblind");
+        check(!robot.isDown() && !Emp.isJammed(robot), "De robot merkte iets van de flashbang");
+        helper.succeed();
+    }
+
+    /** Een gegooide Flashbang stuitert, gaat na zijn lont af en is dan weg (geen gat in de vloer, geen schade). */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "weapons")
+    public static void flashbang_goes_off_without_harm(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        net.minecraft.world.entity.animal.Cow cow = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(8, 2, 8));
+        net.minecraft.world.level.block.state.BlockState floor = helper.getBlockState(new BlockPos(6, 1, 6));
+        RollingGrenade grenade = new RollingGrenade(ModEntities.FLASHBANG.get(), level);
+        Vec3 start = helper.absoluteVec(new Vec3(6.5, 2.5, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.arm(20);
+        level.addFreshEntity(grenade);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De flashbang ging niet af"))
+                .thenExecute(() -> {
+                    check(cow.isAlive() && cow.getHealth() == cow.getMaxHealth(), "De flashbang deed schade");
+                    check(helper.getBlockState(new BlockPos(6, 1, 6)) == floor, "De flashbang maakte een gat in de vloer");
+                })
+                .thenSucceed();
+    }
+
+    /** Jouw keuze: gekleurde rook met een kleurstof. Een smokebom en rode kleurstof geven een rode smokebom. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "weapons")
+    public static void dye_makes_coloured_smoke(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        var input = net.minecraft.world.item.crafting.CraftingInput.of(2, 1, java.util.List.of(
+                new ItemStack(ModItems.SMOKE_GRENADE.get()), new ItemStack(net.minecraft.world.item.Items.RED_DYE)));
+        var recipe = level.getRecipeManager().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING, input, level);
+        check(recipe.isPresent(), "Er is geen recept voor een smokebom met kleurstof");
+        ItemStack result = recipe.get().value().assemble(input, level.registryAccess());
+        check(result.is(ModItems.SMOKE_GRENADE.get())
+                        && result.get(com.senne.imttech.registry.ModDataComponents.SMOKE_COLOR.get()) == net.minecraft.world.item.DyeColor.RED,
+                "Het recept geeft geen rode smokebom: " + result);
+        check(result.getHoverName().getString().contains("Smoke Grenade"), "De naam klopt niet: " + result.getHoverName().getString());
+        helper.succeed();
     }
 }

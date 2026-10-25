@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 323 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 330 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3433,7 +3433,11 @@ Ik stelde acht vragen, jij koos.
   te bekijken.
 - **Stijl: rood-goud** zoals je Tech Suit, met een witte/cyaan gloed.
 - **Later die avond** (tijdens het bouwen): "Maak de EMP granades ook allebei explosiebaar zoals de C4 maar net iets
-  minder sterk". Allebei ontploffen ze nu ook, met dezelfde klap als C4 maar zwakker.
+  minder sterk". Ik gaf eerst de EMP-granaten zelf een klap; jij verbeterde: "Het is niet de bedoeling dat de EMP zelf
+  damage aan de map doet, het is de bedoeling dat er een extra bom komt dat geen EMP is maar wel schade aan de map doet",
+  en daarna: "kopieer de sticky en de bal EMP, hernoem de kopieën en maak er explosieven van". Dus nu **vier**: de EMP
+  Grenade en de Sticky EMP Grenade (alleen een EMP, geen schade aan de map), en hun kopieën de **Frag Grenade** en de
+  **Sticky Frag Grenade** (een klap zoals C4 maar iets zwakker, geen EMP). De namen koos ik.
 - **En daarna**: "Maak voor de bal ook smokebom en flashbang maar geen sticky want dat is voor smoke en flash niet logisch".
   Vier vragen, jouw antwoorden: de **rook blokkeert het zicht van alles wat kijkt** (robots, turrets en drones zien niemand
   in of achter de rook en schieten er niet doorheen; een camera die in de rook kijkt ziet grijs); de **flashbang werkt
@@ -3514,15 +3518,39 @@ Zo bouw ik het:
       `-Ponly=grenades` (`gr01` tot `gr08`): in je hand, op de muur en de vloer, de bol van licht, alles uit, de robot
       neer, en de ruis in je bril. Vier nieuwe tests: plakken op een muur, meerijden op een robot, stuiteren en rollen, en
       gooien. 322 tests, allemaal groen.
-- [x] **2b. Ontploffen zoals C4, maar zwakker** (jouw wens) — als de granaat afgaat, komt na de puls dezelfde klap als C4
-      (`C4Blast.blast`, nu gedeeld): eerst een klap voor wezens (zoals TNT; wie de granaat gooide is de dader, dus zonder
-      PvP raak je geen spelers), dan breekpunten voor blokken. C4 heeft 10 breekpunten op 3,5 blokken en een klap van 4;
-      een granaat 8 breekpunten op 3 blokken en een klap van 3 (`[weapons] grenadeBreach`, `grenadeBreachRadius`,
-      `grenadeEntityPower`). Op een stenen muur blaast een granaat dus alleen het blok eruit waar hij op plakt (de rest
-      krijgt barsten), waar C4 er een paar meer uithaalt; obsidiaan houdt het. Een zone houdt hem niet tegen (net als C4)
-      en het logboek van de zone schrijft "EMP grenade blast". Een robot met een granaat erop gaat nu vaak kapot in plaats
-      van alleen neer te gaan. Eén nieuwe test (`emp_grenade_blows_a_hole_like_a_weaker_c4`). 323 tests, allemaal groen.
-- [ ] **2c. De smokebom en de flashbang** — twee nieuwe ballen (zonder sticky).
+- [x] **2b. De frag-granaten: ontploffen zoals C4, maar zwakker** (jouw wens, na je verbetering) — de **Frag Grenade**
+      (bol) en de **Sticky Frag Grenade** zijn kopieën van de EMP-granaten: ze vliegen, stuiteren, plakken, piepen en
+      knipperen net zo, maar zijn legergroen met een oranje band en rode lampjes, en als ze afgaan komt er geen EMP maar
+      dezelfde klap als C4 (`C4Blast.blast`, nu gedeeld): eerst een klap voor wezens (zoals TNT; wie de granaat gooide is
+      de dader, dus zonder PvP raak je geen spelers), dan breekpunten voor blokken. C4 heeft 10 breekpunten op 3,5
+      blokken en een klap van 4; een frag-granaat 8 breekpunten op 3 blokken en een klap van 3 (`[weapons]
+      grenadeBreach`, `grenadeBreachRadius`, `grenadeEntityPower`). Op een stenen muur blaast hij dus alleen het blok
+      eruit waar hij op plakt (de blokken eromheen krijgen barsten), waar C4 er een paar meer uithaalt; obsidiaan houdt
+      het. Een zone houdt hem niet tegen (net als C4) en het logboek van de zone schrijft "Frag grenade blast". De
+      EMP-granaten doen géén schade aan de map. **Recepten**: 4 ijzer, 4 buskruit en een TNT = 2 Frag Grenades; een Frag
+      Grenade met een slijmbal = een Sticky Frag Grenade.
+- [x] **2c. De smokebom en de flashbang** (jouw wens, alleen als bal) — **De Smoke Grenade** (donker met een band in de
+      kleur van zijn rook en een rooster bovenop): stuitert en rolt, begint na 2 seconden te sissen en maakt een wolk van
+      4,5 blokken die 18 seconden blijft (2 seconden groeien, 3 seconden wegtrekken), en verdwijnt dan. Op de server houdt
+      `weapons/Smoke` de wolken bij: robots, security drones, je eigen drones, raiddrones, torendrones en Raven-soldaten
+      (via `hasLineOfSight`) en turrets (`canSee`) kijken er niet doorheen; van heel dichtbij (1,5 blok rook) nog net wel.
+      In je spel blaast hij honderden dikke plukken rook (een eigen deeltje, `client/weapons/SmokeCloudParticle`, de
+      rookplaatjes van een kampvuur maar 3 tot 4 blokken groot), en in het beeld van een bewakingscamera tekenen we de wolk
+      als een dichte bol (`SmokeView.renderInFeed`): die ziet grijs. **Kleur**: een smokebom met een kleurstof (los in het
+      raster) geeft een "Red Smoke Grenade" enzovoort, 16 recepten (`smoke_grenade_<kleur>.json`, het data component
+      `smoke_color`). **De Flashbang** (stalen bol met een zwarte band en een gouden pin): gaat na 1,6 seconden af met een
+      felle flits en een harde knal (`weapons/Flashbang`). Elke speler die de flits kan zien (geen muur ertussen, tot 20
+      blokken) krijgt een wit scherm over alles heen dat even blijft en dan wegtrekt, een piep in zijn oren, en gedempt
+      geluid (`client/weapons/FlashOverlay`): recht ernaar kijken = 5 seconden helemaal wit, opzij kijken ongeveer de
+      helft, met je rug ernaartoe een beetje; verder dan 4 blokken minder. Ook jijzelf. Robots, turrets, drones en monsters
+      merken niets (jouw keuze). Geen schade, geen gat. **Recepten**: 2 ijzer, 2 buskruit en kolen = 2 Smoke Grenades; 2
+      ijzer, 2 buskruit en glowstone = 2 Flashbangs. Geluiden `smoke_grenade_hiss`, `flashbang_bang`, `flashbang_ring`.
+      Config `[weapons]`: `smokeFuseSeconds`, `smokeSeconds`, `smokeRadius`, `smokeSeeThrough`, `flashFuseSeconds`,
+      `flashRadius`, `flashSeconds`. **Screenshots** `-Ponly=grenades` nu tot `gr18`: de frag-granaten in je hand, een
+      Sticky Frag op de muur, de klap en het gat, de grijze en rode rook (van buiten en van binnen), en het witte scherm.
+      Acht nieuwe tests (rook in de rekensom, robots en turrets blind in de rook, een smokebom die rookt en verdwijnt,
+      de flashbang naar wie kijkt, de flashbang zonder schade, gekleurde rook, de frag-sticky en de frag-bol), en de oude
+      tests weer met "de robot ligt neer" na een EMP. 330 tests, allemaal groen.
 - [ ] **3. Energiecellen en de geweren op de server** — schieten, schade, cellen, herladen, opladen (met tests).
 - [ ] **4. De geweren in je eigen beeld** — modellen, armen, animaties, richten, het vizier, de HUD en geluiden.
 - [ ] **5. Showcase, screenshots en LEESMIJ.**

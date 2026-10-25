@@ -838,6 +838,50 @@ def emp_grenade_bounce():
     return finish(metal_tap(0.18, [1700, 2650, 4100], 28), peak=0.5)
 
 
+
+def smoke_grenade_hiss():
+    """
+    De smokebom begint te roken: een korte plof (het dopje springt eraf) en dan een lang, luid gesis dat langzaam
+    zachter wordt, met wat geruis erin (rook die eruit spuit).
+    """
+    duration = 3.0
+    total = np.zeros(int(RATE * duration))
+    pop = lowpass(noise(0.06), 900) * decay(0.06, 50)
+    hiss = bandpass(noise(2.9), 2500, 9000) * np.minimum(1, seconds(2.9) / 0.08) * np.exp(-seconds(2.9) * 0.6)
+    rumble = lowpass(noise(2.9), 400) * np.exp(-seconds(2.9) * 0.9) * 0.6
+    place(total, pop * 1.5, 0.0)
+    place(total, hiss * 0.8, 0.05)
+    place(total, rumble, 0.05)
+    return finish(fade(total, 0.002, 0.4), peak=0.6)
+
+
+def flashbang_bang():
+    """
+    De flashbang: een snoeiharde, droge knal (veel hoge tonen, heel kort) met een korte echo erachter. Geen dreun zoals
+    bij een explosie: het is geen bom.
+    """
+    total = np.zeros(int(RATE * 1.2))
+    crack = bandpass(noise(0.05), 1200, 12000) * decay(0.05, 60)
+    body = bandpass(noise(0.25), 300, 4000) * decay(0.25, 18)
+    echo = bandpass(noise(0.6), 500, 3000) * decay(0.6, 6) * 0.25
+    place(total, crack * 2.2, 0.0)
+    place(total, body * 1.0, 0.0)
+    place(total, echo, 0.12)
+    return finish(total, peak=0.95)
+
+
+def flashbang_ring():
+    """
+    De piep in je oren na een flashbang: een hoge, zuivere toon (iets zwevend) die 4 seconden blijft en langzaam
+    wegebt, zoals tinnitus.
+    """
+    duration = 4.5
+    t = seconds(duration)
+    tone = np.sin(2 * np.pi * 3520 * t) + 0.35 * np.sin(2 * np.pi * 3528 * t)
+    envelope = np.minimum(1, t / 0.05) * np.exp(-t * 0.55)
+    return finish(fade(tone * envelope, 0.01, 0.5), peak=0.35)
+
+
 SOUNDS = {
     "imt_boot": imt_boot,
     "imt_blip": imt_blip,
@@ -887,6 +931,9 @@ SOUNDS = {
     "emp_grenade_beep": emp_grenade_beep,
     "emp_grenade_stick": emp_grenade_stick,
     "emp_grenade_bounce": emp_grenade_bounce,
+    "smoke_grenade_hiss": smoke_grenade_hiss,
+    "flashbang_bang": flashbang_bang,
+    "flashbang_ring": flashbang_ring,
 }
 
 

@@ -242,6 +242,11 @@ public final class ClientPayloadHandlers {
         BeamEffects.play(payload);
     }
 
+    /** Een flashbang verblindt je (hoofdstuk 35). */
+    public static void onFlash(com.senne.imttech.network.FlashPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.weapons.FlashOverlay.flash(payload.strength(), payload.ticks());
+    }
+
     /** Een EMP-granaat ging af (hoofdstuk 35). */
     public static void onEmpBlast(com.senne.imttech.network.EmpBlastPayload payload, IPayloadContext context) {
         com.senne.imttech.client.weapons.EmpEffects.blast(payload.center(), payload.radius());

@@ -98,6 +98,12 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BEEP = register("emp_grenade.beep");
     /** Een Sticky EMP Grenade plakt vast: een doffe klets met een klikje. */
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_STICK = register("emp_grenade.stick");
+    /** De smokebom begint te roken: een lang, luid gesis. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> SMOKE_GRENADE_HISS = register("smoke_grenade.hiss");
+    /** De flashbang: een snoeiharde knal. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> FLASHBANG_BANG = register("flashbang.bang");
+    /** De piep in je oren na een flashbang (alleen jij hoort hem). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> FLASHBANG_RING = register("flashbang.ring");
     /** De bol stuitert: een metalen tik. */
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BOUNCE = register("emp_grenade.bounce");
 

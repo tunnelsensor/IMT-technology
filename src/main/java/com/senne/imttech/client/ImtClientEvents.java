@@ -371,6 +371,8 @@ public final class ImtClientEvents {
         SuitFlight.reset();
         com.senne.imttech.client.suit.SuitEffects.clear();
         com.senne.imttech.client.weapons.EmpEffects.clear();
+        com.senne.imttech.client.weapons.SmokeView.clear();
+        com.senne.imttech.client.weapons.FlashOverlay.clear();
         com.senne.imttech.client.suit.LaserCannonHand.reset();
         com.senne.imttech.client.illusion.IllusionRenderer.clear();
         com.senne.imttech.client.shield.RayshieldHum.clear();

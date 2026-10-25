@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:gunpowders"
+    },
+    "C": {
+      "tag": "minecraft:coals"
+    }
+  },
+  "pattern": [
+    " I ",
+    "GCG",
+    " I "
+  ],
+  "result": {
+    "id": "imttech:smoke_grenade",
+    "count": 2
+  }
+}

@@ -98,6 +98,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ION_BLASTER.get());
                 output.accept(ModItems.EMP_GRENADE.get());
                 output.accept(ModItems.STICKY_EMP_GRENADE.get());
+                output.accept(ModItems.FRAG_GRENADE.get());
+                output.accept(ModItems.STICKY_FRAG_GRENADE.get());
+                output.accept(ModItems.SMOKE_GRENADE.get());
+                output.accept(ModItems.FLASHBANG.get());
                 output.accept(ModItems.TRAINING_START.get());
                 output.accept(ModItems.TRAINING_END.get());
                 output.accept(ModItems.TRAINING_GOAL.get());

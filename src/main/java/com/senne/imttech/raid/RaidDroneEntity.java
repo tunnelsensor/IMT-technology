@@ -77,6 +77,13 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         com.senne.imttech.drone.DroneDamage.particles(this);
     }
 
+    /** Door de rook van een smokebom (hoofdstuk 35) ziet hij niemand. */
+    @Override
+    public boolean hasLineOfSight(net.minecraft.world.entity.Entity entity) {
+        return super.hasLineOfSight(entity)
+                && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
+    }
+
     @Override
     protected void customServerAiStep() {
         super.customServerAiStep();

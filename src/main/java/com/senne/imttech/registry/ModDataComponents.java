@@ -147,4 +147,13 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("drone_data", builder -> builder
                     .persistent(com.senne.imttech.robot.DroneData.CODEC)
                     .networkSynchronized(com.senne.imttech.robot.DroneData.STREAM_CODEC));
+
+    /**
+     * Hoofdstuk 35: de kleur van de rook van een Smoke Grenade (jouw keuze: "kleur met kleurstof"). Geen = grijs. Je
+     * zet hem met een recept: een smokebom en een kleurstof (zie data/imttech/recipe/smoke_grenade_*.json).
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.world.item.DyeColor>> SMOKE_COLOR =
+            COMPONENTS.registerComponentType("smoke_color", builder -> builder
+                    .persistent(net.minecraft.world.item.DyeColor.CODEC)
+                    .networkSynchronized(net.minecraft.world.item.DyeColor.STREAM_CODEC));
 }

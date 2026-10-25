@@ -301,6 +301,9 @@ public final class ModNetwork {
         // Een EMP-granaat ging af (hoofdstuk 35): de bol van licht.
         registrar.playToClient(EmpBlastPayload.TYPE, EmpBlastPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onEmpBlast(payload, context));
+        // Een flashbang verblindt je (hoofdstuk 35): het witte scherm en de piep.
+        registrar.playToClient(FlashPayload.TYPE, FlashPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onFlash(payload, context));
     }
 
     /**

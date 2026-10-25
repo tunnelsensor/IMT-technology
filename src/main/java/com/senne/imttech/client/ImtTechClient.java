@@ -48,6 +48,11 @@ public class ImtTechClient {
         modEventBus.addListener(ImtTechClient::registerLayerDefinitions);
         // De losse onderdelen van de wapens (hoofdstuk 35): granaten en geweren.
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::register);
+        // De rook van de smokebom, en de kleur van een gekleurde smokebom.
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event) ->
+                event.registerSpriteSet(com.senne.imttech.registry.ModParticles.SMOKE_CLOUD.get(),
+                        com.senne.imttech.client.weapons.SmokeCloudParticle.Provider::new));
+        modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerItemColors);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
@@ -105,8 +110,9 @@ public class ImtTechClient {
         // De harnas-werkbank: waar je naar kijkt op het hologram, en je klik daarop.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.workbench.WorkbenchHologram::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.workbench.WorkbenchHologram::onInteraction);
-        // Wapens (hoofdstuk 35): de bol van licht van een EMP-granaat.
+        // Wapens (hoofdstuk 35): de bol van licht van een EMP-granaat, en gedempt geluid na een flashbang.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.EmpEffects::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.FlashOverlay::onPlaySound);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
@@ -120,6 +126,9 @@ public class ImtTechClient {
         // Het kaartje naast je vizier als je naar het werkbank-hologram kijkt.
         event.registerAbove(VanillaGuiLayers.CROSSHAIR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "workbench_hint"),
                 com.senne.imttech.client.workbench.WorkbenchHologram::renderHint);
+        // Na een flashbang (hoofdstuk 35): een wit scherm over alles heen, ook over je HUD.
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "flashbang"),
+                new com.senne.imttech.client.weapons.FlashOverlay());
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
@@ -140,8 +149,12 @@ public class ImtTechClient {
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.imttech.client.drone.SecurityDroneRenderer::new);
         event.registerEntityRenderer(ModEntities.GUARD_ROBOT.get(), com.senne.imttech.client.robot.GuardRobotRenderer::new);
         event.registerEntityRenderer(ModEntities.GUARD_DRONE.get(), com.senne.imttech.client.robot.GuardDroneRenderer::new);
-        event.registerEntityRenderer(ModEntities.ROLLING_EMP_GRENADE.get(), com.senne.imttech.client.weapons.EmpGrenadeRenderer::new);
-        event.registerEntityRenderer(ModEntities.STICKY_EMP_GRENADE.get(), com.senne.imttech.client.weapons.EmpGrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.ROLLING_EMP_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.STICKY_EMP_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.FRAG_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.STICKY_FRAG_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.SMOKE_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
+        event.registerEntityRenderer(ModEntities.FLASHBANG.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         // C4 (hoofdstuk 10): het schermpje dat aftelt en het knipperende lampje.

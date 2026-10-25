@@ -277,6 +277,13 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         knockDown(ticks);
     }
 
+    /** Door de rook van een smokebom (hoofdstuk 35) ziet hij niemand. */
+    @Override
+    public boolean hasLineOfSight(net.minecraft.world.entity.Entity entity) {
+        return super.hasLineOfSight(entity)
+                && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
+    }
+
     /** Net neergeschoten (een robot stapt dan niet meer uit zijn dock; een drone valt). */
     protected void knockedDown() {}
 

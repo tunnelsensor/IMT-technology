@@ -382,5 +382,29 @@
         "name": "imttech:emp_grenade_bounce"
       }
     ]
+  },
+  "smoke_grenade.hiss": {
+    "subtitle": "subtitles.imttech.smoke_grenade.hiss",
+    "sounds": [
+      {
+        "name": "imttech:smoke_grenade_hiss"
+      }
+    ]
+  },
+  "flashbang.bang": {
+    "subtitle": "subtitles.imttech.flashbang.bang",
+    "sounds": [
+      {
+        "name": "imttech:flashbang_bang"
+      }
+    ]
+  },
+  "flashbang.ring": {
+    "subtitle": "subtitles.imttech.flashbang.ring",
+    "sounds": [
+      {
+        "name": "imttech:flashbang_ring"
+      }
+    ]
   }
 }

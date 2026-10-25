@@ -104,18 +104,54 @@ public final class ModEntities {
                     .build("orbital_missile"));
 
     /** Hoofdstuk 35: de EMP Grenade, een bol die stuitert en rolt en na 3 seconden afgaat. */
-    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.RollingEmpGrenade>> ROLLING_EMP_GRENADE =
-            ENTITIES.register("emp_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.RollingEmpGrenade>of(
-                            com.senne.imttech.weapons.RollingEmpGrenade::new, MobCategory.MISC)
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.RollingGrenade>> ROLLING_EMP_GRENADE =
+            ENTITIES.register("emp_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.RollingGrenade>of(
+                            com.senne.imttech.weapons.RollingGrenade::new, MobCategory.MISC)
                     .sized(0.375f, 0.375f)
                     .clientTrackingRange(6)
                     .updateInterval(2)         // vaak bijwerken: hij stuitert alle kanten op
                     .build("emp_grenade"));
 
+    /** Hoofdstuk 35: de Frag Grenade, een kopie van de EMP Grenade die ontploft zoals C4 (iets zwakker), zonder EMP. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.RollingGrenade>> FRAG_GRENADE =
+            ENTITIES.register("frag_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.RollingGrenade>of(
+                            com.senne.imttech.weapons.RollingGrenade::new, MobCategory.MISC)
+                    .sized(0.375f, 0.375f)
+                    .clientTrackingRange(6)
+                    .updateInterval(2)
+                    .build("frag_grenade"));
+
+    /** Hoofdstuk 35: de Sticky Frag Grenade, een kopie van de Sticky EMP Grenade die ontploft in plaats van een EMP. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.StickyGrenade>> STICKY_FRAG_GRENADE =
+            ENTITIES.register("sticky_frag_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.StickyGrenade>of(
+                            com.senne.imttech.weapons.StickyGrenade::new, MobCategory.MISC)
+                    .sized(0.4f, 0.4f)
+                    .clientTrackingRange(6)
+                    .updateInterval(2)
+                    .build("sticky_frag_grenade"));
+
+    /** Hoofdstuk 35: de Smoke Grenade, een bol die stuitert en rolt en dan een wolk rook maakt. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.RollingGrenade>> SMOKE_GRENADE =
+            ENTITIES.register("smoke_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.RollingGrenade>of(
+                            com.senne.imttech.weapons.RollingGrenade::new, MobCategory.MISC)
+                    .sized(0.375f, 0.375f)
+                    .clientTrackingRange(8)
+                    .updateInterval(2)
+                    .build("smoke_grenade"));
+
+    /** Hoofdstuk 35: de Flashbang, een bol die stuitert en rolt en dan fel flitst. */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.RollingGrenade>> FLASHBANG =
+            ENTITIES.register("flashbang", () -> EntityType.Builder.<com.senne.imttech.weapons.RollingGrenade>of(
+                            com.senne.imttech.weapons.RollingGrenade::new, MobCategory.MISC)
+                    .sized(0.375f, 0.375f)
+                    .clientTrackingRange(6)
+                    .updateInterval(2)
+                    .build("flashbang"));
+
     /** Hoofdstuk 35: de Sticky EMP Grenade, een halve bol die vastplakt en 2 seconden later afgaat. */
-    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.StickyEmpGrenade>> STICKY_EMP_GRENADE =
-            ENTITIES.register("sticky_emp_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.StickyEmpGrenade>of(
-                            com.senne.imttech.weapons.StickyEmpGrenade::new, MobCategory.MISC)
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.StickyGrenade>> STICKY_EMP_GRENADE =
+            ENTITIES.register("sticky_emp_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.StickyGrenade>of(
+                            com.senne.imttech.weapons.StickyGrenade::new, MobCategory.MISC)
                     .sized(0.4f, 0.4f)
                     .clientTrackingRange(6)
                     .updateInterval(2)

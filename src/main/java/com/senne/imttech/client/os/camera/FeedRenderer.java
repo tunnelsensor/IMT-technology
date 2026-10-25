@@ -51,7 +51,8 @@ import org.joml.Quaternionf;
  *   <li>de wezens en spelers (ook jij: de camera ziet je), en blokken met een eigen model, zoals
  *       kisten en de koppen van torentjes.</li>
  * </ol>
- * Geen lucht, wolken, regen of deeltjes: in de verte vervaagt alles naar de kleur van de lucht.
+ * Geen lucht, wolken, regen of deeltjes: in de verte vervaagt alles naar de kleur van de lucht. (De rook van een
+ * smokebom tekenen we wel, als een dichte bol: zie client/weapons/SmokeView.)
  *
  * Alles wat we aan de instellingen van het tekenen veranderen, zetten we daarna terug, zodat het
  * gewone beeld er niets van merkt (zie {@link #render}).
@@ -135,6 +136,8 @@ final class FeedRenderer {
             PoseStack pose = new PoseStack();
             renderEntities(mc, level, eye, frustum, distance, partialTick, pose, buffers, skip);
             renderBlockEntities(mc, level, sections, eye, frustum, partialTick, pose, buffers);
+            // De rook van een smokebom (hoofdstuk 35): deeltjes tekenen we hier niet, dus een dichte bol.
+            com.senne.imttech.client.weapons.SmokeView.renderInFeed(eye, pose, buffers);
             buffers.endLastBatch();
             buffers.endBatch();
             // Met "Fabulous!"-graphics schakelt doorzichtig spul naar een ander tekenvel: terug naar het onze.

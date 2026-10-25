@@ -1725,6 +1725,13 @@ public final class VisualCheck {
             t.onServer(0, player -> {
                 player.getInventory().setItem(0, new ItemStack(ModItems.EMP_GRENADE.get(), 16));
                 player.getInventory().setItem(1, new ItemStack(ModItems.STICKY_EMP_GRENADE.get(), 8));
+                player.getInventory().setItem(2, new ItemStack(ModItems.FRAG_GRENADE.get(), 16));
+                player.getInventory().setItem(3, new ItemStack(ModItems.STICKY_FRAG_GRENADE.get(), 8));
+                player.getInventory().setItem(5, new ItemStack(ModItems.SMOKE_GRENADE.get(), 16));
+                ItemStack red = new ItemStack(ModItems.SMOKE_GRENADE.get(), 16);
+                red.set(com.senne.imttech.registry.ModDataComponents.SMOKE_COLOR.get(), net.minecraft.world.item.DyeColor.RED);
+                player.getInventory().setItem(6, red);
+                player.getInventory().setItem(7, new ItemStack(ModItems.FLASHBANG.get(), 16));
             });
             t.step(0, () -> selectSlot(0));
             t.stand(20, WEAPON_YARD.getX() + 0.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() + 0.5, -90, 15);
@@ -1735,12 +1742,12 @@ public final class VisualCheck {
             // Een sticky tegen de muur en een bol over de vloer; allebei met een lange lont, zodat ze blijven liggen.
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
-                var sticky = new com.senne.imttech.weapons.StickyEmpGrenade(
+                var sticky = new com.senne.imttech.weapons.StickyGrenade(
                         com.senne.imttech.registry.ModEntities.STICKY_EMP_GRENADE.get(), level);
                 sticky.setPos(WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 2.6, WEAPON_YARD.getZ() + 1.5);
                 sticky.shoot(1, 0.1, 0, 0.9f, 0);
                 level.addFreshEntity(sticky);
-                var ball = new com.senne.imttech.weapons.RollingEmpGrenade(
+                var ball = new com.senne.imttech.weapons.RollingGrenade(
                         com.senne.imttech.registry.ModEntities.ROLLING_EMP_GRENADE.get(), level);
                 ball.setPos(WEAPON_YARD.getX() + 2.5, WEAPON_YARD.getY() + 1.5, WEAPON_YARD.getZ() - 1.5);
                 ball.shoot(1, 0.2, 0.15, 0.35f, 0);
@@ -1748,7 +1755,7 @@ public final class VisualCheck {
                 level.addFreshEntity(ball);
             });
             t.onServer(15, player -> player.serverLevel().getEntitiesOfClass(
-                    com.senne.imttech.weapons.EmpGrenadeEntity.class, player.getBoundingBox().inflate(16))
+                    com.senne.imttech.weapons.GrenadeEntity.class, player.getBoundingBox().inflate(16))
                     .forEach(grenade -> grenade.arm(4000)));
             t.view(40, WEAPON_YARD.getX() + 2.5, WEAPON_YARD.getY() + 2.6, WEAPON_YARD.getZ() + 4.5, -120, 20);
             t.shot(0, "gr03_grenades_lying");
@@ -1757,7 +1764,7 @@ public final class VisualCheck {
             // De sticky gaat af.
             t.view(0, WEAPON_YARD.getX() - 3.5, WEAPON_YARD.getY() + 3.5, WEAPON_YARD.getZ() + 0.5, -90, 15);
             t.onServer(20, player -> player.serverLevel().getEntitiesOfClass(
-                            com.senne.imttech.weapons.StickyEmpGrenade.class, player.getBoundingBox().inflate(16))
+                            com.senne.imttech.weapons.StickyGrenade.class, player.getBoundingBox().inflate(16))
                     .forEach(grenade -> grenade.arm(1)));
             t.shot(4, "gr05_emp_blast");
             t.shot(40, "gr06_emp_everything_off");
@@ -1769,7 +1776,54 @@ public final class VisualCheck {
                 com.senne.imttech.weapons.Emp.blast(player.serverLevel(), player.position().add(0, 0.5, 0), player);
             });
             t.shot(15, "gr08_emp_in_your_glasses");
-            t.onServer(0, player -> player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY));
+            t.onServer(0, player -> {
+                player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+                player.setData(com.senne.imttech.registry.ModAttachments.EMP_UNTIL, 0L);
+            });
+            // De frag-kopieën in je hand, en een Sticky Frag Grenade tegen de muur: een gat, geen EMP.
+            t.step(0, () -> selectSlot(2));
+            t.stand(0, WEAPON_YARD.getX() + 0.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() + 0.5, -90, 15);
+            t.shot(15, "gr09_frag_in_hand");
+            t.step(0, () -> selectSlot(3));
+            t.shot(10, "gr10_sticky_frag_in_hand");
+            t.step(0, () -> selectSlot(4));
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                var frag = new com.senne.imttech.weapons.StickyGrenade(
+                        com.senne.imttech.registry.ModEntities.STICKY_FRAG_GRENADE.get(), level);
+                frag.setPos(WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 2.6, WEAPON_YARD.getZ() - 2.5);
+                frag.shoot(1, 0.1, 0, 0.9f, 0);
+                level.addFreshEntity(frag);
+            });
+            t.view(15, WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 2.5, WEAPON_YARD.getZ() - 2.5, -90, 15);
+            t.shot(0, "gr11_sticky_frag_on_wall");
+            t.view(0, WEAPON_YARD.getX() + 0.5, WEAPON_YARD.getY() + 3.5, WEAPON_YARD.getZ() - 2.5, -90, 15);
+            t.shot(30, "gr12_frag_blast");
+            t.shot(20, "gr13_frag_hole");
+            // Twee smokebommen (grijs en rood) over de vloer gerold, en de flashbang.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                for (int i = 0; i < 2; i++) {
+                    var smoke = new com.senne.imttech.weapons.RollingGrenade(
+                            com.senne.imttech.registry.ModEntities.SMOKE_GRENADE.get(), level);
+                    smoke.setPos(WEAPON_YARD.getX() + 1.5, WEAPON_YARD.getY() + 1.5, WEAPON_YARD.getZ() + (i == 0 ? -3.5 : 3.5));
+                    smoke.setSmokeColor(i == 0 ? null : net.minecraft.world.item.DyeColor.RED);
+                    smoke.shoot(1, 0.1, 0, 0.3f, 0);
+                    smoke.arm(10);
+                    level.addFreshEntity(smoke);
+                }
+            });
+            t.view(0, WEAPON_YARD.getX() - 6.5, WEAPON_YARD.getY() + 4, WEAPON_YARD.getZ() + 0.5, -90, 20);
+            t.shot(30, "gr14_smoke_starts");
+            t.shot(50, "gr15_smoke_clouds");
+            t.view(0, WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 1.6, WEAPON_YARD.getZ() + 3.5, 0, 0);
+            t.shot(10, "gr16_inside_red_smoke");
+            // De flashbang: vlak voor je, en je kijkt ernaar.
+            t.stand(0, WEAPON_YARD.getX() - 4.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() + 10.5, -90, 10);
+            t.onServer(20, player -> com.senne.imttech.weapons.Flashbang.bang(player.serverLevel(),
+                    new Vec3(WEAPON_YARD.getX() - 1.5, WEAPON_YARD.getY() + 1.5, WEAPON_YARD.getZ() + 10.5), null));
+            t.shot(4, "gr17_flashbang_white");
+            t.shot(60, "gr18_flashbang_fading");
         }
 
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)

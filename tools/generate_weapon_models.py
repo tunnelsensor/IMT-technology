@@ -5,7 +5,8 @@ en het plaatje met hun materialen.
 Hoe het werkt
     Elk model is een lijstje doosjes ("elements"), net als een blokmodel: van een hoek tot een hoek, in pixels (16 =
     één blok). Elk doosje krijgt een MATERIAAL (rood, goud, donker metaal, gloeiend cyaan, ...). Alle materialen staan
-    op één plaatje van 64 x 64 (textures/item/weapons.png): 16 vakjes van 16 x 16, met een zacht verloop en wat ruis.
+    op één plaatje van 128 x 128 (textures/item/weapons.png): plek voor 64 vakjes van 16 x 16, met een zacht verloop
+    en wat ruis.
     Elke kant van een doosje toont het hele vakje van zijn materiaal. Zo hoef je niets per kant te tekenen.
 
     Een doosje met glow=True gloeit: het krijgt altijd vol licht (ook in het donker) en geen schaduw.
@@ -41,8 +42,14 @@ MATERIALS = {
     "red": (0, 0), "red_dark": (1, 0), "gold": (2, 0), "gold_dark": (3, 0),
     "graphite": (0, 1), "black": (1, 1), "steel": (2, 1), "steel_dark": (3, 1),
     "glow": (0, 2), "glow_white": (1, 2), "lens": (2, 2), "vent": (3, 2),
-    "cell": (0, 3), "screen": (1, 3), "pad": (2, 3), "glow_soft": (3, 3),
+    "cell": (0, 3), "screen": (1, 3), "pad": (2, 3), "paint": (3, 3),
+    # De frag-granaten: legergroen, oranje (gevaar) en een rood lampje.
+    "olive": (4, 0), "orange": (5, 0), "glow_red": (6, 0),
 }
+
+# Het plaatje is 128 pixels breed en hoog: een vakje van 16 pixels is in de 0-16-eenheden van een model 2 breed.
+SIZE = 128
+TILE_UV = 16 * 16 / SIZE
 
 
 def clamp(v):
@@ -66,7 +73,7 @@ def tile(im, material, top, bottom, noise=6, pattern=None, seed=0):
 
 def materials():
     """Het plaatje met alle materialen (textures/item/weapons.png)."""
-    im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    im = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
 
     def highlight(x, y, c):
         # Een glimlijntje bovenaan, zoals gelakt metaal dat licht vangt.
@@ -124,7 +131,19 @@ def materials():
     tile(im, "cell", (150, 158, 172), (104, 110, 122), 4, bands, 13)
     tile(im, "screen", (14, 26, 34), (8, 16, 22), 2, screen, 14)
     tile(im, "pad", (52, 78, 60), (30, 46, 36), 4, gel, 15)
-    tile(im, "glow_soft", (130, 230, 255), (90, 200, 245), 3, None, 16)
+    # Lichtgrijs om te kleuren: de band van de smokebom krijgt in het spel de kleur van zijn rook (tint=True).
+    tile(im, "paint", (236, 236, 236), (196, 196, 196), 4, None, 16)
+
+    def red_glow(x, y, c):
+        # Een rood lampje: wit-roze in het midden, fel rood naar de rand.
+        d = max(abs(x - 7.5), abs(y - 7.5)) / 7.5
+        core = (255, 220, 210)
+        edge = (255, 40, 30)
+        return [core[i] + (edge[i] - core[i]) * d for i in range(3)]
+
+    tile(im, "olive", (92, 104, 70), (56, 64, 42), 5, highlight, 17)
+    tile(im, "orange", (255, 150, 40), (200, 96, 20), 4, highlight, 18)
+    tile(im, "glow_red", (0, 0, 0), (0, 0, 0), 0, red_glow, 19)
     path = ASSETS / "textures" / "item" / "weapons.png"
     path.parent.mkdir(parents=True, exist_ok=True)
     im.save(path)
@@ -134,17 +153,23 @@ def materials():
 # ---------------------------------------------------------------- Doosjes
 
 def uv(material):
-    """Het vakje van dit materiaal, in de 0-16-eenheden van een model (het plaatje is 64 breed: één vakje = 4)."""
+    """Het vakje van dit materiaal, in de 0-16-eenheden van een model (het plaatje is 128 breed: één vakje = 2)."""
     col, row = MATERIALS[material]
-    return [col * 4 + 0.15, row * 4 + 0.15, col * 4 + 3.85, row * 4 + 3.85]
+    inset = TILE_UV * 0.04
+    return [round(col * TILE_UV + inset, 4), round(row * TILE_UV + inset, 4),
+            round((col + 1) * TILE_UV - inset, 4), round((row + 1) * TILE_UV - inset, 4)]
 
 
-def box(frm, to, material, glow=False, rot=None):
+def box(frm, to, material, glow=False, rot=None, tint=False):
     """
     Eén doosje. rot = (as, hoek, middelpunt), bijvoorbeeld ("x", 22.5, (8, 8, 11)): het doosje kantelt om dat punt
-    (Minecraft kan alleen -45, -22.5, 0, 22.5 of 45 graden).
+    (Minecraft kan alleen -45, -22.5, 0, 22.5 of 45 graden). tint=True: het spel kleurt dit doosje (zie
+    WeaponModels.registerItemColors), zoals de band van een gekleurde smokebom.
     """
     faces = {side: {"uv": uv(material), "texture": "#0"} for side in SIDES}
+    if tint:
+        for face in faces.values():
+            face["tintindex"] = 0
     element = {"from": [round(v, 3) for v in frm], "to": [round(v, 3) for v in to], "faces": faces}
     if rot:
         axis, angle, origin = rot
@@ -223,26 +248,36 @@ def save_parts(name, parts, disp):
 
 # ---------------------------------------------------------------- De granaten
 
+def ball(shell, band, band_tint=False):
+    """
+    De bol van de rollende granaten: midden (8, 8, 8), doorsnee 6 pixels. Drie kruisende doosjes en een vierde dat de
+    hoeken opvult, en een band om zijn middel.
+    """
+    return [
+        box((5, 6, 6), (11, 10, 10), shell),
+        box((6, 5, 6), (10, 11, 10), shell),
+        box((6, 6, 5), (10, 10, 11), shell),
+        box((5.5, 5.5, 5.5), (10.5, 10.5, 10.5), shell),
+        box((4.85, 7.55, 6.3), (11.15, 8.45, 9.7), band, tint=band_tint),
+        box((6.3, 7.55, 4.85), (9.7, 8.45, 11.15), band, tint=band_tint),
+        box((5.35, 7.55, 5.35), (10.65, 8.45, 10.65), band, tint=band_tint),
+        # Onderaan een plat donker plaatje (de bol rolt, dus het mag overal).
+        box((7, 4.75, 7), (9, 5.05, 9), "graphite"),
+    ]
+
+
+BALL_DISPLAY = dict(third=((0, 0, 0), (0, 2, 1)), first=((10, -30, 0), (0, 2, -2)), first_scale=0.42)
+
+
 def emp_grenade():
     """
     De EMP Grenade (rollend): een rode bol met een gouden band om zijn middel, een knopje bovenop en vier lampjes op
-    de band, zoals een thermal detonator. Midden van de bol: (8, 8, 8), doorsnee 6 pixels.
+    de band, zoals een thermal detonator.
     """
-    body = [
-        # De bol: drie kruisende doosjes en een vierde dat de hoeken opvult.
-        box((5, 6, 6), (11, 10, 10), "red"),
-        box((6, 5, 6), (10, 11, 10), "red"),
-        box((6, 6, 5), (10, 10, 11), "red"),
-        box((5.5, 5.5, 5.5), (10.5, 10.5, 10.5), "red"),
-        # De gouden band.
-        box((4.85, 7.55, 6.3), (11.15, 8.45, 9.7), "gold"),
-        box((6.3, 7.55, 4.85), (9.7, 8.45, 11.15), "gold"),
-        box((5.35, 7.55, 5.35), (10.65, 8.45, 10.65), "gold"),
+    body = ball("red", "gold") + [
         # Het knopje bovenop (de ontsteker), met een donkere rand.
         box((6.9, 10.9, 6.9), (9.1, 11.35, 9.1), "graphite"),
         box((7.3, 11.35, 7.3), (8.7, 11.55, 8.7), "lens"),
-        # Onderaan een plat donker plaatje (de bol rolt, dus het mag overal).
-        box((7, 4.75, 7), (9, 5.05, 9), "graphite"),
     ]
     light = [
         # Het lampje in het knopje, en vier lampjes op de band.
@@ -252,39 +287,102 @@ def emp_grenade():
         box((7.5, 7.7, 4.75), (8.5, 8.3, 4.9), "glow", glow=True),
         box((7.5, 7.7, 11.1), (8.5, 8.3, 11.25), "glow", glow=True),
     ]
-    disp = display(1.6, (0, 0, 0), 0.7, 0.7, third=((0, 0, 0), (0, 2, 1)), first=((10, -30, 0), (0, 2, -2)),
-                   first_scale=0.42)
-    save_parts("emp_grenade", {"body": body, "light": light}, disp)
+    save_parts("emp_grenade", {"body": body, "light": light}, display(1.6, (0, 0, 0), 0.7, 0.7, **BALL_DISPLAY))
 
 
-def sticky_emp_grenade():
+def frag_grenade():
     """
-    De Sticky EMP Grenade: een halve bol op een groen kleefkussen. Het kussen ligt onderaan op y = 5; daar plakt hij
-    met zijn platte kant tegen de muur, de grond of een robot. Een gouden ring en vier lampjes rond zijn middel.
+    De Frag Grenade: een kopie van de EMP Grenade als explosief (jouw wens). Dezelfde bol, maar legergroen met een
+    oranje band (gevaar), en zijn lampjes knipperen rood.
     """
-    def ring(y0, y1, r, material, glow=False):
+    body = ball("olive", "orange") + [
+        box((6.9, 10.9, 6.9), (9.1, 11.35, 9.1), "graphite"),
+        box((7.3, 11.35, 7.3), (8.7, 11.55, 8.7), "red_dark"),
+    ]
+    light = [
+        box((7.25, 11.5, 7.25), (8.75, 11.7, 8.75), "glow_red", glow=True),
+        box((4.75, 7.7, 7.5), (4.9, 8.3, 8.5), "glow_red", glow=True),
+        box((11.1, 7.7, 7.5), (11.25, 8.3, 8.5), "glow_red", glow=True),
+        box((7.5, 7.7, 4.75), (8.5, 8.3, 4.9), "glow_red", glow=True),
+        box((7.5, 7.7, 11.1), (8.5, 8.3, 11.25), "glow_red", glow=True),
+    ]
+    save_parts("frag_grenade", {"body": body, "light": light}, display(1.6, (0, 0, 0), 0.7, 0.7, **BALL_DISPLAY))
+
+
+def smoke_grenade():
+    """
+    De Smoke Grenade: een donkere bol met een band in de kleur van zijn rook (grijs, of de kleurstof waarmee je hem
+    maakte), en bovenop een rooster met gaatjes waar de rook uit sist.
+    """
+    body = ball("steel_dark", "paint", band_tint=True) + [
+        box((6.6, 10.85, 6.6), (9.4, 11.4, 9.4), "vent"),
+        box((7.6, 11.4, 6.9), (8.4, 11.55, 9.1), "graphite"),
+        box((6.9, 11.4, 7.6), (9.1, 11.55, 8.4), "graphite"),
+        # Twee stalen klemmen over de band.
+        box((4.8, 7.4, 7.6), (5.1, 8.6, 8.4), "steel"),
+        box((10.9, 7.4, 7.6), (11.2, 8.6, 8.4), "steel"),
+    ]
+    save_parts("smoke_grenade", {"body": body, "light": []}, display(1.6, (0, 0, 0), 0.7, 0.7, **BALL_DISPLAY))
+
+
+def flashbang():
+    """
+    De Flashbang: een glanzende stalen bol met een zwarte band, een donker dopje bovenop en een gouden ring (de pin),
+    en kleine witte venstertjes in de band waar de flits uit komt.
+    """
+    body = ball("steel", "black") + [
+        box((7, 10.85, 7), (9, 11.5, 9), "graphite"),
+        # De pin: een gouden ring die rechtop staat.
+        box((7.85, 11.5, 6.6), (8.15, 12.6, 7.0), "gold"),
+        box((7.85, 11.5, 9.0), (8.15, 12.6, 9.4), "gold"),
+        box((7.85, 12.6, 6.6), (8.15, 12.9, 9.4), "gold"),
+        # Witte venstertjes in de band.
+        box((4.75, 7.7, 6.9), (4.85, 8.3, 7.5), "glow_white"),
+        box((4.75, 7.7, 8.5), (4.85, 8.3, 9.1), "glow_white"),
+        box((11.15, 7.7, 6.9), (11.25, 8.3, 7.5), "glow_white"),
+        box((11.15, 7.7, 8.5), (11.25, 8.3, 9.1), "glow_white"),
+    ]
+    save_parts("flashbang", {"body": body, "light": []}, display(1.6, (0, 0, 0), 0.7, 0.7, **BALL_DISPLAY))
+
+
+def sticky(name, shell, ring, light_material):
+    """
+    De halve bol die plakt: een halve bol op een groen kleefkussen. Het kussen ligt onderaan op y = 5; daar plakt hij
+    met zijn platte kant tegen de muur, de grond of een robot. Een ring rond zijn middel en vier lampjes.
+    """
+    def layer(y0, y1, r, material, glow=False):
         """Een "ronde" laag: twee kruisende doosjes en een vierkant ertussen, met straal r rond (8, 8)."""
         return [
             box((8 - r, y0, 8 - r * 0.56), (8 + r, y1, 8 + r * 0.56), material, glow),
             box((8 - r * 0.56, y0, 8 - r), (8 + r * 0.56, y1, 8 + r), material, glow),
             box((8 - r * 0.83, y0, 8 - r * 0.83), (8 + r * 0.83, y1, 8 + r * 0.83), material, glow),
         ]
-    body = (ring(5, 5.5, 3.6, "pad")
-            + ring(5.5, 7.1, 3.25, "red")
-            + ring(7.1, 7.6, 3.05, "gold")
-            + ring(7.6, 8.8, 2.55, "red")
-            + ring(8.8, 9.3, 1.75, "graphite")
+    body = (layer(5, 5.5, 3.6, "pad")
+            + layer(5.5, 7.1, 3.25, shell)
+            + layer(7.1, 7.6, 3.05, ring)
+            + layer(7.6, 8.8, 2.55, shell)
+            + layer(8.8, 9.3, 1.75, "graphite")
             + [box((7.35, 9.3, 7.35), (8.65, 9.5, 8.65), "lens")])
     light = [
-        box((7.2, 9.45, 7.2), (8.8, 9.65, 8.8), "glow", glow=True),
-        box((4.9, 7.2, 7.5), (5.0, 7.5, 8.5), "glow", glow=True),
-        box((11.0, 7.2, 7.5), (11.1, 7.5, 8.5), "glow", glow=True),
-        box((7.5, 7.2, 4.9), (8.5, 7.5, 5.0), "glow", glow=True),
-        box((7.5, 7.2, 11.0), (8.5, 7.5, 11.1), "glow", glow=True),
+        box((7.2, 9.45, 7.2), (8.8, 9.65, 8.8), light_material, glow=True),
+        box((4.9, 7.2, 7.5), (5.0, 7.5, 8.5), light_material, glow=True),
+        box((11.0, 7.2, 7.5), (11.1, 7.5, 8.5), light_material, glow=True),
+        box((7.5, 7.2, 4.9), (8.5, 7.5, 5.0), light_material, glow=True),
+        box((7.5, 7.2, 11.0), (8.5, 7.5, 11.1), light_material, glow=True),
     ]
     disp = display(1.7, (0, 1.5, 0), 0.7, 0.7, gui_rotation=(30, -135, 0), third=((0, 0, 0), (0, 3, 1)),
                    first=((10, -30, 0), (0, 3, -2)), first_scale=0.45)
-    save_parts("sticky_emp_grenade", {"body": body, "light": light}, disp)
+    save_parts(name, {"body": body, "light": light}, disp)
+
+
+def sticky_emp_grenade():
+    """De Sticky EMP Grenade: rood met een gouden ring en cyaan lampjes."""
+    sticky("sticky_emp_grenade", "red", "gold", "glow")
+
+
+def sticky_frag_grenade():
+    """De Sticky Frag Grenade: de kopie als explosief, legergroen met een oranje ring en rode lampjes."""
+    sticky("sticky_frag_grenade", "olive", "orange", "glow_red")
 
 
 # ---------------------------------------------------------------- De energiecel
@@ -517,7 +615,11 @@ def laser_shotgun():
 def main():
     materials()
     emp_grenade()
+    frag_grenade()
+    smoke_grenade()
+    flashbang()
     sticky_emp_grenade()
+    sticky_frag_grenade()
     energy_cell()
     laser_pistol()
     laser_rifle()

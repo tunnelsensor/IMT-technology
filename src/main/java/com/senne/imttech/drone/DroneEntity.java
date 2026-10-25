@@ -430,6 +430,13 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         }
     }
 
+    /** Door de rook van een smokebom (hoofdstuk 35) ziet hij niemand. */
+    @Override
+    public boolean hasLineOfSight(net.minecraft.world.entity.Entity entity) {
+        return super.hasLineOfSight(entity)
+                && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
+    }
+
     /** Geraakt door een EMP-granaat: wie eraan hangt (vervoer) laat hij los, en hij vergeet zijn doelwit. */
     @Override
     public void onEmp(ServerLevel level, int ticks) {

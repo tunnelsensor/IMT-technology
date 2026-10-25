@@ -210,8 +210,11 @@ public class TurretBlockEntity extends BlockEntity {
                 && canSee(level, aim);
     }
 
-    /** Zit er geen blok tussen de loop en deze plek? */
+    /** Zit er geen blok (en geen rook van een smokebom, hoofdstuk 35) tussen de loop en deze plek? */
     private boolean canSee(ServerLevel level, Vec3 aim) {
+        if (com.senne.imttech.weapons.Smoke.blocks(level, muzzle(), aim)) {
+            return false;
+        }
         Vec3 muzzle = muzzle();
         // Een stukje buiten het eigen blok beginnen, anders "raken" we het torentje zelf.
         Vec3 from = muzzle.add(aim.subtract(muzzle).normalize().scale(0.8));

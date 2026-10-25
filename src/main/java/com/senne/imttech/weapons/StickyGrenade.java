@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -23,7 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 /**
- * De Sticky EMP Grenade (hoofdstuk 35, jouw wens: "de halve sticky one"). Een halve bol op een kleefkussen: hij plakt
+ * De halve bol die plakt (hoofdstuk 35, jouw wens: "de halve sticky one"), in twee soorten (welke, zegt het soort
+ * wezen): de Sticky EMP Grenade (een EMP-puls) en zijn kopie, de Sticky Frag Grenade (een klap zoals C4, maar
+ * zwakker). Een sticky smokebom of flashbang vind jij niet logisch, dus die zijn er niet. Een halve bol op een kleefkussen: hij plakt
  * vast op het eerste wat hij raakt (een muur, de grond, een plafond, een robot, een drone of een speler) en gaat 2
  * seconden later af (STICKY_FUSE_SECONDS). Plakt hij op een wezen, dan gaat hij mee met dat wezen.
  *
@@ -32,15 +35,15 @@ import org.joml.Vector3f;
  * (de kant waar zijn bolle kant naartoe wijst; 0,0,0 = hij vliegt nog). Je spel zet hem daar zelf neer: anders zakt hij
  * in je spel nog een stukje verder (je spel laat hem vallen tot het hoort dat hij vastzit).
  */
-public class StickyEmpGrenade extends EmpGrenadeEntity {
+public class StickyGrenade extends GrenadeEntity {
     private static final EntityDataAccessor<Integer> STUCK_TO =
-            SynchedEntityData.defineId(StickyEmpGrenade.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(StickyGrenade.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Vector3f> OFFSET =
-            SynchedEntityData.defineId(StickyEmpGrenade.class, EntityDataSerializers.VECTOR3);
+            SynchedEntityData.defineId(StickyGrenade.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<Vector3f> NORMAL =
-            SynchedEntityData.defineId(StickyEmpGrenade.class, EntityDataSerializers.VECTOR3);
+            SynchedEntityData.defineId(StickyGrenade.class, EntityDataSerializers.VECTOR3);
     private static final EntityDataAccessor<BlockPos> ANCHOR =
-            SynchedEntityData.defineId(StickyEmpGrenade.class, EntityDataSerializers.BLOCK_POS);
+            SynchedEntityData.defineId(StickyGrenade.class, EntityDataSerializers.BLOCK_POS);
 
     private static final double GRAVITY = 0.03;
     /** Plakt hij na zo lang (ticks) nog nergens, dan gaat hij toch af. */
@@ -48,13 +51,16 @@ public class StickyEmpGrenade extends EmpGrenadeEntity {
     /** Het blok waar hij op plakt (alleen op de server), of null. */
     private @Nullable BlockPos stuckBlock;
 
-    public StickyEmpGrenade(EntityType<? extends StickyEmpGrenade> type, Level level) {
+    public StickyGrenade(EntityType<? extends StickyGrenade> type, Level level) {
         super(type, level);
     }
 
-    /** Een nieuwe granaat in de hand van {@code thrower}. Hij gaat pas op scherp als hij vastplakt. */
-    public StickyEmpGrenade(Level level, LivingEntity thrower) {
-        this(ModEntities.STICKY_EMP_GRENADE.get(), level);
+    /**
+     * Een nieuwe granaat in de hand van {@code thrower}: de EMP-versie, of ({@code frag}) de frag-versie. Hij gaat pas
+     * op scherp als hij vastplakt.
+     */
+    public StickyGrenade(Level level, LivingEntity thrower, boolean frag) {
+        this(frag ? ModEntities.STICKY_FRAG_GRENADE.get() : ModEntities.STICKY_EMP_GRENADE.get(), level);
         setOwner(thrower);
         setPos(thrower.getX(), thrower.getEyeY() - 0.2, thrower.getZ());
     }
@@ -142,7 +148,7 @@ public class StickyEmpGrenade extends EmpGrenadeEntity {
 
     @Override
     protected boolean canHitEntity(Entity target) {
-        return super.canHitEntity(target) && !(target instanceof EmpGrenadeEntity) && !target.isSpectator();
+        return super.canHitEntity(target) && !(target instanceof GrenadeEntity) && !target.isSpectator();
     }
 
     /**
@@ -226,6 +232,21 @@ public class StickyEmpGrenade extends EmpGrenadeEntity {
     @Override
     protected Vec3 blastCenter() {
         return isStuck() ? position().add(normal().scale(0.15)) : super.blastCenter();
+    }
+
+    /** Is dit de frag-versie (een klap in plaats van een EMP)? */
+    public boolean isFrag() {
+        return getType() == ModEntities.STICKY_FRAG_GRENADE.get();
+    }
+
+    /** De lont is op: een EMP-puls, of bij de frag-versie een klap zoals C4 (zie GrenadeEntity). */
+    @Override
+    protected void explode(ServerLevel level) {
+        if (isFrag()) {
+            fragBlast(level);
+        } else {
+            empPulse(level);
+        }
     }
 
     /** Vastgeplakt: de klap zit precies tegen het blok of wezen (zoals C4 tegen zijn muur). */

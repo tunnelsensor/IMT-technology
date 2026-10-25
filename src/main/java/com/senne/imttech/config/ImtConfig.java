@@ -1765,7 +1765,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Weapons
 
-    @Section("Weapons (chapter 35): EMP grenades, laser guns and energy cells")
+    @Section("Weapons (chapter 35): EMP and frag grenades, smoke grenades, flashbangs, laser guns and energy cells")
     public static final class Weapons {
         private Weapons() {}
 
@@ -1776,11 +1776,11 @@ public final class ImtConfig {
         /** Hoe lang alles uit blijft na een EMP-granaat (seconden). */
         @Tunable(value = "How long everything stays off after an EMP grenade (seconds)", min = 1, max = 600)
         public static float EMP_SECONDS = 20.0f;
-        /** Na hoeveel seconden een Sticky EMP Grenade afgaat, vanaf het vastplakken. */
-        @Tunable(value = "Seconds from sticking until a Sticky EMP Grenade goes off", max = 30)
+        /** Na hoeveel seconden een sticky (EMP of frag) afgaat, vanaf het vastplakken. */
+        @Tunable(value = "Seconds from sticking until a sticky grenade (EMP or frag) goes off", max = 30)
         public static float STICKY_FUSE_SECONDS = 2.0f;
-        /** Na hoeveel seconden een (rollende) EMP Grenade afgaat, vanaf het gooien. */
-        @Tunable(value = "Seconds from throwing until a rolling EMP Grenade goes off", max = 30)
+        /** Na hoeveel seconden een EMP Grenade of Frag Grenade (de bollen) afgaat, vanaf het gooien. */
+        @Tunable(value = "Seconds from throwing until an EMP Grenade or Frag Grenade (the balls) goes off", max = 30)
         public static float ROLLING_FUSE_SECONDS = 3.0f;
         /** Hoe hard je een granaat gooit (1,5 = zoals een sneeuwbal). */
         @Tunable(value = "How hard you throw a grenade (1.5 = like a snowball)", max = 5)
@@ -1789,20 +1789,44 @@ public final class ImtConfig {
         @Tunable(value = "How hard you toss a grenade underhand, while sneaking", max = 5)
         public static float TOSS_SPEED = 0.45f;
         /**
-         * De klap van een EMP-granaat (jouw wens: "ook explosiebaar zoals de C4, maar net iets minder sterk"): breekpunten
-         * vlak bij de granaat (C4 = 10), aflopend tot 0 op de straal van de klap (C4 = 3,5). Zie [c4] voor hoe sterk
-         * blokken zijn.
+         * De klap van een frag-granaat (jouw wens: een extra bom die geen EMP is maar wel schade aan de map doet, "zoals
+         * de C4 maar net iets minder sterk"): breekpunten vlak bij de granaat (C4 = 10), aflopend tot 0 op de straal van
+         * de klap (C4 = 3,5). Zie [c4] voor hoe sterk blokken zijn. De EMP-granaten doen geen schade aan de map.
          */
-        @Tunable(value = "Breach points of an EMP grenade right where it goes off (C4 is 10)", max = 1_000)
+        @Tunable(value = "Breach points of a frag grenade right where it goes off (C4 is 10)", max = 1_000)
         public static float GRENADE_BREACH = 8.0f;
-        @Tunable(value = "How far the blast of an EMP grenade reaches (blocks; C4 is 3.5)", max = 16)
+        @Tunable(value = "How far the blast of a frag grenade reaches (blocks; C4 is 3.5)", max = 16)
         public static float GRENADE_BREACH_RADIUS = 3.0f;
-        /** Hoe hard de klap van een EMP-granaat spelers en wezens raakt (C4 = 4, TNT = 4). */
-        @Tunable(value = "How hard the blast of an EMP grenade hits players and mobs (C4 and TNT are 4)", max = 16)
+        /** Hoe hard de klap van een frag-granaat spelers en wezens raakt (C4 = 4, TNT = 4). */
+        @Tunable(value = "How hard the blast of a frag grenade hits players and mobs (C4 and TNT are 4)", max = 16)
         public static float GRENADE_ENTITY_POWER = 3.0f;
         /** Hoeveel van zijn vaart de bol overhoudt als hij stuitert (0 = blijft liggen, 1 = stuitert eeuwig). */
         @Tunable(value = "How much speed the rolling grenade keeps when it bounces (0 = none, 1 = all)", max = 0.95)
         public static float BOUNCE = 0.45f;
+
+        // ------------------------------------------------------------------------- De smokebom en de flashbang
+        /** Na hoeveel seconden een Smoke Grenade begint te roken, vanaf het gooien. */
+        @Tunable(value = "Seconds from throwing until a Smoke Grenade starts smoking", max = 30)
+        public static float SMOKE_FUSE_SECONDS = 2.0f;
+        /** Hoe lang de rook blijft hangen (seconden). */
+        @Tunable(value = "How long the smoke of a Smoke Grenade lasts (seconds)", min = 1, max = 600)
+        public static float SMOKE_SECONDS = 18.0f;
+        /** Hoe groot de rookwolk wordt: een bol met deze straal (blokken). */
+        @Tunable(value = "Radius of the cloud of a Smoke Grenade (blocks)", min = 1, max = 16)
+        public static double SMOKE_RADIUS = 4.5;
+        /** Door zoveel blokken rook kunnen robots, turrets en drones nog net kijken (van heel dichtbij). */
+        @Tunable(value = "Through this many blocks of smoke robots, turrets and drones can still see", max = 16)
+        public static double SMOKE_SEE_THROUGH = 1.5;
+        /** Na hoeveel seconden een Flashbang afgaat, vanaf het gooien. */
+        @Tunable(value = "Seconds from throwing until a Flashbang goes off", max = 30)
+        public static float FLASH_FUSE_SECONDS = 1.6f;
+        /** Tot hoe ver een flashbang je verblindt (blokken). */
+        @Tunable(value = "How far away a Flashbang can blind you (blocks)", min = 1, max = 64)
+        public static double FLASH_RADIUS = 20.0;
+        /** Hoe lang je hoogstens verblind bent (seconden: als je er vlakbij recht naar keek). */
+        @Tunable(value = "How long a Flashbang blinds you at most (seconds, when you looked straight at it up close)",
+                max = 60)
+        public static float FLASH_SECONDS = 5.0f;
 
         // ------------------------------------------------------------------------- Energiecellen
         /** Zoveel stroom kost het om een lege cel helemaal op te laden in het Charging Station. */

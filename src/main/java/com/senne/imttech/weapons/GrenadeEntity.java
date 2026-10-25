@@ -13,18 +13,20 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Wat de twee EMP-granaten (hoofdstuk 35) delen: een lont, piepjes die steeds sneller gaan, een knipperend lampje, en
- * de ontploffing (een EMP-puls, zie {@link Emp}). Hoe ze vliegen verschilt: de bol stuitert en rolt
- * ({@link RollingEmpGrenade}), de halve bol plakt vast ({@link StickyEmpGrenade}).
+ * Wat alle granaten (hoofdstuk 35) delen: een lont, en wat er gebeurt als die op is ({@link #explode}). De EMP- en
+ * frag-granaten piepen ook (steeds sneller) en hebben een knipperend lampje; de smokebom en de flashbang niet (die doen
+ * dat in het echt ook niet). Hoe ze vliegen verschilt: de bol stuitert en rolt ({@link RollingGrenade}), de halve bol
+ * plakt vast ({@link StickyGrenade}).
  *
  * De lont telt in ticks van de granaat zelf ({@code tickCount}): {@code FUSE_END} is de tick waarop hij afgaat, -1 =
- * hij is nog niet op scherp gezet (een sticky die nog vliegt). Die gaat ook naar je spel, voor het knipperen.
+ * hij is (nog) niet op scherp gezet (een sticky die nog vliegt, of een smokebom die al rookt). Die gaat ook naar je
+ * spel, voor het knipperen.
  */
-public abstract class EmpGrenadeEntity extends Projectile {
+public abstract class GrenadeEntity extends Projectile {
     private static final EntityDataAccessor<Integer> FUSE_END =
-            SynchedEntityData.defineId(EmpGrenadeEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(GrenadeEntity.class, EntityDataSerializers.INT);
 
-    protected EmpGrenadeEntity(EntityType<? extends EmpGrenadeEntity> type, Level level) {
+    protected GrenadeEntity(EntityType<? extends GrenadeEntity> type, Level level) {
         super(type, level);
     }
 
@@ -40,13 +42,23 @@ public abstract class EmpGrenadeEntity extends Projectile {
         entityData.set(FUSE_END, tickCount + Math.max(1, ticks));
     }
 
+    /** Haalt hem van scherp (hij gaat niet meer af). */
+    protected void disarm() {
+        entityData.set(FUSE_END, -1);
+    }
+
     public boolean isArmed() {
         return entityData.get(FUSE_END) >= 0;
     }
 
-    /** Hoeveel ticks nog tot hij afgaat (of een groot getal als hij nog niet op scherp staat). */
+    /** Hoeveel ticks nog tot hij afgaat (of een groot getal als hij niet op scherp staat). */
     public int ticksLeft() {
         return isArmed() ? entityData.get(FUSE_END) - tickCount : Integer.MAX_VALUE;
+    }
+
+    /** Piept hij, en heeft hij een lampje dat knippert? (De EMP- en frag-granaten.) */
+    public boolean beeps() {
+        return true;
     }
 
     /** Om de hoeveel ticks hij piept: eerst rustig, op het laatst heel snel. */
@@ -56,6 +68,9 @@ public abstract class EmpGrenadeEntity extends Projectile {
 
     /** Is het lampje nu aan? (In je spel, voor het tekenen.) Het flitst kort op bij elk piepje. */
     public boolean lightOn() {
+        if (!beeps()) {
+            return false;
+        }
         if (!isArmed()) {
             return tickCount % 20 < 2; // nog niet op scherp: heel af en toe een knipoogje
         }
@@ -68,10 +83,7 @@ public abstract class EmpGrenadeEntity extends Projectile {
     public void tick() {
         super.tick();
         fly();
-        if (!(level() instanceof ServerLevel level) || !isAlive()) {
-            return;
-        }
-        if (!isArmed()) {
+        if (!(level() instanceof ServerLevel level) || !isAlive() || !isArmed()) {
             return;
         }
         int left = ticksLeft();
@@ -79,7 +91,7 @@ public abstract class EmpGrenadeEntity extends Projectile {
             explode(level);
             return;
         }
-        if (left % beepInterval(left) == 0) {
+        if (beeps() && left % beepInterval(left) == 0) {
             level.playSound(null, getX(), getY(), getZ(), ModSounds.EMP_GRENADE_BEEP.get(), SoundSource.PLAYERS, 0.7f,
                     left <= 14 ? 1.25f : 1.0f);
         }
@@ -88,7 +100,10 @@ public abstract class EmpGrenadeEntity extends Projectile {
     /** Eén tick vliegen, stuiteren of vastzitten (op de server én in je spel, zodat het soepel loopt). */
     protected abstract void fly();
 
-    /** Waar de puls vandaan komt (het midden van de granaat). */
+    /** De lont is op: wat hij dan doet (een EMP-puls, rook, een flits). */
+    protected abstract void explode(ServerLevel level);
+
+    /** Waar het effect vandaan komt (het midden van de granaat). */
     protected Vec3 blastCenter() {
         return getBoundingBox().getCenter();
     }
@@ -98,15 +113,20 @@ public abstract class EmpGrenadeEntity extends Projectile {
         return getBoundingBox().getCenter();
     }
 
-    /**
-     * Hij gaat af: een EMP-puls, en (jouw wens: "ook explosiebaar zoals de C4 maar net iets minder sterk") een klap
-     * zoals C4 met de sterktes uit [weapons] (C4Blast.grenade). Daarna is hij weg.
-     */
-    protected void explode(ServerLevel level) {
+    /** Een EMP-granaat gaat af: alleen een EMP-puls (jouw keuze: de EMP doet zelf geen schade aan de map). Daarna is hij weg. */
+    protected void empPulse(ServerLevel level) {
         Vec3 pulse = blastCenter();
-        Vec3 bang = explosionCenter();
         discard();
         Emp.blast(level, pulse, getOwner());
+    }
+
+    /**
+     * Een frag-granaat gaat af (jouw wens: "een extra bom die geen EMP is maar wel schade aan de map doet", "zoals de C4
+     * maar net iets minder sterk"): een klap zoals C4 met de sterktes uit [weapons] (C4Blast.grenade). Daarna is hij weg.
+     */
+    protected void fragBlast(ServerLevel level) {
+        Vec3 bang = explosionCenter();
+        discard();
         com.senne.imttech.c4.C4Blast.grenade(level, bang, this);
     }
 

@@ -21,7 +21,8 @@ public final class WeaponModels {
 
     public static final String[] GUNS = {"laser_pistol", "laser_rifle", "laser_sniper", "laser_shotgun"};
     public static final String[] GUN_PARTS = {"body", "moving", "trigger", "cell"};
-    public static final String[] GRENADES = {"emp_grenade", "sticky_emp_grenade"};
+    public static final String[] GRENADES = {"emp_grenade", "sticky_emp_grenade", "frag_grenade", "sticky_frag_grenade",
+            "smoke_grenade", "flashbang"};
     public static final String[] GRENADE_PARTS = {"body", "light"};
 
     public static ModelResourceLocation location(String name, String part) {
@@ -52,7 +53,24 @@ public final class WeaponModels {
      * model. Wat in het model gloeit, gloeit vanzelf (vol licht, zie "neoforge_data" in de modellen).
      */
     public static void render(PoseStack pose, MultiBufferSource buffers, String name, String part, int light, int overlay) {
-        Minecraft.getInstance().getItemRenderer().renderModelLists(get(name, part), ItemStack.EMPTY, light, overlay, pose,
+        render(pose, buffers, name, part, light, overlay, ItemStack.EMPTY);
+    }
+
+    /**
+     * Hetzelfde, met een item erbij: delen van het model die een kleur krijgen ("tintindex", zoals de band van een
+     * gekleurde smokebom), krijgen de kleur van dat item.
+     */
+    public static void render(PoseStack pose, MultiBufferSource buffers, String name, String part, int light, int overlay,
+                              ItemStack stack) {
+        Minecraft.getInstance().getItemRenderer().renderModelLists(get(name, part), stack, light, overlay, pose,
                 buffers.getBuffer(Sheets.cutoutBlockSheet()));
+    }
+
+    /** De band van een smokebom heeft de kleur van zijn rook (grijs, of de kleurstof waarmee je hem maakte). */
+    public static void registerItemColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
+        event.register((stack, tintIndex) -> tintIndex == 0
+                        ? 0xFF000000 | SmokeView.rgb(stack.get(com.senne.imttech.registry.ModDataComponents.SMOKE_COLOR.get()))
+                        : -1,
+                com.senne.imttech.registry.ModItems.SMOKE_GRENADE.get());
     }
 }
