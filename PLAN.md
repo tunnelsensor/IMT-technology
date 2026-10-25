@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 305 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 306 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3332,6 +3332,16 @@ Ik bouwde het in deze volgorde:
       stekker gekozen), `bp25` (geknipt: de hele draad groen), `bp26` (de poort uit), `bp27` (het scherm met WIRES CUT en
       Repair wires), `bp28` (hersteld) en `bp29` (een verkeerde draad: ZAP, rood). **LEESMIJ.md**: "Inbreken" heeft een
       stuk over de laserzender, en bij Rayshield staat Repair wires.
+- [x] **3. Kapot blijft kapot** — Ik vroeg: een eigenaar kon doorgeknipte zenders weghakken en terugzetten, en dan
+      waren de draden gratis heel. Jouw antwoord: "de 2de moet inderdaad worden opgelost door te onthouden dat die laser
+      kapot is". Nu valt een doorgeknipte zender eruit als een item dat dat onthoudt (`LASER_CUT`, net zoals de
+      beveiligingskern zijn instellingen meeneemt), met in rood "Wires cut: this emitter is broken." en dat hij pas heel
+      wordt met Repair wires. Zo'n zender stapelt niet met hele. Zet je hem weer neer, dan is hij nog kapot; zet je hem
+      tegen een werkende poort, dan gaat die hele poort meteen uit (één kapotte zender is genoeg). Repair wires maakt de
+      hele poort heel, en daarna valt hij er gewoon als een hele uit. Een zender die pas later tegen een doorgeknipte
+      poort werd gezet, is zelf niet kapot: die valt er als een hele uit. (Je eerste vraag, de zender aan de overkant
+      als eigen poort, liet ik zoals hij was.) Eén nieuwe test (`bypass_laser_stays_cut_when_mined`). De test van de
+      kluwens rekent nu met vaste getallen, wat er ook in de config staat. 306 tests, allemaal groen.
 
 ---
 

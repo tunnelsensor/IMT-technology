@@ -1414,6 +1414,8 @@
   "tooltip.imttech.bypass_kit.panel": "Right-click a code panel: dust it for fingerprints and crack the code.",
   "bypass.imttech.msg.no_code": "No diagram checks a code on this panel: there is no code to crack.",
   "tooltip.imttech.bypass_kit.laser": "Right-click a laser emitter: follow its wires and cut the one to the lens.",
+  "tooltip.imttech.laser_emitter.cut": "Wires cut: this emitter is broken.",
+  "tooltip.imttech.laser_emitter.cut_repair": "Place it and press Repair wires in its screen (sneak + right-click).",
   "bypass.imttech.msg.laser_cut": "These wires are already cut: the laser gate stays off until someone repairs it.",
   "bypass.imttech.msg.laser_locked": "This laser gate locked up after a wrong cut: wait %s.",
   "pickpocket.imttech.msg.disabled": "Pickpocketing is turned off on this server.",

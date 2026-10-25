@@ -214,16 +214,54 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         }
     }
 
-    /** Net neergezet: wie dat deed, is de eigenaar. En als er al redstone op staat, meteen aan. */
+    /**
+     * Net neergezet: wie dat deed, is de eigenaar. En als er al redstone op staat, meteen aan.
+     *
+     * Was het een zender met doorgeknipte draden (weggehakt terwijl hij kapot was, hoofdstuk 33), dan is hij nog
+     * steeds kapot. Zet je hem tegen een poort aan, dan gaat die hele poort meteen uit: één kapotte zender is genoeg.
+     */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof LaserEmitterBlockEntity emitter) {
+        if (!(level.getBlockEntity(pos) instanceof LaserEmitterBlockEntity emitter)) {
+            return;
+        }
+        if (placer instanceof ServerPlayer player) {
             emitter.setOwner(player);
         }
-        if (level instanceof ServerLevel serverLevel) {
-            update(serverLevel, pos, state, false);
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
         }
+        if (LaserEmitterItem.isCut(stack)) {
+            emitter.setCut(true);
+            for (BlockPos member : group(serverLevel, pos)) {
+                BlockState memberState = serverLevel.getBlockState(member);
+                if (memberState.getBlock() instanceof LaserEmitterBlock block) {
+                    block.update(serverLevel, member, memberState, false);
+                }
+            }
+            return;
+        }
+        update(serverLevel, pos, state, false);
+    }
+
+    /**
+     * Wat er uitvalt als de zender kapotgaat (weggehakt of opgeblazen): de zender zelf (de loot table). Waren zijn
+     * draden doorgeknipt, dan onthoudt het item dat (hoofdstuk 33, jouw wens), zodat weghakken en terugzetten hem niet
+     * gratis herstelt.
+     */
+    @Override
+    protected List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
+        List<ItemStack> drops = super.getDrops(state, params);
+        if (params.getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY)
+                instanceof LaserEmitterBlockEntity emitter && emitter.isCut()) {
+            for (ItemStack drop : drops) {
+                if (drop.is(asItem())) {
+                    drop.set(com.senne.imttech.registry.ModDataComponents.LASER_CUT.get(), true);
+                }
+            }
+        }
+        return drops;
     }
 
     /**

@@ -81,8 +81,9 @@ public final class ModItems {
     public static final DeferredItem<EmpItem> EMP = ITEMS.registerItem("emp",
             EmpItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
 
-    public static final DeferredItem<BlockItem> LASER_EMITTER = ITEMS.registerSimpleBlockItem("laser_emitter",
-            ModBlocks.LASER_EMITTER);
+    /** Een eigen item (hoofdstuk 33): een weggehakte zender met doorgeknipte draden blijft kapot (zie LaserEmitterItem). */
+    public static final DeferredItem<com.senne.imttech.shield.LaserEmitterItem> LASER_EMITTER = ITEMS.registerItem("laser_emitter",
+            properties -> new com.senne.imttech.shield.LaserEmitterItem(ModBlocks.LASER_EMITTER.get(), properties));
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
             ModBlocks.DOME_GENERATOR);
     public static final DeferredItem<BlockItem> POWER_CABINET = ITEMS.registerSimpleBlockItem("power_cabinet",

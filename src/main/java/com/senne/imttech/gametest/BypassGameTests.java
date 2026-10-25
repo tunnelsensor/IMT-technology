@@ -31,6 +31,7 @@ import com.senne.imttech.security.os.EventLog;
 import com.senne.imttech.security.os.SecurityOs;
 import com.senne.imttech.shield.LaserEmitterBlock;
 import com.senne.imttech.shield.LaserEmitterBlockEntity;
+import com.senne.imttech.shield.LaserEmitterItem;
 import com.senne.imttech.shield.LaserEmitters;
 import com.senne.imttech.station.ChargerBlockEntity;
 import java.util.Arrays;
@@ -390,11 +391,29 @@ public final class BypassGameTests {
                 }
             }
         }
-        check(WireTangle.wiresFor(1) == 4 && WireTangle.wiresFor(3) == 6 && WireTangle.wiresFor(5) == 8 && WireTangle.wiresFor(40) == 8,
-                "Zoveel draden per poort: " + WireTangle.wiresFor(1) + ", " + WireTangle.wiresFor(3) + ", " + WireTangle.wiresFor(5));
-        check(Math.abs(WireTangle.secondsFor(4) - 40) < 0.01f && Math.abs(WireTangle.secondsFor(6) - 50) < 0.01f
-                && Math.abs(WireTangle.secondsFor(8) - 60) < 0.01f, "De tijd per aantal draden: " + WireTangle.secondsFor(4)
-                + ", " + WireTangle.secondsFor(6) + ", " + WireTangle.secondsFor(8));
+        // Het rekenwerk met vaste getallen (4 tot 8 draden, 40 tot 60 seconden), wat er ook in je config staat.
+        float[] config = {ImtConfig.Bypass.LASER_WIRES_MIN, ImtConfig.Bypass.LASER_WIRES_MAX,
+                ImtConfig.Bypass.LASER_SECONDS_MIN, ImtConfig.Bypass.LASER_SECONDS_MAX};
+        try {
+            ImtConfig.Bypass.LASER_WIRES_MIN = 4;
+            ImtConfig.Bypass.LASER_WIRES_MAX = 8;
+            ImtConfig.Bypass.LASER_SECONDS_MIN = 40;
+            ImtConfig.Bypass.LASER_SECONDS_MAX = 60;
+            check(WireTangle.wiresFor(1) == 4 && WireTangle.wiresFor(3) == 6 && WireTangle.wiresFor(5) == 8 && WireTangle.wiresFor(40) == 8,
+                    "Zoveel draden per poort: " + WireTangle.wiresFor(1) + ", " + WireTangle.wiresFor(3) + ", " + WireTangle.wiresFor(5));
+            check(Math.abs(WireTangle.secondsFor(4) - 40) < 0.01f && Math.abs(WireTangle.secondsFor(6) - 50) < 0.01f
+                    && Math.abs(WireTangle.secondsFor(8) - 60) < 0.01f, "De tijd per aantal draden: " + WireTangle.secondsFor(4)
+                    + ", " + WireTangle.secondsFor(6) + ", " + WireTangle.secondsFor(8));
+            // Een minimum boven het maximum (of boven 8) geeft gewoon het maximum: nooit meer draden dan er namen zijn.
+            ImtConfig.Bypass.LASER_WIRES_MIN = 10;
+            check(WireTangle.wiresFor(1) == 8 && WireTangle.wiresFor(1) <= WireTangle.MAX_WIRES, "Met een minimum van 10: "
+                    + WireTangle.wiresFor(1) + " draden");
+        } finally {
+            ImtConfig.Bypass.LASER_WIRES_MIN = config[0];
+            ImtConfig.Bypass.LASER_WIRES_MAX = config[1];
+            ImtConfig.Bypass.LASER_SECONDS_MIN = config[2];
+            ImtConfig.Bypass.LASER_SECONDS_MAX = config[3];
+        }
         helper.succeed();
     }
 
@@ -522,6 +541,63 @@ public final class BypassGameTests {
     }
 
     /**
+     * Kapot blijft kapot (jouw wens: "onthouden dat die laser kapot is"): een doorgeknipte zender die je weghakt, valt
+     * eruit als een item dat dat onthoudt (en niet stapelt met een hele). Zet je hem tegen een werkende poort, dan is hij
+     * nog kapot en gaat die hele poort uit. Pas Repair wires maakt de poort weer heel, en dan valt hij er gewoon uit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "bypass_laser_mined")
+    public static void bypass_laser_stays_cut_when_mined(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // Tussen de twee poorten in: dichtbij genoeg om allebei in te stellen (6 blokken).
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 3), "laser-mined-owner");
+        owner.getAbilities().instabuild = false;
+        Bypass.clear();
+        BlockPos broken = laserGate(helper, owner, new BlockPos(2, 2, 4));
+        BlockPos working = laserGate(helper, owner, new BlockPos(2, 2, 1));
+        BlockPos placed = working.above(2);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(wall(helper, broken) == 4 && wall(helper, working) == 4, "De poorten gingen niet aan"))
+                .thenExecute(() -> {
+                    LaserEmitters.cutWires(level, helper.absolutePos(broken));
+                    check(cut(helper, broken) && cut(helper, broken.above()), "Doorknippen lukte niet");
+                    // Weghakken: de bovenste zender valt eruit, en onthoudt dat hij kapot is.
+                    BlockPos topAbs = helper.absolutePos(broken.above());
+                    List<ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(level.getBlockState(topAbs), level, topAbs,
+                            level.getBlockEntity(topAbs));
+                    check(drops.size() == 1 && LaserEmitterItem.isCut(drops.get(0)), "Een doorgeknipte zender viel eruit als een hele: " + drops);
+                    check(!ItemStack.isSameItemSameComponents(drops.get(0), new ItemStack(ModItems.LASER_EMITTER.get())),
+                            "Een kapotte zender stapelt met een hele");
+                    helper.setBlock(broken.above(), Blocks.AIR);
+                    // Terugzetten, bovenop de werkende poort (oostwaarts, zoals de rest): nog steeds kapot.
+                    look(owner, 90);
+                    owner.setItemInHand(InteractionHand.MAIN_HAND, drops.get(0));
+                    BlockPos against = helper.absolutePos(working.above());
+                    owner.getMainHandItem().useOn(new net.minecraft.world.item.context.UseOnContext(owner, InteractionHand.MAIN_HAND,
+                            new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(against).relative(Direction.UP, 0.5), Direction.UP,
+                                    against, false)));
+                    check(helper.getBlockState(placed).is(ModBlocks.LASER_EMITTER.get()), "De kapotte zender neerzetten lukte niet");
+                    check(cut(helper, placed), "De teruggezette zender was weer heel");
+                    check(!cut(helper, working), "De werkende poort zelf werd doorgeknipt");
+                })
+                .thenWaitUntil(() -> check(wall(helper, working) == 0 && wall(helper, working.above()) == 0,
+                        "Met een kapotte zender erbij bleef de poort aan"))
+                .thenExecute(() -> {
+                    owner.getInventory().add(new ItemStack(ModItems.COMPUTER_CHIP.get()));
+                    LaserEmitters.handleAction(owner, new LaserActionPayload(helper.absolutePos(working), LaserActionPayload.Op.REPAIR, 0));
+                    check(!cut(helper, placed) && owner.getInventory().countItem(ModItems.COMPUTER_CHIP.get()) == 0,
+                            "Herstellen maakte de teruggezette zender niet heel (of kostte geen chip)");
+                })
+                .thenWaitUntil(() -> check(wall(helper, working) == 4 && wall(helper, placed) == 4, "Na het herstellen kwam de wand niet terug"))
+                .thenExecute(() -> {
+                    BlockPos placedAbs = helper.absolutePos(placed);
+                    List<ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(level.getBlockState(placedAbs), level, placedAbs,
+                            level.getBlockEntity(placedAbs));
+                    check(drops.size() == 1 && !LaserEmitterItem.isCut(drops.get(0)), "Een herstelde zender viel eruit als een kapotte");
+                })
+                .thenSucceed();
+    }
+
+    /**
      * De verkeerde draad: een schok voor de hacker, de poort gaat 5 minuten op slot (ook voor een andere hacker, en dat
      * kost hem niets), en het alarm gaat af (met zijn naam erbij). Is de tijd om, dan gaat de poort ook op slot met
      * alarm, maar zonder schok. Weglopen stopt de hack zonder iets.
@@ -549,7 +625,7 @@ public final class BypassGameTests {
             WireTangle tangle = tangleOf(hacker);
             cutWire(hacker, firstAbs, (tangle.lensStart() + 1) % tangle.wires());
             check(!Bypass.isHacking(hacker), "Na de verkeerde draad liep de hack nog");
-            check(hacker.getHealth() < health, "De verkeerde draad gaf geen schok");
+            check(ImtConfig.Bypass.LASER_SHOCK_DAMAGE <= 0 || hacker.getHealth() < health, "De verkeerde draad gaf geen schok");
             check(!cut(helper, first), "De verkeerde draad knipte de poort toch door");
             long locked = LaserEmitters.lockedFor(level, LaserEmitterBlock.group(level, firstAbs));
             check(locked > 20 * (ImtConfig.Bypass.LASER_LOCK_SECONDS - 2), "De poort zit niet op slot: " + locked + " ticks");

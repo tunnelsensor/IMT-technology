@@ -847,6 +847,9 @@ seconden meer, tot 8 draden en 60 seconden. Elke laserzender mag, ook een zonder
   ook met redstone erop, tot iemand die hem mag instellen in zijn scherm op **Repair wires** drukt (dat
   kost een Computer Chip). Het gaat stil: geen alarm. Wel vonkt de zender, en zegt de app Devices "cut
   wires". Let op: een zender aan de overkant die terugkijkt, is een eigen poort; die moet je ook knippen.
+  **Kapot blijft kapot**: hak je een doorgeknipte zender weg, dan valt hij eruit met in rood "Wires cut"
+  (hij stapelt niet met hele zenders). Zet je hem weer neer, dan is hij nog kapot, en tegen een werkende
+  poort gaat die hele poort uit. Alleen Repair wires maakt hem weer heel.
 - **Een verkeerde draad**: een schok (2 hartjes), de poort gaat **5 minuten op slot** (voor iedereen), en
   hoort hij bij een kern, dan gaat het alarm af ("Someone is tampering with a laser gate at ...", met je
   naam). Ben je te laat, dan ook (maar zonder schok).

@@ -70,6 +70,15 @@ public final class ModDataComponents {
                     .persistent(com.senne.imttech.security.PackedCore.CODEC)
                     .networkSynchronized(com.senne.imttech.security.PackedCore.STREAM_CODEC));
 
+    /**
+     * Een laserzender met doorgeknipte draden (hoofdstuk 33, jouw wens: "onthouden dat die laser kapot is"): hak je
+     * hem weg, dan blijft hij kapot, ook als je hem weer neerzet. Alleen Repair wires maakt hem weer heel.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> LASER_CUT =
+            COMPONENTS.registerComponentType("laser_cut", builder -> builder
+                    .persistent(Codec.BOOL)
+                    .networkSynchronized(ByteBufCodecs.BOOL));
+
     /** Van welk blok een gebarsten blok of poeder komt (hoofdstuk 11, zie FromBlockItem). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.world.level.block.Block>> FROM_BLOCK =
             COMPONENTS.registerComponentType("from_block", builder -> builder
