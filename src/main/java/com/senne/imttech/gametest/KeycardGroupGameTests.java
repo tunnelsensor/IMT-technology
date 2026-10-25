@@ -204,7 +204,26 @@ public final class KeycardGroupGameTests {
         expectError("when every(5):\n    if card.in_group(\"staff\"):\n        pass", 2, "card.in_group(...) only works inside when keycard(...)");
         expectError("when keycard(\"Lab\"):\n    if card.in_group(3):\n        pass", 2, "needs the name of a keycard group");
         expectError("when keycard(\"Lab\"):\n    if card.in_group():\n        pass", 2, "needs the name of a keycard group");
+
+        // Ctrl+Spatie: na "if" staat card.in_group("..."), en tussen zijn aanhalingstekens je groepen.
+        var data = new com.senne.imttech.client.os.CodeCompletion.Data(List.of(), List.of("Lab door"), List.of(),
+                com.senne.imttech.logic.program.ProgramKind.SERVER, List.of(), List.of("staff", "security", "guest"));
+        List<String> afterIf = complete(List.of("when keycard(\"Lab door\"):", "    if "), data);
+        check(afterIf.contains("card.in_group(\"...\")"), "Na if mist card.in_group: " + afterIf);
+        List<String> inQuotes = complete(List.of("when keycard(\"Lab door\"):", "    if card.in_group(\""), data);
+        check(inQuotes.equals(List.of("staff", "security", "guest")), "Tussen de aanhalingstekens van card.in_group: " + inQuotes);
+        List<String> typed = complete(List.of("when keycard(\"Lab door\"):", "    if card.in_group(\"sec"), data);
+        check(typed.equals(List.of("security")), "Na card.in_group(\"sec: " + typed);
+        List<String> elsewhere = complete(List.of("when every(5):", "    if "), data);
+        check(!elsewhere.contains("card.in_group(\"...\")"), "card.in_group staat ook bij every: " + elsewhere);
         helper.succeed();
+    }
+
+    /** Wat Ctrl+Spatie voorstelt aan het einde van de laatste regel. */
+    private static List<String> complete(List<String> lines, com.senne.imttech.client.os.CodeCompletion.Data data) {
+        int line = lines.size() - 1;
+        return com.senne.imttech.client.os.CodeCompletion.complete(lines, line, lines.get(line).length(), data).items().stream()
+                .map(com.senne.imttech.client.os.CodeCompletion.Item::label).toList();
     }
 
     /**

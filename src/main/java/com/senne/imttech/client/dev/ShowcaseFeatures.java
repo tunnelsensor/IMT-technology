@@ -1195,12 +1195,15 @@ final class ShowcaseFeatures {
         add("Server racks and Logic", "Hoofdstuk 8: je redstone programmeren. Een klein lab met een eigen "
                 + "beveiligingskern en drie serverracks (lampjes knipperen: ze draaien mee; samen 2 CPU's, 2 RAM, "
                 + "2 SSD's). In de muur een ijzeren deur, links een keycardlezer, rechts een codepaneel en een lamp. "
-                + "Eerst de kaart (niveau 3) tegen de lezer: oranje, dan groen, en de deur gaat 3 seconden open "
-                + "(het diagram doet pulse(\"Lab door lock\", 3)). Dan een kaart die geblokkeerd is: rood. Dan de "
+                + "Eerst de kaart Lab access (in de groep lab; het diagram vraagt card.in_group(\"lab\")) tegen de "
+                + "lezer: oranje, dan groen, en de deur gaat 3 seconden open (het diagram doet pulse(\"Lab door lock\", "
+                + "3)). Dan een kaart die geblokkeerd is: rood, ook al zit hij in lab. Dan de "
                 + "code 4321 op het paneel: de lamp gaat aan. Dan sneak + rechtsklik op de lezer (13 oktober): zijn "
                 + "naamscherm, met 'Lab entrance' getypt (eronder de regel voor je diagram, en in oranje dat je die "
-                + "ook moet veranderen); Esc laat het zoals het was. Bij het codepaneel werkt dat net zo. Daarna de "
-                + "app Logic op de desktop: de code van het "
+                + "ook moet veranderen); Esc laat het zoals het was. Bij het codepaneel werkt dat net zo. Op de "
+                + "desktop eerst de app Keycards (25 oktober): links je groepen als een boom (lab en guest zitten in "
+                + "staff), rechts de kaarten van lab, met hun kleur en Remove en Block naast elkaar. Daarna de "
+                + "app Logic: de code van het "
                 + "diagram (met kleuren; de deur openen staat in een eigen blok, def open_door(), dat de kaart en "
                 + "de code 7777 allebei gebruiken), en dezelfde code als blokjes met draadjes (de DEF in paars). "
                 + "Luister ook naar de nieuwe "
@@ -1246,7 +1249,10 @@ final class ShowcaseFeatures {
                     .pause(50)
                     .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
                     .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, LOGIC_LAB))
-                    .step(10, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.LOGIC)))
+                    // De app Keycards: de groepen van het lab, met "lab" gekozen.
+                    .step(10, () -> desktop(os -> os.tourKeycardGroup("lab")))
+                    .pause(110)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.LOGIC)))
                     .pause(120)
                     .step(0, () -> desktop(os -> os.tourLogicBlocks(null)))
                     .pause(120)
@@ -1554,7 +1560,7 @@ final class ShowcaseFeatures {
                         wakeLabServer(player);
                         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
                     })
-                    // De keycardlezer: het stroomcircuit speelt zichzelf (niveau 3), de deur gaat open.
+                    // De keycardlezer: het stroomcircuit speelt zichzelf (een kaart van de groep lab), de deur gaat open.
                     .stand(0, LOGIC_LAB.getX() + 1.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 9.5, 180, 15)
                     .lookAt(10, Vec3.atCenterOf(reader))
                     .pause(30)

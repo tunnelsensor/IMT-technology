@@ -500,7 +500,7 @@ gewoon langs. Wie hem neerzet, vindt hem ook in de redstone-lijst van I.M.T (toe
 kunt kiezen, tussen 15 en 128); wat een lamp aan stroom gebruikt staat onder `[power]`.
 
 ### De server: je redstone programmeren
-Met een **server** programmeer je de redstone van je basis: "houdt iemand een kaart van niveau 3
+Met een **server** programmeer je de redstone van je basis: "houdt iemand een kaart van de groep lab
 tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan je
 **beveiligingskern** (Security OS).
 1. **Bouwen**: zet **Server Racks** binnen 200 blokken van je kern, naast of op elkaar: samen zijn
@@ -528,11 +528,22 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    zegt het scherm in het oranje dat je die ook in je diagrammen moet veranderen. Enter of **Save**
    bewaart, Esc laat het zoals het was. Een lezer of paneel van vóór 13 oktober wordt van wie er als
    eerste op sneak-klikt (in iemands basis kan dat niet).
-3. **Keycards**: craft lege kaarten en schrijf ze op de desktop in de app **Keycards** (naam en
-   niveau 1-5; ze krijgen een eigen nummer). Een verloren of gestolen kaart **blokkeer** je daar.
-   Geblokkeerde kaarten staan onderaan de lijst; met **Delete** (of **Delete blocked** voor allemaal
-   tegelijk, twee keer klikken) gooi je ze echt weg, zodat de lijst niet vol en rommelig wordt. Het
-   nummer van een weggegooide kaart komt nooit meer terug.
+3. **Keycards**: craft lege kaarten en schrijf ze op de desktop in de app **Keycards** (een naam en
+   een van acht kleuren; ze krijgen een eigen nummer). Sinds 25 oktober zitten kaarten in **groepen**
+   in plaats van niveaus. Links in de app staan je groepen als een boom (een groep kan in een andere
+   groep zitten, zoals `night shift` in `security` in `staff`), rechts de kaarten van de groep die je
+   kiest. Een nieuwe kaart komt in de gekozen groep. **Sleep** een kaart op een groep om hem ook daarin
+   te zetten (een kaart mag in meer dan één groep zitten), en met **Remove** haal je hem er weer uit.
+   Sleep een groep op een groep om hem erin te steken, of op **All cards** om hem bovenaan te zetten.
+   Onder de groepen staan **New**, **Rename** en **Delete**; gooi je een groep weg, dan schuift wat erin
+   zat een laag omhoog. Hooguit 32 groepen per netwerk. De groepen staan in de kern, niet op de kaart:
+   zet je een kaart in een andere groep, dan geldt dat meteen, ook als iemand anders hem al heeft.
+   Een verloren of gestolen kaart **blokkeer** je daar. Geblokkeerde kaarten staan onderaan de lijst;
+   met **Delete** (of **Delete blocked** bij All cards voor allemaal tegelijk, twee keer klikken) gooi
+   je ze echt weg, zodat de lijst niet vol en rommelig wordt. Het nummer van een weggegooide kaart komt
+   nooit meer terug. Kaarten van vóór 25 oktober (met een niveau) houden hun kleur en komen in de groepen
+   `level 1` tot `level 5`. Die zitten in elkaar, dus `card.in_group("level 3")` doet wat
+   `card.level >= 3` vroeger deed.
 4. **Programmeren**: de app **Logic** op de desktop. Links je diagrammen, rechts de code; de knop
    **Blocks** toont hetzelfde als blokjes met draadjes (en **Code** weer terug). **Check** zoekt
    fouten, **Save** zet het op de server, **Help** toont alles wat je kunt gebruiken (klik erop en
@@ -545,7 +556,7 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
 De code lijkt op Python: wat ingesprongen staat (4 spaties), hoort bij de regel erboven.
 ```
 when keycard("Lab door"):
-    if card.valid and card.level >= 3:
+    if card.in_group("lab"):
         accept()
         pulse("Vault door", 3)
     else:
@@ -555,9 +566,12 @@ when keycard("Lab door"):
 - **Begin met** `when keycard("...")`, `when codepanel("...")`, `when turned_on("...")`,
   `when turned_off("...")` of `when every(10)` (elke 10 seconden).
 - **Kies** met `if ...:`, `elif ...:` en `else:`, met `and`, `or`, `not` en `==`, `!=`, `<`, `>`,
-  `<=`, `>=`. Je kunt kijken naar `card.level`, `card.valid`, `card.number`, `card.name`, `code`
-  (tekst: `code == "4321"`), `player.trusted`, `player.owner`, `player.name`, `is_night`, `is_day`
-  en `is_on("...")`.
+  `<=`, `>=`. Je kunt kijken naar `card.in_group("...")`, `card.valid`, `card.number`, `card.name`,
+  `code` (tekst: `code == "4321"`), `player.trusted`, `player.owner`, `player.name`, `is_night`,
+  `is_day` en `is_on("...")`. `card.in_group("staff")` is waar als de kaart in de groep `staff` zit, of
+  in een groep die (ergens) in `staff` zit; alleen voor een geldige kaart (van jouw netwerk en niet
+  geblokkeerd), dus `if card.in_group("staff"):` is op zichzelf al veilig. Hoofdletters maken niet uit,
+  en `'staff'` mag ook.
 - **Doe** `on(...)`, `off(...)`, `toggle(...)`, `pulse("...", 3)`, `wait(2)`, `accept()` en `deny()`
   (groen of rood lampje op de lezer of het paneel), `say("...")` (I.M.T zegt het je),
   `log("...")` en `alarm("...")` (alarm, en de beveiliging jaagt op wie het deed).
@@ -570,23 +584,23 @@ when keycard("Lab door"):
       pulse("Lab door lock", 3)
 
   when keycard("Lab door"):
-      if card.valid and card.level >= 3:
+      if card.in_group("lab"):
           open_lab()
 
   when codepanel("Lab panel"):
       if code == "4321":
           open_lab()
   ```
-  Een def mag andere defs gebruiken, maar niet zichzelf. Gebruikt hij `card.level` of `accept()`,
+  Een def mag andere defs gebruiken, maar niet zichzelf. Gebruikt hij `card.in_group(...)` of `accept()`,
   dan werkt hij alleen in een when die daarbij past (Check zegt het je). In de blokjes is een def
   een paars **DEF**-blok met de stappen erachter, en **use def** voert hem uit.
 - **Rekenen**: `+ - * /` met haakjes (keer en delen gaan voor), een minteken (`-20`), en met `+` plak
-  je tekst aan elkaar: `if card.level * 2 - 1 >= 5:`, `say("Level " + card.level)`. Een bericht
+  je tekst aan elkaar: `if count * 2 - 1 >= 5:`, `say("Card " + card.number)`. Een bericht
   (`say`, `log`, `alarm`) en de seconden (`wait`, `pulse`) mogen een berekening zijn: `wait(delay * 2)`.
   Een apparaat blijft gewone tekst tussen aanhalingstekens. Delen door 0 geeft 0.
 - **Tekst met namen erin** (sinds 19 oktober): zet een `$` voor de tekst, en wat tussen `{` en `}` staat,
   wordt ingevuld: `say($"This is test {count}")` zegt "This is test 3". Tussen de haakjes mag een naam, een
-  gegeven of een berekening staan: `$"Round {i + 1} of {count}"`, `$"Card {card.name} level {card.level}"`.
+  gegeven of een berekening staan: `$"Round {i + 1} of {count}"`, `$"Card {card.name} (#{card.number})"`.
   Een getal komt er zonder overbodige nullen in, en `true`/`false` als woord. Wil je een gewoon haakje in de
   tekst, schrijf dan `{{` of `}}`. Het werkt overal waar tekst mag (een bericht, `naam = ...`, een `if`), niet
   als naam van een apparaat.
@@ -794,13 +808,14 @@ en ijzer). Rechtsklik ermee op de lezer of het paneel; de kit gaat 16 keer mee. 
 terwijl je hackt (torentjes schieten gewoon op je); Esc of weglopen stopt zonder alarm. Hangt het
 apparaat niet aan een draaiende server, dan valt er niets te bedotten (en kost het niets).
 
-**Een keycardlezer: het stroomcircuit.** Eerst kies je welke kaart je namaakt, niveau 1 tot 5: hoe
-hoger, hoe groter het raster en hoe minder tijd (niveau 1: 5 bij 4 en 60 seconden, niveau 5: 8 bij 6
-en 40 seconden). Dan schroef je de lezer open: een raster met stukjes draad. **Linksklik** draait een
+**Een keycardlezer: het stroomcircuit.** Eerst kies je van welke **groep** van dat netwerk je een
+kaart namaakt: je ziet de groepen van de eigenaar als een boom (heeft hij er geen, dan maak je een kaart
+zonder groep). Het raster is altijd 8 bij 6, met 40 seconden en 3 ALARM-punten. Dan schroef je de
+lezer open: een raster met stukjes draad. **Linksklik** draait een
 stukje rechtsom, **rechtsklik** linksom. Wat aan **CARD** vastzit licht blauw op; leid het signaal
 naar **ACCEPT**. Raakt het een rood **ALARM**-punt, dan knippert alles rood en heb je 1 seconde om dat
 stukje weg te draaien. Komt het signaal bij ACCEPT, dan wordt het pad groen en leest de lezer een
-**geldige kaart van het niveau dat je koos**. Wat er dan gebeurt, beslist het diagram van de eigenaar,
+**geldige kaart van de groep die je koos**. Wat er dan gebeurt, beslist het diagram van de eigenaar,
 zoals bij een echte kaart. Die kaart heeft wel een verzonnen nummer: de eigenaar ziet in zijn
 logboek een nummer dat niet in zijn app Keycards staat, en wie heel voorzichtig is, laat zijn diagram
 ook op `card.number` letten.

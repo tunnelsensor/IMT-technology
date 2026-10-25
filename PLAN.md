@@ -3257,7 +3257,15 @@ Ik bouw het in deze volgorde, één stap per commit:
       `y061` ("security" gekozen), `y062` (New), `y063` (Rename), `y07` en `y08` (Delete blocked). Ook gerepareerd: in
       de screenshot van het zakkenrollen (`bp19`) was de gestolen kaart grijs met BLANK; nu blauw met "#1001". 302 tests:
       299 groen, de 3 rode van hoofdstuk 14 stap 2.
-- [ ] **3. Showcase, screenshots en LEESMIJ**
+- [x] **3. Showcase, screenshots en LEESMIJ** — **LEESMIJ.md**: de app Keycards met groepen (slepen, Remove, New,
+      Rename, Delete, oude kaarten in "level 1" tot "level 5"), `card.in_group("...")` bij wat je kunt nakijken (ook
+      dat het alleen voor een geldige kaart waar is), de voorbeelden zonder `card.level`, en het hacken met een groep
+      (altijd 8 x 6, 40 seconden, 3 ALARM). **De showcase** ("Server racks and Logic", geen nieuwe functie, zodat de
+      nummers van je notities blijven kloppen): het diagram van het lab vraagt `card.in_group("lab")` (lab en guest
+      zitten in staff), en op de desktop komt eerst de app Keycards met "lab" gekozen, dan de app Logic. Bij het hacken
+      kiest het circuit vanzelf de groep lab. Screenshots gecontroleerd: `-Ponly=keycards,bypass,logic,lab`. De test
+      van de taal kijkt nu ook naar Ctrl+Spatie: na `if` staat `card.in_group("...")` (niet onder `every`), en tussen
+      de aanhalingstekens je groepen. 302 tests: 299 groen, de 3 rode van hoofdstuk 14 stap 2.
 
 ---
 
@@ -3379,6 +3387,10 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       (`dr4`-`dr7`) en in de showcase. Probeer zelf of sluipen + rechtsklik met een lege hand fijn werkt, ook
       met een vriend in je Access en met een vreemde (die hoort bij een lezer "This keycard reader belongs to
       ...", en krijgt bij een paneel gewoon de toetsen).
+- [ ] **Keycard-groepen (25 oktober)**: gezien op screenshots (`y05`-`y08`, `bp02`, `bp07`, `bp19`, `l01`). Probeer
+      zelf of slepen in de app Keycards fijn werkt (een kaart op een groep, een groep op een groep, ook met veel
+      kaarten of groepen, als je moet scrollen), en of de drie nieuwe kaartkleuren (rood, oranje, zwart) er in je
+      hand goed uitzien.
 
 ---
 
