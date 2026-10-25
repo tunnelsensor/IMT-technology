@@ -98,6 +98,21 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BEEP = register("emp_grenade.beep");
     /** Een Sticky EMP Grenade plakt vast: een doffe klets met een klikje. */
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_STICK = register("emp_grenade.stick");
+    /** De lasergeweren (hoofdstuk 35): elk zijn eigen schot. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_PISTOL_FIRE = register("laser_pistol.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_RIFLE_FIRE = register("laser_rifle.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_SNIPER_FIRE = register("laser_sniper.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_SHOTGUN_FIRE = register("laser_shotgun.fire");
+    /** Een leeg geweer: een droge klik met een zoempje dat wegvalt. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_GUN_EMPTY = register("laser_gun.empty");
+    /** Herladen: de cel klikt los en schuift eruit... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_GUN_CELL_OUT = register("laser_gun.cell_out");
+    /** ...en de nieuwe klikt erin, met een oplopende zoem (het geweer laadt op). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_GUN_CELL_IN = register("laser_gun.cell_in");
+    /** De grendel van de sniper of de pomp van de shotgun na een schot. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_GUN_CYCLE = register("laser_gun.cycle");
+    /** Richten: een zacht mechanisch klikje. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> LASER_GUN_AIM = register("laser_gun.aim");
     /** De smokebom begint te roken: een lang, luid gesis. */
     public static final DeferredHolder<SoundEvent, SoundEvent> SMOKE_GRENADE_HISS = register("smoke_grenade.hiss");
     /** De flashbang: een snoeiharde knal. */

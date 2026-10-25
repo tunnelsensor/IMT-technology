@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "G": {
+      "tag": "c:ingots/gold"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "L": {
+      "tag": "c:glass_panes"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "GLL",
+    "ICC",
+    "IRR"
+  ],
+  "result": {
+    "id": "imttech:laser_shotgun",
+    "count": 1
+  }
+}

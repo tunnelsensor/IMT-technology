@@ -187,6 +187,11 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Emp::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.imttech.weapons.Emp.clear());
+        // De lasergeweren: herladen afmaken, en wie weggaat vergeten.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.LaserGuns::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.LaserGuns::onLoggedOut);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.weapons.LaserGuns.clear());
         // De rookwolken van de smokebom: vergeten als ze op zijn.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Smoke::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

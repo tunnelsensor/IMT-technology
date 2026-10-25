@@ -242,6 +242,18 @@ public final class ClientPayloadHandlers {
         BeamEffects.play(payload);
     }
 
+    /** Iemand schoot met een lasergeweer (hoofdstuk 35): de laserbouten tekenen. */
+    public static void onGunShot(com.senne.imttech.network.GunShotPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.weapons.GunEffects.shot(payload);
+    }
+
+    /** De server zegt dat herladen niet kan (hoofdstuk 35): de animatie stoppen. */
+    public static void onGunReload(com.senne.imttech.network.GunReloadPayload payload, IPayloadContext context) {
+        if (!payload.start()) {
+            com.senne.imttech.client.weapons.GunControl.reloadRefused();
+        }
+    }
+
     /** Een flashbang verblindt je (hoofdstuk 35). */
     public static void onFlash(com.senne.imttech.network.FlashPayload payload, IPayloadContext context) {
         com.senne.imttech.client.weapons.FlashOverlay.flash(payload.strength(), payload.ticks());

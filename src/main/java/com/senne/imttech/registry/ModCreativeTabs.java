@@ -99,6 +99,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.EMP_GRENADE.get());
                 output.accept(ModItems.STICKY_EMP_GRENADE.get());
                 output.accept(ModItems.FRAG_GRENADE.get());
+                output.accept(ModItems.ENERGY_CELL.get());
+                output.accept(com.senne.imttech.weapons.EnergyCellItem.withCharge(com.senne.imttech.weapons.EnergyCellItem.FULL));
+                output.accept(ModItems.LASER_PISTOL.get());
+                output.accept(ModItems.LASER_RIFLE.get());
+                output.accept(ModItems.LASER_SNIPER.get());
+                output.accept(ModItems.LASER_SHOTGUN.get());
                 output.accept(ModItems.STICKY_FRAG_GRENADE.get());
                 output.accept(ModItems.SMOKE_GRENADE.get());
                 output.accept(ModItems.FLASHBANG.get());

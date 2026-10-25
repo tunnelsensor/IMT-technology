@@ -406,5 +406,77 @@
         "name": "imttech:flashbang_ring"
       }
     ]
+  },
+  "laser_pistol.fire": {
+    "subtitle": "subtitles.imttech.laser_pistol.fire",
+    "sounds": [
+      {
+        "name": "imttech:laser_pistol_fire"
+      }
+    ]
+  },
+  "laser_rifle.fire": {
+    "subtitle": "subtitles.imttech.laser_rifle.fire",
+    "sounds": [
+      {
+        "name": "imttech:laser_rifle_fire"
+      }
+    ]
+  },
+  "laser_sniper.fire": {
+    "subtitle": "subtitles.imttech.laser_sniper.fire",
+    "sounds": [
+      {
+        "name": "imttech:laser_sniper_fire"
+      }
+    ]
+  },
+  "laser_shotgun.fire": {
+    "subtitle": "subtitles.imttech.laser_shotgun.fire",
+    "sounds": [
+      {
+        "name": "imttech:laser_shotgun_fire"
+      }
+    ]
+  },
+  "laser_gun.empty": {
+    "subtitle": "subtitles.imttech.laser_gun.empty",
+    "sounds": [
+      {
+        "name": "imttech:laser_gun_empty"
+      }
+    ]
+  },
+  "laser_gun.cell_out": {
+    "subtitle": "subtitles.imttech.laser_gun.cell_out",
+    "sounds": [
+      {
+        "name": "imttech:laser_gun_cell_out"
+      }
+    ]
+  },
+  "laser_gun.cell_in": {
+    "subtitle": "subtitles.imttech.laser_gun.cell_in",
+    "sounds": [
+      {
+        "name": "imttech:laser_gun_cell_in"
+      }
+    ]
+  },
+  "laser_gun.cycle": {
+    "subtitle": "subtitles.imttech.laser_gun.cycle",
+    "sounds": [
+      {
+        "name": "imttech:laser_gun_cycle"
+      }
+    ]
+  },
+  "laser_gun.aim": {
+    "subtitle": "subtitles.imttech.laser_gun.aim",
+    "sounds": [
+      {
+        "name": "imttech:laser_gun_aim"
+      }
+    ]
   }
 }

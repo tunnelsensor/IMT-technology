@@ -240,6 +240,20 @@ public final class ModNetwork {
                                 ImtSuit.setEngaged(player, payload.engaged());
                             }
                         }));
+        // De lasergeweren (hoofdstuk 35): jouw spel schiet en herlaadt; de server zegt als herladen niet kan.
+        registrar.playToServer(GunFirePayload.TYPE, GunFirePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.weapons.LaserGuns.fire(player, payload.yaw(), payload.pitch(), payload.aiming());
+            }
+        });
+        registrar.playBidirectional(GunReloadPayload.TYPE, GunReloadPayload.STREAM_CODEC,
+                new DirectionalPayloadHandler<>(
+                        (payload, context) -> ClientPayloadHandlers.onGunReload(payload, context),
+                        (payload, context) -> {
+                            if (context.player() instanceof ServerPlayer player && payload.start()) {
+                                com.senne.imttech.weapons.LaserGuns.startReload(player);
+                            }
+                        }));
         // Het codepaneel: de server opent de toetsen, jouw spel stuurt de ingetypte code terug.
         registrar.playBidirectional(CodePanelPayload.TYPE, CodePanelPayload.STREAM_CODEC,
                 new DirectionalPayloadHandler<>(
@@ -301,6 +315,9 @@ public final class ModNetwork {
         // Een EMP-granaat ging af (hoofdstuk 35): de bol van licht.
         registrar.playToClient(EmpBlastPayload.TYPE, EmpBlastPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onEmpBlast(payload, context));
+        // De lasergeweren (hoofdstuk 35): de laserbouten van een schot.
+        registrar.playToClient(GunShotPayload.TYPE, GunShotPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onGunShot(payload, context));
         // Een flashbang verblindt je (hoofdstuk 35): het witte scherm en de piep.
         registrar.playToClient(FlashPayload.TYPE, FlashPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onFlash(payload, context));

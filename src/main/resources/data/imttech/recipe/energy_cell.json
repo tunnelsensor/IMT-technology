@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "B": {
+      "tag": "c:storage_blocks/redstone"
+    },
+    "K": {
+      "tag": "c:ingots/copper"
+    },
+    "L": {
+      "tag": "c:glass_panes"
+    },
+    "N": {
+      "tag": "c:nuggets/gold"
+    }
+  },
+  "pattern": [
+    "NLN",
+    "KBK",
+    "NLN"
+  ],
+  "result": {
+    "id": "imttech:energy_cell",
+    "count": 1
+  }
+}

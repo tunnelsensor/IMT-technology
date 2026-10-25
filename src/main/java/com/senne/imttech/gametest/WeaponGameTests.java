@@ -614,4 +614,135 @@ public final class WeaponGameTests {
         check(result.getHoverName().getString().contains("Smoke Grenade"), "De naam klopt niet: " + result.getHoverName().getString());
         helper.succeed();
     }
+
+    // ================================================================ Stap 3: energiecellen en de geweren
+
+    /** Een speler (survival) met dit geweer in zijn hand, op deze plek, die naar {@code look} kijkt. */
+    private static ServerPlayer shooter(GameTestHelper helper, String name, BlockPos at, com.senne.imttech.weapons.GunType type,
+                                        float cell, Vec3 look) {
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, at, name);
+        player.getAbilities().instabuild = false;
+        player.getInventory().selected = 0;
+        ItemStack gun = new ItemStack(ModItems.laserGun(type));
+        if (cell >= 0) {
+            com.senne.imttech.weapons.LaserGunItem.setCell(gun, cell);
+        }
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, look);
+        com.senne.imttech.weapons.LaserGuns.forgetCooldown(player);
+        return player;
+    }
+
+    private static com.senne.imttech.weapons.LaserGuns.Result fire(ServerPlayer player, boolean aiming) {
+        return com.senne.imttech.weapons.LaserGuns.fire(player, player.getYRot(), player.getXRot(), aiming);
+    }
+
+    /**
+     * Jouw keuze: energiecellen als magazijn, en ze stapelen niet. Een nieuw geweer is leeg (schieten = klik); herladen
+     * pakt de volste cel uit je inventaris en de oude cel komt op zijn plek terug; met alleen legere cellen herlaad je
+     * niet. Elk schot kost een stukje van de cel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
+    public static void laser_gun_reloads_with_the_fullest_cell(GameTestHelper helper) {
+        ServerPlayer player = shooter(helper, "gun-reloader", new BlockPos(4, 2, 4), com.senne.imttech.weapons.GunType.RIFLE, -1,
+                helper.absoluteVec(new Vec3(4.5, 2.5, 14.5)));
+        check(new ItemStack(ModItems.ENERGY_CELL.get()).getMaxStackSize() == 1, "Energiecellen stapelen");
+        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.EMPTY, "Zonder cel schoot het geweer toch");
+        player.getInventory().setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(60));
+        player.getInventory().setItem(6, com.senne.imttech.weapons.EnergyCellItem.withCharge(90));
+        check(com.senne.imttech.weapons.LaserGuns.startReload(player), "Herladen begon niet");
+        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.RELOADING, "Tijdens herladen kon je schieten");
+        helper.startSequence()
+                .thenWaitUntil(() -> check(!com.senne.imttech.weapons.LaserGuns.isReloading(player), "Herladen werd niet klaar"))
+                .thenExecute(() -> {
+                    ItemStack gun = player.getMainHandItem();
+                    check(Math.abs(com.senne.imttech.weapons.LaserGunItem.cell(gun) - 90) < 1e-3,
+                            "Het geweer kreeg niet de volste cel: " + com.senne.imttech.weapons.LaserGunItem.cell(gun));
+                    check(player.getInventory().getItem(6).isEmpty(), "De cel bleef ook in je inventaris");
+                    check(Math.abs(com.senne.imttech.weapons.EnergyCellItem.charge(player.getInventory().getItem(5)) - 60) < 1e-3,
+                            "De andere cel veranderde");
+                    // Alleen nog een legere cel: niet herladen.
+                    check(!com.senne.imttech.weapons.LaserGuns.startReload(player), "Herladen met een legere cel");
+                    com.senne.imttech.weapons.LaserGuns.forgetCooldown(player);
+                    check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.FIRED, "Het geweer schoot niet");
+                    float cost = com.senne.imttech.weapons.GunType.RIFLE.cost();
+                    check(Math.abs(com.senne.imttech.weapons.LaserGunItem.cell(gun) - (90 - cost)) < 1e-3,
+                            "Een schot kostte niet " + cost + "%");
+                    check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.TOO_SOON, "Twee schoten in één tick");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Een schot raakt wat je in je vizier hebt: een koe in haar lijf krijgt de schade van het pistool, een koe in haar
+     * hoofd 1,5 keer zoveel (headshot). Een koe achter een muur krijgt niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "weapons")
+    public static void laser_gun_hits_and_headshots(GameTestHelper helper) {
+        net.minecraft.world.entity.animal.Cow body = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(4, 2, 10));
+        net.minecraft.world.entity.animal.Cow head = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(10, 2, 10));
+        net.minecraft.world.entity.animal.Cow walled = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(16, 2, 10));
+        for (int y = 2; y <= 4; y++) {
+            helper.setBlock(new BlockPos(16, y, 7), Blocks.STONE);
+        }
+        float damage = com.senne.imttech.weapons.GunType.PISTOL.damage();
+        ServerPlayer a = shooter(helper, "gun-body", new BlockPos(4, 2, 4), com.senne.imttech.weapons.GunType.PISTOL, 100,
+                body.position().add(0, 0.5, 0));
+        ServerPlayer b = shooter(helper, "gun-head", new BlockPos(10, 2, 4), com.senne.imttech.weapons.GunType.PISTOL, 100,
+                head.getEyePosition());
+        ServerPlayer c = shooter(helper, "gun-wall", new BlockPos(16, 2, 4), com.senne.imttech.weapons.GunType.PISTOL, 100,
+                walled.position().add(0, 0.5, 0));
+        check(fire(a, true) == com.senne.imttech.weapons.LaserGuns.Result.FIRED, "Het pistool schoot niet");
+        fire(b, true);
+        fire(c, true);
+        check(Math.abs(body.getMaxHealth() - body.getHealth() - Math.min(body.getMaxHealth(), damage)) < 0.01,
+                "Een schot in het lijf deed niet " + damage + " schade: " + (body.getMaxHealth() - body.getHealth()));
+        float headshot = Math.min(head.getMaxHealth(), damage * ImtConfig.Weapons.HEADSHOT);
+        check(!head.isAlive() || Math.abs(head.getMaxHealth() - head.getHealth() - headshot) < 0.01,
+                "Een headshot deed niet " + headshot + " schade: " + (head.getMaxHealth() - head.getHealth()));
+        check(walled.getHealth() == walled.getMaxHealth(), "Het schot ging door de muur");
+        helper.succeed();
+    }
+
+    /**
+     * De laser-shotgun schiet een waaier van stralen; van dichtbij raken de meeste hetzelfde doelwit, en de schade
+     * telt op (in één klap).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "weapons")
+    public static void laser_shotgun_spreads_its_rays(GameTestHelper helper) {
+        net.minecraft.world.entity.monster.Husk husk = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.HUSK,
+                new BlockPos(6, 2, 7));
+        husk.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(200);
+        husk.setHealth(200);
+        ServerPlayer player = shooter(helper, "gun-shotgun", new BlockPos(6, 2, 4), com.senne.imttech.weapons.GunType.SHOTGUN,
+                100, husk.position().add(0, 1.0, 0));
+        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.FIRED, "De shotgun schoot niet");
+        float lost = husk.getMaxHealth() - husk.getHealth();
+        check(lost > com.senne.imttech.weapons.GunType.SHOTGUN.damage() * 2,
+                "Van dichtbij raakten te weinig stralen: " + lost + " schade");
+        check(com.senne.imttech.weapons.GunType.SHOTGUN.rays() > 1, "De shotgun heeft maar één straal");
+        helper.succeed();
+    }
+
+    /** Het Charging Station laadt een lege energiecel op (in het vak van de bril). */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
+    public static void charging_station_charges_a_cell(GameTestHelper helper) {
+        BlockPos at = new BlockPos(5, 2, 5);
+        helper.setBlock(at, ModBlocks.CHARGING_STATION.get());
+        var station = (com.senne.imttech.station.ChargingStationBlockEntity) helper.getBlockEntity(at);
+        ItemStack cell = new ItemStack(ModItems.ENERGY_CELL.get());
+        check(station.canPlaceItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES, cell),
+                "Een energiecel past niet in het station");
+        station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES, cell);
+        station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_FUEL,
+                new ItemStack(net.minecraft.world.item.Items.REDSTONE_BLOCK, 64));
+        helper.startSequence()
+                .thenWaitUntil(() -> check(com.senne.imttech.weapons.EnergyCellItem.charge(
+                                station.getItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES)) > 10,
+                        "De cel laadt niet op"))
+                .thenSucceed();
+    }
 }

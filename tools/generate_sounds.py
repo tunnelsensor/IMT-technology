@@ -882,6 +882,100 @@ def flashbang_ring():
     return finish(fade(tone * envelope, 0.01, 0.5), peak=0.35)
 
 
+
+def laser_shot(start_hz, end_hz, duration, crack, thump, bright):
+    """
+    Een laserschot: een toon die snel naar beneden glijdt (de "pew"), met boventonen ({bright}: hoe schel), een korte
+    knetter ruis aan het begin ({crack}) en een kleine dreun eronder ({thump}).
+    """
+    phase = sweep(start_hz, end_hz, duration, curve=0.55)
+    tone = np.sin(phase) + bright * (0.5 * np.sin(2 * phase) + 0.25 * signal.square(phase))
+    total = np.zeros(int(RATE * (duration + 0.05)))
+    place(total, fade(tone * decay(duration, 9 / duration * 0.25), 0.001, 0.03) * 0.7, 0.0)
+    place(total, bandpass(noise(0.04), 2500, 10000) * decay(0.04, 80) * crack, 0.0)
+    place(total, np.sin(sweep(160, 50, 0.12)) * decay(0.12, 25) * thump, 0.0)
+    return total
+
+
+def laser_pistol_fire():
+    """Het laserpistool: een heldere, korte "pew"."""
+    return finish(laser_shot(2600, 650, 0.16, 0.6, 0.4, 0.5), peak=0.6)
+
+
+def laser_rifle_fire():
+    """Het lasergeweer: een kortere, vollere "zap" (hij schiet snel achter elkaar, dus niet te lang)."""
+    return finish(laser_shot(1900, 480, 0.11, 0.8, 0.7, 0.7), peak=0.6)
+
+
+def laser_sniper_fire():
+    """
+    De lasersniper: eerst een razendsnelle oplaadtoon omhoog, dan een harde knal met een diepe dreun, en een lange
+    knetterende staart (de lucht die nog natrilt).
+    """
+    total = np.zeros(int(RATE * 1.1))
+    charge = whine(600, 3200, 0.07, curve=2.0) * np.linspace(0.2, 1, int(RATE * 0.07)) * 0.4
+    place(total, charge, 0.0)
+    place(total, laser_shot(3200, 260, 0.35, 1.2, 1.4, 0.9), 0.06)
+    boom = np.sin(sweep(120, 35, 0.5)) * decay(0.5, 6) * 0.8
+    place(total, boom, 0.06)
+    place(total, crackle(0.8, 18, 1500, 8000) * np.linspace(1, 0, int(RATE * 0.8)) ** 2 * 0.6, 0.2)
+    return finish(lowpass(total, 11000), peak=0.8)
+
+
+def laser_shotgun_fire():
+    """De laser-shotgun: een brede "wham": een paar stralen tegelijk (net verschillende tonen), een ruisstoot en een dreun."""
+    total = np.zeros(int(RATE * 0.45))
+    for start, end in [(1500, 300), (1700, 360), (1350, 280), (1900, 420)]:
+        place(total, laser_shot(start, end, 0.22, 0.3, 0.0, 0.6) * 0.45, 0.0)
+    place(total, bandpass(noise(0.18), 400, 7000) * decay(0.18, 22) * 0.9, 0.0)
+    place(total, np.sin(sweep(110, 40, 0.3)) * decay(0.3, 12) * 1.0, 0.0)
+    return finish(total, peak=0.75)
+
+
+def laser_gun_empty():
+    """Een leeg geweer: een droge klik en een piepklein zoempje dat wegvalt."""
+    total = np.zeros(int(RATE * 0.25))
+    place(total, metal_tap(0.06, [2800, 4300], 90) * 0.8, 0.0)
+    place(total, whine(900, 300, 0.15, wobble=0.2) * decay(0.15, 15) * 0.15, 0.02)
+    return finish(total, peak=0.45)
+
+
+def laser_gun_cell_out():
+    """De cel eruit: een klik (de klem gaat open), een korte sis, en het geschuif van de cel."""
+    total = np.zeros(int(RATE * 0.5))
+    place(total, metal_tap(0.07, [1900, 3100], 70), 0.0)
+    place(total, bandpass(noise(0.12), 3000, 9000) * decay(0.12, 20) * 0.35, 0.03)
+    place(total, bandpass(noise(0.2), 600, 2500) * np.sin(np.linspace(0, np.pi, int(RATE * 0.2))) * 0.4, 0.12)
+    return finish(total, peak=0.55)
+
+
+def laser_gun_cell_in():
+    """De nieuwe cel erin: een schuif, een stevige klak, en een oplopende zoem (het geweer laadt op)."""
+    total = np.zeros(int(RATE * 0.75))
+    place(total, bandpass(noise(0.12), 600, 2500) * np.sin(np.linspace(0, np.pi, int(RATE * 0.12))) * 0.35, 0.0)
+    place(total, metal_tap(0.08, [1400, 2300, 3600], 60) * 1.1, 0.12)
+    up = whine(350, 1700, 0.45, curve=0.8, wobble=0.15) * np.linspace(0.3, 1, int(RATE * 0.45)) * 0.3
+    place(total, fade(up, 0.01, 0.12), 0.2)
+    return finish(total, peak=0.55)
+
+
+def laser_gun_cycle():
+    """De grendel van de sniper of de pomp van de shotgun: klik naar achteren, een kort gezoem, klik naar voren."""
+    total = np.zeros(int(RATE * 0.4))
+    place(total, metal_tap(0.06, [1600, 2600], 80), 0.0)
+    place(total, servo(0.12, 300, 520) * 0.25, 0.04)
+    place(total, metal_tap(0.07, [1300, 2200], 70) * 1.1, 0.2)
+    return finish(total, peak=0.5)
+
+
+def laser_gun_aim():
+    """Richten door het vizier: een zacht klikje en een heel kort servootje."""
+    total = np.zeros(int(RATE * 0.15))
+    place(total, metal_tap(0.04, [3200, 4800], 120) * 0.6, 0.0)
+    place(total, servo(0.08, 600, 800) * 0.12, 0.02)
+    return finish(total, peak=0.3)
+
+
 SOUNDS = {
     "imt_boot": imt_boot,
     "imt_blip": imt_blip,
@@ -934,6 +1028,15 @@ SOUNDS = {
     "smoke_grenade_hiss": smoke_grenade_hiss,
     "flashbang_bang": flashbang_bang,
     "flashbang_ring": flashbang_ring,
+    "laser_pistol_fire": laser_pistol_fire,
+    "laser_rifle_fire": laser_rifle_fire,
+    "laser_sniper_fire": laser_sniper_fire,
+    "laser_shotgun_fire": laser_shotgun_fire,
+    "laser_gun_empty": laser_gun_empty,
+    "laser_gun_cell_out": laser_gun_cell_out,
+    "laser_gun_cell_in": laser_gun_cell_in,
+    "laser_gun_cycle": laser_gun_cycle,
+    "laser_gun_aim": laser_gun_aim,
 }
 
 

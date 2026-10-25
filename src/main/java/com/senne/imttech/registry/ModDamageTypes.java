@@ -56,6 +56,14 @@ public final class ModDamageTypes {
                 robot, robot);
     }
 
+    public static final ResourceKey<DamageType> LASER_GUN =
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "laser_gun"));
+
+    /** Een schot van een lasergeweer (hoofdstuk 35): de schutter is de aanvaller (dus de PvP-regels gelden). */
+    public static DamageSource laserGun(ServerLevel level, Entity shooter) {
+        return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(LASER_GUN), shooter, shooter);
+    }
+
     /** Laserschade van een drone; de eigenaar telt als "aanvaller" (voor PvP-regels en buit). */
     public static DamageSource droneLaser(ServerLevel level, Entity drone, @Nullable Entity owner) {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(DRONE_LASER), drone, owner);

@@ -115,10 +115,12 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
      */
     private boolean pullFromGrid(ServerLevel level, BlockPos pos) {
         ItemStack glasses = items.get(SLOT_GLASSES);
-        if (!ImtData.isGlasses(glasses)) {
+        boolean cell = glasses.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem;
+        if (!ImtData.isGlasses(glasses) && !cell) {
             return false;
         }
-        double missing = ImtData.getMaxEnergy(glasses) - ImtData.getEnergy(glasses) - energy;
+        double missing = (cell ? com.senne.imttech.weapons.EnergyCellItem.missingEnergy(glasses)
+                : ImtData.getMaxEnergy(glasses) - ImtData.getEnergy(glasses)) - energy;
         double room = ImtConfig.Power.STATION_CAPACITY - energy;
         int wanted = (int) Math.min(Math.min(missing, room), gridCarry.take(ImtConfig.Power.STATION_GRID_RATE));
         if (wanted <= 0) {
@@ -164,6 +166,13 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     /** Stuurt energie van het station naar de bril. */
     private boolean chargeGlasses() {
         ItemStack glasses = items.get(SLOT_GLASSES);
+        // Een energiecel (hoofdstuk 35) laadt hier ook op, net zo snel als een bril.
+        if (energy >= 1 && glasses.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem) {
+            double used = com.senne.imttech.weapons.EnergyCellItem.addEnergy(glasses,
+                    Math.min(chargeCarry.take(Math.min(ImtConfig.Power.STATION_CHARGE_RATE, energy)), energy()));
+            energy -= used;
+            return used > 0;
+        }
         if (energy < 1 || !ImtData.isGlasses(glasses)) {
             return false;
         }
@@ -214,7 +223,7 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
         return switch (slot) {
-            case SLOT_GLASSES -> ImtData.isGlasses(stack);
+            case SLOT_GLASSES -> ImtData.isGlasses(stack) || stack.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem;
             case SLOT_FUEL -> getFuelValue(stack) > 0;
             case SLOT_UPGRADE -> stack.getItem() instanceof UpgradeItem;
             default -> false;

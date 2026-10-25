@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 330 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 334 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3474,7 +3474,7 @@ Ik stelde acht vragen, jij koos.
   Een **headshot** doet 1,5 keer zoveel. Richten maakt je schoten nauwkeuriger (het pistool en het geweer zoomen een
   beetje in, de sniper 4 keer met een vizier over je scherm) en je loopt dan langzamer. Sprinten laat het geweer zakken;
   schieten stopt je sprint. Een koepel houdt de stralen tegen (zoals andere lasers). Spelers raak je alleen als PvP aan
-  staat; in een training krijgt de trainee geen schade (zoals bij de torentjes).
+  staat.
 - **Een nieuw geweer is leeg**: druk R en hij pakt de volste cel uit je inventaris. De oude cel komt terug in je
   inventaris met wat er nog in zat (ook een lege, om op te laden). Een volle cel kost 2000 stroom in het Charging
   Station (in het vak van de bril).
@@ -3551,7 +3551,26 @@ Zo bouw ik het:
       Acht nieuwe tests (rook in de rekensom, robots en turrets blind in de rook, een smokebom die rookt en verdwijnt,
       de flashbang naar wie kijkt, de flashbang zonder schade, gekleurde rook, de frag-sticky en de frag-bol), en de oude
       tests weer met "de robot ligt neer" na een EMP. 330 tests, allemaal groen.
-- [ ] **3. Energiecellen en de geweren op de server** — schieten, schade, cellen, herladen, opladen (met tests).
+- [x] **3. Energiecellen en de geweren op de server** — **De energiecel** (`weapons/EnergyCellItem`): stapelt niet,
+      zijn lading (0 tot 100%) staat in het data component `cell_charge`, het streepje onder het item laat zien hoe vol
+      hij is. Een nieuwe cel is leeg; het **Charging Station** laadt hem op in het vak van de bril, net zo snel als een
+      bril (een volle cel kost 2000 stroom, `[weapons] cellChargeEnergy`). **De geweren** (`weapons/GunType`,
+      `LaserGunItem`): de cel in het geweer staat in het component `gun_cell` (geen = er zit geen cel in); met een geweer
+      in je hand breek je geen blokken en zwaai je niet. **Schieten** (`weapons/LaserGuns`, het bericht `GunFirePayload`
+      met waar je precies keek): de server controleert of je een geweer vasthoudt, niet aan het herladen bent, niet te
+      snel schiet (`gunInterval`, één tick speling) en genoeg in je cel hebt (anders een lege klik). Dan een rechte straal
+      vanaf je ogen met spreiding (`gunSpread`, minder als je richt: `gunSpreadAiming`), tot `gunRange` blokken; muren en
+      schildkoepels houden hem tegen; een schot boven de ogen min een kwart blok is een headshot (x1,5, `headshot`). De
+      shotgun schiet 8 stralen; de schade per wezen telt op en komt in één klap (anders gooien 8 stralen hem 8 keer weg),
+      en "even onkwetsbaar na een klap" telt niet (het geweer schiet sneller dan dat). De schade heet "lasered by"
+      (`damage_type/laser_gun`); spelers raak je alleen met PvP aan. **Herladen** (`GunReloadPayload`): de volste cel uit
+      je inventaris, die voller is dan de cel in het geweer; na de herlaadtijd (`gunReload`) gaat hij erin en komt de
+      oude cel op zijn plek (ook een lege, om op te laden). Pak je iets anders vast, dan stopt het. **Recepten**: een
+      energiecel = 4 goudklompjes, 2 glazen ruiten, 2 koper en een redstoneblok; het pistool, het geweer, de sniper (met
+      een diamant en een verrekijker) en de shotgun met ijzer, goud, glas, redstone en 1 of 2 Computer Chips. Negen
+      nieuwe geluiden (vier schoten, leeg, cel eruit, cel erin, grendel/pomp, richten). Vier nieuwe tests: herladen met de
+      volste cel (en niet met een legere, en niet sneller schieten dan mag), raken met een headshot en niet door een muur,
+      de waaier van de shotgun, en het Charging Station dat een cel oplaadt. 334 tests, allemaal groen.
 - [ ] **4. De geweren in je eigen beeld** — modellen, armen, animaties, richten, het vizier, de HUD en geluiden.
 - [ ] **5. Showcase, screenshots en LEESMIJ.**
 

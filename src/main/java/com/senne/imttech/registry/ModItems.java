@@ -367,6 +367,31 @@ public final class ModItems {
                     com.senne.imttech.weapons.GrenadeItem.Kind.STICKY_FRAG),
             new Item.Properties());
 
+    /** Hoofdstuk 35: de energiecel, het magazijn van de lasergeweren (stapelt niet: elke cel heeft zijn eigen lading). */
+    public static final DeferredItem<com.senne.imttech.weapons.EnergyCellItem> ENERGY_CELL = ITEMS.registerItem(
+            "energy_cell", com.senne.imttech.weapons.EnergyCellItem::new, new Item.Properties());
+
+    /** Hoofdstuk 35: de vier lasergeweren. */
+    public static final DeferredItem<com.senne.imttech.weapons.LaserGunItem> LASER_PISTOL = gun(com.senne.imttech.weapons.GunType.PISTOL);
+    public static final DeferredItem<com.senne.imttech.weapons.LaserGunItem> LASER_RIFLE = gun(com.senne.imttech.weapons.GunType.RIFLE);
+    public static final DeferredItem<com.senne.imttech.weapons.LaserGunItem> LASER_SNIPER = gun(com.senne.imttech.weapons.GunType.SNIPER);
+    public static final DeferredItem<com.senne.imttech.weapons.LaserGunItem> LASER_SHOTGUN = gun(com.senne.imttech.weapons.GunType.SHOTGUN);
+
+    private static DeferredItem<com.senne.imttech.weapons.LaserGunItem> gun(com.senne.imttech.weapons.GunType type) {
+        return ITEMS.registerItem(type.id, properties -> new com.senne.imttech.weapons.LaserGunItem(properties, type),
+                new Item.Properties().rarity(Rarity.UNCOMMON));
+    }
+
+    /** Het lasergeweer van deze soort. */
+    public static com.senne.imttech.weapons.LaserGunItem laserGun(com.senne.imttech.weapons.GunType type) {
+        return switch (type) {
+            case PISTOL -> LASER_PISTOL.get();
+            case RIFLE -> LASER_RIFLE.get();
+            case SNIPER -> LASER_SNIPER.get();
+            case SHOTGUN -> LASER_SHOTGUN.get();
+        };
+    }
+
     /** Hoofdstuk 35: de Smoke Grenade, een bol die een wolk rook maakt (grijs, of in de kleur van een kleurstof). */
     public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> SMOKE_GRENADE = ITEMS.registerItem(
             "smoke_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
