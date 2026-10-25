@@ -1826,6 +1826,81 @@ public final class VisualCheck {
             t.shot(60, "gr18_flashbang_fading");
         }
 
+        // --- De lasergeweren (hoofdstuk 35): elk geweer vanuit de heup, gericht en schietend; het geweer herladen en
+        // bekijken; de kijker van de sniper; de pomp van de shotgun; sprinten; derde persoon; en een geweer zonder cel.
+        if (want("guns")) {
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> {
+                var inventory = player.getInventory();
+                inventory.clearContent();
+                com.senne.imttech.weapons.GunType[] types = com.senne.imttech.weapons.GunType.values();
+                for (int i = 0; i < types.length; i++) {
+                    ItemStack gun = new ItemStack(ModItems.laserGun(types[i]));
+                    com.senne.imttech.weapons.LaserGunItem.setCell(gun, i == 1 ? 45 : 100);
+                    inventory.setItem(i, gun);
+                }
+                inventory.setItem(4, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
+                inventory.setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(60));
+                inventory.setItem(6, new ItemStack(ModItems.ENERGY_CELL.get()));
+                inventory.setItem(8, new ItemStack(ModItems.LASER_PISTOL.get()));
+            });
+            t.stand(20, GUN_RANGE.getX() + 0.5, GUN_RANGE.getY() + 1, GUN_RANGE.getZ() + 0.5, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.shot(25, "g01_pistol_hip");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(12, "g02_pistol_aim");
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.shot(0, "g03_pistol_fire");
+            t.key(8, () -> Minecraft.getInstance().options.keyUse, false);
+            t.step(0, () -> selectSlot(1));
+            t.shot(15, "g04_rifle_hip");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(12, "g05_rifle_aim");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+            t.key(10, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.shot(7, "g06_rifle_firing");
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.step(15, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(10, "g07_rifle_reload_out");
+            t.shot(14, "g08_rifle_reload_in");
+            t.step(40, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+            t.shot(12, "g09_rifle_inspect_side");
+            t.shot(18, "g10_rifle_inspect_top");
+            t.step(30, () -> selectSlot(2));
+            t.shot(15, "g11_sniper_hip");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(15, "g12_sniper_scope");
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.shot(0, "g13_sniper_fire_scope");
+            t.key(8, () -> Minecraft.getInstance().options.keyUse, false);
+            t.shot(10, "g14_sniper_bolt");
+            t.step(20, () -> selectSlot(3));
+            t.shot(15, "g15_shotgun_hip");
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.shot(0, "g16_shotgun_fire");
+            t.shot(5, "g17_shotgun_pump");
+            // Sprinten: vooruit lopen met de sprinttoets in.
+            t.step(15, () -> selectSlot(1));
+            t.key(10, () -> Minecraft.getInstance().options.keySprint, true);
+            t.key(0, () -> Minecraft.getInstance().options.keyUp, true);
+            t.shot(12, "g18_rifle_sprint");
+            t.key(0, () -> Minecraft.getInstance().options.keyUp, false);
+            t.key(0, () -> Minecraft.getInstance().options.keySprint, false);
+            // Derde persoon: van voren, met het geweer vast.
+            t.stand(5, GUN_RANGE.getX() + 0.5, GUN_RANGE.getY() + 1, GUN_RANGE.getZ() + 0.5, 0, 2);
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "g19_third_person_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "g20_third_person_back");
+            t.camera(0, CameraType.FIRST_PERSON);
+            // Een pistool zonder cel: de HUD zegt het.
+            t.step(5, () -> selectSlot(8));
+            t.shot(15, "g21_no_cell");
+        }
+
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
         if (want("satellite")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);
@@ -3601,6 +3676,30 @@ public final class VisualCheck {
             }
         }
         DevWorld.powerNextTo(level, BRIDGE_YARD.below());
+    }
+
+    /** De schietbaan voor de lasergeweren (hoofdstuk 35). */
+    private static final BlockPos GUN_RANGE = new BlockPos(-300, -61, -280);
+
+    /**
+     * Een schietbaan: een vloer van gladde steen, drie husks op 8 tot 12 blokken (die doen niets) en een muur van
+     * stenen erachter.
+     */
+    private static void buildGunRange(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (BlockPos pos : BlockPos.betweenClosed(GUN_RANGE.offset(-8, 1, -4), GUN_RANGE.offset(8, 6, 16))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(GUN_RANGE.offset(-8, 0, -4), GUN_RANGE.offset(8, 0, 16))) {
+            level.setBlockAndUpdate(pos, Blocks.SMOOTH_STONE.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(GUN_RANGE.offset(-8, 1, 15), GUN_RANGE.offset(8, 5, 15))) {
+            level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        int[][] spots = {{-3, 9}, {0, 11}, {3, 8}};
+        for (int[] spot : spots) {
+            DevWorld.spawnStill(level, EntityType.HUSK, GUN_RANGE.offset(spot[0], 1, spot[1]), 180);
+        }
     }
 
     /** Het veldje voor de wapens (hoofdstuk 35). */

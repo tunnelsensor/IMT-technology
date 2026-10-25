@@ -1507,5 +1507,11 @@
   "subtitles.imttech.laser_gun.cell_out": "Energy cell ejected",
   "subtitles.imttech.laser_gun.cell_in": "Energy cell loaded",
   "subtitles.imttech.laser_gun.cycle": "Laser gun cycles",
-  "subtitles.imttech.laser_gun.aim": "Laser gun aims"
+  "subtitles.imttech.laser_gun.aim": "Laser gun aims",
+  "key.imttech.gun_reload": "Reload (laser gun)",
+  "key.imttech.gun_inspect": "Inspect (laser gun)",
+  "hud.imttech.gun.cells": "Cells: %s",
+  "hud.imttech.gun.reloading": "RELOADING",
+  "hud.imttech.gun.no_cell": "NO CELL - PRESS R",
+  "hud.imttech.gun.empty": "EMPTY - PRESS R"
 }

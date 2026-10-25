@@ -53,6 +53,8 @@ public class ImtTechClient {
                 event.registerSpriteSet(com.senne.imttech.registry.ModParticles.SMOKE_CLOUD.get(),
                         com.senne.imttech.client.weapons.SmokeCloudParticle.Provider::new));
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerItemColors);
+        // Een lasergeweer houd je in derde persoon met twee handen vast.
+        modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerExtensions);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
@@ -113,6 +115,16 @@ public class ImtTechClient {
         // Wapens (hoofdstuk 35): de bol van licht van een EMP-granaat, en gedempt geluid na een flashbang.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.EmpEffects::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.FlashOverlay::onPlaySound);
+        // De lasergeweren: bediening, inzoomen, langzamer lopen, het geweer in je beeld, de bouten en de HUD.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onClientTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onInteraction);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onMovementInput);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
+                com.senne.imttech.client.weapons.GunControl::onComputeFov);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onPlayerTurn);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunRenderer::onRenderHand);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunEffects::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunHud::onRenderLayer);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
@@ -126,6 +138,9 @@ public class ImtTechClient {
         // Het kaartje naast je vizier als je naar het werkbank-hologram kijkt.
         event.registerAbove(VanillaGuiLayers.CROSSHAIR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "workbench_hint"),
                 com.senne.imttech.client.workbench.WorkbenchHologram::renderHint);
+        // Met een lasergeweer (hoofdstuk 35): je munitie rechtsonder, je kruisje en de kijker van de sniper.
+        event.registerAbove(VanillaGuiLayers.HOTBAR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "laser_gun"),
+                new com.senne.imttech.client.weapons.GunHud());
         // Na een flashbang (hoofdstuk 35): een wit scherm over alles heen, ook over je HUD.
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "flashbang"),
                 new com.senne.imttech.client.weapons.FlashOverlay());

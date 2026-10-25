@@ -81,6 +81,31 @@ public final class ImtKeys {
      */
     public static final KeyMapping ZONE_BORDER = key("zone_border", InputConstants.UNKNOWN.getValue());
 
+    /**
+     * Hoofdstuk 35: herladen (R) en het geweer bekijken (H), zoals in TACZ. Ze doen alleen iets met een lasergeweer in je
+     * hand; dan doen R en H niet ook nog wat ze anders doen (markeren en de dreigingsscan, zie ImtClientEvents). Daarom
+     * staan ze in Opties > Besturing niet in het rood, ook al delen ze een toets.
+     */
+    public static final KeyMapping GUN_RELOAD = new KeyMapping("key.imttech.gun_reload", GunKeys.CONTEXT, Type.KEYSYM,
+            InputConstants.KEY_R, CATEGORY);
+    public static final KeyMapping GUN_INSPECT = new KeyMapping("key.imttech.gun_inspect", GunKeys.CONTEXT, Type.KEYSYM,
+            InputConstants.KEY_H, CATEGORY);
+
+    /** Wanneer de toetsen van een geweer werken: in het spel (geen scherm open) en met een lasergeweer in je hand. */
+    private static final class GunKeys implements net.neoforged.neoforge.client.settings.IKeyConflictContext {
+        static final GunKeys CONTEXT = new GunKeys();
+
+        @Override
+        public boolean isActive() {
+            return KeyConflictContext.IN_GAME.isActive() && com.senne.imttech.client.weapons.GunControl.held() != null;
+        }
+
+        @Override
+        public boolean conflicts(net.neoforged.neoforge.client.settings.IKeyConflictContext other) {
+            return other == this;
+        }
+    }
+
     private static KeyMapping key(String name, int defaultKey) {
         // KeyConflictContext.IN_GAME: de toets doet alleen iets als er geen scherm open is.
         return new KeyMapping("key.imttech." + name, KeyConflictContext.IN_GAME, Type.KEYSYM, defaultKey, CATEGORY);
@@ -111,5 +136,7 @@ public final class ImtKeys {
         event.register(ROCKETS);
         event.register(CABLE_XRAY);
         event.register(ZONE_BORDER);
+        event.register(GUN_RELOAD);
+        event.register(GUN_INSPECT);
     }
 }

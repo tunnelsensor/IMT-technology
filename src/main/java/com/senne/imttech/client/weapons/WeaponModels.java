@@ -66,6 +66,21 @@ public final class WeaponModels {
                 buffers.getBuffer(Sheets.cutoutBlockSheet()));
     }
 
+    /**
+     * Een lasergeweer houd je in derde persoon met twee handen vast, zoals een geladen kruisboog (voor anderen, en voor
+     * jezelf met F5).
+     */
+    public static void registerExtensions(net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) {
+        event.registerItem(new net.neoforged.neoforge.client.extensions.common.IClientItemExtensions() {
+            @Override
+            public net.minecraft.client.model.HumanoidModel.ArmPose getArmPose(net.minecraft.world.entity.LivingEntity entity,
+                    net.minecraft.world.InteractionHand hand, ItemStack stack) {
+                return net.minecraft.client.model.HumanoidModel.ArmPose.CROSSBOW_HOLD;
+            }
+        }, com.senne.imttech.registry.ModItems.LASER_PISTOL.get(), com.senne.imttech.registry.ModItems.LASER_RIFLE.get(),
+                com.senne.imttech.registry.ModItems.LASER_SNIPER.get(), com.senne.imttech.registry.ModItems.LASER_SHOTGUN.get());
+    }
+
     /** De band van een smokebom heeft de kleur van zijn rook (grijs, of de kleurstof waarmee je hem maakte). */
     public static void registerItemColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) {
         event.register((stack, tintIndex) -> tintIndex == 0

@@ -257,7 +257,7 @@ public final class LaserCannonHand {
      * Voor de hand ({@code hand}) laten we de extra stukken van het harnas weg (schouderstuk,
      * onderarmbeschermer en laser cannon): die horen bij de arm, niet bij een platgedrukte hand.
      */
-    private static void drawArm(Minecraft mc, LocalPlayer player, HumanoidArm arm, boolean suit, boolean hand,
+    public static void drawArm(Minecraft mc, LocalPlayer player, HumanoidArm arm, boolean suit, boolean hand,
                                 PoseStack pose, MultiBufferSource buffers, int light) {
         boolean right = arm == HumanoidArm.RIGHT;
         PlayerRenderer renderer = (PlayerRenderer) mc.getEntityRenderDispatcher().getRenderer(player);

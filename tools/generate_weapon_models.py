@@ -216,6 +216,25 @@ def item_model(elements, display):
             "display": display}
 
 
+def gun_display(gui_scale, gui_translation, ground_scale, grip):
+    """
+    De houdingen van een geweer. In derde persoon (met twee handen, zie WeaponModels.registerExtensions) ligt de loop
+    zonder te draaien al langs je arm naar voren; we schuiven het model zo dat de greep ({grip}) in je hand zit. In je
+    eigen beeld tekent de mod het geweer zelf (zie GunRenderer), dus "firstperson" doet er niet toe.
+    """
+    hand = 0.75
+    # De houding met twee handen draait je arm naar binnen: het geweer draait een stukje terug, zodat de loop
+    # (ongeveer) recht vooruit wijst. De greep blijft in je hand (de verschuiving draait mee).
+    import math
+    turn = -17
+    a = math.radians(turn)
+    gx, gy, gz = (hand * (g - 8) for g in grip)
+    rx = gx * math.cos(a) + gz * math.sin(a)
+    rz = -gx * math.sin(a) + gz * math.cos(a)
+    third = ((0, turn, 0), (round(-rx, 2), round(-gy, 2), round(-rz, 2)))
+    return display(gui_scale, gui_translation, hand, ground_scale, gui_rotation=(0, 90, 0), third=third)
+
+
 def display(gui_scale, gui_translation, hand_scale, ground_scale, gui_rotation=(25, -135, 0),
             third=((0, 180, 0), (0, 3, 1)), first=((0, 180, 0), (1, 3, 0)), first_scale=None):
     """
@@ -470,7 +489,7 @@ def laser_pistol():
         box((7.15, 1.4, 9.9), (8.85, 3.2, 12.5), "cell", rot=("x", GRIP, (8, 8, 11))),
         box((7.45, 1.25, 10.3), (8.55, 1.4, 12.1), "glow", glow=True, rot=("x", GRIP, (8, 8, 11))),
     ]
-    disp = display(1.0, (0, 0, 0), 0.75, 0.6, gui_rotation=(0, 90, 0))
+    disp = gun_display(1.0, (0, 0, 0), 0.6, (8, 6.5, 11.4))
     save_parts("laser_pistol", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
 
 
@@ -519,7 +538,7 @@ def laser_rifle():
         *both(box((6.9, 5, 4.9), (7.0, 7.8, 6.1), "glow", glow=True)),
         box((6.95, 4, 3.9), (9.05, 4.5, 7.1), "gold"),
     ]
-    disp = display(0.55, (0, 0, -1.5), 0.75, 0.5, gui_rotation=(0, 90, 0))
+    disp = gun_display(0.55, (0, 0, -1.5), 0.5, (8, 7.2, 11.3))
     save_parts("laser_rifle", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
 
 
@@ -567,7 +586,7 @@ def laser_sniper():
         *both(box((6.9, 6.6, 6.8), (7.0, 8.4, 8.7), "glow", glow=True)),
         box((6.95, 5.8, 5.9), (9.05, 6.3, 9.6), "gold"),
     ]
-    disp = display(0.42, (0, 0, -1), 0.75, 0.45, gui_rotation=(0, 90, 0))
+    disp = gun_display(0.42, (0, 0, -1), 0.45, (8, 8.2, 14.4))
     save_parts("laser_sniper", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
 
 
@@ -608,7 +627,7 @@ def laser_shotgun():
         *both(box((6.9, 6.6, 4.8), (7.0, 8.1, 6.7), "glow", glow=True)),
         box((6.95, 6.0, 3.9), (9.05, 6.5, 7.6), "gold"),
     ]
-    disp = display(0.6, (0, 0, -1), 0.75, 0.55, gui_rotation=(0, 90, 0))
+    disp = gun_display(0.6, (0, 0, -1), 0.55, (8, 7.0, 11.3))
     save_parts("laser_shotgun", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
 
 

@@ -3571,7 +3571,29 @@ Zo bouw ik het:
       nieuwe geluiden (vier schoten, leeg, cel eruit, cel erin, grendel/pomp, richten). Vier nieuwe tests: herladen met de
       volste cel (en niet met een legere, en niet sneller schieten dan mag), raken met een headshot en niet door een muur,
       de waaier van de shotgun, en het Charging Station dat een cel oplaadt. 334 tests, allemaal groen.
-- [ ] **4. De geweren in je eigen beeld** — modellen, armen, animaties, richten, het vizier, de HUD en geluiden.
+- [x] **4. De geweren in je eigen beeld** — **De modellen** (`tools/generate_weapon_models.py`): elk geweer van 30 tot 40
+      doosjes in vier delen: het lijf, de trekker, de cel en het bewegende deel (de slede van het pistool, de spanhendel
+      van het geweer, de grendel van de sniper, de pomp van de shotgun). Rood-goud met donkere delen en cyaan strepen die
+      ook in het donker gloeien; het geweer heeft een holografisch vizier met een gloeiend puntje, de sniper een kijker.
+      In je inventaris liggen ze opzij, in derde persoon houd je ze met twee handen vast (`WeaponModels.registerExtensions`;
+      de loop wijst vooruit). **In je eigen beeld** (`client/weapons/GunRenderer`, de maten per geweer in `GunRig`) tekenen
+      we het geweer zelf uit zijn delen, met je twee armen eraan (je eigen skin, met het harnas als je dat draagt):
+      pakken (het geweer komt omhoog), terugslag en de trekker bij elk schot, het bewegende deel (de grendel en de pomp
+      gaan na een schot heen en weer), een mondingsvlam, richten (het vizier recht voor je oog; de sniper laat zijn
+      kijker over je hele scherm zien), herladen (kantelen, de cel eruit en weg, je linkerhand haalt een nieuwe, klik,
+      opladen), bekijken met H (eerst de zijkant, dan de bovenkant), sprinten (het geweer zakt) en een beetje ademen. Op
+      de zijkant zit een lichtbalkje van tien vakjes dat laat zien hoe vol de cel is. **De bediening**
+      (`client/weapons/GunControl`): linkerklik schiet (het geweer: inhouden), zwaait niet en breekt niets; rechterklik
+      richt (inzoomen: het pistool 1,25x, het geweer 1,4x, de sniper 4x, en dan een rustigere muis), je loopt dan
+      langzamer en kunt niet sprinten; schieten stopt je sprint en duwt je zicht een stukje omhoog. **R en H** zijn nieuwe
+      toetsen ("Reload" en "Inspect" in Opties > Besturing > I.M.T) die alleen iets doen met een geweer in je hand; dan
+      doen R en H niet ook nog markeren of de dreigingsscan. **De laserbouten** (`GunEffects`): een felle streep, wit met
+      cyaan, die razendsnel van de loop naar de inslag vliegt (bij je eigen schoten precies vanaf de loop in je beeld), de
+      sniper een volle straal die even blijft hangen, en vonken waar het inslaat. **De HUD** (`GunHud`): rechtsonder de
+      schoten (groot), het aantal per cel, de naam en je geladen cellen; "RELOADING" met een balkje; "NO CELL - PRESS R"
+      of "EMPTY - PRESS R" in het rood; een eigen kruisje dat uit elkaar gaat na een schot en weg is als je richt.
+      **Screenshots** `-Ponly=guns` (`g01` tot `g21`): elk geweer vanuit de heup, gericht en schietend, herladen, bekijken,
+      de kijker, de pomp, sprinten, derde persoon van voren en van achteren, en een pistool zonder cel.
 - [ ] **5. Showcase, screenshots en LEESMIJ.**
 
 ---
