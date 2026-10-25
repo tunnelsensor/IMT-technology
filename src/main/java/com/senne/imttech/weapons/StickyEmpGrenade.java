@@ -227,4 +227,10 @@ public class StickyEmpGrenade extends EmpGrenadeEntity {
     protected Vec3 blastCenter() {
         return isStuck() ? position().add(normal().scale(0.15)) : super.blastCenter();
     }
+
+    /** Vastgeplakt: de klap zit precies tegen het blok of wezen (zoals C4 tegen zijn muur). */
+    @Override
+    protected Vec3 explosionCenter() {
+        return isStuck() ? position() : super.explosionCenter();
+    }
 }

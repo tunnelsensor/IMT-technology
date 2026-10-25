@@ -23,6 +23,8 @@ import net.minecraft.world.phys.Vec3;
  *
  * Een zone houdt C4 niet tegen: dat is juist de bedoeling (zie security/zone/Zones). Ander C4 in de
  * klap gaat ook af (een kettingreactie), TNT wordt aangestoken. Wezens krijgen een klap zoals van TNT.
+ *
+ * De EMP-granaten (hoofdstuk 35) ontploffen op dezelfde manier, maar iets zwakker (zie {@link #blast}).
  */
 public final class C4Blast {
     private C4Blast() {}
@@ -42,12 +44,34 @@ public final class C4Blast {
                 com.senne.imttech.security.zone.Zones.activeNear(level, pos, ImtConfig.C4.RADIUS);
         boolean alerted = level.getBlockEntity(pos) instanceof C4BlockEntity self && self.alerted();
         level.removeBlock(pos, false);
+        return blast(level, centre, pos, zone, null, ImtConfig.C4.ENTITY_POWER, ImtConfig.C4.POWER, ImtConfig.C4.RADIUS,
+                "C4", alerted);
+    }
+
+    /**
+     * Een klap zoals van C4 rond {@code centre}, met eigen sterktes: voor C4 zelf, en voor de EMP-granaten (hoofdstuk
+     * 35: "zoals de C4 maar net iets minder sterk"). {@code at} is waar de lading lag (voor het logboek van de zone),
+     * {@code source} wie de klap veroorzaakte (een granaat: dan telt wie hem gooide als dader), {@code what} de naam in
+     * het logboek ("C4", "EMP grenade"). Geeft hoeveel blokken er kapot gingen.
+     */
+    public static int blast(ServerLevel level, Vec3 centre, BlockPos at,
+                            com.senne.imttech.security.zone.ZoneData.@org.jetbrains.annotations.Nullable Zone zone,
+                            @org.jetbrains.annotations.Nullable net.minecraft.world.entity.Entity source,
+                            float entityPower, float power, float radius, String what, boolean alerted) {
         // Eerst de klap voor wezens (met het geluid en de rook van een explosie), zonder blokken: die
         // doen we hieronder zelf. Zo vernielt de klap ook niet de spullen die straks uit de blokken vallen.
-        level.explode(null, centre.x, centre.y, centre.z, ImtConfig.C4.ENTITY_POWER, false, Level.ExplosionInteraction.NONE);
-        Breach result = breach(level, centre, ImtConfig.C4.POWER, ImtConfig.C4.RADIUS, here -> true, zone);
-        C4Alarm.blasted(level, pos, zone, result.inZone(), alerted, "C4");
+        level.explode(source, centre.x, centre.y, centre.z, entityPower, false, Level.ExplosionInteraction.NONE);
+        Breach result = breach(level, centre, power, radius, here -> true, zone);
+        C4Alarm.blasted(level, at, zone, result.inZone(), alerted, what);
         return result.broken();
+    }
+
+    /** Een klap van een EMP-granaat (hoofdstuk 35): als C4, maar met de sterktes uit [weapons]. */
+    public static int grenade(ServerLevel level, Vec3 centre, net.minecraft.world.entity.Entity grenade) {
+        BlockPos at = BlockPos.containing(centre);
+        float radius = ImtConfig.Weapons.GRENADE_BREACH_RADIUS;
+        return blast(level, centre, at, com.senne.imttech.security.zone.Zones.activeNear(level, at, radius), grenade,
+                ImtConfig.Weapons.GRENADE_ENTITY_POWER, ImtConfig.Weapons.GRENADE_BREACH, radius, "EMP grenade", false);
     }
 
     /** Wat een klap deed: zoveel blokken kapot, waarvan zoveel in de zone. */

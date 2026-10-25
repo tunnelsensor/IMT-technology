@@ -290,8 +290,8 @@ public final class WeaponGameTests {
     }
 
     /**
-     * Een Sticky EMP Grenade op een robot gaat met de robot mee als die verplaatst wordt, en legt hem neer als hij
-     * afgaat.
+     * Een Sticky EMP Grenade op een robot gaat met de robot mee als die verplaatst wordt. Als hij afgaat, ligt de robot
+     * neer of is hij kapot (de granaat ontploft ook, zoals C4).
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
     public static void sticky_grenade_rides_along_on_a_robot(GameTestHelper helper) {
@@ -309,7 +309,7 @@ public final class WeaponGameTests {
                 .thenExecute(() -> check(grenade.distanceTo(robot) < 1.2,
                         "De granaat ging niet mee met de robot (afstand " + grenade.distanceTo(robot) + ")"))
                 .thenWaitUntil(() -> check(grenade.isRemoved(), "De granaat ging niet af"))
-                .thenExecute(() -> check(robot.isDown(), "De robot ligt niet neer na de granaat"))
+                .thenExecute(() -> check(!robot.isAlive() || robot.isDown(), "De robot ligt niet neer na de granaat"))
                 .thenSucceed();
     }
 
@@ -353,7 +353,7 @@ public final class WeaponGameTests {
                     check(!grenade.isRemoved(), "De bol ging te vroeg af");
                 })
                 .thenWaitUntil(() -> check(grenade.isRemoved(), "De bol ging niet af"))
-                .thenExecute(() -> check(robot.isDown(), "De robot naast de bol ligt niet neer"))
+                .thenExecute(() -> check(!robot.isAlive() || robot.isDown(), "De robot naast de bol ligt niet neer"))
                 .thenSucceed();
     }
 
@@ -370,5 +370,41 @@ public final class WeaponGameTests {
         check(thrown.size() == 1 && thrown.get(0).getOwner() == player, "Er vloog geen granaat van de speler");
         check(new ItemStack(ModItems.EMP_GRENADE.get()).getMaxStackSize() == 16, "Granaten stapelen niet tot 16");
         helper.succeed();
+    }
+
+    /**
+     * Jouw wens: "maak de EMP granades ook allebei explosiebaar zoals de C4 maar net iets minder sterk". Een sticky op
+     * een stenen muur blaast het blok waar hij op plakt eruit, maar een stenen blok anderhalf blok verder blijft staan
+     * (C4 haalt dat er wel uit) en obsidiaan ernaast ook. Een koe vlakbij krijgt de klap.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
+    public static void emp_grenade_blows_a_hole_like_a_weaker_c4(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (int y = 2; y <= 5; y++) {
+            for (int z = 4; z <= 8; z++) {
+                helper.setBlock(new BlockPos(12, y, z), z == 7 && y == 3 ? Blocks.OBSIDIAN : Blocks.STONE);
+            }
+        }
+        // De koe staat opzij (niet in de weg van de granaat), maar wel dichtbij de plek waar hij ontploft.
+        net.minecraft.world.entity.animal.Cow cow = helper.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(10, 2, 9));
+        StickyEmpGrenade grenade = new StickyEmpGrenade(ModEntities.STICKY_EMP_GRENADE.get(), level);
+        Vec3 start = helper.absoluteVec(new Vec3(4.5, 3.4, 6.5));
+        grenade.setPos(start.x, start.y, start.z);
+        grenade.shoot(1, 0.04, 0, 1.0f, 0);
+        level.addFreshEntity(grenade);
+        BlockPos[] hit = new BlockPos[1];
+        helper.startSequence()
+                .thenWaitUntil(() -> check(grenade.isStuck(), "De granaat plakte niet vast"))
+                .thenExecute(() -> hit[0] = BlockPos.containing(grenade.position().subtract(grenade.normal().scale(0.3))))
+                .thenWaitUntil(() -> check(grenade.isRemoved(), "De granaat ging niet af"))
+                .thenExecute(() -> {
+                    check(level.getBlockState(hit[0]).isAir(), "Het blok waar hij op plakte is er niet uit: " + hit[0]);
+                    BlockPos two = hit[0].offset(0, hit[0].getY() >= helper.absolutePos(new BlockPos(0, 4, 0)).getY() ? -2 : 2, 0);
+                    check(level.getBlockState(two).is(Blocks.STONE), "Een blok twee hoger of lager ging ook kapot (te sterk)");
+                    helper.assertBlockPresent(Blocks.OBSIDIAN, new BlockPos(12, 3, 7));
+                    check(!cow.isAlive() || cow.getHealth() < cow.getMaxHealth(), "De koe vlakbij kreeg geen klap");
+                })
+                .thenSucceed();
     }
 }

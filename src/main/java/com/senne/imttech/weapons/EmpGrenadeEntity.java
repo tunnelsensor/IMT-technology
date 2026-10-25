@@ -93,10 +93,21 @@ public abstract class EmpGrenadeEntity extends Projectile {
         return getBoundingBox().getCenter();
     }
 
-    /** Hij gaat af: een EMP-puls, en dan is hij weg. */
+    /** Waar de klap voor blokken zit (zoals bij C4: tegen het blok waar hij op ligt of plakt). */
+    protected Vec3 explosionCenter() {
+        return getBoundingBox().getCenter();
+    }
+
+    /**
+     * Hij gaat af: een EMP-puls, en (jouw wens: "ook explosiebaar zoals de C4 maar net iets minder sterk") een klap
+     * zoals C4 met de sterktes uit [weapons] (C4Blast.grenade). Daarna is hij weg.
+     */
     protected void explode(ServerLevel level) {
-        Emp.blast(level, blastCenter(), getOwner());
+        Vec3 pulse = blastCenter();
+        Vec3 bang = explosionCenter();
         discard();
+        Emp.blast(level, pulse, getOwner());
+        com.senne.imttech.c4.C4Blast.grenade(level, bang, this);
     }
 
     // ================================================================ Opslaan

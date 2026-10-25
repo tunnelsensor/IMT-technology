@@ -1788,6 +1788,18 @@ public final class ImtConfig {
         /** Hoe hard je hem onderhands gooit (met sneak). */
         @Tunable(value = "How hard you toss a grenade underhand, while sneaking", max = 5)
         public static float TOSS_SPEED = 0.45f;
+        /**
+         * De klap van een EMP-granaat (jouw wens: "ook explosiebaar zoals de C4, maar net iets minder sterk"): breekpunten
+         * vlak bij de granaat (C4 = 10), aflopend tot 0 op de straal van de klap (C4 = 3,5). Zie [c4] voor hoe sterk
+         * blokken zijn.
+         */
+        @Tunable(value = "Breach points of an EMP grenade right where it goes off (C4 is 10)", max = 1_000)
+        public static float GRENADE_BREACH = 8.0f;
+        @Tunable(value = "How far the blast of an EMP grenade reaches (blocks; C4 is 3.5)", max = 16)
+        public static float GRENADE_BREACH_RADIUS = 3.0f;
+        /** Hoe hard de klap van een EMP-granaat spelers en wezens raakt (C4 = 4, TNT = 4). */
+        @Tunable(value = "How hard the blast of an EMP grenade hits players and mobs (C4 and TNT are 4)", max = 16)
+        public static float GRENADE_ENTITY_POWER = 3.0f;
         /** Hoeveel van zijn vaart de bol overhoudt als hij stuitert (0 = blijft liggen, 1 = stuitert eeuwig). */
         @Tunable(value = "How much speed the rolling grenade keeps when it bounces (0 = none, 1 = all)", max = 0.95)
         public static float BOUNCE = 0.45f;

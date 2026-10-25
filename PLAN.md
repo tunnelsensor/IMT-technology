@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 322 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 323 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3432,6 +3432,14 @@ Ik stelde acht vragen, jij koos.
 - **Bediening zoals TACZ**: linkerklik schiet, rechterklik richt door het vizier, R herlaadt, een toets om het geweer
   te bekijken.
 - **Stijl: rood-goud** zoals je Tech Suit, met een witte/cyaan gloed.
+- **Later die avond** (tijdens het bouwen): "Maak de EMP granades ook allebei explosiebaar zoals de C4 maar net iets
+  minder sterk". Allebei ontploffen ze nu ook, met dezelfde klap als C4 maar zwakker.
+- **En daarna**: "Maak voor de bal ook smokebom en flashbang maar geen sticky want dat is voor smoke en flash niet logisch".
+  Vier vragen, jouw antwoorden: de **rook blokkeert het zicht van alles wat kijkt** (robots, turrets en drones zien niemand
+  in of achter de rook en schieten er niet doorheen; een camera die in de rook kijkt ziet grijs); de **flashbang werkt
+  zoals in CS** (een wit scherm dat wegtrekt, het sterkst als je ernaar kijkt, een piep in je oren; ook bij jezelf); de
+  flashbang doet **niets met robots, turrets, drones en monsters** (alleen spelers); de rook is **grijs, maar met een
+  kleurstof te kleuren**.
 
 **Mijn invulling** (zeg het als je het anders wil):
 - **Gooien**: rechtsklik gooit. Met sneak gooi je zachtjes onderhands (de bol rolt dan over de vloer, zoals bij
@@ -3506,6 +3514,15 @@ Zo bouw ik het:
       `-Ponly=grenades` (`gr01` tot `gr08`): in je hand, op de muur en de vloer, de bol van licht, alles uit, de robot
       neer, en de ruis in je bril. Vier nieuwe tests: plakken op een muur, meerijden op een robot, stuiteren en rollen, en
       gooien. 322 tests, allemaal groen.
+- [x] **2b. Ontploffen zoals C4, maar zwakker** (jouw wens) — als de granaat afgaat, komt na de puls dezelfde klap als C4
+      (`C4Blast.blast`, nu gedeeld): eerst een klap voor wezens (zoals TNT; wie de granaat gooide is de dader, dus zonder
+      PvP raak je geen spelers), dan breekpunten voor blokken. C4 heeft 10 breekpunten op 3,5 blokken en een klap van 4;
+      een granaat 8 breekpunten op 3 blokken en een klap van 3 (`[weapons] grenadeBreach`, `grenadeBreachRadius`,
+      `grenadeEntityPower`). Op een stenen muur blaast een granaat dus alleen het blok eruit waar hij op plakt (de rest
+      krijgt barsten), waar C4 er een paar meer uithaalt; obsidiaan houdt het. Een zone houdt hem niet tegen (net als C4)
+      en het logboek van de zone schrijft "EMP grenade blast". Een robot met een granaat erop gaat nu vaak kapot in plaats
+      van alleen neer te gaan. Eén nieuwe test (`emp_grenade_blows_a_hole_like_a_weaker_c4`). 323 tests, allemaal groen.
+- [ ] **2c. De smokebom en de flashbang** — twee nieuwe ballen (zonder sticky).
 - [ ] **3. Energiecellen en de geweren op de server** — schieten, schade, cellen, herladen, opladen (met tests).
 - [ ] **4. De geweren in je eigen beeld** — modellen, armen, animaties, richten, het vizier, de HUD en geluiden.
 - [ ] **5. Showcase, screenshots en LEESMIJ.**
