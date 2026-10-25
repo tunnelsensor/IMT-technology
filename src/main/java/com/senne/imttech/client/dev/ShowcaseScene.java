@@ -105,6 +105,13 @@ final class ShowcaseScene {
     static final BlockPos BIEBIA_BUNKER = new BlockPos(40, -60, 80);
     /** Het Biebia's Industries-torentje van de demo (de warmtegenerator staat ernaast, het Raven-torentje rechts). */
     static final BlockPos TURRET = new BlockPos(0, -60, 40);
+    /**
+     * De laserbrug (hoofdstuk 34): de middelste van drie brugzenders in de grond, aan de westkant van een gracht. De
+     * brug loopt naar het oosten over het water.
+     */
+    static final BlockPos BRIDGE = new BlockPos(20, -61, 16);
+    /** Waar een redstoneblok komt om de brug aan te zetten: onder de noordelijke zender, in de grond. */
+    static final BlockPos BRIDGE_POWER = BRIDGE.north().below();
 
     // ================================================================ Eén keer: de wereld bouwen
 
@@ -257,6 +264,7 @@ final class ShowcaseScene {
         // Geen navigatie actief, schakelaars uit.
         player.setData(ModAttachments.WAYPOINTS, player.getData(ModAttachments.WAYPOINTS).withActive(ImtWaypoints.NONE));
         level.setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState());
+        level.setBlockAndUpdate(BRIDGE_POWER, Blocks.DIRT.defaultBlockState());
         level.setBlockAndUpdate(DOME_POWER, Blocks.AIR.defaultBlockState());
         // De kabel die 'Power grid' doorknipt, altijd weer heel.
         level.setBlockAndUpdate(GRID_CUT, ModBlocks.CABLE.get().defaultBlockState());
@@ -338,6 +346,29 @@ final class ShowcaseScene {
     /** De koepelgenerator van de showcase. */
     static DomeGeneratorBlockEntity dome(ServerPlayer player) {
         return (DomeGeneratorBlockEntity) player.serverLevel().getBlockEntity(DOME);
+    }
+
+    /**
+     * De laserbrug (hoofdstuk 34): een gracht met drie brugzenders in de westrand. Elke keer opnieuw gebouwd, zodat de
+     * showcase altijd hetzelfde laat zien (ook in een wereld van vóór de laserbrug).
+     */
+    static void buildBridge(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        // De gracht: 6 breed, 3 diep, met onderin water.
+        fill(level, BRIDGE.offset(1, 0, -3), BRIDGE.offset(6, -1, 3), Blocks.AIR.defaultBlockState());
+        fill(level, BRIDGE.offset(1, -2, -3), BRIDGE.offset(6, -2, 3), Blocks.WATER.defaultBlockState());
+        // Drie brugzenders naast elkaar in de rand van de vloer (samen één brug van drie breed), van jou en cyaan.
+        for (int dz = -1; dz <= 1; dz++) {
+            BlockPos emitter = BRIDGE.offset(0, 0, dz);
+            level.setBlockAndUpdate(emitter, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
+                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.EAST));
+            if (level.getBlockEntity(emitter) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity bridge) {
+                bridge.setOwner(player);
+            }
+        }
+        // Stroom: een warmtegenerator op magma onder de middelste zender (de zenders geven hem aan elkaar door).
+        DevWorld.powerNextTo(level, BRIDGE.below());
+        level.setBlockAndUpdate(BRIDGE_POWER, Blocks.DIRT.defaultBlockState());
     }
 
     /**

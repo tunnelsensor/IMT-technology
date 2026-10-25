@@ -2,6 +2,7 @@ package com.senne.imttech.client.shield;
 
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.network.LaserActionPayload;
+import com.senne.imttech.shield.LaserBridgeBlock;
 import com.senne.imttech.shield.LaserEmitterBlock;
 import com.senne.imttech.shield.ShieldColor;
 import java.util.ArrayList;
@@ -36,10 +37,15 @@ import org.jetbrains.annotations.Nullable;
  * Heeft iemand de draden doorgeknipt (hoofdstuk 33, met de Bypass Kit), dan staat rechtsboven WIRES CUT en
  * komt er een knop <b>Repair wires</b> bij: die zet de draden van de hele poort weer vast, en kost een Computer
  * Chip (zie shield/LaserEmitters). Of de draden doorgeknipt zijn, weet je spel uit de blok-entiteit.
+ *
+ * Hetzelfde scherm stelt ook de <b>laserbrug</b> in (hoofdstuk 34, zie shield/LaserBridges): dan heet het Laser Bridge,
+ * en zijn er alleen Color en Signal (een brug ligt altijd plat, en de Bypass Kit werkt er niet op).
  */
 public class LaserEmitterScreen extends Screen {
     private static final int PANEL_W = 270;
     private static final int PANEL_H = 160;
+    /** Zoveel lager is het scherm van een laserbrug: die heeft geen regel Wall. */
+    private static final int BRIDGE_LESS = 26;
     /** Zoveel hoger is het scherm als de draden doorgeknipt zijn (de uitleg en de knop Repair wires). */
     private static final int CUT_EXTRA = 30;
     private static final int MARGIN = 8;
@@ -51,6 +57,8 @@ public class LaserEmitterScreen extends Screen {
 
     private final BlockPos pos;
     private final String owner;
+    /** Is dit een laserbrug (hoofdstuk 34) in plaats van een laserzender? */
+    private final boolean bridge;
     private final List<Button> swatches = new ArrayList<>();
     private int left;
     private int top;
@@ -60,9 +68,16 @@ public class LaserEmitterScreen extends Screen {
     private boolean cutLayout;
 
     public LaserEmitterScreen(BlockPos pos, String owner) {
-        super(Component.translatable("screen.imttech.laser"));
+        super(Component.translatable(isBridge(pos) ? "screen.imttech.laser_bridge" : "screen.imttech.laser"));
         this.pos = pos;
         this.owner = owner;
+        this.bridge = isBridge(pos);
+    }
+
+    /** Staat er op deze plek een laserbrug (hoofdstuk 34)? */
+    private static boolean isBridge(BlockPos pos) {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level != null && mc.level.getBlockState(pos).getBlock() instanceof LaserBridgeBlock;
     }
 
     @Override
@@ -70,24 +85,28 @@ public class LaserEmitterScreen extends Screen {
         return false;
     }
 
-    /** De zender zoals hij nu in de wereld staat, of null als hij weg is. */
+    /**
+     * De zender zoals hij nu in de wereld staat, of null als hij weg is. (De kleur, het omkeren en aan/uit lezen we bij
+     * een laserzender en een laserbrug met dezelfde eigenschappen: zie LaserBridgeBlock.)
+     */
     private @Nullable BlockState emitter() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             return null;
         }
         BlockState state = mc.level.getBlockState(pos);
-        return state.getBlock() instanceof LaserEmitterBlock ? state : null;
+        boolean right = bridge ? state.getBlock() instanceof LaserBridgeBlock : state.getBlock() instanceof LaserEmitterBlock;
+        return right ? state : null;
     }
 
     /** Zijn de draden van deze poort doorgeknipt (hoofdstuk 33)? Dat zegt de server via de blok-entiteiten. */
     private boolean gateIsCut() {
         Minecraft mc = Minecraft.getInstance();
-        return mc.level != null && LaserEmitterBlock.isCut(mc.level, LaserEmitterBlock.group(mc.level, pos));
+        return !bridge && mc.level != null && LaserEmitterBlock.isCut(mc.level, LaserEmitterBlock.group(mc.level, pos));
     }
 
     private int panelHeight() {
-        return PANEL_H + (cutLayout ? CUT_EXTRA : 0);
+        return PANEL_H - (bridge ? BRIDGE_LESS : 0) + (cutLayout ? CUT_EXTRA : 0);
     }
 
     // ---------------------------------------------------------------- Waar alles staat
@@ -148,7 +167,8 @@ public class LaserEmitterScreen extends Screen {
                     }
                 })
                 .bounds(left + VALUE_X, signalY(), valueW, 20).build());
-        turnButton = addRenderableWidget(Button.builder(Component.empty(), b -> {
+        // Een laserbrug ligt altijd plat: die heeft geen knop voor staand of liggend.
+        turnButton = bridge ? null : addRenderableWidget(Button.builder(Component.empty(), b -> {
                     BlockState now = emitter();
                     if (now != null) {
                         send(LaserActionPayload.Op.TURN, now.getValue(LaserEmitterBlock.TURNED) ? 0 : 1);
@@ -178,8 +198,9 @@ public class LaserEmitterScreen extends Screen {
     /** De teksten op de knoppen, uit wat het blok nu zegt. */
     private void refreshLabels(BlockState state) {
         if (invertButton != null) {
-            invertButton.setMessage(Component.translatable(state.getValue(LaserEmitterBlock.INVERTED)
-                    ? "screen.imttech.laser.inverted" : "screen.imttech.laser.normal"));
+            String screen = bridge ? "screen.imttech.laser_bridge" : "screen.imttech.laser";
+            invertButton.setMessage(Component.translatable(screen + (state.getValue(LaserEmitterBlock.INVERTED)
+                    ? ".inverted" : ".normal")));
         }
         if (turnButton != null) {
             turnButton.setMessage(Component.translatable(wallKey(state)));
@@ -257,7 +278,9 @@ public class LaserEmitterScreen extends Screen {
             }
         }
         label(g, "screen.imttech.laser.signal", signalY());
-        label(g, "screen.imttech.laser.wall", wallY());
+        if (!bridge) {
+            label(g, "screen.imttech.laser.wall", wallY());
+        }
 
         // Doorgeknipt: wat er aan de hand is (boven de knop Repair wires).
         if (cutLayout) {
@@ -271,11 +294,13 @@ public class LaserEmitterScreen extends Screen {
 
         // Onderaan: voor hoeveel zenders dit geldt.
         Minecraft mc = Minecraft.getInstance();
-        int gate = mc.level == null ? 1 : LaserEmitterBlock.group(mc.level, pos).size();
+        int gate = mc.level == null ? 1
+                : (bridge ? LaserBridgeBlock.group(mc.level, pos) : LaserEmitterBlock.group(mc.level, pos)).size();
+        String screen = bridge ? "screen.imttech.laser_bridge" : "screen.imttech.laser";
         Component scope = gate > 1
-                ? Component.translatable("screen.imttech.laser.gate", gate)
-                : Component.translatable("screen.imttech.laser.single");
-        int y = cutLayout ? footerY() : top + 114;
+                ? Component.translatable(screen + ".gate", gate)
+                : Component.translatable(screen + ".single");
+        int y = cutLayout ? footerY() : bridge ? wallY() : top + 114;
         for (net.minecraft.util.FormattedCharSequence line : font.split(scope, PANEL_W - 2 * MARGIN - DONE_W - 6)) {
             g.drawString(font, line, left + MARGIN, y, HudStyle.argb(150, HudStyle.WHITE), false);
             y += 11;

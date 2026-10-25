@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,powered=false": {
+      "model": "imttech:block/laser_bridge"
+    },
+    "facing=north,powered=true": {
+      "model": "imttech:block/laser_bridge_on"
+    },
+    "facing=east,powered=false": {
+      "model": "imttech:block/laser_bridge",
+      "y": 90
+    },
+    "facing=east,powered=true": {
+      "model": "imttech:block/laser_bridge_on",
+      "y": 90
+    },
+    "facing=south,powered=false": {
+      "model": "imttech:block/laser_bridge",
+      "y": 180
+    },
+    "facing=south,powered=true": {
+      "model": "imttech:block/laser_bridge_on",
+      "y": 180
+    },
+    "facing=west,powered=false": {
+      "model": "imttech:block/laser_bridge",
+      "y": 270
+    },
+    "facing=west,powered=true": {
+      "model": "imttech:block/laser_bridge_on",
+      "y": 270
+    }
+  }
+}

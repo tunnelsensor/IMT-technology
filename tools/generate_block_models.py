@@ -227,6 +227,91 @@ def laser_wall_models():
     blockstate("laser_wall", variants)
 
 
+# ================================================================ Laserbrug (hoofdstuk 34)
+
+def laser_bridge_models():
+    """
+    De laserbrug: de zender en de brugplaten. De plaatjes maakt laser_bridge_textures() in tools/generate_textures.py.
+
+    De zender is een vol blok dat naar het noorden kijkt (de blockstate draait hem). Je zet hem in de rand van de
+    vloer, dus bovenop zie je twee pijlpunten naar de spleet. De spleet zit bovenin de voorkant (y 12 tot 15), want
+    daar komt de plaat naar buiten (y 13 tot 14, zie LaserBridgePlateBlock.TOP). Achter de spleet zit de lichtstreep
+    ("lens"); aan geeft die zelf licht.
+
+    De brugplaat: een plaat van 1 pixel dik met de bovenkant op 14 pixels, die zelf licht geeft. Daarbij een felle
+    rand (een randje van 1 pixel breed dat een halve pixel boven de plaat uitsteekt) aan elke kant waar de brug
+    ophoudt. Dat doet de blockstate met "multipart": de plaat altijd, en per kant een rand als daar geen brug meer
+    ligt (north=false enzovoort). De rand ligt in het model aan de noordkant; de blockstate draait hem naar de
+    andere kanten.
+    """
+    for on in (False, True):
+        name = "laser_bridge_on" if on else "laser_bridge"
+        textures = {"particle": "imttech:block/emitter_side", "side": "imttech:block/emitter_side",
+                    "back": "imttech:block/emitter_back", "recess": "imttech:block/emitter_recess",
+                    "front": "imttech:block/laser_bridge_front",
+                    "top": "imttech:block/laser_bridge_top" + ("_on" if on else ""),
+                    "lens": "imttech:block/laser_bridge_lens" + ("_on" if on else "")}
+        elements = [
+            # de kast, met daarin (alleen door de spleet te zien) de donkere holte
+            box([0, 0, 2], [16, 16, 16], {"north": "#recess", "south": "#back", "up": "#top", "rest": "#side"}),
+            # de voorkant: onder de spleet, de rand erboven, en links en rechts een paaltje
+            box([0, 0, 0], [16, 12, 2], {"north": "#front", "up": "#front", "rest": "#side"}, skip=("south",)),
+            box([0, 15, 0], [16, 16, 2], {"north": "#front", "down": "#front", "up": "#top", "rest": "#side"},
+                skip=("south",)),
+            box([0, 12, 0], [1, 15, 2], {"north": "#front", "east": "#front", "rest": "#side"},
+                skip=("south", "up", "down")),
+            box([15, 12, 0], [16, 15, 2], {"north": "#front", "west": "#front", "rest": "#side"},
+                skip=("south", "up", "down")),
+            # de lichtstreep achterin de spleet
+            box([1, 12, 1], [15, 15, 2], {"north": "#lens"}, glow=on),
+        ]
+        save(name, textures, elements)
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    variants = {}
+    for facing, y in turn.items():
+        for on in (False, True):
+            option = {"model": "imttech:block/laser_bridge" + ("_on" if on else "")}
+            if y:
+                option["y"] = y
+            variants["facing=%s,powered=%s" % (facing, str(on).lower())] = option
+    blockstate("laser_bridge", variants)
+    write(ROOT / "models" / "item" / "laser_bridge.json", {"parent": "imttech:block/laser_bridge"})
+
+    # De brugplaat en de rand: één vorm, per kleur een klein modelletje met alleen het plaatje (zoals de laserwand).
+    def glowing(element):
+        element["shade"] = False
+        element["neoforge_data"] = {"block_light": 15, "sky_light": 15, "ambient_occlusion": False}
+        return element
+
+    # De plaat heeft alleen een boven- en onderkant: opzij ligt er een andere plaat (die zijkant zie je niet), of er
+    # zit een rand die de zijkant afdekt. De rand is iets dikker dan de plaat (van 12,75 tot 14,5), zodat hun vlakken
+    # nergens precies op elkaar liggen (anders flikkert het).
+    write(ROOT / "models" / "block" / "laser_bridge_plate_field.json", {
+        "parent": "block/block", "render_type": "minecraft:translucent", "ambientocclusion": False,
+        "elements": [glowing(box([0, 13, 0], [16, 14, 16], {"up": "#field", "down": "#field"}))],
+    })
+    write(ROOT / "models" / "block" / "laser_bridge_edge_field.json", {
+        "parent": "block/block", "render_type": "minecraft:translucent", "ambientocclusion": False,
+        "elements": [glowing(box([0, 12.75, 0], [16, 14.5, 1], "#field"))],
+    })
+    multipart = []
+    for color in RAYSHIELD_COLORS:
+        for part in ("plate", "edge"):
+            texture = "imttech:block/laser_bridge_%s" % color if part == "plate" else "imttech:block/laser_bridge_edge_%s" % color
+            write(ROOT / "models" / "block" / ("laser_bridge_%s_%s.json" % (part, color)), {
+                "parent": "imttech:block/laser_bridge_%s_field" % part,
+                "render_type": "minecraft:translucent",
+                "textures": {"particle": texture, "field": texture},
+            })
+        multipart.append({"when": {"color": color}, "apply": {"model": "imttech:block/laser_bridge_plate_%s" % color}})
+        for side, y in turn.items():
+            apply = {"model": "imttech:block/laser_bridge_edge_%s" % color}
+            if y:
+                apply["y"] = y
+            multipart.append({"when": {"color": color, side: "false"}, "apply": apply})
+    write(ROOT / "blockstates" / "laser_bridge_plate.json", {"multipart": multipart})
+
+
 # ================================================================ Bewakingscamera
 
 def security_camera():
@@ -402,6 +487,7 @@ if __name__ == "__main__":
     heat_generator(True)
     heat_generator_states()
     laser_wall_models()
+    laser_bridge_models()
     arc_lamp()
     light_switch()
     robot_dock()

@@ -66,7 +66,7 @@ package com.senne.imttech.config;
  *   Recon ........ drone-camera en spionagedrone
  *   Transport .... vervoer door drones
  *   Illusions .... illusies en de E.M.P.
- *   Shields ...... persoonlijk schild en laserwanden
+ *   Shields ...... persoonlijk schild, laserwanden en laserbruggen
  *   Dome ......... de schildkoepel
  *   Hack ......... andere spelers hacken (berichten onderscheppen)
  *   Relays ....... redstone op afstand schakelen
@@ -291,6 +291,12 @@ public final class ImtConfig {
         /** Zoveel seconden moet het net stroom hebben voordat een laserwand aangaat (anders knippert hij). */
         @Tunable("A laser wall only turns on when the grid has had power for this many seconds (so it doesn't flicker)")
         public static float LASER_WALL_START_SECONDS = 5.0f;
+        /** Stroom per tick van één brugzender zolang zijn laserbrug er ligt (hoofdstuk 34). */
+        @Tunable("Energy per tick a laser bridge emitter uses while its bridge is out")
+        public static float LASER_BRIDGE_UPKEEP = 1.0f;
+        /** Zoveel seconden moet het net stroom hebben voordat een laserbrug uitschuift (anders knippert hij). */
+        @Tunable("A laser bridge only comes out when the grid has had power for this many seconds (so it doesn't flicker)")
+        public static float LASER_BRIDGE_START_SECONDS = 5.0f;
         /**
          * Stroom per tick van een schildkoepel, per sterkte-niveau, voor elk van zijn 5 maten (zie Dome.RADII:
          * 8, 12, 16, 24 en 32 blokken). Een koepel van 16 blokken op sterkte 2 kost dus 4 x 2 = 8 per tick.
@@ -692,7 +698,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Shields
 
-    @Section("The personal rayshield and laser walls (their power use is under [power])")
+    @Section("The personal rayshield, laser walls and laser bridges (their power use is under [power])")
     public static final class Shields {
         private Shields() {}
 
@@ -708,6 +714,9 @@ public final class ImtConfig {
         /** Hoe lang een laserwand hooguit wordt. */
         @Tunable(value = "Longest a laser wall can be (blocks between two emitters)", min = 1, max = 64)
         public static float LASER_MAX_LENGTH = 16.0f;
+        /** Hoe lang een laserbrug hooguit wordt (hoofdstuk 34): zoveel blokken vanaf de zender. */
+        @Tunable(value = "Longest a laser bridge can be (blocks from its emitter)", min = 1, max = 64)
+        public static float LASER_BRIDGE_MAX_LENGTH = 16.0f;
     }
 
     // =============================================================================================== Dome

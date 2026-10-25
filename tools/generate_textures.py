@@ -1343,6 +1343,88 @@ def shield_textures():
     save(wall, "block/laser_wall.png")
 
 
+def laser_bridge_textures():
+    """
+    De laserbrug (hoofdstuk 34): de zender en de brugplaten, in elke kleur. Jouw keuze: een eigen look, "een plaat
+    van licht met felle randen en een fijn raster", en een zender met een brede spleet in plaats van een ronde lens.
+
+    De zender (zie laser_bridge_models in tools/generate_block_models.py) is van hetzelfde metaal als de laserzender
+    (emitter_side, emitter_back en emitter_recess gebruikt hij gewoon mee). Nieuw:
+    - de bovenkant: die zie je als hij in de vloer zit, dus daar wijzen twee pijlpunten naar de spleet (de kant waar
+      de brug heen gaat). Aan = fel cyaan, uit = dof;
+    - de voorkant: een frame met gouden hoeken rond de spleet (de spleet zit bovenin, waar de brug uit komt);
+    - de spleet zelf (de "lens"): een lichtstreep, met de felste rij precies waar de plaat naar buiten komt.
+
+    De brugplaten: per kleur een half doorzichtige plaat met een fijn raster (om de 4 pixels), waar langzaam een
+    schuine glans overheen trekt. De glans herhaalt om de 16 pixels, dus over een hele brug loopt hij als één golf
+    door. En per kleur een fel randje (de rand van de brug, zie LaserBridgePlateBlock).
+    """
+    import json
+    import math
+    # --- De bovenkant: metaal met twee pijlpunten naar voren (naar boven in het plaatje = naar de spleet).
+    def top(arrow, lip):
+        im = img(16, 16, METAL_1)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        d.line([1, 2, 14, 2], fill=METAL_3)            # de rand achter de spleet
+        d.line([2, 1, 13, 1], fill=lip)                 # een lichtrandje boven de spleet
+        for y0 in (5, 9):                               # twee pijlpunten (^), de punt naar voren
+            for i in range(4):
+                px(im, [(7 - i, y0 + i), (8 + i, y0 + i)], arrow)
+        px(im, [(2, 13), (13, 13)], METAL_3)            # boutjes
+        d.line([2, 14, 13, 14], fill=METAL_DARK)
+        return im
+
+    save(top(CYAN_DIM, CYAN_DARK), "block/laser_bridge_top.png")
+    save(top(CYAN, (170, 240, 255, 255)), "block/laser_bridge_top_on.png")
+
+    # --- De voorkant: het frame rond de spleet. De spleet zit in de rijen 1 tot 3 (daar tekent het model niets).
+    front = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(front)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    d.rectangle([0, 1, 15, 4], fill=METAL_DARK)          # de rand rond de spleet
+    d.rectangle([3, 7, 12, 12], outline=METAL_1)         # een paneel eronder
+    for x, y in ((1, 13), (13, 13)):
+        d.rectangle([x, y, x + 1, y + 1], fill=GOLD)
+    d.line([5, 14, 10, 14], fill=CYAN_DARK)
+    save(front, "block/laser_bridge_front.png")
+
+    # --- De spleet: een lichtstreep, de felste rij (2) is waar de plaat naar buiten komt.
+    def slit(edge, core):
+        im = img(16, 16, edge)
+        d = ImageDraw.Draw(im)
+        for y in range(2, 16, 4):
+            d.line([0, y, 15, y], fill=core)
+        return im
+
+    save(slit(CYAN_DARK, CYAN_DIM), "block/laser_bridge_lens.png")
+    save(slit(CYAN, (225, 250, 255, 255)), "block/laser_bridge_lens_on.png")
+
+    # --- De brugplaten: per kleur een raster met een schuine glans (32 beelden, elk 2 ticks: 3,2 seconden).
+    frames = 32
+    for name, (r, g, b) in RAYSHIELD_COLORS.items():
+        plate = img(16, 16 * frames)
+        for frame in range(frames):
+            for y in range(16):
+                for x in range(16):
+                    # De glans: een zachte golf langs x + y, die per lus precies 16 pixels opschuift.
+                    wave = 0.5 + 0.5 * math.cos(2 * math.pi * ((x + y) / 16.0 - frame / frames))
+                    shine = wave ** 6                                   # smal: vooral een dunne glansstreep
+                    line = x % 4 == 0 or y % 4 == 0                     # het fijne raster
+                    alpha = (125 if line else 70) + int(70 * shine)
+                    mix = (0.45 if line else 0.15) + 0.45 * shine       # hoe dichter bij wit
+                    plate.putpixel((x, 16 * frame + y), (int(r + (255 - r) * mix), int(g + (255 - g) * mix),
+                                                         int(b + (255 - b) * mix), min(255, alpha)))
+        save(plate, "block/laser_bridge_%s.png" % name)
+        meta = ROOT / "block" / ("laser_bridge_%s.png.mcmeta" % name)
+        meta.write_text(json.dumps({"animation": {"frametime": 2, "interpolate": True}}, indent=2) + "\n",
+                        encoding="utf-8", newline="\n")
+
+        # De rand: fel, bijna wit in het midden, in de kleur van de brug.
+        edge = img(16, 16, (int(r + (255 - r) * 0.55), int(g + (255 - g) * 0.55), int(b + (255 - b) * 0.55), 235))
+        save(edge, "block/laser_bridge_edge_%s.png" % name)
+
+
 def rayshield_walls():
     """
     Het energieveld van de rayshield-laserpoort, in elke kleur.
@@ -3585,6 +3667,7 @@ if __name__ == "__main__":
     relay_inverted_textures()
     relay_emitter_textures()
     shield_textures()
+    laser_bridge_textures()
     rayshield_walls()
     charger_textures()
     emp_item()

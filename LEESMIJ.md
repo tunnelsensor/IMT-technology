@@ -314,7 +314,7 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   hem heen (hoe meer, hoe beter). Bij een lavameer hoef je er nooit meer naar om te kijken.
   Zijn voorkant (het rooster) wijst naar je toe als je hem neerzet; zolang hij warmte
   opwekt, gloeit het rooster oranje en geeft hij wat licht.
-- Zonder stroom doen de laserpoort, de holotafel en de koepel niets.
+- Zonder stroom doen de laserpoort, de laserbrug, de holotafel en de koepel niets.
 - Het **laadstation** laadt een bril die erin ligt uit het net, en vult daarna ook zijn eigen
   voorraad, maar alleen met wat over is: de generatoren houden altijd de helft achter voor de
   rest van het net.
@@ -352,6 +352,23 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   Een inbreker kan met de Bypass Kit de **draden doorknippen** (zie "Inbreken"): dan blijft de hele
   poort uit, en vonkt hij. Zijn instelscherm zegt dan rood **WIRES CUT**, en **Repair wires** zet de
   draden weer vast; dat kost een Computer Chip (in creative niets). De app Devices zegt dan "cut wires".
+- **Laserbrug** (sinds 25 oktober; recept: een laserzender en een gladde stenen plaat): net als de
+  laserzender, maar hij maakt een **vloer van licht** waar je overheen loopt, en hij doet geen pijn. Zet
+  hem **in de rand van de vloer** met je gezicht naar het gat: de brug gaat de kant op waar jij keek
+  (altijd opzij, nooit omhoog), tot 16 blokken of tot het eerste blok. De plaat ligt net onder de rand
+  van het blok (even hoog als zielenzand), dus je loopt er zonder stapje op en af. Het is een plaat van
+  licht met een fijn raster en een glans die eroverheen trekt, en een **fel randje** waar de brug ophoudt
+  (opzij en aan het eind). Op de zender wijzen twee pijlpunten naar de kant van de brug.
+  - **Iedereen** kan erop lopen: spelers, dieren en monsters. Wat erop valt, blijft liggen.
+  - Aan met redstone (of *Inverted*), op **stroom** (een beetje per seconde zolang de brug er ligt),
+    net als de laserzender. Gaat hij uit terwijl er iemand op staat, dan valt die: zo maak je een val.
+  - **Zenders naast elkaar zijn één brug**: drie naast elkaar = een brug van drie breed, met één kabel
+    en één hendel. Een brugzender aan de overkant die terugkijkt, sluit de brug af.
+  - **Sluipen + rechtsklik met een lege hand** (voor wie hem neerzette of vertrouwd is in de basis): het
+    scherm met **Color** en **Signal**, voor de hele brug.
+  - Hij hoort **niet bij de beveiliging**: de schakelaar "Lasers" van je beveiligingskern laat bruggen
+    met rust, en de Bypass Kit werkt er niet op.
+  - Een brug loopt niet over een andere brug die dwars loopt: hij stopt ertegen.
 - **Schildkoepel-generator** (blok, op stroom): een koepel om je basis. **Rechtsklik** opent
   zijn scherm: aan/uit, kleur, bereik (8 tot 32 blokken) en sterkte (1 tot 5). Groter en
   sterker kost meer stroom. De koepel houdt alles tegen wat niet van jou of je team komt:
@@ -1577,7 +1594,7 @@ showcase en staat hij bij NIEUW.
   alle schermen, de holotafel, het harnas, een testvlucht en de satelliet, en sluit weer af. De
   plaatjes staan in `run-visual/screenshots`. Alleen een stuk ervan: `gradlew runVisualCheck
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
-  `laser`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
+  `laser`, `bridge`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
   `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.

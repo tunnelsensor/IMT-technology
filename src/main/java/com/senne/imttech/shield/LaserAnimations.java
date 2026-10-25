@@ -1,6 +1,5 @@
 package com.senne.imttech.shield;
 
-import com.senne.imttech.registry.ModBlocks;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -23,6 +22,9 @@ import org.joml.Vector3f;
  * tweede zender aan de overkant kwam er dan een wand uit het niets.)
  *
  * Per stap zetten we één blok neer (of halen we er één weg), om de paar ticks.
+ *
+ * Sinds hoofdstuk 34 schuift de laserbrug (zie LaserBridgeBlock) op dezelfde manier uit en in: dan zijn het
+ * brugplaten in plaats van stukken laserwand.
  */
 public final class LaserAnimations {
     private LaserAnimations() {}
@@ -55,6 +57,9 @@ public final class LaserAnimations {
     /**
      * Begin met dichtschuiven (of openschuiven) van deze wand.
      * Een wand die al bezig was op dezelfde plek, laten we los: de nieuwe opdracht wint.
+     *
+     * @param wall het blok van het veld. Bij dichtschuiven zetten we precies dit neer; bij openschuiven halen we
+     *             alleen blokken van deze soort weg (een laserwand, of een brugplaat van een laserbrug).
      */
     public static void start(ServerLevel level, List<BlockPos> cells, BlockState wall, ShieldColor color, boolean closing) {
         if (cells.isEmpty()) {
@@ -99,7 +104,7 @@ public final class LaserAnimations {
                     level.setBlock(target, sliding.wall, Block.UPDATE_ALL);
                     spark(level, target, sliding.color);
                 }
-            } else if (level.getBlockState(target).is(ModBlocks.LASER_WALL.get())) {
+            } else if (level.getBlockState(target).is(sliding.wall.getBlock())) {
                 level.setBlock(target, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 spark(level, target, sliding.color);
             }

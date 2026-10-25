@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 306 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 311 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 96 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 97 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -3342,6 +3342,70 @@ Ik bouwde het in deze volgorde:
       poort werd gezet, is zelf niet kapot: die valt er als een hele uit. (Je eerste vraag, de zender aan de overkant
       als eigen poort, liet ik zoals hij was.) Eén nieuwe test (`bypass_laser_stays_cut_when_mined`). De test van de
       kluwens rekent nu met vaste getallen, wat er ook in de config staat. 306 tests, allemaal groen.
+
+### 34. De laserbrug (25 oktober)
+
+Jouw wens: "Maak een nieuwe block laserbridge, dit is basically hetzelfde als een rayshield maar het doet geen
+damage en is enkel horizontaal. Stel vragen waar nodig". Ik stelde vier vragen, jij koos.
+
+**Jouw antwoorden** (25 oktober):
+- **De hoogte**: "een heel klein beetje onder de rand, dus tussen rand en midden, dichter naar rand dan midden". De
+  bovenkant van de plaat ligt nu 2 pixels (1/8 blok) onder de rand van het blok, even hoog als zielenzand. Je zet de
+  zender in de rand van de vloer, en stapt zonder springen op de brug en er weer af.
+- **Wie erop kan: iedereen** (spelers, dieren, monsters). Een val maak je zelf: zet hem uit met redstone terwijl er
+  iemand op staat.
+- **Los van de beveiliging**: de schakelaar "Lasers" van de beveiligingskern laat bruggen met rust, en de Bypass Kit
+  werkt er niet op.
+- **Een eigen look**: een plaat van licht in de gekozen kleur, met felle randen en een fijn raster; de zender heeft een
+  brede spleet in plaats van een ronde lens, zodat je hem niet verwart met een rayshieldzender.
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Zoals de rayshield**: hij heeft stroom nodig (1 per tick per zender, en hij gaat pas aan als het net stroom heeft
+  voor 5 seconden), gaat aan met redstone (of omgekeerd), zenders die tegen elkaar zitten zijn één brug (drie naast
+  elkaar = drie breed, met één kabel en één hendel; ze geven de stroom aan elkaar door), een brugzender aan de overkant
+  die terugkijkt sluit de brug af, en de brug schuift uit en in (één plaat per tick, van het eind terug naar de zender).
+  Hetzelfde "vwoem" als de rayshield (een tikje hoger) en hetzelfde stille zoemen.
+- **Neerzetten**: de brug gaat de kant op waar jij kijkt (altijd opzij, ook als je schuin naar beneden kijkt). Zo zet je
+  hem in de rand van de vloer met je gezicht naar het gat. (De rayshieldzender kijkt juist naar jou: die zet je tegen
+  een muur.) Op de bovenkant van de zender wijzen twee pijlpunten naar de kant van de brug.
+- **Hoe lang**: tot 16 blokken, tot het eerste blok dat in de weg staat.
+- **De randen**: aan elke kant waar geen brug meer ligt (opzij en aan het eind), niet tegen een zender of een andere
+  plaat. Een brede brug heeft dus alleen randen aan de buitenkant.
+- **Kruisingen**: een brug loopt niet over een brug die dwars loopt, maar stopt ertegen. Anders haalde hij bij het
+  uitgaan een stuk van die andere brug mee weg (de rayshield heeft dat probleem wel).
+- **Monsters en dieren** zien de plaat als vloer (net als zielenzand) en lopen er ook zelf overheen. Er spawnt niets op.
+  Items blijven erop liggen en pijlen verbranden niet. Wie erover loopt, schopt geen stofwolkjes op (het is licht).
+- **Kleur**: nieuwe bruggen zijn cyaan (een rayshield is blauw). Kleur en omkeren kies je in hetzelfde instelscherm als
+  bij de laserzender (sneak + rechtsklik met een lege hand, voor wie hem neerzette of wie vertrouwd is in de basis),
+  zonder de regel Wall.
+- **Sterkte**: zo sterk als een ijzerblok (een stenen houweel of beter), niet zo sterk als de laserzender: die hoort bij
+  de beveiliging, de brug niet. Om dezelfde reden staat de brug niet in de app Devices.
+- **Recept**: een laserzender en een gladde stenen plaat (los in het raster) = een laserbrug. Je krijgt het recept
+  zodra je een laserzender hebt.
+- In de config: `[power] laserBridgeUpkeep` en `laserBridgeStartSeconds`, en `[shields] laserBridgeMaxLength`.
+
+Ik bouwde het in één keer:
+
+- [x] **1. De laserbrug** — **De zender** (`shield/LaserBridgeBlock`): kijkt alleen opzij (`HORIZONTAL_FACING`), werkt
+      verder als de laserzender, maar kijkt niet naar de beveiligingskern. Hij zoekt zijn buren met dezelfde zoekfunctie
+      als de laserzender (`LaserEmitterBlock.touching`). **De plaat** (`LaserBridgePlateBlock`): 1 pixel dik met de
+      bovenkant op 14 pixels, onthoudt in welke richting de brug loopt (`AXIS`) en aan welke kanten er nog brug ligt
+      (`NORTH`/`EAST`/`SOUTH`/`WEST`: daar komt geen rand). **De eigenaar** staat in `LaserBridgeBlockEntity`, en
+      **het scherm** gaat via `LaserBridges` (dezelfde berichten als de laserzender; `client/shield/LaserEmitterScreen`
+      kan nu ook een brug). `LaserAnimations` schuift nu ook brugplaten. **Het uiterlijk**: `laser_bridge_textures()` in
+      tools/generate_textures.py (de bovenkant met pijlpunten, de voorkant, de spleet, en per kleur een plaat met
+      raster en glans plus een rand) en `laser_bridge_models()` in tools/generate_block_models.py (de zender, en de
+      plaat als "multipart": de plaat altijd, en een rand per kant waar de brug ophoudt). **Showcase**: functie 97
+      "Laser bridge", achteraan zodat de nummers van je notities blijven kloppen: een gracht met drie zenders, de brug
+      schuift uit, je loopt eroverheen, het scherm (paars), en de val in het water. **Screenshots** `-Ponly=bridge`:
+      `br01` (de zenders uit, van boven), `br02` (de spleet aan de voorkant), `br03` (van opzij, met een armor stand op
+      de brug), `br04` (van boven: randen alleen buiten), `br05` (op de brug), `br06` (paars) en `br07` (het scherm).
+      Vijf nieuwe tests (`BridgeGameTests`): de brug schuift uit vanaf de zender tot het eerste blok, de plaat ligt net
+      onder de rand, de randen kloppen, een armor stand blijft erop staan zonder schade en valt als de brug weggaat;
+      neerzetten kijkt de kant op waar je keek (ook schuin naar beneden), alleen de eigenaar stelt hem in, en een zender
+      ernaast neemt kleur en omkeren over; drie naast elkaar met één generator en één redstoneblok; zonder stroom niets;
+      en met de lasers van de kern uit blijft een laserzender uit maar komt de brug gewoon, en de Bypass Kit doet niets.
+      311 tests, allemaal groen.
 
 ---
 

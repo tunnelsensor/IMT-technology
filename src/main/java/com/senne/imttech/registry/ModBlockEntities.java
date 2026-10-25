@@ -139,6 +139,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.shield.LaserEmitterBlockEntity::new,
                             java.util.Set.of(ModBlocks.LASER_EMITTER.get()), null));
 
+    /** De laserbrug (hoofdstuk 34): van wie hij is (alleen hij en vertrouwde spelers openen zijn scherm). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.shield.LaserBridgeBlockEntity>> LASER_BRIDGE =
+            BLOCK_ENTITIES.register("laser_bridge",
+                    () -> new BlockEntityType<>(com.senne.imttech.shield.LaserBridgeBlockEntity::new,
+                            java.util.Set.of(ModBlocks.LASER_BRIDGE.get()), null));
+
     /** De Robot Assembler (hoofdstuk 21): zijn zes vakjes. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.robot.RobotAssemblerBlockEntity>> ROBOT_ASSEMBLER =
             BLOCK_ENTITIES.register("robot_assembler",

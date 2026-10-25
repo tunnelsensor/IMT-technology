@@ -84,9 +84,13 @@ public final class RayshieldHum {
         }
     }
 
-    /** Staat hier een rayshield aan (een zender met een wand, of een generator met een koepel)? */
+    /**
+     * Staat hier een rayshield aan (een zender met een wand, of een generator met een koepel)? Een laserbrug die
+     * uitgeschoven is (hoofdstuk 34) zoemt net zo stil mee.
+     */
     static boolean isActiveShield(BlockState state) {
         return state.is(ModBlocks.LASER_EMITTER.get()) && state.getValue(LaserEmitterBlock.POWERED)
+                || state.is(ModBlocks.LASER_BRIDGE.get()) && state.getValue(com.senne.imttech.shield.LaserBridgeBlock.POWERED)
                 || state.is(ModBlocks.DOME_GENERATOR.get()) && state.getValue(DomeGeneratorBlock.POWERED);
     }
 

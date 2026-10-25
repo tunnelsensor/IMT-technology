@@ -2240,6 +2240,42 @@ final class ShowcaseFeatures {
                 .step(10, ShowcaseFeatures::openModTab)
                 .pause(160)
                 .close(0));
+
+        // ---------------------------------------------------------------- Laserbrug
+        // Hoofdstuk 34 (25 oktober), achteraan zodat de nummers van je notities blijven kloppen.
+        BlockPos bridge = ShowcaseScene.BRIDGE;
+        add("Laser bridge", "Hoofdstuk 34. Een gracht met drie brugzenders in de westrand (in de vloer, met pijlpunten "
+                + "erop). Redstone aan: de brug schuift uit, drie breed, cyaan, met een fel randje aan de buitenkant en "
+                + "aan het eind, en een glans die eroverheen trekt. Je loopt eroverheen (de plaat ligt net onder de rand, "
+                + "dus zonder stapje). Dan het instelscherm (sneak + klik): paars. Tot slot de val: je staat midden op de "
+                + "brug, de redstone gaat uit, de brug trekt zich terug en je valt in het water.",
+                new Vec3(bridge.getX() + 3.5, bridge.getY() + 4, bridge.getZ() + 9.5), 180, 25, s -> s
+                .onServer(0, ShowcaseScene::buildBridge)
+                .pause(40)
+                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ShowcaseScene.BRIDGE_POWER,
+                        Blocks.REDSTONE_BLOCK.defaultBlockState()))
+                .pause(80)
+                // Eroverheen lopen, van de westkant naar de oostkant.
+                .stand(0, bridge.getX() - 2.5, bridge.getY() + 1, bridge.getZ() + 0.5, -90, 15)
+                .pause(20)
+                .key(0, () -> Minecraft.getInstance().options.keyUp, true)
+                .key(55, () -> Minecraft.getInstance().options.keyUp, false)
+                .pause(20)
+                // Terug naar de zenders: het instelscherm, en paars.
+                .stand(0, bridge.getX() - 1.5, bridge.getY() + 1, bridge.getZ() + 0.5, -90, 40)
+                .onServer(10, player -> com.senne.imttech.shield.LaserBridges.open(player, bridge))
+                .pause(40)
+                .onServer(0, player -> bridge(player, LaserActionPayload.Op.COLOR, ShieldColor.PURPLE.ordinal()))
+                .pause(50)
+                .close(0)
+                // De val: midden op de brug, en dan gaat de redstone uit.
+                .stand(10, bridge.getX() + 3.5, bridge.getY() + com.senne.imttech.shield.LaserBridgePlateBlock.TOP / 16.0,
+                        bridge.getZ() + 0.5, -90, 50)
+                .pause(30)
+                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ShowcaseScene.BRIDGE_POWER,
+                        Blocks.DIRT.defaultBlockState()))
+                .pause(60)
+                .onServer(0, player -> bridge(player, LaserActionPayload.Op.COLOR, ShieldColor.CYAN.ordinal())));
     }
 
     // ================================================================ Hulpjes
@@ -3441,6 +3477,11 @@ final class ShowcaseFeatures {
     /** Een knop uit het scherm van de laserzender LASER_A, zoals jij hem indrukt. */
     private static void laser(ServerPlayer player, LaserActionPayload.Op op, int value) {
         com.senne.imttech.shield.LaserEmitters.handleAction(player, new LaserActionPayload(LASER_A, op, value));
+    }
+
+    /** Een knop uit het scherm van de laserbrug, voor de brug van de showcase (hoofdstuk 34). */
+    private static void bridge(ServerPlayer player, LaserActionPayload.Op op, int value) {
+        com.senne.imttech.shield.LaserBridges.handleAction(player, new LaserActionPayload(ShowcaseScene.BRIDGE, op, value));
     }
 
     /** Rechtsklik op een blok, zoals met de muis. */

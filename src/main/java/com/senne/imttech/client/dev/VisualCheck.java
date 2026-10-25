@@ -1677,6 +1677,40 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- De laserbrug (hoofdstuk 34): drie brugzenders in de rand van een gracht. Eerst uit (de pijlpunten op de
+        // zenders, en de spleet aan de voorkant), dan uitgeschoven met een armor stand erop: van opzij, van boven, en
+        // staand op de brug. Daarna paars, en het instelscherm.
+        if (want("bridge")) {
+            t.onServer(0, VisualCheck::buildLaserBridge);
+            t.view(40, BRIDGE_YARD.getX() - 2.5, BRIDGE_YARD.getY() + 3, BRIDGE_YARD.getZ() + 0.5, -90, 50);
+            t.shot(0, "br01_bridge_off_top");
+            t.view(0, BRIDGE_YARD.getX() + 4.5, BRIDGE_YARD.getY() + 0.5, BRIDGE_YARD.getZ() + 0.5, 90, 10);
+            t.shot(20, "br02_bridge_off_front");
+            t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(BRIDGE_YARD.north().below(),
+                    Blocks.REDSTONE_BLOCK.defaultBlockState()));
+            t.onServer(40, player -> {
+                var stand = EntityType.ARMOR_STAND.create(player.serverLevel());
+                if (stand != null) {
+                    stand.moveTo(BRIDGE_YARD.getX() + 3.5, BRIDGE_YARD.getY() + 1, BRIDGE_YARD.getZ() + 1.5, 90, 0);
+                    player.serverLevel().addFreshEntity(stand);
+                }
+            });
+            t.view(20, BRIDGE_YARD.getX() + 3.5, BRIDGE_YARD.getY() + 3, BRIDGE_YARD.getZ() + 9.5, 180, 20);
+            t.shot(20, "br03_bridge_side");
+            t.view(0, BRIDGE_YARD.getX() + 3.5, BRIDGE_YARD.getY() + 9, BRIDGE_YARD.getZ() + 4.5, 180, 60);
+            t.shot(20, "br04_bridge_above");
+            t.stand(0, BRIDGE_YARD.getX() + 1.5, BRIDGE_YARD.getY() + 0.875, BRIDGE_YARD.getZ() + 0.5, -90, 25);
+            t.shot(30, "br05_bridge_on_it");
+            t.onServer(0, player -> com.senne.imttech.shield.LaserBridges.handleAction(player,
+                    new com.senne.imttech.network.LaserActionPayload(BRIDGE_YARD,
+                            com.senne.imttech.network.LaserActionPayload.Op.COLOR, ShieldColor.PURPLE.ordinal())));
+            t.view(10, BRIDGE_YARD.getX() - 1.5, BRIDGE_YARD.getY() + 4, BRIDGE_YARD.getZ() + 5.5, -135, 35);
+            t.shot(20, "br06_bridge_purple");
+            t.open(0, () -> new com.senne.imttech.client.shield.LaserEmitterScreen(BRIDGE_YARD, "Dev"));
+            t.shot(20, "br07_bridge_screen");
+            t.close(0);
+        }
+
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
         if (want("satellite")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);
@@ -3425,6 +3459,33 @@ public final class VisualCheck {
                     .setValue(LaserEmitterBlock.INVERTED, true)
                     .setValue(LaserEmitterBlock.TURNED, true));
         }
+    }
+
+    /** De middelste van drie brugzenders in de rand van een gracht (zie de sectie "bridge"). */
+    private static final BlockPos BRIDGE_YARD = new BlockPos(-260, -61, -200);
+
+    /**
+     * De laserbrug (hoofdstuk 34): een gracht van 6 breed en 3 diep met water onderin, en in de westrand drie
+     * brugzenders naast elkaar (in de grond, naar het oosten), van jou. Een warmtegenerator op magma onder de
+     * middelste; het redstoneblok (onder de noordelijke) zet de sectie zelf neer.
+     */
+    private static void buildLaserBridge(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (BlockPos pos : BlockPos.betweenClosed(BRIDGE_YARD.offset(1, 0, -4), BRIDGE_YARD.offset(6, -1, 4))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(BRIDGE_YARD.offset(1, -2, -4), BRIDGE_YARD.offset(6, -2, 4))) {
+            level.setBlockAndUpdate(pos, Blocks.WATER.defaultBlockState());
+        }
+        for (int dz = -1; dz <= 1; dz++) {
+            BlockPos pos = BRIDGE_YARD.offset(0, 0, dz);
+            level.setBlockAndUpdate(pos, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
+                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.EAST));
+            if (level.getBlockEntity(pos) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity bridge) {
+                bridge.setOwner(player);
+            }
+        }
+        DevWorld.powerNextTo(level, BRIDGE_YARD.below());
     }
 
     private static BlockState emitter(Direction facing, ShieldColor colour) {

@@ -1,0 +1,33 @@
+{
+  "parent": "block/block",
+  "render_type": "minecraft:translucent",
+  "ambientocclusion": false,
+  "elements": [
+    {
+      "from": [
+        0,
+        13,
+        0
+      ],
+      "to": [
+        16,
+        14,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#field"
+        },
+        "down": {
+          "texture": "#field"
+        }
+      },
+      "shade": false,
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15,
+        "ambient_occlusion": false
+      }
+    }
+  ]
+}

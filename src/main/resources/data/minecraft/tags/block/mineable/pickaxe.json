@@ -4,6 +4,7 @@
     "imttech:relay",
     "imttech:relay_emitter",
     "imttech:laser_emitter",
+    "imttech:laser_bridge",
     "imttech:dome_generator",
     "imttech:holo_table",
     "imttech:cable",

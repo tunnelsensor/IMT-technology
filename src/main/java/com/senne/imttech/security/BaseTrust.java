@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public final class BaseTrust {
     private BaseTrust() {}
 
-    /** Een apparaat dat onthoudt wie het neerzette (de blok-entiteit van de laserzender, lezer of het paneel). */
+    /** Een apparaat dat onthoudt wie het neerzette (de blok-entiteit van de laserzender, de laserbrug, de lezer of het paneel). */
     public interface Placed {
         /** Wie het neerzette, of null (van vóór 13 oktober, of uit een gebouw). */
         @Nullable UUID owner();

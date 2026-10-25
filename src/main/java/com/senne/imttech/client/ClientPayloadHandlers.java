@@ -194,7 +194,7 @@ public final class ClientPayloadHandlers {
         }
     }
 
-    /** Het instelscherm van een laserzender openen (kleur, omkeren, liggend of staand). */
+    /** Het instelscherm van een laserzender openen (kleur, omkeren, liggend of staand), of van een laserbrug (hoofdstuk 34). */
     public static void onLaserOpen(com.senne.imttech.network.LaserOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

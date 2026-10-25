@@ -109,6 +109,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.LightGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.RelayGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.LaserGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BridgeGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.RobotGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BotProgramGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BotSenseGameTests.class));

@@ -20,7 +20,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -152,6 +151,14 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
      * samen één laserpoort.
      */
     public static List<BlockPos> group(Level level, BlockPos start) {
+        return touching(level, start, ModBlocks.LASER_EMITTER.get());
+    }
+
+    /**
+     * De blokken van deze soort die aan elkaar vastzitten (in welke richting ook), te beginnen bij {@code start}.
+     * Zo vindt ook de laserbrug (LaserBridgeBlock, hoofdstuk 34) welke zenders samen één brug maken.
+     */
+    public static List<BlockPos> touching(Level level, BlockPos start, Block block) {
         List<BlockPos> members = new ArrayList<>();
         java.util.Set<BlockPos> seen = new java.util.HashSet<>();
         java.util.ArrayDeque<BlockPos> todo = new java.util.ArrayDeque<>();
@@ -162,7 +169,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
             members.add(pos);
             for (Direction direction : Direction.values()) {
                 BlockPos next = pos.relative(direction);
-                if (seen.add(next) && level.isLoaded(next) && level.getBlockState(next).is(ModBlocks.LASER_EMITTER.get())) {
+                if (seen.add(next) && level.isLoaded(next) && level.getBlockState(next).is(block)) {
                     todo.add(next);
                 }
             }
@@ -549,7 +556,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         BlockState state = level.getBlockState(pos);
         ShieldColor colour = state.hasProperty(COLOR) ? state.getValue(COLOR) : ShieldColor.BLUE;
         LaserAnimations.start(level, wallPositions(level, pos, facing),
-                Blocks.AIR.defaultBlockState(), colour, false);
+                ModBlocks.LASER_WALL.get().defaultBlockState(), colour, false);
     }
 
     /**

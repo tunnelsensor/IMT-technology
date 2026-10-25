@@ -165,8 +165,8 @@ public final class PowerGrid {
     /**
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
      * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels, drone-docks,
-     * laserzenders, serverracks en lichtschakelaars die aan staan geleiden. Staat een apparaat op een
-     * kabel, dan loopt de kabel eronder door.)
+     * laserzenders, brugzenders (hoofdstuk 34), serverracks en lichtschakelaars die aan staan geleiden.
+     * Staat een apparaat op een kabel, dan loopt de kabel eronder door.)
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
@@ -225,7 +225,8 @@ public final class PowerGrid {
                 sources.add(next);
             }
             if (PowerCables.has(level, next) || state.is(ModBlocks.DRONE_DOCK.get())
-                    || state.is(ModBlocks.LASER_EMITTER.get()) || state.is(ModBlocks.SERVER_RACK.get())) {
+                    || state.is(ModBlocks.LASER_EMITTER.get()) || state.is(ModBlocks.LASER_BRIDGE.get())
+                    || state.is(ModBlocks.SERVER_RACK.get())) {
                 cables.add(next);
             }
         }

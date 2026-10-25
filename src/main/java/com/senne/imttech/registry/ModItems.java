@@ -84,6 +84,9 @@ public final class ModItems {
     /** Een eigen item (hoofdstuk 33): een weggehakte zender met doorgeknipte draden blijft kapot (zie LaserEmitterItem). */
     public static final DeferredItem<com.senne.imttech.shield.LaserEmitterItem> LASER_EMITTER = ITEMS.registerItem("laser_emitter",
             properties -> new com.senne.imttech.shield.LaserEmitterItem(ModBlocks.LASER_EMITTER.get(), properties));
+    /** Hoofdstuk 34: de laserbrug (de brugplaten zelf hebben geen item: die horen bij de zender). */
+    public static final DeferredItem<BlockItem> LASER_BRIDGE = ITEMS.registerSimpleBlockItem("laser_bridge",
+            ModBlocks.LASER_BRIDGE);
     public static final DeferredItem<BlockItem> DOME_GENERATOR = ITEMS.registerSimpleBlockItem("dome_generator",
             ModBlocks.DOME_GENERATOR);
     public static final DeferredItem<BlockItem> POWER_CABINET = ITEMS.registerSimpleBlockItem("power_cabinet",

@@ -156,10 +156,15 @@ public final class ModNetwork {
                 com.senne.imttech.light.ArcLamps.handleAction(player, payload);
             }
         });
-        // De laserzender: kleur, omkeren en liggend/staand uit zijn instelscherm (13 oktober).
+        // De laserzender: kleur, omkeren en liggend/staand uit zijn instelscherm (13 oktober). Hetzelfde scherm stelt
+        // ook de laserbrug in (hoofdstuk 34): staat er op die plek een brugzender, dan gaat het naar LaserBridges.
         registrar.playToServer(LaserActionPayload.TYPE, LaserActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
-                com.senne.imttech.shield.LaserEmitters.handleAction(player, payload);
+                if (com.senne.imttech.shield.LaserBridges.isBridge(player, payload.pos())) {
+                    com.senne.imttech.shield.LaserBridges.handleAction(player, payload);
+                } else {
+                    com.senne.imttech.shield.LaserEmitters.handleAction(player, payload);
+                }
             }
         });
         // De trainingsblokken (hoofdstuk 26): de instellingen van een Training Start-blok bewaren.

@@ -1,0 +1,286 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "color": "blue"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_plate_blue"
+      }
+    },
+    {
+      "when": {
+        "color": "blue",
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_blue"
+      }
+    },
+    {
+      "when": {
+        "color": "blue",
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_blue",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "color": "blue",
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_blue",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "color": "blue",
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_blue",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "color": "cyan"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_plate_cyan"
+      }
+    },
+    {
+      "when": {
+        "color": "cyan",
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_cyan"
+      }
+    },
+    {
+      "when": {
+        "color": "cyan",
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_cyan",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "color": "cyan",
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_cyan",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "color": "cyan",
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_cyan",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "color": "green"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_plate_green"
+      }
+    },
+    {
+      "when": {
+        "color": "green",
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_green"
+      }
+    },
+    {
+      "when": {
+        "color": "green",
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_green",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "color": "green",
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_green",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "color": "green",
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_green",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "color": "yellow"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_plate_yellow"
+      }
+    },
+    {
+      "when": {
+        "color": "yellow",
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_yellow"
+      }
+    },
+    {
+      "when": {
+        "color": "yellow",
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_yellow",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "color": "yellow",
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_yellow",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "color": "yellow",
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_yellow",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "color": "red"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_plate_red"
+      }
+    },
+    {
+      "when": {
+        "color": "red",
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_red"
+      }
+    },
+    {
+      "when": {
+        "color": "red",
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_red",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "color": "red",
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_red",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "color": "red",
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_red",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "color": "purple"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_plate_purple"
+      }
+    },
+    {
+      "when": {
+        "color": "purple",
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_purple"
+      }
+    },
+    {
+      "when": {
+        "color": "purple",
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_purple",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "color": "purple",
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_purple",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "color": "purple",
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/laser_bridge_edge_purple",
+        "y": 270
+      }
+    }
+  ]
+}

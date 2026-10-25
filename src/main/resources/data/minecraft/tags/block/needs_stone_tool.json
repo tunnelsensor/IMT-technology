@@ -3,6 +3,7 @@
     "imttech:charging_station",
     "imttech:relay",
     "imttech:dome_generator",
+    "imttech:laser_bridge",
     "imttech:rocket_turret",
     "imttech:raven_turret",
     "imttech:security_turret",

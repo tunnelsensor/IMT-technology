@@ -138,6 +138,34 @@ public final class ModBlocks {
                     .noOcclusion()
                     .isValidSpawn((state, level, pos, type) -> false));
 
+    /**
+     * De laserbrug (hoofdstuk 34): een zender in de rand van de vloer die een brug van licht uitschuift. Zo sterk als
+     * een ijzerblok: hij hoort niet bij de beveiliging, dus hij hoeft niet zo sterk te zijn als de laserzender.
+     */
+    public static final DeferredBlock<com.senne.imttech.shield.LaserBridgeBlock> LASER_BRIDGE = BLOCKS.registerBlock(
+            "laser_bridge", com.senne.imttech.shield.LaserBridgeBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(5.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.imttech.shield.LaserBridgeBlock.POWERED) ? 10 : 3));
+
+    /**
+     * Eén blok van de laserbrug, de plaat van licht waar je over loopt. Net als de laserwand: onbreekbaar (-1) en geen
+     * buit, want hij hoort bij de zender.
+     */
+    public static final DeferredBlock<com.senne.imttech.shield.LaserBridgePlateBlock> LASER_BRIDGE_PLATE = BLOCKS.registerBlock(
+            "laser_bridge_plate", com.senne.imttech.shield.LaserBridgePlateBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(-1.0f, 3600000.0f)
+                    .noLootTable()
+                    .sound(SoundType.GLASS)
+                    .lightLevel(state -> 10)
+                    .noOcclusion()
+                    .isValidSpawn((state, level, pos, type) -> false));
+
     /** De stroomkast: schakelaars voor de kabels die erop uitkomen (zie PowerCabinetBlock). */
     public static final DeferredBlock<com.senne.imttech.energy.PowerCabinetBlock> POWER_CABINET = BLOCKS.registerBlock(
             "power_cabinet", com.senne.imttech.energy.PowerCabinetBlock::new,

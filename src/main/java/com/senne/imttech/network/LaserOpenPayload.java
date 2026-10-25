@@ -13,7 +13,8 @@ import net.minecraft.resources.ResourceLocation;
  *
  * De server beslist of je het mag openen (jij zette hem neer, of je bent vertrouwd in de zone; zie
  * shield/LaserEmitters), en jouw spel opent het dan pas. De kleur, het omkeren en liggend/staand leest het
- * scherm gewoon uit het blok (dat kent jouw spel al).
+ * scherm gewoon uit het blok (dat kent jouw spel al). Een laserbrug (hoofdstuk 34) opent zo ook zijn scherm (zie
+ * shield/LaserBridges).
  *
  * @param pos   welke zender
  * @param owner de naam van wie hem neerzette (leeg als niemand: een oude zender of een uit een gebouw)
