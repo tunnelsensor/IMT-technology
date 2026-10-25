@@ -6,6 +6,7 @@ import com.senne.imttech.nav.ImtWaypoints;
 import com.senne.imttech.redstone.ImtRelays;
 import com.senne.imttech.satellite.SatelliteUpgrades;
 import java.util.function.Supplier;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -78,5 +79,16 @@ public final class ModAttachments {
                     .sync((holder, player) -> holder == player && player.connection != null
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
                             com.senne.imttech.suit.LandingPads.STREAM_CODEC)
+                    .build());
+
+    /**
+     * Tot wanneer (speltijd) dit wezen uitgeschakeld is door een EMP-granaat (hoofdstuk 35); 0 = niet. Op een drone,
+     * een robot of een speler. Niet opgeslagen (het duurt maar even), wel naar iedereen gestuurd die het wezen ziet:
+     * zo gaan de lampjes van een drone uit en ziet een speler ruis in zijn bril.
+     */
+    public static final Supplier<AttachmentType<Long>> EMP_UNTIL = ATTACHMENTS.register("emp_until",
+            () -> AttachmentType.builder(() -> 0L)
+                    .sync((holder, player) -> player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), ByteBufCodecs.VAR_LONG)
                     .build());
 }

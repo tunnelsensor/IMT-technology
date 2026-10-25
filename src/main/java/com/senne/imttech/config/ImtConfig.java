@@ -65,7 +65,7 @@ package com.senne.imttech.config;
  *   Satellite .... de satelliet, met alles per upgrade-niveau
  *   Recon ........ drone-camera en spionagedrone
  *   Transport .... vervoer door drones
- *   Illusions .... illusies en de E.M.P.
+ *   Illusions .... illusies en de Illusion Jammer
  *   Shields ...... persoonlijk schild, laserwanden en laserbruggen
  *   Dome ......... de schildkoepel
  *   Hack ......... andere spelers hacken (berichten onderscheppen)
@@ -85,6 +85,7 @@ package com.senne.imttech.config;
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
  *   Raven ........ Raven-soldaten
  *   Raids ........ vijandige raiddrones
+ *   Weapons ...... EMP-granaten, lasergeweren en energiecellen (hoofdstuk 35)
  */
 public final class ImtConfig {
     private ImtConfig() {}
@@ -655,7 +656,7 @@ public final class ImtConfig {
 
     // =============================================================================================== Illusions
 
-    @Section("Illusions (cloak fields, fake walls, a fake army) and the E.M.P. that jams them")
+    @Section("Illusions (cloak fields, fake walls, a fake army) and the Illusion Jammer that jams them")
     public static final class Illusions {
         private Illusions() {}
 
@@ -684,15 +685,15 @@ public final class ImtConfig {
         @Tunable(value = "How many fake mobs a fake army has", max = 64)
         public static float ARMY_SIZE = 8.0f;
 
-        // ------------------------------------------------------------------------- E.M.P.
-        /** Hoe ver een E.M.P.-puls reikt. */
-        @Tunable("Radius of an E.M.P. pulse (blocks)")
+        // ------------------------------------------------------------------------- Illusion Jammer (heette vroeger E.M.P.)
+        /** Hoe ver een puls van de Illusion Jammer reikt. */
+        @Tunable("Radius of an Illusion Jammer pulse (blocks)")
         public static double EMP_RADIUS = 24.0;
-        /** Hoe lang illusies plat liggen na een E.M.P. (600 = 30 seconden). */
-        @Tunable("How long an E.M.P. jams illusions (ticks)")
+        /** Hoe lang illusies plat liggen na een puls (600 = 30 seconden). */
+        @Tunable("How long the Illusion Jammer jams illusions (ticks)")
         public static float EMP_JAM_TICKS = 600.0f;
-        /** Wachttijd van de E.M.P.-zender (300 = 15 seconden). */
-        @Tunable("Wait between two E.M.P. pulses (ticks)")
+        /** Wachttijd van de Illusion Jammer (300 = 15 seconden). */
+        @Tunable("Wait between two Illusion Jammer pulses (ticks)")
         public static float EMP_COOLDOWN = 300.0f;
     }
 
@@ -1760,5 +1761,71 @@ public final class ImtConfig {
 
         /** VAST: levenspunten (10 = 5 hartjes). Het spel heeft dit nodig bij het opstarten. */
         public static final double HEALTH = 10.0;
+    }
+
+    // =============================================================================================== Weapons
+
+    @Section("Weapons (chapter 35): EMP grenades, laser guns and energy cells")
+    public static final class Weapons {
+        private Weapons() {}
+
+        // ------------------------------------------------------------------------- De EMP-granaten
+        /** Hoe ver de puls van een EMP-granaat reikt: een bol met deze straal. */
+        @Tunable(value = "Radius of the pulse of an EMP grenade (blocks)", min = 1, max = 32)
+        public static double EMP_RADIUS = 5.0;
+        /** Hoe lang alles uit blijft na een EMP-granaat (seconden). */
+        @Tunable(value = "How long everything stays off after an EMP grenade (seconds)", min = 1, max = 600)
+        public static float EMP_SECONDS = 20.0f;
+        /** Na hoeveel seconden een Sticky EMP Grenade afgaat, vanaf het vastplakken. */
+        @Tunable(value = "Seconds from sticking until a Sticky EMP Grenade goes off", max = 30)
+        public static float STICKY_FUSE_SECONDS = 2.0f;
+        /** Na hoeveel seconden een (rollende) EMP Grenade afgaat, vanaf het gooien. */
+        @Tunable(value = "Seconds from throwing until a rolling EMP Grenade goes off", max = 30)
+        public static float ROLLING_FUSE_SECONDS = 3.0f;
+        /** Hoe hard je een granaat gooit (1,5 = zoals een sneeuwbal). */
+        @Tunable(value = "How hard you throw a grenade (1.5 = like a snowball)", max = 5)
+        public static float THROW_SPEED = 1.1f;
+        /** Hoe hard je hem onderhands gooit (met sneak). */
+        @Tunable(value = "How hard you toss a grenade underhand, while sneaking", max = 5)
+        public static float TOSS_SPEED = 0.45f;
+        /** Hoeveel van zijn vaart de bol overhoudt als hij stuitert (0 = blijft liggen, 1 = stuitert eeuwig). */
+        @Tunable(value = "How much speed the rolling grenade keeps when it bounces (0 = none, 1 = all)", max = 0.95)
+        public static float BOUNCE = 0.45f;
+
+        // ------------------------------------------------------------------------- Energiecellen
+        /** Zoveel stroom kost het om een lege cel helemaal op te laden in het Charging Station. */
+        @Tunable(value = "Energy the Charging Station uses to fill one empty energy cell", min = 1)
+        public static float CELL_CHARGE_ENERGY = 2_000.0f;
+
+        // ------------------------------------------------------------------------- De lasergeweren
+        // Elk rijtje: Laser Pistol, Laser Rifle, Laser Sniper, Laser Shotgun.
+        /** Schade van één schot (bij de shotgun: van één straal uit de waaier). */
+        @Tunable(value = "Damage of one shot (shotgun: of one ray of the spread), per gun: pistol, rifle, sniper, shotgun",
+                max = 1_000)
+        public static float[] GUN_DAMAGE = {6.0f, 4.5f, 24.0f, 3.5f};
+        /** Zoveel ticks minstens tussen twee schoten. */
+        @Tunable(value = "Ticks between two shots, per gun", min = 1, max = 200)
+        public static float[] GUN_INTERVAL = {3.0f, 3.0f, 25.0f, 14.0f};
+        /** Zoveel procent van een cel kost één schot (de waaier van de shotgun telt als één schot). */
+        @Tunable(value = "Percent of an energy cell one shot uses, per gun", min = 0.1, max = 100)
+        public static float[] GUN_COST = {5.0f, 3.0f, 20.0f, 12.5f};
+        /** Zo ver reikt een schot (blokken). */
+        @Tunable(value = "How far a shot reaches (blocks), per gun", min = 1, max = 512)
+        public static float[] GUN_RANGE = {64.0f, 96.0f, 192.0f, 24.0f};
+        /** Zo lang duurt herladen (ticks): de animatie in je spel duurt even lang. */
+        @Tunable(value = "How long reloading takes (ticks), per gun", min = 5, max = 200)
+        public static float[] GUN_RELOAD = {30.0f, 44.0f, 60.0f, 52.0f};
+        /** Hoe ver een schot van het midden af kan gaan als je niet richt (graden). */
+        @Tunable(value = "How far a shot can stray when you shoot from the hip (degrees), per gun", max = 45)
+        public static float[] GUN_SPREAD = {2.0f, 3.0f, 6.0f, 8.0f};
+        /** Hoe ver een schot van het midden af kan gaan als je door het vizier richt (graden). */
+        @Tunable(value = "How far a shot can stray while aiming down the sights (degrees), per gun", max = 45)
+        public static float[] GUN_SPREAD_AIMING = {0.5f, 0.8f, 0.0f, 6.0f};
+        /** Zoveel stralen schiet de shotgun in één keer. */
+        @Tunable(value = "How many rays the laser shotgun fires at once", min = 1, max = 32)
+        public static float SHOTGUN_RAYS = 8.0f;
+        /** Zoveel keer meer schade bij een schot in het hoofd. */
+        @Tunable(value = "Damage multiplier for a headshot", min = 1, max = 10)
+        public static float HEADSHOT = 1.5f;
     }
 }

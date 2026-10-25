@@ -35,7 +35,8 @@ public final class LogicEvents {
      * wat ermee gebeurt.
      */
     public static void keycard(ServerLevel level, BlockPos reader, ServerPlayer player, @Nullable KeycardData card) {
-        if (!(level.getBlockEntity(reader) instanceof InputDeviceBlockEntity device) || tooSoon(level, player)) {
+        if (!(level.getBlockEntity(reader) instanceof InputDeviceBlockEntity device) || tooSoon(level, player)
+                || com.senne.imttech.weapons.Emp.deadDevice(level, reader, player)) {
             return;
         }
         SecurityCoreBlockEntity core = serverFor(level, reader, player);
@@ -60,7 +61,8 @@ public final class LogicEvents {
      * niet terugvindt.)
      */
     public static void forgedKeycard(ServerLevel level, BlockPos reader, ServerPlayer player, String group) {
-        if (!(level.getBlockEntity(reader) instanceof InputDeviceBlockEntity device)) {
+        if (!(level.getBlockEntity(reader) instanceof InputDeviceBlockEntity device)
+                || com.senne.imttech.weapons.Emp.deadDevice(level, reader, player)) {
             return;
         }
         SecurityCoreBlockEntity core = serverFor(level, reader, player);
@@ -146,7 +148,8 @@ public final class LogicEvents {
                 || !(level.getBlockState(panel).getBlock() instanceof CodePanelBlock)
                 || !CodePanelBlock.isValidCode(code)
                 || player.distanceToSqr(panel.getCenter()) > CodePanelBlock.REACH * CodePanelBlock.REACH
-                || tooSoon(level, player)) {
+                || tooSoon(level, player)
+                || com.senne.imttech.weapons.Emp.deadDevice(level, panel, player)) {
             return;
         }
         SecurityCoreBlockEntity core = serverFor(level, panel, player);
@@ -164,7 +167,8 @@ public final class LogicEvents {
     public static void crackedCode(ServerLevel level, BlockPos panel, ServerPlayer player, String code) {
         if (!(level.getBlockEntity(panel) instanceof InputDeviceBlockEntity device)
                 || !(level.getBlockState(panel).getBlock() instanceof CodePanelBlock)
-                || !CodePanelBlock.isValidCode(code)) {
+                || !CodePanelBlock.isValidCode(code)
+                || com.senne.imttech.weapons.Emp.deadDevice(level, panel, player)) {
             return;
         }
         SecurityCoreBlockEntity core = serverFor(level, panel, player);

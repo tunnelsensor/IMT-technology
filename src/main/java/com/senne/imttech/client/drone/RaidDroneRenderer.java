@@ -48,7 +48,8 @@ public class RaidDroneRenderer extends MobRenderer<RaidDroneEntity, DroneModel<R
         public void render(PoseStack poseStack, MultiBufferSource buffers, int light, RaidDroneEntity drone,
                            float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks,
                            float netHeadYaw, float headPitch) {
-            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
+            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())
+                    || com.senne.imttech.weapons.Emp.isJammed(drone)) {
                 return;
             }
             getParentModel().renderToBuffer(poseStack, buffers.getBuffer(LIGHTS), light,

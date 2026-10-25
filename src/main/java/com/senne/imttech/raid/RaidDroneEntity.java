@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * Hij wordt wél opgeslagen (in tegenstelling tot je eigen drones): een raid die begint moet je
  * ook afmaken, ook als je even uitlogt.
  */
-public class RaidDroneEntity extends Monster {
+public class RaidDroneEntity extends Monster implements com.senne.imttech.weapons.EmpTarget {
     /** De duik uit de lucht (in een boog naar zijn plek), of null als hij niet (meer) duikt. */
     private @Nullable SkyDive dive;
     private int fireCooldown;
@@ -88,6 +88,13 @@ public class RaidDroneEntity extends Monster {
         }
         if (breakCooldown > 0) {
             breakCooldown--;
+        }
+        // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): naar de grond zakken en daar stil blijven liggen.
+        if (com.senne.imttech.weapons.Emp.isJammed(this)) {
+            setTarget(null);
+            getNavigation().stop();
+            setDeltaMovement(onGround() ? Vec3.ZERO : getDeltaMovement().multiply(0.7, 0.98, 0.7).add(0, -0.08, 0));
+            return;
         }
         if (isDiving()) {
             dive(level);

@@ -74,6 +74,8 @@ public class ImtHud implements LayeredDraw.Layer {
             NOTIFICATIONS);
 
     private final WorldProjection projection = new WorldProjection();
+    /** Lag de bril net plat door een EMP? Dan begint de opstart-animatie opnieuw zodra het voorbij is. */
+    private boolean rebootAfterEmp;
 
     @Override
     public void render(GuiGraphics g, DeltaTracker deltaTracker) {
@@ -101,6 +103,18 @@ public class ImtHud implements LayeredDraw.Layer {
         // op het einde van het laadscherm, nog niets).
         if (ImtClientState.bootPending) {
             return;
+        }
+        // Een EMP-granaat (hoofdstuk 35): alleen ruis. Is hij voorbij, dan start de bril opnieuw op (zonder welkomstzin).
+        if (com.senne.imttech.weapons.Emp.isJammed(player)) {
+            com.senne.imttech.client.hud.EmpStaticOverlay.render(g, mc.font, w, h, now,
+                    com.senne.imttech.weapons.Emp.ticksLeft(player));
+            rebootAfterEmp = true;
+            return;
+        }
+        if (rebootAfterEmp) {
+            rebootAfterEmp = false;
+            ImtClientState.bootStartMillis = now;
+            ImtClientState.bootGreetingSaid = true;
         }
         long bootAge = now - ImtClientState.bootStartMillis;
         if (bootAge < BootOverlay.BOOT_MILLIS) {

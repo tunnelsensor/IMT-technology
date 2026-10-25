@@ -166,7 +166,8 @@ public final class PowerGrid {
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
      * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels, drone-docks,
      * laserzenders, brugzenders (hoofdstuk 34), serverracks en lichtschakelaars die aan staan geleiden.
-     * Staat een apparaat op een kabel, dan loopt de kabel eronder door.)
+     * Staat een apparaat op een kabel, dan loopt de kabel eronder door. Een open kabel in een EMP-puls geleidt even
+     * niet, zie Emp.cutsCable.)
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
@@ -174,7 +175,7 @@ public final class PowerGrid {
         ArrayDeque<BlockPos> cables = new ArrayDeque<>();
         seen.add(device);
         // Staat het apparaat zelf op een kabel (erbovenop gebouwd)? Dan hangt het daar ook aan.
-        if (PowerCables.has(level, device)) {
+        if (PowerCables.has(level, device) && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
             cables.add(device);
         }
         look(level, device, sources, seen, cables);
@@ -224,7 +225,9 @@ public final class PowerGrid {
             if (entity instanceof EnergySource) {
                 sources.add(next);
             }
-            if (PowerCables.has(level, next) || state.is(ModBlocks.DRONE_DOCK.get())
+            // Een kabel die open ligt binnen een EMP-puls (hoofdstuk 35) geeft even niets door; een kabel in een muur wel.
+            boolean cable = PowerCables.has(level, next) && !com.senne.imttech.weapons.Emp.cutsCable(level, next);
+            if (cable || state.is(ModBlocks.DRONE_DOCK.get())
                     || state.is(ModBlocks.LASER_EMITTER.get()) || state.is(ModBlocks.LASER_BRIDGE.get())
                     || state.is(ModBlocks.SERVER_RACK.get())) {
                 cables.add(next);

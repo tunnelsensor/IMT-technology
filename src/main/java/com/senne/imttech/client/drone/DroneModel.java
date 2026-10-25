@@ -118,7 +118,8 @@ public class DroneModel<T extends Entity> extends EntityModel<T> {
         } else {
             setDamage(0, 0);
         }
-        pose(ageInTicks);
+        // Na een EMP-granaat (hoofdstuk 35) staan de rotors stil en zweeft hij niet meer.
+        pose(com.senne.imttech.weapons.Emp.isJammed(entity) ? entity.getUUID().hashCode() % 97 : ageInTicks);
     }
 
     /**

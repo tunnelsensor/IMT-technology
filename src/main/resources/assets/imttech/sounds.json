@@ -342,5 +342,45 @@
         "name": "imttech:ion_blaster"
       }
     ]
+  },
+  "emp.blast": {
+    "subtitle": "subtitles.imttech.emp.blast",
+    "sounds": [
+      {
+        "name": "imttech:emp_blast"
+      }
+    ]
+  },
+  "emp.power_down": {
+    "subtitle": "subtitles.imttech.emp.power_down",
+    "sounds": [
+      {
+        "name": "imttech:emp_power_down"
+      }
+    ]
+  },
+  "emp_grenade.beep": {
+    "subtitle": "subtitles.imttech.emp_grenade.beep",
+    "sounds": [
+      {
+        "name": "imttech:emp_grenade_beep"
+      }
+    ]
+  },
+  "emp_grenade.stick": {
+    "subtitle": "subtitles.imttech.emp_grenade.stick",
+    "sounds": [
+      {
+        "name": "imttech:emp_grenade_stick"
+      }
+    ]
+  },
+  "emp_grenade.bounce": {
+    "subtitle": "subtitles.imttech.emp_grenade.bounce",
+    "sounds": [
+      {
+        "name": "imttech:emp_grenade_bounce"
+      }
+    ]
   }
 }

@@ -90,6 +90,16 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> ROBOT_GUN = register("robot.gun");
     /** De Ion Blaster: een knetterende "fzzzt" die snel wegzakt. */
     public static final DeferredHolder<SoundEvent, SoundEvent> ION_BLASTER_FIRE = register("ion_blaster.fire");
+    /** Een EMP-granaat gaat af (hoofdstuk 35): een diepe elektrische dreun met geknetter. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EMP_BLAST = register("emp.blast");
+    /** Een apparaat dat uitvalt door een EMP: een zoemtoon die wegzakt. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EMP_POWER_DOWN = register("emp.power_down");
+    /** Het piepje van een EMP-granaat die gaat afgaan (steeds sneller). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BEEP = register("emp_grenade.beep");
+    /** Een Sticky EMP Grenade plakt vast: een doffe klets met een klikje. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_STICK = register("emp_grenade.stick");
+    /** De bol stuitert: een metalen tik. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BOUNCE = register("emp_grenade.bounce");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, name)));

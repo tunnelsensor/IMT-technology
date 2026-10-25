@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  * Wie hem neerzette is zijn eigenaar; samen met wie in die basis vertrouwd is mag die hem instellen (dezelfde
  * regel als bij de laserzender, zie BaseTrust).
  */
-public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.Placed {
+public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.Placed, com.senne.imttech.weapons.EmpTarget {
     /** Hoe het met hem gaat (RobotState): je spel doet zijn lichtjes uit als hij niet aan staat. */
     private static final EntityDataAccessor<Byte> STATE =
             SynchedEntityData.defineId(BotEntity.class, EntityDataSerializers.BYTE);
@@ -269,6 +269,12 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + getBbHeight() * 0.5, getZ(), 30, 0.3, 0.6, 0.3, 0.2);
         playSound(ModSounds.ROBOT_HURT.get(), 0.8f, 1.4f);
         updateState();
+    }
+
+    /** Een EMP-granaat (hoofdstuk 35): hij valt neer, net als na de Ion Blaster. */
+    @Override
+    public void onEmp(ServerLevel level, int ticks) {
+        knockDown(ticks);
     }
 
     /** Net neergeschoten (een robot stapt dan niet meer uit zijn dock; een drone valt). */

@@ -785,6 +785,59 @@ def ion_blaster():
     return finish(fade(total, 0.002, 0.08), peak=0.55)
 
 
+
+# ---------------------------------------------------------------- Wapens (hoofdstuk 35)
+
+def emp_blast():
+    """
+    Een EMP-granaat gaat af: een diepe "whumpf" (een toon die naar beneden valt), een korte witte knal, een elektrische
+    zoem die eruit wegtrekt, en een staart van geknetter.
+    """
+    duration = 1.4
+    total = np.zeros(int(RATE * duration))
+    thump = np.sin(sweep(110, 32, 0.6, curve=0.6)) * decay(0.6, 5)
+    crack = bandpass(noise(0.08), 900, 9000) * decay(0.08, 45)
+    zap = whine(900, 120, 0.7, curve=0.5, wobble=0.6) * decay(0.7, 4) * 0.35
+    tail = crackle(1.2, 25, 2000, 9000) * np.linspace(1, 0, int(RATE * 1.2)) ** 1.5 * 0.9
+    place(total, thump * 1.2, 0.0)
+    place(total, crack * 0.9, 0.0)
+    place(total, zap, 0.02)
+    place(total, tail, 0.12)
+    return finish(lowpass(total, 9000), peak=0.85)
+
+
+def emp_power_down():
+    """Een apparaat dat uitvalt: een zoemtoon die wegzakt (zoals een computer die uitvalt), met een paar vonkjes."""
+    duration = 0.8
+    hum = whine(520, 60, duration, curve=0.7, wobble=0.25) * decay(duration, 3.5)
+    sparks = crackle(0.35, 40) * 0.6
+    total = np.zeros(int(RATE * duration))
+    place(total, hum * 0.7, 0.0)
+    place(total, sparks, 0.0)
+    return finish(lowpass(total, 5000), peak=0.5)
+
+
+def emp_grenade_beep():
+    """Het piepje van een EMP-granaat die gaat afgaan: kort, hoog, een beetje elektronisch."""
+    return finish(short_beep(3100, 0.07), peak=0.5)
+
+
+def emp_grenade_stick():
+    """Een Sticky EMP Grenade plakt vast: een doffe klets, en een klikje als hij zich vastzet."""
+    total = np.zeros(int(RATE * 0.3))
+    splat = lowpass(noise(0.07), 1200) * decay(0.07, 40)
+    click = bandpass(noise(0.015), 2500, 8000) * decay(0.015, 350)
+    place(total, splat * 1.4, 0.0)
+    place(total, click * 1.2, 0.08)
+    place(total, short_beep(2200, 0.05) * 0.4, 0.14)
+    return finish(total, peak=0.6)
+
+
+def emp_grenade_bounce():
+    """De bol stuitert: een korte metalen tik (hol, een beetje zoals een blikje)."""
+    return finish(metal_tap(0.18, [1700, 2650, 4100], 28), peak=0.5)
+
+
 SOUNDS = {
     "imt_boot": imt_boot,
     "imt_blip": imt_blip,
@@ -829,6 +882,11 @@ SOUNDS = {
     "robot_laser": robot_laser,
     "robot_gun": robot_gun,
     "ion_blaster": ion_blaster,
+    "emp_blast": emp_blast,
+    "emp_power_down": emp_power_down,
+    "emp_grenade_beep": emp_grenade_beep,
+    "emp_grenade_stick": emp_grenade_stick,
+    "emp_grenade_bounce": emp_grenade_bounce,
 }
 
 

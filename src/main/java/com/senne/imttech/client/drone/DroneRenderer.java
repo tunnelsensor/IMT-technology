@@ -57,8 +57,9 @@ public class DroneRenderer extends MobRenderer<DroneEntity, DroneModel<DroneEnti
             if (drone.isInvisibleTo(Minecraft.getInstance().player)) {
                 return;
             }
-            // Bijna kapot: de lampjes haperen.
-            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())) {
+            // Bijna kapot: de lampjes haperen. Na een EMP-granaat (hoofdstuk 35) zijn ze uit.
+            if (DroneDamage.lightsFlickerOff(DroneDamage.of(drone), ageInTicks, drone.getUUID().hashCode())
+                    || com.senne.imttech.weapons.Emp.isJammed(drone)) {
                 return;
             }
             RenderType lights = switch (drone.getMode()) {

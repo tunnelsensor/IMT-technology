@@ -178,6 +178,8 @@ public final class ImtData {
      */
     public static boolean isOperational(Player player) {
         ItemStack glasses = getWornGlasses(player);
-        return !glasses.isEmpty() && isAuthorized(glasses, player) && getEnergy(glasses) > 0;
+        // Na een EMP-granaat (hoofdstuk 35) start de bril opnieuw op: even niets.
+        return !glasses.isEmpty() && isAuthorized(glasses, player) && getEnergy(glasses) > 0
+                && !com.senne.imttech.weapons.Emp.isJammed(player);
     }
 }

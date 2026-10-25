@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Zijn lampjes zijn rood zolang de toren van niemand is, en blauw als hij van iemand is.
  */
-public class SecurityDroneEntity extends PathfinderMob {
+public class SecurityDroneEntity extends PathfinderMob implements com.senne.imttech.weapons.EmpTarget {
     /** Is de toren van iemand? (Voor de kleur van de lampjes in je spel.) */
     private static final EntityDataAccessor<Boolean> CLAIMED =
             SynchedEntityData.defineId(SecurityDroneEntity.class, EntityDataSerializers.BOOLEAN);
@@ -114,8 +114,9 @@ public class SecurityDroneEntity extends PathfinderMob {
         }
         SecurityCoreBlockEntity core = home == null ? null : SecurityCores.coreAt(level, home);
         entityData.set(CLAIMED, core != null && core.ownerId() != null);
-        // Geen stroom bij de kern: niets doen, langzaam naar de grond zakken.
-        boolean offline = core != null && !core.isOnline();
+        // Geen stroom bij de kern, of uitgeschakeld door een EMP-granaat (hoofdstuk 35): niets doen, langzaam naar de
+        // grond zakken.
+        boolean offline = (core != null && !core.isOnline()) || com.senne.imttech.weapons.Emp.isJammed(this);
         // De eigenaar zette de drones uit (op de desktop): naar de kern vliegen en daar landen.
         parked = !offline && core != null && !core.dronesEnabled();
         entityData.set(OFFLINE, offline || parked);

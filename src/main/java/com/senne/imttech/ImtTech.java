@@ -117,6 +117,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.TrainingGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.DrillGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.KeycardGroupGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.WeaponGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
@@ -181,6 +182,10 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(ImtRaids::onServerStopped);
 
         // Fase 15: het harnas
+        // Wapens (hoofdstuk 35): pulsen van EMP-granaten die voorbij zijn vergeten.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Emp::onServerTick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.weapons.Emp.clear());
         NeoForge.EVENT_BUS.addListener(ImtSuit::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ImtSuit::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ImtSuit::onFall);

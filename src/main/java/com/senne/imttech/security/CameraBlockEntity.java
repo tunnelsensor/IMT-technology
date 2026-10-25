@@ -150,11 +150,15 @@ public class CameraBlockEntity extends BlockEntity {
         }
     }
 
-    /** Heeft hij stroom, en staan de camera's van zijn netwerk aan? Zet dat in het blok (en betaal de stroom). */
+    /**
+     * Heeft hij stroom, staan de camera's van zijn netwerk aan, en is hij niet uitgeschakeld door een EMP-granaat
+     * (hoofdstuk 35)? Zet dat in het blok (en betaal de stroom).
+     */
     public void updateOnline(ServerLevel level, BlockPos pos, BlockState state) {
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
         boolean allowed = core == null || core.camerasEnabled();
-        boolean online = allowed && PowerGrid.pay(level, pos, ImtConfig.Power.CAMERA_UPKEEP);
+        boolean online = allowed && !com.senne.imttech.weapons.Emp.isOut(level, pos)
+                && PowerGrid.pay(level, pos, ImtConfig.Power.CAMERA_UPKEEP);
         if (online != state.getValue(CameraBlock.ONLINE)) {
             level.setBlock(pos, state.setValue(CameraBlock.ONLINE, online), Block.UPDATE_CLIENTS);
         }

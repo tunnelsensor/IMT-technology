@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 311 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 318 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3406,6 +3406,97 @@ Ik bouwde het in één keer:
       ernaast neemt kleur en omkeren over; drie naast elkaar met één generator en één redstoneblok; zonder stroom niets;
       en met de lasers van de kern uit blijft een laserzender uit maar komt de brug gewoon, en de Bypass Kit doet niets.
       311 tests, allemaal groen.
+
+### 35. Wapens: EMP-granaten en lasergeweren (25 oktober)
+
+Jouw wens: "Zo'n robot is super OP dus om dit te counteren zijn er droid poppers zoals in Star Wars. Deze schakelen
+al de elektrische dingen uit zoals robots maar ook turrets, drones, openliggende elektrische wires, ook wil ik nog
+iets van laser achtige guns die zo wat futuristisch zijn, ze moeten goede models/animaties hebben zoals bij TACZ".
+Ik stelde acht vragen, jij koos.
+
+**Jouw antwoorden** (25 oktober):
+- **De naam: EMP Grenade** (geen Star Wars-naam). Het oude item "E.M.P." (dat illusies stoort) heet daarom voortaan
+  **Illusion Jammer**; het doet hetzelfde als vroeger.
+- **Twee soorten** (jouw eigen antwoord: "de halve sticky one en de bol die rolt zoals bij Star Wars detonators"): de
+  **Sticky EMP Grenade**, een halve bol die vastplakt op wat hij raakt, en de **EMP Grenade**, een bol die stuitert en
+  rolt.
+- **Tijdelijk uit**: alles in de buurt valt een tijdje uit en gaat daarna vanzelf weer aan. Robots en drones vallen neer
+  zoals bij de Ion Blaster.
+- **Wat uitvalt**: robots, turrets, drones en kabels die open liggen (een kabel in een muur is beschermd), en ook
+  **camera's, keycardlezers en codepanelen**, en **het harnas en de bril** van spelers in de buurt (vliegen stopt, de
+  HUD valt weg; ook bij jezelf als je te dichtbij staat). **Niet**: rayshields, laserbruggen, koepels en lampen.
+- **Vier lasergeweren**: een **laserpistool** (één klik = één schot), een **lasergeweer** (automatisch: knop
+  inhouden), een **lasersniper** (één zware straal, vizier dat inzoomt) en een **laser-shotgun** (een waaier stralen).
+- **Munitie: energiecellen.** Een cel is het magazijn; leeg = herladen (cel eruit, nieuwe erin). Lege cellen laad je
+  op in het Charging Station. En (jouw toevoeging) **cellen stapelen niet**: elke cel heeft zijn eigen lading.
+- **Bediening zoals TACZ**: linkerklik schiet, rechterklik richt door het vizier, R herlaadt, een toets om het geweer
+  te bekijken.
+- **Stijl: rood-goud** zoals je Tech Suit, met een witte/cyaan gloed.
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Gooien**: rechtsklik gooit. Met sneak gooi je zachtjes onderhands (de bol rolt dan over de vloer, zoals bij
+  bowlen). Granaten stapelen tot 16.
+- **De lont**: de sticky gaat 2 seconden na het vastplakken af (hij plakt ook op een robot, een drone of een speler en
+  gaat met hem mee), de bol 3 seconden na het gooien. Ze piepen en knipperen, steeds sneller.
+- **Hoe groot**: een bol van 5 blokken rond de granaat, 20 seconden uit. Nog eens raken begint de tijd opnieuw. De puls
+  gaat door muren heen (behalve bij kabels in een muur), maar **een schildkoepel beschermt** wat erin staat tegen een
+  granaat die buiten de koepel afgaat.
+- **Wat er per ding gebeurt**: een guard robot of security drone valt neer zoals bij de Ion Blaster (in een training
+  blijft hij liggen tot die voorbij is). Torendrones, raiddrones en je eigen drones zakken naar de grond en blijven daar
+  stil liggen (ook een vervoerdrone: wie eraan hangt valt). Een turret laat zijn loop hangen en schiet niet. Een camera
+  geeft "no signal". Een lezer of paneel doet niets ("The reader is dead"). Een open kabel geeft geen stroom door, dus
+  alles erachter heeft even geen stroom. Bij een speler stopt het vliegen, de laser cannon en de raketten, en in de bril
+  zie je ruis met "EMP" en hoeveel seconden nog; daarna start de bril opnieuw op (de opstart-animatie).
+- **De geweren zelf** vallen niet uit (anders kun je de robot die je net platlegde niet afmaken).
+- **Recepten**: EMP Grenade (2 stuks) = 4 ijzer, 2 redstone, 2 koper en een Computer Chip; Sticky = een EMP Grenade
+  met een slijmbal. Geweren en cellen maak je aan de gewone werkbank (met Computer Chips).
+- **De geweren**:
+
+  | | schade | tempo | per cel | bereik | herladen |
+  |---|---|---|---|---|---|
+  | Laser Pistol | 6 | max 6,7 per seconde (per klik) | 20 schoten | 64 | 1,5 s |
+  | Laser Rifle | 4,5 | 6,7 per seconde (inhouden) | 33 schoten | 96 | 2,2 s |
+  | Laser Sniper | 24 | 1 per 1,25 s | 5 schoten | 192 | 3 s |
+  | Laser Shotgun | 8 × 3,5 | 1 per 0,7 s | 8 schoten | 24 | 2,6 s |
+
+  Een **headshot** doet 1,5 keer zoveel. Richten maakt je schoten nauwkeuriger (het pistool en het geweer zoomen een
+  beetje in, de sniper 4 keer met een vizier over je scherm) en je loopt dan langzamer. Sprinten laat het geweer zakken;
+  schieten stopt je sprint. Een koepel houdt de stralen tegen (zoals andere lasers). Spelers raak je alleen als PvP aan
+  staat; in een training krijgt de trainee geen schade (zoals bij de torentjes).
+- **Een nieuw geweer is leeg**: druk R en hij pakt de volste cel uit je inventaris. De oude cel komt terug in je
+  inventaris met wat er nog in zat (ook een lege, om op te laden). Een volle cel kost 2000 stroom in het Charging
+  Station (in het vak van de bril).
+- **Toetsen**: R herladen en H bekijken, alleen terwijl je een geweer vasthoudt; zonder geweer doen R en H wat ze
+  altijd deden (markeren en de dreigingsscan). Je kunt ze veranderen in Opties > Besturing > I.M.T.
+- **Wat je ziet**: de geweren zijn 3D-modellen van blokjes (zoals in Blockbench), met rood-gouden platen, donkere
+  delen en strepen die cyaan/wit gloeien, ook in het donker. Op elk geweer zit een lichtbalkje dat laat zien hoe vol de
+  cel is. In je eigen beeld zie je je twee armen het geweer vasthouden, met animaties voor pakken, schieten
+  (terugslag, mondingsvlam), richten, herladen (cel eruit, nieuwe erin, opladen), bekijken en sprinten. Rechtsonder
+  staat hoeveel schoten er nog in zitten en hoeveel cellen je bij je hebt, en het kruisje wordt groter als je minder
+  nauwkeurig schiet. Geen extra mod nodig (geen TACZ, geen GeckoLib): alles zit in I.M.T zelf.
+- In de config: een nieuw hoofdstuk `[weapons]`.
+
+Zo bouw ik het:
+
+- [x] **1. De EMP-puls** — `weapons/Emp`: een puls is een bol (midden, straal, tot wanneer, van wie). Wat stilstaat
+      vraagt zelf of het in een puls ligt (`Emp.isOut`): de turret (`refreshOnline`: zijn loop hangt omlaag), de camera
+      (`updateOnline`: geen beeld), de keycardlezer en het codepaneel (`Emp.deadDevice`: "Nothing happens: knocked out
+      by an EMP", ook bij een gehackte kaart of gekraakte code), en `PowerGrid` volgt een open kabel in een puls niet
+      (`Emp.cutsCable`; een kabel in een volledig blok wel). Wat beweegt krijgt een tijd mee (het attachment
+      `EMP_UNTIL`, ook naar je spel gestuurd): robots en security drones vallen neer (`knockDown`, zoals de Ion
+      Blaster), en je eigen drones, raiddrones en torendrones zakken naar de grond met hun lampjes uit en de rotors
+      stil (een vervoerdrone laat los). Bij een speler doen het harnas (`TechSuitItem.isPowered`) en de bril
+      (`ImtData.isOperational`, en de knoppen van de bril) niets; in de bril zie je ruis met "EMP DETECTED" en "I.M.T
+      rebooting... 14s" (`client/hud/EmpStaticOverlay`), en daarna de opstart-animatie. Een schildkoepel beschermt wat
+      erin staat. In je spel: een bol van blauw licht met bliksems (`client/weapons/EmpEffects`), en vonken op de open
+      kabels zolang de puls duurt. Geluiden `emp_blast` en `emp_power_down`. Het oude item "E.M.P." heet nu **Illusion
+      Jammer**. Config `[weapons]`: `empRadius` (5), `empSeconds` (20), en alvast de getallen van de granaten en
+      geweren. Zes nieuwe tests (`WeaponGameTests`): robots en drones, turrets en camera's, open en ingemetselde
+      kabels, harnas en bril, lezers en panelen, en de koepel. 318 tests, allemaal groen.
+- [ ] **2. De twee granaten** — gooien, plakken, stuiteren en rollen, piepen, de ontploffing; modellen en geluiden.
+- [ ] **3. Energiecellen en de geweren op de server** — schieten, schade, cellen, herladen, opladen (met tests).
+- [ ] **4. De geweren in je eigen beeld** — modellen, armen, animaties, richten, het vizier, de HUD en geluiden.
+- [ ] **5. Showcase, screenshots en LEESMIJ.**
 
 ---
 

@@ -132,11 +132,7 @@ public class TurretBlockEntity extends BlockEntity {
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
         // Eén keer per seconde: is er stroom op het net? Dat zetten we in het blok.
         if ((level.getGameTime() + pos.hashCode()) % 20 == 0) {
-            boolean online = PowerGrid.available(level, pos) >= ImtConfig.Power.TURRET_LASER_SHOT;
-            if (online != state.getValue(TurretBlock.ONLINE)) {
-                state = state.setValue(TurretBlock.ONLINE, online);
-                level.setBlock(pos, state, Block.UPDATE_CLIENTS);
-            }
+            state = refreshOnline(level);
         }
         if (laserCooldown > 0) {
             laserCooldown--;
@@ -168,6 +164,21 @@ public class TurretBlockEntity extends BlockEntity {
                 && !com.senne.imttech.training.Shots.trainingShots(target)) {
             fireRocket(level, target);
         }
+    }
+
+    /**
+     * Kijkt nu of hij aan kan: stroom op het net, en niet uitgeschakeld door een EMP-granaat (hoofdstuk 35). Zet dat in
+     * het blok (ONLINE: uit = de loop hangt omlaag) en geeft de nieuwe stand.
+     */
+    public BlockState refreshOnline(ServerLevel level) {
+        BlockState state = getBlockState();
+        boolean online = !com.senne.imttech.weapons.Emp.isOut(level, worldPosition)
+                && PowerGrid.available(level, worldPosition) >= ImtConfig.Power.TURRET_LASER_SHOT;
+        if (online != state.getValue(TurretBlock.ONLINE)) {
+            state = state.setValue(TurretBlock.ONLINE, online);
+            level.setBlock(worldPosition, state, Block.UPDATE_CLIENTS);
+        }
+        return state;
     }
 
     private double laserRange() {

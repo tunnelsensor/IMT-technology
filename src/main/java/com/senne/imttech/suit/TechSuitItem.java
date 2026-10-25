@@ -74,7 +74,8 @@ public class TechSuitItem extends ArmorItem {
      * eigen bril op hebt met energie erin.
      */
     public static boolean isPowered(Player player) {
-        if (wornPieces(player) == 0) {
+        // Na een EMP-granaat (hoofdstuk 35) doet het harnas even niets: niet vliegen, geen laser cannon.
+        if (wornPieces(player) == 0 || com.senne.imttech.weapons.Emp.isJammed(player)) {
             return false;
         }
         ItemStack glasses = ImtData.getWornGlasses(player);

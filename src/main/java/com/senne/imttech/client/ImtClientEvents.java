@@ -56,7 +56,8 @@ public final class ImtClientEvents {
         boolean wasWearing = ImtClientState.wearing;
         ImtClientState.wearing = !glasses.isEmpty();
         ImtClientState.authorized = ImtClientState.wearing && ImtData.isAuthorized(glasses, player);
-        ImtClientState.operational = ImtClientState.authorized && ImtData.getEnergy(glasses) > 0;
+        ImtClientState.operational = ImtClientState.authorized && ImtData.getEnergy(glasses) > 0
+                && !com.senne.imttech.weapons.Emp.isJammed(player);
 
         if (ImtClientState.wearing && !wasWearing) {
             ImtClientState.bootPending = true;
@@ -369,6 +370,7 @@ public final class ImtClientEvents {
         LaserCannonControl.reset();
         SuitFlight.reset();
         com.senne.imttech.client.suit.SuitEffects.clear();
+        com.senne.imttech.client.weapons.EmpEffects.clear();
         com.senne.imttech.client.suit.LaserCannonHand.reset();
         com.senne.imttech.client.illusion.IllusionRenderer.clear();
         com.senne.imttech.client.shield.RayshieldHum.clear();

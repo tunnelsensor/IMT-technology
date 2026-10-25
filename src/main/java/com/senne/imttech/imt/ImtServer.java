@@ -346,6 +346,13 @@ public final class ImtServer {
         if (glasses == null) {
             return;
         }
+        // Na een EMP-granaat (hoofdstuk 35) start de bril opnieuw op: tot dan doet hij niets.
+        if (com.senne.imttech.weapons.Emp.isJammed(player)) {
+            player.displayClientMessage(Component.translatable("hud.imttech.emp_reboot",
+                    net.minecraft.util.Mth.ceil(com.senne.imttech.weapons.Emp.ticksLeft(player) / 20f))
+                    .withStyle(net.minecraft.ChatFormatting.AQUA), true);
+            return;
+        }
 
         ImtFeature feature = action.toggles();
         if (feature != null) {

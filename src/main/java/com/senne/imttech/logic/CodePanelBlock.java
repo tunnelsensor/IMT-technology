@@ -60,6 +60,10 @@ public class CodePanelBlock extends InputDeviceBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device) {
+            // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): de toetsen doen niets.
+            if (com.senne.imttech.weapons.Emp.deadDevice(serverPlayer.serverLevel(), pos, player)) {
+                return InteractionResult.sidedSuccess(level.isClientSide);
+            }
             if (!player.isSecondaryUseActive() || !InputDevices.tryOpen(serverPlayer, pos)) {
                 ModNetwork.sendTo(serverPlayer, new CodePanelPayload(pos, device.name()));
             }

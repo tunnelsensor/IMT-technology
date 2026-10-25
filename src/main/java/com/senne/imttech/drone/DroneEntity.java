@@ -63,7 +63,7 @@ import org.jetbrains.annotations.Nullable;
  * Een drone denkt alleen op de server. Hij heeft altijd een eigenaar; zonder eigenaar
  * (of als de bril af gaat of leeg is) vliegt hij weg.
  */
-public class DroneEntity extends PathfinderMob {
+public class DroneEntity extends PathfinderMob implements com.senne.imttech.weapons.EmpTarget {
     public enum Mode {
         ATTACK, GUARD, SCOUT,
         /** Fase 6: volgt stiekem iemand en rapporteert (onzichtbaar, valt niet aan). */
@@ -350,6 +350,11 @@ public class DroneEntity extends PathfinderMob {
         if (fireCooldown > 0) {
             fireCooldown--;
         }
+        // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): motor uit, naar de grond zakken en daar blijven liggen.
+        if (com.senne.imttech.weapons.Emp.isJammed(this)) {
+            fallDead();
+            return;
+        }
         if (getMode() == Mode.LAUNCH) {
             climbToOrbit(level);
             return;
@@ -422,6 +427,24 @@ public class DroneEntity extends PathfinderMob {
             engage(level, owner, currentTarget);
         } else {
             followOwner(owner);
+        }
+    }
+
+    /** Geraakt door een EMP-granaat: wie eraan hangt (vervoer) laat hij los, en hij vergeet zijn doelwit. */
+    @Override
+    public void onEmp(ServerLevel level, int ticks) {
+        ejectPassengers();
+        currentTarget = null;
+        getNavigation().stop();
+    }
+
+    /** Uit door een EMP: geen motor, dus vallen (iets afgeremd door de lucht) tot op de grond. */
+    private void fallDead() {
+        getNavigation().stop();
+        if (onGround()) {
+            setDeltaMovement(0, 0, 0);
+        } else {
+            setDeltaMovement(getDeltaMovement().multiply(0.7, 0.98, 0.7).add(0, -0.08, 0));
         }
     }
 
@@ -1000,8 +1023,8 @@ public class DroneEntity extends PathfinderMob {
 
         @Override
         public void tick() {
-            if (drone.isScout()) {
-                return; // de verkenner wordt rechtstreeks bestuurd
+            if (drone.isScout() || com.senne.imttech.weapons.Emp.isJammed(drone)) {
+                return; // de verkenner wordt rechtstreeks bestuurd; na een EMP valt hij gewoon
             }
             if (operation != Operation.MOVE_TO) {
                 // Stilhangen: langzaam afremmen.

@@ -41,7 +41,7 @@ public final class SuitEffects {
      * elkaar niet weg: een witte kern met een blauwe gloed erover blijft allebei zichtbaar. Muren
      * houden het wel tegen. Beide kanten van een vlak zijn zichtbaar.
      */
-    static final RenderType GLOW = RenderType.create("imttech_glow", DefaultVertexFormat.POSITION_COLOR,
+    public static final RenderType GLOW = RenderType.create("imttech_glow", DefaultVertexFormat.POSITION_COLOR,
             VertexFormat.Mode.QUADS, 1536, false, false,
             RenderType.CompositeState.builder()
                     .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
@@ -323,7 +323,7 @@ public final class SuitEffects {
     }
 
     /** Een ring van licht om {@code centre}, loodrecht op {@code axis}. */
-    static void ring(Matrix4f m, VertexConsumer out, Vec3 centre, Vec3 axis, float radius, float thickness,
+    public static void ring(Matrix4f m, VertexConsumer out, Vec3 centre, Vec3 axis, float radius, float thickness,
                              int rgb, float alpha) {
         Vec3 a = Math.abs(axis.y) > 0.9 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
         Vec3 u = axis.cross(a).normalize();
@@ -340,7 +340,7 @@ public final class SuitEffects {
     }
 
     /** Een plat schijfje licht, loodrecht op {@code axis}. */
-    static void disc(Matrix4f m, VertexConsumer out, Vec3 centre, Vec3 axis, float radius, int rgb, float alpha) {
+    public static void disc(Matrix4f m, VertexConsumer out, Vec3 centre, Vec3 axis, float radius, int rgb, float alpha) {
         Vec3 a = Math.abs(axis.y) > 0.9 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
         Vec3 u = axis.cross(a).normalize();
         Vec3 v = axis.cross(u).normalize();
@@ -367,7 +367,7 @@ public final class SuitEffects {
     }
 
     /** Een vierhoek (GLOW tekent beide kanten). */
-    static void quad(Matrix4f m, VertexConsumer out, Vec3 a, Vec3 b, Vec3 c, Vec3 d, int rgb, float alpha) {
+    public static void quad(Matrix4f m, VertexConsumer out, Vec3 a, Vec3 b, Vec3 c, Vec3 d, int rgb, float alpha) {
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
         int bl = rgb & 0xFF;

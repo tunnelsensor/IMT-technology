@@ -103,6 +103,8 @@ public class ImtTechClient {
         // De harnas-werkbank: waar je naar kijkt op het hologram, en je klik daarop.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.workbench.WorkbenchHologram::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.workbench.WorkbenchHologram::onInteraction);
+        // Wapens (hoofdstuk 35): de bol van licht van een EMP-granaat.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.EmpEffects::onRenderLevel);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
