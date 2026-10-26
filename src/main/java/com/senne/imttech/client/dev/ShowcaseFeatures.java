@@ -87,6 +87,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -94,6 +95,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -2240,13 +2242,18 @@ final class ShowcaseFeatures {
                 .pause(140)
                 .close(0));
 
-        add("I.M.T Technology items", "Alles wat de mod toevoegt, in het creative-tabblad 'I.M.T Technology': de bril "
-                + "(leeg en opgeladen), de computerchip, de drone, het harnas, de drie upgrades, de E.M.P. en "
-                + "alle blokken (laadstation, zonnepaneel, kabel, warmtegenerator, relais, laserzender, "
-                + "koepelgenerator en holotafel).", start, 180, 0, s -> s
-                .step(10, ShowcaseFeatures::openModTab)
-                .pause(160)
-                .close(0));
+        add("I.M.T Technology items", "Alles wat de mod toevoegt, in de acht creative-tabbladen van I.M.T, elk twee "
+                + "seconden: Resources (chips en upgrades), Equipment (de bril en het harnas), Weapons (alle geweren en "
+                + "granaten), Power (de kabel en de generatoren), Interior (holotafel, werkbank, crusher, compactor), "
+                + "Security (lezers, codepanelen, laserwand en -brug), Robots (onderdelen, chips, training) en "
+                + "Datacenter.", start, 180, 0, s -> {
+                    int wait = 10;
+                    for (DeferredHolder<CreativeModeTab, ? extends CreativeModeTab> tab : ModCreativeTabs.TABS.getEntries()) {
+                        s.step(wait, () -> openModTab(tab.get()));
+                        wait = 40;
+                    }
+                    s.pause(40).close(0);
+                });
 
         // ---------------------------------------------------------------- Laserbrug
         // Hoofdstuk 34 (25 oktober), achteraan zodat de nummers van je notities blijven kloppen.
@@ -3791,11 +3798,11 @@ final class ShowcaseFeatures {
     }
 
     /**
-     * Het creative-scherm, meteen op het tabblad "I.M.T Technology". Welk tabblad open staat, onthoudt
+     * Het creative-scherm, meteen op een tabblad van I.M.T. Welk tabblad open staat, onthoudt
      * Minecraft in een verborgen veld (selectedTab); dat zetten we vooraf, dan kiest het scherm
      * bij het openen zelf dat tabblad (en de goede pagina).
      */
-    private static void openModTab() {
+    static void openModTab(CreativeModeTab tab) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
@@ -3803,9 +3810,9 @@ final class ShowcaseFeatures {
         try {
             java.lang.reflect.Field selected = CreativeModeInventoryScreen.class.getDeclaredField("selectedTab");
             selected.setAccessible(true);
-            selected.set(null, ModCreativeTabs.IMT_TECH.get());
+            selected.set(null, tab);
         } catch (ReflectiveOperationException | RuntimeException e) {
-            ImtTech.LOGGER.warn("[showcase] kan het tabblad I.M.T Technology niet kiezen", e);
+            ImtTech.LOGGER.warn("[showcase] kan het tabblad {} niet kiezen", tab.getDisplayName().getString(), e);
         }
         mc.setScreen(new CreativeModeInventoryScreen(mc.player, mc.player.connection.enabledFeatures(),
                 mc.options.operatorItemsTab().get()));

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 334 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 335 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3675,6 +3675,36 @@ Zo bouw ik het:
       `-Ponly=grenades` (`gr01` tot `gr20`; sinds stap 2e tot `gr23`) en `-Ponly=guns` (`g01` tot `g21`). **LEESMIJ**: een nieuw stuk "Wapens:
       granaten, de Remote EMP en lasergeweren" (wat elke granaat doet, de Remote EMP en de trigger, de bediening van de
       geweren in een tabel, munitie en recepten), en de E.M.P.-zender heet daar nu Illusion Jammer.
+
+### 36. Acht creative-tabbladen (26 oktober)
+
+Jouw wens: "Voeg creative tabs toe in deze volgorde: resources: chip, upgrades... equipment: bril, harnas weapons:
+alle guns power: cabel en generators interieur: holotable, workbanch, crusher, compactor... security: hier staan
+readers, keypads, laserwall/brige... robots: alle robot parts dan alle robot chips, training items datacenter: alles
+voor het datacenter".
+
+- [x] **Het ene tabblad "I.M.T Technology" werd er acht** (`registry/ModCreativeTabs`), achter het vanilla-tabblad
+      Combat, in jouw volgorde. Ze heten in het spel **I.M.T Resources, I.M.T Equipment, I.M.T Weapons, I.M.T Power,
+      I.M.T Interior, I.M.T Security, I.M.T Robots** en **I.M.T Datacenter**. Wat erin staat:
+      **Resources**: Computer Chip, Raven Circuit, de drie bril-upgrades, de vijf harnas-upgrades, Repair Paste.
+      **Equipment**: de bril (leeg en opgeladen), het harnas (drie stukken), het Rocket Pack, de Drone, de Illusion
+      Jammer. **Weapons**: de vier lasergeweren, de Ion Blaster, de Energy Cell (leeg en vol), alle granaten, de Remote
+      EMP/Frag en hun triggers. **Power**: kabel, zonnepaneel, warmtegenerator, Power Cabinet. **Interior**: holotafel,
+      Suit Workbench, Crusher, Compactor, laadstation, Drone Dock, Landing Pad, Arc Lamp, lichtschakelaar, relais en
+      relay emitter. **Security**: Security Core, Zone Marker, keycard, keycard reader, code panel, laserzender,
+      laserbrug, koepelgenerator, camera, de drie turrets, Rocket Ammo, Bypass Kit en Hacking Laptop. **Robots**: eerst
+      alle onderdelen (per stijl hoofd, lijf, armen, benen), dan de chips (printplaat en alle modules), dan de drie
+      trainingsblokken, en daarna de Robot Assembler, Robot Dock, Guard Robot, Security Drone, Soldering Iron, Robot
+      Ammo en de twee spawn eggs. **Datacenter**: het serverrek, CPU, GPU, RAM, SSD en de ventilator.
+      **Mijn invullingen** (zeg het als je iets anders wilt): de relais en de Arc Lamp bij Interior (bij de
+      lichtschakelaar), de turrets en hun munitie bij Security, de Bypass Kit en de Hacking Laptop bij Security (ze
+      werken op de lezers en panelen), de Ion Blaster bij Weapons, de Illusion Jammer bij Equipment, en de spawn egg
+      van de Raven-soldaat bij Robots (naast die van de guard robot). Geen tabblad: het gebarsten blok en het
+      blokpoeder (die bestaan alleen "van" een blok) en het Raven-geweer (alleen de soldaten hebben het).
+      **Test**: `CreativeTabGameTests` (elk item in precies één tabblad, de volgorde klopt, geen vreemde items; zo
+      vergeten we nooit een nieuw item). 335 tests, allemaal groen. **Showcase**: functie 96 "I.M.T Technology items"
+      bladert nu door de acht tabbladen, elk twee seconden. **Screenshots** `-Ponly=creative` (`ct01_resources` tot
+      `ct08_datacenter`).
 
 ---
 

@@ -1931,6 +1931,17 @@ public final class VisualCheck {
             t.shot(15, "g21_no_cell");
         }
 
+        // --- De acht creative-tabbladen van I.M.T (26 oktober), elk een plaatje
+        if (want("creative")) {
+            t.command(0, "gamemode creative @a");
+            int number = 1;
+            for (var tab : com.senne.imttech.registry.ModCreativeTabs.TABS.getEntries()) {
+                t.step(5, () -> ShowcaseFeatures.openModTab(tab.get()));
+                t.shot(15, String.format(java.util.Locale.ROOT, "ct%02d_%s", number++, tab.getId().getPath()));
+            }
+            t.close(0);
+        }
+
         // --- De satelliet: het scherm bij niveau 0, 5 en 10 (dan zie je hem groeien)
         if (want("satellite")) {
             t.view(0, 0.5, -60, -3.2, 0, 22);

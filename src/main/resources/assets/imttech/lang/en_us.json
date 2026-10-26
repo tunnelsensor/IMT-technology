@@ -1,5 +1,12 @@
 {
-  "itemGroup.imttech": "I.M.T Technology",
+  "itemGroup.imttech.resources": "I.M.T Resources",
+  "itemGroup.imttech.equipment": "I.M.T Equipment",
+  "itemGroup.imttech.weapons": "I.M.T Weapons",
+  "itemGroup.imttech.power": "I.M.T Power",
+  "itemGroup.imttech.interior": "I.M.T Interior",
+  "itemGroup.imttech.security": "I.M.T Security",
+  "itemGroup.imttech.robots": "I.M.T Robots",
+  "itemGroup.imttech.datacenter": "I.M.T Datacenter",
   "item.imttech.imt_glasses": "I.M.T Glasses",
   "item.imttech.imt_glasses.subtitle": "I Am Tunnelsensor",
   "item.imttech.computer_chip": "Computer Chip",
