@@ -395,8 +395,8 @@ in een blauw kader; de muur draait mee zodat hij dwars op je kijkrichting staat.
 Zwakke plekken (net als in de film): waar de velden van twee verschillende spelers overlappen
 gaat het beeld **flikkeren** (je eigen illusies storen elkaar niet),
 de drone blijft raakbaar (neerhalen = beeld weg), hij verraadt zich met vonkjes en een zacht
-zoempje, en met de **E.M.P.-zender** (item) leg je alle illusies binnen 24 blokken 30 seconden
-plat.
+zoempje, en met de **Illusion Jammer** (item, heette vroeger E.M.P.-zender) leg je alle illusies binnen 24
+blokken 30 seconden plat.
 
 ### Raiddrones
 Wie de I.M.T-bril draagt, valt op. Af en toe komt er een golf **raiddrones** op je af:
@@ -1290,6 +1290,72 @@ Wat je binnen tegenkomt:
 
 Er staan acht soldaten en vijf torentjes; zonder harnas is dat pittig. Soldaten komen niet
 terug als je ze verslagen hebt, dus de onderdelen zijn niet eindeloos te halen.
+
+### Wapens: granaten, de Remote EMP en lasergeweren
+Robots zijn sterk; dit zijn de wapens om ze aan te pakken (hoofdstuk 35). Alle getallen staan in de config onder
+`[weapons]`.
+
+**De EMP Grenade (een bol) en de Sticky EMP Grenade (een halve bol).** Rechtsklik gooit er een; met sneak gooi je
+hem zachtjes onderhands (de bol rolt dan over de vloer). De bol stuitert tegen muren en rolt verder, en gaat 3 seconden
+na het gooien af. De sticky plakt op het eerste wat hij raakt (een muur, de grond, een robot, een drone of een speler;
+op een wezen gaat hij mee) en gaat 2 seconden later af. Ze piepen steeds sneller en hun lampje knippert. Een EMP doet
+**geen schade aan de map**: alles wat elektrisch is binnen 5 blokken valt 20 seconden uit en gaat daarna vanzelf weer
+aan:
+- guard robots en security drones vallen neer (zoals met de Ion Blaster); je eigen drones, raiddrones en de drones van
+  de toren zakken naar de grond met hun lampjes uit (een vervoerdrone laat los);
+- turrets laten hun loop hangen, camera's geven geen beeld, keycardlezers en codepanelen doen niets;
+- een kabel die **open** ligt geeft even geen stroom door, dus alles erachter heeft geen stroom. Een kabel **in een
+  muur** is beschermd;
+- het harnas en de bril van spelers in de buurt (ook jijzelf): niet vliegen, geen laser cannon, en in je bril ruis met
+  "EMP DETECTED"; daarna start de bril opnieuw op.
+Rayshields, laserbruggen, koepels en lampen merken niets, en een schildkoepel beschermt wat erin staat tegen een EMP
+van buiten. Recept: 4 ijzer, 2 koper, 2 redstone en een Computer Chip = 2 EMP Grenades; een EMP Grenade met een
+slijmbal = een Sticky EMP Grenade.
+
+**De Frag Grenade en de Sticky Frag Grenade** zijn kopieën als explosief: ze vliegen, stuiteren, plakken en piepen net
+zo (legergroen met een oranje band en rode lampjes), maar ontploffen zoals C4, net iets zwakker, en geven geen EMP. Op
+een stenen muur blazen ze het blok eruit waar ze tegen zitten; de blokken eromheen krijgen barsten. Recept: 4 ijzer, 4
+buskruit en een TNT = 2 Frag Grenades; met een slijmbal erbij een Sticky.
+
+**De Remote EMP en de EMP-trigger.** Een Remote EMP plak je tegen een vloer, muur of plafond. Heb je een **EMP Trigger**
+bij je, dan hoort hij meteen bij die trigger (anders: rechtsklik met de trigger op de Remote EMP). **Rechtsklik** met
+de trigger laat al zijn Remote EMP's tot 128 blokken ver afgaan, kort na elkaar: een gewone EMP-puls, en dan is hij op.
+**Sneak + rechtsklik**: hoeveel er bij hem horen en hoeveel in bereik zijn. Zo zet je bijvoorbeeld de open kabels van
+een stroomnet uit wanneer jij wilt. Iedereen kan een Remote EMP eraf trekken. Recept: een Sticky EMP Grenade, een
+redstonefakkel en een koperstaaf = een Remote EMP; de trigger maak je van een redstonefakkel, ijzer, een Computer Chip
+en een knop.
+
+**De Smoke Grenade (een bol).** Na 2 seconden sist hij en groeit er een wolk van 4,5 blokken die 18 seconden blijft.
+Robots, turrets, drones en Raven-soldaten kijken er niet doorheen (en schieten dus niet), en een camera die in de rook
+kijkt, ziet grijs. Grijs, of met een **kleurstof** erbij (los in het raster) in elke kleur. Recept: 2 ijzer, 2 buskruit
+en kolen = 2 Smoke Grenades.
+
+**De Flashbang (een bol).** Gaat na 1,6 seconden af met een felle flits en een harde knal. Elke speler die de flits kan
+zien (tot 20 blokken, geen muur ertussen) krijgt een wit scherm en een piep in zijn oren, en hoort de rest even gedempt;
+recht ernaar kijken = 5 seconden helemaal wit, wegkijken veel minder. Ook jijzelf. Robots, turrets, drones en monsters
+merken er niets van. Recept: 2 ijzer, 2 buskruit en glowstone = 2 Flashbangs.
+
+**De lasergeweren.** Het **Laser Pistol** (één klik = één schot), de **Laser Rifle** (knop inhouden: automatisch), de
+**Laser Sniper** (één zware straal, een kijker die 4 keer inzoomt) en de **Laser Shotgun** (een waaier van stralen).
+Bediening zoals TACZ:
+
+| Toets | Wat het doet |
+|---|---|
+| linkerklik | schieten (de rifle: inhouden) |
+| rechterklik (inhouden) | richten door het vizier: inzoomen, nauwkeuriger, langzamer lopen |
+| R | herladen |
+| H | het geweer bekijken |
+
+R en H doen alleen dit met een geweer in je hand; anders doen ze wat ze altijd deden (markeren, dreigingsscan). Je kunt
+ze veranderen in Opties > Besturing > I.M.T. Sprinten laat het geweer zakken, en schieten stopt je sprint. Een schot in
+het hoofd doet 1,5 keer zoveel; spelers raak je alleen met PvP aan.
+
+**Munitie: energiecellen.** Een geweer heeft een **Energy Cell** als magazijn. Cellen stapelen niet: elke cel heeft zijn
+eigen lading (het streepje onder het item). Een nieuw geweer is leeg: druk **R**, en hij pakt de volste cel uit je
+inventaris; de oude cel komt op zijn plek terug (ook een lege). Lege cellen laad je op in het **Charging Station**, in
+het vak van de bril. Rechtsonder op je scherm zie je hoeveel schoten er nog in zitten en hoeveel cellen je bij je hebt.
+Recepten: een cel = 4 goudklompjes, 2 glazen ruiten, 2 koper en een redstoneblok; de geweren maak je van ijzer, goud,
+glas, redstone en Computer Chips (de sniper ook met een diamant en een verrekijker).
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot

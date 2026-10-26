@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 334 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 335 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 97 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 100 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -3444,6 +3444,11 @@ Ik stelde acht vragen, jij koos.
   zoals in CS** (een wit scherm dat wegtrekt, het sterkst als je ernaar kijkt, een piep in je oren; ook bij jezelf); de
   flashbang doet **niets met robots, turrets, drones en monsters** (alleen spelers); de rook is **grijs, maar met een
   kleurstof te kleuren**.
+- **En op 26 oktober**: "voeg voor de EMP ook nog een remote getriggerde EMP toe, deze ziet er uit als een op de muur
+  geplaatste EMP maar dan trigger je die met een item in de inventory, zo kun je bijvoorbeeld een hele powergrid
+  uitdoen van op afstand wanneer jij wilt". Drie vragen, jouw antwoorden: een **gewone EMP-puls** (zoals een granaat:
+  5 blokken, niet het hele net in één keer; wel zo: zet hem bij de kabels van je doelwit), een **eigen EMP-trigger**
+  (niet de detonator van C4), en **eenmalig** (zoals C4).
 
 **Mijn invulling** (zeg het als je het anders wil):
 - **Gooien**: rechtsklik gooit. Met sneak gooi je zachtjes onderhands (de bol rolt dan over de vloer, zoals bij
@@ -3594,7 +3599,29 @@ Zo bouw ik het:
       of "EMPTY - PRESS R" in het rood; een eigen kruisje dat uit elkaar gaat na een schot en weg is als je richt.
       **Screenshots** `-Ponly=guns` (`g01` tot `g21`): elk geweer vanuit de heup, gericht en schietend, herladen, bekijken,
       de kijker, de pomp, sprinten, derde persoon van voren en van achteren, en een pistool zonder cel.
-- [ ] **5. Showcase, screenshots en LEESMIJ.**
+- [x] **2d. De Remote EMP** (26 oktober, jouw wens) — `weapons/RemoteEmpBlock`: dezelfde halve bol als de sticky, met
+      een stalen ring, een antenne met een rood lampje en lampjes die altijd gloeien; plakt tegen een vloer, muur of
+      plafond (zoals C4) en blijft zitten als het blok erachter weg is. Iedereen kan hem eraf trekken (hij valt eruit).
+      `RemoteEmpBlockEntity` onthoudt wie hem plakte en bij welke trigger hij hoort. **De EMP Trigger**
+      (`weapons/EmpTriggerItem`): een donker handzendertje met een cyaan schermpje, een grote rode knop en een antenne.
+      Werkt zoals de detonator van C4, maar los ervan (het component `emp_trigger`): plak je een Remote EMP met de trigger
+      bij je, dan hoort hij erbij; anders rechtsklik met de trigger op de Remote EMP. **Rechtsklik** laat al zijn Remote
+      EMP's tot 128 blokken ver (`[weapons] empTriggerRange`) afgaan, de dichtste eerst en dan om de 3 ticks de volgende:
+      een gewone EMP-puls, en dan zijn ze weg. **Sneak + rechtsklik**: hoeveel er bij hem horen en hoeveel er in bereik
+      zijn. **Recepten**: een Sticky EMP Grenade, een redstonefakkel en een koperstaaf = een Remote EMP; een
+      redstonefakkel, 4 ijzer, een Computer Chip en een knop = een EMP Trigger. Screenshots `gr19` (de Remote EMP tegen
+      de muur en de trigger in je hand) en `gr20` (na de knop). Eén nieuwe test (`remote_emp_goes_off_with_its_trigger`:
+      plakken koppelt, de knop legt de robot neer en zet de turret uit, de muur blijft heel, en een Remote EMP van een
+      andere trigger blijft zitten). 335 tests, allemaal groen.
+- [x] **5. Showcase, screenshots en LEESMIJ** — **Showcase**: drie nieuwe functies, achteraan zodat de nummers van je
+      notities blijven kloppen: **98 "EMP and frag grenades"** (een veld met een robot en een turret voor een muur: een
+      EMP-bol, een sticky, een Sticky Frag op de muur, een Frag over de vloer, en een EMP aan je voeten met je bril op),
+      **99 "Smoke grenade and flashbang"** (de turret schiet op een husk; grijze rook ertussen en de turret stopt; rode
+      rook; een flashbang voor je ogen) en **100 "Laser guns"** (alle vier, met richten, schieten, herladen, bekijken, de
+      kijker en de pomp). Getest met `python tools/showcase.py --vanaf 98 --tot 100 --test`. **Screenshots**
+      `-Ponly=grenades` (`gr01` tot `gr20`) en `-Ponly=guns` (`g01` tot `g21`). **LEESMIJ**: een nieuw stuk "Wapens:
+      granaten, de Remote EMP en lasergeweren" (wat elke granaat doet, de Remote EMP en de trigger, de bediening van de
+      geweren in een tabel, munitie en recepten), en de E.M.P.-zender heet daar nu Illusion Jammer.
 
 ---
 
@@ -3603,6 +3630,12 @@ Zo bouw ik het:
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De wapens (hoofdstuk 35)**: gezien op screenshots, maar niet zelf gespeeld. Probeer vooral hoe de **geweren
+      voelen** (de terugslag, hoe snel het geweer schiet, hoe groot het geweer en je armen in beeld zijn, het richten en
+      de kijker van de sniper) en of de **getallen** kloppen (schade, schoten per cel, herlaadtijd: alles in `[weapons]`).
+      En de **geluiden**: ik kan niet luisteren. Klinken de vier schoten, de cel eruit en erin, de grendel, de EMP-klap,
+      het sissen van de rook, de knal en de piep van de flashbang goed, en niet te hard? Van de flashbang: is het witte
+      scherm niet te lang, en mag het andere geluid gedempt blijven?
 Sinds de screenshot-rondleiding wél gezien en in orde: de HUD (met doelanalyse), het G-menu,
 alle schermen, de holotafel in alle drie de standen, het harnas op je lijf en hoe de drones en
 raiddrones eruitzien.
