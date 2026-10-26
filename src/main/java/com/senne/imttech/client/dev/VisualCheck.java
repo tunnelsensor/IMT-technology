@@ -1081,11 +1081,13 @@ public final class VisualCheck {
             });
             t.view(0, 67.5, -60, 68.5, 180, 15);
             t.shot(20, "rb11_robot_docks");
-            // Het scherm van de robot in het dock (sneak + rechtsklik): halfvolle batterij.
+            // Het scherm van de robot in het dock (sneak + rechtsklik): halfvolle batterij, en (26 oktober) beschadigd:
+            // de balk Health is oranje.
             t.onServer(0, player -> {
                 for (com.senne.imttech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
                         com.senne.imttech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(new BlockPos(66, -60, 64)).inflate(0.5))) {
                     robot.setBattery(robot.maxBattery() * 0.56);
+                    robot.setHealth(robot.getMaxHealth() * 0.45f);
                     com.senne.imttech.robot.Robots.open(player, robot);
                 }
             });

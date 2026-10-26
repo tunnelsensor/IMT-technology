@@ -12,11 +12,13 @@ import com.senne.imttech.logic.program.ScriptChecker;
 import com.senne.imttech.logic.program.ScriptParser;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModEntities;
+import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.robot.DroneData;
 import com.senne.imttech.robot.GuardDroneEntity;
 import com.senne.imttech.robot.GuardDroneItem;
 import com.senne.imttech.robot.IonBlasterItem;
 import com.senne.imttech.robot.RobotState;
+import com.senne.imttech.robot.Robots;
 import com.senne.imttech.robot.TowerDrones;
 import com.senne.imttech.bot.BotModule;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
@@ -36,6 +38,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
@@ -45,7 +48,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Tests voor de security drone (hoofdstuk 25): zijn programma (een droneprogramma, met up en down), hoe hij vliegt
- * (DroneMove: blok voor blok, niet door een plafond of de grond), laden op zijn Drone Dock, en de Ion Blaster.
+ * (DroneMove: blok voor blok, niet door een plafond of de grond), laden op zijn Drone Dock, de Ion Blaster, en
+ * (26 oktober) dat alleen ijzer hem repareert.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -268,7 +272,11 @@ public final class DroneGameTests {
         ((DroneDockBlockEntity) helper.getBlockEntity(dockPos)).setOwner(player.getUUID());
         helper.setBlock(dockPos.west(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(dockPos.west())).fill(20_000);
-        ItemStack stack = GuardDroneItem.create(DroneData.DEFAULT);
+        return placeOnDock(helper, player, dockPos, GuardDroneItem.create(DroneData.DEFAULT));
+    }
+
+    /** Dit drone-item op het Drone Dock dat er al staat. */
+    private static GuardDroneEntity placeOnDock(GameTestHelper helper, ServerPlayer player, BlockPos dockPos, ItemStack stack) {
         player.setItemInHand(InteractionHand.MAIN_HAND, stack);
         BlockPos abs = helper.absolutePos(dockPos);
         BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.UP, 0.5), Direction.UP, abs, false);
@@ -354,6 +362,45 @@ public final class DroneGameTests {
         helper.runAfterDelay(5 + 60 + 10, () -> {
             check(downed.state() == RobotState.ACTIVE && downed.brain().started(), "Na 3 seconden stond hij niet weer op: " + downed.state());
             check(Double.valueOf(1).equals(downed.brain().global("boots")), "Opgestaan begon zijn programma niet opnieuw (vers)");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een security drone herstelt niet vanzelf, ook niet terwijl hij op zijn dock laadt (26 oktober, jouw wens: "drones
+     * mogen niet zelf herstellen, dit kan enkel met repair van iron"). Oppakken en weer neerzetten maakt hem ook niet
+     * heel (zijn item onthoudt het). Rechtsklik met ijzer wel, en er gaan er niet meer uit je hand dan nodig.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "drone_repair")
+    public static void drone_repairs_only_with_iron(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 1), "drone-mechanic");
+        owner.getAbilities().instabuild = false; // testspelers houden anders creative-handen: dan raakt de stapel niet op
+        BlockPos dockPos = new BlockPos(6, 2, 6);
+        GuardDroneEntity drone = dockedDrone(helper, owner, dockPos);
+        float max = drone.getMaxHealth();
+        drone.setHealth(max / 4);
+        drone.setBattery(drone.maxBattery() / 2); // zodat hij laadt
+        helper.runAfterDelay(60, () -> {
+            check(drone.isCharging(), "Hij laadt niet op zijn dock");
+            check(drone.getHealth() == max / 4, "Op zijn dock herstelde hij vanzelf: " + drone.getHealth() + " van " + max);
+
+            Robots.pickUp(owner, drone);
+            ItemStack stack = ItemStack.EMPTY;
+            for (ItemStack item : owner.getInventory().items) {
+                if (item.is(ModItems.GUARD_DRONE.get())) {
+                    stack = item;
+                }
+            }
+            check(GuardDroneItem.data(stack).damaged(), "Zijn item onthield zijn schade niet");
+            GuardDroneEntity again = placeOnDock(helper, owner, dockPos, stack);
+            check(Math.abs(again.getHealth() - max / 4) < 1.0e-4, "Weer neergezet heeft hij " + again.getHealth() + " leven");
+
+            int needed = (int) Math.ceil((max - max / 4) / ImtConfig.Robots.REPAIR_PER_INGOT);
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT, 64));
+            owner.interactOn(again, InteractionHand.MAIN_HAND);
+            check(again.getHealth() == max, "Met ijzer is hij niet heel: " + again.getHealth() + " van " + max);
+            check(owner.getMainHandItem().getCount() == 64 - needed,
+                    "Er gingen " + (64 - owner.getMainHandItem().getCount()) + " staven op, nodig waren er " + needed);
             helper.succeed();
         });
     }

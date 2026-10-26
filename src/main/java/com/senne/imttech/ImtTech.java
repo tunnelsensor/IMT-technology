@@ -126,7 +126,6 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(ImtServer::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ImtServer::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogin);
-        NeoForge.EVENT_BUS.addListener(ArsenalServer::onPlayerTick);
         // Hoofdstuk 26: trainingen (aftellen, de tijd, en of de trainee er nog is).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.training.Training::onServerTick);
         // Robots en drones die er niet meer zijn, gaan vanzelf uit je lijst (18 oktober).

@@ -52,6 +52,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
@@ -785,6 +786,95 @@ public final class RobotGameTests {
         } finally {
             ImtConfig.Robots.BURN_CHANCE = before;
         }
+        helper.succeed();
+    }
+
+    // ================================================================ 26 oktober: alleen ijzer repareert
+
+    /**
+     * Een robot herstelt niet vanzelf, ook niet terwijl hij op zijn dock laadt (jouw wens: "drones mogen niet zelf
+     * herstellen, dit kan enkel met repair van iron"). Rechtsklik met ijzer wel: elke staaf REPAIR_PER_INGOT leven, en
+     * er gaan er niet meer uit je hand dan nodig. Een vreemde mag het niet, en een hele robot kost geen ijzer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "robot_repair")
+    public static void robot_repairs_only_with_iron(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 1, 12), "repair-owner");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 1, 12), "repair-stranger");
+        owner.getAbilities().instabuild = false; // testspelers houden anders creative-handen: dan raakt de stapel niet op
+        stranger.getAbilities().instabuild = false;
+        BlockPos dock = new BlockPos(4, 1, 4);
+        helper.setBlock(dock.west(), ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(dock.west())).fill(5_000);
+        GuardRobotEntity robot = dockedRobot(helper, owner, dock, RobotParts.DEFAULT);
+        float max = robot.getMaxHealth();
+        robot.setHealth(max / 4);
+        robot.setBattery(robot.maxBattery() / 2); // zodat hij laadt
+        helper.runAfterDelay(60, () -> {
+            check(robot.isCharging(), "Hij laadt niet op zijn dock");
+            check(near(robot.getHealth(), max / 4), "Hij herstelde vanzelf: " + robot.getHealth() + " van " + max);
+
+            stranger.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT, 5));
+            stranger.interactOn(robot, InteractionHand.MAIN_HAND);
+            check(near(robot.getHealth(), max / 4) && stranger.getMainHandItem().getCount() == 5, "Een vreemde kon hem repareren");
+
+            float perIngot = ImtConfig.Robots.REPAIR_PER_INGOT;
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT, 1));
+            owner.interactOn(robot, InteractionHand.MAIN_HAND);
+            check(near(robot.getHealth(), max / 4 + perIngot) && owner.getMainHandItem().isEmpty(),
+                    "Eén staaf gaf " + robot.getHealth() + " leven, verwacht " + (max / 4 + perIngot));
+
+            int needed = (int) Math.ceil((max - max / 4 - perIngot) / perIngot);
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT, 64));
+            owner.interactOn(robot, InteractionHand.MAIN_HAND);
+            check(robot.getHealth() == max, "Met een stapel ijzer is hij niet heel: " + robot.getHealth() + " van " + max);
+            check(owner.getMainHandItem().getCount() == 64 - needed,
+                    "Er gingen " + (64 - owner.getMainHandItem().getCount()) + " staven op, nodig waren er " + needed);
+            owner.interactOn(robot, InteractionHand.MAIN_HAND);
+            check(owner.getMainHandItem().getCount() == 64 - needed, "Een hele robot kostte toch ijzer");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Oppakken en weer neerzetten maakt een robot niet heel: zijn item onthoudt hoe heel hij was. In de Robot Assembler
+     * gaat hij zo niet uit elkaar (anders zette je hem daarna heel weer in elkaar); eerst repareren. Een robot-item van
+     * vóór 26 oktober (zonder "health") is heel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "robot_repair")
+    public static void robot_keeps_its_damage_when_picked_up(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 1, 12), "damage-owner");
+        owner.getAbilities().instabuild = false;
+        BlockPos dock = new BlockPos(4, 1, 4);
+        RobotParts parts = new RobotParts(RobotStyle.BATTLE, RobotStyle.SUPER_BATTLE, RobotStyle.BATTLE, RobotStyle.BATTLE);
+        GuardRobotEntity robot = dockedRobot(helper, owner, dock, parts);
+        robot.setHealth(robot.getMaxHealth() * 0.3f);
+        Robots.pickUp(owner, robot);
+        ItemStack stack = ItemStack.EMPTY;
+        for (ItemStack item : owner.getInventory().items) {
+            if (item.is(ModItems.GUARD_ROBOT.get())) {
+                stack = item;
+            }
+        }
+        check(!stack.isEmpty(), "De robot zit niet als item in de rugzak");
+        RobotData data = GuardRobotItem.data(stack);
+        check(data.damaged() && near(data.health(), 0.3), "Het item onthield zijn schade niet: " + data.health());
+
+        BlockPos at = new BlockPos(8, 1, 4);
+        helper.setBlock(at, ModBlocks.ROBOT_ASSEMBLER.get());
+        RobotAssemblerBlockEntity assembler = (RobotAssemblerBlockEntity) helper.getBlockEntity(at);
+        assembler.items().setItem(RobotAssemblerBlockEntity.ROBOT, stack.copy());
+        check(!assembler.takeApart(), "Een beschadigde robot ging uit elkaar");
+        check(RobotAssemblerBlockEntity.problem(assembler.items()).contains("damaged"),
+                "De assembler zegt niet waarom: " + RobotAssemblerBlockEntity.problem(assembler.items()));
+        assembler.items().setItem(RobotAssemblerBlockEntity.ROBOT, ItemStack.EMPTY);
+
+        GuardRobotEntity again = placeOnDock(helper, owner, dock, stack);
+        check(near(again.getHealth(), again.getMaxHealth() * 0.3f),
+                "Weer neergezet heeft hij " + again.getHealth() + " van " + again.getMaxHealth() + " leven");
+
+        Tag old = RobotData.CODEC.encodeStart(NbtOps.INSTANCE, new RobotData(parts, BotBoard.EMPTY, "Old")).getOrThrow();
+        ((CompoundTag) old).remove("health");
+        check(RobotData.CODEC.parse(NbtOps.INSTANCE, old).getOrThrow().health() == 1.0f, "Een oud robot-item is niet heel");
         helper.succeed();
     }
 

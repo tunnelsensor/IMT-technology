@@ -35,7 +35,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Assemble</b>: liggen alle vier de onderdelen en een printplaat erin, en is het robotvakje leeg,
  *       dan maken we er een Guard Robot-item van (elk onderdeel en de printplaat gaan er één af).</li>
  *   <li><b>Take apart</b>: ligt er een robot in het robotvakje en zijn de andere vakjes leeg, dan komen
- *       zijn onderdelen en printplaat (met alles wat erop gesoldeerd is) terug in hun vakjes.</li>
+ *       zijn onderdelen en printplaat (met alles wat erop gesoldeerd is) terug in hun vakjes. Niet als hij
+ *       beschadigd is (26 oktober): anders zette je hem daarna heel weer in elkaar, en repareren kan alleen met
+ *       ijzer (zie BotEntity).</li>
  * </ul>
  * De regels staan hier als losse methodes ({@link #problem}), zodat het scherm dezelfde uitleg geeft als
  * wat de server doet.
@@ -104,9 +106,9 @@ public class RobotAssemblerBlockEntity extends BlockEntity implements MenuProvid
         return items.getItem(ROBOT).isEmpty() && missing(items).isEmpty();
     }
 
-    /** Kan Take apart nu? */
+    /** Kan Take apart nu? (Een beschadigde robot niet: eerst repareren, met ijzer.) */
     public static boolean canTakeApart(Container items) {
-        if (!fits(ROBOT, items.getItem(ROBOT))) {
+        if (!fits(ROBOT, items.getItem(ROBOT)) || GuardRobotItem.data(items.getItem(ROBOT)).damaged()) {
             return false;
         }
         for (int i = 0; i < ROBOT; i++) {
@@ -120,6 +122,9 @@ public class RobotAssemblerBlockEntity extends BlockEntity implements MenuProvid
     /** Wat het scherm onder de knoppen zegt (Engels, zoals alles in het spel). */
     public static String problem(Container items) {
         if (!items.getItem(ROBOT).isEmpty()) {
+            if (GuardRobotItem.data(items.getItem(ROBOT)).damaged()) {
+                return "It is damaged: put it down and right-click it with iron ingots to repair it first.";
+            }
             return canTakeApart(items) ? "Ready to take apart." : "Empty the part slots to take it apart.";
         }
         List<String> missing = missing(items);

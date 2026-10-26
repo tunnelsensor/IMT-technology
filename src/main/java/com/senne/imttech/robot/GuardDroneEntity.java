@@ -109,9 +109,12 @@ public class GuardDroneEntity extends BotEntity {
         return GuardDroneItem.create(toData());
     }
 
-    /** Neem over wat er in een Security Drone-item zit: printplaat, naam, batterij, programma en kogels. */
+    /**
+     * Neem over wat er in een Security Drone-item zit: printplaat, naam, batterij, programma, kogels en hoe heel hij
+     * is. Oppakken en weer neerzetten maakt hem dus niet heel: dat kan alleen met ijzer.
+     */
     public void applyData(DroneData data) {
-        setHealth(getMaxHealth());
+        setHealthFraction(data.health());
         setBoard(data.board());
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
@@ -120,11 +123,11 @@ public class GuardDroneEntity extends BotEntity {
         updateState(false);
     }
 
-    /** Wat er in zijn item komt als je hem oppakt. */
+    /** Wat er in zijn item komt als je hem oppakt (ook zijn schade). */
     public DroneData toData() {
         return new DroneData(board(), hasCustomName() ? getCustomName().getString() : "",
                 (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag() : brain.program().save(),
-                ammo());
+                ammo(), healthFraction());
     }
 
     /** Opgepakt: zijn Drone Dock is weer vrij. */

@@ -19,9 +19,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import com.senne.imttech.config.ImtConfig;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -107,30 +105,9 @@ public final class ArsenalServer {
         }
     }
 
-    /**
-     * Drones in hun baan herstellen zich daar (hoofdstuk 25, jouw antwoord: "arsenaal-drones gaan niet meer op een
-     * dock, ze blijven in hun baan"): elke seconde {@code ORBIT_REPAIR_PER_SECOND} leven, even snel als vroeger op
-     * een dock, en zonder stroom. Een drone die op pad is (DEPLOYED), herstelt niet.
-     */
-    public static void orbitRepair(ServerPlayer player) {
-        ImtArsenal arsenal = get(player);
-        ImtArsenal repaired = arsenal;
-        for (ArsenalDrone drone : arsenal.drones()) {
-            if (drone.state() == ArsenalDrone.State.ORBIT && drone.health() > 0 && !drone.isFullyRepaired()) {
-                repaired = repaired.replace(drone.withHealth(drone.health() + ImtConfig.Drones.ORBIT_REPAIR_PER_SECOND));
-            }
-        }
-        if (repaired != arsenal) {
-            set(player, repaired);
-        }
-    }
-
-    /** Elke seconde, voor elke speler: zijn drones in hun baan herstellen. */
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player && player.tickCount % 20 == 0) {
-            orbitRepair(player);
-        }
-    }
+    // Een drone herstelt nergens vanzelf, ook niet in zijn baan (26 oktober, jouw wens: "drones mogen niet zelf
+    // herstellen, dit kan enkel met repair van iron"). Repareren doe je met ijzer: roep hem terug en rechtsklik op hem
+    // (zie DroneEntity.mobInteract).
 
     /**
      * Een drone is neergehaald: hij gaat uit het arsenaal en een klein deel van de

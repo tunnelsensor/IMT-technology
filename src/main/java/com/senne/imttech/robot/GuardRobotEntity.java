@@ -175,10 +175,13 @@ public class GuardRobotEntity extends BotEntity {
         shownSlots = mask;
     }
 
-    /** Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat, naam, batterij en programma (zie GuardRobotItem). */
+    /**
+     * Neem over wat er in een Guard Robot-item zit: onderdelen, printplaat, naam, batterij, programma en hoe heel hij is
+     * (zie GuardRobotItem). Oppakken en weer neerzetten maakt hem dus niet heel: dat kan alleen met ijzer.
+     */
     public void applyData(RobotData data) {
         setParts(data.robotParts());
-        setHealth(getMaxHealth());
+        setHealthFraction(data.health());
         setBoard(data.board());
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
@@ -187,11 +190,11 @@ public class GuardRobotEntity extends BotEntity {
         updateState(false);
     }
 
-    /** Wat er in zijn item komt als je hem oppakt (zijn programma en kogels gaan mee). */
+    /** Wat er in zijn item komt als je hem oppakt (zijn programma, kogels en schade gaan mee). */
     public RobotData toData() {
         return new RobotData(parts().pack(), board(), hasCustomName() ? getCustomName().getString() : "",
                 (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag() : brain.program().save(),
-                ammo());
+                ammo(), healthFraction());
     }
 
     // ================================================================ Batterij en zijn dock

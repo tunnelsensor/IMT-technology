@@ -109,6 +109,10 @@ public class GuardRobotItem extends Item {
         }
         tooltip.add(Component.translatable("tooltip.imttech.guard_robot.board", data.board().used())
                 .withStyle(ChatFormatting.DARK_GREEN));
+        if (data.damaged()) {
+            tooltip.add(Component.translatable("tooltip.imttech.guard_robot.damaged", data.healthPercent())
+                    .withStyle(ChatFormatting.RED));
+        }
         tooltip.add(Component.translatable("tooltip.imttech.guard_robot.use").withStyle(ChatFormatting.DARK_AQUA));
     }
 }

@@ -32,7 +32,10 @@ public final class ArsenalCosts {
             new Part(Items.REDSTONE, 2),
             new Part(Items.AMETHYST_SHARD, 1));
 
-    /** Waarmee je repareert. */
+    /**
+     * Waarmee je repareert: een drone uit je arsenaal, en (26 oktober) ook een robot of security drone (zie
+     * BotEntity). Niets herstelt vanzelf; dit is de enige manier.
+     */
     public static final Item REPAIR_PART = Items.IRON_INGOT;
 
     public static Component repairPartName() {

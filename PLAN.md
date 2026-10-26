@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 335 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 338 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3705,6 +3705,34 @@ voor het datacenter".
       vergeten we nooit een nieuw item). 335 tests, allemaal groen. **Showcase**: functie 96 "I.M.T Technology items"
       bladert nu door de acht tabbladen, elk twee seconden. **Screenshots** `-Ponly=creative` (`ct01_resources` tot
       `ct08_datacenter`).
+
+### 37. Drones en robots herstellen niet vanzelf (26 oktober)
+
+Jouw wens: "drones mogen niet zelf herstellen, dit kan enkel met repair van iron, dus de security drones, arsenal
+drones, en ook robots".
+
+- [x] **Alleen ijzer repareert** — **Arsenaal-drones**: het herstel in hun baan (mijn invulling uit hoofdstuk 25,
+      0,25 leven per seconde) is weg, met `orbitRepairPerSecond` uit `[drones]`. Repareren gaat zoals het al ging:
+      roep hem terug en rechtsklik op hem met ijzer in je rugzak (`repairPerIngot` onder `[drones]`, 3 leven per
+      staaf). **Robots en security drones** herstelden niet vanzelf, maar wel als je ze oppakte en weer neerzette (dan
+      kwamen ze heel terug), en met ijzer repareren kon nog niet. Nu: **rechtsklik met ijzer** in je hand (wie hem mag
+      instellen, net als kogels laden): elke staaf geeft 4 leven terug (nieuw in `[robots]`: `repairPerIngot`), en er
+      gaan niet meer staven uit je hand dan nodig. Je hoort een zoem, ziet vonkjes, en onderaan je scherm staat
+      "Guard 1 repaired: 13/20 health" (of "is fully repaired", of "is not damaged" en dan kost het niets). Een vreemde
+      mag het niet. Het item onthoudt hoe heel hij was (`RobotData` en `DroneData` kregen `health`, van 0 tot 1; een
+      item van vóór vandaag is heel), en de tooltip zegt dan in het rood "Damaged: 30% health". **Mijn invullingen**
+      (zeg het als je iets anders wilt): een beschadigde robot gaat in de Robot Assembler niet uit elkaar ("It is
+      damaged: put it down and right-click it with iron ingots to repair it first."), want anders zette je hem daarna
+      heel weer in elkaar; het robotscherm (ook dat van een security drone) heeft een balk **Health** boven de batterij
+      (groen, oranje onder de helft, rood onder een kwart), zodat je ziet hoeveel ijzer hij nodig heeft; 4 leven per
+      staaf (een Battle-robot is met 5 staven heel, een Super Battle met 11, een security drone met 4); de oude
+      "Patrol drones" van vóór hoofdstuk 25 herstellen ook niet vanzelf en krijgen geen reparatie (ze blijven werken
+      tot ze neergeschoten worden). **Tests**: `arsenal_drones_repair_in_orbit` werd
+      `arsenal_drones_do_not_repair_by_themselves` (vijf seconden lang de hele PlayerTickEvent, en de schade blijft);
+      nieuw zijn `robot_repairs_only_with_iron` (niet vanzelf op een dock met stroom, een vreemde niet, één staaf,
+      precies genoeg staven, een hele robot kost niets), `robot_keeps_its_damage_when_picked_up` (het item, de
+      assembler, weer neerzetten, een oud item) en `drone_repairs_only_with_iron`. 338 tests, allemaal groen.
+      **Screenshot** `rb12_robot_screen` (`-Ponly=robots`) toont nu de balk Health.
 
 ---
 

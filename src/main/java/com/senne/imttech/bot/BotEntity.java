@@ -1,5 +1,6 @@
 package com.senne.imttech.bot;
 
+import com.senne.imttech.arsenal.ArsenalCosts;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.energy.PowerGrid;
 import com.senne.imttech.logic.program.LogicProgram;
@@ -21,6 +22,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -35,8 +37,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wat een guard robot en een security drone (hoofdstuk 25) als wezen delen: een printplaat, een batterij die op
  * zijn dock laadt (en met een Solar Panel-module in de zon), aan en uit, neer na de Ion Blaster, kogels voor zijn
- * Gun-module, een eigenaar, een brein dat zijn programma draait, en zijn plek in BotNetwork. Wat verschilt (lopen
- * of vliegen, hoe hij eruitziet, zijn dock) staat in GuardRobotEntity en GuardDroneEntity.
+ * Gun-module, repareren met ijzer (het enige wat zijn leven terugbrengt), een eigenaar, een brein dat zijn programma
+ * draait, en zijn plek in BotNetwork. Wat verschilt (lopen of vliegen, hoe hij eruitziet, zijn dock) staat in
+ * GuardRobotEntity en GuardDroneEntity.
  *
  * Hij is geen monster (dus je torentjes laten hem met rust) en verdwijnt nooit vanzelf. Staat hij aan, dan
  * gebruikt hij stroom (meer als hij beweegt); is de batterij leeg, dan valt hij stil ({@link RobotState#NO_POWER}).
@@ -178,6 +181,52 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
     /** Zijn naam ("Guard 1"), of wat hij is als hij er (nog) geen heeft ("The robot"). */
     public String displayName() {
         return hasCustomName() ? getCustomName().getString() : "The " + kindWord();
+    }
+
+    // ================================================================ Leven en repareren (26 oktober)
+
+    /** Hoe heel hij is, van 0 tot 1 (dat gaat mee in zijn item als je hem oppakt). */
+    public float healthFraction() {
+        return getMaxHealth() > 0 ? Math.min(1.0f, getHealth() / getMaxHealth()) : 1.0f;
+    }
+
+    /** Zo heel als het in zijn item stond (0 tot 1): zijn schade blijft, ook na oppakken en weer neerzetten. */
+    protected void setHealthFraction(float fraction) {
+        setHealth(Math.max(0.0f, Math.min(1.0f, fraction)) * getMaxHealth());
+    }
+
+    /**
+     * Rechtsklik met ijzer (als je hem mag instellen): repareren. Elke staaf geeft {@code REPAIR_PER_INGOT} leven
+     * terug, en er gaan er niet meer uit je hand dan nodig. Dat is de enige manier: een robot of drone herstelt
+     * nergens vanzelf, ook niet op zijn dock (26 oktober, jouw wens: "drones mogen niet zelf herstellen, dit kan
+     * enkel met repair van iron"). Geeft true als er iets gebeurde (of als hij al heel is: dan zegt hij dat).
+     */
+    private boolean repair(ServerPlayer player, ItemStack stack) {
+        if (!Robots.mayEdit(player, this)) {
+            Robots.open(player, this); // dezelfde melding als bij het scherm: "not yours"
+            return false;
+        }
+        String name = displayName();
+        float missing = getMaxHealth() - getHealth();
+        if (missing <= 0) {
+            player.displayClientMessage(Component.translatable("message.imttech.robot.not_damaged", name), true);
+            return true;
+        }
+        double perIngot = ImtConfig.Robots.REPAIR_PER_INGOT;
+        int used = Math.min(stack.getCount(), (int) Math.ceil(missing / perIngot));
+        setHealth((float) Math.min(getMaxHealth(), getHealth() + used * perIngot));
+        stack.consume(used, player); // in creative blijft het ijzer
+        if (level() instanceof ServerLevel level) {
+            level.playSound(null, getX(), getY(), getZ(), ModSounds.STATION_UPGRADE.get(), SoundSource.NEUTRAL, 0.8f, 1.4f);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + getBbHeight() * 0.5, getZ(), 8,
+                    0.25, 0.3, 0.25, 0.05);
+        }
+        // Naar beneden afgerond: 19,4 van 20 is "19/20" (nog een staaf), niet "20/20".
+        player.displayClientMessage(getHealth() >= getMaxHealth()
+                ? Component.translatable("message.imttech.robot.fully_repaired", name)
+                : Component.translatable("message.imttech.robot.repaired", name,
+                        (int) Math.floor(getHealth()), (int) Math.ceil(getMaxHealth())), true);
+        return true;
     }
 
     // ================================================================ Batterij, aan en uit
@@ -510,7 +559,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
 
     /**
      * Sneak + rechtsklik met een lege hand: zijn scherm (als je hem mag instellen, zie Robots). Rechtsklik met Robot
-     * Ammo: kogels laden (hoofdstuk 24).
+     * Ammo: kogels laden (hoofdstuk 24). Rechtsklik met ijzer: repareren (26 oktober).
      */
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -518,6 +567,12 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         if (held.getItem() instanceof RobotAmmoItem && !player.isSecondaryUseActive()) {
             if (player instanceof ServerPlayer serverPlayer) {
                 loadAmmo(serverPlayer, held);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        if (held.is(ArsenalCosts.REPAIR_PART) && !player.isSecondaryUseActive()) {
+            if (player instanceof ServerPlayer serverPlayer) {
+                repair(serverPlayer, held);
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }

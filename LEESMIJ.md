@@ -177,8 +177,8 @@ hij uithangt:
   (de knop **Launch** in het scherm doet hetzelfde).
 
 Schade blijft bewaard: een drone die gehavend terugkomt, gaat gehavend weer de lucht in tot je
-hem repareert. Een drone die **in zijn baan** hangt, herstelt zich daar wel vanzelf, langzaam
-(0,25 leven per seconde, `drones.orbitRepairPerSecond`). Op een Drone Dock komen drones uit je
+hem repareert. **Vanzelf herstelt een drone nergens**, ook niet in zijn baan: alleen ijzer maakt hem
+weer heel (roep hem terug en rechtsklik op hem; `drones.repairPerIngot`). Op een Drone Dock komen drones uit je
 arsenaal niet meer: die is sinds hoofdstuk 25 voor je eigen security drones. Wordt een drone **neergehaald**, dan is hij weg — je krijgt ongeveer 10% van de
 bouwkosten terug als schroot op de plek waar hij viel, de rest kost je een nieuwe drone.
 
@@ -907,7 +907,8 @@ een Computer Chip en een glasruit), een **Robot Circuit Board** (het brein, met 
 je later soldeert) en een **Robot Assembler**. Leg in het scherm van de assembler links de vier
 onderdelen (elk vakje neemt alleen zijn eigen soort) en rechts de printplaat: in het midden draait de
 robot zoals hij wordt. **Assemble** maakt er een **Guard Robot**-item van. **Take apart** (met de robot
-in het robotvakje en de andere vakjes leeg) geeft alles terug, ook de printplaat met wat erop zit.
+in het robotvakje en de andere vakjes leeg) geeft alles terug, ook de printplaat met wat erop zit. Een
+beschadigde robot gaat niet uit elkaar: repareer hem eerst (zie "Repareren" hieronder).
 
 **Neerzetten en laden.** Rechtsklik met het robot-item op een blok: de robot staat erop, met zijn
 gezicht naar jou, en jij bent zijn eigenaar. Hij krijgt een naam ("Guard 1", "Guard 2"...); in je code
@@ -919,8 +920,9 @@ robot staat **uit**.
 
 **Aan en uit.** Sneak + rechtsklik met een lege hand op de robot opent zijn scherm (als jij hem
 neerzette, of als je vertrouwd bent in die basis, zoals bij de laserzender): naam en toestand
-(**Active**, **Standby** of **No power**), zijn onderdelen, de batterij, zijn dock, **Rename**,
-**Switch on/off** en **Pick up** (hij wordt weer een item, met alles erop, ook de batterij). Aan in
+(**Active**, **Standby** of **No power**), zijn onderdelen, zijn leven (**Health**), de batterij, zijn dock,
+**Rename**, **Switch on/off** en **Pick up** (hij wordt weer een item, met alles erop, ook de batterij en zijn
+schade). Aan in
 zijn dock: hij hoort je (twee piepjes), zijn lichtjes gaan aan en hij stapt twee blokken naar voren.
 Uit: hij loopt terug naar zijn dock, gaat er precies in staan en laadt. Aan gebruikt hij stroom (lopend
 meer); is de batterij leeg, dan valt hij stil tot hij weer op zijn dock staat. Zolang hij nog geen
@@ -941,6 +943,12 @@ grijs "far away" staat, heeft de knop **Delete**: klik, dan staat er **Sure?**, 
 gaat uit de lijst (met een programma of opdracht die op hem wachtte). Bestond hij toch nog, dan komt hij
 vanzelf terug zodra hij weer geladen is; heeft intussen een andere robot zijn naam, dan krijgt hij een
 nieuwe ("Guard 3"). Een robot die er gewoon is, kun je niet met Delete weghalen: pak hem dan op.
+
+**Repareren.** Een robot herstelt **nooit vanzelf**, ook niet op zijn dock. **Rechtsklik met ijzer** (als je
+hem mag instellen): elke staaf geeft hem 4 leven terug (`repairPerIngot` onder `[robots]`), en er gaan niet meer
+staven uit je hand dan nodig. Je hoort een zoem, ziet vonkjes, en onderaan je scherm staat hoe heel hij nu is
+("Guard 1 repaired: 13/20 health"). Hoeveel schade hij heeft, zie je in zijn scherm aan de balk **Health**.
+Oppakken maakt hem niet heel: het item onthoudt zijn schade (beweeg erover: "Damaged: 30% health").
 
 Gaat een robot echt kapot (zijn leven is op), dan blijft elk onderdeel met een kans heel
 (`partSurviveChance`, standaard de helft) en valt het op de grond. Je torentjes laten robots met rust.
@@ -1102,6 +1110,9 @@ zonnevleugels en een camera onder zijn neus.
 **Aan en uit.** Aan op zijn dock: hij stijgt een blok op, en dan begint zijn programma. Uit: hij vliegt terug naar
 zijn dock en landt erop. Is zijn batterij leeg, of raakt de Ion Blaster hem, dan valt hij naar de grond (zonder
 schade).
+
+**Repareren.** Net als een robot: hij herstelt nooit vanzelf (ook niet op zijn dock), en oppakken onthoudt zijn
+schade. **Rechtsklik met ijzer**: 4 leven per staaf (hij heeft er 16), zie "Repareren" bij de guard robots.
 
 **Zijn rotors.** Zolang zijn rotors draaien, hoor je ze: een heel zacht "brrr" dat opspint als hij opstijgt, iets
 hoger klinkt als hij vliegt of stijgt, en wegzakt als hij landt of valt. Op zijn dock laden doet hij met stilstaande

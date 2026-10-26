@@ -1704,15 +1704,17 @@ public final class ImtTechGameTests {
         });
     }
 
-    // ================================================================ Arsenaal-drones herstellen in hun baan
+    // ================================================================ Arsenaal-drones herstellen niet vanzelf
 
     /**
-     * Hoofdstuk 25: een drone uit je arsenaal gaat niet meer op een drone-dock (dat is nu het thuis van een security
-     * drone). Hij herstelt zich in zijn baan, elke seconde ORBIT_REPAIR_PER_SECOND, zonder stroom; een drone die op
-     * pad is, herstelt niet.
+     * 26 oktober (jouw wens: "drones mogen niet zelf herstellen, dit kan enkel met repair van iron"): een drone uit je
+     * arsenaal herstelt niet in zijn baan, en een drone die op pad is ook niet. Vijf seconden lang draait alles wat
+     * elke tick voor een speler gebeurt (de hele PlayerTickEvent: een testspeler tikt niet vanzelf), en hun schade
+     * blijft. Hij gaat ook niet op een drone-dock (dat is het thuis van een security drone, hoofdstuk 25). Repareren
+     * met ijzer: zie recall_repair_and_launch.
      */
     @GameTest(template = ARENA, timeoutTicks = 60, batch = "drone_dock")
-    public static void arsenal_drones_repair_in_orbit(GameTestHelper helper) {
+    public static void arsenal_drones_do_not_repair_by_themselves(GameTestHelper helper) {
         ServerPlayer owner = makeImtOwner(helper, new BlockPos(1, 3, 1));
         owner.setData(ModAttachments.ARSENAL, ImtArsenal.EMPTY);
         UUID resting = ArsenalServer.add(owner);
@@ -1724,20 +1726,20 @@ public final class ImtTechGameTests {
         helper.setBlock(pos, ModBlocks.DRONE_DOCK.get());
         var dock = (com.senne.imttech.arsenal.DroneDockBlockEntity) helper.getBlockEntity(pos);
         dock.setOwner(owner.getUUID());
-        for (int second = 0; second < 4; second++) {
-            ArsenalServer.orbitRepair(owner);
+        for (int tick = 0; tick < 100; tick++) {
+            owner.tickCount++;
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new PlayerTickEvent.Post(owner));
         }
         helper.runAfterDelay(20, () -> {
-            float expected = 3.0f + 4 * com.senne.imttech.config.ImtConfig.Drones.ORBIT_REPAIR_PER_SECOND;
-            ArsenalDrone repaired = ArsenalServer.get(owner).find(resting);
+            ArsenalDrone inOrbit = ArsenalServer.get(owner).find(resting);
             ArsenalDrone away = ArsenalServer.get(owner).find(busy);
-            if (repaired == null || repaired.health() < expected - 0.01f) {
-                throw new GameTestAssertException("De drone in zijn baan herstelde niet: " + repaired);
+            if (inOrbit == null || inOrbit.health() != 3.0f) {
+                throw new GameTestAssertException("De drone in zijn baan herstelde vanzelf: " + inOrbit);
             }
             if (away == null || away.health() != 3.0f) {
-                throw new GameTestAssertException("Een drone op pad herstelde toch: " + away);
+                throw new GameTestAssertException("Een drone op pad herstelde vanzelf: " + away);
             }
-            if (repaired.docked() || dock.bot() != null) {
+            if (inOrbit.docked() || dock.bot() != null) {
                 throw new GameTestAssertException("De arsenaal-drone ging toch op het dock");
             }
             helper.succeed();

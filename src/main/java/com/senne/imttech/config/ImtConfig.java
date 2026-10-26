@@ -356,11 +356,6 @@ public final class ImtConfig {
     public static final class Drones {
         private Drones() {}
 
-        // ------------------------------------------------------------------------- Herstellen (hoofdstuk 25)
-        /** Levenspunten per seconde die een drone in zijn baan herstelt (even snel als vroeger op een dock). */
-        @Tunable("Health an arsenal drone repairs per second while it waits in orbit")
-        public static float ORBIT_REPAIR_PER_SECOND = 0.25f;
-
         // ------------------------------------------------------------------------- Hoeveel
         // Op een server met veel spelers kunnen honderden drones het spel laten haperen: hier kies je het maximum.
         /** Aanvalsdrones in een zwerm zonder drone-upgrades. */
@@ -433,10 +428,13 @@ public final class ImtConfig {
         /** Welk deel van de bouwkosten je terugkrijgt als een drone wordt neergehaald (de rest is weg). */
         @Tunable(value = "Share of a drone's build cost you get back as scrap when it is shot down (0-1)", max = 1)
         public static double WRECK_RECOVERY = 0.10;
-        /** Levenspunten die één ijzerstaaf aan een drone herstelt. */
-        @Tunable(value = "Health one iron ingot repairs on a drone", min = 0.1)
+        /**
+         * Levenspunten die één ijzerstaaf aan een drone herstelt. Dat is de enige manier: een drone herstelt nergens
+         * vanzelf, ook niet in zijn baan (26 oktober).
+         */
+        @Tunable(value = "Health one iron ingot repairs on a drone (the only way to repair one: drones never heal "
+                + "by themselves, not even in orbit)", min = 0.1)
         public static double REPAIR_PER_INGOT = 3.0;
-        // (Repareren op een drone-dock staat bij Power.)
 
         // ------------------------------------------------------------------------- Aankomen en vertrekken
         /**
@@ -1488,6 +1486,15 @@ public final class ImtConfig {
         /** De kans dat een onderdeel heel blijft als je een robot echt kapotmaakt (0 = nooit, 1 = altijd). */
         @Tunable(value = "Chance that each part survives when a robot is destroyed (0 = never, 1 = always)", max = 1)
         public static float PART_SURVIVE_CHANCE = 0.5f;
+        /**
+         * Levenspunten die één ijzerstaaf aan een robot of security drone herstelt (rechtsklik met ijzer). Dat is de
+         * enige manier: ze herstellen nergens vanzelf, ook niet op hun dock (26 oktober). Een Battle-robot (20) is met
+         * 5 staven weer heel, een security drone (16) met 4.
+         */
+        @Tunable(value = "Health one iron ingot repairs on a robot or a security drone (right-click it with iron). "
+                + "This is the only way to repair them: they never heal by themselves, not even on their dock",
+                min = 0.1, max = 1_000)
+        public static float REPAIR_PER_INGOT = 4.0f;
         /** Hoeveel stroom per tick een Robot Dock uit het net in de robot op hem stopt. */
         @Tunable(value = "Energy per tick a robot dock takes from the grid and puts into the robot standing on it", max = 1_000)
         public static float DOCK_CHARGE_RATE = 5.0f;

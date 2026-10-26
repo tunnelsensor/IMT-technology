@@ -29,12 +29,13 @@ import org.jetbrains.annotations.Nullable;
  *  Owner: Senne
  *  Head   Commando        Body   Super Battle
  *  Arms   Trainer         Legs   Battle
+ *  Health  [################--]  18/20
  *  Battery [##########--------]  56%
  *  Dock    12, 64, -40
  *  Name    [Guard 1          ] [Rename]
  *  [Switch off] [Pick up] [Board]           [Done]
  * </pre>
- * Wat er nu is (naam, toestand, batterij) leest het scherm gewoon van de robot: dat kent jouw spel al, dus je
+ * Wat er nu is (naam, toestand, leven, batterij) leest het scherm gewoon van de robot: dat kent jouw spel al, dus je
  * ziet het veranderen zodra de server iets gedaan heeft. Een security drone (hoofdstuk 25) heeft hetzelfde scherm,
  * zonder onderdelen (een drone ziet er altijd hetzelfde uit).
  */
@@ -190,25 +191,36 @@ public class RobotScreen extends Screen {
             g.drawString(font, "it flies: up(n) and down(n) in its program", left + MARGIN, top + 48, HudStyle.argb(200, 0x9FC9D6), false);
         }
 
+        // Zijn leven (26 oktober): dat herstelt alleen met ijzer, dus je ziet hier hoeveel schade hij heeft. Groen,
+        // oranje onder de helft, rood onder een kwart. Naar beneden afgerond, net als de melding na het repareren.
+        float health = robot.healthFraction();
+        int healthColour = health < 0.25f ? HudStyle.RED : health < 0.5f ? HudStyle.ORANGE : HudStyle.GREEN;
+        bar(g, "Health", top + 62, health, healthColour,
+                (int) Math.floor(robot.getHealth()) + "/" + (int) Math.ceil(robot.getMaxHealth()));
+
         // De batterij: een balk, groen, oranje onder 30%, rood onder 10%.
-        label(g, "Battery", top + 66);
         float fraction = robot.batteryFraction();
-        int barX = left + VALUE_X;
-        int barW = PANEL_W - VALUE_X - MARGIN - 34;
-        g.fill(barX, top + 66, barX + barW, top + 74, HudStyle.argb(255, 0x1E2128));
         int colour = fraction < 0.1f ? HudStyle.RED : fraction < 0.3f ? HudStyle.ORANGE : HudStyle.GREEN;
-        g.fill(barX, top + 66, barX + Math.round(barW * fraction), top + 74, HudStyle.argb(255, colour));
-        g.renderOutline(barX - 1, top + 65, barW + 2, 10, HudStyle.argb(180, 0x465460));
-        String percent = Math.round(fraction * 100) + "%";
-        g.drawString(font, percent, left + PANEL_W - MARGIN - font.width(percent), top + 66, HudStyle.argb(230, HudStyle.WHITE), false);
+        bar(g, "Battery", top + 76, fraction, colour, Math.round(fraction * 100) + "%");
 
         // Zijn dock.
-        label(g, "Dock", top + 86);
+        label(g, "Dock", top + 92);
         String dock = home == null ? drone ? "None (put it on a Drone Dock)" : "None (put it on a Robot Dock)"
                 : home.getX() + ", " + home.getY() + ", " + home.getZ();
-        g.drawString(font, dock, left + VALUE_X, top + 86, HudStyle.argb(home == null ? 170 : 230, HudStyle.WHITE), false);
+        g.drawString(font, dock, left + VALUE_X, top + 92, HudStyle.argb(home == null ? 170 : 230, HudStyle.WHITE), false);
 
         label(g, "Name", top + 113);
+    }
+
+    /** Een balk (zo vol als {@code fraction}) met de naam ervoor en het getal erachter: het leven en de batterij. */
+    private void bar(GuiGraphics g, String name, int y, float fraction, int colour, String value) {
+        label(g, name, y);
+        int barX = left + VALUE_X;
+        int barW = PANEL_W - VALUE_X - MARGIN - 34;
+        g.fill(barX, y, barX + barW, y + 8, HudStyle.argb(255, 0x1E2128));
+        g.fill(barX, y, barX + Math.round(barW * fraction), y + 8, HudStyle.argb(255, colour));
+        g.renderOutline(barX - 1, y - 1, barW + 2, 10, HudStyle.argb(180, 0x465460));
+        g.drawString(font, value, left + PANEL_W - MARGIN - font.width(value), y, HudStyle.argb(230, HudStyle.WHITE), false);
     }
 
     private void label(GuiGraphics g, String text, int y) {

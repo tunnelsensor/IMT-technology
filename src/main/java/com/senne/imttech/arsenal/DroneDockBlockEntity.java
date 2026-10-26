@@ -20,8 +20,8 @@ import org.jetbrains.annotations.Nullable;
  * GuardDroneEntity, net als een robot op zijn Robot Dock).
  *
  * Vroeger stonden hier drones uit je arsenaal; jouw antwoord van 14 oktober: "arsenaal-drones gaan niet meer op
- * een dock, ze blijven in hun baan". Die herstellen zich nu daar (zie ArsenalServer.orbitRepair). Wat een oud dock
- * nog over zo'n drone bewaarde, lezen we niet meer.
+ * een dock, ze blijven in hun baan". Daar herstellen ze niet vanzelf (26 oktober): alleen met ijzer, als je ze
+ * terugroept (zie DroneEntity.mobInteract). Wat een oud dock nog over zo'n drone bewaarde, lezen we niet meer.
  *
  * Van wie is een dock? Van wie hem neerzet. Een dock in een Biebia's Industries Tower (neergezet door de toren zelf, zonder
  * eigenaar) is van wie de toren gehackt heeft.
