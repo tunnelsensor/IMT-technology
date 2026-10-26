@@ -232,6 +232,20 @@ public final class ModBlocks {
                     .noOcclusion()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
 
+    /**
+     * Hoofdstuk 35: de Remote EMP, een halve bol met een antenne op een vloer, muur of plafond. Gaat af (een EMP-puls)
+     * als iemand op zijn EMP-trigger drukt. Iedereen kan hem eraf trekken.
+     */
+    public static final DeferredBlock<com.senne.imttech.weapons.RemoteEmpBlock> REMOTE_EMP = BLOCKS.registerBlock(
+            "remote_emp", com.senne.imttech.weapons.RemoteEmpBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(0.4f, 1.0f)
+                    .sound(SoundType.METAL)
+                    .noCollission()
+                    .noOcclusion()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
+
     /** C4 met een antenne (hoofdstuk 10): wacht tot iemand op zijn detonator drukt. */
     public static final DeferredBlock<com.senne.imttech.c4.C4Block> REMOTE_C4 = BLOCKS.registerBlock(
             "remote_c4", properties -> new com.senne.imttech.c4.C4Block(com.senne.imttech.c4.C4Block.Kind.REMOTE, properties),

@@ -152,6 +152,15 @@ public final class ModDataComponents {
      * Hoofdstuk 35: de kleur van de rook van een Smoke Grenade (jouw keuze: "kleur met kleurstof"). Geen = grijs. Je
      * zet hem met een recept: een smokebom en een kleurstof (zie data/imttech/recipe/smoke_grenade_*.json).
      */
+    /**
+     * Hoofdstuk 35: wat een EMP-trigger onthoudt (zijn nummer en waar zijn Remote EMP's zitten). Hetzelfde soort gegevens
+     * als bij de detonator van C4, maar apart, zodat een trigger nooit C4 laat afgaan en andersom.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.c4.DetonatorData>> EMP_TRIGGER =
+            COMPONENTS.registerComponentType("emp_trigger", builder -> builder
+                    .persistent(com.senne.imttech.c4.DetonatorData.CODEC)
+                    .networkSynchronized(com.senne.imttech.c4.DetonatorData.STREAM_CODEC));
+
     /** Hoofdstuk 35: hoe vol een energiecel is (0 tot 100). Geen = leeg. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Float>> CELL_CHARGE =
             COMPONENTS.registerComponentType("cell_charge", builder -> builder

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "item": "imttech:sticky_emp_grenade"
+    },
+    {
+      "item": "minecraft:redstone_torch"
+    },
+    {
+      "tag": "c:ingots/copper"
+    }
+  ],
+  "result": {
+    "id": "imttech:remote_emp",
+    "count": 1
+  }
+}

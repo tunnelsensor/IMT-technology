@@ -1776,6 +1776,9 @@ public final class ImtConfig {
         /** Hoe lang alles uit blijft na een EMP-granaat (seconden). */
         @Tunable(value = "How long everything stays off after an EMP grenade (seconds)", min = 1, max = 600)
         public static float EMP_SECONDS = 20.0f;
+        /** Tot hoe ver het signaal van een EMP-trigger reikt (blokken), naar zijn Remote EMP's. */
+        @Tunable(value = "How far the signal of an EMP trigger reaches its Remote EMPs (blocks)", min = 1, max = 1_000)
+        public static float EMP_TRIGGER_RANGE = 128.0f;
         /** Na hoeveel seconden een sticky (EMP of frag) afgaat, vanaf het vastplakken. */
         @Tunable(value = "Seconds from sticking until a sticky grenade (EMP or frag) goes off", max = 30)
         public static float STICKY_FUSE_SECONDS = 2.0f;

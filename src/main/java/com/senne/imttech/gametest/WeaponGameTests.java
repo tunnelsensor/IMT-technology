@@ -745,4 +745,65 @@ public final class WeaponGameTests {
                         "De cel laadt niet op"))
                 .thenSucceed();
     }
+
+    // ================================================================ De Remote EMP
+
+    /**
+     * Jouw wens: "een remote getriggerde EMP ... die trigger je met een item in de inventory". Plak je een Remote EMP
+     * tegen een muur met een EMP-trigger bij je, dan hoort hij bij die trigger. Rechtsklik met de trigger: hij gaat af
+     * (een gewone EMP-puls: de robot ligt neer, de turret staat uit), de muur blijft heel, en hij is weg (eenmalig). Een
+     * Remote EMP van een andere trigger blijft gewoon zitten.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "weapons")
+    public static void remote_emp_goes_off_with_its_trigger(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (int y = 2; y <= 4; y++) {
+            for (int z = 3; z <= 12; z++) {
+                helper.setBlock(new BlockPos(12, y, z), Blocks.STONE);
+            }
+        }
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 6), "emp-remote");
+        player.getAbilities().instabuild = false;
+        ItemStack trigger = new ItemStack(ModItems.EMP_TRIGGER.get());
+        player.getInventory().setItem(8, trigger);
+        // De Remote EMP plakken tegen de westkant van de muur (zoals een speler: rechtsklik op die kant).
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.REMOTE_EMP.get(), 2));
+        BlockPos wallBlock = helper.absolutePos(new BlockPos(12, 3, 6));
+        Vec3 hitAt = Vec3.atCenterOf(wallBlock).add(-0.5, 0, 0);
+        ModItems.REMOTE_EMP.get().useOn(new net.minecraft.world.item.context.UseOnContext(player, InteractionHand.MAIN_HAND,
+                new net.minecraft.world.phys.BlockHitResult(hitAt, Direction.WEST, wallBlock, false)));
+        BlockPos empPos = new BlockPos(11, 3, 6);
+        check(helper.getBlockState(empPos).is(ModBlocks.REMOTE_EMP.get()), "De Remote EMP plakte niet tegen de muur");
+        check(com.senne.imttech.weapons.RemoteEmpBlock.outward(helper.getBlockState(empPos)) == Direction.WEST,
+                "De Remote EMP wijst niet van de muur af");
+        var emp = (com.senne.imttech.weapons.RemoteEmpBlockEntity) helper.getBlockEntity(empPos);
+        check(emp.trigger() != null && emp.trigger().equals(com.senne.imttech.weapons.EmpTriggerItem.data(trigger).id()),
+                "De Remote EMP hoort niet bij de trigger in je inventaris");
+        // Een tweede Remote EMP, van een andere trigger.
+        BlockPos otherPos = new BlockPos(11, 3, 11);
+        helper.setBlock(otherPos, ModBlocks.REMOTE_EMP.get().defaultBlockState()
+                .setValue(com.senne.imttech.weapons.RemoteEmpBlock.FACING, Direction.WEST));
+        ItemStack otherTrigger = new ItemStack(ModItems.EMP_TRIGGER.get());
+        com.senne.imttech.weapons.EmpTriggerItem.link(level, helper.absolutePos(otherPos),
+                (com.senne.imttech.weapons.RemoteEmpBlockEntity) helper.getBlockEntity(otherPos), otherTrigger);
+        GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(9, 2, 7), RobotParts.DEFAULT);
+        BlockPos turret = new BlockPos(8, 2, 4);
+        helper.setBlock(turret, ModBlocks.ROCKET_TURRET.get());
+        generator(helper, turret.below());
+        ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
+        helper.assertBlockProperty(turret, TurretBlock.ONLINE, true);
+        check(!robot.isDown(), "De robot lag al neer");
+        check(com.senne.imttech.weapons.EmpTriggerItem.fire(level, player, trigger) == 1, "De trigger liet niet één EMP afgaan");
+        helper.startSequence()
+                .thenWaitUntil(() -> check(helper.getBlockState(empPos).isAir(), "De Remote EMP ging niet af"))
+                .thenExecute(() -> {
+                    check(robot.isDown(), "De robot ligt niet neer na de Remote EMP");
+                    helper.assertBlockProperty(turret, TurretBlock.ONLINE, false);
+                    helper.assertBlockPresent(Blocks.STONE, new BlockPos(12, 3, 6));
+                    check(helper.getBlockState(otherPos).is(ModBlocks.REMOTE_EMP.get()), "De Remote EMP van de andere trigger ging ook af");
+                    check(com.senne.imttech.weapons.EmpTriggerItem.data(trigger).charges().isEmpty(),
+                            "De trigger onthoudt een EMP die al afging");
+                })
+                .thenSucceed();
+    }
 }

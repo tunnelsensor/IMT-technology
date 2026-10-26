@@ -1513,5 +1513,20 @@
   "hud.imttech.gun.cells": "Cells: %s",
   "hud.imttech.gun.reloading": "RELOADING",
   "hud.imttech.gun.no_cell": "NO CELL - PRESS R",
-  "hud.imttech.gun.empty": "EMPTY - PRESS R"
+  "hud.imttech.gun.empty": "EMPTY - PRESS R",
+  "block.imttech.remote_emp": "Remote EMP",
+  "item.imttech.emp_trigger": "EMP Trigger",
+  "tooltip.imttech.remote_emp": "Stick it to a wall, then set it off from afar with an EMP Trigger",
+  "item.imttech.remote_emp.linked": "Remote EMP linked to your EMP Trigger (%s linked)",
+  "item.imttech.remote_emp.no_trigger": "Remote EMP placed, but you have no EMP Trigger: right-click it with one",
+  "item.imttech.remote_emp.taken": "This Remote EMP belongs to another EMP Trigger",
+  "item.imttech.remote_emp.full": "Your EMP Trigger already has %s Remote EMPs",
+  "item.imttech.emp_trigger.none": "No Remote EMPs linked to this trigger",
+  "item.imttech.emp_trigger.fired": "%s Remote EMPs set off",
+  "item.imttech.emp_trigger.fired_some": "%s Remote EMPs set off, %s out of range (%s blocks)",
+  "item.imttech.emp_trigger.status": "%s Remote EMPs linked, %s within %s blocks",
+  "tooltip.imttech.emp_trigger.linked": "Remote EMPs linked: %s",
+  "tooltip.imttech.emp_trigger.fire": "Right-click: set off every linked Remote EMP within %s blocks",
+  "tooltip.imttech.emp_trigger.status": "Sneak + right-click: how many are linked and in range",
+  "tooltip.imttech.emp_trigger.link": "Right-click a Remote EMP with it to link it"
 }

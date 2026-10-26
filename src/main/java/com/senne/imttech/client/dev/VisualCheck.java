@@ -1824,6 +1824,24 @@ public final class VisualCheck {
                     new Vec3(WEAPON_YARD.getX() - 1.5, WEAPON_YARD.getY() + 1.5, WEAPON_YARD.getZ() + 10.5), null));
             t.shot(4, "gr17_flashbang_white");
             t.shot(60, "gr18_flashbang_fading");
+            // De Remote EMP: tegen de muur, met de EMP-trigger in je hand; dan de knop.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos emp = WEAPON_YARD.offset(6, 2, -3);
+                level.setBlockAndUpdate(emp, ModBlocks.REMOTE_EMP.get().defaultBlockState()
+                        .setValue(com.senne.imttech.weapons.RemoteEmpBlock.FACING, Direction.WEST));
+                ItemStack trigger = new ItemStack(ModItems.EMP_TRIGGER.get());
+                if (level.getBlockEntity(emp) instanceof com.senne.imttech.weapons.RemoteEmpBlockEntity entity) {
+                    com.senne.imttech.weapons.EmpTriggerItem.link(level, emp, entity, trigger);
+                }
+                player.getInventory().setItem(4, trigger);
+            });
+            t.step(0, () -> selectSlot(4));
+            t.stand(0, WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() - 2.5, -90, 12);
+            t.shot(20, "gr19_remote_emp_and_trigger");
+            t.onServer(0, player -> com.senne.imttech.weapons.EmpTriggerItem.fire(player.serverLevel(), player,
+                    player.getMainHandItem()));
+            t.shot(4, "gr20_remote_emp_blast");
         }
 
         // --- De lasergeweren (hoofdstuk 35): elk geweer vanuit de heup, gericht en schietend; het geweer herladen en

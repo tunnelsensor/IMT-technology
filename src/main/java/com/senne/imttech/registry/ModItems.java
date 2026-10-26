@@ -367,6 +367,15 @@ public final class ModItems {
                     com.senne.imttech.weapons.GrenadeItem.Kind.STICKY_FRAG),
             new Item.Properties());
 
+    /** Hoofdstuk 35: de Remote EMP (plak hem, en laat hem afgaan met een EMP-trigger). */
+    public static final DeferredItem<com.senne.imttech.weapons.RemoteEmpItem> REMOTE_EMP = ITEMS.registerItem("remote_emp",
+            properties -> new com.senne.imttech.weapons.RemoteEmpItem(ModBlocks.REMOTE_EMP.get(), properties),
+            new Item.Properties().stacksTo(16));
+
+    /** Hoofdstuk 35: de EMP-trigger: rechtsklik laat al zijn Remote EMP's afgaan. */
+    public static final DeferredItem<com.senne.imttech.weapons.EmpTriggerItem> EMP_TRIGGER = ITEMS.registerItem(
+            "emp_trigger", com.senne.imttech.weapons.EmpTriggerItem::new, new Item.Properties());
+
     /** Hoofdstuk 35: de energiecel, het magazijn van de lasergeweren (stapelt niet: elke cel heeft zijn eigen lading). */
     public static final DeferredItem<com.senne.imttech.weapons.EnergyCellItem> ENERGY_CELL = ITEMS.registerItem(
             "energy_cell", com.senne.imttech.weapons.EnergyCellItem::new, new Item.Properties());

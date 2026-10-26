@@ -404,6 +404,73 @@ def sticky_frag_grenade():
     sticky("sticky_frag_grenade", "olive", "orange", "glow_red")
 
 
+def remote_emp():
+    """
+    De Remote EMP (een blok): dezelfde halve bol als de sticky, maar met een stalen ring, een antenne met een rood
+    lampje, en zijn lampjes gloeien altijd (hij wacht op zijn trigger). Hier ligt het kussen onderaan (y = 0): zo plakt
+    hij op de vloer; de blockstate draait hem tegen een muur of plafond (net als C4).
+    """
+    def layer(y0, y1, r, material, glow=False):
+        return [
+            box((8 - r, y0, 8 - r * 0.56), (8 + r, y1, 8 + r * 0.56), material, glow),
+            box((8 - r * 0.56, y0, 8 - r), (8 + r * 0.56, y1, 8 + r), material, glow),
+            box((8 - r * 0.83, y0, 8 - r * 0.83), (8 + r * 0.83, y1, 8 + r * 0.83), material, glow),
+        ]
+    elements = (layer(0, 0.5, 3.6, "pad")
+                + layer(0.5, 2.1, 3.25, "red")
+                + layer(2.1, 2.6, 3.05, "steel")
+                + layer(2.6, 3.8, 2.55, "red")
+                + layer(3.8, 4.3, 1.75, "graphite")
+                + [box((7.35, 4.3, 7.35), (8.65, 4.5, 8.65), "glow", glow=True),
+                   # Vier lampjes in de ring.
+                   box((4.9, 2.2, 7.5), (5.0, 2.5, 8.5), "glow", glow=True),
+                   box((11.0, 2.2, 7.5), (11.1, 2.5, 8.5), "glow", glow=True),
+                   box((7.5, 2.2, 4.9), (8.5, 2.5, 5.0), "glow", glow=True),
+                   box((7.5, 2.2, 11.0), (8.5, 2.5, 11.1), "glow", glow=True),
+                   # De antenne, met een rood lampje bovenop.
+                   box((9.6, 3.0, 9.6), (10.2, 7.5, 10.2), "graphite"),
+                   box((9.5, 7.5, 9.5), (10.3, 8.1, 10.3), "glow_red", glow=True)])
+    block = {"parent": "minecraft:block/block", "ambientocclusion": False,
+             "textures": {"0": TEXTURE, "particle": TEXTURE}, "elements": elements}
+    write("block/remote_emp.json", block)
+    disp = display(1.7, (0, 3.5, 0), 0.7, 0.7, gui_rotation=(30, -135, 0), third=((0, 0, 0), (0, 3, 1)),
+                   first=((10, -30, 0), (0, 3, -2)), first_scale=0.45)
+    write("item/remote_emp.json", {"parent": "imttech:block/remote_emp", "display": disp})
+    # De blockstate: zoals C4 (op de vloer rechtop, tegen een muur 90 graden gekanteld, aan het plafond ondersteboven).
+    variants = {}
+    for face, x in (("floor", 0), ("wall", 90), ("ceiling", 180)):
+        for i, facing in enumerate(("north", "east", "south", "west")):
+            y = (i * 90 + (180 if face == "ceiling" else 0)) % 360
+            variant = {"model": "imttech:block/remote_emp"}
+            if x:
+                variant["x"] = x
+            if y:
+                variant["y"] = y
+            variants[f"face={face},facing={facing}"] = variant
+    path = ASSETS / "blockstates" / "remote_emp.json"
+    path.write_text(json.dumps({"variants": variants}, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print("geschreven:", path.relative_to(ASSETS.parent.parent.parent.parent.parent))
+
+
+def emp_trigger():
+    """
+    De EMP-trigger: een donker handzendertje met een cyaan schermpje, een grote rode knop met een gouden rand, en een
+    antenne met een cyaan lampje.
+    """
+    elements = [
+        box((6, 1.5, 7), (10, 11.5, 9.2), "graphite"),
+        box((5.8, 1.3, 6.8), (10.2, 2.3, 9.4), "gold"),
+        box((6.6, 7.2, 6.85), (9.4, 10.6, 7.0), "screen", glow=True),
+        box((6.6, 3.0, 6.75), (9.4, 6.4, 7.0), "gold"),
+        box((7.0, 3.4, 6.4), (9.0, 6.0, 6.75), "red"),
+        box((8.7, 11.5, 7.8), (9.3, 15.0, 8.4), "steel"),
+        box((8.6, 15.0, 7.7), (9.4, 15.6, 8.5), "glow", glow=True),
+    ]
+    disp = display(1.25, (0, 0, 0), 0.6, 0.6, gui_rotation=(20, 160, 0), third=((0, 180, 0), (0, 3, 1)),
+                   first=((0, 160, 0), (0, 3, -2)), first_scale=0.5)
+    write("item/emp_trigger.json", item_model(elements, disp))
+
+
 # ---------------------------------------------------------------- De energiecel
 
 def energy_cell():
@@ -639,6 +706,8 @@ def main():
     flashbang()
     sticky_emp_grenade()
     sticky_frag_grenade()
+    remote_emp()
+    emp_trigger()
     energy_cell()
     laser_pistol()
     laser_rifle()

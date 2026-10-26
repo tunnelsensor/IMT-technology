@@ -106,6 +106,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.LASER_SNIPER.get());
                 output.accept(ModItems.LASER_SHOTGUN.get());
                 output.accept(ModItems.STICKY_FRAG_GRENADE.get());
+                output.accept(ModItems.REMOTE_EMP.get());
+                output.accept(ModItems.EMP_TRIGGER.get());
                 output.accept(ModItems.SMOKE_GRENADE.get());
                 output.accept(ModItems.FLASHBANG.get());
                 output.accept(ModItems.TRAINING_START.get());

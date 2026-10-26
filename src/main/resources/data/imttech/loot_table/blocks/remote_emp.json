@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "imttech:remote_emp"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "imttech:blocks/remote_emp"
+}

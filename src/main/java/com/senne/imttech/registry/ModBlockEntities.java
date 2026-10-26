@@ -65,6 +65,12 @@ public final class ModBlockEntities {
                             java.util.Set.of(ModBlocks.SECURITY_CORE.get()), null));
 
     /** Een lading C4: wanneer hij afgaat, wie hem plakte, bij welke detonator hij hoort (hoofdstuk 10). */
+    /** Hoofdstuk 35: de Remote EMP (bij welke trigger hij hoort, en wanneer hij afgaat). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.weapons.RemoteEmpBlockEntity>> REMOTE_EMP =
+            BLOCK_ENTITIES.register("remote_emp",
+                    () -> new BlockEntityType<>(com.senne.imttech.weapons.RemoteEmpBlockEntity::new,
+                            java.util.Set.of(ModBlocks.REMOTE_EMP.get()), null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.c4.C4BlockEntity>> C4 =
             BLOCK_ENTITIES.register("c4",
                     () -> new BlockEntityType<>(com.senne.imttech.c4.C4BlockEntity::new,
