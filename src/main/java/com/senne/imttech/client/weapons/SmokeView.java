@@ -88,9 +88,16 @@ public final class SmokeView {
      * geen wolk kan komen (de pluk dreef eruit, bijvoorbeeld tegen een plafond).
      */
     public static float room(double x, double y, double z) {
+        ClientLevel level = Minecraft.getInstance().level;
+        long now = level == null ? 0 : level.getGameTime();
         long cell = BlockPos.asLong(Mth.floor(x), Mth.floor(y), Mth.floor(z));
         float best = -1;
-        for (Cloud cloud : CLOUDS.values()) {
+        for (Iterator<Cloud> it = CLOUDS.values().iterator(); it.hasNext(); ) {
+            Cloud cloud = it.next();
+            if (now - cloud.seen() > 5) {
+                it.remove(); // de granaat rookt niet meer (of is weg): zijn plukken trekken nu op
+                continue;
+            }
             best = Math.max(best, cloud.volume().room(cell));
         }
         return best;
