@@ -239,35 +239,19 @@
       }
     ]
   },
-  "c4.beep": {
-    "subtitle": "subtitles.imttech.c4.beep",
+  "remote_frag.defuse": {
+    "subtitle": "subtitles.imttech.remote_frag.defuse",
     "sounds": [
       {
-        "name": "imttech:c4_beep"
+        "name": "imttech:remote_frag_defuse"
       }
     ]
   },
-  "c4.arm": {
-    "subtitle": "subtitles.imttech.c4.arm",
+  "trigger.click": {
+    "subtitle": "subtitles.imttech.trigger.click",
     "sounds": [
       {
-        "name": "imttech:c4_arm"
-      }
-    ]
-  },
-  "c4.defuse": {
-    "subtitle": "subtitles.imttech.c4.defuse",
-    "sounds": [
-      {
-        "name": "imttech:c4_defuse"
-      }
-    ]
-  },
-  "c4.detonator": {
-    "subtitle": "subtitles.imttech.c4.detonator",
-    "sounds": [
-      {
-        "name": "imttech:detonator_click"
+        "name": "imttech:trigger_click"
       }
     ]
   },

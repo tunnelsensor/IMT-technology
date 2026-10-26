@@ -1,4 +1,4 @@
-package com.senne.imttech.c4;
+package com.senne.imttech.breach;
 
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.security.zone.Zones;
@@ -26,7 +26,7 @@ import net.minecraft.world.phys.Vec3;
  * weer helemaal sterk is, vervang het dan.
  *
  * In een beveiligde zone mag alleen wie er mag bouwen plamuren (mijn invulling): anders kan een
- * inbreker een muur met wat TNT en pasta steeds zwakker maken, tot één C4 genoeg is.
+ * inbreker een muur met wat TNT en pasta steeds zwakker maken, tot één frag genoeg is.
  */
 public class RepairPasteItem extends Item {
     public RepairPasteItem(Properties properties) {

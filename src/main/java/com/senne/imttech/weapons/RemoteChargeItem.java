@@ -1,6 +1,6 @@
 package com.senne.imttech.weapons;
 
-import com.senne.imttech.c4.DetonatorData;
+import com.senne.imttech.breach.BlastAlarm;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.registry.ModSounds;
 import java.util.List;
@@ -14,39 +14,48 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De Remote EMP als item (hoofdstuk 35): plak hem tegen een vloer, muur of plafond. Heb je een EMP-trigger bij je, dan
- * hoort hij meteen bij die trigger.
+ * De Remote EMP en de Remote Frag als item (hoofdstuk 35): plak hem tegen een vloer, muur of plafond, ook in de zone
+ * van een ander (een lading mag altijd, anders kun je nergens binnen). Heb je een trigger van dezelfde soort bij je, dan
+ * hoort hij meteen bij die trigger. Een Remote Frag op de zone van een ander laat het alarm afgaan (zie BlastAlarm).
  */
-public class RemoteEmpItem extends BlockItem {
-    public RemoteEmpItem(Block block, Properties properties) {
+public class RemoteChargeItem extends BlockItem {
+    private final RemoteChargeBlock charge;
+
+    public RemoteChargeItem(RemoteChargeBlock block, Properties properties) {
         super(block, properties);
+        this.charge = block;
     }
 
-    /** Net geplakt: wie het deed, en meteen koppelen aan de EMP-trigger die je bij je hebt. */
+    public RemoteChargeBlock.Kind kind() {
+        return charge.kind();
+    }
+
+    /** Net geplakt: wie het deed, meteen koppelen aan de trigger die je bij je hebt, en (een frag) het alarm. */
     @Override
     protected boolean updateCustomBlockEntityTag(BlockPos pos, Level level, @Nullable Player player, ItemStack stack, BlockState state) {
         boolean changed = super.updateCustomBlockEntityTag(pos, level, player, stack, state);
-        if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof RemoteEmpBlockEntity emp) {
-            emp.placedBy(player);
+        if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof RemoteChargeBlockEntity placed) {
+            placed.placedBy(player);
             level.playSound(null, pos, ModSounds.EMP_GRENADE_STICK.get(), SoundSource.BLOCKS, 0.8f, 0.9f);
             if (player != null) {
-                ItemStack trigger = EmpTriggerItem.find(player);
+                ItemStack trigger = TriggerItem.find(player, kind());
                 Component message;
                 if (trigger == null) {
-                    message = Component.translatable("item.imttech.remote_emp.no_trigger").withStyle(ChatFormatting.YELLOW);
-                } else if (EmpTriggerItem.link(serverLevel, pos, emp, trigger)) {
-                    message = Component.translatable("item.imttech.remote_emp.linked",
-                            EmpTriggerItem.ensure(trigger).charges().size()).withStyle(ChatFormatting.AQUA);
+                    message = Component.translatable(charge.key("no_trigger")).withStyle(ChatFormatting.YELLOW);
+                } else if (TriggerItem.link(serverLevel, pos, placed, trigger)) {
+                    message = Component.translatable(charge.key("linked"), TriggerItem.ensure(trigger).charges().size())
+                            .withStyle(((TriggerItem) trigger.getItem()).colour());
                 } else {
-                    message = Component.translatable("item.imttech.remote_emp.full", DetonatorData.MAX_CHARGES)
-                            .withStyle(ChatFormatting.YELLOW);
+                    message = Component.translatable(charge.key("full"), TriggerData.MAX_CHARGES).withStyle(ChatFormatting.YELLOW);
                 }
                 player.displayClientMessage(message, true);
+            }
+            if (kind() == RemoteChargeBlock.Kind.FRAG) {
+                BlastAlarm.planted(serverLevel, pos, placed);
             }
         }
         return changed;
@@ -54,8 +63,14 @@ public class RemoteEmpItem extends BlockItem {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.imttech.remote_emp").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.imttech.emp_grenade.what", (int) ImtConfig.Weapons.EMP_RADIUS,
-                Math.round(ImtConfig.Weapons.EMP_SECONDS)).withStyle(ChatFormatting.DARK_AQUA));
+        if (kind() == RemoteChargeBlock.Kind.FRAG) {
+            tooltip.add(Component.translatable("tooltip.imttech.remote_frag").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("tooltip.imttech.frag_grenade.what").withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable("tooltip.imttech.remote_frag.defuse").withStyle(ChatFormatting.DARK_GRAY));
+        } else {
+            tooltip.add(Component.translatable("tooltip.imttech.remote_emp").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("tooltip.imttech.emp_grenade.what", (int) ImtConfig.Weapons.EMP_RADIUS,
+                    Math.round(ImtConfig.Weapons.EMP_SECONDS)).withStyle(ChatFormatting.DARK_AQUA));
+        }
     }
 }

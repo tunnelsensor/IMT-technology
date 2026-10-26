@@ -103,7 +103,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.LogicGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.DatacenterGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.ZoneGameTests.class));
-        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.C4GameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.RemoteFragGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.CrackGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BypassGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.CoreConfigGameTests.class));
@@ -228,7 +228,8 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.imttech.security.zone.Zones::onPlace);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH, com.senne.imttech.security.zone.Zones::onUseItem);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.senne.imttech.security.zone.Zones::onToolModification);
-        // Alleen C4 komt door een zone: geen explosies, zuigers, monsters of lava (vuur: zie FireBlockMixin).
+        // Alleen frags komen door een zone (TNT en de satelliet een beetje): geen andere explosies, zuigers, monsters of
+        // lava (vuur: zie FireBlockMixin).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onExplosion);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onPiston);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onMobGriefing);
@@ -238,17 +239,18 @@ public class ImtTech {
         // De rand van je zone: de server stuurt je zones naar jou en je vrienden.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneSync::onServerTick);
         // De barsten van een klap blijven zichtbaar zolang ze er zijn (tot je ze herstelt).
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.c4.Cracks::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.Cracks::onServerTick);
         // Een blok met barsten weghakken geeft een gebarsten blok. Als laatste: pas als niemand het
         // breken tegenhield (een zone bijvoorbeeld).
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.senne.imttech.repair.CrackDrops::onBreak);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.repair.CrackDrops::onDrops);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.repair.CrackDrops::onServerTick);
-        // Het alarm van C4: het verslag als je weer inlogt, en de hint "alleen met een schaar".
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.c4.C4Alarm::onPlayerLoggedIn);
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.c4.C4Alarm::onServerTick);
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.c4.C4Alarm::onServerStopped);
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.c4.C4Block::onLeftClick);
+        // Het alarm van een zone bij explosieven: het verslag als je weer inlogt, en de hint "alleen met een schaar"
+        // bij een Remote Frag.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.BlastAlarm::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.BlastAlarm::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.BlastAlarm::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.RemoteChargeBlock::onLeftClick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneSync::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneSync::onServerStopped);
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan

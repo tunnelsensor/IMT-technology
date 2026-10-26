@@ -61,15 +61,11 @@ public final class ModSounds {
     /** Iets raakt een rayshield (of loopt tegen een laserwand): een elektrische knetter. */
     public static final DeferredHolder<SoundEvent, SoundEvent> RAYSHIELD_HIT = register("shield.rayshield_hit");
 
-    // Hoofdstuk 10: C4
-    /** Het piepje van een C4 (Timer) die aftelt. */
-    public static final DeferredHolder<SoundEvent, SoundEvent> C4_BEEP = register("c4.beep");
-    /** Een C4 wordt geplakt en gaat lopen (klik, dubbel piepje). */
-    public static final DeferredHolder<SoundEvent, SoundEvent> C4_ARM = register("c4.arm");
-    /** Iemand knipt de draad van een C4 door. */
-    public static final DeferredHolder<SoundEvent, SoundEvent> C4_DEFUSE = register("c4.defuse");
-    /** De knop van de detonator (een klik en een radiotoontje). */
-    public static final DeferredHolder<SoundEvent, SoundEvent> DETONATOR = register("c4.detonator");
+    // Hoofdstuk 35: de Remote Frag en de triggers (eerst van C4)
+    /** Iemand knipt de draad van een Remote Frag door. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> REMOTE_FRAG_DEFUSE = register("remote_frag.defuse");
+    /** De knop van een trigger (een klik en een radiotoontje). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> TRIGGER_CLICK = register("trigger.click");
 
     // ---------------------------------------------------------------- Guard robots (hoofdstuk 21)
     /** Een stap: een servo-ritje en een metalen tikje. */

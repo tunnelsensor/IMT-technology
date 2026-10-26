@@ -1,4 +1,4 @@
-package com.senne.imttech.c4;
+package com.senne.imttech.weapons;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -12,43 +12,44 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
 /**
- * Wat een detonator onthoudt (hoofdstuk 10): zijn eigen nummer (een remote C4 onthoudt bij welke
- * detonator hij hoort) en waar zijn ladingen zitten. Het zit op het item zelf, zodat je spel de rode
- * markeringen kan tekenen als je hem vasthoudt.
+ * Wat een trigger onthoudt (de EMP Trigger en de Frag Trigger, hoofdstuk 35; eerst de detonator van C4): zijn eigen
+ * nummer (een Remote EMP of Remote Frag onthoudt bij welke trigger hij hoort) en waar zijn ladingen zitten. Het zit op
+ * het item zelf, zodat je spel de bordjes boven je ladingen kan tekenen als je hem vasthoudt (zie
+ * client/weapons/TriggerMarkers).
  *
- * @param id      het nummer van deze detonator
+ * @param id      het nummer van deze trigger
  * @param charges waar zijn ladingen zitten (hooguit {@link #MAX_CHARGES})
  */
-public record DetonatorData(UUID id, List<GlobalPos> charges) {
-    /** Zoveel ladingen onthoudt één detonator hooguit. */
+public record TriggerData(UUID id, List<GlobalPos> charges) {
+    /** Zoveel ladingen onthoudt één trigger hooguit. */
     public static final int MAX_CHARGES = 32;
 
-    public static final Codec<DetonatorData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            UUIDUtil.CODEC.fieldOf("id").forGetter(DetonatorData::id),
-            GlobalPos.CODEC.listOf().optionalFieldOf("charges", List.of()).forGetter(DetonatorData::charges)
-    ).apply(instance, DetonatorData::new));
+    public static final Codec<TriggerData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            UUIDUtil.CODEC.fieldOf("id").forGetter(TriggerData::id),
+            GlobalPos.CODEC.listOf().optionalFieldOf("charges", List.of()).forGetter(TriggerData::charges)
+    ).apply(instance, TriggerData::new));
 
-    public static final StreamCodec<ByteBuf, DetonatorData> STREAM_CODEC = StreamCodec.composite(
-            UUIDUtil.STREAM_CODEC, DetonatorData::id,
-            GlobalPos.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_CHARGES)), DetonatorData::charges,
-            DetonatorData::new);
+    public static final StreamCodec<ByteBuf, TriggerData> STREAM_CODEC = StreamCodec.composite(
+            UUIDUtil.STREAM_CODEC, TriggerData::id,
+            GlobalPos.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_CHARGES)), TriggerData::charges,
+            TriggerData::new);
 
-    public DetonatorData {
+    public TriggerData {
         charges = List.copyOf(charges);
     }
 
     /** Een lading erbij (als hij er nog niet in staat, en als er plek is). */
-    public DetonatorData with(GlobalPos charge) {
+    public TriggerData with(GlobalPos charge) {
         if (charges.contains(charge) || charges.size() >= MAX_CHARGES) {
             return this;
         }
         List<GlobalPos> more = new ArrayList<>(charges);
         more.add(charge);
-        return new DetonatorData(id, more);
+        return new TriggerData(id, more);
     }
 
     /** Alleen deze ladingen houden. */
-    public DetonatorData withCharges(List<GlobalPos> kept) {
-        return new DetonatorData(id, kept);
+    public TriggerData withCharges(List<GlobalPos> kept) {
+        return new TriggerData(id, kept);
     }
 }

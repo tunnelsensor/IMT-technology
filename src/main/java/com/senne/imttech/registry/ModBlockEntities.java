@@ -64,17 +64,17 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.security.SecurityCoreBlockEntity::new,
                             java.util.Set.of(ModBlocks.SECURITY_CORE.get()), null));
 
-    /** Een lading C4: wanneer hij afgaat, wie hem plakte, bij welke detonator hij hoort (hoofdstuk 10). */
-    /** Hoofdstuk 35: de Remote EMP (bij welke trigger hij hoort, en wanneer hij afgaat). */
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.weapons.RemoteEmpBlockEntity>> REMOTE_EMP =
+    /** Hoofdstuk 35: de Remote EMP (wie hem plakte, bij welke trigger hij hoort, en wanneer hij afgaat). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.weapons.RemoteChargeBlockEntity>> REMOTE_EMP =
             BLOCK_ENTITIES.register("remote_emp",
-                    () -> new BlockEntityType<>(com.senne.imttech.weapons.RemoteEmpBlockEntity::new,
+                    () -> new BlockEntityType<>(com.senne.imttech.weapons.RemoteChargeBlockEntity::new,
                             java.util.Set.of(ModBlocks.REMOTE_EMP.get()), null));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.c4.C4BlockEntity>> C4 =
-            BLOCK_ENTITIES.register("c4",
-                    () -> new BlockEntityType<>(com.senne.imttech.c4.C4BlockEntity::new,
-                            java.util.Set.of(ModBlocks.TIMED_C4.get(), ModBlocks.REMOTE_C4.get()), null));
+    /** Hoofdstuk 35: de Remote Frag (hetzelfde, en of de zone al gewaarschuwd is). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.weapons.RemoteChargeBlockEntity>> REMOTE_FRAG =
+            BLOCK_ENTITIES.register("remote_frag",
+                    () -> new BlockEntityType<>(com.senne.imttech.weapons.RemoteChargeBlockEntity::new,
+                            java.util.Set.of(ModBlocks.REMOTE_FRAG.get()), null));
 
     /** De binnenkant van een Crusher of Compactor (hoofdstuk 11): zijn twee vakjes en hoe ver hij is. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.repair.CrackMachineBlockEntity>> CRACK_MACHINE =

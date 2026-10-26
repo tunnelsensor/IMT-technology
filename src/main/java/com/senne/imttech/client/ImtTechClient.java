@@ -71,12 +71,12 @@ public class ImtTechClient {
         // Hoofdstuk 10: de rand van je zones (en die van wie jou vertrouwt).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneBorderRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneMarkerControl::onClientTick);
-        // De detonator in je hand: rode bordjes boven je ladingen.
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.c4.DetonatorMarkers::onRenderLevel);
-        // C4 op je zone: rode markeringen "C4!" (zie C4Alarm).
-        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.c4.C4Alerts::onRenderLevel);
+        // Een trigger in je hand: bordjes boven je Remote EMP's of Remote Frags.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.TriggerMarkers::onRenderLevel);
+        // Een Remote Frag op je zone: rode markeringen "FRAG!" (zie BlastAlarm).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ChargeAlerts::onRenderLevel);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
-                com.senne.imttech.client.c4.C4Alerts.clear());
+                com.senne.imttech.client.zone.ChargeAlerts.clear());
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneMarkerControl::onInteraction);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
                 com.senne.imttech.client.zone.ZoneClientState.clear());
@@ -172,8 +172,6 @@ public class ImtTechClient {
         event.registerEntityRenderer(ModEntities.FLASHBANG.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
-        // C4 (hoofdstuk 10): het schermpje dat aftelt en het knipperende lampje.
-        event.registerBlockEntityRenderer(ModBlockEntities.C4.get(), com.senne.imttech.client.c4.C4Renderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TURRET.get(), com.senne.imttech.client.turret.TurretRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SUIT_WORKBENCH.get(),

@@ -1,6 +1,6 @@
 """
-Maakt de 3D-modellen van de wapens (hoofdstuk 35): de twee EMP-granaten, de energiecel en de vier lasergeweren,
-en het plaatje met hun materialen.
+Maakt de 3D-modellen van de wapens (hoofdstuk 35): de granaten, de Remote EMP en Remote Frag met hun triggers, de
+energiecel en de vier lasergeweren, en het plaatje met hun materialen.
 
 Hoe het werkt
     Elk model is een lijstje doosjes ("elements"), net als een blokmodel: van een hoek tot een hoek, in pixels (16 =
@@ -404,11 +404,11 @@ def sticky_frag_grenade():
     sticky("sticky_frag_grenade", "olive", "orange", "glow_red")
 
 
-def remote_emp():
+def remote_charge(name, shell, ring, light):
     """
-    De Remote EMP (een blok): dezelfde halve bol als de sticky, maar met een stalen ring, een antenne met een rood
-    lampje, en zijn lampjes gloeien altijd (hij wacht op zijn trigger). Hier ligt het kussen onderaan (y = 0): zo plakt
-    hij op de vloer; de blockstate draait hem tegen een muur of plafond (net als C4).
+    Een lading met een antenne (een blok): dezelfde halve bol als de sticky, maar met een ring om zijn middel, een
+    antenne met een rood lampje, en zijn lampjes gloeien altijd (hij wacht op zijn trigger). Hier ligt het kussen
+    onderaan (y = 0): zo plakt hij op de vloer; de blockstate draait hem tegen een muur of plafond (net als een knop).
     """
     def layer(y0, y1, r, material, glow=False):
         return [
@@ -417,39 +417,52 @@ def remote_emp():
             box((8 - r * 0.83, y0, 8 - r * 0.83), (8 + r * 0.83, y1, 8 + r * 0.83), material, glow),
         ]
     elements = (layer(0, 0.5, 3.6, "pad")
-                + layer(0.5, 2.1, 3.25, "red")
-                + layer(2.1, 2.6, 3.05, "steel")
-                + layer(2.6, 3.8, 2.55, "red")
+                + layer(0.5, 2.1, 3.25, shell)
+                + layer(2.1, 2.6, 3.05, ring)
+                + layer(2.6, 3.8, 2.55, shell)
                 + layer(3.8, 4.3, 1.75, "graphite")
-                + [box((7.35, 4.3, 7.35), (8.65, 4.5, 8.65), "glow", glow=True),
+                + [box((7.35, 4.3, 7.35), (8.65, 4.5, 8.65), light, glow=True),
                    # Vier lampjes in de ring.
-                   box((4.9, 2.2, 7.5), (5.0, 2.5, 8.5), "glow", glow=True),
-                   box((11.0, 2.2, 7.5), (11.1, 2.5, 8.5), "glow", glow=True),
-                   box((7.5, 2.2, 4.9), (8.5, 2.5, 5.0), "glow", glow=True),
-                   box((7.5, 2.2, 11.0), (8.5, 2.5, 11.1), "glow", glow=True),
+                   box((4.9, 2.2, 7.5), (5.0, 2.5, 8.5), light, glow=True),
+                   box((11.0, 2.2, 7.5), (11.1, 2.5, 8.5), light, glow=True),
+                   box((7.5, 2.2, 4.9), (8.5, 2.5, 5.0), light, glow=True),
+                   box((7.5, 2.2, 11.0), (8.5, 2.5, 11.1), light, glow=True),
                    # De antenne, met een rood lampje bovenop.
                    box((9.6, 3.0, 9.6), (10.2, 7.5, 10.2), "graphite"),
                    box((9.5, 7.5, 9.5), (10.3, 8.1, 10.3), "glow_red", glow=True)])
     block = {"parent": "minecraft:block/block", "ambientocclusion": False,
              "textures": {"0": TEXTURE, "particle": TEXTURE}, "elements": elements}
-    write("block/remote_emp.json", block)
+    write(f"block/{name}.json", block)
     disp = display(1.7, (0, 3.5, 0), 0.7, 0.7, gui_rotation=(30, -135, 0), third=((0, 0, 0), (0, 3, 1)),
                    first=((10, -30, 0), (0, 3, -2)), first_scale=0.45)
-    write("item/remote_emp.json", {"parent": "imttech:block/remote_emp", "display": disp})
-    # De blockstate: zoals C4 (op de vloer rechtop, tegen een muur 90 graden gekanteld, aan het plafond ondersteboven).
+    write(f"item/{name}.json", {"parent": f"imttech:block/{name}", "display": disp})
+    # De blockstate: op de vloer rechtop, tegen een muur 90 graden gekanteld, aan het plafond ondersteboven.
     variants = {}
     for face, x in (("floor", 0), ("wall", 90), ("ceiling", 180)):
         for i, facing in enumerate(("north", "east", "south", "west")):
             y = (i * 90 + (180 if face == "ceiling" else 0)) % 360
-            variant = {"model": "imttech:block/remote_emp"}
+            variant = {"model": f"imttech:block/{name}"}
             if x:
                 variant["x"] = x
             if y:
                 variant["y"] = y
             variants[f"face={face},facing={facing}"] = variant
-    path = ASSETS / "blockstates" / "remote_emp.json"
+    path = ASSETS / "blockstates" / f"{name}.json"
     path.write_text(json.dumps({"variants": variants}, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ASSETS.parent.parent.parent.parent.parent))
+
+
+def remote_emp():
+    """De Remote EMP: rood met een stalen ring en cyaan lampjes (de sticky EMP met een antenne)."""
+    remote_charge("remote_emp", "red", "steel", "glow")
+
+
+def remote_frag():
+    """
+    De Remote Frag (26 oktober, in plaats van C4): de Sticky Frag met een antenne. Legergroen met een oranje ring en
+    rode lampjes.
+    """
+    remote_charge("remote_frag", "olive", "orange", "glow_red")
 
 
 def emp_trigger():
@@ -469,6 +482,44 @@ def emp_trigger():
     disp = display(1.25, (0, 0, 0), 0.6, 0.6, gui_rotation=(20, 160, 0), third=((0, 180, 0), (0, 3, 1)),
                    first=((0, 160, 0), (0, 3, -2)), first_scale=0.5)
     write("item/emp_trigger.json", item_model(elements, disp))
+
+
+def frag_trigger():
+    """
+    De Frag Trigger (jouw wens: "een nieuwe mooie 3D-model zoals de EMP trigger"): een stevige legergroene ontsteker. Een
+    oranje gevarenband, rubberen grepen aan de zijkanten, een klein rood schermpje, een dikke rubberen antenne met een
+    rood lampje, een tuimelschakelaar met een rood lampje (gewapend), en een grote rode knop onder een oranje klepje dat
+    openstaat.
+    """
+    elements = [
+        # Het kastje, met een donkere voet en een oranje band bovenaan.
+        box((5.6, 1.5, 6.9), (10.4, 10.5, 9.5), "olive"),
+        box((5.4, 0.8, 6.7), (10.6, 1.6, 9.7), "graphite"),
+        box((5.5, 9.6, 6.8), (10.5, 10.2, 9.6), "orange"),
+        # Rubberen grepen aan de zijkanten.
+        box((5.35, 2.2, 7.2), (5.6, 8.2, 9.2), "black"),
+        box((10.4, 2.2, 7.2), (10.65, 8.2, 9.2), "black"),
+        # Het schermpje: een zwarte rand met een rode gloed.
+        box((6.4, 7.5, 6.75), (9.6, 9.2, 6.9), "black"),
+        box((6.7, 7.8, 6.68), (9.3, 8.9, 6.75), "glow_red", glow=True),
+        # De knop: een stalen kader en een grote rode knop.
+        box((6.3, 2.6, 6.6), (9.7, 6.6, 6.9), "steel_dark"),
+        box((6.9, 3.2, 6.2), (9.1, 6.0, 6.6), "red"),
+        # Het klepje over de knop, open: scharnieren bovenaan, en het klepje schuin omhoog.
+        box((6.4, 6.5, 6.45), (7.0, 7.0, 6.9), "steel"),
+        box((9.0, 6.5, 6.45), (9.6, 7.0, 6.9), "steel"),
+        box((6.2, 6.6, 3.0), (9.8, 6.9, 6.6), "orange", rot=("x", 45, (8, 6.75, 6.6))),
+        # Een dikke rubberen antenne links, met een rood lampje.
+        box((6.0, 10.5, 7.8), (6.8, 14.4, 8.6), "black"),
+        box((5.95, 14.4, 7.75), (6.85, 15.0, 8.65), "glow_red", glow=True),
+        # Een tuimelschakelaar rechts bovenop, en ernaast een rood lampje: hij is gewapend.
+        box((8.6, 10.5, 7.6), (9.6, 10.85, 8.6), "steel_dark"),
+        box((8.95, 10.85, 7.95), (9.25, 12.1, 8.25), "steel", rot=("x", -22.5, (9.1, 10.85, 8.1))),
+        box((7.3, 10.5, 8.3), (7.9, 10.75, 8.9), "glow_red", glow=True),
+    ]
+    disp = display(1.25, (0, 0, 0), 0.6, 0.6, gui_rotation=(20, 160, 0), third=((0, 180, 0), (0, 3, 1)),
+                   first=((0, 160, 0), (0, 3, -2)), first_scale=0.5)
+    write("item/frag_trigger.json", item_model(elements, disp))
 
 
 # ---------------------------------------------------------------- De energiecel
@@ -708,6 +759,8 @@ def main():
     sticky_frag_grenade()
     remote_emp()
     emp_trigger()
+    remote_frag()
+    frag_trigger()
     energy_cell()
     laser_pistol()
     laser_rifle()

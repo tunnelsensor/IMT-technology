@@ -8,7 +8,7 @@
     "minecraft:soul_wall_torch",
     "minecraft:lantern",
     "minecraft:soul_lantern",
-    "imttech:timed_c4",
-    "imttech:remote_c4"
+    "imttech:remote_frag",
+    "imttech:remote_emp"
   ]
 }

@@ -31,6 +31,16 @@ public final class ModItems {
 
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(ImtTech.MODID);
 
+    static {
+        // C4 bestaat niet meer (26 oktober): C4 van vroeger wordt een Remote Frag, de detonator een Frag Trigger.
+        ITEMS.addAlias(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "timed_c4"),
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "remote_frag"));
+        ITEMS.addAlias(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "remote_c4"),
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "remote_frag"));
+        ITEMS.addAlias(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "detonator"),
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "frag_trigger"));
+    }
+
     /**
      * De bril. Hij zit in het helm-slot (ArmorItem.Type.HELMET) en gaat nooit kapot
      * (geen duurzaamheid ingesteld).
@@ -200,21 +210,9 @@ public final class ModItems {
     public static final DeferredItem<com.senne.imttech.security.zone.ZoneMarkerItem> ZONE_MARKER = ITEMS.registerItem(
             "zone_marker", com.senne.imttech.security.zone.ZoneMarkerItem::new, new Item.Properties().stacksTo(1));
 
-    /** C4 met een timer (hoofdstuk 10): rechtsklik in de lucht = de tijd kiezen, plakken = hij loopt. */
-    public static final DeferredItem<com.senne.imttech.c4.C4Item> TIMED_C4 = ITEMS.registerItem("timed_c4",
-            properties -> new com.senne.imttech.c4.C4Item(ModBlocks.TIMED_C4.get(), properties),
-            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
-
-    /** C4 met een antenne (hoofdstuk 10): plak hem met een detonator in je rugzak, en hij hoort erbij. */
-    public static final DeferredItem<com.senne.imttech.c4.C4Item> REMOTE_C4 = ITEMS.registerItem("remote_c4",
-            properties -> new com.senne.imttech.c4.C4Item(ModBlocks.REMOTE_C4.get(), properties),
-            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON));
-    /** De detonator (hoofdstuk 10): rechtsklik = al zijn remote C4 binnen bereik gaan af. */
-    public static final DeferredItem<com.senne.imttech.c4.DetonatorItem> DETONATOR = ITEMS.registerItem("detonator",
-            com.senne.imttech.c4.DetonatorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
     /** Repair Paste (hoofdstuk 11): rechtsklik op een blok met barsten, en ze zijn opgevuld. */
-    public static final DeferredItem<com.senne.imttech.c4.RepairPasteItem> REPAIR_PASTE = ITEMS.registerItem(
-            "repair_paste", com.senne.imttech.c4.RepairPasteItem::new, new Item.Properties());
+    public static final DeferredItem<com.senne.imttech.breach.RepairPasteItem> REPAIR_PASTE = ITEMS.registerItem(
+            "repair_paste", com.senne.imttech.breach.RepairPasteItem::new, new Item.Properties());
     /** Een gebarsten blok (hoofdstuk 11): wat je overhoudt als je een blok met barsten weghakt. */
     public static final DeferredItem<com.senne.imttech.repair.FromBlockItem> CRACKED_BLOCK = ITEMS.registerItem(
             "cracked_block", properties -> new com.senne.imttech.repair.FromBlockItem(properties,
@@ -355,7 +353,7 @@ public final class ModItems {
                     com.senne.imttech.weapons.GrenadeItem.Kind.STICKY_EMP),
             new Item.Properties());
 
-    /** Hoofdstuk 35: de Frag Grenade, de EMP-bol als explosief (zoals C4, iets zwakker; geen EMP). */
+    /** Hoofdstuk 35: de Frag Grenade, de EMP-bol als explosief (blaast blokken uit een muur; geen EMP). */
     public static final DeferredItem<com.senne.imttech.weapons.GrenadeItem> FRAG_GRENADE = ITEMS.registerItem(
             "frag_grenade", properties -> new com.senne.imttech.weapons.GrenadeItem(properties,
                     com.senne.imttech.weapons.GrenadeItem.Kind.FRAG),
@@ -367,14 +365,25 @@ public final class ModItems {
                     com.senne.imttech.weapons.GrenadeItem.Kind.STICKY_FRAG),
             new Item.Properties());
 
-    /** Hoofdstuk 35: de Remote EMP (plak hem, en laat hem afgaan met een EMP-trigger). */
-    public static final DeferredItem<com.senne.imttech.weapons.RemoteEmpItem> REMOTE_EMP = ITEMS.registerItem("remote_emp",
-            properties -> new com.senne.imttech.weapons.RemoteEmpItem(ModBlocks.REMOTE_EMP.get(), properties),
+    /** Hoofdstuk 35: de Remote EMP (plak hem, en laat hem afgaan met een EMP Trigger). */
+    public static final DeferredItem<com.senne.imttech.weapons.RemoteChargeItem> REMOTE_EMP = ITEMS.registerItem("remote_emp",
+            properties -> new com.senne.imttech.weapons.RemoteChargeItem(ModBlocks.REMOTE_EMP.get(), properties),
             new Item.Properties().stacksTo(16));
 
-    /** Hoofdstuk 35: de EMP-trigger: rechtsklik laat al zijn Remote EMP's afgaan. */
-    public static final DeferredItem<com.senne.imttech.weapons.EmpTriggerItem> EMP_TRIGGER = ITEMS.registerItem(
-            "emp_trigger", com.senne.imttech.weapons.EmpTriggerItem::new, new Item.Properties());
+    /** Hoofdstuk 35: de EMP Trigger: rechtsklik laat al zijn Remote EMP's afgaan. */
+    public static final DeferredItem<com.senne.imttech.weapons.TriggerItem> EMP_TRIGGER = ITEMS.registerItem(
+            "emp_trigger", properties -> new com.senne.imttech.weapons.TriggerItem(
+                    com.senne.imttech.weapons.RemoteChargeBlock.Kind.EMP, properties), new Item.Properties());
+
+    /** Hoofdstuk 35 (in plaats van C4): de Remote Frag (plak hem, en laat hem afgaan met een Frag Trigger). */
+    public static final DeferredItem<com.senne.imttech.weapons.RemoteChargeItem> REMOTE_FRAG = ITEMS.registerItem("remote_frag",
+            properties -> new com.senne.imttech.weapons.RemoteChargeItem(ModBlocks.REMOTE_FRAG.get(), properties),
+            new Item.Properties().stacksTo(16));
+
+    /** Hoofdstuk 35 (in plaats van de detonator): de Frag Trigger: rechtsklik laat al zijn Remote Frags afgaan. */
+    public static final DeferredItem<com.senne.imttech.weapons.TriggerItem> FRAG_TRIGGER = ITEMS.registerItem(
+            "frag_trigger", properties -> new com.senne.imttech.weapons.TriggerItem(
+                    com.senne.imttech.weapons.RemoteChargeBlock.Kind.FRAG, properties), new Item.Properties());
 
     /** Hoofdstuk 35: de energiecel, het magazijn van de lasergeweren (stapelt niet: elke cel heeft zijn eigen lading). */
     public static final DeferredItem<com.senne.imttech.weapons.EnergyCellItem> ENERGY_CELL = ITEMS.registerItem(

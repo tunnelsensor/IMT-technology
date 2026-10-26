@@ -78,14 +78,14 @@ package com.senne.imttech.config;
  *   Turrets ...... torentjes (raket, Raven, beveiliging)
  *   Security ..... de beveiligingskern: zone, drones, systeem
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
- *   C4 ........... C4, en TNT en de satelliet tegen een beschermde zone
+ *   Breach ....... hoe sterk blokken zijn tegen frags, en TNT en de satelliet tegen een beschermde zone
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
  *   Bypass ....... inbreken met de Bypass Kit, en zakkenrollen
  *   Lights ....... de Arc Lamp
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
  *   Raven ........ Raven-soldaten
  *   Raids ........ vijandige raiddrones
- *   Weapons ...... EMP-granaten, lasergeweren en energiecellen (hoofdstuk 35)
+ *   Weapons ...... granaten, de Remote EMP en Remote Frag, lasergeweren en energiecellen (hoofdstuk 35)
  */
 public final class ImtConfig {
     private ImtConfig() {}
@@ -1297,33 +1297,20 @@ public final class ImtConfig {
         public static final int RACK_ROWS = 3;
     }
 
-    // =============================================================================================== C4
+    // =============================================================================================== Breach
 
     /*
-     * Hoe de klap werkt: één C4 doet POWER "breekpunten" vlak bij de lading, en dat loopt af tot 0 op
-     * RADIUS blokken. Elk blok kan een aantal breekpunten hebben voor het breekt: zwak (hout, glas,
-     * aarde) WEAK, gewoon (steen, baksteen) NORMAL, sterk (obsidiaan) STRONG, de beveiligingskern CORE.
-     * Wat niet breekt krijgt barsten: de volgende klap telt erbij op, tot je ze herstelt (zie Repair).
-     * Zo maakt één C4 een gat in een stenen muur van één dik, en heb je voor obsidiaan er drie nodig.
+     * Hoe een klap werkt (eerst van C4, sinds 26 oktober van de frags: zie [weapons]): een frag doet "breekpunten" vlak
+     * bij de lading, en dat loopt af tot 0 aan de rand van de klap. Elk blok kan een aantal breekpunten hebben voor het
+     * breekt: zwak (hout, glas, aarde) WEAK, gewoon (steen, baksteen) NORMAL, sterk (obsidiaan) STRONG, de
+     * beveiligingskern CORE. Wat niet breekt krijgt barsten: de volgende klap telt erbij op, tot je ze herstelt (zie
+     * Repair). Zo blaast één frag een blok steen uit een muur, en heb je voor obsidiaan er vier nodig.
      */
-    @Section("C4, and TNT and the satellite against the blocks of a protected zone. A blast does 'breach points' that "
-            + "fall to 0 at the blast radius; a block breaks when it took its breach points, otherwise it gets cracks")
-    public static final class C4 {
-        private C4() {}
-
-        // ------------------------------------------------------------------------- De klap
-        /** Breekpunten van één C4 vlak bij de lading. */
-        @Tunable("Breach points of one C4 right at the charge (falling to 0 at the blast radius)")
-        public static float POWER = 10.0f;
-        /** Hoe ver de klap reikt. */
-        @Tunable("How far a C4 blast reaches (blocks)")
-        public static float RADIUS = 3.5f;
-        /** Hoe hard de klap spelers en wezens raakt (TNT = 4). */
-        @Tunable("How hard a C4 blast hits players and mobs (TNT is 4)")
-        public static float ENTITY_POWER = 4.0f;
-        /** Andere C4 in de klap gaat zoveel ticks later ook af (een kettingreactie). */
-        @Tunable("Other C4 in the blast goes off this many ticks later (a chain reaction)")
-        public static float CHAIN_DELAY = 3.0f;
+    @Section("How strong blocks are against frags (and TNT and the satellite against the blocks of a protected zone). A "
+            + "blast does 'breach points' that fall to 0 at the blast radius; a block breaks when it took its breach points, "
+            + "otherwise it gets cracks")
+    public static final class Breach {
+        private Breach() {}
 
         // ------------------------------------------------------------------------- Hoe sterk blokken zijn
         @Tunable("Breach points a weak block (wood, glass, dirt, wool, sand...) takes before it breaks")
@@ -1332,7 +1319,7 @@ public final class ImtConfig {
         public static float NORMAL = 6.0f;
         @Tunable("Breach points a strong block (obsidian, netherite, the laser emitter...) takes before it breaks")
         public static float STRONG = 20.0f;
-        @Tunable("Breach points the security core takes before it breaks (about 6 C4)")
+        @Tunable("Breach points the security core takes before it breaks (about 8 Remote Frags)")
         public static float CORE = 48.0f;
         /** Vanaf deze explosieweerstand (zoals in Minecraft) is een blok "gewoon"; daaronder zwak. */
         @Tunable("From this explosion resistance (as in Minecraft) a block counts as normal; below it, weak")
@@ -1342,28 +1329,14 @@ public final class ImtConfig {
         public static float STRONG_RESISTANCE = 100.0f;
 
         // ------------------------------------------------------------------------- TNT en de satelliet in een zone
-        // In een zone werken ze met breekpunten, net als C4, maar zwakker ("TNT doet heel weinig aan de muur").
-        @Tunable("Breach points of one TNT on the blocks of a protected zone (C4 is 10)")
+        // In een zone werken ze met breekpunten, net als een frag, maar zwakker ("TNT doet heel weinig aan de muur").
+        @Tunable("Breach points of one TNT on the blocks of a protected zone (a frag is 8)")
         public static float TNT_BREACH = 3.0f;
-        @Tunable("Breach points of one satellite bombardment impact on the blocks of a protected zone (C4 is 10)")
+        @Tunable("Breach points of one satellite bombardment impact on the blocks of a protected zone (a frag is 8)")
         public static float SATELLITE_BREACH = 6.0f;
         /** Zo ver reikt de klap van TNT of een satellietinslag in een zone. */
         @Tunable("How far the blast of TNT or a satellite impact reaches in a protected zone (blocks)")
         public static float EXPLOSION_BREACH_RADIUS = 3.0f;
-
-        // ------------------------------------------------------------------------- Detonator en timer
-        /** Hoe ver het signaal van een detonator reikt. */
-        @Tunable("How far a detonator's signal reaches (blocks)")
-        public static float DETONATOR_RANGE = 128.0f;
-        /** De kortste tijd die je op een C4 (Timer) kunt zetten (seconden)... */
-        @Tunable(value = "Shortest time you can set on a C4 (Timer) (seconds)", min = 1)
-        public static float TIMER_MIN = 5.0f;
-        /** ...de langste... */
-        @Tunable(value = "Longest time you can set on a C4 (Timer) (seconds)", min = 1)
-        public static float TIMER_MAX = 120.0f;
-        /** ...en waar een nieuwe C4 (Timer) op staat. */
-        @Tunable(value = "Time a new C4 (Timer) starts with (seconds)", min = 1)
-        public static float TIMER_DEFAULT = 10.0f;
     }
 
     // =============================================================================================== Repair
@@ -1776,9 +1749,10 @@ public final class ImtConfig {
         /** Hoe lang alles uit blijft na een EMP-granaat (seconden). */
         @Tunable(value = "How long everything stays off after an EMP grenade (seconds)", min = 1, max = 600)
         public static float EMP_SECONDS = 20.0f;
-        /** Tot hoe ver het signaal van een EMP-trigger reikt (blokken), naar zijn Remote EMP's. */
-        @Tunable(value = "How far the signal of an EMP trigger reaches its Remote EMPs (blocks)", min = 1, max = 1_000)
-        public static float EMP_TRIGGER_RANGE = 128.0f;
+        /** Tot hoe ver het signaal van een EMP Trigger of Frag Trigger reikt (blokken), naar zijn ladingen. */
+        @Tunable(value = "How far the signal of an EMP Trigger or Frag Trigger reaches its Remote EMPs or Remote Frags (blocks)",
+                min = 1, max = 1_000)
+        public static float TRIGGER_RANGE = 128.0f;
         /** Na hoeveel seconden een sticky (EMP of frag) afgaat, vanaf het vastplakken. */
         @Tunable(value = "Seconds from sticking until a sticky grenade (EMP or frag) goes off", max = 30)
         public static float STICKY_FUSE_SECONDS = 2.0f;
@@ -1792,16 +1766,17 @@ public final class ImtConfig {
         @Tunable(value = "How hard you toss a grenade underhand, while sneaking", max = 5)
         public static float TOSS_SPEED = 0.45f;
         /**
-         * De klap van een frag-granaat (jouw wens: een extra bom die geen EMP is maar wel schade aan de map doet, "zoals
-         * de C4 maar net iets minder sterk"): breekpunten vlak bij de granaat (C4 = 10), aflopend tot 0 op de straal van
-         * de klap (C4 = 3,5). Zie [c4] voor hoe sterk blokken zijn. De EMP-granaten doen geen schade aan de map.
+         * De klap van een frag-granaat en van de Remote Frag (jouw wens: een extra bom die geen EMP is maar wel schade
+         * aan de map doet, "zoals de C4 maar net iets minder sterk"; de Remote Frag "zoals een Sticky Frag"): breekpunten
+         * vlak bij de lading (de oude C4 deed 10), aflopend tot 0 op de straal van de klap (C4: 3,5). Zie [breach] voor
+         * hoe sterk blokken zijn. De EMP-granaten doen geen schade aan de map.
          */
-        @Tunable(value = "Breach points of a frag grenade right where it goes off (C4 is 10)", max = 1_000)
+        @Tunable(value = "Breach points of a frag grenade or Remote Frag right where it goes off", max = 1_000)
         public static float GRENADE_BREACH = 8.0f;
-        @Tunable(value = "How far the blast of a frag grenade reaches (blocks; C4 is 3.5)", max = 16)
+        @Tunable(value = "How far the blast of a frag grenade or Remote Frag reaches (blocks)", max = 16)
         public static float GRENADE_BREACH_RADIUS = 3.0f;
-        /** Hoe hard de klap van een frag-granaat spelers en wezens raakt (C4 = 4, TNT = 4). */
-        @Tunable(value = "How hard the blast of a frag grenade hits players and mobs (C4 and TNT are 4)", max = 16)
+        /** Hoe hard de klap van een frag spelers en wezens raakt (TNT = 4). */
+        @Tunable(value = "How hard the blast of a frag grenade or Remote Frag hits players and mobs (TNT is 4)", max = 16)
         public static float GRENADE_ENTITY_POWER = 3.0f;
         /** Hoeveel van zijn vaart de bol overhoudt als hij stuitert (0 = blijft liggen, 1 = stuitert eeuwig). */
         @Tunable(value = "How much speed the rolling grenade keeps when it bounces (0 = none, 1 = all)", max = 0.95)
@@ -1814,8 +1789,9 @@ public final class ImtConfig {
         /** Hoe lang de rook blijft hangen (seconden). */
         @Tunable(value = "How long the smoke of a Smoke Grenade lasts (seconds)", min = 1, max = 600)
         public static float SMOKE_SECONDS = 18.0f;
-        /** Hoe groot de rookwolk wordt: een bol met deze straal (blokken). */
-        @Tunable(value = "Radius of the cloud of a Smoke Grenade (blocks)", min = 1, max = 16)
+        /** Hoe ver de rook stroomt (blokken, om muren heen): in de open lucht een bol met deze straal. */
+        @Tunable(value = "How far the smoke of a Smoke Grenade spreads (blocks, around walls; in open air a ball this big)",
+                min = 1, max = 16)
         public static double SMOKE_RADIUS = 4.5;
         /** Door zoveel blokken rook kunnen robots, turrets en drones nog net kijken (van heel dichtbij). */
         @Tunable(value = "Through this many blocks of smoke robots, turrets and drones can still see", max = 16)

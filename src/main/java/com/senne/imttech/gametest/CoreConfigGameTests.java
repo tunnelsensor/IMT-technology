@@ -215,7 +215,7 @@ public final class CoreConfigGameTests {
     }
 
     /**
-     * Opgeblazen (C4 breekt de kern zoals {@code destroyBlock}: eerst valt het item, dan is de kern
+     * Opgeblazen (een frag breekt de kern zoals {@code destroyBlock}: eerst valt het item, dan is de kern
      * weg, andersom dan bij hakken): ook dan gaan de zone en de rest mee. Een kern van niemand (de
      * Biebia's Industries Tower van Biebia, nog niet gehackt) valt als een nieuwe kern, zoals altijd: wie die neerzet,
      * is de eigenaar.

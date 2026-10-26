@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Vuur brandt een blok weg in {@code FireBlock.checkBurnOut}: daar kijkt het of een buurblok vlam
  * vat, en zo ja, dan verdwijnt dat blok (of wordt het zelf vuur). Wij kijken vlak daarvoor: ligt dat
  * blok in een actieve zone, dan gebeurt er niets. Zo steekt niemand je houten basis van buitenaf in
- * brand; alleen C4 komt door een zone.
+ * brand; alleen een frag komt door een zone.
  *
  * Mixin vindt de methode op naam; omdat NeoForge sinds 1.20.5 dezelfde (Mojang-)namen gebruikt als
  * in de code, is daar geen omzettabel ("refmap") voor nodig.

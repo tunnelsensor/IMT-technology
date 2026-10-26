@@ -25,8 +25,8 @@ import org.joml.Vector3f;
 
 /**
  * De halve bol die plakt (hoofdstuk 35, jouw wens: "de halve sticky one"), in twee soorten (welke, zegt het soort
- * wezen): de Sticky EMP Grenade (een EMP-puls) en zijn kopie, de Sticky Frag Grenade (een klap zoals C4, maar
- * zwakker). Een sticky smokebom of flashbang vind jij niet logisch, dus die zijn er niet. Een halve bol op een kleefkussen: hij plakt
+ * wezen): de Sticky EMP Grenade (een EMP-puls) en zijn kopie, de Sticky Frag Grenade (een klap met
+ * breekpunten, zie breach/Blast). Een sticky smokebom of flashbang vind jij niet logisch, dus die zijn er niet. Een halve bol op een kleefkussen: hij plakt
  * vast op het eerste wat hij raakt (een muur, de grond, een plafond, een robot, een drone of een speler) en gaat 2
  * seconden later af (STICKY_FUSE_SECONDS). Plakt hij op een wezen, dan gaat hij mee met dat wezen.
  *
@@ -239,7 +239,7 @@ public class StickyGrenade extends GrenadeEntity {
         return getType() == ModEntities.STICKY_FRAG_GRENADE.get();
     }
 
-    /** De lont is op: een EMP-puls, of bij de frag-versie een klap zoals C4 (zie GrenadeEntity). */
+    /** De lont is op: een EMP-puls, of bij de frag-versie een klap met breekpunten (zie GrenadeEntity). */
     @Override
     protected void explode(ServerLevel level) {
         if (isFrag()) {
@@ -249,7 +249,7 @@ public class StickyGrenade extends GrenadeEntity {
         }
     }
 
-    /** Vastgeplakt: de klap zit precies tegen het blok of wezen (zoals C4 tegen zijn muur). */
+    /** Vastgeplakt: de klap zit precies tegen het blok of wezen (zoals een Remote Frag tegen zijn muur). */
     @Override
     protected Vec3 explosionCenter() {
         return isStuck() ? position() : super.explosionCenter();

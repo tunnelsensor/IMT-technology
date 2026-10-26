@@ -1818,6 +1818,8 @@ public final class VisualCheck {
             t.shot(50, "gr15_smoke_clouds");
             t.view(0, WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 1.6, WEAPON_YARD.getZ() + 3.5, 0, 0);
             t.shot(10, "gr16_inside_red_smoke");
+            // De smokebommen weg: hun rook trekt dan snel op (anders staan de volgende foto's in de rook).
+            t.onServer(0, VisualCheck::removeSmokeGrenades);
             // De flashbang: vlak voor je, en je kijkt ernaar.
             t.stand(0, WEAPON_YARD.getX() - 4.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() + 10.5, -90, 10);
             t.onServer(20, player -> com.senne.imttech.weapons.Flashbang.bang(player.serverLevel(),
@@ -1829,17 +1831,17 @@ public final class VisualCheck {
                 ServerLevel level = player.serverLevel();
                 BlockPos emp = WEAPON_YARD.offset(6, 2, -3);
                 level.setBlockAndUpdate(emp, ModBlocks.REMOTE_EMP.get().defaultBlockState()
-                        .setValue(com.senne.imttech.weapons.RemoteEmpBlock.FACING, Direction.WEST));
+                        .setValue(com.senne.imttech.weapons.RemoteChargeBlock.FACING, Direction.WEST));
                 ItemStack trigger = new ItemStack(ModItems.EMP_TRIGGER.get());
-                if (level.getBlockEntity(emp) instanceof com.senne.imttech.weapons.RemoteEmpBlockEntity entity) {
-                    com.senne.imttech.weapons.EmpTriggerItem.link(level, emp, entity, trigger);
+                if (level.getBlockEntity(emp) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity entity) {
+                    com.senne.imttech.weapons.TriggerItem.link(level, emp, entity, trigger);
                 }
                 player.getInventory().setItem(4, trigger);
             });
             t.step(0, () -> selectSlot(4));
             t.stand(0, WEAPON_YARD.getX() + 3.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() - 2.5, -90, 12);
             t.shot(20, "gr19_remote_emp_and_trigger");
-            t.onServer(0, player -> com.senne.imttech.weapons.EmpTriggerItem.fire(player.serverLevel(), player,
+            t.onServer(0, player -> com.senne.imttech.weapons.TriggerItem.fire(player.serverLevel(), player,
                     player.getMainHandItem()));
             t.shot(4, "gr20_remote_emp_blast");
             // De rook gaat niet door blokken (26 oktober): een smokebom in een schuurtje. De muren en het dak houden hem
@@ -1851,6 +1853,7 @@ public final class VisualCheck {
             t.shot(10, "gr22_smoke_not_through_the_roof");
             t.view(0, WEAPON_YARD.getX() - 0.5, WEAPON_YARD.getY() + 2, WEAPON_YARD.getZ() + 11.5, 0, 5);
             t.shot(10, "gr23_smoke_out_of_the_door");
+            t.onServer(0, VisualCheck::removeSmokeGrenades);
         }
 
         // --- De lasergeweren (hoofdstuk 35): elk geweer vanuit de heup, gericht en schietend; het geweer herladen en
@@ -2712,49 +2715,32 @@ public final class VisualCheck {
             t.close(10);
         }
 
-        // --- C4 (hoofdstuk 10, stap 5): drie ladingen die aftellen (muur, vloer, plafond), van dichtbij,
-        // het timerscherm, dan de klap: een gat in de muur met barsten eromheen, en barsten in obsidiaan.
-        if (want("c4")) {
-            BlockPos w = C4_WALL;
-            t.onServer(0, VisualCheck::buildC4Wall);
+        // --- De Remote Frag (hoofdstuk 35, in plaats van C4): drie tegen een muur, op de vloer en onder een overstekje,
+        // van dichtbij; de Frag Trigger in je hand met de bordjes boven je ladingen; het alarm "FRAG!" op je zone; dan de
+        // klap: een gat in de muur met barsten eromheen, en barsten in obsidiaan (na drie frags nog geen gat).
+        if (want("remote_frag")) {
+            BlockPos w = FRAG_WALL;
+            t.onServer(0, VisualCheck::buildFragWall);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.stand(10, w.getX() + 8.5, w.getY(), w.getZ() + 3.5, 90, 12);
-            t.shot(40, "x01_c4_counting");
+            t.shot(40, "f01_remote_frags");
             t.view(10, w.getX() + 4.2, w.getY() + 0.6, w.getZ() + 3.5, 90, 8);
-            t.shot(20, "x02_c4_close");
+            t.shot(20, "f02_remote_frag_close");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-            t.onServer(0, player -> {
-                net.minecraft.world.item.ItemStack c4 = new net.minecraft.world.item.ItemStack(ModItems.TIMED_C4.get());
-                c4.set(com.senne.imttech.registry.ModDataComponents.C4_TIMER.get(), 30);
-                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, c4);
-            });
-            t.step(5, () -> com.senne.imttech.client.c4.C4TimerScreen.open(net.minecraft.world.InteractionHand.MAIN_HAND));
-            t.shot(10, "x03_c4_timer_screen");
-            t.close(5);
-            // De remote C4 (met antenne) en de detonator in je hand: rode bordjes boven je ladingen.
+            // De Frag Trigger in je hand: rode bordjes boven je ladingen.
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
-                net.minecraft.world.item.ItemStack detonator = new net.minecraft.world.item.ItemStack(ModItems.DETONATOR.get());
-                for (BlockPos support : new BlockPos[] {w.offset(1, 1, 6), w.offset(1, 3, 7)}) {
-                    BlockPos pos = support.east();
-                    level.setBlockAndUpdate(pos, ModBlocks.REMOTE_C4.get().defaultBlockState()
-                            .setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, Direction.EAST));
-                    if (level.getBlockEntity(pos) instanceof com.senne.imttech.c4.C4BlockEntity c4) {
-                        com.senne.imttech.c4.DetonatorItem.link(level, pos, c4, detonator);
+                ItemStack trigger = new ItemStack(ModItems.FRAG_TRIGGER.get());
+                for (BlockPos pos : new BlockPos[] {w.offset(2, 2, 3), w.offset(3, 0, 2), w.offset(4, 2, 6)}) {
+                    if (level.getBlockEntity(pos) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag) {
+                        com.senne.imttech.weapons.TriggerItem.link(level, pos, frag, trigger);
                     }
                 }
-                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, detonator);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, trigger);
             });
-            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.stand(10, w.getX() + 8.5, w.getY(), w.getZ() + 5.5, 90, 10);
-            t.shot(30, "x06_remote_c4_detonator");
-            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-            t.onServer(0, player -> {
-                player.serverLevel().removeBlock(w.offset(2, 1, 6), false);
-                player.serverLevel().removeBlock(w.offset(2, 3, 7), false);
-                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
-            });
-            // Het alarm: de muur wordt jouw zone (een kern met stroom ernaast), en "iemand" plakt er C4 op.
+            t.shot(30, "f03_frag_trigger_markers");
+            // Het alarm: de muur wordt jouw zone (een kern met stroom ernaast), en "iemand" plakt er een Remote Frag op.
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
                 BlockPos corePos = w.offset(5, 0, -3);
@@ -2768,43 +2754,42 @@ public final class VisualCheck {
                     core.ensureSystem(level);
                     core.setZoneBoxes(java.util.List.of(com.senne.imttech.security.zone.ZoneBox.of(w.offset(0, -1, 0), w.offset(1, 5, 8))));
                 }
-                stickC4(level, w.offset(1, 0, 1), Direction.EAST, 0);
+                stickFrag(level, w.offset(1, 0, 1), Direction.EAST);
                 BlockPos planted = w.offset(2, 0, 1);
-                if (level.getBlockEntity(planted) instanceof com.senne.imttech.c4.C4BlockEntity c4) {
-                    c4.detonateIn(40 * 20);
-                    com.senne.imttech.c4.C4Alarm.planted(level, planted, c4);
+                if (level.getBlockEntity(planted) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag) {
+                    com.senne.imttech.breach.BlastAlarm.planted(level, planted, frag);
                 }
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             });
-            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.stand(10, w.getX() + 9.5, w.getY(), w.getZ() + 4.5, 100, 8);
-            t.shot(30, "x07_c4_alarm");
-            t.onServer(0, player -> {
-                BlockPos planted = w.offset(2, 0, 1);
-                if (player.serverLevel().getBlockEntity(planted) instanceof com.senne.imttech.c4.C4BlockEntity c4) {
-                    com.senne.imttech.c4.C4Alarm.defused(player.serverLevel(), planted, c4, player);
-                }
-                player.serverLevel().removeBlock(planted, false);
-            });
+            t.shot(30, "f04_frag_zone_alarm");
+            // Met een schaar onschadelijk gemaakt; dan gaan de andere drie af (de knop), en drie keer een frag tegen het
+            // obsidiaan: veel barsten, nog geen gat (dat is pas na de vierde).
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
-                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
-                // De lading op de muur gaat nu af; de andere twee halen we weg (anders ontploffen ze later).
-                BlockPos onWall = w.offset(2, 2, 3);
-                com.senne.imttech.c4.C4Blast.detonate(level, onWall, level.getBlockState(onWall));
-                level.removeBlock(w.offset(3, 0, 2), false);
-                level.removeBlock(w.offset(4, 2, 6), false);
-                // En twee ladingen tegen het obsidiaan: veel barsten, nog geen gat (dat is pas na de derde).
+                BlockPos planted = w.offset(2, 0, 1);
+                if (level.getBlockEntity(planted) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag
+                        && level.getBlockState(planted).getBlock() instanceof com.senne.imttech.weapons.RemoteChargeBlock block) {
+                    block.defuse(level, planted, frag, player);
+                }
+                for (BlockPos pos : new BlockPos[] {w.offset(2, 2, 3), w.offset(3, 0, 2), w.offset(4, 2, 6)}) {
+                    if (level.getBlockEntity(pos) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag) {
+                        frag.goOff(level, pos, level.getBlockState(pos));
+                    }
+                }
                 BlockPos onObsidian = w.offset(2, 1, 11);
-                for (int i = 0; i < 2; i++) {
-                    stickC4(level, w.offset(1, 1, 11), Direction.EAST, 0);
-                    com.senne.imttech.c4.C4Blast.detonate(level, onObsidian, level.getBlockState(onObsidian));
+                for (int i = 0; i < 3; i++) {
+                    stickFrag(level, w.offset(1, 1, 11), Direction.EAST);
+                    if (level.getBlockEntity(onObsidian) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag) {
+                        frag.goOff(level, onObsidian, level.getBlockState(onObsidian));
+                    }
                 }
             });
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.stand(30, w.getX() + 7.5, w.getY(), w.getZ() + 6.5, 115, 8);
-            t.shot(20, "x04_c4_hole_and_cracks");
+            t.shot(20, "f05_frag_hole_and_cracks");
             t.stand(10, w.getX() + 4.5, w.getY() + 1, w.getZ() + 11.5, 90, 10);
-            t.shot(15, "x05_c4_obsidian_cracked");
+            t.shot(15, "f06_frag_obsidian_cracked");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
@@ -3139,7 +3124,6 @@ public final class VisualCheck {
         }
 }
 
-    /** Waar de C4-muur van de rondleiding staat (zie buildC4Wall). */
     /**
      * Een beveiligingskern van deze speler op {@code core}, met stroom en een serverrack ernaast (dan hebben robots en
      * drones verbinding), als die er nog niet staat. Voor de groepen secdrones en training.
@@ -3204,12 +3188,13 @@ public final class VisualCheck {
                 code, kind);
     }
 
-    private static final BlockPos C4_WALL = new BlockPos(120, -60, 128);
+    /** Waar de muur van de Remote Frags staat (zie buildFragWall; eerst stond hier de C4-muur). */
+    private static final BlockPos FRAG_WALL = new BlockPos(120, -60, 128);
 
-    /** Een C4 (Timer) tegen de kant {@code outward} van {@code support}, die over {@code seconds} afgaat. */
-    private static void stickC4(ServerLevel level, BlockPos support, Direction outward, int seconds) {
+    /** Een Remote Frag (nog nergens aan gekoppeld) tegen de kant {@code outward} van {@code support}. */
+    private static void stickFrag(ServerLevel level, BlockPos support, Direction outward) {
         BlockPos pos = support.relative(outward);
-        BlockState state = ModBlocks.TIMED_C4.get().defaultBlockState();
+        BlockState state = ModBlocks.REMOTE_FRAG.get().defaultBlockState();
         net.minecraft.world.level.block.state.properties.AttachFace face = outward == Direction.UP
                 ? net.minecraft.world.level.block.state.properties.AttachFace.FLOOR
                 : outward == Direction.DOWN ? net.minecraft.world.level.block.state.properties.AttachFace.CEILING
@@ -3219,18 +3204,19 @@ public final class VisualCheck {
             state = state.setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, outward);
         }
         level.setBlockAndUpdate(pos, state);
-        if (seconds > 0 && level.getBlockEntity(pos) instanceof com.senne.imttech.c4.C4BlockEntity c4) {
-            c4.detonateIn(seconds * 20);
-        }
     }
 
     /**
-     * Een muur van stenen bakstenen (twee dik, 9 lang, 5 hoog) met een overstekje, en drie C4 die
-     * aftellen: tegen de muur, op de vloer en onder het overstekje. Ernaast een muurtje obsidiaan.
+     * Een muur van stenen bakstenen (twee dik, 9 lang, 5 hoog) met een overstekje, en drie Remote Frags: tegen de muur,
+     * op de vloer en onder het overstekje. Ernaast een muurtje obsidiaan. Wat er van een vorige keer stond (een kern,
+     * gaten), wordt eerst weggehaald.
      */
-    private static void buildC4Wall(ServerPlayer player) {
+    private static void buildFragWall(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        BlockPos w = C4_WALL;
+        BlockPos w = FRAG_WALL;
+        for (BlockPos pos : BlockPos.betweenClosed(w.offset(-2, 0, -5), w.offset(8, 6, 15))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
         for (int x = 0; x <= 1; x++) {
             for (int y = 0; y <= 4; y++) {
                 for (int z = 0; z <= 8; z++) {
@@ -3246,9 +3232,9 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(w.offset(1, y, z), Blocks.OBSIDIAN.defaultBlockState());
             }
         }
-        stickC4(level, w.offset(1, 2, 3), Direction.EAST, 59);
-        stickC4(level, w.offset(3, -1, 2), Direction.UP, 44);
-        stickC4(level, w.offset(4, 3, 6), Direction.DOWN, 89);
+        stickFrag(level, w.offset(1, 2, 3), Direction.EAST);
+        stickFrag(level, w.offset(3, -1, 2), Direction.UP);
+        stickFrag(level, w.offset(4, 3, 6), Direction.DOWN);
     }
 
     /** Waar het lab van hoofdstuk 12 staat (zie buildBypassLab). */
@@ -3787,6 +3773,14 @@ public final class VisualCheck {
         smoke.setPos(shed.getX() + 0.5, shed.getY() + 1, shed.getZ() + 0.5);
         smoke.arm(5);
         level.addFreshEntity(smoke);
+    }
+
+    /** Haalt de smokebommen rond het wapenveld weg (hun rook trekt dan op). */
+    private static void removeSmokeGrenades(ServerPlayer player) {
+        for (var grenade : player.serverLevel().getEntitiesOfClass(com.senne.imttech.weapons.RollingGrenade.class,
+                new net.minecraft.world.phys.AABB(WEAPON_YARD).inflate(40))) {
+            grenade.discard();
+        }
     }
 
     /** Kiest een vakje in je hotbar (in je eigen spel: de server bepaalt dat niet). */

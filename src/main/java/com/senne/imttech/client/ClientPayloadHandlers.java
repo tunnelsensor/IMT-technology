@@ -273,9 +273,9 @@ public final class ClientPayloadHandlers {
         DroneCamera.onServerMessage(payload.droneId(), payload.control());
     }
 
-    /** C4 op je zone (hoofdstuk 10): de rode markering aan of uit. */
-    public static void onC4Alert(com.senne.imttech.network.C4AlertPayload payload, IPayloadContext context) {
-        com.senne.imttech.client.c4.C4Alerts.onPayload(payload);
+    /** Een Remote Frag op je zone (hoofdstuk 10 en 35): de rode markering aan of uit. */
+    public static void onChargeAlert(com.senne.imttech.network.ChargeAlertPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.zone.ChargeAlerts.onPayload(payload);
     }
 
     /** De zones die jij mag zien (hoofdstuk 10): de rand tekent ZoneBorderRenderer. */

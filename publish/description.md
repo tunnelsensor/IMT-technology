@@ -40,7 +40,7 @@ bunkers to raid.
 - A Security Core with its own desktop (Security OS): a camera wall, devices, keycards and code
   panels, files and traps, and protected build zones.
 - Rayshields (laser gates in six colours), shield domes, rocket and laser turrets, security
-  cameras, timed and remote C4 (defuse it with shears), cracks that stay until you repair them.
+  cameras, remote frags you set off from afar (defuse them with shears), cracks that stay until you repair them.
 - Server racks with CPU, RAM, SSD, GPU and fans: program your base with redstone diagrams or a
   small Python-like language. Racks heat up, so give every rack a fan.
 - Break-ins: hack keycard readers and code panels with the Bypass Kit, or pickpocket a keycard.

@@ -108,7 +108,7 @@ public abstract class GrenadeEntity extends Projectile {
         return getBoundingBox().getCenter();
     }
 
-    /** Waar de klap voor blokken zit (zoals bij C4: tegen het blok waar hij op ligt of plakt). */
+    /** Waar de klap voor blokken zit (tegen het blok waar hij op ligt of plakt). */
     protected Vec3 explosionCenter() {
         return getBoundingBox().getCenter();
     }
@@ -122,12 +122,13 @@ public abstract class GrenadeEntity extends Projectile {
 
     /**
      * Een frag-granaat gaat af (jouw wens: "een extra bom die geen EMP is maar wel schade aan de map doet", "zoals de C4
-     * maar net iets minder sterk"): een klap zoals C4 met de sterktes uit [weapons] (C4Blast.grenade). Daarna is hij weg.
+     * maar net iets minder sterk"): een klap met breekpunten, met de sterktes uit [weapons] (zie breach/Blast). Daarna is
+     * hij weg.
      */
     protected void fragBlast(ServerLevel level) {
         Vec3 bang = explosionCenter();
         discard();
-        com.senne.imttech.c4.C4Blast.grenade(level, bang, this);
+        com.senne.imttech.breach.Blast.frag(level, bang, net.minecraft.core.BlockPos.containing(bang), this, false, "Frag grenade");
     }
 
     // ================================================================ Opslaan

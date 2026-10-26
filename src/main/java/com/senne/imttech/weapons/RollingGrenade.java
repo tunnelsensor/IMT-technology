@@ -29,8 +29,8 @@ import org.joml.Vector3f;
  * <ul>
  *   <li>de <b>EMP Grenade</b> (jouw wens: "de bol die rolt zoals bij Star Wars detonators"): gaat 3 seconden na het
  *       gooien af met een EMP-puls (geen schade aan de map);</li>
- *   <li>de <b>Frag Grenade</b>, zijn kopie als explosief (jouw wens): dezelfde bol, maar een klap zoals C4, net iets
- *       minder sterk, en geen EMP;</li>
+ *   <li>de <b>Frag Grenade</b>, zijn kopie als explosief (jouw wens): dezelfde bol, maar een klap met breekpunten
+ *       (zie breach/Blast), en geen EMP;</li>
  *   <li>de <b>Smoke Grenade</b> (jouw wens: "maak voor de bal ook smokebom en flashbang"): sist en maakt een wolk rook
  *       (zie {@link Smoke}) waar robots, turrets en drones niet doorheen kijken. Grijs, of in de kleur van de kleurstof
  *       waarmee je hem maakte. Hij blijft liggen tot de rook op is;</li>

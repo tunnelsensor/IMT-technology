@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 336 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 334 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -1275,6 +1275,10 @@ De stappen, één per commit:
       nieuw `r05b_rack_other_hot`, `r08_os_monitor`).
 
 ### 10. Je basis beveiligen: zones en C4 (8 oktober)
+
+> **Sinds 26 oktober bestaat C4 niet meer** (jouw wens: "haal de C4 weg, ik wil dat er nog enkel granaten
+> bestaan"). De remote C4 werd de **Remote Frag** met de **Frag Trigger** (hoofdstuk 35, stap 2f); de klap met
+> breekpunten en barsten bleef (nu `breach/Blast`, config `[breach]`). Hieronder staat hoe het toen gebouwd werd.
 
 Jouw wensen: in Minecraft kan iedereen zomaar elk blok weghakken; je basis moet veiliger. Je stelt
 een **zone** in, tot op het blok precies (hoeken, rechte lijnen, x, y en z), je kunt zien waar hij
@@ -3450,6 +3454,10 @@ Ik stelde acht vragen, jij koos.
   5 blokken, niet het hele net in één keer; wel zo: zet hem bij de kabels van je doelwit), een **eigen EMP-trigger**
   (niet de detonator van C4), en **eenmalig** (zoals C4).
 - **Ook op 26 oktober**: "zorg dat de smoke van smokegranades niet door blokken kan gaan".
+- **En nog op 26 oktober**: "haal de C4 weg, ik wil dat er nog enkel zo granaten bestaan; de plak-C4 met remote moet
+  zijn zoals een halve sticky frag, maar dan ook met remote zoals de Remote EMP". Drie vragen, jouw antwoorden: een
+  **eigen Frag Trigger** ("een nieuwe mooie 3D-model zoals de EMP trigger, en de oude C4-trigger moet weg"), bij een
+  zone **alarm en schaar, zoals C4**, en zo sterk als een **Sticky Frag**.
 
 **Mijn invulling** (zeg het als je het anders wil):
 - **Gooien**: rechtsklik gooit. Met sneak gooi je zachtjes onderhands (de bol rolt dan over de vloer, zoals bij
@@ -3630,13 +3638,41 @@ Zo bouw ik het:
       schuurtje: niets door de muren, wel door het raam te zien), `gr22` (niets door het dak) en `gr23` (een sliertje
       door de open deur). Eén nieuwe test (`smoke_does_not_go_through_blocks`: niet door een muur en een dichte deur, wel
       door een open deur), en de rekensom-test telt nu cel voor cel. 336 tests, allemaal groen.
+- [x] **2f. C4 weg: de Remote Frag en de Frag Trigger** (26 oktober, jouw wens) — **Weg**: de C4 (Timer), de C4 (Remote)
+      en de detonator, met hun scherm voor de tijd, het aftellende schermpje, de piepjes, de modellen, plaatjes en
+      recepten, en de config `[c4]`. **Wat bleef**: de klap met breekpunten en barsten (`c4/C4Blast` heet nu
+      `breach/Blast`, met `Cracks` en de Repair Paste in `breach/`), en het alarm van een zone (`breach/BlastAlarm`). De
+      sterktes van blokken staan nu onder `[breach]` (TNT en de satelliet ook). **De Remote Frag** (`remote_frag`): de
+      halve bol van de Sticky Frag (legergroen, oranje ring, rode lampjes) met een antenne, op een vloer, muur of
+      plafond. Hij en de Remote EMP zijn nu één blok met twee soorten (`weapons/RemoteChargeBlock`, `RemoteChargeItem`,
+      `RemoteChargeBlockEntity`), zoals de sticky-granaten. Jouw keuzes: zo sterk als een Sticky Frag (8 breekpunten, 3
+      blokken ver: één frag blaast een blok steen uit een muur, obsidiaan na vier, de kern na acht); **alarm en schaar**
+      zoals C4: met je hand krijg je hem er niet af (alleen een schaar knipt de draad door, dan valt hij eruit), en plakt
+      een vreemde hem op een zone, dan ziet de eigenaar een rood bordje "FRAG!" en staat het in het logboek. Een explosie
+      maakt hem niet kapot: dan gaat hij zelf af. **De Frag Trigger** (`frag_trigger`, een nieuw 3D-model): een
+      legergroen kastje met een oranje gevarenband, rubberen grepen, een rood schermpje, een grote rode knop onder een
+      oranje klepje dat openstaat, een tuimelschakelaar met een rood lampje en een dikke antenne. De EMP Trigger en de
+      Frag Trigger zijn nu één item met twee soorten (`weapons/TriggerItem`, wat ze onthouden in `TriggerData`, elk in
+      een eigen component); een EMP Trigger laat nooit een Remote Frag afgaan. Met een trigger in je hand zie je bordjes
+      boven je ladingen: "EMP" in cyaan, "FRAG" in rood (`client/weapons/TriggerMarkers`). Het bereik van allebei is
+      `triggerRange` onder `[weapons]` (was `empTriggerRange`). **Recepten**: een Sticky Frag Grenade, een redstonefakkel
+      en een koperstaaf = een Remote Frag; een bliksemafleider, ijzer, een Computer Chip en een stenen knop = een Frag
+      Trigger (het recept van de detonator). Geluiden: het doorknippen heet nu `remote_frag.defuse`, de klik van de
+      triggers `trigger.click`. **Mijn invullingen**: C4 en detonators uit een oude wereld worden vanzelf Remote Frags en
+      Frag Triggers (een "alias"; een C4 met een eigen tijd erop gaat verloren); ook de **Remote EMP** mag je nu in de
+      zone van een ander plakken (net als de Remote Frag: het zijn inbraakmiddelen). **Showcase**: functie 79 heet nu
+      "Remote Frag" (alarm en schaar als eigenaar, dan als inbreker twee frags en de knop, en vier op het obsidiaan).
+      **Screenshots** `-Ponly=remote_frag` (`f01` tot `f06`, in plaats van `-Ponly=c4`). **Tests**: `C4GameTests` werd
+      `RemoteFragGameTests` (8 tests: een blok uit een muur en met een tweede een gat, obsidiaan na vier, de kern na
+      acht, een kettingreactie, koppelen en afgaan, bereik en koppelen, alarm en schaar, het verslag als je weg was).
+      334 tests, allemaal groen.
 - [x] **5. Showcase, screenshots en LEESMIJ** — **Showcase**: drie nieuwe functies, achteraan zodat de nummers van je
       notities blijven kloppen: **98 "EMP and frag grenades"** (een veld met een robot en een turret voor een muur: een
       EMP-bol, een sticky, een Sticky Frag op de muur, een Frag over de vloer, en een EMP aan je voeten met je bril op),
       **99 "Smoke grenade and flashbang"** (de turret schiet op een husk; grijze rook ertussen en de turret stopt; rode
       rook; een flashbang voor je ogen) en **100 "Laser guns"** (alle vier, met richten, schieten, herladen, bekijken, de
       kijker en de pomp). Getest met `python tools/showcase.py --vanaf 98 --tot 100 --test`. **Screenshots**
-      `-Ponly=grenades` (`gr01` tot `gr20`) en `-Ponly=guns` (`g01` tot `g21`). **LEESMIJ**: een nieuw stuk "Wapens:
+      `-Ponly=grenades` (`gr01` tot `gr20`; sinds stap 2e tot `gr23`) en `-Ponly=guns` (`g01` tot `g21`). **LEESMIJ**: een nieuw stuk "Wapens:
       granaten, de Remote EMP en lasergeweren" (wat elke granaat doet, de Remote EMP en de trigger, de bediening van de
       geweren in een tabel, munitie en recepten), en de E.M.P.-zender heet daar nu Illusion Jammer.
 
@@ -3675,17 +3711,17 @@ raiddrones eruitzien.
       getallen goed voelen: hoeveel fans je nodig hebt, hoe snel het warm wordt (ongeveer een
       minuut), hoe lang I.M.T erbij nadenkt (1 CPU +8 s), en of vuur van een brandend rack niet
       te makkelijk een houten basis afbrandt. Alles staat in de config onder `[logic]`.
-- [ ] **Zones en C4 (8-9 oktober)**: gezien op screenshots, niet zelf gespeeld. Kijk zelf of de rand
-      niet te fel of te zwak is (vooral dichtbij, tegen je eigen muur), of de muisklikken in de app
-      Zone goed werken (typen in de vakjes, de kaart), of de piepjes van C4 en het doorknippen goed
-      klinken, en of de getallen goed voelen: hoeveel C4 een muur kost (steen 1, obsidiaan 3, de kern
-      6), hoe groot het gat is, en hoeveel stroom een grote zone kost. Op obsidiaan zie je de barsten
-      bijna niet (zo tekent Minecraft barsten). Alles staat in de config onder `[c4]` en `[security]`.
+- [ ] **Zones en de Remote Frag (8-9 en 26 oktober)**: gezien op screenshots, niet zelf gespeeld. Kijk zelf of de
+      rand niet te fel of te zwak is (vooral dichtbij, tegen je eigen muur), of de muisklikken in de app Zone goed
+      werken (typen in de vakjes, de kaart), of het doorknippen goed klinkt, en of de getallen goed voelen: hoeveel
+      frags een muur kost (steen 1, obsidiaan 4, de kern 8), hoe groot het gat is, en hoeveel stroom een grote zone
+      kost. Op obsidiaan zie je de barsten bijna niet (zo tekent Minecraft barsten). Alles staat in de config onder
+      `[breach]`, `[weapons]` en `[security]`.
 - [ ] **Barsten herstellen (9 oktober)**: gezien op screenshots en in de showcase, niet zelf gespeeld.
       Luister of de Crusher (een heel zachte slijpsteen) en de Compactor (een heel zachte zuiger) goed
       klinken, en of de getallen goed voelen: 15% zwakker per keer plamuren, 5 seconden per blok in een
       machine. Een gebarsten blok van obsidiaan ziet er in je hand bijna uit als gewoon obsidiaan (net
-      als de barsten in de wereld). Alles staat in de config onder `[c4]` en `[repair]`.
+      als de barsten in de wereld). Alles staat in de config onder `[breach]` en `[repair]`.
 - [ ] **Inbreken (9 oktober)**: gezien op screenshots en in de showcase, maar niet zelf met een muis
       gespeeld. Probeer of het draaien met links- en rechtsklik, het vegen met de muisknop ingedrukt en
       het slepen in de zak goed aanvoelen, en of de getallen kloppen: de tijden van het stroomcircuit

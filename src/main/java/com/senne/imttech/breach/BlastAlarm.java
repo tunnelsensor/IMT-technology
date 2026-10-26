@@ -1,13 +1,14 @@
-package com.senne.imttech.c4;
+package com.senne.imttech.breach;
 
 import com.senne.imttech.imt.ImtServer;
-import com.senne.imttech.network.C4AlertPayload;
+import com.senne.imttech.network.ChargeAlertPayload;
 import com.senne.imttech.network.ImtMessagePayload;
 import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.os.EventLog;
 import com.senne.imttech.security.zone.ZoneData;
 import com.senne.imttech.security.zone.Zones;
+import com.senne.imttech.weapons.RemoteChargeBlockEntity;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -23,24 +24,24 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het alarm van C4 (hoofdstuk 10, jouw keuze: "plakt iemand C4 op of in je zone, dan zegt I.M.T
- * waar, aan jou en je vertrouwde spelers").
+ * Het alarm van een zone bij explosieven (hoofdstuk 10, jouw keuze: "plakt iemand een lading op of in je zone, dan zegt
+ * I.M.T waar, aan jou en je vertrouwde spelers"). Eerst was dat voor C4; sinds 26 oktober voor de Remote Frag (jouw
+ * keuze: "alarm en schaar, zoals C4").
  *
  * <ul>
- *   <li><b>Geplakt</b> in een zone of tot 3 blokken ervan (door iemand die er niet mag bouwen):
- *       I.M.T zegt waar, aan de eigenaar en zijn vrienden die online zijn, en ze zien een rode
- *       markering "C4!" tot hij weg is. Niet wie het was: in het echt weet je dat ook niet.</li>
- *   <li><b>Ontploft</b> (C4, of TNT of de satelliet die in de zone iets kapotmaken): hoeveel blokken van
- *       de zone er weg zijn. Is de eigenaar offline, dan hoort
- *       hij het als hij weer inlogt ("While you were away: ...").</li>
+ *   <li><b>Geplakt</b>: een Remote Frag in een zone of tot 3 blokken ervan (door iemand die er niet mag bouwen): I.M.T
+ *       zegt waar, aan de eigenaar en zijn vrienden die online zijn, en ze zien een rode markering "FRAG!" tot hij weg
+ *       is. Niet wie het was: in het echt weet je dat ook niet.</li>
+ *   <li><b>Ontploft</b> (een frag, of TNT of de satelliet die in de zone iets kapotmaken): hoeveel blokken van de zone
+ *       er weg zijn. Is de eigenaar offline, dan hoort hij het als hij weer inlogt ("While you were away: ...").</li>
  *   <li><b>Onschadelijk gemaakt</b> (met een schaar): de markering gaat weg, en wie hem plakte hoort het.</li>
  * </ul>
  * Alles staat ook in het logboek van de kern (rode regels, ALARM).
  */
-public final class C4Alarm {
-    private C4Alarm() {}
+public final class BlastAlarm {
+    private BlastAlarm() {}
 
-    /** Zo ver van een zone telt een C4 nog als "op je zone" (blokken). */
+    /** Zo ver van een zone telt een lading nog als "op je zone" (blokken). */
     public static final double NEAR = 3.0;
     /** Zo lang na het inloggen wacht I.M.T met het verslag (ticks), zodat je bril eerst opstart. */
     private static final int REPORT_DELAY = 100;
@@ -50,17 +51,15 @@ public final class C4Alarm {
 
     // ================================================================ Geplakt
 
-    /** Net geplakt: ligt hij op een zone van een ander, dan gaat het alarm af. */
-    public static void planted(ServerLevel level, BlockPos pos, C4BlockEntity c4) {
+    /** Een Remote Frag net geplakt: ligt hij op een zone van een ander, dan gaat het alarm af. */
+    public static void planted(ServerLevel level, BlockPos pos, RemoteChargeBlockEntity charge) {
         ZoneData.Zone zone = Zones.activeNear(level, pos, NEAR);
-        if (zone == null || zone.isBuilder(level, c4.placer(), c4.placerName())) {
-            return; // geen zone, of het is je eigen C4 in je eigen zone
+        if (zone == null || zone.isBuilder(level, charge.owner(), charge.ownerName())) {
+            return; // geen zone, of het is je eigen lading in je eigen zone
         }
-        c4.setAlerted();
-        String what = c4.kind() == C4Block.Kind.TIMED && c4.explodeAt() >= 0
-                ? "timer " + C4Item.clock((int) Math.ceil(c4.remaining(level.getGameTime()) / 20.0)) : "remote";
-        log(level, zone, "C4 planted at " + xyz(pos) + " (" + what + ")");
-        tellBuilders(level, zone, Component.translatable("zone.imttech.c4.planted", pos.getX(), pos.getY(), pos.getZ(), what),
+        charge.setAlerted();
+        log(level, zone, "Remote Frag planted at " + xyz(pos));
+        tellBuilders(level, zone, Component.translatable("zone.imttech.frag.planted", pos.getX(), pos.getY(), pos.getZ()),
                 ImtMessagePayload.Level.ALERT);
         marker(level, zone, pos, true);
     }
@@ -68,8 +67,8 @@ public final class C4Alarm {
     // ================================================================ Ontploft of onschadelijk
 
     /**
-     * Ontploft. {@code zone} is de zone die de klap raakte (of null), {@code blocks} hoeveel blokken
-     * van die zone er weg zijn.
+     * Ontploft. {@code zone} is de zone die de klap raakte (of null), {@code blocks} hoeveel blokken van die zone er weg
+     * zijn, {@code alerted} of er een markering stond (die gaat dan weg).
      */
     public static void blasted(ServerLevel level, BlockPos pos, @Nullable ZoneData.Zone zone, int blocks, boolean alerted, String what) {
         if (zone == null) {
@@ -82,7 +81,7 @@ public final class C4Alarm {
         if (blocks <= 0) {
             return;
         }
-        tellBuilders(level, zone, Component.translatable("zone.imttech.c4.blast", what, blocks), ImtMessagePayload.Level.ALERT);
+        tellBuilders(level, zone, Component.translatable("zone.imttech.blast", what, blocks), ImtMessagePayload.Level.ALERT);
         UUID owner = zone.owner();
         if (owner != null && level.getServer().getPlayerList().getPlayer(owner) == null) {
             ZoneData.get(level).addAwayReport(owner, blocks);
@@ -90,18 +89,18 @@ public final class C4Alarm {
     }
 
     /** Met een schaar onschadelijk gemaakt: de markering weg, en wie hem plakte hoort het. */
-    public static void defused(ServerLevel level, BlockPos pos, C4BlockEntity c4, ServerPlayer by) {
+    public static void defused(ServerLevel level, BlockPos pos, RemoteChargeBlockEntity charge, ServerPlayer by) {
         ZoneData.Zone zone = Zones.activeNear(level, pos, NEAR);
         if (zone != null) {
-            if (c4.alerted()) {
+            if (charge.alerted()) {
                 marker(level, zone, pos, false);
             }
-            log(level, zone, "C4 at " + xyz(pos) + " defused");
+            log(level, zone, "Remote Frag at " + xyz(pos) + " defused");
         }
-        if (c4.placer() != null && !c4.placer().equals(by.getUUID())) {
-            ServerPlayer placer = level.getServer().getPlayerList().getPlayer(c4.placer());
+        if (charge.owner() != null && !charge.owner().equals(by.getUUID())) {
+            ServerPlayer placer = level.getServer().getPlayerList().getPlayer(charge.owner());
             if (placer != null) {
-                ImtServer.send(placer, Component.translatable("zone.imttech.c4.your_defused", pos.getX(), pos.getY(), pos.getZ()),
+                ImtServer.send(placer, Component.translatable("zone.imttech.frag.your_defused", pos.getX(), pos.getY(), pos.getZ()),
                         ImtMessagePayload.Level.WARNING);
             }
         }
@@ -118,9 +117,9 @@ public final class C4Alarm {
         }
     }
 
-    /** De rode markering "C4!" aan of uit, bij de eigenaar en zijn vrienden. */
+    /** De rode markering "FRAG!" aan of uit, bij de eigenaar en zijn vrienden. */
     private static void marker(ServerLevel level, ZoneData.Zone zone, BlockPos pos, boolean on) {
-        C4AlertPayload payload = new C4AlertPayload(GlobalPos.of(level.dimension(), pos.immutable()), on);
+        ChargeAlertPayload payload = new ChargeAlertPayload(GlobalPos.of(level.dimension(), pos.immutable()), on);
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
             if (zone.isBuilder(level, player)) {
                 ModNetwork.sendTo(player, payload);
@@ -167,7 +166,7 @@ public final class C4Alarm {
             }
             int[] report = ZoneData.get(event.getServer()).takeAwayReport(player.getUUID());
             if (report != null) {
-                ImtServer.send(player, Component.translatable("zone.imttech.c4.report", report[0], report[1]),
+                ImtServer.send(player, Component.translatable("zone.imttech.blast.report", report[0], report[1]),
                         ImtMessagePayload.Level.ALERT);
             }
         }

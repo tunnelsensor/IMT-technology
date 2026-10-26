@@ -24,6 +24,14 @@ public final class ModBlocks {
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(ImtTech.MODID);
 
+    static {
+        // C4 bestaat niet meer (26 oktober): C4 in een wereld van vroeger wordt een Remote Frag.
+        BLOCKS.addAlias(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "timed_c4"),
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "remote_frag"));
+        BLOCKS.addAlias(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "remote_c4"),
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "remote_frag"));
+    }
+
     public static final DeferredBlock<ChargingStationBlock> CHARGING_STATION = BLOCKS.registerBlock("charging_station",
             ChargingStationBlock::new,
             BlockBehaviour.Properties.of()
@@ -218,26 +226,12 @@ public final class ModBlocks {
                     .noOcclusion());
 
     /**
-     * C4 met een timer (hoofdstuk 10): plakt op een vloer, muur of plafond en gaat af als de tijd om
-     * is. Met de hand krijg je hem er niet af (alleen met een schaar), en een explosie maakt hem niet
-     * kapot (dan gaat hij zelf af).
-     */
-    public static final DeferredBlock<com.senne.imttech.c4.C4Block> TIMED_C4 = BLOCKS.registerBlock(
-            "timed_c4", properties -> new com.senne.imttech.c4.C4Block(com.senne.imttech.c4.C4Block.Kind.TIMED, properties),
-            BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.CLAY)
-                    .strength(-1.0f, 3_600_000.0f)
-                    .sound(SoundType.WOOL)
-                    .noCollission()
-                    .noOcclusion()
-                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
-
-    /**
      * Hoofdstuk 35: de Remote EMP, een halve bol met een antenne op een vloer, muur of plafond. Gaat af (een EMP-puls)
-     * als iemand op zijn EMP-trigger drukt. Iedereen kan hem eraf trekken.
+     * als iemand op zijn EMP Trigger drukt. Iedereen kan hem eraf trekken.
      */
-    public static final DeferredBlock<com.senne.imttech.weapons.RemoteEmpBlock> REMOTE_EMP = BLOCKS.registerBlock(
-            "remote_emp", com.senne.imttech.weapons.RemoteEmpBlock::new,
+    public static final DeferredBlock<com.senne.imttech.weapons.RemoteChargeBlock> REMOTE_EMP = BLOCKS.registerBlock(
+            "remote_emp", properties -> new com.senne.imttech.weapons.RemoteChargeBlock(
+                    com.senne.imttech.weapons.RemoteChargeBlock.Kind.EMP, properties),
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_RED)
                     .strength(0.4f, 1.0f)
@@ -246,13 +240,18 @@ public final class ModBlocks {
                     .noOcclusion()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
 
-    /** C4 met een antenne (hoofdstuk 10): wacht tot iemand op zijn detonator drukt. */
-    public static final DeferredBlock<com.senne.imttech.c4.C4Block> REMOTE_C4 = BLOCKS.registerBlock(
-            "remote_c4", properties -> new com.senne.imttech.c4.C4Block(com.senne.imttech.c4.C4Block.Kind.REMOTE, properties),
+    /**
+     * Hoofdstuk 35 (26 oktober, in plaats van C4): de Remote Frag, de halve bol van een Sticky Frag met een antenne. Gaat
+     * af (een klap zoals een Sticky Frag) als iemand op zijn Frag Trigger drukt. Met de hand krijg je hem er niet af
+     * (alleen met een schaar), en een explosie maakt hem niet kapot (dan gaat hij zelf af).
+     */
+    public static final DeferredBlock<com.senne.imttech.weapons.RemoteChargeBlock> REMOTE_FRAG = BLOCKS.registerBlock(
+            "remote_frag", properties -> new com.senne.imttech.weapons.RemoteChargeBlock(
+                    com.senne.imttech.weapons.RemoteChargeBlock.Kind.FRAG, properties),
             BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.CLAY)
+                    .mapColor(MapColor.COLOR_GREEN)
                     .strength(-1.0f, 3_600_000.0f)
-                    .sound(SoundType.WOOL)
+                    .sound(SoundType.METAL)
                     .noCollission()
                     .noOcclusion()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));

@@ -1,7 +1,9 @@
-package com.senne.imttech.c4;
+package com.senne.imttech.breach;
 
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.registry.ModBlocks;
+import com.senne.imttech.weapons.RemoteChargeBlock;
+import com.senne.imttech.weapons.RemoteChargeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -13,75 +15,52 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * De klap van C4 (hoofdstuk 10, jouw keuze: "sterke muren kosten meer C4").
+ * De klap van een explosief tegen blokken (hoofdstuk 10, jouw keuze: "sterke muren kosten meer"). Vroeger was dit de
+ * klap van C4; sinds 26 oktober (jouw wens: "haal de C4 weg, ik wil dat er nog enkel granaten bestaan") zijn het de
+ * frag-granaten en de Remote Frag (hoofdstuk 35), allemaal even sterk (zie {@link #frag}).
  *
- * Het midden van de klap ligt op het blok waar de lading tegenaan plakt. Elk blok binnen
- * {@link ImtConfig.C4#RADIUS} krijgt breekpunten: {@link ImtConfig.C4#POWER} vlak bij de lading, aflopend tot
- * 0 aan de rand. Heeft een blok genoeg (zie {@link #strength}), dan breekt het en valt het eruit zoals
- * bij TNT (een kist ook, met zijn inhoud). Zo niet, dan krijgt het barsten die je ziet, en de volgende
- * C4 telt erbij op. Die barsten blijven tot je ze herstelt (zie {@link Cracks}, hoofdstuk 11).
+ * Elk blok binnen de straal krijgt breekpunten: veel vlak bij de lading, aflopend tot 0 aan de rand. Heeft een blok
+ * genoeg (zie {@link #strength}), dan breekt het en valt het eruit zoals bij TNT (een kist ook, met zijn inhoud). Zo
+ * niet, dan krijgt het barsten die je ziet, en de volgende klap telt erbij op. Die barsten blijven tot je ze herstelt
+ * (zie {@link Cracks}, hoofdstuk 11).
  *
- * Een zone houdt C4 niet tegen: dat is juist de bedoeling (zie security/zone/Zones). Ander C4 in de
- * klap gaat ook af (een kettingreactie), TNT wordt aangestoken. Wezens krijgen een klap zoals van TNT.
- *
- * De frag-granaten (hoofdstuk 35) ontploffen op dezelfde manier, maar iets zwakker (zie {@link #grenade}).
+ * Een zone houdt deze klap niet tegen: dat is juist de bedoeling (zie security/zone/Zones). Een andere Remote Frag in de
+ * klap gaat ook af (een kettingreactie), TNT wordt aangestoken. Wezens krijgen een klap zoals van TNT, iets zwakker.
  */
-public final class C4Blast {
-    private C4Blast() {}
+public final class Blast {
+    private Blast() {}
 
-    /** Zo ver van het midden van het blok ligt het midden van de klap: op de kant waar de lading plakt. */
-    private static final double ON_FACE = 0.45;
-
-    /**
-     * Laat de C4 op {@code pos} ontploffen. Geeft terug hoeveel blokken er kapot gingen (voor het
-     * logboek van een zone, zie stap 7).
-     */
-    public static int detonate(ServerLevel level, BlockPos pos, BlockState state) {
-        Direction3 out = Direction3.of(state);
-        Vec3 centre = pos.getCenter().subtract(out.x * ON_FACE, out.y * ON_FACE, out.z * ON_FACE);
-        // Welke zone raakt deze klap (voor het alarm en het logboek)?
-        com.senne.imttech.security.zone.ZoneData.Zone zone =
-                com.senne.imttech.security.zone.Zones.activeNear(level, pos, ImtConfig.C4.RADIUS);
-        boolean alerted = level.getBlockEntity(pos) instanceof C4BlockEntity self && self.alerted();
-        level.removeBlock(pos, false);
-        return blast(level, centre, pos, zone, null, ImtConfig.C4.ENTITY_POWER, ImtConfig.C4.POWER, ImtConfig.C4.RADIUS,
-                "C4", alerted);
-    }
+    /** Een Remote Frag in de klap gaat zoveel ticks later zelf af (een kettingreactie). */
+    private static final int CHAIN_DELAY = 3;
 
     /**
-     * Een klap zoals van C4 rond {@code centre}, met eigen sterktes: voor C4 zelf, en voor de frag-granaten (hoofdstuk
-     * 35: "zoals de C4 maar net iets minder sterk"). {@code at} is waar de lading lag (voor het logboek van de zone),
-     * {@code source} wie de klap veroorzaakte (een granaat: dan telt wie hem gooide als dader), {@code what} de naam in
-     * het logboek ("C4", "Frag grenade"). Geeft hoeveel blokken er kapot gingen.
+     * Een frag gaat af (jouw keuze: de Remote Frag even sterk als een Sticky Frag): een klap rond {@code centre} met de
+     * sterktes uit [weapons]. {@code at} is waar de lading lag (voor het logboek van een zone), {@code source} wie of wat
+     * de klap veroorzaakte (een granaat: dan telt wie hem gooide als dader), {@code alerted} of de zone al gewaarschuwd
+     * was (dan gaat de markering weg), {@code what} de naam in het logboek. Geeft hoeveel blokken er kapot gingen.
      */
-    public static int blast(ServerLevel level, Vec3 centre, BlockPos at,
-                            com.senne.imttech.security.zone.ZoneData.@org.jetbrains.annotations.Nullable Zone zone,
-                            @org.jetbrains.annotations.Nullable net.minecraft.world.entity.Entity source,
-                            float entityPower, float power, float radius, String what, boolean alerted) {
-        // Eerst de klap voor wezens (met het geluid en de rook van een explosie), zonder blokken: die
-        // doen we hieronder zelf. Zo vernielt de klap ook niet de spullen die straks uit de blokken vallen.
-        level.explode(source, centre.x, centre.y, centre.z, entityPower, false, Level.ExplosionInteraction.NONE);
-        Breach result = breach(level, centre, power, radius, here -> true, zone);
-        C4Alarm.blasted(level, at, zone, result.inZone(), alerted, what);
-        return result.broken();
-    }
-
-    /** Een klap van een frag-granaat (hoofdstuk 35): als C4, maar met de sterktes uit [weapons]. */
-    public static int grenade(ServerLevel level, Vec3 centre, net.minecraft.world.entity.Entity grenade) {
-        BlockPos at = BlockPos.containing(centre);
+    public static int frag(ServerLevel level, Vec3 centre, BlockPos at,
+                           @org.jetbrains.annotations.Nullable net.minecraft.world.entity.Entity source,
+                           boolean alerted, String what) {
         float radius = ImtConfig.Weapons.GRENADE_BREACH_RADIUS;
-        return blast(level, centre, at, com.senne.imttech.security.zone.Zones.activeNear(level, at, radius), grenade,
-                ImtConfig.Weapons.GRENADE_ENTITY_POWER, ImtConfig.Weapons.GRENADE_BREACH, radius, "Frag grenade", false);
+        com.senne.imttech.security.zone.ZoneData.Zone zone = com.senne.imttech.security.zone.Zones.activeNear(level, at, radius);
+        // Eerst de klap voor wezens (met het geluid en de rook van een explosie), zonder blokken: die doen we hieronder
+        // zelf. Zo vernielt de klap ook niet de spullen die straks uit de blokken vallen.
+        level.explode(source, centre.x, centre.y, centre.z, ImtConfig.Weapons.GRENADE_ENTITY_POWER, false,
+                Level.ExplosionInteraction.NONE);
+        Breach result = breach(level, centre, ImtConfig.Weapons.GRENADE_BREACH, radius, here -> true, zone);
+        BlastAlarm.blasted(level, at, zone, result.inZone(), alerted, what);
+        return result.broken();
     }
 
     /** Wat een klap deed: zoveel blokken kapot, waarvan zoveel in de zone. */
     public record Breach(int broken, int inZone) {}
 
     /**
-     * Breekpunten uitdelen rond {@code centre}: {@code power} vlakbij, aflopend tot 0 op {@code radius}
-     * blokken, alleen aan blokken waar {@code affects} ja op zegt. Wat genoeg heeft, breekt (zoals bij
-     * TNT); de rest krijgt barsten. Ander C4 in de klap gaat ook af. C4 gebruikt dit voor alles in zijn
-     * klap; TNT en satellietraketten alleen voor de blokken van een zone (zie Zones.onExplosion).
+     * Breekpunten uitdelen rond {@code centre}: {@code power} vlakbij, aflopend tot 0 op {@code radius} blokken, alleen
+     * aan blokken waar {@code affects} ja op zegt. Wat genoeg heeft, breekt (zoals bij TNT); de rest krijgt barsten. Een
+     * Remote Frag in de klap gaat ook af. Frags gebruiken dit voor alles in hun klap; TNT en satellietraketten alleen voor
+     * de blokken van een zone (zie Zones.onExplosion).
      */
     public static Breach breach(ServerLevel level, Vec3 centre, float power, float radius,
                                 java.util.function.Predicate<BlockPos> affects,
@@ -103,10 +82,10 @@ public final class C4Blast {
             if (!affects.test(here)) {
                 continue;
             }
-            // Ander C4: gaat zelf ook af (een beetje later, dat klinkt als een kettingreactie).
-            if (target.getBlock() instanceof C4Block) {
-                if (level.getBlockEntity(here) instanceof C4BlockEntity other) {
-                    other.detonateIn(Math.round(ImtConfig.C4.CHAIN_DELAY));
+            // Een andere Remote Frag: gaat zelf ook af (een beetje later, dat klinkt als een kettingreactie).
+            if (target.getBlock() instanceof RemoteChargeBlock charge && charge.kind() == RemoteChargeBlock.Kind.FRAG) {
+                if (level.getBlockEntity(here) instanceof RemoteChargeBlockEntity other) {
+                    other.goOffIn(CHAIN_DELAY);
                 }
                 continue;
             }
@@ -142,10 +121,10 @@ public final class C4Blast {
     }
 
     /**
-     * Hoeveel breekpunten dit blok kan hebben voor het breekt (-1 = nooit). Dat hangt af van hoe goed
-     * het in Minecraft tegen explosies kan: steen en baksteen zijn "gewoon", obsidiaan "sterk". De
-     * beveiligingskern is het sterkst (hacken is de andere weg naar binnen). Is het blok geplamuurd,
-     * dan is het zwakker (hoofdstuk 11: elke keer 15%, zie {@link Cracks#factor}).
+     * Hoeveel breekpunten dit blok kan hebben voor het breekt (-1 = nooit). Dat hangt af van hoe goed het in Minecraft
+     * tegen explosies kan: steen en baksteen zijn "gewoon", obsidiaan "sterk". De beveiligingskern is het sterkst
+     * (hacken is de andere weg naar binnen). Is het blok geplamuurd, dan is het zwakker (hoofdstuk 11: elke keer 15%,
+     * zie {@link Cracks#factor}).
      */
     public static float strength(ServerLevel level, BlockPos pos, BlockState state) {
         float strength = baseStrength(level, pos, state);
@@ -155,26 +134,15 @@ public final class C4Blast {
     /** Zoals {@link #strength}, maar voor een nieuw blok (nooit geplamuurd). */
     public static float baseStrength(ServerLevel level, BlockPos pos, BlockState state) {
         if (state.is(ModBlocks.SECURITY_CORE.get())) {
-            return ImtConfig.C4.CORE;
+            return ImtConfig.Breach.CORE;
         }
         if (state.getDestroySpeed(level, pos) < 0) {
             return -1;
         }
         float resistance = state.getBlock().getExplosionResistance();
-        if (resistance >= ImtConfig.C4.STRONG_RESISTANCE) {
-            return ImtConfig.C4.STRONG;
+        if (resistance >= ImtConfig.Breach.STRONG_RESISTANCE) {
+            return ImtConfig.Breach.STRONG;
         }
-        return resistance >= ImtConfig.C4.NORMAL_RESISTANCE ? ImtConfig.C4.NORMAL : ImtConfig.C4.WEAK;
-    }
-
-    /** De kant waar een lading van af wijst, als drie getallen (zie C4Block.outward). */
-    private record Direction3(int x, int y, int z) {
-        static Direction3 of(BlockState state) {
-            if (!(state.getBlock() instanceof C4Block)) {
-                return new Direction3(0, 0, 0);
-            }
-            net.minecraft.core.Direction out = C4Block.outward(state);
-            return new Direction3(out.getStepX(), out.getStepY(), out.getStepZ());
-        }
+        return resistance >= ImtConfig.Breach.NORMAL_RESISTANCE ? ImtConfig.Breach.NORMAL : ImtConfig.Breach.WEAK;
     }
 }

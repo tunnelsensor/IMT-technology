@@ -1,6 +1,6 @@
 package com.senne.imttech.mixin;
 
-import com.senne.imttech.c4.Cracks;
+import com.senne.imttech.breach.Cracks;
 import com.senne.imttech.light.ArcLampLight;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;

@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "25";
+    private static final String PROTOCOL_VERSION = "26";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -110,12 +110,6 @@ public final class ModNetwork {
             }
         });
         // De harnas-werkbank: een klik op een stuk van het hologram.
-        // Hoofdstuk 10: de tijd op een C4 (Timer) instellen.
-        registrar.playToServer(C4TimerPayload.TYPE, C4TimerPayload.STREAM_CODEC, (payload, context) -> {
-            if (context.player() instanceof ServerPlayer player) {
-                C4TimerPayload.handle(player, payload);
-            }
-        });
         // Hoofdstuk 10: linksklik met de Zone Marker (hoek 1, of met sluipen een kubus weghalen).
         registrar.playToServer(ZoneMarkerClickPayload.TYPE, ZoneMarkerClickPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -306,9 +300,9 @@ public final class ModNetwork {
         // Harnas: straalvlammen onder de laarzen van wie vliegt
         registrar.playToClient(ThrusterPayload.TYPE, ThrusterPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onThruster(payload, context));
-        // Hoofdstuk 10: C4 op je zone (de rode markering aan of uit)
-        registrar.playToClient(C4AlertPayload.TYPE, C4AlertPayload.STREAM_CODEC,
-                (payload, context) -> ClientPayloadHandlers.onC4Alert(payload, context));
+        // Hoofdstuk 10 en 35: een Remote Frag op je zone (de rode markering aan of uit)
+        registrar.playToClient(ChargeAlertPayload.TYPE, ChargeAlertPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onChargeAlert(payload, context));
         // Hoofdstuk 10: de zones die jij mag zien (jouw eigen zones en die van je vrienden)
         registrar.playToClient(ZoneSyncPayload.TYPE, ZoneSyncPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onZoneSync(payload, context));

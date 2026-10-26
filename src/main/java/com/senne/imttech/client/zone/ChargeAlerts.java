@@ -1,7 +1,7 @@
-package com.senne.imttech.client.c4;
+package com.senne.imttech.client.zone;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.senne.imttech.network.C4AlertPayload;
+import com.senne.imttech.network.ChargeAlertPayload;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,12 +17,12 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 /**
- * De rode markeringen "C4!" boven C4 die iemand op jouw zone plakte (hoofdstuk 10, stap 7). De server
- * zet ze aan en weer uit (zie c4/C4Alarm); je ziet ze door muren heen, met hoe ver ze zijn. Een
- * markering die de server vergat uit te zetten, verdwijnt na een kwartier vanzelf.
+ * De rode markeringen "FRAG!" boven een Remote Frag die iemand op jouw zone plakte (hoofdstuk 10 en 35). De server zet
+ * ze aan en weer uit (zie breach/BlastAlarm); je ziet ze door muren heen, met hoe ver ze zijn. Een markering die de
+ * server vergat uit te zetten, verdwijnt na een kwartier vanzelf.
  */
-public final class C4Alerts {
-    private C4Alerts() {}
+public final class ChargeAlerts {
+    private ChargeAlerts() {}
 
     /** Zo lang blijft een markering hooguit staan (milliseconden). */
     private static final long MAX_AGE = 15 * 60 * 1000L;
@@ -30,7 +30,7 @@ public final class C4Alerts {
     /** Waar de markeringen staan, en sinds wanneer. */
     private static final Map<GlobalPos, Long> ALERTS = new HashMap<>();
 
-    public static void onPayload(C4AlertPayload payload) {
+    public static void onPayload(ChargeAlertPayload payload) {
         if (payload.on()) {
             ALERTS.put(payload.pos(), Util.getMillis());
         } else {
@@ -74,7 +74,7 @@ public final class C4Alerts {
             if (distance > 160) {
                 continue;
             }
-            String text = "C4!  " + Math.round(distance) + " m";
+            String text = "FRAG!  " + Math.round(distance) + " m";
             float size = 0.03f * (float) Math.max(1.0, at.distanceTo(cam) / 8.0);
             pose.pushPose();
             pose.translate(at.x, at.y, at.z);

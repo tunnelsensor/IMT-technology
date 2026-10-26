@@ -359,37 +359,6 @@ def security_camera():
     blockstate("security_camera", variants)
 
 
-def c4_blocks():
-    """
-    C4 (hoofdstuk 10): een plat pakketje van 10 x 10 pixels en 3 dik, met een zwart kastje met een
-    schermpje erop. Het model ligt op de vloer; de blockstate draait het naar de muur (x 90) of het
-    plafond (x 180), net als een knop in Minecraft. De tijd tekent de mod er zelf voor (C4Renderer).
-    """
-    textures = {"particle": "imttech:block/c4_putty", "putty": "imttech:block/c4_putty",
-                "device": "imttech:block/c4_device", "screen": "imttech:block/c4_screen"}
-    elements = [
-        box([3, 0, 3], [13, 3, 13], "#putty"),
-        box([5, 3, 5], [11, 4.5, 10], {"up": "#screen", "rest": "#device"}, skip=("down",)),
-    ]
-    save("timed_c4", textures, elements)
-    # De remote C4: hetzelfde, met een antenne naast het kastje.
-    save("remote_c4", textures, elements + [box([11.5, 3, 10.5], [12.5, 9, 11.5], "#device", skip=("down",))])
-    floor = {"north": 0, "east": 90, "south": 180, "west": 270}
-    ceiling = {"north": 180, "east": 270, "south": 0, "west": 90}
-    for name in ("timed_c4", "remote_c4"):
-        variants = {}
-        for face, x in (("floor", 0), ("wall", 90), ("ceiling", 180)):
-            for facing in ("north", "east", "south", "west"):
-                y = ceiling[facing] if face == "ceiling" else floor[facing]
-                option = {"model": "imttech:block/" + name}
-                if x:
-                    option["x"] = x
-                if y:
-                    option["y"] = y
-                variants["face=%s,facing=%s" % (face, facing)] = option
-        blockstate(name, variants)
-
-
 def arc_lamp():
     """
     De Arc Lamp (9 oktober): een gewoon blok, met het glas aan vier kanten en de koelplaat boven en

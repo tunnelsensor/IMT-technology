@@ -1,6 +1,5 @@
 package com.senne.imttech.weapons;
 
-import com.senne.imttech.c4.DetonatorData;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.registry.ModDataComponents;
 import com.senne.imttech.registry.ModSounds;
@@ -10,6 +9,7 @@ import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,63 +24,93 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De EMP-trigger (hoofdstuk 35, jouw keuze: een eigen item, los van de detonator van C4). Zo werkt hij, net als de
- * detonator:
+ * De triggers (hoofdstuk 35): de <b>EMP Trigger</b> voor de Remote EMP's (jouw keuze: een eigen item) en de <b>Frag
+ * Trigger</b> voor de Remote Frags (26 oktober, jouw keuze: "een nieuwe mooie 3D-model zoals de EMP Trigger, en de oude
+ * C4-trigger moet weg"). Ze werken allebei zo:
  * <ul>
- *   <li>plak je een <b>Remote EMP</b> terwijl je een EMP-trigger bij je hebt, dan hoort hij bij die trigger; een
- *       Remote EMP die nog nergens bij hoort, koppel je met een rechtsklik met de trigger erop;</li>
- *   <li><b>rechtsklik</b>: al zijn Remote EMP's binnen EMP_TRIGGER_RANGE blokken gaan af, kort na elkaar;</li>
+ *   <li>plak je een lading terwijl je een trigger van dezelfde soort bij je hebt, dan hoort hij bij die trigger; een
+ *       lading die nog nergens bij hoort, koppel je met een rechtsklik met de trigger erop;</li>
+ *   <li><b>rechtsklik</b>: al zijn ladingen binnen TRIGGER_RANGE blokken gaan af, kort na elkaar;</li>
  *   <li><b>sneak + rechtsklik</b>: hoeveel er bij hem horen en hoeveel er in bereik zijn.</li>
  * </ul>
- * Wat hij onthoudt (zijn nummer en waar zijn ladingen zitten) is hetzelfde soort gegevens als bij de detonator, maar
- * in een eigen component (EMP_TRIGGER), zodat de twee nooit door elkaar lopen.
+ * Met een trigger in je hand zie je boven elke lading een bordje (zie client/weapons/TriggerMarkers). Wat hij onthoudt
+ * (zijn nummer en waar zijn ladingen zitten, {@link TriggerData}) staat per soort in een eigen component, zodat een EMP
+ * Trigger nooit een Remote Frag laat afgaan en andersom.
  */
-public class EmpTriggerItem extends Item {
+public class TriggerItem extends Item {
     /** Zoveel ticks zit er tussen twee ladingen die na elkaar afgaan. */
     private static final int BETWEEN = 3;
 
-    public EmpTriggerItem(Properties properties) {
+    private final RemoteChargeBlock.Kind kind;
+
+    public TriggerItem(RemoteChargeBlock.Kind kind, Properties properties) {
         super(properties.stacksTo(1));
+        this.kind = kind;
     }
 
-    /** Wat deze trigger onthoudt, of null als hij nog nooit gebruikt is. */
-    public static @Nullable DetonatorData data(ItemStack stack) {
-        return stack.get(ModDataComponents.EMP_TRIGGER.get());
+    /** Welke ladingen deze trigger laat afgaan. */
+    public RemoteChargeBlock.Kind kind() {
+        return kind;
+    }
+
+    /** De kleur van zijn teksten: cyaan (EMP) of rood (frag). */
+    public ChatFormatting colour() {
+        return kind == RemoteChargeBlock.Kind.EMP ? ChatFormatting.AQUA : ChatFormatting.RED;
+    }
+
+    /** Waar deze soort trigger zijn gegevens bewaart. */
+    private DataComponentType<TriggerData> component() {
+        return kind == RemoteChargeBlock.Kind.EMP ? ModDataComponents.EMP_TRIGGER.get() : ModDataComponents.FRAG_TRIGGER.get();
+    }
+
+    /** De naam van een tekst voor deze soort: "item.imttech.emp_trigger.fired" of "item.imttech.frag_trigger.fired". */
+    private String key(String prefix, String what) {
+        return prefix + (kind == RemoteChargeBlock.Kind.EMP ? "emp_trigger" : "frag_trigger") + "." + what;
+    }
+
+    /** Wat deze trigger onthoudt, of null als hij nog nooit gebruikt is (of geen trigger is). */
+    public static @Nullable TriggerData data(ItemStack stack) {
+        return stack.getItem() instanceof TriggerItem trigger ? stack.get(trigger.component()) : null;
     }
 
     /** Wat deze trigger onthoudt; heeft hij nog geen nummer, dan krijgt hij er nu een. */
-    public static DetonatorData ensure(ItemStack stack) {
-        DetonatorData data = data(stack);
+    public static TriggerData ensure(ItemStack stack) {
+        TriggerData data = data(stack);
         if (data == null) {
-            data = new DetonatorData(UUID.randomUUID(), List.of());
-            stack.set(ModDataComponents.EMP_TRIGGER.get(), data);
+            data = new TriggerData(UUID.randomUUID(), List.of());
+            if (stack.getItem() instanceof TriggerItem trigger) {
+                stack.set(trigger.component(), data);
+            }
         }
         return data;
     }
 
-    /** De EMP-trigger die deze speler bij zich heeft (eerst in zijn andere hand), of null. */
-    public static @Nullable ItemStack find(Player player) {
-        if (player.getOffhandItem().getItem() instanceof EmpTriggerItem) {
+    /** De trigger van deze soort die deze speler bij zich heeft (eerst in zijn andere hand), of null. */
+    public static @Nullable ItemStack find(Player player, RemoteChargeBlock.Kind kind) {
+        if (player.getOffhandItem().getItem() instanceof TriggerItem trigger && trigger.kind == kind) {
             return player.getOffhandItem();
         }
         for (ItemStack stack : player.getInventory().items) {
-            if (stack.getItem() instanceof EmpTriggerItem) {
+            if (stack.getItem() instanceof TriggerItem trigger && trigger.kind == kind) {
                 return stack;
             }
         }
         return null;
     }
 
-    /** Koppelt de Remote EMP op {@code pos} aan deze trigger. Geeft false als de trigger vol zit. */
-    public static boolean link(ServerLevel level, BlockPos pos, RemoteEmpBlockEntity emp, ItemStack trigger) {
-        DetonatorData data = ensure(trigger);
+    /** Koppelt de lading op {@code pos} aan deze trigger. Geeft false als de trigger vol zit. */
+    public static boolean link(ServerLevel level, BlockPos pos, RemoteChargeBlockEntity charge, ItemStack stack) {
+        if (!(stack.getItem() instanceof TriggerItem trigger)) {
+            return false;
+        }
+        TriggerData data = ensure(stack);
         GlobalPos here = GlobalPos.of(level.dimension(), pos.immutable());
-        DetonatorData linked = data.with(here);
+        TriggerData linked = data.with(here);
         if (linked == data && !data.charges().contains(here)) {
             return false;
         }
-        trigger.set(ModDataComponents.EMP_TRIGGER.get(), linked);
-        emp.link(linked.id());
+        stack.set(trigger.component(), linked);
+        charge.link(linked.id());
         return true;
     }
 
@@ -97,23 +127,31 @@ public class EmpTriggerItem extends Item {
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
-    private static double range() {
-        return Math.round(ImtConfig.Weapons.EMP_TRIGGER_RANGE);
+    /** Tot hoe ver het signaal reikt (blokken). */
+    public static double range() {
+        return Math.round(ImtConfig.Weapons.TRIGGER_RANGE);
     }
 
+    /** Wat er met een signaal gebeurt: zoveel gingen af, zoveel waren te ver. */
+    public record Fired(int fired, int outOfRange) {}
+
     /**
-     * De knop: al zijn Remote EMP's in bereik gaan af, de dichtstbijzijnde eerst en dan om de drie ticks de volgende.
-     * Wat er niet meer is (afgegaan of eraf gehaald), vergeet hij. Geeft hoeveel er afgaan.
+     * De knop: al zijn ladingen in bereik gaan af, de dichtstbijzijnde eerst en dan om de drie ticks de volgende. Wat er
+     * niet meer is (afgegaan, eraf gehaald of onschadelijk gemaakt), vergeet hij.
      */
-    public static int fire(ServerLevel level, ServerPlayer player, ItemStack stack) {
-        level.playSound(null, player.blockPosition(), ModSounds.DETONATOR.get(), SoundSource.PLAYERS, 1.0f, 1.3f);
-        DetonatorData data = data(stack);
+    public static Fired fire(ServerLevel level, ServerPlayer player, ItemStack stack) {
+        if (!(stack.getItem() instanceof TriggerItem trigger)) {
+            return new Fired(0, 0);
+        }
+        level.playSound(null, player.blockPosition(), ModSounds.TRIGGER_CLICK.get(), SoundSource.PLAYERS, 1.0f,
+                trigger.kind == RemoteChargeBlock.Kind.EMP ? 1.3f : 1.0f);
+        TriggerData data = data(stack);
         if (data == null || data.charges().isEmpty()) {
-            player.displayClientMessage(Component.translatable("item.imttech.emp_trigger.none").withStyle(ChatFormatting.GRAY), true);
-            return 0;
+            player.displayClientMessage(Component.translatable(trigger.key("item.imttech.", "none")).withStyle(ChatFormatting.GRAY), true);
+            return new Fired(0, 0);
         }
         List<GlobalPos> kept = new ArrayList<>();
-        List<RemoteEmpBlockEntity> ready = new ArrayList<>();
+        List<RemoteChargeBlockEntity> ready = new ArrayList<>();
         int outOfRange = 0;
         for (GlobalPos charge : data.charges()) {
             if (!charge.dimension().equals(level.dimension())
@@ -123,8 +161,9 @@ public class EmpTriggerItem extends Item {
                 kept.add(charge);
                 continue;
             }
-            if (level.getBlockEntity(charge.pos()) instanceof RemoteEmpBlockEntity emp && data.id().equals(emp.trigger())) {
-                ready.add(emp);
+            if (level.getBlockEntity(charge.pos()) instanceof RemoteChargeBlockEntity found && found.kind() == trigger.kind
+                    && data.id().equals(found.trigger())) {
+                ready.add(found);
             }
         }
         ready.sort((a, b) -> Double.compare(a.getBlockPos().distToCenterSqr(player.position()),
@@ -132,17 +171,20 @@ public class EmpTriggerItem extends Item {
         for (int i = 0; i < ready.size(); i++) {
             ready.get(i).goOffIn(1 + i * BETWEEN);
         }
-        stack.set(ModDataComponents.EMP_TRIGGER.get(), data.withCharges(kept));
+        stack.set(trigger.component(), data.withCharges(kept));
         Component message = outOfRange > 0
-                ? Component.translatable("item.imttech.emp_trigger.fired_some", ready.size(), outOfRange, (int) range())
-                : Component.translatable("item.imttech.emp_trigger.fired", ready.size());
-        player.displayClientMessage(message.copy().withStyle(ready.isEmpty() ? ChatFormatting.GRAY : ChatFormatting.AQUA), true);
-        return ready.size();
+                ? Component.translatable(trigger.key("item.imttech.", "fired_some"), ready.size(), outOfRange, (int) range())
+                : Component.translatable(trigger.key("item.imttech.", "fired"), ready.size());
+        player.displayClientMessage(message.copy().withStyle(ready.isEmpty() ? ChatFormatting.GRAY : trigger.colour()), true);
+        return new Fired(ready.size(), outOfRange);
     }
 
-    /** Sneak + rechtsklik: hoeveel Remote EMP's horen erbij, en hoeveel zijn in bereik. */
+    /** Sneak + rechtsklik: hoeveel ladingen horen erbij, en hoeveel zijn in bereik. */
     private static void status(ServerLevel level, ServerPlayer player, ItemStack stack) {
-        DetonatorData data = data(stack);
+        if (!(stack.getItem() instanceof TriggerItem trigger)) {
+            return;
+        }
+        TriggerData data = data(stack);
         int linked = data == null ? 0 : data.charges().size();
         int inRange = 0;
         if (data != null) {
@@ -153,17 +195,17 @@ public class EmpTriggerItem extends Item {
                 }
             }
         }
-        player.displayClientMessage(Component.translatable("item.imttech.emp_trigger.status", linked, inRange, (int) range())
-                .withStyle(ChatFormatting.AQUA), true);
+        player.displayClientMessage(Component.translatable(trigger.key("item.imttech.", "status"), linked, inRange, (int) range())
+                .withStyle(trigger.colour()), true);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        DetonatorData data = data(stack);
-        tooltip.add(Component.translatable("tooltip.imttech.emp_trigger.linked", data == null ? 0 : data.charges().size())
-                .withStyle(ChatFormatting.AQUA));
-        tooltip.add(Component.translatable("tooltip.imttech.emp_trigger.fire", (int) range()).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.imttech.emp_trigger.status").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.imttech.emp_trigger.link").withStyle(ChatFormatting.GRAY));
+        TriggerData data = data(stack);
+        tooltip.add(Component.translatable(key("tooltip.imttech.", "linked"), data == null ? 0 : data.charges().size())
+                .withStyle(colour()));
+        tooltip.add(Component.translatable(key("tooltip.imttech.", "fire"), (int) range()).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(key("tooltip.imttech.", "status")).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(key("tooltip.imttech.", "link")).withStyle(ChatFormatting.GRAY));
     }
 }

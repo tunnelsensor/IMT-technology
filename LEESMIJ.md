@@ -711,9 +711,11 @@ er backups van, en het brein van I.M.T draait erop.
 
 Alle getallen staan in `config/imttech.toml` onder `[logic]` (de stroom van een kast onder `[power]`).
 
-### Je basis beveiligen: zones en C4
+### Je basis beveiligen: zones (en inbreken met frags)
 In Minecraft kan iedereen elk blok weghakken. Met een **zone** kunnen in je basis alleen jij en je
-vrienden nog bouwen en breken. Om toch te kunnen inbreken (moeilijker, niet onmogelijk) is er **C4**.
+vrienden nog bouwen en breken. Om toch te kunnen inbreken (moeilijker, niet onmogelijk) zijn er de
+**frags**: de Frag Grenade, de Sticky Frag Grenade en de **Remote Frag** (zie "Wapens" hieronder; tot 26 oktober
+was dat C4).
 
 **Een zone tekenen.** Een zone hoort bij je **beveiligingskern** en bestaat uit één of meer
 **kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze mogen
@@ -739,7 +741,8 @@ another security network").
 **Wie mag wat.** In een zone mogen alleen **jij, je team en je vertrouwde spelers** (de app Access)
 blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten;
 hij ziet dan "Protected zone". Wel mag iedereen **ladders, scaffolding, klimplanten, fakkels en
-lantaarns** plaatsen en weer weghalen (klimmen kan in het echt ook), en natuurlijk C4. Ook mag iedereen
+lantaarns** plaatsen en weer weghalen (klimmen kan in het echt ook), en natuurlijk een Remote Frag of Remote EMP.
+Ook mag iedereen
 een **emmer leeggieten of vullen, maar alleen op de grond** (niet tegen een muur: zo klim je niet met
 water omhoog), **vuur aansteken**, een **bijl of schoffel** op een blok gebruiken, en **stroomkabels
 leggen of knippen** (verstop je kabels dus in een muur of vloer). Een pad maken met een schep en
@@ -747,8 +750,9 @@ beendermeel mogen niet. Al de rest is gewoon
 bruikbaar, net als in het echt: wie binnen is, kan kisten openen, deuren gebruiken en stelen. Een
 houten deur is dus geen slot; een ijzeren deur met een keycard-lezer of codepaneel buiten wel.
 
-**Wat er nog meer doorkomt.** **TNT** en de raketten van het **satellietbombardement** wel, maar zwak:
-ze werken in een zone met breekpunten zoals C4 (TNT 3, een satellietraket 6, C4 10). TNT naast een
+**Wat er nog meer doorkomt.** Een frag komt altijd door een zone (zie "Inbreken met frags" hieronder). **TNT** en
+de raketten van het **satellietbombardement** ook, maar zwak: ze werken in een zone met breekpunten zoals een frag
+(TNT 3, een satellietraket 6, een frag 8). TNT naast een
 houten muur breekt er een plank uit; een stenen muur krijgt barsten en breekt pas na drie TNT op
 dezelfde plek. Creepers, vuurballen en andere explosies breken geen blokken van een zone (je eigen
 TNT in je eigen zone wel gewoon). Vuur brandt ze niet weg en lava steekt ze niet aan; een
@@ -773,30 +777,26 @@ creative valt hij eruit. Een kern die een ander weghaalt of opblaast, blijft van
 wachtwoord: de dief moet hem nog steeds hacken. De Biebia's Industries Tower die nog van niemand is, valt als een
 nieuwe kern.
 
-**C4.** Je plakt C4 op een vloer, muur of plafond, ook in de zone van een ander.
-- **C4 (Timer)** (TNT, twee klei, een slijmbal, redstone en een klok): rechtsklik in de lucht om de
-  tijd te kiezen (5 seconden tot 2 minuten). Na het plakken telt hij af op zijn schermpje en piept hij
-  steeds sneller.
-- **C4 (Remote)** (TNT, twee klei, een slijmbal, redstone en een bliksemafleider) met de
-  **Detonator** (een bliksemafleider, ijzer, een computerchip, ijzer en een knop): heb je de detonator
-  bij je als je plakt, dan hoort de lading erbij. **Rechtsklik** met de detonator = al zijn ladingen
-  binnen 128 blokken gaan af; **sluipen + rechtsklik** = hoeveel er gekoppeld zijn. Met de detonator in
-  je hand zie je je ladingen als rode bordjes.
-- **Sterke muren kosten meer C4**: hout, glas en aarde vliegen er meteen uit, één C4 maakt een gat
-  van drie hoog in een stenen muur, obsidiaan breekt pas na drie C4 op dezelfde plek, de
-  beveiligingskern na zes. Wat niet breekt krijgt **barsten** (de volgende klap telt erbij op). Op
-  obsidiaan zie je die barsten bijna niet. Andere C4 in de klap gaat ook af.
+**Inbreken met frags.** C4 bestaat niet meer (26 oktober): in de plaats kwam de **Remote Frag** (zie "Wapens"
+hieronder). Je plakt hem op een vloer, muur of plafond, ook in de zone van een ander, en laat hem van ver afgaan met
+je **Frag Trigger**.
+- **Sterke muren kosten meer frags**: hout, glas en aarde vliegen er meteen uit, één frag blaast een blok steen of
+  baksteen uit een muur (een tweede ernaast of erboven maakt er een gat van waar je door kunt), obsidiaan breekt pas
+  na vier frags op dezelfde plek, de beveiligingskern na acht. Wat niet breekt krijgt **barsten** (de volgende klap
+  telt erbij op). Op obsidiaan zie je die barsten bijna niet. Een andere Remote Frag in de klap gaat ook af.
 - **Barsten** blijven tot je ze herstelt: zie hieronder.
-- **Ontmantelen**: alleen met een **schaar** (rechtsklik): de C4 valt eruit, en jij hebt hem. Met je
-  hand krijg je hem er niet af.
-- **Alarm**: plakt iemand C4 op jouw zone, dan zegt I.M.T waar (niet wie), en jij en je vrienden
-  zien een knipperend rood bordje "C4!" tot hij weg is. Hoeveel er ontploft is, staat in het logboek
-  van je kern. Was je offline, dan vertelt I.M.T het als je weer inlogt.
+- **Ontmantelen**: een Remote Frag krijg je er alleen met een **schaar** af (rechtsklik): hij valt eruit, en jij hebt
+  hem. Met je hand krijg je hem er niet af.
+- **Alarm**: plakt iemand een Remote Frag op jouw zone, dan zegt I.M.T waar (niet wie), en jij en je vrienden zien
+  een knipperend rood bordje "FRAG!" tot hij weg is. Hoeveel er ontploft is, staat in het logboek van je kern. Was je
+  offline, dan vertelt I.M.T het als je weer inlogt.
 
-Alle getallen staan in `config/imttech.toml` onder `[c4]` en `[security]` (wat een zone aan stroom kost onder `[power]`).
+Alle getallen staan in `config/imttech.toml` onder `[breach]` (hoe sterk blokken zijn), `[weapons]` (hoe sterk een
+frag is) en `[security]` (wat een zone aan stroom kost onder `[power]`). Had je zelf getallen onder `[c4]` veranderd:
+die zijn weg, de sterktes van blokken staan nu onder `[breach]`.
 
 ### Barsten herstellen
-Wat een klap niet kapotmaakt, krijgt **barsten**: van C4, en in een zone ook van TNT en de satelliet.
+Wat een klap niet kapotmaakt, krijgt **barsten**: van een frag, en in een zone ook van TNT en de satelliet.
 Die barsten genezen niet vanzelf, ook niet na een herstart, en de volgende klap telt erbij op. Je
 herstelt een muur op twee manieren:
 
@@ -807,7 +807,7 @@ herstelt een muur op twee manieren:
   zwakker maken).
 - **Vervangen**: hak het blok weg en zet er een nieuw in, dat is weer helemaal sterk. Wat je weghakt,
   wordt een **gebarsten blok** ("Cracked Stone Bricks": het blok met barsten erover). Steen geeft zo
-  gebarsten steen, geen keien. Wat C4 of TNT kapotmaakt, valt eruit zoals altijd.
+  gebarsten steen, geen keien. Wat een frag of TNT kapotmaakt, valt eruit zoals altijd.
 
 Van een gebarsten blok maak je weer een nieuw blok, met twee machines op netstroom (via kabels of
 direct tegen een generator). Elk heeft een vakje erin, een vakje eruit en een pijl die vol loopt:
@@ -1253,7 +1253,7 @@ als **indringer**, ook als het je eigen basis is:
 - je torentjes, laserwanden, oude patrouilledrones, robots en security drones schieten op je (met trainingsschoten
   kost een treffer alleen een leven; ook zonder PvP), en een robot met het filter `"strangers"` ziet je; je eigen
   I.M.T-drones zijn dan ook indringers, en die krijgen wel echte schade (trainingsschoten gelden alleen voor jou);
-- in je zone bouw of sloop je niets (behalve de vrije klimblokken en C4, zoals elke indringer), en je zone verandert
+- in je zone bouw of sloop je niets (behalve de vrije klimblokken en een Remote Frag, zoals elke indringer), en je zone verandert
   je niet;
 - je apparaten (robots, de laserzender, lezers...) stel je niet in, je desktop gaat niet open (ook niet op afstand),
   en met je bril schakel je de relais van je basis niet (I.M.T: "Your base does not obey you during the drill");
@@ -1291,7 +1291,7 @@ Wat je binnen tegenkomt:
 Er staan acht soldaten en vijf torentjes; zonder harnas is dat pittig. Soldaten komen niet
 terug als je ze verslagen hebt, dus de onderdelen zijn niet eindeloos te halen.
 
-### Wapens: granaten, de Remote EMP en lasergeweren
+### Wapens: granaten, de Remote EMP, de Remote Frag en lasergeweren
 Robots zijn sterk; dit zijn de wapens om ze aan te pakken (hoofdstuk 35). Alle getallen staan in de config onder
 `[weapons]`.
 
@@ -1313,17 +1313,28 @@ van buiten. Recept: 4 ijzer, 2 koper, 2 redstone en een Computer Chip = 2 EMP Gr
 slijmbal = een Sticky EMP Grenade.
 
 **De Frag Grenade en de Sticky Frag Grenade** zijn kopieën als explosief: ze vliegen, stuiteren, plakken en piepen net
-zo (legergroen met een oranje band en rode lampjes), maar ontploffen zoals C4, net iets zwakker, en geven geen EMP. Op
-een stenen muur blazen ze het blok eruit waar ze tegen zitten; de blokken eromheen krijgen barsten. Recept: 4 ijzer, 4
-buskruit en een TNT = 2 Frag Grenades; met een slijmbal erbij een Sticky.
+zo (legergroen met een oranje band en rode lampjes), maar ontploffen en geven geen EMP. Op een stenen muur blazen ze
+het blok eruit waar ze tegen zitten; de blokken eromheen krijgen barsten (zie "Inbreken met frags" hierboven). Recept: 4
+ijzer, 4 buskruit en een TNT = 2 Frag Grenades; met een slijmbal erbij een Sticky.
 
 **De Remote EMP en de EMP-trigger.** Een Remote EMP plak je tegen een vloer, muur of plafond. Heb je een **EMP Trigger**
 bij je, dan hoort hij meteen bij die trigger (anders: rechtsklik met de trigger op de Remote EMP). **Rechtsklik** met
 de trigger laat al zijn Remote EMP's tot 128 blokken ver afgaan, kort na elkaar: een gewone EMP-puls, en dan is hij op.
 **Sneak + rechtsklik**: hoeveel er bij hem horen en hoeveel in bereik zijn. Zo zet je bijvoorbeeld de open kabels van
-een stroomnet uit wanneer jij wilt. Iedereen kan een Remote EMP eraf trekken. Recept: een Sticky EMP Grenade, een
-redstonefakkel en een koperstaaf = een Remote EMP; de trigger maak je van een redstonefakkel, ijzer, een Computer Chip
-en een knop.
+een stroomnet uit wanneer jij wilt. Iedereen kan een Remote EMP eraf trekken, en je mag hem ook in de zone van een
+ander plakken. Recept: een Sticky EMP Grenade, een redstonefakkel en een koperstaaf = een Remote EMP; de trigger maak je
+van een redstonefakkel, ijzer, een Computer Chip en een knop.
+
+**De Remote Frag en de Frag Trigger** (in plaats van C4). Een Remote Frag is een Sticky Frag met een antenne: plak hem
+tegen een vloer, muur of plafond (ook in de zone van een ander) en laat hem afgaan met je **Frag Trigger**, precies
+zoals de Remote EMP met zijn trigger: plak je hem met de trigger bij je, dan hoort hij erbij (anders: rechtsklik met de
+trigger erop); **rechtsklik** = al zijn Remote Frags tot 128 blokken ver gaan af, kort na elkaar; **sneak +
+rechtsklik** = hoeveel er bij hem horen. Met de trigger in je hand zie je rode bordjes "FRAG" boven je ladingen. Hij is
+zo sterk als een Sticky Frag (één blok steen per frag), en net als C4 vroeger: met je hand krijg je hem er niet af,
+alleen met een **schaar**, en op de zone van een ander gaat het **alarm** af. Een EMP Trigger laat nooit een Remote Frag
+afgaan, en andersom. Recept: een Sticky Frag Grenade, een redstonefakkel en een koperstaaf = een Remote Frag; de Frag
+Trigger maak je van een bliksemafleider, ijzer, een Computer Chip en een stenen knop (het recept van de oude detonator).
+C4 en detonators uit een oude wereld worden vanzelf Remote Frags en Frag Triggers.
 
 **De Smoke Grenade (een bol).** Na 2 seconden sist hij en groeit er een wolk van 4,5 blokken die 18 seconden blijft.
 De rook gaat **niet door blokken**: hij stroomt om muren heen en blijft binnen, glas en een dichte deur houden hem
@@ -1656,7 +1667,7 @@ showcase en staat hij bij NIEUW.
   satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   mini-raketten, de Raven-soldaten, de torentjes, de spraakcommando's, en alles wat erna kwam
-  (beveiliging, zones, C4, barsten, servers, robots, security drones en trainingen).
+  (beveiliging, zones, de frags, barsten, servers, robots, security drones en trainingen).
   Let op: ze draaien in `run/` met jouw `run/config/imttech.toml`. Staan daar andere getallen
   dan de standaard (zoals tragere generatoren), dan kunnen tests over de toren en de bunker
   falen. Gooi dat bestand weg om terug de standaard te krijgen.

@@ -1,6 +1,6 @@
 package com.senne.imttech.repair;
 
-import com.senne.imttech.c4.CrackData;
+import com.senne.imttech.breach.CrackData;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.security.zone.Zones;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  *       van het blok zelf: gebarsten steen, geen keien (mijn invulling).</li>
  *   <li>Valt er niets (geen goed gereedschap, of glas zonder zijdezacht), dan ook geen gebarsten blok.</li>
  * </ul>
- * Alleen als een speler het weghakt: wat C4 of TNT kapotmaakt, valt eruit zoals altijd. Blokken met
+ * Alleen als een speler het weghakt: wat een frag of TNT kapotmaakt, valt eruit zoals altijd. Blokken met
  * iets erin (een kist, een shulkerdoos...) en de vrije blokken van een zone (ladders, fakkels...) gaan
  * ook zoals altijd.
  *

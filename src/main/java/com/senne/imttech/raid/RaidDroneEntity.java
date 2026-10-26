@@ -196,7 +196,7 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
                 return; // onverwoestbaar (bedrock): hier houdt het op
             }
             if (com.senne.imttech.security.zone.Zones.activeAt(level, pos) != null) {
-                return; // een blok van een zone: daar komt alleen C4 door (hoofdstuk 10)
+                return; // een blok van een zone: daar komt alleen een frag door (hoofdstuk 10 en 35)
             }
             level.destroyBlock(pos, true, this);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,

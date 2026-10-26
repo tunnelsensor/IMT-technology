@@ -1,9 +1,9 @@
-package com.senne.imttech.client.c4;
+package com.senne.imttech.client.weapons;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.senne.imttech.c4.DetonatorData;
-import com.senne.imttech.c4.DetonatorItem;
-import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.weapons.RemoteChargeBlock;
+import com.senne.imttech.weapons.TriggerData;
+import com.senne.imttech.weapons.TriggerItem;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -17,14 +17,14 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 /**
- * Met de detonator in je hand zie je waar je ladingen zitten (hoofdstuk 10): boven elke remote C4 die
- * bij deze detonator hoort een rood bordje "C4  12 m", ook door muren heen. Te ver weg voor het
- * signaal? Dan is het bordje grijs ("out of range").
+ * Met een trigger in je hand zie je waar je ladingen zitten (hoofdstuk 35, zoals eerst bij de detonator van C4): boven
+ * elke Remote EMP of Remote Frag die bij deze trigger hoort een bordje "EMP  12 m" (cyaan) of "FRAG  12 m" (rood), ook
+ * door muren heen. Te ver weg voor het signaal? Dan is het bordje grijs ("out of range").
  *
- * Waar de ladingen zitten, staat op de detonator zelf (zie DetonatorData); de server houdt dat bij.
+ * Waar de ladingen zitten, staat op de trigger zelf (zie TriggerData); de server houdt dat bij.
  */
-public final class DetonatorMarkers {
-    private DetonatorMarkers() {}
+public final class TriggerMarkers {
+    private TriggerMarkers() {}
 
     /** Verder weg dan dit (blokken) tekenen we geen bordje. */
     private static final double SHOW_RANGE = 256.0;
@@ -37,17 +37,20 @@ public final class DetonatorMarkers {
         if (mc.player == null || mc.level == null) {
             return;
         }
-        DetonatorData data = null;
+        TriggerData data = null;
+        TriggerItem trigger = null;
         for (InteractionHand hand : InteractionHand.values()) {
             ItemStack stack = mc.player.getItemInHand(hand);
-            if (stack.getItem() instanceof DetonatorItem) {
-                data = DetonatorItem.data(stack);
+            if (stack.getItem() instanceof TriggerItem item) {
+                data = TriggerItem.data(stack);
+                trigger = item;
                 break;
             }
         }
         if (data == null || data.charges().isEmpty()) {
             return;
         }
+        boolean emp = trigger.kind() == RemoteChargeBlock.Kind.EMP;
         Camera camera = event.getCamera();
         Vec3 cam = camera.getPosition();
         PoseStack pose = event.getPoseStack();
@@ -63,9 +66,9 @@ public final class DetonatorMarkers {
             if (distance > SHOW_RANGE) {
                 continue;
             }
-            boolean inRange = distance <= Math.round(ImtConfig.C4.DETONATOR_RANGE);
-            String text = "C4  " + Math.round(distance) + " m" + (inRange ? "" : "  (out of range)");
-            label(pose, buffers, camera, mc, at, text, inRange ? 0xFF4A3A : 0x9A9A9A);
+            boolean inRange = distance <= TriggerItem.range();
+            String text = (emp ? "EMP  " : "FRAG  ") + Math.round(distance) + " m" + (inRange ? "" : "  (out of range)");
+            label(pose, buffers, camera, mc, at, text, !inRange ? 0x9A9A9A : emp ? 0x46D2FF : 0xFF4A3A);
         }
         buffers.endBatch();
         pose.popPose();

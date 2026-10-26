@@ -1417,28 +1417,27 @@ final class ShowcaseFeatures {
                     .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
         });
 
-        add("C4", "Hoofdstuk 10: C4 (in survival). Eerst ben jij de eigenaar van de basis: iemand plakt C4 op je muur. "
-                + "I.M.T zegt waar ('C4 planted at your zone', zonder naam) en je ziet een knipperend rood bordje "
-                + "'C4!'. Met een schaar knip je de draad door: hij valt eruit, jij hebt hem nu. Dan ben je de inbreker "
-                + "(de basis is van Lotte). Je zet de timer op 0:05 (rechtsklik in de lucht), plakt hem op de muur: hij "
-                + "piept steeds sneller, telt af op zijn schermpje, en blaast een gat van drie hoog in de stenen muur, "
-                + "met barsten eromheen. Daarna de obsidiaan muur aan de westkant: met remote C4 en de detonator (rode "
-                + "bordjes boven je ladingen). Na de eerste en tweede klap staat het obsidiaan er nog (barsten zie je "
-                + "bijna niet op obsidiaan), na de derde is er een gat.",
+        add("Remote Frag", "Hoofdstuk 35 (in plaats van C4): de Remote Frag (in survival). Eerst ben jij de eigenaar "
+                + "van de basis: iemand plakt een Remote Frag op je muur. I.M.T zegt waar ('Remote Frag planted at your "
+                + "zone', zonder naam) en je ziet een knipperend rood bordje 'FRAG!'. Met je hand krijg je hem er niet af; "
+                + "met een schaar knip je de draad door: hij valt eruit, jij hebt hem nu. Dan ben je de inbreker (de basis "
+                + "is van Lotte), met Remote Frags in je hand en de Frag Trigger in je andere hand (rode bordjes 'FRAG' boven "
+                + "je ladingen). Je plakt er twee boven elkaar op de stenen muur, loopt achteruit en drukt: een gat van twee "
+                + "hoog, met barsten eromheen. Daarna de obsidiaan muur aan de westkant: na de eerste, tweede en derde frag "
+                + "staat het obsidiaan er nog (barsten zie je bijna niet op obsidiaan), na de vierde is er een gat.",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(4, 0, 15)), 180, 5, s -> {
             BlockPos wall = ZONE_BASE.offset(3, 1, 9);
             BlockPos obsidian = ZONE_BASE.offset(2, 1, 5);
             s.onServer(0, ShowcaseFeatures::buildZoneBase)
                     .pause(40)
-                    // Iemand plakt C4 op jouw muur: het alarm.
+                    // Iemand plakt een Remote Frag op jouw muur: het alarm.
                     .onServer(0, player -> {
                         ServerLevel level = player.serverLevel();
                         BlockPos planted = wall.east().south();
-                        level.setBlockAndUpdate(planted, ModBlocks.TIMED_C4.get().defaultBlockState()
+                        level.setBlockAndUpdate(planted, ModBlocks.REMOTE_FRAG.get().defaultBlockState()
                                 .setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, Direction.SOUTH));
-                        if (level.getBlockEntity(planted) instanceof com.senne.imttech.c4.C4BlockEntity c4) {
-                            c4.detonateIn(60 * 20);
-                            com.senne.imttech.c4.C4Alarm.planted(level, planted, c4);
+                        if (level.getBlockEntity(planted) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag) {
+                            com.senne.imttech.breach.BlastAlarm.planted(level, planted, frag);
                         }
                     })
                     .pause(80)
@@ -1448,25 +1447,26 @@ final class ShowcaseFeatures {
                     .pause(30)
                     .tap(0, () -> Minecraft.getInstance().options.keyUse)
                     .pause(60)
-                    // Nu ben jij de inbreker: de basis is van Lotte.
+                    // Nu ben jij de inbreker: de basis is van Lotte. Remote Frags in je hand, de trigger in je andere hand.
                     .onServer(0, ShowcaseFeatures::giveZoneBaseToLotte)
                     .onServer(0, player -> {
-                        ItemStack c4 = new ItemStack(ModItems.TIMED_C4.get());
-                        c4.set(com.senne.imttech.registry.ModDataComponents.C4_TIMER.get(), 5);
-                        player.setItemInHand(InteractionHand.MAIN_HAND, c4);
+                        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.REMOTE_FRAG.get(), 6));
+                        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(ModItems.FRAG_TRIGGER.get()));
                     })
-                    .step(10, () -> com.senne.imttech.client.c4.C4TimerScreen.open(InteractionHand.MAIN_HAND))
-                    .pause(50)
-                    .close(0)
                     .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 180, 0)
                     .pause(20)
                     .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(20)
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 12.5, 180, -19)
+                    .pause(10)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
                     .pause(30)
-                    // Achteruit, buiten de klap.
+                    // Achteruit, buiten de klap, en op de knop (je kijkt nergens naar: dan gaat de trigger).
                     .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 21.5, 180, 3)
-                    .pause(120)
-                    // De obsidiaan muur: drie keer een remote C4 en de detonator.
-                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.DETONATOR.get())))
+                    .pause(40)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(90)
+                    // De obsidiaan muur: vier keer een Remote Frag en de knop.
                     .stand(0, ZONE_BASE.getX() - 9.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 5.5, -90, 5)
                     .onServer(0, player -> stickRemote(player, obsidian))
                     .pause(50)
@@ -1479,8 +1479,15 @@ final class ShowcaseFeatures {
                     .onServer(0, player -> stickRemote(player, obsidian))
                     .pause(30)
                     .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                    .pause(50)
+                    .onServer(0, player -> stickRemote(player, obsidian))
+                    .pause(30)
+                    .tap(0, () -> Minecraft.getInstance().options.keyUse)
                     .pause(90)
-                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+                    .onServer(0, player -> {
+                        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                        player.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+                    });
         });
 
         add("Repairing cracks", "Hoofdstuk 11: barsten herstellen (in survival). Je basis kreeg klappen: een paar "
@@ -2774,7 +2781,7 @@ final class ShowcaseFeatures {
     /**
      * Een L-vormige basis van stenen bakstenen (10 x 8, vier hoog, zonder dak, met een deuropening aan
      * de noordkant) met een torentje van twaalf hoog in de zuidoosthoek, en in de westmuur een stuk
-     * obsidiaan (voor C4). Binnen de kern van jou, op een volle generator, met de zone: twee kubussen.
+     * obsidiaan (voor de Remote Frags). Binnen de kern van jou, op een volle generator, met de zone: twee kubussen.
      * Wat er van een vorige keer stond (gaten, een derde kubus), wordt eerst weggehaald.
      */
     static void buildZoneBase(ServerPlayer player) {
@@ -2852,15 +2859,16 @@ final class ShowcaseFeatures {
         }
     }
 
-    /** Een remote C4 tegen de westkant van het obsidiaan, gekoppeld aan de detonator in je hand. */
+    /** Een Remote Frag tegen de westkant van het obsidiaan, gekoppeld aan de Frag Trigger die je bij je hebt. */
     static void stickRemote(ServerPlayer player, BlockPos support) {
         ServerLevel level = player.serverLevel();
         BlockPos pos = support.west();
-        level.setBlockAndUpdate(pos, ModBlocks.REMOTE_C4.get().defaultBlockState()
+        level.setBlockAndUpdate(pos, ModBlocks.REMOTE_FRAG.get().defaultBlockState()
                 .setValue(net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock.FACING, Direction.WEST));
-        if (level.getBlockEntity(pos) instanceof com.senne.imttech.c4.C4BlockEntity c4
-                && player.getMainHandItem().getItem() instanceof com.senne.imttech.c4.DetonatorItem) {
-            com.senne.imttech.c4.DetonatorItem.link(level, pos, c4, player.getMainHandItem());
+        ItemStack trigger = com.senne.imttech.weapons.TriggerItem.find(player, com.senne.imttech.weapons.RemoteChargeBlock.Kind.FRAG);
+        if (level.getBlockEntity(pos) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity frag && trigger != null) {
+            frag.placedBy(player);
+            com.senne.imttech.weapons.TriggerItem.link(level, pos, frag, trigger);
         }
     }
 
@@ -2868,7 +2876,7 @@ final class ShowcaseFeatures {
 
     /** Een klapje van 4,5 breekpunten op alleen dit blok (van de zuidkant): barsten, maar het breekt niet. */
     static void dent(ServerLevel level, BlockPos pos) {
-        com.senne.imttech.c4.C4Blast.breach(level, Vec3.atCenterOf(pos).add(0, 0, 0.95), 4.5f, 3.0f, here -> here.equals(pos), null);
+        com.senne.imttech.breach.Blast.breach(level, Vec3.atCenterOf(pos).add(0, 0, 0.95), 4.5f, 3.0f, here -> here.equals(pos), null);
     }
 
     /** Een Crusher en een Compactor met hun voorkant naar het noorden, elk tegen een volle generator. */

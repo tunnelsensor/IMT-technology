@@ -45,8 +45,9 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tests voor zones en C4 (hoofdstuk 10 van het plan, 8 oktober): in een zone mag alleen wie
- * toestemming heeft plaatsen en breken.
+ * Tests voor zones (hoofdstuk 10 van het plan, 8 oktober): in een zone mag alleen wie
+ * toestemming heeft plaatsen en breken. (De lading die erdoor komt, eerst C4 en nu de Remote Frag: zie
+ * RemoteFragGameTests.)
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -723,7 +724,7 @@ public final class ZoneGameTests {
         });
     }
 
-    // ================================================================ Stap 4: alleen C4 komt erdoor
+    // ================================================================ Stap 4: alleen frags komen erdoor
 
     /**
      * Een explosie zonder TNT of satelliet (zoals een creeper) naast de zone: de aarde erbuiten vliegt
@@ -861,7 +862,7 @@ public final class ZoneGameTests {
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 20), "zone-owner");
         ServerPlayer outsider = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(18, 3, 20), "zone-outsider");
         SecurityCoreBlockEntity core = zoneCore(helper, owner);
-        C4GameTests.wall(helper, 8, Blocks.STONE);
+        RemoteFragGameTests.wall(helper, 8, Blocks.STONE);
         BlockPos stone = new BlockPos(8, 3, 8);
         BlockPos planks = new BlockPos(9, 4, 8);
         helper.setBlock(planks, Blocks.OAK_PLANKS);
@@ -872,7 +873,7 @@ public final class ZoneGameTests {
             if (i == 1) {
                 helper.assertBlockNotPresent(Blocks.OAK_PLANKS, planks);
                 helper.assertBlockPresent(Blocks.STONE, stone);
-                if (com.senne.imttech.c4.Cracks.damage(level, helper.absolutePos(stone)) <= 0) {
+                if (com.senne.imttech.breach.Cracks.damage(level, helper.absolutePos(stone)) <= 0) {
                     throw new GameTestAssertException("Na één TNT zou de steen barsten moeten hebben");
                 }
             } else if (i == 2) {

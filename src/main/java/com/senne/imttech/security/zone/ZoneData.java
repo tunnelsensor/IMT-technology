@@ -182,7 +182,7 @@ public final class ZoneData extends SavedData {
             return isBuilder(level, player.getUUID(), player.getScoreboardName());
         }
 
-        /** Hetzelfde, op nummer en naam (ook voor wie nu offline is, zoals wie een C4 plakte). */
+        /** Hetzelfde, op nummer en naam (ook voor wie nu offline is, zoals wie een Remote Frag plakte). */
         public boolean isBuilder(ServerLevel level, @Nullable UUID id, String name) {
             // De trainee van een oefening (hoofdstuk 27) bouwt en sloopt hier zoals een indringer, ook als het zijn zone is.
             if (owner == null || id == null || com.senne.imttech.training.Training.isDrillTrainee(core, id)) {
@@ -218,7 +218,7 @@ public final class ZoneData extends SavedData {
     private final Map<GlobalPos, Zone> zones = new LinkedHashMap<>();
     /**
      * Wat er met de zones van een eigenaar gebeurde terwijl hij offline was (hoofdstuk 10, stap 7):
-     * hoeveel C4-klappen en hoeveel blokken. Bij het inloggen vertelt I.M.T het, dan is het weg.
+     * hoeveel klappen en hoeveel blokken. Bij het inloggen vertelt I.M.T het, dan is het weg.
      */
     private final Map<UUID, int[]> awayReports = new HashMap<>();
     /** Per dimensie de zones met kubussen (opnieuw opgebouwd na elke verandering). Niet bewaard. */
@@ -342,7 +342,7 @@ public final class ZoneData extends SavedData {
 
     // ================================================================ Terwijl je weg was
 
-    /** Een C4-klap op een zone van deze eigenaar, terwijl hij offline is. */
+    /** Een klap op een zone van deze eigenaar, terwijl hij offline is. */
     public void addAwayReport(UUID owner, int blocks) {
         int[] report = awayReports.computeIfAbsent(owner, key -> new int[2]);
         report[0]++;

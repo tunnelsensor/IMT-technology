@@ -112,7 +112,7 @@ public final class ModEntities {
                     .updateInterval(2)         // vaak bijwerken: hij stuitert alle kanten op
                     .build("emp_grenade"));
 
-    /** Hoofdstuk 35: de Frag Grenade, een kopie van de EMP Grenade die ontploft zoals C4 (iets zwakker), zonder EMP. */
+    /** Hoofdstuk 35: de Frag Grenade, een kopie van de EMP Grenade die ontploft (blokken uit een muur), zonder EMP. */
     public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.weapons.RollingGrenade>> FRAG_GRENADE =
             ENTITIES.register("frag_grenade", () -> EntityType.Builder.<com.senne.imttech.weapons.RollingGrenade>of(
                             com.senne.imttech.weapons.RollingGrenade::new, MobCategory.MISC)

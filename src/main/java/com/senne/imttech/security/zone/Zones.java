@@ -51,8 +51,8 @@ import org.jetbrains.annotations.Nullable;
  * steeds niet: met een schep een pad maken en beendermeel (die veranderen ook een blok).
  *
  * Wat iedereen wel mag (ook weer weghalen): de "vrije" blokken uit de tag
- * {@code imttech:zone_free}: ladders, scaffolding, klimplanten, fakkels en lantaarns (en straks
- * C4). "In het echt zou dat ook gaan."
+ * {@code imttech:zone_free}: ladders, scaffolding, klimplanten, fakkels en lantaarns (en de Remote Frag en
+ * Remote EMP, zie hoofdstuk 35). "In het echt zou dat ook gaan."
  */
 public final class Zones {
     private Zones() {}
@@ -264,10 +264,10 @@ public final class Zones {
         tellProtected(player);
     }
 
-    // ================================================================ Alleen C4 komt erdoor (stap 4)
+    // ================================================================ Alleen frags komen erdoor (stap 4)
     //
-    // Anders kon je met TNT, een aansteker of een zuiger om de zone heen. C4 breekt zelf zijn blokken
-    // (zie item/C4), dus die gaat hier niet langs.
+    // Anders kon je met TNT, een aansteker of een zuiger om de zone heen. Een frag (een granaat of een Remote Frag)
+    // breekt zelf zijn blokken (zie breach/Blast), dus die gaat hier niet langs.
 
     /**
      * Staat er nu een raket van het satellietbombardement te ontploffen? (Zie SatelliteStrikes: die
@@ -290,8 +290,8 @@ public final class Zones {
      * bouwen hem veroorzaakte (je eigen TNT in je eigen basis). Wezens krijgen de klap gewoon.
      *
      * TNT en raketten van de satelliet komen er wel door (jouw wens, 9 oktober), maar met breekpunten
-     * zoals C4 en veel zwakker: TNT {@link ImtConfig.C4#TNT_BREACH} (C4 doet 10),
-     * een satellietraket {@link ImtConfig.C4#SATELLITE_BREACH}. Zo maakt TNT maar
+     * zoals een frag en veel zwakker: TNT {@link ImtConfig.Breach#TNT_BREACH} (een frag doet 8),
+     * een satellietraket {@link ImtConfig.Breach#SATELLITE_BREACH}. Zo maakt TNT maar
      * een klein beetje kapot aan een muur, en tellen de barsten op. Creepers, vuurballen en de rest
      * maken in een zone niets kapot.
      */
@@ -312,18 +312,18 @@ public final class Zones {
             return;
         }
         net.minecraft.world.phys.Vec3 centre = explosion.center();
-        float radius = ImtConfig.C4.EXPLOSION_BREACH_RADIUS;
+        float radius = ImtConfig.Breach.EXPLOSION_BREACH_RADIUS;
         ZoneData.Zone zone = activeNear(level, BlockPos.containing(centre), radius);
         if (zone == null) {
             return;
         }
-        com.senne.imttech.c4.C4Blast.Breach result = com.senne.imttech.c4.C4Blast.breach(level, centre,
-                tnt ? ImtConfig.C4.TNT_BREACH : ImtConfig.C4.SATELLITE_BREACH,
+        com.senne.imttech.breach.Blast.Breach result = com.senne.imttech.breach.Blast.breach(level, centre,
+                tnt ? ImtConfig.Breach.TNT_BREACH : ImtConfig.Breach.SATELLITE_BREACH,
                 radius, pos -> {
                     ZoneData.Zone here = activeAt(level, pos);
                     return here != null && !mayBuild(level, here, cause);
                 }, zone);
-        com.senne.imttech.c4.C4Alarm.blasted(level, BlockPos.containing(centre), zone, result.inZone(), false,
+        com.senne.imttech.breach.BlastAlarm.blasted(level, BlockPos.containing(centre), zone, result.inZone(), false,
                 tnt ? "TNT" : "Satellite strike");
     }
 

@@ -20,6 +20,12 @@ public final class ModDataComponents {
     public static final DeferredRegister.DataComponents COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, ImtTech.MODID);
 
+    static {
+        // De detonator van C4 is nu de Frag Trigger (26 oktober): wat hij onthield, blijft.
+        COMPONENTS.addAlias(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "detonator"),
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "frag_trigger"));
+    }
+
     /**
      * Hoeveel energie (SE) er in de bril zit. Een kommagetal, zodat ook 0.5 per seconde verbruiken werkt.
      * (Een bril uit een oude wereld, met een heel getal erin, leest hij gewoon.)
@@ -48,18 +54,6 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("zone_selection", builder -> builder
                     .persistent(com.senne.imttech.security.zone.ZoneSelection.CODEC)
                     .networkSynchronized(com.senne.imttech.security.zone.ZoneSelection.STREAM_CODEC));
-
-    /** De tijd op een C4 (Timer), in seconden (hoofdstuk 10). */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> C4_TIMER =
-            COMPONENTS.registerComponentType("c4_timer", builder -> builder
-                    .persistent(Codec.INT)
-                    .networkSynchronized(ByteBufCodecs.VAR_INT));
-
-    /** Wat een detonator onthoudt: zijn nummer en waar zijn ladingen zitten (hoofdstuk 10). */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.c4.DetonatorData>> DETONATOR =
-            COMPONENTS.registerComponentType("detonator", builder -> builder
-                    .persistent(com.senne.imttech.c4.DetonatorData.CODEC)
-                    .networkSynchronized(com.senne.imttech.c4.DetonatorData.STREAM_CODEC));
 
     /**
      * Het etiket op een weggehakte beveiligingskern: onder welk nummer de server zijn instellingen
@@ -149,17 +143,19 @@ public final class ModDataComponents {
                     .networkSynchronized(com.senne.imttech.robot.DroneData.STREAM_CODEC));
 
     /**
-     * Hoofdstuk 35: de kleur van de rook van een Smoke Grenade (jouw keuze: "kleur met kleurstof"). Geen = grijs. Je
-     * zet hem met een recept: een smokebom en een kleurstof (zie data/imttech/recipe/smoke_grenade_*.json).
+     * Hoofdstuk 35: wat een EMP Trigger onthoudt (zijn nummer en waar zijn Remote EMP's zitten). Hetzelfde soort gegevens
+     * als bij de Frag Trigger, maar apart, zodat een EMP Trigger nooit een Remote Frag laat afgaan en andersom.
      */
-    /**
-     * Hoofdstuk 35: wat een EMP-trigger onthoudt (zijn nummer en waar zijn Remote EMP's zitten). Hetzelfde soort gegevens
-     * als bij de detonator van C4, maar apart, zodat een trigger nooit C4 laat afgaan en andersom.
-     */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.c4.DetonatorData>> EMP_TRIGGER =
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.weapons.TriggerData>> EMP_TRIGGER =
             COMPONENTS.registerComponentType("emp_trigger", builder -> builder
-                    .persistent(com.senne.imttech.c4.DetonatorData.CODEC)
-                    .networkSynchronized(com.senne.imttech.c4.DetonatorData.STREAM_CODEC));
+                    .persistent(com.senne.imttech.weapons.TriggerData.CODEC)
+                    .networkSynchronized(com.senne.imttech.weapons.TriggerData.STREAM_CODEC));
+
+    /** Hoofdstuk 35: wat een Frag Trigger onthoudt (zijn nummer en waar zijn Remote Frags zitten). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.weapons.TriggerData>> FRAG_TRIGGER =
+            COMPONENTS.registerComponentType("frag_trigger", builder -> builder
+                    .persistent(com.senne.imttech.weapons.TriggerData.CODEC)
+                    .networkSynchronized(com.senne.imttech.weapons.TriggerData.STREAM_CODEC));
 
     /** Hoofdstuk 35: hoe vol een energiecel is (0 tot 100). Geen = leeg. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Float>> CELL_CHARGE =
@@ -173,6 +169,10 @@ public final class ModDataComponents {
                     .persistent(Codec.FLOAT)
                     .networkSynchronized(ByteBufCodecs.FLOAT));
 
+    /**
+     * Hoofdstuk 35: de kleur van de rook van een Smoke Grenade (jouw keuze: "kleur met kleurstof"). Geen = grijs. Je
+     * zet hem met een recept: een smokebom en een kleurstof (zie data/imttech/recipe/smoke_grenade_*.json).
+     */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.world.item.DyeColor>> SMOKE_COLOR =
             COMPONENTS.registerComponentType("smoke_color", builder -> builder
                     .persistent(net.minecraft.world.item.DyeColor.CODEC)

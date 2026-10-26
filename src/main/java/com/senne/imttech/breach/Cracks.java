@@ -1,4 +1,4 @@
-package com.senne.imttech.c4;
+package com.senne.imttech.breach;
 
 import com.senne.imttech.config.ImtConfig;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -12,7 +12,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 /**
  * De barsten in blokken (hoofdstuk 10 en 11).
  *
- * Een klap die een blok niet breekt (C4, of TNT en de satelliet in een zone: zie C4Blast), geeft het
+ * Een klap die een blok niet breekt (een frag, of TNT en de satelliet in een zone: zie Blast), geeft het
  * barsten; de volgende klap telt erbij op. Sinds hoofdstuk 11 genezen ze niet meer vanzelf (jouw keuze):
  * ze blijven, ook na een herstart (ze staan in {@link CrackData}), tot je
  * <ul>
@@ -47,7 +47,7 @@ public final class Cracks {
 
     /**
      * Een klap die dit blok niet brak: het heeft nu {@code damage} breekpunten, van de {@code hp} die het
-     * kan hebben (zie C4Blast.strength). Hoe vaak het geplamuurd is, blijft.
+     * kan hebben (zie Blast.strength). Hoe vaak het geplamuurd is, blijft.
      */
     static void crack(ServerLevel level, BlockPos pos, Block block, float damage, float hp) {
         CrackData data = CrackData.get(level);
@@ -124,7 +124,7 @@ public final class Cracks {
                     continue;
                 }
                 BlockState state = level.getBlockState(pos);
-                float hp = C4Blast.strength(level, pos, state);
+                float hp = Blast.strength(level, pos, state);
                 if (hp > 0 && state.getBlock() == crack.block()) {
                     show(level, pos, crack.damage() / hp);
                 }

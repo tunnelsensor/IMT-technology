@@ -384,11 +384,11 @@ public final class WeaponGameTests {
     /**
      * Jouw wens: een kopie van de EMP-granaten als explosief, "zoals de C4 maar net iets minder sterk". Een Sticky Frag
      * Grenade op een stenen muur blaast het blok waar hij op plakt eruit, maar een stenen blok twee hoger of lager blijft
-     * staan (C4 haalt dat er wel uit) en obsidiaan ernaast ook. Een koe vlakbij krijgt de klap. Het is geen EMP: de
+     * staan (de oude C4 haalde dat er wel uit) en obsidiaan ernaast ook. Een koe vlakbij krijgt de klap. Het is geen EMP: de
      * turret ernaast blijft aan.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
-    public static void frag_grenade_blows_a_hole_like_a_weaker_c4(GameTestHelper helper) {
+    public static void frag_grenade_blows_a_block_out_of_a_wall(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         for (int y = 2; y <= 5; y++) {
             for (int z = 4; z <= 8; z++) {
@@ -566,7 +566,8 @@ public final class WeaponGameTests {
                 .thenExecute(() -> check(husk[0].getHealth() == husk[0].getMaxHealth(), "De turret schoot door de rook heen"))
                 .thenWaitUntil(() -> check(husk[0].getHealth() < husk[0].getMaxHealth() || !husk[0].isAlive(),
                         "Zonder rook schoot de turret niet"))
-                .thenExecute(() -> check(robot.hasLineOfSight(cow), "Na de rook ziet de robot de koe niet meer"))
+                // De twee wolken trekken niet op precies dezelfde tick op: even wachten tot de robot weer kijkt.
+                .thenWaitUntil(() -> check(robot.hasLineOfSight(cow), "Na de rook ziet de robot de koe niet meer"))
                 .thenSucceed();
     }
 
@@ -828,18 +829,22 @@ public final class WeaponGameTests {
                 new net.minecraft.world.phys.BlockHitResult(hitAt, Direction.WEST, wallBlock, false)));
         BlockPos empPos = new BlockPos(11, 3, 6);
         check(helper.getBlockState(empPos).is(ModBlocks.REMOTE_EMP.get()), "De Remote EMP plakte niet tegen de muur");
-        check(com.senne.imttech.weapons.RemoteEmpBlock.outward(helper.getBlockState(empPos)) == Direction.WEST,
+        check(com.senne.imttech.weapons.RemoteChargeBlock.outward(helper.getBlockState(empPos)) == Direction.WEST,
                 "De Remote EMP wijst niet van de muur af");
-        var emp = (com.senne.imttech.weapons.RemoteEmpBlockEntity) helper.getBlockEntity(empPos);
-        check(emp.trigger() != null && emp.trigger().equals(com.senne.imttech.weapons.EmpTriggerItem.data(trigger).id()),
+        var emp = (com.senne.imttech.weapons.RemoteChargeBlockEntity) helper.getBlockEntity(empPos);
+        check(emp.trigger() != null && emp.trigger().equals(com.senne.imttech.weapons.TriggerItem.data(trigger).id()),
                 "De Remote EMP hoort niet bij de trigger in je inventaris");
         // Een tweede Remote EMP, van een andere trigger.
         BlockPos otherPos = new BlockPos(11, 3, 11);
         helper.setBlock(otherPos, ModBlocks.REMOTE_EMP.get().defaultBlockState()
-                .setValue(com.senne.imttech.weapons.RemoteEmpBlock.FACING, Direction.WEST));
+                .setValue(com.senne.imttech.weapons.RemoteChargeBlock.FACING, Direction.WEST));
         ItemStack otherTrigger = new ItemStack(ModItems.EMP_TRIGGER.get());
-        com.senne.imttech.weapons.EmpTriggerItem.link(level, helper.absolutePos(otherPos),
-                (com.senne.imttech.weapons.RemoteEmpBlockEntity) helper.getBlockEntity(otherPos), otherTrigger);
+        com.senne.imttech.weapons.TriggerItem.link(level, helper.absolutePos(otherPos),
+                (com.senne.imttech.weapons.RemoteChargeBlockEntity) helper.getBlockEntity(otherPos), otherTrigger);
+        // Een Remote Frag van een Frag Trigger ernaast: een EMP Trigger laat die niet afgaan.
+        BlockPos fragPos = new BlockPos(11, 4, 9);
+        helper.setBlock(fragPos, ModBlocks.REMOTE_FRAG.get().defaultBlockState()
+                .setValue(com.senne.imttech.weapons.RemoteChargeBlock.FACING, Direction.WEST));
         GuardRobotEntity robot = RobotGameTests.robot(helper, new BlockPos(9, 2, 7), RobotParts.DEFAULT);
         BlockPos turret = new BlockPos(8, 2, 4);
         helper.setBlock(turret, ModBlocks.ROCKET_TURRET.get());
@@ -847,7 +852,7 @@ public final class WeaponGameTests {
         ((TurretBlockEntity) helper.getBlockEntity(turret)).refreshOnline(level);
         helper.assertBlockProperty(turret, TurretBlock.ONLINE, true);
         check(!robot.isDown(), "De robot lag al neer");
-        check(com.senne.imttech.weapons.EmpTriggerItem.fire(level, player, trigger) == 1, "De trigger liet niet één EMP afgaan");
+        check(com.senne.imttech.weapons.TriggerItem.fire(level, player, trigger).fired() == 1, "De trigger liet niet één EMP afgaan");
         helper.startSequence()
                 .thenWaitUntil(() -> check(helper.getBlockState(empPos).isAir(), "De Remote EMP ging niet af"))
                 .thenExecute(() -> {
@@ -855,7 +860,8 @@ public final class WeaponGameTests {
                     helper.assertBlockProperty(turret, TurretBlock.ONLINE, false);
                     helper.assertBlockPresent(Blocks.STONE, new BlockPos(12, 3, 6));
                     check(helper.getBlockState(otherPos).is(ModBlocks.REMOTE_EMP.get()), "De Remote EMP van de andere trigger ging ook af");
-                    check(com.senne.imttech.weapons.EmpTriggerItem.data(trigger).charges().isEmpty(),
+                    check(helper.getBlockState(fragPos).is(ModBlocks.REMOTE_FRAG.get()), "De EMP liet een Remote Frag afgaan");
+                    check(com.senne.imttech.weapons.TriggerItem.data(trigger).charges().isEmpty(),
                             "De trigger onthoudt een EMP die al afging");
                 })
                 .thenSucceed();

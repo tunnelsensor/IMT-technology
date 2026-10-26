@@ -1,9 +1,9 @@
 package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
-import com.senne.imttech.c4.C4Blast;
-import com.senne.imttech.c4.CrackData;
-import com.senne.imttech.c4.Cracks;
+import com.senne.imttech.breach.Blast;
+import com.senne.imttech.breach.CrackData;
+import com.senne.imttech.breach.Cracks;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
@@ -48,12 +48,12 @@ public final class CrackGameTests {
 
     private static final String ARENA = "empty";
 
-    /** Het blok waar de tests C4 tegen plakken. */
+    /** Het blok waar de tests een Remote Frag tegen plakken. */
     private static final BlockPos BLOCK = new BlockPos(8, 3, 8);
 
-    /** Plakt een C4 tegen de oostkant van {@code pos} en laat hem meteen afgaan. */
+    /** Plakt een Remote Frag tegen de oostkant van {@code pos} en laat hem meteen afgaan. */
     private static void blast(GameTestHelper helper, BlockPos pos) {
-        C4GameTests.boom(helper, C4GameTests.stick(helper, ModBlocks.TIMED_C4.get(), pos, Direction.EAST));
+        RemoteFragGameTests.boom(helper, RemoteFragGameTests.stick(helper, pos, Direction.EAST));
     }
 
     /**
@@ -74,7 +74,7 @@ public final class CrackGameTests {
 
     private static float strength(GameTestHelper helper, BlockPos pos) {
         BlockPos abs = helper.absolutePos(pos);
-        return C4Blast.strength(helper.getLevel(), abs, helper.getLevel().getBlockState(abs));
+        return Blast.strength(helper.getLevel(), abs, helper.getLevel().getBlockState(abs));
     }
 
     /** Houdt de wereld nog iets bij over deze plek (ook als er nu een ander blok staat)? */
@@ -90,7 +90,7 @@ public final class CrackGameTests {
     }
 
     /**
-     * Jouw keuze: barsten genezen niet meer vanzelf, ze blijven (ook na een herstart). Na één C4 heeft
+     * Jouw keuze: barsten genezen niet meer vanzelf, ze blijven (ook na een herstart). Na één frag heeft
      * obsidiaan barsten, en die staan nog precies zo in de wereld als je hem opslaat en weer inlaadt.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
@@ -99,7 +99,7 @@ public final class CrackGameTests {
         helper.setBlock(BLOCK, Blocks.OBSIDIAN);
         blast(helper, BLOCK);
         float damage = Cracks.damage(level, helper.absolutePos(BLOCK));
-        check(damage > 0, "Na één C4 zou het obsidiaan barsten moeten hebben");
+        check(damage > 0, "Na één frag zou het obsidiaan barsten moeten hebben");
         CrackData.Crack saved = CrackData.afterReload(CrackData.get(level), level.dimension(), helper.absolutePos(BLOCK),
                 level.registryAccess());
         check(saved != null && saved.damage() == damage && saved.block() == Blocks.OBSIDIAN && saved.patches() == 0,
@@ -119,7 +119,7 @@ public final class CrackGameTests {
         check(strength(helper, BLOCK) == 20, "Nieuw obsidiaan zou 20 breekpunten moeten kunnen hebben");
         for (int patches = 1; patches <= 2; patches++) {
             blast(helper, BLOCK);
-            check(Cracks.damage(level, helper.absolutePos(BLOCK)) > 0, "Na de C4 zou het obsidiaan barsten moeten hebben");
+            check(Cracks.damage(level, helper.absolutePos(BLOCK)) > 0, "Na de frag zou het obsidiaan barsten moeten hebben");
             check(paste(helper, player, BLOCK), "Plamuren lukte niet (keer " + patches + ")");
             check(Cracks.damage(level, helper.absolutePos(BLOCK)) == 0, "Na het plamuren zijn er nog barsten");
             check(Cracks.patches(level, helper.absolutePos(BLOCK)) == patches, "Het blok zou " + patches + " keer geplamuurd moeten zijn");
@@ -166,7 +166,7 @@ public final class CrackGameTests {
 
         // Een ander blok ertussen (zoals een zuiger of explosie doet): de barsten zijn meteen vergeten.
         blast(helper, BLOCK);
-        check(remembered(helper, BLOCK), "Na de C4 zou de wereld de barsten moeten onthouden");
+        check(remembered(helper, BLOCK), "Na de frag zou de wereld de barsten moeten onthouden");
         helper.setBlock(BLOCK, Blocks.DIRT);
         check(!remembered(helper, BLOCK), "Er staat aarde, maar de wereld onthoudt de barsten van het obsidiaan nog");
         helper.setBlock(BLOCK, Blocks.OBSIDIAN);
@@ -187,7 +187,7 @@ public final class CrackGameTests {
         helper.setBlock(BLOCK, Blocks.OBSIDIAN);
         blast(helper, BLOCK);
         float damage = Cracks.damage(level, helper.absolutePos(BLOCK));
-        check(damage > 0, "Na de C4 zou het obsidiaan barsten moeten hebben");
+        check(damage > 0, "Na de frag zou het obsidiaan barsten moeten hebben");
 
         check(!paste(helper, outsider, BLOCK), "Een vreemde kon in de zone plamuren");
         check(Cracks.damage(level, helper.absolutePos(BLOCK)) == damage, "De barsten van de vreemde zijn toch opgevuld");
@@ -204,7 +204,7 @@ public final class CrackGameTests {
     /** Een klein klapje van 3 breekpunten op alleen dit blok: barsten, maar het breekt niet (steen kan 6 hebben). */
     private static void dent(GameTestHelper helper, BlockPos pos) {
         BlockPos abs = helper.absolutePos(pos);
-        C4Blast.breach(helper.getLevel(), Vec3.atCenterOf(abs).add(0.95, 0, 0), 3.0f, 3.0f, here -> here.equals(abs), null);
+        Blast.breach(helper.getLevel(), Vec3.atCenterOf(abs).add(0.95, 0, 0), 3.0f, 3.0f, here -> here.equals(abs), null);
     }
 
     /**
@@ -266,7 +266,7 @@ public final class CrackGameTests {
         helper.succeed();
     }
 
-    /** Wat C4 kapotmaakt, valt eruit zoals altijd, ook als het blok al barsten had (mijn invulling). */
+    /** Wat een frag kapotmaakt, valt eruit zoals altijd, ook als het blok al barsten had (mijn invulling). */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
     public static void blasted_blocks_drop_normally(GameTestHelper helper) {
         helper.setBlock(BLOCK, Blocks.STONE_BRICKS);
