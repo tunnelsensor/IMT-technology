@@ -112,6 +112,11 @@ final class ShowcaseScene {
     static final BlockPos BRIDGE = new BlockPos(20, -61, 16);
     /** Waar een redstoneblok komt om de brug aan te zetten: onder de noordelijke zender, in de grond. */
     static final BlockPos BRIDGE_POWER = BRIDGE.north().below();
+    /**
+     * De wapens (hoofdstuk 35): een veld van gladde steen met een muur in het oosten (x + 10). Ertussen een guard
+     * robot, een raketturret op stroom en een camera; aan de westkant drie husks om op te schieten.
+     */
+    static final BlockPos WEAPONS = new BlockPos(160, -61, -60);
 
     // ================================================================ Eén keer: de wereld bouwen
 
@@ -369,6 +374,28 @@ final class ShowcaseScene {
         // Stroom: een warmtegenerator op magma onder de middelste zender (de zenders geven hem aan elkaar door).
         DevWorld.powerNextTo(level, BRIDGE.below());
         level.setBlockAndUpdate(BRIDGE_POWER, Blocks.DIRT.defaultBlockState());
+    }
+
+    /**
+     * Het veld voor de wapens (hoofdstuk 35), elke keer opnieuw: de muur heeft na de frag-granaat een gat. Een guard
+     * robot en een raketturret op stroom vlak voor de muur, en drie husks die niets doen (doelwitten) in het westen.
+     */
+    static void buildWeapons(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        fill(level, WEAPONS.offset(-14, 1, -8), WEAPONS.offset(12, 7, 8), Blocks.AIR.defaultBlockState());
+        fill(level, WEAPONS.offset(-14, 0, -8), WEAPONS.offset(12, 0, 8), Blocks.SMOOTH_STONE.defaultBlockState());
+        fill(level, WEAPONS.offset(10, 1, -6), WEAPONS.offset(10, 5, 6), Blocks.STONE_BRICKS.defaultBlockState());
+        for (Entity old : level.getEntitiesOfClass(Entity.class, new AABB(WEAPONS).inflate(16),
+                entity -> !(entity instanceof net.minecraft.world.entity.player.Player))) {
+            old.discard();
+        }
+        BlockPos turret = WEAPONS.offset(8, 1, 3);
+        level.setBlockAndUpdate(turret, ModBlocks.ROCKET_TURRET.get().defaultBlockState());
+        DevWorld.powerNextTo(level, turret.below());
+        DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), WEAPONS.offset(7, 1, -2), 90);
+        for (int z = -4; z <= 4; z += 4) {
+            DevWorld.spawnStill(level, EntityType.HUSK, WEAPONS.offset(-12, 1, z), -90);
+        }
     }
 
     /**

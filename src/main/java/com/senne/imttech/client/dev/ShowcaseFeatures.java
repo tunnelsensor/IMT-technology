@@ -2276,6 +2276,131 @@ final class ShowcaseFeatures {
                         Blocks.DIRT.defaultBlockState()))
                 .pause(60)
                 .onServer(0, player -> bridge(player, LaserActionPayload.Op.COLOR, ShieldColor.CYAN.ordinal())));
+
+        // ---------------------------------------------------------------- Wapens
+        // Hoofdstuk 35 (25 oktober), ook achteraan.
+        BlockPos weapons = ShowcaseScene.WEAPONS;
+        add("EMP and frag grenades", "Hoofdstuk 35. Een veld met een guard robot en een raketturret voor een muur. Je "
+                + "gooit een EMP Grenade (de bol): hij stuitert, rolt, piept steeds sneller en gaat af in een bol van "
+                + "blauw licht; de robot valt neer en de loop van de turret hangt omlaag (20 seconden). Daarna een Sticky "
+                + "EMP Grenade op de muur, en dan de explosieve kopieën: een Sticky Frag Grenade op de muur (een gat, "
+                + "barsten eromheen) en een Frag Grenade over de vloer. Tot slot een EMP aan je eigen voeten, met je "
+                + "bril op: ruis, en daarna start de bril opnieuw op.",
+                new Vec3(weapons.getX() + 0.5, weapons.getY() + 1, weapons.getZ() + 0.5), -90, 10, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .stand(0, weapons.getX() + 0.5, weapons.getY() + 1, weapons.getZ() + 0.5, -90, 8)
+                .onServer(20, player -> holdAndThrow(player, ModItems.EMP_GRENADE.get(), false))
+                .pause(110)
+                .onServer(0, player -> holdAndThrow(player, ModItems.STICKY_EMP_GRENADE.get(), false))
+                .pause(80)
+                .stand(0, weapons.getX() + 0.5, weapons.getY() + 1, weapons.getZ() - 3.5, -90, 4)
+                .onServer(10, player -> holdAndThrow(player, ModItems.STICKY_FRAG_GRENADE.get(), false))
+                .pause(80)
+                .onServer(0, player -> holdAndThrow(player, ModItems.FRAG_GRENADE.get(), true))
+                .pause(110)
+                .onServer(0, player -> {
+                    DevWorld.wearGlasses(player);
+                    com.senne.imttech.weapons.Emp.blast(player.serverLevel(), player.position().add(0, 0.5, 0), player);
+                })
+                .pause(120)
+                .onServer(0, player -> {
+                    player.setData(ModAttachments.EMP_UNTIL, 0L);
+                    player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                }));
+
+        add("Smoke grenade and flashbang", "Hoofdstuk 35. De raketturret schiet op een husk; je rolt een Smoke "
+                + "Grenade ertussen: hij sist, er groeit een wolk, en de turret stopt (machines kijken niet door rook). "
+                + "Dan een rode smokebom (gemaakt met rode kleurstof). Tot slot een Flashbang vlak voor je: je kijkt "
+                + "ernaar, dus je scherm wordt helemaal wit, je hoort een piep, en het trekt langzaam weer weg.",
+                new Vec3(weapons.getX() - 2.5, weapons.getY() + 2, weapons.getZ() + 9.5), 180, 15, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> DevWorld.spawnStill(player.serverLevel(), EntityType.HUSK,
+                        weapons.offset(-2, 1, 3), 90))
+                .stand(0, weapons.getX() - 2.5, weapons.getY() + 1, weapons.getZ() + 9.5, 135, 8)
+                .pause(60)
+                .onServer(0, player -> holdAndThrow(player, ModItems.SMOKE_GRENADE.get(), true))
+                .pause(120)
+                .onServer(0, player -> {
+                    ItemStack red = new ItemStack(ModItems.SMOKE_GRENADE.get());
+                    red.set(com.senne.imttech.registry.ModDataComponents.SMOKE_COLOR.get(), net.minecraft.world.item.DyeColor.RED);
+                    player.setItemInHand(InteractionHand.MAIN_HAND, red);
+                    ModItems.SMOKE_GRENADE.get().use(player.serverLevel(), player, InteractionHand.MAIN_HAND);
+                })
+                .pause(140)
+                .stand(0, weapons.getX() - 6.5, weapons.getY() + 1, weapons.getZ() - 6.5, -90, 10)
+                .onServer(10, player -> com.senne.imttech.weapons.Flashbang.bang(player.serverLevel(),
+                        new Vec3(weapons.getX() - 3.5, weapons.getY() + 1.5, weapons.getZ() - 6.5), null))
+                .pause(140)
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY)));
+
+        add("Laser guns", "Hoofdstuk 35. De vier lasergeweren, zoals in TACZ: het pistool (vanuit de heup, dan door het "
+                + "vizier, een paar schoten), het geweer (inhouden: automatisch, met terugslag en laserbouten; dan R: "
+                + "herladen met de cel eruit en een nieuwe erin; dan H: bekijken), de sniper (de kijker over je scherm, één "
+                + "zware straal, de grendel) en de shotgun (een waaier van stralen, de pomp). Rechtsonder je munitie en je "
+                + "cellen. Met je eigen armen aan het geweer.",
+                new Vec3(weapons.getX() + 0.5, weapons.getY() + 1, weapons.getZ() + 0.5), 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveGuns)
+                .stand(0, weapons.getX() + 0.5, weapons.getY() + 1, weapons.getZ() + 0.5, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(40)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, true)
+                .pause(20)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(8, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(8, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(20, () -> Minecraft.getInstance().options.keyUse, false)
+                .step(10, () -> hotbar(1))
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true)
+                .key(30, () -> Minecraft.getInstance().options.keyAttack, false)
+                .step(20, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(60)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()))
+                .pause(60)
+                .step(0, () -> hotbar(2))
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, true)
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(30, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(20)
+                .step(0, () -> hotbar(3))
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(25, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(40)
+                .step(0, () -> hotbar(0))
+                .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+    /** Zet dit item (granaat) in je hand en gooi het (met {@code toss}: onderhands, zoals met sneak). */
+    private static void holdAndThrow(ServerPlayer player, net.minecraft.world.item.Item item, boolean toss) {
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(item, 4));
+        player.setShiftKeyDown(toss);
+        item.use(player.serverLevel(), player, InteractionHand.MAIN_HAND);
+        player.setShiftKeyDown(false);
+    }
+
+    /** De vier lasergeweren met een volle cel in je hotbar, en twee reservecellen. */
+    private static void giveGuns(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.weapons.GunType[] types = com.senne.imttech.weapons.GunType.values();
+        for (int i = 0; i < types.length; i++) {
+            ItemStack gun = new ItemStack(ModItems.laserGun(types[i]));
+            com.senne.imttech.weapons.LaserGunItem.setCell(gun, i == 1 ? 30 : 100);
+            inventory.setItem(i, gun);
+        }
+        inventory.setItem(4, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
+        inventory.setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
+    }
+
+    /** Kies een vakje in je hotbar (in je eigen spel). */
+    private static void hotbar(int slot) {
+        if (Minecraft.getInstance().player != null) {
+            Minecraft.getInstance().player.getInventory().selected = slot;
+        }
     }
 
     // ================================================================ Hulpjes
