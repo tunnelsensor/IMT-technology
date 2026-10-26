@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 335 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 336 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3449,6 +3449,7 @@ Ik stelde acht vragen, jij koos.
   uitdoen van op afstand wanneer jij wilt". Drie vragen, jouw antwoorden: een **gewone EMP-puls** (zoals een granaat:
   5 blokken, niet het hele net in één keer; wel zo: zet hem bij de kabels van je doelwit), een **eigen EMP-trigger**
   (niet de detonator van C4), en **eenmalig** (zoals C4).
+- **Ook op 26 oktober**: "zorg dat de smoke van smokegranades niet door blokken kan gaan".
 
 **Mijn invulling** (zeg het als je het anders wil):
 - **Gooien**: rechtsklik gooit. Met sneak gooi je zachtjes onderhands (de bol rolt dan over de vloer, zoals bij
@@ -3613,6 +3614,22 @@ Zo bouw ik het:
       de muur en de trigger in je hand) en `gr20` (na de knop). Eén nieuwe test (`remote_emp_goes_off_with_its_trigger`:
       plakken koppelt, de knop legt de robot neer en zet de turret uit, de muur blijft heel, en een Remote EMP van een
       andere trigger blijft zitten). 335 tests, allemaal groen.
+- [x] **2e. De rook gaat niet door blokken** (26 oktober, jouw wens) — Een wolk was een bol die dwars door muren
+      ging: robots en turrets achter een muur zagen niets, en de grote rookplukken staken aan de andere kant van een muur
+      of een plafond uit. Nu **stroomt** de rook (`Smoke.Volume`): hij begint bij de granaat en gaat van blokplek naar
+      blokplek (ook schuin), tot hij 4,5 blokken (`smokeRadius`) heeft afgelegd, langs de kortste weg **om blokken heen**.
+      Muren, glas, een **dichte deur**, een dicht luik, een ruit of een plaat houden hem tegen (een blok dat bekeken langs
+      die richting de hele doorgang dichtzet); door een **open deur** stroomt hij naar buiten, maar omdat die weg langer
+      is maar een klein stukje. Een hek, een fakkel of een bloem laat hem door; water en lava vult hij niet. In de open
+      lucht is de wolk rond, zoals eerst. Robots, turrets en drones kijken alleen door de plekken met rook (cel voor cel
+      langs hun kijklijn). In je spel rekent de mod dezelfde plekken uit en blaast hij de plukken alleen daar; een pluk is
+      nooit groter dan de ruimte tot het dichtstbijzijnde blok (midden in een kamer groot, tegen een muur, vloer of
+      plafond klein) en drijft hij uit de wolk, dan verdwijnt hij. In het beeld van een bewakingscamera is de wolk nu
+      dichte blokjes waar de rook hangt (in plaats van een bol). **Mijn invulling**: welke plekken de rook vult, ligt vast
+      als hij begint (een deur die je daarna opendoet, laat niets meer door). Screenshots `gr21` (een smokebom in een
+      schuurtje: niets door de muren, wel door het raam te zien), `gr22` (niets door het dak) en `gr23` (een sliertje
+      door de open deur). Eén nieuwe test (`smoke_does_not_go_through_blocks`: niet door een muur en een dichte deur, wel
+      door een open deur), en de rekensom-test telt nu cel voor cel. 336 tests, allemaal groen.
 - [x] **5. Showcase, screenshots en LEESMIJ** — **Showcase**: drie nieuwe functies, achteraan zodat de nummers van je
       notities blijven kloppen: **98 "EMP and frag grenades"** (een veld met een robot en een turret voor een muur: een
       EMP-bol, een sticky, een Sticky Frag op de muur, een Frag over de vloer, en een EMP aan je voeten met je bril op),

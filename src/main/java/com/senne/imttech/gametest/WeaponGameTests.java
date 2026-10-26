@@ -452,24 +452,25 @@ public final class WeaponGameTests {
 
     /**
      * De rekensom van de rook: een lijn dwars door een wolk is geblokkeerd, een lijn ernaast niet, en van heel dichtbij
-     * (minder dan SMOKE_SEE_THROUGH rook ertussen) zie je elkaar nog.
+     * (minder dan SMOKE_SEE_THROUGH rook ertussen) zie je elkaar nog. Een lijn telt cel voor cel: dwars door één cel met
+     * rook is precies één blok rook.
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "weapons")
     public static void smoke_blocks_lines_through_the_cloud(GameTestHelper helper) {
-        Vec3 c = new Vec3(0, 0, 0);
-        check(Math.abs(com.senne.imttech.weapons.Smoke.inside(c, 4, new Vec3(-10, 0, 0), new Vec3(10, 0, 0)) - 8) < 1e-6,
-                "Dwars door het midden gaat niet 8 blokken door de rook");
-        check(com.senne.imttech.weapons.Smoke.inside(c, 4, new Vec3(-10, 5, 0), new Vec3(10, 5, 0)) == 0,
-                "Een lijn boven de wolk gaat toch door de rook");
-        check(Math.abs(com.senne.imttech.weapons.Smoke.inside(c, 4, new Vec3(0, 0, 0), new Vec3(1, 0, 0)) - 1) < 1e-6,
-                "Een stukje binnen de wolk telt niet goed");
         ServerLevel level = helper.getLevel();
         Vec3 middle = helper.absoluteVec(new Vec3(10, 3, 10));
         com.senne.imttech.weapons.Smoke.Cloud cloud = com.senne.imttech.weapons.Smoke.add(level, middle, 200);
+        com.senne.imttech.weapons.Smoke.Volume volume = cloud.volume();
+        double r = ImtConfig.Weapons.SMOKE_RADIUS;
+        Vec3 cell = Vec3.atLowerCornerOf(helper.absolutePos(new BlockPos(10, 3, 10)));
+        check(Math.abs(volume.inside(r, cell.add(0, 0.5, 0.5), cell.add(1, 0.5, 0.5)) - 1) < 1e-6,
+                "Dwars door één cel met rook is niet één blok rook");
+        check(Math.abs(volume.inside(r, cell.add(-3, 0.5, 0.5), cell.add(4, 0.5, 0.5)) - 7) < 1e-6,
+                "Zeven cellen met rook op een rij tellen niet als zeven blokken");
+        check(volume.inside(0, cell.add(-3, 0.5, 0.5), cell.add(4, 0.5, 0.5)) == 0, "Een wolk zonder grootte heeft toch rook");
         helper.startSequence()
                 .thenIdle(com.senne.imttech.weapons.Smoke.GROW_TICKS + 1)
                 .thenExecute(() -> {
-                    double r = ImtConfig.Weapons.SMOKE_RADIUS;
                     check(Math.abs(cloud.radius(level.getGameTime()) - r) < 1e-6, "De wolk groeide niet tot zijn grootte");
                     check(com.senne.imttech.weapons.Smoke.blocks(level, middle.add(-r - 3, 0, 0), middle.add(r + 3, 0, 0)),
                             "Dwars door de wolk kijk je er toch doorheen");
@@ -477,6 +478,59 @@ public final class WeaponGameTests {
                             middle.add(r + 3, r + 1, 0)), "Over de wolk heen kijk je er niet langs");
                     check(!com.senne.imttech.weapons.Smoke.blocks(level, middle, middle.add(1, 0, 0)),
                             "Van heel dichtbij in de rook zie je elkaar niet");
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Jouw wens (26 oktober): de rook gaat niet door blokken. Een wolk vlak voor een stenen muur vult de plekken voor de
+     * muur, maar niet erachter (ook al ligt dat binnen de grootte van de wolk), en een lijn achter de muur langs is vrij.
+     * Een dichte deur in de muur houdt de rook ook tegen; door een open deur stroomt hij naar de andere kant.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "weapons")
+    public static void smoke_does_not_go_through_blocks(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (int y = 2; y <= 9; y++) {
+            for (int z = 3; z <= 17; z++) {
+                helper.setBlock(new BlockPos(12, y, z), Blocks.STONE);
+            }
+        }
+        // Een deur in de muur, dicht (de deur draait om een as langs de muur: dicht ligt het blad dwars op x).
+        BlockPos door = new BlockPos(12, 2, 10);
+        net.minecraft.world.level.block.state.BlockState closed = Blocks.OAK_DOOR.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.DoorBlock.FACING, Direction.EAST);
+        helper.setBlock(door, closed);
+        helper.setBlock(door.above(), closed.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+        double r = ImtConfig.Weapons.SMOKE_RADIUS;
+        Vec3 middle = helper.absoluteVec(new Vec3(10.5, 2.5, 10.5));
+        com.senne.imttech.weapons.Smoke.Cloud cloud = com.senne.imttech.weapons.Smoke.add(level, middle, 200);
+        com.senne.imttech.weapons.Smoke.Volume volume = cloud.volume();
+        check(volume.has(helper.absolutePos(new BlockPos(11, 2, 10)), r), "Voor de muur hangt geen rook");
+        check(volume.has(helper.absolutePos(new BlockPos(10, 6, 10)), r), "Boven de granaat hangt geen rook");
+        for (BlockPos behind : new BlockPos[] {new BlockPos(13, 2, 10), new BlockPos(13, 3, 10), new BlockPos(14, 2, 11)}) {
+            check(!volume.has(helper.absolutePos(behind), r), "Achter de muur (of de dichte deur) hangt toch rook: " + behind);
+        }
+        check(!volume.has(helper.absolutePos(new BlockPos(12, 4, 10)), r), "In de muur zelf hangt rook");
+        Vec3 behindFrom = helper.absoluteVec(new Vec3(13.5, 2.5, 4.5));
+        Vec3 behindTo = helper.absoluteVec(new Vec3(13.5, 2.5, 16.5));
+        Vec3 frontFrom = helper.absoluteVec(new Vec3(10.5, 2.5, 4.5));
+        Vec3 frontTo = helper.absoluteVec(new Vec3(10.5, 2.5, 16.5));
+        check(!com.senne.imttech.weapons.Smoke.blocks(level, behindFrom, behindTo), "Achter de muur langs kijk je niet door");
+        // De deur open: de rook stroomt erdoor.
+        helper.setBlock(door, closed.setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true));
+        helper.setBlock(door.above(), closed.setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true)
+                .setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                        net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+        com.senne.imttech.weapons.Smoke.Volume open = com.senne.imttech.weapons.Smoke.Volume.fill(level, middle);
+        check(open.has(helper.absolutePos(new BlockPos(13, 2, 10)), r), "Door de open deur stroomt geen rook");
+        check(!open.has(helper.absolutePos(new BlockPos(12, 4, 10)), r), "De rook zit in de muur boven de deur");
+        helper.startSequence()
+                .thenIdle(com.senne.imttech.weapons.Smoke.GROW_TICKS + 1)
+                .thenExecute(() -> {
+                    check(com.senne.imttech.weapons.Smoke.blocks(level, frontFrom, frontTo), "Voor de muur kijk je door de rook");
+                    check(!com.senne.imttech.weapons.Smoke.blocks(level, behindFrom, behindTo),
+                            "Achter de muur langs is de rook toch in de weg");
                 })
                 .thenSucceed();
     }

@@ -1842,6 +1842,15 @@ public final class VisualCheck {
             t.onServer(0, player -> com.senne.imttech.weapons.EmpTriggerItem.fire(player.serverLevel(), player,
                     player.getMainHandItem()));
             t.shot(4, "gr20_remote_emp_blast");
+            // De rook gaat niet door blokken (26 oktober): een smokebom in een schuurtje. De muren en het dak houden hem
+            // binnen, door het raam zie je hem, en door de open deur stroomt een beetje naar buiten.
+            t.onServer(0, VisualCheck::buildSmokeShed);
+            t.stand(0, WEAPON_YARD.getX() + 0.5, WEAPON_YARD.getY() + 1, WEAPON_YARD.getZ() + 8.5, 0, 8);
+            t.shot(90, "gr21_smoke_stays_in_the_shed");
+            t.view(0, WEAPON_YARD.getX() + 7.5, WEAPON_YARD.getY() + 8, WEAPON_YARD.getZ() + 10.5, 45, 35);
+            t.shot(10, "gr22_smoke_not_through_the_roof");
+            t.view(0, WEAPON_YARD.getX() - 0.5, WEAPON_YARD.getY() + 2, WEAPON_YARD.getZ() + 11.5, 0, 5);
+            t.shot(10, "gr23_smoke_out_of_the_door");
         }
 
         // --- De lasergeweren (hoofdstuk 35): elk geweer vanuit de heup, gericht en schietend; het geweer herladen en
@@ -3743,6 +3752,41 @@ public final class VisualCheck {
         level.setBlockAndUpdate(turret, ModBlocks.ROCKET_TURRET.get().defaultBlockState());
         DevWorld.powerNextTo(level, turret.below());
         DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), WEAPON_YARD.offset(5, 1, -2), 90);
+    }
+
+    /**
+     * Een schuurtje van stenen bakstenen ten zuiden van het wapenveld (7 bij 7, drie hoog binnen, met een dak), met een
+     * glazen raam en een open deur in de noordmuur, en binnen een grijze smokebom die meteen gaat roken.
+     */
+    private static void buildSmokeShed(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos shed = WEAPON_YARD.offset(0, 0, 17);
+        for (BlockPos pos : BlockPos.betweenClosed(shed.offset(-6, 1, -9), shed.offset(6, 6, 6))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(shed.offset(-6, 0, -9), shed.offset(6, 0, 6))) {
+            level.setBlockAndUpdate(pos, Blocks.SMOOTH_STONE.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(shed.offset(-3, 1, -3), shed.offset(3, 4, 3))) {
+            boolean inside = Math.abs(pos.getX() - shed.getX()) < 3 && Math.abs(pos.getZ() - shed.getZ()) < 3
+                    && pos.getY() - shed.getY() < 4;
+            if (!inside) {
+                level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
+            }
+        }
+        level.setBlockAndUpdate(shed.offset(1, 2, -3), Blocks.GLASS.defaultBlockState());
+        level.setBlockAndUpdate(shed.offset(2, 2, -3), Blocks.GLASS.defaultBlockState());
+        BlockState door = Blocks.OAK_DOOR.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.DoorBlock.FACING, Direction.NORTH)
+                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true);
+        level.setBlock(shed.offset(-1, 1, -3), door, 2);
+        level.setBlock(shed.offset(-1, 2, -3), door.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 2);
+        var smoke = new com.senne.imttech.weapons.RollingGrenade(
+                com.senne.imttech.registry.ModEntities.SMOKE_GRENADE.get(), level);
+        smoke.setPos(shed.getX() + 0.5, shed.getY() + 1, shed.getZ() + 0.5);
+        smoke.arm(5);
+        level.addFreshEntity(smoke);
     }
 
     /** Kiest een vakje in je hotbar (in je eigen spel: de server bepaalt dat niet). */

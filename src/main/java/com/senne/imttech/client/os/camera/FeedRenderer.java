@@ -52,7 +52,7 @@ import org.joml.Quaternionf;
  *       kisten en de koppen van torentjes.</li>
  * </ol>
  * Geen lucht, wolken, regen of deeltjes: in de verte vervaagt alles naar de kleur van de lucht. (De rook van een
- * smokebom tekenen we wel, als een dichte bol: zie client/weapons/SmokeView.)
+ * smokebom tekenen we wel, als dichte blokjes waar de rook hangt: zie client/weapons/SmokeView.)
  *
  * Alles wat we aan de instellingen van het tekenen veranderen, zetten we daarna terug, zodat het
  * gewone beeld er niets van merkt (zie {@link #render}).
@@ -136,7 +136,7 @@ final class FeedRenderer {
             PoseStack pose = new PoseStack();
             renderEntities(mc, level, eye, frustum, distance, partialTick, pose, buffers, skip);
             renderBlockEntities(mc, level, sections, eye, frustum, partialTick, pose, buffers);
-            // De rook van een smokebom (hoofdstuk 35): deeltjes tekenen we hier niet, dus een dichte bol.
+            // De rook van een smokebom (hoofdstuk 35): deeltjes tekenen we hier niet, dus dichte blokjes.
             com.senne.imttech.client.weapons.SmokeView.renderInFeed(eye, pose, buffers);
             buffers.endLastBatch();
             buffers.endBatch();

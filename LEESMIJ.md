@@ -1326,8 +1326,9 @@ redstonefakkel en een koperstaaf = een Remote EMP; de trigger maak je van een re
 en een knop.
 
 **De Smoke Grenade (een bol).** Na 2 seconden sist hij en groeit er een wolk van 4,5 blokken die 18 seconden blijft.
-Robots, turrets, drones en Raven-soldaten kijken er niet doorheen (en schieten dus niet), en een camera die in de rook
-kijkt, ziet grijs. Grijs, of met een **kleurstof** erbij (los in het raster) in elke kleur. Recept: 2 ijzer, 2 buskruit
+De rook gaat **niet door blokken**: hij stroomt om muren heen en blijft binnen, glas en een dichte deur houden hem
+tegen, en door een open deur komt er maar een beetje naar buiten. Robots, turrets, drones en Raven-soldaten kijken er
+niet doorheen (en schieten dus niet), en een camera die in de rook kijkt, ziet grijs. Grijs, of met een **kleurstof** erbij (los in het raster) in elke kleur. Recept: 2 ijzer, 2 buskruit
 en kolen = 2 Smoke Grenades.
 
 **De Flashbang (een bol).** Gaat na 1,6 seconden af met een felle flits en een harde knal. Elke speler die de flits kan
