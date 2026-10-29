@@ -273,9 +273,12 @@ public final class LogicRunner {
         return fire(level, core, Op.SQUAD_DOWN, squad, Context.plain(Op.SQUAD_DOWN, squad));
     }
 
-    /** Een relais (of laser, koepel, torentje) ging aan of uit: start "when turned_on/turned_off". */
+    /**
+     * Een relais (of laser, koepel, torentje) ging aan of uit: start "when turned_on/turned_off" op de server van de kern
+     * die het bestuurt (een torentje via zijn netwerkkabel, een relais via zijn gebied: zie SecurityCores.controllerOf).
+     */
     public static void switched(ServerLevel level, BlockPos pos, int channel, boolean on) {
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        SecurityCoreBlockEntity core = SecurityCores.controllerOf(level, pos);
         if (core == null || core.logic().programs().isEmpty()) {
             return;
         }

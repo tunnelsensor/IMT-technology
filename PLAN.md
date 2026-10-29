@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 342 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 349 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3775,15 +3775,38 @@ Ik bouw het in deze volgorde, één stap per commit:
       `cable_kinds_share_a_cell_but_stay_apart`, `cable_spools_draw_and_pick_up_their_own_kind`,
       `shears_cut_one_cable_at_a_time`, `structure_markers_lay_every_kind_of_cable`. 342 tests, allemaal groen.
       **Screenshots** `-Ponly=network`: `nw01_cable_colours`, `nw02_cable_lanes`, `nw03_cable_xray`, `nw04_cable_xray_off`.
-- [ ] **2. Het netwerk en de koppeling aan de kern** (`lan/LanGrid`; zonder kabel doet een beveiligingsapparaat niets;
-      `[network] required`)
-- [ ] **3. Stroom voor lezer en paneel**
-- [ ] **4. PoE: stroom en netwerk in één kabel**
-- [ ] **5. De Network Switch**
-- [ ] **6. De laserbrug op het netwerk** (groep LASER BRIDGES)
-- [ ] **7. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)
-- [ ] **8. Signalen en stroom die je ziet lopen**
-- [ ] **9. De Biebia's Industries Tower bekabeld**
+- [x] **2. Het netwerk en de koppeling aan de kern** — nieuw `lan/LanGrid`: vanaf een apparaat zoeken we langs de
+      netwerk- en PoE-kabels (zoals bij stroom: tegen elkaar = vast, een apparaat ernaast of erbovenop hangt eraan) tot we
+      bij een Security Core komen; staat het apparaat direct tegen de kern, dan is er geen kabel nodig. Serverracks en
+      laserzenders geven het netwerk door aan wie ertegenaan staat (een kast vol racks of een laserpoort heeft genoeg aan
+      één kabel). Raakt een net twee kernen, dan wint de dichtstbijzijnde langs de kabel. Een open netwerkkabel in een
+      EMP-puls geeft even niets door, een kabel in een muur wel. **Zonder netwerkkabel doet een beveiligingsapparaat
+      niets** (jouw keuze): een keycardlezer of codepaneel geeft een rood lampje en "Not connected: no network cable to the
+      desktop of a security core."; een camera geeft geen beeld ("offline", "no network cable to a security core" als je
+      erop klikt); een beveiligingstorentje staat uit en schiet op niemand (ook niet als hij toch aan zou staan: zonder
+      kern weet hij niet wie een vriend is); een serverrek zegt "geen netwerk". In Devices staat alleen wat bekabeld is.
+      Laserpoorten en je eigen raketturretje werken wel los (jouw keuze), maar volgen de kern (de schakelaar Lasers, de
+      regels van Access) pas als ze aan zijn netwerk hangen. **Config**: een nieuwe sectie `[network]` met `required`
+      (standaard `true`; op `false` geldt de oude regel: apparaten horen bij de dichtstbijzijnde kern in wiens gebied ze
+      staan, voor een oude wereld). **Binnenkant**: `SecurityCores` kreeg `deviceCore`/`linkedTo` (via de kabel) en
+      `controllerOf`/`controls` (een apparaat via de kabel, een relais of koepel via zijn gebied); `coreAt` en `ownedBy`
+      blijven "in wiens gebied", voor zones, robots, docks en wie er vertrouwd is. Omgezet naar de kabel: de lezers en
+      panelen (`LogicEvents`, namen, hernoemen), de Bypass Kit (alleen echt verbonden apparaten zijn te hacken), de camera,
+      het serverrek en de server, het torentje (aan, op wie hij schiet, zijn statusregel), de schakelaar Lasers, Devices
+      (`SecurityDevices.scan`) en "when turned_on/turned_off". De Security Core en de lezers en panelen tekenen nu een
+      stukje kabel naar zich toe (`PowerConnectable`, `NetworkConnectable`). **Mijn invulling**: tijdens
+      `gradlew runGameTestServer` geldt de oude regel (anders moesten alle 342 oude tests bekabeld worden); de tests van
+      het netwerk zetten het zelf aan (`@BeforeBatch`). **Tests** (batch `lan`): `reader_needs_a_network_cable_to_the_desktop`,
+      `network_reaches_through_walls_and_by_touch`, `the_nearest_core_along_the_cable_wins`,
+      `without_the_network_rule_the_area_counts`, `camera_turret_and_rack_need_the_network`,
+      `rocket_turret_and_laser_gate_work_without_network`, `emp_cuts_open_network_cables`. 349 tests, allemaal groen.
+- [ ] **3. De Biebia's Industries Tower bekabeld** (eerder dan gepland: anders blijft de beveiliging van de toren uit)
+- [ ] **4. Stroom voor lezer en paneel**
+- [ ] **5. PoE: stroom en netwerk in één kabel**
+- [ ] **6. De Network Switch**
+- [ ] **7. De laserbrug op het netwerk** (groep LASER BRIDGES)
+- [ ] **8. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)
+- [ ] **9. Signalen en stroom die je ziet lopen**
 - [ ] **10. LEESMIJ, showcase en screenshots**
 
 ---

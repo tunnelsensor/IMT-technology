@@ -46,7 +46,8 @@ import org.jetbrains.annotations.Nullable;
  *       ("Lobby"), dan staat die naam bij zijn beeld. Breek je hem af, dan houdt het item die naam.</li>
  * </ul>
  */
-public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock, PowerConnectable {
+public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock, PowerConnectable,
+        com.senne.imttech.lan.NetworkConnectable {
     public static final MapCodec<CameraBlock> CODEC = simpleCodec(CameraBlock::new);
 
     /** Werkt hij (stroom, en de camera's van het netwerk staan aan)? Dan brandt zijn lampje. */
@@ -110,13 +111,16 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
-            SecurityCoreBlockEntity core = SecurityCores.coreAt(serverLevel, pos);
+            SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, pos);
+            boolean cable = com.senne.imttech.lan.LanGrid.required();
             Component status = state.getValue(ONLINE)
                     ? Component.translatable("security.imttech.camera.online").withStyle(ChatFormatting.GREEN)
-                    : Component.translatable(core != null && !core.camerasEnabled()
-                            ? "security.imttech.camera.off" : "security.imttech.camera.no_power").withStyle(ChatFormatting.RED);
+                    : Component.translatable(core == null && cable ? "security.imttech.camera.offline"
+                            : core != null && !core.camerasEnabled() ? "security.imttech.camera.off"
+                            : "security.imttech.camera.no_power").withStyle(ChatFormatting.RED);
             Component network = core == null
-                    ? Component.translatable("security.imttech.camera.no_network").withStyle(ChatFormatting.YELLOW)
+                    ? Component.translatable(cable ? "security.imttech.camera.no_cable" : "security.imttech.camera.no_network")
+                            .withStyle(ChatFormatting.YELLOW)
                     : Component.translatable("security.imttech.camera.network", core.hostname()).withStyle(ChatFormatting.AQUA);
             String name = camera.name().isEmpty() ? "Security Camera" : camera.name();
             player.displayClientMessage(Component.translatable("security.imttech.camera.status", name, status, network), true);

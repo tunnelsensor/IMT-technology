@@ -85,7 +85,7 @@ public final class InputDevices {
         }
         String old = device.name();
         device.setName(clean);
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(player.serverLevel(), payload.pos());
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(player.serverLevel(), payload.pos());
         if (core != null && !old.equals(clean)) {
             core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed \"" + old + "\" to \""
                     + clean + "\"");

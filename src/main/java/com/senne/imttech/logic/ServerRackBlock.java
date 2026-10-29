@@ -36,7 +36,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * Rechtsklik opent zijn scherm: de vier vakjes, en wat de hele server kan.
  */
-public class ServerRackBlock extends HorizontalDirectionalBlock implements EntityBlock, PowerConnectable {
+public class ServerRackBlock extends HorizontalDirectionalBlock implements EntityBlock, PowerConnectable,
+        com.senne.imttech.lan.NetworkConnectable {
     public static final MapCodec<ServerRackBlock> CODEC = simpleCodec(ServerRackBlock::new);
 
     /** Draait hij mee in de server (stroom, en hij hoort bij de grootste groep)? Dan knipperen zijn lampjes. */
@@ -104,7 +105,7 @@ public class ServerRackBlock extends HorizontalDirectionalBlock implements Entit
     private static void recount(ServerLevel level, BlockPos pos) {
         PowerGrid.changed();
         LogicServer.forgetAll();
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         if (core != null) {
             SecurityDevices.forget(level, core);
         }

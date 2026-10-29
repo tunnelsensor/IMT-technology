@@ -167,13 +167,17 @@ public class TurretBlockEntity extends BlockEntity {
     }
 
     /**
-     * Kijkt nu of hij aan kan: stroom op het net, en niet uitgeschakeld door een EMP-granaat (hoofdstuk 35). Zet dat in
-     * het blok (ONLINE: uit = de loop hangt omlaag) en geeft de nieuwe stand.
+     * Kijkt nu of hij aan kan: stroom op het net, en niet uitgeschakeld door een EMP-granaat (hoofdstuk 35). Een
+     * beveiligingstorentje moet ook met een netwerkkabel aan de desktop van een kern hangen (hoofdstuk 38; behalve met
+     * {@code [network] required = false}): zonder kern weet hij niet wie een vriend is. Zet dat in het blok (ONLINE:
+     * uit = de loop hangt omlaag) en geeft de nieuwe stand.
      */
     public BlockState refreshOnline(ServerLevel level) {
         BlockState state = getBlockState();
         boolean online = !com.senne.imttech.weapons.Emp.isOut(level, worldPosition)
-                && PowerGrid.available(level, worldPosition) >= ImtConfig.Power.TURRET_LASER_SHOT;
+                && PowerGrid.available(level, worldPosition) >= ImtConfig.Power.TURRET_LASER_SHOT
+                && (kind() != TurretKind.SECURITY || !com.senne.imttech.lan.LanGrid.required()
+                        || com.senne.imttech.security.SecurityCores.deviceCore(level, worldPosition) != null);
         if (online != state.getValue(TurretBlock.ONLINE)) {
             state = state.setValue(TurretBlock.ONLINE, online);
             level.setBlock(worldPosition, state, Block.UPDATE_CLIENTS);

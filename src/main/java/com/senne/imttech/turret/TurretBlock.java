@@ -56,7 +56,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * Het blok zelf is alleen de voet; de draaiende kop tekent TurretRenderer.
  */
-public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, PowerConnectable {
+public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, PowerConnectable,
+        com.senne.imttech.lan.NetworkConnectable {
     public static final MapCodec<TurretBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             TurretKind.CODEC.fieldOf("kind").forGetter(TurretBlock::kind),
             propertiesCodec()).apply(instance, TurretBlock::new));
@@ -217,8 +218,11 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
             return;
         }
         if (kind == TurretKind.SECURITY) {
-            var core = com.senne.imttech.security.SecurityCores.coreAt(player.level(), turret.getBlockPos());
-            Component tower = core == null || core.ownerId() == null
+            // Bij welke kern hij hoort: die aan het andere eind van zijn netwerkkabel (hoofdstuk 38).
+            var core = com.senne.imttech.security.SecurityCores.deviceCore(player.level(), turret.getBlockPos());
+            Component tower = core == null && com.senne.imttech.lan.LanGrid.required()
+                    ? Component.translatable("turret.imttech.status.no_cable").withStyle(ChatFormatting.YELLOW)
+                    : core == null || core.ownerId() == null
                     ? Component.translatable("turret.imttech.status.unclaimed").withStyle(ChatFormatting.RED)
                     : Component.translatable("turret.imttech.status.owned", core.ownerName()).withStyle(ChatFormatting.AQUA);
             player.displayClientMessage(Component.translatable("turret.imttech.status.security", onOff, tower), true);

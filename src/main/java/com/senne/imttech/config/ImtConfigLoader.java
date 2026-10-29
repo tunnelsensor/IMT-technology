@@ -60,6 +60,7 @@ public final class ImtConfigLoader {
             ImtConfig.Workbench.class,
             ImtConfig.Turrets.class,
             ImtConfig.Security.class,
+            ImtConfig.Network.class,
             ImtConfig.Logic.class,
             ImtConfig.Breach.class,
             ImtConfig.Repair.class,

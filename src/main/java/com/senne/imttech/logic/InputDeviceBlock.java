@@ -39,7 +39,8 @@ import org.jetbrains.annotations.Nullable;
  * (zie InputLight) en een naam (InputDeviceBlockEntity). Ze geven een "trigger" aan de server van
  * de beveiligingskern in wiens gebied ze hangen; wat er dan gebeurt, staat in je diagram.
  */
-public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implements EntityBlock,
+        com.senne.imttech.energy.PowerConnectable, com.senne.imttech.lan.NetworkConnectable {
     public static final EnumProperty<InputLight> LIGHT = EnumProperty.create("light", InputLight.class);
 
     /** Zo lang (ticks) blijft het lampje groen, rood of oranje. */
@@ -102,7 +103,7 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
         if (device.name().isEmpty()) {
             device.setName(freeName(serverLevel, pos));
         }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(serverLevel, pos);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, pos);
         if (core != null) {
             SecurityDevices.forget(serverLevel, core);
         }
@@ -111,7 +112,7 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
     /** "Reader 1", "Reader 2", ...: het eerste nummer dat in dit netwerk nog niet gebruikt is. */
     private String freeName(ServerLevel level, BlockPos pos) {
         Set<String> used = new HashSet<>();
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         if (core != null) {
             for (BlockPos other : SecurityDevices.scan(level, core).inputs()) {
                 if (!other.equals(pos) && level.getBlockEntity(other) instanceof InputDeviceBlockEntity device) {
@@ -167,7 +168,7 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         super.onRemove(state, level, pos, newState, movedByPiston);
         if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel) {
-            SecurityCoreBlockEntity core = SecurityCores.coreAt(serverLevel, pos);
+            SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, pos);
             if (core != null) {
                 SecurityDevices.forget(serverLevel, core);
             }

@@ -103,7 +103,7 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             if (index == ServerRackMenu.DATA_TEMP) {
                 return tenths(temperature); // ook zonder netwerk: dan koelt het af
             }
-            SecurityCoreBlockEntity core = SecurityCores.coreAt(serverLevel, worldPosition);
+            SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, worldPosition);
             if (core == null) {
                 return 0;
             }
@@ -184,9 +184,12 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    /** Hoort hij bij een server, heeft hij stroom? Zet dat in het blok (en betaal de stroom). */
+    /**
+     * Hoort hij bij een server, heeft hij stroom? Zet dat in het blok (en betaal de stroom). Sinds hoofdstuk 38 hoort hij
+     * bij de kern aan het andere eind van zijn netwerkkabel (racks die tegen elkaar staan, delen die kabel).
+     */
     public void update(ServerLevel level, BlockPos pos, BlockState state) {
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         Status now;
         if (core == null) {
             now = Status.NO_NETWORK;
@@ -324,7 +327,7 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     public void burnDown(ServerLevel level) {
         BlockPos pos = worldPosition;
         boolean ssd = count(ServerPartItem.Kind.SSD) > 0;
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         parts.clearContent(); // verbrand: er valt niets uit
         burnUntil = 0;
         level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 30, 0.4, 0.5, 0.4, 0.05);

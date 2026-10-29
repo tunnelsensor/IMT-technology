@@ -38,9 +38,13 @@ public final class TurretTargeting {
             return false;
         }
         if (kind == TurretKind.SECURITY) {
-            // Wie een indringer is, zegt de beveiligingskern van de toren.
-            return com.senne.imttech.security.SecurityCores.isIntruder(level,
-                    com.senne.imttech.security.SecurityCores.coreAt(level, turretPos), entity);
+            // Wie een indringer is, zegt de beveiligingskern van de toren: die aan het andere eind van zijn netwerkkabel
+            // (hoofdstuk 38). Hangt hij nergens aan terwijl dat moet, dan schiet hij op niemand (hij staat dan ook uit).
+            var core = com.senne.imttech.security.SecurityCores.deviceCore(level, turretPos);
+            if (core == null && com.senne.imttech.lan.LanGrid.required()) {
+                return false;
+            }
+            return com.senne.imttech.security.SecurityCores.isIntruder(level, core, entity);
         }
         if (kind == TurretKind.RAVEN) {
             return entity instanceof DroneEntity || entity instanceof Player player && canHurt(player);
@@ -48,7 +52,9 @@ public final class TurretTargeting {
         if (ownerId != null && entity instanceof OwnableEntity pet && ownerId.equals(pet.getOwnerUUID())) {
             return false;
         }
-        var core = com.senne.imttech.security.SecurityCores.coreAt(level, turretPos);
+        // Je eigen raketturretje volgt de regels van jouw kern als hij met een netwerkkabel aan die kern hangt (hoofdstuk
+        // 38); zonder kabel werkt hij los (monsters, en spelers alleen met PvP).
+        var core = com.senne.imttech.security.SecurityCores.deviceCore(level, turretPos);
         if (core != null && ownerId != null && ownerId.equals(core.ownerId())) {
             return com.senne.imttech.security.SecurityCores.isIntruder(level, core, entity);
         }

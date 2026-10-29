@@ -43,15 +43,17 @@ public final class LogicDevices {
         }
         Map<String, List<LogicStore.Target>> fresh = new LinkedHashMap<>();
         ImtRelays relays = owner.getData(ModAttachments.RELAYS);
+        // Een relais (of koepel, stroomkast) telt als het in het gebied staat; een beveiligingsapparaat (een torentje) als
+        // het met een netwerkkabel aan deze kern hangt (hoofdstuk 38, zie SecurityCores.controls).
         for (Relay relay : relays.relays()) {
-            if (relay.dimension() == level.dimension() && SecurityCores.ownedBy(level, core, relay.pos())) {
+            if (relay.dimension() == level.dimension() && SecurityCores.controls(level, core, relay.pos())) {
                 add(fresh, relay.name(), relay);
             }
         }
         // Groepen: alles wat erin zit (ook via groepen eronder), voor zover het in het gebied staat.
         for (String group : relays.groups()) {
             for (Relay relay : relays.inGroup(group)) {
-                if (relay.dimension() == level.dimension() && SecurityCores.ownedBy(level, core, relay.pos())) {
+                if (relay.dimension() == level.dimension() && SecurityCores.controls(level, core, relay.pos())) {
                     add(fresh, group, relay);
                 }
             }

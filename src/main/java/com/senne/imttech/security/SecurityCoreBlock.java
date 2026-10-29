@@ -45,7 +45,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * Je kunt er ook zelf een bouwen voor je eigen basis: die is meteen van jou (zie setPlacedBy).
  */
-public class SecurityCoreBlock extends BaseEntityBlock {
+public class SecurityCoreBlock extends BaseEntityBlock implements com.senne.imttech.energy.PowerConnectable,
+        com.senne.imttech.lan.NetworkConnectable {
     public static final MapCodec<SecurityCoreBlock> CODEC = simpleCodec(SecurityCoreBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
@@ -202,13 +203,25 @@ public class SecurityCoreBlock extends BaseEntityBlock {
         return super.playerWillDestroy(level, pos, state, player);
     }
 
-    /** Afgebroken (niet alleen een ander lampje): het IP van de kern is weer vrij. */
+    /** Neergezet: de netwerken in de buurt kunnen nu bij deze kern uitkomen (hoofdstuk 38). */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(this)) {
+            com.senne.imttech.lan.LanGrid.changed();
+        }
+    }
+
+    /** Afgebroken (niet alleen een ander lampje): het IP van de kern is weer vrij, en zijn netwerk hangt nergens meer aan. */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel
                 && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
             core.releaseSystem(serverLevel);
             com.senne.imttech.logic.LogicRunner.stop(serverLevel, pos);
+        }
+        if (!state.is(newState.getBlock())) {
+            com.senne.imttech.lan.LanGrid.changed();
         }
         super.onRemove(state, level, pos, newState, moved);
     }

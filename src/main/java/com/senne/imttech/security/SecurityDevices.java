@@ -63,7 +63,10 @@ public final class SecurityDevices {
 
     // ================================================================ Zoeken
 
-    /** Wat er nu bij deze kern hoort (hooguit RESCAN ticks oud). */
+    /**
+     * Wat er nu bij deze kern hoort (hooguit RESCAN ticks oud). Sinds hoofdstuk 38: wat via netwerkkabels aan zijn desktop
+     * hangt (zie LanGrid); alleen met {@code [network] required = false} nog alles in zijn gebied, zoals vroeger.
+     */
     public static Found scan(ServerLevel level, SecurityCoreBlockEntity core) {
         GlobalPos key = GlobalPos.of(level.dimension(), core.getBlockPos());
         Found cached = CACHE.get(key);
@@ -71,6 +74,44 @@ public final class SecurityDevices {
         if (cached != null && now - cached.time() < RESCAN && now >= cached.time()) {
             return cached;
         }
+        Found found = com.senne.imttech.lan.LanGrid.required() ? scanNetwork(level, core, now) : scanArea(level, core, now);
+        CACHE.put(key, found);
+        return found;
+    }
+
+    /** De apparaten die via netwerkkabels aan de desktop van deze kern hangen (hoofdstuk 38). */
+    private static Found scanNetwork(ServerLevel level, SecurityCoreBlockEntity core, long now) {
+        List<BlockPos> turrets = new ArrayList<>();
+        List<BlockPos> emitters = new ArrayList<>();
+        List<BlockPos> cameras = new ArrayList<>();
+        List<BlockPos> racks = new ArrayList<>();
+        List<BlockPos> inputs = new ArrayList<>();
+        for (BlockPos pos : com.senne.imttech.lan.LanGrid.devicesOf(level, core.getBlockPos())) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof TurretBlockEntity turret) {
+                if (belongs(core, turret)) {
+                    turrets.add(pos);
+                }
+            } else if (blockEntity instanceof CameraBlockEntity) {
+                cameras.add(pos);
+            } else if (blockEntity instanceof com.senne.imttech.logic.ServerRackBlockEntity) {
+                racks.add(pos);
+            } else if (blockEntity instanceof com.senne.imttech.logic.InputDeviceBlockEntity) {
+                inputs.add(pos);
+            } else if (level.getBlockState(pos).is(ModBlocks.LASER_EMITTER.get())) {
+                emitters.add(pos);
+            }
+        }
+        // Het netwerk geeft ze in willekeurige volgorde: altijd dezelfde volgorde, zodat er in Devices niets verspringt
+        // (en elke laserpoort steeds dezelfde zender als "zijn" plek houdt).
+        turrets.sort(null);
+        emitters.sort(null);
+        racks.sort(null);
+        return found(level, turrets, emitters, cameras, racks, inputs, now);
+    }
+
+    /** Zoals vroeger: alles wat in het gebied van deze kern staat (en geen andere kern dichterbij heeft). */
+    private static Found scanArea(ServerLevel level, SecurityCoreBlockEntity core, long now) {
         List<BlockPos> turrets = new ArrayList<>();
         List<BlockPos> emitters = new ArrayList<>();
         List<BlockPos> cameras = new ArrayList<>();
@@ -125,6 +166,12 @@ public final class SecurityDevices {
                 }
             }
         }
+        return found(level, turrets, emitters, cameras, racks, inputs, now);
+    }
+
+    /** Maakt de lijst af: zenders die aan elkaar vastzitten worden poorten, en camera's, lezers en panelen op volgorde. */
+    private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> cameras,
+                               List<BlockPos> racks, List<BlockPos> inputs, long now) {
         // Zenders die aan elkaar vastzitten zijn samen één poort.
         List<BlockPos> gates = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
@@ -141,10 +188,8 @@ public final class SecurityDevices {
         // De lezers en panelen ook: zo springt er niets heen en weer als je er een andere naam geeft.
         inputs.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
-        Found found = new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
+        return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
                 List.copyOf(racks), List.copyOf(inputs), now);
-        CACHE.put(key, found);
-        return found;
     }
 
     /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */
@@ -197,7 +242,7 @@ public final class SecurityDevices {
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof TurretBlock turretBlock)
                 || !(level.getBlockEntity(pos) instanceof TurretBlockEntity turret)
-                || !SecurityCores.ownedBy(level, core, pos) || !belongs(core, turret)) {
+                || !SecurityCores.linkedTo(level, core, pos) || !belongs(core, turret)) {
             return "that turret is not part of this network";
         }
         turretBlock.setSwitched(level, pos, state, on);
@@ -231,7 +276,7 @@ public final class SecurityDevices {
 
     /** Een camera een stukje draaien en/of kantelen (de pijltjes op de desktop). Foutmelding, of null. */
     public static @Nullable String aimCamera(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, float dPan, float dTilt) {
-        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.ownedBy(level, core, pos)) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.linkedTo(level, core, pos)) {
             return "that camera is not part of this network";
         }
         camera.aim(Math.max(-20f, Math.min(20f, dPan)), Math.max(-20f, Math.min(20f, dTilt)));
@@ -243,7 +288,7 @@ public final class SecurityDevices {
      * zijn eigen naam weg (dan heet hij weer "Camera 3"). Foutmelding, of null.
      */
     public static @Nullable String renameCamera(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, String name) {
-        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.ownedBy(level, core, pos)) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera) || !SecurityCores.linkedTo(level, core, pos)) {
             return "that camera is not part of this network";
         }
         camera.setName(name);

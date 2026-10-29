@@ -152,11 +152,12 @@ public class CameraBlockEntity extends BlockEntity {
 
     /**
      * Heeft hij stroom, staan de camera's van zijn netwerk aan, en is hij niet uitgeschakeld door een EMP-granaat
-     * (hoofdstuk 35)? Zet dat in het blok (en betaal de stroom).
+     * (hoofdstuk 35)? Zet dat in het blok (en betaal de stroom). Sinds hoofdstuk 38 moet hij ook met een netwerkkabel
+     * aan de desktop van een kern hangen (behalve met {@code [network] required = false}): zonder kabel geen beeld.
      */
     public void updateOnline(ServerLevel level, BlockPos pos, BlockState state) {
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
-        boolean allowed = core == null || core.camerasEnabled();
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
+        boolean allowed = core == null ? !com.senne.imttech.lan.LanGrid.required() : core.camerasEnabled();
         boolean online = allowed && !com.senne.imttech.weapons.Emp.isOut(level, pos)
                 && PowerGrid.pay(level, pos, ImtConfig.Power.CAMERA_UPKEEP);
         if (online != state.getValue(CameraBlock.ONLINE)) {

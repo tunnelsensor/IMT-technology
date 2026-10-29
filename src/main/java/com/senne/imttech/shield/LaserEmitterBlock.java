@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
  * redstone op één ervan zet ze allemaal aan, en de stroom van een kabel loopt door de hele rij.
  * Zo bouw je een wand van 3 x 3 met één hendel en één kabel.
  */
-public class LaserEmitterBlock extends Block implements PowerConnectable, EntityBlock {
+public class LaserEmitterBlock extends Block implements PowerConnectable, EntityBlock, com.senne.imttech.lan.NetworkConnectable {
     public static final MapCodec<LaserEmitterBlock> CODEC = simpleCodec(LaserEmitterBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
@@ -194,7 +194,9 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         if (signal == state.getValue(INVERTED)) {
             return false;
         }
-        var core = com.senne.imttech.security.SecurityCores.coreAt(level, pos);
+        // De schakelaar "Lasers" van de kern aan het andere eind van zijn netwerkkabel (hoofdstuk 38). Zonder kabel werkt
+        // de poort gewoon los.
+        var core = com.senne.imttech.security.SecurityCores.deviceCore(level, pos);
         return core == null || core.lasersEnabled();
     }
 

@@ -114,6 +114,50 @@ public final class SecurityCores {
         return true;
     }
 
+    // ================================================================ Apparaten en hun kern (hoofdstuk 38)
+
+    /**
+     * De kern waar dit beveiligingsapparaat (keycardlezer, codepaneel, camera, torentje, serverrek, laserzender) bij
+     * hoort: de kern aan het andere eind van zijn netwerkkabel (zie LanGrid). Met {@code [network] required = false} (een
+     * oude wereld) de oude regel: de dichtstbijzijnde kern in wiens gebied het staat ({@link #coreAt}).
+     *
+     * Let op: {@link #coreAt} blijft "in wiens gebied staat dit", voor alles wat niet aan een kabel hangt (zones, robots,
+     * docks, wie hier vertrouwd is). Een beveiligingstorentje met coreAt == null zou op iedereen schieten; daarom vragen
+     * apparaten dit, en niet coreAt.
+     */
+    public static @Nullable SecurityCoreBlockEntity deviceCore(Level level, BlockPos device) {
+        return com.senne.imttech.lan.LanGrid.required() ? com.senne.imttech.lan.LanGrid.coreOf(level, device)
+                : coreAt(level, device);
+    }
+
+    /** Hoort dit beveiligingsapparaat bij deze kern (via zijn netwerkkabel; zonder netwerk-eis: in zijn gebied)? */
+    public static boolean linkedTo(Level level, SecurityCoreBlockEntity core, BlockPos device) {
+        return com.senne.imttech.lan.LanGrid.required() ? com.senne.imttech.lan.LanGrid.coreOf(level, device) == core
+                : ownedBy(level, core, device);
+    }
+
+    /**
+     * Hangt het blok op deze plek aan een netwerkkabel (een beveiligingsapparaat), of hoort het bij een kern door waar het
+     * staat (een relais, koepel, stroomkast)? Een stukje wereld dat niet geladen is, laden we hiervoor niet in: dan
+     * telt het als "door waar het staat".
+     */
+    private static boolean networked(Level level, BlockPos pos) {
+        return level.isLoaded(pos) && level.getBlockState(pos).getBlock() instanceof com.senne.imttech.lan.NetworkConnectable;
+    }
+
+    /**
+     * De kern die het ding op deze plek bestuurt (voor de diagrammen: "when turned_on", on("naam")): een
+     * beveiligingsapparaat via zijn netwerkkabel ({@link #deviceCore}), al het andere via zijn gebied ({@link #coreAt}).
+     */
+    public static @Nullable SecurityCoreBlockEntity controllerOf(Level level, BlockPos pos) {
+        return networked(level, pos) ? deviceCore(level, pos) : coreAt(level, pos);
+    }
+
+    /** Bestuurt deze kern het ding op deze plek? (Zie {@link #controllerOf}.) */
+    public static boolean controls(Level level, SecurityCoreBlockEntity core, BlockPos pos) {
+        return networked(level, pos) ? linkedTo(level, core, pos) : ownedBy(level, core, pos);
+    }
+
     /**
      * Zit deze kubus voor de zone van de kern op {@code corePos} een ander in de weg? Een zone mag tot
      * ZONE_REACH blokken ver (het hele gebied van de kern), maar niet over de zone van een andere kern

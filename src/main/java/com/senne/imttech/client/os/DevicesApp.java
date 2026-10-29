@@ -165,7 +165,13 @@ final class DevicesApp {
         }
         if (rows.isEmpty()) {
             g.drawString(font, "No turrets, drones, laser gates, cameras, readers", a.x() + 5, top + 4, HudStyle.argb(255, OsDraw.GREY), false);
-            g.drawString(font, "or code panels in this network's area yet.", a.x() + 5, top + 14, HudStyle.argb(255, OsDraw.GREY), false);
+            // Hoofdstuk 38: apparaten horen bij deze desktop via een netwerkkabel (de config van de server zegt of dat moet).
+            g.drawString(font, com.senne.imttech.config.ImtConfig.Network.REQUIRED
+                            ? "or code panels on this network yet: connect them" : "or code panels in this network's area yet.",
+                    a.x() + 5, top + 14, HudStyle.argb(255, OsDraw.GREY), false);
+            if (com.senne.imttech.config.ImtConfig.Network.REQUIRED) {
+                g.drawString(font, "to this core with a Network Cable.", a.x() + 5, top + 24, HudStyle.argb(255, OsDraw.GREY), false);
+            }
             return;
         }
         OsDraw.tableHeader(g, font, a.x() + 2, a.x() + a.w() - 2, top + 2,

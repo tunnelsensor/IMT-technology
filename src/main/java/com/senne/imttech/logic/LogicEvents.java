@@ -110,7 +110,7 @@ public final class LogicEvents {
         String name = level.getBlockEntity(device) instanceof InputDeviceBlockEntity input ? input.name() : "a reader";
         InputDeviceBlock.flash(level, device, InputLight.DENIED);
         level.playSound(null, device, ModSounds.IMT_DENIED.get(), SoundSource.BLOCKS, 0.8f, 0.8f);
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, device);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, device);
         if (core == null) {
             return;
         }
@@ -128,7 +128,7 @@ public final class LogicEvents {
      */
     public static void tamperedLaser(ServerLevel level, BlockPos emitter, ServerPlayer player) {
         level.playSound(null, emitter, ModSounds.IMT_DENIED.get(), SoundSource.BLOCKS, 0.8f, 0.8f);
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, emitter);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, emitter);
         if (core == null) {
             return;
         }
@@ -190,12 +190,13 @@ public final class LogicEvents {
     }
 
     /**
-     * De beveiligingskern waar deze lezer of dit paneel bij hoort, als zijn server draait. Zo niet,
-     * dan wordt het lampje rood, hoort de speler waarom, en geven we null.
+     * De beveiligingskern waar deze lezer of dit paneel bij hoort (via zijn netwerkkabel, hoofdstuk 38), als zijn server
+     * draait. Zo niet, dan wordt het lampje rood, hoort de speler waarom, en geven we null.
      */
     private static @Nullable SecurityCoreBlockEntity serverFor(ServerLevel level, BlockPos device, ServerPlayer player) {
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, device);
-        String problem = core == null ? "logic.imttech.input.no_network"
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, device);
+        String problem = core == null ? (com.senne.imttech.lan.LanGrid.required() ? "logic.imttech.input.no_cable"
+                : "logic.imttech.input.no_network")
                 : !LogicServer.stats(level, core).online() ? "logic.imttech.input.no_response" : null;
         if (problem == null) {
             return core;

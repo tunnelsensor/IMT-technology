@@ -77,6 +77,7 @@ package com.senne.imttech.config;
  *   Workbench .... de harnas-werkbank en de upgrades van het harnas
  *   Turrets ...... torentjes (raket, Raven, beveiliging)
  *   Security ..... de beveiligingskern: zone, drones, systeem
+ *   Network ...... netwerkkabels: welke apparaten er een nodig hebben (hoofdstuk 38)
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
  *   Breach ....... hoe sterk blokken zijn tegen frags, en TNT en de satelliet tegen een beschermde zone
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
@@ -1191,6 +1192,25 @@ public final class ImtConfig {
         public static final double DRONE_HEALTH = 8.0;
         /** VAST: zoveel kubussen kan één zone hebben (dit gaat mee in de berichten naar de spelers). */
         public static final int ZONE_MAX_BOXES = 16;
+    }
+
+    // =============================================================================================== Network
+
+    @Section("Network cables (chapter 38): which security devices need a network cable to the desktop of a security core. "
+            + "The power the devices use is under [power]")
+    public static final class Network {
+        private Network() {}
+
+        /**
+         * Moeten beveiligingsapparaten met een netwerkkabel aan de desktop van een kern hangen (jouw wens, 29 oktober)?
+         * Aan: een keycardlezer, codepaneel, camera, beveiligingstorentje of serverrek zonder netwerkkabel doet niets en
+         * staat niet in Devices. Uit: de oude regel, ze horen bij de dichtstbijzijnde kern in wiens gebied ze staan
+         * (handig voor een oude wereld). Laserpoorten, de laserbrug en je eigen raketturretje werken altijd los.
+         */
+        @Tunable("Do security devices (keycard readers, code panels, cameras, security turrets, server racks) need a network "
+                + "cable to the desktop of a security core? false = the old rule: they belong to the nearest core within its "
+                + "reach (handy for an old world)")
+        public static boolean REQUIRED = true;
     }
 
     // =============================================================================================== Logic

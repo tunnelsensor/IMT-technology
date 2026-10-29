@@ -1,0 +1,220 @@
+package com.senne.imttech.lan;
+
+import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.energy.Cables;
+import com.senne.imttech.registry.ModBlocks;
+import com.senne.imttech.security.SecurityCoreBlock;
+import com.senne.imttech.security.SecurityCoreBlockEntity;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.gametest.framework.GameTestServer;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Het netwerk van een beveiligingskern (hoofdstuk 38, jouw wens van 29 oktober): "je hangt een witte netwerkkabel aan de
+ * desktop, verbindt die met een keycardreader, en dan pas komt die bij de desktop devices."
+ *
+ * Hoe het werkt (net als het stroomnet, zie PowerGrid):
+ * <ul>
+ *   <li>Een apparaat hangt aan het netwerk als er een netwerkkabel (of PoE-kabel) naast ligt, of als het er bovenop
+ *       staat. Kabels die tegen elkaar aan liggen, zitten aan elkaar vast.</li>
+ *   <li>We zoeken vanaf het apparaat langs de kabels, net als water door buizen, tot we bij een Security Core komen
+ *       (de desktop). Staat het apparaat er direct tegenaan, dan heeft het geen kabel nodig.</li>
+ *   <li>Serverracks en laserzenders geven het netwerk ook door aan wie ertegenaan staat: een kast vol racks of een
+ *       laserpoort van meer zenders heeft genoeg aan één kabel (zoals bij stroom).</li>
+ *   <li>Een open kabel binnen een EMP-puls geeft even niets door (zie Emp.cutsCable); een kabel in een muur wel.</li>
+ *   <li>Raakt een net twee kernen, dan hoort een apparaat bij de dichtstbijzijnde langs de kabel.</li>
+ * </ul>
+ * Het zoeken kost wat werk, dus we onthouden het resultaat. Komt er ergens een kabel bij of gaat er een weg (of iets
+ * anders dat het net verandert), dan verhogen we {@link #changed()} en zoeken we de volgende keer opnieuw.
+ */
+public final class LanGrid {
+    private LanGrid() {}
+
+    /** Zoveel stukjes kabel (en racks en zenders) volgen we hooguit vanaf één plek (tegen eindeloos lange netten). */
+    public static final int MAX_NODES = 512;
+    /** Na zoveel ticks zoeken we sowieso opnieuw welke kern een apparaat heeft (bijvoorbeeld als er een stuk wereld laadde). */
+    private static final int CORE_TICKS = 200;
+    /** Zo lang (ticks) onthouden we welke apparaten aan een kern hangen (net zo lang als SecurityDevices). */
+    private static final int LIST_TICKS = 40;
+
+    /** Telt elke verandering aan een net; staat hij anders dan bij het zoeken, dan zoeken we opnieuw. */
+    private static int version;
+
+    /** Welke kern een apparaat had bij het zoeken (null = geen). */
+    private record Link(int version, long gameTime, @Nullable BlockPos core) {}
+
+    /** Welke apparaten aan een kern hingen bij het zoeken. */
+    private record Reach(int version, long gameTime, Set<BlockPos> devices) {}
+
+    private static final Map<ResourceKey<Level>, Map<BlockPos, Link>> CORE_OF = new HashMap<>();
+    private static final Map<ResourceKey<Level>, Map<BlockPos, Reach>> DEVICES_OF = new HashMap<>();
+
+    /** Voor de automatische tests: het netwerk aan (true) of uit (false) gezet, of null = zoals de config zegt. */
+    private static @Nullable Boolean requiredOverride;
+
+    // ================================================================ Moet er een kabel zijn?
+
+    /**
+     * Hebben beveiligingsapparaten een netwerkkabel nodig ({@code [network] required} in de config)? Zo niet (een oude
+     * wereld), dan horen ze zoals vroeger bij de dichtstbijzijnde kern in wiens gebied ze staan (zie SecurityCores).
+     *
+     * Tijdens de automatische tests ({@code gradlew runGameTestServer}) geldt de oude regel, zodat alle tests van vóór de
+     * netwerkkabels niet bekabeld hoeven te worden; de tests van het netwerk zetten het zelf aan (zie
+     * NetworkGameTests).
+     */
+    public static boolean required() {
+        Boolean override = requiredOverride;
+        if (override != null) {
+            return override;
+        }
+        if (ServerLifecycleHooks.getCurrentServer() instanceof GameTestServer) {
+            return false;
+        }
+        return ImtConfig.Network.REQUIRED;
+    }
+
+    /** Alleen voor de tests: het netwerk aan of uit zetten, of met null weer de config laten beslissen. */
+    public static void overrideRequired(@Nullable Boolean required) {
+        requiredOverride = required;
+        changed();
+    }
+
+    // ================================================================ Opvragen
+
+    /** Er kwam een kabel, switch, rack, zender of kern bij, of er ging er een weg: alle netten opnieuw zoeken. */
+    public static void changed() {
+        version++;
+    }
+
+    /**
+     * De kern waar dit apparaat via netwerkkabels aan hangt (de dichtstbijzijnde langs de kabel), of null als het nergens
+     * aan hangt. (Ook als er geen kabel nodig is: dit kijkt alleen naar de kabels; zie SecurityCores.deviceCore.)
+     */
+    public static @Nullable SecurityCoreBlockEntity coreOf(Level level, BlockPos device) {
+        BlockPos core = corePosOf(level, device);
+        if (core == null || !level.isLoaded(core)) {
+            return null;
+        }
+        return level.getBlockEntity(core) instanceof SecurityCoreBlockEntity entity ? entity : null;
+    }
+
+    /** Waar de kern van dit apparaat staat (uit het geheugen als dat nog klopt), of null. */
+    private static @Nullable BlockPos corePosOf(Level level, BlockPos device) {
+        Map<BlockPos, Link> perLevel = CORE_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        Link link = perLevel.get(device);
+        long now = level.getGameTime();
+        if (link == null || link.version() != version || now - link.gameTime() > CORE_TICKS || now < link.gameTime()) {
+            link = new Link(version, now, searchCore(level, device));
+            perLevel.put(device.immutable(), link);
+        }
+        return link.core();
+    }
+
+    /**
+     * Alle apparaten (de plekken van blokken met een netwerkaansluiting, zie NetworkConnectable) die via netwerkkabels aan
+     * deze kern hangen. Hooguit LIST_TICKS oud.
+     */
+    public static Set<BlockPos> devicesOf(Level level, BlockPos core) {
+        Map<BlockPos, Reach> perLevel = DEVICES_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        Reach reach = perLevel.get(core);
+        long now = level.getGameTime();
+        if (reach == null || reach.version() != version || now - reach.gameTime() >= LIST_TICKS || now < reach.gameTime()) {
+            reach = new Reach(version, now, searchDevices(level, core));
+            perLevel.put(core.immutable(), reach);
+        }
+        return reach.devices();
+    }
+
+    // ================================================================ Zoeken
+
+    /**
+     * Zoekt de kern: eerst de zes buren van het apparaat, en dan langs elke kabel verder, van dichtbij naar ver. De eerste
+     * kern die we tegenkomen is de dichtstbijzijnde langs de kabel.
+     */
+    private static @Nullable BlockPos searchCore(Level level, BlockPos device) {
+        Set<BlockPos> seen = new HashSet<>();
+        ArrayDeque<BlockPos> todo = new ArrayDeque<>();
+        seen.add(device.immutable());
+        todo.add(device.immutable());
+        int followed = 0;
+        while (!todo.isEmpty() && followed++ < MAX_NODES) {
+            BlockPos at = todo.poll();
+            for (Direction direction : Direction.values()) {
+                BlockPos next = at.relative(direction);
+                if (!seen.add(next) || !level.isLoaded(next)) {
+                    continue;
+                }
+                BlockState state = level.getBlockState(next);
+                if (state.getBlock() instanceof SecurityCoreBlock) {
+                    return next;
+                }
+                if (conducts(level, next, state)) {
+                    todo.add(next);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Zoekt de apparaten van een kern: vanaf de kern langs alle kabels. Een apparaat dat ook bij een andere kern kan (twee
+     * netten die elkaar raken), houden we alleen als deze kern de dichtstbijzijnde is.
+     */
+    private static Set<BlockPos> searchDevices(Level level, BlockPos core) {
+        Set<BlockPos> devices = new LinkedHashSet<>();
+        Set<BlockPos> seen = new HashSet<>();
+        ArrayDeque<BlockPos> todo = new ArrayDeque<>();
+        seen.add(core.immutable());
+        todo.add(core.immutable());
+        int followed = 0;
+        while (!todo.isEmpty() && followed++ < MAX_NODES) {
+            BlockPos at = todo.poll();
+            for (Direction direction : Direction.values()) {
+                BlockPos next = at.relative(direction);
+                if (!seen.add(next) || !level.isLoaded(next)) {
+                    continue;
+                }
+                BlockState state = level.getBlockState(next);
+                if (state.getBlock() instanceof SecurityCoreBlock) {
+                    continue; // een andere kern: daar gaan we niet doorheen
+                }
+                if (state.getBlock() instanceof NetworkConnectable) {
+                    devices.add(next);
+                }
+                if (conducts(level, next, state)) {
+                    todo.add(next);
+                }
+            }
+        }
+        devices.removeIf(device -> !core.equals(corePosOf(level, device)));
+        return Set.copyOf(devices);
+    }
+
+    /**
+     * Geeft deze plek het netwerk door? Een netwerk- of PoE-kabel (behalve een open kabel in een EMP-puls), een serverrack
+     * of een laserzender.
+     */
+    private static boolean conducts(Level level, BlockPos pos, BlockState state) {
+        if (state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.LASER_EMITTER.get())) {
+            return true;
+        }
+        return Cables.carriesNetwork(level, pos) && !com.senne.imttech.weapons.Emp.cutsCable(level, pos);
+    }
+
+    /** Bij het afsluiten van de wereld: alles vergeten. */
+    public static void clear() {
+        CORE_OF.clear();
+        DEVICES_OF.clear();
+    }
+}

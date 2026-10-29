@@ -133,11 +133,11 @@ public final class LogicServer {
         if (cached != null && now - cached.time() < RECOUNT && now >= cached.time()) {
             return cached;
         }
-        // Alleen de racks die bij DEZE kern horen: liggen er twee gebieden over elkaar, dan hoort een rack
-        // bij de dichtstbijzijnde kern (zie SecurityCores.coreAt), niet bij allebei.
+        // Alleen de racks die bij DEZE kern horen: liggen er twee gebieden (of netwerken) over elkaar, dan hoort een rack
+        // bij de dichtstbijzijnde kern (zie SecurityCores.deviceCore), niet bij allebei.
         List<BlockPos> racks = new java.util.ArrayList<>();
         for (BlockPos pos : SecurityDevices.scan(level, core).racks()) {
-            if (com.senne.imttech.security.SecurityCores.coreAt(level, pos) == core) {
+            if (com.senne.imttech.security.SecurityCores.deviceCore(level, pos) == core) {
                 racks.add(pos);
             }
         }

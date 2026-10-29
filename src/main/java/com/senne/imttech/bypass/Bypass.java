@@ -139,7 +139,7 @@ public final class Bypass {
                     (wait + 19) / 20).withStyle(ChatFormatting.RED), true);
             return;
         }
-        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         if (core == null || !LogicServer.stats(level, core).online()) {
             player.displayClientMessage(Component.translatable("bypass.imttech.msg.no_server")
                     .withStyle(ChatFormatting.GRAY), true);
@@ -240,7 +240,7 @@ public final class Bypass {
             case "group" -> {
                 if (session.kind == Kind.READER && session.startedAt < 0) {
                     // Een groep die bestaat; heeft het netwerk geen groepen, dan een kaart zonder groep.
-                    SecurityCoreBlockEntity core = SecurityCores.coreAt(level, session.pos);
+                    SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, session.pos);
                     String chosen = core == null ? null : core.logic().spelling(payload.args().getString("group"));
                     if (chosen == null && core != null && !core.logic().groups().isEmpty()) {
                         return;

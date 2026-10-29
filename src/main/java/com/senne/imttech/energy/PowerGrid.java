@@ -55,9 +55,14 @@ public final class PowerGrid {
     /** Per apparaat: wat het nog schuldig is, minder dan 1 (zie {@link #pay}). */
     private static final Map<ResourceKey<Level>, Map<BlockPos, Double>> OWED = new HashMap<>();
 
-    /** Er kwam een kabel of leverancier bij, of er ging er een weg: alle netten opnieuw zoeken. */
+    /**
+     * Er kwam een kabel of leverancier bij, of er ging er een weg: alle netten opnieuw zoeken. Ook het netwerk van de
+     * beveiligingskernen (hoofdstuk 38, zie LanGrid): wat het stroomnet verandert (een kabel, een rack, een laserzender,
+     * een EMP-puls), verandert het netwerk vaak ook.
+     */
     public static void changed() {
         version++;
+        com.senne.imttech.lan.LanGrid.changed();
     }
 
     /** Alle leveranciers die met dit apparaat verbonden zijn. */
