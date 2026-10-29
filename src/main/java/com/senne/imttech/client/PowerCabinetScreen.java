@@ -5,7 +5,6 @@ import com.senne.imttech.energy.EnergySource;
 import com.senne.imttech.energy.PowerCabinetBlock;
 import com.senne.imttech.energy.PowerCabinets;
 import com.senne.imttech.energy.PowerConnectable;
-import com.senne.imttech.energy.PowerCables;
 import com.senne.imttech.network.CabinetActionPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -157,7 +156,8 @@ public class PowerCabinetScreen extends Screen {
             g.pose().popPose();
             // Zit er iets aan deze kant?
             BlockPos next = pos.relative(side);
-            boolean wired = mc.level != null && (PowerCables.has(mc.level, next)
+            // Een stroomkabel of een PoE-kabel (hoofdstuk 38: die geeft ook stroom door).
+            boolean wired = mc.level != null && (com.senne.imttech.energy.Cables.carriesPower(mc.level, next)
                     || mc.level.getBlockState(next).getBlock() instanceof PowerConnectable
                     || mc.level.getBlockEntity(next) instanceof EnergySource);
             g.drawString(font, Component.translatable(wired ? "screen.imttech.cabinet.wired" : "screen.imttech.cabinet.nothing"),

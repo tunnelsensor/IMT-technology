@@ -470,6 +470,75 @@ public final class NetworkGameTests {
         helper.succeed();
     }
 
+    // ================================================================ Stap 5: PoE
+
+    /**
+     * Jouw wens: "POE-kabels nemen power en ethernet samen; dit werkt als je een power cable aan de desktop hebt hangen, en
+     * dan vertrekt die van de desktop". Een camera die alleen met een PoE-kabel aan de kern hangt, heeft beeld: netwerk én
+     * stroom komen over die ene kabel, de stroom van de generator onder de kern. Heeft de kern zelf geen stroom, dan heeft de
+     * camera die ook niet (het netwerk werkt wel).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void poe_brings_power_and_network_from_the_desktop(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // Een kern met stroom (een generator eronder) en een PoE-kabel naar een camera op een steen.
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        line(helper, CableKind.POE, new BlockPos(3, 3, 2), new BlockPos(9, 3, 2));
+        BlockPos camera = placeCamera(helper, new BlockPos(9, 4, 2));
+        CameraBlockEntity cam = (CameraBlockEntity) helper.getBlockEntity(camera);
+        BlockPos cameraAbs = helper.absolutePos(camera);
+        check(coreOf(helper, camera) == core, "Over de PoE-kabel komt geen netwerk");
+        check(PowerGrid.available(level, cameraAbs) > 0, "Over de PoE-kabel komt geen stroom van de desktop");
+        cam.updateOnline(level, cameraAbs, level.getBlockState(cameraAbs));
+        helper.assertBlockProperty(camera, CameraBlock.ONLINE, true);
+        // Een kern zonder stroom: dan geeft de PoE-kabel ook geen stroom (wel netwerk).
+        BlockPos bareCore = new BlockPos(2, 3, 12);
+        helper.setBlock(bareCore, ModBlocks.SECURITY_CORE.get());
+        line(helper, CableKind.POE, new BlockPos(3, 3, 12), new BlockPos(9, 3, 12));
+        BlockPos dark = placeCamera(helper, new BlockPos(9, 4, 12));
+        BlockPos darkAbs = helper.absolutePos(dark);
+        check(coreOf(helper, dark) == helper.getBlockEntity(bareCore), "Over de PoE-kabel komt geen netwerk");
+        check(PowerGrid.available(level, darkAbs) == 0, "Een kern zonder stroom geeft toch stroom over de PoE-kabel");
+        ((CameraBlockEntity) helper.getBlockEntity(dark)).updateOnline(level, darkAbs, level.getBlockState(darkAbs));
+        helper.assertBlockProperty(dark, CameraBlock.ONLINE, false);
+        helper.succeed();
+    }
+
+    /**
+     * Een PoE-kabel sluit aan op een stroomkabel ernaast (de stroom gaat erdoor) en op een netwerkkabel ernaast (het netwerk
+     * gaat erdoor). Een lezer aan het eind van een netwerkkabel die tegen de PoE-kabel ligt, hangt aan de kern; een
+     * apparaat aan het eind van een stroomkabel die tegen de PoE-kabel ligt, krijgt stroom.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void poe_joins_power_and_network_cables(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 18), null);
+        line(helper, CableKind.POE, new BlockPos(3, 3, 18), new BlockPos(8, 3, 18));
+        // Een netwerkkabel verder naar een lezer, en een stroomkabel de andere kant op naar een lege plek.
+        line(helper, CableKind.NETWORK, new BlockPos(8, 3, 19), new BlockPos(8, 3, 22));
+        BlockPos reader = new BlockPos(8, 3, 23);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        line(helper, CableKind.POWER, new BlockPos(9, 3, 18), new BlockPos(14, 3, 18));
+        BlockPos device = new BlockPos(15, 3, 18);
+        check(coreOf(helper, reader) == core, "Een netwerkkabel tegen een PoE-kabel geeft het netwerk niet door");
+        check(PowerGrid.available(level, helper.absolutePos(device)) > 0,
+                "Een stroomkabel tegen een PoE-kabel geeft de stroom van de desktop niet door");
+        // Een netwerkkabel geeft geen stroom door: de lezer heeft (zonder eigen stroom) geen stroom.
+        check(!com.senne.imttech.lan.DevicePower.hasPower(level, helper.absolutePos(reader)),
+                "Over een netwerkkabel kwam stroom");
+        helper.succeed();
+    }
+
+    /** Een camera op de vloer bij {@code pos} (er komt een steen onder), die naar het zuiden kijkt. */
+    private static BlockPos placeCamera(GameTestHelper helper, BlockPos pos) {
+        if (helper.getBlockState(pos.below()).isAir()) {
+            helper.setBlock(pos.below(), Blocks.STONE);
+        }
+        helper.setBlock(pos, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(CameraBlock.FACE, AttachFace.FLOOR).setValue(CameraBlock.FACING, Direction.SOUTH));
+        return pos;
+    }
+
     /** De toestand van dit apparaat in de Devices-app ("st"), of "" als het er niet in staat. */
     private static String statusOf(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos) {
         for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {

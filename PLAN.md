@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 351 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 353 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3820,7 +3820,16 @@ Ik bouw het in deze volgorde, één stap per commit:
       stroom nodig, zoals vroeger (anders werkte een oude wereld niet meer, en alle oude tests ook niet). Binnenkant:
       `lan/DevicePower` (straks ook voor knop, hendel en switch). **Test**: `reader_and_panel_need_power`. 351 tests,
       allemaal groen.
-- [ ] **5. PoE: stroom en netwerk in één kabel**
+- [x] **5. PoE: stroom en netwerk in één kabel** — jouw wens: "POE-kabels nemen power en ethernet samen; dit werkt als je
+      een power cable aan de desktop hebt hangen, en dan vertrekt die van de desktop". Een PoE-kabel geeft nu ook stroom
+      door (`PowerGrid`), en de Security Core geeft zijn stroom door aan wat erop aangesloten is: één stroomkabel (of een
+      generator) aan de kern voedt zo al zijn PoE-kabels, en een camera die alleen met een PoE-kabel aan de kern hangt,
+      heeft beeld. Heeft de kern zelf geen stroom, dan geeft de PoE-kabel ook geen stroom (het netwerk werkt wel). Een
+      PoE-kabel sluit aan op een stroomkabel ernaast (de stroom gaat erdoor, beide kanten op) en op een netwerkkabel
+      ernaast (het netwerk gaat erdoor); een netwerkkabel zelf geeft geen stroom. De stroomkast ziet een PoE-kabel ook
+      als "wired". **Mijn invulling**: een apparaat dat direct tegen de kern staat, krijgt zo ook zijn stroom van de kern
+      (net als het netwerk). **Tests**: `poe_brings_power_and_network_from_the_desktop`,
+      `poe_joins_power_and_network_cables`. 353 tests, allemaal groen.
 - [ ] **6. De Network Switch**
 - [ ] **7. De laserbrug op het netwerk** (groep LASER BRIDGES)
 - [ ] **8. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)

@@ -173,6 +173,10 @@ public final class PowerGrid {
      * laserzenders, brugzenders (hoofdstuk 34), serverracks en lichtschakelaars die aan staan geleiden.
      * Staat een apparaat op een kabel, dan loopt de kabel eronder door. Een open kabel in een EMP-puls geleidt even
      * niet, zie Emp.cutsCable.)
+     *
+     * Hoofdstuk 38: een PoE-kabel geeft ook stroom door (stroom en netwerk in één kabel), en de Security Core (de
+     * desktop) geeft zijn stroom door aan wat erop aangesloten is. Jouw wens: "PoE werkt als je een power cable aan de
+     * desktop hebt hangen, en dan vertrekt die van de desktop": één stroomkabel op de kern voedt zo al zijn PoE-kabels.
      */
     private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
@@ -180,7 +184,7 @@ public final class PowerGrid {
         ArrayDeque<BlockPos> cables = new ArrayDeque<>();
         seen.add(device);
         // Staat het apparaat zelf op een kabel (erbovenop gebouwd)? Dan hangt het daar ook aan.
-        if (PowerCables.has(level, device) && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
+        if (Cables.carriesPower(level, device) && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
             cables.add(device);
         }
         look(level, device, sources, seen, cables);
@@ -231,10 +235,12 @@ public final class PowerGrid {
                 sources.add(next);
             }
             // Een kabel die open ligt binnen een EMP-puls (hoofdstuk 35) geeft even niets door; een kabel in een muur wel.
-            boolean cable = PowerCables.has(level, next) && !com.senne.imttech.weapons.Emp.cutsCable(level, next);
+            // Een stroomkabel of een PoE-kabel (hoofdstuk 38).
+            boolean cable = Cables.carriesPower(level, next) && !com.senne.imttech.weapons.Emp.cutsCable(level, next);
+            // De Security Core geeft stroom door aan wat erop aangesloten is (zijn PoE-kabels, hoofdstuk 38).
             if (cable || state.is(ModBlocks.DRONE_DOCK.get())
                     || state.is(ModBlocks.LASER_EMITTER.get()) || state.is(ModBlocks.LASER_BRIDGE.get())
-                    || state.is(ModBlocks.SERVER_RACK.get())) {
+                    || state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.SECURITY_CORE.get())) {
                 cables.add(next);
             }
         }
