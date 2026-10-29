@@ -916,6 +916,31 @@ public final class VisualCheck {
             t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
         }
 
+        // --- Hoofdstuk 38: de drie soorten kabels (stroom grijs, netwerk wit, PoE groen) naast elkaar, alle drie op
+        // dezelfde plekken (boven elkaar), en verborgen onder een vloer (met de bril grijs, wit en gloeiend groen).
+        if (want("network")) {
+            BlockPos y = NETWORK_YARD;
+            t.onServer(0, VisualCheck::buildNetworkYard);
+            t.onServer(0, player -> {
+                player.getInventory().setItem(0, new ItemStack(ModItems.CABLE.get(), 64));
+                player.getInventory().setItem(1, new ItemStack(ModItems.NETWORK_CABLE.get(), 64));
+                player.getInventory().setItem(2, new ItemStack(ModItems.POE_CABLE.get(), 64));
+            });
+            t.step(0, () -> Minecraft.getInstance().player.getInventory().selected = 1);
+            t.view(20, y.getX() - 2.5, y.getY() + 5, y.getZ() + 11.5, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(y.offset(3, 0, 4)));
+            t.shot(20, "nw01_cable_colours");
+            t.view(0, y.getX() + 2.5, y.getY() + 1.6, y.getZ() + 9.5, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(y.offset(4, 0, 7)));
+            t.shot(20, "nw02_cable_lanes");
+            t.view(0, y.getX() - 3.5, y.getY() + 5, y.getZ() + 23.5, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(y.offset(3, 0, 14)));
+            t.shot(20, "nw03_cable_xray");
+            t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
+            t.shot(20, "nw04_cable_xray_off");
+            t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
+        }
+
         // --- De Biebia's Industries Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
         if (want("tower")) {
             tower(t);
@@ -4046,6 +4071,62 @@ public final class VisualCheck {
         }
         com.senne.imttech.energy.PowerCables.add(level, new BlockPos(20, -60, -18));
         com.senne.imttech.energy.PowerCables.add(level, new BlockPos(20, -60, -19));
+    }
+
+    /** Hoofdstuk 38: het veldje met de drie soorten kabels (ver weg van de rest, zodat niets erdoorheen loopt). */
+    private static final BlockPos NETWORK_YARD = new BlockPos(-340, -60, -340);
+
+    /**
+     * Bij NETWORK_YARD: drie kabels naast elkaar over de vloer en een muurtje op (stroom, netwerk, PoE), dan alle drie op
+     * dezelfde plekken (die liggen boven elkaar), en verder naar het zuiden dezelfde drie verborgen onder een strook
+     * gepolijst andesiet, en nog een strook met alle drie samen erin.
+     */
+    private static void buildNetworkYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos y = NETWORK_YARD;
+        com.senne.imttech.energy.CableKind[] kinds = com.senne.imttech.energy.CableKind.values();
+        // Het muurtje van drie hoog aan de oostkant.
+        for (int dy = 0; dy <= 2; dy++) {
+            for (int dz = -1; dz <= 8; dz++) {
+                level.setBlockAndUpdate(y.offset(6, dy, dz), Blocks.STONE_BRICKS.defaultBlockState());
+            }
+        }
+        // Drie kabels naast elkaar, over de vloer en tegen het muurtje op.
+        for (int i = 0; i < kinds.length; i++) {
+            for (int dx = 0; dx <= 5; dx++) {
+                com.senne.imttech.energy.Cables.add(kinds[i], level, y.offset(dx, 0, i * 2));
+            }
+            for (int dy = 1; dy <= 2; dy++) {
+                com.senne.imttech.energy.Cables.add(kinds[i], level, y.offset(5, dy, i * 2));
+            }
+        }
+        // Alle drie op dezelfde plekken: boven elkaar (de banen). Het eerste stuk alleen netwerk en PoE.
+        for (int dx = 0; dx <= 5; dx++) {
+            for (com.senne.imttech.energy.CableKind kind : kinds) {
+                if (dx >= 2 || kind != com.senne.imttech.energy.CableKind.POWER) {
+                    com.senne.imttech.energy.Cables.add(kind, level, y.offset(dx, 0, 7));
+                }
+            }
+        }
+        for (int dy = 1; dy <= 2; dy++) {
+            for (com.senne.imttech.energy.CableKind kind : kinds) {
+                com.senne.imttech.energy.Cables.add(kind, level, y.offset(5, dy, 7));
+            }
+        }
+        // Verborgen onder stroken steen: elke soort apart (een blok uit elkaar, anders zit een PoE-kabel vast aan de
+        // netwerkkabel ernaast), en alle drie samen.
+        for (int dx = 0; dx <= 5; dx++) {
+            for (int i = 0; i < kinds.length; i++) {
+                BlockPos pos = y.offset(dx, 0, 11 + i * 2);
+                com.senne.imttech.energy.Cables.add(kinds[i], level, pos);
+                level.setBlockAndUpdate(pos, Blocks.POLISHED_ANDESITE.defaultBlockState());
+            }
+            BlockPos together = y.offset(dx, 0, 17);
+            for (com.senne.imttech.energy.CableKind kind : kinds) {
+                com.senne.imttech.energy.Cables.add(kind, level, together);
+            }
+            level.setBlockAndUpdate(together, Blocks.POLISHED_ANDESITE.defaultBlockState());
+        }
     }
 
     /** Een guard robot die aan staat, stil, en naar het zuiden kijkt (naar de camera). */

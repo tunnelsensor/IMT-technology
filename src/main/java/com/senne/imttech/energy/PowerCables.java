@@ -1,6 +1,5 @@
 package com.senne.imttech.energy;
 
-import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModBlocks;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -26,13 +24,16 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Waar de kabels liggen, en alles wat je ermee doet: leggen, weghalen, een route tekenen, en
- * oude kabelblokken omzetten.
+ * De stroomkabels, en wat alle kabels samen hebben: een route tekenen, en oude kabelblokken omzetten.
  *
  * Een kabel ligt op een blokplek (zie CableCells). Op die plek mag ook een blok staan: dan zit de
  * kabel in dat blok (in een muur, een vloer). Kabels op plekken die naast elkaar liggen, zitten
  * aan elkaar vast; een apparaat dat naast een kabel staat (of er bovenop is gezet), zit eraan
  * vast. De stroom zelf regelt PowerGrid.
+ *
+ * Sinds hoofdstuk 38 zijn er drie soorten kabels (stroom, netwerk en PoE, zie CableKind). Het leggen en opvragen voor
+ * alle soorten staat in Cables; de methodes hieronder zijn die van de stroomkabel, zodat alles wat er al naar vroeg
+ * gewoon blijft werken.
  */
 public final class PowerCables {
     private PowerCables() {}
@@ -40,101 +41,26 @@ public final class PowerCables {
     /** Zo ver mag één stuk dat je in één keer tekent, hooguit zoeken (blokken). */
     private static final int MAX_ROUTE = 24;
 
-    // ================================================================ Opvragen
+    // ================================================================ De stroomkabel (zie Cables voor alle soorten)
 
-    /** Ligt hier een kabel? (Een chunk die niet geladen is: nee.) */
+    /** Ligt hier een stroomkabel? (Een chunk die niet geladen is: nee.) */
     public static boolean has(Level level, BlockPos pos) {
-        if (!level.isLoaded(pos)) {
-            return false;
-        }
-        LevelChunk chunk = level.getChunkAt(pos);
-        return chunk.hasData(ModAttachments.CABLES) && chunk.getData(ModAttachments.CABLES).contains(pos);
+        return Cables.has(CableKind.POWER, level, pos);
     }
 
-    /** Alle kabels in deze chunk (leeg als er geen zijn). */
+    /** Alle stroomkabels in deze chunk (leeg als er geen zijn). */
     public static CableCells in(LevelChunk chunk) {
-        return chunk.hasData(ModAttachments.CABLES) ? chunk.getData(ModAttachments.CABLES) : CableCells.EMPTY;
+        return Cables.in(CableKind.POWER, chunk);
     }
 
-    // ================================================================ Leggen en weghalen
-
-    /** Legt een stuk kabel op deze plek. Geeft false als er al een lag. */
+    /** Legt een stuk stroomkabel op deze plek. Geeft false als er al een lag. */
     public static boolean add(ServerLevel level, BlockPos pos) {
-        LevelChunk chunk = level.getChunkAt(pos);
-        CableCells cells = in(chunk);
-        if (cells.contains(pos)) {
-            return false;
-        }
-        store(chunk, cells.with(pos.immutable()));
-        return true;
+        return Cables.add(CableKind.POWER, level, pos);
     }
 
-    /** Haalt het stuk kabel op deze plek weg. Geeft false als er geen lag. */
+    /** Haalt het stuk stroomkabel op deze plek weg. Geeft false als er geen lag. */
     public static boolean remove(ServerLevel level, BlockPos pos) {
-        if (!level.isLoaded(pos)) {
-            return false;
-        }
-        LevelChunk chunk = level.getChunkAt(pos);
-        CableCells cells = in(chunk);
-        if (!cells.contains(pos)) {
-            return false;
-        }
-        store(chunk, cells.without(pos));
-        return true;
-    }
-
-    private static void store(LevelChunk chunk, CableCells cells) {
-        if (cells.isEmpty()) {
-            chunk.removeData(ModAttachments.CABLES);
-        } else {
-            chunk.setData(ModAttachments.CABLES, cells);
-        }
-        chunk.setUnsaved(true);
-        // Naar iedereen die deze chunk ziet, zodat ze de kabel zien verschijnen of verdwijnen. Dat
-        // doen we aan het eind van de servertik, één keer per chunk: een gebouw legt honderden
-        // kabels tegelijk, en anders ging de hele kabellijst per stukje kabel opnieuw de lijn over.
-        synchronized (TO_CONVERT) {
-            TO_SYNC.add(chunk);
-        }
-        PowerGrid.changed();
-    }
-
-    /** Chunks waarvan de kabels deze tik veranderd zijn (zie store). */
-    private static final Set<LevelChunk> TO_SYNC = new HashSet<>();
-
-    /** De chunks met nieuwe of weggehaalde kabels doorsturen. */
-    private static void syncChanged() {
-        List<LevelChunk> chunks;
-        synchronized (TO_CONVERT) {
-            if (TO_SYNC.isEmpty()) {
-                return;
-            }
-            chunks = new ArrayList<>(TO_SYNC);
-            TO_SYNC.clear();
-        }
-        for (LevelChunk chunk : chunks) {
-            if (chunk.getLevel() instanceof ServerLevel level && anyoneHas(level, chunk)) {
-                chunk.syncData(ModAttachments.CABLES);
-            }
-        }
-    }
-
-    /**
-     * Heeft een speler deze chunk al binnen? Een chunk die net gemaakt is (met een gebouw erin)
-     * staat meestal nog in de wachtrij om verstuurd te worden: die krijgt de kabels vanzelf mee
-     * als hij aankomt. Stuur je ze eerder, dan gooit de speler ze weg ("unknown chunk").
-     */
-    private static boolean anyoneHas(ServerLevel level, LevelChunk chunk) {
-        ChunkPos pos = chunk.getPos();
-        if (level.getChunkSource().getChunkNow(pos.x, pos.z) != chunk) {
-            return false; // al weer uit het geheugen
-        }
-        for (ServerPlayer player : level.getChunkSource().chunkMap.getPlayers(pos, false)) {
-            if (player.connection != null && !player.connection.chunkSender.isPending(pos.toLong())) {
-                return true;
-            }
-        }
-        return false;
+        return Cables.remove(CableKind.POWER, level, pos);
     }
 
     // ================================================================ Tekenen
@@ -310,10 +236,10 @@ public final class PowerCables {
         }
     }
 
-    /** Na elke servertik: oude kabelblokken omzetten, dan de veranderde kabels doorsturen. */
+    /** Na elke servertik: oude kabelblokken omzetten, dan de veranderde kabels (van elke soort) doorsturen. */
     public static void onServerTick(ServerTickEvent.Post event) {
         convertQueued();
-        syncChanged();
+        Cables.syncChanged();
     }
 
     /** De chunks uit de wachtrij omzetten (niet tijdens het laden zelf). */
@@ -369,26 +295,35 @@ public final class PowerCables {
      * een kabel hoort (zie cable() in tools/generate_structure.py). Komt zo'n marker in de wereld,
      * dan leggen we daar een kabel en laten we de marker zelf niet toe. Zo blijft het blok op die
      * plek (een koperen zuil, een vloer, een plafond) gewoon staan, met de kabel erin.
+     *
+     * Elke soort kabel heeft zijn eigen labeltje (zie CableKind.marker): "imttech_cable" voor stroom,
+     * "imttech_net_cable" voor netwerk en "imttech_poe_cable" voor PoE. Eén marker kan er meer hebben.
      */
     public static void onEntityJoin(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)
                 || !(event.getEntity() instanceof net.minecraft.world.entity.Marker marker)) {
             return;
         }
-        net.minecraft.nbt.CompoundTag tag = marker.saveWithoutId(new net.minecraft.nbt.CompoundTag());
-        if (tag.getCompound("data").getBoolean("imttech_cable")) {
-            add(level, marker.blockPosition());
+        net.minecraft.nbt.CompoundTag data = marker.saveWithoutId(new net.minecraft.nbt.CompoundTag()).getCompound("data");
+        boolean any = false;
+        for (CableKind kind : CableKind.values()) {
+            if (data.getBoolean(kind.marker())) {
+                Cables.add(kind, level, marker.blockPosition());
+                any = true;
+            }
+        }
+        if (any) {
             event.setCanceled(true);
         }
     }
 
-    /** Bij het afsluiten: de wachtrij vergeten. */
+    /** Bij het afsluiten: de wachtrijen vergeten. */
     public static void clear() {
         synchronized (TO_CONVERT) {
             TO_CONVERT.clear();
             PLACED.clear();
-            TO_SYNC.clear();
         }
+        Cables.clear();
     }
 
     /** De plekken naast {@code pos} met een kabel (voor het tekenen en de tests). */

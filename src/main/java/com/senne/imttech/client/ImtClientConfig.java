@@ -45,11 +45,12 @@ public final class ImtClientConfig {
             .define("voiceTextInHud", true);
 
     /**
-     * Zie je verborgen stroomkabels (in een muur of vloer) blauw door de muur heen als je de bril
-     * draagt? Aan/uit via G > Information > Cable X-ray (of een eigen toets).
+     * Zie je verborgen kabels (in een muur of vloer) door de muur heen als je de bril draagt? Stroomkabels grijs,
+     * netwerkkabels wit, PoE-kabels gloeiend groen (hoofdstuk 38). Aan/uit via G > Information > Cable X-ray (of een
+     * eigen toets).
      */
     public static final ModConfigSpec.BooleanValue CABLE_XRAY = BUILDER
-            .comment("With the I.M.T glasses on, see hidden power cables glow through walls (G > Information > Cable X-ray)")
+            .comment("With the I.M.T glasses on, see hidden power, network and PoE cables glow through walls (G > Information > Cable X-ray)")
             .define("cableXray", true);
 
     /**

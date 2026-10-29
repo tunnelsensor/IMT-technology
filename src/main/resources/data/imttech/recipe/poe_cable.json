@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "imttech:cable"
+    },
+    {
+      "item": "imttech:network_cable"
+    },
+    {
+      "tag": "c:dyes/lime"
+    }
+  ],
+  "result": {
+    "id": "imttech:poe_cable",
+    "count": 2
+  }
+}

@@ -84,7 +84,16 @@ public final class ModItems {
     /** De stroomkabel voor het stroomnet. */
     /** Een rol stroomkabel: daarmee teken je kabels (zie CableSpoolItem). Vroeger een blok. */
     public static final DeferredItem<com.senne.imttech.energy.CableSpoolItem> CABLE = ITEMS.registerItem("cable",
-            com.senne.imttech.energy.CableSpoolItem::new, new Item.Properties());
+            properties -> new com.senne.imttech.energy.CableSpoolItem(properties, com.senne.imttech.energy.CableKind.POWER),
+            new Item.Properties());
+    /** Hoofdstuk 38: een rol netwerkkabel (wit), van de desktop van een Security Core naar zijn apparaten. */
+    public static final DeferredItem<com.senne.imttech.energy.CableSpoolItem> NETWORK_CABLE = ITEMS.registerItem("network_cable",
+            properties -> new com.senne.imttech.energy.CableSpoolItem(properties, com.senne.imttech.energy.CableKind.NETWORK),
+            new Item.Properties());
+    /** Hoofdstuk 38: een rol PoE-kabel (groen): stroom en netwerk in één kabel. */
+    public static final DeferredItem<com.senne.imttech.energy.CableSpoolItem> POE_CABLE = ITEMS.registerItem("poe_cable",
+            properties -> new com.senne.imttech.energy.CableSpoolItem(properties, com.senne.imttech.energy.CableKind.POE),
+            new Item.Properties());
 
     // Fase 11: rayshield (de laserwand zelf heeft geen item: die hoort bij de zenders)
     /** Fase 12: de E.M.P.-zender waarmee je illusies platlegt. */

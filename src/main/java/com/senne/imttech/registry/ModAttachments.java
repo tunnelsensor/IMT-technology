@@ -38,11 +38,24 @@ public final class ModAttachments {
      * iedereen gestuurd die de chunk ziet (om ze te tekenen). Een lege lijst bewaren we niet.
      */
     public static final Supplier<AttachmentType<com.senne.imttech.energy.CableCells>> CABLES = ATTACHMENTS.register("cables",
-            () -> AttachmentType.builder(() -> com.senne.imttech.energy.CableCells.EMPTY)
-                    .serialize(com.senne.imttech.energy.CableCells.CODEC, cells -> !cells.isEmpty())
-                    .sync((holder, player) -> player.connection != null
-                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), com.senne.imttech.energy.CableCells.STREAM_CODEC)
-                    .build());
+            ModAttachments::cableCells);
+
+    /** De getekende netwerkkabels in een chunk (hoofdstuk 38, zie CableKind.NETWORK). Net als de stroomkabels. */
+    public static final Supplier<AttachmentType<com.senne.imttech.energy.CableCells>> NET_CABLES = ATTACHMENTS.register("net_cables",
+            ModAttachments::cableCells);
+
+    /** De getekende PoE-kabels in een chunk (hoofdstuk 38, zie CableKind.POE). Net als de stroomkabels. */
+    public static final Supplier<AttachmentType<com.senne.imttech.energy.CableCells>> POE_CABLES = ATTACHMENTS.register("poe_cables",
+            ModAttachments::cableCells);
+
+    /** Een lijst kabels per chunk: opgeslagen met de chunk (leeg niet), en naar iedereen die de chunk ziet. */
+    private static AttachmentType<com.senne.imttech.energy.CableCells> cableCells() {
+        return AttachmentType.builder(() -> com.senne.imttech.energy.CableCells.EMPTY)
+                .serialize(com.senne.imttech.energy.CableCells.CODEC, cells -> !cells.isEmpty())
+                .sync((holder, player) -> player.connection != null
+                        && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), com.senne.imttech.energy.CableCells.STREAM_CODEC)
+                .build();
+    }
 
     /** De redstone-relais die deze speler heeft aangemeld (fase 9). */
     public static final Supplier<AttachmentType<ImtRelays>> RELAYS = ATTACHMENTS.register("relays",

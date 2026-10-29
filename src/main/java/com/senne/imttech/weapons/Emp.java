@@ -183,7 +183,8 @@ public final class Emp {
 
     /**
      * Is de kabel op deze plek doorgebrand? Alleen een kabel die open ligt (niet in een volledig blok) en binnen een
-     * puls. (Of er echt een kabel ligt, kijkt PowerGrid zelf.)
+     * puls. Geldt voor elke soort kabel (stroom, netwerk, PoE). (Of er echt een kabel ligt, kijken PowerGrid en het
+     * netwerk zelf.)
      */
     public static boolean cutsCable(Level level, BlockPos pos) {
         List<Pulse> pulses = PULSES.get(level.dimension());
@@ -277,9 +278,12 @@ public final class Emp {
         return found;
     }
 
-    /** De kabels binnen deze puls die open liggen (niet in een muur, niet achter een koepel). */
+    /**
+     * De kabels binnen deze puls die open liggen (niet in een muur, niet achter een koepel): stroom-, netwerk- en
+     * PoE-kabels (hoofdstuk 38). Een plek met twee soorten telt één keer.
+     */
     private static List<BlockPos> openCables(ServerLevel level, Pulse pulse) {
-        List<BlockPos> cables = new ArrayList<>();
+        java.util.Set<BlockPos> cables = new java.util.LinkedHashSet<>();
         double r = pulse.radius;
         ChunkPos from = new ChunkPos(BlockPos.containing(pulse.center.x - r, 0, pulse.center.z - r));
         ChunkPos to = new ChunkPos(BlockPos.containing(pulse.center.x + r, 0, pulse.center.z + r));
@@ -289,15 +293,17 @@ public final class Emp {
                     continue;
                 }
                 LevelChunk chunk = level.getChunk(cx, cz);
-                PowerCables.in(chunk).forEach(pos -> {
-                    Vec3 at = Vec3.atCenterOf(pos);
-                    if (pulse.reaches(at) && !PowerCables.isSolid(level, pos) && !shielded(level, pulse, at)) {
-                        cables.add(pos);
-                    }
-                });
+                for (com.senne.imttech.energy.CableKind kind : com.senne.imttech.energy.CableKind.values()) {
+                    com.senne.imttech.energy.Cables.in(kind, chunk).forEach(pos -> {
+                        Vec3 at = Vec3.atCenterOf(pos);
+                        if (pulse.reaches(at) && !PowerCables.isSolid(level, pos) && !shielded(level, pulse, at)) {
+                            cables.add(pos);
+                        }
+                    });
+                }
             }
         }
-        return cables;
+        return new ArrayList<>(cables);
     }
 
     /** Vonkjes op een paar willekeurige open kabels in deze puls. */

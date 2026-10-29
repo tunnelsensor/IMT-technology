@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 338 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 342 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3733,6 +3733,58 @@ drones, en ook robots".
       precies genoeg staven, een hele robot kost niets), `robot_keeps_its_damage_when_picked_up` (het item, de
       assembler, weer neerzetten, een oud item) en `drone_repairs_only_with_iron`. 338 tests, allemaal groen.
       **Screenshot** `rb12_robot_screen` (`-Ponly=robots`) toont nu de balk Health.
+
+### 38. Netwerkkabels, de switch, PoE, en een netwerkhendel en -knop (29 oktober)
+
+Jouw wens: "voeg netwerkkabels toe, net zoals de powercables maar dan voor al de security items te zien/configureren in de
+starkos. Je hangt een witte netwerkkabel aan de desktop, verbindt die met een keycardreader en dan pas komt die bij de
+desktop devices (ook keypad, cameras, turrets). Deze dingen hebben allemaal ook stroom nodig. Ook netwerk lever en
+buttons (aan een kabel, power en netwerk) die je gebruikt via de logic in de desktop, een switch waar de netwerkkabels
+samenkomen, en POE-kabels die power en ethernet samen nemen." Met kleuren: stroom gewoon grijs, x-ray grijs (jouw
+aanpassing van het plan), stromend geel met animatie; netwerk wit, x-ray wit, een signaal = een helder wit vakje dat de
+kabel volgt; PoE groen, x-ray gloeiend groen, een signaal = een helder groen vakje.
+
+**Jouw antwoorden** (29 oktober): ook **laserpoorten, de laserbrug en serverracks** krijgen een netwerkkabel (geen relais,
+geen Arc Lamp, drones en robots blijven draadloos); de **switch is zoals de stroomkast, met eigen stroom** (aan/uit per
+kant, ook vanaf de desktop); **zonder netwerkkabel doet een apparaat niets** (met een config-schakelaar voor het oude
+gedrag); **PoE mag ook via een switch**; laserpoorten, brug en je raketturretje **werken los** met alleen stroom (de kabel
+is voor de desktop); de laserbrug krijgt in Devices een groep **LASER BRIDGES** met aan/uit. Wat je daarna vroeg (geen
+redstone meer voor de mod-apparaten, schakelen op naam) staat in hoofdstuk 39.
+
+**Mijn invulling** (zeg het als je het anders wil): drie aparte kabelrollen (Power, **Network**, **PoE Cable**); ze mogen
+op dezelfde plek liggen (dan boven elkaar); aansluiten gaat zoals bij stroom (een apparaat tegen een kabel, de kern of
+een switch hangt eraan); raakt een net twee kernen, dan wint de dichtstbijzijnde langs de kabel; de kern geeft stroom
+door aan PoE-kabels; lezer, paneel, knop, hendel en switch gebruiken een beetje stroom (betaald door de kern); een EMP
+legt open netwerk- en PoE-kabels even plat; iedereen mag netwerkkabels leggen en knippen, ook in andermans zone; de
+signalen zijn alleen om naar te kijken (de logica reageert meteen).
+
+Ik bouw het in deze volgorde, één stap per commit:
+
+- [x] **1. Drie soorten kabels** — naast de stroomkabel nu de **Network Cable** (wit, 8 stuks uit 2 koper en een kwarts)
+      en de **PoE Cable** (groen, 2 stuks uit een stroomkabel, een netwerkkabel en limoenverf), allebei in het tabblad
+      I.M.T Power. Je tekent ze zoals de stroomkabel. Elke soort heeft zijn eigen lijst per chunk (`energy/CableKind`,
+      `energy/Cables`; de stroomkabel houdt `imttech:cables`, nieuw zijn `imttech:net_cables` en `imttech:poe_cables`),
+      dus op één plek kunnen ze naast elkaar liggen: de eerste (stroom, netwerk, PoE) tegen de vloer of muur, de volgende
+      er een kabeldikte boven (`energy/CableGeometry`, de "banen"). Een PoE-kabel zit vast aan een stroom- en aan een
+      netwerkkabel ernaast; een stroom- en een netwerkkabel niet aan elkaar. Shift + rechtsklik met een rol raapt alleen
+      zijn eigen soort op; een schaar knipt de kabel die het dichtst bij je kijklijn ligt (en geeft een stukje van die
+      soort). Met de bril door de muur heen: stroom grijs (half doorzichtig, niet oplichtend, zodat het echt grijs is),
+      netwerk wit, PoE gloeiend groen (een felle kern met een zachte gloed). Gebouwen kunnen ook netwerk- en PoE-kabels
+      leggen (markers `imttech_net_cable` en `imttech_poe_cable`). Een EMP geeft vonken op alle soorten. In deze stap
+      doen ze nog niets: dat komt in stap 2 en 4. **Tests** (`gametest/NetworkGameTests`, batch `lan`):
+      `cable_kinds_share_a_cell_but_stay_apart`, `cable_spools_draw_and_pick_up_their_own_kind`,
+      `shears_cut_one_cable_at_a_time`, `structure_markers_lay_every_kind_of_cable`. 342 tests, allemaal groen.
+      **Screenshots** `-Ponly=network`: `nw01_cable_colours`, `nw02_cable_lanes`, `nw03_cable_xray`, `nw04_cable_xray_off`.
+- [ ] **2. Het netwerk en de koppeling aan de kern** (`lan/LanGrid`; zonder kabel doet een beveiligingsapparaat niets;
+      `[network] required`)
+- [ ] **3. Stroom voor lezer en paneel**
+- [ ] **4. PoE: stroom en netwerk in één kabel**
+- [ ] **5. De Network Switch**
+- [ ] **6. De laserbrug op het netwerk** (groep LASER BRIDGES)
+- [ ] **7. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)
+- [ ] **8. Signalen en stroom die je ziet lopen**
+- [ ] **9. De Biebia's Industries Tower bekabeld**
+- [ ] **10. LEESMIJ, showcase en screenshots**
 
 ---
 

@@ -80,10 +80,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.FRAG_TRIGGER.get());
             });
 
-    /** De kabel en wat stroom maakt of opslaat. */
+    /** De kabels (stroom, netwerk, PoE) en wat stroom maakt of opslaat. */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> POWER = tab("power", WEAPONS.getKey(),
             () -> new ItemStack(ModItems.SOLAR_PANEL.get()), (parameters, output) -> {
                 output.accept(ModItems.CABLE.get());
+                output.accept(ModItems.NETWORK_CABLE.get());
+                output.accept(ModItems.POE_CABLE.get());
                 output.accept(ModItems.SOLAR_PANEL.get());
                 output.accept(ModItems.HEAT_GENERATOR.get());
                 output.accept(ModItems.POWER_CABINET.get());

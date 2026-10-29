@@ -1,6 +1,5 @@
 package com.senne.imttech.energy;
 
-import com.senne.imttech.registry.ModItems;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,22 +31,26 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Een rol stroomkabel. Daarmee TEKEN je kabels, in plaats van blokken neer te zetten:
+ * Een rol kabel: stroomkabel, netwerkkabel of PoE-kabel (hoofdstuk 38, zie CableKind). Daarmee TEKEN je kabels, in
+ * plaats van blokken neer te zetten:
  *
  * <ul>
  *   <li><b>Rechtermuisknop ingedrukt houden</b> en rondkijken: waar je kijkt komt een kabel te
  *       liggen, over de vloer, tegen een muur op, onder een plafond. Beweeg je sneller dan één
  *       blok per keer, dan trekt hij netjes een lijn van waar je was naar waar je nu kijkt.
  *       Elk stukje kost één kabel van de rol.</li>
- *   <li><b>Shift + rechtsklik</b> op een kabel: oprapen (je krijgt hem terug).</li>
- *   <li>Een <b>schaar</b> (rechtsklik) knipt een kabel door (zie onRightClick hieronder).</li>
+ *   <li><b>Shift + rechtsklik</b> op een kabel: oprapen (je krijgt hem terug). Alleen de soort van de rol in je
+ *       hand: liggen er een stroom- en een netwerkkabel op dezelfde plek, dan raapt een netwerkrol alleen de
+ *       netwerkkabel op.</li>
+ *   <li>Een <b>schaar</b> (rechtsklik) knipt een kabel door (zie onRightClick hieronder): de kabel die het
+ *       dichtst bij je kijklijn ligt.</li>
  * </ul>
  *
  * Ook in de zone van iemand anders mag dat allemaal (jouw wens, 9 oktober): zet je kabels dus goed
- * weg, in een muur of vloer, anders knipt een inbreker de stroom van je zone eruit.
+ * weg, in een muur of vloer, anders knipt een inbreker de stroom (of het netwerk) van je zone eruit.
  *
  * Een kabel is geen blok: je kunt er gewoon een muur of een vloer overheen bouwen, dan loopt hij
- * erin door (zie PowerCables). Een verborgen kabel zie je alleen met de bril op.
+ * erin door (zie Cables). Een verborgen kabel zie je alleen met de bril op.
  */
 public class CableSpoolItem extends Item {
     /** Waar elke speler de vorige tick zijn kabel legde (zolang hij de knop vasthoudt). */
@@ -55,8 +58,16 @@ public class CableSpoolItem extends Item {
     /** Zo ver kun je een kabel leggen of oprapen (blokken). */
     private static final double REACH = 6.0;
 
-    public CableSpoolItem(Properties properties) {
+    /** Welke soort kabel er op deze rol zit. */
+    private final CableKind kind;
+
+    public CableSpoolItem(Properties properties, CableKind kind) {
         super(properties);
+        this.kind = kind;
+    }
+
+    public CableKind kind() {
+        return kind;
     }
 
     @Override
@@ -64,7 +75,7 @@ public class CableSpoolItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (player.isShiftKeyDown()) {
             if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
-                BlockPos cable = lookedAtCable(serverLevel, serverPlayer);
+                Hit cable = lookedAtCable(serverLevel, serverPlayer, kind);
                 if (cable != null) {
                     take(serverLevel, serverPlayer, cable);
                 }
@@ -105,13 +116,13 @@ public class CableSpoolItem extends Item {
         List<BlockPos> path = last == null ? List.of(cell) : PowerCables.route(serverLevel, last, cell);
         int placed = 0;
         for (BlockPos pos : path) {
-            if (PowerCables.has(serverLevel, pos)) {
+            if (Cables.has(kind, serverLevel, pos)) {
                 continue;
             }
             if (!player.getAbilities().instabuild && stack.isEmpty()) {
                 break;
             }
-            if (PowerCables.add(serverLevel, pos)) {
+            if (Cables.add(kind, serverLevel, pos)) {
                 placed++;
                 if (!player.getAbilities().instabuild) {
                     stack.shrink(1);
@@ -135,6 +146,12 @@ public class CableSpoolItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        // Wat deze soort doet (de stroomkabel spreekt voor zich).
+        if (kind == CableKind.NETWORK) {
+            tooltip.add(Component.translatable("tooltip.imttech.network_cable").withStyle(ChatFormatting.WHITE));
+        } else if (kind == CableKind.POE) {
+            tooltip.add(Component.translatable("tooltip.imttech.poe_cable").withStyle(ChatFormatting.GREEN));
+        }
         tooltip.add(Component.translatable("tooltip.imttech.cable.draw").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.cable.take").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.cable.cut").withStyle(ChatFormatting.DARK_AQUA));
@@ -151,13 +168,21 @@ public class CableSpoolItem extends Item {
         return blockHit.getBlockPos().relative(blockHit.getDirection());
     }
 
+    /** Een stukje kabel waar je naar kijkt: de plek, en welke soort. */
+    public record Hit(BlockPos pos, CableKind kind) {}
+
     /**
-     * De eerste kabel die je ziet als je kijkt: we lopen in kleine stapjes langs je kijklijn.
-     * Een kabel die in een blok zit (verborgen), kun je niet pakken: daar zit het blok voor.
+     * Het eerste stukje kabel dat je ziet als je kijkt: we lopen in kleine stapjes langs je kijklijn. Een kabel die in een
+     * blok zit (verborgen), kun je niet pakken: daar zit het blok voor.
+     *
+     * @param only alleen deze soort (een rol raapt alleen zijn eigen soort op), of null = elke soort. Liggen er dan meer
+     *             soorten op die plek, dan krijg je de kabel die het dichtst bij je kijklijn ligt (zie CableGeometry: ze
+     *             liggen boven elkaar).
      */
-    public static @Nullable BlockPos lookedAtCable(ServerLevel level, Player player) {
+    public static @Nullable Hit lookedAtCable(ServerLevel level, Player player, @Nullable CableKind only) {
         Vec3 eye = player.getEyePosition();
-        Vec3 step = player.getViewVector(1.0f).scale(0.1);
+        Vec3 view = player.getViewVector(1.0f);
+        Vec3 step = view.scale(0.1);
         BlockPos lastCell = null;
         for (int i = 0; i < REACH * 10; i++) {
             Vec3 at = eye.add(step.scale(i));
@@ -169,23 +194,39 @@ public class CableSpoolItem extends Item {
             if (PowerCables.isSolid(level, cell)) {
                 return null; // een muur: verder kijken we niet
             }
-            if (PowerCables.has(level, cell)) {
-                return cell;
+            if (only != null) {
+                if (Cables.has(only, level, cell)) {
+                    return new Hit(cell, only);
+                }
+                continue;
+            }
+            CableKind best = null;
+            double bestDistance = Double.MAX_VALUE;
+            for (CableKind kind : Cables.at(level, cell)) {
+                Vec3 point = Vec3.atLowerCornerOf(cell).add(CableGeometry.lay(level, cell, kind, false).point());
+                double distance = point.subtract(eye).cross(view).lengthSqr();
+                if (distance < bestDistance) {
+                    best = kind;
+                    bestDistance = distance;
+                }
+            }
+            if (best != null) {
+                return new Hit(cell, best);
             }
         }
         return null;
     }
 
     /** Opraapt (shift + rechtsklik met de rol): de kabel weg, jij krijgt hem terug. */
-    private static void take(ServerLevel level, ServerPlayer player, BlockPos cable) {
-        if (PowerCables.remove(level, cable)) {
+    private static void take(ServerLevel level, ServerPlayer player, Hit cable) {
+        if (Cables.remove(cable.kind(), level, cable.pos())) {
             if (!player.getAbilities().instabuild) {
-                ItemStack back = new ItemStack(ModItems.CABLE.get());
+                ItemStack back = new ItemStack(cable.kind().item());
                 if (!player.getInventory().add(back)) {
                     player.drop(back, false);
                 }
             }
-            level.playSound(null, cable, SoundEvents.WOOL_BREAK, SoundSource.BLOCKS, 0.5f, 1.2f);
+            level.playSound(null, cable.pos(), SoundEvents.WOOL_BREAK, SoundSource.BLOCKS, 0.5f, 1.2f);
         }
     }
 
@@ -194,7 +235,9 @@ public class CableSpoolItem extends Item {
     /**
      * Rechtsklik met een schaar: ligt er een kabel in je kijklijn (vóór het blok waar je naar
      * kijkt), dan knip je hem door. Er valt een stukje kabel uit, en er springen vonken.
-     * Zo kun je bijvoorbeeld de stroom naar de lasers of torentjes van een gebouw afsnijden.
+     * Zo kun je bijvoorbeeld de stroom naar de lasers of torentjes van een gebouw afsnijden, of het
+     * netwerk naar een camera. Liggen er meer soorten op één plek, dan knip je de kabel die het
+     * dichtst bij je kijklijn ligt.
      */
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (tryCut(event.getEntity(), event.getItemStack())) {
@@ -214,15 +257,16 @@ public class CableSpoolItem extends Item {
         if (!held.is(Items.SHEARS) || !(player.level() instanceof ServerLevel level)) {
             return false;
         }
-        BlockPos cable = lookedAtCable(level, player);
-        if (cable == null) {
+        Hit hit = lookedAtCable(level, player, null);
+        if (hit == null) {
             return false;
         }
-        if (!PowerCables.remove(level, cable)) {
+        if (!Cables.remove(hit.kind(), level, hit.pos())) {
             return false;
         }
+        BlockPos cable = hit.pos();
         net.minecraft.world.entity.item.ItemEntity drop = new net.minecraft.world.entity.item.ItemEntity(level,
-                cable.getX() + 0.5, cable.getY() + 0.3, cable.getZ() + 0.5, new ItemStack(ModItems.CABLE.get()));
+                cable.getX() + 0.5, cable.getY() + 0.3, cable.getZ() + 0.5, new ItemStack(hit.kind().item()));
         level.addFreshEntity(drop);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, cable.getX() + 0.5, cable.getY() + 0.2, cable.getZ() + 0.5,
                 12, 0.2, 0.1, 0.2, 0.2);

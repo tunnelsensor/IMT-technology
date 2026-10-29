@@ -5,9 +5,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.senne.imttech.energy.CableCells;
+import com.senne.imttech.energy.CableGeometry;
+import com.senne.imttech.energy.CableKind;
+import com.senne.imttech.energy.Cables;
 import com.senne.imttech.energy.EnergySource;
 import com.senne.imttech.energy.PowerConnectable;
 import com.senne.imttech.energy.PowerCables;
+import com.senne.imttech.lan.NetworkConnectable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -20,24 +24,29 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Tekent de getekende stroomkabels (zie PowerCables): een dun, donker kabeltje dat plat op de vloer
- * ligt, tegen een muur omhoog loopt of onder een plafond hangt, met een knik op de hoeken. Naar een
- * apparaat ernaast loopt een stukje kabel.
+ * Tekent de getekende kabels (zie Cables): een dun kabeltje dat plat op de vloer ligt, tegen een muur omhoog loopt of
+ * onder een plafond hangt, met een knik op de hoeken. Naar een apparaat ernaast loopt een stukje kabel. Hoe het kabeltje
+ * precies in een blok ligt, staat in CableGeometry.
  *
- * Zit een kabel IN een blok (je bouwde er een muur overheen), dan zie je hem niet: het blok zit
- * ervoor. Draag je de bril, dan licht hij door de muur heen op als een zachte blauwe lijn (tot 24
- * blokken ver), zodat je weet waar de stroom loopt, en waar je moet knippen. Die "kabel-xray" zet
- * je aan of uit in G > Information (zie ImtClientConfig.CABLE_XRAY).
+ * Sinds hoofdstuk 38 zijn er drie soorten, elk met een eigen kleur (jouw tabel van 29 oktober):
+ * <ul>
+ *   <li><b>stroomkabel</b>: donkergrijs rubber; met de bril door de muur heen grijs;</li>
+ *   <li><b>netwerkkabel</b>: wit; met de bril ook wit;</li>
+ *   <li><b>PoE-kabel</b>: groen; met de bril gloeiend groen (een felle kern met een zachte gloed eromheen).</li>
+ * </ul>
+ * Liggen er meer soorten op één plek, dan liggen ze boven elkaar (de "banen", zie CableGeometry).
  *
- * Hoe het kabeltje loopt: elke plek kiest een "ankerkant" (de vloer, een muur of het plafond waar
- * hij tegenaan ligt). Van het midden van die kant loopt hij naar elke buur, eerst langs de
- * ankerkant en dan pas omhoog of opzij; zo liggen de stukken netjes tegen de oppervlakken.
+ * Zit een kabel IN een blok (je bouwde er een muur overheen), dan zie je hem niet: het blok zit ervoor. Draag je de bril,
+ * dan licht hij door de muur heen op (tot 24 blokken ver), zodat je weet waar de stroom en het netwerk lopen, en waar je
+ * moet knippen. Die "kabel-xray" zet je aan of uit in G > Information (zie ImtClientConfig.CABLE_XRAY).
  */
 public final class CableRenderer {
     private CableRenderer() {}
@@ -52,8 +61,22 @@ public final class CableRenderer {
                     .setLightmapState(RenderStateShard.LIGHTMAP)
                     .createCompositeState(false));
 
-    /** Licht dat door alles heen te zien is (voor verborgen kabels met de bril op). */
+    /**
+     * Een half doorzichtige kleur die door alles heen te zien is (verborgen stroom- en netwerkkabels met de bril op). Gewoon
+     * doorzichtig, niet oplichtend: zo blijft grijs echt grijs.
+     */
     private static final RenderType XRAY = RenderType.create("imttech_cable_xray", DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS, 4096, false, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
+                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                    .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
+                    .createCompositeState(false));
+
+    /** Licht dat door alles heen te zien is en oplicht (verborgen PoE-kabels met de bril op: gloeiend groen). */
+    private static final RenderType XRAY_GLOW = RenderType.create("imttech_cable_xray_glow", DefaultVertexFormat.POSITION_COLOR,
             VertexFormat.Mode.QUADS, 4096, false, false,
             RenderType.CompositeState.builder()
                     .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
@@ -66,9 +89,28 @@ public final class CableRenderer {
     /** Hoeveel chunks rond de camera we tekenen, en hoe ver verborgen kabels te zien zijn. */
     private static final int RANGE_CHUNKS = 4;
     private static final double XRAY_RANGE = 24.0;
-    /** Half de dikte van het kabeltje, en hoe ver het van de vloer of muur af ligt. */
-    private static final double HALF = 0.045;
-    private static final double LIFT = 0.5 - HALF - 0.005;
+    private static final double HALF = CableGeometry.HALF;
+
+    /**
+     * Hoe een soort kabel eruitziet. Gewoon: de bovenkant iets lichter, de onderkant iets donkerder (schaduw). Met de bril
+     * door een muur heen: één kleur, half doorzichtig; {@code glow} = met een zachte gloed eromheen.
+     */
+    private record Look(int top, int side, int bottom, int xray, int xrayAlpha, boolean glow) {}
+
+    private static final Look POWER_LOOK = new Look(0x4A505C, 0x33373F, 0x24272D, 0x50565F, 200, false);
+    private static final Look NETWORK_LOOK = new Look(0xF2F4F7, 0xD5D9DF, 0xB2B8C1, 0xF6F8FC, 170, false);
+    private static final Look POE_LOOK = new Look(0x4CC764, 0x35A04C, 0x267A38, 0x3DFF6E, 170, true);
+
+    private static Look look(CableKind kind) {
+        return switch (kind) {
+            case POWER -> POWER_LOOK;
+            case NETWORK -> NETWORK_LOOK;
+            case POE -> POE_LOOK;
+        };
+    }
+
+    /** Een kabel in een muur die we met de bril tekenen: waar, en welke soort. */
+    private record Hidden(BlockPos cell, CableKind kind) {}
 
     public static void onRenderLevel(RenderLevelStageEvent event) {
         // Na de wezens: in deze fase draait de camera al mee in de PoseStack (net als bij de illusies).
@@ -89,7 +131,7 @@ public final class CableRenderer {
         VertexConsumer solid = buffers.getBuffer(CABLE);
         // Verborgen kabels alleen met een werkende bril op, en alleen als de kabel-xray aan staat.
         boolean xray = ImtClientState.operational && ImtClientConfig.cableXray();
-        List<BlockPos> hidden = new ArrayList<>();
+        List<Hidden> hidden = new ArrayList<>();
 
         ChunkPos centre = new ChunkPos(BlockPos.containing(cam));
         for (int cx = centre.x - RANGE_CHUNKS; cx <= centre.x + RANGE_CHUNKS; cx++) {
@@ -98,168 +140,136 @@ public final class CableRenderer {
                 if (chunk == null) {
                     continue;
                 }
-                CableCells cells = PowerCables.in(chunk);
-                if (cells.isEmpty()) {
-                    continue;
-                }
-                cells.forEach(cell -> {
-                    if (PowerCables.isSolid(level, cell)) {
-                        if (xray && cell.distToCenterSqr(cam) < XRAY_RANGE * XRAY_RANGE) {
-                            hidden.add(cell);
-                        }
-                    } else {
-                        drawCell(m, solid, level, cell, LevelRenderer.getLightColor(level, cell), false);
+                for (CableKind kind : CableKind.values()) {
+                    CableCells cells = Cables.in(kind, chunk);
+                    if (cells.isEmpty()) {
+                        continue;
                     }
-                });
+                    cells.forEach(cell -> {
+                        if (PowerCables.isSolid(level, cell)) {
+                            if (xray && cell.distToCenterSqr(cam) < XRAY_RANGE * XRAY_RANGE) {
+                                hidden.add(new Hidden(cell, kind));
+                            }
+                        } else {
+                            drawCell(m, solid, level, cell, kind, LevelRenderer.getLightColor(level, cell), false);
+                        }
+                    });
+                }
             }
         }
         buffers.endBatch(CABLE);
         if (!hidden.isEmpty()) {
-            VertexConsumer glow = buffers.getBuffer(XRAY);
-            for (BlockPos cell : hidden) {
-                drawCell(m, glow, level, cell, 0, true);
+            // Eerst de gewone (stroom en netwerk), dan wat gloeit (PoE): elk soort licht in zijn eigen keer.
+            for (boolean glowing : new boolean[] {false, true}) {
+                RenderType type = glowing ? XRAY_GLOW : XRAY;
+                VertexConsumer vc = buffers.getBuffer(type);
+                for (Hidden cable : hidden) {
+                    if (look(cable.kind()).glow() == glowing) {
+                        drawCell(m, vc, level, cable.cell(), cable.kind(), 0, true);
+                    }
+                }
+                buffers.endBatch(type);
             }
-            buffers.endBatch(XRAY);
         }
         pose.popPose();
     }
 
     // ================================================================ Eén plek
 
-    private static void drawCell(Matrix4f m, VertexConsumer vc, ClientLevel level, BlockPos cell, int light, boolean xray) {
-        EnumSet<Direction> links = linksOf(level, cell);
-        List<Direction> anchors = xray ? List.of() : anchors(level, cell);
+    private static void drawCell(Matrix4f m, VertexConsumer vc, ClientLevel level, BlockPos cell, CableKind kind,
+                                 int light, boolean xray) {
+        CableGeometry.Lay lay = CableGeometry.lay(level, cell, kind, xray);
+        Look look = look(kind);
+        EnumSet<Direction> links = linksOf(level, cell, kind);
         Vec3 base = Vec3.atLowerCornerOf(cell);
-        Vec3 p = base.add(point(anchors));
+        Vec3 p = base.add(lay.point());
         if (links.isEmpty()) {
-            box(m, vc, p, p, light, xray);
+            box(m, vc, p, p, light, look, xray);
             return;
         }
         for (Direction d : links) {
-            Vec3 f = base.add(facePoint(d, anchors));
-            path(m, vc, p, f, anchors, light, xray);
-            // Ligt de buurkabel tegen een andere kant aan? Dan een bruggetje over het raakvlak.
+            Vec3 f = base.add(lay.facePoint(d));
+            path(m, vc, p, f, lay.anchors(), light, look, xray);
+            // Ligt de buurkabel anders (tegen een andere kant, of op een andere baan)? Dan een bruggetje over het
+            // raakvlak. Eén keer per raakvlak: alleen vanaf de kant met de laagste coördinaat.
             BlockPos next = cell.relative(d);
-            if (!xray && PowerCables.has(level, next) && !PowerCables.isSolid(level, next)) {
-                Vec3 g = Vec3.atLowerCornerOf(next).add(facePoint(d.getOpposite(), anchors(level, next)));
+            CableKind other = neighbourKind(level, next, kind);
+            if (other != null && d.getAxisDirection() == Direction.AxisDirection.POSITIVE
+                    && PowerCables.isSolid(level, next) == xray) {
+                Vec3 g = Vec3.atLowerCornerOf(next).add(CableGeometry.lay(level, next, other, xray).facePoint(d.getOpposite()));
                 if (g.distanceToSqr(f) > 1.0E-6) {
-                    path(m, vc, f, g, List.of(), light, false);
+                    path(m, vc, f, g, List.of(), light, look, xray);
                 }
             }
         }
     }
 
-    /** Naar welke kanten loopt de kabel: naar andere kabels, en naar apparaten met stroom. */
-    private static EnumSet<Direction> linksOf(ClientLevel level, BlockPos cell) {
+    /**
+     * Naar welke kanten loopt de kabel: naar kabels waar hij aan vastzit (dezelfde soort; een PoE-kabel ook naar een
+     * stroom- of netwerkkabel, zie CableKind.joins), en naar apparaten die op deze soort aansluiten.
+     */
+    private static EnumSet<Direction> linksOf(ClientLevel level, BlockPos cell, CableKind kind) {
         EnumSet<Direction> links = EnumSet.noneOf(Direction.class);
         for (Direction d : Direction.values()) {
             BlockPos next = cell.relative(d);
-            if (PowerCables.has(level, next) || level.getBlockState(next).getBlock() instanceof PowerConnectable
-                    || level.getBlockEntity(next) instanceof EnergySource) {
+            if (neighbourKind(level, next, kind) != null || connectsDevice(level, next, kind)) {
                 links.add(d);
             }
         }
         return links;
     }
 
-    private static final Direction[] WALLS = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-
-    /**
-     * Waar het kabeltje tegenaan ligt: hooguit twee kanten. Een vloer (of plafond) en een muur
-     * ernaast: dan ligt hij in de hoek ertussen, zodat hij netjes van de vloer de muur op gaat.
-     * Raakt deze plek niets, maar zit er schuin onder of boven een blok (de rand bovenop een
-     * muurtje), dan ligt hij op die rand. Anders nergens tegenaan (door het midden).
-     */
-    private static List<Direction> anchors(ClientLevel level, BlockPos cell) {
-        Direction vertical = PowerCables.isSolid(level, cell.below()) ? Direction.DOWN
-                : PowerCables.isSolid(level, cell.above()) ? Direction.UP : null;
-        Direction wall = null;
-        for (Direction d : WALLS) {
-            if (PowerCables.isSolid(level, cell.relative(d))) {
-                wall = d;
-                break;
+    /** De kabel op {@code next} waar een kabel van soort {@code kind} aan vastzit (liefst dezelfde soort), of null. */
+    private static @Nullable CableKind neighbourKind(ClientLevel level, BlockPos next, CableKind kind) {
+        if (Cables.has(kind, level, next)) {
+            return kind;
+        }
+        for (CableKind other : CableKind.values()) {
+            if (other != kind && kind.joins(other) && Cables.has(other, level, next)) {
+                return other;
             }
         }
-        if (vertical != null && wall != null) {
-            return List.of(wall, vertical);
-        }
-        if (vertical != null) {
-            return List.of(vertical);
-        }
-        if (wall != null) {
-            return List.of(wall);
-        }
-        for (Direction v : new Direction[] {Direction.DOWN, Direction.UP}) {
-            for (Direction d : WALLS) {
-                if (PowerCables.isSolid(level, cell.relative(d).relative(v))) {
-                    return List.of(d, v);
-                }
-            }
-        }
-        return List.of();
+        return null;
     }
 
-    /** Het punt waar de kabel in dit blok ligt: tegen zijn ankerkanten aan (plek 0..1 binnen het blok). */
-    private static Vec3 point(List<Direction> anchors) {
-        Vec3 point = new Vec3(0.5, 0.5, 0.5);
-        for (Direction a : anchors) {
-            point = point.add(a.getStepX() * LIFT, a.getStepY() * LIFT, a.getStepZ() * LIFT);
+    /** Sluit het blok op {@code next} aan op deze soort kabel? Stroom: apparaten met stroom; netwerk: netwerkapparaten. */
+    private static boolean connectsDevice(ClientLevel level, BlockPos next, CableKind kind) {
+        Block block = level.getBlockState(next).getBlock();
+        if (kind.carriesPower() && (block instanceof PowerConnectable || level.getBlockEntity(next) instanceof EnergySource)) {
+            return true;
         }
-        return point;
+        return kind.carriesNetwork() && block instanceof NetworkConnectable;
     }
 
-    /**
-     * Waar de kabel het blok uit gaat naar kant {@code d}: op die kant, tegen de ankerkanten aan
-     * (behalve een ankerkant in dezelfde richting als {@code d}: daar gaat hij juist doorheen).
-     */
-    private static Vec3 facePoint(Direction d, List<Direction> anchors) {
-        Vec3 face = new Vec3(0.5 + d.getStepX() * 0.5, 0.5 + d.getStepY() * 0.5, 0.5 + d.getStepZ() * 0.5);
-        for (Direction a : anchors) {
-            if (a.getAxis() != d.getAxis()) {
-                face = face.add(a.getStepX() * LIFT, a.getStepY() * LIFT, a.getStepZ() * LIFT);
-            }
-        }
-        return face;
-    }
-
-    /**
-     * Van {@code from} naar {@code to}, in rechte stukken langs de assen: eerst de assen die langs
-     * de ankerkanten lopen, pas dan de assen die ervan af gaan (zo blijft hij tegen vloer en muur).
-     */
+    /** Van {@code from} naar {@code to} in rechte stukken langs de assen (zie CableGeometry.corners). */
     private static void path(Matrix4f m, VertexConsumer vc, Vec3 from, Vec3 to, List<Direction> anchors,
-                             int light, boolean xray) {
-        List<Direction.Axis> order = new ArrayList<>(List.of(Direction.Axis.X, Direction.Axis.Z, Direction.Axis.Y));
-        for (Direction a : anchors) {
-            order.remove(a.getAxis());
-            order.add(a.getAxis());
-        }
-        Vec3 at = from;
-        for (Direction.Axis axis : order) {
-            double target = to.get(axis);
-            if (Math.abs(at.get(axis) - target) < 1.0E-6) {
-                continue;
-            }
-            Vec3 next = switch (axis) {
-                case X -> new Vec3(target, at.y, at.z);
-                case Y -> new Vec3(at.x, target, at.z);
-                case Z -> new Vec3(at.x, at.y, target);
-            };
-            box(m, vc, at, next, light, xray);
-            at = next;
+                             int light, Look look, boolean xray) {
+        List<Vec3> corners = CableGeometry.corners(from, to, anchors);
+        for (int i = 1; i < corners.size(); i++) {
+            box(m, vc, corners.get(i - 1), corners.get(i), light, look, xray);
         }
     }
 
-    /** Een dun blokje van {@code a} naar {@code b} (een recht stuk kabel), met de dikte eromheen. */
-    private static void box(Matrix4f m, VertexConsumer vc, Vec3 a, Vec3 b, int light, boolean xray) {
-        double h = xray ? HALF * 1.6 : HALF;
+    /**
+     * Een dun blokje van {@code a} naar {@code b} (een recht stuk kabel), met de dikte eromheen. Een PoE-kabel door de
+     * muur heen krijgt er nog een dikkere, zwakke doos omheen: de gloed.
+     */
+    private static void box(Matrix4f m, VertexConsumer vc, Vec3 a, Vec3 b, int light, Look look, boolean xray) {
+        if (xray) {
+            cuboid(m, vc, a, b, HALF * 1.6, light, true, look.xray(), look.xray(), look.xray(), look.xrayAlpha());
+            if (look.glow()) {
+                cuboid(m, vc, a, b, HALF * 3.4, light, true, look.xray(), look.xray(), look.xray(), look.xrayAlpha() / 4);
+            }
+        } else {
+            cuboid(m, vc, a, b, HALF, light, false, look.top(), look.side(), look.bottom(), 255);
+        }
+    }
+
+    private static void cuboid(Matrix4f m, VertexConsumer vc, Vec3 a, Vec3 b, double h, int light, boolean xray,
+                               int top, int side, int bottom, int alpha) {
         float x0 = (float) (Math.min(a.x, b.x) - h), x1 = (float) (Math.max(a.x, b.x) + h);
         float y0 = (float) (Math.min(a.y, b.y) - h), y1 = (float) (Math.max(a.y, b.y) + h);
         float z0 = (float) (Math.min(a.z, b.z) - h), z1 = (float) (Math.max(a.z, b.z) + h);
-        // Donker rubber; de bovenkant iets lichter, de onderkant iets donkerder (schaduw).
-        int top = xray ? 0x2A6FA0 : 0x4A505C;
-        int side = xray ? 0x2A6FA0 : 0x33373F;
-        int bottom = xray ? 0x2A6FA0 : 0x24272D;
-        int alpha = xray ? 110 : 255;
         quad(m, vc, light, xray, top, alpha, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
         quad(m, vc, light, xray, bottom, alpha, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
         quad(m, vc, light, xray, side, alpha, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);

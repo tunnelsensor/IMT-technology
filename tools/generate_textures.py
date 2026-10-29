@@ -1088,6 +1088,35 @@ def cable_textures():
     save(spool, "item/cable_spool.png")
 
 
+def network_cable_spools():
+    """
+    Hoofdstuk 38: de rollen netwerkkabel (wit, op een lichtgrijze spoel) en PoE-kabel (groen, op een koperen
+    spoel, want er gaat ook stroom door). Dezelfde vorm als de rol stroomkabel, zodat je ze herkent.
+    Alleen deze functie draaien:
+        python -c "import sys; sys.path.insert(0,'tools'); import generate_textures as g; g.network_cable_spools()"
+    """
+    def spool(flange, flange_edge, cable, cable_hi, cable_edge, stripe, stripe_hi, rel):
+        im = img(16, 16)
+        d = ImageDraw.Draw(im)
+        d.rectangle([2, 2, 4, 13], fill=flange, outline=flange_edge)      # linker flens
+        d.rectangle([11, 2, 13, 13], fill=flange, outline=flange_edge)    # rechter flens
+        d.rectangle([5, 4, 10, 11], fill=cable, outline=cable_edge)
+        for y in (5, 7, 9):
+            d.line([5, y, 10, y], fill=cable_hi)
+        d.line([5, 8, 10, 8], fill=stripe)
+        px(im, [(7, 8), (8, 8)], stripe_hi)
+        d.line([10, 11, 12, 14], fill=cable_edge)
+        px(im, [(12, 15)], flange)
+        save(im, rel)
+
+    # Wit: lichte kabel met een grijze rand (anders verdwijnt hij tegen een licht vak), een blauwgrijs streepje.
+    spool((176, 182, 190, 255), (92, 98, 108, 255), (226, 230, 236, 255), (250, 251, 253, 255),
+          (120, 126, 136, 255), (150, 168, 190, 255), (210, 225, 245, 255), "item/network_cable_spool.png")
+    # Groen: koperen spoel (stroom), groene kabel met een fel lichtgroen streepje.
+    spool((190, 110, 60, 255), (112, 56, 28, 255), (52, 160, 76, 255), (84, 196, 104, 255),
+          (28, 96, 44, 255), (120, 255, 150, 255), (200, 255, 210, 255), "item/poe_cable_spool.png")
+
+
 # --------------------------------------------------------------------- Fase 9: redstone-relais
 
 def relay_textures():
@@ -3559,6 +3588,7 @@ if __name__ == "__main__":
     planet_texture()
     satellite_textures()
     cable_textures()
+    network_cable_spools()
     dome_field()
     zone_textures()
     zone_marker_item()
