@@ -417,6 +417,60 @@ public final class NetworkGameTests {
         helper.succeedWhen(() -> helper.assertBlockProperty(emitter, LaserEmitterBlock.POWERED, true));
     }
 
+    // ================================================================ Stap 3: de toren bekabeld
+
+    /**
+     * De Biebia's Industries Tower: elke stroomkabel in de muren heeft een netwerkkabel ernaast (zie
+     * tools/generate_structure.py), dus al zijn beveiligingstorentjes, camera's en laserzenders hangen met een netwerkkabel
+     * aan zijn kern (ook de lasers achter de stroomkast, via het stukje kabel om de kast heen). In Devices staan de negen
+     * torentjes en de zes camera's. (De "serverkasten" van de toren zijn decoratie: geen echte racks.)
+     */
+    @GameTest(template = "biebia_tower", timeoutTicks = 200, batch = "lan")
+    public static void biebia_tower_is_wired_with_network_cables(GameTestHelper helper) {
+        helper.runAfterDelay(40, () -> {
+            ServerLevel level = helper.getLevel();
+            List<BlockPos> turrets = new java.util.ArrayList<>();
+            List<BlockPos> cameras = new java.util.ArrayList<>();
+            List<BlockPos> emitters = new java.util.ArrayList<>();
+            BlockPos core = null;
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int x = 0; x < 41; x++) {
+                for (int z = 0; z < 55; z++) {
+                    for (int y = 0; y < 100; y++) {
+                        var state = helper.getBlockState(pos.set(x, y, z));
+                        if (state.is(ModBlocks.SECURITY_TURRET.get())) {
+                            turrets.add(pos.immutable());
+                        } else if (state.is(ModBlocks.SECURITY_CAMERA.get())) {
+                            cameras.add(pos.immutable());
+                        } else if (state.is(ModBlocks.LASER_EMITTER.get())) {
+                            emitters.add(pos.immutable());
+                        } else if (state.is(ModBlocks.SECURITY_CORE.get())) {
+                            core = pos.immutable();
+                        }
+                    }
+                }
+            }
+            check(core != null && turrets.size() == 9 && cameras.size() == 6 && !emitters.isEmpty(),
+                    "De toren heeft niet wat hij moet hebben: " + turrets.size() + " torentjes, " + cameras.size()
+                            + " camera's, " + emitters.size() + " zenders, kern " + core);
+            SecurityCoreBlockEntity coreEntity = (SecurityCoreBlockEntity) helper.getBlockEntity(core);
+            List<BlockPos> loose = new java.util.ArrayList<>();
+            for (List<BlockPos> devices : List.of(turrets, cameras, emitters)) {
+                for (BlockPos device : devices) {
+                    if (SecurityCores.deviceCore(level, helper.absolutePos(device)) != coreEntity) {
+                        loose.add(device);
+                    }
+                }
+            }
+            check(loose.isEmpty(), "Deze apparaten van de toren hangen niet met een netwerkkabel aan de kern: " + loose);
+            SecurityDevices.forget(level, coreEntity);
+            var found = SecurityDevices.scan(level, coreEntity);
+            check(found.turrets().size() == 9 && found.cameras().size() == 6,
+                    "Devices ziet " + found.turrets().size() + " torentjes en " + found.cameras().size() + " camera's");
+            helper.succeed();
+        });
+    }
+
     /**
      * Een EMP-puls legt een open netwerkkabel even plat (het apparaat erachter hoort dan bij geen kern), een netwerkkabel in
      * een muur niet. Na de puls werkt de open kabel weer.

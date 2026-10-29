@@ -1604,6 +1604,10 @@ def wire_security():
     cables.discard(cabinet)
     put(*cabinet, "imttech:power_cabinet", {"facing": "west"})
     cx, cy, cz = cabinet
+    # Hoofdstuk 38: het netwerk gaat niet door de stroomkast (alleen stroom). Eén stukje netwerkkabel om de kast heen
+    # verbindt de beveiliging (de noordkant, met de kern) met de lasers (de kabel boven de kast), zodat de kern ook de
+    # lasergang en de kluis ziet en bedient. Het zit in de mantel van de krachtcentrale.
+    net_cable(cx, cy + 1, cz - 1)
     # Generator A (onderaan) via de oostmantel naar de rechterkant van de kast.
     route((cx + 1, cy, cz), (cx + 2, cy, cz), (cx + 2, SECURITY_Y + 3, cz), (cx, SECURITY_Y + 3, cz))
     # De beveiliging: via de noordmantel omlaag de vloer in.
@@ -1703,13 +1707,35 @@ def cable(x, y, z):
         cables.add((x, y, z))
 
 
+# Hoofdstuk 38: de plekken met alleen een netwerkkabel (zie net_cable()). Daarnaast krijgt elke stroomkabel van de
+# toren ook een netwerkkabel op dezelfde plek (zie cable_markers()): de beveiliging van de toren hangt zo met een
+# netwerkkabel aan de kern, langs dezelfde verborgen wegen als de stroom. Knip je die door, dan valt het uit.
+net_cables = set()
+
+
+def net_cable(x, y, z):
+    """Alleen een netwerkkabel (geen stroom), op dezelfde manier als cable()."""
+    if 0 <= x < SIZE_X and 0 <= y < SIZE_Y and 0 <= z < SIZE_Z:
+        net_cables.add((x, y, z))
+
+
 def cable_markers():
-    """De markers voor alle kabels, zoals ze in het NBT-bestand bij "entities" horen."""
-    return [{
-        "blockPos": [Int(x), Int(y), Int(z)],
-        "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
-        "nbt": {"id": "minecraft:marker", "data": {"imttech_cable": Int(1)}},
-    } for (x, y, z) in sorted(cables)]
+    """
+    De markers voor alle kabels, zoals ze in het NBT-bestand bij "entities" horen. Een stroomkabel krijgt het labeltje
+    "imttech_cable", en (hoofdstuk 38) ook "imttech_net_cable": daar ligt dan ook een netwerkkabel. Een plek uit
+    net_cables krijgt alleen de netwerkkabel.
+    """
+    markers = []
+    for (x, y, z) in sorted(cables | net_cables):
+        data = {"imttech_net_cable": Int(1)}
+        if (x, y, z) in cables:
+            data["imttech_cable"] = Int(1)
+        markers.append({
+            "blockPos": [Int(x), Int(y), Int(z)],
+            "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
+            "nbt": {"id": "minecraft:marker", "data": data},
+        })
+    return markers
 
 
 def to_nbt():

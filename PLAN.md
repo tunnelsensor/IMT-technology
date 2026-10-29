@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 349 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 350 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3800,7 +3800,16 @@ Ik bouw het in deze volgorde, één stap per commit:
       `network_reaches_through_walls_and_by_touch`, `the_nearest_core_along_the_cable_wins`,
       `without_the_network_rule_the_area_counts`, `camera_turret_and_rack_need_the_network`,
       `rocket_turret_and_laser_gate_work_without_network`, `emp_cuts_open_network_cables`. 349 tests, allemaal groen.
-- [ ] **3. De Biebia's Industries Tower bekabeld** (eerder dan gepland: anders blijft de beveiliging van de toren uit)
+- [x] **3. De Biebia's Industries Tower bekabeld** (eerder dan gepland: anders bleef de beveiliging van de toren in een
+      echte wereld uit) — in `tools/generate_structure.py` krijgt elke stroomkabel van de toren een netwerkkabel op
+      dezelfde plek (de markers krijgen allebei de labeltjes), dus het netwerk loopt langs dezelfde verborgen wegen als de
+      stroom: knip je zo'n kabel door, dan valt wat erachter zit uit. Het netwerk gaat niet door de stroomkast; één
+      stukje netwerkkabel om de kast heen (in de mantel van de krachtcentrale) verbindt de beveiliging met de lasers, zodat
+      de kern ook de lasergang en de kluis ziet. `biebia_tower.nbt` opnieuw gemaakt (alleen de markers zijn anders: ik
+      controleerde dat het script zonder deze wijziging precies het oude bestand maakt). De "serverkasten" van de toren
+      zijn decoratie (crafters), die hebben niets nodig. **Test**: `biebia_tower_is_wired_with_network_cables` (met het
+      netwerk aan: de 9 torentjes, 6 camera's en 22 laserzenders hangen aan de kern, en Devices ziet 9 torentjes en 6
+      camera's). 350 tests, allemaal groen.
 - [ ] **4. Stroom voor lezer en paneel**
 - [ ] **5. PoE: stroom en netwerk in één kabel**
 - [ ] **6. De Network Switch**
