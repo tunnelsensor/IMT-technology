@@ -265,6 +265,7 @@ public final class NetworkGameTests {
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
         BlockPos reader = new BlockPos(9, 3, 2);
         helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        generator(helper, reader.above()); // stroom (stap 4): zonder stroom gaat er geen lampje aan
         check(coreOf(helper, reader) == null, "Een lezer zonder netwerkkabel hoort bij een kern");
         check(!SecurityDevices.scan(level, core).inputs().contains(helper.absolutePos(reader)),
                 "Een lezer zonder netwerkkabel staat in Devices");
@@ -415,6 +416,69 @@ public final class NetworkGameTests {
         generator(helper, emitter.below());
         helper.setBlock(emitter.west(), Blocks.REDSTONE_BLOCK);
         helper.succeedWhen(() -> helper.assertBlockProperty(emitter, LaserEmitterBlock.POWERED, true));
+    }
+
+    // ================================================================ Stap 4: stroom voor lezer en paneel
+
+    /**
+     * Jouw wens: "deze dingen hebben allemaal stroom nodig, dus de keycardreader heeft een netwerkkabel én een powerkabel".
+     * Een lezer en een paneel aan het netwerk maar zonder stroom doen niets (geen lampje), en Devices zegt "no power". Met
+     * stroom ernaast werken ze (zonder draaiende server: een rood lampje). De kern betaalt hun stroom om de twee seconden,
+     * van hun eigen stroomnet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void reader_and_panel_need_power(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 4), "lan-power");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos reader = new BlockPos(5, 3, 2);
+        BlockPos panel = new BlockPos(9, 3, 2);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 3), new BlockPos(9, 3, 3));
+        line(helper, CableKind.NETWORK, new BlockPos(2, 3, 3), new BlockPos(2, 3, 3));
+        check(coreOf(helper, reader) == core && coreOf(helper, panel) == core, "De lezer en het paneel hangen niet aan de kern");
+        BlockPos readerAbs = helper.absolutePos(reader);
+        BlockPos panelAbs = helper.absolutePos(panel);
+        // Zonder stroom: niets.
+        LogicEvents.clear();
+        LogicEvents.keycard(level, readerAbs, owner, null);
+        helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.OFF);
+        LogicEvents.clear();
+        LogicEvents.codePanel(level, panelAbs, owner, "1234");
+        helper.assertBlockProperty(panel, InputDeviceBlock.LIGHT, InputLight.OFF);
+        SecurityDevices.forget(level, core);
+        check(statusOf(level, core, readerAbs).equals("no power"),
+                "Devices zegt bij een lezer zonder stroom: " + statusOf(level, core, readerAbs));
+        // Met stroom ernaast (een generator boven elk apparaat): rood (er draait geen server), dus hij deed iets.
+        generator(helper, reader.above());
+        generator(helper, panel.above());
+        LogicEvents.clear();
+        LogicEvents.keycard(level, readerAbs, owner, null);
+        helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.DENIED);
+        LogicEvents.clear();
+        LogicEvents.codePanel(level, panelAbs, owner, "1234");
+        helper.assertBlockProperty(panel, InputDeviceBlock.LIGHT, InputLight.DENIED);
+        check(statusOf(level, core, readerAbs).equals("no server"),
+                "Devices zegt bij een lezer met stroom (zonder server): " + statusOf(level, core, readerAbs));
+        // De kern betaalt hun stroom: de generator van de lezer raakt READER_UPKEEP kwijt.
+        ChargerBlockEntity readerPower = (ChargerBlockEntity) helper.getBlockEntity(reader.above());
+        int before = readerPower.energy();
+        core.powerTick(level);
+        check(before - readerPower.energy() >= Math.round(com.senne.imttech.config.ImtConfig.Power.READER_UPKEEP),
+                "De kern betaalde de stroom van de lezer niet (" + before + " -> " + readerPower.energy() + ")");
+        helper.succeed();
+    }
+
+    /** De toestand van dit apparaat in de Devices-app ("st"), of "" als het er niet in staat. */
+    private static String statusOf(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos) {
+        for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {
+            net.minecraft.nbt.CompoundTag device = (net.minecraft.nbt.CompoundTag) tag;
+            if (device.getInt("x") == pos.getX() && device.getInt("y") == pos.getY() && device.getInt("z") == pos.getZ()) {
+                return device.getString("st");
+            }
+        }
+        return "";
     }
 
     // ================================================================ Stap 3: de toren bekabeld

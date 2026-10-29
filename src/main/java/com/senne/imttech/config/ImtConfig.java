@@ -321,6 +321,15 @@ public final class ImtConfig {
         /** Stroom die een bewakingscamera elke twee seconden haalt (zonder: "NO SIGNAL"). */
         @Tunable("Grid energy a security camera uses every two seconds (without it, it shows NO SIGNAL)")
         public static float CAMERA_UPKEEP = 2.0f;
+        /**
+         * Hoofdstuk 38: stroom die een keycardlezer elke twee seconden haalt (de kern waar hij met een netwerkkabel aan
+         * hangt, betaalt dat van het stroomnet van de lezer). Zonder stroom leest hij geen kaarten.
+         */
+        @Tunable("Grid energy a keycard reader uses every two seconds (without it, it reads no cards)")
+        public static float READER_UPKEEP = 1.0f;
+        /** Hetzelfde voor een codepaneel: zonder stroom doen de toetsen niets. */
+        @Tunable("Grid energy a code panel uses every two seconds (without it, its keys do nothing)")
+        public static float CODE_PANEL_UPKEEP = 1.0f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */
@@ -1204,12 +1213,13 @@ public final class ImtConfig {
         /**
          * Moeten beveiligingsapparaten met een netwerkkabel aan de desktop van een kern hangen (jouw wens, 29 oktober)?
          * Aan: een keycardlezer, codepaneel, camera, beveiligingstorentje of serverrek zonder netwerkkabel doet niets en
-         * staat niet in Devices. Uit: de oude regel, ze horen bij de dichtstbijzijnde kern in wiens gebied ze staan
-         * (handig voor een oude wereld). Laserpoorten, de laserbrug en je eigen raketturretje werken altijd los.
+         * staat niet in Devices, en lezers en panelen hebben stroom nodig. Uit: de oude regel, ze horen bij de
+         * dichtstbijzijnde kern in wiens gebied ze staan, en lezers en panelen werken zonder stroom (handig voor een oude
+         * wereld). Laserpoorten, de laserbrug en je eigen raketturretje werken altijd los.
          */
         @Tunable("Do security devices (keycard readers, code panels, cameras, security turrets, server racks) need a network "
-                + "cable to the desktop of a security core? false = the old rule: they belong to the nearest core within its "
-                + "reach (handy for an old world)")
+                + "cable to the desktop of a security core, and readers and code panels power? false = the old rule: they "
+                + "belong to the nearest core within its reach, and readers and panels need no power (handy for an old world)")
         public static boolean REQUIRED = true;
     }
 

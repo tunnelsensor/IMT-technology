@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 350 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 351 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3810,7 +3810,16 @@ Ik bouw het in deze volgorde, één stap per commit:
       zijn decoratie (crafters), die hebben niets nodig. **Test**: `biebia_tower_is_wired_with_network_cables` (met het
       netwerk aan: de 9 torentjes, 6 camera's en 22 laserzenders hangen aan de kern, en Devices ziet 9 torentjes en 6
       camera's). 350 tests, allemaal groen.
-- [ ] **4. Stroom voor lezer en paneel**
+- [x] **4. Stroom voor lezer en paneel** — jouw wens: "de keycardreader heeft een netwerkkabel én een powerkabel". Een
+      keycardlezer en een codepaneel gebruiken nu een beetje stroom: nieuw onder `[power]` zijn `readerUpkeep` en
+      `codePanelUpkeep` (elk 1 per twee seconden). Ze hebben geen eigen klok: de kern waar ze aan hangen, betaalt om de
+      twee seconden hun stroom van hun eigen stroomnet (een stroomkabel ernaast, of een generator ertegen). Zonder stroom
+      gaat er geen lampje aan: een kaart of een code doet niets ("No power: connect it with a power cable (or a PoE
+      cable)."), de Bypass Kit vindt er niets om te hacken, en in Devices staat "no power". Hernoemen (sneak + rechtsklik)
+      kan wel. **Mijn invulling**: met `[network] required = false` (het oude gedrag) hebben lezers en panelen ook geen
+      stroom nodig, zoals vroeger (anders werkte een oude wereld niet meer, en alle oude tests ook niet). Binnenkant:
+      `lan/DevicePower` (straks ook voor knop, hendel en switch). **Test**: `reader_and_panel_need_power`. 351 tests,
+      allemaal groen.
 - [ ] **5. PoE: stroom en netwerk in één kabel**
 - [ ] **6. De Network Switch**
 - [ ] **7. De laserbrug op het netwerk** (groep LASER BRIDGES)

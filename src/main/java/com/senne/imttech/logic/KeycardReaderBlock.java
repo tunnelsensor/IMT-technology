@@ -49,6 +49,12 @@ public class KeycardReaderBlock extends InputDeviceBlock {
         return "Reader";
     }
 
+    /** Hoofdstuk 38: stroom die de lezer elke twee seconden gebruikt (zonder stroom leest hij geen kaarten). */
+    @Override
+    public float upkeep() {
+        return com.senne.imttech.config.ImtConfig.Power.READER_UPKEEP;
+    }
+
     /** Een kaart tegen de lezer houden. */
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,

@@ -52,6 +52,12 @@ public class CodePanelBlock extends InputDeviceBlock {
         return "Panel";
     }
 
+    /** Hoofdstuk 38: stroom die het paneel elke twee seconden gebruikt (zonder stroom doen de toetsen niets). */
+    @Override
+    public float upkeep() {
+        return com.senne.imttech.config.ImtConfig.Power.CODE_PANEL_UPKEEP;
+    }
+
     /**
      * Rechtsklik: de toetsen openen (op jouw scherm). Sneak + rechtsklik met een lege hand (13 oktober): het
      * naamscherm, als jij het paneel neerzette of vertrouwd bent in de basis (zie InputDevices). Mag je dat
@@ -60,13 +66,16 @@ public class CodePanelBlock extends InputDeviceBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device) {
-            // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): de toetsen doen niets.
-            if (com.senne.imttech.weapons.Emp.deadDevice(serverPlayer.serverLevel(), pos, player)) {
+            // Hernoemen kan altijd (ook zonder stroom).
+            if (player.isSecondaryUseActive() && InputDevices.tryOpen(serverPlayer, pos)) {
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
-            if (!player.isSecondaryUseActive() || !InputDevices.tryOpen(serverPlayer, pos)) {
-                ModNetwork.sendTo(serverPlayer, new CodePanelPayload(pos, device.name()));
+            // Uitgeschakeld door een EMP-granaat (hoofdstuk 35), of zonder stroom (hoofdstuk 38): de toetsen doen niets.
+            if (com.senne.imttech.weapons.Emp.deadDevice(serverPlayer.serverLevel(), pos, player)
+                    || com.senne.imttech.lan.DevicePower.dead(serverPlayer.serverLevel(), pos, player)) {
+                return InteractionResult.sidedSuccess(level.isClientSide);
             }
+            ModNetwork.sendTo(serverPlayer, new CodePanelPayload(pos, device.name()));
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

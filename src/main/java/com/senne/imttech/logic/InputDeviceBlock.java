@@ -40,7 +40,8 @@ import org.jetbrains.annotations.Nullable;
  * de beveiligingskern in wiens gebied ze hangen; wat er dan gebeurt, staat in je diagram.
  */
 public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implements EntityBlock,
-        com.senne.imttech.energy.PowerConnectable, com.senne.imttech.lan.NetworkConnectable {
+        com.senne.imttech.energy.PowerConnectable, com.senne.imttech.lan.NetworkConnectable,
+        com.senne.imttech.lan.DevicePower.Powered {
     public static final EnumProperty<InputLight> LIGHT = EnumProperty.create("light", InputLight.class);
 
     /** Zo lang (ticks) blijft het lampje groen, rood of oranje. */

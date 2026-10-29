@@ -1304,6 +1304,7 @@
   "block.imttech.code_panel": "Code Panel",
   "logic.imttech.input.no_network": "Not connected: there is no security core nearby.",
   "logic.imttech.input.no_cable": "Not connected: no network cable to the desktop of a security core.",
+  "logic.imttech.input.no_power": "No power: connect it with a power cable (or a PoE cable).",
   "logic.imttech.input.no_response": "No response: the server is offline.",
   "logic.imttech.alarm": "ALARM on %s: %s",
   "zone.imttech.msg.protected": "Protected zone: you can't build or break here. Only explosives get through.",

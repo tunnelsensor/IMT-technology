@@ -423,7 +423,8 @@ public final class SecurityDevices {
             boolean panel = level.getBlockState(pos).getBlock() instanceof com.senne.imttech.logic.CodePanelBlock;
             CompoundTag device = position(panel ? "panel" : "reader", pos);
             device.putString("name", input.name());
-            device.putString("st", server ? "ready" : "no server");
+            device.putString("st", !com.senne.imttech.lan.DevicePower.hasPower(level, pos) ? "no power"
+                    : server ? "ready" : "no server");
             device.putInt("uses", uses(core, panel ? com.senne.imttech.logic.program.Op.CODEPANEL
                     : com.senne.imttech.logic.program.Op.KEYCARD, input.name()));
             list.add(device);

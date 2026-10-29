@@ -643,6 +643,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             com.senne.imttech.energy.PowerGrid.pay(level, worldPosition,
                     ImtConfig.Power.SECURITY_CORE_UPKEEP + (zonePowered ? zoneCost : 0));
         }
+        // Hoofdstuk 38: de stroom van de lezers en panelen op zijn netwerk (ieder van zijn eigen stroomnet).
+        com.senne.imttech.lan.DevicePower.payUpkeep(level, SecurityDevices.scan(level, this).inputs());
     }
 
     // ================================================================ Elke tick

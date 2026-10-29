@@ -145,6 +145,10 @@ public final class Bypass {
                     .withStyle(ChatFormatting.GRAY), true);
             return;
         }
+        // Zonder stroom (hoofdstuk 38) is er niets om voor de gek te houden: het apparaat is dood (het kost niets).
+        if (com.senne.imttech.lan.DevicePower.dead(level, pos, player)) {
+            return;
+        }
         // Een paneel: welke code opent het? Staat er geen in je diagrammen, dan valt er niets te kraken.
         List<String> codes = kind == Kind.PANEL ? PanelCodes.forPanel(core, device.name()) : List.of();
         if (kind == Kind.PANEL && codes.isEmpty()) {
