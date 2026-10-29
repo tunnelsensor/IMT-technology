@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 353 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 356 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3830,7 +3830,19 @@ Ik bouw het in deze volgorde, één stap per commit:
       als "wired". **Mijn invulling**: een apparaat dat direct tegen de kern staat, krijgt zo ook zijn stroom van de kern
       (net als het netwerk). **Tests**: `poe_brings_power_and_network_from_the_desktop`,
       `poe_joins_power_and_network_cables`. 353 tests, allemaal groen.
-- [ ] **6. De Network Switch**
+- [x] **6. De Network Switch** — jouw keuze: "zoals de stroomkast, met stroom". Een nieuw blok (tabblad Power; recept:
+      ijzer en netwerkkabels om een Computer Chip met redstone) waar netwerk- en PoE-kabels van alle zes kanten samenkomen.
+      Achter het deurtje (rechtsklik) staat per kant een poort met een aan/uit-knop, met erbij of er iets aan hangt
+      ("wired"/"nothing"); een poort die uit staat, knipt de tak erachter af. De switch heeft zelf stroom nodig: hij haalt
+      elke twee seconden `networkSwitchUpkeep` (3, onder `[power]`) van zijn stroomnet, en zonder stroom gaat er geen
+      netwerk door (de lampjes voorop gaan uit). PoE-stroom gaat wel door een switch (jouw keuze): van een PoE-kabel naar
+      een PoE-kabel, alleen langs poorten die aan staan (ook als de switch zelf geen stroom heeft: dat is één kabel die
+      verder loopt). In een EMP-puls valt hij even uit, zoals een lezer. In **Devices** een groep NETWORK SWITCHES: online
+      of "no power", met de knoppen Rename en Ports; Ports klapt een regel open met de zes poorten (groen aan, rood uit,
+      grijs = er hangt niets aan), en een klik zet een poort om. Een nieuwe switch heet "Switch 1", "Switch 2"... (of de
+      naam die je hem op een aambeeld gaf). **Tests**: `switch_ports_and_power_decide_the_network`,
+      `poe_power_passes_through_a_switch`, `desktop_switches_switch_ports`. 356 tests, allemaal groen. **Screenshots**
+      `-Ponly=network`: `nw05_switch_block`, `nw06_switch_screen`, `nw07_devices_switch`.
 - [ ] **7. De laserbrug op het netwerk** (groep LASER BRIDGES)
 - [ ] **8. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)
 - [ ] **9. Signalen en stroom die je ziet lopen**

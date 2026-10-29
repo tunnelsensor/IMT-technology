@@ -124,7 +124,9 @@ public final class Emp {
                 camera.updateOnline(level, pos, device.getBlockState());
             } else {
                 Block block = device.getBlockState().getBlock();
-                electric = block instanceof KeycardReaderBlock || block instanceof CodePanelBlock;
+                // Hoofdstuk 38: ook een Network Switch valt even uit (zie NetworkSwitchBlock.passes).
+                electric = block instanceof KeycardReaderBlock || block instanceof CodePanelBlock
+                        || block instanceof com.senne.imttech.lan.NetworkSwitchBlock;
             }
             if (electric) {
                 sparks(level, Vec3.atCenterOf(pos), 12);

@@ -224,6 +224,8 @@ public final class SecurityOs {
             case "flag" -> setFlag(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "dev_toggle" -> toggleTurret(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getBoolean("on"));
+            case "sw_port" -> switchPort(player, core, session,
+                    new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getInt("side"), args.getBoolean("on"));
             case "cam_aim" -> aimCamera(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getFloat("pan"), args.getFloat("tilt"));
             case "cam_rename" -> renameCamera(player, core, session,
@@ -376,6 +378,22 @@ public final class SecurityOs {
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " switched the turret at "
                 + pos.toShortString() + (on ? " on" : " off"));
         notify(player, core, session, "Turret " + (on ? "on" : "off"), false);
+    }
+
+    /** Een poort van een Network Switch aan of uit (de knoppen onder een switch in de app Devices, hoofdstuk 38). */
+    private static void switchPort(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, int side,
+                                   boolean on) {
+        net.minecraft.core.Direction direction = net.minecraft.core.Direction.from3DDataValue(side);
+        String error = com.senne.imttech.security.SecurityDevices.switchPort(player.serverLevel(), core, pos, direction, on);
+        if (error != null) {
+            notify(player, core, session, error, true);
+            return;
+        }
+        String name = player.serverLevel().getBlockEntity(pos) instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity entity
+                ? entity.name() : "a switch";
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " switched port " + direction.getName()
+                + " of " + name + (on ? " on" : " off"));
+        notify(player, core, session, name + ": port " + direction.getName() + (on ? " on" : " off"), false);
     }
 
     /**
@@ -583,8 +601,9 @@ public final class SecurityOs {
     /** Een keycardlezer of codepaneel een andere naam geven (in de app Devices of Logic). */
     private static void renameInput(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, String name) {
         String clean = com.senne.imttech.logic.InputDeviceBlockEntity.cleanName(name);
+        // Een lezer, paneel of (hoofdstuk 38) switch: alles met een naam in het blok zelf.
         if (clean.isEmpty() || !SecurityCores.linkedTo(player.serverLevel(), core, pos)
-                || !(player.serverLevel().getBlockEntity(pos) instanceof com.senne.imttech.logic.InputDeviceBlockEntity device)) {
+                || !(player.serverLevel().getBlockEntity(pos) instanceof com.senne.imttech.lan.NamedDevice device)) {
             notify(player, core, session, "That name cannot be used", true);
             return;
         }

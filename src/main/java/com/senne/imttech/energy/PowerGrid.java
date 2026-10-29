@@ -187,30 +187,51 @@ public final class PowerGrid {
         if (Cables.carriesPower(level, device) && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
             cables.add(device);
         }
-        look(level, device, sources, seen, cables);
+        look(level, device, sources, seen, cables, true);
         int followed = 0;
         while (!cables.isEmpty() && followed < MAX_CABLES) {
-            look(level, cables.poll(), sources, seen, cables);
+            look(level, cables.poll(), sources, seen, cables, false);
             followed++;
         }
         return List.copyOf(sources);
     }
 
-    /** Bekijkt de zes buren van {@code from}: een leverancier onthouden we, een kabel volgen we. */
+    /**
+     * Bekijkt de zes buren van {@code from}: een leverancier onthouden we, een kabel volgen we. {@code start}: dit is het
+     * apparaat zelf (dat zoekt zijn stroom aan alle kanten, ook een switch).
+     */
     private static void look(Level level, BlockPos from, List<BlockPos> sources, Set<BlockPos> seen,
-                             ArrayDeque<BlockPos> cables) {
+                             ArrayDeque<BlockPos> cables, boolean start) {
         BlockState fromState = level.getBlockState(from);
         boolean fromCabinet = fromState.getBlock() instanceof PowerCabinetBlock;
+        // Hoofdstuk 38: door een Network Switch gaat alleen PoE-stroom, van een PoE-kabel naar de PoE-kabels aan de andere
+        // poorten die aan staan (niet naar een gewone stroomkabel of een apparaat ertegen).
+        boolean fromSwitch = !start && fromState.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock;
+        boolean fromPoe = Cables.has(CableKind.POE, level, from);
         for (Direction direction : Direction.values()) {
             // Uit een stroomkast gaat de stroom alleen naar de kanten waarvan de schakelaar aan staat.
             if (fromCabinet && !PowerCabinetBlock.isOn(fromState, direction)) {
+                continue;
+            }
+            if (fromSwitch && !com.senne.imttech.lan.NetworkSwitchBlock.isOn(fromState, direction)) {
                 continue;
             }
             BlockPos next = from.relative(direction);
             if (seen.contains(next) || !level.isLoaded(next)) {
                 continue;
             }
+            if (fromSwitch && !Cables.has(CableKind.POE, level, next)) {
+                continue;
+            }
             BlockState state = level.getBlockState(next);
+            // In een switch kom je alleen vanaf een PoE-kabel, door een poort die aan staat.
+            if (state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock) {
+                if (fromPoe && com.senne.imttech.lan.NetworkSwitchBlock.isOn(state, direction.getOpposite())) {
+                    seen.add(next);
+                    cables.add(next);
+                }
+                continue;
+            }
             // Een lichtschakelaar is een stukje kabel dat aan of uit kan: aan = de stroom gaat erdoor,
             // uit = hier houdt het op (ook als er een getekende kabel door de schakelaar loopt).
             if (state.getBlock() instanceof com.senne.imttech.light.LightSwitchBlock) {

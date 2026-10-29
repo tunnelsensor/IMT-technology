@@ -54,10 +54,11 @@ public final class SecurityDevices {
 
     /**
      * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
-     * camera's, de serverracks (zie LogicServer) en de keycardlezers en codepanelen (inputs).
+     * camera's, de serverracks (zie LogicServer), de keycardlezers en codepanelen (inputs) en (hoofdstuk 38) de
+     * Network Switches.
      */
     public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> cameras,
-                        List<BlockPos> racks, List<BlockPos> inputs, long time) {}
+                        List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches, long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -86,6 +87,7 @@ public final class SecurityDevices {
         List<BlockPos> cameras = new ArrayList<>();
         List<BlockPos> racks = new ArrayList<>();
         List<BlockPos> inputs = new ArrayList<>();
+        List<BlockPos> switches = new ArrayList<>();
         for (BlockPos pos : com.senne.imttech.lan.LanGrid.devicesOf(level, core.getBlockPos())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof TurretBlockEntity turret) {
@@ -98,6 +100,8 @@ public final class SecurityDevices {
                 racks.add(pos);
             } else if (blockEntity instanceof com.senne.imttech.logic.InputDeviceBlockEntity) {
                 inputs.add(pos);
+            } else if (blockEntity instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity) {
+                switches.add(pos);
             } else if (level.getBlockState(pos).is(ModBlocks.LASER_EMITTER.get())) {
                 emitters.add(pos);
             }
@@ -107,7 +111,8 @@ public final class SecurityDevices {
         turrets.sort(null);
         emitters.sort(null);
         racks.sort(null);
-        return found(level, turrets, emitters, cameras, racks, inputs, now);
+        switches.sort(null);
+        return found(level, turrets, emitters, cameras, racks, inputs, switches, now);
     }
 
     /** Zoals vroeger: alles wat in het gebied van deze kern staat (en geen andere kern dichterbij heeft). */
@@ -117,6 +122,7 @@ public final class SecurityDevices {
         List<BlockPos> cameras = new ArrayList<>();
         List<BlockPos> racks = new ArrayList<>();
         List<BlockPos> inputs = new ArrayList<>();
+        List<BlockPos> switches = new ArrayList<>();
         AABB area = core.area();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
         int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
@@ -141,6 +147,9 @@ public final class SecurityDevices {
                     } else if (blockEntity instanceof com.senne.imttech.logic.InputDeviceBlockEntity input
                             && SecurityCores.ownedBy(level, core, input.getBlockPos())) {
                         inputs.add(input.getBlockPos().immutable());
+                    } else if (blockEntity instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity networkSwitch
+                            && SecurityCores.ownedBy(level, core, networkSwitch.getBlockPos())) {
+                        switches.add(networkSwitch.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -166,12 +175,12 @@ public final class SecurityDevices {
                 }
             }
         }
-        return found(level, turrets, emitters, cameras, racks, inputs, now);
+        return found(level, turrets, emitters, cameras, racks, inputs, switches, now);
     }
 
     /** Maakt de lijst af: zenders die aan elkaar vastzitten worden poorten, en camera's, lezers en panelen op volgorde. */
     private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> cameras,
-                               List<BlockPos> racks, List<BlockPos> inputs, long now) {
+                               List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches, long now) {
         // Zenders die aan elkaar vastzitten zijn samen één poort.
         List<BlockPos> gates = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
@@ -189,7 +198,7 @@ public final class SecurityDevices {
         inputs.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
         return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
-                List.copyOf(racks), List.copyOf(inputs), now);
+                List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), now);
     }
 
     /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */
@@ -429,7 +438,50 @@ public final class SecurityDevices {
                     : com.senne.imttech.logic.program.Op.KEYCARD, input.name()));
             list.add(device);
         }
+        // Hoofdstuk 38: de Network Switches, met hun zes poorten in de volgorde van het deurtje (voor, achter, links,
+        // rechts, boven, onder): de vertaalsleutel van de naam, aan of uit, en of er iets aan zit.
+        for (BlockPos pos : found.switches()) {
+            BlockState state = level.getBlockState(pos);
+            if (!(level.getBlockEntity(pos) instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity entity)
+                    || !(state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock)) {
+                continue;
+            }
+            CompoundTag device = position("switch", pos);
+            device.putString("name", entity.name());
+            device.putString("st", com.senne.imttech.lan.NetworkSwitchBlock.passes(level, pos, state) ? "online" : "no power");
+            net.minecraft.core.Direction front = state.getValue(com.senne.imttech.lan.NetworkSwitchBlock.FACING);
+            ListTag ports = new ListTag();
+            for (net.minecraft.core.Direction side : new net.minecraft.core.Direction[] {front, front.getOpposite(),
+                    front.getClockWise(), front.getCounterClockWise(), net.minecraft.core.Direction.UP,
+                    net.minecraft.core.Direction.DOWN}) {
+                BlockPos next = pos.relative(side);
+                CompoundTag port = new CompoundTag();
+                port.putInt("s", side.get3DDataValue());
+                port.putString("n", com.senne.imttech.energy.PowerCabinets.sideKey(state, side));
+                port.putBoolean("on", com.senne.imttech.lan.NetworkSwitchBlock.isOn(state, side));
+                port.putBoolean("w", com.senne.imttech.energy.Cables.carriesNetwork(level, next)
+                        || level.getBlockState(next).getBlock() instanceof com.senne.imttech.lan.NetworkConnectable);
+                ports.add(port);
+            }
+            device.put("ports", ports);
+            list.add(device);
+        }
         return list;
+    }
+
+    /**
+     * Een poort van een Network Switch aan of uit zetten vanaf de desktop (hoofdstuk 38). Alleen als de switch op het
+     * netwerk van deze kern hangt. Geeft een foutmelding terug, of null als het lukte.
+     */
+    public static @Nullable String switchPort(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos,
+                                              net.minecraft.core.Direction side, boolean on) {
+        if (!(level.getBlockState(pos).getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock)
+                || !SecurityCores.linkedTo(level, core, pos)) {
+            return "that switch is not part of this network";
+        }
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, pos, side, on);
+        forget(level, core);
+        return null;
     }
 
     /**

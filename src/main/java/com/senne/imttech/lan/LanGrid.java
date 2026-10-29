@@ -141,6 +141,10 @@ public final class LanGrid {
     /**
      * Zoekt de kern: eerst de zes buren van het apparaat, en dan langs elke kabel verder, van dichtbij naar ver. De eerste
      * kern die we tegenkomen is de dichtstbijzijnde langs de kabel.
+     *
+     * Een Network Switch (stap 6): je komt er alleen in via een poort die aan staat, en je gaat er alleen door als hij
+     * stroom heeft, en dan alleen naar poorten die aan staan. Is het apparaat zelf een switch, dan zoekt hij via zijn
+     * eigen poorten die aan staan (ook zonder stroom: dan hangt hij er nog wel aan, maar laat hij niets door).
      */
     private static @Nullable BlockPos searchCore(Level level, BlockPos device) {
         Set<BlockPos> seen = new HashSet<>();
@@ -150,12 +154,20 @@ public final class LanGrid {
         int followed = 0;
         while (!todo.isEmpty() && followed++ < MAX_NODES) {
             BlockPos at = todo.poll();
+            BlockState atState = level.getBlockState(at);
             for (Direction direction : Direction.values()) {
+                if (closedPort(atState, direction)) {
+                    continue;
+                }
                 BlockPos next = at.relative(direction);
-                if (!seen.add(next) || !level.isLoaded(next)) {
+                if (seen.contains(next) || !level.isLoaded(next)) {
                     continue;
                 }
                 BlockState state = level.getBlockState(next);
+                if (closedPort(state, direction.getOpposite())) {
+                    continue; // de poort aan deze kant staat uit: misschien komen we er via een andere kant wel in
+                }
+                seen.add(next);
                 if (state.getBlock() instanceof SecurityCoreBlock) {
                     return next;
                 }
@@ -169,7 +181,8 @@ public final class LanGrid {
 
     /**
      * Zoekt de apparaten van een kern: vanaf de kern langs alle kabels. Een apparaat dat ook bij een andere kern kan (twee
-     * netten die elkaar raken), houden we alleen als deze kern de dichtstbijzijnde is.
+     * netten die elkaar raken), houden we alleen als deze kern de dichtstbijzijnde is. Een switch telt zelf ook als
+     * apparaat (hij staat in Devices) zodra je hem via een poort die aan staat bereikt, ook zonder stroom.
      */
     private static Set<BlockPos> searchDevices(Level level, BlockPos core) {
         Set<BlockPos> devices = new LinkedHashSet<>();
@@ -180,12 +193,20 @@ public final class LanGrid {
         int followed = 0;
         while (!todo.isEmpty() && followed++ < MAX_NODES) {
             BlockPos at = todo.poll();
+            BlockState atState = level.getBlockState(at);
             for (Direction direction : Direction.values()) {
+                if (closedPort(atState, direction)) {
+                    continue;
+                }
                 BlockPos next = at.relative(direction);
-                if (!seen.add(next) || !level.isLoaded(next)) {
+                if (seen.contains(next) || !level.isLoaded(next)) {
                     continue;
                 }
                 BlockState state = level.getBlockState(next);
+                if (closedPort(state, direction.getOpposite())) {
+                    continue;
+                }
+                seen.add(next);
                 if (state.getBlock() instanceof SecurityCoreBlock) {
                     continue; // een andere kern: daar gaan we niet doorheen
                 }
@@ -201,13 +222,21 @@ public final class LanGrid {
         return Set.copyOf(devices);
     }
 
+    /** Is dit een Network Switch waarvan de poort aan deze kant uit staat? */
+    private static boolean closedPort(BlockState state, Direction side) {
+        return state.getBlock() instanceof NetworkSwitchBlock && !NetworkSwitchBlock.isOn(state, side);
+    }
+
     /**
-     * Geeft deze plek het netwerk door? Een netwerk- of PoE-kabel (behalve een open kabel in een EMP-puls), een serverrack
-     * of een laserzender.
+     * Geeft deze plek het netwerk door? Een netwerk- of PoE-kabel (behalve een open kabel in een EMP-puls), een serverrack,
+     * een laserzender, of een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de zoektocht zelf na).
      */
     private static boolean conducts(Level level, BlockPos pos, BlockState state) {
         if (state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.LASER_EMITTER.get())) {
             return true;
+        }
+        if (state.getBlock() instanceof NetworkSwitchBlock) {
+            return NetworkSwitchBlock.passes(level, pos, state);
         }
         return Cables.carriesNetwork(level, pos) && !com.senne.imttech.weapons.Emp.cutsCable(level, pos);
     }

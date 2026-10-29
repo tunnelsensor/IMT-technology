@@ -529,6 +529,125 @@ public final class NetworkGameTests {
         helper.succeed();
     }
 
+    // ================================================================ Stap 6: de Network Switch
+
+    /**
+     * Jouw wens: "een switch waar de netwerkkabels samenkomen", zoals de stroomkast (jouw keuze: met een schakelaar per
+     * kant, en met eigen stroom). Een lezer achter een switch hangt aan de kern; zet je de poort naar de lezer uit, dan niet
+     * meer; zet je de poort naar de kern uit, dan hangt ook de switch zelf los. Zonder stroom laat de switch geen netwerk
+     * door (alles erachter ligt plat), maar staat hij zelf nog wel in Devices.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void switch_ports_and_power_decide_the_network(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(5, 3, 2));
+        BlockPos sw = new BlockPos(6, 3, 2);
+        helper.setBlock(sw, ModBlocks.NETWORK_SWITCH.get());
+        generator(helper, sw.above());
+        com.senne.imttech.lan.NetworkSwitchBlockEntity switchEntity =
+                (com.senne.imttech.lan.NetworkSwitchBlockEntity) helper.getBlockEntity(sw);
+        switchEntity.updateOnline(level);
+        helper.assertBlockProperty(sw, com.senne.imttech.lan.NetworkSwitchBlock.ONLINE, true);
+        line(helper, CableKind.NETWORK, new BlockPos(7, 3, 2), new BlockPos(9, 3, 2));
+        BlockPos reader = new BlockPos(10, 3, 2);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        BlockPos swAbs = helper.absolutePos(sw);
+        check(coreOf(helper, reader) == core, "Een lezer achter een switch hangt niet aan de kern");
+        check(coreOf(helper, sw) == core, "De switch zelf hangt niet aan de kern");
+        // De poort naar de lezer (oost) uit, en weer aan.
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, swAbs, Direction.EAST, false);
+        check(coreOf(helper, reader) == null, "Met de poort uit hangt de lezer nog aan de kern");
+        check(coreOf(helper, sw) == core, "Een poort naar de lezer uit, en de switch zelf hangt los");
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, swAbs, Direction.EAST, true);
+        check(coreOf(helper, reader) == core, "Met de poort weer aan hangt de lezer niet aan de kern");
+        // De poort naar de kern (west) uit: alles erachter, ook de switch, hangt los.
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, swAbs, Direction.WEST, false);
+        check(coreOf(helper, reader) == null && coreOf(helper, sw) == null,
+                "Met de poort naar de kern uit hangt er nog iets aan de kern");
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, swAbs, Direction.WEST, true);
+        // Geen stroom meer: niets erdoor, maar de switch staat nog in Devices ("no power").
+        helper.setBlock(sw.above(), Blocks.AIR);
+        switchEntity.updateOnline(level);
+        helper.assertBlockProperty(sw, com.senne.imttech.lan.NetworkSwitchBlock.ONLINE, false);
+        check(coreOf(helper, reader) == null, "Een switch zonder stroom laat het netwerk door");
+        SecurityDevices.forget(level, core);
+        check(SecurityDevices.scan(level, core).switches().contains(swAbs), "Een switch zonder stroom staat niet in Devices");
+        check(statusOf(level, core, swAbs).equals("no power"), "Devices zegt bij een switch zonder stroom: "
+                + statusOf(level, core, swAbs));
+        helper.succeed();
+    }
+
+    /**
+     * Jouw keuze: PoE-stroom mag ook via een switch. Een switch zonder eigen stroom krijgt die van de PoE-kabel van de
+     * desktop, en geeft netwerk en stroom door naar een camera aan een PoE-kabel achter hem. Zet je die poort uit, dan heeft
+     * de camera geen stroom en geen netwerk meer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void poe_power_passes_through_a_switch(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 12), null);
+        line(helper, CableKind.POE, new BlockPos(3, 3, 12), new BlockPos(5, 3, 12));
+        BlockPos sw = new BlockPos(6, 3, 12);
+        helper.setBlock(sw, ModBlocks.NETWORK_SWITCH.get());
+        ((com.senne.imttech.lan.NetworkSwitchBlockEntity) helper.getBlockEntity(sw)).updateOnline(level);
+        helper.assertBlockProperty(sw, com.senne.imttech.lan.NetworkSwitchBlock.ONLINE, true);
+        line(helper, CableKind.POE, new BlockPos(7, 3, 12), new BlockPos(9, 3, 12));
+        BlockPos camera = placeCamera(helper, new BlockPos(9, 4, 12));
+        BlockPos cameraAbs = helper.absolutePos(camera);
+        CameraBlockEntity cam = (CameraBlockEntity) helper.getBlockEntity(camera);
+        check(coreOf(helper, camera) == core, "Over PoE door een switch komt geen netwerk");
+        check(PowerGrid.available(level, cameraAbs) > 0, "Over PoE door een switch komt geen stroom");
+        cam.updateOnline(level, cameraAbs, level.getBlockState(cameraAbs));
+        helper.assertBlockProperty(camera, CameraBlock.ONLINE, true);
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, helper.absolutePos(sw), Direction.EAST, false);
+        check(coreOf(helper, camera) == null, "Met de poort uit komt er nog netwerk bij de camera");
+        check(PowerGrid.available(level, cameraAbs) == 0, "Met de poort uit komt er nog stroom bij de camera");
+        // Een gewone stroomkabel tegen de switch krijgt geen PoE-stroom (alleen PoE gaat erdoor).
+        line(helper, CableKind.POWER, new BlockPos(6, 3, 13), new BlockPos(6, 3, 15));
+        check(PowerGrid.available(level, helper.absolutePos(new BlockPos(6, 3, 16))) == 0,
+                "Een stroomkabel tegen de switch kreeg PoE-stroom");
+        helper.succeed();
+    }
+
+    /**
+     * De poorten van een switch schakel je ook vanaf de desktop (de knoppen onder een switch in Devices): alleen als de
+     * switch aan het netwerk van die kern hangt. Devices toont de switch met zijn zes poorten.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void desktop_switches_switch_ports(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 3, 20), "lan-desk");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 20), owner);
+        BlockPos sw = new BlockPos(3, 3, 20); // tegen de kern aan
+        helper.setBlock(sw, ModBlocks.NETWORK_SWITCH.get());
+        BlockPos swAbs = helper.absolutePos(sw);
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 20));
+        helper.runAfterDelay(2, () -> {
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            CompoundTag args = new CompoundTag();
+            args.putInt("x", swAbs.getX());
+            args.putInt("y", swAbs.getY());
+            args.putInt("z", swAbs.getZ());
+            args.putInt("side", Direction.UP.get3DDataValue());
+            args.putBoolean("on", false);
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                    new com.senne.imttech.network.OsActionPayload(coreAbs, "sw_port", args));
+            check(!com.senne.imttech.lan.NetworkSwitchBlock.isOn(level.getBlockState(swAbs), Direction.UP),
+                    "De desktop zette de poort van de switch niet uit");
+            SecurityDevices.forget(level, core);
+            CompoundTag row = null;
+            for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {
+                if (((CompoundTag) tag).getString("k").equals("switch")) {
+                    row = (CompoundTag) tag;
+                }
+            }
+            check(row != null && row.getList("ports", net.minecraft.nbt.Tag.TAG_COMPOUND).size() == 6,
+                    "Devices toont de switch niet met zes poorten: " + row);
+            helper.succeed();
+        });
+    }
+
     /** Een camera op de vloer bij {@code pos} (er komt een steen onder), die naar het zuiden kijkt. */
     private static BlockPos placeCamera(GameTestHelper helper, BlockPos pos) {
         if (helper.getBlockState(pos.below()).isAir()) {

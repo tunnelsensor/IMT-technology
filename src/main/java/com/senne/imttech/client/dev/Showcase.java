@@ -62,6 +62,9 @@ public final class Showcase {
             return;
         }
         ImtTech.LOGGER.info("[showcase] showcase staat aan");
+        // Hoofdstuk 38: de oudere functies bouwen apparaten zonder netwerkkabel (lezers, camera's naast een kern). Die
+        // laten we werken zoals vroeger; de functies over netwerkkabels zetten het netwerk zelf aan.
+        com.senne.imttech.lan.LanGrid.overrideRequired(false);
         LINK.start();
         NeoForge.EVENT_BUS.addListener(Showcase::onClientTick);
     }

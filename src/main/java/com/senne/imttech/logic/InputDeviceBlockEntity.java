@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  * Wie hem neerzette (13 oktober) bepaalt mee wie hem zo mag hernoemen (zie security/BaseTrust). Een lezer of
  * paneel van vóór die dag heeft nog geen eigenaar.
  */
-public class InputDeviceBlockEntity extends BlockEntity implements BaseTrust.Placed {
+public class InputDeviceBlockEntity extends BlockEntity implements BaseTrust.Placed, com.senne.imttech.lan.NamedDevice {
     /** Zo lang mag de naam hooguit zijn. */
     public static final int MAX_NAME = 24;
 
@@ -37,10 +37,12 @@ public class InputDeviceBlockEntity extends BlockEntity implements BaseTrust.Pla
         super(ModBlockEntities.INPUT_DEVICE.get(), pos, state);
     }
 
+    @Override
     public String name() {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = cleanName(name);
         setChanged();

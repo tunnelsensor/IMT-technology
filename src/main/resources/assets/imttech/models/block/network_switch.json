@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "imttech:block/network_switch_front",
+    "side": "imttech:block/network_switch_side",
+    "top": "imttech:block/network_switch_top"
+  }
+}

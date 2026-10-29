@@ -89,6 +89,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SOLAR_PANEL.get());
                 output.accept(ModItems.HEAT_GENERATOR.get());
                 output.accept(ModItems.POWER_CABINET.get());
+                output.accept(ModItems.NETWORK_SWITCH.get());
             });
 
     /** De machines en werkbanken voor in je basis, en het licht en de relais. */

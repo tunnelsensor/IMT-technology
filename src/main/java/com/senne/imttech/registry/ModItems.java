@@ -110,6 +110,9 @@ public final class ModItems {
             ModBlocks.DOME_GENERATOR);
     public static final DeferredItem<BlockItem> POWER_CABINET = ITEMS.registerSimpleBlockItem("power_cabinet",
             ModBlocks.POWER_CABINET, new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** Hoofdstuk 38: de Network Switch. */
+    public static final DeferredItem<BlockItem> NETWORK_SWITCH = ITEMS.registerSimpleBlockItem("network_switch",
+            ModBlocks.NETWORK_SWITCH, new Item.Properties().rarity(Rarity.UNCOMMON));
     // ---------------------------------------------------------------- Fase 15: het harnas
     /** De borstplaat: hier zit de reactor, dus hier komt de laser cannon vandaan. */
     // stacksTo(1): het harnas heeft geen duurzaamheid, en dan laat Minecraft het anders tot 64

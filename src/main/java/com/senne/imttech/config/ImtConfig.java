@@ -330,6 +330,9 @@ public final class ImtConfig {
         /** Hetzelfde voor een codepaneel: zonder stroom doen de toetsen niets. */
         @Tunable("Grid energy a code panel uses every two seconds (without it, its keys do nothing)")
         public static float CODE_PANEL_UPKEEP = 1.0f;
+        /** Stroom die een Network Switch elke twee seconden haalt (zonder: geen netwerk door de switch). */
+        @Tunable("Grid energy a network switch uses every two seconds (without it, no network passes through it)")
+        public static float NETWORK_SWITCH_UPKEEP = 3.0f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */

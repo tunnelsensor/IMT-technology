@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "26";
+    private static final String PROTOCOL_VERSION = "27";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -104,6 +104,12 @@ public final class ModNetwork {
         });
         // Fase 15: de holotafel
         // De stroomkast: een schakelaar op zijn deurtje.
+        // Hoofdstuk 38: een poort van een Network Switch omzetten.
+        registrar.playToServer(SwitchActionPayload.TYPE, SwitchActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.lan.NetworkSwitches.handleAction(player, payload);
+            }
+        });
         registrar.playToServer(CabinetActionPayload.TYPE, CabinetActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof net.minecraft.server.level.ServerPlayer player) {
                 com.senne.imttech.energy.PowerCabinets.handleAction(player, payload);
@@ -212,6 +218,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
         registrar.playToClient(CabinetOpenPayload.TYPE, CabinetOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onCabinetOpen(payload, context));
+        registrar.playToClient(SwitchOpenPayload.TYPE, SwitchOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onSwitchOpen(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
         registrar.playToClient(LampOpenPayload.TYPE, LampOpenPayload.STREAM_CODEC,

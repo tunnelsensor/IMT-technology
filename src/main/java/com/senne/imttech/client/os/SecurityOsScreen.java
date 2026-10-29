@@ -365,6 +365,12 @@ public class SecurityOsScreen extends Screen {
         devices.tourSave();
     }
 
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 38): de app Devices met de poorten van de eerste switch open. */
+    public void tourSwitchPorts() {
+        openApp(App.DEVICES);
+        devices.tourPorts();
+    }
+
     /** Alleen voor de screenshot-rondleiding: de app Zone, met deze kubus gekozen. */
     public void tourZone(int box) {
         openApp(App.ZONE);

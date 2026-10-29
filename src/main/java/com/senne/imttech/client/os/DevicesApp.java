@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +41,11 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  */
 final class DevicesApp {
-    /** Een regel in de lijst: een kopje ("TURRETS") of een apparaat. */
-    private record Row(@Nullable String header, @Nullable CompoundTag device) {}
+    /**
+     * Een regel in de lijst: een kopje ("TURRETS"), een apparaat, of (hoofdstuk 38, {@code ports}) de regel onder een
+     * Network Switch met zijn zes poorten.
+     */
+    private record Row(@Nullable String header, @Nullable CompoundTag device, boolean ports) {}
 
     private static final int HEADER_H = 13;
     private static final int DEVICE_H = 14;
@@ -52,9 +56,11 @@ final class DevicesApp {
 
     private final SecurityOsScreen screen;
     private int scroll;
-    /** Welke lezer of welk paneel je een andere naam aan het geven bent (de plek), of null. */
+    /** Welke lezer, welk paneel of welke switch je een andere naam aan het geven bent (de plek), of null. */
     private @Nullable BlockPos renaming;
     private @Nullable EditBox nameBox;
+    /** Van welke Network Switch de poorten open staan (de knop Ports), of null. */
+    private @Nullable BlockPos portsOpen;
 
     DevicesApp(SecurityOsScreen screen) {
         this.screen = screen;
@@ -68,7 +74,7 @@ final class DevicesApp {
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"camera", "CAMERAS"},
-                {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}};
+                {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {
             boolean any = false;
@@ -78,10 +84,14 @@ final class DevicesApp {
                     continue;
                 }
                 if (!any) {
-                    rows.add(new Row(kind[1], null));
+                    rows.add(new Row(kind[1], null, false));
                     any = true;
                 }
-                rows.add(new Row(null, device));
+                rows.add(new Row(null, device, false));
+                // Staan de poorten van deze switch open? Dan een regel eronder met de zes poorten.
+                if (kind[0].equals("switch") && posOf(device).equals(portsOpen)) {
+                    rows.add(new Row(null, device, true));
+                }
             }
         }
         return rows;
@@ -100,10 +110,16 @@ final class DevicesApp {
         return listTop(a) + 15;
     }
 
-    /** De knop rechts op de rij van dit apparaat (Turn off, Turn on, Rename, Save), of null als hij er geen heeft. */
+    /**
+     * De knop rechts op de rij van dit apparaat (Turn off, Turn on, Rename, Save; bij een switch Ports of Close), of null
+     * als hij er geen heeft.
+     */
     private @Nullable String buttonLabel(CompoundTag device) {
         if (device.getString("k").equals("turret")) {
             return device.getBoolean("on") ? "Turn off" : "Turn on";
+        }
+        if (device.getString("k").equals("switch")) {
+            return isRenaming(device) ? "Save" : posOf(device).equals(portsOpen) ? "Close" : "Ports";
         }
         return renamable(device) ? renameLabel(device) : null;
     }
@@ -113,6 +129,70 @@ final class DevicesApp {
             return device.getBoolean("on") ? HudStyle.RED : HudStyle.GREEN;
         }
         return isRenaming(device) ? HudStyle.GREEN : HudStyle.CYAN;
+    }
+
+    /**
+     * Een tweede knop, links van de gewone: bij een switch Rename naast Ports (terwijl je de naam typt is er alleen Save).
+     * Of null als het apparaat er geen heeft.
+     */
+    private @Nullable String extraLabel(CompoundTag device) {
+        return device.getString("k").equals("switch") && !isRenaming(device) ? "Rename" : null;
+    }
+
+    // ================================================================ De poorten van een switch (hoofdstuk 38)
+
+    /**
+     * De opschriften van de zes poortknoppen: de naam van de kant en hoe hij staat ("Front ON"). Passen ze niet naast
+     * elkaar (een klein venster), dan alleen de naam van de kant; de kleur zegt dan nog steeds aan of uit.
+     */
+    private static List<String> portLabels(Font font, SecurityOsScreen.Area a, CompoundTag device) {
+        List<String> full = new ArrayList<>();
+        List<String> sides = new ArrayList<>();
+        int width = 0;
+        for (Tag element : device.getList("ports", Tag.TAG_COMPOUND)) {
+            CompoundTag port = (CompoundTag) element;
+            String side = Component.translatable(port.getString("n")).getString();
+            String label = side + (port.getBoolean("on") ? " ON" : " OFF");
+            full.add(label);
+            sides.add(side);
+            width += OsDraw.buttonWidth(font, label) + 3;
+        }
+        return width <= a.w() - COL_NAME - 8 - 4 ? full : sides;
+    }
+
+    /** De regel onder een switch: zes knoppen, een per poort (groen = aan, rood = uit, grijs = er zit niets aan). */
+    private void renderPorts(GuiGraphics g, Font font, SecurityOsScreen.Area a, int y, CompoundTag device) {
+        List<String> labels = portLabels(font, a, device);
+        ListTag ports = device.getList("ports", Tag.TAG_COMPOUND);
+        int x = a.x() + COL_NAME + 8;
+        for (int i = 0; i < ports.size() && i < labels.size(); i++) {
+            CompoundTag port = ports.getCompound(i);
+            int colour = port.getBoolean("on") ? HudStyle.GREEN : HudStyle.RED;
+            x += OsDraw.button(g, font, x, y + 1, labels.get(i), port.getBoolean("w"), colour) + 3;
+        }
+    }
+
+    /** Een klik op de regel met poorten: een poort omzetten. Geeft true als er een poort geraakt werd. */
+    private boolean portsClicked(Font font, SecurityOsScreen.Area a, int y, CompoundTag device, int mx, int my) {
+        List<String> labels = portLabels(font, a, device);
+        ListTag ports = device.getList("ports", Tag.TAG_COMPOUND);
+        int x = a.x() + COL_NAME + 8;
+        for (int i = 0; i < ports.size() && i < labels.size(); i++) {
+            CompoundTag port = ports.getCompound(i);
+            int w = OsDraw.buttonWidth(font, labels.get(i));
+            if (OsDraw.inside(mx, my, x, y + 1, w, OsDraw.BUTTON_H)) {
+                CompoundTag args = new CompoundTag();
+                args.putInt("x", device.getInt("x"));
+                args.putInt("y", device.getInt("y"));
+                args.putInt("z", device.getInt("z"));
+                args.putInt("side", port.getInt("s"));
+                args.putBoolean("on", !port.getBoolean("on"));
+                screen.send("sw_port", args);
+                return true;
+            }
+            x += w + 3;
+        }
+        return false;
     }
 
     private static BlockPos posOf(CompoundTag device) {
@@ -184,6 +264,9 @@ final class DevicesApp {
                 // Een kopje (TURRETS): een donkere band over de hele breedte.
                 g.fill(a.x() + 2, y, a.x() + a.w() - 2, y + HEADER_H - 1, HudStyle.argb(255, 0x10222D));
                 g.drawString(font, row.header(), a.x() + COL_NAME, y + 2, HudStyle.argb(255, HudStyle.CYAN), false);
+            } else if (row.ports()) {
+                renderPorts(g, font, a, y, row.device());
+                OsDraw.rowLine(g, a.x() + 2, a.x() + a.w() - 2, y + DEVICE_H - 1);
             } else {
                 renderDevice(g, font, a, y, row.device(), mx, my, partialTick);
                 OsDraw.rowLine(g, a.x() + 2, a.x() + a.w() - 2, y + DEVICE_H - 1);
@@ -207,6 +290,11 @@ final class DevicesApp {
         int buttonX = a.x() + a.w() - 4 - (button == null ? 0 : OsDraw.buttonWidth(font, button));
         if (button != null) {
             OsDraw.button(g, font, buttonX, y + 1, button, true, buttonColour(device));
+        }
+        String extra = extraLabel(device);
+        if (extra != null) {
+            buttonX -= OsDraw.buttonWidth(font, extra) + 4;
+            OsDraw.button(g, font, buttonX, y + 1, extra, true, HudStyle.CYAN);
         }
         if (isRenaming(device)) {
             // Het vak waar je de nieuwe naam typt (over de naam en de plek), en in de kolom ernaast hoe het werkt.
@@ -292,11 +380,22 @@ final class DevicesApp {
         int bottom = a.y() + a.h();
         for (int i = scroll; i < rows.size() && y + height(rows.get(i)) <= bottom; i++) {
             CompoundTag device = rows.get(i).device();
+            if (rows.get(i).ports()) {
+                if (portsClicked(font, a, y, device, mx, my)) {
+                    return;
+                }
+                y += height(rows.get(i));
+                continue;
+            }
             String button = device == null ? null : buttonLabel(device);
             if (button != null) {
                 int w = OsDraw.buttonWidth(font, button);
                 if (OsDraw.inside(mx, my, a.x() + a.w() - 4 - w, y + 1, w, OsDraw.BUTTON_H)) {
-                    if (device.getString("k").equals("turret")) {
+                    if (device.getString("k").equals("switch") && !isRenaming(device)) {
+                        // Ports / Close: de regel met de zes poorten open of dicht.
+                        portsOpen = posOf(device).equals(portsOpen) ? null : posOf(device);
+                        renaming = null;
+                    } else if (device.getString("k").equals("turret")) {
                         CompoundTag args = new CompoundTag();
                         args.putInt("x", device.getInt("x"));
                         args.putInt("y", device.getInt("y"));
@@ -309,6 +408,13 @@ final class DevicesApp {
                     } else {
                         startRename(device);
                     }
+                    return;
+                }
+                // De tweede knop links ervan (Rename bij een switch).
+                String extra = extraLabel(device);
+                int extraW = extra == null ? 0 : OsDraw.buttonWidth(font, extra);
+                if (extra != null && OsDraw.inside(mx, my, a.x() + a.w() - 4 - w - 4 - extraW, y + 1, extraW, OsDraw.BUTTON_H)) {
+                    startRename(device);
                     return;
                 }
             }
@@ -401,5 +507,15 @@ final class DevicesApp {
     /** Alleen voor de screenshot-rondleiding: op Save klikken (de naam gaat echt naar de server). */
     void tourSave() {
         submitName();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de poorten van de eerste Network Switch open (de knop Ports). */
+    void tourPorts() {
+        for (Row row : rows()) {
+            if (row.device() != null && row.device().getString("k").equals("switch")) {
+                portsOpen = posOf(row.device());
+                return;
+            }
+        }
     }
 }

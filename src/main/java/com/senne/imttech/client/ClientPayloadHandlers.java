@@ -163,6 +163,14 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Hoofdstuk 38: het deurtje van een Network Switch. */
+    public static void onSwitchOpen(com.senne.imttech.network.SwitchOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new NetworkSwitchScreen(payload.pos(), payload.name()));
+        }
+    }
+
     public static void onDomeOpen(DomeOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

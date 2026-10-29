@@ -36,6 +36,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.energy.PowerCabinetBlockEntity::new,
                             java.util.Set.of(ModBlocks.POWER_CABINET.get()), null));
 
+    /** Hoofdstuk 38: de Network Switch (naam, eigenaar, en of hij stroom heeft). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.lan.NetworkSwitchBlockEntity>> NETWORK_SWITCH =
+            BLOCK_ENTITIES.register("network_switch",
+                    () -> new BlockEntityType<>(com.senne.imttech.lan.NetworkSwitchBlockEntity::new,
+                            java.util.Set.of(ModBlocks.NETWORK_SWITCH.get()), null));
+
     /** De schildkoepel-generator: zijn instellingen, schildkracht en of de koepel staat. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DomeGeneratorBlockEntity>> DOME_GENERATOR =
             BLOCK_ENTITIES.register("dome_generator",

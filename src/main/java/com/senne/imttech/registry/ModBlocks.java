@@ -183,6 +183,16 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
 
+    /** Hoofdstuk 38: de Network Switch, waar netwerk- en PoE-kabels samenkomen (zie lan/NetworkSwitchBlock). */
+    public static final DeferredBlock<com.senne.imttech.lan.NetworkSwitchBlock> NETWORK_SWITCH = BLOCKS.registerBlock(
+            "network_switch", com.senne.imttech.lan.NetworkSwitchBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(4.0f, 9.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.imttech.lan.NetworkSwitchBlock.ONLINE) ? 3 : 0));
+
     /** De schildkoepel-generator. */
     public static final DeferredBlock<DomeGeneratorBlock> DOME_GENERATOR = BLOCKS.registerBlock("dome_generator",
             DomeGeneratorBlock::new,

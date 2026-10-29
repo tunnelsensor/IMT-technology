@@ -106,6 +106,9 @@ public final class VisualCheck {
             return;
         }
         ImtTech.LOGGER.info("[visual check] rondleiding staat aan");
+        // Hoofdstuk 38: de rondleiding bouwt veel apparaten zonder netwerkkabel (lezers, camera's naast een kern). Die
+        // laten we werken zoals vroeger; alleen de stukken over netwerkkabels zetten het netwerk aan.
+        com.senne.imttech.lan.LanGrid.overrideRequired(false);
         buildTour();
         NeoForge.EVENT_BUS.addListener(VisualCheck::onClientTick);
     }
@@ -939,6 +942,27 @@ public final class VisualCheck {
             t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
             t.shot(20, "nw04_cable_xray_off");
             t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
+            // Een kern met een Network Switch ernaast (stap 6): het blok met zijn lampjes, het deurtje met de zes
+            // poorten, en de app Devices met de poorten van de switch open (de bovenste poort staat uit).
+            BlockPos desk = NETWORK_DESK;
+            BlockPos networkSwitch = desk.east(3);
+            t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(true));
+            t.onServer(0, VisualCheck::buildNetworkDesk);
+            t.view(20, desk.getX() + 1.5, desk.getY() + 2.5, desk.getZ() + 5.5, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(networkSwitch));
+            t.shot(30, "nw05_switch_block");
+            t.onServer(0, player -> com.senne.imttech.lan.NetworkSwitches.open(player, networkSwitch));
+            t.shot(15, "nw06_switch_screen");
+            t.close(5);
+            t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, desk));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourSwitchPorts();
+                }
+            });
+            t.shot(25, "nw07_devices_switch");
+            t.close(10);
+            t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(false));
         }
 
         // --- De Biebia's Industries Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
@@ -4075,6 +4099,58 @@ public final class VisualCheck {
 
     /** Hoofdstuk 38: het veldje met de drie soorten kabels (ver weg van de rest, zodat niets erdoorheen loopt). */
     private static final BlockPos NETWORK_YARD = new BlockPos(-340, -60, -340);
+    /** Hoofdstuk 38: een kern met een switch, naast het veldje met kabels. */
+    private static final BlockPos NETWORK_DESK = new BlockPos(-320, -60, -340);
+
+    /**
+     * Bij NETWORK_DESK: een kern (van jou) met een generator eronder, een PoE-kabel naar een Network Switch ("Lobby
+     * switch", met een eigen generator), en vanaf de switch een netwerkkabel naar een keycardlezer en een PoE-kabel naar een
+     * camera (die krijgt zijn stroom van de kern, door de switch heen). De bovenste poort van de switch staat uit.
+     */
+    private static void buildNetworkDesk(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos core = NETWORK_DESK;
+        BlockPos networkSwitch = core.east(3);
+        BlockPos reader = networkSwitch.east(3);
+        BlockPos camera = networkSwitch.north(3);
+        for (BlockPos generator : new BlockPos[] {core.below(), networkSwitch.below(), reader.below()}) {
+            level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+        level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.SecurityCoreBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
+            be.setOwner(player);
+            be.ensureSystem(level);
+            be.setPassword("bitech1", level.random);
+        }
+        for (int dx = 1; dx <= 2; dx++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.east(dx));
+        }
+        level.setBlockAndUpdate(networkSwitch, ModBlocks.NETWORK_SWITCH.get().defaultBlockState()
+                .setValue(com.senne.imttech.lan.NetworkSwitchBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(networkSwitch) instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity be) {
+            be.setName("Lobby switch");
+            be.updateOnline(level);
+        }
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, networkSwitch, Direction.UP, false);
+        for (int dx = 1; dx <= 2; dx++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, networkSwitch.east(dx));
+        }
+        level.setBlockAndUpdate(reader, ModBlocks.KEYCARD_READER.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(reader) instanceof com.senne.imttech.logic.InputDeviceBlockEntity be) {
+            be.setName("Lobby door");
+        }
+        for (int dz = 1; dz <= 2; dz++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, networkSwitch.north(dz));
+        }
+        level.setBlockAndUpdate(camera, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.imttech.security.CameraBlock.FACING, Direction.SOUTH));
+    }
 
     /**
      * Bij NETWORK_YARD: drie kabels naast elkaar over de vloer en een muurtje op (stroom, netwerk, PoE), dan alle drie op

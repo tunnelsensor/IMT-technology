@@ -18,6 +18,7 @@
     "imttech:drone_dock",
     "imttech:landing_pad",
     "imttech:power_cabinet",
+    "imttech:network_switch",
     "imttech:security_camera",
     "imttech:server_rack",
     "imttech:keycard_reader",

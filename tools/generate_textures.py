@@ -2603,6 +2603,64 @@ def power_cabinet_textures():
     save(top, "block/power_cabinet_top.png")
 
 
+def network_switch_textures():
+    """
+    Hoofdstuk 38: de Network Switch, een netwerkkast naast de stroomkast.
+    - voorkant: donker blauwgrijs staal met een wit naamplaatje, zes netwerkpoorten (twee rijen van drie) en per poort
+      een lampje; zonder stroom zijn de lampjes donker ('front'), met stroom groen en het stroomlampje blauw ('front_on');
+    - zijkant: staal met een witte doorvoer (daar komt een netwerkkabel binnen);
+    - bovenkant: staal met een ventilatierooster.
+    Alleen deze functie draaien:
+        python -c "import sys; sys.path.insert(0,'tools'); import generate_textures as g; g.network_switch_textures()"
+    """
+    steel = (70, 80, 94, 255)
+    steel_dark = (40, 46, 56, 255)
+    steel_light = (112, 124, 140, 255)
+    white = (228, 232, 238, 255)
+    port = (20, 22, 26, 255)
+    port_edge = (150, 160, 172, 255)
+    led_off = (36, 52, 40, 255)
+    led_on = (90, 245, 130, 255)
+    power_on = (90, 190, 255, 255)
+
+    def front(lit):
+        im = img(16, 16, steel)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=steel_dark)
+        d.rectangle([1, 1, 14, 14], outline=steel_light)
+        # Het naamplaatje bovenaan, met het stroomlampje rechts.
+        d.rectangle([3, 3, 10, 4], fill=white)
+        px(im, [(12, 3), (12, 4)], power_on if lit else led_off)
+        # Zes poorten in twee rijen, elk met een lampje erboven.
+        for y in (7, 11):
+            for x in (3, 7, 11):
+                px(im, [(x, y - 1), (x + 1, y - 1)], led_on if lit else led_off)
+                d.rectangle([x - 1, y, x + 2, y + 2], fill=port, outline=port_edge)
+        return im
+
+    save(front(False), "block/network_switch_front.png")
+    save(front(True), "block/network_switch_front_on.png")
+
+    side = img(16, 16, steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for y in (3, 12):
+        d.line([2, y, 13, y], fill=steel_light)
+    d.ellipse([5, 5, 10, 10], fill=port, outline=steel_dark)
+    d.ellipse([6, 6, 9, 9], fill=(52, 58, 66, 255))
+    px(side, [(7, 7), (8, 8), (7, 8), (8, 7)], white)
+    save(side, "block/network_switch_side.png")
+
+    top = img(16, 16, steel)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for y in range(4, 12, 2):
+        d.line([4, y, 11, y], fill=steel_dark)
+    for x, y in ((1, 1), (14, 1), (1, 14), (14, 14)):
+        px(top, [(x, y)], steel_light)
+    save(top, "block/network_switch_top.png")
+
+
 def drone_dock_textures():
     """
     De drone-dock voor de hangar:
@@ -3625,6 +3683,7 @@ if __name__ == "__main__":
     drone_dock_textures()
     landing_pad_textures()
     power_cabinet_textures()
+    network_switch_textures()
     server_rack_textures()
     server_part_items()
     keycard_items()
