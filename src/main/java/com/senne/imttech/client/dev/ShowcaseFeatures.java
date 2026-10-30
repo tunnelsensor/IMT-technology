@@ -2448,6 +2448,75 @@ final class ShowcaseFeatures {
                 .step(0, () -> desktop(os -> os.tourDevicesAt("BUTTONS")))
                 .pause(90)
                 .close(20));
+
+        // ---------------------------------------------------------------- De laptop overal, en computers
+        // Hoofdstuk 40 (30 oktober), ook achteraan.
+        BlockPos pc = PC_DESK;
+        add("Hacking Laptop: log in from anywhere", "Hoofdstuk 40. Rechtsklik met de Hacking Laptop in de lucht: het "
+                + "inlogscherm (SSH login) met het IP van een kern en zijn wachtwoord (sterretjes). Eerst een fout "
+                + "wachtwoord: rood \"Permission denied\" (en de eigenaar krijgt een alarm). Dan het goede: de desktop van "
+                + "de kern opent op afstand, met bovenaan REMOTE SESSION, en de app Status laat het IP zien. Kijk of je de "
+                + "tekst goed kunt lezen en of de knoppen op hun plek staan.",
+                new Vec3(pc.getX() + 3.5, pc.getY(), pc.getZ() + 4.5), 180, 20, s -> s
+                .onServer(0, player -> com.senne.imttech.lan.LanGrid.overrideRequired(true))
+                .onServer(0, player -> VisualCheck.buildComputerDesk(player, PC_DESK))
+                .onServer(0, player -> player.getInventory().setItem(0,
+                        new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.HACKING_LAPTOP.get())))
+                .step(0, () -> hotbar(0))
+                .pause(30)
+                .open(0, () -> new com.senne.imttech.client.os.OsLoginScreen(""))
+                .step(20, () -> login(screen -> screen.tourType(VisualCheck.computerDeskIp, "wrong1")))
+                .pause(40)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(70)
+                .step(0, () -> login(screen -> screen.tourType(VisualCheck.computerDeskIp, "recept1")))
+                .pause(40)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(30)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
+                .pause(100)
+                .close(20)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        add("Computer and monitor", "Hoofdstuk 40. Een receptie: twee Computers aan het netwerk van een kern, elk met een "
+                + "Monitor ernaast (het scherm licht op als de computer werkt). Eerst de app Computers op de kern: per "
+                + "computer wie hem mag gebruiken, een code, en per app Off, View of Use. Dan rechtsklik op de monitor van "
+                + "Reception: bovenaan COMPUTER: Reception, en alleen Status, Cameras, Devices en Logs, om te kijken (\"view "
+                + "only\": geen pijltjes bij de camera's, geen knoppen in Devices). In Logs met Show: entries zie je wie er waar "
+                + "binnenkwam. Tot slot het codescherm van de tweede computer (Office).",
+                new Vec3(pc.getX() + 3.5, pc.getY(), pc.getZ() + 4.5), 180, 20, s -> s
+                .onServer(0, player -> com.senne.imttech.lan.LanGrid.overrideRequired(true))
+                .onServer(0, player -> VisualCheck.buildComputerDesk(player, PC_DESK))
+                .lookAt(20, Vec3.atCenterOf(PC_DESK.east(5)))
+                .pause(80)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, PC_DESK))
+                .step(30, () -> desktop(os -> os.tourComputers(PC_DESK.east(4))))
+                .pause(140)
+                .close(20)
+                .onServer(5, player -> com.senne.imttech.computer.Computers.use(player, PC_DESK.east(5)))
+                .pause(60)
+                .step(0, () -> desktop(os -> os.tourCameras(null)))
+                .pause(80)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.DEVICES)))
+                .pause(80)
+                .step(0, () -> desktop(com.senne.imttech.client.os.SecurityOsScreen::tourLogsEntries))
+                .pause(100)
+                .close(20)
+                .open(0, () -> new com.senne.imttech.client.os.OsLoginScreen(PC_DESK.east(3).south(), "Office"))
+                .pause(80)
+                .close(20));
+    }
+
+    // ---------------------------------------------------------------- De laptop overal, en computers (hoofdstuk 40)
+
+    /** Waar de receptie met de computers staat (zie VisualCheck.buildComputerDesk). */
+    static final BlockPos PC_DESK = new BlockPos(-130, -60, 120);
+
+    /** Iets doen met het inlogscherm van de laptop (of het codescherm), als het open staat. */
+    private static void login(Consumer<com.senne.imttech.client.os.OsLoginScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.OsLoginScreen screen) {
+            action.accept(screen);
+        }
     }
 
     // ---------------------------------------------------------------- Het netwerk (hoofdstuk 38)

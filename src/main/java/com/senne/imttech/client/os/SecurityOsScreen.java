@@ -264,7 +264,8 @@ public class SecurityOsScreen extends Screen {
      */
     void send(String op, CompoundTag args) {
         if (!rights().allows(op, args)) {
-            showNotice("View only on this computer", true);
+            String app = com.senne.imttech.security.os.DesktopRights.appOf(op, args);
+            showNotice(rights().shows(app) ? "View only on this computer" : "This computer does not allow that", true);
             return;
         }
         PacketDistributor.sendToServer(new OsActionPayload(core, op, args));
@@ -425,6 +426,18 @@ public class SecurityOsScreen extends Screen {
         openApp(App.DEVICES);
         devices.tourPorts();
         devices.tourScroll("NETWORK SWITCHES");
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 40): de app Computers, met deze computer gekozen. */
+    public void tourComputers(BlockPos computer) {
+        openApp(App.COMPUTERS);
+        computers.tourSelect(computer);
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 40): de app Logs, met alleen de entries. */
+    public void tourLogsEntries() {
+        openApp(App.LOGS);
+        entriesOnly = true;
     }
 
     /** Alleen voor de screenshot-rondleiding (hoofdstuk 38): de app Devices, naar beneden tot dit kopje ("BUTTONS"). */
@@ -919,17 +932,20 @@ public class SecurityOsScreen extends Screen {
         String host = data.getString("host");
         String ip = data.getString("ip");
         g.fill(0, 0, width, 14, HudStyle.argb(255, BAR));
-        g.drawString(font, "SECURITY OS  " + host + (ip.isEmpty() ? "" : "  " + ip), 6, 3,
-                HudStyle.argb(255, HudStyle.CYAN), false);
+        String system = "SECURITY OS  " + host + (ip.isEmpty() ? "" : "  " + ip);
+        g.drawString(font, system, 6, 3, HudStyle.argb(255, HudStyle.CYAN), false);
         boolean online = data.getBoolean("online");
         String power = online ? "ONLINE" : "OFFLINE";
         g.drawString(font, power, width - font.width(power) - 6, 3, HudStyle.argb(255, online ? HudStyle.GREEN : HudStyle.RED), false);
-        if (remote) {
-            String tag = "REMOTE SESSION";
-            g.drawString(font, tag, (width - font.width(tag)) / 2, 3, HudStyle.argb(255, HudStyle.ORANGE), false);
-        } else if (!computerName().isEmpty()) {
-            String tag = "COMPUTER: " + computerName();
-            g.drawString(font, tag, (width - font.width(tag)) / 2, 3, HudStyle.argb(255, HudStyle.GREEN), false);
+        // In het midden: op afstand (de laptop) of op een Computer (hoofdstuk 40). Past het daar niet naast de naam en het
+        // IP (een smal scherm), dan erachter, en eventueel ingekort.
+        String tag = remote ? "REMOTE SESSION" : computerName().isEmpty() ? "" : "COMPUTER: " + computerName();
+        if (!tag.isEmpty()) {
+            int left = 6 + font.width(system) + 12;
+            int room = width - font.width(power) - 18 - left;
+            String shown = OsDraw.fitRight(font, tag, Math.max(0, room));
+            int x = Math.max(left, (width - font.width(shown)) / 2);
+            g.drawString(font, shown, x, 3, HudStyle.argb(255, remote ? HudStyle.ORANGE : HudStyle.GREEN), false);
         }
         // Icoontjes links (op een Computer alleen de apps die de kern toestaat).
         List<App> visible = visibleApps();

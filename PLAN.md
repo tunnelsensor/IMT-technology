@@ -28,7 +28,7 @@ per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaar
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 102 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 104 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4029,7 +4029,7 @@ Ik bouw het in deze volgorde, één stap per commit:
       `DesktopRights` (Off/View/Use per app, en welke opdracht bij welke app hoort; de server weigert voortaan elke
       opdracht die niet mag, "View only on this computer"), de instellingen staan in `ComputerBlockEntity`, de knoppen in
       `Computers.desktop`. **Test**: `computers_app_sets_apps_who_and_code`. 365 tests, allemaal groen.
-- [x] **4. De pc gebruiken** — rechtsklik op de monitor opent de desktop van de computer, met bovenaan in het groen
+- [x] **4. De pc gebruiken** (`dc4fcd3`) — rechtsklik op de monitor opent de desktop van de computer, met bovenaan in het groen
       **COMPUTER: Reception**. Eerst kijkt de server: werkt de computer, staat er minstens één app op ("Not set up yet"),
       en mag jij erop: **Everyone**, **Trusted** ("ACCESS DENIED: only trusted players may use Reception") of **Keycard
       group** (een geldige kaart van dit netwerk uit die groep ergens in je inventaris; "... needs a keycard of group
@@ -4049,7 +4049,16 @@ Ik bouw het in deze volgorde, één stap per commit:
       **Logs** heeft bovenaan een knop **Show: all / Show: entries**: met entries alleen wie welke lezer, welk paneel,
       welke knop of hendel gebruikte en wie waar inlogde ("kijken wie er waar binnengaat"), op de kern en op een pc.
       **Test**: `computer_desktop_shows_only_what_the_core_allows`. 366 tests, allemaal groen.
-- [ ] **5. LEESMIJ, showcase en screenshots**
+- [x] **5. LEESMIJ, showcase en screenshots** — LEESMIJ.md heeft een nieuw stuk "Je desktop van overal (de laptop) en
+      computers voor je basis" (na het netwerk), en bij het hacken een regel over inloggen met de laptop. Showcase: **103
+      Hacking Laptop: log in from anywhere** (eerst een fout wachtwoord, dan het goede: REMOTE SESSION) en **104 Computer
+      and monitor** (de app Computers, de pc van de receptie met alleen Status, Cameras, Devices en Logs om te kijken,
+      Logs met Show: entries, het codescherm van Office). Screenshots `-Ponly=computers`: `pc01_computer_and_monitor`,
+      `pc02_computers_app`, `pc03_pc_desktop`, `pc04_pc_devices_view_only`, `pc05_pc_logs_entries`, `pc06_code_screen`,
+      `pc07_laptop_login`, `pc08_remote_session`. Wat ik daarop zag en rechtzette: "COMPUTER: Reception" en "REMOTE
+      SESSION" liepen in de kopbalk over het IP heen op een smal scherm; nu staan ze erachter (en worden ze zo nodig
+      ingekort). En: een bestand openen kan op een pc alleen als **Notes** erop staat (daar lees je het); met alleen
+      Files zie je de mappen (anders flitste er een Notes-venster op dat meteen weer dicht ging).
 
 ---
 
@@ -4058,6 +4067,12 @@ Ik bouw het in deze volgorde, één stap per commit:
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De laptop overal en de Computer met Monitor (hoofdstuk 40)**: gezien op screenshots (`-Ponly=computers`, en
+      showcase 103 en 104), maar niet zelf gespeeld. Probeer: een wachtwoord op je kern zetten (Settings), het IP uit
+      Status, en ver weg rechtsklikken met de Hacking Laptop; een Computer met een netwerkkabel en stroom, een Monitor
+      ertegen, en in de app Computers een paar apps op View en Use; dan als vriend (of met een tweede account) op de
+      monitor klikken. Kijk of het **model van de monitor** goed staat (het voetje, het toetsenbord, het licht van het
+      scherm), of de app Computers op jouw schermgrootte past, en of "view only" duidelijk genoeg is.
 - [ ] **Het netwerk (hoofdstuk 38)**: gezien op screenshots (`-Ponly=network`, en showcase 101 en 102), maar niet zelf
       gespeeld. Probeer: kern + generator + netwerkkabel naar een lezer (en zonder kabel: niets); een schaar door de
       netwerkkabel; één stroomkabel op de kern en een PoE-kabel naar een camera; een poort van de switch uit; een

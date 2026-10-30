@@ -97,9 +97,11 @@ public final class DesktopRights {
         }
         return switch (op) {
             case "close", "desk_save", "desk_off" -> true;
-            // Bestanden: Files en Notes delen ze. Openen is kijken; maken, bewaren, verplaatsen en weggooien is bedienen.
-            case "fs_open" -> shows("FILES") || shows("NOTES");
-            case "fs_save", "fs_touch" -> mayUse("FILES") || mayUse("NOTES");
+            // Bestanden: Files en Notes delen ze. Een bestand lees je in Notes (dus openen kan alleen als Notes erop staat);
+            // maken, bewaren, verplaatsen en weggooien is bedienen.
+            case "fs_open" -> shows("NOTES");
+            case "fs_save" -> mayUse("NOTES");
+            case "fs_touch" -> mayUse("FILES") || mayUse("NOTES");
             case "fs_mkdir", "fs_move", "fs_delete", "fs_trap" -> mayUse("FILES");
             // De schakelaars van het hele netwerk: monsters en spelers staan in Access, de rest in Devices.
             case "flag" -> {
@@ -133,6 +135,9 @@ public final class DesktopRights {
 
     /** Bij welke app hoort deze opdracht (voor de melding "View only")? Leeg als we het niet weten. */
     public static String appOf(String op, CompoundTag args) {
+        if (op.equals("fs_open") || op.equals("fs_save")) {
+            return "NOTES";
+        }
         if (op.startsWith("fs_")) {
             return "FILES";
         }

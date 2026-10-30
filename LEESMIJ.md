@@ -97,6 +97,9 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (286 automati
   Alleen wie de laptop neerzette, kan hem gebruiken. Is de toren van jou, dan klap je de laptop
   dicht en zit hij weer in je rugzak; breek je hem eerder af, dan krijg je hem ook terug (maar
   begin je opnieuw).
+- De laptop is ook je **laptop voor op afstand**: rechtsklik ermee in de lucht en log met het IP en
+  het wachtwoord in op de desktop van een kern, waar je ook bent (zie "Je desktop van overal" in
+  hoofdstuk 5).
 
 ---
 
@@ -532,6 +535,59 @@ app **Devices** van de desktop, en hoort het bij die kern.
   `config/imttech.toml` onder `[network]` `required = false`: dan horen apparaten zoals vroeger bij de
   kern in wiens gebied ze staan, en hebben lezers en panelen geen stroom nodig. Onder `[network]`
   staan ook `signalRange` (hoe ver weg je de vakjes en streepjes ziet) en `flowSeconds`.
+
+### Je desktop van overal (de laptop) en computers voor je basis
+De **desktop** van je beveiliging (Security OS) opent met een rechtsklik met een lege hand op je
+**Security Core**. Daar hoef je niet altijd bij te staan:
+
+**De Hacking Laptop, van overal.** Rechtsklik met de laptop **in de lucht** (gewoon uit je
+inventaris, je zet niets neer). Het scherm **SSH login** vraagt het **IP** van de kern (dat staat in
+de app **Status** op de desktop, bijvoorbeeld `10.42.7.13`) en zijn **wachtwoord** (je ziet
+sterretjes). Klopt het, dan opent de desktop met bovenaan **REMOTE SESSION**, en kun je alles wat je
+op de kern zelf kunt.
+- Ook de eigenaar typt het wachtwoord. Een kern **zonder wachtwoord** laat niemand van ver binnen:
+  zet er eerst een in de app **Settings**. Een kern **zonder stroom** antwoordt niet.
+- Het werkt in **dezelfde dimensie**: je basis in de overworld bereik je overal in de overworld,
+  niet vanuit de Nether.
+- De laptop onthoudt het **laatste IP** (ook in zijn tooltip), nooit het wachtwoord.
+- Een **fout wachtwoord** staat in het logboek van de kern, en de eigenaar krijgt een I.M.T-alarm
+  (ook als iemand anders met het goede wachtwoord inlogt). Na 5 foute pogingen moet je even wachten
+  (`passwordAttempts` en `passwordLockoutMillis` onder `[security]`).
+- De verbinding valt weg als je de laptop niet meer bij je hebt, van dimensie wisselt, de kern geen
+  stroom meer heeft of iemand het wachtwoord verandert. Camera's ver weg geven "OUT OF RANGE": je
+  ziet alleen beeld van wat je spel zelf geladen heeft.
+- Hacken werkt zoals altijd: klik met de laptop op een kern die niet van jou is.
+
+**Een Computer met een Monitor**, bijvoorbeeld in de receptie van je basis, om de camera's te
+bekijken of te zien wie er waar binnenkwam.
+1. **Bouwen**: een **Computer** (6 ijzer, een Computer Chip, redstone en een netwerkkabel) en een
+   **Monitor** (4 ijzer, een zwarte glazen ruit, glowstone en 3 stenen knopjes). Zet de monitor
+   **tegen de computer** (aan een kant of erop; een computer mag meer monitoren hebben).
+2. **Aansluiten**: een **netwerkkabel** (of PoE-kabel) van de computer naar de kern, en een beetje
+   **stroom** (`computerUpkeep` onder `[power]`; een stroomkabel, een generator ertegen of PoE). Werkt
+   hij, dan brandt de ring rond de aan-knop en licht het scherm van de monitor op. Rechtsklik op de
+   kast zegt hoe hij ervoor staat ("No network...", "no power...").
+3. **Instellen** op de kern (of met de laptop), in de app **Computers**: links je computers, rechts
+   de gekozen computer.
+   - **Rename**: zijn naam ("Reception").
+   - **Who**: wie hem mag gebruiken: **Everyone** (iedereen die ervoor staat), **Trusted** (jij, je
+     team en je vertrouwde spelers uit Access; zo begint een nieuwe computer) of **Keycard group**
+     (wie een geldige keycard van dit netwerk uit die groep bij zich heeft; kies de groep met < en >).
+     De eigenaar mag er altijd op.
+   - **Code**: een eigen code (4-8 tekens, a-z en 0-9), of geen. De eigenaar hoeft hem niet te typen.
+   - **APPS**: per app **Off** (staat er niet op), **View** (alleen kijken) of **Use** (ook
+     bedienen). Status, Logs en Monitor hebben geen knoppen: die zijn Off of View. Een bestand lees je
+     in Notes: met alleen Files zie je de mappen, met Notes erbij open je ook de bestanden. Settings
+     (het wachtwoord van de kern), Groups (je eigen relais) en Computers kunnen nooit op een computer.
+4. **Gebruiken**: **rechtsklik op de monitor**. Bovenaan staat **COMPUTER: Reception**, en je ziet
+   alleen de apps die je koos; de server stuurt de computer ook niets van de andere apps. Een app op
+   View heeft "view only" in zijn titel: in **Cameras** zie je de beelden zonder pijltjes of Rename,
+   in **Devices** de toestand zonder knoppen. Een nieuwe computer zonder apps zegt "Not set up yet".
+   De computer onthoudt zijn eigen vensters. Loop je meer dan 8 blokken weg, dan gaat hij dicht.
+
+**Wie kwam er binnen?** In de app **Logs** staat bovenaan **Show: all**. Klik erop voor **Show:
+entries**: dan zie je alleen wie welke keycardlezer, welk codepaneel, welke knop of hendel gebruikte,
+en wie waar inlogde ("Lotte logged in at Reception").
 
 ### Licht: de Arc Lamp en de lichtschakelaar
 De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een computerchip) is een lamp met **lichtniveau

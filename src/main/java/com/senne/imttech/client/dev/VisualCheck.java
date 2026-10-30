@@ -1000,6 +1000,62 @@ public final class VisualCheck {
             t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(false));
         }
 
+        // --- Hoofdstuk 40: een receptie met een Computer en een Monitor aan het netwerk van een kern, de app Computers op de
+        // kern, de desktop van de pc (alleen Cameras, Devices en Logs, om te kijken), het codescherm van een tweede pc, en
+        // het inlogscherm van de Hacking Laptop met daarna de desktop op afstand.
+        if (want("computers")) {
+            BlockPos desk = COMPUTER_DESK;
+            BlockPos reception = desk.east(4);
+            BlockPos office = desk.east(2).south();
+            t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(true));
+            t.onServer(0, player -> buildComputerDesk(player, COMPUTER_DESK));
+            t.view(20, desk.getX() + 3.5, desk.getY() + 1.8, desk.getZ() + 4.5, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(reception.east()));
+            t.shot(30, "pc01_computer_and_monitor");
+            t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, desk));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourComputers(reception);
+                }
+            });
+            t.shot(25, "pc02_computers_app");
+            t.close(10);
+            t.onServer(5, player -> com.senne.imttech.computer.Computers.use(player, reception.east()));
+            t.shot(25, "pc03_pc_desktop");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.DEVICES);
+                }
+            });
+            t.shot(10, "pc04_pc_devices_view_only");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourLogsEntries();
+                }
+            });
+            t.shot(10, "pc05_pc_logs_entries");
+            t.close(10);
+            t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(office.east(), "Office"));
+            t.shot(15, "pc06_code_screen");
+            t.close(5);
+            t.onServer(0, player -> player.getInventory().setItem(0, new ItemStack(ModItems.HACKING_LAPTOP.get())));
+            t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(""));
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+                    login.tourType(computerDeskIp, "recept1");
+                }
+            });
+            t.shot(10, "pc07_laptop_login");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+                    login.tourConnect();
+                }
+            });
+            t.shot(30, "pc08_remote_session");
+            t.close(10);
+            t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(false));
+        }
+
         // --- De Biebia's Industries Tower: van buiten (drie kanten, en 's nachts) en elke verdieping van binnen.
         if (want("tower")) {
             tower(t);
@@ -4137,6 +4193,91 @@ public final class VisualCheck {
      * camera (die krijgt zijn stroom van de kern, door de switch heen). De bovenste poort van de switch staat uit. Achter
      * de kern een laserbrug met een netwerkkabel (en een eigen generator en redstone, zodat hij er ligt).
      */
+    /** Hoofdstuk 40: de receptie met computers (zie "computers" hierboven). */
+    private static final BlockPos COMPUTER_DESK = new BlockPos(-300, -60, -340);
+    /** Het IP van de kern van de receptie (de server zet het, het inlogscherm van de laptop typt het; ook de showcase). */
+    static String computerDeskIp = "";
+
+    /**
+     * Een kern (wachtwoord "recept1") met een netwerkkabel naar twee computers met elk een monitor: "Reception" (voor
+     * iedereen; Status, Cameras, Devices en Logs om te kijken) en "Office" (voor vertrouwde spelers, met een code, Keycards
+     * en Logs). Een keycardlezer "Front door" en een camera "Lobby" aan hetzelfde netwerk, en een paar regels in het
+     * logboek van wie er binnenkwam. De showcase (functie 103 en 104) bouwt hem ook, op een andere plek.
+     */
+    static void buildComputerDesk(ServerPlayer player, BlockPos core) {
+        ServerLevel level = player.serverLevel();
+        BlockPos reception = core.east(4);
+        BlockPos office = core.east(2).south();
+        BlockPos reader = core.west(2);
+        BlockPos camera = core.north(2);
+        for (BlockPos generator : new BlockPos[] {core.below(), reception.below(), office.below(), reader.below()}) {
+            level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+        level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.SecurityCoreBlock.FACING, Direction.SOUTH));
+        if (!(level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity coreEntity)) {
+            return;
+        }
+        coreEntity.setOwner(player);
+        coreEntity.ensureSystem(level);
+        coreEntity.setPassword("recept1", level.random);
+        coreEntity.powerTick(level);
+        computerDeskIp = coreEntity.ip();
+        for (int dx = 1; dx <= 3; dx++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.east(dx));
+        }
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.west());
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.north());
+        level.setBlockAndUpdate(reader, ModBlocks.KEYCARD_READER.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(reader) instanceof com.senne.imttech.logic.InputDeviceBlockEntity be) {
+            be.setName("Front door");
+        }
+        level.setBlockAndUpdate(camera, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.imttech.security.CameraBlock.FACING, Direction.SOUTH));
+        // De twee computers, elk met een monitor ernaast (naar het zuiden, naar de camera van de screenshot).
+        Object[][] computers = {
+                {reception, "Reception", com.senne.imttech.computer.ComputerBlockEntity.Who.EVERYONE,
+                        new String[] {"STATUS", "CAMERAS", "DEVICES", "LOGS"}, ""},
+                {office, "Office", com.senne.imttech.computer.ComputerBlockEntity.Who.TRUSTED,
+                        new String[] {"KEYCARDS", "LOGS"}, "desk42"}};
+        for (Object[] row : computers) {
+            BlockPos pos = (BlockPos) row[0];
+            level.setBlockAndUpdate(pos, ModBlocks.COMPUTER.get().defaultBlockState()
+                    .setValue(com.senne.imttech.computer.ComputerBlock.FACING, Direction.SOUTH));
+            level.setBlockAndUpdate(pos.east(), ModBlocks.MONITOR.get().defaultBlockState()
+                    .setValue(com.senne.imttech.computer.MonitorBlock.FACING, Direction.SOUTH));
+            if (level.getBlockEntity(pos) instanceof com.senne.imttech.computer.ComputerBlockEntity be) {
+                be.setOwner(player);
+                be.setName((String) row[1]);
+                be.setWho((com.senne.imttech.computer.ComputerBlockEntity.Who) row[2], "");
+                com.senne.imttech.security.os.DesktopRights rights = be.rights();
+                for (String app : (String[]) row[3]) {
+                    rights = rights.with(app, app.equals("KEYCARDS") ? com.senne.imttech.security.os.DesktopRights.Access.USE
+                            : com.senne.imttech.security.os.DesktopRights.Access.VIEW);
+                }
+                be.setRights(rights);
+                be.setCode((String) row[4], level.random);
+            }
+        }
+        com.senne.imttech.security.SecurityDevices.forget(level, coreEntity);
+        for (BlockPos pos : new BlockPos[] {reception, office}) {
+            if (level.getBlockEntity(pos) instanceof com.senne.imttech.computer.ComputerBlockEntity be) {
+                be.updateOn(level);
+            }
+        }
+        // Wie er vandaag binnenkwam (de app Logs, Show: entries), tussen een paar andere regels.
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Lotte used keycard #1001 at Front door");
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.DEVICE, "Senne set Cameras on Reception to view");
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Senne entered a code at Front door");
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.LOGIN, "Lotte logged in at Reception");
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Jonas used keycard #1002 at Front door");
+    }
+
     private static void buildNetworkDesk(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos core = NETWORK_DESK;
