@@ -2386,6 +2386,199 @@ final class ShowcaseFeatures {
                 .pause(40)
                 .step(0, () -> hotbar(0))
                 .onServer(0, player -> player.getInventory().clearContent()));
+
+        // ---------------------------------------------------------------- Het netwerk
+        // Hoofdstuk 38 (29 oktober), ook achteraan.
+        BlockPos lan = NET_YARD;
+        add("Network cables", "Hoofdstuk 38. Een desktop (Security Core) met drie soorten kabel: een groene PoE-kabel naar "
+                + "een Network Switch, daarachter een witte netwerkkabel (een stukje onder een blok: met de bril zie je hem "
+                + "er wit doorheen) naar een keycardlezer, een PoE-kabel naar een camera, en een grijze stroomkabel die de "
+                + "switch voedt. Let op: twee keer loopt er een helder vakje van de lezer naar de kern (wit over de "
+                + "netwerkkabel, groen over de PoE-kabel), en de gele streepjes van de stroom (naar de switch, en over de "
+                + "PoE-kabel naar de camera). Dan het deurtje van de switch: de poort naar de camera gaat uit (de camera "
+                + "verliest stroom en netwerk) en weer aan. Tot slot Devices op de desktop, met de switch en zijn poorten.",
+                new Vec3(lan.getX() + 3.5, lan.getY(), lan.getZ() + 6.5), 180, 25, s -> s
+                .onServer(0, player -> com.senne.imttech.lan.LanGrid.overrideRequired(true))
+                .onServer(0, ShowcaseFeatures::buildNetworkYard)
+                .pause(60)
+                .onServer(0, player -> com.senne.imttech.lan.CableTraffic.signal(player.serverLevel(), NET_READER, true))
+                .pause(50)
+                .onServer(0, player -> com.senne.imttech.lan.CableTraffic.signal(player.serverLevel(), NET_READER, true))
+                .pause(90)
+                // Het deurtje van de switch: de poort naar de camera (achter, noord) uit en weer aan.
+                .stand(0, lan.getX() + 3.5, lan.getY(), lan.getZ() + 2.5, 180, 30)
+                .onServer(10, player -> com.senne.imttech.lan.NetworkSwitches.open(player, NET_SWITCH))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.lan.NetworkSwitches.setPort(player.serverLevel(), NET_SWITCH,
+                        net.minecraft.core.Direction.NORTH, false))
+                .pause(50)
+                .close(0)
+                .lookAt(5, Vec3.atCenterOf(NET_SWITCH.north(3)))
+                .pause(80)
+                .onServer(0, player -> com.senne.imttech.lan.NetworkSwitches.setPort(player.serverLevel(), NET_SWITCH,
+                        net.minecraft.core.Direction.NORTH, true))
+                .pause(60)
+                // De desktop: Devices, met de poorten van de switch open.
+                .stand(0, lan.getX() + 0.5, lan.getY(), lan.getZ() + 1.5, 180, 20)
+                .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, NET_YARD))
+                .step(30, () -> desktop(com.senne.imttech.client.os.SecurityOsScreen::tourSwitchPorts))
+                .pause(100)
+                .close(20));
+
+        add("Network button and lever", "Hoofdstuk 38. Een netwerkhendel en een netwerkknop op de vloer, met een PoE-kabel "
+                + "naar de desktop, en een diagram op de server: when lever(\"Night mode\") en when button(\"Doorbell\"). De "
+                + "hendel gaat om: een vakje loopt over de kabel naar de kern en I.M.T zegt \"Night mode on\" (lever.on). "
+                + "Dan de knop: hij duikt even in, en I.M.T zegt dat jij aanbelde (player.name). De hendel terug: \"Night "
+                + "mode off\". Geen redstone: alles via het diagram. Tot slot het diagram in de app Logic, en de knoppen en "
+                + "hendels in Devices.",
+                new Vec3(lan.getX() + 0.5, lan.getY(), lan.getZ() - 3.5), 0, 40, s -> s
+                .onServer(0, player -> com.senne.imttech.lan.LanGrid.overrideRequired(true))
+                .onServer(0, ShowcaseFeatures::buildNetworkYard)
+                .onServer(30, ShowcaseFeatures::wakeNetworkServer)
+                .pause(40)
+                .onServer(0, player -> useControl(player, NET_LEVER))
+                .pause(80)
+                .onServer(0, player -> useControl(player, NET_BUTTON))
+                .pause(80)
+                .onServer(0, player -> useControl(player, NET_LEVER))
+                .pause(80)
+                .stand(0, lan.getX() + 0.5, lan.getY(), lan.getZ() + 1.5, 180, 20)
+                .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, NET_YARD))
+                .step(30, () -> desktop(os -> os.tourLogic("Controls", CONTROLS_CODE, false)))
+                .pause(200)
+                .step(0, () -> desktop(os -> os.tourDevicesAt("BUTTONS")))
+                .pause(90)
+                .close(20));
+    }
+
+    // ---------------------------------------------------------------- Het netwerk (hoofdstuk 38)
+
+    /** Waar de desktop van het netwerk staat: ver van de rest, met zijn kabels eromheen. */
+    static final BlockPos NET_YARD = new BlockPos(-130, -60, 90);
+    /** De Network Switch, de keycardlezer, en de netwerkhendel en -knop van het netwerk. */
+    static final BlockPos NET_SWITCH = NET_YARD.east(3);
+    static final BlockPos NET_READER = NET_YARD.east(6);
+    static final BlockPos NET_LEVER = NET_YARD.north(2).west();
+    static final BlockPos NET_BUTTON = NET_YARD.north(2).east();
+
+    /** Het diagram van de hendel en de knop. */
+    private static final String CONTROLS_CODE = """
+            # No redstone: they reach the server over their network cable
+            when lever("Night mode"):
+                if lever.on:
+                    say("Night mode on: the cameras watch the hall")
+                else:
+                    say("Night mode off")
+
+            when button("Doorbell"):
+                say(player.name + " rang the doorbell")
+            """;
+
+    /**
+     * Bouwt het netwerk (elke keer opnieuw): een desktop van jou met een generator eronder en een serverrek ertegen, een
+     * PoE-kabel naar een Network Switch (gevoed door een grijze stroomkabel van een generator verderop), daarachter een
+     * witte netwerkkabel (één stukje onder een blok) naar een keycardlezer, een PoE-kabel van de switch naar een camera, en
+     * aan de noordkant een PoE-kabel naar een netwerkhendel en een netwerkknop. En het diagram van die twee.
+     */
+    static void buildNetworkYard(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        BlockPos y = NET_YARD;
+        for (BlockPos pos : BlockPos.betweenClosed(y.offset(-3, 0, -5), y.offset(9, 3, 5))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+            for (com.senne.imttech.energy.CableKind kind : com.senne.imttech.energy.CableKind.values()) {
+                com.senne.imttech.energy.Cables.remove(kind, level, pos);
+            }
+        }
+        BlockPos rack = y.west();
+        BlockPos switchPower = NET_SWITCH.south(3);
+        for (BlockPos generator : new BlockPos[] {y.below(), rack.below(), NET_READER.below(), switchPower}) {
+            level.setBlockAndUpdate(generator, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+                charger.fill(30_000);
+            }
+        }
+        level.setBlockAndUpdate(y, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.SecurityCoreBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        claimTowerCore(player, y);
+        // Het serverrek tegen de kern (zonder kabel op het netwerk), met onderdelen en een fan.
+        level.setBlockAndUpdate(rack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+            be.parts().setItem(0, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_CPU.get()));
+            be.parts().setItem(1, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_RAM.get()));
+            be.parts().setItem(2, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
+            be.parts().setItem(5, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
+        }
+        // PoE van de kern naar de switch, de switch met een grijze stroomkabel.
+        for (int dx = 1; dx <= 2; dx++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, y.east(dx));
+        }
+        level.setBlockAndUpdate(NET_SWITCH, com.senne.imttech.registry.ModBlocks.NETWORK_SWITCH.get().defaultBlockState()
+                .setValue(com.senne.imttech.lan.NetworkSwitchBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        if (level.getBlockEntity(NET_SWITCH) instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity be) {
+            be.setOwner(player);
+            be.setName("Hall switch");
+        }
+        for (int dz = 1; dz <= 2; dz++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, NET_SWITCH.south(dz));
+        }
+        // De netwerkkabel naar de lezer; het middelste stukje onder een blok gepolijst andesiet.
+        for (int dx = 1; dx <= 2; dx++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, NET_SWITCH.east(dx));
+        }
+        level.setBlockAndUpdate(NET_SWITCH.east(2), Blocks.POLISHED_ANDESITE.defaultBlockState());
+        placeInput(level, NET_READER, com.senne.imttech.registry.ModBlocks.KEYCARD_READER.get().defaultBlockState(), "Hall door");
+        // PoE van de switch naar een camera (noord).
+        for (int dz = 1; dz <= 2; dz++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, NET_SWITCH.north(dz));
+        }
+        level.setBlockAndUpdate(NET_SWITCH.north(3), com.senne.imttech.registry.ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.imttech.security.CameraBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        // PoE naar het noorden, met de hendel en de knop op de vloer ernaast.
+        for (int dz = 1; dz <= 2; dz++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, y.north(dz));
+        }
+        placeControl(level, player, NET_LEVER, com.senne.imttech.registry.ModBlocks.NETWORK_LEVER.get().defaultBlockState(), "Night mode");
+        placeControl(level, player, NET_BUTTON, com.senne.imttech.registry.ModBlocks.NETWORK_BUTTON.get().defaultBlockState(), "Doorbell");
+        if (level.getBlockEntity(y) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+            core.logic().remove("Controls");
+            var graph = com.senne.imttech.logic.program.GraphConverter.toGraph(
+                    com.senne.imttech.logic.program.ScriptParser.parse(CONTROLS_CODE), null);
+            core.logic().put(null, new com.senne.imttech.logic.program.LogicProgram("Controls", true, graph, CONTROLS_CODE));
+            core.setChanged();
+            com.senne.imttech.security.SecurityDevices.forget(level, core);
+            com.senne.imttech.logic.LogicServer.forgetAll();
+        }
+    }
+
+    /** Een netwerkhendel of -knop van jou op de vloer, met deze naam. */
+    private static void placeControl(net.minecraft.server.level.ServerLevel level, net.minecraft.server.level.ServerPlayer player,
+                                     BlockPos pos, net.minecraft.world.level.block.state.BlockState state, String name) {
+        level.setBlockAndUpdate(pos, state
+                .setValue(com.senne.imttech.logic.NetworkControlBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, net.minecraft.core.Direction.SOUTH));
+        if (level.getBlockEntity(pos) instanceof com.senne.imttech.logic.InputDeviceBlockEntity device) {
+            device.setOwner(player);
+            device.setName(name);
+        }
+    }
+
+    /** Het rek van het netwerk meteen laten kijken of het meedraait (anders duurt dat tot twee seconden). */
+    static void wakeNetworkServer(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        BlockPos rack = NET_YARD.west();
+        if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+            be.update(level, rack, level.getBlockState(rack));
+        }
+        com.senne.imttech.logic.LogicServer.forgetAll();
+    }
+
+    /** Rechtsklikken op een netwerkhendel of -knop, zoals jij dat doet (met een lege hand, zonder te sluipen). */
+    private static void useControl(net.minecraft.server.level.ServerPlayer player, BlockPos pos) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        level.getBlockState(pos).useWithoutItem(level, player,
+                new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(pos), net.minecraft.core.Direction.UP, pos, false));
     }
 
     /** Zet dit item (granaat) in je hand en gooi het (met {@code toss}: onderhands, zoals met sneak). */

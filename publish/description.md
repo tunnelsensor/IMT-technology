@@ -39,6 +39,8 @@ bunkers to raid.
 **Bases and security**
 - A Security Core with its own desktop (Security OS): a camera wall, devices, keycards and code
   panels, files and traps, and protected build zones.
+- Wire your security with network cables, PoE cables and a network switch; network buttons and
+  levers start your diagrams, and you can watch signals and power run along the cables.
 - Rayshields (laser gates in six colours), shield domes, rocket and laser turrets, security
   cameras, remote frags you set off from afar (defuse them with shears), cracks that stay until you repair them.
 - Server racks with CPU, RAM, SSD, GPU and fans: program your base with redstone diagrams or a

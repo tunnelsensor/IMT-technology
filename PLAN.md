@@ -28,7 +28,7 @@ per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaar
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 100 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 102 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -3886,7 +3886,15 @@ Ik bouw het in deze volgorde, één stap per commit:
       invulling**: een generator die direct tegen een apparaat staat, geeft geen streepjes (er is geen kabel om op te
       tekenen). **Test**: `signals_and_power_follow_the_cables`. 360 tests, allemaal groen. **Screenshots**
       `-Ponly=network`: `nw10_signal`, `nw11_power_flow` (stilgezet).
-- [ ] **10. LEESMIJ, showcase en screenshots**
+- [x] **10. LEESMIJ, showcase en screenshots** — **LEESMIJ**: een nieuw stuk "Het netwerk: netwerkkabels, PoE, de
+      switch, knoppen en hendels" (na De stroomkast), "Stroom en kabels" bijgewerkt (de drie soorten, de kleuren door de
+      muur heen, de gele streepjes), de triggers `when button`/`when lever` en `lever.on` bij De server, en de
+      verouderde getallen (360 tests, `-Ponly=network`). **Showcase**: twee nieuwe functies, achteraan zodat de nummers
+      van je notities blijven kloppen: **101 Network cables** (de drie kabels, een vakje van de lezer naar de kern, de
+      gele streepjes, een poort van de switch uit en aan, Devices) en **102 Network button and lever** (een diagram met
+      `when lever` en `when button`: I.M.T zegt wat er gebeurt; daarna de code in Logic en Devices). Elke functie zet
+      het netwerk zelf aan; de oudere functies werken zoals vroeger zonder kabels. **Publiceren**: een regel erbij in
+      `publish/description.md`.
 
 ---
 
@@ -3895,6 +3903,14 @@ Ik bouw het in deze volgorde, één stap per commit:
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Het netwerk (hoofdstuk 38)**: gezien op screenshots (`-Ponly=network`, en showcase 101 en 102), maar niet zelf
+      gespeeld. Probeer: kern + generator + netwerkkabel naar een lezer (en zonder kabel: niets); een schaar door de
+      netwerkkabel; één stroomkabel op de kern en een PoE-kabel naar een camera; een poort van de switch uit; een
+      netwerkknop en -hendel in een diagram. Kijk of de **kleuren** goed zijn (grijs, wit, groen; door de muur heen met de
+      bril), of het **vakje** en de **gele streepjes** niet te druk of te snel zijn (de snelheid staat in
+      `client/CableTraffic`, hoe vaak in `[network] flowSeconds`), en of de modellen van de knop en de hendel er goed
+      uitzien (aan de muur, op de vloer, aan het plafond). Een oude wereld: zet `[network] required = false` in
+      `imttech.toml`, of leg de kabels.
 - [ ] **De wapens (hoofdstuk 35)**: gezien op screenshots, maar niet zelf gespeeld. Probeer vooral hoe de **geweren
       voelen** (de terugslag, hoe snel het geweer schiet, hoe groot het geweer en je armen in beeld zijn, het richten en
       de kijker van de sniper) en of de **getallen** kloppen (schade, schoten per cel, herlaadtijd: alles in `[weapons]`).

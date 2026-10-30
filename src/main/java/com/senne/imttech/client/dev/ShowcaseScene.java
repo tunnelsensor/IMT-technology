@@ -208,6 +208,8 @@ final class ShowcaseScene {
      */
     static void reset(ServerPlayer player, GameType mode) {
         ServerLevel level = player.serverLevel();
+        // Hoofdstuk 38: de oudere functies werken zonder netwerkkabels; de functies over het netwerk zetten het zelf aan.
+        com.senne.imttech.lan.LanGrid.overrideRequired(false);
         player.stopRiding();
         if (ImtSpy.of(player) != null) {
             ImtSpy.stop(player, "imt.imttech.spy.log.end_recalled");

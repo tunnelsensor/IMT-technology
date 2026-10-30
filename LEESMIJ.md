@@ -301,9 +301,16 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   bovenop gezet) ook.
 - Omdat het geen blok is, kun je er gewoon **blokken overheen bouwen**: bouw een muur of vloer
   over een kabel en hij loopt erin door. Zo werk je kabels weg. Verborgen kabels zie je alleen
-  **met de bril op**: dan lichten ze blauw op door de muur heen (tot 24 blokken ver). Dat
-  zet je aan of uit met **G > Information > Cable X-ray** (of geef het een eigen toets in
-  Opties > Besturing > I.M.T: "Cable X-ray on/off").
+  **met de bril op**: dan lichten ze op door de muur heen (tot 24 blokken ver): een stroomkabel
+  grijs, een netwerkkabel wit en een PoE-kabel gloeiend groen. Dat zet je aan of uit met
+  **G > Information > Cable X-ray** (of geef het een eigen toets in Opties > Besturing > I.M.T:
+  "Cable X-ray on/off").
+- Er zijn **drie soorten kabel**: de stroomkabel (grijs), de **netwerkkabel** (wit) en de
+  **PoE-kabel** (groen, stroom en netwerk samen). Ze mogen op dezelfde plek liggen (dan liggen ze
+  netjes boven elkaar) zonder elkaar te raken. Over de netwerkkabel en de PoE-kabel lees je meer
+  bij **Het netwerk** hieronder.
+- **Stroom die loopt, zie je**: een apparaat dat stroom haalt, laat gele streepjes van de
+  generator naar zich toe lopen, over de kabels (aan of uit met G > Information > Power flow).
 - **Shift + rechtsklik** met kabel in je hand op een kabel: oprapen. Een **schaar** (rechtsklik)
   knipt een kabel door; er valt een stukje uit. Een kabel in een muur moet je eerst vrijhakken.
 - Oude kabelblokken (uit een oudere versie, en in de Biebia's Industries Tower en de Biebia's Industries-bunker) worden
@@ -480,6 +487,52 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
   cabinets**, zodat je ze op afstand of met je stem schakelt ("turn off cabinet 1 left").
 - In de Biebia's Industries Tower en de Biebia's Industries-bunker staat er een op een goed bewaakte plek.
 
+### Het netwerk: netwerkkabels, PoE, de switch, knoppen en hendels
+Je beveiliging is echt bekabeld. Een **Network Cable** (wit; koper, kwarts, koper geeft 8 stuks)
+loopt van de desktop (de **Security Core**) naar elk beveiligingsapparaat: keycardlezer, codepaneel,
+camera, beveiligingstorentje, serverrek, laserpoort en laserbrug. Pas dan staat het apparaat in de
+app **Devices** van de desktop, en hoort het bij die kern.
+- Je **tekent** hem net als een stroomkabel (rechtermuisknop ingedrukt), en hij zit net zo vast:
+  kabels naast elkaar, en een apparaat naast een kabel. Een apparaat dat direct tegen de kern staat,
+  heeft geen kabel nodig. Serverracks, laserzenders en brugzenders geven het netwerk door aan wie
+  ertegenaan staat (een kast vol racks of een hele laserpoort heeft genoeg aan één kabel).
+- **Zonder netwerkkabel doet een beveiligingsapparaat niets**: een lezer of paneel geeft een rood
+  lampje ("Not connected: no network cable to the desktop of a security core."), een camera geeft
+  geen beeld, een beveiligingstorentje schiet niet, een serverrek draait niet mee. Laserpoorten, de
+  laserbrug en je eigen raketturretje werken wel los, gewoon op stroom: de kabel is daar alleen voor
+  de desktop (de lijst in Devices, de schakelaar Lasers).
+- **Stroom**: een lezer, een paneel, een knop en een hendel gebruiken een klein beetje stroom (een
+  stroomkabel ernaast, een generator ertegen, of een PoE-kabel). Zonder stroom doen ze niets en zegt
+  Devices "no power".
+- Raakt een net twee kernen, dan hoort een apparaat bij de dichtstbijzijnde langs de kabel. Knip je
+  een kabel door (met een schaar), dan valt alles erachter uit. In een EMP-puls geeft een open kabel
+  even niets door.
+- **PoE Cable** (groen; een stroomkabel, een netwerkkabel en limoenverf geven er 2): stroom en
+  netwerk in één kabel. Hang één stroomkabel (of een generator) aan de kern: dan voedt de kern al zijn
+  PoE-kabels, en een camera aan een PoE-kabel heeft beeld zonder eigen stroomkabel.
+- **Network Switch** (ijzer, netwerkkabels, redstone en een Computer Chip): een punt waar netwerk- en
+  PoE-kabels van alle zes kanten samenkomen, zoals de stroomkast. Achter het deurtje (rechtsklik) zet
+  je **elke poort aan of uit**; een poort die uit staat, knipt de tak erachter af. De switch heeft
+  zelf een beetje stroom nodig: zonder stroom gaat er geen netwerk door. PoE-stroom gaat wel door
+  een switch, naar de PoE-poorten die aan staan. In Devices staat hij bij NETWORK SWITCHES: met
+  **Ports** zet je zijn poorten ook op afstand om.
+- **Network Button** en **Network Lever** (een stenen knop of een hendel, een Computer Chip en een
+  netwerkkabel): aan de muur, op de vloer of aan het plafond, zoals een gewone knop of hendel, maar
+  **zonder redstone**: ze starten je diagram op de server. `when button("Doorbell"):` als iemand op
+  de knop drukt, en `when lever("Night mode"):` als iemand de hendel omzet, met `lever.on` (staat hij
+  nu aan?). `player.name` zegt wie het deed, en `is_on("Night mode")` leest de hendel altijd, ook in
+  een andere trigger. Ze heten "Button 1" en "Lever 1"; een andere naam geef je met **sneak +
+  rechtsklik met een lege hand**, of in Devices (BUTTONS, LEVERS).
+- **Wat je ziet lopen**: een kaart, een code, een knop of een hendel stuurt een **helder vakje** over
+  de kabel naar de kern (wit over een netwerkkabel, groen over een PoE-kabel), en het antwoord
+  (`accept()`, `deny()`) loopt terug. Aan of uit met **G > Information > Cable signals**.
+- In de **Biebia's Industries Tower** loopt naast elke stroomkabel in de muren een netwerkkabel: knip
+  er een door en wat erachter zit, valt uit.
+- **Een oude wereld?** Daar hangen je apparaten nog nergens aan. Leg de kabels, of zet in
+  `config/imttech.toml` onder `[network]` `required = false`: dan horen apparaten zoals vroeger bij de
+  kern in wiens gebied ze staan, en hebben lezers en panelen geen stroom nodig. Onder `[network]`
+  staan ook `signalRange` (hoe ver weg je de vakjes en streepjes ziet) en `flowSeconds`.
+
 ### Licht: de Arc Lamp en de lichtschakelaar
 De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een computerchip) is een lamp met **lichtniveau
 100**. Een gewone lamp in Minecraft houdt op bij 15: dat licht reikt zo'n 15 blokken. Deze lamp geeft
@@ -583,12 +636,13 @@ when keycard("Lab door"):
         deny()
         alarm("Wrong card at the lab")
 ```
-- **Begin met** `when keycard("...")`, `when codepanel("...")`, `when turned_on("...")`,
-  `when turned_off("...")` of `when every(10)` (elke 10 seconden).
+- **Begin met** `when keycard("...")`, `when codepanel("...")`, `when button("...")`, `when lever("...")`
+  (een netwerkknop of -hendel, zie **Het netwerk**), `when turned_on("...")`, `when turned_off("...")` of
+  `when every(10)` (elke 10 seconden).
 - **Kies** met `if ...:`, `elif ...:` en `else:`, met `and`, `or`, `not` en `==`, `!=`, `<`, `>`,
   `<=`, `>=`. Je kunt kijken naar `card.in_group("...")`, `card.valid`, `card.number`, `card.name`,
-  `code` (tekst: `code == "4321"`), `player.trusted`, `player.owner`, `player.name`, `is_night`,
-  `is_day` en `is_on("...")`. `card.in_group("staff")` is waar als de kaart in de groep `staff` zit, of
+  `code` (tekst: `code == "4321"`), `lever.on` (na `when lever`), `player.trusted`, `player.owner`,
+  `player.name`, `is_night`, `is_day` en `is_on("...")` (ook een netwerkhendel). `card.in_group("staff")` is waar als de kaart in de groep `staff` zit, of
   in een groep die (ergens) in `staff` zit; alleen voor een geldige kaart (van jouw netwerk en niet
   geblokkeerd), dus `if card.in_group("staff"):` is op zichzelf al veilig. Hoofdletters maken niet uit,
   en `'staff'` mag ook.
@@ -1674,11 +1728,12 @@ showcase en staat hij bij NIEUW.
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.
-- **Tests**: `gradlew runGameTestServer` — 286 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 360 tests over de toren en zijn kluis, het
   satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   mini-raketten, de Raven-soldaten, de torentjes, de spraakcommando's, en alles wat erna kwam
-  (beveiliging, zones, de frags, barsten, servers, robots, security drones en trainingen).
+  (beveiliging, zones, de frags, barsten, servers, robots, security drones, trainingen, wapens en
+  het netwerk).
   Let op: ze draaien in `run/` met jouw `run/config/imttech.toml`. Staan daar andere getallen
   dan de standaard (zoals tragere generatoren), dan kunnen tests over de toren en de bunker
   falen. Gooi dat bestand weg om terug de standaard te krijgen.
@@ -1688,7 +1743,7 @@ showcase en staat hij bij NIEUW.
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `bridge`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
-  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`; meerdere met komma's). Op een ander
+  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`, `network`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Logo**: `python tools/generate_logo.py` maakt het logo in de modlijst
   (`src/main/resources/imttech_logo.png`) en het projectplaatje voor CurseForge
