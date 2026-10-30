@@ -95,12 +95,36 @@ public final class SecurityOs {
         private final UUID viewer;
         /** In welke dimensie de kern staat (hoofdstuk 40: op afstand moet je in dezelfde blijven). */
         private final ResourceKey<Level> dimension;
+        /** Hoofdstuk 40: de Computer waarop deze desktop draait, of null (de kern zelf, of de laptop). */
+        private final @Nullable BlockPos computer;
+        /** Waar je bij moet blijven (binnen REACH): de kern, of de monitor waarop je klikte. */
+        private final BlockPos anchor;
 
-        Session(BlockPos core, boolean remote, UUID viewer, ResourceKey<Level> dimension) {
+        Session(BlockPos core, boolean remote, UUID viewer, ResourceKey<Level> dimension, @Nullable BlockPos computer,
+                BlockPos anchor) {
             this.core = core;
             this.remote = remote;
             this.viewer = viewer;
             this.dimension = dimension;
+            this.computer = computer;
+            this.anchor = anchor;
+        }
+
+        public @Nullable BlockPos computer() {
+            return computer;
+        }
+
+        /**
+         * Wat je op deze desktop mag: alles op de kern of met de laptop; op een Computer wat de kern daar toestaat (elke
+         * keer opnieuw uit de computer gelezen, zodat een wijziging in de app Computers meteen geldt). Is de computer
+         * weg, dan niets.
+         */
+        public DesktopRights rights(ServerLevel level) {
+            if (computer == null) {
+                return DesktopRights.FULL;
+            }
+            return level.getBlockEntity(computer) instanceof com.senne.imttech.computer.ComputerBlockEntity entity
+                    ? entity.rights() : DesktopRights.NONE;
         }
 
         public UUID viewer() {
@@ -169,7 +193,8 @@ public final class SecurityOs {
                     .withStyle(ChatFormatting.RED), true);
             return false;
         }
-        Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID(), player.serverLevel().dimension());
+        Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID(), player.serverLevel().dimension(),
+                null, core.getBlockPos().immutable());
         SESSIONS.put(player.getUUID(), session);
         if (remote) {
             keepLoaded(player.serverLevel(), session.core());
@@ -376,6 +401,14 @@ public final class SecurityOs {
             return;
         }
         CompoundTag args = payload.args();
+        // Hoofdstuk 40: op een Computer mag alleen wat de kern daar toestaat (een app op View: alleen kijken).
+        DesktopRights rights = session.rights(level);
+        if (!rights.allows(payload.op(), args)) {
+            String app = DesktopRights.appOf(payload.op(), args);
+            notify(player, core, session, rights.shows(app) ? "View only on this computer"
+                    : "This computer does not allow that", true);
+            return;
+        }
         switch (payload.op()) {
             case "close" -> close(player);
             // De desktop ging dicht: onthoud welke vensters er open stonden (19 oktober). Uitzetten met de aan/uit-knop
@@ -440,6 +473,12 @@ public final class SecurityOs {
             case "robot_switch", "robot_rename", "robot_program", "robot_squad", "robot_delete" -> {
                 // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23; weghalen: 18 oktober), zie robot/Robots.
                 com.senne.imttech.robot.Robots.Desktop result = com.senne.imttech.robot.Robots.desktop(
+                        player, core, payload.op(), args);
+                notify(player, core, session, result.text(), result.error());
+            }
+            case "pc_rename", "pc_who", "pc_code", "pc_app" -> {
+                // De app Computers (hoofdstuk 40), zie computer/Computers.
+                com.senne.imttech.computer.Computers.Result result = com.senne.imttech.computer.Computers.desktop(
                         player, core, payload.op(), args);
                 notify(player, core, session, result.text(), result.error());
             }
@@ -1176,6 +1215,8 @@ public final class SecurityOs {
         data.put("server", com.senne.imttech.logic.LogicServer.snapshot(level, core));
         // De backups van deze server en van de eigenaar (de app Backup).
         data.put("backup", com.senne.imttech.logic.Backups.snapshot(level, core));
+        // De computers op het netwerk van deze kern (de app Computers, hoofdstuk 40).
+        data.put("computers", com.senne.imttech.computer.Computers.snapshot(level, core));
         // De zone: de kubussen waarin alleen jij en je vrienden bouwen (de app Zone, hoofdstuk 10).
         data.put("zone", com.senne.imttech.security.zone.ZoneApp.snapshot(level, core,
                 level.getServer().getPlayerList().getPlayer(session.viewer()), session.remote()));

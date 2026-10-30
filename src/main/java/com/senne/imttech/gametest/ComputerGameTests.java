@@ -211,4 +211,101 @@ public final class ComputerGameTests {
         helper.assertBlockProperty(monitor, MonitorBlock.ON, false);
         helper.succeed();
     }
+
+    /** Een opdracht van het scherm naar de server, alsof de speler op een knop klikte (de plek van een computer erbij). */
+    private static void pcAction(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos computer, String op,
+                                 java.util.function.Consumer<net.minecraft.nbt.CompoundTag> extra) {
+        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+        args.putInt("x", computer.getX());
+        args.putInt("y", computer.getY());
+        args.putInt("z", computer.getZ());
+        extra.accept(args);
+        SecurityOs.handleAction(player, new com.senne.imttech.network.OsActionPayload(core.getBlockPos(), op, args));
+    }
+
+    /** Een kern met een werkende computer (netwerkkabel en stroom) en een monitor ertegen. Geeft de plek van de computer. */
+    private static BlockPos workingComputer(GameTestHelper helper, BlockPos computer) {
+        helper.setBlock(computer, ModBlocks.COMPUTER.get());
+        helper.setBlock(computer.east(), ModBlocks.MONITOR.get());
+        networkLine(helper, new BlockPos(3, computer.getY(), computer.getZ()), computer.getX() - 1);
+        generator(helper, computer.above());
+        ComputerBlockEntity entity = (ComputerBlockEntity) helper.getBlockEntity(computer);
+        entity.setName("Computer 1");
+        entity.updateOn(helper.getLevel());
+        return helper.absolutePos(computer);
+    }
+
+    /**
+     * De app Computers op de kern (stap 3): de computer staat in de lijst; per app Off, View of Use (Logs hooguit View);
+     * wie (een keycard-groep kan pas als er een groep is); een code van 4-8 tekens (te kort lukt niet, leeg haalt hem weg);
+     * een andere naam. Het staat in het logboek (de code niet), het blijft na opslaan en laden, en een computer van een
+     * ander netwerk kun je hier niet instellen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "computers")
+    public static void computers_app_sets_apps_who_and_code(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 3, 6), "pc-config");
+        SecurityCoreBlockEntity core = poweredCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos pc = workingComputer(helper, new BlockPos(6, 3, 2));
+        SecurityDevices.forget(level, core); // de kern keek al vóór de computer er stond (hij kijkt om de 2 seconden)
+        SecurityOs.open(owner, core.getBlockPos());
+        check(SecurityOs.hasDesktop(owner), "De eigenaar kreeg zijn desktop niet");
+        var snapshot = SecurityOs.snapshot(core, level, SecurityOs.session(owner), true);
+        check(snapshot.getList("computers", 10).size() == 1, "De app Computers kent de computer niet: " + snapshot.get("computers"));
+        ComputerBlockEntity entity = (ComputerBlockEntity) level.getBlockEntity(pc);
+        check(entity.rights().empty() && entity.who() == ComputerBlockEntity.Who.TRUSTED && !entity.hasCode(),
+                "Een nieuwe computer is niet leeg, op Trusted en zonder code");
+
+        // De apps: Cameras View, Devices Use, Logs hooguit View.
+        pcAction(owner, core, pc, "pc_app", args -> { args.putString("app", "CAMERAS"); args.putInt("access", 1); });
+        pcAction(owner, core, pc, "pc_app", args -> { args.putString("app", "DEVICES"); args.putInt("access", 2); });
+        pcAction(owner, core, pc, "pc_app", args -> { args.putString("app", "LOGS"); args.putInt("access", 2); });
+        pcAction(owner, core, pc, "pc_app", args -> { args.putString("app", "SETTINGS"); args.putInt("access", 2); });
+        var rights = entity.rights();
+        check(rights.access("CAMERAS") == com.senne.imttech.security.os.DesktopRights.Access.VIEW
+                        && rights.mayUse("DEVICES") && rights.access("LOGS") == com.senne.imttech.security.os.DesktopRights.Access.VIEW
+                        && !rights.shows("SETTINGS") && !rights.shows("KEYCARDS"),
+                "De apps staan niet goed: " + rights.save());
+
+        // Wie: een keycard-groep kan pas als er een is.
+        pcAction(owner, core, pc, "pc_who", args -> { args.putString("who", "GROUP"); args.putString("group", "staff"); });
+        check(entity.who() == ComputerBlockEntity.Who.TRUSTED, "Een keycard-groep kon zonder groepen");
+        core.logic().addGroup("staff", "");
+        pcAction(owner, core, pc, "pc_who", args -> { args.putString("who", "GROUP"); args.putString("group", "STAFF"); });
+        check(entity.who() == ComputerBlockEntity.Who.GROUP && entity.group().equals("staff"),
+                "Wie staat niet op de groep staff: " + entity.who() + " " + entity.group());
+
+        // De code: te kort lukt niet, 4-8 tekens wel, leeg haalt hem weg.
+        pcAction(owner, core, pc, "pc_code", args -> args.putString("code", "ab"));
+        check(!entity.hasCode(), "Een te korte code werd bewaard");
+        pcAction(owner, core, pc, "pc_code", args -> args.putString("code", "desk42"));
+        check(entity.hasCode() && entity.checkCode("desk42") && !entity.checkCode("desk43"), "De code klopt niet");
+        check(core.log().entries().stream().noneMatch(entry -> entry.text().contains("desk42")), "De code staat in het logboek");
+
+        // Een andere naam, en alles staat in het logboek.
+        pcAction(owner, core, pc, "pc_rename", args -> args.putString("name", "Reception"));
+        check(entity.name().equals("Reception"), "De naam is niet Reception maar " + entity.name());
+        check(hasLog(core, EventLog.Type.DEVICE, "set Cameras on Computer 1 to view")
+                        && hasLog(core, EventLog.Type.DEVICE, "set a code on Computer 1")
+                        && hasLog(core, EventLog.Type.DEVICE, "renamed computer Computer 1 to Reception"),
+                "Het logboek mist iets van de app Computers");
+
+        // Opslaan en laden: alles blijft.
+        var registries = level.registryAccess();
+        var copy = new ComputerBlockEntity(pc, entity.getBlockState());
+        copy.loadWithComponents(entity.saveWithFullMetadata(registries), registries);
+        check(copy.rights().mayUse("DEVICES") && copy.who() == ComputerBlockEntity.Who.GROUP && copy.checkCode("desk42")
+                        && !copy.checkCode("wrong1") && copy.name().equals("Reception"),
+                "Na laden is de computer zijn instellingen kwijt");
+
+        // Een computer die niet aan deze kern hangt, stel je hier niet in.
+        BlockPos stray = new BlockPos(6, 3, 12);
+        helper.setBlock(stray, ModBlocks.COMPUTER.get());
+        BlockPos strayAbs = helper.absolutePos(stray);
+        pcAction(owner, core, strayAbs, "pc_app", args -> { args.putString("app", "CAMERAS"); args.putInt("access", 2); });
+        check(((ComputerBlockEntity) level.getBlockEntity(strayAbs)).rights().empty(),
+                "Een computer van een ander netwerk werd ingesteld");
+        SecurityOs.close(owner);
+        helper.succeed();
+    }
 }

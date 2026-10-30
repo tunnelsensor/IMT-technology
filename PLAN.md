@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 364 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 365 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -4002,7 +4002,7 @@ Ik bouw het in deze volgorde, één stap per commit:
       `laptop_logs_in_with_ip_and_password` (zonder laptop, zonder wachtwoord, onbekend IP, fout wachtwoord, het goede,
       het IP op de laptop, een vriend met het wachtwoord, te veel pogingen, een kern zonder stroom). 363 tests, allemaal
       groen.
-- [x] **2. De Computer en de Monitor** — twee nieuwe blokken in de tab Security, na de Security Core. De
+- [x] **2. De Computer en de Monitor** (`6823449`) — twee nieuwe blokken in de tab Security, na de Security Core. De
       **Computer** is een donkergrijze pc-kast (voorkant: twee schijfvakken, een aan-knop met een ring en een werklampje;
       achterkant: een witte netwerkpoort, de stroomaansluiting en een ventilator). Hij heeft een netwerkkabel (of PoE) naar
       een kern nodig en `[power] computerUpkeep` stroom (2 per twee seconden, zoals een camera). Werkt hij, dan brandt de
@@ -4016,7 +4016,19 @@ Ik bouw het in deze volgorde, één stap per commit:
       glazen ruit, glowstone en 3 stenen knopjes (het toetsenbord). Plaatjes: `generate_textures.computer_textures()`,
       modellen: `generate_block_models.computer_and_monitor()`. **Test**:
       `computer_needs_network_and_power_and_lights_its_monitor`. 364 tests, allemaal groen.
-- [ ] **3. De app Computers op de kern** (naam, wie, code, Off/View/Use per app)
+- [x] **3. De app Computers op de kern** — een nieuwe app **Computers** (icoon P, na Access) op de desktop van de kern
+      (en dus ook met de laptop). Links de computers op het netwerk van die kern, met een groen of rood blokje (werkt hij
+      of niet); rechts de gekozen computer: zijn naam met **Rename**, of hij werkt (of waarom niet), **Who** (een knop die
+      wisselt tussen Everyone, Trusted en Keycard group; bij Keycard group kies je de groep met < en >), **Code** ("set"
+      of "none", met **Set code** / **Change** en **Clear**; je typt sterretjes, 4-8 tekens a-z en 0-9 zoals een
+      wachtwoord) en de 14 **APPS** in twee kolommen, elk met een knop die wisselt tussen **Off** (grijs), **View**
+      (cyaan) en **Use** (groen). Status, Logs en Monitor gaan alleen tussen Off en View. Settings, Groups en Computers
+      staan er niet bij. Elke klik gaat meteen naar de server en in het logboek ("Senne set Cameras on Reception to
+      view", "Senne set a code on Reception"; de code zelf nooit). Keycard group kan pas als je een groep hebt ("Make a
+      keycard group first (in the Keycards app)"). Zonder computers legt de app uit hoe je er een aansluit. Binnenin:
+      `DesktopRights` (Off/View/Use per app, en welke opdracht bij welke app hoort; de server weigert voortaan elke
+      opdracht die niet mag, "View only on this computer"), de instellingen staan in `ComputerBlockEntity`, de knoppen in
+      `Computers.desktop`. **Test**: `computers_app_sets_apps_who_and_code`. 365 tests, allemaal groen.
 - [ ] **4. De pc gebruiken** (wie, code, alleen de toegestane apps, alleen kijken, eigen vensters, Logs met Entries)
 - [ ] **5. LEESMIJ, showcase en screenshots**
 

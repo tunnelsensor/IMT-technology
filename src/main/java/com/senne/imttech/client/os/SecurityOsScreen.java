@@ -41,6 +41,8 @@ public class SecurityOsScreen extends Screen {
         /** De training die nu bezig is, en de rapporten van de laatste (hoofdstuk 26). */
         TRAINING("Training", "T", 340, 196),
         ACCESS("Access", "A", 280, 190),
+        /** Hoofdstuk 40: de Computers op het netwerk van deze kern, en wat je op elk ervan mag. */
+        COMPUTERS("Computers", "P", 390, 206),
         /** Sinds 25 oktober met de groepen links: breder en iets hoger (past nog net op 1280 x 720). */
         KEYCARDS("Keycards", "K", 396, 200),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
@@ -131,6 +133,7 @@ public class SecurityOsScreen extends Screen {
     private final TrainingApp training = new TrainingApp(this);
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
+    private final ComputersApp computers = new ComputersApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
     private final LogicApp logic = new LogicApp(this, net.minecraft.client.Minecraft.getInstance().font);
     private final MonitorApp monitor = new MonitorApp(this);
@@ -498,6 +501,9 @@ public class SecurityOsScreen extends Screen {
         if (win.app != App.ZONE) {
             zone.blur();
         }
+        if (win.app != App.COMPUTERS) {
+            computers.blur();
+        }
     }
 
     private @Nullable Win focused() {
@@ -539,6 +545,9 @@ public class SecurityOsScreen extends Screen {
         }
         if (win.app == App.ZONE) {
             zone.blur(); // half getypte getallen niet bewaren
+        }
+        if (win.app == App.COMPUTERS) {
+            computers.blur(); // een half getypte naam of code niet bewaren
         }
         if (win.app == App.NOTES) {
             notes.save(); // wat je typte, gaat niet verloren
@@ -641,6 +650,7 @@ public class SecurityOsScreen extends Screen {
             case LOGIC -> logic.mouseClicked(font, contentArea(win), mx, my, button);
             case BACKUP -> backup.mouseClicked(font, contentArea(win), mx, my);
             case ZONE -> zone.mouseClicked(font, contentArea(win), mx, my);
+            case COMPUTERS -> computers.mouseClicked(font, contentArea(win), mx, my);
             case SETTINGS -> {
                 int cx = win.x + 6;
                 int fieldY = win.y + TITLE_H + 60;
@@ -728,6 +738,7 @@ public class SecurityOsScreen extends Screen {
             case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, (int) mouseY, scrollY);
             case MONITOR -> monitor.mouseScrolled(scrollY);
             case BACKUP -> backup.mouseScrolled(scrollY);
+            case COMPUTERS -> computers.mouseScrolled(scrollY);
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
@@ -747,7 +758,8 @@ public class SecurityOsScreen extends Screen {
                 || top != null && top.app == App.ROBOTS && robots.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.LOGIC && logic.charTyped(codePoint, modifiers)
-                || top != null && top.app == App.ZONE && zone.charTyped(codePoint, modifiers)) {
+                || top != null && top.app == App.ZONE && zone.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.COMPUTERS && computers.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (editingPassword && passwordText.length() < 8
@@ -771,7 +783,8 @@ public class SecurityOsScreen extends Screen {
                 || top != null && top.app == App.ROBOTS && robots.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.KEYCARDS && keycards.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.LOGIC && logic.keyPressed(keyCode, scanCode, modifiers)
-                || top != null && top.app == App.ZONE && zone.keyPressed(keyCode, scanCode, modifiers)) {
+                || top != null && top.app == App.ZONE && zone.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.COMPUTERS && computers.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         if (editingPassword) {
@@ -925,6 +938,7 @@ public class SecurityOsScreen extends Screen {
             case MONITOR -> monitor.render(g, font, area, mouseX, mouseY, partialTick);
             case BACKUP -> backup.render(g, font, area, mouseX, mouseY, partialTick);
             case ZONE -> zone.render(g, font, area, mouseX, mouseY, partialTick);
+            case COMPUTERS -> computers.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);
