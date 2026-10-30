@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "28";
+    private static final String PROTOCOL_VERSION = "29";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -220,6 +220,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onCabinetOpen(payload, context));
         registrar.playToClient(SwitchOpenPayload.TYPE, SwitchOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSwitchOpen(payload, context));
+        registrar.playToClient(CableTrafficPayload.TYPE, CableTrafficPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onCableTraffic(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onHoloOpen(payload, context));
         registrar.playToClient(LampOpenPayload.TYPE, LampOpenPayload.STREAM_CODEC,

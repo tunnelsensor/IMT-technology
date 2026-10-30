@@ -1230,6 +1230,21 @@ public final class ImtConfig {
                 + "cable to the desktop of a security core, and readers and code panels power? false = the old rule: they "
                 + "belong to the nearest core within its reach, and readers and panels need no power (handy for an old world)")
         public static boolean REQUIRED = true;
+
+        /**
+         * Hoe ver weg (blokken) je de signalen en de stroom over de kabels ziet lopen (het witte of groene vakje, de gele
+         * streepjes). 0 = nooit: dan stuurt de server ze ook niet.
+         */
+        @Tunable("How far away (blocks) players see signals and power move along cables (the white or green box, the "
+                + "yellow dashes). 0 = never")
+        public static float SIGNAL_RANGE = 48.0f;
+
+        /**
+         * Hoe vaak (seconden) een apparaat hooguit laat zien dat er stroom naar hem toe loopt. Kleiner = vaker een nieuw
+         * pakketje naar de spelers in de buurt. 0 = nooit.
+         */
+        @Tunable("How often (seconds) a device at most shows its power flowing towards it along the cables. 0 = never")
+        public static float FLOW_SECONDS = 2.0f;
     }
 
     // =============================================================================================== Logic

@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Het stroomnet van I.M.T Technology: zonnepanelen en warmtegeneratoren leveren, en alles wat via
@@ -105,6 +106,10 @@ public final class PowerGrid {
         if (taken < amount) {
             missed(sources, amount - taken);
         }
+        // Hoofdstuk 38: de stroom liep echt; spelers in de buurt zien gele streepjes over de kabel (zie lan/CableTraffic).
+        if (taken > 0 && level instanceof net.minecraft.server.level.ServerLevel server) {
+            com.senne.imttech.lan.CableTraffic.power(server, device);
+        }
         return taken;
     }
 
@@ -161,7 +166,7 @@ public final class PowerGrid {
         Found found = perLevel.get(device);
         long now = level.getGameTime();
         if (found == null || found.version != version || now - found.gameTime > CACHE_TICKS) {
-            found = new Found(version, now, search(level, device));
+            found = new Found(version, now, search(level, device, null));
             perLevel.put(device.immutable(), found);
         }
         return found.sources;
@@ -178,7 +183,7 @@ public final class PowerGrid {
      * desktop) geeft zijn stroom door aan wat erop aangesloten is. Jouw wens: "PoE werkt als je een power cable aan de
      * desktop hebt hangen, en dan vertrekt die van de desktop": één stroomkabel op de kern voedt zo al zijn PoE-kabels.
      */
-    private static List<BlockPos> search(Level level, BlockPos device) {
+    private static List<BlockPos> search(Level level, BlockPos device, @Nullable Map<BlockPos, BlockPos> parents) {
         List<BlockPos> sources = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
         ArrayDeque<BlockPos> cables = new ArrayDeque<>();
@@ -187,13 +192,31 @@ public final class PowerGrid {
         if (Cables.carriesPower(level, device) && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
             cables.add(device);
         }
-        look(level, device, sources, seen, cables, true);
+        look(level, device, sources, seen, cables, true, parents);
         int followed = 0;
         while (!cables.isEmpty() && followed < MAX_CABLES) {
-            look(level, cables.poll(), sources, seen, cables, false);
+            look(level, cables.poll(), sources, seen, cables, false, parents);
             followed++;
         }
         return List.copyOf(sources);
+    }
+
+    /**
+     * De weg langs de kabels van de dichtstbijzijnde leverancier van dit apparaat naar het apparaat: elke plek, van de
+     * leverancier tot en met het apparaat. Leeg als het geen leverancier heeft. Voor de gele streepjes van de stroom die je
+     * over een kabel ziet lopen (hoofdstuk 38, zie lan/CableTraffic); dit wordt niet onthouden.
+     */
+    public static List<BlockPos> path(Level level, BlockPos device) {
+        Map<BlockPos, BlockPos> parents = new HashMap<>();
+        List<BlockPos> sources = search(level, device, parents);
+        if (sources.isEmpty()) {
+            return List.of();
+        }
+        List<BlockPos> path = new ArrayList<>();
+        for (BlockPos at = sources.getFirst(); at != null; at = parents.get(at)) {
+            path.add(at);
+        }
+        return path;
     }
 
     /**
@@ -201,7 +224,7 @@ public final class PowerGrid {
      * apparaat zelf (dat zoekt zijn stroom aan alle kanten, ook een switch).
      */
     private static void look(Level level, BlockPos from, List<BlockPos> sources, Set<BlockPos> seen,
-                             ArrayDeque<BlockPos> cables, boolean start) {
+                             ArrayDeque<BlockPos> cables, boolean start, @Nullable Map<BlockPos, BlockPos> parents) {
         BlockState fromState = level.getBlockState(from);
         boolean fromCabinet = fromState.getBlock() instanceof PowerCabinetBlock;
         // Hoofdstuk 38: door een Network Switch gaat alleen PoE-stroom, van een PoE-kabel naar de PoE-kabels aan de andere
@@ -228,6 +251,7 @@ public final class PowerGrid {
             if (state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock) {
                 if (fromPoe && com.senne.imttech.lan.NetworkSwitchBlock.isOn(state, direction.getOpposite())) {
                     seen.add(next);
+                    remember(parents, next, from);
                     cables.add(next);
                 }
                 continue;
@@ -236,6 +260,7 @@ public final class PowerGrid {
             // uit = hier houdt het op (ook als er een getekende kabel door de schakelaar loopt).
             if (state.getBlock() instanceof com.senne.imttech.light.LightSwitchBlock) {
                 seen.add(next);
+                remember(parents, next, from);
                 if (com.senne.imttech.light.LightSwitchBlock.isOn(state)) {
                     cables.add(next);
                 }
@@ -245,11 +270,13 @@ public final class PowerGrid {
             if (state.getBlock() instanceof PowerCabinetBlock) {
                 if (PowerCabinetBlock.isOn(state, direction.getOpposite())) {
                     seen.add(next);
+                    remember(parents, next, from);
                     cables.add(next);
                 }
                 continue;
             }
             seen.add(next);
+            remember(parents, next, from);
             // Een leverancier kan ook OP een kabel staan: dan is de plek allebei.
             BlockEntity entity = level.getBlockEntity(next);
             if (entity instanceof EnergySource) {
@@ -264,6 +291,13 @@ public final class PowerGrid {
                     || state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.SECURITY_CORE.get())) {
                 cables.add(next);
             }
+        }
+    }
+
+    /** Onthoudt (als we een weg zoeken) dat we {@code next} vanaf {@code from} bereikten. */
+    private static void remember(@Nullable Map<BlockPos, BlockPos> parents, BlockPos next, BlockPos from) {
+        if (parents != null) {
+            parents.put(next.immutable(), from.immutable());
         }
     }
 

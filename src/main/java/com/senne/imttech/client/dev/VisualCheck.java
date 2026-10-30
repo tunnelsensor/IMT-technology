@@ -976,6 +976,20 @@ public final class VisualCheck {
             t.view(0, desk.getX() - 0.3, desk.getY() + 1.5, desk.getZ() + 3.2, 0, 0);
             t.lookAt(5, new Vec3(desk.getX() - 1.6, desk.getY() + 0.6, desk.getZ() + 1.0));
             t.shot(20, "nw08_controls");
+            // Stap 9: een signaal van de lezer naar de kern (stilgezet onderweg, op de witte netwerkkabel), en de stroom die
+            // als gele streepjes naar de laserbrug en over de PoE-kabel naar de camera loopt.
+            BlockPos lobby = desk.east(6);
+            t.view(0, desk.getX() + 6.5, desk.getY() + 1.4, desk.getZ() + 3.0, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(desk.east(4)));
+            t.onServer(10, player -> com.senne.imttech.lan.CableTraffic.signal(player.serverLevel(), lobby, true));
+            t.step(3, () -> com.senne.imttech.client.CableTraffic.freeze(true));
+            t.shot(5, "nw10_signal");
+            t.step(0, () -> com.senne.imttech.client.CableTraffic.freeze(false));
+            t.view(0, desk.getX() + 2.5, desk.getY() + 2.0, desk.getZ() - 5.5, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(desk.north(3)));
+            t.step(60, () -> com.senne.imttech.client.CableTraffic.freeze(true));
+            t.shot(5, "nw11_power_flow");
+            t.step(0, () -> com.senne.imttech.client.CableTraffic.freeze(false));
             t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(false));
         }
 
@@ -4165,13 +4179,16 @@ public final class VisualCheck {
         level.setBlockAndUpdate(camera, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
                 .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
                 .setValue(com.senne.imttech.security.CameraBlock.FACING, Direction.SOUTH));
-        // Achter de kern een laserbrug (stap 7) met een netwerkkabel ernaartoe: die staat in Devices bij LASER BRIDGES.
+        // Achter de kern een laserbrug (stap 7) met een netwerkkabel ernaartoe: die staat in Devices bij LASER BRIDGES. Zijn
+        // stroom komt over een stroomkabel van een generator verderop (stap 9: daar zie je de gele streepjes lopen).
         BlockPos bridge = core.north(2);
         com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.north());
-        level.setBlockAndUpdate(bridge.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
-        if (level.getBlockEntity(bridge.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+        level.setBlockAndUpdate(core.north(5), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(core.north(5)) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
             charger.fill(20_000);
         }
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(3));
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(4));
         level.setBlockAndUpdate(bridge, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
                 .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.WEST));
         if (level.getBlockEntity(bridge) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity be) {

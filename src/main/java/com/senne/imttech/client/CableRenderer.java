@@ -171,6 +171,8 @@ public final class CableRenderer {
                 buffers.endBatch(type);
             }
         }
+        // Wat er over de kabels loopt (een signaal, stroom): zie CableTraffic.
+        CableTraffic.render(m, buffers, level, cam, xray, event.getPartialTick().getGameTimeDeltaPartialTick(false));
         pose.popPose();
     }
 

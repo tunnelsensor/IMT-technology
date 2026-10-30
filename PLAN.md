@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 357 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 360 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3870,7 +3870,22 @@ Ik bouw het in deze volgorde, één stap per commit:
       kit in je hand druk je gewoon); een oude def die `button` of `lever` heette, krijgt vanzelf een andere naam
       (`lever_1`). **Tests**: `network_button_and_lever_start_diagrams`, `logic_buttons_and_levers`. 359 tests, allemaal
       groen. **Screenshot** `-Ponly=network`: `nw08_controls`.
-- [ ] **9. Signalen en stroom die je ziet lopen**
+- [x] **9. Signalen en stroom die je ziet lopen** — jouw tabel: "een signaal wordt gestuurd = helder wit vakje dat de
+      kabel volgt tot aan destination" (groen over een PoE-kabel), en "als power erdoor stroomt = geel met animatie".
+      **Signalen**: een kaart, een code, een knop of een hendel stuurt een helder vakje van het apparaat over de kabels naar
+      de kern (zo'n 10 blokken per seconde); `accept()` en `deny()` sturen het antwoord terug naar de lezer, en een
+      schakelaar op de desktop (een torentje aan/uit, een poort van een switch) loopt van de kern naar het apparaat. Wit
+      over een netwerkkabel, groen over een PoE-kabel; door een switch of de kern zie je het niet (dan zit het binnenin).
+      **Stroom**: een apparaat dat stroom haalt, laat gele streepjes lopen van zijn generator naar zich toe, over stroom-
+      en PoE-kabels (ook door de kern en een switch heen). Het is alleen om naar te kijken: de logica wacht er niet op. Over
+      een kabel in een muur zie je het alleen met de kabel-xray van de bril. **Config**: onder `[network]` `signalRange`
+      (48 blokken: wie verder weg is, krijgt niets) en `flowSeconds` (2: zo vaak hooguit stuurt een apparaat zijn stroom;
+      0 = nooit). In **G > Information** twee nieuwe knoppen voor je eigen spel: Cable signals en Power flow.
+      **Binnenkant**: `LanGrid.path` en `PowerGrid.path` zoeken de weg, `lan/CableTraffic` stuurt hem (een nieuw bericht,
+      `CableTrafficPayload`), `client/CableTraffic` tekent hem over de kabels zoals ze liggen (CableGeometry). **Mijn
+      invulling**: een generator die direct tegen een apparaat staat, geeft geen streepjes (er is geen kabel om op te
+      tekenen). **Test**: `signals_and_power_follow_the_cables`. 360 tests, allemaal groen. **Screenshots**
+      `-Ponly=network`: `nw10_signal`, `nw11_power_flow` (stilgezet).
 - [ ] **10. LEESMIJ, showcase en screenshots**
 
 ---

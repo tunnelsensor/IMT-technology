@@ -169,9 +169,11 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.imttech.energy.PowerCables.clear());
-        // Hoofdstuk 38: het netwerk van de beveiligingskernen (wat het onthield) vergeten.
-        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
-                com.senne.imttech.lan.LanGrid.clear());
+        // Hoofdstuk 38: het netwerk van de beveiligingskernen (wat het onthield) vergeten, en wanneer de stroom liep.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> {
+            com.senne.imttech.lan.LanGrid.clear();
+            com.senne.imttech.lan.CableTraffic.clear();
+        });
         NeoForge.EVENT_BUS.addListener(ImtRedstone::onServerStopped);
         // Fase 12: cloakingdrones en hun illusies
         NeoForge.EVENT_BUS.addListener(ImtIllusions::onServerTick);

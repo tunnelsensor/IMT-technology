@@ -853,6 +853,8 @@
   "screen.imttech.menu.voice_edit": "Commands",
   "screen.imttech.menu.voice_text": "Voice text",
   "screen.imttech.menu.cable_xray": "Cable X-ray",
+  "screen.imttech.menu.cable_signals": "Cable signals",
+  "screen.imttech.menu.power_flow": "Power flow",
   "screen.imttech.menu.edit": "EDIT",
   "screen.imttech.voice_edit": "Voice commands",
   "screen.imttech.voice_edit.tab.commands": "Commands",

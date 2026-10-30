@@ -54,6 +54,22 @@ public final class ImtClientConfig {
             .define("cableXray", true);
 
     /**
+     * Zie je een signaal over een netwerk- of PoE-kabel lopen (het witte of groene vakje, hoofdstuk 38)? Aan/uit via
+     * G > Information > Cable signals.
+     */
+    public static final ModConfigSpec.BooleanValue CABLE_SIGNALS = BUILDER
+            .comment("See a signal run along network and PoE cables as a bright box (G > Information > Cable signals)")
+            .define("cableSignals", true);
+
+    /**
+     * Zie je de stroom over stroom- en PoE-kabels lopen (gele streepjes, hoofdstuk 38)? Aan/uit via G > Information >
+     * Power flow.
+     */
+    public static final ModConfigSpec.BooleanValue POWER_FLOW = BUILDER
+            .comment("See power flow along power and PoE cables as moving yellow dashes (G > Information > Power flow)")
+            .define("powerFlow", true);
+
+    /**
      * Zie je de rand van je zones (en die van wie jou vertrouwt)? Aan/uit via G > Information > Zone
      * border, of een eigen toets. Alleen met je eigen bril op (hoofdstuk 10; jouw wens van 9 oktober).
      */
@@ -193,6 +209,26 @@ public final class ImtClientConfig {
             SPEC.save();
         }
         return cableXray();
+    }
+
+    /** Zie je de signalen over de kabels? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean cableSignals() {
+        return !SPEC.isLoaded() || CABLE_SIGNALS.get();
+    }
+
+    /** Zie je de stroom over de kabels lopen? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean powerFlow() {
+        return !SPEC.isLoaded() || POWER_FLOW.get();
+    }
+
+    /** Zet een van deze aan/uit-instellingen om, bewaart de keuze, en geeft terug of hij nu aan staat. */
+    public static boolean toggle(ModConfigSpec.BooleanValue value) {
+        if (!SPEC.isLoaded()) {
+            return true;
+        }
+        value.set(!value.get());
+        SPEC.save();
+        return value.get();
     }
 
     /** Zie je de rand van zones? (Zolang de instellingen nog niet geladen zijn: ja.) */

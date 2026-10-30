@@ -291,6 +291,7 @@ public final class SecurityDevices {
             return "that turret is not part of this network";
         }
         turretBlock.setSwitched(level, pos, state, on);
+        com.senne.imttech.lan.CableTraffic.signal(level, pos, false); // de opdracht loopt van de kern naar het torentje
         return null;
     }
 
@@ -534,6 +535,7 @@ public final class SecurityDevices {
                 || !SecurityCores.linkedTo(level, core, pos)) {
             return "that switch is not part of this network";
         }
+        com.senne.imttech.lan.CableTraffic.signal(level, pos, false); // eerst: met de poort uit is de weg er misschien niet meer
         com.senne.imttech.lan.NetworkSwitches.setPort(level, pos, side, on);
         forget(level, core);
         return null;

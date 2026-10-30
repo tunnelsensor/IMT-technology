@@ -83,6 +83,7 @@ public final class LogicEvents {
     private static void read(ServerLevel level, BlockPos reader, InputDeviceBlockEntity device, SecurityCoreBlockEntity core,
                              ServerPlayer player, @Nullable KeycardData card, boolean valid, List<String> groups) {
         InputDeviceBlock.flash(level, reader, InputLight.BUSY);
+        com.senne.imttech.lan.CableTraffic.signal(level, reader, true); // het witte vakje naar de kern
         level.playSound(null, reader, ModSounds.IMT_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         String what = card == null ? "a blank card"
                 : "card #" + card.number() + " (" + (!valid ? "not valid here" : groups.isEmpty() ? "no group" : String.join(", ", groups)) + ")";
@@ -197,6 +198,7 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
+        com.senne.imttech.lan.CableTraffic.signal(level, button, true);
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " pressed " + device.name());
         LogicRunner.fire(level, core, Op.BUTTON, device.name(), new LogicRunner.Context(Op.BUTTON, device.name(),
                 button.immutable(), player.getUUID(), player.getGameProfile().getName(),
@@ -218,6 +220,7 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
+        com.senne.imttech.lan.CableTraffic.signal(level, lever, true);
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " switched " + device.name() + (on ? " on" : " off"));
         LogicRunner.fire(level, core, Op.LEVER, device.name(), new LogicRunner.Context(Op.LEVER, device.name(),
                 lever.immutable(), player.getUUID(), player.getGameProfile().getName(),
@@ -228,6 +231,7 @@ public final class LogicEvents {
     private static void enter(ServerLevel level, BlockPos panel, InputDeviceBlockEntity device, SecurityCoreBlockEntity core,
                               ServerPlayer player, String code) {
         InputDeviceBlock.flash(level, panel, InputLight.BUSY);
+        com.senne.imttech.lan.CableTraffic.signal(level, panel, true);
         level.playSound(null, panel, ModSounds.IMT_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " entered a code at " + device.name());
         LogicRunner.fire(level, core, Op.CODEPANEL, device.name(), new LogicRunner.Context(Op.CODEPANEL, device.name(),

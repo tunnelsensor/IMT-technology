@@ -171,6 +171,11 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Hoofdstuk 38: er loopt een signaal of stroom over de kabels (zie CableTraffic). */
+    public static void onCableTraffic(com.senne.imttech.network.CableTrafficPayload payload, IPayloadContext context) {
+        CableTraffic.receive(payload);
+    }
+
     public static void onDomeOpen(DomeOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

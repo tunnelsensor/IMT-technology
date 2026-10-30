@@ -135,6 +135,17 @@ public class ImtMenuScreen extends Screen {
                             ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.imttech.off"), GREY),
                     ImtClientEvents::toggleCableXray),
+            // Hoofdstuk 38: wat er over de kabels loopt (een signaal, stroom). Ook instellingen van je eigen spel.
+            new Option(Component.translatable("screen.imttech.menu.cable_signals"),
+                    glasses -> ImtClientConfig.cableSignals()
+                            ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
+                            : new Status(Component.translatable("screen.imttech.off"), GREY),
+                    ImtClientEvents::toggleCableSignals),
+            new Option(Component.translatable("screen.imttech.menu.power_flow"),
+                    glasses -> ImtClientConfig.powerFlow()
+                            ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
+                            : new Status(Component.translatable("screen.imttech.off"), GREY),
+                    ImtClientEvents::togglePowerFlow),
             // De rand van je zones (en die van wie jou vertrouwt). Ook een instelling van je eigen spel.
             new Option(Component.translatable("screen.imttech.menu.zone_border"),
                     glasses -> ImtClientConfig.zoneBorder()

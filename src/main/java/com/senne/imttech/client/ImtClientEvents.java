@@ -246,6 +246,26 @@ public final class ImtClientEvents {
                 ImtMessagePayload.Level.INFO);
     }
 
+    /** De signalen over de kabels aan of uit (G > Information > Cable signals, hoofdstuk 38). */
+    public static void toggleCableSignals() {
+        toggleSetting(ImtClientConfig.CABLE_SIGNALS, "screen.imttech.menu.cable_signals");
+    }
+
+    /** De stroom die je over de kabels ziet lopen aan of uit (G > Information > Power flow, hoofdstuk 38). */
+    public static void togglePowerFlow() {
+        toggleSetting(ImtClientConfig.POWER_FLOW, "screen.imttech.menu.power_flow");
+    }
+
+    /** Zet een instelling van je eigen spel om; I.M.T meldt het, net als bij de kabel-xray. */
+    private static void toggleSetting(net.neoforged.neoforge.common.ModConfigSpec.BooleanValue value, String name) {
+        if (!ImtClientState.authorized) {
+            return;
+        }
+        boolean on = ImtClientConfig.toggle(value);
+        ImtClientState.addNotification(Component.translatable(on ? "imt.imttech.msg.feature_on" : "imt.imttech.msg.feature_off",
+                Component.translatable(name)), ImtMessagePayload.Level.INFO);
+    }
+
     /** Opent een I.M.T-scherm, maar alleen als je de bril draagt en de eigenaar bent. */
     public static void openIfAuthorized(Minecraft mc, net.minecraft.client.gui.screens.Screen screen) {
         if (!ImtClientState.wearing || mc.screen != null) {

@@ -793,6 +793,82 @@ public final class NetworkGameTests {
         });
     }
 
+    // ================================================================ Stap 9: signalen en stroom die je ziet lopen
+
+    /**
+     * De wegen die je over de kabels ziet lopen (het vakje van een signaal, de gele streepjes van de stroom). Een signaal
+     * van een lezer gaat langs de netwerkkabel door de switch naar de kern; met de poort van de switch uit is er geen weg.
+     * De stroom van een lezer loopt van zijn generator langs de stroomkabel naar hem toe; die van een camera aan een
+     * PoE-kabel van de generator onder de kern, door de kern en over de PoE-kabel. Elke plek ligt naast de vorige. En een
+     * apparaat laat zijn stroom hooguit om de {@code flowSeconds} zien.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "lan")
+    public static void signals_and_power_follow_the_cables(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(4, 3, 2));
+        BlockPos sw = new BlockPos(5, 3, 2);
+        helper.setBlock(sw, ModBlocks.NETWORK_SWITCH.get());
+        generator(helper, sw.above());
+        ((com.senne.imttech.lan.NetworkSwitchBlockEntity) helper.getBlockEntity(sw)).updateOnline(level);
+        line(helper, CableKind.NETWORK, new BlockPos(6, 3, 2), new BlockPos(8, 3, 2));
+        BlockPos reader = new BlockPos(9, 3, 2);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        // De stroom van de lezer: een generator verderop en een stroomkabel ernaartoe.
+        line(helper, CableKind.POWER, new BlockPos(9, 3, 3), new BlockPos(9, 3, 5));
+        BlockPos readerGenerator = new BlockPos(9, 3, 6);
+        generator(helper, readerGenerator);
+        // Een camera aan een PoE-kabel van de kern (de generator staat onder de kern, zie placeCore).
+        line(helper, CableKind.POE, new BlockPos(2, 3, 3), new BlockPos(2, 3, 5));
+        BlockPos camera = placeCamera(helper, new BlockPos(2, 3, 6));
+
+        List<BlockPos> signal = LanGrid.path(level, helper.absolutePos(reader));
+        check(signal.size() == 8 && signal.getFirst().equals(helper.absolutePos(reader))
+                        && signal.getLast().equals(helper.absolutePos(new BlockPos(2, 3, 2)))
+                        && signal.contains(helper.absolutePos(sw)) && neighbours(signal),
+                "De weg van het signaal van de lezer naar de kern klopt niet: " + signal);
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, helper.absolutePos(sw), Direction.EAST, false);
+        check(LanGrid.path(level, helper.absolutePos(reader)).isEmpty(), "Met de poort uit is er nog een weg naar de kern");
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, helper.absolutePos(sw), Direction.EAST, true);
+
+        List<BlockPos> power = PowerGrid.path(level, helper.absolutePos(reader));
+        check(power.size() == 5 && power.getFirst().equals(helper.absolutePos(readerGenerator))
+                        && power.getLast().equals(helper.absolutePos(reader)) && neighbours(power),
+                "De weg van de stroom naar de lezer klopt niet: " + power);
+        List<BlockPos> poe = PowerGrid.path(level, helper.absolutePos(camera));
+        check(poe.size() == 6 && poe.getFirst().equals(helper.absolutePos(new BlockPos(2, 2, 2)))
+                        && poe.get(1).equals(helper.absolutePos(new BlockPos(2, 3, 2)))
+                        && poe.getLast().equals(helper.absolutePos(camera)) && neighbours(poe),
+                "De weg van de stroom over de PoE-kabel klopt niet: " + poe);
+
+        // Hooguit om de flowSeconds: de tweede keer meteen erna telt niet.
+        BlockPos readerAbs = helper.absolutePos(reader);
+        com.senne.imttech.lan.CableTraffic.power(level, readerAbs);
+        long first = com.senne.imttech.lan.CableTraffic.lastFlow(level, readerAbs);
+        int interval = Math.round(com.senne.imttech.config.ImtConfig.Network.FLOW_SECONDS * 20);
+        helper.runAfterDelay(1, () -> {
+            com.senne.imttech.lan.CableTraffic.power(level, readerAbs);
+            check(first >= 0 && com.senne.imttech.lan.CableTraffic.lastFlow(level, readerAbs) == first,
+                    "De stroom werd vaker dan om de flowSeconds getoond");
+        });
+        helper.runAfterDelay(interval + 2, () -> {
+            com.senne.imttech.lan.CableTraffic.power(level, readerAbs);
+            check(com.senne.imttech.lan.CableTraffic.lastFlow(level, readerAbs) > first,
+                    "Na de flowSeconds werd de stroom niet opnieuw getoond");
+            helper.succeed();
+        });
+    }
+
+    /** Ligt elke plek van de weg naast de vorige? */
+    private static boolean neighbours(List<BlockPos> path) {
+        for (int i = 1; i < path.size(); i++) {
+            if (path.get(i).distManhattan(path.get(i - 1)) != 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** Een netwerkknop of -hendel op de vloer bij {@code pos} (van niemand), met deze naam. */
     private static BlockPos placeControl(GameTestHelper helper, net.minecraft.world.level.block.Block block, BlockPos pos,
                                          String name) {

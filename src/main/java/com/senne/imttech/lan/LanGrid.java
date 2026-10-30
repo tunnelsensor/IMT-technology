@@ -6,9 +6,11 @@ import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.security.SecurityCoreBlock;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
@@ -115,7 +117,7 @@ public final class LanGrid {
         Link link = perLevel.get(device);
         long now = level.getGameTime();
         if (link == null || link.version() != version || now - link.gameTime() > CORE_TICKS || now < link.gameTime()) {
-            link = new Link(version, now, searchCore(level, device));
+            link = new Link(version, now, searchCore(level, device, null));
             perLevel.put(device.immutable(), link);
         }
         return link.core();
@@ -146,7 +148,7 @@ public final class LanGrid {
      * stroom heeft, en dan alleen naar poorten die aan staan. Is het apparaat zelf een switch, dan zoekt hij via zijn
      * eigen poorten die aan staan (ook zonder stroom: dan hangt hij er nog wel aan, maar laat hij niets door).
      */
-    private static @Nullable BlockPos searchCore(Level level, BlockPos device) {
+    private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<BlockPos, BlockPos> parents) {
         Set<BlockPos> seen = new HashSet<>();
         ArrayDeque<BlockPos> todo = new ArrayDeque<>();
         seen.add(device.immutable());
@@ -168,6 +170,9 @@ public final class LanGrid {
                     continue; // de poort aan deze kant staat uit: misschien komen we er via een andere kant wel in
                 }
                 seen.add(next);
+                if (parents != null) {
+                    parents.put(next, at);
+                }
                 if (state.getBlock() instanceof SecurityCoreBlock) {
                     return next;
                 }
@@ -220,6 +225,25 @@ public final class LanGrid {
         }
         devices.removeIf(device -> !core.equals(corePosOf(level, device)));
         return Set.copyOf(devices);
+    }
+
+    /**
+     * De weg langs de kabels van dit apparaat naar zijn kern (de dichtstbijzijnde langs de kabel): elke plek, van het
+     * apparaat tot en met de kern. Leeg als het nergens aan hangt. Voor de signalen die je over de kabel ziet lopen (zie
+     * CableTraffic); dit wordt niet onthouden.
+     */
+    public static List<BlockPos> path(Level level, BlockPos device) {
+        Map<BlockPos, BlockPos> parents = new HashMap<>();
+        BlockPos core = searchCore(level, device, parents);
+        if (core == null) {
+            return List.of();
+        }
+        List<BlockPos> path = new ArrayList<>();
+        for (BlockPos at = core; at != null; at = parents.get(at)) {
+            path.add(at);
+        }
+        java.util.Collections.reverse(path);
+        return path;
     }
 
     /** Is dit een Network Switch waarvan de poort aan deze kant uit staat? */

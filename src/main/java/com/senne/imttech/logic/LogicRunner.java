@@ -530,6 +530,8 @@ public final class LogicRunner {
                 if (context.sourcePos() != null) {
                     boolean ok = node.op == Op.ACCEPT;
                     InputDeviceBlock.flash(level, context.sourcePos(), ok ? InputLight.OK : InputLight.DENIED);
+                    // Het antwoord loopt als een vakje van de kern terug naar de lezer (hoofdstuk 38).
+                    com.senne.imttech.lan.CableTraffic.signal(level, context.sourcePos(), false);
                     level.playSound(null, context.sourcePos(), ok ? ModSounds.IMT_CONFIRM.get() : ModSounds.IMT_DENIED.get(),
                             SoundSource.BLOCKS, 0.7f, 1.0f);
                 }
