@@ -31,6 +31,12 @@ import org.jetbrains.annotations.Nullable;
  * is hij offline, dan kan niemand erin kijken. Daarom onthoudt de emitter zelf waar die relais staan
  * ({@link #targets}), net als het "telefoonboek" van een server (LogicDevices). Die kopie werken we bij
  * zolang de eigenaar online is: als je het scherm opslaat, elke 5 seconden, en vlak voor het schakelen.
+ *
+ * <h2>In een gebouw (hoofdstuk 39)</h2>
+ * Een emitter die een gebouw neerzet (de val in de kluis van de Biebia's Industries Tower: een drukplaat met vier
+ * laserzenders eromheen) heeft geen eigenaar en dus geen lijst. Zijn gebouw zet er "LinkAround" in: dan zoekt hij de
+ * eerste keer dat hij tikt (of schakelt) zelf de laserzenders binnen zoveel blokken om hem heen, en die schakelt hij
+ * voortaan. Zo werkt de val zonder redstone in de zenders, ook als het gebouw gedraaid is neergezet.
  */
 public class RelayEmitterBlockEntity extends BlockEntity {
     /** Wat hij doet als de redstone verandert. */
@@ -69,6 +75,8 @@ public class RelayEmitterBlockEntity extends BlockEntity {
     private Mode mode = Mode.FOLLOW;
     /** Waar de relais stonden toen we het laatst in de lijst van de eigenaar keken. */
     private List<Target> targets = List.of();
+    /** Uit een gebouw (hoofdstuk 39): zoek de laserzenders binnen zoveel blokken om hem heen (0 = niet, of al gedaan). */
+    private int linkAround;
 
     public RelayEmitterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RELAY_EMITTER.get(), pos, state);
@@ -130,7 +138,25 @@ public class RelayEmitterBlockEntity extends BlockEntity {
         return owner == null || server == null ? null : server.getPlayerList().getPlayer(owner);
     }
 
+    /** Een emitter uit een gebouw: de laserzenders om hem heen worden zijn doelen (één keer, zie de uitleg bovenaan). */
+    private void linkIfNeeded(ServerLevel level) {
+        if (linkAround <= 0) {
+            return;
+        }
+        List<Target> found = new ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-linkAround, -linkAround, -linkAround),
+                worldPosition.offset(linkAround, linkAround, linkAround))) {
+            if (level.getBlockState(pos).getBlock() instanceof com.senne.imttech.shield.LaserEmitterBlock) {
+                found.add(new Target(level.dimension(), pos.immutable(), -1));
+            }
+        }
+        targets = List.copyOf(found);
+        linkAround = 0;
+        setChanged();
+    }
+
     public void serverTick(ServerLevel level) {
+        linkIfNeeded(level);
         // Niet alle emitters in dezelfde tick: zijn plek bepaalt wanneer hij aan de beurt is.
         if (Math.floorMod(level.getGameTime() + worldPosition.hashCode(), REFRESH_TICKS) != 0) {
             return;
@@ -154,6 +180,7 @@ public class RelayEmitterBlockEntity extends BlockEntity {
 
     /** De redstone ging aan of uit (zie RelayEmitterBlock.tick): schakel de relais. Gratis, ook zonder bril. */
     public void signalChanged(ServerLevel level, boolean powered) {
+        linkIfNeeded(level);
         ImtRedstone.Op op = opFor(mode, powered);
         if (op == null) {
             return;
@@ -201,6 +228,9 @@ public class RelayEmitterBlockEntity extends BlockEntity {
             list.add(one);
         }
         tag.put("Targets", list);
+        if (linkAround > 0) {
+            tag.putInt("LinkAround", linkAround);
+        }
     }
 
     @Override
@@ -224,5 +254,6 @@ public class RelayEmitterBlockEntity extends BlockEntity {
             }
         }
         targets = List.copyOf(list);
+        linkAround = tag.getInt("LinkAround");
     }
 }

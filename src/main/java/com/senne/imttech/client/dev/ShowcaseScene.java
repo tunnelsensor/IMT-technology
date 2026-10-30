@@ -153,11 +153,11 @@ final class ShowcaseScene {
         level.setBlockAndUpdate(RELAY, ModBlocks.RELAY.get().defaultBlockState());
         ImtRedstone.register(player, RELAY);
 
-        // De laserpoort: twee zenders die elkaar aankijken.
+        // De laserpoort: twee zenders die elkaar aankijken, nog uit (hoofdstuk 39: de demo zet ze aan, zie lasers).
         level.setBlockAndUpdate(LASER_A, ModBlocks.LASER_EMITTER.get().defaultBlockState()
-                .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+                .setValue(LaserEmitterBlock.FACING, Direction.EAST).setValue(LaserEmitterBlock.SWITCHED_ON, false));
         level.setBlockAndUpdate(LASER_B, ModBlocks.LASER_EMITTER.get().defaultBlockState()
-                .setValue(LaserEmitterBlock.FACING, Direction.WEST));
+                .setValue(LaserEmitterBlock.FACING, Direction.WEST).setValue(LaserEmitterBlock.SWITCHED_ON, false));
         level.setBlockAndUpdate(DOME, ModBlocks.DOME_GENERATOR.get().defaultBlockState());
         // Ook de laserzender en de koepel hebben stroom nodig: een warmtegenerator op magma ernaast.
         DevWorld.powerNextTo(level, LASER_A.north());
@@ -272,6 +272,8 @@ final class ShowcaseScene {
         player.setData(ModAttachments.WAYPOINTS, player.getData(ModAttachments.WAYPOINTS).withActive(ImtWaypoints.NONE));
         level.setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(BRIDGE_POWER, Blocks.DIRT.defaultBlockState());
+        lasers(level, false);
+        bridge(level, false);
         level.setBlockAndUpdate(DOME_POWER, Blocks.AIR.defaultBlockState());
         // De kabel die 'Power grid' doorknipt, altijd weer heel.
         level.setBlockAndUpdate(GRID_CUT, ModBlocks.CABLE.get().defaultBlockState());
@@ -356,6 +358,24 @@ final class ShowcaseScene {
     }
 
     /**
+     * De laserpoort van de demo aan of uit, zoals I.M.T hem schakelt (hoofdstuk 39: redstone doet niets meer).
+     */
+    static void lasers(ServerLevel level, boolean on) {
+        for (BlockPos pos : new BlockPos[] {LASER_A, LASER_B}) {
+            if (level.getBlockState(pos).getBlock() instanceof LaserEmitterBlock) {
+                ImtRedstone.switchAt(level, pos, -1, on ? ImtRedstone.Op.ON : ImtRedstone.Op.OFF, 0);
+            }
+        }
+    }
+
+    /** De laserbrug van de demo aan of uit (hoofdstuk 39), zoals I.M.T hem schakelt. */
+    static void bridge(ServerLevel level, boolean on) {
+        if (level.getBlockState(BRIDGE).getBlock() instanceof com.senne.imttech.shield.LaserBridgeBlock) {
+            ImtRedstone.switchAt(level, BRIDGE, -1, on ? ImtRedstone.Op.ON : ImtRedstone.Op.OFF, 0);
+        }
+    }
+
+    /**
      * De laserbrug (hoofdstuk 34): een gracht met drie brugzenders in de westrand. Elke keer opnieuw gebouwd, zodat de
      * showcase altijd hetzelfde laat zien (ook in een wereld van vóór de laserbrug).
      */
@@ -368,7 +388,8 @@ final class ShowcaseScene {
         for (int dz = -1; dz <= 1; dz++) {
             BlockPos emitter = BRIDGE.offset(0, 0, dz);
             level.setBlockAndUpdate(emitter, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
-                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.EAST));
+                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.EAST)
+                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.SWITCHED_ON, false));
             if (level.getBlockEntity(emitter) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity bridge) {
                 bridge.setOwner(player);
             }

@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "29";
+    private static final String PROTOCOL_VERSION = "30";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -164,6 +164,16 @@ public final class ModNetwork {
                     com.senne.imttech.shield.LaserBridges.handleAction(player, payload);
                 } else {
                     com.senne.imttech.shield.LaserEmitters.handleAction(player, payload);
+                }
+            }
+        });
+        // Hoofdstuk 39: een laserpoort of laserbrug een naam geven (in je I.M.T-lijst), vanuit zijn instelscherm.
+        registrar.playToServer(LaserRenamePayload.TYPE, LaserRenamePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                if (com.senne.imttech.shield.LaserBridges.isBridge(player, payload.pos())) {
+                    com.senne.imttech.shield.LaserBridges.handleRename(player, payload);
+                } else {
+                    com.senne.imttech.shield.LaserEmitters.handleRename(player, payload);
                 }
             }
         });

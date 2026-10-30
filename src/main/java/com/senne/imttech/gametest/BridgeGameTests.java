@@ -49,11 +49,27 @@ public final class BridgeGameTests {
         }
     }
 
-    /** Een brugzender die naar het oosten kijkt, met een volle warmtegenerator eronder (stroom). */
+    /**
+     * Een brugzender die naar het oosten kijkt, met een volle warmtegenerator eronder (stroom). Hij staat nog uit
+     * (hoofdstuk 39: anders schoof hij meteen uit); zet hem aan met {@link #switchBridge}.
+     */
     private static void bridge(GameTestHelper helper, BlockPos pos) {
-        helper.setBlock(pos, ModBlocks.LASER_BRIDGE.get().defaultBlockState().setValue(LaserBridgeBlock.FACING, Direction.EAST));
+        helper.setBlock(pos, offBridge());
         helper.setBlock(pos.below(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(pos.below())).fill(5_000);
+    }
+
+    /** Een brugzender die naar het oosten kijkt en uit staat. */
+    private static BlockState offBridge() {
+        return ModBlocks.LASER_BRIDGE.get().defaultBlockState().setValue(LaserBridgeBlock.FACING, Direction.EAST)
+                .setValue(LaserBridgeBlock.SWITCHED_ON, false);
+    }
+
+    /** De brug van deze zender aan of uit, zoals I.M.T (of een diagram) hem op zijn naam schakelt (hoofdstuk 39). */
+    private static void switchBridge(GameTestHelper helper, BlockPos pos, boolean on) {
+        check(com.senne.imttech.redstone.ImtRedstone.switchAt(helper.getLevel(), helper.absolutePos(pos), -1,
+                on ? com.senne.imttech.redstone.ImtRedstone.Op.ON : com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0),
+                "Er staat geen brug om te schakelen");
     }
 
     /** Hoeveel brugplaten er oostelijk van {@code emitter} liggen (tot {@code length} ver). */
@@ -82,7 +98,7 @@ public final class BridgeGameTests {
         BlockPos emitter = new BlockPos(1, 4, 2);
         bridge(helper, emitter);
         helper.setBlock(emitter.east(5), Blocks.STONE); // hier houdt de brug op
-        helper.setBlock(emitter.west(), Blocks.REDSTONE_BLOCK);
+        switchBridge(helper, emitter, true);
         check(plates(helper, emitter, 4) < 4, "De brug lag er meteen helemaal (geen animatie)");
         helper.onEachTick(() -> {
             int count = plates(helper, emitter, 4);
@@ -122,7 +138,7 @@ public final class BridgeGameTests {
                     check(stand[0].isAlive() && Math.abs(feet - LaserBridgePlateBlock.TOP / 16.0) < 0.01,
                             "De armor stand staat niet op de brug (voeten op " + feet + ")");
                     check(stand[0].getHealth() == stand[0].getMaxHealth(), "De brug deed pijn");
-                    helper.setBlock(emitter.west(), Blocks.AIR); // uit: de brug trekt zich terug
+                    switchBridge(helper, emitter, false); // uit: de brug trekt zich terug
                 })
                 .thenWaitUntil(() -> check(plates(helper, emitter, 4) == 0, "De brug ging niet weg"))
                 .thenWaitUntil(() -> check(stand[0].getY() < helper.absolutePos(emitter).getY() - 0.5,
@@ -132,8 +148,9 @@ public final class BridgeGameTests {
 
     /**
      * Alleen opzij: de brug gaat de kant op waar je kijkt als je hem neerzet, ook als je schuin naar beneden kijkt. Wie
-     * hem neerzette, is de eigenaar. Een zender ernaast hoort bij de brug en neemt zijn kleur en omkeren over; een vreemde
-     * kan niets veranderen, de eigenaar wel (voor de hele brug).
+     * hem neerzette, is de eigenaar, en hij heeft hem in zijn I.M.T-lijst ("Bridge 1", hoofdstuk 39). Een zender ernaast
+     * hoort bij de brug en neemt zijn kleur en aan/uit over (en geeft geen tweede regel in de lijst); een vreemde kan niets
+     * veranderen, de eigenaar wel (voor de hele brug).
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "laser_bridge")
     public static void laser_bridge_faces_where_you_look(GameTestHelper helper) {
@@ -155,26 +172,29 @@ public final class BridgeGameTests {
         var entity = (LaserBridgeBlockEntity) helper.getBlockEntity(first);
         check(owner.getUUID().equals(entity.owner()), "Wie hem neerzette, is niet de eigenaar");
 
-        // Een vreemde: niets (geen kleur, geen omkeren).
+        // Een vreemde: niets (geen kleur, niet aan of uit).
         LaserBridges.handleAction(stranger, new LaserActionPayload(helper.absolutePos(first), LaserActionPayload.Op.COLOR,
                 ShieldColor.RED.ordinal()));
         check(!LaserBridges.mayEdit(stranger, entity) && colour(helper, first) == ShieldColor.CYAN,
                 "Een vreemde kon de brug instellen");
-        // De eigenaar: groen en omgekeerd.
+        // De eigenaar: groen en uit.
         LaserBridges.handleAction(owner, new LaserActionPayload(helper.absolutePos(first), LaserActionPayload.Op.COLOR,
                 ShieldColor.GREEN.ordinal()));
-        LaserBridges.handleAction(owner, new LaserActionPayload(helper.absolutePos(first), LaserActionPayload.Op.INVERT, 1));
-        check(colour(helper, first) == ShieldColor.GREEN && helper.getBlockState(first).getValue(LaserBridgeBlock.INVERTED),
+        LaserBridges.handleAction(owner, new LaserActionPayload(helper.absolutePos(first), LaserActionPayload.Op.SWITCH, 0));
+        check(colour(helper, first) == ShieldColor.GREEN && !helper.getBlockState(first).getValue(LaserBridgeBlock.SWITCHED_ON),
                 "De eigenaar kon de brug niet instellen");
         // Liggend/staand bestaat niet bij een brug: die knop doet niets (en geeft geen fout).
         LaserBridges.handleAction(owner, new LaserActionPayload(helper.absolutePos(first), LaserActionPayload.Op.TURN, 1));
 
-        // Een tweede ernaast (ook als je een andere kant op kijkt): die hoort erbij en is meteen groen en omgekeerd.
+        // Een tweede ernaast (ook als je een andere kant op kijkt): die hoort erbij en is meteen groen en uit.
         owner.moveTo(spot.x, spot.y, spot.z, 0.0f, 50.0f);
         check(ZoneGameTests.place(helper, owner, ModItems.LASER_BRIDGE.get(), floor.south(), Direction.UP), "De tweede neerzetten lukte niet");
         BlockPos second = first.south();
-        check(colour(helper, second) == ShieldColor.GREEN && helper.getBlockState(second).getValue(LaserBridgeBlock.INVERTED),
+        check(colour(helper, second) == ShieldColor.GREEN && !helper.getBlockState(second).getValue(LaserBridgeBlock.SWITCHED_ON),
                 "Een zender naast de brug nam haar instellingen niet over");
+        var relays = owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
+        check(relays.relays().size() == 1 && relays.relays().getFirst().name().equals("Bridge 1"),
+                "De brug staat niet één keer, als Bridge 1, in de I.M.T-lijst: " + relays.relays());
         check(LaserBridgeBlock.group(helper.getLevel(), helper.absolutePos(first)).size() == 2, "De twee zenders zijn niet één brug");
         // Rood geldt voor allebei.
         LaserBridges.handleAction(owner, new LaserActionPayload(helper.absolutePos(second), LaserActionPayload.Op.COLOR,
@@ -185,21 +205,21 @@ public final class BridgeGameTests {
     }
 
     /**
-     * Drie zenders naast elkaar zijn één brug van drie breed: stroom alleen bij de noordelijkste, redstone alleen bij de
+     * Drie zenders naast elkaar zijn één brug van drie breed: stroom alleen bij de noordelijkste, aan gezet via de
      * zuidelijkste, en toch schuiven ze alle drie uit. De middelste rij heeft opzij geen rand (daar ligt brug), de buitenste
-     * alleen aan de buitenkant. Zonder redstone gaan ze allemaal weer weg.
+     * alleen aan de buitenkant. Uit (weer via de zuidelijkste) gaan ze allemaal weer weg.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "laser_bridge")
     public static void laser_bridge_three_wide_one_cable(GameTestHelper helper) {
         BlockPos north = new BlockPos(12, 4, 2);
         for (int i = 0; i < 3; i++) {
             BlockPos emitter = north.south(i);
-            helper.setBlock(emitter, ModBlocks.LASER_BRIDGE.get().defaultBlockState().setValue(LaserBridgeBlock.FACING, Direction.EAST));
+            helper.setBlock(emitter, offBridge());
             helper.setBlock(emitter.east(5), Blocks.STONE);
         }
         helper.setBlock(north.north(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(north.north())).fill(5_000);
-        helper.setBlock(north.south(3), Blocks.REDSTONE_BLOCK);
+        switchBridge(helper, north.south(2), true);
         helper.startSequence()
                 .thenWaitUntil(() -> {
                     for (int i = 0; i < 3; i++) {
@@ -217,7 +237,7 @@ public final class BridgeGameTests {
                     check(outerSouth.getValue(LaserBridgePlateBlock.NORTH) && !outerSouth.getValue(LaserBridgePlateBlock.SOUTH),
                             "De zuidelijke rij heeft zijn rand aan de verkeerde kant");
                 })
-                .thenExecute(() -> helper.setBlock(north.south(3), Blocks.AIR))
+                .thenExecute(() -> switchBridge(helper, north.south(2), false))
                 .thenWaitUntil(() -> {
                     for (int i = 0; i < 3; i++) {
                         check(plates(helper, north.south(i), 4) == 0, "Rij " + (i + 1) + " ging niet mee weg");
@@ -226,12 +246,13 @@ public final class BridgeGameTests {
                 .thenSucceed();
     }
 
-    /** Zonder stroom geen brug, ook niet met redstone erop. */
+    /** Zonder stroom geen brug, ook niet als hij aan staat (en redstone doet niets meer, hoofdstuk 39). */
     @GameTest(template = ARENA, timeoutTicks = 60, batch = "laser_bridge")
     public static void laser_bridge_needs_power(GameTestHelper helper) {
         BlockPos emitter = new BlockPos(1, 4, 20);
         helper.setBlock(emitter, ModBlocks.LASER_BRIDGE.get().defaultBlockState().setValue(LaserBridgeBlock.FACING, Direction.EAST));
         helper.setBlock(emitter.west(), Blocks.REDSTONE_BLOCK);
+        check(helper.getBlockState(emitter).getValue(LaserBridgeBlock.SWITCHED_ON), "Een nieuwe brug staat niet aan");
         helper.runAfterDelay(30, () -> {
             check(plates(helper, emitter, 4) == 0 && !helper.getBlockState(emitter).getValue(LaserBridgeBlock.POWERED),
                     "De brug ging aan zonder stroom");
@@ -241,7 +262,7 @@ public final class BridgeGameTests {
 
     /**
      * Los van de beveiliging (jouw keuze): staan de lasers van de beveiligingskern uit (de schakelaar "Lasers"), dan blijft
-     * een laserzender ernaast uit, maar de brug schuift gewoon uit. En de Bypass Kit doet niets op een brug (hij slijt
+     * een laserzender ernaast uit (ook al staat hij zelf aan), maar de brug schuift gewoon uit. En de Bypass Kit doet niets op een brug (hij slijt
      * ook niet). (In een eigen batch: deze kern zet de lasers uit, dat mag geen andere test merken.)
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "laser_bridge_security")
@@ -252,7 +273,7 @@ public final class BridgeGameTests {
         hacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
         SecurityCoreBlockEntity core = ZoneGameTests.zoneCore(helper, owner);
         core.setLasersEnabled(false);
-        // Een brug en (ernaast) een laserzender, allebei met stroom en redstone.
+        // Een brug en (ernaast) een laserzender, allebei met stroom en aan.
         BlockPos bridge = new BlockPos(6, 4, 8);
         bridge(helper, bridge);
         helper.setBlock(bridge.east(5), Blocks.STONE);
@@ -261,8 +282,7 @@ public final class BridgeGameTests {
         helper.setBlock(laser.east(5), Blocks.STONE); // gaat hij later toch aan, dan blijft zijn wand in deze test
         helper.setBlock(laser.below(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(laser.below())).fill(5_000);
-        helper.setBlock(bridge.west(), Blocks.REDSTONE_BLOCK);
-        helper.setBlock(laser.west(), Blocks.REDSTONE_BLOCK);
+        switchBridge(helper, bridge, true);
         helper.runAfterDelay(40, () -> {
             try {
                 check(!helper.getBlockState(laser).getValue(LaserEmitterBlock.POWERED),

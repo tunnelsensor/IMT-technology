@@ -1757,7 +1757,7 @@ public final class VisualCheck {
             t.shot(0, "73_laser_flat");
             t.view(0, 38.5, -56.5, 31.5, 135, 25);
             t.shot(20, "74_laser_flat_angle");
-            t.open(0, () -> new com.senne.imttech.client.shield.LaserEmitterScreen(FLAT_GATE.above(), "Dev"));
+            t.open(0, () -> new com.senne.imttech.client.shield.LaserEmitterScreen(FLAT_GATE.above(), "Dev", "Flat gate"));
             t.shot(20, "75_laser_screen");
             t.close(0);
         }
@@ -1771,8 +1771,8 @@ public final class VisualCheck {
             t.shot(0, "br01_bridge_off_top");
             t.view(0, BRIDGE_YARD.getX() + 4.5, BRIDGE_YARD.getY() + 0.5, BRIDGE_YARD.getZ() + 0.5, 90, 10);
             t.shot(20, "br02_bridge_off_front");
-            t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(BRIDGE_YARD.north().below(),
-                    Blocks.REDSTONE_BLOCK.defaultBlockState()));
+            t.onServer(0, player -> com.senne.imttech.redstone.ImtRedstone.switchAt(player.serverLevel(), BRIDGE_YARD, -1,
+                    com.senne.imttech.redstone.ImtRedstone.Op.ON, 0));
             t.onServer(40, player -> {
                 var stand = EntityType.ARMOR_STAND.create(player.serverLevel());
                 if (stand != null) {
@@ -1791,7 +1791,7 @@ public final class VisualCheck {
                             com.senne.imttech.network.LaserActionPayload.Op.COLOR, ShieldColor.PURPLE.ordinal())));
             t.view(10, BRIDGE_YARD.getX() - 1.5, BRIDGE_YARD.getY() + 4, BRIDGE_YARD.getZ() + 5.5, -135, 35);
             t.shot(20, "br06_bridge_purple");
-            t.open(0, () -> new com.senne.imttech.client.shield.LaserEmitterScreen(BRIDGE_YARD, "Dev"));
+            t.open(0, () -> new com.senne.imttech.client.shield.LaserEmitterScreen(BRIDGE_YARD, "Dev", "Moat bridge"));
             t.shot(20, "br07_bridge_screen");
             t.close(0);
         }
@@ -3382,7 +3382,6 @@ public final class VisualCheck {
         for (int dy = 0; dy < 2; dy++) {
             level.setBlockAndUpdate(bottom.offset(-6, dy, 0), Blocks.SMOOTH_STONE.defaultBlockState());
         }
-        level.setBlockAndUpdate(bottom.above().east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
         com.senne.imttech.bypass.Bypass.clear();
     }
@@ -3709,13 +3708,10 @@ public final class VisualCheck {
 
     private static void buildLaserGates(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        BlockState power = Blocks.REDSTONE_BLOCK.defaultBlockState();
-        // Van west (x 30) naar oost (x 36), twee blokken hoog.
+        // Van west (x 30) naar oost (x 36), twee blokken hoog. Ze staan aan zodra ze stroom hebben (hoofdstuk 39).
         for (int y = -60; y <= -59; y++) {
             level.setBlockAndUpdate(new BlockPos(30, y, 20), emitter(Direction.EAST, ShieldColor.BLUE));
             level.setBlockAndUpdate(new BlockPos(36, y, 20), emitter(Direction.WEST, ShieldColor.BLUE));
-            level.setBlockAndUpdate(new BlockPos(29, y, 20), power);
-            level.setBlockAndUpdate(new BlockPos(37, y, 20), power);
         }
         // Stroom: een warmtegenerator tegen de onderste zender, en een stukje kabel erboven naar
         // de bovenste.
@@ -3726,8 +3722,6 @@ public final class VisualCheck {
         // Van noord (z 17) naar zuid (z 23), in het rood.
         level.setBlockAndUpdate(new BlockPos(42, -60, 17), emitter(Direction.SOUTH, ShieldColor.RED));
         level.setBlockAndUpdate(new BlockPos(42, -60, 23), emitter(Direction.NORTH, ShieldColor.RED));
-        level.setBlockAndUpdate(new BlockPos(42, -60, 16), power);
-        level.setBlockAndUpdate(new BlockPos(42, -60, 24), power);
         DevWorld.powerNextTo(level, new BlockPos(43, -60, 17));
         DevWorld.powerNextTo(level, new BlockPos(43, -60, 23));
     }
@@ -3749,7 +3743,6 @@ public final class VisualCheck {
         }
         for (int i = 0; i < 3; i++) {
             level.setBlockAndUpdate(FLAT_GATE.above(i), emitter(Direction.EAST, ShieldColor.CYAN)
-                    .setValue(LaserEmitterBlock.INVERTED, true)
                     .setValue(LaserEmitterBlock.TURNED, true));
         }
     }
@@ -3773,7 +3766,8 @@ public final class VisualCheck {
         for (int dz = -1; dz <= 1; dz++) {
             BlockPos pos = BRIDGE_YARD.offset(0, 0, dz);
             level.setBlockAndUpdate(pos, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
-                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.EAST));
+                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.EAST)
+                    .setValue(com.senne.imttech.shield.LaserBridgeBlock.SWITCHED_ON, false));
             if (level.getBlockEntity(pos) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity bridge) {
                 bridge.setOwner(player);
             }
@@ -4194,7 +4188,6 @@ public final class VisualCheck {
         if (level.getBlockEntity(bridge) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity be) {
             be.setOwner(player);
         }
-        level.setBlockAndUpdate(bridge.above(), Blocks.REDSTONE_BLOCK.defaultBlockState());
         // Links van de kern (stap 8): PoE-kabels naar een muurtje met een netwerkknop en een netwerkhendel (die staat aan),
         // en op de vloer nog een hendel en een knop (die is net ingedrukt).
         for (BlockPos poe : new BlockPos[] {core.west(), core.west().above(), core.west().south()}) {

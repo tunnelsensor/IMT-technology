@@ -19,8 +19,8 @@ import org.jetbrains.annotations.Nullable;
  * (LaserOpenPayload, LaserActionPayload); staat er op die plek een brug, dan komt het bericht hier terecht.
  *
  * Wie het mag openen: dezelfde regel als bij de laserzender (security/BaseTrust): wie de brug neerzette, of wie in
- * deze basis vertrouwd is. Wat je kiest (de kleur, omkeren), geldt voor de hele brug: alle brugzenders die eraan
- * vastzitten, behalve die van iemand anders.
+ * deze basis vertrouwd is. Wat je kiest (de kleur, aan of uit, de naam), geldt voor de hele brug: alle brugzenders die
+ * eraan vastzitten, behalve die van iemand anders.
  */
 public final class LaserBridges {
     private LaserBridges() {}
@@ -41,7 +41,18 @@ public final class LaserBridges {
                     : Component.translatable("imt.imttech.msg.laser_bridge_not_yours", owner), true);
             return;
         }
-        ModNetwork.sendTo(player, new LaserOpenPayload(pos, bridge.ownerName()));
+        ModNetwork.sendTo(player, new LaserOpenPayload(pos, bridge.ownerName(),
+                LaserGates.nameOf(player, LaserBridgeBlock.group(player.serverLevel(), pos))));
+    }
+
+    /** Save in het scherm (hoofdstuk 39): de brug krijgt deze naam in de I.M.T-lijst van de speler. */
+    public static void handleRename(ServerPlayer player, com.senne.imttech.network.LaserRenamePayload payload) {
+        LaserBridgeBlockEntity bridge = bridge(player, payload.pos());
+        if (bridge == null || !mayEdit(player, bridge)) {
+            return;
+        }
+        LaserEmitters.renamed(player, LaserGates.rename(player, LaserBridgeBlock.group(player.serverLevel(), payload.pos()),
+                payload.pos(), payload.name()), payload.name());
     }
 
     /** Is dit een brugzender waar deze speler bij kan? Dan gaat een knop uit het scherm naar {@link #handleAction}. */
@@ -49,7 +60,7 @@ public final class LaserBridges {
         return bridge(player, pos) != null;
     }
 
-    /** Een knop uit het scherm: de kleur of omkeren, voor de hele brug. */
+    /** Een knop uit het scherm: de kleur of aan/uit, voor de hele brug. */
     public static void handleAction(ServerPlayer player, LaserActionPayload payload) {
         LaserBridgeBlockEntity clicked = bridge(player, payload.pos());
         if (clicked == null || !mayEdit(player, clicked)) {
@@ -65,7 +76,12 @@ public final class LaserBridges {
         switch (payload.op()) {
             case COLOR -> LaserBridgeBlock.applyColour(level, bridge,
                     ShieldColor.values()[Math.floorMod(payload.value(), ShieldColor.values().length)]);
-            case INVERT -> LaserBridgeBlock.applyInverted(level, bridge, payload.value() != 0);
+            case SWITCH -> {
+                if (!bridge.isEmpty()) {
+                    com.senne.imttech.redstone.ImtRedstone.switchAt(level, bridge.getFirst(), -1,
+                            payload.value() != 0 ? com.senne.imttech.redstone.ImtRedstone.Op.ON : com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
+                }
+            }
             case TURN, REPAIR -> { } // een brug ligt altijd plat, en heeft geen draden om te herstellen
         }
     }

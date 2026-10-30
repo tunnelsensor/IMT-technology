@@ -418,7 +418,7 @@ public final class BypassGameTests {
     }
 
     /**
-     * Een laserpoort van twee zenders (oostwaarts, op stroom, met redstone), van {@code owner}. Geeft de onderste zender
+     * Een laserpoort van twee zenders (oostwaarts, op stroom, aan), van {@code owner}. Geeft de onderste zender
      * (relatief).
      */
     private static BlockPos laserGate(GameTestHelper helper, ServerPlayer owner, BlockPos bottom) {
@@ -429,7 +429,6 @@ public final class BypassGameTests {
         }
         helper.setBlock(bottom.west(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(bottom.west())).fill(20_000);
-        helper.setBlock(bottom.above().west(), Blocks.REDSTONE_BLOCK);
         return bottom;
     }
 

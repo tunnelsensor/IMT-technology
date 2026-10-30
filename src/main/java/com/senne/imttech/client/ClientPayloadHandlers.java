@@ -211,7 +211,7 @@ public final class ClientPayloadHandlers {
     public static void onLaserOpen(com.senne.imttech.network.LaserOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
-            mc.setScreen(new com.senne.imttech.client.shield.LaserEmitterScreen(payload.pos(), payload.owner()));
+            mc.setScreen(new com.senne.imttech.client.shield.LaserEmitterScreen(payload.pos(), payload.owner(), payload.name()));
         }
     }
 

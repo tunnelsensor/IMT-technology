@@ -24,8 +24,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * <ul>
  *   <li><b>Color</b>: zes vakjes, één per kleur van het veld.</li>
- *   <li><b>Signal</b>: Normal (redstone aan = laser aan) of Inverted (redstone aan = laser uit; zonder
- *       redstone staat hij dan aan).</li>
+ *   <li><b>Name</b> (hoofdstuk 39): de naam van de poort in jouw I.M.T-lijst, en dus in je diagrammen
+ *       ({@code off("poort1")}) en voor je stem. Typ en druk op Save (of Enter).</li>
+ *   <li><b>Switch</b> (hoofdstuk 39): aan (de wand staat zolang er stroom is) of uit (open). Redstone doet niets
+ *       meer.</li>
  *   <li><b>Wall</b>: Vertical (staand, zoals altijd) of Horizontal (plat, als een vloertje). Voor zenders
  *       in de vloer of het plafond loopt de wand omhoog of omlaag; dan kies je Facing south (de wand loopt
  *       van oost naar west) of Facing west (van noord naar zuid).</li>
@@ -39,11 +41,11 @@ import org.jetbrains.annotations.Nullable;
  * Chip (zie shield/LaserEmitters). Of de draden doorgeknipt zijn, weet je spel uit de blok-entiteit.
  *
  * Hetzelfde scherm stelt ook de <b>laserbrug</b> in (hoofdstuk 34, zie shield/LaserBridges): dan heet het Laser Bridge,
- * en zijn er alleen Color en Signal (een brug ligt altijd plat, en de Bypass Kit werkt er niet op).
+ * en zijn er alleen Color, Name en Switch (een brug ligt altijd plat, en de Bypass Kit werkt er niet op).
  */
 public class LaserEmitterScreen extends Screen {
     private static final int PANEL_W = 270;
-    private static final int PANEL_H = 160;
+    private static final int PANEL_H = 186;
     /** Zoveel lager is het scherm van een laserbrug: die heeft geen regel Wall. */
     private static final int BRIDGE_LESS = 26;
     /** Zoveel hoger is het scherm als de draden doorgeknipt zijn (de uitleg en de knop Repair wires). */
@@ -54,23 +56,28 @@ public class LaserEmitterScreen extends Screen {
     private static final int SWATCH = 20;
     private static final int SWATCH_GAP = 4;
     private static final int DONE_W = 80;
+    private static final int SAVE_W = 44;
 
     private final BlockPos pos;
     private final String owner;
+    /** De naam van de poort in jouw I.M.T-lijst toen het scherm openging ("" = hij staat er niet in). */
+    private final String name;
     /** Is dit een laserbrug (hoofdstuk 34) in plaats van een laserzender? */
     private final boolean bridge;
     private final List<Button> swatches = new ArrayList<>();
     private int left;
     private int top;
-    private @Nullable Button invertButton;
+    private @Nullable Button switchButton;
     private @Nullable Button turnButton;
+    private @Nullable net.minecraft.client.gui.components.EditBox nameBox;
     /** Is het scherm opgebouwd met de knop Repair wires (de draden waren doorgeknipt)? */
     private boolean cutLayout;
 
-    public LaserEmitterScreen(BlockPos pos, String owner) {
+    public LaserEmitterScreen(BlockPos pos, String owner, String name) {
         super(Component.translatable(isBridge(pos) ? "screen.imttech.laser_bridge" : "screen.imttech.laser"));
         this.pos = pos;
         this.owner = owner;
+        this.name = name;
         this.bridge = isBridge(pos);
     }
 
@@ -86,8 +93,8 @@ public class LaserEmitterScreen extends Screen {
     }
 
     /**
-     * De zender zoals hij nu in de wereld staat, of null als hij weg is. (De kleur, het omkeren en aan/uit lezen we bij
-     * een laserzender en een laserbrug met dezelfde eigenschappen: zie LaserBridgeBlock.)
+     * De zender zoals hij nu in de wereld staat, of null als hij weg is. (De kleur en aan/uit lezen we bij een laserzender
+     * en een laserbrug met dezelfde eigenschappen: zie LaserBridgeBlock.)
      */
     private @Nullable BlockState emitter() {
         Minecraft mc = Minecraft.getInstance();
@@ -115,12 +122,16 @@ public class LaserEmitterScreen extends Screen {
         return top + 36;
     }
 
-    private int signalY() {
+    private int nameY() {
         return top + 62;
     }
 
-    private int wallY() {
+    private int switchY() {
         return top + 88;
+    }
+
+    private int wallY() {
+        return top + 114;
     }
 
     private int footerY() {
@@ -129,11 +140,11 @@ public class LaserEmitterScreen extends Screen {
 
     /** De uitleg dat de draden doorgeknipt zijn, en de knop Repair wires (alleen als ze dat zijn). */
     private int cutInfoY() {
-        return top + 114;
+        return top + 140;
     }
 
     private int repairY() {
-        return top + 138;
+        return top + 164;
     }
 
     // ---------------------------------------------------------------- Opbouw
@@ -160,13 +171,22 @@ public class LaserEmitterScreen extends Screen {
             swatches.add(addRenderableWidget(swatch));
         }
         int valueW = PANEL_W - VALUE_X - MARGIN;
-        invertButton = addRenderableWidget(Button.builder(Component.empty(), b -> {
+        // De naam (hoofdstuk 39): wat je typte blijft staan als het scherm opnieuw opbouwt.
+        String typed = nameBox == null ? name : nameBox.getValue();
+        nameBox = addRenderableWidget(new net.minecraft.client.gui.components.EditBox(font, left + VALUE_X, nameY(),
+                valueW - SAVE_W - 4, 20, Component.translatable("screen.imttech.laser.name")));
+        nameBox.setMaxLength(com.senne.imttech.shield.LaserGates.MAX_NAME);
+        nameBox.setValue(typed);
+        nameBox.setHint(Component.translatable("screen.imttech.laser.name_hint"));
+        addRenderableWidget(Button.builder(Component.translatable("screen.imttech.laser.save"), b -> saveName())
+                .bounds(left + PANEL_W - MARGIN - SAVE_W, nameY(), SAVE_W, 20).build());
+        switchButton = addRenderableWidget(Button.builder(Component.empty(), b -> {
                     BlockState now = emitter();
                     if (now != null) {
-                        send(LaserActionPayload.Op.INVERT, now.getValue(LaserEmitterBlock.INVERTED) ? 0 : 1);
+                        send(LaserActionPayload.Op.SWITCH, now.getValue(LaserEmitterBlock.SWITCHED_ON) ? 0 : 1);
                     }
                 })
-                .bounds(left + VALUE_X, signalY(), valueW, 20).build());
+                .bounds(left + VALUE_X, switchY(), valueW, 20).build());
         // Een laserbrug ligt altijd plat: die heeft geen knop voor staand of liggend.
         turnButton = bridge ? null : addRenderableWidget(Button.builder(Component.empty(), b -> {
                     BlockState now = emitter();
@@ -195,12 +215,29 @@ public class LaserEmitterScreen extends Screen {
         PacketDistributor.sendToServer(new LaserActionPayload(pos, op, value));
     }
 
+    /** Save (of Enter in het naamvak): de naam naar de server, die hem in jouw I.M.T-lijst zet. */
+    private void saveName() {
+        if (nameBox != null && !nameBox.getValue().isBlank()) {
+            PacketDistributor.sendToServer(new com.senne.imttech.network.LaserRenamePayload(pos, nameBox.getValue()));
+        }
+    }
+
+    /** Enter in het naamvak bewaart de naam (en sluit het scherm niet). */
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (nameBox != null && nameBox.isFocused() && (keyCode == 257 || keyCode == 335)) {
+            saveName();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
     /** De teksten op de knoppen, uit wat het blok nu zegt. */
     private void refreshLabels(BlockState state) {
-        if (invertButton != null) {
+        if (switchButton != null) {
             String screen = bridge ? "screen.imttech.laser_bridge" : "screen.imttech.laser";
-            invertButton.setMessage(Component.translatable(screen + (state.getValue(LaserEmitterBlock.INVERTED)
-                    ? ".inverted" : ".normal")));
+            switchButton.setMessage(Component.translatable(screen + (state.getValue(LaserEmitterBlock.SWITCHED_ON)
+                    ? ".switch_on" : ".switch_off")));
         }
         if (turnButton != null) {
             turnButton.setMessage(Component.translatable(wallKey(state)));
@@ -277,7 +314,8 @@ public class LaserEmitterScreen extends Screen {
                 g.renderOutline(swatch.getX() - 1, swatch.getY() - 1, SWATCH + 2, SWATCH + 2, HudStyle.argb(255, HudStyle.WHITE));
             }
         }
-        label(g, "screen.imttech.laser.signal", signalY());
+        label(g, "screen.imttech.laser.name", nameY());
+        label(g, "screen.imttech.laser.switch", switchY());
         if (!bridge) {
             label(g, "screen.imttech.laser.wall", wallY());
         }
@@ -300,7 +338,7 @@ public class LaserEmitterScreen extends Screen {
         Component scope = gate > 1
                 ? Component.translatable(screen + ".gate", gate)
                 : Component.translatable(screen + ".single");
-        int y = cutLayout ? footerY() : bridge ? wallY() : top + 114;
+        int y = cutLayout ? footerY() : bridge ? wallY() : top + 140;
         for (net.minecraft.util.FormattedCharSequence line : font.split(scope, PANEL_W - 2 * MARGIN - DONE_W - 6)) {
             g.drawString(font, line, left + MARGIN, y, HudStyle.argb(150, HudStyle.WHITE), false);
             y += 11;

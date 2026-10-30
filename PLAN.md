@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 360 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 361 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3895,6 +3895,39 @@ Ik bouw het in deze volgorde, één stap per commit:
       `when lever` en `when button`: I.M.T zegt wat er gebeurt; daarna de code in Logic en Devices). Elke functie zet
       het netwerk zelf aan; de oudere functies werken zoals vroeger zonder kabels. **Publiceren**: een regel erbij in
       `publish/description.md`.
+
+### 39. Apparaten op hun naam, zonder redstone (29 oktober)
+
+Jouw wens: "Ik wil dat alles vanaf nu niet meer met redstone wordt geschakeld maar allemaal met stroom: als het stroom
+heeft gaat het aan, zonder stroom uit, voor de rayshield en de raybridge" en "behoud hoe relays nu werken, zorg dat elke
+device een eigen naam krijgt die je kunt on/off/pulse/toggle net zoals een relay ... je kunt de poort dan toggelen via
+bijvoorbeeld on("poort1"), poort1 is dan de naam die je in de GUI van de rayshield hebt ingesteld. De relays gebruik je dus
+enkel nog voor redstone, de security dingen van de mod doe je via script, voice, enzovoort."
+
+- [x] **1. Laserpoorten en laserbruggen op hun naam** — een laserpoort of laserbrug **staat aan zolang hij stroom heeft**;
+      redstone doet niets meer (en omkeren, "Inverted", is weg: zonder redstone betekent het niets). Wie hem neerzet,
+      krijgt hem in zijn **I.M.T-lijst** (toets '): "Gate 1", "Bridge 2", één regel per poort (een zender ertegenaan geeft
+      geen tweede regel). Daarmee schakel je hem zoals een relais: met je bril, je stem ("turn off gate 1"), of een
+      diagram (`off("poort1")`, `on`, `toggle`, `pulse`); het geldt voor de hele poort. In zijn **scherm** (sneak +
+      rechtsklik) staan nu **Name** (de naam in jouw lijst, met Save) en **Switch** (aan: de wand staat zolang er stroom
+      is; uit: open). Hak je de zender met de naam weg, dan schuift de naam naar een zender ernaast; de laatste weg, en
+      de naam is weg. Op de **desktop** staan poorten en bruggen in Devices onder hun naam, met een knop **Turn off /
+      Turn on** (zoals bij de torentjes). **De toren en de bunker**: de redstoneblokken achter de lasers zijn weg (ze staan
+      gewoon aan op hun stroom). De **val in de kluis** werkt nu met een **relay emitter** onder het vloerblok onder de
+      drukplaat: de plaat geeft dat blok stroom, de emitter zet de vier vloerzenders aan zolang de plaat ingedrukt is. Hij
+      heeft geen eigenaar; in de structuur staat "LinkAround", zodat hij de eerste keer zelf de zenders om hem heen opzoekt
+      (ook als de toren gedraaid in de wereld staat). `biebia_tower.nbt` en `biebia_bunker.nbt` opnieuw gemaakt.
+      **Mijn invulling**: een nieuwe poort staat aan; een oude omgekeerde poort staat voortaan gewoon aan zodra hij stroom
+      heeft; in een diagram werkt een poort alleen als hij met een netwerkkabel aan de kern hangt (zoals alle
+      beveiligingsapparaten), met je bril en stem overal. Een speler die vertrouwd is in de basis en de naam in het
+      scherm bewaart, zet de poort in zijn eigen lijst. **Tests**: `laser_switched_by_name_and_lying_flat` (was het
+      omkeren), `laser_gate_switched_by_name_from_a_diagram`; de tests van de laserpoort, de brug, de Bypass Kit en de
+      toren zijn omgezet van redstone naar schakelen op naam. 361 tests, allemaal groen. **Screenshots**
+      `-Ponly=laser,bridge`: `75_laser_screen`, `br07_bridge_screen`.
+- [ ] **2. Torentjes en camera's**: geen redstone-uitknop meer voor torentjes; camera's aan/uit op hun naam; Rename in
+      Devices voor alle soorten (dat zet het apparaat ook in de lijst van de eigenaar).
+- [ ] **3. LEESMIJ, showcase en screenshots** (Rayshield, Laserbrug, Torentjes, Redstone-relais: "relais zijn alleen
+      voor redstone").
 
 ---
 

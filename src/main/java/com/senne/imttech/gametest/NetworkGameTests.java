@@ -416,7 +416,6 @@ public final class NetworkGameTests {
         BlockPos emitter = new BlockPos(16, 3, 22);
         helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get());
         generator(helper, emitter.below());
-        helper.setBlock(emitter.west(), Blocks.REDSTONE_BLOCK);
         helper.succeedWhen(() -> helper.assertBlockProperty(emitter, LaserEmitterBlock.POWERED, true));
     }
 
@@ -673,14 +672,12 @@ public final class NetworkGameTests {
             helper.setBlock(emitter.east(5), Blocks.STONE);
         }
         generator(helper, first.below());
-        helper.setBlock(first.above(), Blocks.REDSTONE_BLOCK);
-        // Een brug van een ander aan dezelfde kabel, en een brug van de eigenaar zonder kabel (met stroom en redstone).
+        // Een brug van een ander aan dezelfde kabel, en een brug van de eigenaar zonder kabel (met stroom: hij staat aan).
         placeBridge(helper, new BlockPos(4, 3, 1), stranger);
         BlockPos loose = new BlockPos(6, 3, 12);
         placeBridge(helper, loose, owner);
         helper.setBlock(loose.east(5), Blocks.STONE);
         generator(helper, loose.below());
-        helper.setBlock(loose.above(), Blocks.REDSTONE_BLOCK);
         helper.succeedWhen(() -> {
             check(helper.getBlockState(first).getValue(LaserBridgeBlock.POWERED), "De bekabelde brug ging niet aan");
             check(helper.getBlockState(loose).getValue(LaserBridgeBlock.POWERED), "Een brug zonder netwerkkabel werkt niet los");
@@ -867,6 +864,93 @@ public final class NetworkGameTests {
             }
         }
         return true;
+    }
+
+    // ================================================================ Hoofdstuk 39: apparaten op hun naam
+
+    /**
+     * Jouw voorbeeld: {@code on("poort1")}, met poort1 de naam die je in het scherm van de rayshield instelde. Een poort met
+     * een netwerkkabel naar de kern (van de eigenaar van de kern) heet in zijn scherm poort1; een diagram zet hem uit en
+     * weer aan (met een netwerkhendel als trigger). In Devices staat hij onder die naam, en de knop daar (Turn off) zet hem
+     * ook uit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "lan")
+    public static void laser_gate_switched_by_name_from_a_diagram(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 5), "lan-gate-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos rack = new BlockPos(2, 3, 3);
+        ImtTechGameTests.placeServer(helper, rack, core);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(5, 3, 2));
+        BlockPos gate = new BlockPos(6, 3, 2);
+        BlockPos gateAbs = helper.absolutePos(gate);
+        helper.setBlock(gate, ModBlocks.LASER_EMITTER.get().defaultBlockState().setValue(LaserEmitterBlock.FACING, Direction.EAST));
+        ModBlocks.LASER_EMITTER.get().setPlacedBy(level, gateAbs, helper.getBlockState(gate), owner, ItemStack.EMPTY);
+        generator(helper, gate.above());
+        helper.setBlock(gate.east(5), Blocks.STONE);
+        BlockPos lever = placeControl(helper, ModBlocks.NETWORK_LEVER.get(), new BlockPos(4, 3, 3), "Gate lever");
+        generator(helper, lever.south());
+        com.senne.imttech.shield.LaserEmitters.handleRename(owner, new com.senne.imttech.network.LaserRenamePayload(gateAbs, "poort1"));
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, rack, core);
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            String code = """
+                    when lever("Gate lever"):
+                        if lever.on:
+                            off("poort1")
+                        else:
+                            on("poort1")
+                    """;
+            CompoundTag args = new CompoundTag();
+            args.putString("old", "");
+            args.putString("name", "Gate");
+            args.put("graph", com.senne.imttech.logic.program.GraphConverter.toGraph(
+                    com.senne.imttech.logic.program.ScriptParser.parse(code), null).save());
+            args.putString("source", code);
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                    new com.senne.imttech.network.OsActionPayload(coreAbs, "logic_save", args));
+            check(core.logic().program("Gate") != null, "Het diagram met poort1 werd niet bewaard");
+            check(!core.logic().devices("poort1").isEmpty(), "De server kent de naam poort1 niet");
+        });
+        helper.startSequence()
+                .thenWaitUntil(() -> check(wall(helper, gate) == 4, "De poort met stroom ging niet vanzelf aan"))
+                .thenExecute(() -> use(helper, owner, lever))
+                .thenWaitUntil(() -> check(wall(helper, gate) == 0, "off(\"poort1\") in het diagram zette de poort niet uit"))
+                .thenExecute(() -> {
+                    SecurityDevices.forget(level, core);
+                    CompoundTag row = null;
+                    for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {
+                        if (((CompoundTag) tag).getString("k").equals("laser")) {
+                            row = (CompoundTag) tag;
+                        }
+                    }
+                    check(row != null && row.getString("name").equals("poort1") && !row.getBoolean("on")
+                                    && row.getString("st").equals("open"), "Devices toont de poort niet als poort1 (uit): " + row);
+                })
+                .thenExecute(() -> use(helper, owner, lever))
+                .thenWaitUntil(() -> check(wall(helper, gate) == 4, "on(\"poort1\") in het diagram zette de poort niet aan"))
+                // De knop Turn off in Devices.
+                .thenExecute(() -> {
+                    CompoundTag off = new CompoundTag();
+                    off.putInt("x", gateAbs.getX());
+                    off.putInt("y", gateAbs.getY());
+                    off.putInt("z", gateAbs.getZ());
+                    off.putBoolean("on", false);
+                    com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                            new com.senne.imttech.network.OsActionPayload(coreAbs, "dev_toggle", off));
+                })
+                .thenWaitUntil(() -> check(wall(helper, gate) == 0, "Turn off in Devices zette de poort niet uit"))
+                .thenSucceed();
+    }
+
+    /** Hoeveel blokken laserwand er oostelijk van deze zender staan (tot 4 ver). */
+    private static int wall(GameTestHelper helper, BlockPos emitter) {
+        int count = 0;
+        for (int i = 1; i <= 4 && helper.getBlockState(emitter.east(i)).is(ModBlocks.LASER_WALL.get()); i++) {
+            count++;
+        }
+        return count;
     }
 
     /** Een netwerkknop of -hendel op de vloer bij {@code pos} (van niemand), met deze naam. */

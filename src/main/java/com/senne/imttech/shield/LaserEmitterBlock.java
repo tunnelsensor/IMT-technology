@@ -38,38 +38,44 @@ import org.jetbrains.annotations.Nullable;
  * Wars). Handig als deur die je niet ziet aankomen, of als val in een gang. Eén zender is
  * genoeg; zet je er een tweede tegenover, dan sluit die de wand netjes af.
  *
- * Een volledig blok met een lens aan de voorkant. Aan en uit gaat met redstone: een hendel,
- * een drukplaat, of een I.M.T-relais ernaast (dan kan I.M.T hem toch schakelen).
+ * Een volledig blok met een lens aan de voorkant. Sinds hoofdstuk 39 (jouw wens van 29 oktober: "niet meer met
+ * redstone, maar allemaal met stroom") staat een laserpoort AAN zolang hij stroom heeft, en schakel je hem op zijn
+ * NAAM, net als een relais: wie hem neerzet, krijgt hem in zijn I.M.T-lijst ("Gate 3"), en dan zet je hem uit en aan
+ * met je bril, je stem, of een diagram ({@code off("poort1")}). Redstone doet niets meer.
  *
  * Gewoon rechtsklikken doet niets (13 oktober: zo leg je makkelijk een kabel tegen hem aan). Sneak +
  * rechtsklik met een lege hand opent zijn instelscherm, maar alleen voor wie hem neerzette of wie in deze
- * basis vertrouwd is (zie LaserEmitters). Daarin kies je de kleur, of hij omgekeerd werkt (redstone aan =
- * laser uit) en of de wand staat of ligt. Dat geldt voor de hele laserpoort.
+ * basis vertrouwd is (zie LaserEmitters). Daarin kies je de kleur, de naam, aan of uit, en of de wand staat of ligt.
+ * Dat geldt voor de hele laserpoort.
  *
  * Met de Bypass Kit kan een inbreker zijn draden doorknippen (hoofdstuk 33, zie bypass/Bypass): dan blijft de
  * hele poort uit tot de eigenaar (of een vertrouwde speler) in dat scherm op Repair wires drukt.
  *
  * Hij heeft STROOM nodig: een stroomkabel naar een zonnepaneel of warmtegenerator (of er
  * direct tegenaan). Zolang de wand aan staat, betaalt hij elke seconde LASER_UPKEEP per tick.
- * Is de stroom op, dan valt de wand weg; komt de stroom terug terwijl de redstone nog aan
- * staat, dan gaat hij vanzelf weer aan.
+ * Is de stroom op, dan valt de wand weg; komt de stroom terug terwijl hij aan staat, dan gaat hij vanzelf weer aan.
  *
  * De wand loopt in de richting waarin de zender kijkt, tot maximaal LASER_MAX_LENGTH blokken,
  * en stopt bij de tegenoverliggende zender (of bij het eerste blok dat in de weg staat).
  *
- * Zenders die tegen elkaar aan zitten, zijn samen ÉÉN laserpoort (jouw wens, 27 september):
- * redstone op één ervan zet ze allemaal aan, en de stroom van een kabel loopt door de hele rij.
- * Zo bouw je een wand van 3 x 3 met één hendel en één kabel.
+ * Zenders die tegen elkaar aan zitten, zijn samen ÉÉN laserpoort (jouw wens, 27 september): aan of uit geldt
+ * voor de hele poort, met één naam, en de stroom van een kabel loopt door de hele rij. Zo bouw je een wand van
+ * 3 x 3 met één kabel.
  */
-public class LaserEmitterBlock extends Block implements PowerConnectable, EntityBlock, com.senne.imttech.lan.NetworkConnectable {
+public class LaserEmitterBlock extends Block implements PowerConnectable, EntityBlock, com.senne.imttech.lan.NetworkConnectable,
+        ImtSwitchable {
     public static final MapCodec<LaserEmitterBlock> CODEC = simpleCodec(LaserEmitterBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     /** De kleur van het veld dat deze zender maakt. Kies je in zijn scherm. */
     public static final EnumProperty<ShieldColor> COLOR = EnumProperty.create("color", ShieldColor.class);
-    /** Omgekeerd: redstone aan = laser uit, en zonder redstone staat hij aan (13 oktober). */
-    public static final BooleanProperty INVERTED = BlockStateProperties.INVERTED;
+    /**
+     * Staat de poort aan (hoofdstuk 39)? Aan = de wand staat zolang er stroom is; uit = open. Je zet hem om met I.M.T,
+     * een diagram, de desktop of zijn scherm; het geldt voor de hele poort. (Vroeger deed redstone dit, en kon je hem
+     * omkeren; dat is weg.)
+     */
+    public static final BooleanProperty SWITCHED_ON = BooleanProperty.create("switched_on");
     /**
      * Het veld een kwartslag gedraaid (13 oktober: "kiezen of de laser horizontaal is of verticaal").
      * Een wand die opzij loopt, ligt dan plat (zoals een vloer) in plaats van te staan; een wand die
@@ -84,7 +90,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
                 .setValue(FACING, Direction.NORTH)
                 .setValue(POWERED, false)
                 .setValue(COLOR, ShieldColor.BLUE)
-                .setValue(INVERTED, false)
+                .setValue(SWITCHED_ON, true)
                 .setValue(TURNED, false));
     }
 
@@ -95,7 +101,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED, COLOR, INVERTED, TURNED);
+        builder.add(FACING, POWERED, COLOR, SWITCHED_ON, TURNED);
     }
 
     @Override
@@ -109,13 +115,13 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         if (facing.getAxis() == Direction.Axis.Y) {
             placed = placed.setValue(TURNED, context.getHorizontalDirection().getAxis() == Direction.Axis.X);
         }
-        // Zet je hem tegen een laserpoort aan, dan hoort hij erbij: dan neemt hij haar kleur en omkeren over
-        // (anders ging een omgekeerde poort half aan en half uit), en liggend/staand als hij dezelfde kant op
-        // schiet (een wand die omhoog loopt, draait anders dan een die opzij loopt).
+        // Zet je hem tegen een laserpoort aan, dan hoort hij erbij: dan neemt hij haar kleur en aan/uit over
+        // (anders ging een poort half aan en half uit), en liggend/staand als hij dezelfde kant op schiet (een
+        // wand die omhoog loopt, draait anders dan een die opzij loopt).
         for (Direction direction : Direction.values()) {
             BlockState next = context.getLevel().getBlockState(context.getClickedPos().relative(direction));
             if (next.is(this)) {
-                placed = placed.setValue(COLOR, next.getValue(COLOR)).setValue(INVERTED, next.getValue(INVERTED));
+                placed = placed.setValue(COLOR, next.getValue(COLOR)).setValue(SWITCHED_ON, next.getValue(SWITCHED_ON));
                 if (next.getValue(FACING).getAxis() == facing.getAxis()) {
                     placed = placed.setValue(TURNED, next.getValue(TURNED));
                 }
@@ -178,20 +184,16 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     }
 
     /**
-     * Moet deze poort aan? Er moet redstone op staan (of juist niet, als hij omgekeerd is), de draden mogen
-     * niet doorgeknipt zijn (hoofdstuk 33), en de beveiligingskern van dit gebied (als die er is) moet de
-     * lasers aan hebben staan (de schakelaar "Lasers" op de desktop).
+     * Moet deze poort aan? Hij moet aan staan (SWITCHED_ON, hoofdstuk 39), de draden mogen niet doorgeknipt zijn
+     * (hoofdstuk 33), en de beveiligingskern aan het andere eind van zijn netwerkkabel (als die er is) moet de lasers
+     * aan hebben staan (de schakelaar "Lasers" op de desktop).
      */
     private static boolean wanted(Level level, BlockPos pos, BlockState state) {
-        boolean signal = false;
-        for (BlockPos member : group(level, pos)) {
-            // Is één zender van de poort doorgeknipt, dan blijft de hele poort uit (jouw keuze: tot iemand hem herstelt).
-            if (level.getBlockEntity(member) instanceof LaserEmitterBlockEntity emitter && emitter.isCut()) {
-                return false;
-            }
-            signal |= level.hasNeighborSignal(member);
+        if (!state.getValue(SWITCHED_ON)) {
+            return false;
         }
-        if (signal == state.getValue(INVERTED)) {
+        // Is één zender van de poort doorgeknipt, dan blijft de hele poort uit (jouw keuze: tot iemand hem herstelt).
+        if (isCut(level, group(level, pos))) {
             return false;
         }
         // De schakelaar "Lasers" van de kern aan het andere eind van zijn netwerkkabel (hoofdstuk 38). Zonder kabel werkt
@@ -210,21 +212,24 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         return false;
     }
 
-    /**
-     * Redstone erop of eraf (bij deze zender of een zender van dezelfde poort)? Dan de wand aan
-     * (als er stroom is) of uit. Verandert deze zender, dan horen zijn buren dat vanzelf, en die
-     * kijken dan zelf ook weer: zo gaat de hele poort mee.
-     */
+    // ---------------------------------------------------------------- Schakelen op naam (hoofdstuk 39)
+
+    /** Zet de hele poort aan of uit (I.M.T, een diagram, de desktop, zijn scherm): de zenders kijken dan meteen. */
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
-                                   BlockPos fromPos, boolean movedByPiston) {
-        if (level instanceof ServerLevel serverLevel) {
-            update(serverLevel, pos, state, false);
-        }
+    public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
+        apply(level, group(level, pos), member -> member.setValue(SWITCHED_ON, on), true);
+        level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4f, on ? 0.7f : 0.55f);
+    }
+
+    @Override
+    public boolean isSwitchedOn(BlockState state) {
+        return state.getValue(SWITCHED_ON);
     }
 
     /**
-     * Net neergezet: wie dat deed, is de eigenaar. En als er al redstone op staat, meteen aan.
+     * Net neergezet: wie dat deed, is de eigenaar, en (hoofdstuk 39) hij krijgt de poort in zijn I.M.T-lijst ("Gate 3"):
+     * één regel per poort, dus niet als er al een zender van deze poort in zijn lijst staat. Heeft hij stroom, dan meteen
+     * aan.
      *
      * Was het een zender met doorgeknipte draden (weggehakt terwijl hij kapot was, hoofdstuk 33), dan is hij nog
      * steeds kapot. Zet je hem tegen een poort aan, dan gaat die hele poort meteen uit: één kapotte zender is genoeg.
@@ -237,6 +242,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         }
         if (placer instanceof ServerPlayer player) {
             emitter.setOwner(player);
+            LaserGates.register(player, group(level, pos), pos, "imt.imttech.laser_gate.default_name");
         }
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
@@ -275,7 +281,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
 
     /**
      * In de wereld gezet (ook door een gebouw, zoals de Biebia's Industries Tower): over een seconde kijken
-     * of hij aan moet (redstone en stroom), of, als hij al aan stond, zijn stroom betalen.
+     * of hij aan moet (aan en stroom), of, als hij al aan stond, zijn stroom betalen.
      */
     @Override
     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
@@ -290,12 +296,11 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     private static final int UPKEEP_INTERVAL = 20;
 
     /**
-     * Moet de wand aan of uit? Aan als er redstone op staat én er genoeg stroom is. Zonder stroom
-     * blijft hij gewoon uit en kijkt hij elke twee seconden stil of er weer stroom is.
+     * Moet de wand aan of uit? Aan als hij aan staat én er genoeg stroom is. Zonder stroom blijft hij gewoon uit en
+     * kijkt hij elke twee seconden stil of er weer stroom is.
      *
-     * @param retry true als dit zo'n stille herhaling is. Alleen als je de redstone net aanzet,
-     *              klikt de zender waar de redstone op zit één keer ("geen stroom"). Bij een
-     *              omgekeerde poort klikt een zender zonder redstone (die wil dan juist aan).
+     * @param retry true als dit zo'n stille herhaling is. Alleen als je hem net aanzet, klikt hij één keer ("geen
+     *              stroom").
      */
     private void update(ServerLevel level, BlockPos pos, BlockState state, boolean retry) {
         boolean wanted = wanted(level, pos, state);
@@ -312,8 +317,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
             if (enough && pay(level, pos)) {
                 setActive(level, pos, state, true);
             } else {
-                if (!retry && level.hasNeighborSignal(pos) != state.getValue(INVERTED)
-                        && !level.getBlockTicks().hasScheduledTick(pos, this)) {
+                if (!retry && !level.getBlockTicks().hasScheduledTick(pos, this)) {
                     noPower(level, pos);
                 }
                 if (!level.getBlockTicks().hasScheduledTick(pos, this)) {
@@ -345,8 +349,8 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
     }
 
     /**
-     * Elke seconde terwijl hij aan staat: stroom betalen, anders gaat hij uit. Staat hij uit terwijl
-     * er wel redstone op staat (geen stroom), dan proberen we hem weer aan te zetten.
+     * Elke seconde terwijl hij aan staat: stroom betalen, anders gaat hij uit. Staat de wand er niet terwijl hij wel aan
+     * staat (geen stroom), dan proberen we hem weer aan te zetten.
      */
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
@@ -383,7 +387,10 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         }
     }
 
-    /** Weggehaald: de wand verdwijnt mee. */
+    /**
+     * Weggehaald: de wand verdwijnt mee, en (hoofdstuk 39) de regel van de poort in de I.M.T-lijst schuift naar een zender
+     * die er nog staat (of verdwijnt, als dit de laatste was).
+     */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && state.getValue(POWERED) && !newState.is(this)) {
@@ -391,6 +398,9 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         }
         if (!newState.is(this)) {
             PowerGrid.changed();
+            if (level instanceof ServerLevel serverLevel) {
+                LaserGates.removed(serverLevel, pos, this);
+            }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
@@ -421,11 +431,6 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         }
     }
 
-    /** Omkeren (of terug): daarna gaan de zenders meteen aan of uit als dat nu anders moet. */
-    public static void applyInverted(ServerLevel level, List<BlockPos> members, boolean inverted) {
-        apply(level, members, state -> state.setValue(INVERTED, inverted), true);
-    }
-
     /** Liggend of staand: een wand die er al staat, draait meteen mee. */
     public static void applyTurned(ServerLevel level, List<BlockPos> members, boolean turned) {
         apply(level, members, state -> state.setValue(TURNED, turned), false);
@@ -433,8 +438,8 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
 
     /**
      * De draden doorknippen of herstellen (hoofdstuk 33), voor elke zender van de lijst (de hele poort). Daarna kijkt
-     * elke zender of hij aan of uit moet: doorgeknipt schuift de wand terug, hersteld komt hij weer (als er redstone
-     * en stroom is).
+     * elke zender of hij aan of uit moet: doorgeknipt schuift de wand terug, hersteld komt hij weer (als hij aan staat
+     * en er stroom is).
      */
     public static void applyCut(ServerLevel level, List<BlockPos> members, boolean cut) {
         for (BlockPos member : members) {

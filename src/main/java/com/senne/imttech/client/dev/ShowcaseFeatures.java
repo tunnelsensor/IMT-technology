@@ -551,21 +551,23 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON)
                 .action(0, ImtAction.TOGGLE_SHIELD));
 
-        add("Rayshield: laser gate", "Een laserzender (vol blok met een lens): met redstone schuift de "
-                + "energiewand uit de lens naar de overkant, altijd van één kant (niet meer van twee kanten naar "
-                + "het midden). Zonder redstone schuift hij terug de zender in. Een tweede zender aan de "
-                + "overkant is niet nodig. Hij draait op stroom van de warmtegenerator ernaast; zonder stroom "
-                + "gaat hij niet aan. Sneak + rechtsklik op een zender = zijn instelscherm (de volgende functie).",
+        add("Rayshield: laser gate", "Een laserzender (vol blok met een lens). Hoofdstuk 39: geen redstone meer; hij "
+                + "staat aan zolang hij stroom heeft, en je schakelt hem op zijn naam (I.M.T, je stem, een diagram). Aan: "
+                + "de energiewand schuift uit de lens naar de overkant, altijd van één kant (niet meer van twee kanten "
+                + "naar het midden). Uit: hij schuift terug de zender in. Een tweede zender aan de overkant is niet "
+                + "nodig. Hij draait op stroom van de warmtegenerator ernaast; zonder stroom gaat hij niet aan. Sneak + "
+                + "rechtsklik op een zender = zijn instelscherm (de volgende functie).",
                 new Vec3(13.5, -60, 4.5), 0, 5, s -> s
-                .onServer(20, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.REDSTONE_BLOCK.defaultBlockState()))
+                .onServer(20, player -> ShowcaseScene.lasers(player.serverLevel(), true))
                 .pause(120)
-                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(LASER_POWER, Blocks.AIR.defaultBlockState()))
+                .onServer(0, player -> ShowcaseScene.lasers(player.serverLevel(), false))
                 .pause(80));
 
         add("Rayshield: laser settings", "13 oktober. Gewoon rechtsklikken op een zender doet niets meer (zo leg je "
                 + "makkelijk een kabel); sneak + rechtsklik met een lege hand opent zijn scherm, alleen voor wie hem "
-                + "neerzette of wie vertrouwd is in de zone. Rood; dan Inverted: zonder redstone schuift de wand er "
-                + "nu uit; dan Horizontal: de wand ligt plat. Weer Normal: de wand schuift terug.",
+                + "neerzette of wie vertrouwd is in de zone. Rood; dan Switch ON (hoofdstuk 39: aan, zonder redstone): "
+                + "de wand schuift uit; dan Horizontal: de wand ligt plat; dan Switch OFF: de wand schuift terug. In de "
+                + "regel Name staat de naam van de poort in je I.M.T-lijst.",
                 // Dichterbij dan bij de vorige functie: het scherm werkt tot 6 blokken van de zender.
                 new Vec3(13.5, -60, 7.5), 0, 5, s -> s
                 .onServer(0, player -> {
@@ -577,11 +579,11 @@ final class ShowcaseFeatures {
                 .pause(40)
                 .onServer(0, player -> laser(player, LaserActionPayload.Op.COLOR, ShieldColor.RED.ordinal()))
                 .pause(40)
-                .onServer(0, player -> laser(player, LaserActionPayload.Op.INVERT, 1))
+                .onServer(0, player -> laser(player, LaserActionPayload.Op.SWITCH, 1))
                 .pause(80)
                 .onServer(0, player -> laser(player, LaserActionPayload.Op.TURN, 1))
                 .pause(80)
-                .onServer(0, player -> laser(player, LaserActionPayload.Op.INVERT, 0))
+                .onServer(0, player -> laser(player, LaserActionPayload.Op.SWITCH, 0))
                 .pause(60)
                 .close(0)
                 .onServer(0, player -> {
@@ -2259,15 +2261,14 @@ final class ShowcaseFeatures {
         // Hoofdstuk 34 (25 oktober), achteraan zodat de nummers van je notities blijven kloppen.
         BlockPos bridge = ShowcaseScene.BRIDGE;
         add("Laser bridge", "Hoofdstuk 34. Een gracht met drie brugzenders in de westrand (in de vloer, met pijlpunten "
-                + "erop). Redstone aan: de brug schuift uit, drie breed, cyaan, met een fel randje aan de buitenkant en "
+                + "erop). Aan (hoofdstuk 39: op zijn naam, zoals I.M.T hem schakelt): de brug schuift uit, drie breed, cyaan, met een fel randje aan de buitenkant en "
                 + "aan het eind, en een glans die eroverheen trekt. Je loopt eroverheen (de plaat ligt net onder de rand, "
                 + "dus zonder stapje). Dan het instelscherm (sneak + klik): paars. Tot slot de val: je staat midden op de "
-                + "brug, de redstone gaat uit, de brug trekt zich terug en je valt in het water.",
+                + "brug, hij gaat uit, de brug trekt zich terug en je valt in het water.",
                 new Vec3(bridge.getX() + 3.5, bridge.getY() + 4, bridge.getZ() + 9.5), 180, 25, s -> s
                 .onServer(0, ShowcaseScene::buildBridge)
                 .pause(40)
-                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ShowcaseScene.BRIDGE_POWER,
-                        Blocks.REDSTONE_BLOCK.defaultBlockState()))
+                .onServer(0, player -> ShowcaseScene.bridge(player.serverLevel(), true))
                 .pause(80)
                 // Eroverheen lopen, van de westkant naar de oostkant.
                 .stand(0, bridge.getX() - 2.5, bridge.getY() + 1, bridge.getZ() + 0.5, -90, 15)
@@ -2286,8 +2287,7 @@ final class ShowcaseFeatures {
                 .stand(10, bridge.getX() + 3.5, bridge.getY() + com.senne.imttech.shield.LaserBridgePlateBlock.TOP / 16.0,
                         bridge.getZ() + 0.5, -90, 50)
                 .pause(30)
-                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ShowcaseScene.BRIDGE_POWER,
-                        Blocks.DIRT.defaultBlockState()))
+                .onServer(0, player -> ShowcaseScene.bridge(player.serverLevel(), false))
                 .pause(60)
                 .onServer(0, player -> bridge(player, LaserActionPayload.Op.COLOR, ShieldColor.CYAN.ordinal())));
 
@@ -2921,7 +2921,6 @@ final class ShowcaseFeatures {
         for (int dy = 0; dy < 2; dy++) {
             level.setBlockAndUpdate(bottom.offset(7, dy, 0), Blocks.STONE_BRICKS.defaultBlockState());
         }
-        level.setBlockAndUpdate(bottom.offset(-1, 1, 0), Blocks.REDSTONE_BLOCK.defaultBlockState());
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BYPASS_KIT.get()));
         if (player.getInventory().countItem(ModItems.COMPUTER_CHIP.get()) == 0) {
             player.getInventory().add(new ItemStack(ModItems.COMPUTER_CHIP.get()));

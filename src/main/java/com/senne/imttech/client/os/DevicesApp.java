@@ -117,7 +117,7 @@ final class DevicesApp {
      * als hij er geen heeft.
      */
     private @Nullable String buttonLabel(CompoundTag device) {
-        if (device.getString("k").equals("turret")) {
+        if (switchable(device)) {
             return device.getBoolean("on") ? "Turn off" : "Turn on";
         }
         if (device.getString("k").equals("switch")) {
@@ -126,8 +126,14 @@ final class DevicesApp {
         return renamable(device) ? renameLabel(device) : null;
     }
 
+    /** Een torentje, of (hoofdstuk 39) een laserpoort of laserbrug: die hebben een knop Turn off / Turn on. */
+    private static boolean switchable(CompoundTag device) {
+        String kind = device.getString("k");
+        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge");
+    }
+
     private int buttonColour(CompoundTag device) {
-        if (device.getString("k").equals("turret")) {
+        if (switchable(device)) {
             return device.getBoolean("on") ? HudStyle.RED : HudStyle.GREEN;
         }
         return isRenaming(device) ? HudStyle.GREEN : HudStyle.CYAN;
@@ -401,7 +407,7 @@ final class DevicesApp {
                         // Ports / Close: de regel met de zes poorten open of dicht.
                         portsOpen = posOf(device).equals(portsOpen) ? null : posOf(device);
                         renaming = null;
-                    } else if (device.getString("k").equals("turret")) {
+                    } else if (switchable(device)) {
                         CompoundTag args = new CompoundTag();
                         args.putInt("x", device.getInt("x"));
                         args.putInt("y", device.getInt("y"));

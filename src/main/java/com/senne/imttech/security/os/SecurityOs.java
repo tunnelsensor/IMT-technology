@@ -370,14 +370,18 @@ public final class SecurityOs {
 
     /** Eén torentje aan of uit. */
     private static void toggleTurret(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, boolean on) {
-        String error = com.senne.imttech.security.SecurityDevices.switchTurret(player.serverLevel(), core, pos, on);
+        // Een torentje, of (hoofdstuk 39) een laserpoort of laserbrug: elk met zijn eigen aan/uit-knop in Devices.
+        String what = player.serverLevel().getBlockState(pos).getBlock() instanceof com.senne.imttech.turret.TurretBlock ? "turret"
+                : player.serverLevel().getBlockState(pos).getBlock() instanceof com.senne.imttech.shield.LaserBridgeBlock ? "laser bridge"
+                : "laser gate";
+        String error = com.senne.imttech.security.SecurityDevices.switchDevice(player.serverLevel(), core, pos, on);
         if (error != null) {
             notify(player, core, session, error, true);
             return;
         }
-        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " switched the turret at "
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " switched the " + what + " at "
                 + pos.toShortString() + (on ? " on" : " off"));
-        notify(player, core, session, "Turret " + (on ? "on" : "off"), false);
+        notify(player, core, session, Character.toUpperCase(what.charAt(0)) + what.substring(1) + (on ? " on" : " off"), false);
     }
 
     /** Een poort van een Network Switch aan of uit (de knoppen onder een switch in de app Devices, hoofdstuk 38). */

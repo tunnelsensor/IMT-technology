@@ -16,6 +16,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -116,38 +117,61 @@ public final class LaserGameTests {
                 ShieldColor.RED.ordinal()));
         check(colour(helper, bottom) == ShieldColor.RED && colour(helper, top) == ShieldColor.RED,
                 "Rood ging niet naar de hele poort: " + colour(helper, bottom) + ", " + colour(helper, top));
-        LaserEmitters.handleAction(owner, new LaserActionPayload(helper.absolutePos(top), LaserActionPayload.Op.INVERT, 1));
+        LaserEmitters.handleAction(owner, new LaserActionPayload(helper.absolutePos(top), LaserActionPayload.Op.SWITCH, 0));
 
-        // Een derde tegen de poort aan: die is meteen rood en omgekeerd, net als de rest.
+        // Een derde tegen de poort aan: die is meteen rood en uit, net als de rest. En de poort staat één keer in de
+        // I.M.T-lijst van de eigenaar (hoofdstuk 39), als Gate 1.
         check(ZoneGameTests.place(helper, owner, ModItems.LASER_EMITTER.get(), top, Direction.UP), "De derde zender neerzetten lukte niet");
         BlockPos third = top.above();
-        check(colour(helper, third) == ShieldColor.RED && helper.getBlockState(third).getValue(LaserEmitterBlock.INVERTED),
+        check(colour(helper, third) == ShieldColor.RED && !helper.getBlockState(third).getValue(LaserEmitterBlock.SWITCHED_ON),
                 "Een zender tegen de poort nam haar instellingen niet over");
+        var relays = owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
+        check(relays.relays().size() == 1 && relays.relays().getFirst().name().equals("Gate 1"),
+                "De poort staat niet één keer, als Gate 1, in de I.M.T-lijst: " + relays.relays());
         helper.succeed();
     }
 
     /**
-     * Omkeren: zonder redstone staat de wand aan, met redstone gaat hij uit. Liggend: de wand die er staat,
-     * draait mee en is een plat vloertje.
+     * Hoofdstuk 39 (jouw wens: "niet meer met redstone, maar allemaal met stroom ... on("poort1"), poort1 is dan de naam die
+     * je in de GUI van de rayshield hebt ingesteld"): een laserpoort met stroom staat meteen aan, en staat als Gate 1 in de
+     * I.M.T-lijst van wie hem neerzette. In zijn scherm krijgt hij de naam poort1; op die naam gaat hij uit (zoals I.M.T,
+     * je stem of een diagram het doen), en redstone doet niets. Switch in het scherm zet hem weer aan. Liggend: de wand die
+     * er staat, draait mee en is een plat vloertje. Weghakken van de zender met de naam: de naam schuift naar de zender
+     * ernaast; de laatste weg, en de naam is weg.
      */
-    @GameTest(template = ARENA, timeoutTicks = 200, batch = "laser_settings")
-    public static void laser_inverted_and_lying_flat(GameTestHelper helper) {
+    @GameTest(template = ARENA, timeoutTicks = 240, batch = "laser_settings")
+    public static void laser_switched_by_name_and_lying_flat(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 6), "laser-owner");
         BlockPos pos = new BlockPos(1, 3, 3);
         helper.setBlock(pos, ModBlocks.LASER_EMITTER.get().defaultBlockState().setValue(LaserEmitterBlock.FACING, Direction.EAST));
-        ModBlocks.LASER_EMITTER.get().setPlacedBy(helper.getLevel(), helper.absolutePos(pos), helper.getBlockState(pos), owner, ItemStack.EMPTY);
+        ModBlocks.LASER_EMITTER.get().setPlacedBy(level, helper.absolutePos(pos), helper.getBlockState(pos), owner, ItemStack.EMPTY);
         helper.setBlock(pos.above(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(pos.above())).fill(5_000);
         BlockPos abs = helper.absolutePos(pos);
-        check(!helper.getBlockState(pos).getValue(LaserEmitterBlock.POWERED), "Zonder redstone stond hij al aan");
+        var relays = owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
+        check(relays.at(level.dimension(), abs) != null && relays.at(level.dimension(), abs).name().equals("Gate 1"),
+                "De poort staat niet als Gate 1 in de I.M.T-lijst: " + relays.relays());
 
         helper.startSequence()
-                .thenExecute(() -> LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.INVERT, 1)))
-                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 4, "Omgekeerd en zonder redstone ging de wand niet aan"))
+                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 4, "Met stroom ging de wand niet vanzelf aan"))
+                // Een andere naam in het scherm, en dan uit op die naam.
+                .thenExecute(() -> LaserEmitters.handleRename(owner, new com.senne.imttech.network.LaserRenamePayload(abs, "poort1")))
+                .thenExecute(() -> {
+                    var named = owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS).named("poort1");
+                    check(named.size() == 1, "De naam poort1 uit het scherm staat niet in de I.M.T-lijst");
+                    check(com.senne.imttech.redstone.ImtRedstone.switchAt(level, named.getFirst().pos(), named.getFirst().channel(),
+                            com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0), "Uitzetten op de naam poort1 lukte niet");
+                })
+                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 0, "Op zijn naam uitgezet, en de wand bleef staan"))
+                // Redstone doet niets meer.
                 .thenExecute(() -> helper.setBlock(pos.below(), Blocks.REDSTONE_BLOCK))
-                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 0, "Omgekeerd en met redstone ging de wand niet uit"))
-                .thenExecute(() -> helper.setBlock(pos.below(), Blocks.AIR))
-                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 4, "Zonder redstone kwam de wand niet terug"))
+                .thenIdle(30)
+                .thenExecute(() -> check(wallLength(helper, pos, 4) == 0 && !helper.getBlockState(pos).getValue(LaserEmitterBlock.SWITCHED_ON),
+                        "Redstone zette de poort toch aan"))
+                // Switch in het scherm: weer aan.
+                .thenExecute(() -> LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.SWITCH, 1)))
+                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 4, "Switch in het scherm zette de wand niet aan"))
                 .thenExecute(() -> LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.TURN, 1)))
                 .thenExecute(() -> {
                     for (int i = 1; i <= 4; i++) {
@@ -158,9 +182,21 @@ public final class LaserGameTests {
                                 "De liggende wand is geen plat vloertje: " + box);
                     }
                 })
-                // En terug naar gewoon: redstone aan = wand aan.
-                .thenExecute(() -> LaserEmitters.handleAction(owner, new LaserActionPayload(abs, LaserActionPayload.Op.INVERT, 0)))
-                .thenWaitUntil(() -> check(wallLength(helper, pos, 4) == 0, "Niet meer omgekeerd, zonder redstone, en de wand bleef staan"))
+                // Een tweede zender eronder (dezelfde poort), en dan de zender met de naam weghakken: de naam schuift mee.
+                .thenExecute(() -> {
+                    helper.setBlock(pos.below(), ModBlocks.LASER_EMITTER.get().defaultBlockState().setValue(LaserEmitterBlock.FACING, Direction.EAST));
+                    ModBlocks.LASER_EMITTER.get().setPlacedBy(level, helper.absolutePos(pos.below()), helper.getBlockState(pos.below()),
+                            owner, ItemStack.EMPTY);
+                    check(owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS).relays().size() == 1,
+                            "Een zender tegen de poort gaf een tweede regel in de I.M.T-lijst");
+                    helper.setBlock(pos, Blocks.AIR);
+                    var moved = owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS).named("poort1");
+                    check(moved.size() == 1 && moved.getFirst().pos().equals(helper.absolutePos(pos.below())),
+                            "De naam schoof niet mee naar de zender die er nog staat: " + moved);
+                    helper.setBlock(pos.below(), Blocks.AIR);
+                    check(owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS).named("poort1").isEmpty(),
+                            "De laatste zender is weg, maar de naam staat nog in de lijst");
+                })
                 .thenSucceed();
     }
 

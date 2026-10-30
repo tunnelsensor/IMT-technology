@@ -1006,8 +1006,8 @@ def build_laser_gauntlet():
     """
     De lasergang: de enige weg naar de kluis, dwars doorsneden door rayshields.
 
-    De velden staan aan zolang er redstone op de zenders staat (een redstoneblok in de muur
-    achter elke zender) én er stroom is. Die stroom komt uit een verborgen krachtcentrale op de
+    De velden staan aan zolang er stroom is (hoofdstuk 39: geen redstone meer; de zenders staan
+    gewoon aan). Die stroom komt uit een verborgen krachtcentrale op de
     verdieping eronder (zie build_power_plant), via kabels in het plafond. Er komt niemand
     doorheen, dus je moet eromheen: drie kamers aan de zijkant, elk achter een ijzeren deur
     met de schakelaar ernaast. Of je vindt de kabels in het plafond en knipt ze door...
@@ -1028,14 +1028,12 @@ def build_laser_gauntlet():
     laser_rows = list(range(z0 + 3, z1 - 2, 2))
     for i, z in enumerate(laser_rows):
         colour = colours[i % len(colours)]
-        # Nog uit: ze gaan zelf aan zodra ze redstone en stroom hebben.
+        # Aan, maar de wand komt pas als ze stroom hebben (hoofdstuk 39: zonder redstone).
         put(MID - 2, LASERS_Y + 1, z, "imttech:laser_emitter",
-            {"facing": "east", "powered": "false", "color": colour})
+            {"facing": "east", "powered": "false", "color": colour, "switched_on": "true"})
         put(MID + 2, LASERS_Y + 1, z, "imttech:laser_emitter",
-            {"facing": "west", "powered": "false", "color": colour})
-        # Redstone in de muur achter de zender, stroom via een kabel eronder.
-        put(MID - 3, LASERS_Y + 1, z, "minecraft:redstone_block")
-        put(MID + 3, LASERS_Y + 1, z, "minecraft:redstone_block")
+            {"facing": "west", "powered": "false", "color": colour, "switched_on": "true"})
+        # Stroom via een kabel eronder.
         cable(MID - 2, LASERS_Y, z)
         cable(MID + 2, LASERS_Y, z)
     # De kabels in het plafond van de beveiligingsverdieping: een lijn onder elke rij zenders.
@@ -1080,9 +1078,10 @@ def build_vault():
 
     Dichte wanden van deepslate met versterkte hoeken, de kluiskist op een sokkel in het
     midden, vier bewakers in de hoeken, en een val: voor de sokkel ligt een drukplaat, met in
-    de vloer eromheen vier laserzenders die omhoog kijken. Stap je op de plaat, dan krijgen de
-    vloerblokken eronder redstone en schieten er vier laserzuilen tot aan het plafond omhoog:
-    je staat in een kooi. Eruit? Hak een zender uit de vloer, of zorg dat er geen stroom is (de
+    de vloer eromheen vier laserzenders die omhoog kijken (uit). Stap je op de plaat, dan hoort een
+    relay emitter onder de vloer dat, en zet hij de vier zenders aan (hoofdstuk 39: geen redstone in de
+    zenders, maar zoals I.M.T ze schakelt): er schieten vier laserzuilen tot aan het plafond omhoog,
+    en je staat in een kooi. Eruit? Hak een zender uit de vloer, of zorg dat er geen stroom is (de
     zenders hangen via een kabel door de muur van de lasergang aan de krachtcentrale).
     """
     x0, z0, x1, z1 = bounds(VAULT_IN)
@@ -1133,14 +1132,20 @@ def build_vault():
         put(MID + 2, y, z, RAIL, BARS)
 
     # De val: de drukplaat voor de sokkel, en vier zenders in de vloer eromheen die omhoog
-    # kijken. Onder de vloer liggen kabels, die via de muur van de lasergang aan het net hangen.
+    # kijken (uit). Onder de vloer liggen kabels, die via de muur van de lasergang aan het net hangen.
+    # Onder het vloerblok onder de plaat een relay emitter (hoofdstuk 39): de plaat geeft dat blok
+    # stroom, de emitter hoort het en zet de vier zenders aan zolang de plaat ingedrukt is. Hij heeft
+    # geen eigenaar; "LinkAround" laat hem zelf de zenders om hem heen zoeken (zie
+    # RelayEmitterBlockEntity).
     plate_z = MID + 3
     put(MID, y, plate_z, "minecraft:heavy_weighted_pressure_plate", {"power": "0"})
     for (dx, dz) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
         put(MID + dx, VAULT_Y, plate_z + dz, "imttech:laser_emitter",
-            {"facing": "up", "powered": "false", "color": "red"})
+            {"facing": "up", "powered": "false", "color": "red", "switched_on": "false"})
         cable(MID + dx, VAULT_Y - 1, plate_z + dz)
     cable(MID, VAULT_Y - 1, plate_z)
+    put(MID, VAULT_Y - 1, plate_z, "imttech:relay_emitter", {"powered": "false"},
+        {"LinkAround": Int(2), "Mode": "FOLLOW"})
     # Van onder de val, door het plafond van de lasergang, langs de oostmuur van de gang omlaag
     # naar de kabel onder de zenders van de lasergang.
     riser_x = MID + 3

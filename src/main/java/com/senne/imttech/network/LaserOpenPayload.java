@@ -18,14 +18,16 @@ import net.minecraft.resources.ResourceLocation;
  *
  * @param pos   welke zender
  * @param owner de naam van wie hem neerzette (leeg als niemand: een oude zender of een uit een gebouw)
+ * @param name  (hoofdstuk 39) de naam van de poort in jouw I.M.T-lijst, of leeg als hij er niet in staat
  */
-public record LaserOpenPayload(BlockPos pos, String owner) implements CustomPacketPayload {
+public record LaserOpenPayload(BlockPos pos, String owner, String name) implements CustomPacketPayload {
     public static final Type<LaserOpenPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "laser_open"));
 
     public static final StreamCodec<ByteBuf, LaserOpenPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC, LaserOpenPayload::pos,
             ByteBufCodecs.stringUtf8(64), LaserOpenPayload::owner,
+            ByteBufCodecs.stringUtf8(64), LaserOpenPayload::name,
             LaserOpenPayload::new);
 
     @Override

@@ -230,6 +230,26 @@ public final class ImtRedstone {
     }
 
     /**
+     * Het blok op {@code from} is weg, maar hoort bij een groter geheel dat er nog staat (een laserpoort van meer zenders,
+     * hoofdstuk 39): de regels van iedereen die {@code from} in zijn lijst had, wijzen voortaan naar {@code to} (met
+     * dezelfde naam en groep).
+     */
+    public static void move(ServerLevel level, BlockPos from, BlockPos to) {
+        for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            ImtRelays data = player.getData(ModAttachments.RELAYS);
+            int index = data.indexAt(level.dimension(), from);
+            if (index < 0) {
+                continue;
+            }
+            Relay old = data.get(index);
+            Relay moved = new Relay(old.name(), old.group(), old.dimension(), to.immutable(), old.channel());
+            // Stond {@code to} er zelf ook al in (twee poorten die samengingen), dan is één regel genoeg.
+            player.setData(ModAttachments.RELAYS, data.indexAt(level.dimension(), to) >= 0
+                    ? data.without(index) : data.replace(index, moved));
+        }
+    }
+
+    /**
      * Rechtsklikken op een relais: het scherm openen waarin je naam en groep instelt. Daar heb je je bril
      * niet voor nodig (13 oktober): je staat er toch naast. Alleen de eigenaar: een ander hoort van wie
      * het is.

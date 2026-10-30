@@ -45,26 +45,29 @@ import org.jetbrains.annotations.Nullable;
  *
  * Verder werkt hij net als de laserzender van de rayshield (LaserEmitterBlock):
  * <ul>
- *   <li>aan en uit met redstone (of omgekeerd: redstone aan = brug weg);</li>
+ *   <li>hij ligt er zolang hij aan staat en stroom heeft (hoofdstuk 39: geen redstone meer); aan en uit zet je hem op
+ *       zijn naam ("Bridge 2" in je I.M.T-lijst, of de naam die je hem in zijn scherm gaf), met je bril, je stem, een
+ *       diagram of de desktop, en in zijn scherm;</li>
  *   <li>hij heeft STROOM nodig (LASER_BRIDGE_UPKEEP per tick zolang de brug er ligt); is de stroom op, dan valt
  *       de brug weg, en komt hij vanzelf terug als er weer stroom is;</li>
  *   <li>zenders die tegen elkaar aan zitten, zijn samen één brug: drie naast elkaar = een brug van drie breed, met
- *       één hendel en één kabel;</li>
+ *       één naam en één kabel;</li>
  *   <li>de brug schuift uit de lens naar voren, tot LASER_BRIDGE_MAX_LENGTH blokken of tot er iets in de weg staat;
  *       een brugzender aan de overkant die terugkijkt, sluit hem netjes af;</li>
  *   <li>gewoon rechtsklikken doet niets (zo leg je makkelijk een kabel); sneak + rechtsklik met een lege hand opent
- *       het instelscherm (de kleur en omkeren), voor wie hem neerzette of wie in deze basis vertrouwd is.</li>
+ *       het instelscherm (de kleur, de naam, aan of uit), voor wie hem neerzette of wie in deze basis vertrouwd is.</li>
  * </ul>
  *
  * Anders dan de rayshield (jouw keuzes): de brug doet geen pijn, iedereen kan erop lopen (spelers, dieren, monsters),
  * en hij hoort niet bij de beveiliging: de schakelaar "Lasers" van de beveiligingskern laat hem met rust, en de
- * Bypass Kit werkt er niet op. Een val maak je zelf: zet hem uit (redstone) terwijl er iemand op staat.
+ * Bypass Kit werkt er niet op. Een val maak je zelf: zet hem uit terwijl er iemand op staat.
  *
  * Hoofdstuk 38: met een netwerkkabel naar de desktop van een kern staat de brug in Devices (de groep LASER BRIDGES).
  * Zonder kabel werkt hij gewoon los, op stroom (jouw keuze). Brugzenders die tegen elkaar zitten, geven het netwerk aan
  * elkaar door: één kabel is genoeg voor de hele brug.
  */
-public class LaserBridgeBlock extends Block implements PowerConnectable, com.senne.imttech.lan.NetworkConnectable, EntityBlock {
+public class LaserBridgeBlock extends Block implements PowerConnectable, com.senne.imttech.lan.NetworkConnectable, EntityBlock,
+        ImtSwitchable {
     public static final MapCodec<LaserBridgeBlock> CODEC = simpleCodec(LaserBridgeBlock::new);
 
     /** Waar de lens heen kijkt, en dus waar de brug heen loopt: altijd opzij (jouw wens: "enkel horizontaal"). */
@@ -75,8 +78,8 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
      * het instelscherm (client/shield/LaserEmitterScreen) hem bij allebei op dezelfde manier leest.
      */
     public static final EnumProperty<ShieldColor> COLOR = LaserEmitterBlock.COLOR;
-    /** Omgekeerd: redstone aan = brug weg, en zonder redstone ligt hij er. */
-    public static final BooleanProperty INVERTED = BlockStateProperties.INVERTED;
+    /** Staat de brug aan (hoofdstuk 39)? Dan ligt hij er zolang er stroom is. Geldt voor de hele brug. */
+    public static final BooleanProperty SWITCHED_ON = LaserEmitterBlock.SWITCHED_ON;
 
     public LaserBridgeBlock(Properties properties) {
         super(properties);
@@ -84,7 +87,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
                 .setValue(FACING, Direction.NORTH)
                 .setValue(POWERED, false)
                 .setValue(COLOR, ShieldColor.CYAN)
-                .setValue(INVERTED, false));
+                .setValue(SWITCHED_ON, true));
     }
 
     @Override
@@ -94,7 +97,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED, COLOR, INVERTED);
+        builder.add(FACING, POWERED, COLOR, SWITCHED_ON);
     }
 
     /**
@@ -102,8 +105,8 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
      * de kant waar je naartoe kijkt). Zo zet je hem in de rand van de vloer met je gezicht naar het gat, en loopt de
      * brug het gat over. (De rayshieldzender kijkt juist naar jou toe: die zet je tegen een muur.)
      *
-     * Zet je hem tegen een brugzender aan, dan hoort hij bij die brug (zie group): dan neemt hij haar kleur en
-     * omkeren over, anders ging een omgekeerde brug half aan en half uit.
+     * Zet je hem tegen een brugzender aan, dan hoort hij bij die brug (zie group): dan neemt hij haar kleur en aan/uit
+     * over, anders ging een brug half aan en half uit.
      */
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
@@ -111,7 +114,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         for (Direction direction : Direction.values()) {
             BlockState next = context.getLevel().getBlockState(context.getClickedPos().relative(direction));
             if (next.is(this)) {
-                return placed.setValue(COLOR, next.getValue(COLOR)).setValue(INVERTED, next.getValue(INVERTED));
+                return placed.setValue(COLOR, next.getValue(COLOR)).setValue(SWITCHED_ON, next.getValue(SWITCHED_ON));
             }
         }
         return placed;
@@ -141,16 +144,12 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
     }
 
     /**
-     * Moet deze brug er liggen? Er moet redstone op staan (of juist niet, als hij omgekeerd is), bij deze zender of
-     * bij een zender van dezelfde brug. Anders dan de rayshield kijkt hij niet naar de beveiligingskern (jouw keuze):
-     * de schakelaar "Lasers" laat bruggen met rust, anders haalde "lasers uit" ook je bruggen weg.
+     * Moet deze brug er liggen? Als hij aan staat (hoofdstuk 39). Anders dan de rayshield kijkt hij niet naar de
+     * beveiligingskern (jouw keuze): de schakelaar "Lasers" laat bruggen met rust, anders haalde "lasers uit" ook je
+     * bruggen weg.
      */
     private static boolean wanted(Level level, BlockPos pos, BlockState state) {
-        boolean signal = false;
-        for (BlockPos member : group(level, pos)) {
-            signal |= level.hasNeighborSignal(member);
-        }
-        return signal != state.getValue(INVERTED);
+        return state.getValue(SWITCHED_ON);
     }
 
     /**
@@ -162,24 +161,28 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         return state.getBlock() instanceof LaserBridgeBlock && wanted(level, pos, state);
     }
 
-    /**
-     * Redstone erop of eraf (bij deze zender of een zender van dezelfde brug)? Dan de brug uitschuiven (als er stroom
-     * is) of terugtrekken. Verandert deze zender, dan horen zijn buren dat vanzelf: zo gaat de hele brug mee.
-     */
+    /** Zet de hele brug aan of uit (I.M.T, een diagram, de desktop, zijn scherm): de zenders kijken dan meteen. */
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
-                                   BlockPos fromPos, boolean movedByPiston) {
-        if (level instanceof ServerLevel serverLevel) {
-            update(serverLevel, pos, state, false);
-        }
+    public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
+        apply(level, group(level, pos), member -> member.setValue(SWITCHED_ON, on), true);
+        level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4f, on ? 0.7f : 0.55f);
     }
 
-    /** Net neergezet: wie dat deed, is de eigenaar. En als er al redstone op staat, meteen aan. */
+    @Override
+    public boolean isSwitchedOn(BlockState state) {
+        return state.getValue(SWITCHED_ON);
+    }
+
+    /**
+     * Net neergezet: wie dat deed, is de eigenaar, en hij krijgt de brug in zijn I.M.T-lijst ("Bridge 2", één regel per
+     * brug; zie LaserGates). Heeft hij stroom, dan schuift hij meteen uit.
+     */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity bridge) {
             bridge.setOwner(player);
+            LaserGates.register(player, group(level, pos), pos, "imt.imttech.laser_bridge.default_name");
         }
         if (level instanceof ServerLevel serverLevel) {
             update(serverLevel, pos, state, false);
@@ -200,11 +203,11 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
     private static final int UPKEEP_INTERVAL = 20;
 
     /**
-     * Moet de brug er liggen of niet? Aan als er redstone op staat én er genoeg stroom is. Zonder stroom blijft hij
-     * gewoon uit en kijkt hij elke twee seconden stil of er weer stroom is (net als de laserzender).
+     * Moet de brug er liggen of niet? Aan als hij aan staat én er genoeg stroom is. Zonder stroom blijft hij gewoon uit
+     * en kijkt hij elke twee seconden stil of er weer stroom is (net als de laserzender).
      *
-     * @param retry true als dit zo'n stille herhaling is. Alleen als je de redstone net aanzet, klikt de zender waar
-     *              de redstone op zit één keer ("geen stroom").
+     * @param retry true als dit zo'n stille herhaling is. Alleen als je hem net aanzet, klikt hij één keer ("geen
+     *              stroom").
      */
     private void update(ServerLevel level, BlockPos pos, BlockState state, boolean retry) {
         boolean wanted = wanted(level, pos, state);
@@ -221,8 +224,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
             if (enough && pay(level, pos)) {
                 setActive(level, pos, state, true);
             } else {
-                if (!retry && level.hasNeighborSignal(pos) != state.getValue(INVERTED)
-                        && !level.getBlockTicks().hasScheduledTick(pos, this)) {
+                if (!retry && !level.getBlockTicks().hasScheduledTick(pos, this)) {
                     noPower(level, pos);
                 }
                 if (!level.getBlockTicks().hasScheduledTick(pos, this)) {
@@ -255,8 +257,8 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
     }
 
     /**
-     * Elke seconde terwijl hij aan staat: stroom betalen, anders valt de brug weg. Staat hij uit terwijl er wel
-     * redstone op staat (geen stroom), dan proberen we hem weer aan te zetten.
+     * Elke seconde terwijl hij er ligt: stroom betalen, anders valt de brug weg. Ligt hij er niet terwijl hij wel aan
+     * staat (geen stroom), dan proberen we hem weer uit te schuiven.
      */
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
@@ -289,7 +291,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         }
     }
 
-    /** Weggehaald: de brug verdwijnt mee. */
+    /** Weggehaald: de brug verdwijnt mee, en zijn regel in de I.M.T-lijst schuift mee (zie LaserGates). */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && state.getValue(POWERED) && !newState.is(this)) {
@@ -297,6 +299,9 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         }
         if (!newState.is(this)) {
             PowerGrid.changed();
+            if (level instanceof ServerLevel serverLevel) {
+                LaserGates.removed(serverLevel, pos, this);
+            }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
@@ -325,11 +330,6 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         if (!members.isEmpty()) {
             level.playSound(null, members.get(0), SoundEvents.DYE_USE, SoundSource.BLOCKS, 0.6f, 1.2f);
         }
-    }
-
-    /** Omkeren (of terug): daarna gaan de zenders meteen aan of uit als dat nu anders moet. */
-    public static void applyInverted(ServerLevel level, List<BlockPos> members, boolean inverted) {
-        apply(level, members, state -> state.setValue(INVERTED, inverted), true);
     }
 
     /**

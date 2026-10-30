@@ -929,13 +929,12 @@ public final class ImtTechGameTests {
         com.senne.imttech.security.os.SecurityOs.handleAction(owner,
                 new com.senne.imttech.network.OsActionPayload(coreAbs, "dev_toggle", off));
         helper.assertBlockProperty(turretPos, com.senne.imttech.turret.TurretBlock.ENABLED, false);
-        // Een laserpoort met redstone en stroom: met de lasers uit gaat hij niet aan.
+        // Een laserpoort die aan staat, met stroom: met de lasers uit gaat hij niet aan.
         BlockPos emitter = new BlockPos(6, 3, 2);
         helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, Direction.EAST));
         helper.setBlock(emitter.above(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(emitter.above())).fill(5_000);
-        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
         // Een naam die nooit op de server was, kun je niet vertrouwen.
         osAction(owner, coreAbs, "trust_add", "name", "nobody_like_this");
         if (!core.trustedNames().isEmpty()) {
@@ -2416,10 +2415,9 @@ public final class ImtTechGameTests {
         BlockPos far = emitter.east(5);
         helper.setBlock(far, ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, Direction.WEST));
-        // Stroom (een volle warmtegenerator erboven), en dan aanzetten met redstone eronder.
+        // Stroom (een volle warmtegenerator erboven): hij staat aan, dus hij gaat vanzelf aan (hoofdstuk 39).
         helper.setBlock(emitter.above(), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(emitter.above())).fill(5_000);
-        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
 
         // Meteen daarna mag hij nog niet dicht zijn: hij hoort te schuiven.
         int immediately = countWall(helper, emitter, 4);
@@ -2447,21 +2445,22 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Zenders die tegen elkaar aan zitten zijn één laserpoort: redstone op de onderste en stroom
-     * op de bovenste zet alle drie aan (een wand van drie hoog), en zonder redstone gaan ze
-     * allemaal weer uit.
+     * Zenders die tegen elkaar aan zitten zijn één laserpoort: de onderste aanzetten (zoals I.M.T hem op zijn naam
+     * schakelt, hoofdstuk 39) met stroom op de bovenste zet alle drie aan (een wand van drie hoog), en de onderste uit
+     * zet ze allemaal weer uit.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "laser_group")
     public static void touching_laser_emitters_are_one_gate(GameTestHelper helper) {
         BlockPos bottom = new BlockPos(1, 2, 8);
         for (int i = 0; i < 3; i++) {
             helper.setBlock(bottom.above(i), ModBlocks.LASER_EMITTER.get().defaultBlockState()
-                    .setValue(LaserEmitterBlock.FACING, Direction.EAST));
+                    .setValue(LaserEmitterBlock.FACING, Direction.EAST).setValue(LaserEmitterBlock.SWITCHED_ON, false));
         }
-        // Stroom alleen bij de bovenste (de zenders geven hem door), redstone alleen bij de onderste.
+        // Stroom alleen bij de bovenste (de zenders geven hem door), aanzetten alleen via de onderste.
         helper.setBlock(bottom.above(3), ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(bottom.above(3))).fill(5_000);
-        helper.setBlock(bottom.west(), Blocks.REDSTONE_BLOCK);
+        com.senne.imttech.redstone.ImtRedstone.switchAt(helper.getLevel(), helper.absolutePos(bottom), -1,
+                com.senne.imttech.redstone.ImtRedstone.Op.ON, 0);
         helper.startSequence()
                 .thenWaitUntil(() -> {
                     for (int i = 0; i < 3; i++) {
@@ -2470,7 +2469,8 @@ public final class ImtTechGameTests {
                         }
                     }
                 })
-                .thenExecute(() -> helper.setBlock(bottom.west(), Blocks.AIR))
+                .thenExecute(() -> com.senne.imttech.redstone.ImtRedstone.switchAt(helper.getLevel(), helper.absolutePos(bottom), -1,
+                        com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0))
                 .thenWaitUntil(() -> {
                     for (int i = 0; i < 3; i++) {
                         if (countWall(helper, bottom.above(i), 4) > 0) {
@@ -2496,13 +2496,14 @@ public final class ImtTechGameTests {
         for (BlockPos each : List.of(emitter, far)) {
             helper.setBlock(each.above(), ModBlocks.HEAT_GENERATOR.get());
             ((ChargerBlockEntity) helper.getBlockEntity(each.above())).fill(5_000);
-            helper.setBlock(each.below(), Blocks.REDSTONE_BLOCK);
         }
         helper.runAfterDelay(40, () -> {
             if (countWall(helper, emitter, 4) < 4) {
                 throw new GameTestAssertException("De wand tussen de twee zenders stond er niet");
             }
-            helper.setBlock(emitter.below(), Blocks.AIR); // de eerste zender gaat uit
+            // De eerste zender gaat uit (op zijn naam, zoals I.M.T het doet; hoofdstuk 39).
+            com.senne.imttech.redstone.ImtRedstone.switchAt(helper.getLevel(), helper.absolutePos(emitter), -1,
+                    com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
             helper.runAfterDelay(40, () -> {
                 if (countWall(helper, emitter, 4) < 4) {
                     throw new GameTestAssertException("De wand ging weg terwijl de zender aan de overkant nog aan stond");
@@ -3743,13 +3744,12 @@ public final class ImtTechGameTests {
         return station;
     }
 
-    /** Een laserzender zonder stroom doet niets, ook niet met redstone erop. */
+    /** Een laserzender zonder stroom doet niets, ook niet als hij aan staat. */
     @GameTest(template = ARENA, timeoutTicks = 60, batch = "grid")
     public static void laser_gate_needs_power(GameTestHelper helper) {
         BlockPos emitter = new BlockPos(1, 3, 1);
         helper.setBlock(emitter, ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(LaserEmitterBlock.FACING, Direction.EAST));
-        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
         helper.runAfterDelay(20, () -> {
             if (countWall(helper, emitter, 4) > 0 || helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
                 throw new GameTestAssertException("De laserpoort ging aan zonder stroom");
@@ -3770,7 +3770,6 @@ public final class ImtTechGameTests {
         helper.setBlock(emitter.west(), ModBlocks.HEAT_GENERATOR.get());
         var generator = (ChargerBlockEntity) helper.getBlockEntity(emitter.west());
         generator.fill(40); // genoeg voor twee seconden, niet genoeg om aan te gaan
-        helper.setBlock(emitter.below(), Blocks.REDSTONE_BLOCK);
         helper.runAfterDelay(60, () -> {
             if (helper.getBlockState(emitter).getValue(LaserEmitterBlock.POWERED)) {
                 throw new GameTestAssertException("De laserpoort ging aan met maar een beetje stroom");

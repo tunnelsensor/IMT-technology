@@ -61,10 +61,32 @@ public final class LaserEmitters {
             player.displayClientMessage(refusal(player.serverLevel(), emitter), true);
             return;
         }
-        ModNetwork.sendTo(player, new LaserOpenPayload(pos, emitter.ownerName()));
+        ModNetwork.sendTo(player, new LaserOpenPayload(pos, emitter.ownerName(),
+                LaserGates.nameOf(player, LaserEmitterBlock.group(player.serverLevel(), pos))));
     }
 
-    /** Een knop uit het scherm: de kleur, omkeren of liggend/staand, voor de hele poort, of de draden herstellen. */
+    /**
+     * Save in het scherm (hoofdstuk 39): de poort krijgt deze naam in de I.M.T-lijst van de speler (staat hij er nog niet
+     * in, dan komt hij erin). Alleen wie hem mag instellen.
+     */
+    public static void handleRename(ServerPlayer player, com.senne.imttech.network.LaserRenamePayload payload) {
+        LaserEmitterBlockEntity emitter = emitter(player, payload.pos());
+        if (emitter == null || !mayEdit(player, emitter)) {
+            return;
+        }
+        renamed(player, LaserGates.rename(player, LaserEmitterBlock.group(player.serverLevel(), payload.pos()), payload.pos(),
+                payload.name()), payload.name());
+    }
+
+    /** Wat de speler hoort na Save: de nieuwe naam, of dat het niet lukte (een lege naam, of zijn lijst is vol). */
+    static void renamed(ServerPlayer player, boolean ok, String name) {
+        player.displayClientMessage(ok
+                ? Component.translatable("imt.imttech.msg.laser_renamed", com.senne.imttech.redstone.ImtRedstone.clean(name,
+                        LaserGates.MAX_NAME, "")).withStyle(net.minecraft.ChatFormatting.GREEN)
+                : Component.translatable("imt.imttech.msg.laser_rename_failed").withStyle(net.minecraft.ChatFormatting.RED), true);
+    }
+
+    /** Een knop uit het scherm: de kleur, aan/uit of liggend/staand, voor de hele poort, of de draden herstellen. */
     public static void handleAction(ServerPlayer player, LaserActionPayload payload) {
         LaserEmitterBlockEntity clicked = emitter(player, payload.pos());
         if (clicked == null || !mayEdit(player, clicked)) {
@@ -84,7 +106,13 @@ public final class LaserEmitters {
         switch (payload.op()) {
             case COLOR -> LaserEmitterBlock.applyColour(level, gate,
                     ShieldColor.values()[Math.floorMod(payload.value(), ShieldColor.values().length)]);
-            case INVERT -> LaserEmitterBlock.applyInverted(level, gate, payload.value() != 0);
+            case SWITCH -> {
+                // Aan of uit (hoofdstuk 39): zoals I.M.T het doet, zodat ook "when turned_on(...)" het hoort.
+                if (!gate.isEmpty()) {
+                    com.senne.imttech.redstone.ImtRedstone.switchAt(level, gate.getFirst(), -1,
+                            payload.value() != 0 ? com.senne.imttech.redstone.ImtRedstone.Op.ON : com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
+                }
+            }
             case TURN -> LaserEmitterBlock.applyTurned(level, gate, payload.value() != 0);
             case REPAIR -> { } // hierboven al gedaan
         }

@@ -280,10 +280,9 @@ def build_vault_corridor():
     for z in LASER_ROWS:
         for y in (1, 2, 3):
             # Een zender in de linkermuur die naar rechts kijkt; de wand loopt tot de rechtermuur.
-            put(MID - 2, y, z, "imttech:laser_emitter", {"facing": "east", "powered": "false", "color": "red"})
-            # Redstone in de rots erachter: hij staat altijd "aan"...
-            put(MID - 3, y, z, "minecraft:redstone_block")
-            # ...en stroom via een kabel in de muur ernaast.
+            # Aan (hoofdstuk 39: zonder redstone), met stroom via een kabel in de muur ernaast.
+            put(MID - 2, y, z, "imttech:laser_emitter",
+                {"facing": "east", "powered": "false", "color": "red", "switched_on": "true"})
             cable(MID - 2, y, z + 1)
         cable(MID - 2, 4, z + 1)
         cable(MID - 2, 5, z + 1)

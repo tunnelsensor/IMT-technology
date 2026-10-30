@@ -35,15 +35,17 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Torentjes:</b> de beveiligingstorentjes in het gebied, en de Biebia's Industries-torentjes van de
  *       eigenaar van de kern. Elk torentje kun je los aan- en uitzetten (dezelfde schakelaar als
  *       I.M.T gebruikt).</li>
- *   <li><b>Laserpoorten:</b> zenders die aan elkaar vastzitten. Ze gaan met redstone; de kern kan
- *       ze allemaal tegelijk uitzetten (de schakelaar "Lasers").</li>
+ *   <li><b>Laserpoorten:</b> zenders die aan elkaar vastzitten, met hun naam uit de I.M.T-lijst van de eigenaar
+ *       (hoofdstuk 39). Elke poort heeft een eigen aan/uit-knop; de kern kan ze ook allemaal tegelijk uitzetten (de
+ *       schakelaar "Lasers").</li>
  *   <li><b>Drones:</b> de beveiligingsdrones van deze kern. De schakelaar "Drones" laat ze landen.</li>
  *   <li><b>Camera's:</b> de bewakingscamera's in het gebied. De schakelaar "Cameras" zet ze uit
  *       (dan geven ze "NO SIGNAL").</li>
  *   <li><b>Keycardlezers, codepanelen en (hoofdstuk 38) netwerkknoppen en -hendels:</b> met hun naam (die kun je
  *       daar ook veranderen), of de server ze hoort, en in hoeveel diagrammen ze staan.</li>
  *   <li><b>Network Switches</b> (hoofdstuk 38): of ze stroom hebben, en hun zes poorten.</li>
- *   <li><b>Laserbruggen</b> (hoofdstuk 38): van de eigenaar van de kern, één regel per brug: ligt hij er of niet.</li>
+ *   <li><b>Laserbruggen</b> (hoofdstuk 38): van de eigenaar van de kern, één regel per brug: ligt hij er of niet, met
+ *       zijn naam en een aan/uit-knop (hoofdstuk 39).</li>
  * </ul>
  *
  * Er is geen lijst die bijhoudt wat er gebouwd wordt: we kijken gewoon in het gebied, en
@@ -437,16 +439,19 @@ public final class SecurityDevices {
                 continue;
             }
             List<BlockPos> members = LaserEmitterBlock.group(level, gate);
-            boolean on = members.stream().anyMatch(member -> {
+            boolean active = members.stream().anyMatch(member -> {
                 BlockState state = level.getBlockState(member);
                 return state.is(ModBlocks.LASER_EMITTER.get()) && state.getValue(LaserEmitterBlock.POWERED);
             });
+            boolean switched = level.getBlockState(gate).getValue(LaserEmitterBlock.SWITCHED_ON);
             CompoundTag device = position("laser", gate);
-            device.putString("name", "Laser gate (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)"));
-            device.putBoolean("on", on);
+            device.putString("name", nameOf(core, members,
+                    "Laser gate (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)")));
+            // "on" is de knop (hoofdstuk 39): staat de poort aan? Of de wand er nu staat, zegt "st".
+            device.putBoolean("on", switched);
             // Doorgeknipt met de Bypass Kit (hoofdstuk 33): zo ziet de eigenaar welke poort hij moet herstellen.
-            device.putString("st", LaserEmitterBlock.isCut(level, members) ? "cut wires"
-                    : on ? "active" : core.lasersEnabled() ? "open" : "off (network)");
+            device.putString("st", LaserEmitterBlock.isCut(level, members) ? "cut wires" : !switched ? "open"
+                    : active ? "active" : core.lasersEnabled() ? "no power" : "off (network)");
             list.add(device);
         }
         // Hoofdstuk 38: de laserbruggen, één regel per brug. "no power": hij wil er liggen, maar er is te weinig stroom.
@@ -460,8 +465,9 @@ public final class SecurityDevices {
                 return state.is(ModBlocks.LASER_BRIDGE.get()) && state.getValue(LaserBridgeBlock.POWERED);
             });
             CompoundTag device = position("bridge", bridge);
-            device.putString("name", "Laser bridge (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)"));
-            device.putBoolean("on", on);
+            device.putString("name", nameOf(core, members,
+                    "Laser bridge (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)")));
+            device.putBoolean("on", LaserBridgeBlock.wantsOn(level, bridge));
             device.putString("st", on ? "active" : LaserBridgeBlock.wantsOn(level, bridge) ? "no power" : "retracted");
             list.add(device);
         }
@@ -553,6 +559,41 @@ public final class SecurityDevices {
             }
         }
         return count;
+    }
+
+    /**
+     * De naam van een laserpoort of laserbrug (hoofdstuk 39): de naam die de eigenaar van de kern hem in zijn I.M.T-lijst
+     * gaf (zoals de server hem kent, zie LogicDevices), of anders {@code fallback}.
+     */
+    private static String nameOf(SecurityCoreBlockEntity core, List<BlockPos> members, String fallback) {
+        for (BlockPos member : members) {
+            List<String> names = core.logic().namesAt(member, -1);
+            if (!names.isEmpty()) {
+                return names.getFirst();
+            }
+        }
+        return fallback;
+    }
+
+    /**
+     * Een apparaat aan of uit vanaf de desktop (de knop in Devices): een torentje, of (hoofdstuk 39) een laserpoort of
+     * laserbrug. Alleen als het echt bij deze kern hoort. Een poort of brug schakelt zoals I.M.T hem op zijn naam
+     * schakelt (dus "when turned_on(...)" hoort het ook). Geeft een foutmelding terug, of null als het lukte.
+     */
+    public static @Nullable String switchDevice(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, boolean on) {
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof TurretBlock) {
+            return switchTurret(level, core, pos, on);
+        }
+        boolean gate = state.is(ModBlocks.LASER_EMITTER.get());
+        boolean bridge = level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity entity && belongs(core, entity);
+        if (!(gate || bridge) || !SecurityCores.linkedTo(level, core, pos)) {
+            return "that device is not part of this network";
+        }
+        com.senne.imttech.redstone.ImtRedstone.switchAt(level, pos, -1,
+                on ? com.senne.imttech.redstone.ImtRedstone.Op.ON : com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
+        com.senne.imttech.lan.CableTraffic.signal(level, pos, false);
+        return null;
     }
 
     /** De soort in Devices van een apparaat dat deze trigger start: reader, panel, (hoofdstuk 38) button of lever. */

@@ -23,8 +23,8 @@ public record LaserActionPayload(BlockPos pos, Op op, int value) implements Cust
     public enum Op {
         /** De kleur van het veld. */
         COLOR,
-        /** Omkeren: redstone aan = laser uit. */
-        INVERT,
+        /** Aan of uit (hoofdstuk 39; vroeger stond hier omkeren, toen redstone hem nog schakelde): 1 = aan, 0 = uit. */
+        SWITCH,
         /** Het veld een kwartslag draaien: liggend in plaats van staand. */
         TURN,
         /**
