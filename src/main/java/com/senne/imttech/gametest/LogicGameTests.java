@@ -120,6 +120,46 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /**
+     * Hoofdstuk 38: de netwerkknop en -hendel in de taal. {@code when button(...)} en {@code when lever(...)} lezen en
+     * schrijven netjes terug; {@code lever.on} werkt alleen in een when lever, {@code player.name} ook na een knop of
+     * hendel, en accept() niet (een knop heeft geen lampje). Een oude def die lever heette, krijgt een andere naam, en
+     * Ctrl+Spatie kent de nieuwe triggers en lever.on.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_buttons_and_levers(GameTestHelper helper) {
+        String code = """
+                when button("Doorbell"):
+                    say(player.name + " is at the door")
+
+                when lever("Night mode"):
+                    if lever.on:
+                        on("Vault lasers")
+                    else:
+                        off("Vault lasers")
+                """;
+        String printed = ScriptPrinter.print(ScriptParser.parse(code));
+        check(printed.equals(code), "Knop en hendel terugschrijven gaf andere code:\n" + printed);
+        expectError("when button(\"Doorbell\"):\n    if lever.on:\n        on(\"Lamp\")", 2, "lever.on only works inside when lever(...)");
+        expectError("when button(\"Doorbell\"):\n    accept()", 2, "only works inside when keycard");
+        expectError("when every(5):\n    say(player.name)", 2, "button(...) or lever(...)");
+        expectError("when lever(Night):\n    on(\"Lamp\")", 1, "Put names between quotes");
+        // Een oude def die lever heette.
+        LogicGraph old = new LogicGraph();
+        LogicGraph.Node def = old.add(Op.DEF, 0, 0);
+        def.text = "lever";
+        LogicGraph.Node every = old.add(Op.EVERY, 0, 40);
+        LogicGraph.Node call = old.add(Op.CALL, 100, 40);
+        call.text = "lever";
+        every.next = call.id;
+        check(old.renameReservedDefs() && def.text.equals("lever_1") && call.text.equals("lever_1"),
+                "De def lever kreeg geen andere naam: " + def.text + " / " + call.text);
+        expectSuggestions("when |", List.of("button(\"...\"):", "lever(\"...\"):"), List.of());
+        expectSuggestions("when lever(\"Night mode\"):\n    if |", List.of("lever.on", "player.name"), List.of("card.valid", "code"));
+        expectSuggestions("when button(\"Doorbell\"):\n    if |", List.of("player.name"), List.of("lever.on"));
+        helper.succeed();
+    }
+
     private static void expectError(String code, int line, String part) {
         try {
             ScriptParser.parse(code);

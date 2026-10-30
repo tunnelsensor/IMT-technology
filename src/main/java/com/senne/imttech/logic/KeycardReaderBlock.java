@@ -49,6 +49,11 @@ public class KeycardReaderBlock extends InputDeviceBlock {
         return "Reader";
     }
 
+    @Override
+    public com.senne.imttech.logic.program.Op trigger() {
+        return com.senne.imttech.logic.program.Op.KEYCARD;
+    }
+
     /** Hoofdstuk 38: stroom die de lezer elke twee seconden gebruikt (zonder stroom leest hij geen kaarten). */
     @Override
     public float upkeep() {

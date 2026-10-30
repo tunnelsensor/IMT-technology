@@ -210,6 +210,11 @@ public final class ModItems {
             ModBlocks.KEYCARD_READER, new Item.Properties());
     public static final DeferredItem<BlockItem> CODE_PANEL = ITEMS.registerSimpleBlockItem("code_panel",
             ModBlocks.CODE_PANEL, new Item.Properties());
+    /** De netwerkknop en -hendel (hoofdstuk 38): ze starten je diagram, via een netwerkkabel. */
+    public static final DeferredItem<BlockItem> NETWORK_BUTTON = ITEMS.registerSimpleBlockItem("network_button",
+            ModBlocks.NETWORK_BUTTON, new Item.Properties());
+    public static final DeferredItem<BlockItem> NETWORK_LEVER = ITEMS.registerSimpleBlockItem("network_lever",
+            ModBlocks.NETWORK_LEVER, new Item.Properties());
     /** De Bypass Kit (hoofdstuk 12): een keycardlezer of codepaneel hacken met een minigame. */
     public static final DeferredItem<com.senne.imttech.bypass.BypassKitItem> BYPASS_KIT = ITEMS.registerItem("bypass_kit",
             com.senne.imttech.bypass.BypassKitItem::new,

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "minecraft:lever"
+    },
+    {
+      "item": "imttech:computer_chip"
+    },
+    {
+      "item": "imttech:network_cable"
+    }
+  ],
+  "result": {
+    "id": "imttech:network_lever"
+  }
+}

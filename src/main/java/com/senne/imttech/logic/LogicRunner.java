@@ -73,13 +73,23 @@ public final class LogicRunner {
      */
     public record Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
                           boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
-                          com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups) {
+                          com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups,
+                          boolean leverOn) {
         /**
          * {@code cardGroups} (25 oktober): de groepen waar de kaart zelf in zit, zoals de kern ze kent toen hij gelezen
-         * werd (een nagemaakte kaart: de groep die de hacker koos). Leeg voor een ongeldige kaart.
+         * werd (een nagemaakte kaart: de groep die de hacker koos). Leeg voor een ongeldige kaart. {@code leverOn}
+         * (hoofdstuk 38): na een netwerkhendel, of hij nu aan staat ({@code lever.on}).
          */
         public Context {
             cardGroups = List.copyOf(cardGroups);
+        }
+
+        /** Zonder hendel. */
+        public Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
+                       boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
+                       com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups) {
+            this(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training, cardGroups,
+                    false);
         }
 
         /** Zonder kaartgroepen. */
@@ -440,6 +450,7 @@ public final class LogicRunner {
                     case "card.valid" -> context.cardValid();
                     case "card.name" -> context.card() == null ? "" : context.card().label();
                     case "code" -> context.code();
+                    case "lever.on" -> context.leverOn();
                     case "player.name" -> context.playerName();
                     case "player.trusted" -> context.trusted();
                     case "player.owner" -> context.owner();

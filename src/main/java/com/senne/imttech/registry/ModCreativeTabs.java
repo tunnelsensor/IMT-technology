@@ -116,6 +116,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.KEYCARD.get());
                 output.accept(ModItems.KEYCARD_READER.get());
                 output.accept(ModItems.CODE_PANEL.get());
+                output.accept(ModItems.NETWORK_BUTTON.get());
+                output.accept(ModItems.NETWORK_LEVER.get());
                 output.accept(ModItems.LASER_EMITTER.get());
                 output.accept(ModItems.LASER_BRIDGE.get());
                 output.accept(ModItems.DOME_GENERATOR.get());

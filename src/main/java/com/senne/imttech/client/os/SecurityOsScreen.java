@@ -369,6 +369,13 @@ public class SecurityOsScreen extends Screen {
     public void tourSwitchPorts() {
         openApp(App.DEVICES);
         devices.tourPorts();
+        devices.tourScroll("NETWORK SWITCHES");
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 38): de app Devices, naar beneden tot dit kopje ("BUTTONS"). */
+    public void tourDevicesAt(String header) {
+        openApp(App.DEVICES);
+        devices.tourScroll(header);
     }
 
     /** Alleen voor de screenshot-rondleiding: de app Zone, met deze kubus gekozen. */

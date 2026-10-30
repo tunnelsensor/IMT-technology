@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * Wat een keycardlezer en een codepaneel samen hebben: een plat kastje aan de muur met een lampje
  * (zie InputLight) en een naam (InputDeviceBlockEntity). Ze geven een "trigger" aan de server van
  * de beveiligingskern in wiens gebied ze hangen; wat er dan gebeurt, staat in je diagram.
+ * Sinds hoofdstuk 38 horen ook de netwerkknop en -hendel erbij (zie NetworkControlBlock).
  */
 public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implements EntityBlock,
         com.senne.imttech.energy.PowerConnectable, com.senne.imttech.lan.NetworkConnectable,
@@ -64,6 +65,12 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
 
     /** Het begin van de standaardnaam: "Reader" of "Panel" (daarna komt een nummer). */
     protected abstract String defaultNamePrefix();
+
+    /**
+     * De trigger in je diagram die dit apparaat start: {@code keycard}, {@code codepanel} of (hoofdstuk 38)
+     * {@code button} en {@code lever}.
+     */
+    public abstract com.senne.imttech.logic.program.Op trigger();
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

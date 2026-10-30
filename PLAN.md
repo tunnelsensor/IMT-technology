@@ -3853,7 +3853,23 @@ Ik bouw het in deze volgorde, één stap per commit:
       anders kon iemand met een kabel naar zijn eigen kern jouw brug bedienen (de aan/uit-knop komt in hoofdstuk 39). Met
       `[network] required = false` staan de bruggen in het gebied van de kern erin. **Test**:
       `laser_bridges_join_the_network`. 357 tests, allemaal groen.
-- [ ] **8. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)
+- [x] **8. De netwerkhendel en de netwerkknop** — jouw wens: "netwerk lever en buttons, deze hangen ook aan een kabel
+      (power en netwerk) en kunnen net zoals een redstone button of lever worden gebruikt maar dan via de logic in de
+      desktop". Twee nieuwe blokken (tabblad Security; recept: een stenen knop of een hendel + Computer Chip + Network
+      Cable): de **Network Button** en de **Network Lever**, aan de muur, op de vloer of aan het plafond, zoals een gewone
+      knop of hendel. Ze geven geen redstone: met een netwerkkabel naar de desktop en een beetje stroom (`buttonUpkeep` en
+      `leverUpkeep`, elk 0.5 per twee seconden onder `[power]`; een PoE-kabel geeft allebei) starten ze je diagram:
+      `when button("Doorbell"):` (de knop duikt een seconde in) en `when lever("Night mode"):` met `lever.on` (hoe hij nu
+      staat). Daarin werken ook `player.name`, `player.trusted` en `player.owner`, en `is_on("Night mode")` leest een
+      hendel altijd, ook in een andere trigger. Zonder stroom, kabel of draaiende server gaat hij wel om (het is een echte
+      knop), maar de server hoort niets: de speler hoort waarom. Ze heten "Button 1" en "Lever 1"; hernoemen met sneak +
+      rechtsklik met een lege hand, of in **Devices** (groepen BUTTONS en LEVERS, een hendel met "on" of "off"). De app
+      Logic kent ze overal: Help (START WITH, en de lijst READERS, PANELS, BUTTONS, LEVERS), Ctrl+Spatie en de blokjes.
+      In het logboek: "Senne pressed Doorbell", "Senne switched Night mode on". **Mijn invulling**: `accept()` en `deny()`
+      blijven voor lezers en panelen (een knop heeft geen lampje); de Bypass Kit doet niets op een knop of hendel (met de
+      kit in je hand druk je gewoon); een oude def die `button` of `lever` heette, krijgt vanzelf een andere naam
+      (`lever_1`). **Tests**: `network_button_and_lever_start_diagrams`, `logic_buttons_and_levers`. 359 tests, allemaal
+      groen. **Screenshot** `-Ponly=network`: `nw08_controls`.
 - [ ] **9. Signalen en stroom die je ziet lopen**
 - [ ] **10. LEESMIJ, showcase en screenshots**
 

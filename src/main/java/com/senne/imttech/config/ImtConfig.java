@@ -333,6 +333,12 @@ public final class ImtConfig {
         /** Stroom die een Network Switch elke twee seconden haalt (zonder: geen netwerk door de switch). */
         @Tunable("Grid energy a network switch uses every two seconds (without it, no network passes through it)")
         public static float NETWORK_SWITCH_UPKEEP = 3.0f;
+        /** Stroom die een netwerkknop elke twee seconden haalt (zonder: de server hoort hem niet). */
+        @Tunable("Grid energy a network button uses every two seconds (without it, the server does not hear it)")
+        public static float BUTTON_UPKEEP = 0.5f;
+        /** Hetzelfde voor een netwerkhendel. */
+        @Tunable("Grid energy a network lever uses every two seconds (without it, the server does not hear it)")
+        public static float LEVER_UPKEEP = 0.5f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */

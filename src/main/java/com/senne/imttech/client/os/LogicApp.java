@@ -414,7 +414,7 @@ final class LogicApp {
         setKind(newKind);
         nameBox().setValue(base + number);
         loadedName = "";
-        String reader = firstInput(false);
+        String reader = firstInput(Op.KEYCARD);
         String code = newKind == ProgramKind.ROBOT
                 ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen started:\n    pass\n"
                 : newKind == ProgramKind.DRONE
@@ -493,17 +493,25 @@ final class LogicApp {
         for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
             outputs.add(tag.getAsString());
         }
+        // De lezers, panelen, knoppen en hendels, per trigger die ze starten (keycard, codepanel, button, lever).
         List<String> readers = new ArrayList<>();
         List<String> panels = new ArrayList<>();
+        List<String> buttons = new ArrayList<>();
+        List<String> levers = new ArrayList<>();
         for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
             CompoundTag input = (CompoundTag) element;
-            (input.getBoolean("p") ? panels : readers).add(input.getString("n"));
+            switch (input.getString("t")) {
+                case "codepanel" -> panels.add(input.getString("n"));
+                case "button" -> buttons.add(input.getString("n"));
+                case "lever" -> levers.add(input.getString("n"));
+                default -> readers.add(input.getString("n"));
+            }
         }
         List<String> robots = new ArrayList<>();
         for (Tag element : info().getList("robots", Tag.TAG_COMPOUND)) {
             robots.add(((CompoundTag) element).getString("n"));
         }
-        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups());
+        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups(), buttons, levers);
     }
 
     /** De keycard-groepen van dit netwerk (25 oktober), op alfabet. */
@@ -515,10 +523,11 @@ final class LogicApp {
         return groups;
     }
 
-    private @Nullable String firstInput(boolean panel) {
+    /** De naam van het eerste apparaat dat deze trigger start (een lezer bij keycard, ...), of null. */
+    private @Nullable String firstInput(Op trigger) {
         for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
             CompoundTag input = (CompoundTag) element;
-            if (input.getBoolean("p") == panel) {
+            if (input.getString("t").equals(trigger.code())) {
                 return input.getString("n");
             }
         }
@@ -677,8 +686,10 @@ final class LogicApp {
 
     private List<HelpLine> helpLines() {
         List<HelpLine> lines = new ArrayList<>();
-        String reader = firstInput(false);
-        String panel = firstInput(true);
+        String reader = firstInput(Op.KEYCARD);
+        String panel = firstInput(Op.CODEPANEL);
+        String button = firstInput(Op.BUTTON);
+        String lever = firstInput(Op.LEVER);
         List<String> outputs = new ArrayList<>();
         for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
             outputs.add(tag.getAsString());
@@ -689,6 +700,8 @@ final class LogicApp {
         if (server) {
         lines.add(item("keycard(...)", "when keycard(\"" + (reader == null ? "Reader 1" : reader) + "\"):\n    if card.valid:\n        accept()\n    else:\n        deny()\n", Op.KEYCARD));
         lines.add(item("codepanel(...)", "when codepanel(\"" + (panel == null ? "Panel 1" : panel) + "\"):\n    if code == \"1234\":\n        accept()\n    else:\n        deny()\n", Op.CODEPANEL));
+        lines.add(item("button(...)", "when button(\"" + (button == null ? "Button 1" : button) + "\"):\n    say(player.name + \" pressed the button\")\n", Op.BUTTON));
+        lines.add(item("lever(...)", "when lever(\"" + (lever == null ? "Lever 1" : lever) + "\"):\n    if lever.on:\n        on(\"" + device + "\")\n    else:\n        off(\"" + device + "\")\n", Op.LEVER));
         lines.add(item("turned_on(...)", "when turned_on(\"" + device + "\"):\n    pass\n", Op.TURNED_ON));
         lines.add(item("turned_off(...)", "when turned_off(\"" + device + "\"):\n    pass\n", Op.TURNED_OFF));
         lines.add(item("message(...)", "when message(\"intruder\"):\n    alarm(\"Intruder seen by \" + sender.name)\n", Op.MESSAGE));
@@ -832,16 +845,23 @@ final class LogicApp {
             lines.add(new HelpLine(name, quoted(name), "a relay, laser, dome, turret or cabinet switch", 0x9ED8FF, null));
         }
         if (!server) {
-            return lines; // lezers en panelen horen bij de server
+            return lines; // lezers, panelen, knoppen en hendels horen bij de server
         }
-        lines.add(header("READERS AND PANELS"));
+        lines.add(header("READERS, PANELS, BUTTONS, LEVERS"));
         for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
             CompoundTag input = (CompoundTag) element;
-            lines.add(new HelpLine((input.getBoolean("p") ? "[panel] " : "[reader] ") + input.getString("n"),
-                    quoted(input.getString("n")), "click R to rename it", HudStyle.CYAN, input));
+            String tag = switch (input.getString("t")) {
+                case "codepanel" -> "[panel] ";
+                case "button" -> "[button] ";
+                case "lever" -> "[lever] ";
+                default -> "[reader] ";
+            };
+            lines.add(new HelpLine(tag + input.getString("n"), quoted(input.getString("n")), "click R to rename it",
+                    HudStyle.CYAN, input));
         }
         if (info().getList("inputs", Tag.TAG_COMPOUND).isEmpty()) {
-            lines.add(new HelpLine("(none in this network yet)", null, "Place a Keycard Reader or Code Panel near the core", OsDraw.GREY, null));
+            lines.add(new HelpLine("(none in this network yet)", null,
+                    "Connect a reader, panel, button or lever to the core with a Network Cable", OsDraw.GREY, null));
         }
         return lines;
     }

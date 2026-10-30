@@ -82,6 +82,8 @@ public sealed interface Expr {
         CARD_VALID("card.valid", Type.BOOL, "true if this network wrote the card and it is not blocked", Op.KEYCARD),
         CARD_NAME("card.name", Type.TEXT, "the name written on the card", Op.KEYCARD),
         CODE("code", Type.TEXT, "the code that was typed, as text (use quotes: code == \"4321\")", Op.CODEPANEL),
+        // Na when lever(...) (hoofdstuk 38): hoe de hendel nu staat.
+        LEVER_ON("lever.on", Type.BOOL, "true if the lever was just switched on, false if it was switched off", Op.LEVER),
         PLAYER_NAME("player.name", Type.TEXT, "the name of the player", null),
         PLAYER_TRUSTED("player.trusted", Type.BOOL, "true for the owner, their team and trusted players", null),
         PLAYER_OWNER("player.owner", Type.BOOL, "true if the player owns this network", null),
@@ -167,12 +169,12 @@ public sealed interface Expr {
         }
 
         /**
-         * Mag dit gegeven na deze trigger? (player.* alleen na een lezer of paneel; trainee, lives en hits na elke
-         * trainingstrigger; null = in een def: alles.)
+         * Mag dit gegeven na deze trigger? (player.* alleen na een lezer, paneel, knop of hendel; trainee, lives en hits
+         * na elke trainingstrigger; null = in een def: alles.)
          */
         public boolean allowedAfter(@Nullable Op trigger) {
             if (name.startsWith("player.")) {
-                return trigger == null || trigger.hasSourceDevice();
+                return trigger == null || trigger.fromInput();
             }
             if (this == TRAINEE || this == LIVES || this == HITS) {
                 return trigger == null || trigger == Op.TRAINING_STARTED || trigger == Op.TRAINING_HIT || trigger == Op.TRAINING_ENDED
@@ -183,6 +185,9 @@ public sealed interface Expr {
 
         /** Waar dit gegeven wel werkt, voor de foutmeldingen: "when keycard(...)". Null = overal. */
         public @Nullable String where() {
+            if (name.startsWith("player.")) {
+                return "when keycard(...), codepanel(...), button(...) or lever(...)";
+            }
             if (this == TRAINEE || this == LIVES || this == HITS) {
                 return "when training_started(...), training_hit(...), training_ended(...) or (in a Training End block) when trainee_hit:";
             }

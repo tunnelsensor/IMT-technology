@@ -702,6 +702,119 @@ public final class NetworkGameTests {
         });
     }
 
+    // ================================================================ Stap 8: de netwerkknop en -hendel
+
+    /**
+     * Jouw wens: "netwerk lever en buttons ... kunnen net zoals een redstone button of lever worden gebruikt maar dan via
+     * de logic in de desktop". Een hendel met een netwerkkabel en stroom start {@code when lever(...)} met {@code lever.on};
+     * een knop start {@code when button(...)} (met player.name, en {@code is_on("Night mode")} leest de hendel). Een
+     * hendel zonder stroom of een knop zonder kabel gaat wel om (het zijn echte knoppen), maar de server hoort niets. De
+     * knop komt na een seconde vanzelf terug. In Devices staan ze bij BUTTONS en LEVERS.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 140, batch = "lan")
+    public static void network_button_and_lever_start_diagrams(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 8), "lan-ctl-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos rack = new BlockPos(2, 3, 3); // tegen de kern aan: op het netwerk zonder kabel
+        ImtTechGameTests.placeServer(helper, rack, core);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(9, 3, 2));
+        BlockPos doorbell = placeControl(helper, ModBlocks.NETWORK_BUTTON.get(), new BlockPos(5, 3, 3), "Doorbell");
+        generator(helper, doorbell.south());
+        BlockPos night = placeControl(helper, ModBlocks.NETWORK_LEVER.get(), new BlockPos(7, 3, 3), "Night mode");
+        generator(helper, night.south());
+        BlockPos dark = placeControl(helper, ModBlocks.NETWORK_LEVER.get(), new BlockPos(9, 3, 3), "Dark lever"); // geen stroom
+        BlockPos far = placeControl(helper, ModBlocks.NETWORK_BUTTON.get(), new BlockPos(13, 3, 8), "Far button"); // geen kabel
+        generator(helper, far.south());
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, rack, core);
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            String code = """
+                    when button("Doorbell"):
+                        log("bell by " + player.name)
+                        if is_on("Night mode"):
+                            log("bell at night")
+
+                    when lever("Night mode"):
+                        if lever.on:
+                            log("night on")
+                        else:
+                            log("night off")
+
+                    when lever("Dark lever"):
+                        log("dark lever")
+
+                    when button("Far button"):
+                        log("far button")
+                    """;
+            CompoundTag args = new CompoundTag();
+            args.putString("old", "");
+            args.putString("name", "Controls");
+            args.put("graph", com.senne.imttech.logic.program.GraphConverter.toGraph(
+                    com.senne.imttech.logic.program.ScriptParser.parse(code), null).save());
+            args.putString("source", code);
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                    new com.senne.imttech.network.OsActionPayload(coreAbs, "logic_save", args));
+            check(core.logic().program("Controls") != null, "Het diagram met knop en hendel werd niet bewaard");
+            use(helper, owner, night);
+            use(helper, owner, dark);
+            use(helper, owner, far);
+            helper.assertBlockProperty(night, com.senne.imttech.logic.NetworkLeverBlock.ON, true);
+            helper.assertBlockProperty(dark, com.senne.imttech.logic.NetworkLeverBlock.ON, true);
+            helper.assertBlockProperty(far, com.senne.imttech.logic.NetworkButtonBlock.PRESSED, true);
+        });
+        helper.runAfterDelay(25, () -> {
+            check(logged(core, "night on"), "De hendel startte when lever(...) niet (of lever.on klopte niet)");
+            check(!logged(core, "dark lever"), "Een hendel zonder stroom werd toch gehoord");
+            check(!logged(core, "far button"), "Een knop zonder netwerkkabel werd toch gehoord");
+            use(helper, owner, doorbell);
+            helper.assertBlockProperty(doorbell, com.senne.imttech.logic.NetworkButtonBlock.PRESSED, true);
+        });
+        helper.runAfterDelay(50, () -> {
+            check(logged(core, "bell by lan-ctl-owner"), "De knop startte when button(...) niet (met player.name)");
+            check(logged(core, "bell at night"), "is_on(\"Night mode\") las de hendel niet");
+            helper.assertBlockProperty(doorbell, com.senne.imttech.logic.NetworkButtonBlock.PRESSED, false);
+            use(helper, owner, night);
+            helper.assertBlockProperty(night, com.senne.imttech.logic.NetworkLeverBlock.ON, false);
+        });
+        helper.runAfterDelay(75, () -> {
+            check(logged(core, "night off"), "Terugzetten gaf geen lever.on = false");
+            SecurityDevices.forget(level, core);
+            String kinds = "";
+            for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {
+                CompoundTag device = (CompoundTag) tag;
+                if (device.getString("name").equals("Doorbell") || device.getString("name").equals("Night mode")) {
+                    kinds += device.getString("k") + " ";
+                }
+            }
+            check(kinds.contains("button") && kinds.contains("lever"), "Devices toont de knop en de hendel niet: " + kinds);
+            helper.succeed();
+        });
+    }
+
+    /** Een netwerkknop of -hendel op de vloer bij {@code pos} (van niemand), met deze naam. */
+    private static BlockPos placeControl(GameTestHelper helper, net.minecraft.world.level.block.Block block, BlockPos pos,
+                                         String name) {
+        helper.setBlock(pos, block.defaultBlockState().setValue(com.senne.imttech.logic.NetworkControlBlock.FACE, AttachFace.FLOOR));
+        ((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(pos)).setName(name);
+        return pos;
+    }
+
+    /** Rechtsklikken met een lege hand (zonder sneak). */
+    private static void use(GameTestHelper helper, ServerPlayer player, BlockPos pos) {
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        BlockPos abs = helper.absolutePos(pos);
+        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), player,
+                new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(abs), Direction.UP, abs, false));
+    }
+
+    /** Staat deze tekst als regel van een diagram in het logboek van de kern? */
+    private static boolean logged(SecurityCoreBlockEntity core, String text) {
+        return core.log().entries().stream().anyMatch(entry -> entry.type() == com.senne.imttech.security.os.EventLog.Type.LOGIC
+                && entry.text().equals(text));
+    }
+
     /** Een brugzender die naar het oosten kijkt, van deze speler. */
     private static void placeBridge(GameTestHelper helper, BlockPos pos, ServerPlayer owner) {
         helper.setBlock(pos, ModBlocks.LASER_BRIDGE.get().defaultBlockState().setValue(LaserBridgeBlock.FACING, Direction.EAST));

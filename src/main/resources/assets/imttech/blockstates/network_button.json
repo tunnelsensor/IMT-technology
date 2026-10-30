@@ -1,0 +1,94 @@
+{
+  "variants": {
+    "face=wall,facing=north,pressed=false": {
+      "model": "imttech:block/network_button_wall"
+    },
+    "face=wall,facing=north,pressed=true": {
+      "model": "imttech:block/network_button_wall_pressed"
+    },
+    "face=wall,facing=east,pressed=false": {
+      "model": "imttech:block/network_button_wall",
+      "y": 90
+    },
+    "face=wall,facing=east,pressed=true": {
+      "model": "imttech:block/network_button_wall_pressed",
+      "y": 90
+    },
+    "face=wall,facing=south,pressed=false": {
+      "model": "imttech:block/network_button_wall",
+      "y": 180
+    },
+    "face=wall,facing=south,pressed=true": {
+      "model": "imttech:block/network_button_wall_pressed",
+      "y": 180
+    },
+    "face=wall,facing=west,pressed=false": {
+      "model": "imttech:block/network_button_wall",
+      "y": 270
+    },
+    "face=wall,facing=west,pressed=true": {
+      "model": "imttech:block/network_button_wall_pressed",
+      "y": 270
+    },
+    "face=floor,facing=north,pressed=false": {
+      "model": "imttech:block/network_button_floor"
+    },
+    "face=floor,facing=north,pressed=true": {
+      "model": "imttech:block/network_button_floor_pressed"
+    },
+    "face=floor,facing=east,pressed=false": {
+      "model": "imttech:block/network_button_floor",
+      "y": 90
+    },
+    "face=floor,facing=east,pressed=true": {
+      "model": "imttech:block/network_button_floor_pressed",
+      "y": 90
+    },
+    "face=floor,facing=south,pressed=false": {
+      "model": "imttech:block/network_button_floor",
+      "y": 180
+    },
+    "face=floor,facing=south,pressed=true": {
+      "model": "imttech:block/network_button_floor_pressed",
+      "y": 180
+    },
+    "face=floor,facing=west,pressed=false": {
+      "model": "imttech:block/network_button_floor",
+      "y": 270
+    },
+    "face=floor,facing=west,pressed=true": {
+      "model": "imttech:block/network_button_floor_pressed",
+      "y": 270
+    },
+    "face=ceiling,facing=north,pressed=false": {
+      "model": "imttech:block/network_button_ceiling"
+    },
+    "face=ceiling,facing=north,pressed=true": {
+      "model": "imttech:block/network_button_ceiling_pressed"
+    },
+    "face=ceiling,facing=east,pressed=false": {
+      "model": "imttech:block/network_button_ceiling",
+      "y": 90
+    },
+    "face=ceiling,facing=east,pressed=true": {
+      "model": "imttech:block/network_button_ceiling_pressed",
+      "y": 90
+    },
+    "face=ceiling,facing=south,pressed=false": {
+      "model": "imttech:block/network_button_ceiling",
+      "y": 180
+    },
+    "face=ceiling,facing=south,pressed=true": {
+      "model": "imttech:block/network_button_ceiling_pressed",
+      "y": 180
+    },
+    "face=ceiling,facing=west,pressed=false": {
+      "model": "imttech:block/network_button_ceiling",
+      "y": 270
+    },
+    "face=ceiling,facing=west,pressed=true": {
+      "model": "imttech:block/network_button_ceiling_pressed",
+      "y": 270
+    }
+  }
+}

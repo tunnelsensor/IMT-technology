@@ -803,7 +803,13 @@ final class BlockCanvas {
             return "Name (counts, like i)";
         }
         return switch (op.textArg()) {
-            case DEVICE -> op == Op.KEYCARD ? "Reader" : op == Op.CODEPANEL ? "Panel" : "Device";
+            case DEVICE -> switch (op) {
+                case KEYCARD -> "Reader";
+                case CODEPANEL -> "Panel";
+                case BUTTON -> "Button";
+                case LEVER -> "Lever";
+                default -> "Device";
+            };
             case TEXT -> op == Op.ORDERED ? "Order" : "Message";
             case ROBOT -> "Robot";
             case NAME -> op == Op.DEF ? "Name (letters, digits, _)" : "Def to use";
@@ -812,13 +818,13 @@ final class BlockCanvas {
         };
     }
 
-    /** De namen die bij dit blokje passen: lezers, panelen, of je apparaten. */
+    /** De namen die bij dit blokje passen: lezers, panelen, knoppen, hendels, of je apparaten. */
     private List<String> suggestions(Op op) {
         List<String> names = new ArrayList<>();
-        if (op == Op.KEYCARD || op == Op.CODEPANEL) {
+        if (op.fromInput()) {
             for (Tag element : info.get().getList("inputs", Tag.TAG_COMPOUND)) {
                 CompoundTag input = (CompoundTag) element;
-                if (input.getBoolean("p") == (op == Op.CODEPANEL)) {
+                if (input.getString("t").equals(op.code())) {
                     names.add(input.getString("n"));
                 }
             }

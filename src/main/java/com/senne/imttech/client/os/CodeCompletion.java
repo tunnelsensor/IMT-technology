@@ -31,11 +31,17 @@ public final class CodeCompletion {
     private CodeCompletion() {}
 
     /**
-     * De namen die de server stuurde: je apparaten, lezers, panelen, (hoofdstuk 23) robots en (25 oktober) je
-     * keycard-groepen.
+     * De namen die de server stuurde: je apparaten, lezers, panelen, (hoofdstuk 23) robots, (25 oktober) je
+     * keycard-groepen en (hoofdstuk 38) je netwerkknoppen en -hendels.
      */
     public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots,
-                       List<String> cardGroups) {
+                       List<String> cardGroups, List<String> buttons, List<String> levers) {
+        /** Zonder netwerkknoppen en -hendels. */
+        public Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots,
+                    List<String> cardGroups) {
+            this(outputs, readers, panels, kind, robots, cardGroups, List.of(), List.of());
+        }
+
         /** Voor een diagram op de server. */
         public Data(List<String> outputs, List<String> readers, List<String> panels) {
             this(outputs, readers, panels, ProgramKind.SERVER, List.of());
@@ -99,17 +105,24 @@ public final class CodeCompletion {
             List<String> source = switch (function) {
                 case "keycard" -> data.readers();
                 case "codepanel" -> data.panels();
-                case "on", "off", "toggle", "pulse", "turned_on", "turned_off", "is_on" -> data.outputs();
+                case "button" -> data.buttons();
+                case "lever" -> data.levers();
+                case "on", "off", "toggle", "pulse", "turned_on", "turned_off" -> data.outputs();
+                // is_on kent ook je netwerkhendels (hoofdstuk 38).
+                case "is_on" -> concat(data.outputs(), data.levers());
                 case "order", "activate", "deactivate" -> data.robots();
                 case "in_group" -> data.cardGroups();
                 default -> List.of();
             };
             String what = function.equals("keycard") ? "a keycard reader" : function.equals("codepanel") ? "a code panel"
+                    : function.equals("button") ? "a network button" : function.equals("lever") ? "a network lever"
                     : data.robots() == source ? "a guard robot in this network's area"
                     : function.equals("in_group") ? "a keycard group"
                     : "a relay, laser, dome, turret or cabinet switch";
             for (String name : source) {
-                names.add(new Item(name, name, -1, what + " in this network", NAME));
+                String kind = function.equals("is_on") && data.levers().contains(name) && !data.outputs().contains(name)
+                        ? "a network lever" : what;
+                names.add(new Item(name, name, -1, kind + " in this network", NAME));
             }
             return new Result(quote + 1, filter(names, prefix), true);
         }
@@ -146,6 +159,8 @@ public final class CodeCompletion {
     private static void topLevel(List<Item> items, Data data) {
         String reader = first(data.readers(), "Reader 1");
         String panel = first(data.panels(), "Panel 1");
+        String button = first(data.buttons(), "Button 1");
+        String lever = first(data.levers(), "Lever 1");
         String device = first(data.outputs(), "Lamp");
         // Elke trigger die er is (zie Op): een nieuwe trigger staat hier vanzelf bij.
         for (Op op : Op.values()) {
@@ -153,8 +168,8 @@ public final class CodeCompletion {
                 continue;
             }
             boolean named = op.textArg() != Op.Arg.NONE;
-            String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel
-                    : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
+            String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel : op == Op.BUTTON ? button
+                    : op == Op.LEVER ? lever : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
             String label = "when " + (named ? op.code() + "(...)" : op.example()) + ":";
             String call = named ? op.code() + "(\"" + name + "\")" : op.example();
             items.add(new Item(label, "when " + call + ":\n    ", -1, op.help(), TRIGGER));
@@ -369,6 +384,17 @@ public final class CodeCompletion {
 
     private static String first(List<String> names, String fallback) {
         return names.isEmpty() ? fallback : names.getFirst();
+    }
+
+    /** Twee lijstjes namen achter elkaar, zonder dubbele (hoofdletters maken niet uit). */
+    private static List<String> concat(List<String> first, List<String> second) {
+        List<String> all = new ArrayList<>(first);
+        for (String name : second) {
+            if (all.stream().noneMatch(name::equalsIgnoreCase)) {
+                all.add(name);
+            }
+        }
+        return all;
     }
 
     /**

@@ -1007,6 +1007,40 @@ def light_switch_textures():
     save(img(16, 16, (110, 24, 24, 255)), "block/light_switch_led_off.png")
 
 
+def network_control_textures():
+    """
+    De netwerkknop en de netwerkhendel (hoofdstuk 38): een donker plaatje (zoals de keycardlezer) met een wit randje
+    onderaan (wit = het netwerk) en vier gouden puntjes in de hoeken; een wit kapje voor de knop met een cyaan stipje;
+    een stalen steeltje met een wit knopje voor de hendel; en het lampje van de hendel (aan: groen, uit: donkerrood).
+    Het plaatje zit in de modellen op x 5-10 en (aan de muur) y 4-11; de rest zie je alleen op de smalle randjes.
+    """
+    body = (40, 43, 50, 255)
+    edge = (22, 23, 27, 255)
+    white = (236, 239, 244, 255)
+    plate = img(16, 16, body)
+    d = ImageDraw.Draw(plate)
+    d.rectangle([5, 4, 10, 11], fill=body, outline=edge)
+    d.line([6, 10, 9, 10], fill=white)
+    px(plate, [(5, 4), (10, 4), (5, 11), (10, 11)], GOLD)
+    save(plate, "block/network_control_plate.png")
+
+    cap = img(16, 16, white)
+    d = ImageDraw.Draw(cap)
+    d.rectangle([6, 6, 9, 9], fill=white, outline=(176, 182, 192, 255))
+    px(cap, [(7, 7), (8, 8)], CYAN)
+    px(cap, [(8, 7), (7, 8)], (120, 226, 255, 255))
+    save(cap, "block/network_button_cap.png")
+
+    stick = img(16, 16, (150, 156, 166, 255))
+    ImageDraw.Draw(stick).line([0, 0, 15, 0], fill=(176, 182, 192, 255))
+    save(stick, "block/network_lever_stick.png")
+    knob = img(16, 16, white)
+    ImageDraw.Draw(knob).rectangle([0, 0, 15, 15], outline=(200, 205, 214, 255))
+    save(knob, "block/network_lever_knob.png")
+    save(img(16, 16, (80, 230, 120, 255)), "block/network_lever_led_on.png")
+    save(img(16, 16, (110, 24, 24, 255)), "block/network_lever_led_off.png")
+
+
 def block_powder_item():
     """
     Poeder (hoofdstuk 11): een hoopje fijn poeder met wat losse korrels. Lichtgrijs, want het spel
@@ -3656,6 +3690,7 @@ if __name__ == "__main__":
     compactor_textures()
     arc_lamp_textures()
     light_switch_textures()
+    network_control_textures()
     relay_textures()
     relay_inverted_textures()
     relay_emitter_textures()

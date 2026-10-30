@@ -100,11 +100,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.logic.ServerRackBlockEntity::new,
                             java.util.Set.of(ModBlocks.SERVER_RACK.get()), null));
 
-    /** Een keycardlezer of codepaneel: alleen zijn naam. */
+    /** Een keycardlezer, codepaneel of (hoofdstuk 38) netwerkknop of -hendel: zijn naam en eigenaar. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.logic.InputDeviceBlockEntity>> INPUT_DEVICE =
             BLOCK_ENTITIES.register("input_device",
                     () -> new BlockEntityType<>(com.senne.imttech.logic.InputDeviceBlockEntity::new,
-                            java.util.Set.of(ModBlocks.KEYCARD_READER.get(), ModBlocks.CODE_PANEL.get()), null));
+                            java.util.Set.of(ModBlocks.KEYCARD_READER.get(), ModBlocks.CODE_PANEL.get(),
+                                    ModBlocks.NETWORK_BUTTON.get(), ModBlocks.NETWORK_LEVER.get()), null));
 
     /** De laptop op een kern: van wie hij is, en wat er al getypt is (de voortgang van de hack). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.security.HackingLaptopBlockEntity>> HACKING_LAPTOP =

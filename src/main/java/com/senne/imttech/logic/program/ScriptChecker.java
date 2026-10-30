@@ -20,7 +20,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>een def die (via andere defs) zichzelf gebruikt: die zou nooit stoppen;</li>
  *   <li>een def die iets gebruikt dat niet past bij de when die hem gebruikt: {@code card.valid}
  *       alleen vanuit {@code when keycard(...)}, {@code code} alleen vanuit {@code when codepanel(...)},
- *       {@code player...}, {@code accept()} en {@code deny()} alleen vanuit een lezer of paneel.</li>
+ *       {@code accept()} en {@code deny()} alleen vanuit een lezer of paneel, {@code player...} ook vanuit een
+ *       netwerkknop of -hendel (hoofdstuk 38), en {@code lever.on} alleen vanuit {@code when lever(...)}.</li>
  * </ul>
  * Een fout hoort bij {@code ref}: een regel in de code, of een blokje in de blokjes.
  */

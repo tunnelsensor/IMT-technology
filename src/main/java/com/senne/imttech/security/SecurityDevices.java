@@ -40,8 +40,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Drones:</b> de beveiligingsdrones van deze kern. De schakelaar "Drones" laat ze landen.</li>
  *   <li><b>Camera's:</b> de bewakingscamera's in het gebied. De schakelaar "Cameras" zet ze uit
  *       (dan geven ze "NO SIGNAL").</li>
- *   <li><b>Keycardlezers en codepanelen:</b> met hun naam (die kun je daar ook veranderen), of de
- *       server ze hoort, en in hoeveel diagrammen ze staan.</li>
+ *   <li><b>Keycardlezers, codepanelen en (hoofdstuk 38) netwerkknoppen en -hendels:</b> met hun naam (die kun je
+ *       daar ook veranderen), of de server ze hoort, en in hoeveel diagrammen ze staan.</li>
  *   <li><b>Network Switches</b> (hoofdstuk 38): of ze stroom hebben, en hun zes poorten.</li>
  *   <li><b>Laserbruggen</b> (hoofdstuk 38): van de eigenaar van de kern, één regel per brug: ligt hij er of niet.</li>
  * </ul>
@@ -478,16 +478,19 @@ public final class SecurityDevices {
         }
         boolean server = com.senne.imttech.logic.LogicServer.stats(level, core).online();
         for (BlockPos pos : found.inputs()) {
-            if (!(level.getBlockEntity(pos) instanceof com.senne.imttech.logic.InputDeviceBlockEntity input)) {
+            BlockState state = level.getBlockState(pos);
+            if (!(level.getBlockEntity(pos) instanceof com.senne.imttech.logic.InputDeviceBlockEntity input)
+                    || !(state.getBlock() instanceof com.senne.imttech.logic.InputDeviceBlock block)) {
                 continue;
             }
-            boolean panel = level.getBlockState(pos).getBlock() instanceof com.senne.imttech.logic.CodePanelBlock;
-            CompoundTag device = position(panel ? "panel" : "reader", pos);
+            CompoundTag device = position(inputKind(block.trigger()), pos);
             device.putString("name", input.name());
             device.putString("st", !com.senne.imttech.lan.DevicePower.hasPower(level, pos) ? "no power"
                     : server ? "ready" : "no server");
-            device.putInt("uses", uses(core, panel ? com.senne.imttech.logic.program.Op.CODEPANEL
-                    : com.senne.imttech.logic.program.Op.KEYCARD, input.name()));
+            if (block instanceof com.senne.imttech.logic.NetworkLeverBlock) {
+                device.putBoolean("on", com.senne.imttech.logic.NetworkLeverBlock.isOn(state)); // hoe de hendel staat
+            }
+            device.putInt("uses", uses(core, block.trigger(), input.name()));
             list.add(device);
         }
         // Hoofdstuk 38: de Network Switches, met hun zes poorten in de volgorde van het deurtje (voor, achter, links,
@@ -548,6 +551,16 @@ public final class SecurityDevices {
             }
         }
         return count;
+    }
+
+    /** De soort in Devices van een apparaat dat deze trigger start: reader, panel, (hoofdstuk 38) button of lever. */
+    private static String inputKind(com.senne.imttech.logic.program.Op trigger) {
+        return switch (trigger) {
+            case CODEPANEL -> "panel";
+            case BUTTON -> "button";
+            case LEVER -> "lever";
+            default -> "reader";
+        };
     }
 
     private static CompoundTag position(String kind, BlockPos pos) {

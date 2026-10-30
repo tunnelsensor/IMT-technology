@@ -417,6 +417,87 @@ def light_switch():
     blockstate("light_switch", variants)
 
 
+def network_controls():
+    """
+    De netwerkknop en de netwerkhendel (hoofdstuk 38), net als de lichtschakelaar in drie soorten: aan de muur, op de
+    vloer en aan het plafond. Elk model kijkt naar het noorden (aan de muur zit hij dan tegen de zuidkant); de blockstate
+    draait het. Een donker plaatje met een wit randje (de kleur van het netwerk), en daarop:
+    - de knop: een wit kapje van 4 x 4 dat 2 pixels uitsteekt (ingedrukt: 1 pixel);
+    - de hendel: een stalen steeltje met een wit knopje dat 45 graden kantelt (aan: omhoog, uit: omlaag), en een
+      lampje op het plaatje (aan: groen, uit: donkerrood).
+    Voor in je rugzak een eigen model: het muurmodel naar het midden van het blok geschoven.
+    """
+    plate_textures = {"particle": "imttech:block/network_control_plate", "plate": "imttech:block/network_control_plate"}
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+
+    # ---- De knop: soort -> (plaat, kapje, kapje ingedrukt)
+    buttons = {
+        "wall": (([5, 5, 15], [11, 11, 16]), ([6, 6, 13], [10, 10, 15]), ([6, 6, 14], [10, 10, 15])),
+        "floor": (([5, 0, 5], [11, 1, 11]), ([6, 1, 6], [10, 3, 10]), ([6, 1, 6], [10, 2, 10])),
+        "ceiling": (([5, 15, 5], [11, 16, 11]), ([6, 13, 6], [10, 15, 10]), ([6, 14, 6], [10, 15, 10])),
+    }
+    for kind, (plate, cap, pressed_cap) in buttons.items():
+        for pressed in (False, True):
+            textures = dict(plate_textures, cap="imttech:block/network_button_cap")
+            c = pressed_cap if pressed else cap
+            save("network_button_" + kind + ("_pressed" if pressed else ""), textures,
+                 [box(plate[0], plate[1], "#plate"), box(c[0], c[1], "#cap")])
+    variants = {}
+    for kind in buttons:
+        for facing, y in turn.items():
+            for pressed in (False, True):
+                option = {"model": "imttech:block/network_button_" + kind + ("_pressed" if pressed else "")}
+                if y:
+                    option["y"] = y
+                variants["face=%s,facing=%s,pressed=%s" % (kind, facing, "true" if pressed else "false")] = option
+    blockstate("network_button", variants)
+    save("network_button_inventory", dict(plate_textures, cap="imttech:block/network_button_cap"),
+         [box([5, 5, 8], [11, 11, 9], "#plate"), box([6, 6, 6], [10, 10, 8], "#cap")])
+
+    # ---- De hendel: soort -> (plaat, steel, knopje, draaipunt, lampje, hoek als hij aan staat)
+    levers = {
+        "wall": (([5, 4, 15], [11, 12, 16]), ([7.5, 7.5, 10], [8.5, 8.5, 15]), ([7, 7, 8.5], [9, 9, 10.5]), [8, 8, 15],
+                 ([7.5, 4.5, 14.75], [8.5, 5.5, 15]), 45),
+        "floor": (([5, 0, 4], [11, 1, 12]), ([7.5, 1, 7.5], [8.5, 6, 8.5]), ([7, 5.5, 7], [9, 7.5, 9]), [8, 1, 8],
+                  ([7.5, 1, 10.5], [8.5, 1.25, 11.5]), -45),
+        "ceiling": (([5, 15, 4], [11, 16, 12]), ([7.5, 10, 7.5], [8.5, 15, 8.5]), ([7, 8.5, 7], [9, 10.5, 9]), [8, 15, 8],
+                    ([7.5, 14.75, 10.5], [8.5, 15, 11.5]), 45),
+    }
+    for kind, (plate, stick, knob, pivot, led, on_angle) in levers.items():
+        for on in (False, True):
+            textures = dict(plate_textures, stick="imttech:block/network_lever_stick",
+                            knob="imttech:block/network_lever_knob",
+                            led="imttech:block/network_lever_led_" + ("on" if on else "off"))
+            angle = on_angle if on else -on_angle
+            save("network_lever_" + kind + ("_on" if on else ""), textures, [
+                box(plate[0], plate[1], "#plate"),
+                box(stick[0], stick[1], "#stick", rotation=("x", angle, pivot)),
+                box(knob[0], knob[1], "#knob", rotation=("x", angle, pivot)),
+                box(led[0], led[1], "#led", glow=on),
+            ])
+    variants = {}
+    for kind in levers:
+        for facing, y in turn.items():
+            for on in (False, True):
+                option = {"model": "imttech:block/network_lever_" + kind + ("_on" if on else "")}
+                if y:
+                    option["y"] = y
+                variants["face=%s,facing=%s,on=%s" % (kind, facing, "true" if on else "false")] = option
+    blockstate("network_lever", variants)
+    save("network_lever_inventory", dict(plate_textures, stick="imttech:block/network_lever_stick",
+                                         knob="imttech:block/network_lever_knob", led="imttech:block/network_lever_led_on"), [
+        box([5, 4, 9], [11, 12, 10], "#plate"),
+        box([7.5, 7.5, 4], [8.5, 8.5, 9], "#stick", rotation=("x", 45, [8, 8, 9])),
+        box([7, 7, 2.5], [9, 9, 4.5], "#knob", rotation=("x", 45, [8, 8, 9])),
+    ])
+    # In je rugzak groter dan een gewoon blok (het zijn kleine plaatjes), en recht van voren.
+    display = {"gui": {"rotation": [20, 200, 0], "translation": [0, 0, 0], "scale": [1.5, 1.5, 1.5]}}
+    write(ROOT / "models" / "item" / "network_button.json",
+          {"parent": "imttech:block/network_button_inventory", "display": display})
+    write(ROOT / "models" / "item" / "network_lever.json",
+          {"parent": "imttech:block/network_lever_inventory", "display": display})
+
+
 def robot_dock():
     """
     Het Robot Dock (hoofdstuk 21): een lage laadplaat waar de robot op staat, met achteraan een paal met een
@@ -459,4 +540,5 @@ if __name__ == "__main__":
     laser_bridge_models()
     arc_lamp()
     light_switch()
+    network_controls()
     robot_dock()

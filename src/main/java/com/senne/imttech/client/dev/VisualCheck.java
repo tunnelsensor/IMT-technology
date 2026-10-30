@@ -57,6 +57,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -928,6 +929,8 @@ public final class VisualCheck {
                 player.getInventory().setItem(0, new ItemStack(ModItems.CABLE.get(), 64));
                 player.getInventory().setItem(1, new ItemStack(ModItems.NETWORK_CABLE.get(), 64));
                 player.getInventory().setItem(2, new ItemStack(ModItems.POE_CABLE.get(), 64));
+                player.getInventory().setItem(3, new ItemStack(ModItems.NETWORK_BUTTON.get()));
+                player.getInventory().setItem(4, new ItemStack(ModItems.NETWORK_LEVER.get()));
             });
             t.step(0, () -> Minecraft.getInstance().player.getInventory().selected = 1);
             t.view(20, y.getX() - 2.5, y.getY() + 5, y.getZ() + 11.5, 0, 0);
@@ -961,7 +964,18 @@ public final class VisualCheck {
                 }
             });
             t.shot(25, "nw07_devices_switch");
+            // Dezelfde app, naar beneden tot de knoppen en hendels (stap 8).
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourDevicesAt("BUTTONS");
+                }
+            });
+            t.shot(10, "nw09_devices_controls");
             t.close(10);
+            // De netwerkknop en -hendel (stap 8): aan de muur en op de vloer, met PoE-kabels naar de kern.
+            t.view(0, desk.getX() - 0.3, desk.getY() + 1.5, desk.getZ() + 3.2, 0, 0);
+            t.lookAt(5, new Vec3(desk.getX() - 1.6, desk.getY() + 0.6, desk.getZ() + 1.0));
+            t.shot(20, "nw08_controls");
             t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(false));
         }
 
@@ -4164,6 +4178,32 @@ public final class VisualCheck {
             be.setOwner(player);
         }
         level.setBlockAndUpdate(bridge.above(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+        // Links van de kern (stap 8): PoE-kabels naar een muurtje met een netwerkknop en een netwerkhendel (die staat aan),
+        // en op de vloer nog een hendel en een knop (die is net ingedrukt).
+        for (BlockPos poe : new BlockPos[] {core.west(), core.west().above(), core.west().south()}) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, poe);
+        }
+        level.setBlockAndUpdate(core.west(3), Blocks.STONE_BRICKS.defaultBlockState());
+        level.setBlockAndUpdate(core.west(3).above(), Blocks.STONE_BRICKS.defaultBlockState());
+        placeControl(level, player, core.west(2), ModBlocks.NETWORK_BUTTON.get().defaultBlockState(), AttachFace.WALL,
+                Direction.EAST, "Front bell");
+        placeControl(level, player, core.west(2).above(), ModBlocks.NETWORK_LEVER.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.NetworkLeverBlock.ON, true), AttachFace.WALL, Direction.EAST, "Night mode");
+        placeControl(level, player, core.west(2).south(), ModBlocks.NETWORK_LEVER.get().defaultBlockState(), AttachFace.FLOOR,
+                Direction.EAST, "Alarm test");
+        placeControl(level, player, core.west().south(2), ModBlocks.NETWORK_BUTTON.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.NetworkButtonBlock.PRESSED, true), AttachFace.FLOOR, Direction.SOUTH, "Desk button");
+    }
+
+    /** Een netwerkknop of -hendel (stap 8) van jou, met deze naam, op de muur, de vloer of het plafond. */
+    private static void placeControl(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState state, AttachFace face,
+                                     Direction facing, String name) {
+        level.setBlockAndUpdate(pos, state.setValue(com.senne.imttech.logic.NetworkControlBlock.FACE, face)
+                .setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, facing));
+        if (level.getBlockEntity(pos) instanceof com.senne.imttech.logic.InputDeviceBlockEntity be) {
+            be.setOwner(player);
+            be.setName(name);
+        }
     }
 
     /**

@@ -555,17 +555,18 @@ public final class SecurityOs {
     /** De eerste naam van een apparaat in dit diagram die de server (nog) niet kent, of null. */
     private static @Nullable String unknownDevice(ServerLevel level, SecurityCoreBlockEntity core,
                                                   com.senne.imttech.logic.program.LogicGraph graph) {
+        // Per trigger (keycard, codepanel, button, lever) de namen van de apparaten die hem starten.
         java.util.Set<String> inputs = new java.util.HashSet<>();
         for (var input : com.senne.imttech.logic.LogicDevices.inputs(level, core)) {
-            inputs.add(input.name().toLowerCase(java.util.Locale.ROOT));
+            inputs.add(input.trigger().code() + ":" + input.name().toLowerCase(java.util.Locale.ROOT));
         }
         java.util.Set<Integer> reachable = graph.reachable();
         for (var node : graph.nodes()) {
             if (!reachable.contains(node.id) || node.op.textArg() != com.senne.imttech.logic.program.Op.Arg.DEVICE) {
                 continue;
             }
-            boolean known = node.op.hasSourceDevice()
-                    ? inputs.contains(node.text.toLowerCase(java.util.Locale.ROOT))
+            boolean known = node.op.fromInput()
+                    ? inputs.contains(node.op.code() + ":" + node.text.toLowerCase(java.util.Locale.ROOT))
                     : !core.logic().devices(node.text).isEmpty();
             if (!known) {
                 return node.text;
@@ -1018,7 +1019,8 @@ public final class SecurityOs {
         for (var input : com.senne.imttech.logic.LogicDevices.inputs(level, core)) {
             CompoundTag entry = new CompoundTag();
             entry.putString("n", input.name());
-            entry.putBoolean("p", input.panel());
+            // Welke trigger hij start (hoofdstuk 38): keycard, codepanel, button of lever.
+            entry.putString("t", input.trigger().code());
             entry.putInt("x", input.pos().getX());
             entry.putInt("y", input.pos().getY());
             entry.putInt("z", input.pos().getZ());

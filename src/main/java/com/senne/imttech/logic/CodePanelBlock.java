@@ -52,6 +52,11 @@ public class CodePanelBlock extends InputDeviceBlock {
         return "Panel";
     }
 
+    @Override
+    public com.senne.imttech.logic.program.Op trigger() {
+        return com.senne.imttech.logic.program.Op.CODEPANEL;
+    }
+
     /** Hoofdstuk 38: stroom die het paneel elke twee seconden gebruikt (zonder stroom doen de toetsen niets). */
     @Override
     public float upkeep() {

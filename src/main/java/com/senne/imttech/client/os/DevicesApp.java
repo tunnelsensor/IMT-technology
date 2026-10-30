@@ -75,7 +75,8 @@ final class DevicesApp {
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"bridge", "LASER BRIDGES"},
-                {"camera", "CAMERAS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"switch", "NETWORK SWITCHES"}};
+                {"camera", "CAMERAS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
+                {"lever", "LEVERS"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {
             boolean any = false;
@@ -200,10 +201,10 @@ final class DevicesApp {
         return new BlockPos(device.getInt("x"), device.getInt("y"), device.getInt("z"));
     }
 
-    /** Een keycardlezer of codepaneel? Die kun je een andere naam geven. */
+    /** Een keycardlezer, codepaneel of (hoofdstuk 38) netwerkknop of -hendel? Die kun je een andere naam geven. */
     private static boolean renamable(CompoundTag device) {
         String kind = device.getString("k");
-        return kind.equals("reader") || kind.equals("panel");
+        return kind.equals("reader") || kind.equals("panel") || kind.equals("button") || kind.equals("lever");
     }
 
     private boolean isRenaming(CompoundTag device) {
@@ -337,6 +338,9 @@ final class DevicesApp {
         }
         if (device.contains("tgt")) {
             details.append("  > ").append(device.getString("tgt"));
+        }
+        if (kind.equals("lever")) {
+            details.append(device.getBoolean("on") ? "  on" : "  off"); // hoe de hendel nu staat
         }
         if (device.contains("uses")) {
             // Zie je hier "in no diagram" na een andere naam, dan gebruikt je diagram nog de oude naam.
@@ -509,6 +513,17 @@ final class DevicesApp {
     /** Alleen voor de screenshot-rondleiding: op Save klikken (de naam gaat echt naar de server). */
     void tourSave() {
         submitName();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de lijst naar beneden tot dit kopje (bovenaan). */
+    void tourScroll(String header) {
+        List<Row> rows = rows();
+        for (int i = 0; i < rows.size(); i++) {
+            if (header.equals(rows.get(i).header())) {
+                scroll = i;
+                return;
+            }
+        }
     }
 
     /** Alleen voor de screenshot-rondleiding: de poorten van de eerste Network Switch open (de knop Ports). */

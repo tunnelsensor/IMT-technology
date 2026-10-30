@@ -19,8 +19,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Hier komt binnen wat er in de wereld gebeurt en een diagram kan starten: een kaart tegen een
- * keycardlezer, een code op een codepaneel. We kijken bij welke beveiligingskern het hoort, of
- * zijn server draait, en geven het dan door.
+ * keycardlezer, een code op een codepaneel, (hoofdstuk 38) een netwerkknop of -hendel. We kijken bij
+ * welke beveiligingskern het hoort, of zijn server draait, en geven het dan door.
  */
 public final class LogicEvents {
     private LogicEvents() {}
@@ -116,7 +116,7 @@ public final class LogicEvents {
         if (core == null) {
             return;
         }
-        Op trigger = level.getBlockState(device).getBlock() instanceof CodePanelBlock ? Op.CODEPANEL : Op.KEYCARD;
+        Op trigger = level.getBlockState(device).getBlock() instanceof InputDeviceBlock input ? input.trigger() : Op.KEYCARD;
         LogicRunner.alarm(level, core, new LogicRunner.Context(trigger, name, device.immutable(), player.getUUID(),
                 player.getGameProfile().getName(), SecurityCores.isFriend(level, core, player),
                 isOwner(level, core, player), null, false, ""), "Someone is tampering with " + name);
@@ -180,6 +180,48 @@ public final class LogicEvents {
             return;
         }
         enter(level, panel, device, core, player, code);
+    }
+
+    /**
+     * Iemand drukte op een netwerkknop (hoofdstuk 38): een regel in het logboek ("Senne pressed Doorbell") en de server
+     * aan het werk ({@code when button("Doorbell"):}). Zonder stroom, netwerkkabel of draaiende server hoort de speler
+     * waarom er niets gebeurt. (Geen wachttijd zoals bij een lezer: de knop blijft zelf even ingedrukt.)
+     */
+    public static void button(ServerLevel level, BlockPos button, ServerPlayer player) {
+        if (!(level.getBlockEntity(button) instanceof InputDeviceBlockEntity device)
+                || com.senne.imttech.weapons.Emp.deadDevice(level, button, player)
+                || com.senne.imttech.lan.DevicePower.dead(level, button, player)) {
+            return;
+        }
+        SecurityCoreBlockEntity core = serverFor(level, button, player);
+        if (core == null) {
+            return;
+        }
+        core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " pressed " + device.name());
+        LogicRunner.fire(level, core, Op.BUTTON, device.name(), new LogicRunner.Context(Op.BUTTON, device.name(),
+                button.immutable(), player.getUUID(), player.getGameProfile().getName(),
+                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), null, false, ""));
+    }
+
+    /**
+     * Iemand zette een netwerkhendel om (hoofdstuk 38): een regel in het logboek ("Senne switched Night mode on") en de
+     * server aan het werk ({@code when lever("Night mode"):}, met {@code lever.on}). Elke keer omzetten telt (geen
+     * wachttijd), anders wist de server niet meer hoe de hendel staat.
+     */
+    public static void lever(ServerLevel level, BlockPos lever, ServerPlayer player, boolean on) {
+        if (!(level.getBlockEntity(lever) instanceof InputDeviceBlockEntity device)
+                || com.senne.imttech.weapons.Emp.deadDevice(level, lever, player)
+                || com.senne.imttech.lan.DevicePower.dead(level, lever, player)) {
+            return;
+        }
+        SecurityCoreBlockEntity core = serverFor(level, lever, player);
+        if (core == null) {
+            return;
+        }
+        core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " switched " + device.name() + (on ? " on" : " off"));
+        LogicRunner.fire(level, core, Op.LEVER, device.name(), new LogicRunner.Context(Op.LEVER, device.name(),
+                lever.immutable(), player.getUUID(), player.getGameProfile().getName(),
+                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), null, false, "", null, List.of(), on));
     }
 
     /** Er is een code ingetypt: oranje lampje, een regel in het logboek (zonder de code), en de server aan het werk. */

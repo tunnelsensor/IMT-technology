@@ -23,6 +23,10 @@ public enum Op {
     // ---------------------------------------------------------------- Triggers
     KEYCARD(Kind.TRIGGER, "keycard", Arg.DEVICE, Arg.NONE, "A keycard is held against this reader"),
     CODEPANEL(Kind.TRIGGER, "codepanel", Arg.DEVICE, Arg.NONE, "Someone types a code on this panel"),
+    /** {@code when button("Doorbell"):} (hoofdstuk 38): iemand drukt op een netwerkknop. */
+    BUTTON(Kind.TRIGGER, "button", Arg.DEVICE, Arg.NONE, "Someone presses this network button"),
+    /** {@code when lever("Night mode"):} (hoofdstuk 38): iemand zet een netwerkhendel om; lever.on zegt hoe hij nu staat. */
+    LEVER(Kind.TRIGGER, "lever", Arg.DEVICE, Arg.NONE, "Someone flips this network lever (lever.on: is it on now?)"),
     TURNED_ON(Kind.TRIGGER, "turned_on", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched on"),
     TURNED_OFF(Kind.TRIGGER, "turned_off", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched off"),
     EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.NUMBER, "Every so many seconds"),
@@ -346,7 +350,7 @@ public enum Op {
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
-            case KEYCARD, CODEPANEL, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE,
+            case KEYCARD, CODEPANEL, BUTTON, LEVER, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE,
                  TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED, SQUAD_DOWN -> kind == ProgramKind.SERVER;
             // Robots en squads aansturen kan ook een Training End-blok (hoofdstuk 26: deactivate("Wave 1")).
             case ORDER, ACTIVATE, DEACTIVATE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
@@ -362,5 +366,14 @@ public enum Op {
     /** Werken {@code accept()} en {@code deny()} hier? Alleen na een keycardlezer of codepaneel. */
     public boolean hasSourceDevice() {
         return this == KEYCARD || this == CODEPANEL;
+    }
+
+    /**
+     * Begint deze trigger bij een apparaat dat een speler gebruikt: een lezer, een paneel of (hoofdstuk 38) een
+     * netwerkknop of -hendel? Dan is de naam die van zo'n apparaat (niet van een relais), en weet je wie het deed
+     * ({@code player.name}).
+     */
+    public boolean fromInput() {
+        return this == KEYCARD || this == CODEPANEL || this == BUTTON || this == LEVER;
     }
 }

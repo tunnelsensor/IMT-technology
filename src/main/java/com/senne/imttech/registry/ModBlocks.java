@@ -331,6 +331,28 @@ public final class ModBlocks {
                     .lightLevel(state -> state.getValue(com.senne.imttech.logic.InputDeviceBlock.LIGHT)
                             == com.senne.imttech.logic.InputLight.OFF ? 0 : 4));
 
+    /** De netwerkknop (hoofdstuk 38): erop drukken start je diagram, zonder redstone. */
+    public static final DeferredBlock<com.senne.imttech.logic.NetworkButtonBlock> NETWORK_BUTTON = BLOCKS.registerBlock(
+            "network_button", com.senne.imttech.logic.NetworkButtonBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(1.5f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noCollission()
+                    .noOcclusion()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
+
+    /** De netwerkhendel (hoofdstuk 38): omzetten start je diagram (lever.on zegt hoe hij staat). */
+    public static final DeferredBlock<com.senne.imttech.logic.NetworkLeverBlock> NETWORK_LEVER = BLOCKS.registerBlock(
+            "network_lever", com.senne.imttech.logic.NetworkLeverBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(1.5f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noCollission()
+                    .noOcclusion()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY));
+
     /** De beveiligingskern van de Biebia's Industries Tower: heel sterk, zodat hacken de weg is. */
     public static final DeferredBlock<com.senne.imttech.security.SecurityCoreBlock> SECURITY_CORE = BLOCKS.registerBlock(
             "security_core", com.senne.imttech.security.SecurityCoreBlock::new,

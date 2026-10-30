@@ -23,6 +23,8 @@
     "imttech:server_rack",
     "imttech:keycard_reader",
     "imttech:code_panel",
+    "imttech:network_button",
+    "imttech:network_lever",
     "imttech:crusher",
     "imttech:compactor",
     "imttech:arc_lamp",

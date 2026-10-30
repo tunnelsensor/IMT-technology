@@ -26,8 +26,8 @@ import net.minecraft.server.level.ServerPlayer;
  * niet bent. Ook je groepen staan erin (14 oktober): {@code on("base")} zet alles in "base" aan, ook wat
  * in groepen eronder zit ("security room").
  *
- * <b>Ingangen</b> (wat een diagram start: {@code when keycard("Lab door"):}): de keycardlezers en
- * codepanelen in het gebied, met de naam die in het blok zelf staat.
+ * <b>Ingangen</b> (wat een diagram start: {@code when keycard("Lab door"):}): de keycardlezers,
+ * codepanelen en (hoofdstuk 38) netwerkknoppen en -hendels van de kern, met de naam die in het blok zelf staat.
  */
 public final class LogicDevices {
     private LogicDevices() {}
@@ -114,25 +114,38 @@ public final class LogicDevices {
         return done;
     }
 
-    /** Staat (minstens één van) het apparaat met deze naam aan? */
+    /**
+     * Staat (minstens één van) het apparaat met deze naam aan? Sinds hoofdstuk 38 ook een netwerkhendel van dit netwerk
+     * met die naam: {@code is_on("Night mode")} zegt of hij nu omhoog staat.
+     */
     public static boolean isOn(ServerLevel level, SecurityCoreBlockEntity core, String name) {
         for (LogicStore.Target target : core.logic().devices(name)) {
             if (level.isLoaded(target.pos()) && Boolean.TRUE.equals(ImtRedstone.isOnAt(level, target.pos(), target.channel()))) {
                 return true;
             }
         }
+        for (Input input : inputs(level, core)) {
+            if (input.trigger() == com.senne.imttech.logic.program.Op.LEVER && input.name().equalsIgnoreCase(name)
+                    && NetworkLeverBlock.isOn(level.getBlockState(input.pos()))) {
+                return true;
+            }
+        }
         return false;
     }
 
-    /** Een keycardlezer of codepaneel in het gebied, met zijn naam en soort. */
-    public record Input(String name, boolean panel, BlockPos pos) {}
+    /**
+     * Een keycardlezer, codepaneel, netwerkknop of netwerkhendel van deze kern, met zijn naam, de trigger die hij start
+     * (keycard, codepanel, button, lever) en waar hij hangt.
+     */
+    public record Input(String name, com.senne.imttech.logic.program.Op trigger, BlockPos pos) {}
 
-    /** Alle keycardlezers en codepanelen in het gebied van deze kern. */
+    /** Alle keycardlezers, codepanelen, netwerkknoppen en -hendels van deze kern. */
     public static List<Input> inputs(ServerLevel level, SecurityCoreBlockEntity core) {
         List<Input> inputs = new ArrayList<>();
         for (BlockPos pos : SecurityDevices.scan(level, core).inputs()) {
-            if (level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device) {
-                inputs.add(new Input(device.name(), level.getBlockState(pos).getBlock() instanceof CodePanelBlock, pos));
+            if (level.getBlockEntity(pos) instanceof InputDeviceBlockEntity device
+                    && level.getBlockState(pos).getBlock() instanceof InputDeviceBlock block) {
+                inputs.add(new Input(device.name(), block.trigger(), pos));
             }
         }
         return inputs;

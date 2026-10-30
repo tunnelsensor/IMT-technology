@@ -1,7 +1,6 @@
 package com.senne.imttech.client;
 
 import com.senne.imttech.client.hud.HudStyle;
-import com.senne.imttech.logic.CodePanelBlock;
 import com.senne.imttech.logic.InputDeviceBlock;
 import com.senne.imttech.logic.InputDeviceBlockEntity;
 import com.senne.imttech.network.InputRenamePayload;
@@ -185,7 +184,7 @@ public class InputNameScreen extends Screen {
         // Zo noem je hem in een diagram: when keycard("Lab door"):
         g.drawString(font, Component.translatable("screen.imttech.input_name.in_diagram"), left + MARGIN, top + 60,
                 HudStyle.argb(150, HudStyle.WHITE), false);
-        String trigger = state.getBlock() instanceof CodePanelBlock ? "codepanel" : "keycard";
+        String trigger = ((InputDeviceBlock) state.getBlock()).trigger().code();
         Component code = Component.literal("when ").withColor(KEYWORD)
                 .append(Component.literal(trigger).withColor(HudStyle.CYAN))
                 .append(Component.literal("(").withColor(PLAIN))

@@ -13,8 +13,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Stroom voor de kleine beveiligingsapparaten op het netwerk (hoofdstuk 38, jouw wens: "deze dingen hebben allemaal stroom
- * nodig, dus de keycardreader heeft een netwerkkabel én een powerkabel"): de keycardlezer, het codepaneel, en straks de
- * netwerkknop, de netwerkhendel en de switch.
+ * nodig, dus de keycardreader heeft een netwerkkabel én een powerkabel"): de keycardlezer, het codepaneel, de
+ * netwerkknop en de netwerkhendel. (De switch betaalt zijn stroom zelf, zie NetworkSwitchBlockEntity.)
  *
  * Ze hebben geen eigen klok: de kern waar ze met een netwerkkabel aan hangen, betaalt om de twee seconden hun stroom (zie
  * SecurityCoreBlockEntity.powerTick), van hun eigen stroomnet (een stroomkabel ernaast, of straks een PoE-kabel). Gebruik
