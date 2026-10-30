@@ -73,6 +73,15 @@ public final class ModDataComponents {
                     .persistent(Codec.BOOL)
                     .networkSynchronized(ByteBufCodecs.BOOL));
 
+    /**
+     * Hoofdstuk 40: het IP waar je de vorige keer met deze Hacking Laptop op inlogde, zodat het inlogscherm het al
+     * invult. Het wachtwoord onthoudt de laptop nooit.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> LAST_IP =
+            COMPONENTS.registerComponentType("last_ip", builder -> builder
+                    .persistent(Codec.STRING)
+                    .networkSynchronized(ByteBufCodecs.STRING_UTF8));
+
     /** Van welk blok een gebarsten blok of poeder komt (hoofdstuk 11, zie FromBlockItem). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.world.level.block.Block>> FROM_BLOCK =
             COMPONENTS.registerComponentType("from_block", builder -> builder

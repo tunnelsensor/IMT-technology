@@ -1,0 +1,34 @@
+package com.senne.imttech.network;
+
+import com.senne.imttech.ImtTech;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+
+/**
+ * Server naar speler (hoofdstuk 40): het inlogscherm van de Hacking Laptop openen ({@code open} = true), met het IP van
+ * de vorige keer al ingevuld; of, als het al open staat, zeggen waarom inloggen niet lukte ({@code open} = false, met
+ * {@code message}). Lukt het wel, dan stuurt de server gewoon de desktop (OsOpenPayload).
+ */
+public record OsLoginPromptPayload(String ip, String message, boolean open) implements CustomPacketPayload {
+    public static final Type<OsLoginPromptPayload> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "os_login_prompt"));
+
+    public static final StreamCodec<ByteBuf, OsLoginPromptPayload> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(32), OsLoginPromptPayload::ip,
+            ByteBufCodecs.stringUtf8(256), OsLoginPromptPayload::message,
+            ByteBufCodecs.BOOL, OsLoginPromptPayload::open,
+            OsLoginPromptPayload::new);
+
+    /** Een antwoord voor het inlogscherm dat al open staat. */
+    public static OsLoginPromptPayload reply(String message) {
+        return new OsLoginPromptPayload("", message, false);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+}

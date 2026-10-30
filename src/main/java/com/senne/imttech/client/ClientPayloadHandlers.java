@@ -148,6 +148,19 @@ public final class ClientPayloadHandlers {
         mc.setScreen(new com.senne.imttech.client.os.SecurityOsScreen(payload.pos(), payload.remote()));
     }
 
+    /**
+     * Hoofdstuk 40: het inlogscherm van de Hacking Laptop openen (met het IP van de vorige keer), of het antwoord van de
+     * server laten zien als het al open staat (waarom inloggen niet lukte).
+     */
+    public static void onOsLoginPrompt(com.senne.imttech.network.OsLoginPromptPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (payload.open()) {
+            mc.setScreen(new com.senne.imttech.client.os.OsLoginScreen(payload.ip()));
+        } else if (mc.screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+            login.reply(payload.message());
+        }
+    }
+
     /** Een nieuwe momentopname van de desktop: het scherm leest hieruit. */
     public static void onOsSnapshot(com.senne.imttech.network.OsSnapshotPayload payload, IPayloadContext context) {
         if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen desk

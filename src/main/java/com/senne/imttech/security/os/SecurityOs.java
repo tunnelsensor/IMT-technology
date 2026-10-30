@@ -5,24 +5,35 @@ import com.senne.imttech.imt.ImtServer;
 import com.senne.imttech.network.ImtMessagePayload;
 import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.network.OsActionPayload;
+import com.senne.imttech.network.OsLoginPromptPayload;
 import com.senne.imttech.network.OsOpenPayload;
 import com.senne.imttech.network.OsSnapshotPayload;
+import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.SecurityDroneEntity;
+import com.senne.imttech.security.net.CoreNetworkData;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -45,6 +56,10 @@ import org.jetbrains.annotations.Nullable;
  * Sinds stap 5 ook de mappen en bestanden (de apps Files en Notes) en de VALSTRIKKEN: een bestand
  * dat de eigenaar als valstrik markeerde. Opent iemand anders dan de eigenaar het, dan gaat het
  * alarm af, wordt hij eruit gegooid en een tijdje buitengesloten, en jagen de drones op hem.
+ *
+ * Sinds hoofdstuk 40 (30 oktober) kun je ook van ver inloggen, met de Hacking Laptop: IP + wachtwoord, zoals SSH (zie
+ * {@link #login}). Zo'n sessie "op afstand" houdt het stukje wereld met de kern geladen, en sluit als je de laptop niet
+ * meer bij je hebt of de kern geen stroom meer heeft.
  */
 public final class SecurityOs {
     private SecurityOs() {}
@@ -78,11 +93,14 @@ public final class SecurityOs {
 
         /** Wie deze desktop open heeft (de app Zone toont waar hij staat). */
         private final UUID viewer;
+        /** In welke dimensie de kern staat (hoofdstuk 40: op afstand moet je in dezelfde blijven). */
+        private final ResourceKey<Level> dimension;
 
-        Session(BlockPos core, boolean remote, UUID viewer) {
+        Session(BlockPos core, boolean remote, UUID viewer, ResourceKey<Level> dimension) {
             this.core = core;
             this.remote = remote;
             this.viewer = viewer;
+            this.dimension = dimension;
         }
 
         public UUID viewer() {
@@ -151,8 +169,11 @@ public final class SecurityOs {
                     .withStyle(ChatFormatting.RED), true);
             return false;
         }
-        Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID());
+        Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID(), player.serverLevel().dimension());
         SESSIONS.put(player.getUUID(), session);
+        if (remote) {
+            keepLoaded(player.serverLevel(), session.core());
+        }
         ModNetwork.sendTo(player, new OsOpenPayload(core.getBlockPos(), true, remote));
         sendSnapshot(player, core, session);
         return true;
@@ -188,6 +209,158 @@ public final class SecurityOs {
             return 0;
         }
         return (int) Math.ceil(left / 20.0);
+    }
+
+    // ================================================================ Inloggen met de laptop (hoofdstuk 40)
+
+    /**
+     * Het "ticket" dat het stukje wereld met de kern geladen houdt tijdens een sessie op afstand (anders kon de server
+     * de kern niet lezen als je ver weg bent). Het verloopt vanzelf na 5 seconden; zolang de sessie loopt, vernieuwen we
+     * het elke seconde.
+     */
+    private static final TicketType<ChunkPos> REMOTE_TICKET =
+            TicketType.create("imttech_remote_desktop", Comparator.comparingLong(ChunkPos::toLong), 100);
+
+    /** Zo lang (ticks) krijgt de eigenaar maar één alarm over foute wachtwoorden van dezelfde speler (een minuut). */
+    private static final int FAIL_ALERT_EVERY = 1200;
+
+    /** Hoeveel foute wachtwoorden na elkaar deze speler al typte (tot [security] passwordAttempts). */
+    private static final Map<UUID, Integer> WRONG = new HashMap<>();
+    /** Na te veel foute wachtwoorden: tot wanneer (speltijd) deze speler moet wachten. */
+    private static final Map<UUID, Long> WAIT_UNTIL = new HashMap<>();
+    /** Wanneer de eigenaar het laatste alarm kreeg over foute wachtwoorden van deze speler. */
+    private static final Map<UUID, Long> LAST_FAIL_ALERT = new HashMap<>();
+
+    /** Het stukje wereld met de kern geladen houden (een sessie op afstand), nog 5 seconden. */
+    private static void keepLoaded(ServerLevel level, BlockPos core) {
+        ChunkPos chunk = new ChunkPos(core);
+        level.getChunkSource().addRegionTicket(REMOTE_TICKET, chunk, 2, chunk);
+    }
+
+    /** De Hacking Laptop in de lucht gebruikt: het inlogscherm openen, met het IP van de vorige keer. */
+    public static void promptLogin(ServerPlayer player, ItemStack laptop) {
+        String lastIp = laptop.getOrDefault(com.senne.imttech.registry.ModDataComponents.LAST_IP.get(), "");
+        ModNetwork.sendTo(player, new OsLoginPromptPayload(lastIp, "", true));
+    }
+
+    /** Heeft deze speler een Hacking Laptop bij zich (ergens in zijn inventaris)? */
+    private static boolean hasLaptop(ServerPlayer player) {
+        return player.getInventory().contains(stack -> stack.is(ModItems.HACKING_LAPTOP.get()));
+    }
+
+    /**
+     * Inloggen met een IP en een wachtwoord (het inlogscherm van de laptop). Zo gaat het:
+     * <ul>
+     *   <li>we zoeken de kern met dat IP in het netwerk van de wereld (CoreNetworkData) en laden zo nodig het stukje
+     *       wereld waar hij staat. Hij moet in dezelfde dimensie staan als jij;</li>
+     *   <li>een kern zonder stroom antwoordt niet; een kern zonder wachtwoord laat niemand van ver binnen (ook de
+     *       eigenaar niet: die zet eerst een wachtwoord in Settings);</li>
+     *   <li>een fout wachtwoord: een regel in het logboek, de eigenaar krijgt een alarm (hooguit één per minuut per
+     *       speler), en na [security] passwordAttempts keer moet je even wachten;</li>
+     *   <li>het goede wachtwoord: de desktop opent op afstand ("REMOTE SESSION"), de laptop onthoudt het IP, en ben je
+     *       niet de eigenaar, dan weet de eigenaar het meteen.</li>
+     * </ul>
+     */
+    public static void login(ServerPlayer player, String ip, String password) {
+        ServerLevel here = player.serverLevel();
+        String address = ip.strip();
+        long now = here.getGameTime();
+        if (!hasLaptop(player)) {
+            reply(player, "You need a Hacking Laptop to log in from a distance.");
+            return;
+        }
+        Long waitUntil = WAIT_UNTIL.get(player.getUUID());
+        if (waitUntil != null && now < waitUntil) {
+            reply(player, "Too many wrong passwords: wait " + (int) Math.ceil((waitUntil - now) / 20.0) + " s.");
+            return;
+        }
+        GlobalPos where = CoreNetworkData.get(here).find(address);
+        if (where == null) {
+            reply(player, "ssh: no system answers at " + address + ".");
+            return;
+        }
+        if (!where.dimension().equals(here.dimension())) {
+            reply(player, "ssh: no route to " + address + ". That system is in another dimension.");
+            return;
+        }
+        BlockPos pos = where.pos();
+        // Het stukje wereld met de kern laden (van ver is het misschien niet geladen).
+        here.getChunk(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
+        if (!(here.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core)) {
+            reply(player, "ssh: no system answers at " + address + ".");
+            return;
+        }
+        boolean owner = isOwner(player, core);
+        if (!core.isOnline()) {
+            reply(player, "ssh: " + address + " does not answer. That system has no power.");
+            return;
+        }
+        if (!core.hasPassword()) {
+            reply(player, owner ? "Set a password in Settings on your core first: without one, nobody can log in from far away."
+                    : "This system takes no logins: it has no password. Take it over on site with a Hacking Laptop.");
+            return;
+        }
+        int locked = lockedSeconds(player, core);
+        if (locked > 0) {
+            reply(player, "ACCESS DENIED: you are locked out of this system for " + locked + " s.");
+            return;
+        }
+        String name = player.getGameProfile().getName();
+        if (!core.checkPassword(password)) {
+            int wrong = WRONG.merge(player.getUUID(), 1, Integer::sum);
+            core.logEvent(EventLog.Type.LOGIN_FAIL, "Wrong password from " + name + " (remote)");
+            Long lastAlert = LAST_FAIL_ALERT.get(player.getUUID());
+            if (!owner && (lastAlert == null || now - lastAlert > FAIL_ALERT_EVERY)) {
+                LAST_FAIL_ALERT.put(player.getUUID(), now);
+                alertOwner(here, core, player, "os.imttech.msg.login_fail_alert");
+            }
+            if (wrong >= Math.max(1, Math.round(ImtConfig.Security.PASSWORD_ATTEMPTS))) {
+                WRONG.remove(player.getUUID());
+                long ticks = Math.max(20, Math.round(ImtConfig.Security.PASSWORD_LOCKOUT_MILLIS / 50.0));
+                WAIT_UNTIL.put(player.getUUID(), now + ticks);
+                reply(player, "Permission denied. Too many wrong passwords: wait " + (int) Math.ceil(ticks / 20.0) + " s.");
+            } else {
+                reply(player, "Permission denied, please try again.");
+            }
+            return;
+        }
+        WRONG.remove(player.getUUID());
+        WAIT_UNTIL.remove(player.getUUID());
+        if (!openFor(player, core, true)) {
+            reply(player, "Connection refused.");
+            return;
+        }
+        core.logEvent(EventLog.Type.LOGIN, name + " logged in remotely");
+        if (!owner) {
+            alertOwner(here, core, player, "os.imttech.msg.login_alert");
+        }
+        // De laptop onthoudt het IP (de eerste in je handen, anders de eerste in je inventaris).
+        ItemStack laptop = player.getMainHandItem().is(ModItems.HACKING_LAPTOP.get()) ? player.getMainHandItem()
+                : player.getOffhandItem().is(ModItems.HACKING_LAPTOP.get()) ? player.getOffhandItem() : ItemStack.EMPTY;
+        for (int i = 0; laptop.isEmpty() && i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i).is(ModItems.HACKING_LAPTOP.get())) {
+                laptop = player.getInventory().getItem(i);
+            }
+        }
+        if (!laptop.isEmpty()) {
+            laptop.set(com.senne.imttech.registry.ModDataComponents.LAST_IP.get(), core.ip());
+        }
+        // LogicDevices.refresh doet dit ook bij het openen ter plekke: de namen van je apparaten voor de app Logic.
+        com.senne.imttech.logic.LogicDevices.refresh(here, core, player);
+    }
+
+    /** Een antwoord voor het inlogscherm (waarom het niet lukte). */
+    private static void reply(ServerPlayer player, String message) {
+        ModNetwork.sendTo(player, OsLoginPromptPayload.reply(message));
+    }
+
+    /** Een alarm van I.M.T voor de eigenaar (als hij online is, waar hij ook is). */
+    private static void alertOwner(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer who, String key) {
+        ServerPlayer owner = core.ownerId() == null ? null : level.getServer().getPlayerList().getPlayer(core.ownerId());
+        if (owner != null && owner != who) {
+            ImtServer.send(owner, Component.translatable(key, who.getGameProfile().getName(), core.hostname()),
+                    ImtMessagePayload.Level.ALERT);
+        }
     }
 
     // ================================================================ Opdrachten van het scherm
@@ -1143,11 +1316,22 @@ public final class SecurityOs {
             return;
         }
         ServerLevel level = player.serverLevel();
-        if (!(level.getBlockEntity(session.core()) instanceof SecurityCoreBlockEntity core)
+        if (level.dimension() != session.dimension
+                || !(level.getBlockEntity(session.core()) instanceof SecurityCoreBlockEntity core)
                 || !player.isAlive()
                 || !session.remote() && player.distanceToSqr(session.core().getCenter()) > REACH * REACH) {
             close(player);
             return;
+        }
+        // Op afstand (hoofdstuk 40): de kern geladen houden, en de verbinding valt weg zonder laptop of zonder stroom.
+        if (session.remote() && level.getGameTime() % 20 == 0) {
+            if (!hasLaptop(player) || !core.isOnline()) {
+                close(player);
+                player.displayClientMessage(Component.translatable(core.isOnline() ? "os.imttech.msg.lost_laptop"
+                        : "os.imttech.msg.lost_power", core.hostname()).withStyle(ChatFormatting.YELLOW), true);
+                return;
+            }
+            keepLoaded(level, session.core());
         }
         if (level.getGameTime() % SNAPSHOT_INTERVAL == 0) {
             sendSnapshot(player, core, session);
@@ -1167,6 +1351,9 @@ public final class SecurityOs {
     public static void onServerStopped(ServerStoppedEvent event) {
         SESSIONS.clear();
         LOCKOUTS.clear();
+        WRONG.clear();
+        WAIT_UNTIL.clear();
+        LAST_FAIL_ALERT.clear();
         com.senne.imttech.security.SecurityDevices.clear();
         com.senne.imttech.logic.LogicServer.clear();
         com.senne.imttech.logic.LogicEvents.clear();

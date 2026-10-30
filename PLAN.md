@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 362 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 363 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3939,6 +3939,73 @@ enkel nog voor redstone, de security dingen van de mod doe je via script, voice,
       `-Ponly=network`: `nw12_devices_named`.
 - [ ] **3. LEESMIJ, showcase en screenshots** (Rayshield, Laserbrug, Torentjes, Redstone-relais: "relais zijn alleen
       voor redstone").
+
+### 40. De laptop overal, en een Computer met Monitor (30 oktober)
+
+Jouw wens: "Ik wil dat je laptops overal kunt gebruiken om je security core te configureren ook wil ik dat je een desktop
+toevoegt met monitor deze kun je configureren via de security core wat je exact op die desktop mag en kan doen, dit kun je
+dan gebruiken om in bijvoorbeeld de receptie van je base te zetten voor de cams te bekijken of kijken wie er waar
+binnengaat etc."
+
+**Jouw antwoorden** (30 oktober):
+- **De laptop** is de **Hacking Laptop**, omgebouwd: rechtsklik in de lucht opent het inlogscherm; op een vreemde kern
+  klikken blijft hacken zoals nu. Je gebruikt hem gewoon vanuit je inventaris, je zet niets neer.
+- **Verbinden** gaat met **IP + wachtwoord** (zoals SSH), niet met een lijstje of door te koppelen.
+- **De desktop-pc** zijn **twee blokken**: een **Computer** (de kast, met netwerkkabel en stroom) en een **Monitor** die
+  ertegen staat. Rechtsklik op de monitor opent hem.
+- **Per pc stel je op de kern in**: welke apps erop staan, per app **alleen kijken** of **ook bedienen**, **wie** hem mag
+  gebruiken (iedereen, je vertrouwde spelers, of wie een keycard uit een groep heeft) en een **eigen code**.
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Inloggen met de laptop**: het IP staat in de app Status van je kern. Ook de eigenaar typt het wachtwoord (zo koos je
+  het); een kern **zonder wachtwoord** laat niemand van ver binnen, en een kern **zonder stroom** antwoordt niet. Het werkt
+  in **dezelfde dimensie** (je basis in de overworld bereik je overal in de overworld, niet vanuit de Nether). Na
+  `[security] passwordAttempts` foute wachtwoorden moet je even wachten (`passwordLockoutMillis`), net als in de terminal.
+  Elke poging staat in het logboek; logt iemand anders dan de eigenaar in, dan krijgt de eigenaar een I.M.T-alarm. De
+  laptop onthoudt het laatste IP (niet het wachtwoord). De sessie sluit als je de laptop niet meer bij je hebt, van
+  dimensie wisselt, de kern stroom verliest of het wachtwoord verandert. Zolang ze open is, blijft het stukje wereld met de
+  kern geladen. Camera's van ver geven nog "OUT OF RANGE" (dat is stap 10 van hoofdstuk 7, nog steeds opzij).
+- **De Computer** heeft een netwerkkabel naar de kern nodig (of PoE) en een beetje stroom, zoals een keycardlezer. De
+  **Monitor** heeft niets nodig: hij gebruikt de computer waar hij tegenaan staat (één computer mag meer monitoren hebben).
+  Het scherm licht op als de computer werkt.
+- **Instellen** doe je in een nieuwe app **Computers** op de kern (ook via de laptop): alle computers op het netwerk van
+  die kern, met hun naam, wie, de code, en per app **Off / View / Use**. Status, Logs en Monitor hebben geen knoppen, die
+  zijn Off of View. **Settings** (het wachtwoord van de kern), **Groups** (dat zijn je eigen relais) en **Computers** zelf
+  kunnen niet op een pc. De instellingen zitten in de computer zelf: hak je hem weg, dan begint hij opnieuw.
+- **Een nieuwe computer** staat op "Trusted", zonder code en zonder apps ("Not set up yet: choose its apps in the
+  Computers app on your security core").
+- **De eigenaar** komt altijd binnen, zonder code, maar ziet dezelfde apps als iedereen op die pc (alles kan hij op de kern
+  of met de laptop).
+- **Wat een pc niet mag tonen, krijgt hij ook niet**: de server stuurt alleen de gegevens van de apps die erop staan, en
+  weigert elke knop van een app die op View staat ("View only on this computer").
+- **Logs** krijgt bovenaan een knop **All / Entries**: met Entries zie je alleen wie welke lezer, welk paneel of welke
+  knop gebruikte ("wie er waar binnengaat"), ook op de kern zelf.
+- Een pc onthoudt zijn eigen vensters (los van de kern), en sluit als je meer dan 8 blokken van de monitor wegloopt.
+
+Ik bouw het in deze volgorde, één stap per commit:
+
+- [x] **1. Inloggen met de Hacking Laptop (IP + wachtwoord)** — rechtsklik met de laptop in de lucht (of op een blok
+      dat geen kern is) opent het scherm **Hacking Laptop: SSH login**: een vak voor het IP, een vak voor het wachtwoord
+      (je ziet sterretjes; alleen a-z en 0-9 passen erin) en **Connect** (of Enter). Het IP van de vorige keer staat er
+      al in (de laptop onthoudt het, ook in zijn tooltip: "Last login: 10.x.x.x"), het wachtwoord nooit. Lukt het, dan
+      opent de desktop met bovenaan **REMOTE SESSION**; lukt het niet, dan staat er in het rood waarom: "ssh: no system
+      answers at ...", "no route ... That system is in another dimension", "does not answer. That system has no power",
+      "Set a password in Settings on your core first" (de eigenaar), "This system takes no logins: it has no password"
+      (een ander), "Permission denied, please try again", en na `[security] passwordAttempts` foute wachtwoorden "wait
+      4 s". Elke foute poging staat als LOGIN_FAIL in het logboek ("Wrong password from Senne (remote)"), een goede als
+      LOGIN ("Senne logged in remotely"); logt iemand anders in (of probeert hij het), dan krijgt de eigenaar een
+      I.M.T-alarm. Zolang je ingelogd bent, houdt de server het stukje wereld rond de kern geladen (3 x 3 chunks die
+      tikken); de verbinding sluit als je geen Hacking Laptop meer bij je hebt ("you no longer carry a Hacking
+      Laptop"), als de kern geen stroom meer heeft ("the system has no power"), als je van dimensie wisselt, en (zoals
+      al) als iemand het wachtwoord verandert. Hacken werkt zoals altijd: klik met de laptop op een kern die niet van
+      jou is. Nieuw: `OsLoginScreen`, `OsLoginPayload`, `OsLoginPromptPayload`, `SecurityOs.login`. **Test**:
+      `laptop_logs_in_with_ip_and_password` (zonder laptop, zonder wachtwoord, onbekend IP, fout wachtwoord, het goede,
+      het IP op de laptop, een vriend met het wachtwoord, te veel pogingen, een kern zonder stroom). 363 tests, allemaal
+      groen.
+- [ ] **2. De Computer en de Monitor** (blokken, modellen, recepten, netwerk en stroom)
+- [ ] **3. De app Computers op de kern** (naam, wie, code, Off/View/Use per app)
+- [ ] **4. De pc gebruiken** (wie, code, alleen de toegestane apps, alleen kijken, eigen vensters, Logs met Entries)
+- [ ] **5. LEESMIJ, showcase en screenshots**
 
 ---
 
