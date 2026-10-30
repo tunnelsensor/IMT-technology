@@ -4105,7 +4105,8 @@ public final class VisualCheck {
     /**
      * Bij NETWORK_DESK: een kern (van jou) met een generator eronder, een PoE-kabel naar een Network Switch ("Lobby
      * switch", met een eigen generator), en vanaf de switch een netwerkkabel naar een keycardlezer en een PoE-kabel naar een
-     * camera (die krijgt zijn stroom van de kern, door de switch heen). De bovenste poort van de switch staat uit.
+     * camera (die krijgt zijn stroom van de kern, door de switch heen). De bovenste poort van de switch staat uit. Achter
+     * de kern een laserbrug met een netwerkkabel (en een eigen generator en redstone, zodat hij er ligt).
      */
     private static void buildNetworkDesk(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -4150,6 +4151,19 @@ public final class VisualCheck {
         level.setBlockAndUpdate(camera, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
                 .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
                 .setValue(com.senne.imttech.security.CameraBlock.FACING, Direction.SOUTH));
+        // Achter de kern een laserbrug (stap 7) met een netwerkkabel ernaartoe: die staat in Devices bij LASER BRIDGES.
+        BlockPos bridge = core.north(2);
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.north());
+        level.setBlockAndUpdate(bridge.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(bridge.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+            charger.fill(20_000);
+        }
+        level.setBlockAndUpdate(bridge, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
+                .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.WEST));
+        if (level.getBlockEntity(bridge) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity be) {
+            be.setOwner(player);
+        }
+        level.setBlockAndUpdate(bridge.above(), Blocks.REDSTONE_BLOCK.defaultBlockState());
     }
 
     /**

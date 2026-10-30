@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 356 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 357 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3843,7 +3843,16 @@ Ik bouw het in deze volgorde, één stap per commit:
       naam die je hem op een aambeeld gaf). **Tests**: `switch_ports_and_power_decide_the_network`,
       `poe_power_passes_through_a_switch`, `desktop_switches_switch_ports`. 356 tests, allemaal groen. **Screenshots**
       `-Ponly=network`: `nw05_switch_block`, `nw06_switch_screen`, `nw07_devices_switch`.
-- [ ] **7. De laserbrug op het netwerk** (groep LASER BRIDGES)
+- [x] **7. De laserbrug op het netwerk** — jouw keuze: "rij in Devices". Een laserbrug met een netwerkkabel naar de
+      desktop staat nu in **Devices**, in een eigen groep LASER BRIDGES: één regel per brug ("Laser bridge (2 emitters)"),
+      met "active" (hij ligt er), "retracted" (ingetrokken) of "no power" (hij wil er liggen maar er is te weinig stroom).
+      Brugzenders die tegen elkaar zitten geven het netwerk aan elkaar door, zoals laserzenders: één kabel is genoeg voor
+      de hele brug. Zonder kabel werkt een brug gewoon los, op stroom (jouw keuze), en de schakelaar Lasers laat bruggen
+      nog steeds met rust. Laserpoorten en serverracks hingen al aan het netwerk (stap 2). **Mijn invulling**: alleen
+      bruggen van de eigenaar van de kern (of van niemand, uit een commando) staan erin, net als bij je raketturretjes:
+      anders kon iemand met een kabel naar zijn eigen kern jouw brug bedienen (de aan/uit-knop komt in hoofdstuk 39). Met
+      `[network] required = false` staan de bruggen in het gebied van de kern erin. **Test**:
+      `laser_bridges_join_the_network`. 357 tests, allemaal groen.
 - [ ] **8. De netwerkhendel en de netwerkknop** (`when lever(...)`, `when button(...)`)
 - [ ] **9. Signalen en stroom die je ziet lopen**
 - [ ] **10. LEESMIJ, showcase en screenshots**

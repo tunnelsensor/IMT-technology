@@ -59,8 +59,12 @@ import org.jetbrains.annotations.Nullable;
  * Anders dan de rayshield (jouw keuzes): de brug doet geen pijn, iedereen kan erop lopen (spelers, dieren, monsters),
  * en hij hoort niet bij de beveiliging: de schakelaar "Lasers" van de beveiligingskern laat hem met rust, en de
  * Bypass Kit werkt er niet op. Een val maak je zelf: zet hem uit (redstone) terwijl er iemand op staat.
+ *
+ * Hoofdstuk 38: met een netwerkkabel naar de desktop van een kern staat de brug in Devices (de groep LASER BRIDGES).
+ * Zonder kabel werkt hij gewoon los, op stroom (jouw keuze). Brugzenders die tegen elkaar zitten, geven het netwerk aan
+ * elkaar door: één kabel is genoeg voor de hele brug.
  */
-public class LaserBridgeBlock extends Block implements PowerConnectable, EntityBlock {
+public class LaserBridgeBlock extends Block implements PowerConnectable, com.senne.imttech.lan.NetworkConnectable, EntityBlock {
     public static final MapCodec<LaserBridgeBlock> CODEC = simpleCodec(LaserBridgeBlock::new);
 
     /** Waar de lens heen kijkt, en dus waar de brug heen loopt: altijd opzij (jouw wens: "enkel horizontaal"). */
@@ -147,6 +151,15 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, EntityB
             signal |= level.hasNeighborSignal(member);
         }
         return signal != state.getValue(INVERTED);
+    }
+
+    /**
+     * Wil de brug van deze zender er liggen (ook als hij er door een stroomtekort niet ligt)? Voor de desktop: een brug
+     * die aan wil maar uit staat, heeft geen stroom.
+     */
+    public static boolean wantsOn(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return state.getBlock() instanceof LaserBridgeBlock && wanted(level, pos, state);
     }
 
     /**

@@ -18,6 +18,8 @@ import com.senne.imttech.security.CameraBlockEntity;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.SecurityDevices;
+import com.senne.imttech.shield.LaserBridgeBlock;
+import com.senne.imttech.shield.LaserBridgeBlockEntity;
 import com.senne.imttech.shield.LaserEmitterBlock;
 import com.senne.imttech.station.ChargerBlockEntity;
 import com.senne.imttech.turret.TurretBlock;
@@ -646,6 +648,64 @@ public final class NetworkGameTests {
                     "Devices toont de switch niet met zes poorten: " + row);
             helper.succeed();
         });
+    }
+
+    // ================================================================ Stap 7: de laserbrug op het netwerk
+
+    /**
+     * Jouw keuze: een laserbrug met een netwerkkabel naar de desktop staat in Devices (de groep LASER BRIDGES), met één
+     * regel per brug, ook als hij uit twee zenders bestaat (die geven het netwerk aan elkaar door: één kabel is genoeg). Een
+     * brug van iemand anders staat er niet in, ook niet als hij aan de kabel hangt, en een brug zonder kabel ook niet; die
+     * werkt gewoon los, op stroom.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "lan")
+    public static void laser_bridges_join_the_network(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 3, 7), "lan-bridge-owner");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "lan-bridge-stranger");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(5, 3, 2));
+        // Een brug van twee zenders breed: de kabel komt alleen bij de eerste.
+        BlockPos first = new BlockPos(6, 3, 2);
+        BlockPos second = first.south();
+        for (BlockPos emitter : List.of(first, second)) {
+            placeBridge(helper, emitter, owner);
+            helper.setBlock(emitter.east(5), Blocks.STONE);
+        }
+        generator(helper, first.below());
+        helper.setBlock(first.above(), Blocks.REDSTONE_BLOCK);
+        // Een brug van een ander aan dezelfde kabel, en een brug van de eigenaar zonder kabel (met stroom en redstone).
+        placeBridge(helper, new BlockPos(4, 3, 1), stranger);
+        BlockPos loose = new BlockPos(6, 3, 12);
+        placeBridge(helper, loose, owner);
+        helper.setBlock(loose.east(5), Blocks.STONE);
+        generator(helper, loose.below());
+        helper.setBlock(loose.above(), Blocks.REDSTONE_BLOCK);
+        helper.succeedWhen(() -> {
+            check(helper.getBlockState(first).getValue(LaserBridgeBlock.POWERED), "De bekabelde brug ging niet aan");
+            check(helper.getBlockState(loose).getValue(LaserBridgeBlock.POWERED), "Een brug zonder netwerkkabel werkt niet los");
+            check(coreOf(helper, second) == core, "De tweede zender hangt niet aan het netwerk (via de eerste)");
+            SecurityDevices.forget(level, core);
+            List<CompoundTag> rows = new java.util.ArrayList<>();
+            for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {
+                if (((CompoundTag) tag).getString("k").equals("bridge")) {
+                    rows.add((CompoundTag) tag);
+                }
+            }
+            check(rows.size() == 1, "Devices toont niet precies één brug (de bekabelde van de eigenaar): " + rows);
+            CompoundTag row = rows.get(0);
+            BlockPos firstAbs = helper.absolutePos(first);
+            check(row.getInt("x") == firstAbs.getX() && row.getInt("y") == firstAbs.getY() && row.getInt("z") == firstAbs.getZ(),
+                    "De brug staat niet onder zijn eerste zender in Devices: " + row);
+            check(row.getString("name").equals("Laser bridge (2 emitters)") && row.getString("st").equals("active"),
+                    "De regel van de brug klopt niet: " + row);
+        });
+    }
+
+    /** Een brugzender die naar het oosten kijkt, van deze speler. */
+    private static void placeBridge(GameTestHelper helper, BlockPos pos, ServerPlayer owner) {
+        helper.setBlock(pos, ModBlocks.LASER_BRIDGE.get().defaultBlockState().setValue(LaserBridgeBlock.FACING, Direction.EAST));
+        ((LaserBridgeBlockEntity) helper.getBlockEntity(pos)).setOwner(owner);
     }
 
     /** Een camera op de vloer bij {@code pos} (er komt een steen onder), die naar het zuiden kijkt. */

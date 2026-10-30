@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>torentjes: aan/uit (een eigen knop per torentje), stroom, raketten, waar hij op richt;</li>
  *   <li>drones: levens, wat hij doet, op wie hij schiet;</li>
  *   <li>laserpoorten: aan of open;</li>
+ *   <li>laserbruggen (hoofdstuk 38): ligt hij er ("active"), is hij ingetrokken ("retracted"), of heeft hij geen stroom;</li>
  *   <li>camera's: beeld of niet (het beeld zelf zie je in de app Cameras);</li>
  *   <li>keycardlezers en codepanelen: of de server ze hoort, in hoeveel diagrammen ze staan, en een
  *       knop Rename (jouw wens van 8 oktober). Typ de naam, Enter bewaart, Esc laat het zoals het was.</li>
@@ -73,8 +74,8 @@ final class DevicesApp {
     /** De lijst: per soort een kopje en dan de apparaten van die soort. */
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
-        String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"camera", "CAMERAS"},
-                {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"switch", "NETWORK SWITCHES"}};
+        String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"bridge", "LASER BRIDGES"},
+                {"camera", "CAMERAS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {
             boolean any = false;
@@ -244,13 +245,14 @@ final class DevicesApp {
             renaming = null; // de lezer is weg (afgebroken)
         }
         if (rows.isEmpty()) {
-            g.drawString(font, "No turrets, drones, laser gates, cameras, readers", a.x() + 5, top + 4, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, "No turrets, drones, laser gates, bridges, cameras,", a.x() + 5, top + 4, HudStyle.argb(255, OsDraw.GREY), false);
             // Hoofdstuk 38: apparaten horen bij deze desktop via een netwerkkabel (de config van de server zegt of dat moet).
             g.drawString(font, com.senne.imttech.config.ImtConfig.Network.REQUIRED
-                            ? "or code panels on this network yet: connect them" : "or code panels in this network's area yet.",
+                            ? "readers, code panels or switches on this network" : "readers, code panels or switches in this area yet.",
                     a.x() + 5, top + 14, HudStyle.argb(255, OsDraw.GREY), false);
             if (com.senne.imttech.config.ImtConfig.Network.REQUIRED) {
-                g.drawString(font, "to this core with a Network Cable.", a.x() + 5, top + 24, HudStyle.argb(255, OsDraw.GREY), false);
+                g.drawString(font, "yet: connect them to this core with a Network Cable.", a.x() + 5, top + 24,
+                        HudStyle.argb(255, OsDraw.GREY), false);
             }
             return;
         }
@@ -319,7 +321,7 @@ final class DevicesApp {
         int colour = switch (status) {
             case "online", "patrolling", "active", "ready" -> HudStyle.GREEN;
             case "attacking", "standby" -> HudStyle.ORANGE;
-            case "open" -> HudStyle.CYAN;
+            case "open", "retracted" -> HudStyle.CYAN;
             default -> HudStyle.RED;
         };
         StringBuilder details = new StringBuilder();

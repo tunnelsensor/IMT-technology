@@ -30,8 +30,8 @@ import org.jetbrains.annotations.Nullable;
  *       staat. Kabels die tegen elkaar aan liggen, zitten aan elkaar vast.</li>
  *   <li>We zoeken vanaf het apparaat langs de kabels, net als water door buizen, tot we bij een Security Core komen
  *       (de desktop). Staat het apparaat er direct tegenaan, dan heeft het geen kabel nodig.</li>
- *   <li>Serverracks en laserzenders geven het netwerk ook door aan wie ertegenaan staat: een kast vol racks of een
- *       laserpoort van meer zenders heeft genoeg aan één kabel (zoals bij stroom).</li>
+ *   <li>Serverracks, laserzenders en brugzenders geven het netwerk ook door aan wie ertegenaan staat: een kast vol racks,
+ *       een laserpoort of een laserbrug van meer zenders heeft genoeg aan één kabel (zoals bij stroom).</li>
  *   <li>Een open kabel binnen een EMP-puls geeft even niets door (zie Emp.cutsCable); een kabel in een muur wel.</li>
  *   <li>Raakt een net twee kernen, dan hoort een apparaat bij de dichtstbijzijnde langs de kabel.</li>
  * </ul>
@@ -229,10 +229,12 @@ public final class LanGrid {
 
     /**
      * Geeft deze plek het netwerk door? Een netwerk- of PoE-kabel (behalve een open kabel in een EMP-puls), een serverrack,
-     * een laserzender, of een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de zoektocht zelf na).
+     * een laser- of brugzender, of een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de zoektocht zelf
+     * na).
      */
     private static boolean conducts(Level level, BlockPos pos, BlockState state) {
-        if (state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.LASER_EMITTER.get())) {
+        if (state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.LASER_EMITTER.get())
+                || state.is(ModBlocks.LASER_BRIDGE.get())) {
             return true;
         }
         if (state.getBlock() instanceof NetworkSwitchBlock) {

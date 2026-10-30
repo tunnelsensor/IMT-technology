@@ -1,6 +1,8 @@
 package com.senne.imttech.security;
 
 import com.senne.imttech.registry.ModBlocks;
+import com.senne.imttech.shield.LaserBridgeBlock;
+import com.senne.imttech.shield.LaserBridgeBlockEntity;
 import com.senne.imttech.shield.LaserEmitterBlock;
 import com.senne.imttech.turret.TurretBlock;
 import com.senne.imttech.turret.TurretBlockEntity;
@@ -40,6 +42,8 @@ import org.jetbrains.annotations.Nullable;
  *       (dan geven ze "NO SIGNAL").</li>
  *   <li><b>Keycardlezers en codepanelen:</b> met hun naam (die kun je daar ook veranderen), of de
  *       server ze hoort, en in hoeveel diagrammen ze staan.</li>
+ *   <li><b>Network Switches</b> (hoofdstuk 38): of ze stroom hebben, en hun zes poorten.</li>
+ *   <li><b>Laserbruggen</b> (hoofdstuk 38): van de eigenaar van de kern, één regel per brug: ligt hij er of niet.</li>
  * </ul>
  *
  * Er is geen lijst die bijhoudt wat er gebouwd wordt: we kijken gewoon in het gebied, en
@@ -55,10 +59,11 @@ public final class SecurityDevices {
     /**
      * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
      * camera's, de serverracks (zie LogicServer), de keycardlezers en codepanelen (inputs) en (hoofdstuk 38) de
-     * Network Switches.
+     * Network Switches en van elke laserbrug één zender (bridges).
      */
-    public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> cameras,
-                        List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches, long time) {}
+    public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> bridges,
+                        List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
+                        long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -88,6 +93,7 @@ public final class SecurityDevices {
         List<BlockPos> racks = new ArrayList<>();
         List<BlockPos> inputs = new ArrayList<>();
         List<BlockPos> switches = new ArrayList<>();
+        List<BlockPos> bridges = new ArrayList<>();
         for (BlockPos pos : com.senne.imttech.lan.LanGrid.devicesOf(level, core.getBlockPos())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof TurretBlockEntity turret) {
@@ -102,6 +108,10 @@ public final class SecurityDevices {
                 inputs.add(pos);
             } else if (blockEntity instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity) {
                 switches.add(pos);
+            } else if (blockEntity instanceof LaserBridgeBlockEntity bridge) {
+                if (belongs(core, bridge)) {
+                    bridges.add(pos);
+                }
             } else if (level.getBlockState(pos).is(ModBlocks.LASER_EMITTER.get())) {
                 emitters.add(pos);
             }
@@ -112,7 +122,7 @@ public final class SecurityDevices {
         emitters.sort(null);
         racks.sort(null);
         switches.sort(null);
-        return found(level, turrets, emitters, cameras, racks, inputs, switches, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, now);
     }
 
     /** Zoals vroeger: alles wat in het gebied van deze kern staat (en geen andere kern dichterbij heeft). */
@@ -123,6 +133,7 @@ public final class SecurityDevices {
         List<BlockPos> racks = new ArrayList<>();
         List<BlockPos> inputs = new ArrayList<>();
         List<BlockPos> switches = new ArrayList<>();
+        List<BlockPos> bridges = new ArrayList<>();
         AABB area = core.area();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
         int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
@@ -150,6 +161,9 @@ public final class SecurityDevices {
                     } else if (blockEntity instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity networkSwitch
                             && SecurityCores.ownedBy(level, core, networkSwitch.getBlockPos())) {
                         switches.add(networkSwitch.getBlockPos().immutable());
+                    } else if (blockEntity instanceof LaserBridgeBlockEntity bridge
+                            && SecurityCores.ownedBy(level, core, bridge.getBlockPos()) && belongs(core, bridge)) {
+                        bridges.add(bridge.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -175,12 +189,16 @@ public final class SecurityDevices {
                 }
             }
         }
-        return found(level, turrets, emitters, cameras, racks, inputs, switches, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, now);
     }
 
-    /** Maakt de lijst af: zenders die aan elkaar vastzitten worden poorten, en camera's, lezers en panelen op volgorde. */
-    private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> cameras,
-                               List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches, long now) {
+    /**
+     * Maakt de lijst af: zenders die aan elkaar vastzitten worden poorten (en brugzenders bruggen), en camera's, lezers en
+     * panelen op volgorde.
+     */
+    private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> bridgeEmitters,
+                               List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
+                               long now) {
         // Zenders die aan elkaar vastzitten zijn samen één poort.
         List<BlockPos> gates = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
@@ -190,6 +208,15 @@ public final class SecurityDevices {
                 gates.add(emitter);
             }
         }
+        // Hetzelfde voor de bruggen: de laagste plek (na sorteren de eerste) staat voor de hele brug.
+        List<BlockPos> bridges = new ArrayList<>();
+        bridgeEmitters.sort(null);
+        for (BlockPos emitter : bridgeEmitters) {
+            if (seen.add(emitter)) {
+                seen.addAll(LaserBridgeBlock.group(level, emitter));
+                bridges.add(emitter);
+            }
+        }
         // De camera's in een vaste volgorde (van boven naar beneden, dan noord naar zuid, west naar
         // oost), zodat "Camera 1" niet steeds een andere is.
         cameras.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
@@ -197,14 +224,23 @@ public final class SecurityDevices {
         // De lezers en panelen ook: zo springt er niets heen en weer als je er een andere naam geeft.
         inputs.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
-        return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(cameras),
-                List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), now);
+        return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(bridges),
+                List.copyOf(cameras), List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), now);
     }
 
     /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */
     public static boolean belongs(SecurityCoreBlockEntity core, TurretBlockEntity turret) {
         return turret.kind() == TurretKind.SECURITY
                 || turret.kind() == TurretKind.ROCKET && core.ownerId() != null && core.ownerId().equals(turret.ownerId());
+    }
+
+    /**
+     * Hoort deze laserbrug bij de kern (hoofdstuk 38)? Als hij van de eigenaar van de kern is, of van niemand (neergezet
+     * met een commando of door een gebouw). Een brug van iemand anders niet, ook niet als er een kabel naar deze kern
+     * loopt: anders kon je met een kabel de brug van een ander bedienen.
+     */
+    public static boolean belongs(SecurityCoreBlockEntity core, LaserBridgeBlockEntity bridge) {
+        return bridge.owner() == null || bridge.owner().equals(core.ownerId());
     }
 
     /** De oude beveiligingsdrones van deze kern (van voor hoofdstuk 25: de kern maakt er geen meer). */
@@ -410,6 +446,22 @@ public final class SecurityDevices {
             // Doorgeknipt met de Bypass Kit (hoofdstuk 33): zo ziet de eigenaar welke poort hij moet herstellen.
             device.putString("st", LaserEmitterBlock.isCut(level, members) ? "cut wires"
                     : on ? "active" : core.lasersEnabled() ? "open" : "off (network)");
+            list.add(device);
+        }
+        // Hoofdstuk 38: de laserbruggen, één regel per brug. "no power": hij wil er liggen, maar er is te weinig stroom.
+        for (BlockPos bridge : found.bridges()) {
+            if (!level.getBlockState(bridge).is(ModBlocks.LASER_BRIDGE.get())) {
+                continue;
+            }
+            List<BlockPos> members = LaserBridgeBlock.group(level, bridge);
+            boolean on = members.stream().anyMatch(member -> {
+                BlockState state = level.getBlockState(member);
+                return state.is(ModBlocks.LASER_BRIDGE.get()) && state.getValue(LaserBridgeBlock.POWERED);
+            });
+            CompoundTag device = position("bridge", bridge);
+            device.putString("name", "Laser bridge (" + members.size() + (members.size() == 1 ? " emitter)" : " emitters)"));
+            device.putBoolean("on", on);
+            device.putString("st", on ? "active" : LaserBridgeBlock.wantsOn(level, bridge) ? "no power" : "retracted");
             list.add(device);
         }
         int cameraNumber = 1;
