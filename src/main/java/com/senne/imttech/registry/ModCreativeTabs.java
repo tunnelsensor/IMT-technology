@@ -112,6 +112,8 @@ public final class ModCreativeTabs {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SECURITY = tab("security", INTERIOR.getKey(),
             () -> new ItemStack(ModItems.KEYCARD_READER.get()), (parameters, output) -> {
                 output.accept(ModItems.SECURITY_CORE.get());
+                output.accept(ModItems.COMPUTER.get());
+                output.accept(ModItems.MONITOR.get());
                 output.accept(ModItems.ZONE_MARKER.get());
                 output.accept(ModItems.KEYCARD.get());
                 output.accept(ModItems.KEYCARD_READER.get());

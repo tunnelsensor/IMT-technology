@@ -62,11 +62,11 @@ public final class SecurityDevices {
     /**
      * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
      * camera's, de serverracks (zie LogicServer), de keycardlezers en codepanelen (inputs) en (hoofdstuk 38) de
-     * Network Switches en van elke laserbrug één zender (bridges).
+     * Network Switches en van elke laserbrug één zender (bridges), en (hoofdstuk 40) de Computers.
      */
     public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> bridges,
                         List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
-                        long time) {}
+                        List<BlockPos> computers, long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -97,6 +97,7 @@ public final class SecurityDevices {
         List<BlockPos> inputs = new ArrayList<>();
         List<BlockPos> switches = new ArrayList<>();
         List<BlockPos> bridges = new ArrayList<>();
+        List<BlockPos> computers = new ArrayList<>();
         for (BlockPos pos : com.senne.imttech.lan.LanGrid.devicesOf(level, core.getBlockPos())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof TurretBlockEntity turret) {
@@ -111,6 +112,8 @@ public final class SecurityDevices {
                 inputs.add(pos);
             } else if (blockEntity instanceof com.senne.imttech.lan.NetworkSwitchBlockEntity) {
                 switches.add(pos);
+            } else if (blockEntity instanceof com.senne.imttech.computer.ComputerBlockEntity) {
+                computers.add(pos);
             } else if (blockEntity instanceof LaserBridgeBlockEntity bridge) {
                 if (belongs(core, bridge)) {
                     bridges.add(pos);
@@ -125,7 +128,7 @@ public final class SecurityDevices {
         emitters.sort(null);
         racks.sort(null);
         switches.sort(null);
-        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, now);
     }
 
     /** Zoals vroeger: alles wat in het gebied van deze kern staat (en geen andere kern dichterbij heeft). */
@@ -137,6 +140,7 @@ public final class SecurityDevices {
         List<BlockPos> inputs = new ArrayList<>();
         List<BlockPos> switches = new ArrayList<>();
         List<BlockPos> bridges = new ArrayList<>();
+        List<BlockPos> computers = new ArrayList<>();
         AABB area = core.area();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
         int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
@@ -167,6 +171,9 @@ public final class SecurityDevices {
                     } else if (blockEntity instanceof LaserBridgeBlockEntity bridge
                             && SecurityCores.ownedBy(level, core, bridge.getBlockPos()) && belongs(core, bridge)) {
                         bridges.add(bridge.getBlockPos().immutable());
+                    } else if (blockEntity instanceof com.senne.imttech.computer.ComputerBlockEntity computer
+                            && SecurityCores.ownedBy(level, core, computer.getBlockPos())) {
+                        computers.add(computer.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -192,7 +199,7 @@ public final class SecurityDevices {
                 }
             }
         }
-        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, now);
     }
 
     /**
@@ -201,7 +208,7 @@ public final class SecurityDevices {
      */
     private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> bridgeEmitters,
                                List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
-                               long now) {
+                               List<BlockPos> computers, long now) {
         // Zenders die aan elkaar vastzitten zijn samen één poort.
         List<BlockPos> gates = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
@@ -227,8 +234,10 @@ public final class SecurityDevices {
         // De lezers en panelen ook: zo springt er niets heen en weer als je er een andere naam geeft.
         inputs.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
+        // De computers ook (hoofdstuk 40): zo staan ze in de app Computers altijd in dezelfde volgorde.
+        computers.sort(null);
         return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(bridges),
-                List.copyOf(cameras), List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), now);
+                List.copyOf(cameras), List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), List.copyOf(computers), now);
     }
 
     /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */

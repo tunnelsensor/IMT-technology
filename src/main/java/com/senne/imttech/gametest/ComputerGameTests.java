@@ -1,11 +1,19 @@
 package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
+import com.senne.imttech.computer.ComputerBlock;
+import com.senne.imttech.computer.ComputerBlockEntity;
+import com.senne.imttech.computer.Computers;
+import com.senne.imttech.computer.MonitorBlock;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.energy.CableKind;
+import com.senne.imttech.energy.Cables;
+import com.senne.imttech.lan.LanGrid;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModDataComponents;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
+import com.senne.imttech.security.SecurityDevices;
 import com.senne.imttech.security.os.EventLog;
 import com.senne.imttech.security.os.SecurityOs;
 import net.minecraft.core.BlockPos;
@@ -15,6 +23,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -28,6 +37,37 @@ public final class ComputerGameTests {
     private ComputerGameTests() {}
 
     private static final String ARENA = "empty";
+
+    /** Vóór de tests van deze batch: beveiligingsapparaten hebben een netwerkkabel nodig (zoals in een echte wereld). */
+    @net.minecraft.gametest.framework.BeforeBatch(batch = "computers")
+    public static void networkOn(ServerLevel level) {
+        LanGrid.overrideRequired(true);
+    }
+
+    /** Daarna weer de oude regel, voor de andere tests. */
+    @net.minecraft.gametest.framework.AfterBatch(batch = "computers")
+    public static void networkOff(ServerLevel level) {
+        LanGrid.overrideRequired(null);
+    }
+
+    private static void check(boolean ok, String message) {
+        if (!ok) {
+            throw new GameTestAssertException(message);
+        }
+    }
+
+    /** Legt een netwerkkabel langs een rechte lijn op de x-as, van {@code from} tot en met {@code to}. */
+    private static void networkLine(GameTestHelper helper, BlockPos from, int toX) {
+        for (int x = from.getX(); x <= toX; x++) {
+            Cables.add(CableKind.NETWORK, helper.getLevel(), helper.absolutePos(new BlockPos(x, from.getY(), from.getZ())));
+        }
+    }
+
+    /** Een volle warmtegenerator op deze plek (stroom voor wat ernaast staat). */
+    private static void generator(GameTestHelper helper, BlockPos pos) {
+        helper.setBlock(pos, ModBlocks.HEAT_GENERATOR.get());
+        ((com.senne.imttech.station.ChargerBlockEntity) helper.getBlockEntity(pos)).fill(20_000);
+    }
 
     /** Een kern met stroom en een systeem (IP), van deze eigenaar, die weet dat hij stroom heeft. */
     private static SecurityCoreBlockEntity poweredCore(GameTestHelper helper, BlockPos pos, ServerPlayer owner) {
@@ -122,6 +162,53 @@ public final class ComputerGameTests {
         if (dark.isOnline() || SecurityOs.hasDesktop(owner)) {
             throw new GameTestAssertException("Een kern zonder stroom liet iemand van ver binnen");
         }
+        helper.succeed();
+    }
+
+    /**
+     * De Computer en de Monitor (stap 2): zonder netwerkkabel naar de kern werkt de computer niet ("no network"), met kabel
+     * maar zonder stroom ook niet ("no power"); met allebei brandt hij, licht de monitor ertegen op en staat hij in de lijst
+     * van de kern. Een nieuwe computer heet "Computer 1". Haal je de computer weg, dan gaat het scherm uit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "computers")
+    public static void computer_needs_network_and_power_and_lights_its_monitor(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 3, 6), "pc-owner");
+        SecurityCoreBlockEntity core = poweredCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos computer = new BlockPos(6, 3, 2);
+        BlockPos monitor = new BlockPos(7, 3, 2);
+        helper.setBlock(computer, ModBlocks.COMPUTER.get());
+        helper.setBlock(monitor, ModBlocks.MONITOR.get());
+        BlockPos computerAbs = helper.absolutePos(computer);
+        ComputerBlockEntity entity = (ComputerBlockEntity) helper.getBlockEntity(computer);
+        check("Computer 1".equals(Computers.freeName(level, computerAbs)), "Een nieuwe computer heet niet Computer 1");
+
+        // Zonder netwerkkabel: uit.
+        entity.updateOn(level);
+        helper.assertBlockProperty(computer, ComputerBlock.ON, false);
+        check(Computers.problem(level, computerAbs) != null && Computers.problem(level, computerAbs).getString().contains("No network"),
+                "Zonder kabel zegt de computer: " + Computers.problem(level, computerAbs));
+
+        // Met netwerkkabel, zonder stroom: nog steeds uit.
+        networkLine(helper, new BlockPos(3, 3, 2), 5);
+        entity.updateOn(level);
+        helper.assertBlockProperty(computer, ComputerBlock.ON, false);
+        check(entity.core(level) == core, "De computer hangt niet aan de kern");
+        check(Computers.problem(level, computerAbs) != null && Computers.problem(level, computerAbs).getString().contains("no power"),
+                "Zonder stroom zegt de computer: " + Computers.problem(level, computerAbs));
+
+        // Met stroom: aan, de monitor licht op, en de kern kent hem.
+        generator(helper, computer.above());
+        entity.updateOn(level);
+        helper.assertBlockProperty(computer, ComputerBlock.ON, true);
+        helper.assertBlockProperty(monitor, MonitorBlock.ON, true);
+        check(Computers.problem(level, computerAbs) == null, "Een werkende computer heeft toch een probleem");
+        SecurityDevices.forget(level, core);
+        check(SecurityDevices.scan(level, core).computers().contains(computerAbs), "De kern kent zijn computer niet");
+
+        // De computer weg: het scherm gaat uit.
+        helper.setBlock(computer, Blocks.AIR);
+        helper.assertBlockProperty(monitor, MonitorBlock.ON, false);
         helper.succeed();
     }
 }

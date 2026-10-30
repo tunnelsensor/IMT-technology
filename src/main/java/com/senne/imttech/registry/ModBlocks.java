@@ -193,6 +193,26 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(com.senne.imttech.lan.NetworkSwitchBlock.ONLINE) ? 3 : 0));
 
+    /** Hoofdstuk 40: de Computer, een pc-kast op het netwerk van een kern (zie computer/ComputerBlock). */
+    public static final DeferredBlock<com.senne.imttech.computer.ComputerBlock> COMPUTER = BLOCKS.registerBlock(
+            "computer", com.senne.imttech.computer.ComputerBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.imttech.computer.ComputerBlock.ON) ? 2 : 0));
+
+    /** Hoofdstuk 40: de Monitor met toetsenbord, tegen een Computer (zie computer/MonitorBlock). Het scherm geeft wat licht. */
+    public static final DeferredBlock<com.senne.imttech.computer.MonitorBlock> MONITOR = BLOCKS.registerBlock(
+            "monitor", com.senne.imttech.computer.MonitorBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(1.5f, 3.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.imttech.computer.MonitorBlock.ON) ? 6 : 0));
+
     /** De schildkoepel-generator. */
     public static final DeferredBlock<DomeGeneratorBlock> DOME_GENERATOR = BLOCKS.registerBlock("dome_generator",
             DomeGeneratorBlock::new,

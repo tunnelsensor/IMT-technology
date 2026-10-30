@@ -339,6 +339,9 @@ public final class ImtConfig {
         /** Hetzelfde voor een netwerkhendel. */
         @Tunable("Grid energy a network lever uses every two seconds (without it, the server does not hear it)")
         public static float LEVER_UPKEEP = 0.5f;
+        /** Hoofdstuk 40: stroom die een Computer elke twee seconden haalt (zonder: zijn monitor blijft zwart). */
+        @Tunable("Grid energy a computer uses every two seconds (without it, its monitor stays dark)")
+        public static float COMPUTER_UPKEEP = 2.0f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */

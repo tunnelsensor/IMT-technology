@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "item": "minecraft:black_stained_glass_pane"
+    },
+    "D": {
+      "tag": "c:dusts/glowstone"
+    },
+    "B": {
+      "item": "minecraft:stone_button"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "IDI",
+    "BBB"
+  ],
+  "result": {
+    "id": "imttech:monitor"
+  }
+}

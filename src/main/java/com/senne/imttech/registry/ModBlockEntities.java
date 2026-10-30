@@ -42,6 +42,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.lan.NetworkSwitchBlockEntity::new,
                             java.util.Set.of(ModBlocks.NETWORK_SWITCH.get()), null));
 
+    /** Hoofdstuk 40: de Computer (naam, eigenaar, en wat de kern erop toestaat). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.computer.ComputerBlockEntity>> COMPUTER =
+            BLOCK_ENTITIES.register("computer",
+                    () -> new BlockEntityType<>(com.senne.imttech.computer.ComputerBlockEntity::new,
+                            java.util.Set.of(ModBlocks.COMPUTER.get()), null));
+
     /** De schildkoepel-generator: zijn instellingen, schildkracht en of de koepel staat. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DomeGeneratorBlockEntity>> DOME_GENERATOR =
             BLOCK_ENTITIES.register("dome_generator",

@@ -526,6 +526,52 @@ def robot_dock():
     blockstate("robot_dock", variants)
 
 
+def computer_and_monitor():
+    """
+    Hoofdstuk 40: de Computer (een volle pc-kast) en de Monitor met toetsenbord. Beide kijken naar het noorden: de
+    voorkant van de kast (met de aan-knop) en het scherm van de monitor wijzen naar wie ze neerzette. De blockstate
+    draait ze, en "on" kiest het model waarin de knop brandt en het scherm de desktop toont (en zelf licht geeft).
+    - de monitor: een voetje en een steeltje achteraan, het scherm (14 x 10) erboven, en vooraan het toetsenbord.
+    """
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    for on in (False, True):
+        suffix = "_on" if on else ""
+        textures = {"particle": "imttech:block/computer_side",
+                    "front": "imttech:block/computer_front" + suffix,
+                    "back": "imttech:block/computer_back",
+                    "side": "imttech:block/computer_side",
+                    "top": "imttech:block/computer_top"}
+        save("computer" + suffix, textures, [
+            box([0, 0, 0], [16, 16, 16], {"north": "#front", "south": "#back", "east": "#side", "west": "#side",
+                                          "up": "#top", "down": "#top"}),
+        ])
+        textures = {"particle": "imttech:block/monitor_case",
+                    "case": "imttech:block/monitor_case",
+                    "screen": "imttech:block/monitor_screen" + suffix,
+                    "keys": "imttech:block/monitor_keyboard"}
+        screen = box([1, 3, 11], [15, 13, 12.5], {"north": "#screen", "rest": "#case"})
+        if on:
+            # Alleen de voorkant van het scherm geeft licht (de rest van de monitor niet).
+            screen["faces"]["north"]["shade"] = False
+            screen["faces"]["north"]["neoforge_data"] = {"block_light": 15, "sky_light": 15}
+        save("monitor" + suffix, textures, [
+            box([5, 0, 10], [11, 1, 14], "#case"),
+            box([7, 1, 12.5], [9, 6, 13.5], "#case", skip=("down",)),
+            screen,
+            box([2, 0, 2], [14, 0.75, 7], {"up": "#keys", "rest": "#case"}),
+        ])
+    for name in ("computer", "monitor"):
+        variants = {}
+        for facing, y in turn.items():
+            for on in (False, True):
+                option = {"model": "imttech:block/" + name + ("_on" if on else "")}
+                if y:
+                    option["y"] = y
+                variants["facing=%s,on=%s" % (facing, "true" if on else "false")] = option
+        blockstate(name, variants)
+        write(ROOT / "models" / "item" / (name + ".json"), {"parent": "imttech:block/" + name + "_on"})
+
+
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
@@ -542,3 +588,4 @@ if __name__ == "__main__":
     light_switch()
     network_controls()
     robot_dock()
+    computer_and_monitor()

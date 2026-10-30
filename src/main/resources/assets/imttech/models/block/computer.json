@@ -1,0 +1,50 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/computer_side",
+    "front": "imttech:block/computer_front",
+    "back": "imttech:block/computer_back",
+    "side": "imttech:block/computer_side",
+    "top": "imttech:block/computer_top"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#front",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#back",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#side",
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#side",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#top",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#top",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}

@@ -2695,6 +2695,125 @@ def network_switch_textures():
     save(top, "block/network_switch_top.png")
 
 
+
+def computer_textures():
+    """
+    Hoofdstuk 40: de Computer (een pc-kast) en de Monitor met toetsenbord die ertegen staat.
+    - computer voorkant: donkergrijze kast met twee schijfvakken, een aan-knop met een ring (uit: donker, aan: cyaan) en
+      een groen werklampje ('front_on'), onderaan een ventilatierooster;
+    - computer achterkant: een witte netwerkpoort (de kleur van het netwerk), een stroomaansluiting en een ventilator;
+    - computer zijkant en bovenkant: de kast met een rooster en een randje;
+    - monitor: de kast (zwart plastic), het scherm uit (donker glas met een glimp licht) en aan (de Security OS-desktop:
+      een kopbalk, icoontjes links, een venster met een camerabeeld en de taakbalk), en het toetsenbord.
+    Het beeld staat in het vak x 1-14, y 3-12 van het plaatje (daar valt het scherm van het model).
+    Alleen deze functie draaien:
+        python -c "import sys; sys.path.insert(0,'tools'); import generate_textures as g; g.computer_textures()"
+    """
+    case = (44, 48, 56, 255)
+    case_dark = (26, 28, 34, 255)
+    case_light = (78, 84, 96, 255)
+    bay = (34, 37, 44, 255)
+    white = (228, 232, 238, 255)
+    led_off = (40, 50, 56, 255)
+    led_on = (90, 245, 130, 255)
+    ring_on = (63, 216, 255, 255)
+
+    def front(lit):
+        im = img(16, 16, case)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=case_dark)
+        d.line([1, 1, 14, 1], fill=case_light)
+        # Twee schijfvakken met een gleufje.
+        for y in (3, 6):
+            d.rectangle([2, y, 13, y + 1], fill=bay, outline=case_dark)
+            d.line([4, y + 1, 9, y + 1], fill=case_light)
+        # De aan-knop met zijn ring, en rechts het werklampje.
+        d.ellipse([6, 8, 9, 11], fill=case_dark, outline=ring_on if lit else led_off)
+        px(im, [(7, 9), (8, 10), (7, 10), (8, 9)], case_light)
+        px(im, [(12, 10)], led_on if lit else led_off)
+        # Ventilatiesleufjes onderaan.
+        for y in (13, 14):
+            for x in range(3, 13, 2):
+                px(im, [(x, y)], case_dark)
+        return im
+
+    save(front(False), "block/computer_front.png")
+    save(front(True), "block/computer_front_on.png")
+
+    side = img(16, 16, case)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=case_dark)
+    d.line([1, 1, 14, 1], fill=case_light)
+    for y in range(4, 12, 2):
+        for x in range(4, 12, 2):
+            px(side, [(x, y)], case_dark)
+    save(side, "block/computer_side.png")
+
+    back = img(16, 16, case)
+    d = ImageDraw.Draw(back)
+    d.rectangle([0, 0, 15, 15], outline=case_dark)
+    d.rectangle([2, 2, 6, 5], fill=(20, 22, 26, 255), outline=white)        # de netwerkpoort
+    px(back, [(3, 4), (4, 4), (5, 4)], white)
+    d.rectangle([9, 2, 13, 5], fill=(14, 14, 16, 255), outline=case_light)  # de stroomaansluiting
+    px(back, [(10, 3), (12, 3)], (180, 160, 60, 255))
+    d.ellipse([4, 7, 11, 14], fill=case_dark, outline=case_light)           # de ventilator
+    d.line([5, 8, 10, 13], fill=case)
+    d.line([5, 13, 10, 8], fill=case)
+    px(back, [(7, 10), (8, 11), (7, 11), (8, 10)], case_light)
+    save(back, "block/computer_back.png")
+
+    top = img(16, 16, case)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=case_dark)
+    d.rectangle([1, 1, 14, 14], outline=case_light)
+    save(top, "block/computer_top.png")
+
+    plastic = (30, 33, 40, 255)
+    plastic_light = (58, 62, 72, 255)
+    monitor_case = img(16, 16, plastic)
+    d = ImageDraw.Draw(monitor_case)
+    d.rectangle([0, 0, 15, 15], outline=(18, 20, 24, 255))
+    d.line([1, 1, 14, 1], fill=plastic_light)
+    save(monitor_case, "block/monitor_case.png")
+
+    def screen(lit):
+        im = img(16, 16, plastic)
+        d = ImageDraw.Draw(im)
+        # De rand van het scherm (het beeld zelf is x 2-13, y 4-11).
+        d.rectangle([1, 3, 14, 12], outline=(18, 20, 24, 255))
+        if not lit:
+            d.rectangle([2, 4, 13, 11], fill=(10, 13, 18, 255))
+            d.line([9, 4, 13, 8], fill=(26, 32, 42, 255))   # een glimp licht op het glas
+            d.line([10, 4, 13, 7], fill=(20, 25, 33, 255))
+            return im
+        d.rectangle([2, 4, 13, 11], fill=(10, 16, 22, 255))
+        d.line([2, 4, 13, 4], fill=(14, 26, 36, 255))         # de kopbalk
+        px(im, [(3, 4), (4, 4), (5, 4)], (63, 216, 255, 255))
+        px(im, [(12, 4)], (90, 245, 130, 255))                # ONLINE
+        for y in (6, 8, 10):                                  # de icoontjes links
+            px(im, [(3, y)], (63, 216, 255, 255))
+        d.rectangle([5, 5, 12, 10], fill=(18, 32, 43, 255), outline=(30, 110, 140, 255))  # een venster
+        d.line([5, 5, 12, 5], fill=(63, 216, 255, 255))
+        d.rectangle([6, 7, 9, 9], fill=(70, 92, 76, 255))     # een camerabeeld
+        px(im, [(7, 8)], (150, 170, 150, 255))
+        px(im, [(11, 7)], (255, 70, 60, 255))                 # REC
+        d.line([2, 11, 13, 11], fill=(14, 26, 36, 255))       # de taakbalk
+        px(im, [(13, 11)], (200, 40, 40, 255))
+        return im
+
+    save(screen(False), "block/monitor_screen.png")
+    save(screen(True), "block/monitor_screen_on.png")
+
+    keys = img(16, 16, plastic)
+    d = ImageDraw.Draw(keys)
+    d.rectangle([0, 0, 15, 15], outline=(18, 20, 24, 255))
+    for row in range(4):
+        for col in range(7):
+            px(keys, [(1 + col * 2, 2 + row * 2)], plastic_light)
+    d.line([4, 11, 11, 11], fill=plastic_light)               # de spatiebalk
+    save(keys, "block/monitor_keyboard.png")
+
+
 def drone_dock_textures():
     """
     De drone-dock voor de hangar:
@@ -3719,6 +3838,7 @@ if __name__ == "__main__":
     landing_pad_textures()
     power_cabinet_textures()
     network_switch_textures()
+    computer_textures()
     server_rack_textures()
     server_part_items()
     keycard_items()

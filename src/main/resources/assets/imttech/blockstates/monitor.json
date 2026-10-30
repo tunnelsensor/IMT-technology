@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,on=false": {
+      "model": "imttech:block/monitor"
+    },
+    "facing=north,on=true": {
+      "model": "imttech:block/monitor_on"
+    },
+    "facing=east,on=false": {
+      "model": "imttech:block/monitor",
+      "y": 90
+    },
+    "facing=east,on=true": {
+      "model": "imttech:block/monitor_on",
+      "y": 90
+    },
+    "facing=south,on=false": {
+      "model": "imttech:block/monitor",
+      "y": 180
+    },
+    "facing=south,on=true": {
+      "model": "imttech:block/monitor_on",
+      "y": 180
+    },
+    "facing=west,on=false": {
+      "model": "imttech:block/monitor",
+      "y": 270
+    },
+    "facing=west,on=true": {
+      "model": "imttech:block/monitor_on",
+      "y": 270
+    }
+  }
+}

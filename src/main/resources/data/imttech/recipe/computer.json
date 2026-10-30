@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "K": {
+      "item": "imttech:network_cable"
+    }
+  },
+  "pattern": [
+    "ICI",
+    "IRI",
+    "IKI"
+  ],
+  "result": {
+    "id": "imttech:computer"
+  }
+}

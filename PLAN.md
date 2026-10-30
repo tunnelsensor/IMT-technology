@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 363 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 364 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3984,7 +3984,7 @@ binnengaat etc."
 
 Ik bouw het in deze volgorde, één stap per commit:
 
-- [x] **1. Inloggen met de Hacking Laptop (IP + wachtwoord)** — rechtsklik met de laptop in de lucht (of op een blok
+- [x] **1. Inloggen met de Hacking Laptop (IP + wachtwoord)** (`2a09346`) — rechtsklik met de laptop in de lucht (of op een blok
       dat geen kern is) opent het scherm **Hacking Laptop: SSH login**: een vak voor het IP, een vak voor het wachtwoord
       (je ziet sterretjes; alleen a-z en 0-9 passen erin) en **Connect** (of Enter). Het IP van de vorige keer staat er
       al in (de laptop onthoudt het, ook in zijn tooltip: "Last login: 10.x.x.x"), het wachtwoord nooit. Lukt het, dan
@@ -4002,7 +4002,20 @@ Ik bouw het in deze volgorde, één stap per commit:
       `laptop_logs_in_with_ip_and_password` (zonder laptop, zonder wachtwoord, onbekend IP, fout wachtwoord, het goede,
       het IP op de laptop, een vriend met het wachtwoord, te veel pogingen, een kern zonder stroom). 363 tests, allemaal
       groen.
-- [ ] **2. De Computer en de Monitor** (blokken, modellen, recepten, netwerk en stroom)
+- [x] **2. De Computer en de Monitor** — twee nieuwe blokken in de tab Security, na de Security Core. De
+      **Computer** is een donkergrijze pc-kast (voorkant: twee schijfvakken, een aan-knop met een ring en een werklampje;
+      achterkant: een witte netwerkpoort, de stroomaansluiting en een ventilator). Hij heeft een netwerkkabel (of PoE) naar
+      een kern nodig en `[power] computerUpkeep` stroom (2 per twee seconden, zoals een camera). Werkt hij, dan brandt de
+      ring cyaan en licht elke **Monitor** ertegen op (aan welke kant ook, ook bovenop): het scherm toont dan de Security
+      OS-desktop en geeft wat licht (6). De monitor heeft een voetje en een toetsenbord ervoor, en draait naar wie hem
+      neerzet. Rechtsklik op de kast zegt hoe hij ervoor staat ("Computer 1: connected to my-core (10.x.x.x)", of "No
+      network: connect the computer to a security core with a network cable", "The computer has no power", "the security
+      core ... has no power", "down after an EMP blast"); rechtsklik op de monitor zegt nu nog "Not set up yet" (openen
+      komt in stap 4). Een nieuwe computer heet "Computer 1" (of de naam uit een aambeeld; afbreken houdt de naam).
+      **Recepten**: Computer = 6 ijzer, een computerchip, redstone en een netwerkkabel; Monitor = 4 ijzer, een zwarte
+      glazen ruit, glowstone en 3 stenen knopjes (het toetsenbord). Plaatjes: `generate_textures.computer_textures()`,
+      modellen: `generate_block_models.computer_and_monitor()`. **Test**:
+      `computer_needs_network_and_power_and_lights_its_monitor`. 364 tests, allemaal groen.
 - [ ] **3. De app Computers op de kern** (naam, wie, code, Off/View/Use per app)
 - [ ] **4. De pc gebruiken** (wie, code, alleen de toegestane apps, alleen kijken, eigen vensters, Logs met Entries)
 - [ ] **5. LEESMIJ, showcase en screenshots**
