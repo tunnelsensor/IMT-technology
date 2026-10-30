@@ -97,7 +97,7 @@ def soldier(x, y, z):
 
 
 def turret(x, y, z):
-    put(x, y, z, "imttech:raven_turret", {"enabled": "true", "powered": "false"})
+    put(x, y, z, "imttech:raven_turret", {"enabled": "true"})
 
 
 def chest(x, y, z, facing, loot):

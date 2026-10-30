@@ -3203,16 +3203,24 @@ public final class ImtTechGameTests {
         });
     }
 
-    /** Een redstone-signaal zet het torentje uit: dan schiet het niet, ook niet met stroom. */
+    /**
+     * Hoofdstuk 39: redstone zet een torentje niet meer uit (het blijft aan); op zijn naam wel (zoals I.M.T, je stem of
+     * een diagram het doen). Uit schiet het niet, ook niet met stroom.
+     */
     @GameTest(template = ARENA, timeoutTicks = 120, batch = "turret")
-    public static void turret_is_off_with_redstone(GameTestHelper helper) {
+    public static void turret_ignores_redstone_and_switches_by_name(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
         ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(2, 3, 2));
         placeTurret(helper, pos, false, owner);
         powerTurret(helper, pos.east());
         helper.setBlock(pos.west(), Blocks.REDSTONE_BLOCK);
-        if (!helper.getBlockState(pos).getValue(TurretBlock.POWERED)) {
-            throw new GameTestAssertException("Het torentje merkte het redstone-signaal niet");
+        if (!helper.getBlockState(pos).getValue(TurretBlock.ENABLED)) {
+            throw new GameTestAssertException("Redstone zette het torentje toch uit");
+        }
+        com.senne.imttech.redstone.ImtRedstone.switchAt(helper.getLevel(), helper.absolutePos(pos), -1,
+                com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
+        if (helper.getBlockState(pos).getValue(TurretBlock.ENABLED)) {
+            throw new GameTestAssertException("Uitzetten op zijn naam lukte niet");
         }
         Husk monster = spawnDummyEnemy(helper, new BlockPos(12, 3, 18));
         helper.runAfterDelay(80, () -> {

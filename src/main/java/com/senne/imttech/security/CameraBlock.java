@@ -44,14 +44,19 @@ import org.jetbrains.annotations.Nullable;
  *       CameraBlockEntity: pan en tilt).</li>
  *   <li>Geef je hem in een aambeeld of op de desktop (Rename, bij het grote beeld) een naam
  *       ("Lobby"), dan staat die naam bij zijn beeld. Breek je hem af, dan houdt het item die naam.</li>
+ *   <li>Hoofdstuk 39: wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Camera 1", of de naam uit het aambeeld), en
+ *       zet hem op die naam aan en uit, net als een relais: met je bril, je stem, een diagram ({@code off("Lobby")}) of
+ *       de knop in Devices. Uit = geen beeld.</li>
  * </ul>
  */
 public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock, PowerConnectable,
-        com.senne.imttech.lan.NetworkConnectable {
+        com.senne.imttech.lan.NetworkConnectable, com.senne.imttech.shield.ImtSwitchable {
     public static final MapCodec<CameraBlock> CODEC = simpleCodec(CameraBlock::new);
 
     /** Werkt hij (stroom, en de camera's van het netwerk staan aan)? Dan brandt zijn lampje. */
     public static final BooleanProperty ONLINE = BooleanProperty.create("online");
+    /** Staat hij aan (hoofdstuk 39: op zijn naam aan en uit te zetten)? Uit = geen beeld. */
+    public static final BooleanProperty ENABLED = net.minecraft.world.level.block.state.properties.BlockStateProperties.ENABLED;
 
     /** De vorm (voor het aanklikken) per bevestiging en richting. */
     private static final Map<AttachFace, Map<Direction, VoxelShape>> SHAPES = new EnumMap<>(AttachFace.class);
@@ -66,7 +71,7 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
     public CameraBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACE, AttachFace.WALL)
-                .setValue(FACING, Direction.NORTH).setValue(ONLINE, false));
+                .setValue(FACING, Direction.NORTH).setValue(ONLINE, false).setValue(ENABLED, true));
     }
 
     @Override
@@ -76,7 +81,7 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACE, FACING, ONLINE);
+        builder.add(FACE, FACING, ONLINE, ENABLED);
     }
 
     // ================================================================ Vorm
@@ -98,13 +103,68 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
 
     // ================================================================ Neerzetten en bekijken
 
-    /** Had het item een naam (uit een aambeeld)? Dan heet de camera zo. */
+    /**
+     * Had het item een naam (uit een aambeeld)? Dan heet de camera zo. Wie hem neerzet, krijgt hem in zijn I.M.T-lijst
+     * (hoofdstuk 39), met die naam of anders "Camera 1".
+     */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (stack.has(DataComponents.CUSTOM_NAME) && level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
+        if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera)) {
+            return;
+        }
+        if (stack.has(DataComponents.CUSTOM_NAME)) {
             camera.setName(stack.getHoverName().getString());
         }
+        if (placer instanceof net.minecraft.server.level.ServerPlayer player) {
+            if (camera.name().isEmpty()) {
+                // Eén naam overal: de camera heet zoals hij in je lijst staat ("Camera 3"), ook op de desktop.
+                com.senne.imttech.redstone.DeviceNames.register(player, java.util.List.of(pos), pos, DEFAULT_NAME);
+                camera.setName(com.senne.imttech.redstone.DeviceNames.nameOf(player, java.util.List.of(pos)));
+            } else {
+                com.senne.imttech.redstone.DeviceNames.rename(player, java.util.List.of(pos), pos, camera.name(), DEFAULT_NAME);
+            }
+        }
+    }
+
+    /** De standaardnaam in de I.M.T-lijst: "Camera 1". */
+    public static final String DEFAULT_NAME = "imt.imttech.camera.default_name";
+
+    /** Neergezet (ook zonder speler): het netwerk van de kern is anders, dus Devices kijkt meteen opnieuw (hoofdstuk 38). */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(this)) {
+            com.senne.imttech.lan.LanGrid.changed();
+        }
+    }
+
+    /** Weggehaald: ook uit de I.M.T-lijst (zie ImtRedstone.forget), en het netwerk van de kern is anders. */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel) {
+            com.senne.imttech.redstone.ImtRedstone.forget(serverLevel, pos);
+            com.senne.imttech.lan.LanGrid.changed();
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    // ================================================================ Aan en uit op zijn naam (hoofdstuk 39)
+
+    @Override
+    public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
+        BlockState changed = state.setValue(ENABLED, on);
+        level.setBlock(pos, changed, Block.UPDATE_ALL);
+        if (level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
+            camera.updateOnline(level, pos, changed);
+        }
+        level.playSound(null, pos, net.minecraft.sounds.SoundEvents.LEVER_CLICK, net.minecraft.sounds.SoundSource.BLOCKS,
+                0.3f, on ? 0.9f : 0.75f);
+    }
+
+    @Override
+    public boolean isSwitchedOn(BlockState state) {
+        return state.getValue(ENABLED);
     }
 
     /** Rechtsklik: hoe staat hij ervoor (stroom, en bij welk netwerk hij hoort)? */
@@ -115,7 +175,8 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
             boolean cable = com.senne.imttech.lan.LanGrid.required();
             Component status = state.getValue(ONLINE)
                     ? Component.translatable("security.imttech.camera.online").withStyle(ChatFormatting.GREEN)
-                    : Component.translatable(core == null && cable ? "security.imttech.camera.offline"
+                    : Component.translatable(!state.getValue(ENABLED) ? "security.imttech.camera.switched_off"
+                            : core == null && cable ? "security.imttech.camera.offline"
                             : core != null && !core.camerasEnabled() ? "security.imttech.camera.off"
                             : "security.imttech.camera.no_power").withStyle(ChatFormatting.RED);
             Component network = core == null

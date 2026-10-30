@@ -116,9 +116,9 @@ public class TurretBlockEntity extends BlockEntity {
         setChanged();
     }
 
-    /** Staat hij aan? (Niet uitgezet met redstone of door I.M.T, en er is stroom.) */
+    /** Staat hij aan? (Niet uitgezet op zijn naam, en er is stroom.) */
     public static boolean isActive(BlockState state) {
-        return state.getValue(TurretBlock.ENABLED) && !state.getValue(TurretBlock.POWERED)
+        return state.getValue(TurretBlock.ENABLED)
                 && state.getValue(TurretBlock.ONLINE);
     }
 

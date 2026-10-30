@@ -1011,16 +1011,15 @@ final class ShowcaseFeatures {
                 + "draait dan naar het dichtstbijzijnde en blijft daarop schieten tot het neer is: een blauwe "
                 + "laser (60 stroom per schot). Er zitten 16 raketten in (Rocket Ammo, met "
                 + "rechtsklik of een trechter), dus om de paar seconden gaat er ook een raket in een boogje op "
-                + "af. Jou raakt hij nooit. Dan komt er een redstoneblok naast: het torentje staat uit en de "
-                + "loop hangt omlaag (I.M.T kan hem ook uitzetten, hij staat in je redstone-lijst onder "
-                + "Turrets). Rechts een Raven-torentje uit de bunker: dat schiet rode lasers op jou.",
+                + "af. Jou raakt hij nooit. Dan zet I.M.T hem uit op zijn naam (hoofdstuk 39: redstone doet niets "
+                + "meer; hij staat in je I.M.T-lijst): de loop hangt omlaag. Rechts een Raven-torentje uit de bunker: dat schiet rode lasers op jou.",
                 GameType.SURVIVAL, at(ShowcaseScene.TURRET.offset(-4, 0, 3)), 200, 10, s -> s
                 .onServer(0, ShowcaseScene::buildTurrets)
                 .pause(40)
                 .onServer(0, ShowcaseScene::turretAttackers)
                 .pause(240)
-                .onServer(0, player -> player.serverLevel().setBlockAndUpdate(ShowcaseScene.TURRET.west(),
-                        net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState()))
+                .onServer(0, player -> com.senne.imttech.redstone.ImtRedstone.switchAt(player.serverLevel(), ShowcaseScene.TURRET, -1,
+                        com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0))
                 .pause(50)
                 .look(0, 150, 10)
                 .pause(70));

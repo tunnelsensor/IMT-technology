@@ -62,7 +62,7 @@ public final class LaserEmitters {
             return;
         }
         ModNetwork.sendTo(player, new LaserOpenPayload(pos, emitter.ownerName(),
-                LaserGates.nameOf(player, LaserEmitterBlock.group(player.serverLevel(), pos))));
+                com.senne.imttech.redstone.DeviceNames.nameOf(player, LaserEmitterBlock.group(player.serverLevel(), pos))));
     }
 
     /**
@@ -74,15 +74,16 @@ public final class LaserEmitters {
         if (emitter == null || !mayEdit(player, emitter)) {
             return;
         }
-        renamed(player, LaserGates.rename(player, LaserEmitterBlock.group(player.serverLevel(), payload.pos()), payload.pos(),
-                payload.name()), payload.name());
+        renamed(player, com.senne.imttech.redstone.DeviceNames.rename(player,
+                LaserEmitterBlock.group(player.serverLevel(), payload.pos()), payload.pos(), payload.name(),
+                "imt.imttech.laser_gate.default_name"), payload.name());
     }
 
     /** Wat de speler hoort na Save: de nieuwe naam, of dat het niet lukte (een lege naam, of zijn lijst is vol). */
     static void renamed(ServerPlayer player, boolean ok, String name) {
         player.displayClientMessage(ok
                 ? Component.translatable("imt.imttech.msg.laser_renamed", com.senne.imttech.redstone.ImtRedstone.clean(name,
-                        LaserGates.MAX_NAME, "")).withStyle(net.minecraft.ChatFormatting.GREEN)
+                        com.senne.imttech.redstone.DeviceNames.MAX_NAME, "")).withStyle(net.minecraft.ChatFormatting.GREEN)
                 : Component.translatable("imt.imttech.msg.laser_rename_failed").withStyle(net.minecraft.ChatFormatting.RED), true);
     }
 

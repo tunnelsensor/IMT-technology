@@ -172,10 +172,20 @@ public abstract class InputDeviceBlock extends HorizontalDirectionalBlock implem
 
     // ================================================================ Weg
 
+    /** Neergezet (ook zonder speler): het netwerk van de kern is anders, dus Devices kijkt meteen opnieuw (hoofdstuk 38). */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(this)) {
+            com.senne.imttech.lan.LanGrid.changed();
+        }
+    }
+
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         super.onRemove(state, level, pos, newState, movedByPiston);
         if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel) {
+            com.senne.imttech.lan.LanGrid.changed();
             SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, pos);
             if (core != null) {
                 SecurityDevices.forget(serverLevel, core);

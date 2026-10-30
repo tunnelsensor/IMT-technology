@@ -158,7 +158,7 @@ public class CameraBlockEntity extends BlockEntity {
     public void updateOnline(ServerLevel level, BlockPos pos, BlockState state) {
         SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         boolean allowed = core == null ? !com.senne.imttech.lan.LanGrid.required() : core.camerasEnabled();
-        boolean online = allowed && !com.senne.imttech.weapons.Emp.isOut(level, pos)
+        boolean online = state.getValue(CameraBlock.ENABLED) && allowed && !com.senne.imttech.weapons.Emp.isOut(level, pos)
                 && PowerGrid.pay(level, pos, ImtConfig.Power.CAMERA_UPKEEP);
         if (online != state.getValue(CameraBlock.ONLINE)) {
             level.setBlock(pos, state.setValue(CameraBlock.ONLINE, online), Block.UPDATE_CLIENTS);

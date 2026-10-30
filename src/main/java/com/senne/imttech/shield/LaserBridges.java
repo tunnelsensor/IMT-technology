@@ -42,7 +42,7 @@ public final class LaserBridges {
             return;
         }
         ModNetwork.sendTo(player, new LaserOpenPayload(pos, bridge.ownerName(),
-                LaserGates.nameOf(player, LaserBridgeBlock.group(player.serverLevel(), pos))));
+                com.senne.imttech.redstone.DeviceNames.nameOf(player, LaserBridgeBlock.group(player.serverLevel(), pos))));
     }
 
     /** Save in het scherm (hoofdstuk 39): de brug krijgt deze naam in de I.M.T-lijst van de speler. */
@@ -51,8 +51,9 @@ public final class LaserBridges {
         if (bridge == null || !mayEdit(player, bridge)) {
             return;
         }
-        LaserEmitters.renamed(player, LaserGates.rename(player, LaserBridgeBlock.group(player.serverLevel(), payload.pos()),
-                payload.pos(), payload.name()), payload.name());
+        LaserEmitters.renamed(player, com.senne.imttech.redstone.DeviceNames.rename(player,
+                LaserBridgeBlock.group(player.serverLevel(), payload.pos()), payload.pos(), payload.name(),
+                "imt.imttech.laser_bridge.default_name"), payload.name());
     }
 
     /** Is dit een brugzender waar deze speler bij kan? Dan gaat een knop uit het scherm naar {@link #handleAction}. */

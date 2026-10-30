@@ -242,7 +242,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         }
         if (placer instanceof ServerPlayer player) {
             emitter.setOwner(player);
-            LaserGates.register(player, group(level, pos), pos, "imt.imttech.laser_gate.default_name");
+            com.senne.imttech.redstone.DeviceNames.register(player, group(level, pos), pos, "imt.imttech.laser_gate.default_name");
         }
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
@@ -399,7 +399,7 @@ public class LaserEmitterBlock extends Block implements PowerConnectable, Entity
         if (!newState.is(this)) {
             PowerGrid.changed();
             if (level instanceof ServerLevel serverLevel) {
-                LaserGates.removed(serverLevel, pos, this);
+                com.senne.imttech.redstone.DeviceNames.removed(serverLevel, pos, this);
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

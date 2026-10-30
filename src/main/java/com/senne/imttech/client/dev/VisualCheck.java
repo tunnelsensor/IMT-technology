@@ -971,6 +971,13 @@ public final class VisualCheck {
                 }
             });
             t.shot(10, "nw09_devices_controls");
+            // Bovenaan (hoofdstuk 39): de laserbrug en de camera met Rename en Turn off.
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourDevicesAt("LASER BRIDGES");
+                }
+            });
+            t.shot(10, "nw12_devices_named");
             t.close(10);
             // De netwerkknop en -hendel (stap 8): aan de muur en op de vloer, met PoE-kabels naar de kern.
             t.view(0, desk.getX() - 0.3, desk.getY() + 1.5, desk.getZ() + 3.2, 0, 0);
@@ -4307,7 +4314,7 @@ public final class VisualCheck {
         level.setBlockAndUpdate(new BlockPos(83, -60, 60), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
         BlockPos off = new BlockPos(87, -60, 60);
         level.setBlockAndUpdate(off, ModBlocks.ROCKET_TURRET.get().defaultBlockState());
-        level.setBlockAndUpdate(off.east(), net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());
+        level.setBlockAndUpdate(off, level.getBlockState(off).setValue(com.senne.imttech.turret.TurretBlock.ENABLED, false));
     }
 
     private static void wearSuit(ServerPlayer player) {

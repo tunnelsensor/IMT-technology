@@ -230,6 +230,8 @@ public final class SecurityOs {
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getFloat("pan"), args.getFloat("tilt"));
             case "cam_rename" -> renameCamera(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
+            case "dev_rename" -> renameDevice(player, core, session,
+                    new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
             case "trust_add" -> trust(player, core, session, args.getString("name").strip());
             case "trust_remove" -> untrust(player, core, session, args.getString("name").strip());
             case "card_write" -> writeCard(player, core, session, args.getString("label"), args.getInt("colour"), args.getString("group"));
@@ -365,7 +367,29 @@ public final class SecurityOs {
         }
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " renamed the camera at "
                 + pos.toShortString() + (clean.isEmpty() ? " back to its number" : " to \"" + clean + "\""));
+        // Hoofdstuk 39: staat de camera in jouw I.M.T-lijst, dan krijgt hij daar dezelfde naam (één naam overal).
+        if (!clean.isEmpty() && !com.senne.imttech.redstone.DeviceNames.nameOf(player, java.util.List.of(pos)).isEmpty()) {
+            com.senne.imttech.redstone.DeviceNames.rename(player, java.util.List.of(pos), pos, clean,
+                    com.senne.imttech.security.CameraBlock.DEFAULT_NAME);
+            com.senne.imttech.logic.LogicDevices.refresh(player.serverLevel(), core, player);
+        }
         notify(player, core, session, clean.isEmpty() ? "Camera name cleared" : "Camera renamed to " + clean, false);
+    }
+
+    /**
+     * Rename in Devices voor een torentje, laserpoort, laserbrug of camera (hoofdstuk 39): de naam komt in de I.M.T-lijst van
+     * wie aan de desktop zit (zie SecurityDevices.renameDevice).
+     */
+    private static void renameDevice(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, String name) {
+        String error = com.senne.imttech.security.SecurityDevices.renameDevice(player, core, pos, name);
+        if (error != null) {
+            notify(player, core, session, error, true);
+            return;
+        }
+        String clean = com.senne.imttech.redstone.ImtRedstone.clean(name, com.senne.imttech.redstone.DeviceNames.MAX_NAME, "");
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " named the device at " + pos.toShortString()
+                + " \"" + clean + "\"");
+        notify(player, core, session, "Renamed to " + clean + " (in your I.M.T list)", false);
     }
 
     /** Eén torentje aan of uit. */

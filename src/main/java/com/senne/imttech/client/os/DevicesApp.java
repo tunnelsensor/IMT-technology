@@ -60,6 +60,8 @@ final class DevicesApp {
     /** Welke lezer, welk paneel of welke switch je een andere naam aan het geven bent (de plek), of null. */
     private @Nullable BlockPos renaming;
     private @Nullable EditBox nameBox;
+    /** Met welke opdracht de naam naar de server gaat: input_rename of (hoofdstuk 39) dev_rename. */
+    private String renameOp = "input_rename";
     /** Van welke Network Switch de poorten open staan (de knop Ports), of null. */
     private @Nullable BlockPos portsOpen;
 
@@ -118,7 +120,7 @@ final class DevicesApp {
      */
     private @Nullable String buttonLabel(CompoundTag device) {
         if (switchable(device)) {
-            return device.getBoolean("on") ? "Turn off" : "Turn on";
+            return isRenaming(device) ? "Save" : device.getBoolean("on") ? "Turn off" : "Turn on";
         }
         if (device.getString("k").equals("switch")) {
             return isRenaming(device) ? "Save" : posOf(device).equals(portsOpen) ? "Close" : "Ports";
@@ -126,25 +128,28 @@ final class DevicesApp {
         return renamable(device) ? renameLabel(device) : null;
     }
 
-    /** Een torentje, of (hoofdstuk 39) een laserpoort of laserbrug: die hebben een knop Turn off / Turn on. */
+    /**
+     * Een torentje, of (hoofdstuk 39) een laserpoort, laserbrug of camera: die hebben een knop Turn off / Turn on, en
+     * Rename (de naam in je I.M.T-lijst).
+     */
     private static boolean switchable(CompoundTag device) {
         String kind = device.getString("k");
-        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge");
+        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge") || kind.equals("camera");
     }
 
     private int buttonColour(CompoundTag device) {
-        if (switchable(device)) {
+        if (switchable(device) && !isRenaming(device)) {
             return device.getBoolean("on") ? HudStyle.RED : HudStyle.GREEN;
         }
         return isRenaming(device) ? HudStyle.GREEN : HudStyle.CYAN;
     }
 
     /**
-     * Een tweede knop, links van de gewone: bij een switch Rename naast Ports (terwijl je de naam typt is er alleen Save).
-     * Of null als het apparaat er geen heeft.
+     * Een tweede knop, links van de gewone: Rename naast Ports (een switch) of naast Turn off (hoofdstuk 39). Terwijl je de
+     * naam typt is er alleen Save. Of null als het apparaat er geen heeft.
      */
     private @Nullable String extraLabel(CompoundTag device) {
-        return device.getString("k").equals("switch") && !isRenaming(device) ? "Rename" : null;
+        return (device.getString("k").equals("switch") || switchable(device)) && !isRenaming(device) ? "Rename" : null;
     }
 
     // ================================================================ De poorten van een switch (hoofdstuk 38)
@@ -407,7 +412,7 @@ final class DevicesApp {
                         // Ports / Close: de regel met de zes poorten open of dicht.
                         portsOpen = posOf(device).equals(portsOpen) ? null : posOf(device);
                         renaming = null;
-                    } else if (switchable(device)) {
+                    } else if (switchable(device) && !isRenaming(device)) {
                         CompoundTag args = new CompoundTag();
                         args.putInt("x", device.getInt("x"));
                         args.putInt("y", device.getInt("y"));
@@ -456,6 +461,10 @@ final class DevicesApp {
     /** De knop Rename: het naamvak met de huidige naam, helemaal geselecteerd (typen vervangt hem). */
     private void startRename(CompoundTag device) {
         EditBox box = nameBox();
+        // Een lezer, paneel, knop, hendel of switch heeft zijn naam zelf; een torentje, poort, brug of camera (hoofdstuk
+        // 39) krijgt hem in je I.M.T-lijst (en mag dan wat langer zijn).
+        renameOp = switchable(device) ? "dev_rename" : "input_rename";
+        box.setMaxLength(switchable(device) ? com.senne.imttech.redstone.DeviceNames.MAX_NAME : InputDeviceBlockEntity.MAX_NAME);
         box.setValue(device.getString("name"));
         box.moveCursorToEnd(false);
         box.setHighlightPos(0);
@@ -475,7 +484,7 @@ final class DevicesApp {
         args.putInt("y", pos.getY());
         args.putInt("z", pos.getZ());
         args.putString("name", nameBox().getValue());
-        screen.send("input_rename", args);
+        screen.send(renameOp, args);
     }
 
     /** Typ je een naam, dan gaan de toetsen naar het naamvak: Enter bewaart, Esc laat het zoals het was. */

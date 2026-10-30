@@ -175,7 +175,7 @@ public class LaserEmitterScreen extends Screen {
         String typed = nameBox == null ? name : nameBox.getValue();
         nameBox = addRenderableWidget(new net.minecraft.client.gui.components.EditBox(font, left + VALUE_X, nameY(),
                 valueW - SAVE_W - 4, 20, Component.translatable("screen.imttech.laser.name")));
-        nameBox.setMaxLength(com.senne.imttech.shield.LaserGates.MAX_NAME);
+        nameBox.setMaxLength(com.senne.imttech.redstone.DeviceNames.MAX_NAME);
         nameBox.setValue(typed);
         nameBox.setHint(Component.translatable("screen.imttech.laser.name_hint"));
         addRenderableWidget(Button.builder(Component.translatable("screen.imttech.laser.save"), b -> saveName())

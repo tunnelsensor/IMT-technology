@@ -944,6 +944,65 @@ public final class NetworkGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Hoofdstuk 39: een camera die je neerzet, staat in je I.M.T-lijst ("Camera 1") en heet zelf ook zo. Op zijn naam gaat
+     * hij uit (geen beeld); de knop in Devices zet hem weer aan. Rename in Devices geeft een beveiligingstorentje (dat van
+     * niemand is) een naam in jouw lijst, en dan kent de server die naam voor je diagrammen en staat hij zo in Devices.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "lan")
+    public static void cameras_and_turrets_switch_and_rename_by_name(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-cam-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
+        line(helper, CableKind.POE, new BlockPos(2, 3, 3), new BlockPos(2, 3, 5));
+        BlockPos camera = placeCamera(helper, new BlockPos(2, 3, 6));
+        BlockPos cameraAbs = helper.absolutePos(camera);
+        ModBlocks.SECURITY_CAMERA.get().setPlacedBy(level, cameraAbs, helper.getBlockState(camera), owner, ItemStack.EMPTY);
+        CameraBlockEntity cam = (CameraBlockEntity) helper.getBlockEntity(camera);
+        check(cam.name().equals("Camera 1")
+                        && com.senne.imttech.redstone.DeviceNames.nameOf(owner, List.of(cameraAbs)).equals("Camera 1"),
+                "De camera heet niet Camera 1 (zelf en in de I.M.T-lijst): " + cam.name());
+        cam.updateOnline(level, cameraAbs, helper.getBlockState(camera));
+        helper.assertBlockProperty(camera, CameraBlock.ONLINE, true);
+        com.senne.imttech.redstone.ImtRedstone.switchAt(level, cameraAbs, -1, com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
+        helper.assertBlockProperty(camera, CameraBlock.ENABLED, false);
+        helper.assertBlockProperty(camera, CameraBlock.ONLINE, false);
+        // Devices: Turn on.
+        com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+        CompoundTag on = new CompoundTag();
+        on.putInt("x", cameraAbs.getX());
+        on.putInt("y", cameraAbs.getY());
+        on.putInt("z", cameraAbs.getZ());
+        on.putBoolean("on", true);
+        com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "dev_toggle", on));
+        helper.assertBlockProperty(camera, CameraBlock.ENABLED, true);
+        helper.assertBlockProperty(camera, CameraBlock.ONLINE, true);
+        // Een beveiligingstorentje tegen de kern (van niemand): Rename in Devices.
+        BlockPos turret = new BlockPos(1, 3, 2);
+        helper.setBlock(turret, ModBlocks.SECURITY_TURRET.get());
+        BlockPos turretAbs = helper.absolutePos(turret);
+        CompoundTag rename = new CompoundTag();
+        rename.putInt("x", turretAbs.getX());
+        rename.putInt("y", turretAbs.getY());
+        rename.putInt("z", turretAbs.getZ());
+        rename.putString("name", "Hall gun");
+        com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "dev_rename", rename));
+        check(com.senne.imttech.redstone.DeviceNames.nameOf(owner, List.of(turretAbs)).equals("Hall gun"),
+                "Rename in Devices zette het torentje niet als Hall gun in de I.M.T-lijst");
+        check(!core.logic().devices("Hall gun").isEmpty() && !core.logic().devices("Camera 1").isEmpty(),
+                "De server kent de namen Hall gun en Camera 1 niet");
+        SecurityDevices.forget(level, core);
+        check(statusOf(level, core, turretAbs).equals("online") || statusOf(level, core, turretAbs).equals("no power"),
+                "Het torentje staat niet in Devices");
+        boolean named = false;
+        for (net.minecraft.nbt.Tag tag : SecurityDevices.snapshot(level, core)) {
+            named |= ((CompoundTag) tag).getString("name").equals("Hall gun");
+        }
+        check(named, "Devices toont het torentje niet als Hall gun");
+        helper.succeed();
+    }
+
     /** Hoeveel blokken laserwand er oostelijk van deze zender staan (tot 4 ver). */
     private static int wall(GameTestHelper helper, BlockPos emitter) {
         int count = 0;

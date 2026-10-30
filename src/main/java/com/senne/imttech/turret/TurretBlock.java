@@ -47,12 +47,12 @@ import org.jetbrains.annotations.Nullable;
  * Het ROCKET-torentje zet je bij je basis. Het schiet op monsters en raiddrones die het kan zien
  * (zie TurretTargeting): met een laser die stroom van het net haalt (een stroomkabel naar een
  * zonnepaneel of warmtegenerator, of er direct tegenaan) en met raketten als je er munitie in
- * doet (rechtsklik met Rocket Ammo, of een trechter erboven). Een redstone-signaal zet het uit
- * (een hendel, of een I.M.T-relais ernaast), en I.M.T kan het zelf ook aan en uit
- * zetten (het staat in je redstone-lijst).
+ * doet (rechtsklik met Rocket Ammo, of een trechter erboven). Aan en uit zet je het op zijn naam (hoofdstuk 39:
+ * redstone doet niets meer): het staat in je I.M.T-lijst ("Turret 3"), dus met je bril, je stem, een diagram
+ * ({@code off("Turret 3")}) of de knop in Devices op de desktop.
  *
  * Het RAVEN-torentje staat in de Biebia's Industries-bunker. Het heeft geen eigenaar en geen stroom nodig,
- * en schiet op spelers en I.M.T-drones. Ook dat gaat uit met redstone: zoek de hendel!
+ * en schiet op spelers en I.M.T-drones. Uitzetten kan niet: sloop het, of leg het even plat met een EMP-granaat.
  *
  * Het blok zelf is alleen de voet; de draaiende kop tekent TurretRenderer.
  */
@@ -62,9 +62,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
             TurretKind.CODEC.fieldOf("kind").forGetter(TurretBlock::kind),
             propertiesCodec()).apply(instance, TurretBlock::new));
 
-    /** Krijgt het blok een redstone-signaal? Dan staat het uit. */
-    public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    /** Heeft I.M.T het aan staan? (Uitzetten kan ook via je redstone-scherm of je stem.) */
+    /** Staat het aan? (Uitzetten op zijn naam: je I.M.T-lijst, je stem, een diagram of de desktop.) */
     public static final BooleanProperty ENABLED = BlockStateProperties.ENABLED;
     /**
      * Heeft hij stroom van het net? Zonder stroom doet hij niets en hangt de loop omlaag. Dit
@@ -79,7 +77,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
     public TurretBlock(TurretKind kind, BlockBehaviour.Properties properties) {
         super(properties);
         this.kind = kind;
-        registerDefaultState(stateDefinition.any().setValue(POWERED, false).setValue(ENABLED, true).setValue(ONLINE, false));
+        registerDefaultState(stateDefinition.any().setValue(ENABLED, true).setValue(ONLINE, false));
     }
 
     public TurretKind kind() {
@@ -97,7 +95,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(POWERED, ENABLED, ONLINE);
+        builder.add(ENABLED, ONLINE);
     }
 
     @Override
@@ -132,22 +130,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
         };
     }
 
-    // ================================================================ Redstone
-
-    @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(POWERED, context.getLevel().hasNeighborSignal(context.getClickedPos()));
-    }
-
-    /** Er veranderde iets naast het blok: kijk of er nu redstone op staat. */
-    @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighbor, BlockPos from,
-                                   boolean moved) {
-        boolean powered = level.hasNeighborSignal(pos);
-        if (powered != state.getValue(POWERED)) {
-            level.setBlock(pos, state.setValue(POWERED, powered), Block.UPDATE_ALL);
-        }
-    }
+    // ================================================================ Aan en uit (op zijn naam)
 
     @Override
     public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
@@ -161,12 +144,20 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
 
     // ================================================================ Neerzetten en gebruiken
 
-    /** Een Biebia's Industries-torentje is van wie het neerzet, en I.M.T kan het schakelen. */
+    /**
+     * Een Biebia's Industries-torentje is van wie het neerzet. Wie een raketturretje of (hoofdstuk 39) een
+     * beveiligingstorentje neerzet, krijgt het in zijn I.M.T-lijst ("Turret 3"): zo schakel je het op zijn naam.
+     */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (kind == TurretKind.ROCKET && placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
+        if (!(placer instanceof ServerPlayer player) || !(level.getBlockEntity(pos) instanceof TurretBlockEntity turret)) {
+            return;
+        }
+        if (kind == TurretKind.ROCKET) {
             turret.setOwner(player);
+        }
+        if (kind != TurretKind.RAVEN) {
             ImtRedstone.register(player, pos, "imt.imttech.turret.default_name");
         }
     }
@@ -210,8 +201,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
     private void status(Player player, BlockState state, TurretBlockEntity turret) {
         Component onOff = TurretBlockEntity.isActive(state)
                 ? Component.translatable("turret.imttech.status.online").withStyle(ChatFormatting.GREEN)
-                : Component.translatable(state.getValue(POWERED) ? "turret.imttech.status.off_redstone"
-                        : !state.getValue(ENABLED) ? "turret.imttech.status.off_imt"
+                : Component.translatable(!state.getValue(ENABLED) ? "turret.imttech.status.off_imt"
                         : "turret.imttech.status.off_power").withStyle(ChatFormatting.RED);
         if (kind == TurretKind.RAVEN) {
             player.displayClientMessage(Component.translatable("turret.imttech.status.raven", onOff), true);
@@ -236,11 +226,23 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
                 turret.ammoCount()), true);
     }
 
-    /** Afgebroken: de raketten vallen eruit. */
+    /** Neergezet (ook zonder speler): het netwerk van de kern is anders, dus Devices kijkt meteen opnieuw (hoofdstuk 38). */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(this)) {
+            com.senne.imttech.lan.LanGrid.changed();
+        }
+    }
+
+    /** Afgebroken: de raketten vallen eruit, en het netwerk van de kern is anders. */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof TurretBlockEntity turret) {
             Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), turret.ammo().getStackInSlot(0).copy());
+        }
+        if (!state.is(newState.getBlock())) {
+            com.senne.imttech.lan.LanGrid.changed();
         }
         super.onRemove(state, level, pos, newState, moved);
     }

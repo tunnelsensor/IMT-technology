@@ -195,7 +195,7 @@ def chest(x, y, z, facing, loot=LOOT):
 
 def security_turret(x, y, z):
     """Een beveiligingstorentje: schiet op indringers, tot iemand de toren hackt."""
-    put(x, y, z, "imttech:security_turret", {"enabled": "true", "powered": "false"})
+    put(x, y, z, "imttech:security_turret", {"enabled": "true"})
 
 
 def security_camera(x, y, z, face, facing, name, pan=0, tilt=0):

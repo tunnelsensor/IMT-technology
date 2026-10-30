@@ -175,14 +175,14 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
 
     /**
      * Net neergezet: wie dat deed, is de eigenaar, en hij krijgt de brug in zijn I.M.T-lijst ("Bridge 2", één regel per
-     * brug; zie LaserGates). Heeft hij stroom, dan schuift hij meteen uit.
+     * brug; zie redstone/DeviceNames). Heeft hij stroom, dan schuift hij meteen uit.
      */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (placer instanceof ServerPlayer player && level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity bridge) {
             bridge.setOwner(player);
-            LaserGates.register(player, group(level, pos), pos, "imt.imttech.laser_bridge.default_name");
+            com.senne.imttech.redstone.DeviceNames.register(player, group(level, pos), pos, "imt.imttech.laser_bridge.default_name");
         }
         if (level instanceof ServerLevel serverLevel) {
             update(serverLevel, pos, state, false);
@@ -291,7 +291,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         }
     }
 
-    /** Weggehaald: de brug verdwijnt mee, en zijn regel in de I.M.T-lijst schuift mee (zie LaserGates). */
+    /** Weggehaald: de brug verdwijnt mee, en zijn regel in de I.M.T-lijst schuift mee (zie redstone/DeviceNames). */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && state.getValue(POWERED) && !newState.is(this)) {
@@ -300,7 +300,7 @@ public class LaserBridgeBlock extends Block implements PowerConnectable, com.sen
         if (!newState.is(this)) {
             PowerGrid.changed();
             if (level instanceof ServerLevel serverLevel) {
-                LaserGates.removed(serverLevel, pos, this);
+                com.senne.imttech.redstone.DeviceNames.removed(serverLevel, pos, this);
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

@@ -19,6 +19,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -391,10 +392,11 @@ public final class SecurityDevices {
                 continue;
             }
             CompoundTag device = position("turret", pos);
-            device.putString("name", turret.kind() == TurretKind.SECURITY ? "Security turret" : "rocket turret");
+            // Hoofdstuk 39: de naam uit de I.M.T-lijst van de eigenaar (als hij hem een naam gaf).
+            device.putString("name", nameOf(core, List.of(pos),
+                    turret.kind() == TurretKind.SECURITY ? "Security turret" : "rocket turret"));
             device.putBoolean("on", state.getValue(TurretBlock.ENABLED));
             device.putString("st", !state.getValue(TurretBlock.ENABLED) ? "switched off"
-                    : state.getValue(TurretBlock.POWERED) ? "off (redstone)"
                     : !state.getValue(TurretBlock.ONLINE) ? "no power" : "online");
             if (turret.kind().usesAmmo()) {
                 device.putInt("ammo", turret.ammoCount());
@@ -476,11 +478,14 @@ public final class SecurityDevices {
             if (!(level.getBlockEntity(pos) instanceof CameraBlockEntity camera)) {
                 continue;
             }
-            boolean on = level.getBlockState(pos).getValue(CameraBlock.ONLINE);
+            BlockState state = level.getBlockState(pos);
+            boolean online = state.getValue(CameraBlock.ONLINE);
             CompoundTag device = position("camera", pos);
             device.putString("name", cameraName(camera, cameraNumber++));
-            device.putBoolean("on", on);
-            device.putString("st", on ? "online" : core.camerasEnabled() ? "no power" : "off (network)");
+            // "on" is de knop (hoofdstuk 39): staat de camera aan? Of hij beeld heeft, zegt "st".
+            device.putBoolean("on", state.getValue(CameraBlock.ENABLED));
+            device.putString("st", !state.getValue(CameraBlock.ENABLED) ? "switched off" : online ? "online"
+                    : core.camerasEnabled() ? "no power" : "off (network)");
             list.add(device);
         }
         boolean server = com.senne.imttech.logic.LogicServer.stats(level, core).online();
@@ -576,9 +581,9 @@ public final class SecurityDevices {
     }
 
     /**
-     * Een apparaat aan of uit vanaf de desktop (de knop in Devices): een torentje, of (hoofdstuk 39) een laserpoort of
-     * laserbrug. Alleen als het echt bij deze kern hoort. Een poort of brug schakelt zoals I.M.T hem op zijn naam
-     * schakelt (dus "when turned_on(...)" hoort het ook). Geeft een foutmelding terug, of null als het lukte.
+     * Een apparaat aan of uit vanaf de desktop (de knop in Devices): een torentje, of (hoofdstuk 39) een laserpoort,
+     * laserbrug of camera. Alleen als het echt bij deze kern hoort. Een poort, brug of camera schakelt zoals I.M.T hem op
+     * zijn naam schakelt (dus "when turned_on(...)" hoort het ook). Geeft een foutmelding terug, of null als het lukte.
      */
     public static @Nullable String switchDevice(ServerLevel level, SecurityCoreBlockEntity core, BlockPos pos, boolean on) {
         BlockState state = level.getBlockState(pos);
@@ -587,12 +592,55 @@ public final class SecurityDevices {
         }
         boolean gate = state.is(ModBlocks.LASER_EMITTER.get());
         boolean bridge = level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity entity && belongs(core, entity);
-        if (!(gate || bridge) || !SecurityCores.linkedTo(level, core, pos)) {
+        boolean camera = state.getBlock() instanceof CameraBlock;
+        if (!(gate || bridge || camera) || !SecurityCores.linkedTo(level, core, pos)) {
             return "that device is not part of this network";
         }
         com.senne.imttech.redstone.ImtRedstone.switchAt(level, pos, -1,
                 on ? com.senne.imttech.redstone.ImtRedstone.Op.ON : com.senne.imttech.redstone.ImtRedstone.Op.OFF, 0);
         com.senne.imttech.lan.CableTraffic.signal(level, pos, false);
+        return null;
+    }
+
+    /**
+     * Een andere naam vanaf de desktop (Rename in Devices, hoofdstuk 39) voor een torentje, laserpoort, laserbrug of
+     * camera: de naam komt in de I.M.T-lijst van wie aan de desktop zit (dan schakelt hij het op die naam, met zijn stem
+     * of een diagram), en een camera heet zelf ook zo (bij zijn beeld). Alleen als het bij deze kern hoort. Geeft een
+     * foutmelding terug, of null als het lukte.
+     */
+    public static @Nullable String renameDevice(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos pos, String name) {
+        ServerLevel level = player.serverLevel();
+        BlockState state = level.getBlockState(pos);
+        List<BlockPos> members;
+        String key;
+        if (state.getBlock() instanceof TurretBlock && level.getBlockEntity(pos) instanceof TurretBlockEntity turret
+                && belongs(core, turret)) {
+            members = List.of(pos);
+            key = "imt.imttech.turret.default_name";
+        } else if (state.is(ModBlocks.LASER_EMITTER.get())) {
+            members = LaserEmitterBlock.group(level, pos);
+            key = "imt.imttech.laser_gate.default_name";
+        } else if (level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity bridge && belongs(core, bridge)) {
+            members = LaserBridgeBlock.group(level, pos);
+            key = "imt.imttech.laser_bridge.default_name";
+        } else if (state.getBlock() instanceof CameraBlock) {
+            members = List.of(pos);
+            key = CameraBlock.DEFAULT_NAME;
+        } else {
+            return "that device is not part of this network";
+        }
+        if (!SecurityCores.linkedTo(level, core, pos)) {
+            return "that device is not part of this network";
+        }
+        if (!com.senne.imttech.redstone.DeviceNames.rename(player, members, pos, name, key)) {
+            return "that name did not work (empty, or your I.M.T list is full)";
+        }
+        if (level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
+            camera.setName(com.senne.imttech.redstone.ImtRedstone.clean(name, com.senne.imttech.redstone.DeviceNames.MAX_NAME, ""));
+        }
+        // De server kent de naam meteen (voor je diagrammen), als jij de eigenaar van de kern bent.
+        com.senne.imttech.logic.LogicDevices.refresh(level, core, player);
+        forget(level, core);
         return null;
     }
 

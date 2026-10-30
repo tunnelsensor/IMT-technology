@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 361 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 362 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3924,8 +3924,19 @@ enkel nog voor redstone, de security dingen van de mod doe je via script, voice,
       omkeren), `laser_gate_switched_by_name_from_a_diagram`; de tests van de laserpoort, de brug, de Bypass Kit en de
       toren zijn omgezet van redstone naar schakelen op naam. 361 tests, allemaal groen. **Screenshots**
       `-Ponly=laser,bridge`: `75_laser_screen`, `br07_bridge_screen`.
-- [ ] **2. Torentjes en camera's**: geen redstone-uitknop meer voor torentjes; camera's aan/uit op hun naam; Rename in
-      Devices voor alle soorten (dat zet het apparaat ook in de lijst van de eigenaar).
+- [x] **2. Torentjes en camera's** — een **torentje** gaat niet meer uit met redstone (ook het Raven-torentje niet:
+      sloop het, of leg het even plat met een EMP-granaat); je zet het uit en aan op zijn naam. Wie een raketturretje
+      of een beveiligingstorentje neerzet, heeft het in zijn I.M.T-lijst ("Turret 3"). Een **camera** heeft nu een
+      eigen aan/uit: wie hem neerzet, heeft hem in zijn lijst ("Camera 1", of de naam uit het aambeeld), en de camera heet
+      zelf ook zo (bij zijn beeld op de desktop: één naam overal). Uit = geen beeld ("switched off" als je erop klikt).
+      In **Devices** hebben torentjes, laserpoorten, laserbruggen en camera's nu twee knoppen: **Rename** en **Turn off /
+      Turn on**. Rename zet de naam in jouw I.M.T-lijst (staat het er nog niet in, zoals een beveiligingstorentje van de
+      toren, dan komt het erin), en de server kent hem meteen voor je diagrammen; bij een camera verandert ook de naam bij
+      zijn beeld (en Rename in de app Cameras verandert ook de naam in je lijst). **Mijn invulling**: de naam komt in de
+      lijst van wie aan de desktop zit; een apparaat neerzetten of weghalen ververst het netwerk van de kern meteen (zodat
+      het direct in Devices staat). **Test**: `cameras_and_turrets_switch_and_rename_by_name`; de test van het torentje met
+      redstone is nu `turret_ignores_redstone_and_switches_by_name`. 362 tests, allemaal groen. **Screenshot**
+      `-Ponly=network`: `nw12_devices_named`.
 - [ ] **3. LEESMIJ, showcase en screenshots** (Rayshield, Laserbrug, Torentjes, Redstone-relais: "relais zijn alleen
       voor redstone").
 
