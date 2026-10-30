@@ -308,4 +308,111 @@ public final class ComputerGameTests {
         SecurityOs.close(owner);
         helper.succeed();
     }
+
+    /** Een opdracht van het scherm zonder plek (zoals Access of de mappen). */
+    private static void osAction(ServerPlayer player, SecurityCoreBlockEntity core, String op,
+                                 java.util.function.Consumer<net.minecraft.nbt.CompoundTag> extra) {
+        net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+        extra.accept(args);
+        SecurityOs.handleAction(player, new com.senne.imttech.network.OsActionPayload(core.getBlockPos(), op, args));
+    }
+
+    /**
+     * De pc gebruiken (stap 4). Niet ingesteld: niets. Op "Everyone" komt een vreemde erop, maar ziet alleen de apps die de
+     * kern toestaat (en krijgt alleen hun gegevens); een app op View weigert zijn knoppen, een app op Use niet, en Access,
+     * de mappen en het wachtwoord kan hij niet. Het inloggen staat in het logboek, en de pc onthoudt zijn eigen vensters.
+     * Op "Trusted" mag de vreemde er niet meer op; op een keycard-groep wel als hij een kaart van die groep heeft. Met een
+     * code: eerst de code (fout staat in het logboek), behalve voor de eigenaar. Breek je de computer af, dan gaat de
+     * desktop dicht.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "computers")
+    public static void computer_desktop_shows_only_what_the_core_allows(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 3, 4), "pc-boss");
+        SecurityCoreBlockEntity core = poweredCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos pc = workingComputer(helper, new BlockPos(6, 3, 2));
+        BlockPos monitor = pc.east();
+        ComputerBlockEntity computer = (ComputerBlockEntity) level.getBlockEntity(pc);
+        ServerPlayer visitor = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 4), "pc-visitor");
+
+        // Nog niet ingesteld: ook de eigenaar komt er niet op.
+        Computers.use(owner, monitor);
+        check(!SecurityOs.hasDesktop(owner), "Een computer zonder apps ging open");
+
+        // Ingesteld: Cameras en Logs om te kijken, Devices om te bedienen, voor iedereen.
+        computer.setRights(computer.rights().with("CAMERAS", com.senne.imttech.security.os.DesktopRights.Access.VIEW)
+                .with("LOGS", com.senne.imttech.security.os.DesktopRights.Access.VIEW)
+                .with("DEVICES", com.senne.imttech.security.os.DesktopRights.Access.USE));
+        computer.setWho(ComputerBlockEntity.Who.EVERYONE, "");
+        Computers.use(visitor, monitor);
+        var session = SecurityOs.session(visitor);
+        check(session != null && pc.equals(session.computer()), "Een vreemde kwam niet op een computer voor iedereen");
+        check(hasLog(core, EventLog.Type.LOGIN, "pc-visitor logged in at Computer 1"), "Het inloggen op de pc staat niet in het logboek");
+        var snapshot = SecurityOs.snapshot(core, level, session, false);
+        check(snapshot.getString("pc").equals("Computer 1") && snapshot.contains("rights") && snapshot.contains("cameras")
+                        && snapshot.contains("log") && snapshot.contains("devices"),
+                "De pc kreeg niet wat hij mag tonen: " + snapshot.getAllKeys());
+        for (String hidden : new String[] {"cards", "fs", "computers", "logicInfo", "backup", "zone", "robots"}) {
+            check(!snapshot.contains(hidden), "De pc kreeg gegevens die hij niet mag tonen: " + hidden);
+        }
+        // Devices op Use: de laserwanden uitzetten mag. Access, mappen en het wachtwoord niet.
+        osAction(visitor, core, "flag", args -> { args.putString("name", "lasers"); args.putBoolean("on", false); });
+        check(!core.lasersEnabled(), "Devices op Use mocht toch niet schakelen");
+        osAction(visitor, core, "trust_add", args -> args.putString("name", "pc-visitor"));
+        osAction(visitor, core, "flag", args -> { args.putString("name", "players"); args.putBoolean("on", true); });
+        osAction(visitor, core, "fs_mkdir", args -> args.putString("path", "/home/hacked"));
+        osAction(visitor, core, "passwd", args -> args.putString("pw", "owned1"));
+        check(!core.isTrusted(visitor.getUUID()) && !core.attackPlayers() && core.fs().get("/home/hacked") == null
+                && !core.hasPassword(), "Op de pc lukte iets wat de kern niet toestaat");
+        // Cameras op View: een camera hernoemen mag niet (de server weigert het al vóór hij de camera zoekt).
+        check(!computer.rights().allows("cam_rename", new net.minecraft.nbt.CompoundTag())
+                && computer.rights().allows("cam_watch", new net.minecraft.nbt.CompoundTag()), "View laat de verkeerde dingen toe");
+        // De pc onthoudt zijn eigen vensters, niet die van de kern.
+        osAction(visitor, core, "desk_save", args -> {
+            net.minecraft.nbt.ListTag windows = new net.minecraft.nbt.ListTag();
+            net.minecraft.nbt.CompoundTag window = new net.minecraft.nbt.CompoundTag();
+            window.putString("a", "CAMERAS");
+            windows.add(window);
+            args.put("w", windows);
+        });
+        check(computer.desktop().size() == 1 && core.desktop().isEmpty(), "De vensters van de pc kwamen niet in de pc");
+
+        // Op Trusted: de vreemde mag er niet meer op (een open desktop gaat dicht bij de volgende controle).
+        computer.setWho(ComputerBlockEntity.Who.TRUSTED, "");
+        check(Computers.stillAllowed(visitor, core, pc) != null, "Na Trusted mocht de vreemde nog op de pc");
+        SecurityOs.close(visitor);
+        Computers.use(visitor, monitor);
+        check(!SecurityOs.hasDesktop(visitor), "Een vreemde kwam op een computer voor vertrouwde spelers");
+
+        // Een keycard-groep: met een kaart van die groep wel.
+        core.logic().addGroup("staff", "");
+        computer.setWho(ComputerBlockEntity.Who.GROUP, "staff");
+        Computers.use(visitor, monitor);
+        check(!SecurityOs.hasDesktop(visitor), "Zonder kaart kwam de vreemde op een computer voor een keycard-groep");
+        var card = core.logic().issue("Visitor", 1, "pc-boss", "staff");
+        ItemStack keycard = new ItemStack(ModItems.KEYCARD.get());
+        com.senne.imttech.logic.KeycardItem.write(keycard, new com.senne.imttech.logic.KeycardData(core.ip(), core.hostname(),
+                card.number(), card.colour(), card.label()));
+        visitor.getInventory().add(keycard);
+        Computers.use(visitor, monitor);
+        check(SecurityOs.hasDesktop(visitor), "Met een kaart van de groep kwam de vreemde er niet op");
+        SecurityOs.close(visitor);
+
+        // Een code: eerst de code (fout staat in het logboek), behalve voor de eigenaar.
+        computer.setCode("desk42", level.random);
+        Computers.use(visitor, monitor);
+        check(!SecurityOs.hasDesktop(visitor), "Een computer met een code ging zonder code open");
+        Computers.enterCode(visitor, monitor, "nope99");
+        check(!SecurityOs.hasDesktop(visitor) && hasLog(core, EventLog.Type.LOGIN_FAIL, "Wrong code on Computer 1"),
+                "Een foute code opende de pc, of staat niet in het logboek");
+        Computers.enterCode(visitor, monitor, "desk42");
+        check(SecurityOs.hasDesktop(visitor), "De goede code opende de pc niet");
+        Computers.use(owner, monitor);
+        check(SecurityOs.hasDesktop(owner), "De eigenaar moest toch de code typen");
+
+        // De computer weg: de desktops gaan dicht.
+        helper.setBlock(new BlockPos(6, 3, 2), Blocks.AIR);
+        check(!SecurityOs.hasDesktop(visitor) && !SecurityOs.hasDesktop(owner), "Na het afbreken bleef de desktop van de pc open");
+        helper.succeed();
+    }
 }

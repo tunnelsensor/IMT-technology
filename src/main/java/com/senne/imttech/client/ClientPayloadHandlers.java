@@ -161,6 +161,16 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Hoofdstuk 40: het codescherm van een Computer openen, of het antwoord van de server laten zien. */
+    public static void onComputerCodePrompt(com.senne.imttech.network.ComputerCodePromptPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (payload.open()) {
+            mc.setScreen(new com.senne.imttech.client.os.OsLoginScreen(payload.monitor(), payload.name()));
+        } else if (mc.screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+            login.reply(payload.message());
+        }
+    }
+
     /** Een nieuwe momentopname van de desktop: het scherm leest hieruit. */
     public static void onOsSnapshot(com.senne.imttech.network.OsSnapshotPayload payload, IPayloadContext context) {
         if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen desk

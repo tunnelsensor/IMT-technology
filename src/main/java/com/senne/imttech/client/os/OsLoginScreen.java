@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -29,6 +30,9 @@ import org.jetbrains.annotations.Nullable;
  * Het wachtwoord zie je als sterretjes. De server kijkt alles na: lukt het, dan stuurt hij de desktop (en gaat dit
  * scherm vanzelf dicht); lukt het niet, dan staat er in het rood waarom. Het IP van de vorige keer staat er al in (de
  * laptop onthoudt het), het wachtwoord nooit.
+ *
+ * Hetzelfde scherm vraagt ook de code van een Computer (hoofdstuk 40, een rechtsklik op zijn monitor): dan staat er
+ * alleen het vak voor de code, met de naam van de computer bovenaan.
  */
 public class OsLoginScreen extends Screen {
     private static final int PANEL_W = 250;
@@ -39,6 +43,8 @@ public class OsLoginScreen extends Screen {
     private static final int MAX_IP = 15;
 
     private final String startIp;
+    /** De monitor van een Computer met een code, of null: dit is het inlogscherm van de laptop. */
+    private final @Nullable BlockPos monitor;
     private @Nullable EditBox ipBox;
     private @Nullable EditBox passwordBox;
     private @Nullable Button connectButton;
@@ -51,6 +57,14 @@ public class OsLoginScreen extends Screen {
     public OsLoginScreen(String ip) {
         super(Component.literal("Hacking Laptop: SSH login"));
         this.startIp = ip;
+        this.monitor = null;
+    }
+
+    /** Het codescherm van een Computer (de monitor waarop je klikte, en de naam van de computer). */
+    public OsLoginScreen(BlockPos monitor, String computerName) {
+        super(Component.literal(computerName + ": enter the code"));
+        this.startIp = "";
+        this.monitor = monitor;
     }
 
     @Override
@@ -71,7 +85,9 @@ public class OsLoginScreen extends Screen {
         ipBox.setFilter(text -> text.chars().allMatch(c -> c >= '0' && c <= '9' || c == '.'));
         ipBox.setValue(ip);
         ipBox.setHint(Component.literal("10.x.x.x").withColor(OsDraw.GREY));
-        addRenderableWidget(ipBox);
+        if (monitor == null) {
+            addRenderableWidget(ipBox); // een Computer heeft geen IP-vak, alleen de code
+        }
 
         passwordBox = new EditBox(font, left + MARGIN, top + 66, PANEL_W - 2 * MARGIN, 16, Component.literal("Password"));
         passwordBox.setMaxLength(SystemPassword.MAX_LENGTH);
@@ -88,11 +104,14 @@ public class OsLoginScreen extends Screen {
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
                 .bounds(connectX - 6 - BUTTON_W, buttons, BUTTON_W, 20).build());
         // Staat het IP er al, dan typ je meteen het wachtwoord.
-        setInitialFocus(ip.isEmpty() ? ipBox : passwordBox);
+        setInitialFocus(monitor == null && ip.isEmpty() ? ipBox : passwordBox);
         refreshConnect();
     }
 
     private String ip() {
+        if (monitor != null) {
+            return "computer"; // een Computer heeft geen IP: alleen de code telt
+        }
         return ipBox == null ? "" : ipBox.getValue().strip();
     }
 
@@ -112,8 +131,13 @@ public class OsLoginScreen extends Screen {
             return;
         }
         waiting = true;
-        message = "Connecting to " + ip() + "...";
-        PacketDistributor.sendToServer(new OsLoginPayload(ip(), password()));
+        if (monitor != null) {
+            message = "Checking the code...";
+            PacketDistributor.sendToServer(new com.senne.imttech.network.ComputerCodePayload(monitor, password()));
+        } else {
+            message = "Connecting to " + ip() + "...";
+            PacketDistributor.sendToServer(new OsLoginPayload(ip(), password()));
+        }
         refreshConnect();
     }
 
@@ -162,10 +186,15 @@ public class OsLoginScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         super.render(g, mouseX, mouseY, a);
         g.drawString(font, title, left + MARGIN, top + 8, HudStyle.argb(255, HudStyle.CYAN), true);
-        g.drawString(font, "IP address", left + MARGIN, top + 24, HudStyle.argb(200, HudStyle.WHITE), false);
-        g.drawString(font, "Password", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
-        g.drawString(font, "The IP is in the Status app of a security core.", left + MARGIN, top + 88,
-                HudStyle.argb(150, HudStyle.WHITE), false);
+        if (monitor != null) {
+            g.drawString(font, "Code", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
+            g.drawString(font, "This computer asks for a code.", left + MARGIN, top + 30, HudStyle.argb(150, HudStyle.WHITE), false);
+        } else {
+            g.drawString(font, "IP address", left + MARGIN, top + 24, HudStyle.argb(200, HudStyle.WHITE), false);
+            g.drawString(font, "Password", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
+            g.drawString(font, "The IP is in the Status app of a security core.", left + MARGIN, top + 88,
+                    HudStyle.argb(150, HudStyle.WHITE), false);
+        }
         if (!message.isEmpty()) {
             int colour = waiting ? HudStyle.CYAN : HudStyle.RED;
             int y = top + 101;

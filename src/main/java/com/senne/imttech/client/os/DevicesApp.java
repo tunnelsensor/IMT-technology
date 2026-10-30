@@ -119,6 +119,10 @@ final class DevicesApp {
      * als hij er geen heeft.
      */
     private @Nullable String buttonLabel(CompoundTag device) {
+        // Hoofdstuk 40: op een Computer waar Devices op View staat, kijk je alleen (de poorten van een switch zie je wel).
+        if (!screen.mayUse(SecurityOsScreen.App.DEVICES) && !device.getString("k").equals("switch")) {
+            return null;
+        }
         if (switchable(device)) {
             return isRenaming(device) ? "Save" : device.getBoolean("on") ? "Turn off" : "Turn on";
         }
@@ -149,6 +153,9 @@ final class DevicesApp {
      * naam typt is er alleen Save. Of null als het apparaat er geen heeft.
      */
     private @Nullable String extraLabel(CompoundTag device) {
+        if (!screen.mayUse(SecurityOsScreen.App.DEVICES)) {
+            return null;
+        }
         return (device.getString("k").equals("switch") || switchable(device)) && !isRenaming(device) ? "Rename" : null;
     }
 
@@ -245,9 +252,10 @@ final class DevicesApp {
         // De schakelaars van het hele netwerk.
         CompoundTag access = access();
         int bx = a.x();
-        bx = switchButton(g, font, bx, a.y(), "Drones", access.getBoolean("drones")) + 6;
-        bx = switchButton(g, font, bx, a.y(), "Lasers", access.getBoolean("lasers")) + 6;
-        switchButton(g, font, bx, a.y(), "Cameras", access.getBoolean("cameras"));
+        boolean use = screen.mayUse(SecurityOsScreen.App.DEVICES);
+        bx = switchButton(g, font, bx, a.y(), "Drones", access.getBoolean("drones"), use) + 6;
+        bx = switchButton(g, font, bx, a.y(), "Lasers", access.getBoolean("lasers"), use) + 6;
+        switchButton(g, font, bx, a.y(), "Cameras", access.getBoolean("cameras"), use);
         // De lijst.
         int top = listTop(a);
         int bottom = a.y() + a.h();
@@ -289,9 +297,16 @@ final class DevicesApp {
         }
     }
 
-    /** Een knop "Drones: ON" (groen) of "Drones: OFF" (rood). Geeft de rechterkant terug. */
-    private static int switchButton(GuiGraphics g, Font font, int x, int y, String name, boolean on) {
+    /**
+     * Een knop "Drones: ON" (groen) of "Drones: OFF" (rood). Geeft de rechterkant terug. Zonder {@code use} (een Computer
+     * waar Devices op View staat) alleen de tekst, zonder knop.
+     */
+    private static int switchButton(GuiGraphics g, Font font, int x, int y, String name, boolean on, boolean use) {
         String label = name + ": " + (on ? "ON" : "OFF");
+        if (!use) {
+            g.drawString(font, label, x + 4, y + 2, HudStyle.argb(255, on ? HudStyle.GREEN : HudStyle.RED), false);
+            return x + OsDraw.buttonWidth(font, label);
+        }
         return x + OsDraw.button(g, font, x, y, label, true, on ? HudStyle.GREEN : HudStyle.RED);
     }
 
@@ -370,6 +385,22 @@ final class DevicesApp {
 
     void mouseClicked(Font font, SecurityOsScreen.Area a, int mx, int my) {
         CompoundTag access = access();
+        if (!screen.mayUse(SecurityOsScreen.App.DEVICES)) {
+            // Alleen kijken: geen schakelaars, geen namen; alleen de poorten van een switch open- en dichtklappen.
+            List<Row> rows = rows();
+            int y = rowsTop(a);
+            for (int i = scroll; i < rows.size() && y + height(rows.get(i)) <= a.y() + a.h(); i++) {
+                CompoundTag device = rows.get(i).device();
+                String button = device == null || rows.get(i).ports() ? null : buttonLabel(device);
+                if (button != null && OsDraw.inside(mx, my, a.x() + a.w() - 4 - OsDraw.buttonWidth(font, button), y + 1,
+                        OsDraw.buttonWidth(font, button), OsDraw.BUTTON_H)) {
+                    portsOpen = posOf(device).equals(portsOpen) ? null : posOf(device);
+                    return;
+                }
+                y += height(rows.get(i));
+            }
+            return;
+        }
         // De twee schakelaars bovenaan.
         String drones = "Drones: " + (access.getBoolean("drones") ? "ON" : "OFF");
         int dronesW = OsDraw.buttonWidth(font, drones);

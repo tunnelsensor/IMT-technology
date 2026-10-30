@@ -1277,6 +1277,8 @@
   "computer.imttech.msg.no_power": "The computer has no power: lay a power cable (or PoE cable) to it.",
   "computer.imttech.msg.status": "%s: connected to %s (%s).",
   "computer.imttech.msg.not_set_up": "Not set up yet: choose its apps in the Computers app on your security core.",
+  "computer.imttech.msg.trusted_only": "ACCESS DENIED: only trusted players may use %s.",
+  "computer.imttech.msg.group_only": "ACCESS DENIED: %s needs a keycard of group %s.",
   "screen.imttech.switch": "NETWORK SWITCH",
   "screen.imttech.switch.online": "online",
   "screen.imttech.switch.no_power": "no power",

@@ -151,6 +151,12 @@ public final class ModNetwork {
                 com.senne.imttech.security.os.SecurityOs.login(player, payload.ip(), payload.password());
             }
         });
+        // Hoofdstuk 40: de code van een Computer (achter zijn monitor).
+        registrar.playToServer(ComputerCodePayload.TYPE, ComputerCodePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.computer.Computers.enterCode(player, payload.monitor(), payload.code());
+            }
+        });
         registrar.playToServer(HoloActionPayload.TYPE, HoloActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 HoloTables.handleAction(player, payload);
@@ -232,6 +238,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onOsSnapshot(payload, context));
         registrar.playToClient(OsLoginPromptPayload.TYPE, OsLoginPromptPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onOsLoginPrompt(payload, context));
+        registrar.playToClient(ComputerCodePromptPayload.TYPE, ComputerCodePromptPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onComputerCodePrompt(payload, context));
         registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
         registrar.playToClient(CabinetOpenPayload.TYPE, CabinetOpenPayload.STREAM_CODEC,

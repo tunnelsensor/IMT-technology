@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 365 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 366 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -4016,7 +4016,7 @@ Ik bouw het in deze volgorde, één stap per commit:
       glazen ruit, glowstone en 3 stenen knopjes (het toetsenbord). Plaatjes: `generate_textures.computer_textures()`,
       modellen: `generate_block_models.computer_and_monitor()`. **Test**:
       `computer_needs_network_and_power_and_lights_its_monitor`. 364 tests, allemaal groen.
-- [x] **3. De app Computers op de kern** — een nieuwe app **Computers** (icoon P, na Access) op de desktop van de kern
+- [x] **3. De app Computers op de kern** (`a9e7b37`) — een nieuwe app **Computers** (icoon P, na Access) op de desktop van de kern
       (en dus ook met de laptop). Links de computers op het netwerk van die kern, met een groen of rood blokje (werkt hij
       of niet); rechts de gekozen computer: zijn naam met **Rename**, of hij werkt (of waarom niet), **Who** (een knop die
       wisselt tussen Everyone, Trusted en Keycard group; bij Keycard group kies je de groep met < en >), **Code** ("set"
@@ -4029,7 +4029,26 @@ Ik bouw het in deze volgorde, één stap per commit:
       `DesktopRights` (Off/View/Use per app, en welke opdracht bij welke app hoort; de server weigert voortaan elke
       opdracht die niet mag, "View only on this computer"), de instellingen staan in `ComputerBlockEntity`, de knoppen in
       `Computers.desktop`. **Test**: `computers_app_sets_apps_who_and_code`. 365 tests, allemaal groen.
-- [ ] **4. De pc gebruiken** (wie, code, alleen de toegestane apps, alleen kijken, eigen vensters, Logs met Entries)
+- [x] **4. De pc gebruiken** — rechtsklik op de monitor opent de desktop van de computer, met bovenaan in het groen
+      **COMPUTER: Reception**. Eerst kijkt de server: werkt de computer, staat er minstens één app op ("Not set up yet"),
+      en mag jij erop: **Everyone**, **Trusted** ("ACCESS DENIED: only trusted players may use Reception") of **Keycard
+      group** (een geldige kaart van dit netwerk uit die groep ergens in je inventaris; "... needs a keycard of group
+      staff"). De eigenaar mag altijd. Heeft de computer een **code**, dan eerst het codescherm (hetzelfde als het
+      inlogscherm van de laptop, met alleen het vak "Code"); een foute code staat in het logboek ("Wrong code on
+      Reception from Lotte"), na `passwordAttempts` keer moet je even wachten. De eigenaar typt geen code. Inloggen staat
+      als LOGIN in het logboek ("Lotte logged in at Reception").
+      Op de pc staan **alleen de toegestane apps** (de icoontjes schuiven op), en de server stuurt **alleen hun
+      gegevens** mee (geen keycards, mappen, diagrammen... als die apps er niet op staan). Een app op **View** heeft
+      "view only" in zijn titel: in **Cameras** zie je de muur en het grote beeld met alleen Back (geen pijltjes, geen
+      Rename), in **Devices** de lijst met de toestand maar zonder knoppen (Drones/Lasers/Cameras als tekst). Elke andere
+      knop van een app op View zegt "View only on this computer", en de server weigert hem toch. Op een pc nooit Settings,
+      Groups of Computers. Verandert de eigenaar de apps terwijl iemand kijkt, dan verdwijnen die vensters meteen; mag
+      iemand er niet meer op (Who veranderd, computer zonder stroom), dan gaat de desktop binnen een seconde dicht. Ook als
+      je meer dan 8 blokken van de monitor wegloopt of iemand de computer afbreekt. De pc onthoudt zijn **eigen vensters**
+      (Shut down vergeet ze, net als op de kern).
+      **Logs** heeft bovenaan een knop **Show: all / Show: entries**: met entries alleen wie welke lezer, welk paneel,
+      welke knop of hendel gebruikte en wie waar inlogde ("kijken wie er waar binnengaat"), op de kern en op een pc.
+      **Test**: `computer_desktop_shows_only_what_the_core_allows`. 366 tests, allemaal groen.
 - [ ] **5. LEESMIJ, showcase en screenshots**
 
 ---

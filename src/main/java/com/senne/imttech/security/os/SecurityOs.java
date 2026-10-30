@@ -181,6 +181,19 @@ public final class SecurityOs {
      * Geeft false als deze speler hier nog buitengesloten is (na een valstrik).
      */
     public static boolean openFor(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote) {
+        return openFor(player, core, remote, null, core.getBlockPos());
+    }
+
+    /**
+     * Hoofdstuk 40: de desktop op een Computer (rechtsklik op zijn monitor, zie computer/Computers.use). Je ziet alleen de
+     * apps die de kern daar toestaat, en je moet bij de monitor blijven.
+     */
+    public static boolean openComputer(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos computer, BlockPos monitor) {
+        return openFor(player, core, false, computer, monitor);
+    }
+
+    private static boolean openFor(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote, @Nullable BlockPos computer,
+                                   BlockPos anchor) {
         // Tijdens een oefening (hoofdstuk 27) is de trainee een indringer: zijn eigen desktop gaat niet open (ook niet op afstand).
         if (com.senne.imttech.training.Training.isDrillTrainee(player.serverLevel(), core.getBlockPos(), player.getUUID())) {
             player.displayClientMessage(Component.literal("The desktop is locked: you are the intruder in a drill")
@@ -194,7 +207,7 @@ public final class SecurityOs {
             return false;
         }
         Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID(), player.serverLevel().dimension(),
-                null, core.getBlockPos().immutable());
+                computer == null ? null : computer.immutable(), anchor.immutable());
         SESSIONS.put(player.getUUID(), session);
         if (remote) {
             keepLoaded(player.serverLevel(), session.core());
@@ -209,6 +222,20 @@ public final class SecurityOs {
         Session session = SESSIONS.remove(player.getUUID());
         if (session != null) {
             ModNetwork.sendTo(player, OsOpenPayload.close(session.core()));
+        }
+    }
+
+    /** Hoofdstuk 40: deze Computer is weg (afgebroken): wie hem open had, krijgt hem dicht. */
+    public static void closeComputer(ServerLevel level, BlockPos computer) {
+        for (Map.Entry<UUID, Session> entry : java.util.List.copyOf(SESSIONS.entrySet())) {
+            if (computer.equals(entry.getValue().computer())) {
+                ServerPlayer player = level.getServer().getPlayerList().getPlayer(entry.getKey());
+                if (player != null) {
+                    close(player);
+                } else {
+                    SESSIONS.remove(entry.getKey());
+                }
+            }
         }
     }
 
@@ -413,10 +440,24 @@ public final class SecurityOs {
             case "close" -> close(player);
             // De desktop ging dicht: onthoud welke vensters er open stonden (19 oktober). Uitzetten met de aan/uit-knop
             // vergeet ze: de volgende keer start hij met alleen Status.
-            case "desk_save" -> core.setDesktop(desktopWindows(args.getList("w", Tag.TAG_COMPOUND)));
+            case "desk_save" -> {
+                // Op een Computer onthoudt de computer zijn eigen vensters (hoofdstuk 40), los van de kern.
+                if (session.computer() != null && level.getBlockEntity(session.computer())
+                        instanceof com.senne.imttech.computer.ComputerBlockEntity computer) {
+                    computer.setDesktop(desktopWindows(args.getList("w", Tag.TAG_COMPOUND)));
+                } else if (session.computer() == null) {
+                    core.setDesktop(desktopWindows(args.getList("w", Tag.TAG_COMPOUND)));
+                }
+            }
             case "desk_off" -> {
-                core.setDesktop(new ListTag());
-                core.logEvent(EventLog.Type.LOGIN, player.getGameProfile().getName() + " shut down the desktop");
+                if (session.computer() != null) {
+                    if (level.getBlockEntity(session.computer()) instanceof com.senne.imttech.computer.ComputerBlockEntity computer) {
+                        computer.setDesktop(new ListTag());
+                    }
+                } else {
+                    core.setDesktop(new ListTag());
+                    core.logEvent(EventLog.Type.LOGIN, player.getGameProfile().getName() + " shut down the desktop");
+                }
                 close(player);
             }
             case "passwd" -> passwd(player, core, session, args.getString("pw"));
@@ -1168,6 +1209,16 @@ public final class SecurityOs {
      */
     public static CompoundTag snapshot(SecurityCoreBlockEntity core, ServerLevel level, Session session, boolean owner) {
         CompoundTag data = new CompoundTag();
+        // Hoofdstuk 40: op een Computer alleen de gegevens van de apps die de kern daar toestaat (wat er niet op staat,
+        // krijgt die pc ook niet), plus de naam van de computer en de rechten (voor de icoontjes en knoppen).
+        DesktopRights rights = session.rights(level);
+        if (!rights.full()) {
+            data.put("rights", rights.save());
+            if (session.computer() != null && level.getBlockEntity(session.computer())
+                    instanceof com.senne.imttech.computer.ComputerBlockEntity computer) {
+                data.putString("pc", computer.name());
+            }
+        }
         data.putString("host", core.hostname());
         data.putString("ip", core.ip());
         data.putInt("port", core.sshPort());
@@ -1178,74 +1229,150 @@ public final class SecurityOs {
         data.putBoolean("remote", session.remote());
         // Het logboek, met per regel hoe lang geleden het was (in seconden).
         long now = level.getGameTime();
-        ListTag log = new ListTag();
-        for (EventLog.Entry entry : core.log().entries()) {
-            CompoundTag line = new CompoundTag();
-            line.putInt("ago", (int) Math.max(0, (now - entry.time()) / 20));
-            line.putString("k", entry.type().name());
-            line.putString("x", entry.text());
-            log.add(line);
-        }
-        data.put("log", log);
-        // Toegang en de schakelaars van het netwerk (de apps Access en Devices).
-        CompoundTag access = new CompoundTag();
-        access.putBoolean("mobs", core.attackMobs());
-        access.putBoolean("players", core.attackPlayers());
-        access.putBoolean("pvp", level.getServer().isPvpAllowed());
-        access.putBoolean("drones", core.dronesEnabled());
-        access.putBoolean("lasers", core.lasersEnabled());
-        access.putBoolean("cameras", core.camerasEnabled());
-        ListTag trusted = new ListTag();
-        for (String name : core.trustedNames()) {
-            trusted.add(net.minecraft.nbt.StringTag.valueOf(name));
-        }
-        access.put("trusted", trusted);
-        data.put("access", access);
-        // De apparaten met hun status.
-        data.put("devices", com.senne.imttech.security.SecurityDevices.snapshot(level, core));
-        ListTag cameras = com.senne.imttech.security.SecurityDevices.cameras(level, core);
-        cameras.addAll(com.senne.imttech.robot.Robots.cameras(level, core)); // robots met een camera (hoofdstuk 24)
-        data.put("cameras", cameras);
-        // De guard robots in het gebied van de kern (de app Robots, hoofdstuk 21).
-        data.put("robots", com.senne.imttech.robot.Robots.snapshot(level, core));
-        data.put("training", com.senne.imttech.training.Trainings.snapshot(level, core));
-        data.put("robotPrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.ROBOT));
-        data.put("dronePrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.DRONE));
-        // De server (serverracks) waar de redstone-diagrammen op draaien.
-        data.put("server", com.senne.imttech.logic.LogicServer.snapshot(level, core));
-        // De backups van deze server en van de eigenaar (de app Backup).
-        data.put("backup", com.senne.imttech.logic.Backups.snapshot(level, core));
-        // De computers op het netwerk van deze kern (de app Computers, hoofdstuk 40).
-        data.put("computers", com.senne.imttech.computer.Computers.snapshot(level, core));
-        // De zone: de kubussen waarin alleen jij en je vrienden bouwen (de app Zone, hoofdstuk 10).
-        data.put("zone", com.senne.imttech.security.zone.ZoneApp.snapshot(level, core,
-                level.getServer().getPlayerList().getPlayer(session.viewer()), session.remote()));
-        // De keycards die dit netwerk schreef, met hun kleur en hun eigen groepen.
-        ListTag cards = new ListTag();
-        for (com.senne.imttech.logic.LogicStore.Card card : core.logic().cards()) {
-            CompoundTag entry = new CompoundTag();
-            entry.putInt("n", card.number());
-            entry.putString("l", card.label());
-            entry.putInt("c", card.colour());
-            entry.putBoolean("b", card.blocked());
-            entry.putString("w", card.writtenBy());
-            ListTag groups = new ListTag();
-            for (String group : card.groups()) {
-                groups.add(net.minecraft.nbt.StringTag.valueOf(group));
+        if (rights.shows("LOGS")) {
+            ListTag log = new ListTag();
+            for (EventLog.Entry entry : core.log().entries()) {
+                CompoundTag line = new CompoundTag();
+                line.putInt("ago", (int) Math.max(0, (now - entry.time()) / 20));
+                line.putString("k", entry.type().name());
+                line.putString("x", entry.text());
+                log.add(line);
             }
-            entry.put("g", groups);
-            cards.add(entry);
+            data.put("log", log);
         }
-        data.put("cards", cards);
+        appSnapshot(data, core, level, session, rights);
+        // De mappen: alleen als het scherm een oudere versie heeft (en op een Computer alleen met Files of Notes).
+        boolean files = rights.shows("FILES") || rights.shows("NOTES");
+        VirtualFs fs = core.fs();
+        if (files && (session.sentFs != fs || session.sentRevision != fs.revision())) {
+            data.put("fs", fsList(fs, owner));
+            session.sentFs = fs;
+            session.sentRevision = fs.revision();
+        }
+        // Een net geopend bestand (één keer).
+        if (session.fileToSend != null) {
+            VirtualFs.Node node = fs.get(session.fileToSend);
+            if (files && node != null && !node.isDir()) {
+                CompoundTag file = new CompoundTag();
+                file.putString("p", session.fileToSend);
+                file.putString("c", node.content());
+                file.putBoolean("s", node.isSystem());
+                data.put("file", file);
+            }
+            session.fileToSend = null;
+        }
+        // Welke vensters er de vorige keer open stonden (één keer, bij het openen; 19 oktober). Een Computer heeft zijn eigen.
+        if (!session.sentDesktop) {
+            ListTag desk = core.desktop();
+            if (session.computer() != null) {
+                desk = level.getBlockEntity(session.computer()) instanceof com.senne.imttech.computer.ComputerBlockEntity computer
+                        ? computer.desktop() : new ListTag();
+            }
+            data.put("desk", desk);
+            session.sentDesktop = true;
+        }
+        // Een melding (één keer).
+        if (session.notice != null) {
+            CompoundTag notice = new CompoundTag();
+            notice.putString("x", session.notice);
+            notice.putBoolean("err", session.noticeError);
+            data.put("notice", notice);
+            session.notice = null;
+        }
+        return data;
+    }
+
+    /**
+     * De gegevens van de apps, elk alleen als die app op deze desktop staat (op de kern en met de laptop: allemaal).
+     * Sommige apps lezen ook gegevens van een andere: Devices de schakelaars van Access, Logic de keycard-groepen en de
+     * server, Status de server.
+     */
+    private static void appSnapshot(CompoundTag data, SecurityCoreBlockEntity core, ServerLevel level, Session session,
+                                    DesktopRights rights) {
+        // Toegang en de schakelaars van het netwerk (de apps Access en Devices).
+        if (rights.shows("ACCESS") || rights.shows("DEVICES")) {
+            CompoundTag access = new CompoundTag();
+            access.putBoolean("mobs", core.attackMobs());
+            access.putBoolean("players", core.attackPlayers());
+            access.putBoolean("pvp", level.getServer().isPvpAllowed());
+            access.putBoolean("drones", core.dronesEnabled());
+            access.putBoolean("lasers", core.lasersEnabled());
+            access.putBoolean("cameras", core.camerasEnabled());
+            ListTag trusted = new ListTag();
+            for (String name : core.trustedNames()) {
+                trusted.add(net.minecraft.nbt.StringTag.valueOf(name));
+            }
+            access.put("trusted", trusted);
+            data.put("access", access);
+        }
+        // De apparaten met hun status.
+        if (rights.shows("DEVICES")) {
+            data.put("devices", com.senne.imttech.security.SecurityDevices.snapshot(level, core));
+        }
+        if (rights.shows("CAMERAS")) {
+            ListTag cameras = com.senne.imttech.security.SecurityDevices.cameras(level, core);
+            cameras.addAll(com.senne.imttech.robot.Robots.cameras(level, core)); // robots met een camera (hoofdstuk 24)
+            data.put("cameras", cameras);
+        }
+        // De guard robots in het gebied van de kern (de app Robots, hoofdstuk 21).
+        if (rights.shows("ROBOTS")) {
+            data.put("robots", com.senne.imttech.robot.Robots.snapshot(level, core));
+            data.put("robotPrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.ROBOT));
+            data.put("dronePrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.DRONE));
+        }
+        if (rights.shows("TRAINING")) {
+            data.put("training", com.senne.imttech.training.Trainings.snapshot(level, core));
+        }
+        // De server (serverracks) waar de redstone-diagrammen op draaien.
+        if (rights.shows("MONITOR") || rights.shows("STATUS") || rights.shows("LOGIC")) {
+            data.put("server", com.senne.imttech.logic.LogicServer.snapshot(level, core));
+        }
+        // De backups van deze server en van de eigenaar (de app Backup).
+        if (rights.shows("BACKUP")) {
+            data.put("backup", com.senne.imttech.logic.Backups.snapshot(level, core));
+        }
+        // De computers op het netwerk van deze kern (de app Computers, hoofdstuk 40): nooit op een Computer zelf.
+        if (rights.full()) {
+            data.put("computers", com.senne.imttech.computer.Computers.snapshot(level, core));
+        }
+        // De zone: de kubussen waarin alleen jij en je vrienden bouwen (de app Zone, hoofdstuk 10).
+        if (rights.shows("ZONE")) {
+            data.put("zone", com.senne.imttech.security.zone.ZoneApp.snapshot(level, core,
+                    level.getServer().getPlayerList().getPlayer(session.viewer()), session.remote()));
+        }
+        // De keycards die dit netwerk schreef, met hun kleur en hun eigen groepen.
+        if (rights.shows("KEYCARDS")) {
+            ListTag cards = new ListTag();
+            for (com.senne.imttech.logic.LogicStore.Card card : core.logic().cards()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putInt("n", card.number());
+                entry.putString("l", card.label());
+                entry.putInt("c", card.colour());
+                entry.putBoolean("b", card.blocked());
+                entry.putString("w", card.writtenBy());
+                ListTag groups = new ListTag();
+                for (String group : card.groups()) {
+                    groups.add(net.minecraft.nbt.StringTag.valueOf(group));
+                }
+                entry.put("g", groups);
+                cards.add(entry);
+            }
+            data.put("cards", cards);
+        }
         // De keycard-groepen (25 oktober): per groep in welke groep hij zit ("" = bovenaan).
-        ListTag cardGroups = new ListTag();
-        for (String group : core.logic().groups()) {
-            CompoundTag entry = new CompoundTag();
-            entry.putString("n", group);
-            entry.putString("p", core.logic().parentOf(group));
-            cardGroups.add(entry);
+        if (rights.shows("KEYCARDS") || rights.shows("LOGIC") || rights.full()) {
+            ListTag cardGroups = new ListTag();
+            for (String group : core.logic().groups()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putString("n", group);
+                entry.putString("p", core.logic().parentOf(group));
+                cardGroups.add(entry);
+            }
+            data.put("cardGroups", cardGroups);
         }
-        data.put("cardGroups", cardGroups);
+        if (!rights.shows("LOGIC")) {
+            return;
+        }
         // De app Logic: hoe vol de SSD's zijn, wat er bezig is, en welke apparaten een diagram kan noemen.
         CompoundTag info = new CompoundTag();
         info.putInt("used", core.logic().blocks());
@@ -1287,39 +1414,6 @@ public final class SecurityOs {
             session.sentLogic = store;
             session.sentLogicRevision = store.revision();
         }
-        // De mappen: alleen als het scherm een oudere versie heeft.
-        VirtualFs fs = core.fs();
-        if (session.sentFs != fs || session.sentRevision != fs.revision()) {
-            data.put("fs", fsList(fs, owner));
-            session.sentFs = fs;
-            session.sentRevision = fs.revision();
-        }
-        // Een net geopend bestand (één keer).
-        if (session.fileToSend != null) {
-            VirtualFs.Node node = fs.get(session.fileToSend);
-            if (node != null && !node.isDir()) {
-                CompoundTag file = new CompoundTag();
-                file.putString("p", session.fileToSend);
-                file.putString("c", node.content());
-                file.putBoolean("s", node.isSystem());
-                data.put("file", file);
-            }
-            session.fileToSend = null;
-        }
-        // Welke vensters er de vorige keer open stonden (één keer, bij het openen; 19 oktober).
-        if (!session.sentDesktop) {
-            data.put("desk", core.desktop());
-            session.sentDesktop = true;
-        }
-        // Een melding (één keer).
-        if (session.notice != null) {
-            CompoundTag notice = new CompoundTag();
-            notice.putString("x", session.notice);
-            notice.putBoolean("err", session.noticeError);
-            data.put("notice", notice);
-            session.notice = null;
-        }
-        return data;
     }
 
     /** Alle mappen en bestanden als lijst: pad, map of niet, systeem, valstrik (alleen voor de eigenaar), grootte. */
@@ -1360,9 +1454,18 @@ public final class SecurityOs {
         if (level.dimension() != session.dimension
                 || !(level.getBlockEntity(session.core()) instanceof SecurityCoreBlockEntity core)
                 || !player.isAlive()
-                || !session.remote() && player.distanceToSqr(session.core().getCenter()) > REACH * REACH) {
+                || !session.remote() && player.distanceToSqr(session.anchor.getCenter()) > REACH * REACH) {
             close(player);
             return;
+        }
+        // Op een Computer (hoofdstuk 40): werkt hij nog, en mag jij er nog op (iemand kan "wie" net veranderd hebben)?
+        if (session.computer() != null && level.getGameTime() % 20 == 0) {
+            Component problem = com.senne.imttech.computer.Computers.stillAllowed(player, core, session.computer());
+            if (problem != null) {
+                close(player);
+                player.displayClientMessage(problem.copy().withStyle(ChatFormatting.YELLOW), true);
+                return;
+            }
         }
         // Op afstand (hoofdstuk 40): de kern geladen houden, en de verbinding valt weg zonder laptop of zonder stroom.
         if (session.remote() && level.getGameTime() % 20 == 0) {
@@ -1395,6 +1498,7 @@ public final class SecurityOs {
         WRONG.clear();
         WAIT_UNTIL.clear();
         LAST_FAIL_ALERT.clear();
+        com.senne.imttech.computer.Computers.clear();
         com.senne.imttech.security.SecurityDevices.clear();
         com.senne.imttech.logic.LogicServer.clear();
         com.senne.imttech.logic.LogicEvents.clear();

@@ -181,15 +181,17 @@ final class CamerasApp {
                     + pos.getZ(), a.x(), a.y(), HudStyle.argb(255, HudStyle.CYAN), false);
         }
         renderFeed(g, font, camera, a.x(), fy, fw, fh, true, false, partialTick);
+        boolean use = screen.mayUse(SecurityOsScreen.App.CAMERAS);
         String hint = robot ? "You look through its eyes: its program decides where it looks"
+                : !use ? "View only on this computer"
                 : renaming ? "Enter = save   Esc = cancel   empty = number"
                 : "Drag the image or use the arrow keys to aim";
         g.drawString(font, OsDraw.fitLeft(font, hint, a.w()), a.x(), fy + fh + 4, HudStyle.argb(255, OsDraw.GREY), false);
         // Rechts: terug, en (alleen bij een camerablok) de pijltjes en een andere naam geven.
         int px = a.x() + fw + 8;
         OsDraw.button(g, font, px, fy, "Back", true, HudStyle.CYAN);
-        if (robot) {
-            return;
+        if (robot || !use) {
+            return; // een robot, of (hoofdstuk 40) een Computer waar Cameras op View staat: alleen Back
         }
         for (Arrow arrow : Arrow.values()) {
             OsDraw.button(g, font, px + arrow.dx, fy + arrow.dy, arrow.label, true, HudStyle.CYAN);
@@ -374,8 +376,8 @@ final class CamerasApp {
                 showWall();
                 return;
             }
-            if (bigBlock() == null) {
-                return; // een robot: alleen Back
+            if (bigBlock() == null || !screen.mayUse(SecurityOsScreen.App.CAMERAS)) {
+                return; // een robot, of alleen kijken: alleen Back
             }
             boolean onRename = OsDraw.inside(mx, my, px, fy + RENAME_DY, OsDraw.buttonWidth(font, renameLabel()), OsDraw.BUTTON_H);
             if (renaming) {

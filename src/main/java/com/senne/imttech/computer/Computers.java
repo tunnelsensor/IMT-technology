@@ -1,14 +1,21 @@
 package com.senne.imttech.computer;
 
+import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.lan.DevicePower;
+import com.senne.imttech.network.ComputerCodePromptPayload;
+import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.SecurityDevices;
 import com.senne.imttech.security.os.DesktopRights;
 import com.senne.imttech.security.os.EventLog;
+import com.senne.imttech.security.os.SecurityOs;
 import com.senne.imttech.security.os.SystemPassword;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -17,6 +24,8 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +98,68 @@ public final class Computers {
                 core == null ? "?" : core.hostname(), core == null ? "?" : core.ip()).withStyle(ChatFormatting.AQUA), true);
     }
 
-    /** Rechtsklik op een monitor: de desktop van zijn computer (of waarom dat niet gaat). */
+    // ================================================================ De pc gebruiken (een rechtsklik op de monitor)
+
+    /** Hoeveel foute codes na elkaar deze speler al typte (tot [security] passwordAttempts, net als bij de laptop). */
+    private static final Map<UUID, Integer> WRONG = new HashMap<>();
+    /** Na te veel foute codes: tot wanneer (speltijd) deze speler moet wachten. */
+    private static final Map<UUID, Long> WAIT_UNTIL = new HashMap<>();
+
+    /**
+     * Mag deze speler op deze computer? De eigenaar van de kern altijd. Verder wat de kern koos (jouw wens: "wie hem mag
+     * gebruiken"): iedereen, de vertrouwde spelers (de eigenaar, zijn team en de lijst in Access), of wie een geldige
+     * keycard van dit netwerk uit de gekozen groep bij zich heeft (ergens in zijn inventaris). Geeft de reden als het
+     * niet mag, of null.
+     */
+    public static @Nullable Component mayEnter(ServerPlayer player, SecurityCoreBlockEntity core, ComputerBlockEntity computer) {
+        if (player.getUUID().equals(core.ownerId())) {
+            return null;
+        }
+        return switch (computer.who()) {
+            case EVERYONE -> null;
+            case TRUSTED -> SecurityCores.isFriend(player.serverLevel(), core, player) ? null
+                    : Component.translatable("computer.imttech.msg.trusted_only", computer.name());
+            case GROUP -> hasCard(player, core, computer.group()) ? null
+                    : Component.translatable("computer.imttech.msg.group_only", computer.name(), computer.group());
+        };
+    }
+
+    /** Heeft deze speler een geldige keycard van dit netwerk bij zich die in deze groep zit (zelf, of via een groep erin)? */
+    private static boolean hasCard(ServerPlayer player, SecurityCoreBlockEntity core, String group) {
+        net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            com.senne.imttech.logic.KeycardData card = com.senne.imttech.logic.KeycardItem.data(inventory.getItem(i));
+            if (core.logic().isValid(core.ip(), card) && core.logic().inGroup(card.number(), group)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Mag deze speler (nog) op de desktop van deze computer? Hij moet werken, ingesteld zijn (minstens één app) en jij moet
+     * erop mogen. Geeft de reden als het niet (meer) mag, of null. Om de seconde gevraagd zolang de desktop open staat.
+     */
+    public static @Nullable Component stillAllowed(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos computer) {
+        ServerLevel level = player.serverLevel();
+        if (!(level.getBlockEntity(computer) instanceof ComputerBlockEntity entity) || entity.core(level) != core) {
+            return Component.translatable("computer.imttech.msg.no_network");
+        }
+        Component problem = problem(level, computer);
+        if (problem != null) {
+            return problem;
+        }
+        if (entity.rights().empty()) {
+            return Component.translatable("computer.imttech.msg.not_set_up");
+        }
+        return mayEnter(player, core, entity);
+    }
+
+    /**
+     * Rechtsklik op een monitor: de desktop van zijn computer, met wat de kern daar toestaat. Werkt de computer niet, is hij
+     * nog niet ingesteld of mag jij er niet op, dan zegt de actiebalk waarom. Heeft hij een code (en ben jij niet de
+     * eigenaar), dan eerst het codescherm.
+     */
     public static void use(ServerPlayer player, BlockPos monitor) {
         ServerLevel level = player.serverLevel();
         BlockPos computer = computerNextTo(level, monitor);
@@ -98,17 +168,84 @@ public final class Computers {
                     .withStyle(ChatFormatting.RED), true);
             return;
         }
-        Component problem = problem(level, computer);
-        if (problem != null) {
-            player.displayClientMessage(problem.copy().withStyle(ChatFormatting.RED), true);
+        if (!(level.getBlockEntity(computer) instanceof ComputerBlockEntity entity)) {
             return;
         }
-        player.displayClientMessage(Component.translatable("computer.imttech.msg.not_set_up")
-                .withStyle(ChatFormatting.YELLOW), true);
+        SecurityCoreBlockEntity core = entity.core(level);
+        Component problem = core == null ? problem(level, computer) : stillAllowed(player, core, computer);
+        if (problem != null || core == null) {
+            player.displayClientMessage((problem == null ? Component.translatable("computer.imttech.msg.no_network") : problem)
+                    .copy().withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        if (entity.hasCode() && !player.getUUID().equals(core.ownerId())) {
+            ModNetwork.sendTo(player, new ComputerCodePromptPayload(monitor.immutable(), entity.name(), "", true));
+            return;
+        }
+        open(player, core, entity, monitor);
+    }
+
+    /**
+     * De code van het codescherm. Alles wordt opnieuw nagekeken (je kon intussen weglopen, of de computer veranderde). Een
+     * foute code staat in het logboek van de kern; na [security] passwordAttempts foute codes moet je even wachten.
+     */
+    public static void enterCode(ServerPlayer player, BlockPos monitor, String code) {
+        ServerLevel level = player.serverLevel();
+        BlockPos computer = computerNextTo(level, monitor);
+        if (computer == null || player.distanceToSqr(monitor.getCenter()) > SecurityOs.REACH * SecurityOs.REACH
+                || !(level.getBlockEntity(computer) instanceof ComputerBlockEntity entity)) {
+            ModNetwork.sendTo(player, ComputerCodePromptPayload.reply(monitor, "You are too far from the computer."));
+            return;
+        }
+        SecurityCoreBlockEntity core = entity.core(level);
+        Component problem = core == null ? Component.translatable("computer.imttech.msg.no_network")
+                : stillAllowed(player, core, computer);
+        if (problem != null) {
+            ModNetwork.sendTo(player, ComputerCodePromptPayload.reply(monitor, problem.getString()));
+            return;
+        }
+        long now = level.getGameTime();
+        Long waitUntil = WAIT_UNTIL.get(player.getUUID());
+        if (waitUntil != null && now < waitUntil) {
+            ModNetwork.sendTo(player, ComputerCodePromptPayload.reply(monitor,
+                    "Too many wrong codes: wait " + (int) Math.ceil((waitUntil - now) / 20.0) + " s."));
+            return;
+        }
+        if (!entity.checkCode(code)) {
+            int wrong = WRONG.merge(player.getUUID(), 1, Integer::sum);
+            core.logEvent(EventLog.Type.LOGIN_FAIL, "Wrong code on " + entity.name() + " from " + player.getGameProfile().getName());
+            String text = "Wrong code, try again.";
+            if (wrong >= Math.max(1, Math.round(ImtConfig.Security.PASSWORD_ATTEMPTS))) {
+                WRONG.remove(player.getUUID());
+                long ticks = Math.max(20, Math.round(ImtConfig.Security.PASSWORD_LOCKOUT_MILLIS / 50.0));
+                WAIT_UNTIL.put(player.getUUID(), now + ticks);
+                text = "Wrong code. Too many tries: wait " + (int) Math.ceil(ticks / 20.0) + " s.";
+            }
+            ModNetwork.sendTo(player, ComputerCodePromptPayload.reply(monitor, text));
+            return;
+        }
+        WRONG.remove(player.getUUID());
+        WAIT_UNTIL.remove(player.getUUID());
+        open(player, core, entity, monitor);
+    }
+
+    /** De desktop van deze computer echt openen, en in het logboek: wie er waar inlogde (zie de app Logs, Show: entries). */
+    private static void open(ServerPlayer player, SecurityCoreBlockEntity core, ComputerBlockEntity computer, BlockPos monitor) {
+        if (SecurityOs.openComputer(player, core, computer.getBlockPos(), monitor)) {
+            core.logEvent(EventLog.Type.LOGIN, player.getGameProfile().getName() + " logged in at " + computer.name());
+            player.serverLevel().playSound(null, monitor, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.3f, 2.0f);
+        }
     }
 
     /** Een computer is weg (afgebroken): wie hem open had, krijgt hem dicht. */
     public static void gone(ServerLevel level, BlockPos computer) {
+        SecurityOs.closeComputer(level, computer);
+    }
+
+    /** Bij het afsluiten van de wereld: de foute codes vergeten. */
+    public static void clear() {
+        WRONG.clear();
+        WAIT_UNTIL.clear();
     }
 
     // ================================================================ De app Computers op de kern

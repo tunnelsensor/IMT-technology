@@ -173,10 +173,20 @@ public class SecurityOsScreen extends Screen {
             // De vensters van de vorige keer weer op hun plek (19 oktober), zoals bij een pc die aan bleef.
             restoreDesktop(snapshot.getList("desk", Tag.TAG_COMPOUND));
             // Jouw eigen kern, nog zonder wachtwoord: meteen Settings open, klaar om er een te typen.
-            if (snapshot.getBoolean("isOwner") && !snapshot.getBoolean("hasPassword")) {
+            if (snapshot.getBoolean("isOwner") && !snapshot.getBoolean("hasPassword") && shows(App.SETTINGS)) {
                 openApp(App.SETTINGS);
                 editingPassword = true;
             }
+        }
+        // Hoofdstuk 40: op een Computer alleen de apps die de kern toestaat (dat kan ook veranderen terwijl je zit te kijken).
+        for (Win win : List.copyOf(windows)) {
+            if (!shows(win.app)) {
+                closeWindow(win);
+            }
+        }
+        List<App> visible = visibleApps();
+        if (windows.isEmpty() && !visible.isEmpty()) {
+            openApp(visible.getFirst());
         }
         if (snapshot.contains("fs")) {
             files.update(snapshot.getList("fs", Tag.TAG_COMPOUND));
@@ -210,7 +220,7 @@ public class SecurityOsScreen extends Screen {
             } catch (IllegalArgumentException e) {
                 continue; // een app die er niet (meer) is
             }
-            if (restored.stream().anyMatch(win -> win.app == app)) {
+            if (restored.stream().anyMatch(win -> win.app == app) || !shows(app)) {
                 continue;
             }
             Win win = placed(app, restored.size());
@@ -248,9 +258,51 @@ public class SecurityOsScreen extends Screen {
         noticeUntil = Util.getMillis() + 4000;
     }
 
-    /** Stuurt een opdracht naar de server (die controleert altijd zelf of het mag). */
+    /**
+     * Stuurt een opdracht naar de server (die controleert altijd zelf of het mag). Op een Computer waar het niet mag (een app
+     * op View), zeggen we dat meteen en sturen we niets.
+     */
     void send(String op, CompoundTag args) {
+        if (!rights().allows(op, args)) {
+            showNotice("View only on this computer", true);
+            return;
+        }
         PacketDistributor.sendToServer(new OsActionPayload(core, op, args));
+    }
+
+    /**
+     * Hoofdstuk 40: wat je op deze desktop mag. Op de kern of met de laptop alles; op een Computer stuurt de server mee wat
+     * de kern daar toestaat (de server kijkt het zelf ook na; dit is om icoontjes en knoppen te verbergen).
+     */
+    com.senne.imttech.security.os.DesktopRights rights() {
+        return data.contains("rights") ? com.senne.imttech.security.os.DesktopRights.load(data.getCompound("rights"))
+                : com.senne.imttech.security.os.DesktopRights.FULL;
+    }
+
+    /** Staat deze app op deze desktop? */
+    boolean shows(App app) {
+        return rights().shows(app.name());
+    }
+
+    /** Mag je deze app hier ook bedienen (niet alleen bekijken)? */
+    boolean mayUse(App app) {
+        return rights().mayUse(app.name());
+    }
+
+    /** De apps die op deze desktop staan, in hun vaste volgorde (de icoontjes links). */
+    private List<App> visibleApps() {
+        List<App> apps = new ArrayList<>();
+        for (App app : App.values()) {
+            if (shows(app)) {
+                apps.add(app);
+            }
+        }
+        return apps;
+    }
+
+    /** De naam van de Computer waarop deze desktop draait, of "" (de kern zelf, of de laptop). */
+    private String computerName() {
+        return data.getString("pc");
     }
 
     /** Ben jij de eigenaar van dit systeem? (Alleen die ziet en zet valstrikken.) */
@@ -621,13 +673,14 @@ public class SecurityOsScreen extends Screen {
 
     /** Waar de kolommen met icoontjes ophouden (nieuwe vensters openen rechts daarvan). */
     private int iconsRight() {
-        int[] last = iconPos(App.values().length - 1);
+        int[] last = iconPos(Math.max(0, visibleApps().size() - 1));
         return last[0] + ICON;
     }
 
     private @Nullable App iconAt(int mx, int my) {
-        for (App app : App.values()) {
-            int[] pos = iconPos(app.ordinal());
+        List<App> visible = visibleApps();
+        for (App app : visible) {
+            int[] pos = iconPos(visible.indexOf(app));
             if (mx >= pos[0] && mx < pos[0] + ICON && my >= pos[1] && my < pos[1] + ICON) {
                 return app;
             }
@@ -651,6 +704,14 @@ public class SecurityOsScreen extends Screen {
             case BACKUP -> backup.mouseClicked(font, contentArea(win), mx, my);
             case ZONE -> zone.mouseClicked(font, contentArea(win), mx, my);
             case COMPUTERS -> computers.mouseClicked(font, contentArea(win), mx, my);
+            case LOGS -> {
+                Area area = contentArea(win);
+                String label = entriesOnly ? LOGS_ENTRIES : LOGS_ALL;
+                if (OsDraw.inside(mx, my, area.x(), area.y(), OsDraw.buttonWidth(font, label), OsDraw.BUTTON_H)) {
+                    entriesOnly = !entriesOnly;
+                    win.scroll = 0;
+                }
+            }
             case SETTINGS -> {
                 int cx = win.x + 6;
                 int fieldY = win.y + TITLE_H + 60;
@@ -866,10 +927,14 @@ public class SecurityOsScreen extends Screen {
         if (remote) {
             String tag = "REMOTE SESSION";
             g.drawString(font, tag, (width - font.width(tag)) / 2, 3, HudStyle.argb(255, HudStyle.ORANGE), false);
+        } else if (!computerName().isEmpty()) {
+            String tag = "COMPUTER: " + computerName();
+            g.drawString(font, tag, (width - font.width(tag)) / 2, 3, HudStyle.argb(255, HudStyle.GREEN), false);
         }
-        // Icoontjes links.
-        for (App app : App.values()) {
-            int[] pos = iconPos(app.ordinal());
+        // Icoontjes links (op een Computer alleen de apps die de kern toestaat).
+        List<App> visible = visibleApps();
+        for (App app : visible) {
+            int[] pos = iconPos(visible.indexOf(app));
             int ix = pos[0];
             int iy = pos[1];
             boolean open = windows.stream().anyMatch(win -> win.app == app);
@@ -920,6 +985,10 @@ public class SecurityOsScreen extends Screen {
         // Titelbalk.
         g.fill(win.x, win.y, win.x + win.w, win.y + TITLE_H, HudStyle.argb(255, active ? 0x16303F : 0x111E28));
         g.drawString(font, win.app.label, win.x + 5, win.y + 3, HudStyle.argb(255, active ? HudStyle.CYAN : HudStyle.WHITE), false);
+        // Hoofdstuk 40: op een Computer waar deze app op View staat, zie je dat in de titel.
+        if (!mayUse(win.app) && !com.senne.imttech.security.os.DesktopRights.LOOK_ONLY.contains(win.app.name())) {
+            g.drawString(font, "view only", win.x + 10 + font.width(win.app.label), win.y + 3, HudStyle.argb(255, OsDraw.GREY), false);
+        }
         // Kruisje.
         g.drawString(font, "x", win.x + win.w - 9, win.y + 3, HudStyle.argb(255, HudStyle.RED), false);
         // Inhoud, afgeknipt.
@@ -966,8 +1035,36 @@ public class SecurityOsScreen extends Screen {
         }
     }
 
-    private void renderLogs(GuiGraphics g, int cx, int cy, int ch, int scroll) {
+    /**
+     * Hoofdstuk 40 (jouw voorbeeld: "kijken wie er waar binnengaat"): bovenaan de knop Show: all / Show: entries. Met
+     * entries alleen de regels van lezers, codepanelen, knoppen en hendels (wie wat gebruikte), en wie op een computer of
+     * de kern inlogde.
+     */
+    private boolean entriesOnly;
+    private static final String LOGS_ALL = "Show: all";
+    private static final String LOGS_ENTRIES = "Show: entries";
+
+    /** De regels van het logboek die je nu ziet (alles, of alleen de entries). */
+    private List<Tag> shownLog() {
         List<Tag> log = data.getList("log", Tag.TAG_COMPOUND);
+        if (!entriesOnly) {
+            return log;
+        }
+        List<Tag> entries = new ArrayList<>();
+        for (Tag element : log) {
+            String kind = ((CompoundTag) element).getString("k");
+            if (kind.equals("ENTRY") || kind.equals("LOGIN")) {
+                entries.add(element);
+            }
+        }
+        return entries;
+    }
+
+    private void renderLogs(GuiGraphics g, int cx, int cy, int ch, int scroll) {
+        OsDraw.button(g, font, cx, cy, entriesOnly ? LOGS_ENTRIES : LOGS_ALL, true, entriesOnly ? HudStyle.ORANGE : HudStyle.CYAN);
+        cy += OsDraw.BUTTON_H + 4;
+        ch -= OsDraw.BUTTON_H + 4;
+        List<Tag> log = shownLog();
         int rows = Math.max(1, ch / LINE);
         int total = log.size();
         int first = Math.max(0, total - rows - scroll);
@@ -980,7 +1077,7 @@ public class SecurityOsScreen extends Screen {
             y += LINE;
         }
         if (total == 0) {
-            line(g, cx, cy, "(no events yet)", 0x5A6B72);
+            line(g, cx, cy, entriesOnly ? "(nobody used a reader, panel or computer yet)" : "(no events yet)", 0x5A6B72);
         }
     }
 
