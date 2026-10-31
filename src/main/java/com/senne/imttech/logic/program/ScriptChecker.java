@@ -287,7 +287,8 @@ public final class ScriptChecker {
         try {
             if (action.op().textArg() == Op.Arg.VALUES) {
                 // goto(x, y, z): elke waarde streng gelezen, en dan of het er genoeg zijn en van de goede soort.
-                return Checks.valuesProblem(action.op(), Expr.parseValues(action.expr(), trigger, scope, kind));
+                return Checks.valuesProblem(action.op(), action.expr().isBlank() ? List.of()
+                        : Expr.parseValues(action.expr(), trigger, scope, kind));
             }
             Expr.Type type = Expr.typeOf(Expr.parseValue(action.expr(), trigger, scope, kind));
             if (!Checks.exprIsText(action.op()) && type != Expr.Type.NUMBER && type != Expr.Type.ANY) {

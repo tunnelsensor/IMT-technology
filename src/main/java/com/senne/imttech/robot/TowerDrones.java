@@ -48,22 +48,18 @@ public final class TowerDrones {
     /** Biebia's programma: de hangar rondvliegen, op vreemden schieten, en komen kijken als het alarm gaat. */
     public static final String PROGRAM = """
             # Biebia's drones: patrol the hangar, shoot strangers, and come when the alarm goes off.
-            scanPin = pin(1)
             facePin = pin(2)
             laserPin = pin(3)
 
             when started:
                 write(facePin, "strangers")
+                write(laserPin, true)
                 up(2)
                 while true:
                     if drone.battery < 25:
                         charge()
                     forward(3)
                     turn_right()
-
-            when every(1):
-                if read(scanPin) and read(laserPin):
-                    write(laserPin, true)
 
             when ordered("alarm"):
                 goto(order.x, order.y + 2, order.z)

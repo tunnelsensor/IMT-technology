@@ -1845,12 +1845,15 @@ final class ShowcaseFeatures {
 
         add("Robot senses and weapons", "Hoofdstuk 24: zien en schieten. In de werkplaats staan twee Commando-robots naar "
                 + "het noorden te kijken, met elk een husk vijf blokken voor zich. De linker heeft een Laser (pin 3), de rechter "
-                + "een Gun (pin 4) met 6 Robot Ammo; hun programma: zodra het wapen klaar is, schieten. Kijk naar de "
-                + "oranjerode laserstraal uit de rechterarm en het gele kogelspoortje uit de linkerarm (luister naar de "
-                + "'pew' en de knal); de husks vallen om. Dan schiet jij met de Ion Blaster op de linker robot: een dikke "
-                + "blauwe straal, en hij valt neer op zijn rug (zonder schade: na 60 seconden staat hij weer op). Tot slot de "
-                + "app Cameras op de desktop: beide robots hebben een Camera-module, dus ze staan ertussen met ROBOT erbij "
-                + "(de neergeschoten robot geeft NO SIGNAL); het grote beeld kijkt door de ogen van de rechter robot.",
+                + "een Gun (pin 4) met 6 Robot Ammo; hun programma: write(pin, true), dus het wapen staat aan en schiet zodra "
+                + "het klaar is. Kijk naar de oranjerode laserstraal uit de rechterarm en het gele kogelspoortje uit de "
+                + "linkerarm (luister naar de 'pew' en de knal); de husks vallen om. (19 oktober) Dan krijgt de derde robot, "
+                + "in het midden, een opdracht met een plek: aim(order.x, order.y, order.z). Hij draait zich naar links en "
+                + "schiet de husk daar neer, op de plek die jij kiest. Dan schiet jij met de Ion Blaster op de linker robot: "
+                + "een dikke blauwe straal, en hij valt neer op zijn rug (zonder schade: na 60 seconden staat hij weer op). "
+                + "Op de desktop de code van die derde robot in de app Logic, en de app Cameras: beide robots hebben een "
+                + "Camera-module, dus ze staan ertussen met ROBOT erbij (de neergeschoten robot geeft NO SIGNAL); het grote "
+                + "beeld kijkt door de ogen van de rechter robot.",
                 Vec3.atBottomCenterOf(ROBOT_BAY.offset(5, 0, 11)), 180, 10, s -> {
             s.onServer(0, ShowcaseFeatures::buildRobotBay)
                     .onServer(0, player -> {
@@ -1869,14 +1872,28 @@ final class ShowcaseFeatures {
                                 int pin = i == 0 ? 3 : 4;
                                 robot.setBoard(com.senne.imttech.bot.BotBoard.EMPTY.with(pin, weapons[i]).with(6, "camera"));
                                 robot.setAmmo(6);
-                                robot.setProgram(program("Shoot", "when started:\n    while true:\n        if read(pin(" + pin + ")):\n"
-                                        + "            write(pin(" + pin + "), true)\n        wait(0.5)\n",
+                                robot.setProgram(program("Shoot", "when started:\n    write(pin(" + pin + "), true)\n",
                                         com.senne.imttech.logic.program.ProgramKind.ROBOT));
                                 robot.setActive(true);
                             }
                         }
+                        // De derde robot richt op wat zijn programma kiest (19 oktober).
+                        DevWorld.spawnStill(level, net.minecraft.world.entity.EntityType.HUSK, ROBOT_BAY.offset(1, 0, 6), 0);
+                        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), ROBOT_BAY.offset(5, 0, 6), 180)
+                                instanceof com.senne.imttech.robot.GuardRobotEntity robot) {
+                            com.senne.imttech.robot.RobotStyle c = com.senne.imttech.robot.RobotStyle.COMMANDO;
+                            robot.setParts(new com.senne.imttech.robot.RobotParts(c, c, c, c));
+                            robot.setOwner(player);
+                            robot.setCustomName(net.minecraft.network.chat.Component.literal("Aim guard"));
+                            robot.setBoard(com.senne.imttech.bot.BotBoard.EMPTY.with(3, "laser"));
+                            robot.setProgram(program("Aim guard", AIM_GUARD, com.senne.imttech.logic.program.ProgramKind.ROBOT));
+                            robot.setActive(true);
+                        }
                     })
                     .pause(120)
+                    .onServer(0, player -> robotNear(player, ROBOT_BAY.offset(5, 0, 6), robot ->
+                            robot.brain().order("fire", ROBOT_BAY.offset(1, 1, 6))))
+                    .pause(100)
                     // De Ion Blaster: jij schiet de linker robot neer.
                     .onServer(0, player -> robotNear(player, ROBOT_BAY.offset(4, 0, 9), robot -> {
                         player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, robot.getBoundingBox().getCenter());
@@ -1887,7 +1904,9 @@ final class ShowcaseFeatures {
                     // nieuwe kern opent eerst zelf Settings, voor een wachtwoord.)
                     .stand(0, ROBOT_BAY.getX() + 10.5, ROBOT_BAY.getY(), ROBOT_BAY.getZ() + 8.5, 180, 20)
                     .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, ROBOT_BAY.offset(10, 0, 6)))
-                    .step(30, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.CAMERAS)))
+                    .step(30, () -> desktop(os -> os.tourLogic("Aim guard", AIM_GUARD, false)))
+                    .pause(120)
+                    .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.CAMERAS)))
                     .pause(40)
                     .step(0, () -> desktop(os -> os.tourRobotCamera("Gun guard")))
                     .pause(240)
@@ -3647,6 +3666,18 @@ final class ShowcaseFeatures {
                 for i in range(2):
                     turn_left()
                     turn_right()
+            """;
+
+    /** De derde robot van "Robot senses and weapons": schiet op de plek uit een opdracht, en stopt dan weer. */
+    private static final String AIM_GUARD = """
+            laserPin = pin(3)
+
+            when ordered("fire"):
+                aim(order.x, order.y, order.z)
+                write(laserPin, true)
+                wait(4)
+                write(laserPin, false)
+                aim()
             """;
 
     /**

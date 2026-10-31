@@ -759,6 +759,7 @@ final class LogicApp {
             lines.add(new HelpLine("scanPin = pin(1)", "scanPin = pin(1)\n", Expr.Function.PIN.help(), 0xF1E87C, null));
             lines.add(new HelpLine("if read(scanPin):", "if read(scanPin):\n    pass", Expr.Function.READ.help(), HudStyle.WHITE, null));
             lines.add(item("write(laserPin, true)", "write(laserPin, true)", Op.WRITE));
+            lines.add(item("aim(x, y, z) / aim()", "aim(" + self + ".x, " + self + ".y, " + self + ".z - 5)", Op.AIM));
             lines.add(item("send(...)", "send(\"intruder\")", Op.SEND));
             lines.add(new HelpLine("if " + self + ".battery < 10:", "if " + self + ".battery < 10:\n    charge()",
                     kind == ProgramKind.DRONE
@@ -768,22 +769,26 @@ final class LogicApp {
             // Wat elke module zegt (read) en doet (write) (hoofdstuk 24).
             lines.add(header("MODULES (read / write)"));
             lines.add(new HelpLine("Scan: if read(scanPin):", "if read(scanPin):\n    alarm(\"Intruder near \" + " + self + ".name)",
-                    "true if it sees a player (not through walls; not in creative)", HudStyle.WHITE, null));
+                    "true if it sees a player (not through walls; not in creative); write(scanPin, false) = off: it sees nobody",
+                    HudStyle.WHITE, null));
             lines.add(new HelpLine("Distance: read(distancePin)", "if read(distancePin) < 3:\n    turn_right()",
-                    "blocks to what stands in front of it (99 = nothing)", HudStyle.WHITE, null));
+                    "blocks to what stands in front of it (99 = nothing, or switched off)", HudStyle.WHITE, null));
             lines.add(new HelpLine("Face: write(facePin, ...)", "write(facePin, \"strangers\")",
-                    "who it looks for: \"everyone\", \"strangers\", \"trusted\", \"trainee\" or a name; read(facePin) = who it sees",
+                    "who it looks for: \"everyone\", \"strangers\", \"trusted\", \"trainee\" or a name; read(facePin) = who it sees; false = off",
                     0x9ED8FF, null));
-            lines.add(new HelpLine("Laser: write(laserPin, true)", "if read(scanPin) and read(laserPin):\n    write(laserPin, true)",
-                    "one shot at whom the scan sees (else straight ahead); read = ready to fire", 0x9ED8FF, null));
-            lines.add(new HelpLine("Gun: write(gunPin, true)", "if read(gunPin) > 0:\n    write(gunPin, true)",
-                    "one bullet (Robot Ammo: right-click the " + self + " to load); read = bullets left", 0x9ED8FF, null));
+            lines.add(new HelpLine("Laser: write(laserPin, true)", "write(laserPin, true)",
+                    "on: fires whenever ready, at aim(x, y, z) or whom the scan sees (no scan: straight ahead), until false; read = ready to fire",
+                    0x9ED8FF, null));
+            lines.add(new HelpLine("Gun: write(gunPin, true)", "write(gunPin, true)",
+                    "the same, with bullets (Robot Ammo: right-click the " + self + " to load); read = bullets left", 0x9ED8FF, null));
             lines.add(new HelpLine("Solar: read(solarPin)", "if read(solarPin) > 50:\n    pass",
-                    "how much sun it catches, 0-100 (it charges by itself)", HudStyle.WHITE, null));
+                    "how much sun it catches, 0-100 (it charges by itself); write(solarPin, false) = off: it stops charging",
+                    HudStyle.WHITE, null));
             lines.add(new HelpLine("Camera: read(cameraPin)", "if read(cameraPin):\n    say(\"Someone is watching\")",
                     "true while someone looks through its eyes (Cameras app); write(cameraPin, false) = off", HudStyle.WHITE, null));
             lines.add(new HelpLine("Path: read(pathPin)", "goto(10, 64, -20)",
-                    "lets goto(x, y, z) work; read = true while it is on its way", HudStyle.WHITE, null));
+                    "lets goto(x, y, z) work; read = true while it is on its way; write(pathPin, false) = off: goto is blocked",
+                    HudStyle.WHITE, null));
         }
         lines.add(header("CHECK (if)"));
         if (server) {

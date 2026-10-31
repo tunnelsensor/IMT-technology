@@ -88,8 +88,13 @@ public enum Op {
     CHARGE(Kind.ACTION, "charge", Arg.NONE, Arg.OPTIONAL_NUMBER, "Go to the dock, charge (to 100%, or charge(80)) and come back"),
     /** {@code stop()}: zichzelf uitzetten; hij gaat naar zijn dock en blijft daar. */
     STOP(Kind.ACTION, "stop", Arg.NONE, Arg.NONE, "Switch yourself off: go back to the dock and stay there"),
-    /** {@code write(laserPin, true)}: een pin iets laten doen. De waarden (pin, waarde) staan in expr. */
-    WRITE(Kind.ACTION, "write", Arg.VALUES, Arg.NONE, "Tell the module on a pin what to do: write(laserPin, true)"),
+    /** {@code write(laserPin, true)}: een pin aan of uit zetten (of een filter geven). De waarden (pin, waarde) staan in expr. */
+    WRITE(Kind.ACTION, "write", Arg.VALUES, Arg.NONE, "Switch the module on a pin on or off: write(laserPin, true)"),
+    /**
+     * {@code aim(x, y, z)}: de wapens richten op die plek, of {@code aim()}: weer op wie de Scan ziet (jouw antwoord van 19
+     * oktober: "richten op wat ik kies"). De waarden staan in expr.
+     */
+    AIM(Kind.ACTION, "aim", Arg.VALUES, Arg.NONE, "Point its weapons at a place: aim(x, y, z). aim() points them at whom the Scan sees again"),
     /** {@code send("intruder")}: een bericht naar de server; daar begint {@code when message("intruder"):}. */
     SEND(Kind.ACTION, "send", Arg.TEXT, Arg.NONE, "Send the server a message: its when message(...) starts"),
 
@@ -310,7 +315,7 @@ public enum Op {
     /** De namen van de waarden van een VALUES-blokje, zoals in de uitleg: {"x", "y", "z"}. */
     public String[] valueNames() {
         return switch (this) {
-            case GOTO -> new String[] {"x", "y", "z"};
+            case GOTO, AIM -> new String[] {"x", "y", "z"};
             case WRITE -> new String[] {"pin", "value"};
             case ORDER -> new String[] {"robot", "order", "x", "y", "z"};
             default -> new String[0];
@@ -320,16 +325,16 @@ public enum Op {
     /** Wat elke waarde moet zijn (ANY = alles mag: write(pin, true) en write(pin, "strangers")). */
     public Expr.Type[] valueTypes() {
         return switch (this) {
-            case GOTO -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
+            case GOTO, AIM -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
             case WRITE -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.ANY};
             case ORDER -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.TEXT, Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
             default -> new Expr.Type[0];
         };
     }
 
-    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek). */
+    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek; bij aim: alles). */
     public int requiredValues() {
-        return this == ORDER ? 2 : valueNames().length;
+        return this == ORDER ? 2 : this == AIM ? 0 : valueNames().length;
     }
 
     /** Hoe je het schrijft, voor de foutmeldingen: {@code goto(10, 64, -20)}. */
@@ -337,6 +342,7 @@ public enum Op {
         return switch (this) {
             case GOTO -> "goto(10, 64, -20)";
             case WRITE -> "write(laserPin, true)";
+            case AIM -> "aim(10, 64, -20) or aim()";
             case ORDER -> "order(\"Guard 1\", \"attack\") or order(\"Guard 1\", \"attack\", 10, 64, -20)";
             default -> code + "()";
         };
@@ -357,7 +363,7 @@ public enum Op {
             case HIT -> kind == ProgramKind.TRAINING_END;
             // Een Training End-blok doet alleen iets bij een treffer.
             case EVERY -> kind != ProgramKind.TRAINING_END;
-            case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, SEND -> kind.onBot();
+            case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, AIM, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
             default -> true;
         };

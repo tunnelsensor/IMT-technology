@@ -1416,6 +1416,29 @@ public final class VisualCheck {
                 t.shot(2, weapon == com.senne.imttech.bot.BotShot.Weapon.LASER ? "rb20_robot_laser" : "rb21_robot_gun");
                 t.step(20, () -> { });
             }
+            // 19 oktober: aim(x, y, z). Hij keek naar het oosten; nu richt hij op een koe aan zijn linkerkant, met zijn laser
+            // aan: zijn hoofd en lijf draaien erheen.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos side = shooter.north(5);
+                DevWorld.spawnStill(level, net.minecraft.world.entity.EntityType.COW, side, 90);
+                String code = "when started:\n    aim(" + side.getX() + ", " + (side.getY() + 1) + ", " + side.getZ()
+                        + ")\n    write(pin(3), true)\n";
+                for (com.senne.imttech.robot.GuardRobotEntity robot : level.getEntitiesOfClass(
+                        com.senne.imttech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(shooter).inflate(0.5))) {
+                    robot.setProgram(new com.senne.imttech.logic.program.LogicProgram("Aim", true,
+                            com.senne.imttech.logic.program.GraphConverter.toGraph(com.senne.imttech.logic.program.ScriptParser.parse(
+                                    code, com.senne.imttech.logic.program.ProgramKind.ROBOT), null),
+                            code, com.senne.imttech.logic.program.ProgramKind.ROBOT));
+                }
+            });
+            t.shot(4, "rb27_robot_aim");
+            t.onServer(20, player -> {
+                for (com.senne.imttech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                        com.senne.imttech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(shooter).inflate(0.5))) {
+                    robot.setProgram(null);
+                }
+            });
             // De Ion Blaster: jij schiet de robot neer (blauwe straal), en dan ligt hij op zijn rug.
             t.onServer(0, player -> {
                 for (com.senne.imttech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(

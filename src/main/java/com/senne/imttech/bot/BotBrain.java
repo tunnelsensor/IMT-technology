@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -201,6 +202,7 @@ public final class BotBrain {
             bot.setActive(false); // stop(): hij zet zichzelf uit, en dit brein stopt de volgende tick
             return;
         }
+        pins.tick(); // een wapen dat aan staat, schiet zodra het klaar is (en hij kijkt waar hij op richt)
         // Wie het eerst vroeg, mag nu bewegen (een opdracht gaat voor).
         if (moving == null && !queue.isEmpty()) {
             Run next = queue.stream().filter(run -> run.order != null).findFirst().orElse(ordering ? null : queue.peek());
@@ -320,6 +322,9 @@ public final class BotBrain {
                 if (!bot.board().has(BotModule.PATHFINDING)) {
                     report("goto(...) needs the Pathfinding module on one of its pins");
                     body.markBlocked();
+                } else if (!pins.moduleOn(BotModule.PATHFINDING)) {
+                    report("goto(...): its Pathfinding module is switched off");
+                    body.markBlocked();
                 } else if (values.size() >= 3) {
                     move(run, new BotMove.GoTo(BlockPos.containing(toNumber(values.get(0)), toNumber(values.get(1)),
                             toNumber(values.get(2)))));
@@ -343,6 +348,12 @@ public final class BotBrain {
                 if (values.size() >= 2) {
                     pins.write((int) Math.rint(toNumber(values.get(0))), values.get(1));
                 }
+            }
+            case AIM -> {
+                // aim(x, y, z): het midden van dat blok (net als bij goto een blok); aim(): weer op wie zijn Scan ziet.
+                List<Object> values = values(run, node);
+                pins.aim(values.size() >= 3 ? Vec3.atCenterOf(BlockPos.containing(toNumber(values.get(0)),
+                        toNumber(values.get(1)), toNumber(values.get(2)))) : null);
             }
             default -> { }
         }
@@ -397,8 +408,11 @@ public final class BotBrain {
 
     /** De waarden van een blokje met een rijtje ({@code goto(x, y, z)}), uitgerekend. */
     private List<Object> values(Run run, LogicGraph.Node node) {
-        List<Expr> exprs = ExprCache.values(node.expr);
         List<Object> values = new ArrayList<>();
+        if (node.expr.isBlank()) {
+            return values; // aim(): niets tussen de haakjes
+        }
+        List<Expr> exprs = ExprCache.values(node.expr);
         if (exprs == null) {
             report("the values \"" + node.expr + "\" are not valid");
             return values;

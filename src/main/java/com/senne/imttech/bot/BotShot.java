@@ -21,7 +21,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Eén schot van een guard robot (hoofdstuk 24): met de Laser-module (kost batterij) of de Gun-module (kost één
  * Robot Ammo). Wie BotPins aanwijst (wie de robot ziet, door het filter van zijn Face Recognition) wordt het
- * doelwit; ziet hij niemand, dan schiet hij recht vooruit en raakt hij wat daar staat.
+ * doelwit; zonder doelwit schiet hij recht vooruit en raakt hij wat daar staat, en met {@code aim(x, y, z)} (zie
+ * {@link #fireAt}) richting die plek.
  * <ul>
  *   <li>Een muur houdt het schot tegen, en een schildkoepel ook (zoals bij de Raven-soldaat; de koepels van zijn
  *       eigenaar niet).</li>
@@ -40,24 +41,47 @@ public final class BotShot {
         if (!(bot.level() instanceof ServerLevel level)) {
             return null;
         }
-        boolean laser = weapon == Weapon.LASER;
-        Vec3 from = bot.muzzle(laser, Vec3.directionFromRotation(0, bot.getYRot()));
-        double range = ImtConfig.Robots.SHOT_RANGE;
-        LivingEntity hit = null;
-        Vec3 to;
-        if (target != null && target.isAlive() && target.getBoundingBox().getCenter().distanceTo(from) <= range) {
-            hit = target;
-            to = target.getBoundingBox().getCenter();
-        } else {
-            // Niemand in zicht: recht vooruit, en raak wat daar staat.
-            to = from.add(Vec3.directionFromRotation(0, bot.getYRot()).scale(range));
-            EntityHitResult first = ProjectileUtil.getEntityHitResult(level, bot.entity(), from, to, new AABB(from, to).inflate(1.0),
-                    entity -> entity instanceof LivingEntity living && living.isAlive() && entity != bot.entity(), 0.3f);
-            if (first != null) {
-                hit = (LivingEntity) first.getEntity();
-                to = first.getLocation();
-            }
+        Vec3 forward = Vec3.directionFromRotation(0, bot.getYRot());
+        Vec3 from = bot.muzzle(weapon == Weapon.LASER, forward);
+        if (target != null && target.isAlive() && target.getBoundingBox().getCenter().distanceTo(from) <= ImtConfig.Robots.SHOT_RANGE) {
+            return shoot(level, bot, weapon, from, target.getBoundingBox().getCenter(), target);
         }
+        // Niemand in zicht: recht vooruit, en raak wat daar staat.
+        return along(level, bot, weapon, from, forward);
+    }
+
+    /**
+     * {@code aim(x, y, z)}: schiet richting deze plek en raak wat er op die lijn staat. Het schot gaat zo ver als een wapen
+     * schiet (ook voorbij de plek), tot een muur of iets levends het tegenhoudt. Geeft het wezen dat geraakt werd, of null.
+     */
+    public static @Nullable LivingEntity fireAt(Bot bot, Weapon weapon, Vec3 place) {
+        if (!(bot.level() instanceof ServerLevel level)) {
+            return null;
+        }
+        Vec3 flat = new Vec3(place.x - bot.position().x, 0, place.z - bot.position().z);
+        Vec3 side = flat.lengthSqr() < 1.0e-4 ? Vec3.directionFromRotation(0, bot.getYRot()) : flat.normalize();
+        Vec3 from = bot.muzzle(weapon == Weapon.LASER, side);
+        Vec3 way = place.subtract(from);
+        return along(level, bot, weapon, from, way.lengthSqr() < 1.0e-4 ? side : way.normalize());
+    }
+
+    /** Schiet vanaf {@code from} in deze richting, en raak het eerste levende wezen op die lijn. */
+    private static @Nullable LivingEntity along(ServerLevel level, Bot bot, Weapon weapon, Vec3 from, Vec3 way) {
+        Vec3 to = from.add(way.scale(ImtConfig.Robots.SHOT_RANGE));
+        EntityHitResult first = ProjectileUtil.getEntityHitResult(level, bot.entity(), from, to, new AABB(from, to).inflate(1.0),
+                entity -> entity instanceof LivingEntity living && living.isAlive() && entity != bot.entity(), 0.3f);
+        if (first == null) {
+            return shoot(level, bot, weapon, from, to, null);
+        }
+        // Waar de straal hem raakt (Minecraft geeft hier zijn voeten, en dan loopt het schot door de vloer).
+        Entity entity = first.getEntity();
+        Vec3 end = entity.getBoundingBox().inflate(0.3).clip(from, to).orElse(entity.getBoundingBox().getCenter());
+        return shoot(level, bot, weapon, from, end, (LivingEntity) entity);
+    }
+
+    /** Het schot zelf, van {@code from} naar {@code to}: wat ertussen staat, het geluid, de straal, en de schade aan {@code hit}. */
+    private static @Nullable LivingEntity shoot(ServerLevel level, Bot bot, Weapon weapon, Vec3 from, Vec3 to, @Nullable LivingEntity hit) {
+        boolean laser = weapon == Weapon.LASER;
         // Een muur ertussen: daar houdt het op.
         HitResult wall = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, bot.entity()));
         if (wall.getType() != HitResult.Type.MISS) {

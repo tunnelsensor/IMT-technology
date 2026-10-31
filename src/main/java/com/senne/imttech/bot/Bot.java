@@ -43,6 +43,14 @@ public interface Bot {
 
     float getXRot();
 
+    void setYRot(float yaw);
+
+    void setYHeadRot(float yaw);
+
+    void setYBodyRot(float yaw);
+
+    void setXRot(float pitch);
+
     Component getName();
 
     boolean hasCustomName();

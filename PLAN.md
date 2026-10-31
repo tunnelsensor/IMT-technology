@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 366 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 371 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -3164,11 +3164,37 @@ Ik bouw het in deze volgorde, één stap per commit:
       namen voor; de Help heeft een regel bij NAMES. In de screenshot `l12` en in de showcase ("Logic: names, sums and
       loops": `log($"Blink {i} of 3")`). LEESMIJ.md: "Tekst met namen erin". Twee nieuwe tests (`logic_text_with_names`,
       `logic_text_with_names_run`).
-- [ ] **3. Devices als tabel**
-- [ ] **4. Robots als tabel**
-- [ ] **5. De desktop onthoudt wat open stond, met een aan/uit-knop**
-- [ ] **6. Modules aan en uit met `write(pin, true/false)`**
-- [ ] **7. Richten: `aim(x, y, z)`**, en de showcase laat de code van de schietende robots zien
+- [x] **3. Devices als tabel** (`e4c0786`, de vakjes hier bleven toen leeg) — per apparaat één regel: naam, plek, toestand
+      en rechts de knop, met lijntjes ertussen en de kopjes NAME, WHERE en STATUS.
+- [x] **4. Robots als tabel** (`e4c0786`) — per robot één regel (naam, soort, toestand, batterij, programma, squad); klik er
+      een aan, en zijn knoppen staan onderaan naast elkaar.
+- [x] **5. De desktop onthoudt wat open stond, met een aan/uit-knop** (`e4c0786`) — sluit je de desktop, dan onthoudt de kern
+      welke vensters waar stonden; **Shut down** rechts in de taakbalk vergeet ze, en de volgende keer begint hij met alleen
+      Status. Test: `os_desktop_remembers_its_windows`.
+- [x] **6. Modules aan en uit met `write(pin, true/false)`** — elke module heeft nu een aan/uit-stand per pin
+      (`BotPins.isOn`). Sensoren beginnen aan, wapens uit; opnieuw opstarten zet alles terug. Uit betekent: **Scan** ziet
+      niemand, **Distance** zegt 99, **Face Recognition** herkent niemand en zijn filter telt niet, **Pathfinding** laat geen
+      nieuwe `goto` meer toe (`robot.blocked`, en een regel in het logboek), **Solar Panel** zegt 0 en laadt niet, **Camera**
+      geeft geen beeld. `write(facePin, "strangers")` kiest het filter (en zet hem aan). Een **wapen** dat aan staat, schiet
+      zodra het klaar is, tot je het uitzet (elk schot kost zoals altijd batterij of een kogel; `write(pin, true)` is dus
+      niet meer één schot). Tekst of een getal naar een andere module zegt in het logboek "write(...) takes true or false
+      here". **Mijn invulling** (zeg het als je het anders wil): een wapen met een Scan die aan staat, **wacht** tot die
+      iemand ziet (het schoot vroeger dan recht vooruit, en dan kon je ook je vriend raken); zonder Scan, of met de Scan uit,
+      schiet het recht vooruit. Biebia's drones gebruiken het ook: hun programma zet de laser één keer aan en schiet dan op
+      elke vreemde die ze zien. Oude programma's blijven werken. **Tests**: `robot_weapon_stays_on_until_switched_off`,
+      `robot_modules_switch_on_and_off`, `robot_with_a_scan_waits_for_someone_to_shoot`; `robot_laser_and_gun_shoot` en
+      `robot_shots_stop_at_walls_domes_and_pvp` zijn omgezet.
+- [x] **7. Richten: `aim(x, y, z)`**, en de showcase laat de code van de schietende robots zien — een nieuw woord in de taal
+      (voor een robot en een drone; ook in de Help, Ctrl+Spatie en de blokjes). `aim(x, y, z)` richt zijn wapens op het midden
+      van dat blok, `aim()` weer op wie zijn Scan ziet. Zijn hoofd draait erheen (daar kijkt zijn Scan dan ook), zijn lijf als
+      hij stilstaat; **vooruit blijft vooruit**, zodat een `forward(3)` niet ineens een andere kant op gaat. Hij raakt het
+      eerste levende wezen op de lijn (een muur en een schildkoepel houden het tegen), en het schot gaat zo ver als een wapen
+      schiet, ook voorbij de plek. In `BotShot` is het schot opgesplitst: `fire` (op een doelwit of recht vooruit), `fireAt`
+      (de lijn naar een plek), `along` en `shoot`. **Showcase 85** (Robot senses and weapons): de twee robots zetten hun
+      wapen aan met `write(pin, true)`, een derde robot krijgt een opdracht met een plek en draait zich naar de husk links
+      van hem, en op de desktop staat zijn code in de app Logic. **Test**: `robot_aims_at_a_place`, en in
+      `logic_robot_words` de foutmeldingen ("aim needs 0 or 3 values (x, y, z)") en code > blokjes > code. 371 tests, allemaal
+      groen. **Screenshot** `-Ponly=robots`: `rb27_robot_aim`.
 - [ ] **8. De Camera Monitor en de schermmuur** (het blok, samenvoegen tot een rechthoek)
 - [ ] **9. Het instelscherm van de schermmuur** (welke camera waar en hoe groot)
 - [ ] **10. Live beelden op de schermmuur**

@@ -1148,22 +1148,26 @@ Hoe snel hij loopt en hoeveel hij per tick doet, staat in `config/imttech.toml` 
 
 ### Zien en schieten: de modules in je programma
 Wat er op de pinnen van een robot gesoldeerd zit, gebruik je in zijn programma met `read(pin)` (wat zegt de
-module?) en `write(pin, ...)` (doe iets). Geef de pin eerst een naam: `scanPin = pin(1)`. In de Help van de app
-Logic staat bij **YOUR ROBOTS** wat er op de pinnen van je robots zit (klik erop) en bij **MODULES** een voorbeeld
-per module.
+module?) en `write(pin, true)` of `write(pin, false)` (zet hem aan of uit). Geef de pin eerst een naam:
+`scanPin = pin(1)`. In de Help van de app Logic staat bij **YOUR ROBOTS** wat er op de pinnen van je robots zit (klik
+erop) en bij **MODULES** een voorbeeld per module.
 
-| Module | `read(pin)` | `write(pin, ...)` |
-|---|---|---|
-| **Scan** | `true` als hij een speler ziet: binnen het bereik en de kijkhoek van zijn hoofd, niet door muren | — |
-| **Distance** | hoeveel blokken tot wat recht voor hem staat (een muur vlak voor hem = 1, niets = 99) | — |
-| **Face Recognition** | de naam van wie hij ziet (`""` = niemand) | wie hij zoekt: `"everyone"`, `"strangers"`, `"trusted"`, `"trainee"` (zie Training) of een naam |
-| **Pathfinding** | `true` zolang hij met `goto` onderweg is | — (zonder deze module werkt `goto` niet) |
-| **Laser** | `true` als hij kan schieten | `true` = één schot (kost batterij) |
-| **Gun** | hoeveel kogels hij nog heeft | `true` = één schot (kost één Robot Ammo) |
-| **Solar Panel** | hoeveel zon hij vangt (0-100); hij laadt er zelf mee, ook als hij uit staat | — |
-| **Camera** | `true` als iemand door zijn ogen kijkt | `false` = camera uit, `true` = weer aan |
+Sensoren beginnen aan, wapens uit. Start de robot opnieuw (uit en aan, neergeschoten, een nieuw programma), dan staat
+alles weer zo.
 
-Een voorbeeld van een bewaker:
+| Module | `read(pin)` | Aan | Uit (`write(pin, false)`) |
+|---|---|---|---|
+| **Scan** | `true` als hij een speler ziet: binnen het bereik en de kijkhoek van zijn hoofd, niet door muren | zo begint hij | hij ziet niemand |
+| **Distance** | hoeveel blokken tot wat recht voor hem staat (een muur vlak voor hem = 1, niets = 99) | zo begint hij | altijd 99 |
+| **Face Recognition** | de naam van wie hij ziet (`""` = niemand) | zo begint hij; met `write(facePin, "strangers")` kies je wie hij zoekt: `"everyone"`, `"strangers"`, `"trusted"`, `"trainee"` (zie Training) of een naam | hij herkent niemand, en zijn Scan telt iedereen |
+| **Pathfinding** | `true` zolang hij met `goto` onderweg is | zo begint hij; zonder deze module werkt `goto` niet | een nieuwe `goto` lukt niet (`robot.blocked`) |
+| **Laser** | `true` als hij kan schieten | hij schiet zodra hij klaar is (elk schot kost batterij) | zo begint hij: hij schiet niet |
+| **Gun** | hoeveel kogels hij nog heeft | hij schiet zodra hij klaar is (elk schot kost één Robot Ammo) | zo begint hij: hij schiet niet |
+| **Solar Panel** | hoeveel zon hij vangt (0-100); hij laadt er zelf mee, ook als hij uit staat | zo begint hij | 0, en hij laadt niet |
+| **Camera** | `true` als iemand door zijn ogen kijkt | zo begint hij | geen beeld |
+
+Een voorbeeld van een bewaker: hij zoekt vreemden, zet zijn laser aan, en schiet zodra hij er een ziet. Zie je het
+alarm? Dat gaat apart, om de seconde, zolang hij iemand ziet.
 
 ```
 scanPin = pin(1)
@@ -1172,11 +1176,11 @@ laserPin = pin(3)
 
 when started:
     write(facePin, "strangers")
-    while true:
-        if read(scanPin) and read(laserPin):
-            alarm("Intruder near " + robot.name)
-            write(laserPin, true)
-        wait(0.5)
+    write(laserPin, true)
+
+when every(1):
+    if read(scanPin):
+        alarm("Intruder near " + robot.name)
 ```
 
 **Wie ziet hij?** Spelers in creative of die alleen toekijken ziet hij niet (net als monsters en torentjes).
@@ -1184,12 +1188,28 @@ Met "strangers" ziet hij alleen wie niet bij je basis hoort, met "trusted" juist
 spelers. Dat vraagt hij aan de server: **zonder verbinding** ziet hij met die twee niemand (zo schiet hij nooit
 op een vriend omdat hij het niet weet). Een naam herkent hij altijd.
 
-**Schieten.** De laser en het geweer richten op wie zijn Scan ziet (door het filter); zonder Scan-module, of als
-hij niemand ziet, schiet hij recht vooruit en raakt hij wat daar staat (tot 24 blokken). De laser zit aan zijn
-rechterarm, het geweer aan zijn linker. Hoe snel hij opnieuw kan schieten, hangt aan zijn armen (Super Battle
-het snelst, Battle het traagst). Een muur en een schildkoepel houden een schot tegen; spelers raakt hij alleen
+**Schieten.** Een wapen dat aan staat, schiet zodra het klaar is, tot je het uitzet. Hij schiet op wie zijn Scan ziet
+(door het filter); ziet die niemand, dan wacht hij. Zonder Scan-module, of met zijn Scan uit, schiet hij recht vooruit en
+raakt hij wat daar staat (tot 24 blokken). De laser zit aan zijn rechterarm, het geweer aan zijn linker. Hoe snel hij
+opnieuw kan schieten, hangt aan zijn armen (Super Battle het snelst, Battle het traagst). Een muur en een schildkoepel houden een schot tegen; spelers raakt hij alleen
 als PvP aan staat (of als het de trainee van een training is). **Robot Ammo** maak je van buskruit, een koperstaaf en twee ijzerklompjes (16 kogels);
 rechtsklik je robot ermee om hem te laden (tot 64), en zijn scherm zegt hoeveel hij er nog heeft.
+
+**Richten op wat jij kiest.** `aim(x, y, z)` richt zijn wapens op die plek: zijn hoofd draait erheen (en zijn lijf, als
+hij stilstaat), en een wapen dat aan staat, schiet die kant op en raakt wat op die lijn staat, ook een muur of iets
+waar hij niet op richtte. `aim()` richt hem weer op wie zijn Scan ziet. Vooruit blijft vooruit: `forward(3)` loopt gewoon
+de kant op die hij al op liep. Zo schiet hij op de plek uit een opdracht:
+
+```
+laserPin = pin(3)
+
+when ordered("fire"):
+    aim(order.x, order.y, order.z)
+    write(laserPin, true)
+    wait(5)
+    write(laserPin, false)
+    aim()
+```
 
 **Door zijn ogen kijken.** Een robot met een Camera-module en verbinding staat in de app **Cameras** tussen je
 camera's, met ROBOT erbij. Het beeld loopt met hem mee; draaien doet zijn programma.
@@ -1243,10 +1263,6 @@ when started:
             charge(50)
         forward(3)
         turn_right()
-
-when every(1):
-    if read(scanPin) and read(laserPin):
-        write(laserPin, true)
 ```
 
 - `up(2)` en `down(1)`: blok voor blok recht omhoog of omlaag. Niet door een plafond en niet door de grond: dan

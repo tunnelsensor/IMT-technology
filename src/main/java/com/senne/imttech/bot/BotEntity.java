@@ -509,8 +509,9 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         if (entityData.get(CHARGING) != charging) {
             entityData.set(CHARGING, charging);
         }
-        // De Solar Panel-module (hoofdstuk 24): laadt in de zon, ook als hij uit staat (één keer per seconde).
-        if (tickCount % 20 == 0 && battery < max && board().has(BotModule.SOLAR_PANEL)) {
+        // De Solar Panel-module (hoofdstuk 24): laadt in de zon, ook als hij uit staat (één keer per seconde), tenzij
+        // zijn programma de module uitzette met write(solarPin, false).
+        if (tickCount % 20 == 0 && battery < max && brain.pins().moduleOn(BotModule.SOLAR_PANEL)) {
             battery = Math.min(max, battery + 20 * ImtConfig.Robots.SOLAR_CHARGE * sunlight(level));
         }
         boolean moving = isMoving();

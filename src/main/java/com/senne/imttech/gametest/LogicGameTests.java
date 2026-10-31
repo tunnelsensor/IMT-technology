@@ -1155,6 +1155,21 @@ public final class LogicGameTests {
                     deactivate("Guard 3")
                 """);
 
+        // aim(x, y, z) en aim() (19 oktober): drie getallen of niets, en van code naar blokjes en terug blijft het zo.
+        String aiming = "when ordered(\"attack\"):\n    aim(order.x, order.y + 1, order.z)\n    write(pin(3), true)\n    aim()\n";
+        String printedAim = ScriptPrinter.print(ScriptParser.parse(aiming, ProgramKind.ROBOT));
+        check(printedAim.contains("aim(order.x, order.y + 1, order.z)") && printedAim.contains("    aim()\n"),
+                "aim schrijft zichzelf niet terug:\n" + printedAim);
+        LogicGraph aimGraph = GraphConverter.toGraph(ScriptParser.parse(aiming, ProgramKind.ROBOT), null);
+        check(ScriptPrinter.print(GraphConverter.toScript(LogicGraph.load(aimGraph.save()))).equals(printedAim),
+                "Code > blokjes > code veranderde aim");
+        check(aimGraph.problems(ProgramKind.ROBOT).isEmpty(), "De blokjes van aim geven fouten: " + aimGraph.problems(ProgramKind.ROBOT));
+        expectKindError("when started:\n    aim(1, 2)", ProgramKind.ROBOT, 2,
+                "aim needs 0 or 3 values (x, y, z) between the brackets, like aim(10, 64, -20) or aim()");
+        expectKindError("when started:\n    aim(\"here\", 2, 3)", ProgramKind.ROBOT, 2,
+                "aim: the x must be a number, like aim(10, 64, -20) or aim()");
+        expectError("when every(5):\n    aim(1, 2, 3)", 2, "aim() only works in a robot program");
+
         // Elk woord alleen in zijn eigen soort programma.
         expectError("when started:\n    pass", 1, "when started: only works in a robot program or a drone program, not in a server diagram");
         expectError("when every(5):\n    forward(3)", 2, "forward() only works in a robot program");

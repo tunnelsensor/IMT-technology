@@ -640,6 +640,7 @@ final class BlockCanvas {
             node.expr = switch (op) {
                 case GOTO -> "robot.x + 5, robot.y, robot.z";
                 case WRITE -> "1, true";
+                case AIM -> "0, 64, 0";
                 default -> "\"Guard 1\", \"attack\"";
             };
         } else if (op == Op.DEF) {
@@ -777,7 +778,7 @@ final class BlockCanvas {
             int required = node.op.requiredValues();
             String label = String.join(", ", java.util.Arrays.copyOf(names, required));
             if (required < names.length) {
-                label += " (" + String.join(", ", java.util.Arrays.copyOfRange(names, required, names.length)) + ")";
+                label += (required > 0 ? " " : "") + "(" + String.join(", ", java.util.Arrays.copyOfRange(names, required, names.length)) + ")";
             }
             return label;
         }

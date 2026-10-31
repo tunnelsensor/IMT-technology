@@ -85,8 +85,8 @@ public final class Checks {
      */
     public static @Nullable String argsProblem(Op op, @Nullable String text, @Nullable Double number, String expr) {
         if (op.textArg() == Op.Arg.VALUES) {
-            // goto(x, y, z): alles staat in expr. Of het er genoeg zijn, zegt valuesProblem.
-            return expr.isBlank() ? op.code() + " needs " + valuesCount(op) + " between the brackets, like " + op.valuesExample()
+            // goto(x, y, z): alles staat in expr. Of het er genoeg zijn, zegt valuesProblem. (aim() mag leeg.)
+            return expr.isBlank() && op.requiredValues() > 0 ? op.code() + " needs " + valuesCount(op) + " between the brackets, like " + op.valuesExample()
                     : null;
         }
         if (!expr.isEmpty()) {
@@ -106,7 +106,7 @@ public final class Checks {
 
     /**
      * Klopt het rijtje waarden van een VALUES-blokje (hoofdstuk 23)? Genoeg waarden ({@code goto} 3,
-     * {@code write} 2, {@code order} 2 of 5), en van de goede soort (een plek zijn getallen, een robot en een
+     * {@code write} 2, {@code order} 2 of 5, {@code aim} 0 of 3), en van de goede soort (een plek zijn getallen, een robot en een
      * opdracht zijn tekst). Een naam waarvan we de soort nog niet weten (ANY) mag altijd.
      */
     public static @Nullable String valuesProblem(Op op, java.util.List<Expr> values) {

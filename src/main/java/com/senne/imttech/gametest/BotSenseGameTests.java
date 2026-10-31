@@ -157,36 +157,27 @@ public final class BotSenseGameTests {
 
     // ================================================================ Stap 3: laser en geweer
 
-    /** Schiet met de laser (pin 3) zodra hij klaar is; telt de schoten, en of hij vlak na een schot weer klaar was. */
+    /** Zet de laser (pin 3) aan: hij schiet zodra hij klaar is, tot je hem uitzet (19 oktober). */
     private static final String LASER = """
-            shots = 0
-            readyAfter = true
             when started:
-                while true:
-                    if read(pin(3)):
-                        write(pin(3), true)
-                        shots = shots + 1
-                        readyAfter = read(pin(3))
-                    wait(0.1)
+                write(pin(3), true)
             """;
 
-    /** Schiet met het geweer (pin 4) zolang er kogels zijn; een schot telt als er een kogel minder is. */
+    /** Hetzelfde met het geweer (pin 4). */
     private static final String GUN = """
-            shots = 0
             when started:
-                while true:
-                    before = read(pin(4))
-                    if before > 0:
-                        write(pin(4), true)
-                        if read(pin(4)) < before:
-                            shots = shots + 1
-                    wait(0.1)
+                write(pin(4), true)
             """;
+
+    /** Hoeveel laserschoten deze robot sinds {@code before} gelost heeft (de batterij zakt ook een beetje vanzelf). */
+    private static int laserShots(GuardRobotEntity robot, double before) {
+        return (int) Math.floor((before - robot.battery()) / ImtConfig.Robots.LASER_ENERGY);
+    }
 
     /**
-     * De laser schiet recht vooruit (hij ziet geen speler) en raakt de koe: dat kost batterij, en vlak na een schot is
-     * hij niet klaar. Het geweer schiet niet zonder kogels; de eigenaar laadt er drie (rechtsklik met Robot Ammo), een
-     * vreemde mag dat niet, en dan schiet hij ze alle drie op.
+     * De laser schiet recht vooruit (hij heeft geen Scan) en raakt de koe: dat kost batterij, en vlak na een schot is hij
+     * niet klaar. Het geweer schiet niet zonder kogels; de eigenaar laadt er drie (rechtsklik met Robot Ammo), een vreemde
+     * mag dat niet, en omdat het geweer aan staat, schiet hij ze dan alle drie op.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_weapons")
     public static void robot_laser_and_gun_shoot(GameTestHelper helper) {
@@ -201,12 +192,10 @@ public final class BotSenseGameTests {
         gun.setOwner(owner);
         double full = laser.maxBattery();
         helper.runAfterDelay(20, () -> {
-            check((Double) laser.brain().global("shots") >= 1, "De laser schoot niet");
-            check(Boolean.FALSE.equals(laser.brain().global("readyAfter")), "Vlak na een schot was de laser al weer klaar");
+            check(laserShots(laser, full) >= 1, "De laser schoot niet: batterij " + laser.battery());
+            check(Boolean.FALSE.equals(laser.brain().pins().read(3)), "Vlak na een schot was de laser al weer klaar");
             check(laserCow.getHealth() < laserCow.getMaxHealth(), "De laser raakte de koe niet");
-            check(laser.battery() <= full - ImtConfig.Robots.LASER_ENERGY, "Een laserschot kostte geen batterij: " + laser.battery());
-            check(Double.valueOf(0).equals(gun.brain().global("shots")) && gunCow.getHealth() == gunCow.getMaxHealth(),
-                    "Het geweer schoot zonder kogels");
+            check(gunCow.getHealth() == gunCow.getMaxHealth(), "Het geweer schoot zonder kogels");
             // Laden: de eigenaar wel, een vreemde niet.
             stranger.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ROBOT_AMMO.get(), 5));
             stranger.interactOn(gun, InteractionHand.MAIN_HAND);
@@ -216,9 +205,197 @@ public final class BotSenseGameTests {
             check(gun.ammo() == 3 && owner.getMainHandItem().isEmpty(), "Laden lukte niet: " + gun.ammo() + " kogels");
         });
         helper.runAfterDelay(140, () -> {
-            check(gun.ammo() == 0 && Double.valueOf(3).equals(gun.brain().global("shots")),
-                    "Het geweer schoot niet drie keer: " + gun.brain().global("shots") + " schoten, " + gun.ammo() + " kogels over");
+            check(gun.ammo() == 0, "Het geweer schoot niet drie keer: nog " + gun.ammo() + " kogels over");
             check(!gunCow.isAlive() || gunCow.getHealth() < gunCow.getMaxHealth(), "Het geweer raakte de koe niet");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een wapen blijft aan tot je het uitzet (19 oktober: "write(pin, true/false): je togglet die pin aan/uit"): de laser
+     * schiet steeds opnieuw zolang hij aan staat, en na {@code write(pin, false)} niet meer. Opnieuw opstarten zet hem uit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "robot_weapons")
+    public static void robot_weapon_stays_on_until_switched_off(GameTestHelper helper) {
+        GuardRobotEntity laser = robot(helper, new BlockPos(4, 2, 14), RobotStyle.BATTLE, BotBoard.EMPTY.with(3, "laser"),
+                "when started:\n    write(pin(3), true)\n\nwhen ordered(\"cease\"):\n    write(pin(3), false)\n");
+        double full = laser.maxBattery();
+        helper.runAfterDelay(2, () -> check(laser.brain().pins().isOn(3), "De laser ging niet aan"));
+        // Battle-armen schieten om de 36 ticks: op tick 80 zijn dat er minstens twee.
+        helper.runAfterDelay(80, () -> {
+            check(laserShots(laser, full) >= 2, "De laser schoot maar " + laserShots(laser, full) + " keer: hij bleef niet aan");
+            laser.brain().order("cease", null);
+        });
+        double[] after = new double[1];
+        helper.runAfterDelay(84, () -> {
+            check(!laser.brain().pins().isOn(3), "write(pin, false) zette de laser niet uit");
+            after[0] = laser.battery();
+        });
+        helper.runAfterDelay(84 + 80, () -> {
+            check(laserShots(laser, after[0]) == 0, "De laser schoot door terwijl hij uit stond");
+            laser.setActive(false);
+        });
+        helper.runAfterDelay(84 + 85, () -> {
+            check(!laser.brain().pins().isOn(3), "Uitgezet bleef de laser aan");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Elke sensor kun je uitzetten: de Scan ziet dan niemand, de Distance zegt 99, de Face Recognition herkent niemand
+     * (en zijn filter telt niet), goto lukt niet zonder Pathfinding, de camera geeft geen beeld, en de Solar Panel laadt
+     * niet. Weer aan werkt alles zoals eerst, en ze beginnen allemaal aan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_modules")
+    public static void robot_modules_switch_on_and_off(GameTestHelper helper) {
+        helper.getLevel().setDayTime(6000);
+        BotBoard board = BotBoard.EMPTY.with(1, "scan").with(2, "distance").with(3, "face_recognition").with(4, "pathfinding")
+                .with(5, "solar_panel").with(6, "camera");
+        GuardRobotEntity robot = robot(helper, new BlockPos(6, 2, 12), RobotStyle.COMMANDO, board, """
+                seen = false
+                far = 0
+                who = "?"
+                sun = 0
+                blocked = false
+                when started:
+                    while true:
+                        seen = read(pin(1))
+                        far = read(pin(2))
+                        who = read(pin(3))
+                        sun = read(pin(5))
+                        wait(0.1)
+
+                when ordered("off"):
+                    write(pin(1), false)
+                    write(pin(2), false)
+                    write(pin(3), false)
+                    write(pin(4), false)
+                    write(pin(5), false)
+                    write(pin(6), false)
+                    goto(robot.x, robot.y, robot.z - 1)
+                    blocked = robot.blocked
+
+                when ordered("on"):
+                    write(pin(1), true)
+                    write(pin(2), true)
+                    write(pin(3), true)
+                    write(pin(4), true)
+                    write(pin(5), true)
+                    write(pin(6), true)
+                """);
+        ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 2, 7), "module-target");
+        var pins = robot.brain().pins();
+        helper.runAfterDelay(10, () -> {
+            for (int pin = 1; pin <= 6; pin++) {
+                check(pins.isOn(pin), "De module op pin " + pin + " begon niet aan");
+            }
+            check(!pins.isOn(7), "Een lege pin staat aan");
+            check(Boolean.TRUE.equals(robot.brain().global("seen")) && Double.valueOf(5).equals(robot.brain().global("far"))
+                    && "module-target".equals(robot.brain().global("who")), "Aan zagen de sensoren niet wat ze moesten zien");
+            check((Double) robot.brain().global("sun") >= 90, "Aan ving de Solar Panel geen zon: " + robot.brain().global("sun"));
+            check(pins.cameraOn(), "De camera stond niet aan");
+            robot.setBattery(robot.maxBattery() / 2);
+            robot.brain().order("off", null);
+        });
+        double[] battery = new double[1];
+        helper.runAfterDelay(15, () -> {
+            check(Boolean.TRUE.equals(robot.brain().global("blocked")), "goto lukte terwijl de Pathfinding uit stond");
+            check(Boolean.FALSE.equals(pins.read(1)), "De Scan zag iemand terwijl hij uit stond");
+            check(Double.valueOf(99).equals(pins.read(2)), "De Distance gaf niet 99 terwijl hij uit stond: " + pins.read(2));
+            check("".equals(pins.read(3)), "De Face Recognition herkende iemand terwijl hij uit stond");
+            check(Double.valueOf(0).equals(pins.read(5)), "De Solar Panel ving zon terwijl hij uit stond");
+            check(!pins.cameraOn(), "De camera bleef aan");
+            battery[0] = robot.battery();
+        });
+        helper.runAfterDelay(60, () -> {
+            check(robot.battery() <= battery[0], "De Solar Panel laadde terwijl hij uit stond: " + battery[0] + " > " + robot.battery());
+            robot.brain().order("on", null);
+        });
+        helper.runAfterDelay(66, () -> {
+            for (int pin = 1; pin <= 6; pin++) {
+                check(pins.isOn(pin), "De module op pin " + pin + " ging niet weer aan");
+            }
+            check(Boolean.TRUE.equals(pins.read(1)) && Double.valueOf(5).equals(pins.read(2)) && "module-target".equals(pins.read(3)),
+                    "Weer aan zagen de sensoren niets");
+            check(pins.cameraOn(), "De camera ging niet weer aan");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Op wie hij schiet: met een Scan die aan staat wacht hij tot die iemand ziet (de koe voor hem raakt hij niet), en dan
+     * schiet hij op die speler. Zet zijn programma de Scan uit, dan schiet hij recht vooruit en raakt hij de koe.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_weapons")
+    public static void robot_with_a_scan_waits_for_someone_to_shoot(GameTestHelper helper) {
+        Cow cow = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(4, 2, 9));
+        GuardRobotEntity robot = robot(helper, new BlockPos(4, 2, 14), RobotStyle.COMMANDO,
+                BotBoard.EMPTY.with(1, "scan").with(3, "laser"),
+                "when started:\n    write(pin(3), true)\n\nwhen ordered(\"blind\"):\n    write(pin(1), false)\n");
+        double full = robot.maxBattery();
+        helper.runAfterDelay(50, () -> {
+            check(laserShots(robot, full) == 0, "Hij schoot terwijl zijn Scan niemand zag");
+            check(cow.getHealth() == cow.getMaxHealth(), "Hij raakte de koe terwijl hij op zijn Scan wachtte");
+            ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 9), "scan-target");
+        });
+        helper.runAfterDelay(50 + 30, () -> {
+            check(laserShots(robot, full) >= 1, "Hij schoot niet op de speler die hij zag");
+            check(cow.getHealth() == cow.getMaxHealth(), "Hij schoot op de koe in plaats van op de speler");
+            robot.brain().order("blind", null);
+        });
+        helper.runAfterDelay(50 + 30 + 40, () -> {
+            check(cow.getHealth() < cow.getMaxHealth(), "Met zijn Scan uit schoot hij niet recht vooruit");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * {@code aim(x, y, z)} (19 oktober: "richten op wat ik kies"): de robot kijkt naar het noorden maar schiet op de plek
+     * die zijn programma kiest (hier uit een opdracht, naar het oosten), en raakt de koe daar. Hij blijft "vooruit" naar
+     * het noorden houden. Een muur op de lijn houdt het schot tegen. {@code aim()} richt hem weer op wie zijn Scan ziet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_weapons")
+    public static void robot_aims_at_a_place(GameTestHelper helper) {
+        Cow target = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(14, 2, 14));
+        Cow behindWall = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(4, 2, 4));
+        // De muur op de lijn van de robot naar die koe (de lijn loopt schuin: op z = 9 is hij bij x = 5).
+        for (int x = 4; x <= 6; x++) {
+            helper.setBlock(new BlockPos(x, 2, 9), Blocks.STONE);
+            helper.setBlock(new BlockPos(x, 3, 9), Blocks.STONE);
+        }
+        Cow ignored = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(6, 2, 12));
+        GuardRobotEntity robot = robot(helper, new BlockPos(6, 2, 14), RobotStyle.COMMANDO,
+                BotBoard.EMPTY.with(1, "scan").with(3, "laser"), """
+                when ordered("fire"):
+                    aim(order.x, order.y, order.z)
+                    write(pin(3), true)
+
+                when ordered("cease"):
+                    write(pin(3), false)
+                    aim()
+                """);
+        var pins = robot.brain().pins();
+        BlockPos east = helper.absolutePos(new BlockPos(14, 3, 14));
+        helper.runAfterDelay(4, () -> robot.brain().order("fire", east));
+        helper.runAfterDelay(30, () -> {
+            check(east.getCenter().equals(pins.aimPlace()), "Hij richtte niet op de plek uit de opdracht: " + pins.aimPlace());
+            check(target.getHealth() < target.getMaxHealth(), "Hij raakte de koe op de plek waar hij op richtte niet");
+            check(ignored.getHealth() == ignored.getMaxHealth(), "Hij schoot op iets anders dan waar hij op richtte");
+            check(robot.brain().body().facing() == Direction.NORTH, "Richten veranderde waar vooruit is: " + robot.brain().body().facing());
+            check(Math.abs(net.minecraft.util.Mth.wrapDegrees(robot.getYHeadRot() + 90)) < 2,
+                    "Zijn hoofd keek niet naar het oosten maar naar " + robot.getYHeadRot());
+            // Nu op de plek achter de muur.
+            robot.brain().order("fire", helper.absolutePos(new BlockPos(4, 3, 4)));
+        });
+        helper.runAfterDelay(30 + 80, () -> {
+            check(behindWall.getHealth() == behindWall.getMaxHealth(), "Het schot ging door de muur");
+            robot.brain().order("cease", null);
+        });
+        helper.runAfterDelay(30 + 85, () -> {
+            check(pins.aimPlace() == null, "aim() richtte hem niet weer op wie zijn Scan ziet");
+            check(!pins.isOn(3), "Hij bleef schieten");
+            check(Math.abs(net.minecraft.util.Mth.wrapDegrees(robot.getYHeadRot() - Direction.NORTH.toYRot())) < 2,
+                    "Na aim() keek hij niet weer vooruit maar naar " + robot.getYHeadRot());
             helper.succeed();
         });
     }
@@ -251,10 +428,10 @@ public final class BotSenseGameTests {
             outside[0] = robot(helper, new BlockPos(12, 2, 22), RobotStyle.BATTLE, BotBoard.EMPTY.with(3, "laser"), LASER);
         });
         helper.runAfterDelay(50, () -> {
-            check((Double) sees.brain().global("shots") >= 1, "De robot schoot niet op de speler die hij zag");
+            check(laserShots(sees, sees.maxBattery()) >= 1, "De robot schoot niet op de speler die hij zag");
             check(target.getHealth() == target.getMaxHealth(), "Zonder PvP raakte hij toch een speler");
             check(walled.getHealth() == walled.getMaxHealth(), "Het schot ging door de muur");
-            check((Double) outside[0].brain().global("shots") >= 1, "De robot buiten de koepel schoot niet");
+            check(laserShots(outside[0], outside[0].maxBattery()) >= 1, "De robot buiten de koepel schoot niet");
             check(shielded.getHealth() == shielded.getMaxHealth(), "Het schot ging door de koepel");
             check(dome.isUp(), "De koepel ging neer");
             helper.succeed();
