@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.senne.imttech.client.suit.SuitEffects;
 import com.senne.imttech.network.GunShotPayload;
+import com.senne.imttech.weapons.BoltFlight;
 import com.senne.imttech.weapons.GunType;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -31,10 +32,6 @@ import org.joml.Matrix4f;
 public final class GunEffects {
     private GunEffects() {}
 
-    /** Zo snel vliegt een bout (blokken per tick)... */
-    private static final double SPEED = 9;
-    /** ...en zo lang is hij (blokken). */
-    private static final double LENGTH = 2.2;
     /** Zo lang (ticks) blijft de straal van de sniper hangen. */
     private static final float BEAM_TICKS = 9;
 
@@ -129,14 +126,13 @@ public final class GunEffects {
                 EmpEffects.line(m, out, bolt.from(), bolt.to(), cam, 0.07f * fade, 0xF2FCFF, fade);
                 continue;
             }
-            double head = Math.min(length, Math.max(0, age) * SPEED);
-            double tail = Math.max(0, head - LENGTH);
-            if (tail >= length) {
+            BoltFlight flight = BoltFlight.at(age, length);
+            if (flight.gone(length)) {
                 it.remove();
                 continue;
             }
-            Vec3 a = bolt.from().add(dir.scale(tail));
-            Vec3 b = bolt.from().add(dir.scale(head));
+            Vec3 a = bolt.from().add(dir.scale(flight.tail()));
+            Vec3 b = bolt.from().add(dir.scale(flight.head()));
             EmpEffects.line(m, out, a, b, cam, 0.16f, 0x3FA8FF, 0.5f);
             EmpEffects.line(m, out, a, b, cam, 0.05f, 0xF2FCFF, 1.0f);
         }

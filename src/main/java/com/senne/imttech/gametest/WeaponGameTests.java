@@ -782,6 +782,24 @@ public final class WeaponGameTests {
         helper.succeed();
     }
 
+    /**
+     * Een laserbout vliegt en verdwijnt in de inslag (31 oktober, jouw notitie: hij bleef als een pijl in de grond steken,
+     * omdat de staart meegerekend werd vanaf de kop, en die stopt bij de inslag). Ook op een korte weg, korter dan de bout.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "weapons")
+    public static void laser_bolts_disappear_at_the_impact(GameTestHelper helper) {
+        for (double length : new double[] {1.0, 10.0, 90.0}) {
+            com.senne.imttech.weapons.BoltFlight start = com.senne.imttech.weapons.BoltFlight.at(0, length);
+            check(!start.gone(length) && start.tail() == 0, "De bout was er bij het schot niet (weg van " + length + ")");
+            double ticksToGo = (length + com.senne.imttech.weapons.BoltFlight.LENGTH) / com.senne.imttech.weapons.BoltFlight.SPEED;
+            com.senne.imttech.weapons.BoltFlight halfway = com.senne.imttech.weapons.BoltFlight.at(ticksToGo / 2, length);
+            check(!halfway.gone(length) && halfway.head() <= length, "De bout was halverwege al weg (weg van " + length + ")");
+            com.senne.imttech.weapons.BoltFlight after = com.senne.imttech.weapons.BoltFlight.at(ticksToGo + 0.01, length);
+            check(after.gone(length), "De bout bleef in de inslag steken (weg van " + length + "): staart op " + after.tail());
+        }
+        helper.succeed();
+    }
+
     /** Het Charging Station laadt een lege energiecel op (in het vak van de bril). */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
     public static void charging_station_charges_a_cell(GameTestHelper helper) {
