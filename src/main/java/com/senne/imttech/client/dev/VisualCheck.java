@@ -2021,6 +2021,73 @@ public final class VisualCheck {
             t.onServer(0, VisualCheck::removeSmokeGrenades);
         }
 
+        // --- De schermmuur (19 oktober): de monitoren zonder camera, het instelscherm, het live scherm, en wat er misgaat
+        if (want("camerawall")) {
+            BlockPos core = CAMERA_WALL;
+            BlockPos screen = core.offset(0, 1, -6);
+            t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(true));
+            t.onServer(0, player -> buildCameraWall(player, CAMERA_WALL));
+            t.view(20, core.getX() + 0.5, core.getY() + 1.8, core.getZ() + 0.5, 180, 5);
+            t.onServer(5, player -> wakeCameraWall(player, CAMERA_WALL));
+            t.shot(30, "cw01_monitors_without_camera");
+            t.onServer(5, player -> com.senne.imttech.security.wall.CameraWall.open(player, screen));
+            t.shot(15, "cw02_wall_screen_empty");
+            t.step(0, () -> dragCamera("Lobby", 0, 0, 1, 1));
+            t.shot(5, "cw03_wall_screen_dragging");
+            t.step(0, VisualCheck::dropCamera);
+            t.step(5, () -> dragCamera("Vault", 2, 0, 2, 0));
+            t.step(0, VisualCheck::dropCamera);
+            t.step(5, () -> dragCamera("Guard 9", 2, 1, 2, 1));
+            t.step(0, VisualCheck::dropCamera);
+            t.shot(40, "cw04_wall_screen_filled");
+            t.close(5);
+            t.onServer(5, player -> wakeCameraWall(player, CAMERA_WALL));
+            t.shot(50, "cw05_wall_live");
+            // Dichterbij, om de randjes en de tekst te zien.
+            t.view(0, core.getX() - 0.2, core.getY() + 2.0, core.getZ() - 3.4, 170, 2);
+            t.shot(20, "cw06_wall_close");
+            // Een camera uit: NO SIGNAL op zijn tegel.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos vault = core.offset(-1, 0, -3);
+                level.setBlockAndUpdate(vault, level.getBlockState(vault).setValue(com.senne.imttech.security.CameraBlock.ENABLED, false));
+                if (level.getBlockEntity(vault) instanceof com.senne.imttech.security.CameraBlockEntity camera) {
+                    camera.updateOnline(level, vault, level.getBlockState(vault));
+                }
+                wakeCameraWall(player, CAMERA_WALL);
+            });
+            t.view(5, core.getX() + 0.5, core.getY() + 1.8, core.getZ() + 0.5, 180, 5);
+            t.shot(20, "cw07_wall_no_signal");
+            // Een monitor erbij buiten de rechthoek: de melding, en het scherm gaat uit.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(core.offset(2, 1, -6), ModBlocks.CAMERA_MONITOR.get().defaultBlockState()
+                        .setValue(com.senne.imttech.security.wall.CameraMonitorBlock.FACING, Direction.SOUTH));
+                wakeCameraWall(player, CAMERA_WALL);
+                com.senne.imttech.security.wall.CameraWall.open(player, screen);
+            });
+            t.shot(10, "cw08_not_a_rectangle");
+            t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(core.offset(2, 1, -6), Blocks.AIR.defaultBlockState()));
+            // Een scherm van 8 x 6: past het instelscherm op een klein venster?
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos far = core.offset(4, 0, 8);
+                for (int x = 0; x < 8; x++) {
+                    for (int y = 0; y < 6; y++) {
+                        level.setBlockAndUpdate(far.offset(-x, y, 0), ModBlocks.CAMERA_MONITOR.get().defaultBlockState()
+                                .setValue(com.senne.imttech.security.wall.CameraMonitorBlock.FACING, Direction.NORTH));
+                    }
+                }
+                for (int z = 1; z <= 7; z++) {
+                    com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.south(z));
+                }
+            });
+            t.onServer(5, player -> com.senne.imttech.security.wall.CameraWall.open(player, core.offset(4, 0, 8)));
+            t.shot(10, "cw09_wall_screen_8x6");
+            t.close(5);
+            t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(null));
+        }
+
         // --- De lasergeweren (hoofdstuk 35): elk geweer vanuit de heup, gericht en schietend; het geweer herladen en
         // bekijken; de kijker van de sniper; de pomp van de shotgun; sprinten; derde persoon; en een geweer zonder cel.
         if (want("guns")) {
@@ -4218,6 +4285,145 @@ public final class VisualCheck {
      */
     /** Hoofdstuk 40: de receptie met computers (zie "computers" hierboven). */
     private static final BlockPos COMPUTER_DESK = new BlockPos(-300, -60, -340);
+    /** Waar de schermmuur staat (19 oktober, zie {@link #buildCameraWall}). */
+    private static final BlockPos CAMERA_WALL = new BlockPos(-300, -60, -390);
+
+    /**
+     * Een kamer met een schermmuur (19 oktober): een stenen muur met 3 x 2 Camera Monitors, een PoE-kabel van de kern naar het
+     * scherm (netwerk en stroom), en langs die kabel drie camera's die elk iets anders zien (rode wol en een koe, blauwe wol
+     * en een husk, gele wol), plus een robot met een Camera-module. De camera's heten Lobby, Vault en Hall, de robot Guard 9.
+     */
+    static void buildCameraWall(ServerPlayer player, BlockPos core) {
+        ServerLevel level = player.serverLevel();
+        for (com.senne.imttech.robot.GuardRobotEntity old : level.getEntitiesOfClass(com.senne.imttech.robot.GuardRobotEntity.class,
+                new net.minecraft.world.phys.AABB(core).inflate(16))) {
+            old.discard();
+        }
+        for (int x = -9; x <= 9; x++) {
+            for (int z = -8; z <= 8; z++) {
+                level.setBlockAndUpdate(core.offset(x, -1, z), Blocks.POLISHED_ANDESITE.defaultBlockState());
+                for (int y = 0; y <= 4; y++) {
+                    level.setBlockAndUpdate(core.offset(x, y, z), Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        for (BlockPos generator : new BlockPos[] {core.below(), core.west().below()}) {
+            level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+                charger.fill(20_000);
+            }
+        }
+        level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.SecurityCoreBlock.FACING, Direction.SOUTH));
+        if (!(level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity coreEntity)) {
+            return;
+        }
+        coreEntity.setOwner(player);
+        coreEntity.ensureSystem(level);
+        coreEntity.powerTick(level);
+        // Het serverrek tegen de kern: daardoor praat de robot met de server (en staat hij bij de camera's).
+        BlockPos rack = core.west();
+        level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+        }
+        // De stenen muur, met het scherm ervoor (het kijkt naar het zuiden, de kamer in).
+        for (int x = -5; x <= 5; x++) {
+            for (int y = 0; y <= 4; y++) {
+                level.setBlockAndUpdate(core.offset(x, y, -7), Blocks.STONE_BRICKS.defaultBlockState());
+            }
+        }
+        for (int x = -1; x <= 1; x++) {
+            for (int y = 1; y <= 2; y++) {
+                level.setBlockAndUpdate(core.offset(x, y, -6), ModBlocks.CAMERA_MONITOR.get().defaultBlockState()
+                        .setValue(com.senne.imttech.security.wall.CameraMonitorBlock.FACING, Direction.SOUTH));
+                if (level.getBlockEntity(core.offset(x, y, -6)) instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity monitor) {
+                    monitor.setOwner(player);
+                }
+            }
+        }
+        for (int z = 1; z <= 6; z++) {
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.north(z));
+        }
+        // De drie camera's langs de kabel, en iets om naar te kijken.
+        Object[][] cameras = {{core.offset(1, 0, -3), Direction.EAST, "Lobby"}, {core.offset(-1, 0, -3), Direction.WEST, "Vault"},
+                {core.offset(1, 0, -1), Direction.SOUTH, "Hall"}};
+        for (Object[] row : cameras) {
+            BlockPos pos = (BlockPos) row[0];
+            level.setBlockAndUpdate(pos, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                    .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                    .setValue(com.senne.imttech.security.CameraBlock.FACING, (Direction) row[1]));
+            if (level.getBlockEntity(pos) instanceof com.senne.imttech.security.CameraBlockEntity camera) {
+                camera.setName((String) row[2]);
+            }
+        }
+        for (int y = 0; y <= 3; y++) {
+            level.setBlockAndUpdate(core.offset(8, y, -3), Blocks.RED_WOOL.defaultBlockState());
+            level.setBlockAndUpdate(core.offset(-8, y, -3), Blocks.BLUE_WOOL.defaultBlockState());
+            level.setBlockAndUpdate(core.offset(1, y, 7), Blocks.YELLOW_WOOL.defaultBlockState());
+        }
+        DevWorld.spawnStill(level, EntityType.COW, core.offset(6, 0, -3), 90);
+        DevWorld.spawnStill(level, EntityType.HUSK, core.offset(-5, 0, -3), -90);
+        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), core.offset(0, 0, 4), 180)
+                instanceof com.senne.imttech.robot.GuardRobotEntity robot) {
+            com.senne.imttech.robot.RobotStyle c = com.senne.imttech.robot.RobotStyle.COMMANDO;
+            robot.setParts(new com.senne.imttech.robot.RobotParts(c, c, c, c));
+            robot.setOwner(player);
+            robot.setCustomName(Component.literal("Guard 9"));
+            robot.setBoard(com.senne.imttech.bot.BotBoard.EMPTY.with(6, "camera"));
+            robot.setActive(true);
+        }
+    }
+
+    /** Het scherm en de camera's meteen laten kijken of ze werken (anders duurt dat tot twee seconden). */
+    static void wakeCameraWall(ServerPlayer player, BlockPos core) {
+        ServerLevel level = player.serverLevel();
+        com.senne.imttech.logic.LogicServer.forgetAll();
+        if (level.getBlockEntity(core.west()) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
+            rack.update(level, core.west(), level.getBlockState(core.west()));
+        }
+        com.senne.imttech.logic.LogicServer.forgetAll();
+        // De robot meldt zich anders pas binnen een seconde bij zijn server (dan staat hij nog niet tussen de camera's).
+        for (com.senne.imttech.robot.GuardRobotEntity robot : level.getEntitiesOfClass(com.senne.imttech.robot.GuardRobotEntity.class,
+                new net.minecraft.world.phys.AABB(core).inflate(16))) {
+            com.senne.imttech.bot.BotNetwork.get(level).update(robot);
+        }
+        if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity coreEntity) {
+            com.senne.imttech.security.SecurityDevices.forget(level, coreEntity);
+            for (BlockPos pos : com.senne.imttech.security.SecurityDevices.scan(level, coreEntity).cameras()) {
+                if (level.getBlockEntity(pos) instanceof com.senne.imttech.security.CameraBlockEntity camera) {
+                    camera.updateOnline(level, pos, level.getBlockState(pos));
+                }
+            }
+        }
+        for (int x = -1; x <= 1; x++) {
+            for (int y = 1; y <= 2; y++) {
+                if (level.getBlockEntity(core.offset(x, y, -6)) instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity monitor) {
+                    monitor.updateOn(level);
+                }
+            }
+        }
+    }
+
+    /** Sleept de camera met deze naam op het instelscherm van de schermmuur (als dat open staat). */
+    static void dragCamera(String name, int fromColumn, int fromRow, int toColumn, int toRow) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.CameraWallScreen wall) {
+            if (wall.tourSelect(name)) {
+                wall.tourDrag(fromColumn, fromRow, toColumn, toRow);
+            }
+        }
+    }
+
+    /** Laat het vak los op het instelscherm van de schermmuur. */
+    static void dropCamera() {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.CameraWallScreen wall) {
+            wall.tourDrop();
+        }
+    }
     /** Het IP van de kern van de receptie (de server zet het, het inlogscherm van de laptop typt het; ook de showcase). */
     static String computerDeskIp = "";
 

@@ -2524,7 +2524,51 @@ final class ShowcaseFeatures {
                 .open(0, () -> new com.senne.imttech.client.os.OsLoginScreen(PC_DESK.east(3).south(), "Office"))
                 .pause(80)
                 .close(20));
+
+        // ---------------------------------------------------------------- De schermmuur
+        // 19 oktober (gebouwd op 31 oktober), ook achteraan.
+        BlockPos room = WALL_ROOM;
+        add("Camera wall", "Jouw notitie van 19 oktober: fysieke cameraschermen. Zes Camera Monitors tegen een muur zijn samen één "
+                + "scherm van 3 x 2, met één PoE-kabel naar de kern. Eerst donkerblauw: er staat nog niets op. Rechtsklik: het "
+                + "instelscherm met het hele scherm als rooster en rechts je camera's. Lobby wordt een groot vak van 2 x 2 (je "
+                + "ziet het slepen), Vault en de robot Guard 9 de twee vakjes rechts, en elk vak laat meteen zijn beeld zien. Dan "
+                + "het echte scherm: live beelden met de naam, REC en scanlijnen. Tot slot zet ik de camera Vault uit: zijn vak geeft "
+                + "NO SIGNAL met ruis. Kijk of de beelden scherp zijn en niet uitgerekt, en of de randen kloppen.",
+                new Vec3(room.getX() + 0.5, room.getY(), room.getZ() + 0.5), 180, 5, s -> s
+                .onServer(0, player -> com.senne.imttech.lan.LanGrid.overrideRequired(true))
+                .onServer(0, player -> VisualCheck.buildCameraWall(player, WALL_ROOM))
+                .onServer(10, player -> VisualCheck.wakeCameraWall(player, WALL_ROOM))
+                .pause(70)
+                .onServer(0, player -> com.senne.imttech.security.wall.CameraWall.open(player, WALL_ROOM.offset(0, 1, -6)))
+                .pause(50)
+                .step(0, () -> VisualCheck.dragCamera("Lobby", 0, 0, 1, 1))
+                .pause(50)
+                .step(0, VisualCheck::dropCamera)
+                .pause(40)
+                .step(0, () -> VisualCheck.dragCamera("Vault", 2, 0, 2, 0))
+                .pause(25)
+                .step(0, VisualCheck::dropCamera)
+                .pause(30)
+                .step(0, () -> VisualCheck.dragCamera("Guard 9", 2, 1, 2, 1))
+                .pause(25)
+                .step(0, VisualCheck::dropCamera)
+                .pause(80)
+                .close(10)
+                .pause(160)
+                .onServer(0, player -> {
+                    ServerLevel level = player.serverLevel();
+                    BlockPos vault = WALL_ROOM.offset(-1, 0, -3);
+                    level.setBlockAndUpdate(vault, level.getBlockState(vault).setValue(com.senne.imttech.security.CameraBlock.ENABLED, false));
+                    if (level.getBlockEntity(vault) instanceof com.senne.imttech.security.CameraBlockEntity camera) {
+                        camera.updateOnline(level, vault, level.getBlockState(vault));
+                    }
+                    VisualCheck.wakeCameraWall(player, WALL_ROOM);
+                })
+                .pause(100));
     }
+
+    /** Waar de kamer met de schermmuur staat (zie VisualCheck.buildCameraWall). */
+    static final BlockPos WALL_ROOM = new BlockPos(-130, -60, 160);
 
     // ---------------------------------------------------------------- De laptop overal, en computers (hoofdstuk 40)
 

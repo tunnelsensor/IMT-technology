@@ -37,6 +37,7 @@ bunkers to raid.
 - Wireless redstone relays with groups, an emitter, and the Arc Lamp with a light switch.
 
 **Bases and security**
+- Camera Monitors that merge into one big screen on your wall (up to 8 x 6): drag each camera to where you want it.
 - A Security Core with its own desktop (Security OS): a camera wall, devices, keycards and code
   panels, files and traps, and protected build zones.
 - Wire your security with network cables, PoE cables and a network switch; network buttons and

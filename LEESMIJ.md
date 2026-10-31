@@ -20,7 +20,7 @@ Spotify-koppeling, spraakcommando's en instellingen verhuizen bij de eerste star
 (de map `starktech` wordt `imttech`). Oude werelden niet: blokken en items van de mod verdwijnen
 daaruit, want ze heetten nog `starktech:...`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (286 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (375 automatische tests).
 
 ---
 
@@ -535,6 +535,32 @@ app **Devices** van de desktop, en hoort het bij die kern.
   `config/imttech.toml` onder `[network]` `required = false`: dan horen apparaten zoals vroeger bij de
   kern in wiens gebied ze staan, en hebben lezers en panelen geen stroom nodig. Onder `[network]`
   staan ook `signalRange` (hoe ver weg je de vakjes en streepjes ziet) en `flowSeconds`.
+
+### De schermmuur: je camera's op een echt scherm
+De app Cameras laat je beelden zien op de desktop. Wil je ze aan de muur, bijvoorbeeld in je wachtkamer, dan bouw je een
+**schermmuur** van **Camera Monitors** (4 ijzer, 3 zwarte glazen ruiten, een Computer Chip en redstone geven er 4).
+
+- **Eén scherm.** Monitoren naast en op elkaar, die dezelfde kant op kijken, worden samen één scherm: 1 x 1, 2 x 1, 2 x 2 en
+  zo voort, tot 8 x 6. Klik je op een muur, dan kijkt het scherm van die muur af. Het moet een **rechthoek** zijn: ontbreekt
+  er een monitor of is het te groot, dan blijft alles zwart en zegt een rechtsklik wat er mis is.
+- **Netwerk en stroom.** Net als een camera: een netwerkkabel naar de desktop van je kern, en stroom (`cameraMonitorUpkeep`
+  onder `[power]`, per monitor). Monitoren geven allebei aan elkaar door, dus één kabel (of één PoE-kabel) aan één monitor is
+  genoeg voor het hele scherm. Staat er nog niets op, dan is het donkerblauw met een klein camera-icoontje.
+- **Instellen.** Rechtsklik op het scherm. Links zie je het hele scherm als rooster (één vak per monitor), rechts je camera's:
+  je camerablokken, en je robots en drones met een Camera-module. **Kies een camera en sleep een vak** op het rooster: daar
+  staat hij dan, zo groot als je sleepte (wat eronder lag, gaat weg). **Rechtsklik op een vak** haalt het weg, **Clear** alles.
+  Je ziet het meteen, ook op het scherm zelf.
+- **Wie.** Kijken mag iedereen die ervoor staat. Instellen mag wie alle monitoren van dit scherm neerzette of vertrouwd is in je
+  basis (Access). Er kunnen alleen camera's op van de kern waar het scherm aan hangt.
+- **Wat je ziet.** Elk vak is live, met de naam, een knipperend REC en scanlijnen. Staat een camera uit of heeft hij geen stroom:
+  ruis met **NO SIGNAL**. Ligt hij te ver weg voor je spel: **OUT OF RANGE**, net als in de app Cameras. Een beeld wordt niet
+  uitgerekt: wat niet in het vak past, wordt afgesneden, zoals op een tv. Een vak van 2 x 1 past het best.
+- **Haal je een monitor weg,** dan is alleen het vak weg dat daar linksboven begon; de rest blijft staan. Zet je er monitoren bij,
+  dan worden die nieuwe vakken leeg. Een EMP-puls legt het scherm even plat.
+- Staat er een robot op het scherm en staat er iemand bij het scherm, dan zegt zijn `read(cameraPin)` dat er meegekeken wordt. In
+  **Devices** staat elk scherm onder CAMERA WALLS. Hoe vaak een beeld ververst wordt, staat in `imttech-client.toml`
+  (dezelfde instellingen als de app Cameras: `cameraFeedFps` en `cameraFeedBudgetMs`; meer beelden tegelijk kost meer van je
+  grafische kaart).
 
 ### Je desktop van overal (de laptop) en computers voor je basis
 De **desktop** van je beveiliging (Security OS) opent met een rechtsklik met een lege hand op je
@@ -1800,7 +1826,7 @@ showcase en staat hij bij NIEUW.
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.
-- **Tests**: `gradlew runGameTestServer` — 360 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 375 tests over de toren en zijn kluis, het
   satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   mini-raketten, de Raven-soldaten, de torentjes, de spraakcommando's, en alles wat erna kwam
@@ -1815,7 +1841,7 @@ showcase en staat hij bij NIEUW.
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `bridge`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
-  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`, `network`; meerdere met komma's). Op een ander
+  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`, `network`, `camerawall`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Logo**: `python tools/generate_logo.py` maakt het logo in de modlijst
   (`src/main/resources/imttech_logo.png`) en het projectplaatje voor CurseForge

@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 371 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 375 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 104 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 105 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -3195,9 +3195,52 @@ Ik bouw het in deze volgorde, één stap per commit:
       van hem, en op de desktop staat zijn code in de app Logic. **Test**: `robot_aims_at_a_place`, en in
       `logic_robot_words` de foutmeldingen ("aim needs 0 or 3 values (x, y, z)") en code > blokjes > code. 371 tests, allemaal
       groen. **Screenshot** `-Ponly=robots`: `rb27_robot_aim`.
-- [ ] **8. De Camera Monitor en de schermmuur** (het blok, samenvoegen tot een rechthoek)
-- [ ] **9. Het instelscherm van de schermmuur** (welke camera waar en hoe groot)
-- [ ] **10. Live beelden op de schermmuur**
+- [x] **8. De Camera Monitor en de schermmuur** — een nieuw blok in de tab Security, na de Security Camera: een plat scherm van
+      3 pixels dik tegen de achterkant van zijn blok (recept: 4 ijzer, 3 zwarte ruiten, een chip en redstone geven er 4). Klik je op een muur,
+      dan kijkt het van die muur af. Monitoren die tegen elkaar staan en dezelfde kant op kijken, zijn samen één scherm zolang
+      het een rechthoek is van hooguit 8 x 6 (`security/wall/CameraWall`); de randjes gaan weg waar er een monitor tegenaan zit
+      (een multipart-blockstate). **Veranderd sinds het plan**: het blok hoort nu bij het netwerk van hoofdstuk 38. Het heeft een
+      **netwerkkabel** (of PoE) naar de kern nodig en stroom (`[power] cameraMonitorUpkeep`, 1 per monitor per twee seconden);
+      monitoren geven allebei aan elkaar door, dus één kabel is genoeg voor een heel scherm. Een EMP-puls legt het plat. In
+      **Devices** een groep CAMERA WALLS met "online", "no power", "not a rectangle" of "too big". **Mijn invulling**: is het geen
+      rechthoek, dan is het hele scherm zwart en zegt een rechtsklik wat er mis is (geen losse schermpjes).
+- [x] **9. Het instelscherm van de schermmuur** — rechtsklik: links het hele scherm als rooster met één vak per monitor, rechts
+      je camera's (met ROBOT of DRONE erbij). Kies een camera en sleep een vak; rechtsklik op een vak haalt het weg; **Clear** en
+      **Done**. Elk vak toont meteen zijn live beeld, en elke verandering gaat meteen naar de server, die alles zelf nakijkt: wat
+      buiten het scherm valt, over een ander vak ligt of geen camera van deze kern is, valt af. Instellen mag wie alle monitoren
+      van het scherm mag instellen (`BaseTrust`). **Mijn invulling**: een vak is minstens één monitor (geen halve); een vak
+      staat in de monitor van zijn linkerbovenhoek, dus een monitor weghalen kost alleen het vak dat daar begon.
+- [x] **10. Live beelden op de schermmuur** — `client/os/camera/CameraWallRenderer` tekent de beelden op de monitoren, met
+      dezelfde beelden als de app Cameras (`CameraFeeds` en zijn planner: alleen wat in beeld is, een paar keer per seconde, binnen
+      een tijdbudget per frame). Met de naam, een knipperend REC, scanlijnen en hoekjes; zonder beeld ruis en "NO SIGNAL" of "OUT
+      OF RANGE". Een beeld wordt niet uitgerekt: wat niet past, wordt afgesneden (`CameraFeeds.crop`). Vanaf 4 monitoren krijgt
+      een vak het scherpe beeld. Een camera die naar het scherm kijkt, ziet geen beelden op het scherm (anders tekende een beeld in
+      zichzelf). Een robot op het scherm weet dat er meegekeken wordt zolang er iemand binnen 32 blokken staat. **Tests**
+      (`gametest/CameraWallGameTests`): `camera_monitors_merge_into_a_rectangle`, `camera_wall_needs_network_and_power`,
+      `camera_wall_layout_is_checked_by_the_server`, `camera_wall_shows_a_robot`. 375 tests, allemaal groen. **Screenshots**
+      `-Ponly=camerawall`: `cw01` tot `cw09`. Wat ik daarop zag en rechtzette: de namen waren half weg (de achtergrond van de tekst
+      lag op dezelfde diepte als de letters), en de hint in het instelscherm paste niet. **Showcase 105** (Camera wall), achteraan.
+      LEESMIJ: "De schermmuur".
+
+### 41. Opgeruimd: de notities van alle showcases (31 oktober)
+
+Jouw vraag: "fix de notities van de showcases, als die fix al is gedaan dan mag je dat ook uit de notitie halen zodat ik het
+volgende keer niet weer vraag". Ik heb elke notitie in `showcase-notities.md` nagekeken in de code (de vakjes van hoofdstuk 31
+waren niet bijgewerkt: stap 3 tot en met 5 waren al gebouwd in `e4c0786`). Wat al af was, en wat ik nu bouwde, is uit de notities
+gehaald.
+
+- [x] **1. De laserbouten verdwijnen** (showcase 100: "zorg dat de afgeschoten bullets verdwijnen en niet zoals pijlen in de
+      grond blijven zitten") — de staart van een bout werd gerekend vanaf de kop, en de kop stopt bij de inslag. Daardoor kwam de
+      staart er nooit en bleef de bout voor altijd staan. Nu vliegt de staart door tot in de inslag (`weapons/BoltFlight`).
+      **Test**: `laser_bolts_disappear_at_the_impact`.
+- [x] **2. Stap 6 tot en met 10 van hoofdstuk 31**: modules aan en uit, `aim(x, y, z)` en de schermmuur (showcase 74, 82 en 85).
+- [x] **3. Wat al af was, en dus ook weg is uit de notities** — nagekeken in de code, en waar het iets te zien gaf op screenshots:
+      **61** "hoe meer range hoe meer de light block verbruikt" (`ArcLampBlockEntity.powerPerTick`: het verbruik gaat mee met het
+      lichtniveau, en daar hangt het bereik aan; hoofdstuk 13, test in `LightGameTests`); **34** groepen alleen op de desktop,
+      **76** `for i in range(3)` in plaats van `repeat` en `forever`, en **83** robotonderdelen stapelen niet (hoofdstuk 28);
+      **83** de kern maakt geen drones (hoofdstuk 25, `225f0ce`); **73** de desktop onthoudt zijn vensters met Status als begin en
+      Shut down, Devices en Robots als tabel, en **82** de knoppen naast elkaar (`e4c0786`); **76** `$"dit is de {aantal} test"`
+      en **87** Lethal zonder levens (hoofdstuk 31, stap 1 en 2).
 
 ### 32. Keycards in groepen in plaats van niveaus (25 oktober)
 
@@ -4093,6 +4136,12 @@ Ik bouw het in deze volgorde, één stap per commit:
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De schermmuur (hoofdstuk 31)**: gezien op screenshots (`-Ponly=camerawall`, en showcase 105), maar niet zelf gespeeld.
+      Probeer: monitoren tegen een muur, een PoE-kabel naar je kern, en dan slepen in het instelscherm. Kijk of het **slepen** lekker
+      werkt, of de beelden scherp genoeg zijn, of je spel niet trager wordt bij veel beelden tegelijk (`cameraFeedFps` en
+      `cameraFeedBudgetMs` in `imttech-client.toml`), en of het **donkerblauwe icoontje** op een lege monitor mooi is.
+- [ ] **Schieten met `write` en `aim` (hoofdstuk 31)**: een wapen dat aan staat, schiet zodra het klaar is. Klopt het zo voor jou dat
+      een robot met een Scan wacht tot hij iemand ziet, in plaats van recht vooruit te schieten?
 - [ ] **De laptop overal en de Computer met Monitor (hoofdstuk 40)**: gezien op screenshots (`-Ponly=computers`, en
       showcase 103 en 104), maar niet zelf gespeeld. Probeer: een wachtwoord op je kern zetten (Settings), het IP uit
       Status, en ver weg rechtsklikken met de Hacking Laptop; een Computer met een netwerkkabel en stroom, een Monitor
