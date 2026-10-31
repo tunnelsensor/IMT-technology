@@ -122,6 +122,8 @@ public final class Emp {
                 turret.refreshOnline(level);
             } else if (device instanceof CameraBlockEntity camera) {
                 camera.updateOnline(level, pos, device.getBlockState());
+            } else if (device instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity monitor) {
+                monitor.updateOn(level);
             } else {
                 Block block = device.getBlockState().getBlock();
                 // Hoofdstuk 38: ook een Network Switch valt even uit (zie NetworkSwitchBlock.passes).

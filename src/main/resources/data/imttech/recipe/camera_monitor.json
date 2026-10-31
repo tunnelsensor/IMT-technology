@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "item": "minecraft:black_stained_glass_pane"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "GCG",
+    "IRI"
+  ],
+  "result": {
+    "count": 4,
+    "id": "imttech:camera_monitor"
+  }
+}

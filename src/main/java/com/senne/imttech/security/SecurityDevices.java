@@ -62,11 +62,12 @@ public final class SecurityDevices {
     /**
      * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
      * camera's, de serverracks (zie LogicServer), de keycardlezers en codepanelen (inputs) en (hoofdstuk 38) de
-     * Network Switches en van elke laserbrug één zender (bridges), en (hoofdstuk 40) de Computers.
+     * Network Switches en van elke laserbrug één zender (bridges), (hoofdstuk 40) de Computers, en (19 oktober) alle Camera
+     * Monitors.
      */
     public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> bridges,
                         List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
-                        List<BlockPos> computers, long time) {}
+                        List<BlockPos> computers, List<BlockPos> monitors, long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -98,6 +99,7 @@ public final class SecurityDevices {
         List<BlockPos> switches = new ArrayList<>();
         List<BlockPos> bridges = new ArrayList<>();
         List<BlockPos> computers = new ArrayList<>();
+        List<BlockPos> monitors = new ArrayList<>();
         for (BlockPos pos : com.senne.imttech.lan.LanGrid.devicesOf(level, core.getBlockPos())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof TurretBlockEntity turret) {
@@ -114,6 +116,8 @@ public final class SecurityDevices {
                 switches.add(pos);
             } else if (blockEntity instanceof com.senne.imttech.computer.ComputerBlockEntity) {
                 computers.add(pos);
+            } else if (blockEntity instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity) {
+                monitors.add(pos);
             } else if (blockEntity instanceof LaserBridgeBlockEntity bridge) {
                 if (belongs(core, bridge)) {
                     bridges.add(pos);
@@ -128,7 +132,7 @@ public final class SecurityDevices {
         emitters.sort(null);
         racks.sort(null);
         switches.sort(null);
-        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, monitors, now);
     }
 
     /** Zoals vroeger: alles wat in het gebied van deze kern staat (en geen andere kern dichterbij heeft). */
@@ -141,6 +145,7 @@ public final class SecurityDevices {
         List<BlockPos> switches = new ArrayList<>();
         List<BlockPos> bridges = new ArrayList<>();
         List<BlockPos> computers = new ArrayList<>();
+        List<BlockPos> monitors = new ArrayList<>();
         AABB area = core.area();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
         int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
@@ -174,6 +179,9 @@ public final class SecurityDevices {
                     } else if (blockEntity instanceof com.senne.imttech.computer.ComputerBlockEntity computer
                             && SecurityCores.ownedBy(level, core, computer.getBlockPos())) {
                         computers.add(computer.getBlockPos().immutable());
+                    } else if (blockEntity instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity monitor
+                            && SecurityCores.ownedBy(level, core, monitor.getBlockPos())) {
+                        monitors.add(monitor.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -199,7 +207,7 @@ public final class SecurityDevices {
                 }
             }
         }
-        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, monitors, now);
     }
 
     /**
@@ -208,7 +216,7 @@ public final class SecurityDevices {
      */
     private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> bridgeEmitters,
                                List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
-                               List<BlockPos> computers, long now) {
+                               List<BlockPos> computers, List<BlockPos> monitors, long now) {
         // Zenders die aan elkaar vastzitten zijn samen één poort.
         List<BlockPos> gates = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
@@ -236,8 +244,10 @@ public final class SecurityDevices {
                 .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
         // De computers ook (hoofdstuk 40): zo staan ze in de app Computers altijd in dezelfde volgorde.
         computers.sort(null);
+        monitors.sort(null);
         return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(bridges),
-                List.copyOf(cameras), List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), List.copyOf(computers), now);
+                List.copyOf(cameras), List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), List.copyOf(computers),
+                List.copyOf(monitors), now);
     }
 
     /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */
@@ -354,7 +364,7 @@ public final class SecurityDevices {
     }
 
     /** De naam van een camera op de desktop: zijn eigen naam, of anders "Camera 3". */
-    private static String cameraName(CameraBlockEntity camera, int number) {
+    public static String cameraName(CameraBlockEntity camera, int number) {
         return camera.name().isEmpty() ? "Camera " + number : camera.name();
     }
 
@@ -495,6 +505,21 @@ public final class SecurityDevices {
             device.putBoolean("on", state.getValue(CameraBlock.ENABLED));
             device.putString("st", !state.getValue(CameraBlock.ENABLED) ? "switched off" : online ? "online"
                     : core.camerasEnabled() ? "no power" : "off (network)");
+            list.add(device);
+        }
+        // 19 oktober: de schermmuren, één regel per scherm (monitoren die samen een scherm zijn, staan op de plek linksboven).
+        Set<BlockPos> screens = new HashSet<>();
+        for (BlockPos pos : found.monitors()) {
+            com.senne.imttech.security.wall.CameraWall.Shape shape = com.senne.imttech.security.wall.CameraWall.of(level, pos);
+            if (!screens.add(shape.valid() ? shape.anchor() : pos)) {
+                continue;
+            }
+            CompoundTag device = position("monitor", shape.valid() ? shape.anchor() : pos);
+            device.putString("name", "Camera wall" + (shape.valid() ? " (" + shape.width() + " x " + shape.height() + ")" : ""));
+            BlockState state = level.getBlockState(shape.valid() ? shape.anchor() : pos);
+            device.putString("st", !shape.valid() ? (shape.tooBig() ? "too big" : "not a rectangle")
+                    : state.getBlock() instanceof com.senne.imttech.security.wall.CameraMonitorBlock
+                            && state.getValue(com.senne.imttech.security.wall.CameraMonitorBlock.ON) ? "online" : "no power");
             list.add(device);
         }
         boolean server = com.senne.imttech.logic.LogicServer.stats(level, core).online();

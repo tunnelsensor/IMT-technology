@@ -8,6 +8,9 @@ import java.util.Map;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
@@ -78,6 +81,31 @@ public final class CameraFeeds {
         feed.skip = skip;
         PLANNER.want(key, Util.getMillis(), big);
         return feed.ready && !feed.broken && feed.target != null ? feed.target.getColorTextureId() : -1;
+    }
+
+    /**
+     * Het beeld door de ogen van deze robot of drone (voor de schermmuur, 19 oktober): vanaf zijn hoofd, een stukje naar voren
+     * (anders kijk je tegen de binnenkant van zijn hoofd); een drone kijkt een beetje naar beneden, zoals in de app Cameras.
+     */
+    public static int requestRobot(Entity robot, boolean big, float partialTick) {
+        float yaw = robot instanceof LivingEntity living ? Mth.rotLerp(partialTick, living.yHeadRotO, living.yHeadRot) : robot.getYRot();
+        Vec3 eye = robot.getEyePosition(partialTick).add(Vec3.directionFromRotation(0, yaw).scale(0.35));
+        float pitch = robot.getXRot() + (robot instanceof com.senne.imttech.robot.GuardDroneEntity ? 20.0f : 0.0f);
+        return requestRobot(robot.getId(), eye, yaw, pitch, big);
+    }
+
+    /**
+     * Welk stuk van een beeld je laat zien op een vlak met deze verhouding (breedte / hoogte): {u0, v0, u1, v1}. Een beeld
+     * wordt niet uitgerekt; wat niet past, snijden we links en rechts of boven en onder af.
+     */
+    public static float[] crop(float aspect) {
+        float feed = (float) WIDTH / HEIGHT;
+        if (aspect < feed) {
+            float keep = aspect / feed;
+            return new float[] {(1 - keep) / 2, 0, (1 + keep) / 2, 1};
+        }
+        float keep = feed / aspect;
+        return new float[] {0, (1 - keep) / 2, 1, (1 + keep) / 2};
     }
 
     /**

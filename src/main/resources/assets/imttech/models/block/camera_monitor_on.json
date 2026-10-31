@@ -1,0 +1,52 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/camera_monitor_case",
+    "case": "imttech:block/camera_monitor_case",
+    "screen": "imttech:block/camera_monitor_screen_on"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        13
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#screen",
+          "shade": false,
+          "neoforge_data": {
+            "block_light": 15,
+            "sky_light": 15
+          }
+        },
+        "south": {
+          "texture": "#case",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#case",
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#case",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#case",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#case",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}

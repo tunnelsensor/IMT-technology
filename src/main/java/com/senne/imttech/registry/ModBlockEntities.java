@@ -48,6 +48,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.computer.ComputerBlockEntity::new,
                             java.util.Set.of(ModBlocks.COMPUTER.get()), null));
 
+    /** 19 oktober: de Camera Monitor (wie hem neerzette, en de camera die hier begint). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.security.wall.CameraMonitorBlockEntity>> CAMERA_MONITOR =
+            BLOCK_ENTITIES.register("camera_monitor",
+                    () -> new BlockEntityType<>(com.senne.imttech.security.wall.CameraMonitorBlockEntity::new,
+                            java.util.Set.of(ModBlocks.CAMERA_MONITOR.get()), null));
+
     /** De schildkoepel-generator: zijn instellingen, schildkracht en of de koepel staat. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DomeGeneratorBlockEntity>> DOME_GENERATOR =
             BLOCK_ENTITIES.register("dome_generator",

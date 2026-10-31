@@ -275,6 +275,7 @@ public final class Robots {
             }
             CompoundTag tag = new CompoundTag();
             tag.putInt("robot", robot.getId());
+            tag.putString("id", robot.getUUID().toString()); // zijn vaste nummer (het andere verandert na opnieuw laden)
             tag.putBoolean("drone", entry.drone());
             tag.putString("name", robot.hasCustomName() ? robot.getCustomName().getString() : entry.name());
             tag.putBoolean("on", robot.brain().pins().cameraOn() && !robot.isDown()); // neergeschoten: geen beeld

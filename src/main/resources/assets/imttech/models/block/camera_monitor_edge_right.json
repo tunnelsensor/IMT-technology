@@ -1,0 +1,41 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/camera_monitor_case",
+    "case": "imttech:block/camera_monitor_case"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        12.5
+      ],
+      "to": [
+        1,
+        16,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#case"
+        },
+        "east": {
+          "texture": "#case"
+        },
+        "west": {
+          "texture": "#case",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#case",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#case",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}

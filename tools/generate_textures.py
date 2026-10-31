@@ -2696,6 +2696,45 @@ def network_switch_textures():
 
 
 
+def camera_monitor_textures():
+    """
+    De Camera Monitor (19 oktober): een plat scherm voor aan de muur, dat je met andere monitoren tot één groot scherm maakt.
+    - de kast: zwart plastic met een lichter randje;
+    - het scherm uit: donker glas met een glimp licht, overal even donker, want monitoren staan tegen elkaar;
+    - het scherm aan, zonder camera erop: donkerblauw met scanlijnen en een klein camera-icoontje in het midden.
+    Alleen deze functie draaien:
+        python -c "import sys; sys.path.insert(0,'tools'); import generate_textures as g; g.camera_monitor_textures()"
+    """
+    case = (30, 33, 40, 255)
+    case_light = (58, 63, 74, 255)
+    case_dark = (18, 20, 25, 255)
+    im = img(16, 16, case)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, 15, 15], outline=case_dark)
+    d.line([1, 1, 14, 1], fill=case_light)
+    save(im, "block/camera_monitor_case.png")
+
+    glass = (9, 12, 16, 255)
+    glint = (22, 28, 36, 255)
+    im = img(16, 16, glass)
+    px(im, [(3, 2), (4, 2), (5, 2), (2, 3), (3, 3), (4, 3), (2, 4), (3, 4), (11, 12), (12, 12), (12, 11)], glint)
+    save(im, "block/camera_monitor_screen.png")
+
+    dark = (10, 24, 34, 255)
+    line = (15, 33, 46, 255)
+    icon = (38, 92, 120, 255)
+    im = img(16, 16, dark)
+    d = ImageDraw.Draw(im)
+    for y in range(0, 16, 2):
+        d.line([0, y, 15, y], fill=line)
+    # Een klein camera-icoontje: de kast, de lens en het voetje.
+    d.rectangle([5, 6, 9, 9], fill=icon)
+    px(im, [(10, 7), (11, 6), (11, 7), (11, 8), (11, 9), (10, 8)], icon)
+    px(im, [(7, 7), (7, 8)], dark)
+    px(im, [(6, 10), (8, 10)], icon)
+    save(im, "block/camera_monitor_screen_on.png")
+
+
 def computer_textures():
     """
     Hoofdstuk 40: de Computer (een pc-kast) en de Monitor met toetsenbord die ertegen staat.
@@ -3839,6 +3878,7 @@ if __name__ == "__main__":
     power_cabinet_textures()
     network_switch_textures()
     computer_textures()
+    camera_monitor_textures()
     server_rack_textures()
     server_part_items()
     keycard_items()

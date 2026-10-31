@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "30";
+    private static final String PROTOCOL_VERSION = "31";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -104,6 +104,12 @@ public final class ModNetwork {
         });
         // Fase 15: de holotafel
         // De stroomkast: een schakelaar op zijn deurtje.
+        // 19 oktober: een nieuwe indeling van een schermmuur.
+        registrar.playToServer(CameraWallSavePayload.TYPE, CameraWallSavePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.security.wall.CameraWall.handleSave(player, payload);
+            }
+        });
         // Hoofdstuk 38: een poort van een Network Switch omzetten.
         registrar.playToServer(SwitchActionPayload.TYPE, SwitchActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -244,6 +250,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onDomeOpen(payload, context));
         registrar.playToClient(CabinetOpenPayload.TYPE, CabinetOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onCabinetOpen(payload, context));
+        registrar.playToClient(CameraWallOpenPayload.TYPE, CameraWallOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onCameraWallOpen(payload, context));
         registrar.playToClient(SwitchOpenPayload.TYPE, SwitchOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSwitchOpen(payload, context));
         registrar.playToClient(CableTrafficPayload.TYPE, CableTrafficPayload.STREAM_CODEC,

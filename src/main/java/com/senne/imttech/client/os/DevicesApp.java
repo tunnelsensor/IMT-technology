@@ -77,7 +77,7 @@ final class DevicesApp {
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"bridge", "LASER BRIDGES"},
-                {"camera", "CAMERAS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
+                {"camera", "CAMERAS"}, {"monitor", "CAMERA WALLS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
                 {"lever", "LEVERS"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {

@@ -186,6 +186,14 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** 19 oktober: het instelscherm van een schermmuur. */
+    public static void onCameraWallOpen(com.senne.imttech.network.CameraWallOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null) {
+            mc.setScreen(new com.senne.imttech.client.os.CameraWallScreen(payload.pos(), payload.width(), payload.height(), payload.data()));
+        }
+    }
+
     /** Hoofdstuk 38: het deurtje van een Network Switch. */
     public static void onSwitchOpen(com.senne.imttech.network.SwitchOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

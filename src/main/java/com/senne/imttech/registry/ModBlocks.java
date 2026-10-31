@@ -203,6 +203,17 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(com.senne.imttech.computer.ComputerBlock.ON) ? 2 : 0));
 
+    /** 19 oktober: de Camera Monitor; meer samen zijn één scherm met camerabeelden (zie security/wall/CameraWall). */
+    public static final DeferredBlock<com.senne.imttech.security.wall.CameraMonitorBlock> CAMERA_MONITOR = BLOCKS.registerBlock(
+            "camera_monitor", com.senne.imttech.security.wall.CameraMonitorBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(2.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.imttech.security.wall.CameraMonitorBlock.ON) ? 5 : 0));
+
     /** Hoofdstuk 40: de Monitor met toetsenbord, tegen een Computer (zie computer/MonitorBlock). Het scherm geeft wat licht. */
     public static final DeferredBlock<com.senne.imttech.computer.MonitorBlock> MONITOR = BLOCKS.registerBlock(
             "monitor", com.senne.imttech.computer.MonitorBlock::new,

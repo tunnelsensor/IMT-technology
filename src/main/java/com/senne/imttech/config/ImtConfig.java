@@ -342,6 +342,9 @@ public final class ImtConfig {
         /** Hoofdstuk 40: stroom die een Computer elke twee seconden haalt (zonder: zijn monitor blijft zwart). */
         @Tunable("Grid energy a computer uses every two seconds (without it, its monitor stays dark)")
         public static float COMPUTER_UPKEEP = 2.0f;
+        /** 19 oktober: stroom die één Camera Monitor elke twee seconden haalt (een groot scherm gebruikt dus meer). */
+        @Tunable("Grid energy one camera monitor uses every two seconds (a big screen uses this per monitor; without it, it stays dark)")
+        public static float CAMERA_MONITOR_UPKEEP = 1.0f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */

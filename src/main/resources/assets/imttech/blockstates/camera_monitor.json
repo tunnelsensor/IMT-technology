@@ -1,0 +1,238 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_up"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_down"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "left": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "right": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_up",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_down",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "left": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "right": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_up",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_down",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "left": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "right": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_up",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_down",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "left": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "right": "false"
+      },
+      "apply": {
+        "model": "imttech:block/camera_monitor_edge_right",
+        "y": 270
+      }
+    }
+  ]
+}

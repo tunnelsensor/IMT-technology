@@ -124,6 +124,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.LASER_BRIDGE.get());
                 output.accept(ModItems.DOME_GENERATOR.get());
                 output.accept(ModItems.SECURITY_CAMERA.get());
+                output.accept(ModItems.CAMERA_MONITOR.get());
                 output.accept(ModItems.SECURITY_TURRET.get());
                 output.accept(ModItems.ROCKET_TURRET.get());
                 output.accept(ModItems.RAVEN_TURRET.get());

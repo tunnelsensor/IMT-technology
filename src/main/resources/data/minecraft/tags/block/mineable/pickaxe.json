@@ -21,6 +21,7 @@
     "imttech:network_switch",
     "imttech:computer",
     "imttech:monitor",
+    "imttech:camera_monitor",
     "imttech:security_camera",
     "imttech:server_rack",
     "imttech:keycard_reader",

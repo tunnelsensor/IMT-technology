@@ -572,6 +572,50 @@ def computer_and_monitor():
         write(ROOT / "models" / "item" / (name + ".json"), {"parent": "imttech:block/" + name + "_on"})
 
 
+def camera_monitor():
+    """
+    De Camera Monitor (19 oktober): een plat scherm van 3 pixels dik, tegen de achterkant van zijn blok (naar het noorden: het
+    scherm op z = 13). Monitoren die tegen elkaar staan, zijn samen één scherm: daarom een randje per kant, en alleen aan de
+    kanten waar geen monitor tegenaan zit ("up", "down", "left" en "right" in de blockstate). Het beeld zelf tekent
+    CameraWallRenderer, net voor het scherm.
+    """
+    textures = {"particle": "imttech:block/camera_monitor_case", "case": "imttech:block/camera_monitor_case"}
+    panel = dict(textures)
+    for on in (False, True):
+        panel["screen"] = "imttech:block/camera_monitor_screen" + ("_on" if on else "")
+        element = box([0, 0, 13], [16, 16, 16], {"north": "#screen", "rest": "#case"})
+        if on:
+            element["faces"]["north"]["shade"] = False
+            element["faces"]["north"]["neoforge_data"] = {"block_light": 15, "sky_light": 15}
+        save("camera_monitor" + ("_on" if on else ""), dict(panel), [element])
+    edges = {"up": ([0, 15, 12.5], [16, 16, 13]), "down": ([0, 0, 12.5], [16, 1, 13]),
+             "left": ([15, 0, 12.5], [16, 16, 13]), "right": ([0, 0, 12.5], [1, 16, 13])}
+    for side, (frm, to) in edges.items():
+        save("camera_monitor_edge_" + side, textures, [box(frm, to, "#case", skip=("south",))])
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    parts = []
+
+    def part(model, y, **when):
+        apply = {"model": "imttech:block/" + model}
+        if y:
+            apply["y"] = y
+        parts.append({"when": when, "apply": apply})
+
+    for facing, y in turn.items():
+        part("camera_monitor", y, facing=facing, on="false")
+        part("camera_monitor_on", y, facing=facing, on="true")
+        for side in edges:
+            part("camera_monitor_edge_" + side, y, facing=facing, **{side: "false"})
+    path = ROOT / "blockstates" / "camera_monitor.json"
+    path.write_text(json.dumps({"multipart": parts}, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
+    # Het item: één monitor met zijn hele rand, aan.
+    item = dict(panel)
+    element = box([0, 0, 13], [16, 16, 16], {"north": "#screen", "rest": "#case"})
+    save("camera_monitor_item", item, [element] + [box(frm, to, "#case", skip=("south",)) for frm, to in edges.values()])
+    write(ROOT / "models" / "item" / "camera_monitor.json", {"parent": "imttech:block/camera_monitor_item"})
+
+
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
@@ -589,3 +633,4 @@ if __name__ == "__main__":
     network_controls()
     robot_dock()
     computer_and_monitor()
+    camera_monitor()

@@ -174,6 +174,8 @@ public class ImtTechClient {
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.TURRET.get(), com.senne.imttech.client.turret.TurretRenderer::new);
+        // De schermmuur (19 oktober) tekent de camerabeelden op zijn monitoren.
+        event.registerBlockEntityRenderer(ModBlockEntities.CAMERA_MONITOR.get(), com.senne.imttech.client.os.camera.CameraWallRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SUIT_WORKBENCH.get(),
                 com.senne.imttech.client.workbench.SuitHologramRenderer::new);
     }

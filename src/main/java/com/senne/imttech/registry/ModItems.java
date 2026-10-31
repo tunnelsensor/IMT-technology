@@ -118,6 +118,9 @@ public final class ModItems {
             ModBlocks.COMPUTER, new Item.Properties().rarity(Rarity.UNCOMMON));
     public static final DeferredItem<BlockItem> MONITOR = ITEMS.registerSimpleBlockItem("monitor",
             ModBlocks.MONITOR, new Item.Properties());
+    /** 19 oktober: de Camera Monitor. */
+    public static final DeferredItem<BlockItem> CAMERA_MONITOR = ITEMS.registerSimpleBlockItem("camera_monitor",
+            ModBlocks.CAMERA_MONITOR, new Item.Properties());
     // ---------------------------------------------------------------- Fase 15: het harnas
     /** De borstplaat: hier zit de reactor, dus hier komt de laser cannon vandaan. */
     // stacksTo(1): het harnas heeft geen duurzaamheid, en dan laat Minecraft het anders tot 64
