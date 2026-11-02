@@ -14,7 +14,29 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
+// De versie: de eerste twee getallen staan in gradle.properties (mod_version=2.1), het derde telt git:
+// het aantal commits sinds die regel voor het laatst veranderde. Elke commit geeft zo vanzelf een hogere
+// versie (2.1.0, 2.1.1, 2.1.2, ...), en zet je de regel op 2.2, dan begint het weer bij 2.2.0. Zonder
+// git (een zip van de broncode, bijvoorbeeld) wordt het 2.1.0.
+def git = { String... args ->
+    try {
+        def run = providers.exec {
+            workingDir = projectDir
+            commandLine(['git'] + args.toList())
+            ignoreExitValue = true
+        }
+        run.result.get().exitValue == 0 ? run.standardOutput.asText.get().trim() : null
+    } catch (Exception ignored) {
+        null // geen git op deze computer
+    }
+}
+def versionCommit = git('log', '-1', '--format=%H', '-G^mod_version=', '--', 'gradle.properties')
+// Een nieuwe versie die nog niet gecommit is, begint al bij nul (anders zou hij na de commit dalen).
+def versionChangedNow = git('diff', 'HEAD', '--name-only', '-G^mod_version=', '--', 'gradle.properties')
+def commitsSince = versionCommit && !versionChangedNow ? git('rev-list', '--count', "${versionCommit}..HEAD") : null
+def modVersion = "${mod_version}.${commitsSince ?: 0}".toString()
+
+version = modVersion
 group = mod_group_id
 
 sourceSets.main.resources {
@@ -203,7 +225,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_name               : mod_name,
             mod_authors            : mod_authors,
             mod_license            : mod_license,
-            mod_version            : mod_version,
+            mod_version            : modVersion,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

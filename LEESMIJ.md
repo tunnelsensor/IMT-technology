@@ -10,7 +10,8 @@ satelliet, schilden, illusies, redstone op afstand, en zelfs muziek. De gebouwen
 ## 1. Installeren
 
 1. Bouw de mod: `gradlew build`
-   De jar komt in `build/libs/imttech-2.0.0.jar`.
+   De jar komt in `build/libs/`, met de versie in de naam (bijvoorbeeld `imttech-2.1.0.jar`). Het laatste
+   getal telt vanzelf mee: elke commit maakt het één hoger (zie `mod_version` in `gradle.properties`).
 2. Zet die jar in de map `mods` van je Minecraft-installatie (met NeoForge 21.1.251 of nieuwer voor 1.21.1).
 3. Wil je alleen even testen zonder te installeren? Gebruik `gradlew runClient`.
 

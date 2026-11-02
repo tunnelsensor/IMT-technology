@@ -8,7 +8,7 @@ Alles wat je nodig hebt, staat in deze map:
 | `description.md` | De beschrijving van je projectpagina (Engels, in Markdown) |
 | `changelog-2.0.0.md` | Wat er in deze versie zit (bij het uploaden van het bestand) |
 | `avatar-400.png` | Het projectplaatje (CurseForge wil precies 400 x 400) |
-| `release/imttech-2.0.0.jar` | De jar om te uploaden (niet in git, zie stap 1) |
+| `release/imttech-<versie>.jar` | De jar om te uploaden (niet in git, zie stap 1) |
 | `screenshots/` | Echte screenshots uit het spel voor je galerij (niet in git) |
 
 ## 1. De jar die je uploadt
@@ -22,7 +22,8 @@ maken, doe dan eerst alles af en commit het, en dan:
 
     gradlew build
 
-De jar staat dan in `build/libs/imttech-2.0.0.jar`.
+De jar staat dan in `build/libs/`, met de versie in de naam: bijvoorbeeld `imttech-2.1.0.jar`
+(hoe die versie werkt, staat onderaan bij "Goed om te weten").
 
 ## 2. Het project aanmaken
 
@@ -41,13 +42,13 @@ De jar staat dan in `build/libs/imttech-2.0.0.jar`.
 
 ## 3. Het bestand uploaden
 
-- **File**: `release/imttech-2.0.0.jar`
-- **Display name**: `I.M.T Technology 2.0.0`
+- **File**: de jar uit `release/` (bijvoorbeeld `imttech-2.1.0.jar`)
+- **Display name**: `I.M.T Technology` met de versie van die jar (bijvoorbeeld `I.M.T Technology 2.1.0`)
 - **Release type**: **Release**. (Beta en Alpha ziet de CurseForge-app alleen bij wie dat zelf
   aanzet.)
 - **Game version**: **1.21.1**. **Mod loader**: **NeoForge**. **Java**: **21**.
   Vraagt het formulier naar de omgeving: **Client** en **Server** (de mod moet op allebei).
-- **Changelog**: plak `changelog-2.0.0.md`.
+- **Changelog**: plak de changelog van die versie (zoals `changelog-2.0.0.md` bij 2.0.0).
 - **Dependencies**: geen (NeoForge zelf hoef je niet op te geven).
 
 Daarna kijkt een moderator van CurseForge je project na. Dat kan uren tot enkele dagen duren.
@@ -69,9 +70,11 @@ dan wil CurseForge er een duidelijke vermelding bij.
 - Na de goedkeuring heb je een link naar je projectpagina. Zet die bij de volgende versie in
   `src/main/templates/META-INF/neoforge.mods.toml` als `displayURL`; dan staat hij in de
   modlijst van Minecraft.
-- Elke nieuwe upload krijgt een hoger versienummer: verander `mod_version` in
-  `gradle.properties` (bijvoorbeeld `2.0.1` voor een fix, `2.1.0` voor nieuwe dingen), bouw
-  opnieuw en schrijf een nieuwe changelog.
+- **De versie telt vanzelf mee.** In `gradle.properties` staan alleen de eerste twee getallen
+  (`mod_version=2.1`); het derde is het aantal commits sinds die regel veranderde. Elke commit
+  geeft dus een hogere versie (2.1.0, 2.1.1, 2.1.2, ...). Voor een nieuwe upload met nieuwe
+  dingen verhoog je het tweede getal (`2.2`) en commit je dat: de jar is dan `imttech-2.2.0.jar`.
+  Schrijf er een nieuwe changelog bij (`changelog-2.2.0.md`).
 - Je oude `starktech-2.0.0.jar` in je CurseForge-instances (BuildingsForMod en PVP) vervang je
   door de nieuwe jar. Je spraakmodellen en instellingen verhuizen vanzelf mee.
 - Het logo en het projectplaatje maak je opnieuw met `python tools/generate_logo.py`.

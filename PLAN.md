@@ -4129,6 +4129,21 @@ Ik bouw het in deze volgorde, één stap per commit:
       ingekort). En: een bestand openen kan op een pc alleen als **Notes** erop staat (daar lees je het); met alleen
       Files zie je de mappen (anders flitste er een Notes-venster op dat meteen weer dicht ging).
 
+### 42. De versie telt vanzelf mee (2 november)
+
+Jouw vraag: "waar kan ik zorgen dat als die build dat de versie niet 2.0.0 is want ondertussen zitten we al aan een veel
+hoger versie, kun je ook zorgen dat dat telkens aanpast als er updates gedaan worden". De versie stond sinds 19 september
+vast op 2.0.0 in `gradle.properties`, dus elke jar heette `imttech-2.0.0.jar`, wat er ook in zat.
+
+- [x] **Het derde getal telt git** — `mod_version` in `gradle.properties` heeft nu alleen de eerste twee getallen, en
+      `build.gradle` zet er het aantal commits achter sinds die regel voor het laatst veranderde. Deze commit is
+      **2.1.0**, de volgende 2.1.1, enzovoort. Die versie staat in de naam van de jar en in de modlijst van Minecraft.
+      Voor een nieuwe upload met nieuwe dingen zet je de regel op 2.2 (dan begint het weer bij 2.2.0). Een nieuwe versie
+      die nog niet gecommit is, begint al bij nul; zonder git (een zip van de broncode) wordt het 2.1.0. LEESMIJ.md en
+      `publish/HOE-PUBLICEREN.md` zeggen nu hoe het werkt.
+      **Mijn invulling** (zeg het als je iets anders wilt): **2.1** als begin, de eerste versie met alles wat er na 2.0.0
+      bij kwam. Een ander getal (bijvoorbeeld 3.0) is één regel in `gradle.properties`.
+
 ---
 
 ## Nog nooit in het spel bekeken
