@@ -1134,6 +1134,31 @@ gestolen kaart blokkeert de eigenaar in de app Keycards. Op een server kan zakke
 hetzelfde bestand onder `[bypass]`, net als het aantal draden en de tijd van een laserzender, hoe lang
 hij op slot gaat, de schok en hoeveel chips herstellen kost.
 
+### Handboeien: iemand vangen en meenemen
+Met **Handcuffs** (vier ijzer en een ketting) neem je een speler, een Raven-soldaat of een guard robot
+gevangen:
+
+- **Rechtsklik vasthouden** op hem, ongeveer twee seconden (onderaan telt het af). Is hij **weerloos**, dan
+  gaan de boeien meteen om: verblind door een flashbang, in slaap, bijna dood (minder dan een kwart van
+  zijn leven), of een robot die neerligt (Ion Blaster of EMP). Eén paar boeien per persoon.
+- **Geboeid** kan hij niets met zijn handen: geen items gebruiken, niet hakken of bouwen, geen kisten (die
+  gaan meteen weer dicht), niet slaan, niet eten, niets weggooien. Hij loopt op halve snelheid en kan
+  niet sprinten. Een robot stopt zijn programma en staat stil (in de app Robots: **Handcuffed**); een
+  soldaat doet niets meer. Je ziet een donker bandje om zijn polsen.
+- **Meenemen**: wie hem boeit, houdt hem meteen vast: een touw loopt van je hand naar zijn polsen. Loop weg
+  en hij wordt achter je aan getrokken zodra hij meer dan 3 blokken achterblijft; verder dan 10 blokken
+  ben je hem kwijt (hij blijft wel geboeid). **Rechtsklik** op hem met de boeien in je hand: loslaten, of
+  weer vastpakken.
+- **Los**: met een **Handcuff Key** (een ijzeren nugget op een ijzeren staaf) op hem; jij krijgt de boeien
+  terug. Of hij worstelt zich los: **30 seconden sluipen** (onderaan zie je het aftellen; stop je, dan loopt
+  het terug). Dan zijn de boeien kapot. Een soldaat die niemand vasthoudt, wurmt zich na die 30 seconden
+  ook los; een robot nooit.
+- Na opnieuw inloggen ben je nog geboeid; ga je dood, dan vallen de boeien op de grond. Wie in creative is,
+  kun je niet boeien.
+
+De getallen staan in `config/imttech.toml` onder `[handcuffs]` (`holdSeconds`, `struggleSeconds`, `leash`,
+`letGo`, `slow`, `weakHealth`, `reach`).
+
 ### Guard robots: bouwen, laden, aan en uit
 Een **guard robot** stel je zelf samen uit een **hoofd**, een **lijf**, **armen** en **benen**, elk in
 een van vier stijlen (in de sfeer van Star Wars, maar zonder "droid", dat is een merk):

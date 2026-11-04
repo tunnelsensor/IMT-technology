@@ -104,4 +104,17 @@ public final class ModAttachments {
                     .sync((holder, player) -> player.connection != null
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), ByteBufCodecs.VAR_LONG)
                     .build());
+
+    /**
+     * Handboeien (hoofdstuk 48): of dit wezen (een speler, een Raven-soldaat of een guard robot) geboeid is, en wie hem
+     * vasthoudt. Opgeslagen (na opnieuw inloggen ben je nog geboeid; niet na je dood), en naar iedereen gestuurd die
+     * hem ziet, voor het touw en het bandje om zijn polsen.
+     */
+    public static final Supplier<AttachmentType<com.senne.imttech.cuffs.Handcuffs.State>> CUFFS = ATTACHMENTS.register("cuffs",
+            () -> AttachmentType.builder(() -> com.senne.imttech.cuffs.Handcuffs.State.FREE)
+                    .serialize(com.senne.imttech.cuffs.Handcuffs.State.CODEC, state -> state.cuffed())
+                    .sync((holder, player) -> player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
+                            com.senne.imttech.cuffs.Handcuffs.State.STREAM_CODEC)
+                    .build());
 }

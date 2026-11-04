@@ -270,4 +270,14 @@ public final class DevWorld {
         player.teleportTo(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 180, 0);
         return player;
     }
+
+    /** Dezelfde nep-speler nog eens: bestaat hij al (een stuk showcase speelt opnieuw), dan verhuist hij alleen. */
+    public static ServerPlayer fakePlayerAt(ServerLevel level, String name, BlockPos pos) {
+        ServerPlayer existing = level.getServer().getPlayerList().getPlayerByName(name);
+        if (existing != null) {
+            existing.teleportTo(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 180, 0);
+            return existing;
+        }
+        return fakePlayer(level, name, pos);
+    }
 }

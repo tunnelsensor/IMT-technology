@@ -15,7 +15,9 @@ public enum RobotState {
      * Neergeschoten met een Ion Blaster (hoofdstuk 24): hij ligt op de grond, zijn programma staat stil, en na een
      * tijdje (ionDownSeconds) staat hij weer op. Kapot is hij niet.
      */
-    DOWN("Down");
+    DOWN("Down"),
+    /** Geboeid met handboeien (hoofdstuk 48): hij staat stil en zijn programma staat stil, tot iemand hem losmaakt. */
+    CUFFED("Handcuffed");
 
     private final String title;
 

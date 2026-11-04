@@ -67,6 +67,12 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
                 .add(Attributes.ATTACK_DAMAGE, ImtConfig.Raven.LASER_DAMAGE);
     }
 
+    /** Geboeid met handboeien (hoofdstuk 48): hij staat stil en doet niets, tot hij los is (of zich loswurmt). */
+    @Override
+    protected boolean isImmobile() {
+        return super.isImmobile() || com.senne.imttech.cuffs.Handcuffs.isCuffed(this);
+    }
+
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(1, new FloatGoal(this));

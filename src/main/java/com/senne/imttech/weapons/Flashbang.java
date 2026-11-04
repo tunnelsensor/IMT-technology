@@ -4,7 +4,9 @@ import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.network.FlashPayload;
 import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.registry.ModSounds;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import java.util.Map;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -51,11 +53,29 @@ public final class Flashbang {
             }
             int ticks = Math.max(1, Math.round(ImtConfig.Weapons.FLASH_SECONDS * 20 * strength));
             blinded.put(player, strength);
+            markBlinded(player, ticks);
             if (player.connection != null) {
                 ModNetwork.sendTo(player, new FlashPayload(strength, ticks));
             }
         }
         return blinded;
+    }
+
+    /** Tot wanneer (speltijd) elke speler verblind is: een verblinde speler boei je meteen (hoofdstuk 48). */
+    private static final Map<UUID, Long> BLINDED_UNTIL = new HashMap<>();
+
+    public static void markBlinded(ServerPlayer player, int ticks) {
+        BLINDED_UNTIL.put(player.getUUID(), player.serverLevel().getGameTime() + ticks);
+    }
+
+    /** Is hij nu nog verblind door een flashbang? */
+    public static boolean isBlinded(ServerPlayer player) {
+        Long until = BLINDED_UNTIL.get(player.getUUID());
+        return until != null && player.serverLevel().getGameTime() < until;
+    }
+
+    public static void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+        BLINDED_UNTIL.clear();
     }
 
     /** Zit er geen blok tussen de flits en deze ogen? */

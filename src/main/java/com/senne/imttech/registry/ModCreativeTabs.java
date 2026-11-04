@@ -122,6 +122,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ZONE_MARKER.get());
                 output.accept(ModItems.BLOCK_REINFORCER.get());
                 output.accept(ModItems.REINFORCEMENT_PLATE.get());
+                output.accept(ModItems.HANDCUFFS.get());
+                output.accept(ModItems.HANDCUFF_KEY.get());
                 output.accept(ModItems.KEYCARD.get());
                 output.accept(ModItems.KEYCARD_READER.get());
                 output.accept(ModItems.CODE_PANEL.get());

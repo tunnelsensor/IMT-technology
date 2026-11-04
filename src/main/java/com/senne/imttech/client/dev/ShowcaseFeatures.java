@@ -2656,6 +2656,78 @@ final class ShowcaseFeatures {
                 })
                 .pause(100));
         addBattery();
+        addHandcuffs();
+    }
+
+    /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie VisualCheck.buildCuffYard). */
+    static final BlockPos CUFF_YARD = new BlockPos(-130, -60, 240);
+
+    /** Kijk (in je spel) naar het dichtstbijzijnde wezen van deze soort, op borsthoogte. */
+    private static void lookAtNearest(Class<? extends net.minecraft.world.entity.Entity> kind) {
+        Minecraft mc = Minecraft.getInstance();
+        net.minecraft.client.player.LocalPlayer player = mc.player;
+        if (mc.level == null || player == null) {
+            return;
+        }
+        net.minecraft.world.entity.Entity best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (net.minecraft.world.entity.Entity entity : mc.level.entitiesForRendering()) {
+            double distance = entity.distanceToSqr(player);
+            if (kind.isInstance(entity) && entity != player && distance < bestDistance) {
+                bestDistance = distance;
+                best = entity;
+            }
+        }
+        if (best != null) {
+            player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
+                    best.position().add(0, best.getBbHeight() * 0.6, 0));
+        }
+    }
+
+    /** Hoofdstuk 48: de handboeien. */
+    private static void addHandcuffs() {
+        BlockPos b = CUFF_YARD;
+        Vec3 bram = Vec3.atBottomCenterOf(b.offset(2, 0, 4)).add(0, 1.2, 0);
+        Vec3 soldier = Vec3.atBottomCenterOf(b.offset(4, 0, 4)).add(0, 1.2, 0);
+        add("Handcuffs", "Hoofdstuk 48: handboeien (in survival). Voor je staat Bram, rechts van hem een Raven-soldaat die bijna "
+                + "dood is, links naast je een guard robot die neerligt; achter je een cel van tralies. Je houdt rechtsklik op "
+                + "Bram vast: onderaan telt 'Handcuffing Bram... 2.0 s' af, dan 'You handcuffed Bram', een donker bandje om "
+                + "zijn polsen en een touw van jouw hand naar hem. Dan de soldaat: één klik, want hij is weerloos. Je loopt "
+                + "achteruit de cel in en de soldaat wordt aan het touw achter je aan getrokken. Dan de Handcuff Key op de "
+                + "soldaat (je krijgt de boeien terug), terug naar Bram en ook hem los. Tot slot de robot: hij ligt neer, dus "
+                + "één klik (in de app Robots staat hij dan op Handcuffed), en de sleutel maakt hem weer vrij.",
+                GameType.SURVIVAL, at(b.offset(2, 0, 6)), 180, 5, s -> s
+                .onServer(0, player -> VisualCheck.buildCuffYard(player, CUFF_YARD))
+                .pause(40)
+                .lookAt(10, bram)
+                .key(10, () -> Minecraft.getInstance().options.keyUse, true)
+                .key(55, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(50)
+                .lookAt(0, soldier)
+                .tap(15, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // Achteruit de cel in: de soldaat komt aan het touw mee.
+                .key(0, () -> Minecraft.getInstance().options.keyDown, true)
+                .key(25, () -> Minecraft.getInstance().options.keyDown, false)
+                .pause(60)
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFF_KEY.get())))
+                .step(10, () -> lookAtNearest(RavenSoldierEntity.class))
+                .tap(15, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // Terug naar Bram.
+                .key(0, () -> Minecraft.getInstance().options.keyUp, true)
+                .key(25, () -> Minecraft.getInstance().options.keyUp, false)
+                .step(10, () -> lookAtNearest(net.minecraft.world.entity.player.Player.class))
+                .tap(10, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // De robot: hij ligt neer, dus meteen.
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFFS.get())))
+                .step(10, () -> lookAtNearest(com.senne.imttech.robot.GuardRobotEntity.class))
+                .tap(10, () -> Minecraft.getInstance().options.keyUse)
+                .pause(50)
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFF_KEY.get())))
+                .tap(15, () -> Minecraft.getInstance().options.keyUse)
+                .pause(50));
     }
 
     /** Waar de Power Battery van hoofdstuk 47 staat (zie VisualCheck.buildBatteryYard). */

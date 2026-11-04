@@ -344,6 +344,30 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         }
     }
 
+    /** Geboeid met handboeien (hoofdstuk 48)? Dan staat hij stil en draait zijn programma niet, tot de sleutel. */
+    public boolean isCuffed() {
+        return com.senne.imttech.cuffs.Handcuffs.isCuffed(this);
+    }
+
+    /** Net geboeid (hoofdstuk 48): zijn programma stopt en hij blijft staan (meetrekken kan wel). */
+    public void onCuffed() {
+        brain.stop();
+        getNavigation().stop();
+        setDeltaMovement(0, getDeltaMovement().y, 0);
+        updateState();
+    }
+
+    /** De boeien zijn af: hij mag weer (zijn toestand meteen bijwerken). */
+    public void onReleased() {
+        updateState();
+    }
+
+    /** Geboeid beweegt hij niet uit zichzelf. */
+    @Override
+    protected boolean isImmobile() {
+        return super.isImmobile() || isCuffed();
+    }
+
     /** Ligt hij neer (na de Ion Blaster)? (Ook in je spel.) */
     @Override
     public boolean isDown() {
@@ -518,13 +542,13 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         if (battery > 0 && (active || moving) && downUntil == 0) {
             battery = Math.max(0, battery - (active ? drainOn() : 0) - (moving ? drainMoving() : 0));
         }
-        if (battery <= 0) {
+        if (battery <= 0 || isCuffed()) {
             getNavigation().stop();
         }
         dockTick(level);
         // Zijn programma (hoofdstuk 23): alleen als hij aan staat, stroom heeft en niet neerligt. Anders stopt het, en
         // de volgende keer begint het weer bij when started.
-        if (active && battery > 0 && downUntil == 0 && brain.hasProgram()) {
+        if (active && battery > 0 && downUntil == 0 && !isCuffed() && brain.hasProgram()) {
             brain.tick(level);
         } else {
             brain.stop();
@@ -594,7 +618,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
     /** Hetzelfde; {@code sounds} = false bij het laden en neerzetten (dan geen opstartgeluid). */
     protected void updateState(boolean sounds) {
         RobotState state = battery <= 0 ? RobotState.NO_POWER : downUntil > 0 ? RobotState.DOWN
-                : active ? RobotState.ACTIVE : RobotState.STANDBY;
+                : isCuffed() ? RobotState.CUFFED : active ? RobotState.ACTIVE : RobotState.STANDBY;
         if (state() != state) {
             // Aan (opstarten) of niet meer aan (uitgezet of de batterij is leeg): dat hoor je.
             if (sounds && (state == RobotState.ACTIVE || state() == RobotState.ACTIVE)) {

@@ -889,6 +889,45 @@ def reinforcement_plate_item():
     save(im, "item/reinforcement_plate.png")
 
 
+def handcuffs_item():
+    """
+    Handboeien (hoofdstuk 48): twee stalen ringen naast elkaar, verbonden met twee schakels, met een lichte glans
+    bovenop en een donkere rand.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    steel = (150, 158, 170, 255)
+    steel_light = (204, 210, 220, 255)
+    steel_dark = (66, 72, 82, 255)
+    for cx in (3, 12):
+        d.ellipse([cx - 3, 4, cx + 3, 11], outline=steel_dark, fill=steel)
+        d.ellipse([cx - 1, 6, cx + 1, 9], outline=steel_dark, fill=(0, 0, 0, 0))
+        px(im, [(cx - 2, 5), (cx - 1, 5)], steel_light)
+    # De schakels ertussen.
+    d.rectangle([6, 7, 7, 8], outline=steel_dark, fill=steel)
+    d.rectangle([8, 7, 9, 8], outline=steel_dark, fill=steel)
+    px(im, [(7, 7)], steel_light)
+    save(im, "item/handcuffs.png")
+
+
+def handcuff_key_item():
+    """Het sleuteltje van de handboeien (hoofdstuk 48): een ronde kop linksboven, een steel naar rechtsonder en een baard."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    steel = (168, 176, 188, 255)
+    steel_light = (214, 220, 228, 255)
+    steel_dark = (66, 72, 82, 255)
+    d.line([6, 6, 13, 13], fill=steel_dark, width=3)
+    d.line([6, 6, 13, 13], fill=steel, width=1)
+    d.ellipse([1, 1, 7, 7], outline=steel_dark, fill=steel)
+    d.ellipse([3, 3, 5, 5], outline=steel_dark, fill=(0, 0, 0, 0))
+    px(im, [(2, 2), (3, 2)], steel_light)
+    # De baard: twee tandjes.
+    d.rectangle([10, 13, 11, 14], outline=steel_dark, fill=steel)
+    d.rectangle([13, 10, 14, 11], outline=steel_dark, fill=steel)
+    save(im, "item/handcuff_key.png")
+
+
 def battery_textures():
     """
     De Power Battery (hoofdstuk 47, zoals Mekanism): Battery Casing (een stalen plaat met een donkere rand en vier

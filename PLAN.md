@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 384 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 386 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 108 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 109 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4309,6 +4309,42 @@ poort koper, kabel, casing, chip.
       generatorscherm dat alleen zichzelf toont) en screenshots `-Ponly=battery` (`bt01` de doos, `bt02` het scherm,
       `bt03` 'The wall is not closed').
 
+### 48. Handboeien (4 november)
+
+Jouw wens: "Handboeien zodat je iemand kan vasthouden en meenemen naar een gevangenis".
+
+**Jouw antwoorden**: **rechtsklik ongeveer twee seconden vasthouden** (meteen als hij verblind, slapend of bijna dood is);
+geboeid = **niets gebruiken, niet bouwen, geen kisten, traag**; los met een **sleutel of 30 seconden worstelen** (sluipen,
+instelbaar); **vastpakken en meetrekken** zoals aan een lijn (tot 3 blokken); **ook Raven-soldaten en guard robots**.
+
+**Mijn invulling** (zeg het als je het anders wil): twee items in de tab Security: **Handcuffs** (vier ijzer en een ketting,
+stapel van 16; één paar per gevangene) en de **Handcuff Key** (nugget op een staaf). Wie geboeid is, draagt dat als
+attachment `cuffs` (geboeid + wie hem vasthoudt), bewaard (na opnieuw inloggen nog geboeid, na je dood niet: de boeien
+vallen op de grond) en naar iedereen gestuurd die hem ziet (het touw en het polsbandje tekent `CuffRenderer`). Weerloos
+= meteen: een speler die verblind is (`Flashbang.isBlinded`, nieuw), slaapt of onder `[handcuffs] weakHealth` (een
+kwart) zit; een robot die neerligt of door een EMP uit staat; een soldaat onder een kwart. Geboeid: de server weigert
+rechtsklikken, slaan, hakken, bouwen, eten en weggooien (de events, op HIGHEST), kisten gaan meteen weer dicht, lopen
+op `slow` (de helft), nooit sprinten. Wie boeit, houdt meteen vast: verder dan `leash` (3) wordt hij naar je toe
+getrokken (met een sprongetje bij een opstapje), verder dan `letGo` (10) ben je hem kwijt; rechtsklik met de boeien
+op een geboeide = loslaten of vastpakken. Losworstelen: `struggleSeconds` (30) sluipen, stoppen loopt dubbel zo snel
+terug; de boeien breken dan. Een soldaat die niemand vasthoudt, wurmt zich na dezelfde tijd los; een robot nooit
+(zijn toestand is **Handcuffed**, `RobotState.CUFFED`: programma uit, staat stil, `isImmobile`). Creative en
+spectator zijn niet te boeien; jezelf ook niet.
+
+- [x] **1. Gebouwd** — `cuffs/Handcuffs` (de toestand `State`, de attachment `CUFFS`, elke tick trekken en worstelen,
+      alle blokkades), `HandcuffsItem` (vasthouden via `onUseTick`), `HandcuffKeyItem`, `client/cuffs/CuffRenderer`,
+      `BotEntity.isCuffed/onCuffed/onReleased/isImmobile` + `RobotState.CUFFED`, `RavenSoldierEntity.isImmobile` en
+      `RavenCombatGoal`, `Flashbang.markBlinded/isBlinded`, config `[handcuffs]` (7 getallen), twee recepten, twee
+      plaatjes (`generate_textures.handcuffs_item()` en `handcuff_key_item()`), taal, LEESMIJ.md "Handboeien: iemand
+      vangen en meenemen". Tests `handcuffs_catch_block_drag_and_key` (twee seconden, één tick eerder niet, een paar
+      boeien op, geen hakken/zetten/slaan, aan de lijn getrokken, te ver = los van de lijn, weer vastpakken, de
+      sleutel geeft de boeien terug) en `handcuffs_instant_struggle_robot_and_soldier` (verblind = meteen, losworstelen
+      breekt de boeien, een robot die neerligt = meteen en blijft Handcuffed, een soldaat bijna dood = meteen en komt
+      mee, losgelaten wurmt hij zich los, de sleutel maakt de robot vrij).
+- [x] **2. Showcase en screenshots** — showcase 109 **"Handcuffs"** (Bram twee seconden, de soldaat met één klik en
+      achteruit de cel in getrokken, de sleutel, de robot die neerligt), screenshots `-Ponly=cuffs` (`hc01` het
+      aftellen, `hc02` geboeid met het touw, `hc03` de soldaat aan het touw).
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -4316,6 +4352,10 @@ poort koper, kabel, casing, chip.
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Handboeien (hoofdstuk 48)**: gezien op screenshots (`-Ponly=cuffs`, en showcase 109), maar niet zelf gespeeld met
+      een echte tweede speler. Probeer: iemand boeien (twee seconden vasthouden), kijk of het **touw** en het bandje om
+      zijn polsen er goed uitzien, of hij lekker **meekomt** als je wegloopt (ook trappen op), of hij echt niets kan, en
+      of het worstelen (30 seconden sluipen) klopt. Een robot: na de sleutel moet zijn programma weer lopen.
 - [ ] **De Power Battery (hoofdstuk 47)**: gezien op screenshots (`-Ponly=battery`, en showcase 108), maar niet zelf gespeeld.
       Probeer: een doos van casing bouwen met cellen erin en een poort in de wand, een kabel van je generatoren naar de
       poort, en dan rechtsklik op de poort. Kijk of het scherm klopt met wat je net doet (laden, verbruiken, tekort),

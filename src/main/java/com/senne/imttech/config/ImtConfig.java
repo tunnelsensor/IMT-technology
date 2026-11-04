@@ -1435,6 +1435,38 @@ public final class ImtConfig {
         public static float EXPLOSION_BREACH_RADIUS = 3.0f;
     }
 
+    // =============================================================================================== Handcuffs
+
+    @Section("Handcuffs (chapter 48): catching players, Raven soldiers and guard robots, and dragging them along")
+    public static final class Handcuffs {
+        private Handcuffs() {}
+
+        /** Zo lang houd je rechtsklik vast om iemand te boeien (meteen als hij weerloos is, zie Handcuffs.instant). */
+        @Tunable(value = "How long you hold right-click on someone to handcuff them (seconds); instant when they are flashbanged, "
+                + "asleep, nearly dead, or a robot that is down", max = 60)
+        public static float HOLD_SECONDS = 2.0f;
+        /** Zo dichtbij moet je zijn. */
+        @Tunable(value = "How close you must be to handcuff someone (blocks)", min = 1, max = 8)
+        public static float REACH = 3.0f;
+        /** Onder dit deel van zijn leven is iemand weerloos: dan gaan de boeien meteen om. */
+        @Tunable(value = "Below this part of their health someone is handcuffed instantly (0.25 = a quarter)", max = 1)
+        public static float WEAK_HEALTH = 0.25f;
+        /** Zo lang moet een geboeide speler sluipen om los te komen (een losgelaten soldaat wurmt zich even snel los). */
+        @Tunable(value = "How long a handcuffed player must hold sneak to struggle free (seconds); a Raven soldier nobody "
+                + "holds wriggles free after the same time", min = 1, max = 3600)
+        public static float STRUGGLE_SECONDS = 30.0f;
+        /** Hoe snel een geboeide nog loopt (0.5 = half zo snel). */
+        @Tunable(value = "How fast a handcuffed player still walks (0.5 = half speed)", min = 0.05, max = 1)
+        public static float SLOW = 0.5f;
+        /** Vanaf deze afstand wordt wie je vasthoudt naar je toe getrokken. */
+        @Tunable(value = "When you hold someone, they are pulled along once they are further behind you than this (blocks)",
+                min = 1, max = 16)
+        public static float LEASH = 3.0f;
+        /** Verder weg dan dit, en je bent hem kwijt (hij blijft geboeid). */
+        @Tunable(value = "Further away than this and you lose your hold on them; they stay handcuffed (blocks)", min = 2, max = 64)
+        public static float LET_GO = 10.0f;
+    }
+
     // =============================================================================================== Repair
 
     @Section("Repairing cracks: the Crusher and the Compactor, and Repair Paste (their power use is under [power])")

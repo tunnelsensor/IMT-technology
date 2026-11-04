@@ -125,6 +125,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.WeaponGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.NetworkGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.ComputerGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.HandcuffGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
@@ -225,6 +226,23 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onServerStopped);
+        // Handboeien (hoofdstuk 48): elke tick trekken en worstelen; een geboeide speler kan niets met zijn handen.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.cuffs.Handcuffs::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.cuffs.Handcuffs::onJoin);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.cuffs.Handcuffs::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.cuffs.Handcuffs::onDeath);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.cuffs.Handcuffs::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onEntityInteractSpecific);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onLeftClickBlock);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onBreak);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onPlace);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onAttack);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onUseItemStart);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onToss);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Flashbang::onServerStopped);
         // De Security OS-desktop op de beveiligingskern
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.os.SecurityOs::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.os.SecurityOs::onPlayerLoggedOut);

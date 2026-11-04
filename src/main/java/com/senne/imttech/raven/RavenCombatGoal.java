@@ -70,7 +70,7 @@ public class RavenCombatGoal extends Goal {
     @Override
     public boolean canUse() {
         LivingEntity target = soldier.getTarget();
-        return target != null && target.isAlive();
+        return target != null && target.isAlive() && !com.senne.imttech.cuffs.Handcuffs.isCuffed(soldier);
     }
 
     @Override

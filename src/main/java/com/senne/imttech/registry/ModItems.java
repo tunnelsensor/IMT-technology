@@ -248,6 +248,12 @@ public final class ModItems {
             "block_reinforcer", com.senne.imttech.breach.BlockReinforcerItem::new, new Item.Properties().stacksTo(1));
     /** Een Reinforcement Plate (hoofdstuk 44): wat de Block Reinforcer per blok verbruikt (ijzer en obsidiaan). */
     public static final DeferredItem<Item> REINFORCEMENT_PLATE = ITEMS.registerSimpleItem("reinforcement_plate");
+    /** Handboeien (hoofdstuk 48): rechtsklik twee seconden vasthouden op een speler, een Raven-soldaat of een guard robot. */
+    public static final DeferredItem<com.senne.imttech.cuffs.HandcuffsItem> HANDCUFFS = ITEMS.registerItem(
+            "handcuffs", com.senne.imttech.cuffs.HandcuffsItem::new, new Item.Properties().stacksTo(16));
+    /** De sleutel van de handboeien (hoofdstuk 48): rechtsklik op wie geboeid is, en hij is los. */
+    public static final DeferredItem<com.senne.imttech.cuffs.HandcuffKeyItem> HANDCUFF_KEY = ITEMS.registerItem(
+            "handcuff_key", com.senne.imttech.cuffs.HandcuffKeyItem::new, new Item.Properties().stacksTo(1));
     /** Een gebarsten blok (hoofdstuk 11): wat je overhoudt als je een blok met barsten weghakt. */
     public static final DeferredItem<com.senne.imttech.repair.FromBlockItem> CRACKED_BLOCK = ITEMS.registerItem(
             "cracked_block", properties -> new com.senne.imttech.repair.FromBlockItem(properties,

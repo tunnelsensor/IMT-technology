@@ -3212,6 +3212,23 @@ public final class VisualCheck {
                     ModBlocks.BATTERY_CASING.get().defaultBlockState()));
         }
 
+        // --- Handboeien (hoofdstuk 48): het aftellen tijdens het vasthouden, Bram geboeid met het touw, en de
+        // soldaat die aan het touw achter je aan komt.
+        if (want("cuffs")) {
+            BlockPos c = CUFF_YARD;
+            t.onServer(0, player -> buildCuffYard(player, CUFF_YARD));
+            t.stand(20, c.getX() + 2.5, c.getY(), c.getZ() + 6.5, 180, 8);
+            t.lookAt(10, Vec3.atBottomCenterOf(c.offset(2, 0, 4)).add(0, 1.2, 0));
+            t.key(10, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(25, "hc01_handcuffing_countdown");
+            t.shot(40, "hc02_handcuffed_with_rope");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+            t.lookAt(5, Vec3.atBottomCenterOf(c.offset(4, 0, 4)).add(0, 1.2, 0));
+            t.tap(10, () -> Minecraft.getInstance().options.keyUse);
+            t.stand(30, c.getX() + 2.5, c.getY(), c.getZ() + 11.5, 180, 10);
+            t.shot(25, "hc03_soldier_dragged_along");
+        }
+
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
         // stroomcircuit: een groep kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
         // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
@@ -3769,6 +3786,50 @@ public final class VisualCheck {
         }
         player.getInventory().setItem(9, new net.minecraft.world.item.ItemStack(ModItems.REINFORCEMENT_PLATE.get(), 16));
         ShowcaseFeatures.useReinforcer(player, REINFORCE.offset(1, 1, 0), true);
+    }
+
+    /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie "cuffs"). */
+    private static final BlockPos CUFF_YARD = new BlockPos(-400, -60, -370);
+
+    /**
+     * Het veldje van de handboeien: Bram (een nep-speler) staat twee blokken voor je, een Raven-soldaat die bijna dood is
+     * (en stil staat) rechts van hem, en links naast je een guard robot die neerligt. Achter je een cel van ijzeren
+     * tralies, open aan de noordkant. Je hebt drie paar Handcuffs in je hand en een Handcuff Key ernaast. Wat er van
+     * een vorige keer nog stond (de soldaat, de robot), gaat eerst weg.
+     */
+    static void buildCuffYard(ServerPlayer player, BlockPos base) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.encapsulatingFullBlocks(base.offset(-2, -1, -2), base.offset(8, 4, 14));
+        for (Entity old : level.getEntities((Entity) null, area, e -> e instanceof com.senne.imttech.raven.RavenSoldierEntity
+                || e instanceof com.senne.imttech.robot.GuardRobotEntity)) {
+            old.discard();
+        }
+        for (int x = 0; x <= 4; x++) {
+            for (int z = 8; z <= 12; z++) {
+                level.setBlockAndUpdate(base.offset(x, -1, z), Blocks.STONE_BRICKS.defaultBlockState());
+                boolean wall = x == 0 || x == 4 || z == 12;
+                for (int y = 0; y < 3; y++) {
+                    level.setBlockAndUpdate(base.offset(x, y, z), wall ? Blocks.IRON_BARS.defaultBlockState() : Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        ServerPlayer bram = DevWorld.fakePlayerAt(level, "Bram", base.offset(2, 0, 4));
+        bram.teleportTo(level, base.getX() + 2.5, base.getY(), base.getZ() + 4.5, 0, 0); // naar het zuiden: naar jou
+        com.senne.imttech.cuffs.Handcuffs.release(bram, null, false);
+        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(), base.offset(4, 0, 4), 0)
+                instanceof com.senne.imttech.raven.RavenSoldierEntity soldier) {
+            soldier.setHealth(1.0f);
+        }
+        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), base.offset(0, 0, 6), 0)
+                instanceof com.senne.imttech.robot.GuardRobotEntity robot) {
+            robot.setParts(com.senne.imttech.robot.RobotParts.DEFAULT);
+            robot.setOwner(player);
+            robot.setCustomName(net.minecraft.network.chat.Component.literal("Guard 9"));
+            robot.setActive(true);
+            robot.knockDown(2400);
+        }
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFFS.get(), 3));
+        player.getInventory().setItem(1, new ItemStack(ModItems.HANDCUFF_KEY.get()));
     }
 
     /** Waar de Power Battery van hoofdstuk 47 staat (zie "battery"), ver van de rest. */
