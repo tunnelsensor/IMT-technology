@@ -21,26 +21,37 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
 /**
- * De bunker zelf: het bestand biebia_bunker.nbt (gemaakt door tools/generate_bunker.py),
- * gedraaid zodat de ingang de berg uit kijkt.
+ * Eén stuk van de bunker: vroeger het hele bestand biebia_bunker.nbt, sinds hoofdstuk 51 een zaal uit
+ * data/imttech/structure/bunker/ (zie tools/generate_bunker_rooms.py), gedraaid zodat de ingang de berg uit kijkt.
  *
- * In het bestand staan de soldaten als "data-markeringen": een structuurblok met de tekst
+ * In de bestanden staan de soldaten als "data-markeringen": een structuurblok met de tekst
  * raven_soldier. Als Minecraft zo'n blok neerzet, roept het handleDataMarker aan; daar halen
  * we het blok weg en zetten we er een Raven-soldaat neer, met geweer, die nooit verdwijnt.
  */
 public class BiebiaBunkerPiece extends TemplateStructurePiece {
+    /** De klassieke bunker in één stuk (voor de showcase en wie hem zo wil). */
     public static final ResourceLocation TEMPLATE = ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "biebia_bunker");
     /** De tekst in de data-markeringen voor een soldaat (zie generate_bunker.py). */
     public static final String SOLDIER = "raven_soldier";
 
     public BiebiaBunkerPiece(StructureTemplateManager manager, BlockPos origin, Rotation rotation) {
-        super(ModStructures.BIEBIA_BUNKER_PIECE.get(), 0, manager, TEMPLATE, TEMPLATE.toString(), settings(rotation), origin);
+        this(manager, TEMPLATE, origin, rotation);
+    }
+
+    /** Een zaal van de bunker (hoofdstuk 51): {@code template} is bv. imttech:bunker/reactor. */
+    public BiebiaBunkerPiece(StructureTemplateManager manager, ResourceLocation template, BlockPos origin, Rotation rotation) {
+        super(ModStructures.BIEBIA_BUNKER_PIECE.get(), 0, manager, template, template.toString(), settings(rotation), origin);
     }
 
     /** Terug inladen uit een opgeslagen wereld. */
     public BiebiaBunkerPiece(StructureTemplateManager manager, CompoundTag tag) {
         super(ModStructures.BIEBIA_BUNKER_PIECE.get(), tag, manager,
                 id -> settings(Rotation.valueOf(tag.getString("Rot"))));
+    }
+
+    /** Het bestand van een zaal uit BunkerLayout. */
+    public static ResourceLocation template(String hall) {
+        return ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "bunker/" + hall);
     }
 
     private static StructurePlaceSettings settings(Rotation rotation) {

@@ -12,9 +12,10 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 /**
  * Structuren met een eigen stukje Java.
  *
- * De Biebia's Industries Tower en het satellietwrak hebben dat niet nodig: die staan gewoon op de grond, en
- * dat regelen de JSON-bestanden in data/imttech/worldgen. De Biebia's Industries-bunker moet IN een berg,
- * met de ingang in een rotswand; zo'n plek zoeken kan alleen met code (BiebiaBunkerStructure).
+ * Het satellietwrak heeft dat niet nodig: dat staat gewoon op de grond, en dat regelen de JSON-bestanden in
+ * data/imttech/worldgen. De Biebia's Industries-bunker moet IN een berg, met de ingang in een rotswand; zo'n plek
+ * zoeken kan alleen met code (BiebiaBunkerStructure). Sinds hoofdstuk 51 (4 november) is ook de Biebia's Industries
+ * Tower code (BiebiaTowerStructure): hij wordt uit kamers gestapeld, in een willekeurige volgorde.
  */
 public final class ModStructures {
     private ModStructures() {}
@@ -28,7 +29,15 @@ public final class ModStructures {
     public static final DeferredHolder<StructureType<?>, StructureType<BiebiaBunkerStructure>> BIEBIA_BUNKER =
             TYPES.register("biebia_bunker", () -> () -> BiebiaBunkerStructure.CODEC);
 
-    /** Het ene stuk waaruit de bunker bestaat (het .nbt-bestand), zodat de wereld het kan opslaan. */
+    /** Het soort structuur: "imttech:biebia_tower" in worldgen/structure/biebia_tower.json (hoofdstuk 51). */
+    public static final DeferredHolder<StructureType<?>, StructureType<com.senne.imttech.structures.BiebiaTowerStructure>> BIEBIA_TOWER =
+            TYPES.register("biebia_tower", () -> () -> com.senne.imttech.structures.BiebiaTowerStructure.CODEC);
+
+    /** Een stuk van de toren (een kamer, de lobby of de top), zodat de wereld het kan opslaan. */
+    public static final DeferredHolder<StructurePieceType, StructurePieceType> TOWER_PIECE =
+            PIECES.register("tower_piece", () -> (StructurePieceType.StructureTemplateType) com.senne.imttech.structures.TowerPiece::new);
+
+    /** Een stuk van de bunker (vroeger het hele .nbt-bestand, nu een zaal), zodat de wereld het kan opslaan. */
     public static final DeferredHolder<StructurePieceType, StructurePieceType> BIEBIA_BUNKER_PIECE =
             PIECES.register("biebia_bunker", () -> (StructurePieceType.StructureTemplateType) BiebiaBunkerPiece::new);
 }

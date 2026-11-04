@@ -2659,6 +2659,7 @@ final class ShowcaseFeatures {
         addHandcuffs();
         addAuth();
         addPhone();
+        addRooms();
     }
 
     /** Waar het veldje van de autorisatiecodes (hoofdstuk 49) ligt (zie VisualCheck.buildAuthYard). */
@@ -2761,6 +2762,38 @@ final class ShowcaseFeatures {
                 .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ACCESS)))
                 .pause(100)
                 .close(0));
+    }
+
+    /** Waar de torens en de bunker uit kamers staan (hoofdstuk 51, zie VisualCheck.buildRoomsYard): ver weg, ze zijn groot. */
+    static final BlockPos ROOMS_YARD = new BlockPos(-700, -60, -700);
+
+    /** Hoofdstuk 51: torens en bunkers uit kamers. */
+    private static void addRooms() {
+        BlockPos y = ROOMS_YARD;
+        add("Towers and bunkers built from rooms", "Hoofdstuk 51. In de wereld wordt elke Biebia's Industries Tower nu uit kamers "
+                + "gestapeld: de lobby onderaan en de lasergang, de kluis en het dak bovenaan liggen vast; daartussen 5 tot 8 "
+                + "verdiepingen in een willekeurige keuze en volgorde (de beveiliging met de kern zit er altijd bij), uit het lab, "
+                + "het archief, de hangar, de woonverdieping en zes nieuwe: de sportzaal, de kas, de bioscoop, het zwembad, het "
+                + "museum en de serverzaal. Hier staan twee van zulke torens naast elkaar: kijk hoe ze verschillen (en dat de "
+                + "liftkoker overal doorloopt). Daarna een bunker uit zalen, hier op vlak land: de ingang, 3 tot 6 zalen "
+                + "(de reactor altijd; verder de grote hal, de wapenkamer, het lab, de cellen, de garage, de kantine, de "
+                + "radiokamer) en de kluis. In een echte wereld zit hij in een berg, zo lang als de berg toelaat.",
+                new Vec3(y.getX() + 55.5, y.getY() + 60, y.getZ() + 150.5), 0, 0, s -> s
+                .onServer(0, player -> VisualCheck.buildRoomsYard(player, ROOMS_YARD))
+                .lookAt(40, new Vec3(y.getX() + 50.5, y.getY() + 45, y.getZ() + 20.5))
+                .pause(120)
+                .view(0, y.getX() + 20.5, y.getY() + 20, y.getZ() + 75.5, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 20.5, y.getY() + 30, y.getZ() + 20.5))
+                .pause(100)
+                .view(0, y.getX() + 80.5, y.getY() + 20, y.getZ() + 75.5, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 80.5, y.getY() + 30, y.getZ() + 20.5))
+                .pause(100)
+                .view(0, y.getX() + 17.5, y.getY() + 12, y.getZ() + 230, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 17.5, y.getY() + 3, y.getZ() + 250.5))
+                .pause(100)
+                .view(0, y.getX() + 70.5, y.getY() + 40, y.getZ() + 290.5, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 17.5, y.getY() + 4, y.getZ() + 290.5))
+                .pause(120));
     }
 
     /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie VisualCheck.buildCuffYard). */

@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 390 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 392 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 111 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 112 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4414,6 +4414,43 @@ In **Access** staan de telefoons van de kern met Block/Unblock (`phone_block`).
       `ph02` de PIN kiezen, `ph03` de kleine desktop met Status, `ph04` Requests, `ph05` Messages, `ph06` Access met de
       telefoon).
 
+### 51. Torens en bunkers uit kamers (4 november)
+
+Jouw wens: "laat de structures kamer per kamer generen zodat elk gebouw anders is".
+
+**Jouw antwoorden**: **de toren én de bunker**; de lobby, de kluis en het dak (toren) en de ingang en de kluis (bunker)
+liggen vast; de rest een willekeurige **keuze, volgorde en aantal** (toren 5-8 verdiepingen, bunker 3-6 zalen);
+ongeveer **zes nieuwe kamers** mochten erbij; het satellietwrak blijft zoals het is.
+
+**Mijn invulling** (zeg het als je het anders wil): de klassieke scripts bouwen voortaan ook losse stukken.
+`tools/generate_tower_rooms.py` laat `generate_structure.py` elke verdieping apart bouwen (de vloer op 1, de volgende
+op 12, de gevel overal op inset 6, zodat ze in elke volgorde passen) en schrijft `structure/tower/`: `lobby` (41 x 13 x
+55), elf tussenverdiepingen (41 x 12 x 41: lab, archive, hangar, living, security en de nieuwe gym, greenhouse, cinema,
+pool, museum, server_farm) en `top` (41 x 44 x 41: de lasergang, de kluis, het penthouse, het dak en de antennes). Elke
+tussenverdieping heeft dezelfde liftkoker en in de koperen zuil een kabel over de volle hoogte (stroom en netwerk); de
+beveiligingsverdieping hangt haar stroomkast eraan, de lobby (torentjes, camera) en de top (de lasers en de kluis)
+halen er hun stroom uit. Met vijf verdiepingen is de toren precies de klassieke 110 hoog. `TowerLayout.random` kiest
+(security altijd, elke kamer hooguit één keer), `BiebiaTowerStructure` (een eigen structuursoort in plaats van de
+jigsaw) stapelt de `TowerPiece`s op het oppervlak met één willekeurige draaiing. De bunker: `generate_bunker_rooms.py`
+schrijft `structure/bunker/`: `entrance` (35 x 8 x 15), acht zalen van 14 diep (hall en reactor uit de klassieke bunker,
+opgeschoven; nieuw armory, lab, cells, garage, mess, comms) en `vault` (15 diep); door elke zaal lopen twee kabels (het
+plafond van de hoofdgang voor de lasers, de vloer voor de torentjes). `BunkerLayout.random` kiest (reactor altijd),
+`BiebiaBunkerStructure` zoekt de berg zoals vroeger maar met de echte diepte, en probeert bij te weinig berg een zaal
+minder; `BiebiaBunkerPiece` kreeg een parameter voor het bestand (de soldaten-markeringen werken in elke zaal). De
+klassieke `biebia_tower.nbt` en `biebia_bunker.nbt` blijven (showcase, tests, een oude wereld). `furnish()` in
+`generate_structure.py` is per verdieping gesplitst (de klassieke toren blijft byte voor byte gelijk).
+
+- [x] **1. Gebouwd** — `tools/generate_tower_rooms.py`, `tools/generate_bunker_rooms.py`, 23 nieuwe bestanden in
+      `structure/tower/` en `structure/bunker/`, `structures/TowerLayout`, `TowerPiece`, `BiebiaTowerStructure`,
+      `BunkerLayout`, `RoomPlacer`, `raven/BiebiaBunkerStructure` en `BiebiaBunkerPiece` (zalen), `ModStructures`,
+      `worldgen/structure/biebia_tower.json` (de jigsaw-pool weg), LEESMIJ.md "Torens en bunkers uit kamers". Tests
+      `tower_rooms_follow_the_rules_and_exist` en `bunker_halls_follow_the_rules_and_exist` (200 indelingen, de regels, de
+      maten, de liftkoker, de kern, de docks, de kluis, de lasers, de doorgangen, de soldaten).
+- [x] **2. Showcase en screenshots** — showcase 112 **"Towers and bunkers built from rooms"** (twee torens naast elkaar
+      en een bunker op vlak land), screenshots `-Ponly=rooms` (`rm01` de torens, `rm02` de bunker van voren, `rm03` van opzij).
+- [ ] **3. In een echte wereld** — alleen op vlak land bekeken: `gradlew runStructureCheck` (of `/locate`) in een nieuwe
+      wereld om te zien of de toren op het oppervlak komt en de bunker een berg vindt.
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -4421,6 +4458,11 @@ In **Access** staan de telefoons van de kern met Block/Unblock (`phone_block`).
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Torens en bunkers uit kamers (hoofdstuk 51)**: gezien op screenshots (`-Ponly=rooms`, en showcase 112) op vlak land,
+      maar niet in een echte wereld. Probeer: `/locate structure imttech:biebia_tower` in een nieuwe wereld en kijk of de
+      verdiepingen netjes op elkaar staan (de terrassen, de liftkoker), of de kern het hele gebouw beveiligt en of de
+      lasers in de lasergang aan staan; `/locate structure imttech:biebia_bunker` en kijk of de zalen aansluiten en de
+      laserwanden stroom hebben. Een oude wereld houdt zijn oude toren en bunker.
 - [ ] **De I.M.T Phone (hoofdstuk 50)**: gezien op screenshots (`-Ponly=phone`, en showcase 111), maar niet zelf gespeeld.
       Probeer: een telefoon verbinden, een PIN kiezen, hem ver van je basis openen en een verzoek beantwoorden; een vriend
       laten proberen met een foute PIN (jij moet het horen); hem blokkeren in Access. Kijk of de kleine desktop met zes

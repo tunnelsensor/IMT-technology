@@ -1625,6 +1625,25 @@ dan zegt het hoe dicht je bij de kern kwam. Een **uitbraak** is geslaagd als je 
 haalt (zonder zo'n blok in je basis begint hij niet). De tijd uitzitten is bij een oefening niet genoeg. Naar creative
 gaan stopt de oefening. Daarna is alles meteen weer gewoon: niets wordt teruggezet, wat kapot ging, blijft kapot.
 
+### Torens en bunkers uit kamers
+Sinds 4 november is elke Biebia's Industries Tower in de wereld anders: de mod stapelt hem uit losse
+**kamers**. De lobby (met het plein) ligt altijd onderaan; de lasergang, de kluis, het penthouse en het dak
+altijd bovenaan. Daartussen komen **5 tot 8 verdiepingen** in een willekeurige keuze en volgorde: het lab,
+het archief, de hangar, de woonverdieping, en zes nieuwe (de sportzaal, de kas, de bioscoop, het zwembad,
+het museum en de serverzaal). De beveiligingsverdieping met de kern en de krachtcentrale zit er **altijd**
+bij (anders valt er niets te hacken). De liftkoker loopt door alle verdiepingen, en in zijn koperen zuil
+zit een kabel die alles aan de krachtcentrale hangt, in welke volgorde de verdiepingen ook liggen.
+
+De bunker net zo: de ingang vooraan en de kluis achteraan liggen vast; daartussen **3 tot 6 zalen** (de
+reactorkamer met de stroomkast altijd; verder de grote hal met de slaapzaal, de wapenkamer, het lab, de
+cellen, de garage, de kantine en de radiokamer). Hoe langer de bunker, hoe meer berg er nodig is: past hij
+niet, dan probeert de mod het met een zaal minder. Door elke zaal lopen twee kabels (in het plafond van de
+hoofdgang voor de laserwanden, in de vloer voor de torentjes), zodat de reactor alles voedt.
+
+De klassieke toren en bunker in één stuk bestaan nog (`biebia_tower.nbt`, `biebia_bunker.nbt`): die zie
+je in de showcase. De kamers maak je met `python tools/generate_tower_rooms.py` en
+`python tools/generate_bunker_rooms.py` (ze staan in `data/imttech/structure/tower/` en `bunker/`).
+
 ### De Biebia's Industries-bunker
 Ergens in de bergen heeft Raven een geheime basis uitgehakt. Je
 vindt hem in bergachtige streken (pieken, sneeuwhellingen, bosjes op de berg, winderige heuvels):

@@ -3282,6 +3282,25 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- Torens en bunkers uit kamers (hoofdstuk 51): twee willekeurige torens naast elkaar, en een bunker (hier op
+        // vlak land, zodat je de zalen ziet; in de wereld zit hij in een berg).
+        if (want("rooms")) {
+            BlockPos y = ROOMS_YARD;
+            // Eerst erheen (dan laadt dat stuk wereld), dan bouwen, en ruim de tijd nemen: het zijn twee torens van 110 hoog
+            // en een bunker van 85 lang, ver van alles.
+            t.view(0, y.getX() + 50.5, y.getY() + 30, y.getZ() + 110.5, 0, 0);
+            t.onServer(60, player -> buildRoomsYard(player, ROOMS_YARD));
+            t.view(100, y.getX() + 50.5, y.getY() + 75, y.getZ() + 165.5, 0, 0);
+            t.lookAt(100, new Vec3(y.getX() + 50.5, y.getY() + 50, y.getZ() + 20.5));
+            t.shot(200, "rm01_two_random_towers");
+            t.view(0, y.getX() + 17.5, y.getY() + 12, y.getZ() + 230, 0, 0);
+            t.lookAt(60, new Vec3(y.getX() + 17.5, y.getY() + 3, y.getZ() + 250.5));
+            t.shot(120, "rm02_random_bunker_from_the_front");
+            t.view(0, y.getX() + 70.5, y.getY() + 40, y.getZ() + 290.5, 0, 0);
+            t.lookAt(60, new Vec3(y.getX() + 17.5, y.getY() + 4, y.getZ() + 290.5));
+            t.shot(120, "rm03_random_bunker_from_the_side");
+        }
+
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
         // stroomcircuit: een groep kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
         // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
@@ -3839,6 +3858,23 @@ public final class VisualCheck {
         }
         player.getInventory().setItem(9, new net.minecraft.world.item.ItemStack(ModItems.REINFORCEMENT_PLATE.get(), 16));
         ShowcaseFeatures.useReinforcer(player, REINFORCE.offset(1, 1, 0), true);
+    }
+
+    /** Hoofdstuk 51: twee torens en een bunker uit kamers (zie "rooms"), heel ver weg (ze zijn groot). */
+    private static final BlockPos ROOMS_YARD = new BlockPos(-700, -60, -700);
+
+    /**
+     * Twee willekeurige torens uit kamers naast elkaar (op base en 60 blokken oostelijker), en 250 blokken zuidelijker een
+     * willekeurige bunker uit zalen met de ingang naar het noorden. De indelingen komen in het logboek.
+     */
+    static void buildRoomsYard(ServerPlayer player, BlockPos base) {
+        ServerLevel level = player.serverLevel();
+        java.util.Random random = new java.util.Random(51);
+        java.util.List<String> left = com.senne.imttech.structures.RoomPlacer.placeTower(level, base, net.minecraft.world.level.block.Rotation.NONE, random);
+        java.util.List<String> right = com.senne.imttech.structures.RoomPlacer.placeTower(level, base.east(60), net.minecraft.world.level.block.Rotation.NONE, random);
+        java.util.List<String> bunker = com.senne.imttech.structures.RoomPlacer.placeBunker(level, base.offset(17, 0, 250),
+                net.minecraft.world.level.block.Rotation.NONE, random);
+        com.senne.imttech.ImtTech.LOGGER.info("[rooms] toren links: {}; toren rechts: {}; bunker: {}", left, right, bunker);
     }
 
     /** Hoofdstuk 49: het veldje van de autorisatiecodes (zie "auth"). */

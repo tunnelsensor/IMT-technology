@@ -2,6 +2,7 @@ package com.senne.imttech.raven;
 
 import com.mojang.serialization.MapCodec;
 import com.senne.imttech.registry.ModStructures;
+import com.senne.imttech.structures.BunkerLayout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,18 +35,21 @@ import org.jetbrains.annotations.Nullable;
  * Lukt het in geen enkele richting (vlak land, of een te kleine heuvel), dan komt hier geen
  * bunker. Daarom proberen we het vaak (zie structure_set/biebia_bunkers.json): de meeste plekken
  * in de bergen vallen af, een paar zijn goed.
+ *
+ * Sinds hoofdstuk 51 (4 november) bestaat de bunker uit zalen (zie {@link BunkerLayout}): de ingang, 3 tot 6 zalen in
+ * een willekeurige volgorde, en de kluis, achter elkaar de berg in. Hoe langer de bunker, hoe meer berg er nodig is;
+ * past hij niet, dan proberen we het met een zaal minder, tot het kleinste aantal.
  */
 public class BiebiaBunkerStructure extends Structure {
     public static final MapCodec<BiebiaBunkerStructure> CODEC = simpleCodec(BiebiaBunkerStructure::new);
 
-    /** Afmetingen van het bestand (zie tools/generate_bunker.py). */
+    /** De breedte van elk stuk (zie tools/generate_bunker_rooms.py). */
     private static final int WIDTH = 35;
-    private static final int DEPTH = 44;
     /** Waar in het bestand de ingang zit: het midden van de voorkant, op de vloer. */
     private static final BlockPos ENTRANCE = new BlockPos(17, 0, 0);
     /** Zoveel blokken moet de berg boven de vloer uitkomen, verder dan de ingang (de bunker is 8 hoog). */
     private static final int COVER = 9;
-    /** Zoveel meetpunten (van de 25) mogen iets lager liggen: een echte berg is niet overal even hoog. */
+    /** Zoveel meetpunten mogen iets lager liggen: een echte berg is niet overal even hoog. */
     private static final int COVER_MISSES = 2;
     /** De afstand tussen de negen plekken die we per stuk wereld proberen. */
     private static final int SPOT_STEP = 5;
@@ -86,11 +90,23 @@ public class BiebiaBunkerStructure extends Structure {
             }
         }
         Collections.shuffle(spots, random);
-        for (int[] spot : spots) {
-            Placement placement = tryAt(context, spot[0], spot[1], random);
-            if (placement != null) {
-                return Optional.of(new GenerationStub(placement.entrance().above(), builder -> builder.addPiece(
-                        new BiebiaBunkerPiece(context.structureTemplateManager(), placement.origin(), placement.rotation()))));
+        // Eerst de bunker die het lot geeft; past die nergens, dan een zaal minder, tot de kleinste.
+        int halls = BunkerLayout.MIN_HALLS + random.nextInt(BunkerLayout.MAX_HALLS - BunkerLayout.MIN_HALLS + 1);
+        for (; halls >= BunkerLayout.MIN_HALLS; halls--) {
+            List<String> layout = BunkerLayout.random(random, halls);
+            int depth = BunkerLayout.depth(layout);
+            for (int[] spot : spots) {
+                Placement placement = tryAt(context, spot[0], spot[1], random, depth);
+                if (placement != null) {
+                    return Optional.of(new GenerationStub(placement.entrance().above(), builder -> {
+                        for (int i = 0; i < layout.size(); i++) {
+                            BlockPos shift = StructureTemplate.transform(new BlockPos(0, 0, BunkerLayout.offsetOf(layout, i)),
+                                    Mirror.NONE, placement.rotation(), BlockPos.ZERO);
+                            builder.addPiece(new BiebiaBunkerPiece(context.structureTemplateManager(),
+                                    BiebiaBunkerPiece.template(layout.get(i)), placement.origin().offset(shift), placement.rotation()));
+                        }
+                    }));
+                }
             }
         }
         return Optional.empty();
@@ -109,8 +125,8 @@ public class BiebiaBunkerStructure extends Structure {
         return false;
     }
 
-    /** Past de bunker met zijn ingang op deze plek, in een van de vier richtingen? */
-    private static @Nullable Placement tryAt(GenerationContext context, int x, int z, java.util.Random random) {
+    /** Past een bunker van {@code depth} diep met zijn ingang op deze plek, in een van de vier richtingen? */
+    private static @Nullable Placement tryAt(GenerationContext context, int x, int z, java.util.Random random, int depth) {
         // Eerst wat goedkoop is: staan we in de bergen, en niet in het water? Dat kost één
         // hoogte-berekening; de rest (tientallen hoogtes) doen we alleen als dit klopt. Zonder
         // deze stap duurt /locate (en een verkenningskaart) veel te lang.
@@ -126,7 +142,7 @@ public class BiebiaBunkerStructure extends Structure {
         List<Direction> directions = new ArrayList<>(Direction.Plane.HORIZONTAL.stream().toList());
         Collections.shuffle(directions, random);
         for (Direction out : directions) {
-            Placement placement = tryPlace(context, x, z, floor, out);
+            Placement placement = tryPlace(context, x, z, floor, out, depth);
             if (placement != null) {
                 return placement;
             }
@@ -140,14 +156,14 @@ public class BiebiaBunkerStructure extends Structure {
      * Past de bunker hier, met de ingang naar {@code out}? Zo ja: waar het bestand begint en hoe
      * het gedraaid is.
      */
-    private static @Nullable Placement tryPlace(GenerationContext context, int x, int z, int floor, Direction out) {
+    private static @Nullable Placement tryPlace(GenerationContext context, int x, int z, int floor, Direction out, int depth) {
         Rotation rotation = rotationFacing(out);
         BlockPos entranceWorld = new BlockPos(x, floor, z);
         BlockPos origin = originFor(entranceWorld, rotation);
 
         // Snel afwijzen: midden in de bunker moet de berg hoog genoeg zijn. Meestal is hij dat
         // niet (verkeerde kant op), en dan hoeven we de rest niet uit te rekenen.
-        if (!covered(context, origin, rotation, new BlockPos(17, 0, 24), floor)) {
+        if (!covered(context, origin, rotation, new BlockPos(ENTRANCE.getX(), 0, depth / 2), floor)) {
             return null;
         }
 
@@ -169,9 +185,9 @@ public class BiebiaBunkerStructure extends Structure {
         }
         // Achter de ingang: overal berg boven het plafond, over de hele breedte en lengte.
         int misses = 0;
-        for (int depth = 12; depth < DEPTH; depth += 6) {
+        for (int back = 12; back < depth; back += 6) {
             for (int side = 2; side < WIDTH; side += 8) {
-                if (!covered(context, origin, rotation, new BlockPos(side, 0, depth), floor) && ++misses > COVER_MISSES) {
+                if (!covered(context, origin, rotation, new BlockPos(side, 0, back), floor) && ++misses > COVER_MISSES) {
                     return null;
                 }
             }
