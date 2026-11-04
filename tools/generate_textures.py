@@ -837,6 +837,58 @@ def repair_paste_item():
     save(im, "item/repair_paste.png")
 
 
+def block_reinforcer_item():
+    """
+    De Block Reinforcer (hoofdstuk 44): een handgereedschap als een klinknagelpistool: een donkerstalen
+    kop met een cyaan lampje, een korte loop naar linksboven met een plaatje aan het eind, en een
+    handgreep naar rechtsonder.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    steel = (112, 120, 132, 255)
+    steel_light = (168, 176, 188, 255)
+    steel_dark = (58, 64, 74, 255)
+    # De handgreep (rechtsonder, schuin) met een donkere rand.
+    d.line([9, 9, 14, 14], fill=steel_dark, width=3)
+    d.line([9, 8, 14, 13], fill=steel, width=1)
+    # De kop: een blok in het midden.
+    d.rectangle([5, 5, 10, 9], fill=steel, outline=steel_dark)
+    d.line([6, 6, 9, 6], fill=steel_light)
+    px(im, [(9, 8)], CYAN)
+    px(im, [(8, 8)], CYAN_DIM)
+    # De loop naar linksboven, met het plaatje op het eind.
+    d.line([5, 5, 2, 2], fill=steel_dark, width=2)
+    d.line([4, 4, 2, 2], fill=steel, width=1)
+    d.rectangle([0, 0, 2, 2], fill=steel_light, outline=steel_dark)
+    px(im, [(1, 1)], (210, 216, 224, 255))
+    save(im, "item/block_reinforcer.png")
+
+
+def reinforcement_plate_item():
+    """
+    Een Reinforcement Plate (hoofdstuk 44): een vierkante stalen plaat met een donkere rand, vier
+    klinknagels in de hoeken en een paarsige obsidiaan-glans in het midden.
+    """
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    steel = (128, 136, 148, 255)
+    steel_light = (176, 184, 196, 255)
+    steel_dark = (62, 68, 78, 255)
+    obsidian = (44, 28, 58, 255)
+    obsidian_light = (92, 62, 120, 255)
+    d.rectangle([2, 2, 13, 13], fill=steel, outline=steel_dark)
+    d.line([3, 3, 12, 3], fill=steel_light)
+    d.line([3, 3, 3, 12], fill=steel_light)
+    # Het obsidiaan in het midden.
+    d.rectangle([6, 6, 9, 9], fill=obsidian, outline=steel_dark)
+    px(im, [(7, 7)], obsidian_light)
+    # Vier klinknagels.
+    for x, y in [(4, 4), (11, 4), (4, 11), (11, 11)]:
+        px(im, [(x, y)], steel_dark)
+        px(im, [(x, y - 1)], steel_light)
+    save(im, "item/reinforcement_plate.png")
+
+
 def crusher_textures():
     """
     De Crusher (hoofdstuk 11): een metalen kast met twee maalwielen achter een venster in de

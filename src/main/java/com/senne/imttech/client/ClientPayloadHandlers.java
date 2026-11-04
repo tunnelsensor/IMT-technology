@@ -327,6 +327,11 @@ public final class ClientPayloadHandlers {
         com.senne.imttech.client.zone.ZoneClientState.set(payload.zones());
     }
 
+    /** Hoofdstuk 44: de verstevigde blokken in je buurt (je houdt de Block Reinforcer vast). */
+    public static void onReinforcedBlocks(com.senne.imttech.network.ReinforcedBlocksPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.repair.ReinforcedRenderer.set(payload.blocks());
+    }
+
     public static void onMessage(ImtMessagePayload payload, IPayloadContext context) {
         // De welkomstzin bij het opzetten: die zegt de opstart-animatie zelf, op het moment dat
         // je identiteit bevestigd is. Is die animatie al voorbij, dan gewoon meteen.

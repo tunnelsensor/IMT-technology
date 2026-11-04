@@ -350,6 +350,9 @@ public final class ModNetwork {
         // Hoofdstuk 10: de zones die jij mag zien (jouw eigen zones en die van je vrienden)
         registrar.playToClient(ZoneSyncPayload.TYPE, ZoneSyncPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onZoneSync(payload, context));
+        // Hoofdstuk 44: de verstevigde blokken in je buurt (met de Block Reinforcer in je hand)
+        registrar.playToClient(ReinforcedBlocksPayload.TYPE, ReinforcedBlocksPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onReinforcedBlocks(payload, context));
         // Een EMP-granaat ging af (hoofdstuk 35): de bol van licht.
         registrar.playToClient(EmpBlastPayload.TYPE, EmpBlastPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onEmpBlast(payload, context));

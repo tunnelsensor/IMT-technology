@@ -3171,6 +3171,22 @@ public final class VisualCheck {
             t.shot(20, "r03_cracked_in_hand");
         }
 
+        // --- De Block Reinforcer (hoofdstuk 44): het linker kwartsmuurtje is verstevigd (een randje door je
+        // bril, met het gereedschap in je hand), dan dezelfde klap op allebei: links barsten, rechts een gat.
+        if (want("reinforce")) {
+            BlockPos r = REINFORCE;
+            t.onServer(0, DevWorld::wearGlasses);
+            t.onServer(0, VisualCheck::buildReinforceCorner);
+            t.stand(10, r.getX() + 4.5, r.getY(), r.getZ() + 6.5, 180, 8);
+            t.lookAt(5, new Vec3(r.getX() + 4.5, r.getY() + 1.2, r.getZ() + 0.5));
+            t.shot(50, "rf01_reinforced_outline");
+            t.onServer(0, player -> {
+                ShowcaseFeatures.dent(player.serverLevel(), r.offset(1, 1, 0));
+                ShowcaseFeatures.dent(player.serverLevel(), r.offset(7, 1, 0));
+            });
+            t.shot(40, "rf02_same_blast_left_cracks_right_breaks");
+        }
+
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
         // stroomcircuit: een groep kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
         // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
@@ -3332,6 +3348,28 @@ public final class VisualCheck {
             });
             t.shot(15, "z03c_zone_app");
             t.close(5);
+            // De Autoscan (hoofdstuk 45): een dichte bunker naast de basis; sluipen + rechtsklik met een lege Zone
+            // Marker erin, en de zone ligt om de kamer plus drie blokken muur (de rand zie je met de marker in je hand).
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos b = new BlockPos(190, -61, 60);
+                for (BlockPos pos : BlockPos.betweenClosed(b, b.offset(8, 6, 8))) {
+                    boolean shell = pos.getX() == b.getX() || pos.getX() == b.getX() + 8 || pos.getY() == b.getY()
+                            || pos.getY() == b.getY() + 6 || pos.getZ() == b.getZ() || pos.getZ() == b.getZ() + 8;
+                    level.setBlockAndUpdate(pos, shell ? Blocks.STONE_BRICKS.defaultBlockState() : Blocks.AIR.defaultBlockState());
+                }
+                level.setBlockAndUpdate(b.offset(4, 5, 4), Blocks.GLOWSTONE.defaultBlockState());
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                        new net.minecraft.world.item.ItemStack(ModItems.ZONE_MARKER.get()));
+                player.teleportTo(level, b.getX() + 4.5, b.getY() + 1, b.getZ() + 2.5, 0, 10);
+                com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(level, player, b.offset(4, 1, 2), null);
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, 194.5, -60, 62.5, 0, 12);
+            t.shot(40, "zs01_autoscan_bunker_inside");
+            t.stand(10, 203.5, -58, 74.5, 135, 18);
+            t.shot(30, "zs02_autoscan_bunker_outside");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.onServer(0, player -> player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
                     net.minecraft.world.item.ItemStack.EMPTY));
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
@@ -3686,6 +3724,26 @@ public final class VisualCheck {
                 .setValue(net.minecraft.world.level.block.LeverBlock.POWERED, false));
         player.getInventory().setItem(0, new ItemStack(ModItems.RELAY_EMITTER.get(), 4));
         player.getInventory().setItem(1, new ItemStack(ModItems.RELAY.get(), 8));
+    }
+
+    /** Waar de twee kwartsmuurtjes van hoofdstuk 44 staan (zie "reinforce"): links verstevigd, rechts gewoon. */
+    private static final BlockPos REINFORCE = new BlockPos(140, -60, 148);
+
+    /**
+     * Twee muurtjes van 3 x 3 kwarts, vijf blokken uit elkaar; het linker helemaal verstevigd met de Block Reinforcer
+     * (via sluipen + klik, zoals jij het doet), de Block Reinforcer in je hand en platen in je rugzak.
+     */
+    private static void buildReinforceCorner(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (BlockPos base : new BlockPos[] {REINFORCE, REINFORCE.east(6)}) {
+            for (int x = 0; x < 3; x++) {
+                for (int y = 0; y < 3; y++) {
+                    level.setBlockAndUpdate(base.offset(x, y, 0), Blocks.QUARTZ_BLOCK.defaultBlockState());
+                }
+            }
+        }
+        player.getInventory().setItem(9, new net.minecraft.world.item.ItemStack(ModItems.REINFORCEMENT_PLATE.get(), 16));
+        ShowcaseFeatures.useReinforcer(player, REINFORCE.offset(1, 1, 0), true);
     }
 
     /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */

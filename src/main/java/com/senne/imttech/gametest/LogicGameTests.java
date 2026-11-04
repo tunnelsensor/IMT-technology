@@ -110,7 +110,7 @@ public final class LogicGameTests {
         expectError("when codepanel(\"P\"):\n    if code == 4321:\n        accept()", 2, "put the code between quotes");
         expectError("when every(10):\n    accept()", 2, "only works inside when keycard");
         expectError("when every(0.5):\n    on(\"Lamp\")", 1, "every takes 1 to 3600 seconds");
-        expectError("when keycard(\"Lab\"):\n    on(Lamp)", 2, "Put names between quotes");
+        expectError("when keycard(\"Lab\"):\n    on(Lamp)", 2, "If you meant a device, put it between quotes");
         expectError("when keycard(\"Lab\"):\n    accept()\n      deny()", 3, "indented more");
         expectError("when keycard(\"Lab\"):\n    if card.number = 3:\n        accept()", 2, "Use == to compare");
         expectError("when keycard(\"Lab\"):\n    if card.number >= \"3\":\n        accept()", 2, "cannot compare a number with text");
@@ -158,6 +158,235 @@ public final class LogicGameTests {
         expectSuggestions("when lever(\"Night mode\"):\n    if |", List.of("lever.on", "player.name"), List.of("card.valid", "code"));
         expectSuggestions("when button(\"Doorbell\"):\n    if |", List.of("player.name"), List.of("lever.on"));
         helper.succeed();
+    }
+
+    // ================================================================ Hoofdstuk 43: typen, parameters en global scripts
+
+    /** Een global script met een gedeelde naam en twee defs (een met parameters), zoals de printer het schrijft. */
+    private static final String GLOBAL_SCRIPT = """
+            global
+
+            lockdown: bool = false
+            total: int = 0
+
+            def activate_alarm():
+                alarm("Alarm!")
+
+            def open_door(door: string, secs: float):
+                log("Opening " + door)
+                pulse(door, secs)
+            """;
+
+    /**
+     * Hoofdstuk 43: namen met een soort-woord ({@code count: int = 0}), defs met parameters, aanroepen met waarden, een
+     * apparaat als code, en global scripts. Lezen en terugschrijven geeft dezelfde code (ook via de blokjes); de
+     * bibliotheek van een global script maakt zijn defs en gedeelde namen overal bruikbaar; en fouten krijgen uitleg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_types_params_global(GameTestHelper helper) {
+        // Een global script: lezen, terugschrijven, en via de blokjes.
+        Script global = ScriptParser.parse(GLOBAL_SCRIPT);
+        if (!global.global() || global.functions().size() != 2 || global.globals().size() != 2) {
+            throw new GameTestAssertException("Het global script werd niet goed gelezen: " + global);
+        }
+        if (!ScriptPrinter.print(global).equals(GLOBAL_SCRIPT)) {
+            throw new GameTestAssertException("Terugschrijven van het global script gaf andere code:\n" + ScriptPrinter.print(global));
+        }
+        LogicGraph graph = GraphConverter.toGraph(global, null);
+        if (!graph.global() || !ScriptPrinter.print(GraphConverter.toScript(graph)).equals(GLOBAL_SCRIPT)) {
+            throw new GameTestAssertException("Via de blokjes kwam het global script anders terug:\n"
+                    + ScriptPrinter.print(GraphConverter.toScript(graph)));
+        }
+        LogicGraph loaded = LogicGraph.load(graph.save());
+        if (!loaded.global() || !ScriptPrinter.print(GraphConverter.toScript(loaded)).equals(GLOBAL_SCRIPT)) {
+            throw new GameTestAssertException("Na opslaan en laden kwam het global script anders terug");
+        }
+        var params = global.functions().get(1).params();
+        if (params.size() != 2 || !params.get(0).name().equals("door") || params.get(0).varType() != com.senne.imttech.logic.program.VarType.STRING
+                || params.get(1).varType() != com.senne.imttech.logic.program.VarType.FLOAT) {
+            throw new GameTestAssertException("De parameters van open_door kloppen niet: " + params);
+        }
+        // Een gewoon diagram dat het global script gebruikt: alleen met de bibliotheek.
+        var library = new com.senne.imttech.logic.program.Library(List.of(
+                new com.senne.imttech.logic.program.Library.Source("Lib", global)));
+        String uses = """
+                when keycard("Lab door"):
+                    if lockdown:
+                        deny()
+                        activate_alarm()
+                    else:
+                        accept()
+                        open_door("Vault door", 3)
+
+                when lever("Night"):
+                    lockdown = lever.on
+                """;
+        Script script = ScriptParser.parse(uses, ProgramKind.SERVER, library);
+        if (!ScriptPrinter.print(script).equals(uses)) {
+            throw new GameTestAssertException("Terugschrijven met parameters gaf andere code:\n" + ScriptPrinter.print(script));
+        }
+        expectError(uses, 4, "I don't know \"activate_alarm\""); // zonder de bibliotheek bestaat de def niet
+        // Een eigen def met parameters, en het apparaat als code.
+        String own = """
+                count: int = 0
+
+                def open(door: string):
+                    pulse(door, 2)
+                    count = count + 1
+
+                when every(10):
+                    open("Lamp")
+                    say($"Opened {count} times")
+                """;
+        Script ownScript = ScriptParser.parse(own);
+        if (!ScriptPrinter.print(ownScript).equals(own)) {
+            throw new GameTestAssertException("Terugschrijven van een eigen def met parameter gaf andere code:\n" + ScriptPrinter.print(ownScript));
+        }
+        if (!ScriptPrinter.print(GraphConverter.toScript(GraphConverter.toGraph(ownScript, null))).equals(own)) {
+            throw new GameTestAssertException("Via de blokjes kwam de def met parameter anders terug");
+        }
+        // Fouten met uitleg.
+        expectError("count: int = 2.5\n\nwhen every(10):\n    pass", 1, "whole number");
+        expectError("lockdown: bool = 0\n\nwhen every(10):\n    pass", 1, "cannot give it");
+        expectError("def open(door: strng):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "I don't know the type");
+        expectError("def open(door: string):\n    pass\n\nwhen every(10):\n    open()", 5, "needs 1 value");
+        expectError("def open(door: string):\n    pass\n\nwhen every(10):\n    open(3)", 5, "must be text");
+        expectError("when every(10):\n    global", 2, "first line");
+        expectError("global\n\nwhen every(10):\n    pass", 3, "global script holds only defs");
+        expectError("when every(10):\n    on(Lamp)", 2, "If you meant a device");
+        expectError("when every(10):\n    count: int = 1\n    count = 2.5", 3, "whole number");
+        expectError("when every(10):\n    name: string = \"a\"\n    name = 3", 3, "cannot give it");
+        // Een gedeelde naam nog eens maken, of een def uit het global script nog eens maken, mag niet.
+        expectErrorWith("lockdown = true\n\nwhen every(10):\n    pass", library, 1, "shared name from your global script Lib");
+        expectErrorWith("def activate_alarm():\n    pass\n\nwhen every(10):\n    activate_alarm()", library, 1, "in your global script Lib");
+        // accept() in een def uit het global script werkt alleen onder een lezer of paneel.
+        var withAccept = new com.senne.imttech.logic.program.Library(List.of(new com.senne.imttech.logic.program.Library.Source("Lib",
+                ScriptParser.parse("global\n\ndef ok():\n    accept()\n"))));
+        expectErrorWith("when every(10):\n    ok()", withAccept, 2, "ok() uses accept()");
+        // Ctrl+Spatie kent de soort-woorden, de gedeelde namen en de defs met hun parameters.
+        List<String> types = complete("when every(10):\n    count: |", ProgramKind.SERVER);
+        if (!types.contains("int") || !types.contains("bool")) {
+            throw new GameTestAssertException("Na count: verwachtte ik de soort-woorden, maar kreeg: " + types);
+        }
+        List<String> calls = complete("def open(door: string):\n    pass\n\nwhen every(10):\n    |", ProgramKind.SERVER);
+        if (!calls.contains("open(door: string)")) {
+            throw new GameTestAssertException("Ctrl+Spatie toonde de def niet met zijn parameter: " + calls);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 43 in een wereld: een global script met de gedeelde naam {@code lockdown}; een hendel zet hem om, en een
+     * timer in een ander diagram ziet dezelfde waarde (de lamp volgt). De waarde blijft bewaard na opslaan en laden.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 260, batch = "logic_runner_shared")
+    public static void logic_shared_names_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos lamp = relay(helper, setup, new BlockPos(9, 3, 4), "Lamp");
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
+            SecurityOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Lib", "global\n\nlockdown: bool = false\n");
+            saveWith(setup, "Doors", """
+                    when lever("Night"):
+                        lockdown = lever.on
+
+                    when every(1):
+                        if lockdown:
+                            on("Lamp")
+                        else:
+                            off("Lamp")
+                    """);
+            if (setup.core().logic().program("Doors") == null) {
+                throw new GameTestAssertException("Het diagram werd niet bewaard: " + lastLog(setup.core()));
+            }
+            if (!Boolean.FALSE.equals(setup.core().logic().sharedValues().get("lockdown"))) {
+                throw new GameTestAssertException("De gedeelde naam begon niet op false: " + setup.core().logic().sharedValues());
+            }
+            // De hendel gaat om (alsof iemand hem omzette).
+            LogicRunner.fire(level, setup.core(), Op.LEVER, "Night", new LogicRunner.Context(Op.LEVER, "Night", null,
+                    setup.owner().getUUID(), "Senne", true, true, null, false, "", null, List.of(), true));
+        });
+        helper.runAfterDelay(60, () -> {
+            check(Boolean.TRUE.equals(setup.core().logic().sharedValues().get("lockdown")),
+                    "De hendel zette lockdown niet op true: " + setup.core().logic().sharedValues() + " / " + lastLog(setup.core()));
+            check(level.getBlockState(lamp).getValue(RelayBlock.POWERED), "De timer in het andere diagram zag lockdown niet (lamp uit)");
+            // Opslaan en laden houdt de waarde.
+            var reloaded = com.senne.imttech.logic.LogicStore.load(setup.core().logic().save());
+            check(Boolean.TRUE.equals(reloaded.sharedValues().get("lockdown")), "Na opslaan en laden was lockdown weg: " + reloaded.sharedValues());
+            LogicRunner.fire(level, setup.core(), Op.LEVER, "Night", new LogicRunner.Context(Op.LEVER, "Night", null,
+                    setup.owner().getUUID(), "Senne", true, true, null, false, "", null, List.of(), false));
+        });
+        helper.runAfterDelay(120, () -> {
+            check(Boolean.FALSE.equals(setup.core().logic().sharedValues().get("lockdown")), "De hendel zette lockdown niet terug op false");
+            check(!level.getBlockState(lamp).getValue(RelayBlock.POWERED), "De lamp ging niet uit toen lockdown false werd");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 43 in een wereld: een def met parameters uit een global script ({@code open_door("Lamp", 2)}) pulst het
+     * apparaat dat je meegeeft; een gedeelde {@code total: int} rondt af naar een heel getal (2,5 wordt 2, dan 4).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_shared")
+    public static void logic_def_params_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        BlockPos lamp = relay(helper, setup, new BlockPos(9, 3, 4), "Lamp");
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
+            SecurityOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Lib", GLOBAL_SCRIPT);
+            saveWith(setup, "Timer", """
+                    when every(1):
+                        total = total + 2.5
+                        if total == 2:
+                            open_door("Lamp", 2)
+                    """);
+            if (setup.core().logic().program("Timer") == null) {
+                throw new GameTestAssertException("Het diagram werd niet bewaard: " + lastLog(setup.core()));
+            }
+        });
+        // De timer gaat na 1 s af (plus 0,5 s reactietijd): dan is total 2 (2,5 afgerond) en pulst open_door de lamp 2 s.
+        helper.runAfterDelay(45, () -> {
+            check(Double.valueOf(2.0).equals(setup.core().logic().sharedValues().get("total")),
+                    "total zou 2 moeten zijn (2,5 afgerond naar een heel getal), niet " + setup.core().logic().sharedValues().get("total")
+                            + ". Logboek: " + lastLog(setup.core()));
+            check(level.getBlockState(lamp).getValue(RelayBlock.POWERED), "open_door(\"Lamp\", 2) zette de lamp niet aan. Logboek: " + lastLog(setup.core()));
+        });
+        // De tweede keer (na 2 s): 4,5 wordt 4.
+        helper.runAfterDelay(58, () -> check(Double.valueOf(4.0).equals(setup.core().logic().sharedValues().get("total")),
+                "total zou na de tweede keer 4 moeten zijn, niet " + setup.core().logic().sharedValues().get("total")));
+        helper.runAfterDelay(95, () -> {
+            check(!level.getBlockState(lamp).getValue(RelayBlock.POWERED), "De puls van 2 s hield niet op");
+            helper.succeed();
+        });
+    }
+
+    /** Zoals {@link #expectError}, maar met de defs en gedeelde namen van global scripts erbij. */
+    private static void expectErrorWith(String code, com.senne.imttech.logic.program.Library library, int line, String part) {
+        try {
+            ScriptParser.parse(code, ProgramKind.SERVER, library);
+        } catch (LogicException e) {
+            if (e.line() != line || !e.getMessage().contains(part)) {
+                throw new GameTestAssertException("Voor:\n" + code + "\nverwachtte ik regel " + line + " met \"" + part
+                        + "\", maar kreeg: " + e.describe());
+            }
+            return;
+        }
+        throw new GameTestAssertException("Deze code zou een fout moeten geven:\n" + code);
+    }
+
+    /** Zoals {@link #save}, maar de code mag de defs en gedeelde namen van de global scripts op die kern gebruiken. */
+    private static void saveWith(Setup setup, String name, String code) {
+        var library = com.senne.imttech.logic.program.Library.of(setup.core().logic().programs(), name);
+        CompoundTag args = new CompoundTag();
+        args.putString("old", "");
+        args.putString("name", name);
+        args.put("graph", GraphConverter.toGraph(ScriptParser.parse(code, ProgramKind.SERVER, library), null).save());
+        args.putString("source", code);
+        SecurityOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "logic_save", args));
     }
 
     private static void expectError(String code, int line, String part) {
@@ -306,7 +535,11 @@ public final class LogicGameTests {
         check(graph.nodes().stream().anyMatch(node -> node.op == Op.SAY && node.text.equals("plain text") && node.expr.isEmpty()),
                 "say(\"plain text\") werd een berekening");
         expectError("when every(5):\n    wait(\"x\")", 2, "wait needs a number of seconds");
-        expectError("when every(5):\n    on(\"A\" + \"B\")", 2, "needs the name of a device between quotes");
+        // Sinds hoofdstuk 43 mag een apparaat ook code zijn: on("A" + "B") is een berekende naam (en komt zo terug).
+        String codeDevice = "when every(5):\n    on(\"A\" + \"B\")\n";
+        if (!ScriptPrinter.print(ScriptParser.parse(codeDevice)).equals(codeDevice)) {
+            throw new GameTestAssertException("Een apparaat als code kwam anders terug: " + ScriptPrinter.print(ScriptParser.parse(codeDevice)));
+        }
         expectError("when every(x):\n    pass", 1, "every needs a plain number");
         expectError("when every(5):\n    say(missing)", 2, "If you meant text, put it between quotes");
         expectError("when every(5):\n    pulse(\"Lamp\", \"x\")", 2, "pulse needs a number of seconds");
@@ -413,7 +646,11 @@ public final class LogicGameTests {
         expectError("when every(5):\n    say($\"a } b\")", 2, "needs a { before it");
         expectError("when every(5):\n    say($\"Count {missing}\")", 2, "missing has no value yet");
         expectError("when every(5):\n    say($\"Level {card.number}\")", 2, "card.number only works inside");
-        expectError("when every(5):\n    on($\"Lamp {1}\")", 2, "needs the name of a device between quotes");
+        // Sinds hoofdstuk 43 mag een apparaat ook tekst met namen erin zijn (een berekende naam).
+        String templateDevice = "when every(5):\n    on($\"Lamp {1}\")\n";
+        if (!ScriptPrinter.print(ScriptParser.parse(templateDevice)).equals(templateDevice)) {
+            throw new GameTestAssertException("Een apparaat als $\"...\" kwam anders terug: " + ScriptPrinter.print(ScriptParser.parse(templateDevice)));
+        }
         expectError("when every(5):\n    say($\"Open)", 2, "missing its closing quote");
         helper.succeed();
     }
@@ -827,9 +1064,13 @@ public final class LogicGameTests {
                 7, "outer() uses code");
         expectError("def a():\n    pass\ndef a():\n    pass\nwhen every(5):\n    a()", 3, "There already is a def a");
         expectError("def on():\n    pass", 1, "already a word of the language");
-        expectError("def open(door):\n    pass", 1, "take nothing between the brackets");
+        // Sinds hoofdstuk 43 heeft een def parameters: def open(door): is goed (zonder soort-woord past elke waarde).
+        Script withParam = ScriptParser.parse("def open(door):\n    pass");
+        if (withParam.functions().size() != 1 || withParam.functions().getFirst().params().size() != 1) {
+            throw new GameTestAssertException("def open(door): zou één parameter moeten hebben: " + withParam);
+        }
         expectError("when every(5):\n    def x():\n        pass", 2, "A def must not be indented");
-        expectError("def a():\n    pass\nwhen every(5):\n    a(\"x\")", 4, "take nothing between the brackets");
+        expectError("def a():\n    pass\nwhen every(5):\n    a(\"x\")", 4, "takes nothing between the brackets");
         expectError("def a():\n    pass\nwhen a():\n    pass", 3, "is your own block, not a trigger");
         expectError("def a():\n    pass\nwhen every(5):\n    a", 4, "a needs brackets");
         expectError("def 1abc():\n    pass", 1, "a name cannot start with a number");
@@ -1192,7 +1433,7 @@ public final class LogicGameTests {
         expectKindError("when started:\n    if robot.batery < 10:\n        pass", ProgramKind.ROBOT, 2, "Did you mean robot.battery?");
         expectKindError("when started:\n    forward = 3", ProgramKind.ROBOT, 2, "is already a word of the language");
         expectKindError("when started:\n    activate(\"Guard 1\")", ProgramKind.ROBOT, 2, "activate() only works in a server diagram");
-        expectError("when every(5):\n    activate(Guard)", 2, "Put names between quotes");
+        expectError("when every(5):\n    activate(Guard)", 2, "If you meant a robot, put it between quotes");
         helper.succeed();
     }
 

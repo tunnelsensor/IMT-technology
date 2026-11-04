@@ -1104,7 +1104,7 @@ public sealed interface Expr {
     }
 
     /** Een waarde als tekst: een getal zonder overbodige nullen (3, 0.5), en true of false. */
-    static String text(Object value) {
+    public static String text(Object value) {
         return value instanceof Double d ? number(d) : String.valueOf(value);
     }
 

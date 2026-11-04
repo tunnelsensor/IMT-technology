@@ -76,11 +76,39 @@ public final class ZoneApp {
         List<ZoneBox> boxes = new ArrayList<>(core.zoneBoxes());
         return switch (op) {
             case "zone_new" -> addBox(player, core, boxes, remote);
+            case "zone_scan" -> scan(player, core, remote);
             case "zone_delete" -> deleteBox(core, boxes, args.getInt("i"));
             case "zone_grow" -> growBox(core, boxes, args.getInt("i"), args.getInt("side"), args.getInt("by"));
             case "zone_set" -> setBox(core, boxes, args.getInt("i"), args.getIntArray("box"));
             default -> new Result("", false);
         };
+    }
+
+    /**
+     * De Autoscan (hoofdstuk 45): vanaf de kern (de kamer waar hij staat), of waar jij staat als je bij de kern bent. Een
+     * dichte bunker wordt kamers plus muur; een open basis een doos om het gebouw (zie ZoneScan).
+     */
+    private static Result scan(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote) {
+        ServerLevel level = player.serverLevel();
+        BlockPos start = core.getBlockPos();
+        ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
+        if (!remote && limit.contains(player.blockPosition())) {
+            start = player.blockPosition();
+        } else {
+            // De kern zelf is een vast blok: begin in de lucht ernaast (boven, of een andere kant).
+            for (Direction direction : new Direction[] {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}) {
+                BlockPos next = core.getBlockPos().relative(direction);
+                if (ZoneScan.passable(level, next, level.getBlockState(next))) {
+                    start = next;
+                    break;
+                }
+            }
+        }
+        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES);
+        if (!found.ok()) {
+            return new Result("Autoscan: " + found.problem(), true);
+        }
+        return new Result(ZoneScan.apply(core, found, ImtConfig.Security.ZONE_MAX_BOXES), false);
     }
 
     /** Een nieuwe kubus van 7 x 5 x 7: waar je staat (de vloer onder je hoort erbij), of bij de kern. */

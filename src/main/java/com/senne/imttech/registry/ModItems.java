@@ -238,6 +238,11 @@ public final class ModItems {
     /** Repair Paste (hoofdstuk 11): rechtsklik op een blok met barsten, en ze zijn opgevuld. */
     public static final DeferredItem<com.senne.imttech.breach.RepairPasteItem> REPAIR_PASTE = ITEMS.registerItem(
             "repair_paste", com.senne.imttech.breach.RepairPasteItem::new, new Item.Properties());
+    /** De Block Reinforcer (hoofdstuk 44): rechtsklik op een blok, en het is zo sterk als obsidiaan (kost een plaat). */
+    public static final DeferredItem<com.senne.imttech.breach.BlockReinforcerItem> BLOCK_REINFORCER = ITEMS.registerItem(
+            "block_reinforcer", com.senne.imttech.breach.BlockReinforcerItem::new, new Item.Properties().stacksTo(1));
+    /** Een Reinforcement Plate (hoofdstuk 44): wat de Block Reinforcer per blok verbruikt (ijzer en obsidiaan). */
+    public static final DeferredItem<Item> REINFORCEMENT_PLATE = ITEMS.registerSimpleItem("reinforcement_plate");
     /** Een gebarsten blok (hoofdstuk 11): wat je overhoudt als je een blok met barsten weghakt. */
     public static final DeferredItem<com.senne.imttech.repair.FromBlockItem> CRACKED_BLOCK = ITEMS.registerItem(
             "cracked_block", properties -> new com.senne.imttech.repair.FromBlockItem(properties,

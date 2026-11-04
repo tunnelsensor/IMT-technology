@@ -101,7 +101,12 @@ public final class BotBrain {
 
         Run(LogicProgram program, Op trigger, int first, @Nullable Order order) {
             this.trigger = trigger;
-            this.machine = new Interpreter(program.graph(), first, globals);
+            // Met verbinding (hoofdstuk 43): de defs van de global scripts erbij, en de gedeelde namen van de kern.
+            SecurityCoreBlockEntity core = BotLink.core(bot);
+            java.util.List<LogicGraph> library = core == null ? java.util.List.of() : core.logic().globalGraphs();
+            LogicGraph graph = library.isEmpty() ? program.graph() : program.graph().withLibrary(library);
+            Map<String, Object> shared = core == null ? new HashMap<>() : core.logic().sharedValues();
+            this.machine = new Interpreter(graph, first, globals, shared);
             this.order = order;
         }
 
@@ -374,11 +379,19 @@ public final class BotBrain {
             case SEND -> LogicRunner.robotSend(level, core, name, bot.blockPosition(), message(run, node));
             default -> {
                 double seconds = node.op == Op.PULSE ? number(run, node) : 0;
-                if (!LogicRunner.robotSwitch(level, core, node.op, node.text, seconds)) {
-                    report("there is no device called \"" + node.text + "\" in this network");
+                // Het apparaat: gewone tekst, of (hoofdstuk 43) wat de code in textExpr nu oplevert (pulse(door, 3)).
+                String device = node.textExpr.isEmpty() ? node.text : deviceName(run, node);
+                if (!LogicRunner.robotSwitch(level, core, node.op, device, seconds)) {
+                    report("there is no device called \"" + device + "\" in this network");
                 }
             }
         }
+    }
+
+    /** De naam van het apparaat als code (hoofdstuk 43): wat {@code textExpr} nu oplevert. */
+    private String deviceName(Run run, LogicGraph.Node node) {
+        Expr expr = ExprCache.value(node.textExpr);
+        return expr == null ? node.textExpr : Expr.text(ExprCache.eval(expr, facts(run)));
     }
 
     /** Het bericht van say, log, alarm of send: de tekst, of wat de berekening nu oplevert. */

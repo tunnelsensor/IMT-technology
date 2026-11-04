@@ -1214,8 +1214,18 @@ public final class ImtConfig {
 
         /** VAST: levens van een beveiligingsdrone (8 = 4 hartjes). Het spel heeft dit nodig bij het opstarten. */
         public static final double DRONE_HEALTH = 8.0;
-        /** VAST: zoveel kubussen kan één zone hebben (dit gaat mee in de berichten naar de spelers). */
-        public static final int ZONE_MAX_BOXES = 16;
+        /**
+         * VAST: zoveel kubussen kan één zone hebben (dit gaat mee in de berichten naar de spelers). Sinds hoofdstuk 45
+         * (de Autoscan maakt er al snel een stuk of tien) 48 in plaats van 16.
+         */
+        public static final int ZONE_MAX_BOXES = 48;
+
+        // ------------------------------------------------------------------------- De Autoscan (hoofdstuk 45)
+        @Tunable("Autoscan: how many blocks of wall around the rooms of a bunker belong to the zone (so hidden redstone counts too),"
+                + " and the margin around an open building")
+        public static float ZONE_SCAN_WALL = 3.0f;
+        @Tunable("Autoscan: at most this many blocks of rooms (or of a building) are scanned; more is not a closed bunker")
+        public static float ZONE_SCAN_MAX = 60_000.0f;
     }
 
     // =============================================================================================== Network
@@ -1385,6 +1395,12 @@ public final class ImtConfig {
         /** Vanaf deze explosieweerstand is een blok "sterk" (obsidiaan heeft 1200, steen 6). */
         @Tunable("From this explosion resistance a block counts as strong (obsidian has 1200, stone 6)")
         public static float STRONG_RESISTANCE = 100.0f;
+
+        // ------------------------------------------------------------------------- De Block Reinforcer (hoofdstuk 44)
+        @Tunable("Breach points a block reinforced with a Reinforcement Plate takes at least (20 = as strong as obsidian)")
+        public static float REINFORCED = 20.0f;
+        @Tunable("How many blocks of the same kind the Block Reinforcer does in one go when you sneak (the whole wall)")
+        public static float REINFORCER_WALL = 64.0f;
 
         // ------------------------------------------------------------------------- TNT en de satelliet in een zone
         // In een zone werken ze met breekpunten, net als een frag, maar zwakker ("TNT doet heel weinig aan de muur").

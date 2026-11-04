@@ -140,9 +140,13 @@ public final class Blast {
             return -1;
         }
         float resistance = state.getBlock().getExplosionResistance();
-        if (resistance >= ImtConfig.Breach.STRONG_RESISTANCE) {
-            return ImtConfig.Breach.STRONG;
+        float strength = resistance >= ImtConfig.Breach.STRONG_RESISTANCE ? ImtConfig.Breach.STRONG
+                : resistance >= ImtConfig.Breach.NORMAL_RESISTANCE ? ImtConfig.Breach.NORMAL : ImtConfig.Breach.WEAK;
+        // Hoofdstuk 44 (jouw keuze: "zo sterk als obsidiaan"): een verstevigd blok telt minstens als een sterk blok, hoe
+        // mooi of zwak het zelf ook is (kwarts, hout, glas...).
+        if (Cracks.isReinforced(level, pos)) {
+            strength = Math.max(strength, ImtConfig.Breach.REINFORCED);
         }
-        return resistance >= ImtConfig.Breach.NORMAL_RESISTANCE ? ImtConfig.Breach.NORMAL : ImtConfig.Breach.WEAK;
+        return strength;
     }
 }

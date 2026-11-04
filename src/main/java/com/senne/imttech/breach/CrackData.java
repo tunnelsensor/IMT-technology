@@ -43,7 +43,17 @@ public final class CrackData extends SavedData {
      * @param block   welk blok het was
      * @param patches hoe vaak het geplamuurd is
      */
-    public record Crack(float damage, Block block, int patches) {}
+    public record Crack(float damage, Block block, int patches, boolean reinforced) {
+        /** Zonder versteviging (zoals vóór hoofdstuk 44). */
+        public Crack(float damage, Block block, int patches) {
+            this(damage, block, patches, false);
+        }
+
+        /** Hetzelfde blok, maar verstevigd met een Reinforcement Plate (hoofdstuk 44). */
+        public Crack reinforce() {
+            return new Crack(damage, block, patches, true);
+        }
+    }
 
     /** Per wereld (overworld, nether...): plek (als getal, zie BlockPos.asLong) -> wat er gebeurd is. */
     private final Map<ResourceKey<Level>, Long2ObjectOpenHashMap<Crack>> cracks = new HashMap<>();
@@ -103,6 +113,9 @@ public final class CrackData extends SavedData {
                 item.putString("Block", BuiltInRegistries.BLOCK.getKey(entry.getValue().block()).toString());
                 item.putFloat("Damage", entry.getValue().damage());
                 item.putInt("Patches", entry.getValue().patches());
+                if (entry.getValue().reinforced()) {
+                    item.putBoolean("Reinforced", true); // hoofdstuk 44
+                }
                 list.add(item);
             }
         }
@@ -119,7 +132,8 @@ public final class CrackData extends SavedData {
             Block block = id == null ? Blocks.AIR : BuiltInRegistries.BLOCK.get(id);
             if (dimension != null && block != Blocks.AIR) {
                 data.cracks.computeIfAbsent(ResourceKey.create(Registries.DIMENSION, dimension), key -> new Long2ObjectOpenHashMap<>())
-                        .put(item.getLong("Pos"), new Crack(item.getFloat("Damage"), block, item.getInt("Patches")));
+                        .put(item.getLong("Pos"), new Crack(item.getFloat("Damage"), block, item.getInt("Patches"),
+                                item.getBoolean("Reinforced")));
             }
         }
         return data;

@@ -52,7 +52,7 @@ public final class Cracks {
     static void crack(ServerLevel level, BlockPos pos, Block block, float damage, float hp) {
         CrackData data = CrackData.get(level);
         CrackData.Crack old = data.at(level, pos);
-        data.put(level, pos, new CrackData.Crack(damage, block, old == null ? 0 : old.patches()));
+        data.put(level, pos, new CrackData.Crack(damage, block, old == null ? 0 : old.patches(), old != null && old.reinforced()));
         show(level, pos, damage / hp);
     }
 
@@ -66,9 +66,48 @@ public final class Cracks {
         if (crack == null || crack.damage() <= 0) {
             return false;
         }
-        data.put(level, pos, new CrackData.Crack(0, crack.block(), crack.patches() + 1));
+        data.put(level, pos, new CrackData.Crack(0, crack.block(), crack.patches() + 1, crack.reinforced()));
         hide(level, pos);
         return true;
+    }
+
+    // ================================================================ Verstevigen (hoofdstuk 44)
+
+    /** Is dit blok verstevigd met een Reinforcement Plate (zo sterk als obsidiaan, zie Blast.baseStrength)? */
+    public static boolean isReinforced(ServerLevel level, BlockPos pos) {
+        CrackData.Crack crack = CrackData.get(level).at(level, pos);
+        return crack != null && crack.reinforced();
+    }
+
+    /**
+     * Verstevigt dit blok (de Block Reinforcer): vanaf nu telt het als een sterk blok. Barsten en plamuurbeurten die
+     * het al had, blijven. Komt er een ander blok te staan, dan is de versteviging weg (net als barsten).
+     */
+    public static void reinforce(ServerLevel level, BlockPos pos) {
+        CrackData data = CrackData.get(level);
+        CrackData.Crack old = data.at(level, pos);
+        data.put(level, pos, old != null ? old.reinforce()
+                : new CrackData.Crack(0, level.getBlockState(pos).getBlock(), 0, true));
+    }
+
+    /** Alle verstevigde blokken binnen {@code radius} blokken van {@code centre} (hooguit {@code max}), voor de bril. */
+    public static java.util.List<BlockPos> reinforcedNear(ServerLevel level, BlockPos centre, int radius, int max) {
+        java.util.List<BlockPos> found = new java.util.ArrayList<>();
+        CrackData data = CrackData.get(level);
+        for (Long2ObjectMap.Entry<CrackData.Crack> entry : data.in(level.dimension()).long2ObjectEntrySet()) {
+            if (!entry.getValue().reinforced()) {
+                continue;
+            }
+            BlockPos pos = BlockPos.of(entry.getLongKey());
+            if (pos.distManhattan(centre) <= radius * 2 && pos.distSqr(centre) <= (double) radius * radius
+                    && level.isLoaded(pos) && level.getBlockState(pos).getBlock() == entry.getValue().block()) {
+                found.add(pos);
+                if (found.size() >= max) {
+                    break;
+                }
+            }
+        }
+        return found;
     }
 
     /**
@@ -112,6 +151,18 @@ public final class Cracks {
      * twintig seconden vallen, en zo zie je ook barsten die er al waren voor je kwam.
      */
     public static void onServerTick(ServerTickEvent.Post event) {
+        // Hoofdstuk 44: wie de Block Reinforcer vasthoudt, krijgt elke seconde de verstevigde blokken in de buurt (zijn
+        // bril tekent er een randje om).
+        if (event.getServer().getTickCount() % 20 == 0) {
+            for (net.minecraft.server.level.ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                if (BlockReinforcerItem.holds(player)) {
+                    // Via ModNetwork.sendTo: een testspeler zonder echte verbinding krijgt niets (anders crasht de server).
+                    com.senne.imttech.network.ModNetwork.sendTo(player,
+                            new com.senne.imttech.network.ReinforcedBlocksPayload(reinforcedNear(player.serverLevel(),
+                                    player.blockPosition(), BlockReinforcerItem.SHOW_RADIUS, BlockReinforcerItem.SHOW_MAX)));
+                }
+            }
+        }
         if (event.getServer().getTickCount() % RESEND != 0) {
             return;
         }

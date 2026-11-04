@@ -89,6 +89,10 @@ public final class Checks {
             return expr.isBlank() && op.requiredValues() > 0 ? op.code() + " needs " + valuesCount(op) + " between the brackets, like " + op.valuesExample()
                     : null;
         }
+        if (op == Op.DEF || op == Op.CALL) {
+            // Hoofdstuk 43: bij een def staan de parameters in expr, bij een aanroep de waarden. Zie exprProblem.
+            return argsProblem(op, text, number);
+        }
         if (!expr.isEmpty()) {
             if (exprIsText(op)) {
                 text = text == null ? "" : text;
@@ -97,6 +101,22 @@ public final class Checks {
             }
         }
         return argsProblem(op, text, number);
+    }
+
+    /**
+     * Zoals {@link #argsProblem(Op, String, Double, String)}, maar het apparaat (of de robot) mag ook code zijn
+     * ({@code textExpr}, hoofdstuk 43: {@code pulse(door, 3)}): dan is de naam er wel, alleen pas bij het uitvoeren
+     * bekend.
+     */
+    public static @Nullable String argsProblem(Op op, @Nullable String text, @Nullable Double number, String expr, String textExpr) {
+        if (!textExpr.isBlank() && (op.textArg() == Op.Arg.DEVICE || op.textArg() == Op.Arg.ROBOT)) {
+            String problem = textExprProblem(op, textExpr);
+            if (problem != null) {
+                return problem;
+            }
+            return argsProblem(op, textExpr, number, expr);
+        }
+        return argsProblem(op, text, number, expr);
     }
 
     /** Is de berekening van dit blokje het bericht (say, log, alarm)? Anders zijn het de seconden (wait, pulse). */
@@ -143,7 +163,35 @@ public final class Checks {
             if (op.textArg() == Op.Arg.VALUES) {
                 return valuesProblem(op, Expr.parseLenientList(expr));
             }
+            if (op == Op.DEF) {
+                // Hoofdstuk 43: de parameters van een def (door: string, times: int).
+                return paramsProblem(parseParams(expr), java.util.Set.of());
+            }
+            if (op == Op.CALL) {
+                Expr.parseLenientList(expr); // de waarden voor de parameters; of het er genoeg zijn, zegt ScriptChecker
+                return null;
+            }
             Expr.parseLenient(expr, false);
+            return null;
+        } catch (LogicException e) {
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Is de naam van het apparaat of de robot als code te lezen ({@code textExpr}, hoofdstuk 43: {@code pulse(door, 3)}
+     * met {@code door} een parameter)? Geeft de fout, of null.
+     */
+    public static @Nullable String textExprProblem(Op op, String textExpr) {
+        if (textExpr.isBlank()) {
+            return null;
+        }
+        try {
+            Expr.Type type = Expr.typeOf(Expr.parseLenient(textExpr, false));
+            if (type != Expr.Type.TEXT && type != Expr.Type.ANY) {
+                return op.code() + " needs the name of a " + (op.textArg() == Op.Arg.ROBOT ? "robot" : "device")
+                        + " (text), not " + Expr.describe(type);
+            }
             return null;
         } catch (LogicException e) {
             return e.getMessage();
@@ -160,7 +208,129 @@ public final class Checks {
      */
     private static final java.util.Set<String> RESERVED = java.util.Set.of("when", "if", "elif", "else", "pass", "and",
             "or", "not", "def", "true", "false", "True", "False", "return", "is_on", "code", "is_night", "is_day", "call",
-            "in", "range", "repeat", "forever");
+            "in", "range", "repeat", "forever",
+            // Hoofdstuk 43: het woord global, en de soort-woorden.
+            "global", "int", "float", "string", "bool");
+
+    // ================================================================ Parameters en aanroepen (hoofdstuk 43)
+
+    /**
+     * Leest de parameters van een def zoals ze tussen de haakjes staan: {@code door: string, times: int} (of alleen
+     * {@code door}). Gooit een LogicException met uitleg als het niet klopt.
+     */
+    public static java.util.List<Script.Param> parseParams(String text) {
+        java.util.List<Script.Param> params = new java.util.ArrayList<>();
+        if (text.isBlank()) {
+            return params;
+        }
+        java.util.List<Lexer.Token> tokens = Lexer.tokens(text);
+        int i = 0;
+        while (true) {
+            Lexer.Token name = tokens.get(i);
+            if (name.type() != Lexer.Type.NAME) {
+                throw new LogicException(name.type() == Lexer.Type.END ? "A parameter is missing after the comma"
+                        : "A parameter needs a name, like door: string (not " + name + ")");
+            }
+            i++;
+            String type = "";
+            if (tokens.get(i).is(":")) {
+                Lexer.Token word = tokens.get(i + 1);
+                if (word.type() != Lexer.Type.NAME || VarType.byWord(word.text()) == null) {
+                    throw new LogicException(word.type() == Lexer.Type.END
+                            ? "After " + name.text() + ": comes a type: " + VarType.words()
+                            : "I don't know the type \"" + word.text() + "\": use " + VarType.words());
+                }
+                type = word.text();
+                i += 2;
+            }
+            params.add(new Script.Param(name.text(), type));
+            if (tokens.get(i).is(",")) {
+                i++;
+                continue;
+            }
+            if (tokens.get(i).type() != Lexer.Type.END) {
+                throw new LogicException(tokens.get(i).is("=") ? "A parameter gets its value when you use the def, not here: def open_door(door: string):"
+                        : "Separate the parameters with a comma, like def open_door(door: string, times: int):");
+            }
+            return params;
+        }
+    }
+
+    /** Mogen deze parameters zo heten (zoals een naam), en staat er geen naam twee keer? Geeft de fout, of null. */
+    public static @Nullable String paramsProblem(java.util.List<Script.Param> params, java.util.Collection<String> defNames) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Script.Param param : params) {
+            String problem = variableProblem(param.name(), defNames);
+            if (problem != null) {
+                return problem;
+            }
+            if (!seen.add(param.name())) {
+                return "The parameter " + param.name() + " is there twice";
+            }
+        }
+        return null;
+    }
+
+    /** Een voorbeeldwaarde voor een parameter van deze soort, voor de foutmeldingen. */
+    static String exampleValue(Script.Param param) {
+        VarType type = param.varType();
+        if (type == null) {
+            return "1";
+        }
+        return switch (type) {
+            case INT -> "3";
+            case FLOAT -> "1.5";
+            case STRING -> "\"Lab door\"";
+            case BOOL -> "true";
+        };
+    }
+
+    /** Hoe je deze def aanroept, voor de foutmeldingen: {@code open_door("Lab door", 3)}. */
+    public static String callExample(Script.Function function) {
+        StringBuilder example = new StringBuilder(function.name()).append('(');
+        for (Script.Param param : function.params()) {
+            example.append(example.charAt(example.length() - 1) == '(' ? "" : ", ").append(exampleValue(param));
+        }
+        return example.append(')').toString();
+    }
+
+    /**
+     * Kloppen de waarden waarmee je een def aanroept: evenveel als hij parameters heeft, en van de goede soort? Een
+     * waarde waarvan we de soort nog niet weten (ANY) mag altijd. Geeft de fout, of null.
+     */
+    public static @Nullable String callProblem(Script.Function function, java.util.List<Expr> args) {
+        java.util.List<Script.Param> params = function.params();
+        if (args.size() != params.size()) {
+            if (params.isEmpty()) {
+                return function.name() + "() takes nothing between the brackets";
+            }
+            String count = params.size() == 1 ? "1 value" : params.size() + " values";
+            return function.name() + " needs " + count + " (" + function.paramsCode() + "), like " + callExample(function);
+        }
+        for (int i = 0; i < args.size(); i++) {
+            VarType type = params.get(i).varType();
+            if (type == null) {
+                continue;
+            }
+            Expr arg = args.get(i);
+            Double literal = arg instanceof Expr.Num num ? num.value() : null;
+            if (!type.accepts(Expr.typeOf(arg), literal)) {
+                return function.name() + ": " + params.get(i).name() + " must be " + describeType(type) + ", like "
+                        + callExample(function);
+            }
+        }
+        return null;
+    }
+
+    /** Een soort-woord in begrijpelijk Engels: "a whole number (int)", "text (string)". */
+    public static String describeType(VarType type) {
+        return switch (type) {
+            case INT -> "a whole number (int)";
+            case FLOAT -> "a number (float)";
+            case STRING -> "text (string)";
+            case BOOL -> "true or false (bool)";
+        };
+    }
 
     /**
      * Klopt het bereik van een for-lus (16 oktober)? Eén of twee getallen: {@code range(3)} telt 0, 1, 2 en

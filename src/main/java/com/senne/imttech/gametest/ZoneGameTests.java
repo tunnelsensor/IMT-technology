@@ -101,6 +101,79 @@ public final class ZoneGameTests {
         player.moveTo(above.x, above.y, above.z, 0.0f, 90.0f);
     }
 
+    /**
+     * Hoofdstuk 45: de Autoscan. Een dichte kamer van stenen bakstenen om de kern (0,2,0 tot 8,8,8): de scan vanaf de
+     * kern vindt de kamer (244 blokken lucht) plus de muur eromheen, als een paar kubussen die de hele schil dekken; de
+     * app zet ze in de zone. Een los kwartsbouwsel in de lucht: de scan vanaf zo'n blok is "open" en legt er een doos
+     * omheen met 3 blokken marge, en de Zone Marker voegt die toe. Een natuurlijk blok (steen) telt niet als gebouw.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void autoscan_finds_rooms_and_buildings(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 3, 4), "scan-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, CORE, owner);
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(0, 2, 0), new BlockPos(8, 8, 8))) {
+            boolean shell = pos.getX() == 0 || pos.getX() == 8 || pos.getY() == 2 || pos.getY() == 8 || pos.getZ() == 0 || pos.getZ() == 8;
+            if (shell && !pos.equals(CORE.below())) {
+                helper.setBlock(pos.immutable(), Blocks.STONE_BRICKS);
+            }
+        }
+        ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
+        com.senne.imttech.security.zone.ZoneScan.Result room = com.senne.imttech.security.zone.ZoneScan.scan(level,
+                helper.absolutePos(new BlockPos(2, 4, 2)), limit, 48);
+        if (!room.ok() || !room.enclosed() || room.cells() != 244) {
+            throw new GameTestAssertException("De scan van de kamer klopt niet: " + room);
+        }
+        for (BlockPos corner : new BlockPos[] {new BlockPos(0, 2, 0), new BlockPos(8, 8, 8), new BlockPos(4, 8, 4), new BlockPos(8, 5, 0)}) {
+            if (!com.senne.imttech.security.zone.ZoneShape.inAny(room.boxes(), helper.absolutePos(corner))) {
+                throw new GameTestAssertException("De muur op " + corner + " zit niet in de scan: " + room.boxes());
+            }
+        }
+        if (com.senne.imttech.security.zone.ZoneShape.inAny(room.boxes(), helper.absolutePos(new BlockPos(12, 5, 12)))) {
+            throw new GameTestAssertException("De scan van de kamer ging te ver (12, 5, 12 hoort er niet bij)");
+        }
+        // Via de app: de kubussen in de zone.
+        com.senne.imttech.security.os.SecurityOs.open(owner, helper.absolutePos(CORE));
+        com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(
+                helper.absolutePos(CORE), "zone_scan", new net.minecraft.nbt.CompoundTag()));
+        if (core.zoneBoxes().isEmpty() || !core.zone().contains(helper.absolutePos(new BlockPos(0, 2, 0)))) {
+            throw new GameTestAssertException("Autoscan in de app zette de kamer niet in de zone: " + core.zoneBoxes());
+        }
+        int afterRoom = core.zoneBoxes().size();
+        // Een los bouwsel van kwarts in de lucht (de vloer van de arena is gepolijst andesiet: dat zou meetellen als gebouw).
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(14, 3, 14), new BlockPos(16, 4, 16))) {
+            helper.setBlock(pos.immutable(), Blocks.QUARTZ_BLOCK);
+        }
+        com.senne.imttech.security.zone.ZoneScan.Result open = com.senne.imttech.security.zone.ZoneScan.scan(level,
+                helper.absolutePos(new BlockPos(14, 3, 14)), limit, 48);
+        ZoneBox expected = box(helper, new BlockPos(11, 0, 11), new BlockPos(19, 7, 19));
+        if (!open.ok() || open.enclosed() || open.cells() != 18 || open.boxes().size() != 1 || !open.boxes().getFirst().equals(expected)) {
+            throw new GameTestAssertException("De scan van het bouwsel klopt niet (verwachtte " + expected + "): " + open);
+        }
+        // Met de Zone Marker (sluipen + rechtsklik zonder hoeken, op een blok van het bouwsel). In de testwereld zit elke
+        // arena in een doos van barrières, dus "de lucht rond het bouwsel" is hier een dichte kamer: daarom beginnen we
+        // op het kwarts zelf (in een echte wereld loopt het vullen weg naar buiten en gebeurt hetzelfde).
+        com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(level, owner, helper.absolutePos(new BlockPos(14, 3, 14)),
+                helper.absolutePos(new BlockPos(14, 3, 14)));
+        if (core.zoneBoxes().size() != afterRoom + 1 || !core.zone().contains(helper.absolutePos(new BlockPos(16, 4, 16)))) {
+            throw new GameTestAssertException("De marker zette het bouwsel niet in de zone: " + core.zoneBoxes());
+        }
+        // Nog eens scannen verandert niets (de kubussen liggen er al).
+        com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(level, owner, helper.absolutePos(new BlockPos(14, 3, 14)),
+                helper.absolutePos(new BlockPos(14, 3, 14)));
+        if (core.zoneBoxes().size() != afterRoom + 1) {
+            throw new GameTestAssertException("Een tweede scan zou geen kubus mogen toevoegen: " + core.zoneBoxes());
+        }
+        // Een natuurlijk blok is geen gebouw.
+        helper.setBlock(new BlockPos(20, 3, 20), Blocks.STONE);
+        com.senne.imttech.security.zone.ZoneScan.Result natural = com.senne.imttech.security.zone.ZoneScan.scan(level,
+                helper.absolutePos(new BlockPos(20, 3, 20)), limit, 48);
+        if (natural.ok()) {
+            throw new GameTestAssertException("Een scan vanaf steen zou moeten zeggen dat het natuur is: " + natural);
+        }
+        finish(helper, core);
+    }
+
     /** Stroom onder de kern: weg (null) of weer vol. */
     static void power(GameTestHelper helper, boolean on) {
         BlockPos generator = CORE.below();

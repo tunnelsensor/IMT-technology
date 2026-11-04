@@ -70,7 +70,13 @@ public class ZoneMarkerItem extends Item {
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
         if (context.getPlayer() instanceof ServerPlayer player && context.getLevel() instanceof ServerLevel level) {
             if (player.isShiftKeyDown()) {
-                addSelection(level, player, stack);
+                if (selection(stack).box() == null) {
+                    // Geen hoeken gekozen (hoofdstuk 45): de Autoscan, vanuit de kamer voor het aangeklikte blok (of
+                    // het gebouw zelf, als dat blok gebouwd is).
+                    autoscan(level, player, context.getClickedPos().relative(context.getClickedFace()), context.getClickedPos());
+                } else {
+                    addSelection(level, player, stack);
+                }
             } else {
                 setCorner(player, stack, context.getClickedPos(), false);
             }
@@ -78,7 +84,7 @@ public class ZoneMarkerItem extends Item {
         return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
     }
 
-    /** Rechtsklik in de lucht: alleen met sluipen (de kubus toevoegen). */
+    /** Rechtsklik in de lucht: alleen met sluipen (de kubus toevoegen, of zonder hoeken de Autoscan van waar je staat). */
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -86,9 +92,36 @@ public class ZoneMarkerItem extends Item {
             return InteractionResultHolder.pass(stack);
         }
         if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
-            addSelection(serverLevel, serverPlayer, stack);
+            if (selection(stack).box() == null) {
+                autoscan(serverLevel, serverPlayer, serverPlayer.blockPosition(), null);
+            } else {
+                addSelection(serverLevel, serverPlayer, stack);
+            }
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+    }
+
+    /**
+     * De Autoscan met de Zone Marker (hoofdstuk 45, jouw keuze: "sneak + klik met de Zone Marker scant vanaf die kamer").
+     * {@code start} is de kamer (lucht) waar we beginnen; {@code clicked} het aangeklikte blok (of null in de lucht): is
+     * de kamer niet dicht, dan proberen we vanaf dat blok het gebouw. De kubussen gaan naar je dichtstbijzijnde kern.
+     */
+    public static void autoscan(ServerLevel level, ServerPlayer player, BlockPos start, @Nullable BlockPos clicked) {
+        SecurityCoreBlockEntity core = ownCoreFor(level, player, start);
+        if (core == null) {
+            return;
+        }
+        ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
+        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES);
+        if (!found.ok() && clicked != null && !ZoneScan.passable(level, clicked, level.getBlockState(clicked))) {
+            found = ZoneScan.scan(level, clicked, limit, ImtConfig.Security.ZONE_MAX_BOXES);
+        }
+        if (!found.ok()) {
+            tell(player, Component.literal("Autoscan: " + found.problem()), true);
+            return;
+        }
+        tell(player, Component.literal(ZoneScan.apply(core, found, ImtConfig.Security.ZONE_MAX_BOXES)), false);
+        player.playNotifySound(ModSounds.IMT_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
     }
 
     /** Met de marker breek je niets (ook niet in creative). */
@@ -102,6 +135,7 @@ public class ZoneMarkerItem extends Item {
         tooltip.add(Component.translatable("tooltip.imttech.zone_marker.corners").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.zone_marker.add").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.zone_marker.remove").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.imttech.zone_marker.scan").withStyle(ChatFormatting.GRAY));
         ZoneBox box = selection(stack).box();
         if (box != null) {
             tooltip.add(Component.translatable("tooltip.imttech.zone_marker.selection", box.size(), box.volume())

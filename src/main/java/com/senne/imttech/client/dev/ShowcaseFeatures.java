@@ -1420,6 +1420,58 @@ final class ShowcaseFeatures {
                     .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
         });
 
+        add("Zone autoscan", "Hoofdstuk 45: de Autoscan (in survival). Naast de basis staat een dichte bunker van stenen "
+                + "bakstenen. Je staat erin met een Zone Marker zonder hoeken en doet sluipen + rechtsklik: 'Autoscan "
+                + "(closed rooms + 3 blocks of wall): 1 box added', en de blauwe rand ligt om de kamer en drie blokken "
+                + "muur eromheen (de rand zie je met de marker in je hand). Dan naar de open basis (geen dak): de app "
+                + "Zone op de kern, knop Autoscan: 'open base: a box around N built blocks + 3' en één doos om het hele "
+                + "gebouw.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(-8, 0, 4)), 0, 10, s -> {
+            BlockPos bunker = ZONE_BASE.offset(-12, 0, 0);
+            s.onServer(0, ShowcaseFeatures::buildZoneBase)
+                    .onServer(0, player -> {
+                        ServerLevel level = player.serverLevel();
+                        for (BlockPos pos : BlockPos.betweenClosed(bunker, bunker.offset(8, 6, 8))) {
+                            boolean shell = pos.getX() == bunker.getX() || pos.getX() == bunker.getX() + 8 || pos.getY() == bunker.getY()
+                                    || pos.getY() == bunker.getY() + 6 || pos.getZ() == bunker.getZ() || pos.getZ() == bunker.getZ() + 8;
+                            level.setBlockAndUpdate(pos, shell ? Blocks.STONE_BRICKS.defaultBlockState() : Blocks.AIR.defaultBlockState());
+                        }
+                        level.setBlockAndUpdate(bunker.offset(4, 5, 4), Blocks.GLOWSTONE.defaultBlockState());
+                        // De zone van de basis zelf eerst weg: zo zie je wat de scan vindt.
+                        if (level.getBlockEntity(ZONE_BASE.offset(4, 0, 5)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                            core.setZoneBoxes(java.util.List.of());
+                        }
+                        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ZONE_MARKER.get()));
+                    })
+                    .pause(40)
+                    .stand(0, bunker.getX() + 4.5, bunker.getY() + 1, bunker.getZ() + 2.5, 0, 10)
+                    .pause(30)
+                    // Sluipen + rechtsklik zonder hoeken: de Autoscan vanuit de kamer.
+                    .onServer(0, player -> com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(player.serverLevel(), player,
+                            bunker.offset(4, 1, 2), null))
+                    .pause(80)
+                    .stand(0, bunker.getX() + 14.5, bunker.getY() + 2, bunker.getZ() + 14.5, 135, 18)
+                    .pause(60)
+                    // Dan de open basis: de app Zone, knop Autoscan.
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 4.5, 180, 10)
+                    .onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, ZONE_BASE.offset(4, 0, 5)))
+                    .step(15, () -> {
+                        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                            os.tourZone(0);
+                        }
+                    })
+                    .pause(30)
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ZONE_BASE.offset(4, 0, 5)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                            com.senne.imttech.security.zone.ZoneApp.handle(player, core, "zone_scan", new net.minecraft.nbt.CompoundTag(), false);
+                        }
+                    })
+                    .pause(80)
+                    .close(10)
+                    .stand(0, ZONE_BASE.getX() + 6.5, ZONE_BASE.getY() + 3, ZONE_BASE.getZ() + 20.5, 180, 15)
+                    .pause(80);
+        });
+
         add("Remote Frag", "Hoofdstuk 35 (in plaats van C4): de Remote Frag (in survival). Eerst ben jij de eigenaar "
                 + "van de basis: iemand plakt een Remote Frag op je muur. I.M.T zegt waar ('Remote Frag planted at your "
                 + "zone', zonder naam) en je ziet een knipperend rood bordje 'FRAG!'. Met je hand krijg je hem er niet af; "
@@ -1549,6 +1601,44 @@ final class ShowcaseFeatures {
                     .tap(0, () -> Minecraft.getInstance().options.keyUse)
                     .pause(80)
                     .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
+        });
+
+        add("Block Reinforcer", "Hoofdstuk 44: de Block Reinforcer (in survival). Twee muurtjes van kwarts voor de basis. "
+                + "Je houdt de Block Reinforcer vast (met 16 Reinforcement Plates in je rugzak) en sluipt + klikt op het "
+                + "linker muurtje: 'Reinforced 9 blocks (7 plates left)', en door je bril zie je een staalblauw randje om "
+                + "elk verstevigd blok; het kwarts zelf ziet er precies zo uit. Dan krijgt elk muurtje dezelfde klap: "
+                + "rechts (gewoon kwarts) vliegt het blok eruit, links (verstevigd, zo sterk als obsidiaan) krijgt het "
+                + "alleen barsten.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(2, 0, 23)), 180, 6, s -> {
+            BlockPos left = ZONE_BASE.offset(-2, 0, 17);
+            BlockPos right = ZONE_BASE.offset(4, 0, 17);
+            s.onServer(0, ShowcaseFeatures::buildZoneBase)
+                    .onServer(0, player -> {
+                        for (BlockPos base : new BlockPos[] {left, right}) {
+                            for (int x = 0; x < 3; x++) {
+                                for (int y = 0; y < 3; y++) {
+                                    player.serverLevel().setBlockAndUpdate(base.offset(x, y, 0), Blocks.QUARTZ_BLOCK.defaultBlockState());
+                                }
+                            }
+                        }
+                        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BLOCK_REINFORCER.get()));
+                        player.getInventory().setItem(9, new ItemStack(ModItems.REINFORCEMENT_PLATE.get(), 16));
+                    })
+                    .pause(50)
+                    .stand(0, ZONE_BASE.getX() + 0.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 21.5, 180, 4)
+                    .lookAt(10, Vec3.atCenterOf(left.offset(1, 1, 0)).add(0, 0, 0.5))
+                    .pause(20)
+                    // Sluipen + klik: de hele linker muur in één keer.
+                    .onServer(0, player -> useReinforcer(player, left.offset(1, 1, 0), true))
+                    .pause(70)
+                    .stand(0, ZONE_BASE.getX() + 2.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 23.5, 180, 6)
+                    .pause(30)
+                    // Dezelfde klap op allebei: rechts breekt, links barst.
+                    .onServer(0, player -> {
+                        dent(player.serverLevel(), left.offset(1, 1, 0));
+                        dent(player.serverLevel(), right.offset(1, 1, 0));
+                    })
+                    .pause(100);
         });
 
         add("Hacking and pickpocketing", "Hoofdstuk 12: inbreken (in survival). In het lab van hiervoor, met de "
@@ -3207,6 +3297,18 @@ final class ShowcaseFeatures {
     /** Een klapje van 4,5 breekpunten op alleen dit blok (van de zuidkant): barsten, maar het breekt niet. */
     static void dent(ServerLevel level, BlockPos pos) {
         com.senne.imttech.breach.Blast.breach(level, Vec3.atCenterOf(pos).add(0, 0, 0.95), 4.5f, 3.0f, here -> here.equals(pos), null);
+    }
+
+    /** De Block Reinforcer (hoofdstuk 44) op de zuidkant van {@code pos} gebruiken, al dan niet sluipend (de hele muur). */
+    static void useReinforcer(ServerPlayer player, BlockPos pos, boolean sneak) {
+        if (!player.getMainHandItem().is(ModItems.BLOCK_REINFORCER.get())) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BLOCK_REINFORCER.get()));
+        }
+        player.setShiftKeyDown(sneak);
+        net.minecraft.world.phys.BlockHitResult hit = new net.minecraft.world.phys.BlockHitResult(
+                Vec3.atCenterOf(pos).relative(Direction.SOUTH, 0.5), Direction.SOUTH, pos, false);
+        player.getMainHandItem().useOn(new net.minecraft.world.item.context.UseOnContext(player, InteractionHand.MAIN_HAND, hit));
+        player.setShiftKeyDown(false);
     }
 
     /** Een Crusher en een Compactor met hun voorkant naar het noorden, elk tegen een volle generator. */

@@ -77,6 +77,13 @@ public final class LogicStore {
     private final List<LogicProgram> programs = new ArrayList<>();
     /** Telt elke verandering aan de diagrammen (zo weet de desktop wanneer hij ze opnieuw moet krijgen). */
     private int revision;
+    /**
+     * De gedeelde namen (hoofdstuk 43): wat de global scripts helemaal links verklaren ({@code lockdown: bool = false}),
+     * met hun waarde van nu (een Double, String of Boolean). Elk diagram van deze kern leest en verandert dezelfde, en
+     * ze blijven bewaard (ook na een herstart, en na opnieuw bewaren van het script: alleen een nieuwe naam of een
+     * andere soort begint opnieuw bij zijn eerste waarde). Zie {@link #syncShared}.
+     */
+    private final TreeMap<String, Object> shared = new TreeMap<>();
     /** Naam (hoofdletters maken niet uit) -> de apparaten met die naam. */
     private final TreeMap<String, List<Target>> devices = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
@@ -382,14 +389,89 @@ public final class LogicStore {
             programs.add(program);
         }
         revision++;
+        syncShared();
     }
 
     public boolean remove(String name) {
         boolean removed = programs.removeIf(program -> program.name().equalsIgnoreCase(name));
         if (removed) {
             revision++;
+            syncShared();
         }
         return removed;
+    }
+
+    // ================================================================ Global scripts en gedeelde namen (hoofdstuk 43)
+
+    /** De gedeelde namen met hun waarde van nu. De tolk verandert ze hierin; opslaan bewaart ze. */
+    public Map<String, Object> sharedValues() {
+        return shared;
+    }
+
+    /** De blokjes van alle global scripts (de code begint met {@code global}), in de volgorde van de lijst. */
+    public List<com.senne.imttech.logic.program.LogicGraph> globalGraphs() {
+        List<com.senne.imttech.logic.program.LogicGraph> graphs = new ArrayList<>();
+        for (LogicProgram program : programs) {
+            if (program.graph().global()) {
+                graphs.add(program.graph());
+            }
+        }
+        return graphs;
+    }
+
+    /**
+     * Houdt de gedeelde namen gelijk aan wat de global scripts verklaren: een nieuwe naam krijgt zijn eerste waarde,
+     * een naam die geen script meer verklaart gaat weg, en een naam die van soort veranderde (tekst in plaats van een
+     * getal) begint opnieuw. De rest houdt zijn waarde (jouw keuze: "gedeelde namen blijven bewaard met de kern").
+     */
+    public void syncShared() {
+        Map<String, Object> wanted = new java.util.LinkedHashMap<>();
+        for (LogicProgram program : programs) {
+            if (!program.graph().global()) {
+                continue;
+            }
+            for (com.senne.imttech.logic.program.Script.Global global
+                    : com.senne.imttech.logic.program.GraphConverter.toScript(program.graph()).globals()) {
+                if (wanted.containsKey(global.name())) {
+                    continue; // twee scripts met dezelfde naam: de eerste wint (de controle zegt het bij de tweede)
+                }
+                com.senne.imttech.logic.program.VarType type = com.senne.imttech.logic.program.Library.typeOf(global);
+                Object current = shared.get(global.name());
+                boolean keep = current != null
+                        && com.senne.imttech.logic.program.VarType.of(current).exprType() == type.exprType();
+                wanted.put(global.name(), keep ? type.coerce(current) : firstValue(global, type, wanted));
+            }
+        }
+        shared.clear();
+        shared.putAll(wanted);
+    }
+
+    /** De eerste waarde van een gedeelde naam: wat er rechts van de = staat (die mag andere gedeelde namen erboven gebruiken). */
+    private static Object firstValue(com.senne.imttech.logic.program.Script.Global global,
+                                     com.senne.imttech.logic.program.VarType type, Map<String, Object> above) {
+        try {
+            com.senne.imttech.logic.program.Expr value = com.senne.imttech.logic.program.Expr.parseLenient(global.value(), false);
+            com.senne.imttech.logic.program.Expr.Facts facts = new com.senne.imttech.logic.program.Expr.Facts() {
+                @Override
+                public Object value(String variable) {
+                    return false;
+                }
+
+                @Override
+                public boolean isOn(String device) {
+                    return false;
+                }
+
+                @Override
+                public @Nullable Object variable(String name) {
+                    return above.get(name);
+                }
+            };
+            Object first = com.senne.imttech.logic.program.ExprCache.eval(value, facts);
+            return com.senne.imttech.logic.program.VarType.of(first).exprType() == type.exprType() ? type.coerce(first) : type.empty();
+        } catch (com.senne.imttech.logic.program.LogicException e) {
+            return type.empty();
+        }
     }
 
     public int revision() {
@@ -405,6 +487,7 @@ public final class LogicStore {
         programs.clear();
         cards.clear();
         groupParents.clear();
+        shared.clear();
         revision++;
     }
 
@@ -428,6 +511,7 @@ public final class LogicStore {
         }
         nextCard = Math.max(nextCard, saved.nextCard);
         revision++;
+        syncShared();
     }
 
     /** Hoeveel blokjes alle diagrammen samen gebruiken (zo vol zijn de SSD's). */
@@ -531,6 +615,21 @@ public final class LogicStore {
             }
         }
         tag.put("Devices", deviceList);
+        // De gedeelde namen (hoofdstuk 43) met hun waarde van nu.
+        ListTag sharedList = new ListTag();
+        shared.forEach((name, value) -> {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("N", name);
+            if (value instanceof Double number) {
+                entry.putDouble("D", number);
+            } else if (value instanceof Boolean flag) {
+                entry.putBoolean("B", flag);
+            } else {
+                entry.putString("S", String.valueOf(value));
+            }
+            sharedList.add(entry);
+        });
+        tag.put("Shared", sharedList);
         return tag;
     }
 
@@ -577,6 +676,23 @@ public final class LogicStore {
             store.devices.computeIfAbsent(device.getString("N"), key -> new ArrayList<>())
                     .add(new Target(BlockPos.of(device.getLong("P")), device.getInt("C")));
         }
+        // De gedeelde namen (hoofdstuk 43); daarna gelijktrekken met wat de global scripts nu verklaren.
+        for (Tag element : tag.getList("Shared", Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) element;
+            String name = entry.getString("N");
+            if (name.isEmpty()) {
+                continue;
+            }
+            if (entry.contains("D")) {
+                double number = entry.getDouble("D");
+                store.shared.put(name, Double.isFinite(number) ? number : 0.0);
+            } else if (entry.contains("B")) {
+                store.shared.put(name, entry.getBoolean("B"));
+            } else {
+                store.shared.put(name, entry.getString("S"));
+            }
+        }
+        store.syncShared();
         return store;
     }
 

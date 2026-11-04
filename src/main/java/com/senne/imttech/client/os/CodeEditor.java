@@ -46,10 +46,13 @@ final class CodeEditor {
     private static final int ERROR_LINE = 0x4A1A1E;
 
     private static final Set<String> KEYWORDS = Set.of("when", "if", "elif", "else", "pass", "and", "or", "not", "def",
-            "for", "in", "range", "while", "break");
+            "for", "in", "range", "while", "break", "global");
     /** De kleur van je eigen blokken (de naam na def, en waar je ze gebruikt). */
     static final int FUNCTION = 0xC9A0FF;
     private static final Set<String> CONSTANTS = Set.of("true", "false", "True", "False");
+    /** De soort-woorden (hoofdstuk 43): int, float, string, bool. */
+    private static final Set<String> TYPES = Set.of("int", "float", "string", "bool");
+    static final int TYPE = 0x8BE9FD;
     /** Alle gegevens die je in een voorwaarde kunt gebruiken (zie Expr.Variable), is_on, en pin en read (hoofdstuk 23). */
     private static final Set<String> VARIABLES = variables();
 
@@ -473,6 +476,7 @@ final class CodeEditor {
                         && !KEYWORDS.contains(word) && !VARIABLES.contains(word);
                 int colour = KEYWORDS.contains(word) ? 0xFF79C6
                         : CONSTANTS.contains(word) ? 0xC09CFF
+                        : TYPES.contains(word) ? TYPE
                         : VARIABLES.contains(word) ? 0xF1E87C
                         : own ? FUNCTION
                         : op != null && op.isTrigger() ? HudStyle.CYAN

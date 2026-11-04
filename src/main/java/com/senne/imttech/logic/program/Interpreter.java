@@ -70,6 +70,10 @@ public final class Interpreter {
 
     private final LogicGraph graph;
     private final Map<String, Object> globals;
+    /** De gedeelde namen van de kern (hoofdstuk 43, uit de global scripts): elk diagram leest en verandert dezelfde. */
+    private final Map<String, Object> shared;
+    /** De soort-woorden van de namen (hoofdstuk 43): een int rondt af naar een heel getal als hij een waarde krijgt. */
+    private final Map<String, VarType> types = new HashMap<>();
     private Map<String, Object> locals = new HashMap<>();
     private int current;
     private final ArrayDeque<Frame> frames = new ArrayDeque<>();
@@ -87,9 +91,38 @@ public final class Interpreter {
      * verandert ze echt, zodat de volgende run de nieuwe waarde ziet.
      */
     public Interpreter(LogicGraph graph, int first, Map<String, Object> globals) {
+        this(graph, first, globals, new HashMap<>());
+    }
+
+    /**
+     * Zoals hierboven, met de gedeelde namen van de kern erbij ({@code shared}, hoofdstuk 43): die komen uit de global
+     * scripts, en een waarde die de run eraan geeft, ziet elk ander diagram meteen. Het diagram is dan meestal
+     * samengevoegd met de global scripts (zie LogicGraph.withLibrary), zodat hun defs te vinden zijn.
+     */
+    public Interpreter(LogicGraph graph, int first, Map<String, Object> globals, Map<String, Object> shared) {
         this.graph = graph;
         this.current = first;
         this.globals = globals;
+        this.shared = shared;
+        // De soort-woorden: van namen van links, van een naam die er een krijgt in een when, en van parameters.
+        for (LogicGraph.Node node : graph.nodes()) {
+            if (node.op.kind() == Op.Kind.SET) {
+                VarType type = VarType.byWord(node.type);
+                if (type != null) {
+                    types.putIfAbsent(node.text, type);
+                }
+            } else if (node.op == Op.DEF) {
+                try {
+                    for (Script.Param param : Checks.parseParams(node.expr)) {
+                        if (param.varType() != null) {
+                            types.putIfAbsent(param.name(), param.varType());
+                        }
+                    }
+                } catch (LogicException e) {
+                    // Parameters die niet te lezen zijn: dat zegt de controle al.
+                }
+            }
+        }
     }
 
     /**
@@ -122,15 +155,16 @@ public final class Interpreter {
             }
             if (node.op == Op.CALL) {
                 // Een eigen blok: eerst zijn stappen (met zijn eigen namen), en daarna verder met wat na
-                // de CALL komt.
+                // de CALL komt. Hoofdstuk 43: de waarden tussen de haakjes worden zijn parameters.
                 LogicGraph.Node def = findDef(node.text);
                 if (def == null || frames.size() >= MAX_DEPTH) {
                     host.report(def == null ? "there is no def " + node.text : node.text + "() goes too deep");
                     current = node.next;
                     continue;
                 }
+                Map<String, Object> params = params(host, def, node);
                 frames.push(new Frame(FrameKind.DEF, node.next, locals, -1));
-                locals = new HashMap<>();
+                locals = params;
                 current = def.next;
                 continue;
             }
@@ -287,19 +321,72 @@ public final class Interpreter {
 
     // ================================================================ Namen
 
-    /** De waarde van een naam: eerst die van deze run, dan die van links. Null als hij er geen heeft. */
-    public @Nullable Object variable(String name) {
-        Object value = locals.get(name);
-        return value != null ? value : globals.get(name);
+    /**
+     * De parameters van een def (hoofdstuk 43) met de waarden van de aanroep: {@code open_door("Lab door", 3)} bij
+     * {@code def open_door(door: string, times: int):} geeft door = "Lab door" en times = 3. De waarden rekenen we uit
+     * met de namen van wie aanroept (die zijn er nu nog). Te weinig waarden: de rest krijgt de lege waarde van zijn
+     * soort (dat laat de controle niet toe, maar een oud of vreemd diagram kan het hebben).
+     */
+    private Map<String, Object> params(Host host, LogicGraph.Node def, LogicGraph.Node call) {
+        Map<String, Object> params = new HashMap<>();
+        List<Script.Param> names;
+        try {
+            names = Checks.parseParams(def.expr);
+        } catch (LogicException e) {
+            host.report("the parameters of def " + def.text + " (" + def.expr + ") are not valid");
+            return params;
+        }
+        if (names.isEmpty()) {
+            return params;
+        }
+        List<Expr> args = call.expr.isBlank() ? List.of() : ExprCache.values(call.expr);
+        if (args == null) {
+            host.report("the values for " + call.text + "(" + call.expr + ") are not valid");
+            args = List.of();
+        }
+        Expr.Facts facts = host.facts(this);
+        for (int i = 0; i < names.size(); i++) {
+            Script.Param param = names.get(i);
+            VarType type = param.varType();
+            Object value = i < args.size() ? ExprCache.eval(args.get(i), facts) : (type == null ? 0.0 : type.empty());
+            params.put(param.name(), type == null ? value : type.coerce(value));
+        }
+        return params;
     }
 
-    /** Geeft een naam een waarde: een naam van links verandert voor het hele programma, anders voor deze run. */
-    public void set(String name, Object value) {
-        if (globals.containsKey(name)) {
-            globals.put(name, value);
-        } else {
-            locals.put(name, value);
+    /**
+     * De waarde van een naam: eerst die van deze run, dan die van links, dan (hoofdstuk 43) de gedeelde namen van de
+     * kern. Null als hij er geen heeft.
+     */
+    public @Nullable Object variable(String name) {
+        Object value = locals.get(name);
+        if (value == null) {
+            value = globals.get(name);
         }
+        return value != null ? value : shared.get(name);
+    }
+
+    /**
+     * Geeft een naam een waarde: een naam van links verandert voor het hele programma, een gedeelde naam (hoofdstuk 43)
+     * voor alle diagrammen van de kern, anders voor deze run. Een int houdt alleen het hele getal.
+     */
+    public void set(String name, Object value) {
+        VarType type = types.get(name);
+        Object kept = type == null ? value : type.coerce(value);
+        if (locals.containsKey(name)) {
+            locals.put(name, kept);
+        } else if (globals.containsKey(name)) {
+            globals.put(name, kept);
+        } else if (shared.containsKey(name)) {
+            shared.put(name, kept);
+        } else {
+            locals.put(name, kept);
+        }
+    }
+
+    /** De gedeelde namen waar deze run mee werkt (voor de tests). */
+    public Map<String, Object> shared() {
+        return shared;
     }
 
     /**
@@ -310,7 +397,8 @@ public final class Interpreter {
         Map<String, Object> globals = new LinkedHashMap<>();
         List<LogicGraph.Node> nodes = new ArrayList<>();
         for (LogicGraph.Node node : graph.nodes()) {
-            if (node.op == Op.GLOBAL) {
+            // Een naam uit een global script (shared, hoofdstuk 43) is van de kern, niet van dit programma.
+            if (node.op == Op.GLOBAL && !node.shared) {
                 nodes.add(node);
             }
         }
@@ -333,7 +421,9 @@ public final class Interpreter {
         };
         for (LogicGraph.Node node : nodes) {
             Expr value = ExprCache.value(node.expr);
-            globals.put(node.text, value == null ? 0.0 : ExprCache.eval(value, withGlobals));
+            Object first = value == null ? 0.0 : ExprCache.eval(value, withGlobals);
+            VarType type = VarType.byWord(node.type);
+            globals.put(node.text, type == null ? first : type.coerce(first));
         }
         return globals;
     }

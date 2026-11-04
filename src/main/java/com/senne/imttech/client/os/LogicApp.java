@@ -237,6 +237,20 @@ final class LogicApp {
         canvas.setKind(kind);
     }
 
+    /**
+     * De defs en gedeelde namen van je global scripts (hoofdstuk 43), behalve van het diagram dat open staat: die
+     * mag dit diagram gebruiken. De controle hier (Check) en op de server (Save) kijken er allebei mee.
+     */
+    private com.senne.imttech.logic.program.Library library() {
+        List<LogicProgram> programs = new ArrayList<>();
+        for (Entry entry : entries) {
+            if (entry.graph().global()) {
+                programs.add(new LogicProgram(entry.name(), entry.on(), entry.graph(), entry.source(), entry.kind()));
+            }
+        }
+        return com.senne.imttech.logic.program.Library.of(programs, current);
+    }
+
     /** Zijn er wijzigingen die nog niet bewaard zijn? */
     boolean dirty() {
         return open && (current == null || blocksEdited || !editor.text().equals(loadedCode)
@@ -287,7 +301,7 @@ final class LogicApp {
         if (blockGraph == null) {
             return false;
         }
-        var problems = blockGraph.problems(kind);
+        var problems = blockGraph.problems(kind, library());
         if (!problems.isEmpty()) {
             if (select) {
                 canvas.select(problems.getFirst().node());
@@ -297,7 +311,10 @@ final class LogicApp {
         }
         int loose = blockGraph.size() - blockGraph.reachable().size();
         int handlers = (int) blockGraph.nodes().stream().filter(node -> node.op.isTrigger()).count();
-        if (handlers == 0) {
+        if (blockGraph.global()) {
+            show("Global script: " + blockGraph.size() + (blockGraph.size() == 1 ? " block" : " blocks")
+                    + " (DEF blocks and names at start, for all your diagrams)", HudStyle.GREEN);
+        } else if (handlers == 0) {
             show(blockGraph.size() == 0 ? "Start with a WHEN block (on the right)"
                     : "Add a WHEN block: a DEF does nothing until a when uses it", HudStyle.ORANGE);
         } else if (loose > 0) {
@@ -314,10 +331,18 @@ final class LogicApp {
     /** Controleert de code. {@code jump}: spring naar de regel met de fout. Geeft het Script, of null bij een fout. */
     private @Nullable Script check(boolean jump) {
         try {
-            Script script = ScriptParser.parse(editor.text(), kind);
+            Script script = ScriptParser.parse(editor.text(), kind, library());
             editor.setErrorLine(0);
             int blocks = script.blocks();
-            if (script.items().isEmpty()) {
+            if (script.global()) {
+                // Een global script (hoofdstuk 43): defs en gedeelde namen voor al je diagrammen.
+                int defs = script.functions().size();
+                int shared = script.globals().size();
+                show(blocks == 0 ? "Global script: add defs and shared names (like lockdown: bool = false) for all your diagrams"
+                        : "Global script: " + defs + (defs == 1 ? " def" : " defs") + " and " + shared
+                        + (shared == 1 ? " shared name" : " shared names") + " for all your diagrams (" + blocks
+                        + (blocks == 1 ? " block)" : " blocks)"), HudStyle.GREEN);
+            } else if (script.items().isEmpty()) {
                 show("Empty: start with a line like when keycard(\"Reader 1\"):", HudStyle.ORANGE);
             } else if (script.handlers().isEmpty()) {
                 show("No problems, but no when uses your defs yet (a def does nothing on its own)", HudStyle.ORANGE);
@@ -385,7 +410,7 @@ final class LogicApp {
             return;
         }
         try {
-            ScriptParser.parse(editor.text(), kind);
+            ScriptParser.parse(editor.text(), kind, library());
             save();
         } catch (LogicException e) {
             // Kapotte code bewaren we niet vanzelf.
@@ -426,6 +451,49 @@ final class LogicApp {
         loadedCode = "";
         codeAtSwitch = code;
         blockGraph = GraphConverter.toGraph(ScriptParser.parse(code, newKind), null);
+        blocksEdited = false;
+        if (mode == Mode.BLOCKS) {
+            canvas.setGraph(blockGraph);
+            checkBlocks(false);
+        } else {
+            editor.setFocused(true);
+            check(false);
+        }
+    }
+
+    /**
+     * Een nieuw global script (hoofdstuk 43): een diagram op de server dat met {@code global} begint, met een gedeelde
+     * naam en een def als voorbeeld. Het heet "Global 1".
+     */
+    private void newGlobalScript() {
+        choosingKind = false;
+        if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
+            return;
+        }
+        int number = 1;
+        while (find("Global " + number) != null) {
+            number++;
+        }
+        current = null;
+        open = true;
+        baseGraph = null;
+        setKind(ProgramKind.SERVER);
+        nameBox().setValue("Global " + number);
+        loadedName = "";
+        String code = """
+                global
+
+                # Shared names: every diagram of this core reads and changes the same value.
+                lockdown: bool = false
+
+                # Defs for every diagram: use activate_alarm() in any when.
+                def activate_alarm():
+                    alarm("Alarm!")
+                """;
+        editor.setText(code);
+        loadedCode = "";
+        codeAtSwitch = code;
+        blockGraph = GraphConverter.toGraph(ScriptParser.parse(code, ProgramKind.SERVER), null);
         blocksEdited = false;
         if (mode == Mode.BLOCKS) {
             canvas.setGraph(blockGraph);
@@ -511,7 +579,12 @@ final class LogicApp {
         for (Tag element : info().getList("robots", Tag.TAG_COMPOUND)) {
             robots.add(((CompoundTag) element).getString("n"));
         }
-        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups(), buttons, levers);
+        // De gedeelde namen en de defs uit je global scripts (hoofdstuk 43).
+        com.senne.imttech.logic.program.Library library = library();
+        List<String> shared = new ArrayList<>(library.shared().keySet());
+        java.util.Map<String, String> globalDefs = new java.util.LinkedHashMap<>();
+        library.defs().forEach((name, def) -> globalDefs.put(name, def.function().paramsCode()));
+        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups(), buttons, levers, shared, globalDefs);
     }
 
     /** De keycard-groepen van dit netwerk (25 oktober), op alfabet. */
@@ -627,7 +700,9 @@ final class LogicApp {
             OsDraw.button(g, font, x + 4, top + 15, "Server diagram", true, HudStyle.CYAN);
             OsDraw.button(g, font, x + 4, top + 15 + OsDraw.BUTTON_H + 3, "Robot program", true, 0xF1E87C);
             OsDraw.button(g, font, x + 4, top + 15 + 2 * (OsDraw.BUTTON_H + 3), "Drone program", true, DRONE_COLOUR);
-            OsDraw.button(g, font, x + 4, top + 15 + 3 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
+            // Een global script (hoofdstuk 43): defs en gedeelde namen voor al je diagrammen.
+            OsDraw.button(g, font, x + 4, top + 15 + 3 * (OsDraw.BUTTON_H + 3), "Global script", true, HudStyle.ORANGE);
+            OsDraw.button(g, font, x + 4, top + 15 + 4 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
             return;
         }
         int y = top + 3;
@@ -642,13 +717,17 @@ final class LogicApp {
             g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
             String name = (selected && dirty() ? "*" : "") + entry.name();
             boolean bot = entry.kind().onBot();
-            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (bot ? 24 : 14)), x + 10, y,
+            boolean global = entry.graph().global();
+            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (bot || global ? 24 : 14)), x + 10, y,
                     HudStyle.argb(255, entry.on() || bot ? HudStyle.WHITE : OsDraw.GREY), false);
             if (bot) {
                 // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server); een
                 // droneprogramma (hoofdstuk 25): een lichtblauwe D.
                 boolean drone = entry.kind() == ProgramKind.DRONE;
                 g.drawString(font, drone ? "D" : "R", x + SIDE - 10, y, HudStyle.argb(255, drone ? DRONE_COLOUR : 0xF1E87C), false);
+            } else if (global) {
+                // Een global script (hoofdstuk 43): een oranje G.
+                g.drawString(font, "G", x + SIDE - 10, y, HudStyle.argb(255, HudStyle.ORANGE), false);
             }
             y += ROW;
         }
@@ -809,6 +888,9 @@ final class LogicApp {
         lines.add(header("NAMES (variables)"));
         lines.add(new HelpLine("count = 0", "count = 0\n",
                 "At the left edge: a name for the whole program. It keeps its value between runs.", 0xF1E87C, null));
+        lines.add(new HelpLine("count: int = 0", "count: int = 0\n",
+                "A name with a type: int (whole number), float (decimal), string (text) or bool (true/false). It keeps that type;"
+                        + " an int rounds down (7 / 2 = 3).", 0xF1E87C, null));
         lines.add(new HelpLine("count = count + 1", "count = count + 1",
                 "Inside a when or def: give a name a (new) value. A def has its own names.", 0xF1E87C, null));
         lines.add(new HelpLine("if count >= 3:", "if count >= 3:\n    pass",
@@ -835,11 +917,40 @@ final class LogicApp {
         lines.add(header("YOUR OWN BLOCKS (def)"));
         lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",
                 "Write steps once (at the left edge), then use them in many whens with open_door()", 0xC9A0FF, null));
-        java.util.regex.Matcher defs = java.util.regex.Pattern.compile("(?m)^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(")
+        lines.add(new HelpLine("def open_door(door: string):", "def open_door(door: string):\n    accept()\n    log(\"Opened \" + door)\n    pulse(door, 3)\n",
+                "A def with values it needs (parameters, with a type): use it with open_door(\"" + device + "\"). Inside, door is a name.",
+                0xC9A0FF, null));
+        java.util.regex.Matcher defs = java.util.regex.Pattern.compile("(?m)^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(([^)]*)\\)")
                 .matcher(editor.text());
         while (defs.find()) {
-            lines.add(new HelpLine(defs.group(1) + "()", defs.group(1) + "()", "one of your own blocks: does all its steps here",
+            boolean takes = !defs.group(2).isBlank();
+            lines.add(new HelpLine(defs.group(1) + "(" + defs.group(2).strip() + ")", defs.group(1) + "()",
+                    "one of your own blocks: does all its steps here" + (takes ? " (needs: " + defs.group(2).strip() + ")" : ""),
                     0xC9A0FF, null));
+        }
+        // Global scripts (hoofdstuk 43): defs en gedeelde namen voor al je diagrammen, met hun waarde van nu.
+        lines.add(header("GLOBAL SCRIPTS (shared)"));
+        lines.add(new HelpLine("global", "global\n\n", "The first line of a global script: it holds only defs and shared names,"
+                + " and every diagram of this core can use them (+ > Global script)", 0xFF79C6, null));
+        lines.add(new HelpLine("lockdown: bool = false", "lockdown: bool = false\n",
+                "In a global script: a shared name. Every diagram reads and changes the same value, and the core keeps it.",
+                0xF1E87C, null));
+        lines.add(new HelpLine("if lockdown:", "if lockdown:\n    deny()", "In any diagram: use a shared name like your own names",
+                HudStyle.WHITE, null));
+        com.senne.imttech.logic.program.Library library = library();
+        for (var entry : library.defs().entrySet()) {
+            String params = entry.getValue().function().paramsCode();
+            lines.add(new HelpLine(entry.getKey() + "(" + params + ")", entry.getKey() + "()",
+                    "a def from global script " + entry.getValue().script() + (params.isBlank() ? "" : " (needs: " + params + ")"),
+                    0xC9A0FF, null));
+        }
+        for (Tag element : info().getList("shared", Tag.TAG_COMPOUND)) {
+            CompoundTag sharedName = (CompoundTag) element;
+            lines.add(new HelpLine(sharedName.getString("n") + " = " + sharedName.getString("v"), sharedName.getString("n"),
+                    "a shared name (" + sharedName.getString("t") + "), its value right now: " + sharedName.getString("v"), 0xF1E87C, null));
+        }
+        if (library.isEmpty() && info().getList("shared", Tag.TAG_COMPOUND).isEmpty()) {
+            lines.add(new HelpLine("(no global script yet)", null, "Press + and choose Global script", OsDraw.GREY, null));
         }
         lines.add(header("YOUR DEVICES"));
         if (outputs.isEmpty()) {
@@ -1062,7 +1173,9 @@ final class LogicApp {
                 newDiagram(ProgramKind.ROBOT);
             } else if (OsDraw.inside(mx, my, bx, top + 15 + 2 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Drone program"), OsDraw.BUTTON_H)) {
                 newDiagram(ProgramKind.DRONE);
-            } else if (OsDraw.inside(mx, my, bx, top + 15 + 3 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 3 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Global script"), OsDraw.BUTTON_H)) {
+                newGlobalScript();
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 4 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
                 choosingKind = false;
             }
             if (mx >= a.x() && mx < a.x() + SIDE) {

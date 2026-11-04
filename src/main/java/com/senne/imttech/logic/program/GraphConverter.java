@@ -35,15 +35,27 @@ public final class GraphConverter {
     public static Script toScript(LogicGraph graph) {
         List<Script.Top> items = new ArrayList<>();
         for (LogicGraph.Node root : roots(graph)) {
+            if (root.shared) {
+                continue; // een def of naam uit een global script, erbij gezet om te draaien (zie LogicGraph.withLibrary)
+            }
             if (root.op == Op.GLOBAL) {
-                items.add(new Script.Global(root.text, cleanValue(root.expr), root.id));
+                items.add(new Script.Global(root.text, root.type, cleanValue(root.expr), root.id));
                 continue;
             }
             List<Script.Stmt> body = chain(graph, root.next, new HashSet<>());
-            items.add(root.op == Op.DEF ? new Script.Function(root.text, body, root.id)
+            items.add(root.op == Op.DEF ? new Script.Function(root.text, params(root.expr), body, root.id)
                     : new Script.Handler(root.op, root.text, root.number, body, root.id));
         }
-        return new Script(items);
+        return new Script(items, graph.global());
+    }
+
+    /** De parameters van een DEF-blok (hoofdstuk 43), zoals ze in zijn code-vak staan; niet te lezen = geen (dat zegt problems()). */
+    private static List<Script.Param> params(String text) {
+        try {
+            return Checks.parseParams(text);
+        } catch (LogicException e) {
+            return List.of();
+        }
     }
 
     /** Alle triggers en defs (waar een rij blokjes begint), in de volgorde waarin je ze maakte. */
@@ -70,7 +82,7 @@ public final class GraphConverter {
                 statements.add(new Script.If(cleanCondition(node.text), chain(graph, node.yes, seen),
                         chain(graph, node.no, seen), node.id));
             } else if (node.op == Op.SET) {
-                statements.add(new Script.Assign(node.text, cleanValue(node.expr), node.id));
+                statements.add(new Script.Assign(node.text, node.type, cleanValue(node.expr), node.id));
             } else if (node.op.kind() == Op.Kind.LOOP) {
                 // Een for: de naam staat in text en het bereik in expr; een while: de voorwaarde in text.
                 boolean counting = node.op == Op.FOR;
@@ -79,7 +91,8 @@ public final class GraphConverter {
             } else {
                 statements.add(new Script.Action(node.op, node.op.textArg() == Op.Arg.NONE ? "" : node.text,
                         node.op.numberArg() == Op.Arg.NONE ? 0 : node.number,
-                        node.expr.isBlank() ? "" : cleanValue(node.expr), node.id));
+                        node.expr.isBlank() ? "" : cleanValue(node.expr),
+                        node.textExpr.isBlank() ? "" : cleanValue(node.textExpr), node.id));
             }
             id = node.next;
         }
@@ -125,6 +138,7 @@ public final class GraphConverter {
             }
         }
         LogicGraph graph = new LogicGraph();
+        graph.setGlobal(script.global());
         List<Runnable> later = new ArrayList<>();
         int[] bottom = {MARGIN};
         for (int h = 0; h < script.items().size(); h++) {
@@ -186,9 +200,10 @@ public final class GraphConverter {
         void top(Script.Top item) {
             LogicGraph.Node root;
             if (item instanceof Script.Global global) {
-                // Een naam helemaal links: één blokje zonder uitgangen.
+                // Een naam helemaal links: één blokje zonder uitgangen. Met zijn soort-woord (hoofdstuk 43), als dat er is.
                 root = graph.add(Op.GLOBAL, 0, 0);
                 root.text = global.name();
+                root.type = global.type();
                 root.expr = global.value();
                 byPath.put("w", root);
                 cells.put(root, new int[] {0, 0});
@@ -197,6 +212,7 @@ public final class GraphConverter {
             if (item instanceof Script.Function function) {
                 root = graph.add(Op.DEF, 0, 0);
                 root.text = function.name();
+                root.expr = function.paramsCode(); // de parameters (hoofdstuk 43), als code
             } else {
                 Script.Handler handler = (Script.Handler) item;
                 root = graph.add(handler.trigger(), 0, 0);
@@ -247,6 +263,7 @@ public final class GraphConverter {
                 } else if (statement instanceof Script.Assign assign) {
                     node = graph.add(Op.SET, 0, 0);
                     node.text = assign.name();
+                    node.type = assign.type();
                     node.expr = assign.value();
                     cells.put(node, new int[] {c, row});
                     c++;
@@ -255,6 +272,7 @@ public final class GraphConverter {
                     node.text = action.text();
                     node.number = action.number();
                     node.expr = action.expr();
+                    node.textExpr = action.textExpr();
                     cells.put(node, new int[] {c, row});
                     c++;
                 } else {

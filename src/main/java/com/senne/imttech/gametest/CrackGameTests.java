@@ -134,6 +134,68 @@ public final class CrackGameTests {
         helper.succeed();
     }
 
+    /** Laat de speler de Block Reinforcer op de oostkant van {@code pos} gebruiken (al dan niet sluipend). */
+    private static boolean reinforce(GameTestHelper helper, ServerPlayer player, BlockPos pos, boolean sneak) {
+        player.getAbilities().instabuild = false;
+        if (!player.getMainHandItem().is(ModItems.BLOCK_REINFORCER.get())) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.BLOCK_REINFORCER.get()));
+        }
+        player.setShiftKeyDown(sneak);
+        BlockPos abs = helper.absolutePos(pos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs).relative(Direction.EAST, 0.5), Direction.EAST, abs, false);
+        boolean done = player.getMainHandItem().useOn(new UseOnContext(player, InteractionHand.MAIN_HAND, hit)).consumesAction();
+        player.setShiftKeyDown(false);
+        return done;
+    }
+
+    /**
+     * Hoofdstuk 44 (jouw wens: "block reinforcer zodat je base mooi is en ook sterk voor c4"): kwarts (zwak, 2
+     * breekpunten) wordt met één Reinforcement Plate zo sterk als obsidiaan (20); een tweede keer doet niets; sluipen
+     * verstevigt de hele muur van dat blok, tot de platen op zijn; een frag maakt er dan alleen barsten in; het blijft
+     * bewaard na opslaan en laden; en een ander blok op die plek is de versteviging kwijt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
+    public static void reinforcer_makes_blocks_strong(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 20), "reinforcer");
+        // Een muurtje van vijf kwartsblokken op een rij (zuidwaarts).
+        for (int i = 0; i < 5; i++) {
+            helper.setBlock(BLOCK.south(i), Blocks.QUARTZ_BLOCK);
+        }
+        check(strength(helper, BLOCK) == 2, "Nieuw kwarts zou zwak moeten zijn (2 breekpunten), niet " + strength(helper, BLOCK));
+        player.getInventory().setItem(9, new ItemStack(ModItems.REINFORCEMENT_PLATE.get(), 3));
+        check(reinforce(helper, player, BLOCK, false), "Verstevigen lukte niet");
+        check(Cracks.isReinforced(level, helper.absolutePos(BLOCK)), "Het blok zou verstevigd moeten zijn");
+        check(strength(helper, BLOCK) == 20, "Verstevigd kwarts zou 20 breekpunten moeten kunnen hebben, niet " + strength(helper, BLOCK));
+        check(com.senne.imttech.breach.BlockReinforcerItem.countPlates(player) == 2, "Er zou één plaat op moeten zijn");
+        check(!reinforce(helper, player, BLOCK, false), "Een tweede keer zou niets moeten doen (al verstevigd)");
+        check(com.senne.imttech.breach.BlockReinforcerItem.countPlates(player) == 2, "Een tweede keer zou geen plaat mogen kosten");
+        // Sluipen: de rest van de muur, maar er zijn nog maar twee platen.
+        check(reinforce(helper, player, BLOCK.south(1), true), "De muur verstevigen lukte niet");
+        check(com.senne.imttech.breach.BlockReinforcerItem.countPlates(player) == 0, "De muur zou de laatste twee platen moeten kosten");
+        int reinforced = 0;
+        for (int i = 0; i < 5; i++) {
+            if (Cracks.isReinforced(level, helper.absolutePos(BLOCK.south(i)))) {
+                reinforced++;
+            }
+        }
+        check(reinforced == 3, "Met drie platen zouden drie blokken verstevigd moeten zijn, niet " + reinforced);
+        check(!reinforce(helper, player, BLOCK.south(4), false), "Zonder platen zou verstevigen niet mogen");
+        // Een frag op verstevigd kwarts: barsten, maar het blijft staan (gewoon kwarts vliegt eruit).
+        blast(helper, BLOCK);
+        helper.assertBlockPresent(Blocks.QUARTZ_BLOCK, BLOCK);
+        check(Cracks.damage(level, helper.absolutePos(BLOCK)) > 0, "Na de frag zou het verstevigde kwarts barsten moeten hebben");
+        check(Cracks.isReinforced(level, helper.absolutePos(BLOCK)), "Na de frag zou het nog verstevigd moeten zijn");
+        // Bewaard na opslaan en laden.
+        CrackData.Crack saved = CrackData.afterReload(CrackData.get(level), level.dimension(), helper.absolutePos(BLOCK), level.registryAccess());
+        check(saved != null && saved.reinforced(), "Na opslaan en inladen is de versteviging weg: " + saved);
+        // Een ander blok op die plek: de versteviging is weg.
+        helper.setBlock(BLOCK.south(1), Blocks.STONE);
+        check(!Cracks.isReinforced(level, helper.absolutePos(BLOCK.south(1))), "Een nieuw blok zou niet verstevigd moeten zijn");
+        check(strength(helper, BLOCK.south(1)) == 6, "Nieuwe steen zou gewoon 6 breekpunten moeten kunnen hebben");
+        helper.succeed();
+    }
+
     /** Geen barsten: dan doet de pasta niets (en gaat er ook geen op). */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
     public static void paste_needs_cracks(GameTestHelper helper) {

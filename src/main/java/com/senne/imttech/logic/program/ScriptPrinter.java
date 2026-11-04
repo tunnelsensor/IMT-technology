@@ -6,6 +6,10 @@ import java.util.List;
  * Schrijft een {@link Script} als nette code (4 spaties per inspringing, een lege regel tussen de
  * when-blokken en defs). Een lege tak wordt {@code pass}; een else met alleen een if erin wordt
  * {@code elif}. Zo zie je in de code precies wat de blokjes doen.
+ *
+ * Hoofdstuk 43: een global script begint met de regel {@code global}; een naam met een soort-woord wordt
+ * {@code count: int = 0}; een def met parameters {@code def open_door(door: string):}; een aanroep met waarden
+ * {@code open_door("Lab door")}; en een apparaat als code {@code pulse(door, 3)}.
  */
 public final class ScriptPrinter {
     private ScriptPrinter() {}
@@ -14,24 +18,33 @@ public final class ScriptPrinter {
 
     public static String print(Script script) {
         StringBuilder out = new StringBuilder();
+        if (script.global()) {
+            out.append("global\n");
+        }
         for (int i = 0; i < script.items().size(); i++) {
             Script.Top item = script.items().get(i);
             // Een lege regel tussen de blokken, maar namen bovenaan (count = 0) staan onder elkaar.
-            if (i > 0 && !(item instanceof Script.Global && script.items().get(i - 1) instanceof Script.Global)) {
+            boolean afterGlobalWord = i == 0 && script.global();
+            if ((i > 0 || afterGlobalWord) && !(item instanceof Script.Global && i > 0 && script.items().get(i - 1) instanceof Script.Global)) {
                 out.append('\n');
             }
             if (item instanceof Script.Global global) {
-                out.append(global.name()).append(" = ").append(global.value()).append('\n');
+                out.append(global.name()).append(typeSuffix(global.type())).append(" = ").append(global.value()).append('\n');
                 continue;
             }
             if (item instanceof Script.Function function) {
-                out.append("def ").append(function.name()).append("():\n");
+                out.append("def ").append(function.name()).append('(').append(function.paramsCode()).append("):\n");
             } else if (item instanceof Script.Handler handler) {
                 out.append("when ").append(call(handler.trigger(), handler.text(), handler.number())).append(":\n");
             }
             block(out, item.body(), 1);
         }
         return out.toString();
+    }
+
+    /** {@code : int} achter een naam, of niets als er geen soort-woord is. */
+    private static String typeSuffix(String type) {
+        return type.isEmpty() ? "" : ": " + type;
     }
 
     private static void block(StringBuilder out, List<Script.Stmt> statements, int depth) {
@@ -43,10 +56,12 @@ public final class ScriptPrinter {
             if (statement instanceof Script.If branch) {
                 ifStatement(out, branch, depth, "if");
             } else if (statement instanceof Script.Action action) {
-                out.append(INDENT.repeat(depth)).append(call(action.op(), action.text(), action.number(), action.expr()))
+                out.append(INDENT.repeat(depth))
+                        .append(call(action.op(), action.text(), action.number(), action.expr(), action.textExpr()))
                         .append('\n');
             } else if (statement instanceof Script.Assign assign) {
-                out.append(INDENT.repeat(depth)).append(assign.name()).append(" = ").append(assign.value()).append('\n');
+                out.append(INDENT.repeat(depth)).append(assign.name()).append(typeSuffix(assign.type())).append(" = ")
+                        .append(assign.value()).append('\n');
             } else if (statement instanceof Script.Loop loop) {
                 out.append(INDENT.repeat(depth)).append(loopLine(loop.op(), loop.var(), loop.expr())).append('\n');
                 block(out, loop.body(), depth + 1);
@@ -70,15 +85,40 @@ public final class ScriptPrinter {
      * {@code wait(delay * 2)}, {@code pulse("Lamp", delay)}. Zonder berekening zoals {@link #call(Op, String, double)}.
      */
     public static String call(Op op, String text, double number, String expr) {
-        if (expr.isEmpty()) {
+        return call(op, text, number, expr, "");
+    }
+
+    /**
+     * Zoals hierboven, en (hoofdstuk 43) met het apparaat als code ({@code textExpr}: {@code pulse(door, 3)}), de
+     * parameters van een def ({@code expr} bij DEF: {@code def open_door(door: string)}) of de waarden van een aanroep
+     * ({@code expr} bij CALL: {@code open_door("Lab door")}).
+     */
+    public static String call(Op op, String text, double number, String expr, String textExpr) {
+        if (op == Op.CALL) {
+            return text + "(" + expr + ")";
+        }
+        if (op == Op.DEF) {
+            return "def " + text + "(" + expr + ")";
+        }
+        boolean codeName = !textExpr.isEmpty() && (op.textArg() == Op.Arg.DEVICE || op.textArg() == Op.Arg.ROBOT);
+        if (expr.isEmpty() && !codeName) {
             return call(op, text, number);
         }
         StringBuilder call = new StringBuilder(op.code()).append('(');
-        if (!Checks.exprIsText(op) && op.textArg() != Op.Arg.NONE && op.textArg() != Op.Arg.VALUES) {
-            call.append(Expr.quote(text)).append(", "); // eerst het apparaat, dan de berekende seconden
+        if (op.textArg() != Op.Arg.NONE && op.textArg() != Op.Arg.VALUES && !Checks.exprIsText(op)) {
+            call.append(codeName ? textExpr : Expr.quote(text)); // eerst het apparaat, dan de (berekende) seconden
+            if (!expr.isEmpty()) {
+                call.append(", ");
+            }
         }
-        // Bij goto(x, y, z) (hoofdstuk 23) is expr het hele rijtje waarden.
-        return call.append(expr).append(')').toString();
+        if (!expr.isEmpty()) {
+            // Bij goto(x, y, z) (hoofdstuk 23) is expr het hele rijtje waarden; bij pulse de berekende seconden.
+            call.append(expr);
+        } else if (codeName && (op.numberArg() == Op.Arg.NUMBER
+                || op.numberArg() == Op.Arg.OPTIONAL_NUMBER && number != op.defaultNumber())) {
+            call.append(", ").append(Expr.number(number));
+        }
+        return call.append(')').toString();
     }
 
     /** De eerste regel van een lus: {@code for i in range(3):} of {@code while count < 3:}. */

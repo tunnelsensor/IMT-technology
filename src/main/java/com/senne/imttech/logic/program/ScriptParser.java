@@ -42,9 +42,14 @@ public final class ScriptParser {
     private final java.util.Set<String> functionNames = new java.util.LinkedHashSet<>();
     /** Wat voor programma (hoofdstuk 23): een woord dat hier niet bestaat, zeggen we meteen. */
     private final ProgramKind kind;
+    /** De defs en gedeelde namen van de global scripts (hoofdstuk 43): die mag je hier ook gebruiken. */
+    private final Library library;
+    /** Begint de code met de regel {@code global}? Dan is dit een global script (hoofdstuk 43). */
+    private boolean global;
 
-    private ScriptParser(String source, ProgramKind kind) {
+    private ScriptParser(String source, ProgramKind kind, Library library) {
         this.kind = kind;
+        this.library = library;
         String[] raw = source.replace("\r", "").split("\n", -1);
         for (int i = 0; i < raw.length; i++) {
             String text = raw[i].replace("\t", "    ");
@@ -59,6 +64,12 @@ public final class ScriptParser {
                 throw e.atLine(i + 1);
             }
             if (tokens.getFirst().type() != Lexer.Type.END) {
+                // "global" als eerste regel code (hoofdstuk 43): een global script. Verderop is het een fout (zie script()).
+                if (lines.isEmpty() && !global && indent == 0 && tokens.getFirst().is("global")
+                        && tokens.get(1).type() == Lexer.Type.END) {
+                    global = true;
+                    continue;
+                }
                 lines.add(new Line(i + 1, indent, tokens));
                 if (indent == 0 && tokens.getFirst().is("def") && tokens.get(1).type() == Lexer.Type.NAME) {
                     functionNames.add(tokens.get(1).text());
@@ -74,13 +85,26 @@ public final class ScriptParser {
 
     /** Leest de code van deze soort programma (hoofdstuk 23: een robotprogramma kent andere woorden). */
     public static Script parse(String source, ProgramKind kind) {
-        Script script = new ScriptParser(source, kind).script();
+        return parse(source, kind, Library.EMPTY);
+    }
+
+    /**
+     * Leest de code met de defs en gedeelde namen van de global scripts erbij ({@code library}, hoofdstuk 43): die mag
+     * de code gebruiken alsof ze van hemzelf zijn.
+     */
+    public static Script parse(String source, ProgramKind kind, Library library) {
+        Script script = new ScriptParser(source, kind, library).script();
         // Dan wat over meerdere regels gaat (defs): zelfde controles als bij de blokjes.
-        List<ScriptChecker.Problem> problems = ScriptChecker.check(script, kind);
+        List<ScriptChecker.Problem> problems = ScriptChecker.check(script, kind, library);
         if (!problems.isEmpty()) {
             throw new LogicException(problems.getFirst().ref(), problems.getFirst().message());
         }
         return script;
+    }
+
+    /** Is dit de naam van een def: een eigen def, of een uit een global script? */
+    private boolean isDef(String name) {
+        return functionNames.contains(name) || library.def(name) != null;
     }
 
     // ================================================================ when ...:
@@ -97,22 +121,37 @@ public final class ScriptParser {
                 items.add(function(line));
                 continue;
             }
+            if (first.is("global")) {
+                throw new LogicException(line.number(), line.tokens().get(1).type() == Lexer.Type.END
+                        ? "global only works as the very first line of the diagram (above everything else)"
+                        : "global stands alone on the first line: it makes this a global script with only defs and shared names");
+            }
             if (isAssignment(line)) {
-                // count = 0 helemaal links: een naam voor het hele programma.
+                // count = 0 helemaal links: een naam voor het hele programma. Met een soort-woord (hoofdstuk 43):
+                // count: int = 0.
                 String[] parts = assignment(line);
-                items.add(new Script.Global(parts[0], parts[1], line.number()));
+                items.add(new Script.Global(parts[0], parts[1], parts[2], line.number()));
                 continue;
             }
             if (!first.is("when")) {
                 Op op = first.type() == Lexer.Type.NAME ? Op.byCode(first.text()) : null;
-                boolean own = first.type() == Lexer.Type.NAME && functionNames.contains(first.text());
+                boolean own = first.type() == Lexer.Type.NAME && isDef(first.text());
                 if (own || op != null && !op.isTrigger() && op != Op.IF) {
                     boolean keyword = op != null && (op.kind() == Op.Kind.LOOP || op == Op.BREAK);
                     throw new LogicException(line.number(), first.text() + (keyword ? "" : "()")
                             + " must be inside a when: indent it with 4 spaces under a line like " + exampleWhen());
                 }
+                if (first.type() == Lexer.Type.NAME && line.tokens().get(1).is(":") && line.tokens().get(2).type() == Lexer.Type.NAME
+                        && VarType.byWord(line.tokens().get(2).text()) == null) {
+                    throw new LogicException(line.number(), "I don't know the type \"" + line.tokens().get(2).text() + "\": use "
+                            + VarType.words() + ", like " + first.text() + ": int = 0");
+                }
                 throw new LogicException(line.number(), "Every " + kind.noun() + " starts with when (or def), like: " + exampleWhen()
                         + " (a name with a value, like count = 0, may also stand at the left edge)");
+            }
+            if (global) {
+                throw new LogicException(line.number(), "A global script holds only defs and shared names (like lockdown: bool = false):"
+                        + " put this when in another diagram");
             }
             // when started: (hoofdstuk 23) heeft geen haakjes: er hoort niets bij.
             Call call = line.tokens().get(1).type() == Lexer.Type.NAME && !line.tokens().get(2).is("(")
@@ -136,14 +175,14 @@ public final class ScriptParser {
             items.add(new Script.Handler(trigger, values.text() == null ? "" : values.text(),
                     values.number() == null ? 0 : values.number(), body, line.number()));
         }
-        return new Script(items);
+        return new Script(items, global);
     }
 
-    // ================================================================ def naam():
+    // ================================================================ def naam(parameters):
 
     /**
-     * Een eigen blok: {@code def naam():} met de stappen eronder. Zonder iets tussen de haakjes: je
-     * eigen blokken krijgen (nog) geen gegevens mee.
+     * Een eigen blok: {@code def naam():} met de stappen eronder. Sinds hoofdstuk 43 met parameters tussen de haakjes:
+     * {@code def open_door(door: string, times: int):} (het soort-woord mag weg: dan past elke waarde).
      */
     private Script.Function function(Line line) {
         List<Lexer.Token> tokens = line.tokens();
@@ -158,16 +197,56 @@ public final class ScriptParser {
         if (!tokens.get(2).is("(")) {
             throw new LogicException(line.number(), "A def needs brackets after its name, like: def " + name.text() + "():");
         }
-        if (!tokens.get(3).is(")")) {
-            throw new LogicException(line.number(), tokens.get(3).type() == Lexer.Type.END
-                    ? "def " + name.text() + "( is missing its closing )"
-                    : "Your own blocks take nothing between the brackets: def " + name.text() + "():");
+        // De parameters: tot de ) die erbij hoort.
+        int close = 3;
+        while (tokens.get(close).type() != Lexer.Type.END && !tokens.get(close).is(")")) {
+            close++;
         }
-        expectColon(line, 4);
+        if (tokens.get(close).type() == Lexer.Type.END) {
+            throw new LogicException(line.number(), "def " + name.text() + "( is missing its closing )");
+        }
+        List<Script.Param> params = new ArrayList<>();
+        for (int i = 3; i < close; ) {
+            Lexer.Token param = tokens.get(i);
+            if (param.type() != Lexer.Type.NAME) {
+                throw new LogicException(line.number(), param.is(",") ? "A parameter is missing before the comma"
+                        : "A parameter needs a name, like def " + name.text() + "(door: string):");
+            }
+            String type = "";
+            i++;
+            if (tokens.get(i).is(":")) {
+                Lexer.Token word = tokens.get(i + 1);
+                if (word.type() != Lexer.Type.NAME || VarType.byWord(word.text()) == null) {
+                    throw new LogicException(line.number(), word.is(")") || word.type() == Lexer.Type.END
+                            ? "After " + param.text() + ": comes a type: " + VarType.words()
+                            : "I don't know the type \"" + word.text() + "\": use " + VarType.words());
+                }
+                type = word.text();
+                i += 2;
+            } else if (tokens.get(i).is("=")) {
+                throw new LogicException(line.number(), "A parameter gets its value when you use the def: write def "
+                        + name.text() + "(" + param.text() + ": string): and then " + name.text() + "(\"Lab door\")");
+            }
+            params.add(new Script.Param(param.text(), type));
+            if (tokens.get(i).is(",")) {
+                i++;
+                if (i == close) {
+                    throw new LogicException(line.number(), "A parameter is missing after the comma");
+                }
+            } else if (i != close) {
+                throw new LogicException(line.number(), "Separate the parameters with a comma, like def " + name.text()
+                        + "(door: string, times: int):");
+            }
+        }
+        problem = Checks.paramsProblem(params, functionNames);
+        if (problem != null) {
+            throw new LogicException(line.number(), problem);
+        }
+        expectColon(line, close + 1);
         index++;
         // In een def weten we nog niet welke when hem gebruikt (null): dat controleert ScriptChecker.
         List<Script.Stmt> body = block(line, null);
-        return new Script.Function(name.text(), body, line.number());
+        return new Script.Function(name.text(), params, body, line.number());
     }
 
     // ================================================================ Een ingesprongen blok
@@ -216,6 +295,10 @@ public final class ScriptParser {
         if (first.is("def")) {
             throw new LogicException(line.number(), "A def must not be indented: start it at the left edge, not inside a when");
         }
+        if (first.is("global")) {
+            throw new LogicException(line.number(), "global only works as the very first line of the diagram: it makes the whole"
+                    + " diagram a global script (shared names are written there, like lockdown: bool = false)");
+        }
         if (first.is("pass")) {
             if (line.tokens().get(1).type() != Lexer.Type.END) {
                 throw new LogicException(line.number(), "Nothing may come after pass");
@@ -243,7 +326,12 @@ public final class ScriptParser {
         }
         if (isAssignment(line)) {
             String[] parts = assignment(line);
-            return new Script.Assign(parts[0], parts[1], line.number());
+            return new Script.Assign(parts[0], parts[1], parts[2], line.number());
+        }
+        if (first.type() == Lexer.Type.NAME && line.tokens().get(1).is(":") && line.tokens().get(2).type() == Lexer.Type.NAME
+                && VarType.byWord(line.tokens().get(2).text()) == null && Op.byCode(first.text()) == null) {
+            throw new LogicException(line.number(), "I don't know the type \"" + line.tokens().get(2).text() + "\": use "
+                    + VarType.words() + ", like " + first.text() + ": int = 0");
         }
         Call call = call(line, 0);
         if (line.tokens().get(call.end()).type() != Lexer.Type.END) {
@@ -251,13 +339,11 @@ public final class ScriptParser {
             throw new LogicException(line.number(), extra.is(":")
                     ? call.name() + "() is an action: it does not end with a :" : "I did not expect " + extra + " after " + call.name() + "()");
         }
-        if (functionNames.contains(call.name())) {
-            // Een van je eigen blokken.
-            if (!call.args().isEmpty()) {
-                throw new LogicException(line.number(), "Your own blocks take nothing between the brackets: " + call.name() + "()");
-            }
+        if (isDef(call.name())) {
+            // Een van je eigen blokken (of een def uit een global script, hoofdstuk 43), met de waarden voor zijn
+            // parameters als code: open_door("Lab door", 3). Of het er genoeg zijn, kijkt ScriptChecker na.
             index++;
-            return new Script.Action(Op.CALL, call.name(), 0, line.number());
+            return new Script.Action(Op.CALL, call.name(), 0, Expr.printList(call.args()), line.number());
         }
         Op op = Op.byCode(call.name());
         if (op == Op.CALL || op == Op.DEF) {
@@ -298,7 +384,8 @@ public final class ScriptParser {
         index++;
         double number = values.number() != null ? values.number()
                 : op.numberArg() == Op.Arg.OPTIONAL_NUMBER ? op.defaultNumber() : 0;
-        return new Script.Action(op, values.text() == null ? "" : values.text(), number, values.expr(), line.number());
+        return new Script.Action(op, values.text() == null ? "" : values.text(), number, values.expr(), values.textExpr(),
+                line.number());
     }
 
     /** if (of elif) voorwaarde: blok, en dan eventueel elif/else met hun blok. */
@@ -410,14 +497,26 @@ public final class ScriptParser {
 
     // ================================================================ naam = waarde
 
-    /** Is dit een regel als {@code count = count + 1}: een naam, dan één =? */
+    /**
+     * Is dit een regel als {@code count = count + 1}: een naam, dan één =? Of (hoofdstuk 43) met een soort-woord:
+     * {@code count: int = 0}.
+     */
     private static boolean isAssignment(Line line) {
-        return line.first().type() == Lexer.Type.NAME && line.tokens().get(1).is("=");
+        List<Lexer.Token> tokens = line.tokens();
+        if (line.first().type() != Lexer.Type.NAME) {
+            return false;
+        }
+        if (tokens.get(1).is("=")) {
+            return true;
+        }
+        return tokens.get(1).is(":") && tokens.get(2).type() == Lexer.Type.NAME && VarType.byWord(tokens.get(2).text()) != null
+                && (tokens.get(3).is("=") || tokens.get(3).type() == Lexer.Type.END);
     }
 
     /**
-     * Leest {@code naam = waarde} (hoofdstuk 20). Geeft {naam, waarde als nette code}. Of de naam al
-     * een waarde had en of de soort klopt, controleert ScriptChecker (die kent het hele diagram).
+     * Leest {@code naam = waarde} (hoofdstuk 20) of {@code naam: soort = waarde} (hoofdstuk 43). Geeft {naam, soort-woord
+     * (of leeg), waarde als nette code}. Of de naam al een waarde had en of de soort klopt, controleert ScriptChecker
+     * (die kent het hele diagram).
      */
     private String[] assignment(Line line) {
         String name = line.first().text();
@@ -425,13 +524,23 @@ public final class ScriptParser {
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }
-        if (line.tokens().get(2).type() == Lexer.Type.END) {
+        String type = "";
+        int at = 2;
+        if (line.tokens().get(1).is(":")) {
+            type = line.tokens().get(2).text();
+            if (line.tokens().get(3).type() == Lexer.Type.END) {
+                throw new LogicException(line.number(), "Give " + name + " a value after the type, like " + name + ": " + type
+                        + " = " + VarType.byWord(type).emptyCode());
+            }
+            at = 4;
+        }
+        if (line.tokens().get(at).type() == Lexer.Type.END) {
             throw new LogicException(line.number(), "Give " + name + " a value after the =, like " + name + " = 0");
         }
         int[] end = new int[1];
         Expr value;
         try {
-            value = Expr.parseValue(line.tokens(), 2, end);
+            value = Expr.parseValue(line.tokens(), at, end);
         } catch (LogicException e) {
             throw e.atLine(line.number());
         }
@@ -441,7 +550,7 @@ public final class ScriptParser {
                     : "I did not expect " + extra + " here");
         }
         index++;
-        return new String[] {name, Expr.print(value)};
+        return new String[] {name, type, Expr.print(value)};
     }
 
     // ================================================================ naam(...)
@@ -457,13 +566,14 @@ public final class ScriptParser {
      * bericht), het getal (seconden), en een berekening ({@code expr}) als het bericht of het getal geen
      * gewone tekst of gewoon getal is.
      */
-    private record Values(@Nullable String text, @Nullable Double number, String expr) {}
+    private record Values(@Nullable String text, @Nullable Double number, String expr, String textExpr) {}
 
     /**
-     * Verdeelt de waarden van een aanroep over de vakjes van {@code op}. Een apparaat moet gewone tekst
-     * tussen aanhalingstekens zijn (zo kan de editor de namen voorstellen en controleren); een bericht
-     * (say, log, alarm) en het aantal seconden (wait, pulse) mogen een berekening zijn. Een trigger
-     * neemt alleen gewone tekst en gewone getallen.
+     * Verdeelt de waarden van een aanroep over de vakjes van {@code op}. Een apparaat is meestal gewone tekst
+     * tussen aanhalingstekens (zo kan de editor de namen voorstellen en controleren); sinds hoofdstuk 43 mag het
+     * ook een naam of berekening zijn ({@code pulse(door, 3)} met {@code door} een parameter: dat komt in
+     * {@code textExpr}). Een bericht (say, log, alarm) en het aantal seconden (wait, pulse) mogen een berekening
+     * zijn. Een trigger neemt alleen gewone tekst en gewone getallen.
      */
     private static Values values(Line line, Op op, Call call) {
         List<Expr> args = call.args();
@@ -480,6 +590,7 @@ public final class ScriptParser {
         String text = null;
         Double number = null;
         String expr = "";
+        String textExpr = "";
         int index = 0;
         if (hasText && index < args.size()) {
             Expr arg = args.get(index++);
@@ -487,6 +598,15 @@ public final class ScriptParser {
                 text = str.value();
             } else if (Checks.exprIsText(op) && !op.isTrigger()) {
                 expr = Expr.print(arg); // een berekend bericht: say("Count: " + count)
+            } else if (op.isTrigger()) {
+                throw new LogicException(line.number(), arg instanceof Expr.Ref ref
+                        ? "Put names between quotes: " + op.code() + "(\"" + ref.name() + "\")"
+                        : op.code() + " needs a name between quotes, like " + op.code() + "(\"Lab door\")");
+            } else if ((op.textArg() == Op.Arg.DEVICE || op.textArg() == Op.Arg.ROBOT)
+                    && (Expr.typeOf(arg) == Expr.Type.TEXT || Expr.typeOf(arg) == Expr.Type.ANY)) {
+                // Een naam of berekening als apparaat (hoofdstuk 43): pulse(door, 3). Of die naam een waarde heeft,
+                // kijkt ScriptChecker na (met een tip over aanhalingstekens als het een typfout lijkt).
+                textExpr = Expr.print(arg);
             } else if (arg instanceof Expr.Ref ref) {
                 throw new LogicException(line.number(), "Put names between quotes: " + op.code() + "(\"" + ref.name() + "\")");
             } else {
@@ -511,7 +631,7 @@ public final class ScriptParser {
                 expr = Expr.print(arg); // berekende seconden: wait(delay * 2)
             }
         }
-        return new Values(text, number, expr);
+        return new Values(text, number, expr, textExpr);
     }
 
     private Call call(Line line, int start) {
@@ -560,7 +680,7 @@ public final class ScriptParser {
 
     /** Kloppen de naam en het getal voor dit blokje? */
     private static void check(Line line, Op op, Values values) {
-        String problem = Checks.argsProblem(op, values.text(), values.number(), values.expr());
+        String problem = Checks.argsProblem(op, values.text(), values.number(), values.expr(), values.textExpr());
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }

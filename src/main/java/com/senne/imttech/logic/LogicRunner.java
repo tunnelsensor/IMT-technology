@@ -126,12 +126,42 @@ public final class LogicRunner {
         final long startAt;
         final Interpreter machine;
 
-        Run(LogicProgram program, int first, Context context, long startAt, Map<String, Object> globals) {
+        /**
+         * {@code graph} is het diagram samengevoegd met de global scripts (hoofdstuk 43, zie {@link #merged}), zodat de
+         * tolk hun defs vindt; {@code shared} zijn de gedeelde namen van de kern.
+         */
+        Run(LogicProgram program, LogicGraph graph, int first, Context context, long startAt, Map<String, Object> globals,
+            Map<String, Object> shared) {
             this.program = program;
             this.context = context;
             this.startAt = startAt;
-            this.machine = new Interpreter(program.graph(), first, globals);
+            this.machine = new Interpreter(graph, first, globals, shared);
         }
+    }
+
+    /** Een diagram samengevoegd met de global scripts van toen (hoofdstuk 43), bij deze versie van de diagrammen. */
+    private record Merged(LogicProgram program, int revision, LogicGraph graph) {}
+
+    /**
+     * Het diagram met de defs en gedeelde namen van de global scripts erbij (hoofdstuk 43). Samenvoegen kost wat werk,
+     * dus we onthouden het per programma tot een diagram verandert (de revisie van de kern).
+     */
+    private static LogicGraph merged(SecurityCoreBlockEntity core, Runtime runtime, LogicProgram program) {
+        Merged merged = runtime.merged.get(program.name());
+        int revision = core.logic().revision();
+        if (merged == null || merged.program() != program || merged.revision() != revision) {
+            List<LogicGraph> globals = core.logic().globalGraphs();
+            merged = new Merged(program, revision, globals.isEmpty() ? program.graph() : program.graph().withLibrary(globals));
+            runtime.merged.put(program.name(), merged);
+        }
+        return merged.graph();
+    }
+
+    /** Een nieuwe run van dit programma, vanaf blokje {@code first}, met zijn namen van links en de gedeelde namen. */
+    private static Run newRun(SecurityCoreBlockEntity core, Runtime runtime, LogicProgram program, int first, Context context,
+                              long startAt) {
+        return new Run(program, merged(core, runtime, program), first, context, startAt, globals(runtime, program),
+                core.logic().sharedValues());
     }
 
     /** De namen van links van één programma ({@code count = 0}), bij deze versie van dat programma. */
@@ -178,6 +208,8 @@ public final class LogicRunner {
         int steps;
         /** Per programma (naam) zijn namen van links; na opnieuw bewaren beginnen ze opnieuw. */
         final Map<String, Globals> globals = new HashMap<>();
+        /** Per programma (naam) het diagram samengevoegd met de global scripts (hoofdstuk 43). */
+        final Map<String, Merged> merged = new HashMap<>();
     }
 
     /**
@@ -232,8 +264,7 @@ public final class LogicRunner {
                     if (!allowTrigger(level, core, runtime, now)) {
                         return matched;
                     }
-                    enqueue(level, core, runtime, new Run(program, node.next, context, now + stats.reactionTicks(),
-                            globals(runtime, program)));
+                    enqueue(level, core, runtime, newRun(core, runtime, program, node.next, context, now + stats.reactionTicks()));
                     matched++;
                 }
             }
@@ -271,7 +302,7 @@ public final class LogicRunner {
                 if (!allowTrigger(level, core, runtime, now)) {
                     return matched;
                 }
-                enqueue(level, core, runtime, new Run(program, node.next, context, now + stats.reactionTicks(), globals(runtime, program)));
+                enqueue(level, core, runtime, newRun(core, runtime, program, node.next, context, now + stats.reactionTicks()));
                 matched++;
             }
         }
@@ -407,8 +438,8 @@ public final class LogicRunner {
                 } else if (now >= next) {
                     runtime.timers.put(key, now + interval);
                     if (allowTrigger(level, core, runtime, now)) {
-                        enqueue(level, core, runtime, new Run(program, node.next, Context.plain(Op.EVERY, ""),
-                                now + stats.reactionTicks(), globals(runtime, program)));
+                        enqueue(level, core, runtime, newRun(core, runtime, program, node.next, Context.plain(Op.EVERY, ""),
+                                now + stats.reactionTicks()));
                     }
                 }
             }
@@ -521,9 +552,10 @@ public final class LogicRunner {
                         ? Math.max(Op.PULSE.minNumber(), Math.min(Op.PULSE.maxNumber(), number(level, core, run, node.expr)))
                         : node.number;
                 int pulseTicks = (int) Math.max(1, Math.round(seconds * 20));
-                if (LogicDevices.switchByName(level, core, node.text, op, pulseTicks) == 0) {
+                String device = deviceName(level, core, run, node);
+                if (LogicDevices.switchByName(level, core, device, op, pulseTicks) == 0) {
                     report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": there is no device called \""
-                            + node.text + "\" in this network");
+                            + device + "\" in this network");
                 }
             }
             case ACCEPT, DENY -> {
@@ -548,11 +580,24 @@ public final class LogicRunner {
             case ALARM -> alarm(level, core, context, message(level, core, run, node));
             case ORDER -> order(level, core, runtime, run, node);
             case ACTIVATE, DEACTIVATE -> {
-                BotLink.Result result = BotLink.switchOn(level, core, node.text, node.op == Op.ACTIVATE);
-                robotProblem(level, core, runtime, run, node.text, result);
+                String robot = deviceName(level, core, run, node);
+                BotLink.Result result = BotLink.switchOn(level, core, robot, node.op == Op.ACTIVATE);
+                robotProblem(level, core, runtime, run, robot, result);
             }
             default -> { }
         }
+    }
+
+    /**
+     * De naam van het apparaat of de robot van dit blokje: gewone tekst, of (hoofdstuk 43) wat de code in
+     * {@code textExpr} nu oplevert ({@code pulse(door, 3)} met {@code door} een parameter).
+     */
+    private static String deviceName(ServerLevel level, SecurityCoreBlockEntity core, Run run, LogicGraph.Node node) {
+        if (node.textExpr.isEmpty()) {
+            return node.text;
+        }
+        Expr expr = ExprCache.value(node.textExpr);
+        return expr == null ? node.textExpr : Expr.text(ExprCache.eval(expr, facts(level, core, run)));
     }
 
     /**

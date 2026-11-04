@@ -346,8 +346,14 @@ public final class ZoneBorderRenderer {
     }
 
     /** De twaalf ribben van een doos, elk als een dun balkje licht. */
-    private static void outline(Matrix4f m, VertexConsumer out, double x0, double y0, double z0, double x1, double y1, double z1,
-                                int rgb, float alpha) {
+    /** Het soort lijnen van de oranje doos (hoofdstuk 44: ook voor het randje om verstevigde blokken). */
+    public static RenderType lines() {
+        return LINES;
+    }
+
+    /** Een dun kader (twaalf balkjes) om de doos van (x0, y0, z0) tot (x1, y1, z1). */
+    public static void outline(Matrix4f m, VertexConsumer out, double x0, double y0, double z0, double x1, double y1, double z1,
+                               int rgb, float alpha) {
         double[] xs = {x0, x1};
         double[] ys = {y0, y1};
         double[] zs = {z0, z1};

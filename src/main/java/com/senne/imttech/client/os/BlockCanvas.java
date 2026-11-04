@@ -494,7 +494,7 @@ final class BlockCanvas {
             return node.op == Op.FOR ? com.senne.imttech.logic.program.ScriptPrinter.loopLine(node.op, node.text, node.expr)
                     : com.senne.imttech.logic.program.ScriptPrinter.loopLine(node.op, "", node.text);
         }
-        String call = com.senne.imttech.logic.program.ScriptPrinter.call(node.op, node.text, node.number, node.expr);
+        String call = com.senne.imttech.logic.program.ScriptPrinter.call(node.op, node.text, node.number, node.expr, node.textExpr);
         return node.op.isTrigger() ? "when " + call + ":" : node.op == Op.DEF ? call + ":" : call;
     }
 
@@ -541,7 +541,7 @@ final class BlockCanvas {
 
     /** Hoe ver het palet hooguit kan scrollen (0 als alles past). */
     private int maxPaletteScroll() {
-        return Math.max(0, paletteHeight() - ch);
+        return Math.max(0, paletteHeight() - (ch - toggleHeight()));
     }
 
     /** De naam van een blokje in het palet: zoals in de code, behalve AT START (in de code gewoon count = 0). */
@@ -549,13 +549,31 @@ final class BlockCanvas {
         return op == Op.GLOBAL ? "at start" : op.code();
     }
 
+    /** Zo hoog is de strook bovenaan het palet met de schakelaar "global script" (hoofdstuk 43); 0 als die er niet is. */
+    private int toggleHeight() {
+        return kind == ProgramKind.SERVER ? 12 : 0;
+    }
+
     private void renderPalette(GuiGraphics g, Font font, int mx, int my) {
         OsDraw.field(g, px, cy, px + PANEL_W, cy + ch, false);
+        int top = cy + toggleHeight();
+        if (toggleHeight() > 0) {
+            // Hoofdstuk 43: is dit een global script (alleen defs en gedeelde namen, voor al je diagrammen)?
+            boolean on = graph.global();
+            String label = (on ? "[x] " : "[ ] ") + "global script";
+            boolean hover = OsDraw.inside(mx, my, px + 2, cy + 1, PANEL_W - 4, 10);
+            if (hover) {
+                g.fill(px + 2, cy + 1, px + PANEL_W - 2, cy + 11, HudStyle.argb(255, 0x16303F));
+                hint.accept(on ? "A global script: only DEF blocks and names at start, for all your diagrams (click to make it a normal diagram)"
+                        : "Click to make this a global script: its DEF blocks and names at start work in all your diagrams");
+            }
+            g.drawString(font, label, px + 4, cy + 2, HudStyle.argb(255, on ? HudStyle.ORANGE : OsDraw.GREY), false);
+        }
         // Er zijn meer blokjes dan er passen: het palet scrollt (muiswiel boven het palet).
         paletteScroll = Math.max(0, Math.min(paletteScroll, maxPaletteScroll()));
-        g.enableScissor(px + 1, cy + 1, px + PANEL_W - 1, cy + ch - 1);
-        int y = cy + 3 - paletteScroll;
-        boolean inPanel = my >= cy && my < cy + ch;
+        g.enableScissor(px + 1, top + 1, px + PANEL_W - 1, cy + ch - 1);
+        int y = top + 3 - paletteScroll;
+        boolean inPanel = my >= top && my < cy + ch;
         for (int section = 0; section < palette().length; section++) {
             g.drawString(font, PALETTE_HEADERS[section], px + 4, y, HudStyle.argb(255, HudStyle.ORANGE), false);
             y += 10;
@@ -591,10 +609,10 @@ final class BlockCanvas {
 
     /** Het blokje uit het palet onder de muis, of null. */
     private @Nullable Op paletteAt(int mx, int my) {
-        if (my < cy || my >= cy + ch) {
+        if (my < cy + toggleHeight() || my >= cy + ch) {
             return null;
         }
-        int y = cy + 3 - paletteScroll;
+        int y = cy + toggleHeight() + 3 - paletteScroll;
         for (Op[] ops : palette()) {
             y += 10;
             for (int i = 0; i < ops.length; i++) {
@@ -674,6 +692,69 @@ final class BlockCanvas {
 
     // ================================================================ De instellingen van een blokje
 
+    /** Het soort-woord van een naam (hoofdstuk 43, SET en AT START): int, float, string of bool. */
+    private @Nullable EditBox typeBox;
+    /** De naam van het apparaat of de robot als code (hoofdstuk 43): pulse(door, 3). */
+    private @Nullable EditBox deviceBox;
+
+    private EditBox typeBox() {
+        if (typeBox == null) {
+            typeBox = new EditBox(Minecraft.getInstance().font, 0, 0, 60, 10, Component.literal("Type"));
+            typeBox.setBordered(false);
+            typeBox.setMaxLength(8);
+            typeBox.setFilter(value -> value.chars().allMatch(Character::isLetter));
+            typeBox.setTextColor(HudStyle.argb(255, CodeEditor.TYPE));
+            typeBox.setResponder(value -> {
+                LogicGraph.Node node = graph.node(selected);
+                if (!filling && node != null) {
+                    node.type = value.strip();
+                    edited();
+                }
+            });
+        }
+        return typeBox;
+    }
+
+    private EditBox deviceBox() {
+        if (deviceBox == null) {
+            deviceBox = new EditBox(Minecraft.getInstance().font, 0, 0, 80, 10, Component.literal("Device (code)"));
+            deviceBox.setBordered(false);
+            deviceBox.setMaxLength(Op.MAX_TEXT * 2);
+            deviceBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
+            deviceBox.setResponder(value -> {
+                LogicGraph.Node node = graph.node(selected);
+                if (!filling && node != null) {
+                    node.textExpr = value;
+                    edited();
+                }
+            });
+        }
+        return deviceBox;
+    }
+
+    /** Heeft dit blokje een apparaat of robot dat je als code kunt schrijven (hoofdstuk 43)? */
+    private static boolean namesDevice(LogicGraph.Node node) {
+        return !node.op.isTrigger() && (node.op.textArg() == Op.Arg.DEVICE || node.op.textArg() == Op.Arg.ROBOT);
+    }
+
+    /** Staat het apparaat van dit blokje als code (in het vak "Device (code)") in plaats van als naam? */
+    private static boolean deviceAsCode(LogicGraph.Node node) {
+        return namesDevice(node) && !node.textExpr.isEmpty();
+    }
+
+    /** Wisselt het apparaat tussen een gewone naam en code: de naam gaat mee als code (en terug). */
+    private void toggleDeviceCode(LogicGraph.Node node) {
+        if (deviceAsCode(node)) {
+            node.text = node.textExpr.matches("[A-Za-z_][A-Za-z0-9_]*") ? "" : node.textExpr.replaceAll("^\"|\"$", "");
+            node.textExpr = "";
+        } else {
+            node.textExpr = node.text.isBlank() ? "door" : node.text.matches("[A-Za-z_][A-Za-z0-9_]*") ? node.text : "\"" + node.text + "\"";
+            node.text = "";
+        }
+        edited();
+        selectNode(node.id);
+    }
+
     private EditBox textBox() {
         if (textBox == null) {
             textBox = new EditBox(Minecraft.getInstance().font, 0, 0, 80, 10, Component.literal("Text"));
@@ -747,10 +828,15 @@ final class BlockCanvas {
         numberBox().setValue(node == null ? "" : seconds(node.number));
         exprBox().setValue(node == null ? "" : node.expr);
         exprBox().moveCursorToStart(false);
+        typeBox().setValue(node == null ? "" : node.type);
+        deviceBox().setValue(node == null ? "" : node.textExpr);
+        deviceBox().moveCursorToStart(false);
         filling = false;
         textBox().setFocused(false);
         numberBox().setFocused(false);
         exprBox().setFocused(false);
+        typeBox().setFocused(false);
+        deviceBox().setFocused(false);
     }
 
     /**
@@ -758,12 +844,21 @@ final class BlockCanvas {
      * het bericht of de seconden een berekening zijn ({@code say("Count: " + count)}, {@code wait(delay)}).
      */
     private static boolean showsExpr(LogicGraph.Node node) {
-        return node.op.kind() == Op.Kind.SET || node.op.textArg() == Op.Arg.VALUES || node.op == Op.FOR || !node.expr.isEmpty();
+        return node.op.kind() == Op.Kind.SET || node.op.textArg() == Op.Arg.VALUES || node.op == Op.FOR || !node.expr.isEmpty()
+                || node.op == Op.DEF || node.op == Op.CALL;
     }
 
-    /** Het gewone tekstvak, behalve als het bericht een berekening is (dan staat het in het code-vak). */
+    /**
+     * Het gewone tekstvak, behalve als het bericht een berekening is (dan staat het in het code-vak), of (hoofdstuk 43)
+     * het apparaat als code geschreven is (dan staat het in het vak "Device (code)").
+     */
     private static boolean showsText(LogicGraph.Node node) {
-        return textLabel(node.op) != null && !(Checks.exprIsText(node.op) && !node.expr.isEmpty());
+        return textLabel(node.op) != null && !(Checks.exprIsText(node.op) && !node.expr.isEmpty()) && !deviceAsCode(node);
+    }
+
+    /** Het vak met het soort-woord (hoofdstuk 43): bij SET en AT START. */
+    private static boolean showsType(LogicGraph.Node node) {
+        return node.op.kind() == Op.Kind.SET;
     }
 
     /** Het gewone getalvak (seconden), behalve als de seconden een berekening zijn. */
@@ -784,6 +879,12 @@ final class BlockCanvas {
         }
         if (node.op == Op.FOR) {
             return "Range (3, or 1, 4)";
+        }
+        if (node.op == Op.DEF) {
+            return "Parameters (like door: string)";
+        }
+        if (node.op == Op.CALL) {
+            return "Values for its parameters";
         }
         return node.op.kind() == Op.Kind.SET ? "Value" : Checks.exprIsText(node.op) ? "Message (code)"
                 : unitLabel(node.op) + " (code)";
@@ -885,6 +986,9 @@ final class BlockCanvas {
             if (problem != null) {
                 return problem;
             }
+            if (!node.type.isEmpty() && com.senne.imttech.logic.program.VarType.byWord(node.type) == null) {
+                return "I don't know the type \"" + node.type + "\": use " + com.senne.imttech.logic.program.VarType.words();
+            }
             try {
                 Expr.parseLenient(node.expr, false);
                 return null;
@@ -893,7 +997,7 @@ final class BlockCanvas {
             }
         }
         String problem = Checks.argsProblem(node.op, node.op.textArg() == Op.Arg.NONE ? null : node.text,
-                node.op.numberArg() == Op.Arg.NONE ? null : node.number, node.expr);
+                node.op.numberArg() == Op.Arg.NONE ? null : node.number, node.expr, node.textExpr);
         return problem != null ? problem : Checks.exprProblem(node.op, node.expr);
     }
 
@@ -911,6 +1015,11 @@ final class BlockCanvas {
         String label = textLabel(node.op);
         if (label != null && showsText(node)) {
             g.drawString(font, label, x, y, HudStyle.argb(255, HudStyle.WHITE), false);
+            if (namesDevice(node)) {
+                // Hoofdstuk 43: het apparaat ook als code kunnen schrijven (een parameter of naam).
+                String toggle = "[as code]";
+                g.drawString(font, toggle, px + PANEL_W - 4 - font.width(toggle), y, HudStyle.argb(255, HudStyle.CYAN), false);
+            }
             y += 10;
             EditBox box = textBox();
             OsDraw.field(g, x - 1, y, px + PANEL_W - 3, y + OsDraw.BUTTON_H, box.isFocused());
@@ -918,6 +1027,35 @@ final class BlockCanvas {
             box.setY(y + 2);
             box.setWidth(PANEL_W - 12);
             box.render(g, mx, my, partialTick);
+            y += OsDraw.BUTTON_H + 3;
+        }
+        if (deviceAsCode(node)) {
+            // Het apparaat als code (hoofdstuk 43): door, of "Lab " + number.
+            g.drawString(font, textLabel(node.op) + " (code)", x, y, HudStyle.argb(255, HudStyle.WHITE), false);
+            String toggle = "[as text]";
+            g.drawString(font, toggle, px + PANEL_W - 4 - font.width(toggle), y, HudStyle.argb(255, HudStyle.CYAN), false);
+            y += 10;
+            EditBox box = deviceBox();
+            OsDraw.field(g, x - 1, y, px + PANEL_W - 3, y + OsDraw.BUTTON_H, box.isFocused());
+            box.setX(x + 2);
+            box.setY(y + 2);
+            box.setWidth(PANEL_W - 12);
+            box.render(g, mx, my, partialTick);
+            y += OsDraw.BUTTON_H + 3;
+        }
+        if (showsType(node)) {
+            // Het soort-woord (hoofdstuk 43): leeg = raden uit de waarde.
+            String unit = "Type";
+            g.drawString(font, unit, x, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+            EditBox box = typeBox();
+            int fx = x + font.width(unit) + 4;
+            OsDraw.field(g, fx, y, fx + 50, y + OsDraw.BUTTON_H, box.isFocused());
+            box.setX(fx + 3);
+            box.setY(y + 2);
+            box.setWidth(44);
+            box.render(g, mx, my, partialTick);
+            g.drawString(font, OsDraw.fitRight(font, "int float string bool", PANEL_W - 8 - (fx + 54 - x)), fx + 54, y + 2,
+                    HudStyle.argb(255, OsDraw.GREY), false);
             y += OsDraw.BUTTON_H + 3;
         }
         if (showsExpr(node)) {
@@ -993,11 +1131,39 @@ final class BlockCanvas {
         textBox().setFocused(false);
         numberBox().setFocused(false);
         exprBox().setFocused(false);
+        typeBox().setFocused(false);
+        deviceBox().setFocused(false);
         if (textLabel(node.op) != null && showsText(node)) {
+            if (namesDevice(node) && OsDraw.inside(mx, my, px + PANEL_W - 4 - font.width("[as code]"), y, font.width("[as code]"), 9)) {
+                toggleDeviceCode(node);
+                return;
+            }
             y += 10;
             if (OsDraw.inside(mx, my, x - 1, y, PANEL_W - 6, OsDraw.BUTTON_H)) {
                 textBox().setFocused(true);
                 textBox().mouseClicked(mx, my, 0);
+                return;
+            }
+            y += OsDraw.BUTTON_H + 3;
+        }
+        if (deviceAsCode(node)) {
+            if (OsDraw.inside(mx, my, px + PANEL_W - 4 - font.width("[as text]"), y, font.width("[as text]"), 9)) {
+                toggleDeviceCode(node);
+                return;
+            }
+            y += 10;
+            if (OsDraw.inside(mx, my, x - 1, y, PANEL_W - 6, OsDraw.BUTTON_H)) {
+                deviceBox().setFocused(true);
+                deviceBox().mouseClicked(mx, my, 0);
+                return;
+            }
+            y += OsDraw.BUTTON_H + 3;
+        }
+        if (showsType(node)) {
+            int fx = x + font.width("Type") + 4;
+            if (OsDraw.inside(mx, my, fx, y, 50, OsDraw.BUTTON_H)) {
+                typeBox().setFocused(true);
+                typeBox().mouseClicked(mx, my, 0);
                 return;
             }
             y += OsDraw.BUTTON_H + 3;
@@ -1049,6 +1215,12 @@ final class BlockCanvas {
         if (mx >= px && mx < px + PANEL_W && my >= cy && my < cy + ch) {
             LogicGraph.Node node = graph.node(selected);
             if (node == null) {
+                if (my < cy + toggleHeight()) {
+                    // De schakelaar "global script" (hoofdstuk 43).
+                    graph.setGlobal(!graph.global());
+                    edited();
+                    return true;
+                }
                 Op op = paletteAt(mx, my);
                 if (op != null) {
                     add(op);

@@ -47,6 +47,21 @@ public final class LogicGraph {
          * bericht of getal, of (hoofdstuk 23) het rijtje waarden van goto, write en order; anders leeg.
          */
         public String expr = "";
+        /**
+         * Het soort-woord van een naam (hoofdstuk 43, SET en GLOBAL): {@code int}, {@code float}, {@code string} of
+         * {@code bool}; leeg als er geen staat.
+         */
+        public String type = "";
+        /**
+         * De naam van het apparaat of de robot als code (hoofdstuk 43): {@code pulse(door, 3)} met {@code door} een
+         * parameter. Leeg als het gewone tekst is (dan staat die in {@code text}).
+         */
+        public String textExpr = "";
+        /**
+         * Komt dit blokje uit een global script (hoofdstuk 43)? Alleen in een samengevoegd diagram (zie
+         * {@link #withLibrary}): zo'n def of naam hoort bij het andere script en wordt niet mee opgeslagen of getoond.
+         */
+        public boolean shared;
         /** Waar het staat op het vlak van de blokjes-editor. */
         public int x;
         public int y;
@@ -98,6 +113,9 @@ public final class LogicGraph {
             copy.text = text;
             copy.number = number;
             copy.expr = expr;
+            copy.type = type;
+            copy.textExpr = textExpr;
+            copy.shared = shared;
             copy.x = x;
             copy.y = y;
             copy.next = next;
@@ -112,9 +130,61 @@ public final class LogicGraph {
 
     private final Map<Integer, Node> nodes = new LinkedHashMap<>();
     private int nextId = 1;
+    /**
+     * Is dit een global script (hoofdstuk 43: de code begint met {@code global})? Dan zijn zijn defs en namen van links
+     * voor alle diagrammen van de kern (zie Library), en heeft hij zelf geen whens.
+     */
+    private boolean global;
 
     public Collection<Node> nodes() {
         return nodes.values();
+    }
+
+    public boolean global() {
+        return global;
+    }
+
+    public void setGlobal(boolean global) {
+        this.global = global;
+    }
+
+    /**
+     * Dit diagram met de defs en gedeelde namen van de global scripts erbij (hoofdstuk 43), zodat de tolk een def uit
+     * een global script gewoon vindt. De blokjes uit de andere scripts krijgen nieuwe nummers (achter de onze) en staan
+     * als {@code shared} gemarkeerd: ze tellen niet mee voor de code, het opslaan of de namen van links van dit programma.
+     */
+    public LogicGraph withLibrary(List<LogicGraph> globals) {
+        LogicGraph merged = copy();
+        for (LogicGraph other : globals) {
+            if (other == this || !other.global) {
+                continue;
+            }
+            Set<Integer> wanted = other.reachable();
+            Map<Integer, Integer> renumber = new java.util.HashMap<>();
+            for (Node node : other.nodes.values()) {
+                if (wanted.contains(node.id) && !node.op.isTrigger()) {
+                    renumber.put(node.id, merged.nextId++);
+                }
+            }
+            for (Node node : other.nodes.values()) {
+                Integer id = renumber.get(node.id);
+                if (id == null) {
+                    continue;
+                }
+                Node copy = new Node(id, node.op);
+                copy.text = node.text;
+                copy.number = node.number;
+                copy.expr = node.expr;
+                copy.type = node.type;
+                copy.textExpr = node.textExpr;
+                copy.shared = true;
+                copy.next = renumber.getOrDefault(node.next, -1);
+                copy.yes = renumber.getOrDefault(node.yes, -1);
+                copy.no = renumber.getOrDefault(node.no, -1);
+                merged.nodes.put(id, copy);
+            }
+        }
+        return merged;
     }
 
     public @Nullable Node node(int id) {
@@ -266,11 +336,16 @@ public final class LogicGraph {
 
     /** Hetzelfde, voor deze soort programma (hoofdstuk 23). */
     public List<Problem> problems(ProgramKind kind) {
+        return problems(kind, Library.EMPTY);
+    }
+
+    /** Hetzelfde, met de defs en gedeelde namen van de global scripts erbij (hoofdstuk 43). */
+    public List<Problem> problems(ProgramKind kind, Library library) {
         List<Problem> problems = new ArrayList<>();
         Set<Integer> reachable = reachable();
         Set<Integer> wrong = new HashSet<>();
         for (Node node : nodes.values()) {
-            if (!reachable.contains(node.id)) {
+            if (!reachable.contains(node.id) || node.shared) {
                 continue;
             }
             // Onder een def weten we niet welke when hem gebruikt: dat controleert ScriptChecker.
@@ -293,6 +368,9 @@ public final class LogicGraph {
                 if (problem == null && node.expr.isBlank()) {
                     problem = "Give " + node.text + " a value, like " + node.text + " = 0";
                 }
+                if (problem == null && !node.type.isEmpty() && VarType.byWord(node.type) == null) {
+                    problem = "I don't know the type \"" + node.type + "\": use " + VarType.words();
+                }
                 if (problem == null) {
                     try {
                         Expr.parseLenient(node.expr, false);
@@ -303,7 +381,7 @@ public final class LogicGraph {
             } else {
                 String text = node.op.textArg() == Op.Arg.NONE ? null : node.text;
                 Double number = node.op.numberArg() == Op.Arg.NONE ? null : node.number;
-                problem = Checks.argsProblem(node.op, text, number, node.expr);
+                problem = Checks.argsProblem(node.op, text, number, node.expr, node.textExpr);
                 if (problem == null) {
                     // Een berekend bericht, berekende seconden, of een rijtje waarden (goto): is het te lezen?
                     problem = Checks.exprProblem(node.op, node.expr);
@@ -317,8 +395,17 @@ public final class LogicGraph {
                 wrong.add(node.id);
             }
         }
+        // Een global script (hoofdstuk 43) met een WHEN-blok erin: dat hoort in een gewoon diagram.
+        if (global) {
+            for (Node node : nodes.values()) {
+                if (node.op.isTrigger() && wrong.add(node.id)) {
+                    problems.add(new Problem(node.id, "A global script holds only DEF blocks and names at start:"
+                            + " put this WHEN in another diagram (or remove the word global from the code)"));
+                }
+            }
+        }
         // Je eigen blokken: dezelfde controles als in de code (het "ref" is hier het blokje).
-        for (ScriptChecker.Problem problem : ScriptChecker.check(GraphConverter.toScript(this), kind)) {
+        for (ScriptChecker.Problem problem : ScriptChecker.check(GraphConverter.toScript(this), kind, library)) {
             if (wrong.add(problem.ref())) {
                 problems.add(new Problem(problem.ref(), problem.message()));
             }
@@ -463,6 +550,7 @@ public final class LogicGraph {
                 words(node.text, names);
             }
             words(node.expr, names);
+            words(node.textExpr, names);
         }
         return names;
     }
@@ -494,6 +582,7 @@ public final class LogicGraph {
             copy.nodes.put(node.id, node.copy());
         }
         copy.nextId = nextId;
+        copy.global = global;
         return copy;
     }
 
@@ -501,8 +590,14 @@ public final class LogicGraph {
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
+        if (global) {
+            tag.putBoolean("Global", true);
+        }
         ListTag list = new ListTag();
         for (Node node : nodes.values()) {
+            if (node.shared) {
+                continue; // uit een global script: dat script bewaart het zelf
+            }
             CompoundTag entry = new CompoundTag();
             entry.putInt("i", node.id);
             entry.putString("o", node.op.name());
@@ -514,6 +609,12 @@ public final class LogicGraph {
             }
             if (!node.expr.isEmpty()) {
                 entry.putString("e", node.expr);
+            }
+            if (!node.type.isEmpty()) {
+                entry.putString("ty", node.type);
+            }
+            if (!node.textExpr.isEmpty()) {
+                entry.putString("de", node.textExpr);
             }
             entry.putInt("x", node.x);
             entry.putInt("y", node.y);
@@ -532,6 +633,7 @@ public final class LogicGraph {
      */
     public static LogicGraph load(CompoundTag tag) {
         LogicGraph graph = new LogicGraph();
+        graph.global = tag.getBoolean("Global");
         List<Node> repeats = new ArrayList<>();
         for (Tag element : tag.getList("Nodes", Tag.TAG_COMPOUND)) {
             if (graph.nodes.size() >= MAX_NODES) {
@@ -556,6 +658,10 @@ public final class LogicGraph {
             }
             String expr = entry.getString("e"); // een diagram van vóór hoofdstuk 20 heeft hem niet: leeg
             node.expr = expr.length() > Op.MAX_TEXT * 3 ? expr.substring(0, Op.MAX_TEXT * 3) : expr;
+            // Hoofdstuk 43: het soort-woord van een naam, en een apparaat als code (van vóór die tijd: leeg).
+            node.type = VarType.byWord(entry.getString("ty")) == null ? "" : entry.getString("ty");
+            String textExpr = entry.getString("de");
+            node.textExpr = textExpr.length() > Op.MAX_TEXT * 3 ? textExpr.substring(0, Op.MAX_TEXT * 3) : textExpr;
             if (repeat) {
                 node.expr = node.text.isBlank() ? "0" : node.text; // het aantal wordt het bereik
                 node.text = "";

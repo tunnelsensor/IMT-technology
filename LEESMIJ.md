@@ -754,7 +754,8 @@ when keycard("Lab door"):
 - **Rekenen**: `+ - * /` met haakjes (keer en delen gaan voor), een minteken (`-20`), en met `+` plak
   je tekst aan elkaar: `if count * 2 - 1 >= 5:`, `say("Card " + card.number)`. Een bericht
   (`say`, `log`, `alarm`) en de seconden (`wait`, `pulse`) mogen een berekening zijn: `wait(delay * 2)`.
-  Een apparaat blijft gewone tekst tussen aanhalingstekens. Delen door 0 geeft 0.
+  Een apparaat is meestal gewone tekst tussen aanhalingstekens, maar mag sinds 4 november ook een naam of
+  berekening zijn (zie "Parameters" hieronder). Delen door 0 geeft 0.
 - **Tekst met namen erin** (sinds 19 oktober): zet een `$` voor de tekst, en wat tussen `{` en `}` staat,
   wordt ingevuld: `say($"This is test {count}")` zegt "This is test 3". Tussen de haakjes mag een naam, een
   gegeven of een berekening staan: `$"Round {i + 1} of {count}"`, `$"Card {card.name} (#{card.number})"`.
@@ -795,13 +796,56 @@ when keycard("Lab door"):
   vak voor het bereik (`3`, of `1, 4`); een **WHILE**-blokje een vak voor de voorwaarde. Een naam een
   waarde geven is een geel **SET**-blokje, een naam helemaal links een **AT START**-blokje (met een vak
   voor de naam en een vak voor de waarde).
+- **Soorten** (sinds 4 november, zoals in Python): zet een soort-woord achter een naam met een dubbele punt:
+  `count: int = 0`, `speed: float = 1.5`, `mode: string = "day"`, `lockdown: bool = false`. Zo'n naam houdt
+  die soort: een `int` is een heel getal (krijgt hij 2,5, dan wordt het 2; `7 / 2` wordt 3, zoals in C++),
+  een `float` een kommagetal, een `string` tekst en een `bool` waar of onwaar. Zonder soort-woord raadt de
+  taal de soort uit de waarde, zoals altijd. Na `naam:` toont Ctrl+Spatie de vier soorten.
+- **Parameters** (sinds 4 november): een def kan waarden meekrijgen: `def open_door(door: string, secs: float):`
+  en dan `open_door("Vault door", 3)`. Binnen de def is `door` een gewone naam, ook als **apparaat**:
+  `pulse(door, secs)`. Zo typ je minder: één def die accepteert, logt en de deur opent, voor elke deur.
+  Check kijkt na of je er genoeg waarden bij zet, en van de goede soort. Een apparaat mag daardoor
+  overal een naam of berekening zijn: `on(door)`, `on("Lamp " + i)`; met iets dat geen waarde heeft
+  (`on(Lamp)`) zegt Check dat je het tussen aanhalingstekens moet zetten.
+  ```
+  def open_door(door: string):
+      accept()
+      log("Opened " + door)
+      pulse(door, 3)
+
+  when keycard("Lab door"):
+      if card.in_group("lab"):
+          open_door("Lab door lock")
+  ```
+- **Global scripts** (sinds 4 november): een diagram waarvan de eerste regel `global` is, mag alleen defs en
+  namen bevatten, en die kan **elk diagram** van dezelfde kern gebruiken. Een def erin
+  (`def activate_alarm():`) roep je overal aan; een naam erin (`lockdown: bool = false`) is een
+  **gedeelde naam**: elk diagram leest en verandert dezelfde waarde (een hendel zet `lockdown = true`, een
+  keycardlezer kijkt `if lockdown: deny()`), en de kern bewaart hem, ook na een herstart en na opnieuw
+  bewaren (alleen een nieuwe naam of een andere soort begint opnieuw). Je mag zoveel global scripts hebben
+  als je wil; dezelfde def of naam twee keer maken mag niet (ook niet in een gewoon diagram: Check zegt
+  het). Maak er een met **+ > Global script** in de app Logic; in de lijst staat er een oranje **G** bij,
+  en in de blokjes is het een vinkje **global script** bovenaan het palet (alleen DEF-blokken en AT
+  START-namen). Help toont onder GLOBAL SCRIPTS de defs en de gedeelde namen met hun waarde van nu.
+  Een robot- of droneprogramma mag een global def ook gebruiken (als er niets in staat dat alleen de
+  server kan) en leest en schrijft de gedeelde namen via zijn verbinding met de kern.
+  ```
+  global
+
+  lockdown: bool = false
+
+  def activate_alarm():
+      alarm("Base lockdown!")
+      on("Siren")
+  ```
 - `repeat(3):` en `forever:` bestaan niet meer (jouw notitie van 16 oktober: "een for en while is
   voldoende"). Een diagram dat ze nog had, zet de server bij het laden om: `repeat(3):` wordt
   `for i in range(3):` (een lus in een lus krijgt `j`, dan `k`; gebruikte je zelf al een naam `i`, dan
   begint hij bij `j`), en `forever:` wordt `while true:`. Je commentaar blijft staan. Typ je ze toch, dan
   zegt de code wat je nu schrijft.
 - Had een diagram van vóór 15 oktober een def die nu een woord van de taal is (`repeat`, `while`,
-  `forever`, `break`, `set` of `var`), dan heet die def nu `repeat_1` (ook waar hij gebruikt wordt).
+  `forever`, `break`, `set` of `var`, en sinds 4 november `global`, `int`, `float`, `string` of `bool`),
+  dan heet die def nu `repeat_1` (ook waar hij gebruikt wordt).
 
 Neemt iemand je kern over, dan krijgt hij ook je diagrammen en kaarten. De code van een codepaneel
 staat alleen in je diagram, niet in het logboek.
@@ -857,7 +901,7 @@ was dat C4).
 **Een zone tekenen.** Een zone hoort bij je **beveiligingskern** en bestaat uit één of meer
 **kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze mogen
 tot **200 blokken** van je kern liggen (opzij, omhoog en omlaag; het bereik van je kern, zie
-hieronder); hooguit 16. Niet over de zone van een ander.
+hieronder); hooguit 48 (tot 4 november 16). Niet over de zone van een ander.
 
 **Het bereik van een kern.** Alles van je beveiliging werkt tot **200 blokken** van je kern, in elke
 richting: je zone, en al je apparaten (torentjes, camera's, keycard-lezers, codepanelen,
@@ -874,6 +918,16 @@ another security network").
 - In de app **Zone** op de desktop van je kern (ook via SSH): een kaart van bovenaf, en per kubus de
   getallen van de twee hoeken (typen + Enter) en per kant een **−** en **+** om die kant één blok te
   verschuiven. **New box** zet een kubus van 7 × 5 × 7 waar je staat.
+- **Autoscan** (sinds 4 november): de knop **Autoscan** in de app scant vanaf de kern (of vanaf waar jij
+  staat, als je bij de kern bent); met de Zone Marker doe je **sluipen + rechtsklik zonder hoeken** om
+  vanuit die kamer te scannen. Een **dichte bunker** (deuren toe) wordt alle kamers die open met elkaar
+  verbonden zijn, **plus 3 blokken muur** eromheen (zo zit verborgen redstone er ook in), als een stel
+  kubussen. Loopt de scan naar buiten (een open basis, geen dak), dan volgt hij alle aaneengesloten
+  **gebouwde** blokken (alles wat geen natuur is: geen steen, aarde, zand, erts, bomen) vanaf het
+  aangeklikte blok en legt daar **één doos** omheen met 3 blokken marge; klik dan dus een blok van je
+  gebouw aan. Nog eens scannen voegt alleen toe wat er nog niet in zat (een oude kubus die helemaal in
+  een nieuwe valt, gaat weg). Een zone heeft hooguit 48 kubussen; vindt de scan er meer, dan voegt hij
+  ze samen. De getallen (`zoneScanWall`, `zoneScanMax`) staan onder `[security]`.
 
 **Wie mag wat.** In een zone mogen alleen **jij, je team en je vertrouwde spelers** (de app Access)
 blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten;
@@ -957,6 +1011,25 @@ direct tegen een generator). Elk heeft een vakje erin, een vakje eruit en een pi
 Allebei doen ze 5 seconden over één blok en gebruiken ze dan 4 stroom per tick. Trechters doen er van
 boven of opzij iets in en halen het er van onder uit, zoals bij een oven. Alle getallen staan in
 `config/imttech.toml` onder `[repair]` (de stroom van de machines onder `[power]`).
+
+### Blokken verstevigen: de Block Reinforcer
+Een mooie basis van kwarts, hout of glas is tegen frags zo zwak als papier. Met de **Block Reinforcer**
+(drie ijzer, een obsidiaan en een computerchip) maak je elk blok **zo sterk als obsidiaan** (20
+breekpunten, dus drie frags), zonder dat het er anders uitziet:
+
+- **Rechtsklik** op een blok: verstevigd. Het kost één **Reinforcement Plate** (twee ijzer en een
+  obsidiaan = vier platen) uit je rugzak.
+- **Sluipen + rechtsklik**: de **hele muur** van dat blok in één keer (alle aaneengesloten blokken van
+  dezelfde soort, tot 64), zolang je platen hebt. Onderaan staat hoeveel er verstevigd zijn en hoeveel
+  platen je nog hebt.
+- Alleen waar je **mag bouwen**: in de zone van een ander niet.
+- Met je **bril op** en de Block Reinforcer in je hand zie je een dun staalblauw randje om elk verstevigd
+  blok (tot 24 blokken ver). Zonder bril, of met iets anders in je hand, zie je niets: zo weet een
+  inbreker niet welke muur de sterke is.
+- Barsten en plamuurbeurten tellen gewoon mee (verstevigd en twee keer geplamuurd = 70% van 20). Hak
+  je het blok weg of komt er een ander blok te staan, dan is de versteviging weg.
+
+De getallen staan in `config/imttech.toml` onder `[breach]` (`reinforced` en `reinforcerWall`).
 
 ### Inbreken: lezers, panelen en laserzenders hacken, en zakkenrollen
 Geen kaart en geen code? Dan kun je een **keycardlezer**, een **codepaneel** of een **laserzender** van

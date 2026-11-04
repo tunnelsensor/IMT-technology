@@ -70,6 +70,8 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(CableRenderer::onRenderLevel);
         // Hoofdstuk 10: de rand van je zones (en die van wie jou vertrouwt).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneBorderRenderer::onRenderLevel);
+        // Hoofdstuk 44: het randje om verstevigde blokken (met de bril op en de Block Reinforcer in je hand).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.repair.ReinforcedRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneMarkerControl::onClientTick);
         // Een trigger in je hand: bordjes boven je Remote EMP's of Remote Frags.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.TriggerMarkers::onRenderLevel);

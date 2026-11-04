@@ -28,7 +28,7 @@ per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaar
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 105 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 106 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4143,6 +4143,109 @@ vast op 2.0.0 in `gradle.properties`, dus elke jar heette `imttech-2.0.0.jar`, w
       `publish/HOE-PUBLICEREN.md` zeggen nu hoe het werkt.
       **Mijn invulling** (zeg het als je iets anders wilt): **2.1** als begin, de eerste versie met alles wat er na 2.0.0
       bij kwam. Een ander getal (bijvoorbeeld 3.0) is één regel in `gradle.properties`.
+
+### 43. De taal: soorten, parameters en global scripts (4 november)
+
+Hoofdstukken 43 tot en met 51 komen uit één lijst ideeën van 4 november (negen onderwerpen, één vragenronde, daarna
+alles bouwen). Jouw wens voor de taal: "variabelen: string, int, bool, hierdoor kun je vb baseLockdown = true dan kun je
+met een if kijken of een keycard reader mag werken als base in lockdown is; parameters naar functies: OpenDeur("box")
+opent de deur box maar logt en accepteert ook ineens; global functions: een optie in het script dat het global is, dan
+mogen er enkel functies in staan maar kun je die overal gebruiken, vb ActivateAlarm()".
+
+**Jouw antwoorden**: soorten **zoals in Python** (`lockdown: bool = false`, `def open_door(door: string):`); gedeelde
+namen leven **in een global script**; een script is global door het **woord `global`** op de eerste regel, en er mogen
+**meerdere** global scripts zijn.
+
+**Mijn invulling** (zeg het als je het anders wil): vier soorten, `int` (heel getal, rondt af naar beneden zoals in C++),
+`float`, `string` en `bool`; zonder soort-woord raadt de taal de soort zoals vroeger. Een parameter zonder soort-woord
+neemt elke waarde. Een apparaat mag voortaan ook code zijn (`pulse(door, 3)`, `on("Lamp " + i)`); `on(Lamp)` zonder
+waarde krijgt de tip om aanhalingstekens te zetten. Gedeelde namen blijven bewaard met de kern (ook na een herstart en
+na opnieuw bewaren; een nieuwe naam of een andere soort begint opnieuw bij zijn eerste waarde). Een gewoon diagram mag
+een gedeelde naam of global def niet zelf nog eens maken (Check zegt in welk script hij al staat). Een def uit een global
+script die `accept()` gebruikt, werkt nog steeds alleen onder een lezer of paneel; een robot- of droneprogramma mag een
+global def gebruiken als er niets in staat dat alleen de server kan, en leest en schrijft gedeelde namen via zijn
+verbinding met de kern. De app Logic toont de gedeelde namen met hun waarde van nu in Help (GLOBAL SCRIPTS), heeft
+**+ > Global script**, een oranje **G** in de lijst, en in de blokjes een vinkje **global script** bovenaan het palet,
+een vak **Type** bij SET en AT START, een vak **Parameters** bij DEF, een vak **Values** bij use def, en bij een apparaat
+een schakelaar **[as code]**.
+
+- [x] **1. De taal** — `VarType` (de vier soorten), `Script.Param` en `Function.params`, `Global.type` en `Assign.type`,
+      `Action.textExpr` (een apparaat als code), `Script.global`; de parser leest `global`, `naam: soort = waarde`,
+      `def naam(a: int, b):`, `naam(waarden)` en een apparaat als naam; de printer schrijft het terug; `Library` bundelt
+      de defs en gedeelde namen van de global scripts; `ScriptChecker` kent de bibliotheek, controleert aanroepen (aantal
+      en soort), soorten (`count: int = 2.5` mag niet) en de regels van een global script; de blokjes hebben nieuwe vakken
+      (`type`, `textExpr`, de parameters in het code-vak van DEF) en de graaf een vlag `global`.
+- [x] **2. Uitvoeren** — de tolk krijgt de gedeelde namen van de kern mee en bindt parameters bij een aanroep (een int
+      rondt af); `LogicGraph.withLibrary` voegt de defs van de global scripts bij een diagram (de runner onthoudt dat per
+      programma tot een diagram verandert); `LogicStore` bewaart de gedeelde namen (`Shared`) en trekt ze gelijk met de
+      global scripts (`syncShared`); de robot doet hetzelfde via zijn verbinding; de Security OS controleert bij Save
+      met de bibliotheek en stuurt de gedeelde waarden naar de desktop.
+- [x] **3. De app** — Ctrl+Spatie kent `global`, de soorten na `naam:`, `naam: type = value`, defs met hun parameters
+      (ook uit global scripts) en de gedeelde namen; de editor kleurt `global` en de soort-woorden; Help heeft nieuwe
+      regels onder NAMES, YOUR OWN BLOCKS en GLOBAL SCRIPTS; de blokjes-editor de nieuwe vakken en het vinkje.
+- [x] **4. Tests** — `logic_types_params_global` (lezen, terugschrijven, via de blokjes, opslaan en laden, de bibliotheek,
+      elf foutmeldingen, Ctrl+Spatie), `logic_shared_names_run` (een hendel zet `lockdown`, een timer in een ander
+      diagram ziet het, bewaard na opslaan en laden) en `logic_def_params_run` (`open_door("Lamp", 2)` pulst het apparaat
+      dat je meegeeft, en `total: int` rondt 2,5 af naar 2, dan 4). Vijf oude tests verwachtten het oude gedrag (een
+      apparaat moest letterlijk zijn, een def zonder parameters) en zijn aangepast. 381 tests, allemaal groen.
+- [ ] **5. LEESMIJ, showcase en screenshots** — LEESMIJ.md "De server" heeft de stukken Soorten, Parameters en Global
+      scripts. Showcase en screenshots: zie de afronding onderaan hoofdstuk 51.
+
+### 44. De Block Reinforcer (4 november)
+
+Jouw wens: "block reinforcer zodat je base mooi is en ook sterk voor c4".
+
+**Jouw antwoorden**: een **handgereedschap** per blok (sluipen + klik doet de hele muur), een versteviging is **zo sterk
+als obsidiaan**, en je ziet het alleen **met de bril en het gereedschap in je hand** (een dun randje).
+
+**Mijn invulling** (zeg het als je het anders wil): de **Block Reinforcer** (drie ijzer, een obsidiaan, een computerchip)
+verbruikt per blok één **Reinforcement Plate** (twee ijzer en een obsidiaan = vier platen); sluipen verstevigt alle
+aaneengesloten blokken van dezelfde soort, tot `[breach] reinforcerWall` (64), zolang je platen hebt; alleen waar je
+mag bouwen (zone); alles wat te breken is behalve bedrock, lucht en vloeistof. Een verstevigd blok telt minstens
+`[breach] reinforced` (20) breekpunten; barsten en plamuurbeurten tellen gewoon mee; een ander blok op die plek is de
+versteviging kwijt (zelfde regel als barsten, via `CrackData`). De server stuurt wie het gereedschap vasthoudt elke
+seconde de verstevigde blokken binnen 24 blokken; de bril tekent er een staalblauw randje om (`ReinforcedRenderer`).
+Allebei in de tab Security, na de Zone Marker.
+
+- [x] **1. Gebouwd** — `BlockReinforcerItem`, de vlag `reinforced` in `CrackData.Crack`, `Cracks.reinforce/isReinforced/
+      reinforcedNear`, `Blast.baseStrength` (minstens `reinforced`), `ReinforcedBlocksPayload` en `ReinforcedRenderer`,
+      twee recepten, twee plaatjes (`generate_textures.block_reinforcer_item()` en `reinforcement_plate_item()`), taal,
+      en LEESMIJ.md "Blokken verstevigen: de Block Reinforcer". Test `reinforcer_makes_blocks_strong` (kwarts 2 -> 20,
+      één plaat per blok, een tweede keer doet niets, de muur tot de platen op zijn, een frag maakt alleen barsten,
+      bewaard na opslaan en laden, een nieuw blok is niet verstevigd).
+- [ ] **2. Showcase en screenshots** — showcase **"Block Reinforcer"** (na "Repairing cracks": twee kwartsmuurtjes,
+      links verstevigd met sluipen + klik, dezelfde klap op allebei), screenshots `-Ponly=reinforce`
+      (`rf01_reinforced_outline`, `rf02_same_blast_left_cracks_right_breaks`). Zie de afronding onderaan hoofdstuk 51.
+
+### 45. De Autoscan van een zone (4 november)
+
+Jouw wens: "Autoscan zodat je makkelijk je bunker kunt scannen en protecten, doet altijd 3 blokken in de muur zodat
+eventuele redstone ook wordt meegenomen; als het geen bunker is, is het moeilijker, maar probeer hier ook iets goeds voor
+te zoeken."
+
+**Jouw antwoorden**: de knop **Autoscan in de app Zone** (vanaf de kern) én **sluipen + klik met de Zone Marker** (vanaf
+die kamer); een open basis krijgt **een doos om de gebouwde blokken** (alles wat geen natuur is) met 3 blokken marge.
+
+**Mijn invulling** (zeg het als je het anders wil): met de marker is het sluipen + rechtsklik **zonder hoeken** (met hoeken
+blijft dat "de doos toevoegen"); de scan vult alle kamers die open met elkaar verbonden zijn (lucht en alles zonder
+botsing: een open deur, tapijt, een knop; een dichte deur houdt tegen) tot `[security] zoneScanMax` (60.000) blokken en
+nooit verder dan het bereik van de kern; loopt hij weg naar buiten, dan is het een open basis en volgt hij de gebouwde
+blokken vanaf het aangeklikte blok (de tag `imttech:natural` zegt wat natuur is: steen, aarde, zand, erts, bomen, ook
+zandsteen en obsidiaan); de muur is `[security] zoneScanWall` (3) blokken; de kubussen komen uit een gretige verdeling
+(eerst oost, dan zuid, dan omhoog) en worden samengevoegd als het er meer dan 48 zijn (de twee die samen het minste lucht
+erbij nemen); een zone heeft nu hooguit **48** kubussen (was 16); nog eens scannen voegt alleen toe wat er nog niet in
+zat en haalt oude kubussen weg die helemaal in een nieuwe vallen; een kubus die een andere kern in de weg zit, wordt
+overgeslagen (dat zegt de melding).
+
+- [x] **1. Gebouwd** — `ZoneScan` (vullen, muur, kubussen, samenvoegen, in de zone zetten), de opdracht `zone_scan` in
+      `ZoneApp` (server) met de knop **Autoscan** in de app, `ZoneMarkerItem.autoscan` (sluipen + rechtsklik zonder
+      hoeken, op een blok of in de lucht), de tag `data/imttech/tags/block/natural.json`, config en LEESMIJ.md (het stuk
+      "Je basis beveiligen: zones"). Test `autoscan_finds_rooms_and_buildings` (een dichte kamer om de kern: 244 blokken
+      kamer plus de muur, via de app in de zone; een los kwartsbouwsel: een doos met 3 marge via de marker; een tweede
+      scan voegt niets toe; steen is geen gebouw).
+- [ ] **2. Showcase en screenshots** — showcase **"Zone autoscan"** (na "Protected zones": een bunker naast de basis
+      met de marker, dan de open basis met de knop), screenshots `-Ponly=zones` (`zs01_autoscan_bunker_inside`,
+      `zs02_autoscan_bunker_outside`). Zie de afronding onderaan hoofdstuk 51.
 
 ---
 

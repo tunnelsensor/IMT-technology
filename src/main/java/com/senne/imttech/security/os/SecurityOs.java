@@ -498,7 +498,7 @@ public final class SecurityOs {
             case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "input_rename" -> renameInput(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
-            case "zone_new", "zone_delete", "zone_grow", "zone_set" -> {
+            case "zone_new", "zone_scan", "zone_delete", "zone_grow", "zone_set" -> {
                 // De app Zone (hoofdstuk 10), zie ZoneApp.
                 com.senne.imttech.security.zone.ZoneApp.Result result = com.senne.imttech.security.zone.ZoneApp.handle(
                         player, core, payload.op(), args, session.remote());
@@ -795,7 +795,9 @@ public final class SecurityOs {
         }
         var graph = com.senne.imttech.logic.program.LogicGraph.load(graphTag);
         var kind = com.senne.imttech.logic.program.ProgramKind.byName(kindName);
-        var problems = graph.problems(kind);
+        // De defs en gedeelde namen van de andere global scripts (hoofdstuk 43) mag dit diagram gebruiken.
+        var library = com.senne.imttech.logic.program.Library.of(store.programs(), oldName.isEmpty() ? name : oldName);
+        var problems = graph.problems(kind, library);
         if (!problems.isEmpty()) {
             notify(player, core, session, "Not saved: " + problems.getFirst().message(), true);
             return;
@@ -1398,6 +1400,16 @@ public final class SecurityOs {
         info.put("inputs", inputs);
         // Je robots (hoofdstuk 23): hun namen en wat er op hun pinnen zit, voor Help en Ctrl+Spatie.
         info.put("robots", com.senne.imttech.robot.Robots.logicInfo(level, core));
+        // De gedeelde namen van de global scripts (hoofdstuk 43) met hun waarde van nu: de app Logic laat ze zien.
+        ListTag shared = new ListTag();
+        core.logic().sharedValues().forEach((name, value) -> {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("n", name);
+            entry.putString("t", com.senne.imttech.logic.program.VarType.of(value).word());
+            entry.putString("v", value instanceof String text ? "\"" + text + "\"" : com.senne.imttech.logic.program.Expr.text(value));
+            shared.add(entry);
+        });
+        info.put("shared", shared);
         data.put("logicInfo", info);
         // De diagrammen zelf: alleen als het scherm een oudere versie heeft (anders zou wat je aan het
         // bewerken bent steeds overschreven worden).

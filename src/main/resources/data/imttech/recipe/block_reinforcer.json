@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " IO",
+    "ICI",
+    "I  "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "result": {
+    "id": "imttech:block_reinforcer",
+    "count": 1
+  }
+}

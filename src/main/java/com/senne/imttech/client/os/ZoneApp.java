@@ -145,12 +145,18 @@ final class ZoneApp {
         int addW = OsDraw.buttonWidth(font, add);
         button(g, font, right - addW, y, add, boxes.size() < zone.getInt("max"), HudStyle.CYAN,
                 () -> screen.send("zone_new", new CompoundTag()));
+        // De Autoscan (hoofdstuk 45): de kamers rond de kern (of rond jou) plus de muur, of een doos om het gebouw.
+        String scan = "Autoscan";
+        int scanW = OsDraw.buttonWidth(font, scan);
+        button(g, font, right - addW - 4 - scanW, y, scan, true, HudStyle.GREEN, () -> screen.send("zone_scan", new CompoundTag()));
         if (boxes.isEmpty()) {
             g.drawString(font, "No boxes yet.", px, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
-            hint(g, font, "Press New box, or click two corners", px, y + ROW + 2);
-            hint(g, font, "with a Zone Marker in the world", px, y + 2 * ROW + 2);
-            hint(g, font, "(sneak + right-click adds the box).", px, y + 3 * ROW + 2);
-            hint(g, font, "Reach: " + zone.getInt("reach") + " blocks from the core.", px, y + 5 * ROW + 2);
+            hint(g, font, "Autoscan: the closed rooms around the core (or", px, y + ROW + 2);
+            hint(g, font, "you) + 3 blocks of wall; an open base gets a box.", px, y + 2 * ROW + 2);
+            hint(g, font, "Or New box, or two corners with a Zone Marker", px, y + 3 * ROW + 2);
+            hint(g, font, "(sneak + right-click adds it; without corners", px, y + 4 * ROW + 2);
+            hint(g, font, "sneak + right-click scans that room).", px, y + 5 * ROW + 2);
+            hint(g, font, "Reach: " + zone.getInt("reach") + " blocks from the core.", px, y + 7 * ROW + 2);
             return;
         }
         String which = "Box " + (selected + 1) + " of " + boxes.size();
