@@ -280,6 +280,9 @@ public final class ModItems {
     public static final DeferredItem<com.senne.imttech.security.HackingLaptopItem> HACKING_LAPTOP = ITEMS.registerItem(
             "hacking_laptop", com.senne.imttech.security.HackingLaptopItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
+    /** De I.M.T Phone (hoofdstuk 50): de desktop van je kern in je zak, met een PIN. */
+    public static final DeferredItem<com.senne.imttech.security.PhoneItem> PHONE = ITEMS.registerItem(
+            "phone", com.senne.imttech.security.PhoneItem::new, new Item.Properties().stacksTo(1));
     public static final DeferredItem<Item> ROCKET_AMMO = ITEMS.registerSimpleItem("rocket_ammo",
             new Item.Properties());
 

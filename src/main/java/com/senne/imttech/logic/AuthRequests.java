@@ -91,6 +91,7 @@ public final class AuthRequests {
         core.logEvent(EventLog.Type.ENTRY, name + " asked for access at " + device.name());
         player.displayClientMessage(Component.translatable("auth.imttech.console.sent", Math.round(ImtConfig.Security.AUTH_REQUEST_SECONDS))
                 .withStyle(ChatFormatting.AQUA), true);
+        core.addMessage(name + " asks for access at " + device.name(), false);
         // De eigenaar hoort het meteen (ook zonder desktop open): in de app Requests kan hij antwoorden.
         ServerPlayer owner = core.ownerId() == null ? null : level.getServer().getPlayerList().getPlayer(core.ownerId());
         if (owner != null && owner != player) {

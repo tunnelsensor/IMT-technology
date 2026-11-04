@@ -1213,6 +1213,12 @@ public final class ImtConfig {
         @Tunable(value = "How long a request at an Auth Console waits for an answer (seconds); no answer = denied", min = 5, max = 300)
         public static float AUTH_REQUEST_SECONDS = 30.0f;
 
+        // ------------------------------------------------------------------------- De I.M.T Phone (hoofdstuk 50)
+        @Tunable(value = "How many wrong PINs in a row lock an I.M.T Phone (the owner is told every time)", min = 1, max = 10)
+        public static float PHONE_PIN_ATTEMPTS = 3.0f;
+        @Tunable(value = "How long a phone stays locked after too many wrong PINs (seconds)", min = 1, max = 3600)
+        public static float PHONE_PIN_LOCK_SECONDS = 60.0f;
+
         // ------------------------------------------------------------------------- Biebia's drones (hoofdstuk 25)
         /** Zoveel geprogrammeerde security drones zette Biebia in een Biebia's Industries Tower (op de docks in de hangar). */
         @Tunable(value = "How many programmed security drones Biebia left in a Biebia's Industries Tower (on the drone docks of its hangar)", max = 16)

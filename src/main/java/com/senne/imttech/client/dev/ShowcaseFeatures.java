@@ -2658,6 +2658,7 @@ final class ShowcaseFeatures {
         addBattery();
         addHandcuffs();
         addAuth();
+        addPhone();
     }
 
     /** Waar het veldje van de autorisatiecodes (hoofdstuk 49) ligt (zie VisualCheck.buildAuthYard). */
@@ -2711,6 +2712,55 @@ final class ShowcaseFeatures {
                 .pause(40)
                 .close(0)
                 .pause(60));
+    }
+
+    /** Hoofdstuk 50: de I.M.T Phone, op het veldje van hoofdstuk 49 (dezelfde kern, Bram en de console). */
+    private static void addPhone() {
+        BlockPos y = AUTH_YARD;
+        BlockPos console = y.offset(3, 0, 4);
+        add("I.M.T Phone", "Hoofdstuk 50. Dezelfde kern als hiervoor, en een I.M.T Phone in je hand. Rechtsklik: het scherm "
+                + "'connect to a system' met het IP en het wachtwoord van je kern (zoals de laptop). Dan kies je een PIN van vier "
+                + "cijfers, en de desktop van de telefoon gaat open: bovenaan I.M.T PHONE, en alleen Status (met de "
+                + "autorisatiecode), Logs, Cameras, Devices, Requests en Messages. Bram drukt op de console: zijn verzoek staat in "
+                + "Requests, en je accepteert het vanaf de telefoon. In Messages staat wat I.M.T je zei ('Bram asks for access', "
+                + "'Bram may come in'); onderaan kun je zelf een bericht sturen. De telefoon dicht en weer open: hij vraagt je "
+                + "PIN. Tot slot de desktop op de kern zelf: in Access staat je telefoon, met de knop Block.",
+                at(y.offset(2, 0, 2)), 0, 12, s -> s
+                .onServer(0, player -> VisualCheck.buildAuthYard(player, AUTH_YARD))
+                .onServer(30, player -> VisualCheck.wakeAuthServer(player, AUTH_YARD))
+                .onServer(0, player -> VisualCheck.givePhone(player, AUTH_YARD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()))
+                .step(20, () -> login(screen -> screen.tourType(VisualCheck.authYardIp, "bitech1")))
+                .pause(50)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(40)
+                .step(0, () -> login(screen -> screen.tourType("", "1234")))
+                .pause(50)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(40)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
+                .pause(80)
+                .onServer(0, player -> VisualCheck.bramAsks(player, console))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
+                .pause(80)
+                .step(0, () -> desktop(os -> os.tourRequestAnswer(true)))
+                .pause(40)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MESSAGES)))
+                .pause(100)
+                .close(0)
+                .pause(30)
+                .onServer(0, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()))
+                .pause(60)
+                .step(0, () -> login(screen -> screen.tourType("", "1234")))
+                .pause(30)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(60)
+                .close(0)
+                .onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ACCESS)))
+                .pause(100)
+                .close(0));
     }
 
     /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie VisualCheck.buildCuffYard). */

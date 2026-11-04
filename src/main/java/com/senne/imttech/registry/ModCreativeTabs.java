@@ -141,6 +141,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ROCKET_AMMO.get());
                 output.accept(ModItems.BYPASS_KIT.get());
                 output.accept(ModItems.HACKING_LAPTOP.get());
+                output.accept(ModItems.PHONE.get());
             });
 
     /** Eerst alle robotonderdelen, dan alle chips, de training, en daarna de rest voor robots. */

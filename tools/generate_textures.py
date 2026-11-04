@@ -2574,6 +2574,20 @@ def security_camera_textures():
         save(lens, f"block/{name}.png")
 
 
+def phone_item():
+    """De I.M.T Phone (hoofdstuk 50): een smal donker toestel, een cyaan scherm met wat regels, en een knopje onderaan."""
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.rectangle([4, 0, 11, 15], fill=METAL_DARK, outline=METAL_1)
+    d.rectangle([5, 2, 10, 12], fill=(8, 30, 40, 255))
+    for y, length in ((3, 4), (5, 3), (7, 4), (9, 2)):
+        d.line([6, y, 6 + length - 1, y], fill=CYAN_DIM)
+    px(im, [(6, 3)], CYAN)
+    px(im, [(7, 1)], (90, 96, 104, 255))
+    d.rectangle([7, 13, 8, 14], fill=METAL_3, outline=METAL_2)
+    save(im, "item/phone.png")
+
+
 def hacking_laptop():
     """De hacklaptop: open, met een blauw scherm vol code en een rood lampje."""
     im = img(16, 16)

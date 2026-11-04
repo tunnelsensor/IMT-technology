@@ -1444,7 +1444,20 @@ def furnish():
     - woonverdieping: een aquarium tegen de oostgevel en een pooltafel;
     - penthouse: een zithoek en nog een harnas in een vitrine;
     - overal: plantjes langs de ramen.
+
+    Sinds hoofdstuk 51 (4 november) is dit per verdieping een eigen functie, zodat generate_tower_rooms.py elke
+    verdieping apart kan bouwen; hier samen geeft het precies dezelfde toren als vroeger.
     """
+    furnish_lobby()
+    furnish_lab()
+    furnish_archive()
+    furnish_living()
+    furnish_penthouse()
+    furnish_plants()
+
+
+def furnish_lobby():
+    """De lobby: een vergaderzaal met glazen wanden, en een koffiebar."""
     # --- Lobby
     y = LOBBY_Y
     for x in range(24, 35):
@@ -1473,6 +1486,10 @@ def furnish():
     for x in (7, 9, 11):
         bottom_slab(x, y, 10, "minecraft:dark_oak_slab")
 
+
+
+def furnish_lab():
+    """Het lab: de Hall of Armor en twee werkplekken met schermen."""
     # --- Lab: Hall of Armor, en werkplekken
     y = LAB_Y
     for cx, mark in zip((12, 16, 20, 24, 28), ("TECH SUIT V1", "TECH SUIT V2", "TECH SUIT V3", "TECH SUIT V4",
@@ -1484,6 +1501,10 @@ def furnish():
         desk(x0, y, 26, 4, chairs=(1, 2))
         screen(x0, y + 1, 25, 4, 3)
 
+
+
+def furnish_archive():
+    """Het archief: een wereldbol en een leeshoek."""
     # --- Archief: wereldbol en leeshoek
     y = ARCHIVE_Y
     globe(12, y, 31)
@@ -1498,6 +1519,10 @@ def furnish():
     put(29, y, 15, "minecraft:dark_oak_fence")
     table_lamp(29, y + 1, 15)
 
+
+
+def furnish_living():
+    """De woonverdieping: een aquarium en een pooltafel."""
     # --- Woonverdieping: aquarium en pooltafel
     y = LIVING_Y
     for z in range(11, 21):
@@ -1523,6 +1548,10 @@ def furnish():
             put(x, y + 1, z, "minecraft:green_carpet")
     hanging_lamp(23, SECURITY_Y - 2, 12, 3)
 
+
+
+def furnish_penthouse():
+    """Het penthouse: een zithoek en nog een harnas."""
     # --- Penthouse: zithoek en een harnas
     y = PENTHOUSE_Y + 1
     rug(22, 15, 26, 19, y, "light_blue")
@@ -1532,6 +1561,10 @@ def furnish():
     top_slab(24, y, 17)
     suit_capsule(21, y, 24, "TECH SUIT V6")
 
+
+
+def furnish_plants():
+    """Plantjes langs de ramen van de lobby, het lab, het archief, de woonverdieping en het penthouse."""
     # --- Plantjes langs de ramen
     window_plants(LOBBY_Y, LOBBY_IN, skip={(MID + dx, 37) for dx in range(-4, 5)})
     window_plants(LAB_Y, LAB_IN)

@@ -27,7 +27,7 @@ public final class DesktopRights {
      * De apps die op een Computer kunnen, in de volgorde van de desktop. Niet: Settings (het wachtwoord van de kern),
      * Groups (dat zijn je eigen relais) en Computers zelf (dat stel je in op de kern of met de laptop).
      */
-    public static final List<String> COMPUTER_APPS = List.of("STATUS", "CAMERAS", "DEVICES", "ROBOTS", "TRAINING", "ACCESS", "REQUESTS",
+    public static final List<String> COMPUTER_APPS = List.of("STATUS", "CAMERAS", "DEVICES", "ROBOTS", "TRAINING", "ACCESS", "REQUESTS", "MESSAGES",
             "KEYCARDS", "LOGIC", "MONITOR", "BACKUP", "ZONE", "FILES", "NOTES", "LOGS");
 
     /** Apps zonder knoppen: die zijn alleen OFF of VIEW. */
@@ -37,6 +37,9 @@ public final class DesktopRights {
     public static final DesktopRights FULL = new DesktopRights(null);
     /** Niets mag (een nieuwe Computer die nog niet ingesteld is). */
     public static final DesktopRights NONE = new DesktopRights(Map.of());
+    /** De I.M.T Phone (hoofdstuk 50): Status, Logs, Cameras, Devices, Requests en Messages, meer niet. */
+    public static final DesktopRights PHONE = new DesktopRights(Map.of("STATUS", Access.VIEW, "LOGS", Access.VIEW,
+            "CAMERAS", Access.USE, "DEVICES", Access.USE, "REQUESTS", Access.USE, "MESSAGES", Access.USE));
 
     /** Per app wat mag; null = alles. */
     private final @Nullable Map<String, Access> apps;
@@ -113,6 +116,7 @@ public final class DesktopRights {
             case "dev_toggle", "sw_port", "dev_rename" -> mayUse("DEVICES");
             case "trust_add", "trust_remove" -> mayUse("ACCESS");
             case "req_answer" -> mayUse("REQUESTS");
+            case "msg_send" -> mayUse("MESSAGES");
             case "logic_save", "logic_delete", "logic_enable", "input_rename" -> mayUse("LOGIC");
             case "arrived" -> shows("LOGIC");
             case "training_stop" -> mayUse("TRAINING");
@@ -160,6 +164,12 @@ public final class DesktopRights {
         }
         if (op.startsWith("auth_")) {
             return "SETTINGS";
+        }
+        if (op.startsWith("msg_")) {
+            return "MESSAGES";
+        }
+        if (op.startsWith("phone_")) {
+            return "ACCESS";
         }
         if (op.startsWith("card_") || op.startsWith("cgroup_")) {
             return "KEYCARDS";

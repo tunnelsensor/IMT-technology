@@ -1642,5 +1642,15 @@
   "auth.imttech.console.accepted": "%s: access accepted.",
   "auth.imttech.console.denied": "%s: access denied.",
   "auth.imttech.console.no_answer": "%s: nobody answered.",
-  "auth.imttech.console.owner_notice": "%s asks for access at %s (%s). Answer in the app Requests."
+  "auth.imttech.console.owner_notice": "%s asks for access at %s (%s). Answer in the app Requests.",
+  "item.imttech.phone": "I.M.T Phone",
+  "tooltip.imttech.phone.unlinked": "Right-click to connect it to a security core (its IP and password), then choose a 4-digit PIN.",
+  "tooltip.imttech.phone.linked": "Connected to %s (%s). Right-click and type your PIN.",
+  "tooltip.imttech.phone.apps": "Status (with the authorization code), Logs, Cameras, Devices, Requests and Messages. The owner can block a stolen phone in Access.",
+  "phone.imttech.msg.no_system": "No system answers at %s (%s): it is gone, or it has no power.",
+  "phone.imttech.msg.forgotten": "%s does not know this phone anymore.",
+  "phone.imttech.msg.blocked": "This phone was blocked by the owner of %s.",
+  "phone.imttech.msg.locked": "Wrong PIN too often: the phone is locked for %s s.",
+  "phone.imttech.msg.wrong_pin_alert": "%s typed a wrong PIN on the phone of %s (%s).",
+  "os.imttech.msg.lost_phone": "Connection to %s lost: you no longer have the phone, or it was blocked."
 }

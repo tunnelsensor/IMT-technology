@@ -38,6 +38,23 @@ final class AccessApp {
         return access().getList("trusted", Tag.TAG_STRING);
     }
 
+    /** Een regel in de lijst: een vertrouwde speler (knop Remove), of (hoofdstuk 50) een telefoon (knop Block of Unblock). */
+    private record Row(String text, String button, boolean phone, String id, boolean blocked) {}
+
+    private List<Row> rows() {
+        List<Row> rows = new java.util.ArrayList<>();
+        for (Tag name : trusted()) {
+            rows.add(new Row(name.getAsString(), "Remove", false, "", false));
+        }
+        for (Tag element : access().getList("phones", Tag.TAG_COMPOUND)) {
+            CompoundTag phone = (CompoundTag) element;
+            boolean blocked = phone.getBoolean("b");
+            rows.add(new Row("Phone of " + phone.getString("n") + (blocked ? " (blocked)" : ""), blocked ? "Unblock" : "Block",
+                    true, phone.getString("id"), blocked));
+        }
+        return rows;
+    }
+
     private static int listTop(SecurityOsScreen.Area a) {
         return a.y() + 2 * LINE + 26;
     }
@@ -71,20 +88,22 @@ final class AccessApp {
         // De vertrouwde spelers.
         int headerY = a.y() + 2 * LINE + 13;
         g.drawString(font, "Trusted players", a.x(), headerY, HudStyle.argb(255, HudStyle.CYAN), false);
-        g.drawString(font, "never attacked, no desktop", a.x() + font.width("Trusted players") + 6, headerY,
+        g.drawString(font, "never attacked; and your phones", a.x() + font.width("Trusted players") + 6, headerY,
                 HudStyle.argb(255, OsDraw.GREY), false);
         int top = listTop(a);
         int bottom = listBottom(a);
         OsDraw.field(g, a.x(), top - 1, a.x() + a.w(), bottom, false);
-        List<Tag> names = trusted();
-        scroll = Math.max(0, Math.min(scroll, names.size() - 1));
+        List<Row> rows = rows();
+        scroll = Math.max(0, Math.min(scroll, rows.size() - 1));
         int y = top + 2;
-        for (int i = scroll; i < names.size() && y + 11 <= bottom; i++) {
-            g.drawString(font, names.get(i).getAsString(), a.x() + 5, y + 1, HudStyle.argb(255, HudStyle.WHITE), false);
-            OsDraw.button(g, font, a.x() + a.w() - OsDraw.buttonWidth(font, "Remove") - 3, y - 1, "Remove", true, HudStyle.RED);
+        for (int i = scroll; i < rows.size() && y + 11 <= bottom; i++) {
+            Row row = rows.get(i);
+            g.drawString(font, row.text(), a.x() + 5, y + 1, HudStyle.argb(255, row.phone() ? 0x9ED8FF : HudStyle.WHITE), false);
+            OsDraw.button(g, font, a.x() + a.w() - OsDraw.buttonWidth(font, row.button()) - 3, y - 1, row.button(), true,
+                    row.phone() && row.blocked() ? HudStyle.GREEN : HudStyle.RED);
             y += 13;
         }
-        if (names.isEmpty()) {
+        if (rows.isEmpty()) {
             g.drawString(font, "(nobody yet)", a.x() + 5, top + 3, HudStyle.argb(255, OsDraw.GREY), false);
         }
         // Onderaan: iemand toevoegen.
@@ -127,16 +146,23 @@ final class AccessApp {
             flag("players", !access.getBoolean("players"));
             return;
         }
-        // Iemand weghalen.
-        List<Tag> names = trusted();
+        // Iemand weghalen, of een telefoon blokkeren (hoofdstuk 50).
+        List<Row> rows = rows();
         int y = listTop(a) + 2;
         int bottom = listBottom(a);
-        int removeW = OsDraw.buttonWidth(font, "Remove");
-        for (int i = scroll; i < names.size() && y + 11 <= bottom; i++) {
-            if (OsDraw.inside(mx, my, a.x() + a.w() - removeW - 3, y - 1, removeW, OsDraw.BUTTON_H)) {
+        for (int i = scroll; i < rows.size() && y + 11 <= bottom; i++) {
+            Row row = rows.get(i);
+            int buttonW = OsDraw.buttonWidth(font, row.button());
+            if (OsDraw.inside(mx, my, a.x() + a.w() - buttonW - 3, y - 1, buttonW, OsDraw.BUTTON_H)) {
                 CompoundTag args = new CompoundTag();
-                args.putString("name", names.get(i).getAsString());
-                screen.send("trust_remove", args);
+                if (row.phone()) {
+                    args.putString("id", row.id());
+                    args.putBoolean("on", !row.blocked());
+                    screen.send("phone_block", args);
+                } else {
+                    args.putString("name", row.text());
+                    screen.send("trust_remove", args);
+                }
                 return;
             }
             y += 13;

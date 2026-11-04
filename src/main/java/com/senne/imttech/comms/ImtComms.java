@@ -56,14 +56,27 @@ public final class ImtComms {
         if (ImtServer.authorizedGlasses(sender) == null || !checkRate(sender, NEXT_MESSAGE_TICK, Math.round(ImtConfig.Comms.MESSAGE_COOLDOWN))) {
             return;
         }
-        String text = clean(payload.message(), Math.round(ImtConfig.Comms.MAX_MESSAGE_LENGTH));
+        send(sender, payload.recipient(), payload.message());
+    }
+
+    /** Vanaf de I.M.T Phone (hoofdstuk 50): zonder bril, met dezelfde wachttijd tussen twee berichten. */
+    public static void sendFromPhone(ServerPlayer sender, String recipient, String message) {
+        if (!checkRate(sender, NEXT_MESSAGE_TICK, Math.round(ImtConfig.Comms.MESSAGE_COOLDOWN))) {
+            return;
+        }
+        send(sender, recipient, message);
+    }
+
+    /** Een bericht aan één speler, of (recipient leeg) aan iedereen met I.M.T. */
+    private static void send(ServerPlayer sender, String recipient, String rawMessage) {
+        String text = clean(rawMessage, Math.round(ImtConfig.Comms.MAX_MESSAGE_LENGTH));
         if (text.isEmpty()) {
             return;
         }
         String senderName = sender.getGameProfile().getName();
         Component body = Component.literal(text);
 
-        if (payload.recipient().isEmpty()) {
+        if (recipient.isEmpty()) {
             // Aan iedereen met I.M.T (of alleen je team).
             List<ServerPlayer> recipients = imtUsers(sender).stream().filter(p -> p != sender && sameSide(sender, p)).toList();
             if (recipients.isEmpty()) {
@@ -78,9 +91,9 @@ public final class ImtComms {
             ImtTech.LOGGER.info("[I.M.T comms] {} -> everyone ({}): {}", senderName, recipients.size(), text);
         } else {
             // Aan één speler.
-            ServerPlayer target = sender.level().getServer().getPlayerList().getPlayerByName(payload.recipient());
+            ServerPlayer target = sender.level().getServer().getPlayerList().getPlayerByName(recipient);
             if (target == null || target == sender || !isImtUser(target)) {
-                ImtServer.send(sender, Component.translatable("imt.imttech.msg.recipient_unavailable", payload.recipient()),
+                ImtServer.send(sender, Component.translatable("imt.imttech.msg.recipient_unavailable", recipient),
                         ImtMessagePayload.Level.WARNING);
                 return;
             }

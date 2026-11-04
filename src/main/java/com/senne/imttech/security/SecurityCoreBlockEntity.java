@@ -107,6 +107,15 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private String authPrevious = "";
     private long authSince;
 
+    // ---------------------------------------------------------------- Telefoons en berichten (hoofdstuk 50)
+    /** Een I.M.T Phone die aan deze kern hangt: zijn nummer, van wie, zijn PIN en of de eigenaar hem blokkeerde. */
+    public record Phone(UUID id, String name, String pin, boolean blocked) {}
+    /** Wat I.M.T de eigenaar zei (say, alarmen, verzoeken, logins): de app Messages. */
+    public record Message(long time, String text, boolean alarm) {}
+    public static final int MAX_MESSAGES = 60;
+    private final java.util.LinkedHashMap<UUID, Phone> phones = new java.util.LinkedHashMap<>();
+    private final java.util.ArrayDeque<Message> messages = new java.util.ArrayDeque<>();
+
     /** Heeft de kern stroom (en werken zijn drones dus)? */
     public boolean isOnline() {
         return online;
@@ -775,6 +784,65 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         return new AuthCheck(false, false);
     }
 
+    // ================================================================ Telefoons en berichten (hoofdstuk 50)
+
+    /** De telefoons die aan deze kern hangen, in de volgorde waarin ze verbonden werden. */
+    public List<Phone> phones() {
+        return List.copyOf(phones.values());
+    }
+
+    public @Nullable Phone phone(UUID id) {
+        return phones.get(id);
+    }
+
+    /** Een nieuwe telefoon van deze speler (nog zonder PIN). */
+    public void linkPhone(UUID id, String name) {
+        phones.put(id, new Phone(id, name, "", false));
+        setChanged();
+    }
+
+    public void setPhonePin(UUID id, String pin) {
+        Phone phone = phones.get(id);
+        if (phone != null) {
+            phones.put(id, new Phone(id, phone.name(), pin, phone.blocked()));
+            setChanged();
+        }
+    }
+
+    /** De eigenaar blokkeert (of deblokkeert) een telefoon in de app Access. */
+    public void blockPhone(UUID id, boolean blocked) {
+        Phone phone = phones.get(id);
+        if (phone != null) {
+            phones.put(id, new Phone(id, phone.name(), phone.pin(), blocked));
+            setChanged();
+        }
+    }
+
+    public boolean phoneBlocked(UUID id) {
+        Phone phone = phones.get(id);
+        return phone == null || phone.blocked();
+    }
+
+    /** Een telefoon vergeten (hij kan dan niet meer verbinden tot hij opnieuw verbonden wordt). */
+    public void forgetPhone(UUID id) {
+        phones.remove(id);
+        setChanged();
+    }
+
+    /** Een bericht van I.M.T aan de eigenaar (de app Messages); een alarm is rood. Hooguit MAX_MESSAGES. */
+    public void addMessage(String text, boolean alarm) {
+        messages.addLast(new Message(level == null ? 0 : level.getGameTime(), text, alarm));
+        while (messages.size() > MAX_MESSAGES) {
+            messages.removeFirst();
+        }
+        setChanged();
+    }
+
+    /** De berichten, de oudste eerst. */
+    public List<Message> messages() {
+        return List.copyOf(messages);
+    }
+
     /** Het gebied dat deze kern beschermt: ZONE_REACH blokken in elke richting (zie SecurityCores.inArea). */
     public AABB area() {
         return new AABB(worldPosition).inflate(Math.round(ImtConfig.Security.ZONE_REACH));
@@ -827,6 +895,26 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         tag.putString("AuthCode", authCode);
         tag.putString("AuthPrevious", authPrevious);
         tag.putLong("AuthSince", authSince);
+        // Telefoons en berichten (hoofdstuk 50)
+        net.minecraft.nbt.ListTag phoneList = new net.minecraft.nbt.ListTag();
+        for (Phone phone : phones.values()) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID("Id", phone.id());
+            entry.putString("Name", phone.name());
+            entry.putString("Pin", phone.pin());
+            entry.putBoolean("Blocked", phone.blocked());
+            phoneList.add(entry);
+        }
+        tag.put("Phones", phoneList);
+        net.minecraft.nbt.ListTag messageList = new net.minecraft.nbt.ListTag();
+        for (Message message : messages) {
+            CompoundTag entry = new CompoundTag();
+            entry.putLong("T", message.time());
+            entry.putString("X", message.text());
+            entry.putBoolean("A", message.alarm());
+            messageList.add(entry);
+        }
+        tag.put("Messages", messageList);
         net.minecraft.nbt.ListTag trustedList = new net.minecraft.nbt.ListTag();
         for (java.util.Map.Entry<UUID, String> entry : trusted.entrySet()) {
             CompoundTag person = new CompoundTag();
@@ -871,6 +959,20 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         authCode = tag.getString("AuthCode");
         authPrevious = tag.getString("AuthPrevious");
         authSince = tag.getLong("AuthSince");
+        // Telefoons en berichten (hoofdstuk 50)
+        phones.clear();
+        for (Tag element : tag.getList("Phones", Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) element;
+            if (entry.hasUUID("Id")) {
+                phones.put(entry.getUUID("Id"), new Phone(entry.getUUID("Id"), entry.getString("Name"), entry.getString("Pin"),
+                        entry.getBoolean("Blocked")));
+            }
+        }
+        messages.clear();
+        for (Tag element : tag.getList("Messages", Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) element;
+            messages.addLast(new Message(entry.getLong("T"), entry.getString("X"), entry.getBoolean("A")));
+        }
         dronesEnabled = !tag.contains("DronesOn") || tag.getBoolean("DronesOn");
         lasersEnabled = !tag.contains("LasersOn") || tag.getBoolean("LasersOn");
         camerasEnabled = !tag.contains("CamerasOn") || tag.getBoolean("CamerasOn");

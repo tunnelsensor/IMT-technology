@@ -86,6 +86,12 @@ public final class ModDataComponents {
      * Hoofdstuk 40: het IP waar je de vorige keer met deze Hacking Laptop op inlogde, zodat het inlogscherm het al
      * invult. Het wachtwoord onthoudt de laptop nooit.
      */
+    /** Hoofdstuk 50: aan welke kern een I.M.T Phone hangt (het IP, de naam en het nummer van de telefoon). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.security.PhoneLink>> PHONE =
+            COMPONENTS.registerComponentType("phone", builder -> builder
+                    .persistent(com.senne.imttech.security.PhoneLink.CODEC)
+                    .networkSynchronized(com.senne.imttech.security.PhoneLink.STREAM_CODEC));
+
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> LAST_IP =
             COMPONENTS.registerComponentType("last_ip", builder -> builder
                     .persistent(Codec.STRING)

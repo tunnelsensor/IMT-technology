@@ -157,6 +157,17 @@ public final class ModNetwork {
                 com.senne.imttech.security.os.SecurityOs.login(player, payload.ip(), payload.password());
             }
         });
+        // Hoofdstuk 50: de I.M.T Phone verbinden, en zijn PIN.
+        registrar.playToServer(PhoneLoginPayload.TYPE, PhoneLoginPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.security.os.Phones.login(player, payload.ip(), payload.password());
+            }
+        });
+        registrar.playToServer(PhonePinPayload.TYPE, PhonePinPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.security.os.Phones.pin(player, payload.pin());
+            }
+        });
         // Hoofdstuk 40: de code van een Computer (achter zijn monitor).
         registrar.playToServer(ComputerCodePayload.TYPE, ComputerCodePayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -244,6 +255,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onOsSnapshot(payload, context));
         registrar.playToClient(OsLoginPromptPayload.TYPE, OsLoginPromptPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onOsLoginPrompt(payload, context));
+        registrar.playToClient(PhonePromptPayload.TYPE, PhonePromptPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onPhonePrompt(payload, context));
         registrar.playToClient(ComputerCodePromptPayload.TYPE, ComputerCodePromptPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onComputerCodePrompt(payload, context));
         registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,

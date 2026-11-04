@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "item": "minecraft:black_stained_glass_pane"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "G",
+    "C",
+    "I"
+  ],
+  "result": {
+    "id": "imttech:phone"
+  }
+}

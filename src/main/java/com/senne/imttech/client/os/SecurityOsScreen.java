@@ -43,6 +43,8 @@ public class SecurityOsScreen extends Screen {
         ACCESS("Access", "A", 280, 190),
         /** Hoofdstuk 49: de toegangsverzoeken van de Auth Consoles, met Accept en Deny. */
         REQUESTS("Requests", "?", 300, 170),
+        /** Hoofdstuk 50: wat I.M.T je zei, en een bericht sturen (ook op de telefoon). */
+        MESSAGES("Messages", "@", 330, 190),
         /** Hoofdstuk 40: de Computers op het netwerk van deze kern, en wat je op elk ervan mag. */
         COMPUTERS("Computers", "P", 390, 206),
         /** Sinds 25 oktober met de groepen links: breder en iets hoger (past nog net op 1280 x 720). */
@@ -136,6 +138,7 @@ public class SecurityOsScreen extends Screen {
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
     private final RequestsApp requests = new RequestsApp(this);
+    private final MessagesApp messages = new MessagesApp(this);
     private final ComputersApp computers = new ComputersApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
     private final LogicApp logic = new LogicApp(this, net.minecraft.client.Minecraft.getInstance().font);
@@ -553,6 +556,9 @@ public class SecurityOsScreen extends Screen {
         if (win.app != App.ACCESS) {
             access.blur();
         }
+        if (win.app != App.MESSAGES) {
+            messages.blur();
+        }
         if (win.app != App.CAMERAS) {
             cameras.blur();
         }
@@ -721,6 +727,7 @@ public class SecurityOsScreen extends Screen {
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
             case REQUESTS -> requests.mouseClicked(font, contentArea(win), mx, my);
+            case MESSAGES -> messages.mouseClicked(font, contentArea(win), mx, my);
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
             case LOGIC -> logic.mouseClicked(font, contentArea(win), mx, my, button);
             case BACKUP -> backup.mouseClicked(font, contentArea(win), mx, my);
@@ -821,6 +828,7 @@ public class SecurityOsScreen extends Screen {
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
             case REQUESTS -> requests.mouseScrolled(scrollY);
+            case MESSAGES -> messages.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(contentArea(win), (int) mouseX, scrollY);
             case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, (int) mouseY, scrollY);
             case MONITOR -> monitor.mouseScrolled(scrollY);
@@ -839,6 +847,7 @@ public class SecurityOsScreen extends Screen {
         if (top != null && top.app == App.FILES && files.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.NOTES && notes.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.ACCESS && access.charTyped(codePoint, modifiers)
+                || top != null && top.app == App.MESSAGES && messages.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.DEVICES && devices.charTyped(codePoint, modifiers)
                 || top != null && top.app == App.GROUPS && groups.charTyped(codePoint, modifiers)
@@ -864,6 +873,7 @@ public class SecurityOsScreen extends Screen {
         if (top != null && top.app == App.FILES && files.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.NOTES && notes.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.ACCESS && access.keyPressed(keyCode, scanCode, modifiers)
+                || top != null && top.app == App.MESSAGES && messages.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.CAMERAS && cameras.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.DEVICES && devices.keyPressed(keyCode, scanCode, modifiers)
                 || top != null && top.app == App.GROUPS && groups.keyPressed(keyCode, scanCode, modifiers)
@@ -952,7 +962,8 @@ public class SecurityOsScreen extends Screen {
         g.drawString(font, power, width - font.width(power) - 6, 3, HudStyle.argb(255, online ? HudStyle.GREEN : HudStyle.RED), false);
         // In het midden: op afstand (de laptop) of op een Computer (hoofdstuk 40). Past het daar niet naast de naam en het
         // IP (een smal scherm), dan erachter, en eventueel ingekort.
-        String tag = remote ? "REMOTE SESSION" : computerName().isEmpty() ? "" : "COMPUTER: " + computerName();
+        String tag = data.getBoolean("phone") ? "I.M.T PHONE" : remote ? "REMOTE SESSION"
+                : computerName().isEmpty() ? "" : "COMPUTER: " + computerName();
         if (!tag.isEmpty()) {
             int left = 6 + font.width(system) + 12;
             int room = width - font.width(power) - 18 - left;
@@ -1032,6 +1043,7 @@ public class SecurityOsScreen extends Screen {
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
             case REQUESTS -> requests.render(g, font, area, mouseX, mouseY, partialTick);
+            case MESSAGES -> messages.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGIC -> logic.render(g, font, area, mouseX, mouseY, partialTick);
             case MONITOR -> monitor.render(g, font, area, mouseX, mouseY, partialTick);

@@ -596,6 +596,7 @@ public final class LogicRunner {
             case SAY -> {
                 String message = message(level, core, run, node);
                 core.logEvent(EventLog.Type.LOGIC, message);
+                core.addMessage(message, false);
                 ServerPlayer owner = owner(level, core);
                 if (owner != null) {
                     ImtServer.send(owner, Component.literal(message), ImtMessagePayload.Level.INFO);
@@ -693,6 +694,7 @@ public final class LogicRunner {
     static void alarm(ServerLevel level, SecurityCoreBlockEntity core, Context context, String text) {
         String who = context.player() != null ? " (" + context.playerName() + ")" : "";
         core.logEvent(EventLog.Type.ALARM, text + who);
+        core.addMessage(text + who, true);
         level.playSound(null, core.getBlockPos(), SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2.0f, 0.6f);
         ServerPlayer owner = owner(level, core);
         if (owner != null) {
@@ -726,6 +728,7 @@ public final class LogicRunner {
         switch (op) {
             case SAY -> {
                 core.logEvent(EventLog.Type.LOGIC, line);
+                core.addMessage(line, false);
                 ServerPlayer owner = owner(level, core);
                 if (owner != null) {
                     ImtServer.send(owner, Component.literal(line), ImtMessagePayload.Level.INFO);

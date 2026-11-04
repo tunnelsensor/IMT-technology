@@ -161,6 +161,21 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Hoofdstuk 50: een scherm van de I.M.T Phone openen (verbinden, de PIN, een PIN kiezen), of het antwoord laten zien. */
+    public static void onPhonePrompt(com.senne.imttech.network.PhonePromptPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (payload.mode() >= 0) {
+            com.senne.imttech.client.os.OsLoginScreen.Mode mode = switch (payload.mode()) {
+                case com.senne.imttech.network.PhonePromptPayload.PIN -> com.senne.imttech.client.os.OsLoginScreen.Mode.PHONE_PIN;
+                case com.senne.imttech.network.PhonePromptPayload.SET_PIN -> com.senne.imttech.client.os.OsLoginScreen.Mode.PHONE_SET_PIN;
+                default -> com.senne.imttech.client.os.OsLoginScreen.Mode.PHONE_LOGIN;
+            };
+            mc.setScreen(new com.senne.imttech.client.os.OsLoginScreen(mode, payload.label()));
+        } else if (mc.screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+            login.reply(payload.message());
+        }
+    }
+
     /** Hoofdstuk 40: het codescherm van een Computer openen, of het antwoord van de server laten zien. */
     public static void onComputerCodePrompt(com.senne.imttech.network.ComputerCodePromptPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

@@ -99,15 +99,23 @@ public final class SecurityOs {
         private final @Nullable BlockPos computer;
         /** Waar je bij moet blijven (binnen REACH): de kern, of de monitor waarop je klikte. */
         private final BlockPos anchor;
+        /** Hoofdstuk 50: de I.M.T Phone waarmee deze desktop open is (zijn nummer), of null. */
+        private final @Nullable UUID phone;
 
         Session(BlockPos core, boolean remote, UUID viewer, ResourceKey<Level> dimension, @Nullable BlockPos computer,
                 BlockPos anchor) {
+            this(core, remote, viewer, dimension, computer, anchor, null);
+        }
+
+        Session(BlockPos core, boolean remote, UUID viewer, ResourceKey<Level> dimension, @Nullable BlockPos computer,
+                BlockPos anchor, @Nullable UUID phone) {
             this.core = core;
             this.remote = remote;
             this.viewer = viewer;
             this.dimension = dimension;
             this.computer = computer;
             this.anchor = anchor;
+            this.phone = phone;
         }
 
         public @Nullable BlockPos computer() {
@@ -120,6 +128,9 @@ public final class SecurityOs {
          * weg, dan niets.
          */
         public DesktopRights rights(ServerLevel level) {
+            if (phone != null) {
+                return DesktopRights.PHONE;
+            }
             if (computer == null) {
                 return DesktopRights.FULL;
             }
@@ -129,6 +140,11 @@ public final class SecurityOs {
 
         public UUID viewer() {
             return viewer;
+        }
+
+        /** Hoofdstuk 50: de telefoon waarmee deze desktop open is, of null. */
+        public @Nullable UUID phone() {
+            return phone;
         }
 
         public BlockPos core() {
@@ -192,8 +208,18 @@ public final class SecurityOs {
         return openFor(player, core, false, computer, monitor);
     }
 
+    /** Hoofdstuk 50: de desktop op een I.M.T Phone (op afstand, met alleen de apps van de telefoon). */
+    static boolean openPhone(ServerPlayer player, SecurityCoreBlockEntity core, UUID phone) {
+        return openFor(player, core, true, null, core.getBlockPos(), phone);
+    }
+
     private static boolean openFor(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote, @Nullable BlockPos computer,
                                    BlockPos anchor) {
+        return openFor(player, core, remote, computer, anchor, null);
+    }
+
+    private static boolean openFor(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote, @Nullable BlockPos computer,
+                                   BlockPos anchor, @Nullable UUID phone) {
         // Tijdens een oefening (hoofdstuk 27) is de trainee een indringer: zijn eigen desktop gaat niet open (ook niet op afstand).
         if (com.senne.imttech.training.Training.isDrillTrainee(player.serverLevel(), core.getBlockPos(), player.getUUID())) {
             player.displayClientMessage(Component.literal("The desktop is locked: you are the intruder in a drill")
@@ -207,7 +233,7 @@ public final class SecurityOs {
             return false;
         }
         Session session = new Session(core.getBlockPos().immutable(), remote, player.getUUID(), player.serverLevel().dimension(),
-                computer == null ? null : computer.immutable(), anchor.immutable());
+                computer == null ? null : computer.immutable(), anchor.immutable(), phone);
         SESSIONS.put(player.getUUID(), session);
         if (remote) {
             keepLoaded(player.serverLevel(), session.core());
@@ -315,47 +341,81 @@ public final class SecurityOs {
      */
     public static void login(ServerPlayer player, String ip, String password) {
         ServerLevel here = player.serverLevel();
-        String address = ip.strip();
-        long now = here.getGameTime();
         if (!hasLaptop(player)) {
             reply(player, "You need a Hacking Laptop to log in from a distance.");
             return;
         }
+        SecurityCoreBlockEntity core = connect(player, ip, password, message -> reply(player, message));
+        if (core == null) {
+            return;
+        }
+        String name = player.getGameProfile().getName();
+        boolean owner = isOwner(player, core);
+        if (!openFor(player, core, true)) {
+            reply(player, "Connection refused.");
+            return;
+        }
+        core.logEvent(EventLog.Type.LOGIN, name + " logged in remotely");
+        if (!owner) {
+            alertOwner(here, core, player, "os.imttech.msg.login_alert");
+        }
+        ItemStack laptop = player.getMainHandItem().is(ModItems.HACKING_LAPTOP.get()) ? player.getMainHandItem()
+                : player.getOffhandItem().is(ModItems.HACKING_LAPTOP.get()) ? player.getOffhandItem() : ItemStack.EMPTY;
+        for (int i = 0; laptop.isEmpty() && i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i).is(ModItems.HACKING_LAPTOP.get())) {
+                laptop = player.getInventory().getItem(i);
+            }
+        }
+        if (!laptop.isEmpty()) {
+            laptop.set(com.senne.imttech.registry.ModDataComponents.LAST_IP.get(), core.ip());
+        }
+        com.senne.imttech.logic.LogicDevices.refresh(here, core, player);
+    }
+
+    /**
+     * Het IP en het wachtwoord nakijken, voor de laptop en (hoofdstuk 50) de telefoon: de kern met dat IP opzoeken (in
+     * dezelfde dimensie, met stroom en een wachtwoord), de wachttijd na te veel foute wachtwoorden, en het wachtwoord
+     * zelf (fout: tellen, de eigenaar waarschuwen, en na [security] passwordAttempts even wachten). Geeft de kern, of
+     * null nadat {@code reply} zei waarom niet.
+     */
+    static @Nullable SecurityCoreBlockEntity connect(ServerPlayer player, String ip, String password, java.util.function.Consumer<String> reply) {
+        ServerLevel here = player.serverLevel();
+        String address = ip.strip();
+        long now = here.getGameTime();
         Long waitUntil = WAIT_UNTIL.get(player.getUUID());
         if (waitUntil != null && now < waitUntil) {
-            reply(player, "Too many wrong passwords: wait " + (int) Math.ceil((waitUntil - now) / 20.0) + " s.");
-            return;
+            reply.accept("Too many wrong passwords: wait " + (int) Math.ceil((waitUntil - now) / 20.0) + " s.");
+            return null;
         }
         GlobalPos where = CoreNetworkData.get(here).find(address);
         if (where == null) {
-            reply(player, "ssh: no system answers at " + address + ".");
-            return;
+            reply.accept("ssh: no system answers at " + address + ".");
+            return null;
         }
         if (!where.dimension().equals(here.dimension())) {
-            reply(player, "ssh: no route to " + address + ". That system is in another dimension.");
-            return;
+            reply.accept("ssh: no route to " + address + ". That system is in another dimension.");
+            return null;
         }
         BlockPos pos = where.pos();
-        // Het stukje wereld met de kern laden (van ver is het misschien niet geladen).
         here.getChunk(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
         if (!(here.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core)) {
-            reply(player, "ssh: no system answers at " + address + ".");
-            return;
+            reply.accept("ssh: no system answers at " + address + ".");
+            return null;
         }
         boolean owner = isOwner(player, core);
         if (!core.isOnline()) {
-            reply(player, "ssh: " + address + " does not answer. That system has no power.");
-            return;
+            reply.accept("ssh: " + address + " does not answer. That system has no power.");
+            return null;
         }
         if (!core.hasPassword()) {
-            reply(player, owner ? "Set a password in Settings on your core first: without one, nobody can log in from far away."
+            reply.accept(owner ? "Set a password in Settings on your core first: without one, nobody can log in from far away."
                     : "This system takes no logins: it has no password. Take it over on site with a Hacking Laptop.");
-            return;
+            return null;
         }
         int locked = lockedSeconds(player, core);
         if (locked > 0) {
-            reply(player, "ACCESS DENIED: you are locked out of this system for " + locked + " s.");
-            return;
+            reply.accept("ACCESS DENIED: you are locked out of this system for " + locked + " s.");
+            return null;
         }
         String name = player.getGameProfile().getName();
         if (!core.checkPassword(password)) {
@@ -370,35 +430,15 @@ public final class SecurityOs {
                 WRONG.remove(player.getUUID());
                 long ticks = Math.max(20, Math.round(ImtConfig.Security.PASSWORD_LOCKOUT_MILLIS / 50.0));
                 WAIT_UNTIL.put(player.getUUID(), now + ticks);
-                reply(player, "Permission denied. Too many wrong passwords: wait " + (int) Math.ceil(ticks / 20.0) + " s.");
+                reply.accept("Permission denied. Too many wrong passwords: wait " + (int) Math.ceil(ticks / 20.0) + " s.");
             } else {
-                reply(player, "Permission denied, please try again.");
+                reply.accept("Permission denied, please try again.");
             }
-            return;
+            return null;
         }
         WRONG.remove(player.getUUID());
         WAIT_UNTIL.remove(player.getUUID());
-        if (!openFor(player, core, true)) {
-            reply(player, "Connection refused.");
-            return;
-        }
-        core.logEvent(EventLog.Type.LOGIN, name + " logged in remotely");
-        if (!owner) {
-            alertOwner(here, core, player, "os.imttech.msg.login_alert");
-        }
-        // De laptop onthoudt het IP (de eerste in je handen, anders de eerste in je inventaris).
-        ItemStack laptop = player.getMainHandItem().is(ModItems.HACKING_LAPTOP.get()) ? player.getMainHandItem()
-                : player.getOffhandItem().is(ModItems.HACKING_LAPTOP.get()) ? player.getOffhandItem() : ItemStack.EMPTY;
-        for (int i = 0; laptop.isEmpty() && i < player.getInventory().getContainerSize(); i++) {
-            if (player.getInventory().getItem(i).is(ModItems.HACKING_LAPTOP.get())) {
-                laptop = player.getInventory().getItem(i);
-            }
-        }
-        if (!laptop.isEmpty()) {
-            laptop.set(com.senne.imttech.registry.ModDataComponents.LAST_IP.get(), core.ip());
-        }
-        // LogicDevices.refresh doet dit ook bij het openen ter plekke: de namen van je apparaten voor de app Logic.
-        com.senne.imttech.logic.LogicDevices.refresh(here, core, player);
+        return core;
     }
 
     /** Een antwoord voor het inlogscherm (waarom het niet lukte). */
@@ -408,6 +448,8 @@ public final class SecurityOs {
 
     /** Een alarm van I.M.T voor de eigenaar (als hij online is, waar hij ook is). */
     private static void alertOwner(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer who, String key) {
+        core.addMessage(who.getGameProfile().getName() + (key.endsWith("login_alert") ? " logged in remotely"
+                : " typed a wrong password (remote)"), true);
         ServerPlayer owner = core.ownerId() == null ? null : level.getServer().getPlayerList().getPlayer(core.ownerId());
         if (owner != null && owner != who) {
             ImtServer.send(owner, Component.translatable(key, who.getGameProfile().getName(), core.hostname()),
@@ -463,6 +505,8 @@ public final class SecurityOs {
             case "passwd" -> passwd(player, core, session, args.getString("pw"));
             case "auth_set" -> setAuth(player, core, session, args.getInt("len"), args.getInt("min"), args.getBoolean("old"));
             case "req_answer" -> answerRequest(player, core, session, args.getInt("id"), args.getBoolean("ok"));
+            case "phone_block" -> blockPhone(player, core, session, args.getString("id"), args.getBoolean("on"));
+            case "msg_send" -> Phones.sendMessage(player, args.getString("to"), args.getString("text"));
             case "fs_open" -> openFile(player, core, session, path(args, "path"));
             case "fs_mkdir" -> fileResult(player, core, session, core.fs().mkdir(path(args, "path")));
             case "fs_touch" -> fileResult(player, core, session, touch(core.fs(), path(args, "path")));
@@ -1096,6 +1140,28 @@ public final class SecurityOs {
         sendSnapshot(player, core, session);
     }
 
+    /** Een telefoon blokkeren of weer vrijgeven (hoofdstuk 50, de app Access): alleen de eigenaar. */
+    private static void blockPhone(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String id, boolean blocked) {
+        if (!isOwner(player, core)) {
+            notify(player, core, session, "Only the owner can block a phone.", true);
+            return;
+        }
+        UUID phoneId;
+        try {
+            phoneId = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        SecurityCoreBlockEntity.Phone phone = core.phone(phoneId);
+        if (phone == null) {
+            return;
+        }
+        core.blockPhone(phoneId, blocked);
+        core.logEvent(EventLog.Type.SYSTEM, player.getGameProfile().getName() + (blocked ? " blocked" : " unblocked")
+                + " the phone of " + phone.name());
+        notify(player, core, session, (blocked ? "Blocked" : "Unblocked") + " the phone of " + phone.name() + ".", false);
+    }
+
     /** Gooit iedereen behalve {@code keep} van deze kern af (bij een nieuw wachtwoord of een overname). */
     public static void kickOthers(@Nullable ServerPlayer keep, BlockPos corePos) {
         if (keep == null || keep.getServer() == null) {
@@ -1253,6 +1319,7 @@ public final class SecurityOs {
         data.putBoolean("hasPassword", core.hasPassword());
         data.putBoolean("online", core.isOnline());
         data.putBoolean("remote", session.remote());
+        data.putBoolean("phone", session.phone() != null);
         // Het logboek, met per regel hoe lang geleden het was (in seconden).
         long now = level.getGameTime();
         if (rights.shows("LOGS")) {
@@ -1329,6 +1396,16 @@ public final class SecurityOs {
                 trusted.add(net.minecraft.nbt.StringTag.valueOf(name));
             }
             access.put("trusted", trusted);
+            // De telefoons die aan deze kern hangen (hoofdstuk 50): blokkeren kan hier.
+            ListTag phones = new ListTag();
+            for (SecurityCoreBlockEntity.Phone phone : core.phones()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putString("id", phone.id().toString());
+                entry.putString("n", phone.name());
+                entry.putBoolean("b", phone.blocked());
+                phones.add(entry);
+            }
+            access.put("phones", phones);
             data.put("access", access);
         }
         // De apparaten met hun status.
@@ -1362,6 +1439,18 @@ public final class SecurityOs {
         }
         if (rights.shows("REQUESTS")) {
             data.put("requests", com.senne.imttech.logic.AuthRequests.snapshot(level, core));
+        }
+        // Wat I.M.T je zei (hoofdstuk 50, de app Messages), met per bericht hoe lang geleden (seconden).
+        if (rights.shows("MESSAGES")) {
+            ListTag messages = new ListTag();
+            for (SecurityCoreBlockEntity.Message message : core.messages()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putInt("ago", (int) Math.max(0, (level.getGameTime() - message.time()) / 20));
+                entry.putString("x", message.text());
+                entry.putBoolean("a", message.alarm());
+                messages.add(entry);
+            }
+            data.put("messages", messages);
         }
         // De server (serverracks) waar de redstone-diagrammen op draaien.
         if (rights.shows("MONITOR") || rights.shows("STATUS") || rights.shows("LOGIC")) {
@@ -1519,10 +1608,15 @@ public final class SecurityOs {
         }
         // Op afstand (hoofdstuk 40): de kern geladen houden, en de verbinding valt weg zonder laptop of zonder stroom.
         if (session.remote() && level.getGameTime() % 20 == 0) {
-            if (!hasLaptop(player) || !core.isOnline()) {
+            // Met de telefoon (hoofdstuk 50): die moet nog in je rugzak zitten en niet geblokkeerd zijn.
+            boolean lostDevice = session.phone() != null
+                    ? !Phones.hasPhone(player, session.phone()) || core.phoneBlocked(session.phone())
+                    : !hasLaptop(player);
+            if (lostDevice || !core.isOnline()) {
                 close(player);
-                player.displayClientMessage(Component.translatable(core.isOnline() ? "os.imttech.msg.lost_laptop"
-                        : "os.imttech.msg.lost_power", core.hostname()).withStyle(ChatFormatting.YELLOW), true);
+                player.displayClientMessage(Component.translatable(!core.isOnline() ? "os.imttech.msg.lost_power"
+                        : session.phone() != null ? "os.imttech.msg.lost_phone" : "os.imttech.msg.lost_laptop", core.hostname())
+                        .withStyle(ChatFormatting.YELLOW), true);
                 return;
             }
             keepLoaded(level, session.core());

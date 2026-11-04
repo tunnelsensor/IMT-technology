@@ -656,6 +656,25 @@ bekijken of te zien wie er waar binnenkwam.
 entries**: dan zie je alleen wie welke keycardlezer, welk codepaneel, welke knop of hendel gebruikte,
 en wie waar inlogde ("Lotte logged in at Reception").
 
+### De I.M.T Phone: je kern in je zak
+De **I.M.T Phone** (een zwart glaspaneel, een computerchip en een ijzerstaaf) is de laptop in het klein:
+
+- **Rechtsklik** de eerste keer: het scherm *connect to a system* vraagt het **IP en het wachtwoord** van je
+  kern (zoals de laptop; het IP staat in Status, het wachtwoord zet je in Settings). Dan kies je een **PIN**
+  van vier cijfers. De telefoon hangt vanaf dan aan die kern.
+- Elke keer dat je hem opent, vraagt hij je **PIN**. Drie keer fout (`phonePinAttempts`) en hij zit een
+  minuut op slot (`phonePinLockSeconds`); de eigenaar hoort dat meteen. De PIN staat niet op de telefoon
+  maar bij de kern: wie je telefoon steelt, haalt hem er niet uit.
+- De desktop van de telefoon (bovenaan **I.M.T PHONE**) heeft alleen **Status** (met de autorisatiecode),
+  **Logs**, **Cameras**, **Devices**, **Requests** (toegangsverzoeken accepteren of weigeren, waar je ook
+  bent) en **Messages**: wat I.M.T je zei (`say(...)` uit je diagrammen, alarmen, wie toegang vroeg, wie
+  inlogde), en onderaan een bericht sturen aan een speler (leeg = iedereen met I.M.T), zonder bril.
+- Hij werkt waar je ook bent in dezelfde dimensie, zolang de kern stroom heeft en de telefoon in je rugzak
+  zit. Haal je hem weg, dan gaat de desktop dicht.
+- **Gestolen?** Op de desktop van de kern (of met de laptop) staat in **Access** elke telefoon die aan de kern
+  hangt, met **Block**: een geblokkeerde telefoon gaat meteen dicht en opent niet meer, tot je hem weer
+  vrijgeeft. Messages staat ook op de gewone desktop.
+
 ### Licht: de Arc Lamp en de lichtschakelaar
 De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een computerchip) is een lamp met **lichtniveau
 100**. Een gewone lamp in Minecraft houdt op bij 15: dat licht reikt zo'n 15 blokken. Deze lamp geeft

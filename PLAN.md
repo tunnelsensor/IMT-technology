@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 388 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 390 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 110 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 111 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4382,6 +4382,38 @@ lampje groen of rood, komt in het logboek ("Senne accepted Bram at Gate", "Nobod
 - [x] **2. Showcase en screenshots** — showcase 110 **"Authorization codes and the Auth Console"**, screenshots
       `-Ponly=auth` (`au01` Status met de code, `au02` Settings, `au03` de app Requests, `au04` de console groen).
 
+### 50. De I.M.T Phone (4 november)
+
+Jouw wens: "een GSM-item, zoals de PC maar minder".
+
+**Jouw antwoorden**: de apps **Status met de code, Logs, Cameras, Devices, Requests (accept/deny) en Messages**;
+verbinden **zoals de laptop** (IP + wachtwoord); een gestolen telefoon: **een PIN, en op afstand blokkeren**.
+
+**Mijn invulling** (zeg het als je het anders wil): het item `phone` (tab Security, naast de laptop; stapel van 1) met
+op het item alleen het IP, de naam en het nummer van de telefoon (`PhoneLink`); de PIN en of hij geblokkeerd is staan
+bij de kern (`SecurityCoreBlockEntity.Phone`), zodat een dief er niets aan heeft. Het inlogscherm van de laptop kreeg
+drie standen erbij (`OsLoginScreen.Mode`: verbinden, een PIN kiezen, de PIN intypen); het verbinden zelf deelt de
+laptop en de telefoon (`SecurityOs.connect`). De desktop is een sessie op afstand met `DesktopRights.PHONE` (Status en
+Logs alleen kijken; Cameras, Devices, Requests en Messages bedienen), bovenaan "I.M.T PHONE"; hij gaat dicht zonder de
+telefoon in je rugzak of als de eigenaar hem blokkeert. Drie foute PINs (`[security] phonePinAttempts`) = een minuut op
+slot (`phonePinLockSeconds`), in het logboek, en de eigenaar krijgt een alarm. **Messages** is nieuw (ook op de gewone
+desktop en op een Computer): de kern bewaart de laatste 60 berichten van I.M.T aan de eigenaar (`say`, alarmen, "X asks
+for access", logins, foute PINs) en onderaan stuur je een bericht via de comms (`ImtComms.sendFromPhone`, zonder bril).
+In **Access** staan de telefoons van de kern met Block/Unblock (`phone_block`).
+
+- [x] **1. Gebouwd** — `security/PhoneItem`, `PhoneLink`, `ModDataComponents.PHONE`, `security/os/Phones` (verbinden,
+      PIN, slot, de telefoon in je rugzak, berichten sturen), `SecurityOs` (`connect`, `openPhone`, de sessie met
+      telefoon, de gegevens "phone", "messages" en de telefoons in "access", de opdrachten `phone_block` en
+      `msg_send`), `DesktopRights.PHONE`, `SecurityCoreBlockEntity` (telefoons en berichten, met NBT), `LogicRunner` en
+      `AuthRequests` (berichten), `ImtComms.sendFromPhone`, `client/os/OsLoginScreen` (de standen), `MessagesApp`,
+      `AccessApp` (de telefoons), de kopbalk, drie berichten (`PhoneLoginPayload`, `PhonePinPayload`,
+      `PhonePromptPayload`), config `[security] phonePinAttempts/phonePinLockSeconds`, recept, model, plaatje
+      (`generate_textures.phone_item()`), taal, LEESMIJ.md "De I.M.T Phone: je kern in je zak". Tests
+      `phone_links_sets_pin_and_opens_small_desktop` en `phone_answers_requests_and_can_be_blocked`.
+- [x] **2. Showcase en screenshots** — showcase 111 **"I.M.T Phone"**, screenshots `-Ponly=phone` (`ph01` verbinden,
+      `ph02` de PIN kiezen, `ph03` de kleine desktop met Status, `ph04` Requests, `ph05` Messages, `ph06` Access met de
+      telefoon).
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -4389,6 +4421,10 @@ lampje groen of rood, komt in het logboek ("Senne accepted Bram at Gate", "Nobod
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De I.M.T Phone (hoofdstuk 50)**: gezien op screenshots (`-Ponly=phone`, en showcase 111), maar niet zelf gespeeld.
+      Probeer: een telefoon verbinden, een PIN kiezen, hem ver van je basis openen en een verzoek beantwoorden; een vriend
+      laten proberen met een foute PIN (jij moet het horen); hem blokkeren in Access. Kijk of de kleine desktop met zes
+      apps er goed uitziet, en of de app Messages leesbaar is.
 - [ ] **Autorisatiecodes en de Auth Console (hoofdstuk 49)**: gezien op screenshots (`-Ponly=auth`, en showcase 110), maar
       niet zelf gespeeld. Probeer: de code in Status aflezen en op een paneel typen met `auth.valid` in je diagram; in
       Settings de lengte en de minuten veranderen (de code verspringt meteen bij een andere lengte); een vriend op de

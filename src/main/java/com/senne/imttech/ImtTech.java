@@ -127,6 +127,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.ComputerGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.HandcuffGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.AuthGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.PhoneGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
@@ -244,6 +245,9 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onUseItemStart);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.cuffs.Handcuffs::onToss);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Flashbang::onServerStopped);
+        // De I.M.T Phone (hoofdstuk 50).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.os.Phones::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.os.Phones::onServerStopped);
         // De Security OS-desktop op de beveiligingskern
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.os.SecurityOs::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.os.SecurityOs::onPlayerLoggedOut);

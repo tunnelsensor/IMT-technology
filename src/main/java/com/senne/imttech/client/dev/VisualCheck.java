@@ -3252,6 +3252,36 @@ public final class VisualCheck {
             t.shot(15, "au04_console_accepted");
         }
 
+        // --- De I.M.T Phone (hoofdstuk 50): verbinden, een PIN kiezen, de kleine desktop (Status, Requests, Messages), en de
+        // telefoon in de app Access van de kern zelf.
+        if (want("phone")) {
+            BlockPos y = AUTH_YARD;
+            t.onServer(0, player -> buildAuthYard(player, AUTH_YARD));
+            t.onServer(30, player -> wakeAuthServer(player, AUTH_YARD));
+            t.onServer(0, player -> givePhone(player, AUTH_YARD));
+            t.stand(20, y.getX() + 2.5, y.getY(), y.getZ() + 2.5, 0, 10);
+            t.onServer(10, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()));
+            t.step(15, () -> loginTour(login -> login.tourType(authYardIp, "bitech1")));
+            t.shot(10, "ph01_phone_connect");
+            t.step(0, () -> loginTour(com.senne.imttech.client.os.OsLoginScreen::tourConnect));
+            t.step(20, () -> loginTour(login -> login.tourType("", "1234")));
+            t.shot(10, "ph02_phone_choose_pin");
+            t.step(0, () -> loginTour(com.senne.imttech.client.os.OsLoginScreen::tourConnect));
+            t.step(25, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)));
+            t.shot(15, "ph03_phone_desktop_status");
+            t.onServer(0, player -> bramAsks(player, y.offset(3, 0, 4)));
+            t.step(15, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)));
+            t.shot(15, "ph04_phone_requests");
+            t.step(0, () -> osTour(os -> os.tourRequestAnswer(true)));
+            t.step(15, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MESSAGES)));
+            t.shot(15, "ph05_phone_messages");
+            t.close(0);
+            t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD));
+            t.step(15, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ACCESS)));
+            t.shot(15, "ph06_access_phones");
+            t.close(0);
+        }
+
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
         // stroomcircuit: een groep kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
         // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
@@ -3813,6 +3843,8 @@ public final class VisualCheck {
 
     /** Hoofdstuk 49: het veldje van de autorisatiecodes (zie "auth"). */
     private static final BlockPos AUTH_YARD = new BlockPos(-400, -60, -340);
+    /** Het IP van de kern van dat veldje (de server zet het, het scherm van de telefoon typt het; hoofdstuk 50). */
+    static volatile String authYardIp = "";
 
     /** Het diagram op de server van het veldje: auth.valid op het paneel, request.accepted op de console. */
     static final String AUTH_PROGRAM = """
@@ -3880,8 +3912,27 @@ public final class VisualCheck {
             core.logic().put(null, new com.senne.imttech.logic.program.LogicProgram("Entrance", true, graph, AUTH_PROGRAM));
             core.setAuthSettings(6, 5, false);
             core.authTick(level, level.getGameTime());
+            authYardIp = core.ip();
         }
         com.senne.imttech.logic.AuthRequests.clear();
+    }
+
+    /** Hoofdstuk 50: een nieuwe (nog niet verbonden) I.M.T Phone in je hand; de telefoons van een vorige keer vergeet de kern. */
+    static void givePhone(ServerPlayer player, BlockPos base) {
+        ServerLevel level = player.serverLevel();
+        if (level.getBlockEntity(base) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+            for (com.senne.imttech.security.SecurityCoreBlockEntity.Phone phone : core.phones()) {
+                core.forgetPhone(phone.id());
+            }
+        }
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.PHONE.get()));
+    }
+
+    /** Iets doen met het inlogscherm (van de laptop of de telefoon) als dat open staat. */
+    private static void loginTour(java.util.function.Consumer<com.senne.imttech.client.os.OsLoginScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+            action.accept(login);
+        }
     }
 
     /** Een lezer, paneel of console dat aan de zuidkant van zijn blok hangt en naar het noorden kijkt, met een naam. */
