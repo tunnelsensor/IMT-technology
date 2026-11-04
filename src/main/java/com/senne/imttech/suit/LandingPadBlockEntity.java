@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  *   net over heeft, en daaruit laadt hij je bril veel sneller op dan rechtstreeks uit het net. In
  *   het scherm zit een vakje voor Battery Upgrades: elke maakt de batterij groter.
  */
-public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
+public class LandingPadBlockEntity extends BlockEntity implements MenuProvider, com.senne.imttech.energy.FeBridge.Receiving {
     /** Zo ver opzij (in blokken, vanaf het midden) telt nog als "op het platform". */
     public static final double ZONE = 2.5;
     private static final int CHECK_TICKS = 20;
@@ -131,6 +131,29 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
 
     public int energy() {
         return energy;
+    }
+
+    // ---------------------------------------------------------------- Forge Energy (hoofdstuk 46)
+
+    /** Een kabel van een andere mod vult de batterij van het platform rechtstreeks. */
+    @Override
+    public int receiveFe(int amount, boolean simulate) {
+        int added = Math.max(0, Math.min(amount, capacity() - energy));
+        if (!simulate && added > 0) {
+            energy += added;
+            setChanged();
+        }
+        return added;
+    }
+
+    @Override
+    public int storedFe() {
+        return energy;
+    }
+
+    @Override
+    public int capacityFe() {
+        return capacity();
     }
 
     /** Het vakje met batterijcellen (voor het scherm, en om ze te laten vallen bij afbreken). */
@@ -345,6 +368,7 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
             tag.putUUID("ListedFor", listedFor);
         }
         tag.putInt("Energy", energy);
+        tag.putInt("EnergyUnits", 2); // hoofdstuk 46: in FE
         if (!cells.getItem(0).isEmpty()) {
             tag.put("Cells", cells.getItem(0).save(registries));
         }
@@ -356,6 +380,9 @@ public class LandingPadBlockEntity extends BlockEntity implements MenuProvider {
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         listedFor = tag.hasUUID("ListedFor") ? tag.getUUID("ListedFor") : null;
         energy = tag.getInt("Energy");
+        if (!tag.contains("EnergyUnits")) {
+            energy = (int) Math.min(Integer.MAX_VALUE, energy * 10L); // van voor Forge Energy (hoofdstuk 46)
+        }
         cells.setItem(0, tag.contains("Cells") ? ItemStack.parseOptional(registries, tag.getCompound("Cells")) : ItemStack.EMPTY);
     }
 }

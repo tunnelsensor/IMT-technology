@@ -70,16 +70,25 @@ public final class PowerGrid {
     public static List<EnergySource> sources(Level level, BlockPos device) {
         List<EnergySource> result = new ArrayList<>();
         for (BlockPos pos : sourcePositions(level, device)) {
-            if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof EnergySource source) {
+            if (!level.isLoaded(pos)) {
+                continue;
+            }
+            if (level.getBlockEntity(pos) instanceof EnergySource source) {
                 result.add(source);
+            } else {
+                // Hoofdstuk 46: een leverancier van een andere mod (een energiekubus, een accumulator) op ons net.
+                EnergySource foreign = FeBridge.foreignSource(level, pos, null);
+                if (foreign != null) {
+                    result.add(foreign);
+                }
             }
         }
         return result;
     }
 
-    /** Hoeveel stroom er in totaal in de leveranciers van dit apparaat zit. */
+    /** Hoeveel stroom er in totaal in de leveranciers van dit apparaat zit (en in zijn eigen FE-buffertje). */
     public static int available(Level level, BlockPos device) {
-        long total = 0;
+        long total = FeBridge.buffered(level, device);
         for (EnergySource source : sources(level, device)) {
             total += source.energy();
         }
@@ -88,15 +97,19 @@ public final class PowerGrid {
 
     /**
      * Haalt maximaal {@code amount} stroom uit het net van dit apparaat, bij de voortste
-     * leverancier eerst. Geeft terug hoeveel het werd (kan minder zijn, of 0).
+     * leverancier eerst. Geeft terug hoeveel het werd (kan minder zijn, of 0). Wat een vreemde kabel in het buffertje
+     * van het apparaat duwde (hoofdstuk 46), gaat voor.
      */
     public static int draw(Level level, BlockPos device, int amount) {
         if (amount <= 0) {
             return 0;
         }
+        int taken = FeBridge.drainBuffer(level, device, amount);
+        if (taken >= amount) {
+            return taken;
+        }
         List<EnergySource> sources = sources(level, device);
         sources.sort(Comparator.comparingInt(EnergySource::energy).reversed());
-        int taken = 0;
         for (EnergySource source : sources) {
             taken += source.drain(amount - taken);
             if (taken >= amount) {
@@ -109,8 +122,53 @@ public final class PowerGrid {
         // Hoofdstuk 38: de stroom liep echt; spelers in de buurt zien gele streepjes over de kabel (zie lan/CableTraffic).
         if (taken > 0 && level instanceof net.minecraft.server.level.ServerLevel server) {
             com.senne.imttech.lan.CableTraffic.power(server, device);
+            note(level, device, taken);
         }
         return taken;
+    }
+
+    // ================================================================ Wie gebruikt er stroom (hoofdstuk 47)
+
+    /** Een apparaat dat de laatste tijd stroom haalde: waar, en gemiddeld hoeveel per tick (over een venster van 5 s). */
+    public record DeviceUse(BlockPos device, float perTick) {}
+
+    /** Per apparaat: {begin van het venster, wat het in dit venster haalde, het gemiddelde van het vorige venster, laatste tick}. */
+    private static final Map<ResourceKey<Level>, Map<BlockPos, double[]>> USES = new HashMap<>();
+    private static final int USE_WINDOW = 100;
+
+    private static void note(Level level, BlockPos device, int taken) {
+        long now = level.getGameTime();
+        Map<BlockPos, double[]> perLevel = USES.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        double[] use = perLevel.computeIfAbsent(device.immutable(), key -> new double[] {now, 0, 0, now});
+        if (now - use[0] >= USE_WINDOW) {
+            use[2] = use[1] / Math.max(1, now - use[0]);
+            use[0] = now;
+            use[1] = 0;
+        }
+        use[1] += taken;
+        use[3] = now;
+    }
+
+    /** De apparaten die de laatste 10 seconden stroom haalden in deze wereld, met hun gemiddelde per tick. */
+    public static List<DeviceUse> recentDevices(Level level) {
+        List<DeviceUse> result = new ArrayList<>();
+        Map<BlockPos, double[]> perLevel = USES.get(level.dimension());
+        if (perLevel == null) {
+            return result;
+        }
+        long now = level.getGameTime();
+        perLevel.entrySet().removeIf(entry -> now - entry.getValue()[3] > 2L * USE_WINDOW);
+        for (Map.Entry<BlockPos, double[]> entry : perLevel.entrySet()) {
+            double[] use = entry.getValue();
+            double perTick = use[2] > 0 ? use[2] : use[1] / Math.max(1, now - use[0]);
+            result.add(new DeviceUse(entry.getKey(), (float) perTick));
+        }
+        return result;
+    }
+
+    /** Waar de leveranciers van dit apparaat staan (voor de batterij: hangt dit apparaat aan mij?). */
+    public static List<BlockPos> sourcePositionsOf(Level level, BlockPos device) {
+        return sourcePositions(level, device);
     }
 
     /**
@@ -277,9 +335,10 @@ public final class PowerGrid {
             }
             seen.add(next);
             remember(parents, next, from);
-            // Een leverancier kan ook OP een kabel staan: dan is de plek allebei.
+            // Een leverancier kan ook OP een kabel staan: dan is de plek allebei. Hoofdstuk 46: een leverancier van een
+            // andere mod (via de energie-capability) telt ook.
             BlockEntity entity = level.getBlockEntity(next);
-            if (entity instanceof EnergySource) {
+            if (entity instanceof EnergySource || entity != null && FeBridge.foreignSource(level, next, direction.getOpposite()) != null) {
                 sources.add(next);
             }
             // Een kabel die open ligt binnen een EMP-puls (hoofdstuk 35) geeft even niets door; een kabel in een muur wel.
@@ -306,5 +365,7 @@ public final class PowerGrid {
     public static void clear() {
         CACHE.clear();
         OWED.clear();
+        USES.clear();
+        FeBridge.clear();
     }
 }

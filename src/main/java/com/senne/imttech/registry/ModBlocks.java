@@ -93,6 +93,25 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion());
 
+    // ---------------------------------------------------------------- De Power Battery (hoofdstuk 47)
+    /** Battery Casing: de wand van een Power Battery. */
+    public static final DeferredBlock<com.senne.imttech.battery.BatteryCasingBlock> BATTERY_CASING = BLOCKS.registerBlock("battery_casing",
+            properties -> new com.senne.imttech.battery.BatteryCasingBlock(properties, false),
+            BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0f, 8.0f).requiresCorrectToolForDrops().sound(SoundType.METAL));
+    /** Battery Glass: een doorzichtig wandblok, zodat je de cellen ziet. */
+    public static final DeferredBlock<com.senne.imttech.battery.BatteryCasingBlock> BATTERY_GLASS = BLOCKS.registerBlock("battery_glass",
+            properties -> new com.senne.imttech.battery.BatteryCasingBlock(properties, true),
+            BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(3.0f, 8.0f).requiresCorrectToolForDrops().sound(SoundType.GLASS)
+                    .noOcclusion().isViewBlocking((state, level, pos) -> false).isSuffocating((state, level, pos) -> false));
+    /** Battery Cell: binnenin de doos, elke cel is opslag. */
+    public static final DeferredBlock<com.senne.imttech.battery.BatteryCellBlock> BATTERY_CELL = BLOCKS.registerBlock("battery_cell",
+            com.senne.imttech.battery.BatteryCellBlock::new,
+            BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLUE).strength(3.0f, 8.0f).requiresCorrectToolForDrops().sound(SoundType.METAL));
+    /** Battery Port: in de wand, daar sluiten de kabels aan; het brein van de batterij. */
+    public static final DeferredBlock<com.senne.imttech.battery.BatteryPortBlock> BATTERY_PORT = BLOCKS.registerBlock("battery_port",
+            com.senne.imttech.battery.BatteryPortBlock::new,
+            BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0f, 8.0f).requiresCorrectToolForDrops().sound(SoundType.METAL));
+
     /** De warmtegenerator: maakt energie van brandstof en van de hitte om hem heen. */
     public static final DeferredBlock<HeatGeneratorBlock> HEAT_GENERATOR = BLOCKS.registerBlock("heat_generator",
             HeatGeneratorBlock::new,

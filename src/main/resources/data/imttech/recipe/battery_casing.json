@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "III",
+    "ICI",
+    "III"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "result": {
+    "id": "imttech:battery_casing",
+    "count": 8
+  }
+}

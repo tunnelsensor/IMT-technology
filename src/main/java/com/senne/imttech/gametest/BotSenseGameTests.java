@@ -418,7 +418,7 @@ public final class BotSenseGameTests {
         BlockPos domePos = new BlockPos(12, 3, 12);
         helper.setBlock(domePos, ModBlocks.DOME_GENERATOR.get());
         helper.setBlock(domePos.east(), ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(domePos.east())).fill(20_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(domePos.east())).fill(200_000);
         DomeGeneratorBlockEntity dome = (DomeGeneratorBlockEntity) helper.getBlockEntity(domePos);
         dome.setRadius(0);
         Cow shielded = helper.spawnWithNoFreeWill(EntityType.COW, new BlockPos(12, 2, 14));

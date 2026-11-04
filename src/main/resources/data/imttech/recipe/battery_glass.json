@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "GBG",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "B": {
+      "item": "imttech:battery_casing"
+    }
+  },
+  "result": {
+    "id": "imttech:battery_glass",
+    "count": 4
+  }
+}

@@ -394,7 +394,7 @@ public final class ImtTechGameTests {
         BlockPos busyPos = new BlockPos(2, 3, 2);
         helper.setBlock(busyPos, ModBlocks.HEAT_GENERATOR.get());
         ChargerBlockEntity busy = (ChargerBlockEntity) helper.getBlockEntity(busyPos);
-        busy.fill(1000);
+        busy.fill(1_000);
         busy.setItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(Items.COAL));
         BlockPos emptyPos = new BlockPos(10, 3, 10);
         helper.setBlock(emptyPos, ModBlocks.HEAT_GENERATOR.get());
@@ -1918,7 +1918,7 @@ public final class ImtTechGameTests {
         BlockPos padPos = new BlockPos(6, 2, 6);
         helper.setBlock(padPos, ModBlocks.LANDING_PAD.get());
         helper.setBlock(padPos.below(), ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(padPos.below())).fill(20_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(padPos.below())).fill(200_000);
         var pad = (com.senne.imttech.suit.LandingPadBlockEntity) helper.getBlockEntity(padPos);
         int base = pad.capacity();
         pad.cells().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));

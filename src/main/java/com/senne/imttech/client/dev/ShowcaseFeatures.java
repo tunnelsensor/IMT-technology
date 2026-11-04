@@ -744,7 +744,7 @@ final class ShowcaseFeatures {
                 level.setBlockAndUpdate(bench, com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
                 level.setBlockAndUpdate(bench.east(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(bench.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
                 for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
                     if (slot.getType() == net.minecraft.world.entity.EquipmentSlot.Type.HUMANOID_ARMOR
@@ -2655,6 +2655,53 @@ final class ShowcaseFeatures {
                     VisualCheck.wakeCameraWall(player, WALL_ROOM);
                 })
                 .pause(100));
+        addBattery();
+    }
+
+    /** Waar de Power Battery van hoofdstuk 47 staat (zie VisualCheck.buildBatteryYard). */
+    static final BlockPos BATTERY_YARD = new BlockPos(-130, -60, 200);
+
+    /** Hoofdstuk 47: de Power Battery. Apart, zodat de lijst hierboven leesbaar blijft. */
+    private static void addBattery() {
+        BlockPos b = BATTERY_YARD;
+        BlockPos port = b.offset(0, 0, 2);
+        BlockPos lid = b.offset(2, 3, 2);
+        add("Power Battery", "Hoofdstuk 47: de Power Battery, zoals bij Mekanism. Een doos van 5 x 4 x 5 Battery Casing met "
+                + "een raam van Battery Glass (daarachter de 18 Battery Cells) en een Battery Port links en rechts onderaan. "
+                + "Links komt een kabel van een warmtegenerator en een zonnepaneel; rechts gaat een kabel naar een holotafel "
+                + "en een camera. Rechtsklik op de poort: het scherm van de batterij, vanaf nu de enige plek waar je het "
+                + "hele net ziet: STORED met de balk, wat het net maakt, gebruikt en tekortkomt per tick, de grafiek van de "
+                + "laatste vijf minuten (hier alvast gevuld) en de lijsten GENERATORS en DEVICES. Dan haal ik een casing uit "
+                + "het dak: het scherm zegt 'The wall is not closed' en waar; het blok terug en de stroom is er nog. Tot "
+                + "slot het scherm van de generator: alleen hijzelf, het netoverzicht ernaast is weg.",
+                at(b.offset(2, 0, 9)), 180, 8, s -> s
+                .onServer(0, player -> VisualCheck.buildBatteryYard(player, BATTERY_YARD))
+                .pause(50)
+                .lookAt(10, Vec3.atCenterOf(port))
+                .pause(30)
+                .onServer(0, player -> {
+                    if (player.serverLevel().getBlockEntity(port) instanceof com.senne.imttech.battery.BatteryPortBlockEntity entity) {
+                        entity.tourHistory();
+                    }
+                    com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player);
+                })
+                .pause(160)
+                .close(0)
+                .lookAt(10, Vec3.atCenterOf(lid))
+                .onServer(10, player -> player.serverLevel().setBlockAndUpdate(lid, Blocks.AIR.defaultBlockState()))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player))
+                .pause(80)
+                .close(0)
+                .onServer(10, player -> player.serverLevel().setBlockAndUpdate(lid, ModBlocks.BATTERY_CASING.get().defaultBlockState()))
+                .pause(30)
+                .onServer(0, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player))
+                .pause(80)
+                .close(0)
+                .stand(0, b.getX() - 2.5, b.getY(), b.getZ() + 5.5, 180, 25)
+                .lookAt(10, Vec3.atCenterOf(port.west(3)))
+                .step(20, () -> rightClick(port.west(3)))
+                .close(90));
     }
 
     /** Waar de kamer met de schermmuur staat (zie VisualCheck.buildCameraWall). */
@@ -2715,7 +2762,7 @@ final class ShowcaseFeatures {
         for (BlockPos generator : new BlockPos[] {y.below(), rack.below(), NET_READER.below(), switchPower}) {
             level.setBlockAndUpdate(generator, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(30_000);
+                charger.fill(300_000);
             }
         }
         level.setBlockAndUpdate(y, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState()
@@ -2908,7 +2955,7 @@ final class ShowcaseFeatures {
         BlockPos y = LAMP_YARD;
         level.setBlockAndUpdate(y, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(y) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(20_000);
+            generator.fill(200_000);
         }
         for (int x = 1; x <= 7; x++) {
             com.senne.imttech.energy.PowerCables.add(level, y.east(x));
@@ -3036,7 +3083,7 @@ final class ShowcaseFeatures {
         for (BlockPos generator : new BlockPos[] {lab.below(), racks[0].below()}) {
             level.setBlockAndUpdate(generator, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(30_000);
+                charger.fill(300_000);
             }
         }
         net.minecraft.world.level.block.state.BlockState rack = com.senne.imttech.registry.ModBlocks.SERVER_RACK.get()
@@ -3130,7 +3177,7 @@ final class ShowcaseFeatures {
         }
         level.setBlockAndUpdate(bottom.below(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(bottom.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(30_000);
+            charger.fill(300_000);
         }
         net.minecraft.world.level.block.state.BlockState emitter = com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get()
                 .defaultBlockState().setValue(com.senne.imttech.shield.LaserEmitterBlock.FACING, net.minecraft.core.Direction.EAST);
@@ -3256,7 +3303,7 @@ final class ShowcaseFeatures {
         BlockPos generator = ZONE_BASE.offset(4, -1, 5);
         level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(20_000);
+            charger.fill(200_000);
         }
     }
 
@@ -3321,7 +3368,7 @@ final class ShowcaseFeatures {
         for (BlockPos generator : new BlockPos[] {crusher.west(), compactor.east()}) {
             level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
     }
@@ -3401,7 +3448,7 @@ final class ShowcaseFeatures {
         for (BlockPos generator : new BlockPos[] {vault.below(), vaultRack.below()}) {
             level.setBlockAndUpdate(generator, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(30_000);
+                charger.fill(300_000);
             }
         }
         level.setBlockAndUpdate(vaultRack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState());
@@ -3557,7 +3604,7 @@ final class ShowcaseFeatures {
             BlockPos generator = ROBOT_BAY.offset(x == 1 ? 0 : 6, 0, 7);
             level.setBlockAndUpdate(generator, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
     }
@@ -3789,7 +3836,7 @@ final class ShowcaseFeatures {
         for (BlockPos generator : new BlockPos[] {ROBOT_BAY.offset(7, 0, 2), ROBOT_BAY.offset(10, -1, 6)}) {
             level.setBlockAndUpdate(generator, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
         BlockPos core = ROBOT_BAY.offset(10, 0, 6);
@@ -3835,7 +3882,7 @@ final class ShowcaseFeatures {
         BlockPos rack = ROBOT_BAY.offset(12, 0, 6);
         level.setBlockAndUpdate(rack.below(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(rack.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(30_000);
+            charger.fill(300_000);
         }
         level.setBlockAndUpdate(rack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, net.minecraft.core.Direction.SOUTH));

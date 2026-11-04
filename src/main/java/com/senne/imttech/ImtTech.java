@@ -95,6 +95,10 @@ public class ImtTech {
                                 ? new net.neoforged.neoforge.items.wrapper.InvWrapper(machine)
                                 : new net.neoforged.neoforge.items.wrapper.SidedInvWrapper(machine, side)));
 
+        // Hoofdstuk 46: Forge Energy. Elk blok van ons met een blokentiteit praat via de energie-capability met de kabels en
+        // machines van andere mods (Create Crafts & Additions, Mekanism...).
+        modEventBus.addListener(com.senne.imttech.energy.FeBridge::register);
+
         // Netwerkberichten tussen speler en server.
         modEventBus.addListener(ModNetwork::register);
 

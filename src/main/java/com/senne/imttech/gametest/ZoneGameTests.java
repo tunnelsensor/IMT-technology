@@ -311,9 +311,10 @@ public final class ZoneGameTests {
         SecurityCoreBlockEntity core = zoneCore(helper, owner);
         BlockPos wall = new BlockPos(8, 3, 8);
         helper.setBlock(wall, Blocks.STONE);
-        // 8 x 7 x 8 = 448 blokken: 1 stroom extra.
-        if (core.zoneUpkeep() != 1) {
-            throw new GameTestAssertException("Een zone van 448 blokken zou 1 stroom moeten kosten, niet " + core.zoneUpkeep());
+        // 8 x 7 x 8 = 448 blokken: 1 stroom per ZONE_BLOCKS_PER_POWER blokken (hoofdstuk 46: 200, dus 3 FE).
+        int expected = (int) Math.ceil(448 / ImtConfig.Power.ZONE_BLOCKS_PER_POWER);
+        if (core.zoneUpkeep() != expected) {
+            throw new GameTestAssertException("Een zone van 448 blokken zou " + expected + " stroom moeten kosten, niet " + core.zoneUpkeep());
         }
         core.powerTick(level);
         if (breakBlock(helper, outsider, wall)) {

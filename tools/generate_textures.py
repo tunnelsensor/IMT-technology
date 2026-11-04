@@ -889,6 +889,53 @@ def reinforcement_plate_item():
     save(im, "item/reinforcement_plate.png")
 
 
+def battery_textures():
+    """
+    De Power Battery (hoofdstuk 47, zoals Mekanism): Battery Casing (een stalen plaat met een donkere rand en vier
+    klinknagels), Battery Glass (een stalen rand met doorzichtig glas), Battery Cell (donkerblauw met gloeiende
+    blauwe cellen) en Battery Port (de casing met een cyaan stekkerplaat in het midden).
+    """
+    steel = (104, 112, 124, 255)
+    steel_light = (150, 158, 170, 255)
+    steel_dark = (54, 60, 70, 255)
+    # Casing.
+    casing = img(16, 16, steel)
+    d = ImageDraw.Draw(casing)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.rectangle([1, 1, 14, 14], outline=steel_light)
+    for x, y in [(3, 3), (12, 3), (3, 12), (12, 12)]:
+        px(casing, [(x, y)], steel_dark)
+        px(casing, [(x, y - 1)], (190, 196, 206, 255))
+    d.line([7, 1, 7, 14], fill=(96, 104, 116, 255))
+    d.line([8, 1, 8, 14], fill=(118, 126, 138, 255))
+    save(casing, "block/battery_casing.png")
+    # Glas: alleen een rand, de rest doorzichtig (met een zweem).
+    glass = img(16, 16, (160, 200, 230, 40))
+    d = ImageDraw.Draw(glass)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.rectangle([1, 1, 14, 14], outline=steel)
+    px(glass, [(3, 3), (4, 4), (12, 12), (11, 11)], (220, 240, 255, 120))
+    save(glass, "block/battery_glass.png")
+    # Cel: donker met vier gloeiende blauwe vakjes.
+    cell = img(16, 16, (22, 28, 44, 255))
+    d = ImageDraw.Draw(cell)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for cx, cy in [(2, 2), (9, 2), (2, 9), (9, 9)]:
+        d.rectangle([cx, cy, cx + 4, cy + 4], fill=(30, 90, 150, 255), outline=(16, 40, 70, 255))
+        px(cell, [(cx + 1, cy + 1), (cx + 2, cy + 1)], CYAN)
+        px(cell, [(cx + 1, cy + 2)], (120, 230, 255, 255))
+    d.line([7, 1, 7, 14], fill=(40, 48, 68, 255))
+    d.line([1, 7, 14, 7], fill=(40, 48, 68, 255))
+    save(cell, "block/battery_cell.png")
+    # Poort: de casing met een stekkerplaat.
+    port = casing.copy()
+    d = ImageDraw.Draw(port)
+    d.rectangle([4, 4, 11, 11], fill=(28, 34, 40, 255), outline=steel_dark)
+    d.rectangle([6, 6, 9, 9], fill=CYAN_DIM, outline=CYAN)
+    px(port, [(7, 7)], (200, 245, 255, 255))
+    save(port, "block/battery_port.png")
+
+
 def crusher_textures():
     """
     De Crusher (hoofdstuk 11): een metalen kast met twee maalwielen achter een venster in de

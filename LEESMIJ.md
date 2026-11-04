@@ -297,6 +297,46 @@ geeft 8 stuks) breng je die naar alles wat stroom gebruikt: het laadstation, de 
 holotafel, de schildkoepel, de torentjes... Een apparaat dat direct tegen een generator staat,
 heeft geen kabel nodig. Een apparaat haalt zijn stroom eerst bij de generator die het meest heeft.
 
+**Forge Energy (sinds 4 november).** Alle stroom is **FE**, dezelfde eenheid als Create Crafts &
+Additions, Mekanism en de meeste andere techmods, en met dezelfde schaal: een zonnepaneel maakt
+**24 FE per tick** in de volle zon (zoals het zonnepaneel van Mekanism), een warmtegenerator op
+brandstof 100 FE per tick, de bril houdt 100.000 FE. Alles is tien keer zo groot als vroeger (toen
+heette het SE), en de balans is precies dezelfde: een oude wereld, een oude bril, een oud
+configbestand en een oude robot rekenen zichzelf bij het laden om (het configbestand krijgt
+`energyUnits = 2` onder `[power]`). Daardoor werken onze blokken samen met die mods:
+- Een **kabel of machine van een andere mod** tegen een zonnepaneel, warmtegenerator of (vanaf
+  hoofdstuk 47) de batterij trekt er FE uit, en zo'n generator **duwt** zelf ook elke tick FE in
+  alles ertegen dat het aanneemt (tot `fePushRate` per tick).
+- Elk **apparaat van ons** (een laserzender, een camera, een serverrack, de kern...) neemt FE aan
+  van een vreemde kabel ertegen, in een klein buffertje (`feDeviceBuffer`), en gebruikt dat eerst,
+  voor het ons eigen net aanspreekt. Het landingsplatform vult zo zijn batterij.
+- Een **energiekubus of accumulator** van een andere mod naast een apparaat of een getekende kabel
+  van ons telt als generator op ons net.
+De getekende kabels zelf zijn geen blokken, dus een vreemde kabel sluit aan op onze blokken, niet
+op onze kabels.
+
+**De Power Battery (sinds 4 november, zoals de inductiematrix van Mekanism).** Een multiblok die je
+stroom opslaat, en sinds dit hoofdstuk **de enige plek waar je het hele stroomnet ziet**: een
+zonnepaneel of warmtegenerator zegt alleen nog wat hij zelf maakt en opslaat.
+- Bouw een **dichte doos van Battery Casing** (acht ijzer rond een computerchip = 8 stuks), van
+  3 × 3 × 3 tot 18 × 18 × 18. Een wandblok mag ook **Battery Glass** zijn (glas rond een casing = 4),
+  dan zie je de cellen erin. Zet **Battery Cells** binnenin (vier redstoneblokken en vier ijzer rond
+  een chip): elke cel is **1.000.000 FE** opslag (`[power] batteryCellCapacity`); lucht erin mag ook.
+  Minstens één **Battery Port** in de wand (koper, een kabel, een casing en een chip): daar sluiten
+  je kabels aan (en de kabels van andere mods). Meer poorten mag; ze delen dezelfde stroom.
+- De batterij **laadt vanzelf** met wat de generatoren op haar net over hebben boven hun reserve van
+  50% (`stationGridReserve`), tot `batteryChargeRate` (2.000 FE) per tick. Apparaten halen hun stroom
+  bij wie het meest heeft, dus meestal uit de batterij: zo vang je nachten en pieken op.
+- **Rechtsklik** op eender welk blok van de batterij opent haar scherm: **STORED** (balk en getallen),
+  wat het net per tick **maakt**, **gebruikt** en **tekortkomt** (met de knop /tick ook per seconde,
+  minuut of uur), het oordeel ("Enough: 17 per tick to spare", of hoe lang de batterij het nog
+  volhoudt), een **grafiek** van de laatste 5 minuten (groen gemaakt, oranje gebruikt), en de
+  lijsten **GENERATORS** (per soort, met wat ze maken) en **DEVICES** (per soort, de grootste
+  verbruikers eerst). Klopt de doos niet, dan zegt het scherm wat er mist ("The wall is not closed:
+  Air at 12 64 -30").
+- Breek je een wandblok, dan is het geen batterij meer tot je het dichtmaakt; de stroom blijft bewaard
+  in de laagste poort.
+
 Kabels zijn **geen blokken**: je **tekent** ze.
 - Neem de kabel in je hand, **houd de rechtermuisknop ingedrukt** en kijk rond: waar je kijkt,
   komt een dun kabeltje te liggen, over de vloer, tegen een muur op, onder een plafond. Kijk je

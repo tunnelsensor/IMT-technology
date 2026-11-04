@@ -353,6 +353,14 @@ public final class ModNetwork {
         // Hoofdstuk 44: de verstevigde blokken in je buurt (met de Block Reinforcer in je hand)
         registrar.playToClient(ReinforcedBlocksPayload.TYPE, ReinforcedBlocksPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onReinforcedBlocks(payload, context));
+        // Hoofdstuk 47: het scherm van de Power Battery (openen, en elke seconde nieuwe cijfers).
+        registrar.playToClient(BatteryStatsPayload.TYPE, BatteryStatsPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onBatteryStats(payload, context));
+        registrar.playToServer(BatteryRequestPayload.TYPE, BatteryRequestPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.battery.Batteries.refresh(player, payload.pos());
+            }
+        });
         // Een EMP-granaat ging af (hoofdstuk 35): de bol van licht.
         registrar.playToClient(EmpBlastPayload.TYPE, EmpBlastPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onEmpBlast(payload, context));

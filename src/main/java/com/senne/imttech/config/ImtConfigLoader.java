@@ -199,12 +199,77 @@ public final class ImtConfigLoader {
             return;
         }
         boolean unloading = event instanceof ModConfigEvent.Unloading;
+        if (!unloading) {
+            migrateEnergyUnits(event.getConfig());
+        }
         for (Entry entry : ENTRIES) {
             // Wereld dicht: terug naar de standaard, zodat een volgende wereld schoon begint.
             apply(entry, unloading ? entry.fallback() : entry.value().get());
         }
         ImtTech.LOGGER.info("[config] {} numbers from {} {}", ENTRIES.size(), FILE_NAME,
                 unloading ? "reset to the defaults" : "loaded");
+    }
+
+    /**
+     * Hoofdstuk 46 (4 november): alles rekent in Forge Energy, tien keer zo groot als vroeger. Een bestand van voor die
+     * tijd ({@code [power] energyUnits} 1, of de regel ontbreekt nog in een oud bestand dat NeoForge aanvult met de
+     * standaard... die is 2, dus alleen een bestand dat echt 1 zegt) krijgt elk stroomgetal maal tien (blokken per
+     * stroom gedeeld door tien) en wordt bewaard. Zo houdt jouw eigen balans (een trager zonnepaneel) stand.
+     */
+    @SuppressWarnings("unchecked")
+    private static void migrateEnergyUnits(net.neoforged.fml.config.ModConfig config) {
+        Entry version = null;
+        for (Entry entry : ENTRIES) {
+            if (entry.field().getName().equals("ENERGY_UNITS")) {
+                version = entry;
+            }
+        }
+        if (version == null) {
+            return;
+        }
+        boolean oldFile = ((Number) version.value().get()).intValue() < 2;
+        if (!oldFile) {
+            // Een bestand van voor 4 november heeft de regel energyUnits helemaal niet, en NeoForge vult dan stilletjes de
+            // standaard (2) in. Dus kijken we in het bestand zelf: staat de regel er niet, dan is het een oud bestand.
+            try {
+                java.nio.file.Path path = config.getFullPath();
+                oldFile = path != null && java.nio.file.Files.exists(path) && !java.nio.file.Files.readString(path).contains("energyUnits");
+            } catch (java.io.IOException e) {
+                oldFile = false;
+            }
+        }
+        if (!oldFile) {
+            return;
+        }
+        int changed = 0;
+        for (Entry entry : ENTRIES) {
+            Tunable tunable = entry.field().getAnnotation(Tunable.class);
+            if (tunable == null || !tunable.energy() && !tunable.inverseEnergy()) {
+                continue;
+            }
+            double factor = tunable.inverseEnergy() ? 0.1 : 10.0;
+            Object old = entry.value().get();
+            Object fresh;
+            if (old instanceof List<?> list) {
+                List<Number> scaled = new ArrayList<>();
+                for (Object o : list) {
+                    scaled.add(scaled(o, factor, entry.field().getType().getComponentType() == int.class));
+                }
+                fresh = scaled;
+            } else {
+                fresh = scaled(old, factor, entry.field().getType() == int.class || entry.field().getType() == long.class);
+            }
+            ((ModConfigSpec.ConfigValue<Object>) entry.value()).set(fresh);
+            changed++;
+        }
+        ((ModConfigSpec.ConfigValue<Object>) version.value()).set(2);
+        SPEC.save();
+        ImtTech.LOGGER.info("[config] {} converted to Forge Energy: {} energy numbers multiplied by ten", FILE_NAME, changed);
+    }
+
+    private static Number scaled(Object value, double factor, boolean whole) {
+        double scaled = ((Number) value).doubleValue() * factor;
+        return whole ? (Number) Math.round(scaled) : (Number) scaled;
     }
 
     /** Zet de waarden uit het bestand nog eens in de getallen (voor de tests). */

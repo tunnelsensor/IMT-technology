@@ -37,6 +37,15 @@ public final class ModDataComponents {
                     // Voorkomt dat het item in je hand "wiebelt" telkens als de energie verandert.
                     );
 
+    /**
+     * In welke eenheid de energie van dit item staat (hoofdstuk 46): 2 = Forge Energy (sinds 4 november, tien keer zo
+     * groot). Ontbreekt hij, dan is het een item van voor die tijd: de energie wordt bij het eerste lezen maal tien.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> ENERGY_UNITS =
+            COMPONENTS.registerComponentType("energy_units", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
     /** Hoe versleten een onderdeel van een serverrack is (8 oktober: te heet = slijten); 0 of niet = nieuw. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> WEAR =
             COMPONENTS.registerComponentType("wear", builder -> builder

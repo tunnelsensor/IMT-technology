@@ -62,7 +62,7 @@ public final class LightGameTests {
         ServerLevel level = helper.getLevel();
         BlockPos generator = new BlockPos(2, 2, 6);
         helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(5_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(50_000);
         for (int x = 3; x <= 9; x++) {
             PowerCables.add(level, helper.absolutePos(new BlockPos(x, 2, 6)));
         }
@@ -93,7 +93,7 @@ public final class LightGameTests {
         BlockPos switchPos = new BlockPos(6, 2, 12);
         BlockPos lamp = new BlockPos(9, 2, 12);
         helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(5_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(50_000);
         for (int x = 4; x <= 8; x++) {
             PowerCables.add(level, helper.absolutePos(new BlockPos(x, 2, 12)));
         }
@@ -152,7 +152,7 @@ public final class LightGameTests {
         box(helper, inGlass, Blocks.GLASS);
         box(helper, inStone, Blocks.STONE);
         helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(20_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(200_000);
         helper.setBlock(lamp, ModBlocks.ARC_LAMP.get());
         helper.startSequence()
                 .thenWaitUntil(slowly(() -> {
@@ -216,7 +216,7 @@ public final class LightGameTests {
             level.setBlockAndUpdate(helper.absolutePos(lamp.east(dx)), Blocks.AIR.defaultBlockState());
         }
         helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(20_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(200_000);
         helper.setBlock(lamp, ModBlocks.ARC_LAMP.get());
         ArcLampBlockEntity entity = (ArcLampBlockEntity) helper.getBlockEntity(lamp);
         check(entity.brightness() == 100, "Een nieuwe lamp zou op lichtniveau 100 moeten staan, niet " + entity.brightness());
@@ -290,7 +290,7 @@ public final class LightGameTests {
         BlockPos lamp = new BlockPos(4, 6, 4);
         BlockPos generator = lamp.above();
         helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
-        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(20_000);
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(200_000);
         helper.setBlock(lamp, ModBlocks.ARC_LAMP.get());
         BlockPos[] leftCorners = {new BlockPos(2, 3, 2), new BlockPos(6, 3, 6), new BlockPos(2, 5, 6), new BlockPos(6, 5, 2)};
         BlockPos beam = new BlockPos(10, 3, 4);       // recht door de deuropening

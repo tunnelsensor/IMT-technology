@@ -26,8 +26,9 @@ package com.senne.imttech.config;
  *
  * EENHEDEN
  *   tijd      in ticks: 20 ticks = 1 seconde (600 = een halve minuut, 1200 = een minuut)
- *   energie   in SE (System Energy). Bij de bril gaat het uit de batterij van de bril; bij blokken
- *             (hoofdstuk Power) uit het stroomnet (de stroomkabels).
+ *   energie   in FE (Forge Energy, sinds 4 november: dezelfde eenheid als Create Crafts & Additions en Mekanism; tot
+ *             dan heette het SE en was alles tien keer kleiner). Bij de bril gaat het uit de batterij van de bril; bij
+ *             blokken (hoofdstuk Power) uit het stroomnet (de stroomkabels).
  *   afstand   in blokken
  *   schade    in halve hartjes: 2 = 1 hartje, 20 = een volle levensbalk
  *   delen     0.25 = 25%
@@ -120,11 +121,11 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Batterij
         /** Hoeveel energie de bril kan opslaan zonder batterij-upgrades. */
-        @Tunable("Energy the glasses hold without battery upgrades")
-        public static float BASE_CAPACITY = 10_000.0f;
+        @Tunable(value = "Energy the glasses hold without battery upgrades", energy = true)
+        public static float BASE_CAPACITY = 100_000.0f;
         /** Hoeveel extra opslag elke batterij-upgrade geeft. */
-        @Tunable("Extra energy per battery upgrade")
-        public static float CAPACITY_PER_BATTERY_UPGRADE = 10_000.0f;
+        @Tunable(value = "Extra energy per battery upgrade", energy = true)
+        public static float CAPACITY_PER_BATTERY_UPGRADE = 100_000.0f;
         /** Hoeveel batterij-upgrades er hooguit in één bril passen. */
         @Tunable(value = "How many battery upgrades fit in one pair of glasses", max = 16)
         public static float MAX_BATTERY_UPGRADES = 3.0f;
@@ -137,17 +138,17 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Verbruik per seconde
         /** Wat de HUD zelf kost zolang je de bril draagt. */
-        @Tunable("Energy per second while the HUD is on")
-        public static float DRAIN_HUD = 1.0f;
+        @Tunable(value = "Energy per second while the HUD is on", energy = true)
+        public static float DRAIN_HUD = 10.0f;
         /** Extra zolang nachtzicht aan staat. */
-        @Tunable("Energy per second for night vision")
-        public static float DRAIN_NIGHT_VISION = 4.0f;
+        @Tunable(value = "Energy per second for night vision", energy = true)
+        public static float DRAIN_NIGHT_VISION = 40.0f;
         /** Extra zolang "vijanden door muren" aan staat. */
-        @Tunable("Energy per second for the threat scan")
-        public static float DRAIN_THREAT_SCAN = 3.0f;
+        @Tunable(value = "Energy per second for the threat scan", energy = true)
+        public static float DRAIN_THREAT_SCAN = 30.0f;
         /** Extra zolang doelwit-analyse aan staat. */
-        @Tunable("Energy per second for target analysis")
-        public static float DRAIN_TARGET_ANALYSIS = 1.0f;
+        @Tunable(value = "Energy per second for target analysis", energy = true)
+        public static float DRAIN_TARGET_ANALYSIS = 10.0f;
 
         // ------------------------------------------------------------------------- Doelwitten en zoom
         /** Tot hoe ver je een doelwit kunt analyseren en markeren. */
@@ -168,8 +169,8 @@ public final class ImtConfig {
         private Scanner() {}
 
         /** Kosten van één ertsen-scan. */
-        @Tunable("Energy cost of an ore scan")
-        public static float ORE_SCAN_COST = 400.0f;
+        @Tunable(value = "Energy cost of an ore scan", energy = true)
+        public static float ORE_SCAN_COST = 4_000.0f;
         /** Wachttijd tussen twee scans (200 = 10 seconden). */
         @Tunable("Wait between two ore scans (ticks)")
         public static float ORE_SCAN_COOLDOWN = 200.0f;
@@ -206,8 +207,8 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Zonnepaneel
         /** Energie per tick met de zon recht boven je (minder als de zon laag staat, 's nachts niets). */
-        @Tunable("Energy per tick a solar panel makes with the sun straight above (less when the sun is low, nothing at night)")
-        public static float SOLAR_RATE = 2f;
+        @Tunable(value = "Energy per tick a solar panel makes with the sun straight above (less when the sun is low, nothing at night)", energy = true)
+        public static float SOLAR_RATE = 24.0f;
         /** Welk deel van de zon een zonnepaneel nog krijgt als het regent (0.4 = 40%). */
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets when it rains", max = 1)
         public static float SOLAR_RAIN = 1f;
@@ -215,42 +216,42 @@ public final class ImtConfig {
         @Tunable(value = "Share of the sun (0-1) a solar panel still gets in a thunderstorm", max = 1)
         public static float SOLAR_THUNDER = 0.5f;
         /** Hoeveel een zonnepaneel zelf kan opslaan. */
-        @Tunable("Energy a solar panel can store")
-        public static float SOLAR_CAPACITY = 5_000.0f;
+        @Tunable(value = "Energy a solar panel can store", energy = true)
+        public static float SOLAR_CAPACITY = 50_000.0f;
 
         // ------------------------------------------------------------------------- Warmtegenerator
         /** Energie per tick zolang er brandstof brandt (kolen, hout, ...). */
-        @Tunable("Energy per tick a heat generator makes while it burns fuel")
-        public static float HEAT_RATE_FUEL = 10f;
+        @Tunable(value = "Energy per tick a heat generator makes while it burns fuel", energy = true)
+        public static float HEAT_RATE_FUEL = 100.0f;
         /** Energie per tick per heet blok dat ertegenaan staat (lava, vuur, magma...). */
-        @Tunable("Energy per tick per hot block (lava, fire, magma) next to a heat generator")
-        public static float HEAT_RATE_AMBIENT = 5f;
+        @Tunable(value = "Energy per tick per hot block (lava, fire, magma) next to a heat generator", energy = true)
+        public static float HEAT_RATE_AMBIENT = 50.0f;
         /** Meer hete buren dan dit tellen niet meer mee. */
         @Tunable(value = "Hot blocks above this many no longer count", max = 26)
         public static float HEAT_MAX_NEIGHBOURS = 8.0f;
         /** Hoeveel een warmtegenerator zelf kan opslaan. */
-        @Tunable("Energy a heat generator can store")
-        public static float HEAT_CAPACITY = 5_000.0f;
+        @Tunable(value = "Energy a heat generator can store", energy = true)
+        public static float HEAT_CAPACITY = 50_000.0f;
 
         // ------------------------------------------------------------------------- Laadstation (voor de bril)
         /**
          * Energie uit één stuk redstone. Bewust weinig: een volle bril kost zo ongeveer twee stapels.
          * Redstone is een noodvoorraad in je zak; voor gewone stroom zet je een generator neer.
          */
-        @Tunable("Energy from one redstone dust in a charging station")
-        public static float ENERGY_PER_REDSTONE = 50.0f;
+        @Tunable(value = "Energy from one redstone dust in a charging station", energy = true)
+        public static float ENERGY_PER_REDSTONE = 500.0f;
         /** Energie uit één redstone-blok (9 redstone en een beetje bonus). */
-        @Tunable("Energy from one redstone block in a charging station")
-        public static float ENERGY_PER_REDSTONE_BLOCK = 480.0f;
+        @Tunable(value = "Energy from one redstone block in a charging station", energy = true)
+        public static float ENERGY_PER_REDSTONE_BLOCK = 4_800.0f;
         /** Hoeveel het laadstation zelf kan opslaan (hooguit 32000, anders klopt de balk in het scherm niet). */
-        @Tunable(value = "Energy a charging station can store", min = 1, max = 32_000)
-        public static float STATION_CAPACITY = 30_000.0f;
+        @Tunable(value = "Energy a charging station can store", min = 1, max = 32_000, energy = true)
+        public static float STATION_CAPACITY = 300_000.0f;
         /** Hoeveel energie het station per tick in de bril stopt. */
-        @Tunable("Energy per tick a charging station puts into the glasses")
-        public static float STATION_CHARGE_RATE = 50.0f;
+        @Tunable(value = "Energy per tick a charging station puts into the glasses", energy = true)
+        public static float STATION_CHARGE_RATE = 500.0f;
         /** Hoeveel het station per tick uit het net mag halen om de bril te laden (ruim meer dan één paneel maakt). */
-        @Tunable("Energy per tick a charging station draws from the grid to charge the glasses")
-        public static float STATION_GRID_RATE = 20.0f;
+        @Tunable(value = "Energy per tick a charging station draws from the grid to charge the glasses", energy = true)
+        public static float STATION_GRID_RATE = 200.0f;
         /**
          * Zijn eigen voorraad vult het station ook uit het net, maar alleen met wat over is: dit deel van
          * wat in de generatoren past, blijft altijd voor de rest van het net (holotafel, laserwanden, koepel).
@@ -259,43 +260,43 @@ public final class ImtConfig {
                 + "when it fills its own storage", max = 1)
         public static float STATION_GRID_RESERVE = 0.5f;
         /** ...en dat gaat langzaam: zoveel per tick. */
-        @Tunable("Energy per tick a charging station puts into its own storage from spare grid energy")
-        public static float STATION_STORE_RATE = 10.0f;
+        @Tunable(value = "Energy per tick a charging station puts into its own storage from spare grid energy", energy = true)
+        public static float STATION_STORE_RATE = 100.0f;
 
         // ------------------------------------------------------------------------- Landingsplatform (voor het harnas)
         /** Zoveel energie per seconde laadt een landingsplatform in je bril, uit het net. */
-        @Tunable("Energy per second a landing pad puts into your glasses")
-        public static float PAD_CHARGE_PER_SECOND = 400.0f;
+        @Tunable(value = "Energy per second a landing pad puts into your glasses", energy = true)
+        public static float PAD_CHARGE_PER_SECOND = 4_000.0f;
         /** Hoeveel de eigen batterij van een platform opslaat zonder batterijcellen. */
-        @Tunable("How much a landing pad's own battery holds without battery cells")
-        public static float PAD_BATTERY_BASE = 10_000.0f;
+        @Tunable(value = "How much a landing pad's own battery holds without battery cells", energy = true)
+        public static float PAD_BATTERY_BASE = 100_000.0f;
         /** Extra per Battery Upgrade in het batterijvak van het platform (hooguit 4). */
-        @Tunable("Extra landing pad battery per Battery Upgrade in its battery slot (up to 4)")
-        public static float PAD_BATTERY_PER_CELL = 15_000.0f;
+        @Tunable(value = "Extra landing pad battery per Battery Upgrade in its battery slot (up to 4)", energy = true)
+        public static float PAD_BATTERY_PER_CELL = 150_000.0f;
         /** Zo snel vult het platform zijn batterij met wat het net over heeft (per seconde). */
-        @Tunable("How fast a landing pad fills its battery from the grid's spare energy (per second)")
-        public static float PAD_BATTERY_FILL = 200.0f;
+        @Tunable(value = "How fast a landing pad fills its battery from the grid's spare energy (per second)", energy = true)
+        public static float PAD_BATTERY_FILL = 2_000.0f;
         /** Zo snel laadt het platform je bril uit zijn eigen batterij (per seconde). */
-        @Tunable("How fast a landing pad charges your glasses from its own battery (per second)")
-        public static float PAD_BATTERY_CHARGE = 1600.0f;
+        @Tunable(value = "How fast a landing pad charges your glasses from its own battery (per second)", energy = true)
+        public static float PAD_BATTERY_CHARGE = 16_000.0f;
         /** Zoveel duurzaamheid per seconde repareert een platform aan elk stuk harnas... */
         @Tunable("Durability per second a landing pad repairs on each suit piece")
         public static float PAD_REPAIR_PER_SECOND = 2.0f;
         /** ...en dat kost zoveel stroom per punt. */
-        @Tunable("Energy per point of durability a landing pad repairs")
-        public static float PAD_REPAIR_ENERGY = 10.0f;
+        @Tunable(value = "Energy per point of durability a landing pad repairs", energy = true)
+        public static float PAD_REPAIR_ENERGY = 100.0f;
 
 
         // ------------------------------------------------------------------------- Verbruik: verdediging
         /** Stroom per tick van één laserzender zolang zijn wand aan staat (een paar zenders = 2 per tick). */
-        @Tunable("Energy per tick a laser wall emitter uses while its wall is on")
-        public static float LASER_WALL_UPKEEP = 1.0f;
+        @Tunable(value = "Energy per tick a laser wall emitter uses while its wall is on", energy = true)
+        public static float LASER_WALL_UPKEEP = 10.0f;
         /** Zoveel seconden moet het net stroom hebben voordat een laserwand aangaat (anders knippert hij). */
         @Tunable("A laser wall only turns on when the grid has had power for this many seconds (so it doesn't flicker)")
         public static float LASER_WALL_START_SECONDS = 5.0f;
         /** Stroom per tick van één brugzender zolang zijn laserbrug er ligt (hoofdstuk 34). */
-        @Tunable("Energy per tick a laser bridge emitter uses while its bridge is out")
-        public static float LASER_BRIDGE_UPKEEP = 1.0f;
+        @Tunable(value = "Energy per tick a laser bridge emitter uses while its bridge is out", energy = true)
+        public static float LASER_BRIDGE_UPKEEP = 10.0f;
         /** Zoveel seconden moet het net stroom hebben voordat een laserbrug uitschuift (anders knippert hij). */
         @Tunable("A laser bridge only comes out when the grid has had power for this many seconds (so it doesn't flicker)")
         public static float LASER_BRIDGE_START_SECONDS = 5.0f;
@@ -304,75 +305,96 @@ public final class ImtConfig {
          * 8, 12, 16, 24 en 32 blokken). Een koepel van 16 blokken op sterkte 2 kost dus 4 x 2 = 8 per tick.
          */
         @Tunable(value = "Energy per tick a shield dome uses PER STRENGTH LEVEL, for each of its 5 sizes (see dome.radii). "
-                + "A 16-block dome on strength 2 uses 4 x 2 = 8 per tick", max = 10_000)
-        public static float[] DOME_UPKEEP = {2.0f, 3.0f, 4.0f, 6.0f, 8.0f};
+                + "A 16-block dome on strength 2 uses 4 x 2 = 8 per tick", max = 10_000, energy = true)
+        public static float[] DOME_UPKEEP = {20.0f, 30.0f, 40.0f, 60.0f, 80.0f};
         /** Stroom die één laserschot van een Biebia's Industries-torentje van het net haalt. */
-        @Tunable("Grid energy one rocket turret laser shot uses")
-        public static float TURRET_LASER_SHOT = 60.0f;
+        @Tunable(value = "Grid energy one rocket turret laser shot uses", energy = true)
+        public static float TURRET_LASER_SHOT = 600.0f;
         /** Stroom per raket die een Biebia's Industries-torentje afvuurt. */
-        @Tunable("Grid energy per rocket a rocket turret fires")
-        public static float TURRET_ROCKET = 20.0f;
+        @Tunable(value = "Grid energy per rocket a rocket turret fires", energy = true)
+        public static float TURRET_ROCKET = 200.0f;
         /** Stroom die de beveiligingskern elke twee seconden van het net haalt (zonder staan hij en zijn drones uit). */
-        @Tunable("Grid energy the security core uses every two seconds (without it, the core and its drones are off)")
-        public static float SECURITY_CORE_UPKEEP = 20.0f;
+        @Tunable(value = "Grid energy the security core uses every two seconds (without it, the core and its drones are off)", energy = true)
+        public static float SECURITY_CORE_UPKEEP = 200.0f;
         /** Een zone kost elke twee seconden 1 extra per zoveel blokken (30 x 20 x 30 kost 9 extra). */
-        @Tunable(value = "A protected zone costs 1 extra grid energy every two seconds per this many blocks", min = 0.001)
-        public static float ZONE_BLOCKS_PER_POWER = 2000.0f;
+        @Tunable(value = "A protected zone costs 1 extra grid energy every two seconds per this many blocks", min = 0.001, inverseEnergy = true)
+        public static float ZONE_BLOCKS_PER_POWER = 200.0f;
         /** Stroom die een bewakingscamera elke twee seconden haalt (zonder: "NO SIGNAL"). */
-        @Tunable("Grid energy a security camera uses every two seconds (without it, it shows NO SIGNAL)")
-        public static float CAMERA_UPKEEP = 2.0f;
+        @Tunable(value = "Grid energy a security camera uses every two seconds (without it, it shows NO SIGNAL)", energy = true)
+        public static float CAMERA_UPKEEP = 20.0f;
         /**
          * Hoofdstuk 38: stroom die een keycardlezer elke twee seconden haalt (de kern waar hij met een netwerkkabel aan
          * hangt, betaalt dat van het stroomnet van de lezer). Zonder stroom leest hij geen kaarten.
          */
-        @Tunable("Grid energy a keycard reader uses every two seconds (without it, it reads no cards)")
-        public static float READER_UPKEEP = 1.0f;
+        @Tunable(value = "Grid energy a keycard reader uses every two seconds (without it, it reads no cards)", energy = true)
+        public static float READER_UPKEEP = 10.0f;
         /** Hetzelfde voor een codepaneel: zonder stroom doen de toetsen niets. */
-        @Tunable("Grid energy a code panel uses every two seconds (without it, its keys do nothing)")
-        public static float CODE_PANEL_UPKEEP = 1.0f;
+        @Tunable(value = "Grid energy a code panel uses every two seconds (without it, its keys do nothing)", energy = true)
+        public static float CODE_PANEL_UPKEEP = 10.0f;
         /** Stroom die een Network Switch elke twee seconden haalt (zonder: geen netwerk door de switch). */
-        @Tunable("Grid energy a network switch uses every two seconds (without it, no network passes through it)")
-        public static float NETWORK_SWITCH_UPKEEP = 3.0f;
+        @Tunable(value = "Grid energy a network switch uses every two seconds (without it, no network passes through it)", energy = true)
+        public static float NETWORK_SWITCH_UPKEEP = 30.0f;
         /** Stroom die een netwerkknop elke twee seconden haalt (zonder: de server hoort hem niet). */
-        @Tunable("Grid energy a network button uses every two seconds (without it, the server does not hear it)")
-        public static float BUTTON_UPKEEP = 0.5f;
+        @Tunable(value = "Grid energy a network button uses every two seconds (without it, the server does not hear it)", energy = true)
+        public static float BUTTON_UPKEEP = 5.0f;
         /** Hetzelfde voor een netwerkhendel. */
-        @Tunable("Grid energy a network lever uses every two seconds (without it, the server does not hear it)")
-        public static float LEVER_UPKEEP = 0.5f;
+        @Tunable(value = "Grid energy a network lever uses every two seconds (without it, the server does not hear it)", energy = true)
+        public static float LEVER_UPKEEP = 5.0f;
         /** Hoofdstuk 40: stroom die een Computer elke twee seconden haalt (zonder: zijn monitor blijft zwart). */
-        @Tunable("Grid energy a computer uses every two seconds (without it, its monitor stays dark)")
-        public static float COMPUTER_UPKEEP = 2.0f;
+        @Tunable(value = "Grid energy a computer uses every two seconds (without it, its monitor stays dark)", energy = true)
+        public static float COMPUTER_UPKEEP = 20.0f;
         /** 19 oktober: stroom die één Camera Monitor elke twee seconden haalt (een groot scherm gebruikt dus meer). */
-        @Tunable("Grid energy one camera monitor uses every two seconds (a big screen uses this per monitor; without it, it stays dark)")
-        public static float CAMERA_MONITOR_UPKEEP = 1.0f;
+        @Tunable(value = "Grid energy one camera monitor uses every two seconds (a big screen uses this per monitor; without it, it stays dark)", energy = true)
+        public static float CAMERA_MONITOR_UPKEEP = 10.0f;
 
         // ------------------------------------------------------------------------- Verbruik: machines en de rest
         /** Stroom per tick van de harnas-werkbank zolang hij een stuk bouwt... */
-        @Tunable("Grid energy per tick while the suit workbench builds a suit piece")
-        public static float WORKBENCH_BUILD = 10.0f;
+        @Tunable(value = "Grid energy per tick while the suit workbench builds a suit piece", energy = true)
+        public static float WORKBENCH_BUILD = 100.0f;
         /** ...en zolang hij een upgrade installeert. */
-        @Tunable("Grid energy per tick while the suit workbench installs an upgrade")
-        public static float WORKBENCH_INSTALL = 8.0f;
+        @Tunable(value = "Grid energy per tick while the suit workbench installs an upgrade", energy = true)
+        public static float WORKBENCH_INSTALL = 80.0f;
         /** Stroom per tick van de Crusher en de Compactor zolang ze werken. */
-        @Tunable("Grid energy per tick the Crusher and the Compactor use while they work")
-        public static float CRUSHER_COMPACTOR = 4.0f;
+        @Tunable(value = "Grid energy per tick the Crusher and the Compactor use while they work", energy = true)
+        public static float CRUSHER_COMPACTOR = 40.0f;
         /** Stroom die één serverkast elke twee seconden haalt (zonder tellen zijn onderdelen niet mee). */
-        @Tunable("Grid energy one server rack uses every two seconds (without it, its parts do not count)")
-        public static float SERVER_RACK_UPKEEP = 10.0f;
+        @Tunable(value = "Grid energy one server rack uses every two seconds (without it, its parts do not count)", energy = true)
+        public static float SERVER_RACK_UPKEEP = 100.0f;
         /** Stroom per tick van een holotafel zolang hij aan staat. */
-        @Tunable("Grid energy per tick a holo table uses while it is on")
-        public static float HOLO_TABLE_UPKEEP = 0.5f;
+        @Tunable(value = "Grid energy per tick a holo table uses while it is on", energy = true)
+        public static float HOLO_TABLE_UPKEEP = 5.0f;
         /**
          * Stroom per tick van een Arc Lamp op lichtniveau 100 (2 per tick = 40 per seconde). Zachter gezet
          * gebruikt hij naar verhouding minder: op 50 de helft.
          */
-        @Tunable("Grid energy per tick an Arc Lamp at light level 100 uses while it is on. "
-                + "A lamp set lower uses less: at level 50, half of this.")
-        public static float ARC_LAMP_POWER = 10.0f;
+        @Tunable(value = "Grid energy per tick an Arc Lamp at light level 100 uses while it is on. "
+                + "A lamp set lower uses less: at level 50, half of this.", energy = true)
+        public static float ARC_LAMP_POWER = 100.0f;
         /** Een lamp die uit is, gaat pas aan als het net zoveel ticks stroom heeft (100 = 5 seconden). */
         @Tunable("An Arc Lamp that is off only turns on when the grid has had power for this many ticks "
                 + "(so it doesn't flicker on a weak generator)")
         public static float ARC_LAMP_START_TICKS = 100.0f;
+
+        // ------------------------------------------------------------------------- Forge Energy (hoofdstuk 46)
+        @Tunable(value = "The energy units this file uses: 1 = before 4 November 2026 (every energy number was ten times"
+                + " smaller), 2 = Forge Energy (FE). An old file is converted when it loads. Do not change this yourself.",
+                min = 1, max = 2)
+        public static int ENERGY_UNITS = 2;
+        @Tunable("At most this much FE per tick a solar panel, heat generator or battery pushes into a machine or cable of"
+                + " another mod (Create Crafts & Additions, Mekanism...) standing against it")
+        public static float FE_PUSH_RATE = 1_000.0f;
+        @Tunable("At most this much FE a device of this mod keeps from another mod's cable (its own small buffer, used"
+                + " before the grid)")
+        public static float FE_DEVICE_BUFFER = 4_000.0f;
+
+        // ------------------------------------------------------------------------- De Power Battery (hoofdstuk 47)
+        @Tunable(value = "FE one Battery Cell inside a Power Battery stores", max = 100_000_000)
+        public static float BATTERY_CELL_CAPACITY = 1_000_000.0f;
+        @Tunable("At most this much FE per tick a Power Battery takes from the generators on its grid (what they have above"
+                + " their reserve, see stationGridReserve)")
+        public static float BATTERY_CHARGE_RATE = 2_000.0f;
+        /** VAST: zo groot mag een batterij per kant zijn (de zoektocht naar de doos rekent hiermee). */
+        public static final int BATTERY_MAX_SIZE = 18;
     }
 
     // =============================================================================================== Drones
@@ -407,8 +429,8 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- De zwerm
         /** Kosten om een zwerm te lanceren. */
-        @Tunable("Energy cost of launching a drone swarm")
-        public static float SWARM_COST = 1_500.0f;
+        @Tunable(value = "Energy cost of launching a drone swarm", energy = true)
+        public static float SWARM_COST = 15_000.0f;
         /** Wachttijd tussen twee zwermen (600 = 30 seconden). */
         @Tunable("Wait between two swarms (ticks)")
         public static float SWARM_COOLDOWN = 600.0f;
@@ -418,8 +440,8 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Eén drone op één doelwit
         /** Kosten om één drone op één doelwit af te sturen. */
-        @Tunable("Energy cost of sending a single drone")
-        public static float STRIKE_COST = 400.0f;
+        @Tunable(value = "Energy cost of sending a single drone", energy = true)
+        public static float STRIKE_COST = 4_000.0f;
         /** Wachttijd tussen twee losse drones (160 = 8 seconden). */
         @Tunable("Wait between two single drones (ticks)")
         public static float STRIKE_COOLDOWN = 160.0f;
@@ -432,8 +454,8 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Beschermende drones (escorte)
         /** Extra energie per seconde zolang de beschermende drones aan staan. */
-        @Tunable("Energy per second while escort drones are on")
-        public static float GUARD_DRAIN = 6.0f;
+        @Tunable(value = "Energy per second while escort drones are on", energy = true)
+        public static float GUARD_DRAIN = 60.0f;
         /** Tot hoe ver van jou ze vijanden aanvallen. */
         @Tunable("How far from you escort drones attack threats (blocks)")
         public static double GUARD_RANGE = 12.0;
@@ -503,14 +525,14 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Kosten per schot
         /** Kosten van een precisie-straal (geen blokschade). */
-        @Tunable("Energy cost of a precision beam")
-        public static float COST_PRECISION = 2_000.0f;
+        @Tunable(value = "Energy cost of a precision beam", energy = true)
+        public static float COST_PRECISION = 20_000.0f;
         /** Kosten van een bombardement (meerdere inslagen, krater). */
-        @Tunable("Energy cost of a bombardment")
-        public static float COST_BOMBARDMENT = 5_000.0f;
+        @Tunable(value = "Energy cost of a bombardment", energy = true)
+        public static float COST_BOMBARDMENT = 50_000.0f;
         /** Kosten van de schuivende laser. */
-        @Tunable("Energy cost of a sweeping laser")
-        public static float COST_SWEEP = 3_500.0f;
+        @Tunable(value = "Energy cost of a sweeping laser", energy = true)
+        public static float COST_SWEEP = 35_000.0f;
 
         // ------------------------------------------------------------------------- Recharge, Power, Targeting (niveau 0 t/m 10)
         /** Wachttijd (herlaadtijd) tussen twee aanvallen, per Recharge-niveau: 1800 = 90 seconden, 720 = 36 seconden. */
@@ -597,11 +619,11 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Drone-camera
         /** Kosten om de verkenningsdrone te lanceren. */
-        @Tunable("Energy cost of launching the drone camera")
-        public static float SCOUT_COST = 200.0f;
+        @Tunable(value = "Energy cost of launching the drone camera", energy = true)
+        public static float SCOUT_COST = 2_000.0f;
         /** Extra energie per seconde zolang je door de drone kijkt. */
-        @Tunable("Energy per second while you look through the drone camera")
-        public static float SCOUT_DRAIN = 8.0f;
+        @Tunable(value = "Energy per second while you look through the drone camera", energy = true)
+        public static float SCOUT_DRAIN = 80.0f;
         /** Hoe ver de drone van je lichaam mag vliegen. */
         @Tunable(value = "How far the drone camera may fly from you (blocks)", min = 1)
         public static double SCOUT_RANGE = 64.0;
@@ -614,8 +636,8 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Spionagedrone
         /** Kosten om een spionagedrone te sturen. */
-        @Tunable("Energy cost of a spy drone")
-        public static float SPY_COST = 800.0f;
+        @Tunable(value = "Energy cost of a spy drone", energy = true)
+        public static float SPY_COST = 8_000.0f;
         /** Wachttijd tussen twee spionagedrones (400 = 20 seconden). */
         @Tunable("Wait between two spy drones (ticks)")
         public static float SPY_COOLDOWN = 400.0f;
@@ -635,8 +657,8 @@ public final class ImtConfig {
         @Tunable("How high above its target the spy drone stays (blocks)")
         public static double SPY_FOLLOW_HEIGHT = 5.0;
         /** Extra energie per seconde zolang je door de spionagedrone meekijkt. */
-        @Tunable("Energy per second while you watch through the spy drone")
-        public static float SPY_VIEW_DRAIN = 4.0f;
+        @Tunable(value = "Energy per second while you watch through the spy drone", energy = true)
+        public static float SPY_VIEW_DRAIN = 40.0f;
         /** Tot hoe ver je nog live kunt meekijken. */
         @Tunable("How far away you can still watch through the spy drone (blocks)")
         public static double SPY_VIEW_RANGE = 110.0;
@@ -649,14 +671,14 @@ public final class ImtConfig {
         private Transport() {}
 
         /** Kosten om je te laten oppikken (of om een vracht te versturen). */
-        @Tunable("Energy cost of a transport (ride, autopilot, cargo, carry)")
-        public static float COST = 600.0f;
+        @Tunable(value = "Energy cost of a transport (ride, autopilot, cargo, carry)", energy = true)
+        public static float COST = 6_000.0f;
         /** Wachttijd tussen twee ritten (200 = 10 seconden). */
         @Tunable("Wait between two transports (ticks)")
         public static float COOLDOWN = 200.0f;
         /** Energie per seconde zolang drones je dragen. */
-        @Tunable("Energy per second while drones carry you")
-        public static float DRAIN = 14.0f;
+        @Tunable(value = "Energy per second while drones carry you", energy = true)
+        public static float DRAIN = 140.0f;
         /** Hoe lang een rit of levering hooguit duurt (6000 = 5 minuten). */
         @Tunable("Longest a transport may take (ticks)")
         public static float MAX_TICKS = 6_000.0f;
@@ -684,8 +706,8 @@ public final class ImtConfig {
         private Illusions() {}
 
         /** Kosten om een illusie te starten. */
-        @Tunable("Energy cost of an illusion")
-        public static float COST = 1_200.0f;
+        @Tunable(value = "Energy cost of an illusion", energy = true)
+        public static float COST = 12_000.0f;
         /** Hoeveel illusies één speler tegelijk kan hebben. */
         @Tunable("How many illusions one player can run at once")
         public static float MAX_ACTIVE = 4.0f;
@@ -727,11 +749,11 @@ public final class ImtConfig {
         private Shields() {}
 
         /** Extra energie per seconde zolang je persoonlijke schild aan staat. */
-        @Tunable("Energy per second while the personal rayshield is on")
-        public static float PERSONAL_DRAIN = 5.0f;
+        @Tunable(value = "Energy per second while the personal rayshield is on", energy = true)
+        public static float PERSONAL_DRAIN = 50.0f;
         /** Wat één punt tegengehouden schade kost. */
-        @Tunable("Energy the personal shield uses per point of damage it stops")
-        public static float PERSONAL_COST_PER_DAMAGE = 120.0f;
+        @Tunable(value = "Energy the personal shield uses per point of damage it stops", energy = true)
+        public static float PERSONAL_COST_PER_DAMAGE = 1_200.0f;
         /** Schade als je een laserwand aanraakt (4 = 2 hartjes). */
         @Tunable("Damage from touching a laser wall")
         public static float LASER_WALL_DAMAGE = 4.0f;
@@ -769,7 +791,7 @@ public final class ImtConfig {
         public static float[] MAX_SHIELD = {400.0f, 800.0f, 1_200.0f, 1_600.0f, 2_000.0f};
         /** Hoeveel schildkracht er per tick bijkomt, per sterkte 1 t/m 5. */
         @Tunable("Shield strength a dome gets back per tick for strength 1 to 5")
-        public static float[] RECHARGE = {2.0f, 4.0f, 6.0f, 8.0f, 10.0f};
+        public static float[] RECHARGE = {2.0f, 3.0f, 4.0f, 6.0f, 8.0f};
         /** Hoe lang hij uitvalt als zijn schildkracht op is (200 = 10 seconden). */
         @Tunable("How long a broken dome stays down before it comes back (ticks)")
         public static float DOWN_TICKS = 200.0f;
@@ -815,8 +837,8 @@ public final class ImtConfig {
         @Tunable("How many players you can hack at once")
         public static float MAX_TARGETS = 3.0f;
         /** Energie per seconde per gehackte speler. */
-        @Tunable("Energy per second per hacked player")
-        public static float DRAIN = 3.0f;
+        @Tunable(value = "Energy per second per hacked player", energy = true)
+        public static float DRAIN = 30.0f;
         /** Tot hoe ver je een speler kunt hacken. */
         @Tunable("How far away you can hack a player (blocks)")
         public static double RANGE = 64.0;
@@ -844,8 +866,8 @@ public final class ImtConfig {
         @Tunable(value = "Most relay groups one player can have", min = 1, max = 256)
         public static float MAX_GROUPS = 32.0f;
         /** Wat één schakeling kost. */
-        @Tunable("Energy cost of switching a relay remotely")
-        public static float COST = 5.0f;
+        @Tunable(value = "Energy cost of switching a relay remotely", energy = true)
+        public static float COST = 50.0f;
         /** Hoe lang een puls duurt (20 = 1 seconde). */
         @Tunable(value = "How long a redstone pulse lasts (ticks)", min = 1)
         public static float PULSE_TICKS = 20.0f;
@@ -916,19 +938,19 @@ public final class ImtConfig {
         @Tunable(value = "Share (0-1) of damage each powered suit piece stops (three pieces = three times this)", max = 1)
         public static float POWERED_REDUCTION_PER_PIECE = 0.20f;
         /** Wat één punt tegengehouden schade kost. */
-        @Tunable("Energy per point of damage the suit stops")
-        public static float REDUCTION_COST_PER_DAMAGE = 60.0f;
+        @Tunable(value = "Energy per point of damage the suit stops", energy = true)
+        public static float REDUCTION_COST_PER_DAMAGE = 600.0f;
 
         // ------------------------------------------------------------------------- Vliegen: verbruik
         /** Energie per seconde als je stilhangt. */
-        @Tunable("Energy per second while hovering")
-        public static float DRAIN_HOVER = 12.0f;
+        @Tunable(value = "Energy per second while hovering", energy = true)
+        public static float DRAIN_HOVER = 120.0f;
         /** Energie per seconde als je vooruit vliegt. */
-        @Tunable("Energy per second while flying")
-        public static float DRAIN_FLY = 26.0f;
+        @Tunable(value = "Energy per second while flying", energy = true)
+        public static float DRAIN_FLY = 260.0f;
         /** Energie per seconde met de naverbrander (sprinttoets). */
-        @Tunable("Energy per second with the afterburner")
-        public static float DRAIN_BOOST = 45.0f;
+        @Tunable(value = "Energy per second with the afterburner", energy = true)
+        public static float DRAIN_BOOST = 450.0f;
 
         // ------------------------------------------------------------------------- Vliegen: hoe het voelt
         // Snelheden in blokken per tick: 1 blok per tick = 20 blokken per seconde = 72 km/u.
@@ -974,16 +996,16 @@ public final class ImtConfig {
         @Tunable("Falls up to this height do no damage with the boots on (blocks)")
         public static float SAFE_FALL = 40.0f;
         /** Wat het opvangen van een val kost. */
-        @Tunable("Energy cost of catching a fall")
-        public static float LANDING_COST = 200.0f;
+        @Tunable(value = "Energy cost of catching a fall", energy = true)
+        public static float LANDING_COST = 2_000.0f;
 
         // ------------------------------------------------------------------------- Laser cannon
         /** Schade van één laserkanonschot (7 = 3,5 hartje). */
         @Tunable("Damage of one laser cannon blast")
         public static float LASER_CANNON_DAMAGE = 7.0f;
         /** Wat één stoot kost. */
-        @Tunable("Energy cost of one laser cannon blast")
-        public static float LASER_CANNON_COST = 200.0f;
+        @Tunable(value = "Energy cost of one laser cannon blast", energy = true)
+        public static float LASER_CANNON_COST = 2_000.0f;
         /** Wachttijd tussen twee stoten (20 = 1 seconde). */
         @Tunable(value = "Ticks between two laser cannon blasts", min = 1)
         public static float LASER_CANNON_COOLDOWN = 20.0f;
@@ -1005,8 +1027,8 @@ public final class ImtConfig {
         @Tunable(value = "Number of mini rockets in a salvo", min = 1, max = 64)
         public static float ROCKET_SALVO = 6.0f;
         /** Wat een heel salvo kost. */
-        @Tunable("Energy cost of a mini rocket salvo")
-        public static float ROCKET_COST = 900.0f;
+        @Tunable(value = "Energy cost of a mini rocket salvo", energy = true)
+        public static float ROCKET_COST = 9_000.0f;
         /** Herlaadtijd van het raketpak (240 = 12 seconden). */
         @Tunable("Reload time of the rocket pack (ticks)")
         public static float ROCKET_COOLDOWN = 240.0f;
@@ -1545,8 +1567,8 @@ public final class ImtConfig {
         @Tunable(value = "Armor of a robot, by the style of its body", max = 30)
         public static float[] BODY_ARMOR = {6.0f, 4.0f, 2.0f, 10.0f};
         /** Hoeveel energie de batterij hoogstens heeft, naar de stijl van het lijf. */
-        @Tunable(value = "Battery of a robot (energy), by the style of its body", min = 1, max = 1_000_000)
-        public static float[] BODY_BATTERY = {4000.0f, 6000.0f, 3000.0f, 8000.0f};
+        @Tunable(value = "Battery of a robot (energy), by the style of its body", min = 1, max = 1_000_000, energy = true)
+        public static float[] BODY_BATTERY = {40_000.0f, 60_000.0f, 30_000.0f, 80_000.0f};
         /** Hoe snel hij loopt (0,25 is zo snel als een zombie), naar de stijl van de benen. */
         @Tunable(value = "Walking speed of a robot (0.25 = a zombie), by the style of its legs", max = 1)
         public static float[] LEGS_SPEED = {0.30f, 0.27f, 0.25f, 0.20f};
@@ -1572,14 +1594,14 @@ public final class ImtConfig {
                 min = 0.1, max = 1_000)
         public static float REPAIR_PER_INGOT = 4.0f;
         /** Hoeveel stroom per tick een Robot Dock uit het net in de robot op hem stopt. */
-        @Tunable(value = "Energy per tick a robot dock takes from the grid and puts into the robot standing on it", max = 1_000)
-        public static float DOCK_CHARGE_RATE = 5.0f;
+        @Tunable(value = "Energy per tick a robot dock takes from the grid and puts into the robot standing on it", max = 1_000, energy = true)
+        public static float DOCK_CHARGE_RATE = 50.0f;
         /** Hoeveel van zijn batterij een robot per tick gebruikt als hij aan staat. */
-        @Tunable(value = "Battery a robot uses per tick while it is switched on", max = 100)
-        public static float DRAIN_ON = 0.25f;
+        @Tunable(value = "Battery a robot uses per tick while it is switched on", max = 100, energy = true)
+        public static float DRAIN_ON = 2.5f;
         /** Hoeveel er per tick bij komt terwijl hij loopt. */
-        @Tunable(value = "Extra battery a robot uses per tick while it walks", max = 100)
-        public static float DRAIN_WALKING = 0.5f;
+        @Tunable(value = "Extra battery a robot uses per tick while it walks", max = 100, energy = true)
+        public static float DRAIN_WALKING = 5.0f;
         /** Hoeveel blokken een robot uit zijn dock stapt als je hem aanzet. */
         @Tunable(value = "How many blocks a robot walks out of its dock when you switch it on", max = 16)
         public static float STEP_OUT = 2.0f;
@@ -1611,8 +1633,8 @@ public final class ImtConfig {
         @Tunable(value = "Damage of one robot laser shot", max = 100)
         public static float LASER_DAMAGE = 5.0f;
         /** Hoeveel van zijn batterij één laserschot kost. */
-        @Tunable(value = "Battery one robot laser shot costs", max = 10_000)
-        public static float LASER_ENERGY = 60.0f;
+        @Tunable(value = "Battery one robot laser shot costs", max = 10_000, energy = true)
+        public static float LASER_ENERGY = 600.0f;
         /** Schade van één kogel uit de Gun-module (een kogel is één Robot Ammo). */
         @Tunable(value = "Damage of one robot gun shot (each shot uses one Robot Ammo)", max = 100)
         public static float GUN_DAMAGE = 6.0f;
@@ -1633,8 +1655,8 @@ public final class ImtConfig {
         @Tunable(value = "Ticks between two Ion Blaster shots", min = 1, max = 1_200)
         public static float ION_COOLDOWN = 30.0f;
         /** Zoveel stroom per tick stopt de Solar Panel-module in zijn batterij, in de volle middagzon. */
-        @Tunable(value = "Energy per tick the Solar Panel module puts into a robot's battery in full midday sun", max = 100)
-        public static float SOLAR_CHARGE = 0.5f;
+        @Tunable(value = "Energy per tick the Solar Panel module puts into a robot's battery in full midday sun", max = 100, energy = true)
+        public static float SOLAR_CHARGE = 5.0f;
 
         // Solderen (hoofdstuk 22): de hittebalk en wat er misgaat.
         /** Zoveel ticks duurt het tot de hittebalk vol is. */
@@ -1662,17 +1684,17 @@ public final class ImtConfig {
         @Tunable(value = "Health of a security drone", min = 1, max = 1_000)
         public static float DRONE_HEALTH = 16.0f;
         /** Zoveel stroom past er in zijn batterij. */
-        @Tunable(value = "Battery of a security drone (energy)", min = 1, max = 1_000_000)
-        public static float DRONE_BATTERY = 3000.0f;
+        @Tunable(value = "Battery of a security drone (energy)", min = 1, max = 1_000_000, energy = true)
+        public static float DRONE_BATTERY = 30_000.0f;
         /** Zoveel stroom per tick haalt een Drone Dock uit het net, voor de drone die erop staat. */
-        @Tunable(value = "Energy per tick a drone dock takes from the grid and puts into the security drone on it", max = 1_000)
-        public static float DRONE_DOCK_CHARGE_RATE = 5.0f;
+        @Tunable(value = "Energy per tick a drone dock takes from the grid and puts into the security drone on it", max = 1_000, energy = true)
+        public static float DRONE_DOCK_CHARGE_RATE = 50.0f;
         /** Zoveel batterij per tick als hij aan staat. */
-        @Tunable(value = "Battery a security drone uses per tick while it is switched on", max = 100)
-        public static float DRONE_DRAIN_ON = 0.25f;
+        @Tunable(value = "Battery a security drone uses per tick while it is switched on", max = 100, energy = true)
+        public static float DRONE_DRAIN_ON = 2.5f;
         /** Zoveel extra per tick als hij vliegt. */
-        @Tunable(value = "Extra battery a security drone uses per tick while it flies", max = 100)
-        public static float DRONE_DRAIN_FLYING = 0.6f;
+        @Tunable(value = "Extra battery a security drone uses per tick while it flies", max = 100, energy = true)
+        public static float DRONE_DRAIN_FLYING = 6.0f;
         /** Zo snel vliegt hij (blokken per tick). */
         @Tunable(value = "How fast a security drone flies (blocks per tick; 0.15 = 3 blocks a second)", min = 0.01, max = 2)
         public static float DRONE_SPEED = 0.15f;
@@ -1892,8 +1914,8 @@ public final class ImtConfig {
 
         // ------------------------------------------------------------------------- Energiecellen
         /** Zoveel stroom kost het om een lege cel helemaal op te laden in het Charging Station. */
-        @Tunable(value = "Energy the Charging Station uses to fill one empty energy cell", min = 1)
-        public static float CELL_CHARGE_ENERGY = 2_000.0f;
+        @Tunable(value = "Energy the Charging Station uses to fill one empty energy cell", min = 1, energy = true)
+        public static float CELL_CHARGE_ENERGY = 20_000.0f;
 
         // ------------------------------------------------------------------------- De lasergeweren
         // Elk rijtje: Laser Pistol, Laser Rifle, Laser Sniper, Laser Shotgun.

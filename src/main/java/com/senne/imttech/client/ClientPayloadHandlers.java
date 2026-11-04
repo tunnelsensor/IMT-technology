@@ -332,6 +332,16 @@ public final class ClientPayloadHandlers {
         com.senne.imttech.client.repair.ReinforcedRenderer.set(payload.blocks());
     }
 
+    /** Hoofdstuk 47: het scherm van de Power Battery openen, of de cijfers van een open scherm verversen. */
+    public static void onBatteryStats(com.senne.imttech.network.BatteryStatsPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof BatteryScreen screen) {
+            screen.update(payload);
+        } else if (payload.open() && mc.screen == null) {
+            mc.setScreen(new BatteryScreen(payload));
+        }
+    }
+
     public static void onMessage(ImtMessagePayload payload, IPayloadContext context) {
         // De welkomstzin bij het opzetten: die zegt de opstart-animatie zelf, op het moment dat
         // je identiteit bevestigd is. Is die animatie al voorbij, dan gewoon meteen.

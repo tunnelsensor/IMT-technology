@@ -87,6 +87,11 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.NETWORK_CABLE.get());
                 output.accept(ModItems.POE_CABLE.get());
                 output.accept(ModItems.SOLAR_PANEL.get());
+                // De Power Battery (hoofdstuk 47).
+                output.accept(ModItems.BATTERY_CASING.get());
+                output.accept(ModItems.BATTERY_GLASS.get());
+                output.accept(ModItems.BATTERY_CELL.get());
+                output.accept(ModItems.BATTERY_PORT.get());
                 output.accept(ModItems.HEAT_GENERATOR.get());
                 output.accept(ModItems.POWER_CABINET.get());
                 output.accept(ModItems.NETWORK_SWITCH.get());

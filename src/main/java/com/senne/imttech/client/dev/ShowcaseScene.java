@@ -446,7 +446,7 @@ final class ShowcaseScene {
         }
         level.setBlockAndUpdate(TURRET.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(TURRET.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(10_000);
+            generator.fill(100_000);
         }
         level.setBlockAndUpdate(TURRET.offset(7, 0, -2), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
     }

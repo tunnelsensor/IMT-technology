@@ -30,6 +30,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(SolarPanelBlockEntity::new,
                             java.util.Set.of(ModBlocks.SOLAR_PANEL.get()), null));
 
+    /** De Battery Port (hoofdstuk 47): het brein van een Power Battery. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.battery.BatteryPortBlockEntity>> BATTERY_PORT =
+            BLOCK_ENTITIES.register("battery_port",
+                    () -> new BlockEntityType<>(com.senne.imttech.battery.BatteryPortBlockEntity::new,
+                            java.util.Set.of(ModBlocks.BATTERY_PORT.get()), null));
+
     /** De stroomkast: van wie hij is (voor schakelen op afstand). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.energy.PowerCabinetBlockEntity>> POWER_CABINET =
             BLOCK_ENTITIES.register("power_cabinet",

@@ -380,7 +380,7 @@ public final class VisualCheck {
                 // Stroom voor de kern (dan stuurt hij drones), en twee torentjes in zijn gebied.
                 level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(core.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
                 level.setBlockAndUpdate(core.offset(4, 0, 0), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
                 level.setBlockAndUpdate(core.offset(-4, 0, 0), ModBlocks.SECURITY_TURRET.get().defaultBlockState());
@@ -479,7 +479,7 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState());
                 level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(core.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
                 if (level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
@@ -579,7 +579,7 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(bench, ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
                 level.setBlockAndUpdate(bench.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(bench.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
                 player.getInventory().clearContent();
                 player.getInventory().setItem(1, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 8));
@@ -1305,14 +1305,14 @@ public final class VisualCheck {
                 }
                 level.setBlockAndUpdate(robotCore.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(robotCore.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                    charger.fill(20_000);
+                    charger.fill(200_000);
                 }
                 // Hoofdstuk 24: een serverrack naast de kern, en de robots van de speler: dan hebben ze verbinding
                 // (en staan de robots met een camera in de app Cameras).
                 BlockPos rack = robotCore.east(2);
                 level.setBlockAndUpdate(rack.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(rack.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                    charger.fill(20_000);
+                    charger.fill(200_000);
                 }
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
                 if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
@@ -2198,7 +2198,7 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(padAt.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 level.setBlockAndUpdate(padAt, ModBlocks.LANDING_PAD.get().defaultBlockState());
                 if (level.getBlockEntity(padAt.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
                 if (level.getBlockEntity(padAt) instanceof com.senne.imttech.suit.LandingPadBlockEntity pad) {
                     pad.setOwner(player.getUUID());
@@ -2248,7 +2248,7 @@ public final class VisualCheck {
                 if (level.getBlockEntity(at) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
                     generator.setItem(com.senne.imttech.station.ChargerBlockEntity.SLOT_FUEL,
                             new ItemStack(net.minecraft.world.item.Items.COAL, 8));
-                    generator.fill(5_000);
+                    generator.fill(50_000);
                 }
                 for (BlockPos table : new BlockPos[] {at.east(), at.west(), at.north()}) {
                     level.setBlockAndUpdate(table, ModBlocks.HOLO_TABLE.get().defaultBlockState());
@@ -2315,7 +2315,7 @@ public final class VisualCheck {
                 for (BlockPos generator : new BlockPos[] {core.below(), server[0].below(), lone.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                     if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
+                        charger.fill(200_000);
                     }
                 }
                 BlockState rack = ModBlocks.SERVER_RACK.get().defaultBlockState()
@@ -2430,7 +2430,7 @@ public final class VisualCheck {
                 for (BlockPos generator : new BlockPos[] {vault.below(), vaultRack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                     if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
+                        charger.fill(200_000);
                     }
                 }
                 level.setBlockAndUpdate(vaultRack, ModBlocks.SERVER_RACK.get().defaultBlockState());
@@ -2508,7 +2508,7 @@ public final class VisualCheck {
                 for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                     if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
+                        charger.fill(200_000);
                     }
                 }
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
@@ -2645,7 +2645,7 @@ public final class VisualCheck {
                 for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                     if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
+                        charger.fill(200_000);
                     }
                 }
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
@@ -2775,7 +2775,7 @@ public final class VisualCheck {
                 for (BlockPos generator : new BlockPos[] {core.below(), rack.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                     if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                        charger.fill(20_000);
+                        charger.fill(200_000);
                     }
                 }
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
@@ -2989,7 +2989,7 @@ public final class VisualCheck {
                 BlockPos corePos = w.offset(5, 0, -3);
                 level.setBlockAndUpdate(corePos.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(corePos.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
                 level.setBlockAndUpdate(corePos, ModBlocks.SECURITY_CORE.get().defaultBlockState());
                 if (level.getBlockEntity(corePos) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
@@ -3185,6 +3185,31 @@ public final class VisualCheck {
                 ShowcaseFeatures.dent(player.serverLevel(), r.offset(7, 1, 0));
             });
             t.shot(40, "rf02_same_blast_left_cracks_right_breaks");
+        }
+
+        // --- De Power Battery (hoofdstuk 47): de doos met het raam en de poorten, het scherm (met een gevulde
+        // grafiek), en wat het scherm zegt als er een blok uit de wand is.
+        if (want("battery")) {
+            BlockPos b = BATTERY_YARD;
+            BlockPos port = b.offset(0, 0, 2);
+            t.onServer(0, player -> buildBatteryYard(player, BATTERY_YARD));
+            t.view(20, b.getX() - 3.5, b.getY() + 3.0, b.getZ() + 11.5, 200, 15);
+            t.lookAt(5, Vec3.atCenterOf(b.offset(2, 1, 2)));
+            t.shot(40, "bt01_battery_box");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(port) instanceof com.senne.imttech.battery.BatteryPortBlockEntity entity) {
+                    entity.tourHistory();
+                }
+                com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player);
+            });
+            t.shot(30, "bt02_battery_screen");
+            t.close(0);
+            t.onServer(5, player -> player.serverLevel().setBlockAndUpdate(b.offset(2, 3, 2), Blocks.AIR.defaultBlockState()));
+            t.onServer(10, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player));
+            t.shot(20, "bt03_battery_wall_not_closed");
+            t.close(0);
+            t.onServer(5, player -> player.serverLevel().setBlockAndUpdate(b.offset(2, 3, 2),
+                    ModBlocks.BATTERY_CASING.get().defaultBlockState()));
         }
 
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
@@ -3394,7 +3419,7 @@ public final class VisualCheck {
                 ServerLevel level = player.serverLevel();
                 level.setBlockAndUpdate(ZONE_CORE.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(ZONE_CORE.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-                    generator.fill(20_000);
+                    generator.fill(200_000);
                 }
             });
             t.shot(70, "z05b_zone_with_glasses");
@@ -3420,12 +3445,12 @@ public final class VisualCheck {
         }
         level.setBlockAndUpdate(core.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(core.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(20_000);
+            charger.fill(200_000);
         }
         BlockPos rack = core.east(2);
         level.setBlockAndUpdate(rack.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(rack.below()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(20_000);
+            charger.fill(200_000);
         }
         level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
@@ -3562,7 +3587,7 @@ public final class VisualCheck {
         }
         level.setBlockAndUpdate(bottom.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(bottom.east()) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(20_000);
+            charger.fill(200_000);
         }
         BlockState emitter = ModBlocks.LASER_EMITTER.get().defaultBlockState()
                 .setValue(com.senne.imttech.shield.LaserEmitterBlock.FACING, Direction.WEST);
@@ -3597,7 +3622,7 @@ public final class VisualCheck {
         for (BlockPos generator : new BlockPos[] {lab.below(), rack.below()}) {
             level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
         level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
@@ -3663,7 +3688,7 @@ public final class VisualCheck {
         BlockPos y = LAMP_YARD;
         level.setBlockAndUpdate(y, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(y) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(20_000);
+            generator.fill(200_000);
         }
         for (int x = 1; x <= 7; x++) {
             com.senne.imttech.energy.PowerCables.add(level, y.east(x));
@@ -3746,6 +3771,61 @@ public final class VisualCheck {
         ShowcaseFeatures.useReinforcer(player, REINFORCE.offset(1, 1, 0), true);
     }
 
+    /** Waar de Power Battery van hoofdstuk 47 staat (zie "battery"), ver van de rest. */
+    private static final BlockPos BATTERY_YARD = new BlockPos(-400, -60, -400);
+
+    /**
+     * Een Power Battery van 5 x 4 x 5 (binnenin 18 Battery Cells) met een raam van Battery Glass van 3 x 2 in de zuidkant en
+     * een Battery Port onderaan in de west- en de oostwand. Links (west) een kabel over het gras naar een warmtegenerator
+     * met kolen en een zonnepaneel; rechts (oost) een kabel naar een holotafel en een camera op een paal, die stroom
+     * uit de batterij halen. De batterij heeft al wat stroom, en de generator is bijna vol, zodat hij meteen laadt.
+     */
+    static void buildBatteryYard(ServerPlayer player, BlockPos base) {
+        ServerLevel level = player.serverLevel();
+        for (BlockPos pos : BlockPos.betweenClosed(base, base.offset(4, 3, 4))) {
+            boolean wall = pos.getX() == base.getX() || pos.getX() == base.getX() + 4 || pos.getY() == base.getY()
+                    || pos.getY() == base.getY() + 3 || pos.getZ() == base.getZ() || pos.getZ() == base.getZ() + 4;
+            boolean window = pos.getZ() == base.getZ() + 4 && pos.getX() > base.getX() && pos.getX() < base.getX() + 4
+                    && pos.getY() > base.getY() && pos.getY() < base.getY() + 3;
+            net.minecraft.world.level.block.Block block = window ? ModBlocks.BATTERY_GLASS.get()
+                    : wall ? ModBlocks.BATTERY_CASING.get() : ModBlocks.BATTERY_CELL.get();
+            level.setBlockAndUpdate(pos.immutable(), block.defaultBlockState());
+        }
+        BlockPos west = base.offset(0, 0, 2);
+        BlockPos east = base.offset(4, 0, 2);
+        level.setBlockAndUpdate(west, ModBlocks.BATTERY_PORT.get().defaultBlockState());
+        level.setBlockAndUpdate(east, ModBlocks.BATTERY_PORT.get().defaultBlockState());
+        // Links: een kabel naar de warmtegenerator (met kolen) en het zonnepaneel.
+        level.setBlockAndUpdate(west.west(), ModBlocks.CABLE.get().defaultBlockState());
+        level.setBlockAndUpdate(west.west(2), ModBlocks.CABLE.get().defaultBlockState());
+        level.setBlockAndUpdate(west.west(3), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(west.west(3)) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+            generator.setItem(com.senne.imttech.station.ChargerBlockEntity.SLOT_FUEL,
+                    new ItemStack(net.minecraft.world.item.Items.COAL, 16));
+            generator.fill(45_000);
+        }
+        level.setBlockAndUpdate(west.west(2).south(), ModBlocks.SOLAR_PANEL.get().defaultBlockState());
+        if (level.getBlockEntity(west.west(2).south()) instanceof com.senne.imttech.station.ChargerBlockEntity panel) {
+            panel.fill(40_000);
+        }
+        // Rechts: een kabel naar de holotafel en een camera op een paal.
+        level.setBlockAndUpdate(east.east(), ModBlocks.CABLE.get().defaultBlockState());
+        level.setBlockAndUpdate(east.east(2), ModBlocks.CABLE.get().defaultBlockState());
+        level.setBlockAndUpdate(east.east(3), ModBlocks.HOLO_TABLE.get().defaultBlockState());
+        BlockPos pole = east.east(2).south();
+        level.setBlockAndUpdate(pole, Blocks.STONE_BRICK_WALL.defaultBlockState());
+        level.setBlockAndUpdate(pole.above(), Blocks.STONE_BRICK_WALL.defaultBlockState());
+        level.setBlockAndUpdate(pole.above(2), ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
+                .setValue(com.senne.imttech.security.CameraBlock.FACING, Direction.SOUTH));
+        level.setBlockAndUpdate(pole.east(), ModBlocks.CABLE.get().defaultBlockState());
+        // De batterij heeft al een derde van haar stroom.
+        if (level.getBlockEntity(west) instanceof com.senne.imttech.battery.BatteryPortBlockEntity port) {
+            port.revalidate(level);
+            port.fill(6_000_000L);
+        }
+    }
+
     /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */
     private static final BlockPos REPAIR = new BlockPos(140, -60, 128);
 
@@ -3764,7 +3844,7 @@ public final class VisualCheck {
                 .setValue(com.senne.imttech.repair.CrackMachineBlock.FACING, Direction.SOUTH));
         level.setBlockAndUpdate(r.west(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(r.west()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(20_000);
+            generator.fill(200_000);
         }
         if (level.getBlockEntity(r) instanceof com.senne.imttech.repair.CrackMachineBlockEntity machine) {
             machine.setItem(com.senne.imttech.repair.CrackMachineBlockEntity.SLOT_IN,
@@ -3777,7 +3857,7 @@ public final class VisualCheck {
                 .setValue(com.senne.imttech.repair.CrackMachineBlock.FACING, Direction.SOUTH));
         level.setBlockAndUpdate(press.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(press.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(20_000);
+            generator.fill(200_000);
         }
         if (level.getBlockEntity(press) instanceof com.senne.imttech.repair.CrackMachineBlockEntity machine) {
             machine.setItem(com.senne.imttech.repair.CrackMachineBlockEntity.SLOT_IN,
@@ -3833,7 +3913,7 @@ public final class VisualCheck {
         }
         level.setBlockAndUpdate(ZONE_CORE.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(ZONE_CORE.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(20_000);
+            generator.fill(200_000);
         }
         level.setBlockAndUpdate(ZONE_CORE, ModBlocks.SECURITY_CORE.get().defaultBlockState());
         if (level.getBlockEntity(ZONE_CORE) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
@@ -3910,7 +3990,7 @@ public final class VisualCheck {
                 .setValue(com.senne.imttech.security.CameraBlock.FACING, facing));
         level.setBlockAndUpdate(power, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(power) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(20_000);
+            generator.fill(200_000);
         }
         if (!name.isEmpty() && level.getBlockEntity(pos) instanceof com.senne.imttech.security.CameraBlockEntity camera) {
             camera.setName(name);
@@ -4368,7 +4448,7 @@ public final class VisualCheck {
         for (BlockPos generator : new BlockPos[] {core.below(), core.west().below()}) {
             level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
         level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
@@ -4500,7 +4580,7 @@ public final class VisualCheck {
         for (BlockPos generator : new BlockPos[] {core.below(), reception.below(), office.below(), reader.below()}) {
             level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
         level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
@@ -4574,7 +4654,7 @@ public final class VisualCheck {
         for (BlockPos generator : new BlockPos[] {core.below(), networkSwitch.below(), reader.below()}) {
             level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
             if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-                charger.fill(20_000);
+                charger.fill(200_000);
             }
         }
         level.setBlockAndUpdate(core, ModBlocks.SECURITY_CORE.get().defaultBlockState()
@@ -4614,7 +4694,7 @@ public final class VisualCheck {
         com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.north());
         level.setBlockAndUpdate(core.north(5), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(core.north(5)) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
-            charger.fill(20_000);
+            charger.fill(200_000);
         }
         com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(3));
         com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(4));
@@ -4737,7 +4817,7 @@ public final class VisualCheck {
         }
         level.setBlockAndUpdate(rocket.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(rocket.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
-            generator.fill(10_000);
+            generator.fill(100_000);
         }
         level.setBlockAndUpdate(new BlockPos(83, -60, 60), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
         BlockPos off = new BlockPos(87, -60, 60);

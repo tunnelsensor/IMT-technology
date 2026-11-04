@@ -74,6 +74,11 @@ public final class ModItems {
     /** Het zonnepaneel: laadt je bril op met daglicht. */
     public static final DeferredItem<BlockItem> SOLAR_PANEL = ITEMS.registerSimpleBlockItem("solar_panel",
             ModBlocks.SOLAR_PANEL);
+    // De Power Battery (hoofdstuk 47): wand, glas, cel en poort.
+    public static final DeferredItem<BlockItem> BATTERY_CASING = ITEMS.registerSimpleBlockItem("battery_casing", ModBlocks.BATTERY_CASING);
+    public static final DeferredItem<BlockItem> BATTERY_GLASS = ITEMS.registerSimpleBlockItem("battery_glass", ModBlocks.BATTERY_GLASS);
+    public static final DeferredItem<BlockItem> BATTERY_CELL = ITEMS.registerSimpleBlockItem("battery_cell", ModBlocks.BATTERY_CELL);
+    public static final DeferredItem<BlockItem> BATTERY_PORT = ITEMS.registerSimpleBlockItem("battery_port", ModBlocks.BATTERY_PORT);
 
     /** De warmtegenerator: laadt op brandstof en op de hitte om hem heen. */
     public static final DeferredItem<BlockItem> HEAT_GENERATOR = ITEMS.registerSimpleBlockItem("heat_generator",

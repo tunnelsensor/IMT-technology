@@ -136,7 +136,7 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
-        renderGrid(g);
+        // Sinds hoofdstuk 47 (jouw keuze) zie je het hele net alleen nog in de Power Battery; hier alleen dit apparaat.
         ItemStack glasses = menu.getGlasses();
         if (ImtData.isGlasses(glasses) && over(mouseX, mouseY, GLASSES_BAR_X, GLASSES_BAR_Y,
                 GLASSES_BAR_W, GLASSES_BAR_H)) {

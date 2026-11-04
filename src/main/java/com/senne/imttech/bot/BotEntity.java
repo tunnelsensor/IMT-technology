@@ -648,6 +648,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Active", active);
         tag.putDouble("Battery", battery);
+        tag.putInt("BatteryUnits", 2); // hoofdstuk 46: in FE
         if (home != null) {
             tag.putLong("Home", home.asLong());
         }
@@ -680,7 +681,9 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         // Na het laden van leven en eigenschappen: wat van zijn lijf komt (de config kan intussen andere getallen hebben).
         readBody(tag);
         active = tag.getBoolean("Active");
-        battery = tag.contains("Battery") ? Math.min(tag.getDouble("Battery"), maxBattery()) : maxBattery();
+        // Van voor Forge Energy (hoofdstuk 46, 4 november): de batterij was tien keer kleiner.
+        double saved = tag.contains("Battery") ? tag.getDouble("Battery") * (tag.contains("BatteryUnits") ? 1.0 : 10.0) : maxBattery();
+        battery = Math.min(saved, maxBattery());
         home = tag.contains("Home") ? BlockPos.of(tag.getLong("Home")) : null;
         brain.setProgram(tag.contains("Program") ? LogicProgram.load(tag.getCompound("Program")) : null);
         brain.body().setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);

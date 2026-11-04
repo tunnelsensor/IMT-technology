@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 375 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 384 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 106 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 108 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4247,6 +4247,68 @@ overgeslagen (dat zegt de melding).
       met de marker, dan de open basis met de knop), screenshots `-Ponly=zones` (`zs01_autoscan_bunker_inside`,
       `zs02_autoscan_bunker_outside`). Zie de afronding onderaan hoofdstuk 51.
 
+### 46. Alle stroom is Forge Energy (4 november)
+
+Jouw wens: "zorg dat de power samen kan werken met Create Crafts & Additions en ook Mekanism". Op mijn vraag hoe de
+stroom over moet lopen koos je niet voor een brug via de batterij, maar: **"herwerk alle stroom zodat het FE wordt, hoe
+het in de andere mods werkt"**, en de schaal: **"schaal ze zodat het overeenkomt met Mekanism en andere mods"**.
+
+**Mijn invulling** (zeg het als je het anders wil): alles maal tien (een zonnepaneel maal twaalf: 24 FE per tick, precies
+het zonnepaneel van Mekanism; een warmtegenerator 100 FE/t; de bril 100.000 FE; het laadstation 300.000), met dezelfde
+balans als vroeger. Alles wat bewaard was, rekent zichzelf om bij het laden: een generator, het landingsplatform
+(`EnergyUnits` in hun opslag), een robot of drone (`BatteryUnits`), een bril of ander item (`energy_units` op het item,
+bij het eerste lezen) en het configbestand (`[power] energyUnits`: staat er 1, dan worden alle stroomgetallen maal tien,
+blokken-per-stroom gedeeld door tien, en het bestand bewaard; elk stroomgetal is in de code gemarkeerd met
+`energy = true`). Energiecellen staan in procenten en hoeven niets. Samenwerken via de energie-capability van NeoForge
+(`FeBridge`): een leverancier (zonnepaneel, warmtegenerator, straks de batterij) is leeg te trekken én duwt elke tick FE
+in wat ertegen staat (`fePushRate`, 1000); elk apparaat van ons heeft een buffertje (`feDeviceBuffer`, 4000) dat een
+vreemde kabel vult en dat het stroomnet eerst gebruikt; het landingsplatform neemt FE in zijn batterij; een vreemde
+leverancier naast een apparaat of kabel van ons is een bron van ons net. De eenheid in het spel heet nu **FE** (was SE).
+
+- [x] **1. Gebouwd** — de schaal (91 getallen in `ImtConfig`, script in de sessie), `Tunable.energy/inverseEnergy`, de
+      migratie in `ImtConfigLoader`, `ModDataComponents.ENERGY_UNITS` en `ImtData`, `ChargerBlockEntity` (eenheid +
+      duwen), `LandingPadBlockEntity` (eenheid + aannemen), `BotEntity` (eenheid), `FeBridge` en `PowerGrid`
+      (buffertje eerst, vreemde bronnen), de taal (FE), LEESMIJ.md "Stroom en kabels". Tests `fe_capability_on_our_blocks`
+      en `fe_old_energy_is_converted`.
+- [x] **2. Showcase en screenshots** — de bestaande stroomschermen laten FE zien (de showcases van het laadstation,
+      de generatoren en de bril); geen nieuwe showcase. Het generatorscherm tekent het netoverzicht niet meer (zie
+      hoofdstuk 47).
+
+### 47. De Power Battery (4 november)
+
+Jouw wens: "maak zoals bij Mekanism een multiblock powerbattery, dit is vanaf dan de enige plek waar je de power
+netwerk stats kunt zien, dus vb in de zonnepanelen zie je enkel wat dit paneel produceert maar niet hoe het netwerk is."
+
+**Jouw antwoorden**: **zoals Mekanism** (Casing, Glass, Cells erin, Port(s), 3x3x3 tot 18x18x18); het scherm toont
+opgewekt / verbruikt / tekort per tick, opslag en capaciteit, een grafiek van de laatste minuten én de lijst van
+generatoren en apparaten; het laadstation en de panelen tonen **alleen zichzelf**.
+
+**Mijn invulling** (zeg het als je het anders wil): vier blokken (`battery_casing`, `battery_glass`, `battery_cell`,
+`battery_port`) in de tab Power; de doos is een dichte wand van casing/glas/poorten met binnenin cellen of lucht (de
+poorten mogen overal in de wand, ook in een hoek); elke cel is `[power] batteryCellCapacity` (1.000.000 FE); de
+laagste poort is de baas (bewaart de stroom, meet het net), de andere geven alles aan hem door; laden uit de
+generatoren boven hun reserve van 50% tot `batteryChargeRate` (2.000 FE/t); leveren zoals een generator (apparaten
+kiezen de voorraad met het meest, dus de batterij); Forge Energy: een vreemde kabel vult of leegt hem, en hij duwt in
+vreemde machines ertegen. Het scherm is een gewoon scherm (geen inventaris) dat elke seconde nieuwe cijfers vraagt
+(`BatteryRequestPayload` / `BatteryStatsPayload`); de grafiek is 60 punten van 5 seconden; de lijst DEVICES komt uit wat
+het stroomnet de laatste 10 seconden zag halen (`PowerGrid.recentDevices`), per soort, alleen wat aan een poort van deze
+batterij hangt. Het netoverzicht naast het generatorscherm is weg (de gegevens blijven in het menu, maar worden niet
+meer getekend). Recepten: casing 8 ijzer + chip = 8; glas 4 glas + casing = 4; cel 4 redstoneblokken + 4 ijzer + chip;
+poort koper, kabel, casing, chip.
+
+- [x] **1. Gebouwd** — `battery/BatteryStructure` (zoeken en nakijken, met uitleg wat er mist), `BatteryCasingBlock`,
+      `BatteryCellBlock`, `BatteryPortBlock` + `BatteryPortBlockEntity`, `Batteries`, `PowerGrid.recentDevices`, de
+      twee berichten, `client/BatteryScreen`, modellen (`cube_all`), blockstates, texturen
+      (`generate_textures.battery_textures()`), recepten, taal, LEESMIJ.md "Stroom en kabels". Tests
+      `battery_forms_charges_and_supplies` (vormen, twee cellen, laden uit een paneel boven de reserve, een camera aan een
+      tweede poort haalt eruit, glas mag, een gat maakt het ongedaan, dichtmaken brengt de stroom terug) en
+      `battery_explains_what_is_missing` (te klein, geen cellen, de laagste poort is de baas, een kabel aan de andere
+      poort komt bij dezelfde stroom).
+- [x] **2. Showcase en screenshots** — showcase 108 **"Power Battery"** (de doos met het raam, het scherm met een
+      alvast gevulde grafiek via `BatteryPortBlockEntity.tourHistory`, een gat in het dak en het blok terug, en het
+      generatorscherm dat alleen zichzelf toont) en screenshots `-Ponly=battery` (`bt01` de doos, `bt02` het scherm,
+      `bt03` 'The wall is not closed').
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -4254,6 +4316,15 @@ overgeslagen (dat zegt de melding).
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De Power Battery (hoofdstuk 47)**: gezien op screenshots (`-Ponly=battery`, en showcase 108), maar niet zelf gespeeld.
+      Probeer: een doos van casing bouwen met cellen erin en een poort in de wand, een kabel van je generatoren naar de
+      poort, en dan rechtsklik op de poort. Kijk of het scherm klopt met wat je net doet (laden, verbruiken, tekort),
+      of de lijst DEVICES je apparaten noemt, en of een vreemde kabel (Mekanism, Create Crafts & Additions) de
+      batterij vult of leegt.
+- [ ] **Forge Energy (hoofdstuk 46)**: alleen getest. Probeer een oude wereld: na het laden moeten je bril, je
+      generatoren en je robots evenveel stroom hebben als eerst (maar dan in FE, maal tien), en `imttech.toml`
+      moet `energyUnits = 2` hebben met alle stroomgetallen maal tien. Zet eens een machine van een andere mod
+      tegen een zonnepaneel: hij moet vollopen.
 - [ ] **De schermmuur (hoofdstuk 31)**: gezien op screenshots (`-Ponly=camerawall`, en showcase 105), maar niet zelf gespeeld.
       Probeer: monitoren tegen een muur, een PoE-kabel naar je kern, en dan slepen in het instelscherm. Kijk of het **slepen** lekker
       werkt, of de beelden scherp genoeg zijn, of je spel niet trager wordt bij veel beelden tegelijk (`cameraFeedFps` en

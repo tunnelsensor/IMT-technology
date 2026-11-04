@@ -38,7 +38,18 @@ public final class ImtData {
 
     /** Hoeveel energie er precies in de bril zit: een kommagetal, zodat ook 0.5 per seconde verbruiken werkt. */
     public static double getExactEnergy(ItemStack stack) {
-        return stack.getOrDefault(ModDataComponents.ENERGY.get(), 0.0);
+        Double energy = stack.get(ModDataComponents.ENERGY.get());
+        if (energy == null) {
+            return 0.0;
+        }
+        // Hoofdstuk 46 (4 november): een bril van voor Forge Energy heeft zijn energie nog in de oude eenheid (tien keer
+        // kleiner). De eerste keer dat we hem lezen, rekenen we om en onthouden we dat op het item.
+        if (!stack.has(ModDataComponents.ENERGY_UNITS.get())) {
+            energy = Math.min(energy * 10.0, getMaxEnergy(stack));
+            stack.set(ModDataComponents.ENERGY.get(), energy);
+            stack.set(ModDataComponents.ENERGY_UNITS.get(), 2);
+        }
+        return energy;
     }
 
     public static int getMaxEnergy(ItemStack stack) {
@@ -48,6 +59,7 @@ public final class ImtData {
 
     public static void setEnergy(ItemStack stack, double energy) {
         stack.set(ModDataComponents.ENERGY.get(), Mth.clamp(energy, 0, getMaxEnergy(stack)));
+        stack.set(ModDataComponents.ENERGY_UNITS.get(), 2); // hoofdstuk 46: in FE
     }
 
     /**

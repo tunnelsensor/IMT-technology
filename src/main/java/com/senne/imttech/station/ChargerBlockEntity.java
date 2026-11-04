@@ -237,6 +237,12 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         rate = made;
         boolean changed = made > 0;
         changed |= chargeGlasses();
+        // Hoofdstuk 46: een kabel of machine van een andere mod ertegenaan krijgt FE geduwd.
+        int pushed = com.senne.imttech.energy.FeBridge.push(level, pos, this);
+        if (pushed > 0) {
+            windowUsed += pushed;
+            changed = true;
+        }
         if (changed) {
             setChanged();
         }
@@ -327,6 +333,11 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         ContainerHelper.loadAllItems(tag, items, registries);
         energy = tag.getDouble("Energy"); // ook goed voor een oude wereld, waar het nog een heel getal was
         totalProduced = tag.getDouble("TotalProduced");
+        if (!tag.contains("EnergyUnits")) {
+            // Van voor Forge Energy (hoofdstuk 46, 4 november): alles was tien keer kleiner.
+            energy = Math.min(capacity(), energy * 10.0);
+            totalProduced *= 10.0;
+        }
     }
 
     @Override
@@ -335,6 +346,7 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         ContainerHelper.saveAllItems(tag, items, registries);
         tag.putDouble("Energy", energy);
         tag.putDouble("TotalProduced", totalProduced);
+        tag.putInt("EnergyUnits", 2);
     }
 
     @Override

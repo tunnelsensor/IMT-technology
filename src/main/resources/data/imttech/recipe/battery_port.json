@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " P ",
+    "CBC",
+    " W "
+  ],
+  "key": {
+    "P": {
+      "item": "imttech:cable"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "B": {
+      "item": "imttech:battery_casing"
+    },
+    "W": {
+      "item": "imttech:computer_chip"
+    }
+  },
+  "result": {
+    "id": "imttech:battery_port",
+    "count": 1
+  }
+}

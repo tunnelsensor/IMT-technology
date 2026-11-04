@@ -33,4 +33,14 @@ public @interface Tunable {
 
     /** Het grootste getal dat mag. */
     double max() default 1_000_000;
+
+    /**
+     * Is dit een hoeveelheid stroom (FE)? Sinds 4 november (hoofdstuk 46) rekent alles in Forge Energy, tien keer zo
+     * groot als vroeger: een configbestand van voor die tijd (energyUnits 1) wordt bij het laden voor deze getallen
+     * met tien vermenigvuldigd.
+     */
+    boolean energy() default false;
+
+    /** Hetzelfde, maar andersom (blokken per stroom): gedeeld door tien. */
+    boolean inverseEnergy() default false;
 }
