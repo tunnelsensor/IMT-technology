@@ -682,6 +682,7 @@ public final class SecurityDevices {
     private static String inputKind(com.senne.imttech.logic.program.Op trigger) {
         return switch (trigger) {
             case CODEPANEL -> "panel";
+            case REQUEST -> "console";
             case BUTTON -> "button";
             case LEVER -> "lever";
             default -> "reader";

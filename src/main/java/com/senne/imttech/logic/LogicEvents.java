@@ -233,17 +233,24 @@ public final class LogicEvents {
         InputDeviceBlock.flash(level, panel, InputLight.BUSY);
         com.senne.imttech.lan.CableTraffic.signal(level, panel, true);
         level.playSound(null, panel, ModSounds.IMT_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
-        core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " entered a code at " + device.name());
+        String name = player.getGameProfile().getName();
+        core.logEvent(EventLog.Type.ENTRY, name + " entered a code at " + device.name());
+        // De autorisatiecode (hoofdstuk 49): de vorige code komt altijd in het logboek, ook als hij nog mag.
+        SecurityCoreBlockEntity.AuthCheck auth = core.checkAuthCode(code);
+        if (auth.old()) {
+            core.logEvent(EventLog.Type.ENTRY, name + " used the previous authorization code at " + device.name()
+                    + (auth.valid() ? " (still allowed)" : " (not allowed anymore)"));
+        }
         LogicRunner.fire(level, core, Op.CODEPANEL, device.name(), new LogicRunner.Context(Op.CODEPANEL, device.name(),
-                panel.immutable(), player.getUUID(), player.getGameProfile().getName(),
-                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), null, false, code));
+                panel.immutable(), player.getUUID(), name, SecurityCores.isFriend(level, core, player),
+                isOwner(level, core, player), null, false, code).withAuth(auth.valid(), auth.old(), core.authCode()));
     }
 
     /**
      * De beveiligingskern waar deze lezer of dit paneel bij hoort (via zijn netwerkkabel, hoofdstuk 38), als zijn server
      * draait. Zo niet, dan wordt het lampje rood, hoort de speler waarom, en geven we null.
      */
-    private static @Nullable SecurityCoreBlockEntity serverFor(ServerLevel level, BlockPos device, ServerPlayer player) {
+    static @Nullable SecurityCoreBlockEntity serverFor(ServerLevel level, BlockPos device, ServerPlayer player) {
         SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, device);
         String problem = core == null ? (com.senne.imttech.lan.LanGrid.required() ? "logic.imttech.input.no_cable"
                 : "logic.imttech.input.no_network")
@@ -276,7 +283,7 @@ public final class LogicEvents {
      * Is deze speler de eigenaar van de kern ({@code player.owner} in je diagram)? Niet als hij de trainee is van een
      * oefening bij die kern (hoofdstuk 27): dan is hij voor zijn eigen basis een indringer.
      */
-    private static boolean isOwner(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer player) {
+    static boolean isOwner(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer player) {
         return player.getUUID().equals(core.ownerId())
                 && !com.senne.imttech.training.Training.isDrillTrainee(level, core.getBlockPos(), player.getUUID());
     }

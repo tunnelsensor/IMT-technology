@@ -27,7 +27,7 @@ public final class DesktopRights {
      * De apps die op een Computer kunnen, in de volgorde van de desktop. Niet: Settings (het wachtwoord van de kern),
      * Groups (dat zijn je eigen relais) en Computers zelf (dat stel je in op de kern of met de laptop).
      */
-    public static final List<String> COMPUTER_APPS = List.of("STATUS", "CAMERAS", "DEVICES", "ROBOTS", "TRAINING", "ACCESS",
+    public static final List<String> COMPUTER_APPS = List.of("STATUS", "CAMERAS", "DEVICES", "ROBOTS", "TRAINING", "ACCESS", "REQUESTS",
             "KEYCARDS", "LOGIC", "MONITOR", "BACKUP", "ZONE", "FILES", "NOTES", "LOGS");
 
     /** Apps zonder knoppen: die zijn alleen OFF of VIEW. */
@@ -112,6 +112,7 @@ public final class DesktopRights {
             case "cam_aim", "cam_rename" -> mayUse("CAMERAS");
             case "dev_toggle", "sw_port", "dev_rename" -> mayUse("DEVICES");
             case "trust_add", "trust_remove" -> mayUse("ACCESS");
+            case "req_answer" -> mayUse("REQUESTS");
             case "logic_save", "logic_delete", "logic_enable", "input_rename" -> mayUse("LOGIC");
             case "arrived" -> shows("LOGIC");
             case "training_stop" -> mayUse("TRAINING");
@@ -153,6 +154,12 @@ public final class DesktopRights {
         }
         if (op.startsWith("trust_")) {
             return "ACCESS";
+        }
+        if (op.startsWith("req_")) {
+            return "REQUESTS";
+        }
+        if (op.startsWith("auth_")) {
+            return "SETTINGS";
         }
         if (op.startsWith("card_") || op.startsWith("cgroup_")) {
             return "KEYCARDS";

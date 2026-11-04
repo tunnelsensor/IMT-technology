@@ -41,6 +41,8 @@ public class SecurityOsScreen extends Screen {
         /** De training die nu bezig is, en de rapporten van de laatste (hoofdstuk 26). */
         TRAINING("Training", "T", 340, 196),
         ACCESS("Access", "A", 280, 190),
+        /** Hoofdstuk 49: de toegangsverzoeken van de Auth Consoles, met Accept en Deny. */
+        REQUESTS("Requests", "?", 300, 170),
         /** Hoofdstuk 40: de Computers op het netwerk van deze kern, en wat je op elk ervan mag. */
         COMPUTERS("Computers", "P", 390, 206),
         /** Sinds 25 oktober met de groepen links: breder en iets hoger (past nog net op 1280 x 720). */
@@ -56,7 +58,7 @@ public class SecurityOsScreen extends Screen {
         FILES("Files", "F", 300, 190),
         NOTES("Notes", "N", 320, 196),
         LOGS("Logs", "L", 330, 200),
-        SETTINGS("Settings", "S", 270, 160);
+        SETTINGS("Settings", "S", 270, 200);
 
         final String label;
         final String glyph;
@@ -133,6 +135,7 @@ public class SecurityOsScreen extends Screen {
     private final TrainingApp training = new TrainingApp(this);
     private final CamerasApp cameras = new CamerasApp(this);
     private final AccessApp access = new AccessApp(this);
+    private final RequestsApp requests = new RequestsApp(this);
     private final ComputersApp computers = new ComputersApp(this);
     private final KeycardsApp keycards = new KeycardsApp(this);
     private final LogicApp logic = new LogicApp(this, net.minecraft.client.Minecraft.getInstance().font);
@@ -459,6 +462,11 @@ public class SecurityOsScreen extends Screen {
     }
 
     /** Alleen voor de screenshot-rondleiding: een app openen (of bovenop zetten). */
+    /** Alleen voor de showcase en de screenshots: het eerste toegangsverzoek in de app Requests beantwoorden (hoofdstuk 49). */
+    public void tourRequestAnswer(boolean accepted) {
+        requests.tourAnswer(accepted);
+    }
+
     public void tourOpen(App app) {
         openApp(app);
     }
@@ -712,6 +720,7 @@ public class SecurityOsScreen extends Screen {
             case TRAINING -> training.mouseClicked(font, contentArea(win), mx, my);
             case CAMERAS -> cameras.mouseClicked(font, contentArea(win), mx, my);
             case ACCESS -> access.mouseClicked(font, contentArea(win), mx, my);
+            case REQUESTS -> requests.mouseClicked(font, contentArea(win), mx, my);
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
             case LOGIC -> logic.mouseClicked(font, contentArea(win), mx, my, button);
             case BACKUP -> backup.mouseClicked(font, contentArea(win), mx, my);
@@ -734,6 +743,9 @@ public class SecurityOsScreen extends Screen {
                 }
                 if (mx >= cx + 146 && mx < cx + 216 && my >= fieldY && my < fieldY + 14) {
                     submitPassword();
+                    return;
+                }
+                if (clickAuth(cx, win.y + TITLE_H + 3, mx, my)) {
                     return;
                 }
                 editingPassword = false;
@@ -808,6 +820,7 @@ public class SecurityOsScreen extends Screen {
             case TRAINING -> training.mouseScrolled(scrollY);
             case CAMERAS -> cameras.mouseScrolled(scrollY);
             case ACCESS -> access.mouseScrolled(scrollY);
+            case REQUESTS -> requests.mouseScrolled(scrollY);
             case KEYCARDS -> keycards.mouseScrolled(contentArea(win), (int) mouseX, scrollY);
             case LOGIC -> logic.mouseScrolled(contentArea(win), (int) mouseX, (int) mouseY, scrollY);
             case MONITOR -> monitor.mouseScrolled(scrollY);
@@ -1018,6 +1031,7 @@ public class SecurityOsScreen extends Screen {
             case TRAINING -> training.render(g, font, area, mouseX, mouseY);
             case CAMERAS -> cameras.render(g, font, area, mouseX, mouseY, partialTick);
             case ACCESS -> access.render(g, font, area, mouseX, mouseY, partialTick);
+            case REQUESTS -> requests.render(g, font, area, mouseX, mouseY, partialTick);
             case KEYCARDS -> keycards.render(g, font, area, mouseX, mouseY, partialTick);
             case LOGIC -> logic.render(g, font, area, mouseX, mouseY, partialTick);
             case MONITOR -> monitor.render(g, font, area, mouseX, mouseY, partialTick);
@@ -1049,6 +1063,16 @@ public class SecurityOsScreen extends Screen {
         } else {
             line(g, cx, cy + LINE * 6, "Server: " + server.getString("problem"), HudStyle.ORANGE);
         }
+        // De autorisatiecode van dit moment (hoofdstuk 49): voor iedereen die hier mag kijken.
+        CompoundTag auth = data.getCompound("auth");
+        if (!auth.getString("code").isEmpty()) {
+            line(g, cx, cy + LINE * 7, "Auth code: " + auth.getString("code") + "   (new in " + clock(auth.getInt("left")) + ")", HudStyle.CYAN);
+        }
+    }
+
+    /** Seconden als m:ss. */
+    private static String clock(int seconds) {
+        return seconds / 60 + ":" + String.format(java.util.Locale.ROOT, "%02d", seconds % 60);
     }
 
     /**
@@ -1119,6 +1143,74 @@ public class SecurityOsScreen extends Screen {
         if (!data.getBoolean("hasPassword")) {
             line(g, cx, cy + 96, "No password yet: anyone nearby can open this.", HudStyle.ORANGE);
         }
+        // De autorisatiecodes (hoofdstuk 49): hoe lang, om de hoeveel minuten, en of de vorige nog mag.
+        CompoundTag auth = data.getCompound("auth");
+        line(g, cx, cy + AUTH_TITLE, "Authorization code: " + auth.getString("code") + "   (new in " + clock(auth.getInt("left")) + ")", HudStyle.CYAN);
+        int[] b = authButtons(cx);
+        int row = cy + AUTH_ROW1;
+        line(g, cx, row + 2, "Length", HudStyle.WHITE);
+        OsDraw.button(g, font, b[0], row, "-", true, HudStyle.CYAN);
+        line(g, b[0] + b[5] + 4, row + 2, String.valueOf(auth.getInt("len")), HudStyle.WHITE);
+        OsDraw.button(g, font, b[1], row, "+", true, HudStyle.CYAN);
+        line(g, b[6], row + 2, "Every", HudStyle.WHITE);
+        OsDraw.button(g, font, b[2], row, "-", true, HudStyle.CYAN);
+        line(g, b[2] + b[5] + 4, row + 2, auth.getInt("min") + " min", HudStyle.WHITE);
+        OsDraw.button(g, font, b[3], row, "+", true, HudStyle.CYAN);
+        int row2 = cy + AUTH_ROW2;
+        boolean old = auth.getBoolean("old");
+        line(g, cx, row2 + 2, "Old codes", HudStyle.WHITE);
+        OsDraw.button(g, font, b[4], row2, old ? "ON" : "OFF", true, old ? HudStyle.GREEN : HudStyle.RED);
+        line(g, b[4] + OsDraw.buttonWidth(font, "OFF") + 6, row2 + 2, old ? "the previous code still works (it is logged)"
+                : "only the current code works", 0x8A9BA0);
+    }
+
+    /** Waar de regels van de autorisatiecodes in Settings staan (vanaf de bovenkant van de inhoud). */
+    private static final int AUTH_TITLE = 112;
+    private static final int AUTH_ROW1 = 124;
+    private static final int AUTH_ROW2 = 139;
+
+    /** De knoppen van de autorisatiecodes: x van [-] en [+] bij Length, [-] en [+] bij Every, de ON/OFF, de knopbreedte, en x van "Every". */
+    private int[] authButtons(int cx) {
+        int bw = OsDraw.buttonWidth(font, "+");
+        int lenMinus = cx + font.width("Length") + 4;
+        int lenPlus = lenMinus + bw + 4 + font.width("8") + 4;
+        int everyX = lenPlus + bw + 10;
+        int minMinus = everyX + font.width("Every") + 4;
+        int minPlus = minMinus + bw + 4 + font.width("60 min") + 4;
+        int oldToggle = cx + font.width("Old codes") + 4;
+        return new int[] {lenMinus, lenPlus, minMinus, minPlus, oldToggle, bw, everyX};
+    }
+
+    /** Een klik op de knoppen van de autorisatiecodes in Settings; geeft true als het er een was. */
+    private boolean clickAuth(int cx, int cy, int mx, int my) {
+        CompoundTag auth = data.getCompound("auth");
+        int[] b = authButtons(cx);
+        int len = auth.getInt("len");
+        int min = auth.getInt("min");
+        boolean old = auth.getBoolean("old");
+        int row = cy + AUTH_ROW1;
+        if (OsDraw.inside(mx, my, b[0], row, b[5], OsDraw.BUTTON_H)) {
+            sendAuth(len - 1, min, old);
+        } else if (OsDraw.inside(mx, my, b[1], row, b[5], OsDraw.BUTTON_H)) {
+            sendAuth(len + 1, min, old);
+        } else if (OsDraw.inside(mx, my, b[2], row, b[5], OsDraw.BUTTON_H)) {
+            sendAuth(len, min - 1, old);
+        } else if (OsDraw.inside(mx, my, b[3], row, b[5], OsDraw.BUTTON_H)) {
+            sendAuth(len, min + 1, old);
+        } else if (OsDraw.inside(mx, my, b[4], cy + AUTH_ROW2, OsDraw.buttonWidth(font, "OFF"), OsDraw.BUTTON_H)) {
+            sendAuth(len, min, !old);
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    private void sendAuth(int length, int minutes, boolean old) {
+        CompoundTag args = new CompoundTag();
+        args.putInt("len", Math.max(4, Math.min(8, length)));
+        args.putInt("min", Math.max(1, Math.min(60, minutes)));
+        args.putBoolean("old", old);
+        send("auth_set", args);
     }
 
     private void line(GuiGraphics g, int x, int y, String text, int rgb) {

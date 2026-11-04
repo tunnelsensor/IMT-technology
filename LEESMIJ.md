@@ -890,6 +890,43 @@ when keycard("Lab door"):
 Neemt iemand je kern over, dan krijgt hij ook je diagrammen en kaarten. De code van een codepaneel
 staat alleen in je diagram, niet in het logboek.
 
+### Autorisatiecodes en de Auth Console
+Je kern heeft een **autorisatiecode**: een getal van (standaard) zes cijfers dat **elke vijf minuten
+verandert**. Je ziet hem op de desktop in **Status** (en wanneer de volgende komt), ook via de laptop en de
+GSM; iedereen die de desktop mag openen, ziet hem. In **Settings** stel je per kern in hoe lang hij is (4 tot
+8 cijfers), om de hoeveel minuten (1 tot 60), en of de **vorige code** nog mag.
+
+Op een **codepaneel** gebruik je hem in je diagram, zonder een vaste code in je code te zetten:
+
+    when codepanel("Vault"):
+        if auth.valid:
+            accept()
+        else:
+            deny()
+
+- `auth.valid`: de getypte code is de code van nu (of de vorige, als dat in Settings aan staat).
+- `auth.old`: het was de vorige code. Die komt **altijd in het logboek** ("used the previous
+  authorization code"), ook als hij nog mocht.
+- `auth.code`: de code van nu, als tekst (overal in een serverdiagram te gebruiken).
+
+De **Auth Console** (tab Security, naast het codepaneel) is een kastje met één knop: wie erop drukt,
+**vraagt toegang**. Het lampje wordt oranje, jij krijgt een bericht, en op de desktop (ook via de laptop en
+de GSM) staat het verzoek in de app **Requests** met **Accept** en **Deny**. Zonder antwoord binnen 30
+seconden is het geweigerd. Het antwoord start je diagram:
+
+    when request("Gate"):
+        if request.accepted:
+            pulse("Gate door", 5)
+        else:
+            say(player.name + " may not come in")
+
+Een naam geven: sneak + rechtsklik met een lege hand, of in Devices (AUTH CONSOLES). Zonder stroom of
+netwerk doet de knop niets, net als bij een codepaneel; een EMP legt hem even plat. Alles komt in het
+logboek: wie vroeg, wie antwoordde (of dat niemand deed).
+
+De standaardwaarden staan in `config/imttech.toml` onder `[security]` (`authCodeLength`, `authCodeMinutes`,
+`authOldCodes`, `authRequestSeconds`) en `[power]` (`authConsoleUpkeep`).
+
 ### Het datacenter: warmte, backups en het brein
 Je racks samen zijn je **datacenter**. Het wordt warm, je kunt aflezen hoe hard het werkt, je maakt
 er backups van, en het brein van I.M.T draait erop.

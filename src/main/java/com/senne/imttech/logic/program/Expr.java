@@ -84,6 +84,14 @@ public sealed interface Expr {
         CODE("code", Type.TEXT, "the code that was typed, as text (use quotes: code == \"4321\")", Op.CODEPANEL),
         // Na when lever(...) (hoofdstuk 38): hoe de hendel nu staat.
         LEVER_ON("lever.on", Type.BOOL, "true if the lever was just switched on, false if it was switched off", Op.LEVER),
+        // De autorisatiecode van de kern (hoofdstuk 49): elke paar minuten een nieuwe (zie Status en Settings).
+        AUTH_VALID("auth.valid", Type.BOOL, "true if the code typed is the authorization code of this core right now (or the "
+                + "previous one, when Settings allows old codes)", Op.CODEPANEL),
+        AUTH_OLD("auth.old", Type.BOOL, "true if the code typed is the previous authorization code (that is always written in the log)", Op.CODEPANEL),
+        AUTH_CODE("auth.code", Type.TEXT, "the authorization code of this core right now, as text (it changes every few minutes)", null),
+        // Na when request(...) (hoofdstuk 49): het antwoord op het toegangsverzoek bij een Auth Console.
+        REQUEST_ACCEPTED("request.accepted", Type.BOOL, "true if the request at the Auth Console was accepted (on the desktop, the laptop "
+                + "or the phone); false if it was denied or nobody answered in time", Op.REQUEST),
         PLAYER_NAME("player.name", Type.TEXT, "the name of the player", null),
         PLAYER_TRUSTED("player.trusted", Type.BOOL, "true for the owner, their team and trusted players", null),
         PLAYER_OWNER("player.owner", Type.BOOL, "true if the player owns this network", null),

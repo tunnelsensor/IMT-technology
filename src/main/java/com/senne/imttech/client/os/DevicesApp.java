@@ -78,7 +78,7 @@ final class DevicesApp {
         List<Row> rows = new ArrayList<>();
         String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"bridge", "LASER BRIDGES"},
                 {"camera", "CAMERAS"}, {"monitor", "CAMERA WALLS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
-                {"lever", "LEVERS"}, {"switch", "NETWORK SWITCHES"}};
+                {"lever", "LEVERS"}, {"console", "AUTH CONSOLES"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {
             boolean any = false;
@@ -222,7 +222,8 @@ final class DevicesApp {
     /** Een keycardlezer, codepaneel of (hoofdstuk 38) netwerkknop of -hendel? Die kun je een andere naam geven. */
     private static boolean renamable(CompoundTag device) {
         String kind = device.getString("k");
-        return kind.equals("reader") || kind.equals("panel") || kind.equals("button") || kind.equals("lever");
+        return kind.equals("reader") || kind.equals("panel") || kind.equals("button") || kind.equals("lever")
+                || kind.equals("console");
     }
 
     private boolean isRenaming(CompoundTag device) {

@@ -3229,6 +3229,29 @@ public final class VisualCheck {
             t.shot(25, "hc03_soldier_dragged_along");
         }
 
+        // --- Autorisatiecodes en de Auth Console (hoofdstuk 49): de code in Status, de instellingen in Settings, een
+        // verzoek van Bram in de app Requests, en de console groen na Accept.
+        if (want("auth")) {
+            BlockPos y = AUTH_YARD;
+            t.onServer(0, player -> buildAuthYard(player, AUTH_YARD));
+            t.onServer(30, player -> wakeAuthServer(player, AUTH_YARD));
+            t.stand(20, y.getX() + 2.5, y.getY(), y.getZ() + 2.5, 0, 10);
+            t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD));
+            t.step(15, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)));
+            t.shot(20, "au01_status_auth_code");
+            t.step(0, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.SETTINGS)));
+            t.shot(15, "au02_settings_auth_codes");
+            t.close(0);
+            t.onServer(10, player -> bramAsks(player, y.offset(3, 0, 4)));
+            t.onServer(15, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD));
+            t.step(15, () -> osTour(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)));
+            t.shot(20, "au03_requests_app");
+            t.step(0, () -> osTour(os -> os.tourRequestAnswer(true)));
+            t.close(15);
+            t.lookAt(5, Vec3.atCenterOf(y.offset(3, 0, 4)));
+            t.shot(15, "au04_console_accepted");
+        }
+
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
         // stroomcircuit: een groep kiezen, half opgelost, een stukje dat ALARM raakt (dan Esc), en
         // daarna helemaal (ACCESS, de lezer wordt groen); tot slot een keer betrapt.
@@ -3786,6 +3809,114 @@ public final class VisualCheck {
         }
         player.getInventory().setItem(9, new net.minecraft.world.item.ItemStack(ModItems.REINFORCEMENT_PLATE.get(), 16));
         ShowcaseFeatures.useReinforcer(player, REINFORCE.offset(1, 1, 0), true);
+    }
+
+    /** Hoofdstuk 49: het veldje van de autorisatiecodes (zie "auth"). */
+    private static final BlockPos AUTH_YARD = new BlockPos(-400, -60, -340);
+
+    /** Het diagram op de server van het veldje: auth.valid op het paneel, request.accepted op de console. */
+    static final String AUTH_PROGRAM = """
+            when codepanel("Vault"):
+                if auth.valid:
+                    accept()
+                    say("Vault open for " + player.name)
+                else:
+                    deny()
+                    say("Wrong code at the vault")
+
+            when request("Gate"):
+                if request.accepted:
+                    say(player.name + " may come in")
+                else:
+                    say(player.name + " stays outside")
+            """;
+
+    /**
+     * Een kern (van jou, met wachtwoord, naar het zuiden) met een serverrek ertegen, elk op een generator. Vijf blokken
+     * zuidelijker een muurtje met daaraan (naar het noorden, naar jou) een codepaneel "Vault" en een Auth Console "Gate",
+     * elk met een generator eronder; Bram staat rechts ervan. Op de server het diagram "Entrance" (zie AUTH_PROGRAM); de
+     * autorisatiecode: zes cijfers, elke vijf minuten, de vorige mag niet.
+     */
+    static void buildAuthYard(ServerPlayer player, BlockPos base) {
+        ServerLevel level = player.serverLevel();
+        for (BlockPos pos : BlockPos.betweenClosed(base.offset(-3, 0, -2), base.offset(7, 3, 8))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        BlockPos rack = base.west();
+        BlockPos panel = base.offset(1, 0, 4);
+        BlockPos console = base.offset(3, 0, 4);
+        for (BlockPos generator : new BlockPos[] {base.below(), rack.below(), panel.below(), console.below()}) {
+            level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+                charger.fill(300_000);
+            }
+        }
+        level.setBlockAndUpdate(base, ModBlocks.SECURITY_CORE.get().defaultBlockState()
+                .setValue(com.senne.imttech.security.SecurityCoreBlock.FACING, Direction.SOUTH));
+        level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
+                .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+        }
+        // Het muurtje, met het paneel en de console ervoor (naar het noorden: naar jou).
+        for (int x = 0; x <= 4; x++) {
+            for (int dy = 0; dy <= 1; dy++) {
+                level.setBlockAndUpdate(base.offset(x, dy, 5), Blocks.STONE_BRICKS.defaultBlockState());
+            }
+        }
+        placeInputNorth(level, player, panel, ModBlocks.CODE_PANEL.get().defaultBlockState(), "Vault");
+        placeInputNorth(level, player, console, ModBlocks.AUTH_CONSOLE.get().defaultBlockState(), "Gate");
+        ServerPlayer bram = DevWorld.fakePlayerAt(level, "Bram", base.offset(5, 0, 3));
+        bram.teleportTo(level, base.getX() + 5.5, base.getY(), base.getZ() + 3.5, 90, 0);
+        if (level.getBlockEntity(base) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+            core.setOwner(player);
+            core.ensureSystem(level);
+            core.setPassword("bitech1", level.random);
+            com.senne.imttech.logic.program.LogicGraph graph = com.senne.imttech.logic.program.GraphConverter.toGraph(
+                    com.senne.imttech.logic.program.ScriptParser.parse(AUTH_PROGRAM), null);
+            core.logic().put(null, new com.senne.imttech.logic.program.LogicProgram("Entrance", true, graph, AUTH_PROGRAM));
+            core.setAuthSettings(6, 5, false);
+            core.authTick(level, level.getGameTime());
+        }
+        com.senne.imttech.logic.AuthRequests.clear();
+    }
+
+    /** Een lezer, paneel of console dat aan de zuidkant van zijn blok hangt en naar het noorden kijkt, met een naam. */
+    private static void placeInputNorth(ServerLevel level, ServerPlayer player, BlockPos pos,
+                                        net.minecraft.world.level.block.state.BlockState state, String name) {
+        level.setBlockAndUpdate(pos, state.setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, Direction.NORTH));
+        if (level.getBlockEntity(pos) instanceof com.senne.imttech.logic.InputDeviceBlockEntity device) {
+            device.setOwner(player);
+            device.setName(name);
+        }
+    }
+
+    /** Het serverrek van het veldje meteen laten meedraaien (anders duurt dat tot twee seconden). */
+    static void wakeAuthServer(ServerPlayer player, BlockPos base) {
+        ServerLevel level = player.serverLevel();
+        BlockPos rack = base.west();
+        if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+            be.update(level, rack, level.getBlockState(rack));
+        }
+        com.senne.imttech.logic.LogicServer.forgetAll();
+    }
+
+    /** Bram (de nep-speler) drukt op de Auth Console op {@code console}. */
+    static void bramAsks(ServerPlayer player, BlockPos console) {
+        ServerPlayer bram = player.serverLevel().getServer().getPlayerList().getPlayerByName("Bram");
+        if (bram != null) {
+            com.senne.imttech.logic.AuthRequests.ask(player.serverLevel(), console, bram);
+        }
+    }
+
+    /** Iets doen met de desktop als die open staat. */
+    private static void osTour(java.util.function.Consumer<com.senne.imttech.client.os.SecurityOsScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+            action.accept(os);
+        }
     }
 
     /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie "cuffs"). */

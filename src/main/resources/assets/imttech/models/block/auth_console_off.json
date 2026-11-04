@@ -1,0 +1,7 @@
+{
+  "parent": "imttech:block/auth_console_base",
+  "textures": {
+    "front": "imttech:block/auth_console_off",
+    "side": "imttech:block/auth_console_side"
+  }
+}

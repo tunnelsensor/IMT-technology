@@ -381,6 +381,17 @@ public final class ModBlocks {
                     .lightLevel(state -> state.getValue(com.senne.imttech.logic.InputDeviceBlock.LIGHT)
                             == com.senne.imttech.logic.InputLight.OFF ? 0 : 4));
 
+    /** De Auth Console (hoofdstuk 49): één knop om toegang te vragen; het antwoord komt van de desktop. */
+    public static final DeferredBlock<com.senne.imttech.logic.AuthConsoleBlock> AUTH_CONSOLE = BLOCKS.registerBlock(
+            "auth_console", com.senne.imttech.logic.AuthConsoleBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.imttech.logic.InputDeviceBlock.LIGHT)
+                            == com.senne.imttech.logic.InputLight.OFF ? 0 : 4));
+
     /** De netwerkknop (hoofdstuk 38): erop drukken start je diagram, zonder redstone. */
     public static final DeferredBlock<com.senne.imttech.logic.NetworkButtonBlock> NETWORK_BUTTON = BLOCKS.registerBlock(
             "network_button", com.senne.imttech.logic.NetworkButtonBlock::new,

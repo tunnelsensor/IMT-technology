@@ -461,6 +461,8 @@ public final class SecurityOs {
                 close(player);
             }
             case "passwd" -> passwd(player, core, session, args.getString("pw"));
+            case "auth_set" -> setAuth(player, core, session, args.getInt("len"), args.getInt("min"), args.getBoolean("old"));
+            case "req_answer" -> answerRequest(player, core, session, args.getInt("id"), args.getBoolean("ok"));
             case "fs_open" -> openFile(player, core, session, path(args, "path"));
             case "fs_mkdir" -> fileResult(player, core, session, core.fs().mkdir(path(args, "path")));
             case "fs_touch" -> fileResult(player, core, session, touch(core.fs(), path(args, "path")));
@@ -1072,6 +1074,28 @@ public final class SecurityOs {
         notify(player, core, session, "Password updated. Other sessions were logged out.", false);
     }
 
+    /** De autorisatiecodes instellen (hoofdstuk 49, Settings): alleen de eigenaar. */
+    private static void setAuth(ServerPlayer player, SecurityCoreBlockEntity core, Session session, int length, int minutes, boolean old) {
+        if (!isOwner(player, core)) {
+            notify(player, core, session, "Only the owner can change the authorization codes.", true);
+            return;
+        }
+        core.setAuthSettings(length, minutes, old);
+        core.logEvent(EventLog.Type.SYSTEM, player.getGameProfile().getName() + " set the authorization codes to " + core.authLength()
+                + " digits, new every " + core.authMinutes() + " min, old codes " + (core.authOldAllowed() ? "allowed" : "not allowed"));
+        notify(player, core, session, "Authorization codes: " + core.authLength() + " digits, a new one every " + core.authMinutes()
+                + " min, old codes " + (core.authOldAllowed() ? "allowed (logged)" : "not allowed") + ".", false);
+    }
+
+    /** Een toegangsverzoek beantwoorden (hoofdstuk 49, de app Requests). */
+    private static void answerRequest(ServerPlayer player, SecurityCoreBlockEntity core, Session session, int id, boolean accepted) {
+        if (!com.senne.imttech.logic.AuthRequests.answer(player.serverLevel(), core, id, accepted, player)) {
+            notify(player, core, session, "That request is gone: it was answered already, or the time ran out.", true);
+            return;
+        }
+        sendSnapshot(player, core, session);
+    }
+
     /** Gooit iedereen behalve {@code keep} van deze kern af (bij een nieuw wachtwoord of een overname). */
     public static void kickOthers(@Nullable ServerPlayer keep, BlockPos corePos) {
         if (keep == null || keep.getServer() == null) {
@@ -1325,6 +1349,20 @@ public final class SecurityOs {
         if (rights.shows("TRAINING")) {
             data.put("training", com.senne.imttech.training.Trainings.snapshot(level, core));
         }
+        // De autorisatiecode van dit moment (hoofdstuk 49): voor iedereen die de desktop mag openen (Status), en de
+        // instellingen (Settings). De toegangsverzoeken van de Auth Consoles (de app Requests).
+        if (rights.shows("STATUS") || rights.full()) {
+            CompoundTag auth = new CompoundTag();
+            auth.putString("code", core.authCode());
+            auth.putInt("left", core.authSecondsLeft(level.getGameTime()));
+            auth.putInt("len", core.authLength());
+            auth.putInt("min", core.authMinutes());
+            auth.putBoolean("old", core.authOldAllowed());
+            data.put("auth", auth);
+        }
+        if (rights.shows("REQUESTS")) {
+            data.put("requests", com.senne.imttech.logic.AuthRequests.snapshot(level, core));
+        }
         // De server (serverracks) waar de redstone-diagrammen op draaien.
         if (rights.shows("MONITOR") || rights.shows("STATUS") || rights.shows("LOGIC")) {
             data.put("server", com.senne.imttech.logic.LogicServer.snapshot(level, core));
@@ -1506,6 +1544,7 @@ public final class SecurityOs {
 
     public static void onServerStopped(ServerStoppedEvent event) {
         SESSIONS.clear();
+        com.senne.imttech.logic.AuthRequests.clear();
         LOCKOUTS.clear();
         WRONG.clear();
         WAIT_UNTIL.clear();

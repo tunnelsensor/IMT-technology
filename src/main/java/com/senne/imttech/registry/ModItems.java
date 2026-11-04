@@ -223,6 +223,9 @@ public final class ModItems {
             ModBlocks.KEYCARD_READER, new Item.Properties());
     public static final DeferredItem<BlockItem> CODE_PANEL = ITEMS.registerSimpleBlockItem("code_panel",
             ModBlocks.CODE_PANEL, new Item.Properties());
+    /** De Auth Console (hoofdstuk 49). */
+    public static final DeferredItem<BlockItem> AUTH_CONSOLE = ITEMS.registerSimpleBlockItem("auth_console",
+            ModBlocks.AUTH_CONSOLE, new Item.Properties());
     /** De netwerkknop en -hendel (hoofdstuk 38): ze starten je diagram, via een netwerkkabel. */
     public static final DeferredItem<BlockItem> NETWORK_BUTTON = ITEMS.registerSimpleBlockItem("network_button",
             ModBlocks.NETWORK_BUTTON, new Item.Properties());

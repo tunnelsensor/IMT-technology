@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 386 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 388 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 109 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 110 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4304,6 +4304,10 @@ poort koper, kabel, casing, chip.
       tweede poort haalt eruit, glas mag, een gat maakt het ongedaan, dichtmaken brengt de stroom terug) en
       `battery_explains_what_is_missing` (te klein, geen cellen, de laagste poort is de baas, een kabel aan de andere
       poort komt bij dezelfde stroom).
+- [x] **3. Jouw opmerking (4 november)**: "het update niet elke tick hoeveel er inzit, ook staan sommige teksten over
+      elkaar". Het scherm vraagt nu elke tick nieuwe cijfers (de opslag loopt echt), en de indeling is anders: maakt,
+      gebruikt en tekort elk op een eigen regel, het oordeel eronder (hooguit drie regels), de grafiek ernaast, en de
+      lijsten over de volle breedte eronder (hooguit drie per lijst, dan "+N more"); het venster is 18 pixels hoger.
 - [x] **2. Showcase en screenshots** — showcase 108 **"Power Battery"** (de doos met het raam, het scherm met een
       alvast gevulde grafiek via `BatteryPortBlockEntity.tourHistory`, een gat in het dak en het blok terug, en het
       generatorscherm dat alleen zichzelf toont) en screenshots `-Ponly=battery` (`bt01` de doos, `bt02` het scherm,
@@ -4345,6 +4349,39 @@ spectator zijn niet te boeien; jezelf ook niet.
       achteruit de cel in getrokken, de sleutel, de robot die neerligt), screenshots `-Ponly=cuffs` (`hc01` het
       aftellen, `hc02` geboeid met het touw, `hc03` de soldaat aan het touw).
 
+### 49. Autorisatiecodes en de Auth Console (4 november)
+
+Jouw wens: "autorisatie codes die veranderen, via de laptop of een GSM; oude codes eventueel toestaan maar wel loggen; een
+blok waar de code requests binnenkomen om te accepteren of te weigeren" (zoals in Star Wars: "should I hold them?").
+
+**Jouw antwoorden**: de codes werken **op het codepaneel** (`auth.valid`, `auth.old`, `auth.code`); de lengte en de tijd
+**stel je zelf in op je security core** (Settings); een **Auth Console**-blok en **accept/deny via laptop of GSM**, met een
+wachttijd van 30 seconden; `when request("Gate")` met `request.accepted`; de code is te zien voor **iedereen die de desktop
+mag openen**.
+
+**Mijn invulling** (zeg het als je het anders wil): de kern maakt elke `authCodeMinutes` (5) een nieuwe code van
+`authCodeLength` (6) cijfers en onthoudt de vorige; Settings zet dat per kern (4-8 cijfers, 1-60 minuten, "old codes"
+aan/uit; een andere lengte geeft meteen een nieuwe code). Status toont de code en wanneer de volgende komt (ook via de
+laptop, straks de GSM). Op het paneel geeft `LogicEvents.enter` het diagram `auth.valid` (de code van nu, of de vorige
+als dat mag) en `auth.old`; de vorige code komt altijd in het logboek. De Auth Console is een derde invoerapparaat
+(zelfde kastje als het paneel, een luidsprekerrooster en een knop; naam, stroom, netwerk, EMP zoals een paneel; in
+Devices onder AUTH CONSOLES). Een verzoek leeft in het geheugen (`AuthRequests`, één open verzoek per speler per kern),
+het lampje blijft oranje, de eigenaar krijgt een bericht, en de app **Requests** (ook op een Computer, als de kern dat
+toestaat) toont wie, waar en hoeveel seconden nog, met Accept en Deny. Het antwoord (of de tijd: geweigerd) zet het
+lampje groen of rood, komt in het logboek ("Senne accepted Bram at Gate", "Nobody answered ...") en start
+`when request("Gate")` met `request.accepted` en `player.name`; `accept()`/`deny()` werken daar ook op de console.
+
+- [x] **1. Gebouwd** — `SecurityCoreBlockEntity` (de code, de vorige, de instellingen, `authTick`, `checkAuthCode`),
+      `LogicRunner.Context.withAuth/withRequest` + de gegevens, `Expr.Variable` (4 nieuwe), `Op.REQUEST`,
+      `LogicEvents.enter`, `logic/AuthRequests`, `logic/AuthConsoleBlock`, `SecurityOs` (`auth_set`, `req_answer`, de
+      gegevens "auth" en "requests"), `DesktopRights`, `client/os/RequestsApp`, Status en Settings in `SecurityOsScreen`,
+      Ctrl+Spatie en Help, Devices, EMP, config `[security] authCodeLength/authCodeMinutes/authOldCodes/
+      authRequestSeconds` en `[power] authConsoleUpkeep`, blok + item + modellen + plaatjes
+      (`generate_textures.auth_console_textures()`), taal, LEESMIJ.md "Autorisatiecodes en de Auth Console". Tests
+      `auth_codes_rotate_and_open_the_panel` en `auth_console_requests_are_accepted_denied_or_time_out`.
+- [x] **2. Showcase en screenshots** — showcase 110 **"Authorization codes and the Auth Console"**, screenshots
+      `-Ponly=auth` (`au01` Status met de code, `au02` Settings, `au03` de app Requests, `au04` de console groen).
+
 ---
 
 ## Nog nooit in het spel bekeken
@@ -4352,6 +4389,11 @@ spectator zijn niet te boeien; jezelf ook niet.
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Autorisatiecodes en de Auth Console (hoofdstuk 49)**: gezien op screenshots (`-Ponly=auth`, en showcase 110), maar
+      niet zelf gespeeld. Probeer: de code in Status aflezen en op een paneel typen met `auth.valid` in je diagram; in
+      Settings de lengte en de minuten veranderen (de code verspringt meteen bij een andere lengte); een vriend op de
+      console laten drukken en antwoorden in Requests (ook via de laptop). Kijk of de knoppen [-] [+] in Settings op jouw
+      scherm netjes naast elkaar staan.
 - [ ] **Handboeien (hoofdstuk 48)**: gezien op screenshots (`-Ponly=cuffs`, en showcase 109), maar niet zelf gespeeld met
       een echte tweede speler. Probeer: iemand boeien (twee seconden vasthouden), kijk of het **touw** en het bandje om
       zijn polsen er goed uitzien, of hij lekker **meekomt** als je wegloopt (ook trappen op), of hij echt niets kan, en

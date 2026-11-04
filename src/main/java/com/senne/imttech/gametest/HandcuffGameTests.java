@@ -128,7 +128,8 @@ public final class HandcuffGameTests {
             // Te ver: de lijn breekt, maar de boeien blijven om.
             teleport(helper, captor, 5.5, 3, 20.5);
         });
-        helper.runAfterDelay(6, () -> {
+        // (Pas na een halve seconde: een klik vlak na het boeien telt als de knop die nog ingedrukt is.)
+        helper.runAfterDelay(15, () -> {
             check(Handcuffs.holderOf(victim) == null, "Verder dan letGo zou de vanger hem los moeten zijn");
             check(Handcuffs.isCuffed(victim), "Zonder lijn zou hij nog wel geboeid moeten zijn");
             // Weer vastpakken (rechtsklik met de boeien op wie geboeid is), en dan de sleutel.

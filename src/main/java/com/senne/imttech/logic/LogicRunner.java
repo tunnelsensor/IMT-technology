@@ -74,7 +74,7 @@ public final class LogicRunner {
     public record Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
                           boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
                           com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups,
-                          boolean leverOn) {
+                          boolean leverOn, boolean authValid, boolean authOld, String authCode, boolean requestAccepted) {
         /**
          * {@code cardGroups} (25 oktober): de groepen waar de kaart zelf in zit, zoals de kern ze kent toen hij gelezen
          * werd (een nagemaakte kaart: de groep die de hacker koos). Leeg voor een ongeldige kaart. {@code leverOn}
@@ -82,6 +82,26 @@ public final class LogicRunner {
          */
         public Context {
             cardGroups = List.copyOf(cardGroups);
+        }
+
+        /** Zonder autorisatiecode en zonder verzoek (hoofdstuk 49). */
+        public Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
+                       boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
+                       com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups, boolean leverOn) {
+            this(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training, cardGroups,
+                    leverOn, false, false, "", false);
+        }
+
+        /** Hetzelfde, met wat het codepaneel van de autorisatiecode vond (hoofdstuk 49: auth.valid, auth.old, auth.code). */
+        public Context withAuth(boolean valid, boolean old, String current) {
+            return new Context(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training,
+                    cardGroups, leverOn, valid, old, current, requestAccepted);
+        }
+
+        /** Hetzelfde, met het antwoord op een toegangsverzoek (hoofdstuk 49: request.accepted). */
+        public Context withRequest(boolean accepted) {
+            return new Context(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training,
+                    cardGroups, leverOn, authValid, authOld, authCode, accepted);
         }
 
         /** Zonder hendel. */
@@ -482,6 +502,11 @@ public final class LogicRunner {
                     case "card.name" -> context.card() == null ? "" : context.card().label();
                     case "code" -> context.code();
                     case "lever.on" -> context.leverOn();
+                    // De autorisatiecode (hoofdstuk 49): na een codepaneel wat het paneel vond; de code zelf altijd.
+                    case "auth.valid" -> context.authValid();
+                    case "auth.old" -> context.authOld();
+                    case "auth.code" -> core.authCode();
+                    case "request.accepted" -> context.requestAccepted();
                     case "player.name" -> context.playerName();
                     case "player.trusted" -> context.trusted();
                     case "player.owner" -> context.owner();

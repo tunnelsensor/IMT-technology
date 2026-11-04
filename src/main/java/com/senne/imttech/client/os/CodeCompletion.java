@@ -47,11 +47,18 @@ public final class CodeCompletion {
      */
     public record Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots,
                        List<String> cardGroups, List<String> buttons, List<String> levers, List<String> shared,
-                       Map<String, String> globalDefs) {
+                       Map<String, String> globalDefs, List<String> consoles) {
         /** Zonder global scripts. */
         public Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots,
                     List<String> cardGroups, List<String> buttons, List<String> levers) {
-            this(outputs, readers, panels, kind, robots, cardGroups, buttons, levers, List.of(), Map.of());
+            this(outputs, readers, panels, kind, robots, cardGroups, buttons, levers, List.of(), Map.of(), List.of());
+        }
+
+        /** Zonder Auth Consoles (hoofdstuk 49). */
+        public Data(List<String> outputs, List<String> readers, List<String> panels, ProgramKind kind, List<String> robots,
+                    List<String> cardGroups, List<String> buttons, List<String> levers, List<String> shared,
+                    Map<String, String> globalDefs) {
+            this(outputs, readers, panels, kind, robots, cardGroups, buttons, levers, shared, globalDefs, List.of());
         }
 
         /** Zonder netwerkknoppen en -hendels. */
@@ -128,6 +135,7 @@ public final class CodeCompletion {
                 case "codepanel" -> data.panels();
                 case "button" -> data.buttons();
                 case "lever" -> data.levers();
+                case "request" -> data.consoles();
                 case "on", "off", "toggle", "pulse", "turned_on", "turned_off" -> data.outputs();
                 // is_on kent ook je netwerkhendels (hoofdstuk 38).
                 case "is_on" -> concat(data.outputs(), data.levers());
@@ -184,6 +192,7 @@ public final class CodeCompletion {
         String panel = first(data.panels(), "Panel 1");
         String button = first(data.buttons(), "Button 1");
         String lever = first(data.levers(), "Lever 1");
+        String console = first(data.consoles(), "Console 1");
         String device = first(data.outputs(), "Lamp");
         boolean global = isGlobalScript(lines);
         // Elke trigger die er is (zie Op): een nieuwe trigger staat hier vanzelf bij. (Niet in een global script.)
@@ -194,7 +203,8 @@ public final class CodeCompletion {
                 }
                 boolean named = op.textArg() != Op.Arg.NONE;
                 String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel : op == Op.BUTTON ? button
-                        : op == Op.LEVER ? lever : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
+                        : op == Op.LEVER ? lever : op == Op.REQUEST ? console
+                        : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
                 String label = "when " + (named ? op.code() + "(...)" : op.example()) + ":";
                 String call = named ? op.code() + "(\"" + name + "\")" : op.example();
                 items.add(new Item(label, "when " + call + ":\n    ", -1, op.help(), TRIGGER));

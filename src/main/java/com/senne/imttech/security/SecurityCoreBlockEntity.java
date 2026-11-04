@@ -98,6 +98,15 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     /** Staan de camera's in dit gebied aan? */
     private boolean camerasEnabled = true;
 
+    // ---------------------------------------------------------------- Autorisatiecodes (hoofdstuk 49)
+    /** Hoeveel cijfers (0 = de config), om de hoeveel minuten (0 = de config), en of de vorige code nog mag. */
+    private int authLength;
+    private int authMinutes;
+    private boolean authOldAllowed = ImtConfig.Security.AUTH_OLD_CODES;
+    private String authCode = "";
+    private String authPrevious = "";
+    private long authSince;
+
     /** Heeft de kern stroom (en werken zijn drones dus)? */
     public boolean isOnline() {
         return online;
@@ -662,6 +671,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         com.senne.imttech.logic.LogicRunner.tick(level, this);
         // Het datacenter: hoe warm de racks zijn (om de twee seconden).
         datacenter.tick(level, this);
+        // De autorisatiecode (hoofdstuk 49) draait elke paar minuten; de toegangsverzoeken lopen af.
+        authTick(level, level.getGameTime());
+        com.senne.imttech.logic.AuthRequests.tick(level, this);
         long now = level.getGameTime();
         if ((now + pos.hashCode()) % 40 != 0) {
             return;
@@ -674,6 +686,93 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         // Stroom voor de kern en zijn zone (zie powerTick).
         powerTick(level);
+    }
+
+    // ================================================================ Autorisatiecodes (hoofdstuk 49)
+
+    /** Een getypte code vergeleken met de codes van de kern: geldig, en was het de vorige code? */
+    public record AuthCheck(boolean valid, boolean old) {}
+
+    /** Hoeveel cijfers de code heeft (Settings op de desktop; anders [security] authCodeLength). */
+    public int authLength() {
+        return authLength > 0 ? authLength : Math.max(4, Math.min(8, Math.round(ImtConfig.Security.AUTH_CODE_LENGTH)));
+    }
+
+    /** Om de hoeveel minuten er een nieuwe code komt (Settings; anders [security] authCodeMinutes). */
+    public int authMinutes() {
+        return authMinutes > 0 ? authMinutes : Math.max(1, Math.min(60, Math.round(ImtConfig.Security.AUTH_CODE_MINUTES)));
+    }
+
+    /** Mag de vorige code ook nog (hij komt dan wel in het logboek)? */
+    public boolean authOldAllowed() {
+        return authOldAllowed;
+    }
+
+    /** De code van dit moment (leeg tot de eerste tick). */
+    public String authCode() {
+        return authCode;
+    }
+
+    /** De code van daarvoor (leeg als er nog maar één was). */
+    public String authPrevious() {
+        return authPrevious;
+    }
+
+    /** Wanneer (speltijd) de code van nu begon. */
+    public long authSince() {
+        return authSince;
+    }
+
+    /** Zoveel seconden tot de volgende code. */
+    public int authSecondsLeft(long now) {
+        return (int) Math.max(0, ((long) authMinutes() * 1200 - (now - authSince) + 19) / 20);
+    }
+
+    /**
+     * Instellen (Settings op de desktop): 4 tot 8 cijfers, elke 1 tot 60 minuten, en of de vorige code nog mag. Een andere
+     * lengte geeft meteen een nieuwe code.
+     */
+    public void setAuthSettings(int length, int minutes, boolean oldAllowed) {
+        int newLength = Math.max(4, Math.min(8, length));
+        boolean changed = newLength != authLength();
+        authLength = newLength;
+        authMinutes = Math.max(1, Math.min(60, minutes));
+        authOldAllowed = oldAllowed;
+        if (changed || authCode.isEmpty()) {
+            rotateAuthCode(level == null ? 0 : level.getGameTime());
+        }
+        setChanged();
+    }
+
+    /** Elke tick: de eerste code maken, en na authMinutes een nieuwe. */
+    public void authTick(ServerLevel level, long now) {
+        if (authCode.isEmpty() || now - authSince >= (long) authMinutes() * 1200) {
+            rotateAuthCode(now);
+        }
+    }
+
+    /** Een nieuwe code; de code van nu wordt de vorige. */
+    public void rotateAuthCode(long now) {
+        RandomSource random = level == null ? RandomSource.create() : level.random;
+        StringBuilder code = new StringBuilder();
+        for (int i = 0; i < authLength(); i++) {
+            code.append(random.nextInt(10));
+        }
+        authPrevious = authCode;
+        authCode = code.toString();
+        authSince = now;
+        setChanged();
+    }
+
+    /** Is deze getypte code de code van nu (geldig), of de vorige (alleen geldig als dat aan staat)? */
+    public AuthCheck checkAuthCode(String typed) {
+        if (!authCode.isEmpty() && typed.equals(authCode)) {
+            return new AuthCheck(true, false);
+        }
+        if (!authPrevious.isEmpty() && typed.equals(authPrevious)) {
+            return new AuthCheck(authOldAllowed, true);
+        }
+        return new AuthCheck(false, false);
     }
 
     /** Het gebied dat deze kern beschermt: ZONE_REACH blokken in elke richting (zie SecurityCores.inArea). */
@@ -721,6 +820,13 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         tag.putBoolean("DronesOn", dronesEnabled);
         tag.putBoolean("LasersOn", lasersEnabled);
         tag.putBoolean("CamerasOn", camerasEnabled);
+        // Autorisatiecodes (hoofdstuk 49)
+        tag.putInt("AuthLength", authLength);
+        tag.putInt("AuthMinutes", authMinutes);
+        tag.putBoolean("AuthOld", authOldAllowed);
+        tag.putString("AuthCode", authCode);
+        tag.putString("AuthPrevious", authPrevious);
+        tag.putLong("AuthSince", authSince);
         net.minecraft.nbt.ListTag trustedList = new net.minecraft.nbt.ListTag();
         for (java.util.Map.Entry<UUID, String> entry : trusted.entrySet()) {
             CompoundTag person = new CompoundTag();
@@ -758,6 +864,13 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         // beveiliging op monsters aan, op spelers uit, alle apparaten aan.
         attackMobs = !tag.contains("AttackMobs") || tag.getBoolean("AttackMobs");
         attackPlayers = tag.getBoolean("AttackPlayers");
+        // Autorisatiecodes (hoofdstuk 49); een oude kern krijgt zijn eerste code bij de volgende tick.
+        authLength = tag.getInt("AuthLength");
+        authMinutes = tag.getInt("AuthMinutes");
+        authOldAllowed = tag.contains("AuthOld") ? tag.getBoolean("AuthOld") : ImtConfig.Security.AUTH_OLD_CODES;
+        authCode = tag.getString("AuthCode");
+        authPrevious = tag.getString("AuthPrevious");
+        authSince = tag.getLong("AuthSince");
         dronesEnabled = !tag.contains("DronesOn") || tag.getBoolean("DronesOn");
         lasersEnabled = !tag.contains("LasersOn") || tag.getBoolean("LasersOn");
         camerasEnabled = !tag.contains("CamerasOn") || tag.getBoolean("CamerasOn");

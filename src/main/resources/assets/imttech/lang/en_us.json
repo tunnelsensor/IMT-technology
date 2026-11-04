@@ -1635,5 +1635,12 @@
   "cuffs.imttech.cannot.cuffed_yourself": "You are handcuffed yourself.",
   "cuffs.imttech.cannot.creative": "%s cannot be handcuffed (creative).",
   "cuffs.imttech.cannot.kind": "Handcuffs only work on players, Raven soldiers and guard robots.",
-  "cuffs.imttech.cannot.far": "Too far away to handcuff."
+  "cuffs.imttech.cannot.far": "Too far away to handcuff.",
+  "block.imttech.auth_console": "Auth Console",
+  "auth.imttech.console.sent": "Request sent. Waiting for an answer (%s s).",
+  "auth.imttech.console.waiting": "Your request is still waiting (%s s).",
+  "auth.imttech.console.accepted": "%s: access accepted.",
+  "auth.imttech.console.denied": "%s: access denied.",
+  "auth.imttech.console.no_answer": "%s: nobody answered.",
+  "auth.imttech.console.owner_notice": "%s asks for access at %s (%s). Answer in the app Requests."
 }

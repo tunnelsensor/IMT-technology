@@ -3384,6 +3384,33 @@ def code_panel_textures():
         save(im, f"block/code_panel_{name}.png")
 
 
+def auth_console_textures():
+    """
+    De Auth Console (hoofdstuk 49): hetzelfde donkere kastje als het codepaneel, met bovenaan een luidsprekerrooster
+    (drie rijen gaatjes), het lampje rechtsboven, en onderaan één grote ronde knop.
+    """
+    body = (40, 43, 50, 255)
+    edge = (22, 23, 27, 255)
+    hole = (18, 19, 23, 255)
+    button = (150, 156, 166, 255)
+    button_light = (196, 202, 212, 255)
+    side = img(16, 16, body)
+    ImageDraw.Draw(side).rectangle([0, 0, 15, 15], outline=edge)
+    save(side, "block/auth_console_side.png")
+    for name, led in INPUT_LEDS.items():
+        im = img(16, 16, body)
+        d = ImageDraw.Draw(im)
+        d.rectangle([4, 2, 11, 13], fill=body, outline=edge)
+        d.rectangle([10, 3, 10, 4], fill=led)
+        for y in (4, 6, 8):
+            for x in (5, 7, 9):
+                if not (y == 4 and x == 9):
+                    px(im, [(x, y)], hole)
+        d.ellipse([6, 10, 9, 13], fill=button, outline=edge)
+        px(im, [(7, 11)], button_light)
+        save(im, f"block/auth_console_{name}.png")
+
+
 def bypass_kit_item():
     """
     De Bypass Kit (hoofdstuk 12): een open zwart etui met een schroevendraaier met een gele steel, een

@@ -331,6 +331,9 @@ public final class ImtConfig {
         /** Hetzelfde voor een codepaneel: zonder stroom doen de toetsen niets. */
         @Tunable(value = "Grid energy a code panel uses every two seconds (without it, its keys do nothing)", energy = true)
         public static float CODE_PANEL_UPKEEP = 10.0f;
+        /** Hetzelfde voor een Auth Console (hoofdstuk 49). */
+        @Tunable(value = "Grid energy an Auth Console uses every two seconds (without it, its button does nothing)", energy = true)
+        public static float AUTH_CONSOLE_UPKEEP = 10.0f;
         /** Stroom die een Network Switch elke twee seconden haalt (zonder: geen netwerk door de switch). */
         @Tunable(value = "Grid energy a network switch uses every two seconds (without it, no network passes through it)", energy = true)
         public static float NETWORK_SWITCH_UPKEEP = 30.0f;
@@ -1198,6 +1201,17 @@ public final class ImtConfig {
                 + "(turrets, cameras, keycard readers, code panels, server racks, laser walls). "
                 + "Two cores must stand at least twice this far apart.", min = 1, max = 1_000)
         public static float ZONE_REACH = 200.0f;
+
+        // ------------------------------------------------------------------------- Autorisatiecodes (hoofdstuk 49)
+        // Per kern in te stellen in Settings op de desktop; dit zijn de standaardwaarden voor een nieuwe kern.
+        @Tunable(value = "How many digits the authorization code of a new core has (4-8; change it per core in Settings)", min = 4, max = 8)
+        public static float AUTH_CODE_LENGTH = 6.0f;
+        @Tunable(value = "How many minutes an authorization code lasts before a new one comes (per core in Settings)", min = 1, max = 60)
+        public static float AUTH_CODE_MINUTES = 5.0f;
+        @Tunable("Does the previous authorization code still work on a new core? It is always written in the log (per core in Settings)")
+        public static boolean AUTH_OLD_CODES = false;
+        @Tunable(value = "How long a request at an Auth Console waits for an answer (seconds); no answer = denied", min = 5, max = 300)
+        public static float AUTH_REQUEST_SECONDS = 30.0f;
 
         // ------------------------------------------------------------------------- Biebia's drones (hoofdstuk 25)
         /** Zoveel geprogrammeerde security drones zette Biebia in een Biebia's Industries Tower (op de docks in de hangar). */

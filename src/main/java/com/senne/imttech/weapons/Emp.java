@@ -128,6 +128,7 @@ public final class Emp {
                 Block block = device.getBlockState().getBlock();
                 // Hoofdstuk 38: ook een Network Switch valt even uit (zie NetworkSwitchBlock.passes).
                 electric = block instanceof KeycardReaderBlock || block instanceof CodePanelBlock
+                        || block instanceof com.senne.imttech.logic.AuthConsoleBlock
                         || block instanceof com.senne.imttech.lan.NetworkSwitchBlock;
             }
             if (electric) {

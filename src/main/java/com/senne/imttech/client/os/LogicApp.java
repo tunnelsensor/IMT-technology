@@ -566,12 +566,14 @@ final class LogicApp {
         List<String> panels = new ArrayList<>();
         List<String> buttons = new ArrayList<>();
         List<String> levers = new ArrayList<>();
+        List<String> consoles = new ArrayList<>();
         for (Tag element : info().getList("inputs", Tag.TAG_COMPOUND)) {
             CompoundTag input = (CompoundTag) element;
             switch (input.getString("t")) {
                 case "codepanel" -> panels.add(input.getString("n"));
                 case "button" -> buttons.add(input.getString("n"));
                 case "lever" -> levers.add(input.getString("n"));
+                case "request" -> consoles.add(input.getString("n"));
                 default -> readers.add(input.getString("n"));
             }
         }
@@ -584,7 +586,7 @@ final class LogicApp {
         List<String> shared = new ArrayList<>(library.shared().keySet());
         java.util.Map<String, String> globalDefs = new java.util.LinkedHashMap<>();
         library.defs().forEach((name, def) -> globalDefs.put(name, def.function().paramsCode()));
-        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups(), buttons, levers, shared, globalDefs);
+        return new CodeCompletion.Data(outputs, readers, panels, kind, robots, cardGroups(), buttons, levers, shared, globalDefs, consoles);
     }
 
     /** De keycard-groepen van dit netwerk (25 oktober), op alfabet. */
@@ -769,6 +771,7 @@ final class LogicApp {
         String panel = firstInput(Op.CODEPANEL);
         String button = firstInput(Op.BUTTON);
         String lever = firstInput(Op.LEVER);
+        String console = firstInput(Op.REQUEST);
         List<String> outputs = new ArrayList<>();
         for (Tag tag : info().getList("outputs", Tag.TAG_STRING)) {
             outputs.add(tag.getAsString());
@@ -781,6 +784,7 @@ final class LogicApp {
         lines.add(item("codepanel(...)", "when codepanel(\"" + (panel == null ? "Panel 1" : panel) + "\"):\n    if code == \"1234\":\n        accept()\n    else:\n        deny()\n", Op.CODEPANEL));
         lines.add(item("button(...)", "when button(\"" + (button == null ? "Button 1" : button) + "\"):\n    say(player.name + \" pressed the button\")\n", Op.BUTTON));
         lines.add(item("lever(...)", "when lever(\"" + (lever == null ? "Lever 1" : lever) + "\"):\n    if lever.on:\n        on(\"" + device + "\")\n    else:\n        off(\"" + device + "\")\n", Op.LEVER));
+        lines.add(item("request(...)", "when request(\"" + (console == null ? "Console 1" : console) + "\"):\n    if request.accepted:\n        pulse(\"" + device + "\", 5)\n    else:\n        say(player.name + \" was denied\")\n", Op.REQUEST));
         lines.add(item("turned_on(...)", "when turned_on(\"" + device + "\"):\n    pass\n", Op.TURNED_ON));
         lines.add(item("turned_off(...)", "when turned_off(\"" + device + "\"):\n    pass\n", Op.TURNED_OFF));
         lines.add(item("message(...)", "when message(\"intruder\"):\n    alarm(\"Intruder seen by \" + sender.name)\n", Op.MESSAGE));

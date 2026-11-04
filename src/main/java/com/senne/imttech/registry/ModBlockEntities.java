@@ -123,7 +123,8 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("input_device",
                     () -> new BlockEntityType<>(com.senne.imttech.logic.InputDeviceBlockEntity::new,
                             java.util.Set.of(ModBlocks.KEYCARD_READER.get(), ModBlocks.CODE_PANEL.get(),
-                                    ModBlocks.NETWORK_BUTTON.get(), ModBlocks.NETWORK_LEVER.get()), null));
+                                    ModBlocks.NETWORK_BUTTON.get(), ModBlocks.NETWORK_LEVER.get(),
+                                    ModBlocks.AUTH_CONSOLE.get()), null));
 
     /** De laptop op een kern: van wie hij is, en wat er al getypt is (de voortgang van de hack). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.security.HackingLaptopBlockEntity>> HACKING_LAPTOP =

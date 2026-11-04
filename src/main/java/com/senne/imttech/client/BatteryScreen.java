@@ -26,11 +26,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
  *  DEVICES                                      +--------------+
  *   Laser Emitter x3   30 per tick
  * </pre>
- * Elke seconde vraagt het scherm nieuwe cijfers aan de server (BatteryRequestPayload).
+ * Elke tick vraagt het scherm nieuwe cijfers aan de server (BatteryRequestPayload), zodat de opslag echt loopt.
  */
 public class BatteryScreen extends Screen {
     private static final int W = 300;
-    private static final int H = 210;
+    private static final int H = 228;
     private static final int GRAPH_W = 120;
     private static final int GRAPH_H = 64;
 
@@ -61,12 +61,12 @@ public class BatteryScreen extends Screen {
         addRenderableWidget(PowerUnit.button(x + W - 8 - 34, y + 6, 34, 12));
     }
 
+    /** Elke tick nieuwe cijfers vragen (4 november: zo zie je de opslag echt lopen). */
     @Override
     public void tick() {
         super.tick();
-        if (++ticks % 20 == 0) {
-            PacketDistributor.sendToServer(new BatteryRequestPayload(stats.pos()));
-        }
+        ticks++;
+        PacketDistributor.sendToServer(new BatteryRequestPayload(stats.pos()));
     }
 
     @Override
@@ -120,14 +120,17 @@ public class BatteryScreen extends Screen {
         String stored = String.format("%,d / %,d FE (%d%%)", stats.energy(), stats.capacity(), Math.round(fraction * 100));
         g.drawString(font, stored, x + 52, line, white, false);
         line += 14;
-        // Maakt / gebruikt / tekort.
-        int col = (W - 16) / 3;
-        g.drawString(font, Component.translatable("screen.imttech.grid.makes", unit.rate(stats.made())), x + 8, line, white, false);
-        g.drawString(font, Component.translatable("screen.imttech.grid.uses", unit.rate(stats.used())), x + 8 + col, line, white, false);
-        g.drawString(font, Component.translatable("battery.imttech.short", unit.rate(stats.missed())), x + 8 + 2 * col, line,
-                stats.missed() > 0.005f ? HudStyle.argb(255, HudStyle.RED) : white, false);
-        line += 12;
-        // Het oordeel, zoals vroeger naast het zonnepaneel.
+        // Links: maakt, gebruikt en tekort, elk op een eigen regel (zo lopen ze nooit over elkaar), en het oordeel.
+        int leftW = W - 16 - GRAPH_W - 8;
+        line = y + 50;
+        g.drawString(font, fit(Component.translatable("screen.imttech.grid.makes", unit.rate(stats.made())).getString(), leftW),
+                x + 8, line, white, false);
+        g.drawString(font, fit(Component.translatable("screen.imttech.grid.uses", unit.rate(stats.used())).getString(), leftW),
+                x + 8, line + 10, white, false);
+        g.drawString(font, fit(Component.translatable("battery.imttech.short", unit.rate(stats.missed())).getString(), leftW),
+                x + 8, line + 20, stats.missed() > 0.005f ? HudStyle.argb(255, HudStyle.RED) : white, false);
+        line += 32;
+        // Het oordeel, zoals vroeger naast het zonnepaneel (hooguit drie regels: de rest valt weg).
         Component verdict;
         int colour;
         float made = stats.made();
@@ -146,20 +149,17 @@ public class BatteryScreen extends Screen {
                     PowerReadout.timeLeft((int) Math.min(Integer.MAX_VALUE, stats.energy()), (used - made) * 20));
             colour = HudStyle.ORANGE;
         }
-        for (FormattedCharSequence part : font.split(verdict, W - 16 - GRAPH_W - 8)) {
-            g.drawString(font, part, x + 8, line, HudStyle.argb(255, colour), false);
+        List<FormattedCharSequence> parts = font.split(verdict, leftW);
+        for (int i = 0; i < Math.min(3, parts.size()); i++) {
+            g.drawString(font, parts.get(i), x + 8, line, HudStyle.argb(255, colour), false);
             line += 10;
         }
-        line += 4;
-        // De grafiek rechts.
-        int gx = x + W - 8 - GRAPH_W;
-        int gy = line - 14;
-        graph(g, gx, gy, unit);
-        // De lijsten links.
-        int listW = W - 16 - GRAPH_W - 8;
-        line = list(g, x + 8, line, listW, "GENERATORS", stats.generators(), unit, 0x9ED8FF);
-        line += 4;
-        list(g, x + 8, line, listW, "DEVICES", stats.devices(), unit, 0xF1E87C);
+        // De grafiek rechts, naast de cijfers.
+        graph(g, x + W - 8 - GRAPH_W, y + 50, unit);
+        // De lijsten eronder, over de volle breedte: de generatoren, dan de apparaten.
+        int listY = y + 120;
+        listY = list(g, x + 8, listY, W - 16, "GENERATORS", stats.generators(), unit, 0x9ED8FF);
+        list(g, x + 8, listY + 2, W - 16, "DEVICES", stats.devices(), unit, 0xF1E87C);
     }
 
     /** Een lijstje: een kopje en per regel "Naam x2  48 per tick". Geeft de y eronder. */
@@ -171,7 +171,7 @@ public class BatteryScreen extends Screen {
             g.drawString(font, Component.translatable("battery.imttech.none"), x + 4, y, HudStyle.argb(170, HudStyle.WHITE), false);
             return y + 10;
         }
-        int max = Math.min(entries.size(), 6);
+        int max = Math.min(entries.size(), 3);
         for (int i = 0; i < max; i++) {
             BatteryStatsPayload.Entry entry = entries.get(i);
             String name = entry.name() + (entry.count() > 1 ? " x" + entry.count() : "");

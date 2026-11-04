@@ -27,6 +27,9 @@ public enum Op {
     BUTTON(Kind.TRIGGER, "button", Arg.DEVICE, Arg.NONE, "Someone presses this network button"),
     /** {@code when lever("Night mode"):} (hoofdstuk 38): iemand zet een netwerkhendel om; lever.on zegt hoe hij nu staat. */
     LEVER(Kind.TRIGGER, "lever", Arg.DEVICE, Arg.NONE, "Someone flips this network lever (lever.on: is it on now?)"),
+    /** {@code when request("Gate"):} (hoofdstuk 49): een toegangsverzoek bij een Auth Console kreeg zijn antwoord. */
+    REQUEST(Kind.TRIGGER, "request", Arg.DEVICE, Arg.NONE, "Someone asked for access at this Auth Console and got an answer "
+            + "(request.accepted: yes or no)"),
     TURNED_ON(Kind.TRIGGER, "turned_on", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched on"),
     TURNED_OFF(Kind.TRIGGER, "turned_off", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched off"),
     EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.NUMBER, "Every so many seconds"),
@@ -356,7 +359,7 @@ public enum Op {
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
-            case KEYCARD, CODEPANEL, BUTTON, LEVER, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE,
+            case KEYCARD, CODEPANEL, BUTTON, LEVER, REQUEST, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE,
                  TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED, SQUAD_DOWN -> kind == ProgramKind.SERVER;
             // Robots en squads aansturen kan ook een Training End-blok (hoofdstuk 26: deactivate("Wave 1")).
             case ORDER, ACTIVATE, DEACTIVATE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
@@ -371,7 +374,7 @@ public enum Op {
 
     /** Werken {@code accept()} en {@code deny()} hier? Alleen na een keycardlezer of codepaneel. */
     public boolean hasSourceDevice() {
-        return this == KEYCARD || this == CODEPANEL;
+        return this == KEYCARD || this == CODEPANEL || this == REQUEST;
     }
 
     /**
@@ -380,6 +383,6 @@ public enum Op {
      * ({@code player.name}).
      */
     public boolean fromInput() {
-        return this == KEYCARD || this == CODEPANEL || this == BUTTON || this == LEVER;
+        return this == KEYCARD || this == CODEPANEL || this == BUTTON || this == LEVER || this == REQUEST;
     }
 }

@@ -2657,6 +2657,60 @@ final class ShowcaseFeatures {
                 .pause(100));
         addBattery();
         addHandcuffs();
+        addAuth();
+    }
+
+    /** Waar het veldje van de autorisatiecodes (hoofdstuk 49) ligt (zie VisualCheck.buildAuthYard). */
+    static final BlockPos AUTH_YARD = new BlockPos(-130, -60, 270);
+
+    /** Hoofdstuk 49: de autorisatiecodes en de Auth Console. */
+    private static void addAuth() {
+        BlockPos y = AUTH_YARD;
+        BlockPos panel = y.offset(1, 0, 4);
+        BlockPos console = y.offset(3, 0, 4);
+        add("Authorization codes and the Auth Console", "Hoofdstuk 49. Achter je een kern met een server; voor je een muurtje "
+                + "met een codepaneel 'Vault' en een Auth Console 'Gate', en Bram ernaast. Eerst de desktop: in Status staat de "
+                + "autorisatiecode van dit moment (en wanneer de volgende komt); in Settings stel je in hoe lang hij is, om de "
+                + "hoeveel minuten, en of de vorige nog mag. Dan typ ik die code op het paneel: groen, en I.M.T zegt 'Vault open "
+                + "for Dev' (het diagram kijkt naar auth.valid, er staat geen code in). Dan drukt Bram op de console: oranje, jij "
+                + "krijgt een bericht, en in de app Requests staat 'Bram at Gate' met Accept en Deny. Accept: de console groen "
+                + "en I.M.T zegt 'Bram may come in' (request.accepted). Bram nog eens, nu Deny: rood, 'Bram stays outside'.",
+                at(y.offset(2, 0, 2)), 0, 12, s -> s
+                .onServer(0, player -> VisualCheck.buildAuthYard(player, AUTH_YARD))
+                .onServer(30, player -> VisualCheck.wakeAuthServer(player, AUTH_YARD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
+                .pause(90)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.SETTINGS)))
+                .pause(100)
+                .close(0)
+                .lookAt(10, Vec3.atCenterOf(panel))
+                .onServer(20, player -> {
+                    if (player.serverLevel().getBlockEntity(AUTH_YARD) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                        com.senne.imttech.logic.LogicEvents.codePanel(player.serverLevel(), panel, player, core.authCode());
+                    }
+                })
+                .pause(70)
+                .lookAt(0, Vec3.atCenterOf(console))
+                .onServer(10, player -> VisualCheck.bramAsks(player, console))
+                .pause(60)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
+                .pause(80)
+                .step(0, () -> desktop(os -> os.tourRequestAnswer(true)))
+                .pause(40)
+                .close(0)
+                .pause(60)
+                .onServer(0, player -> VisualCheck.bramAsks(player, console))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
+                .pause(60)
+                .step(0, () -> desktop(os -> os.tourRequestAnswer(false)))
+                .pause(40)
+                .close(0)
+                .pause(60));
     }
 
     /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie VisualCheck.buildCuffYard). */
